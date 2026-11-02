@@ -19,13 +19,14 @@ import {
   TRIGLYCERIDES_THRESHOLDS,
   type MetricType,
   bpTargetFor,
+  elevatedWaistFromCm,
   isWaistToHeightElevated,
   rangeFault,
   waistToHeightRatio,
 } from './units';
 import { getLipidStatus } from './calculations';
 import { METRIC_TO_FIELD } from './mappings';
-import { isLimitField, limitLabelValue, limitRepresentative, type Comparator } from './lab-limits';
+import { certainValue, isLimitField, limitLabelValue, limitRepresentative, linesReached, type Comparator } from './lab-limits';
 
 export type GradeStatus = 'ok' | 'warn' | 'bad' | null;
 
@@ -85,29 +86,36 @@ export function statusOf(metric: MetricType, siValue: number, grading: Grading):
 
 // ── Vitals: their lines depend on the plan (IBW for weight, WHtR < 0.5 for waist, BP target) ──
 
+/** Weight's and waist's lines, which their grades below read and a limit is judged against
+ *  (US-12 AC21): weight's around the ideal (5 under, 2 over, 5 over), waist's at the healthy
+ *  ratio and 8 cm past half the height. */
+const weightLines = (ibw: number) => [ibw - 5, ibw + 2, ibw + 5] as const;
+const waistLines = (heightCm: number) => [elevatedWaistFromCm(heightCm), heightCm * 0.5 + 8] as const;
+
 function weightStatus(siKg: number | null | undefined, ibw?: number): GradeStatus {
   if (siKg == null || Number.isNaN(siKg) || ibw == null) return null;
-  if (siKg >= ibw - 5 && siKg <= ibw + 2) return 'ok';
-  if (siKg <= ibw + 5) return 'warn';
+  const [low, okTop, warnTop] = weightLines(ibw);
+  if (siKg >= low && siKg <= okTop) return 'ok';
+  if (siKg <= warnTop) return 'warn';
   return 'bad';
 }
 /** 'ok' exactly when the plan counts the waist as healthy (US-06 AC5). */
 function waistStatus(siCm: number | null | undefined, heightCm?: number): GradeStatus {
   if (siCm == null || Number.isNaN(siCm) || heightCm == null) return null;
   if (!isWaistToHeightElevated(waistToHeightRatio(siCm, heightCm))) return 'ok';
-  if (siCm <= heightCm * 0.5 + 8) return 'warn';
+  if (siCm <= waistLines(heightCm)[1]) return 'warn';
   return 'bad';
 }
+/** A blood pressure half's lines: the systolic target and 10 above it, diastolic 80 and 85. A half's
+ *  grade is how many it has reached (ok, warn, bad), and the pair's the worse half's. */
+const bpLines = (sysTarget: number) => ({ sys: [sysTarget, sysTarget + 10], dia: [80, 85] });
+const BP_GRADES = ['ok', 'warn', 'bad'] as const;
+
 /** Neutral with no systolic target: there is no plan (US-06 AC5). */
 export function bpStatus(sys: number | null | undefined, dia: number | null | undefined, sysTarget: number | undefined): GradeStatus {
   if (sys == null || dia == null || Number.isNaN(sys) || Number.isNaN(dia) || sysTarget === undefined) return null;
-  const diaTarget = 80;
-  if (sys < sysTarget && dia < diaTarget) return 'ok';
-  if (sys < sysTarget + 10 && dia < diaTarget + 5) return 'warn';
-  return 'bad';
-}
-export function simpleStatus(metric: 'weight' | 'waist', si: number | null | undefined, ibwKg?: number, planHeightCm?: number): GradeStatus {
-  return metric === 'weight' ? weightStatus(si, ibwKg) : waistStatus(si, planHeightCm);
+  const lines = bpLines(sysTarget);
+  return BP_GRADES[Math.max(linesReached(lines.sys, undefined, sys)[0], linesReached(lines.dia, undefined, dia)[0])];
 }
 
 /** Whom and against what plan a row's value is graded. */
@@ -122,10 +130,29 @@ function limitField(metric: MetricType) {
   return field && isLimitField(field) ? field : null;
 }
 
-/** A limit the plan cannot grade: it shows no colour, and says `LIMIT_NOT_GRADED`. */
-export function limitUngraded(metric: MetricType, bound: number, comparator?: Comparator): boolean {
-  const field = limitField(metric);
-  return !!comparator && (!field || limitRepresentative(field, comparator, bound) === null);
+/** A blood pressure as graded: each half, with its limit if it was printed as one. */
+export type PressureReading = { value: number; comparator?: Comparator; dia?: { value: number; comparator?: Comparator } };
+
+/**
+ * Whether a value printed as a limit says `LIMIT_NOT_GRADED`, given the grade it got: only when
+ * there is something to grade it against (an exact value there would be graded) and the rule
+ * leaves it without a grade (US-12 AC20, AC21). Weight needs an adult and an ideal weight, waist
+ * a height, blood pressure an adult's plan; a blood test an adult, and says it when the plan
+ * cannot grade the limit. A known minor, or no plan, says nothing, as an exact value there does.
+ */
+export function limitUngraded(metric: MetricType | 'blood_pressure', status: GradeStatus, { grading, plan }: GradeContext, reading: PressureReading): boolean {
+  const comparator = reading.comparator;
+  if (!comparator && !reading.dia?.comparator) return false;
+  switch (metric) {
+    case 'weight': return status === null && !!grading && plan?.idealBodyWeight != null;
+    case 'waist': return status === null && plan?.heightCm != null;
+    case 'blood_pressure': return status === null && !!grading && !!plan;
+    default: {
+      if (!grading || !comparator) return false;
+      const field = limitField(metric);
+      return !field || limitRepresentative(field, comparator, reading.value) === null;
+    }
+  }
 }
 
 /** A saved core value's colour. A limit is coloured only when its bound
@@ -140,16 +167,35 @@ export function savedStatus(metric: MetricType, si: number, comparator: Comparat
 
 /** A value's grade, as the grids colour it: the blood tests by their lines,
  *  a limit only when its bound decides (US-12 AC20), weight and waist by the
- *  plan; none for a known minor's adult lines. */
+ *  plan, a limit only when certain (US-12 AC21); none for a known minor's adult lines. */
 export function valueStatus(metric: MetricType, si: number, { grading, plan }: GradeContext, comparator?: Comparator): GradeStatus {
-  if (metric === 'weight') return simpleStatus('weight', si, grading ? plan?.idealBodyWeight : undefined);
-  if (metric === 'waist') return simpleStatus('waist', si, undefined, plan?.heightCm);
+  if (metric === 'weight') {
+    const ibw = grading ? plan?.idealBodyWeight : undefined;
+    const value = ibw == null ? null : certainValue(weightLines(ibw), comparator, si);
+    return value === null ? null : weightStatus(value, ibw);
+  }
+  if (metric === 'waist') {
+    const heightCm = plan?.heightCm;
+    const value = heightCm == null ? null : certainValue(waistLines(heightCm), comparator, si);
+    return value === null ? null : waistStatus(value, heightCm);
+  }
   return savedStatus(metric, si, comparator, grading);
 }
 
-/** A pressure's grade against the plan's systolic target; none without a plan or for a known minor. */
-export function pressureStatus(r: { value: number; dia?: { value: number } }, { grading, plan }: GradeContext): GradeStatus {
-  return bpStatus(r.value, r.dia?.value, plan && grading ? bpTargetFor(plan.age) : undefined);
+/** A pressure's grade against the plan's systolic target; none without a plan or for a known minor.
+ *  With a half printed as a limit, graded only when the grade is the same for every pair both
+ *  bounds allow (US-12 AC21): the pair's grade is the worse half's, so the fewest and the most
+ *  lines each half can have reached decide it, exactly. ">160/<90" is certainly high, "<125/78"
+ *  and "<120.00001/70" open, "<120/70" on target. */
+export function pressureStatus(r: PressureReading, { grading, plan }: GradeContext): GradeStatus {
+  const sysTarget = plan && grading ? bpTargetFor(plan.age) : undefined;
+  // No target, a missing half or not a number: no grade, as bpStatus says.
+  if (!r.dia || bpStatus(r.value, r.dia.value, sysTarget) === null) return null;
+  const lines = bpLines(sysTarget!);
+  const [sysFewest, sysMost] = linesReached(lines.sys, r.comparator, r.value);
+  const [diaFewest, diaMost] = linesReached(lines.dia, r.dia.comparator, r.dia.value);
+  const fewest = Math.max(sysFewest, diaFewest);
+  return fewest === Math.max(sysMost, diaMost) ? BP_GRADES[fewest] : null;
 }
 
 /** The line each metric's grade is read against, in the words its target prints. */

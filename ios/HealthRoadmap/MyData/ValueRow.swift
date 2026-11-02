@@ -21,6 +21,8 @@ struct ValueRow: View {
     var grade: MyData.Grade?
     /// The grade as VoiceOver says it after the value, off target only ("above optimal").
     var gradeWords: String?
+    /// Why a value printed as a limit has no grade, said in the grade's place, as the web's row says it.
+    var note: String?
     /// A US height, shown as 5 ft 10 in in place of the value (AC17).
     var feetInches: MyData.FeetInches?
     /// The recent days, drawn small beside the value (AC17d).
@@ -180,7 +182,7 @@ extension ValueRow {
     /// What VoiceOver says for this row's value, its grade words included (the hidden column's
     /// copies say it too, unheard).
     func spokenLabel(_ value: String, previous: String?) -> String {
-        Self.spoken(value, grade: gradeWords, previous: previous)
+        Self.spoken(value, grade: gradeWords ?? note, previous: previous)
     }
 
     /// What VoiceOver says for a value: "3.4, above optimal, previous 2.9" (MyDataRows.tsx MetricRow).

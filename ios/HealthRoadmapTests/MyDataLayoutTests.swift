@@ -372,6 +372,18 @@ final class MyDataLayoutTests: XCTestCase {
         }
     }
 
+    /// US-12 AC21: a value printed as a limit the rule leaves ungraded says the web's note where its
+    /// grade would be; an older engine sends none.
+    @MainActor
+    func testAnUngradedLimitSaysTheNoteInTheGradesPlace_US12() throws {
+        let note = "Printed as a limit, so the plan cannot grade it against its cutoff."
+        let row = MyData.Row(metric: "weight", label: "Weight", unit: "kg", latest: .init(id: "a", value: "> 78.0", day: "2026-10-15"),
+                             trend: nil, switchable: true, previous: "80.0", note: note)
+        XCTAssertEqual(MyDataView.valueRow(row, tint: .blue).spokenLabel("> 78.0", previous: "80.0"), "> 78.0, \(note), previous 80.0")
+        let older = try JSONDecoder().decode(MyData.Row.self, from: Data(#"{"metric":"weight","label":"Weight","unit":"kg","latest":null,"trend":null,"switchable":true}"#.utf8))
+        XCTAssertNil(older.note)
+    }
+
     /// Whether `view`, drawn in light mode, has a red pixel: the red channel well above the
     /// other two. (The drawn bytes are colour-managed, so an exact hex never matches.)
     @MainActor

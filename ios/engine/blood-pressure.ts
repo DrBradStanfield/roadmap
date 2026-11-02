@@ -7,7 +7,9 @@ import { appendMeasurement, correctValue, findActiveInSlot, resolveRecordedAt, s
 import { PRESSURE_ORDER, pressureInverted } from '../../packages/health-core/src/validation';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { formatDisplayValue } from '../../packages/health-core/src/units';
-import { isComparator } from '../../packages/health-core/src/lab-limits';
+import { formatValue } from '../../packages/health-core/src/lab-limits';
+import { comparatorOf } from '../../packages/health-core/src/lab-limits';
+import type { PressureReading } from '../../packages/health-core/src/row-grade';
 import type { HistoryRow, MetricHistory } from './my-data-forms';
 
 /** The phone's name for the pair; no row carries it. */
@@ -91,7 +93,7 @@ function sameIds(seen: unknown, held: string[]): boolean {
  * it) shows over the pair as it stood but never changes it, so a lost write
  * cannot leak into the pair later writes build on. A half not yet written is a dash.
  */
-export function pressureHistory(file: RoadmapFile, excludedFields: readonly string[], shown?: Map<string, { sys?: number; dia?: number; limit: boolean }>): Omit<MetricHistory, 'markers'> {
+export function pressureHistory(file: RoadmapFile, excludedFields: readonly string[], shown?: Map<string, PressureReading>): Omit<MetricHistory, 'markers'> {
   const rows = file.measurements.filter((row) => (HALVES as readonly string[]).includes(row.metricType));
   const current = new Set(latestActivePerMetric(rows).map((row) => row.id));
   // One pass each, not one per day: a filter per day was quadratic, 17 s for ten years
@@ -133,8 +135,10 @@ export function pressureHistory(file: RoadmapFile, excludedFields: readonly stri
       const now = held.length > 0 && index === stateAt;
       const snapshot = snapshots[index];
       // `shown`: each active pair's stored halves, so My data grades the pair it shows (adversary R1).
-      // `limit`: either half was printed as a limit (US-12 AC20).
-      if (now) shown?.set(`${day}:${snapshot.id}`, { sys: snapshot.sys?.value, dia: snapshot.dia?.value, limit: isComparator(snapshot.sys?.comparator) || isComparator(snapshot.dia?.comparator) });
+      // Both halves present, each with its limit if it was printed as one (US-12 AC20).
+      if (now && snapshot.sys && snapshot.dia) {
+        shown?.set(`${day}:${snapshot.id}`, { value: snapshot.sys.value, ...comparatorOf(snapshot.sys), dia: { value: snapshot.dia.value, ...comparatorOf(snapshot.dia) } });
+      }
       return {
         ...pair(snapshot.sys, snapshot.dia, now ? 'active' : 'entered-in-error', now && held.some((row) => current.has(row.id))),
         id: `${day}:${snapshot.id}`, day, correction: snapshot.rows.some((row) => !!row.correctsId),
@@ -186,5 +190,7 @@ function pair(sys: FileMeasurement | undefined, dia: FileMeasurement | undefined
   Omit<HistoryRow, 'id' | 'day' | 'correction'> {
   const systolic = sys ? formatDisplayValue('systolic_bp', sys.value, 'si') : null;
   const diastolic = dia ? formatDisplayValue('diastolic_bp', dia.value, 'si') : null;
-  return { value: `${systolic ?? '–'}/${diastolic ?? '–'}`, systolic, diastolic, status, current: isCurrent };
+  // The pair as read: a half printed as a limit with its symbol, "< 125/78" (US-12 AC20).
+  const shown = (row: FileMeasurement | undefined, metric: 'systolic_bp' | 'diastolic_bp') => row ? formatValue(metric, row.value, 'si', comparatorOf(row).comparator) : '–';
+  return { value: `${shown(sys, 'systolic_bp')}/${shown(dia, 'diastolic_bp')}`, systolic, diastolic, status, current: isCurrent };
 }

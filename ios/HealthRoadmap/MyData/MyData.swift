@@ -75,6 +75,10 @@ struct MyData: Decodable {
         /// The grade as VoiceOver says it after an off-target value ("above optimal", health-core's
         /// gradeWords); nil on target, ungraded, or from an older engine.
         var gradeWords: String? = nil
+        /// "Printed as a limit, so the plan cannot grade it against its cutoff.": a latest value printed
+        /// as a limit the rule leaves ungraded (US-12 AC21), said where the grade would be; nil otherwise,
+        /// or from an older engine.
+        var note: String? = nil
 
         var id: String { metric }
     }
