@@ -163,9 +163,10 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         setActiveConversationId(payload.activeConversationId);
         setMessages(payload.messages);
         setIsLoading(payload.isLoading);
+        isLoadingRef.current = payload.isLoading; // a load landing before the re-render says what this message said (US-15 AC7a)
         clearTimeout(remotePending);
         // The expiry never ends this tab's own send.
-        if (payload.isLoading) remotePending = setTimeout(() => { if (!ownSendRef.current) setIsLoading(false); }, REMOTE_PENDING_MS);
+        if (payload.isLoading) remotePending = setTimeout(() => { if (!ownSendRef.current) { setIsLoading(false); isLoadingRef.current = false; } }, REMOTE_PENDING_MS);
         setIsLocalSender(false);
         setError(payload.error);
         return;
