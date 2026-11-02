@@ -157,7 +157,7 @@ function reject<R extends string = EditRejectionReason>(reason: R, message: stri
 }
 
 /** Float noise from a unit conversion is not a mismatch; a wrong number is. */
-function sameValue(a: number, b: number): boolean {
+export function sameValue(a: number, b: number): boolean {
   return Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
@@ -306,7 +306,7 @@ export function slotKey(kind: SlotKind, metric: string, recordedAt: string): str
   return kind === 'measurement' ? `m:${metric}@${dayOf(recordedAt)}` : `l:${labSlotKey(metric)}@${dayOf(recordedAt)}`;
 }
 
-function slotOfRow(row: FileMeasurement | FileLabValue): string {
+export function slotOfRow(row: FileMeasurement | FileLabValue): string {
   return 'metricType' in row ? slotKey('measurement', row.metricType, row.recordedAt ?? '') : slotKey('lab', row.metricName, row.recordedAt ?? '');
 }
 

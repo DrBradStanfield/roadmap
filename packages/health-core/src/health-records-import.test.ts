@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import Ajv2020 from 'ajv/dist/2020';
 import { describe, expect, it } from 'vitest';
 import { HEALTH_RECORDS_LOINC, importHealthRecords, type ClinicalRecordInput } from './health-records-import';
-import { acceptedLabUnits, LAB_CATALOG, normalizeLabUnit } from './lab-catalog';
+import { acceptedLabUnits, LAB_CATALOG } from './lab-catalog';
 import { mergeFiles } from './merge';
 import { migrateFile } from './migrate';
 import { appendLabValue, appendMeasurement, correctValue } from './record-edits';
@@ -510,13 +510,29 @@ describe('US-66 AC12: the record schema and the web', () => {
 });
 
 describe('US-66 AC2: UCUM unit spellings', () => {
-  it('reads UCUM\'s bracket and brace forms as the spellings the record knows', () => {
-    expect(['m[IU]/L', 'u[IU]/mL', 'mm[Hg]', '%{HbA1c}', 'mL/min/{1.73_m2}'].map(normalizeLabUnit))
-      .toEqual(['mIU/L', 'µIU/mL', 'mmHg', '%', 'mL/min/1.73m²']);
+  it('reads UCUM\'s bracket and brace forms, as the code or the printed unit, as the spellings the record knows', () => {
+    const days = ['2026-10-18', '2026-10-19', '2026-10-20', '2026-10-21'];
+    const results = [lab('3016-3', 2.1, 'm[IU]/L'), lab('3016-3', 2.1, 'u[IU]/mL'), lab('4548-4', 6.5, '%{HbA1c}'), lab('98979-8', 90, 'mL/min/{1.73_m2}')];
+    const asCode = results.map((r, i) => rec({ ...r, id: `code${i}`, effectiveDateTime: days[i] }));
+    // The same results with no UCUM code: the printed unit is read the same way.
+    const asPrinted = results.map((r, i) => rec({
+      ...r, id: `printed${i}`, effectiveDateTime: days[i],
+      valueQuantity: { value: (r.valueQuantity as { value: number }).value, unit: (r.valueQuantity as { unit: string }).unit },
+    }));
+    for (const batch of [asCode, asPrinted]) {
+      const { file, counts } = run(empty(), batch);
+      expect(counts).toMatchObject({ added: 4, notRead: 0 });
+      expect(file.labValues.map((v) => [v.metricName, v.value, v.unit])).toEqual([
+        ['tsh', 2.1, 'mIU/L'], ['tsh', 2.1, 'mIU/L'], ['egfr', 90, 'mL/min/1.73m²'],
+      ]);
+      expect(file.measurements.map((m) => [m.metricType, m.value])).toEqual([['hba1c', toCanonicalValue('hba1c', 6.5, 'conventional')]]);
+    }
   });
 
-  it('a brace after a space is not UCUM and stays, to be refused', () => {
-    expect(normalizeLabUnit('mmol/L {H}')).toBe('mmol/L {H}');
+  it('a brace after a space is not UCUM: the result is not read', () => {
+    const { file, counts } = run(empty(), [rec(lab('2089-1', 2.9, 'mmol/L {H}'))]);
+    expect(counts).toMatchObject({ added: 0, notRead: 1 });
+    expect(file.measurements).toEqual([]);
   });
 
   it('changes no spelling the record already accepts: none holds a brace or bracket', () => {

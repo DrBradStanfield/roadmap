@@ -190,7 +190,7 @@ final class AppleHealthSync {
             // with one half refused shows only the other. Until a kind has given a whole
             // reading, keep no anchor, so allowing it later still brings in its past.
             if anchor == nil, !Self.hasWholeReading(batch.samples, kind) { continue }
-            if !batch.samples.isEmpty { try await save(batch.samples) }
+            if !batch.samples.isEmpty { try await save(.appleHealth(batch.samples)) }
             memory.setAnchor(batch.anchor, for: kind)
         }
         try await importLabResults()
@@ -203,7 +203,7 @@ final class AppleHealthSync {
         let anchor = memory.labResultsAnchor
         let batch = try await client.labResults(after: anchor)
         if anchor == nil, batch.records.isEmpty { return }
-        if !batch.records.isEmpty, try await save(batch.records)?.landed == true {
+        if !batch.records.isEmpty, try await save(.healthRecords(batch.records))?.landed == true {
             analytics?.event(.healthRecordsImported)
         }
         memory.labResultsAnchor = batch.anchor
@@ -213,23 +213,15 @@ final class AppleHealthSync {
     /// the erase guard), checked against the record as it is now: an import is not a
     /// sheet, so a sheet's pin never refuses it. A refusal reads the record again and
     /// tries once more; a second refusal keeps the anchor, so the batch comes again.
-    private func save(_ samples: [HealthSample]) async throws {
-        try await saved { (await self.store.applyNow(.appleHealth(samples)), nil) }
-    }
-
-    /// Lab results the same way, and what the engine made of them.
-    private func save(_ records: [HealthRecord]) async throws -> HealthRecordCounts? {
-        try await saved { await self.store.applyNow(records: records) }
-    }
-
+    /// Returns what a Health Records batch did (nil for any other edit).
     @discardableResult
-    private func saved(_ apply: @MainActor () async -> (result: RecordStore.ApplyResult, counts: HealthRecordCounts?)) async throws -> HealthRecordCounts? {
-        let first = await apply()
-        if case .saved = first.result { return first.counts }
+    private func save(_ edit: RecordEdit) async throws -> HealthRecordCounts? {
+        if case .saved(let counts) = await store.applyNow(edit) { return counts }
         await reread()
-        let second = await apply()
-        if case .refused(let message, _) = second.result { throw ImportRefused(message: message) }
-        return second.counts
+        switch await store.applyNow(edit) {
+        case .saved(let counts): return counts
+        case .refused(let message, _): throw ImportRefused(message: message)
+        }
     }
 
     /// Each value once per version. One Health refuses does not hold back the rest:

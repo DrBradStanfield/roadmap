@@ -220,7 +220,7 @@ final class CloudSyncTests: XCTestCase {
         let save = Task { await store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")) }
         try await sync.connect(.dropbox, authenticate: signIn())
         let saved = await save.value
-        XCTAssertEqual(saved, .saved)
+        XCTAssertEqual(saved, .saved())
         XCTAssertNotNil(store.cloudErase, "the cloud record is open")
         XCTAssertEqual(activeDays(store.recordJSON), ["2026-10-01", "2026-10-02"], "the screen shows the save")
         await sync.background()
@@ -277,7 +277,7 @@ final class CloudSyncTests: XCTestCase {
         await sync.start()
         dropbox.onDownload = nil
         let result = await imported?.value
-        XCTAssertEqual(result, .saved)
+        XCTAssertEqual(result, .saved())
         XCTAssertNotNil(store.cloudErase, "the cloud record is open")
         XCTAssertEqual(activeDays(store.recordJSON), ["2026-10-01", "2026-10-02"], "the screen shows the import")
         await sync.background()
@@ -489,7 +489,7 @@ final class CloudSyncTests: XCTestCase {
         let (store, sync, engine) = try app()
         await sync.start()
         let chosen = await store.setLpaUnit("mg/dL").value
-        XCTAssertEqual(chosen, .saved, "the menu's choice goes through the session")
+        XCTAssertEqual(chosen, .saved(), "the menu's choice goes through the session")
         store.pinScreen()
         XCTAssertEqual(store.screen.lpaUnit, "mg/dL")
         // Saved without a re-read: the session throttles re-reads, and the web's change comes next.
@@ -506,12 +506,12 @@ final class CloudSyncTests: XCTestCase {
         }
         XCTAssertTrue(message.contains("Close this"), message)
         let weight = await store.apply(.add(metric: "weight", value: 80, day: "2026-10-02"))
-        XCTAssertEqual(weight, .saved, "another test's value still saves")
+        XCTAssertEqual(weight, .saved(), "another test's value still saves")
         store.unpinScreen()
         // A sheet opened now shows mg/L: its value saves, read in mg/L.
         store.pinScreen()
         let lpaSaved = await store.apply(.add(metric: "lpa", value: 500, day: "2026-10-02"))
-        XCTAssertEqual(lpaSaved, .saved)
+        XCTAssertEqual(lpaSaved, .saved())
         store.unpinScreen()
         await sync.background()
         let lpa = (dropbox.record["measurements"] as? [[String: Any]])?.first { $0["metricType"] as? String == "lpa" }

@@ -514,7 +514,7 @@ final class RecordStoreTests: XCTestCase {
         let store = try store()
         let row = try XCTUnwrap(store.myData?.bloodTests.first { $0.metric == "lpa" })
         var seen = store.screen // the entry sheet opens, showing the default unit
-        let sheet = ValueEntrySheet(title: row.label, unit: row.unit, current: nil, asksForDay: true) { _, _ in .saved }
+        let sheet = ValueEntrySheet(title: row.label, unit: row.unit, current: nil, asksForDay: true) { _, _ in .saved() }
             .lpaUnits(store, row) { seen = seen.showing(lpaUnit: $0) }
         let choose = try XCTUnwrap(sheet.chooseUnit)
         let refusal = await choose("mg/L")

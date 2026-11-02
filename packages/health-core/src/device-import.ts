@@ -89,8 +89,9 @@ const CLOCK_SKEW_MS = 5 * 60_000;
  * draw time through it too (health-records-import.ts).
  */
 export function recordedAtOf(measuredAt: unknown, now: string): string | null {
-  const parts = typeof measuredAt === 'string' ? MEASURED_AT.exec(measuredAt) : null;
-  const at = parts ? Date.parse(measuredAt as string) : Number.NaN;
+  if (typeof measuredAt !== 'string') return null;
+  const parts = MEASURED_AT.exec(measuredAt);
+  const at = parts ? Date.parse(measuredAt) : Number.NaN;
   if (!parts || Number.isNaN(at) || at > Date.parse(now) + CLOCK_SKEW_MS) return null;
   const [, day, time, offset] = parts;
   return isCalendarDay(day) ? `${day}T${time}.000${offset}` : null;

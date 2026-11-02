@@ -29,7 +29,7 @@ import { normalizeLabUnit, resolveLabCatalogEntry } from './lab-catalog';
 import { isClinicalDay } from './measurement-history';
 import { comparatorOf, isComparator, type Comparator } from './lab-limits';
 import { latestDayOnEarth } from './merge';
-import { measurementValueFault, newId, slotKey, slotIndex, stampUpdatedAt, toStoredLab } from './record-edits';
+import { measurementValueFault, newId, sameValue, slotKey, slotIndex, slotOfRow, stampUpdatedAt, toStoredLab } from './record-edits';
 import { createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { reportedToCanonical, type MetricType } from './units';
 import { METRIC_TYPES } from './validation';
@@ -120,10 +120,31 @@ const observation = z.object({
 });
 type Observation = z.infer<typeof observation>;
 
-
-/** The unit a Quantity states: its UCUM code when it has one, else the printed unit. */
-function unitOf(q: z.infer<typeof quantity> | undefined): string | undefined {
+/** The unit a Quantity states, as printed: its UCUM code when it has one, else the printed unit.
+ *  An unversioned result's version key reads it so, so a stored `externalId` never changes. */
+function statedUnit(q: z.infer<typeof quantity> | undefined): string | undefined {
   return q?.system === UCUM && q.code ? q.code : q?.unit;
+}
+
+/** The unit a Quantity states, in the spelling the record reads (AC2). */
+function unitOf(q: z.infer<typeof quantity> | undefined): string | undefined {
+  const u = statedUnit(q);
+  return u === undefined ? u : fromUcum(u);
+}
+
+/**
+ * UCUM, as Health Records feeds print it (AC2). No accepted spelling holds a
+ * brace or a square bracket, so these can only turn a refusal into a match.
+ * Per body surface area is a term of its own; any other {annotation} is a
+ * label UCUM gives no value to ("%{HbA1c}" is %); a bracketed unit keeps its
+ * letters ("m[IU]/L" is mIU/L, "mm[Hg]" is mmHg). A brace after a space is
+ * not UCUM ("mmol/L {H}" is a flag) and is left to be refused.
+ */
+function fromUcum(unit: string): string {
+  return unit.trim()
+    .replace(/\{1\.73_?m2\}/gi, '1.73m2')
+    .replace(/(^|[^\s{}])\{[^{}\s]*\}/g, '$1')
+    .replace(/\[([^[\]\s]+)\]/g, '$1');
 }
 
 /** The one metric the Observation's LOINC codings name, or null for none or two. */
@@ -164,11 +185,10 @@ function readingOf(obs: Observation, now: string): Reading | null {
   if (!metric || typeof q?.value !== 'number' || !unit || !recordedAt) return null;
   // US-12 AC20: a result printed as a limit keeps its comparator; `value` is the bound. FHIR's `ad` is not read.
   if (q.comparator !== undefined && !isComparator(q.comparator)) return null;
-  const comparator = q.comparator;
   if ((METRIC_TYPES as readonly string[]).includes(metric)) {
     const si = reportedToCanonical(metric as MetricType, q.value, normalizeLabUnit(unit));
     if (!si || measurementValueFault(metric, si.valueSI)) return null;
-    return { kind: 'measurement', metric, value: si.valueSI, recordedAt, comparator };
+    return { kind: 'measurement', metric, value: si.valueSI, recordedAt, comparator: q.comparator };
   }
   const entry = resolveLabCatalogEntry(metric);
   if (!entry) return null;
@@ -180,12 +200,7 @@ function readingOf(obs: Observation, now: string): Reading | null {
   const range = obs.referenceRange?.[0];
   const stored = toStoredLab(entry, q.value, unit, sameUnit(range?.low), sameUnit(range?.high));
   if ('ok' in stored) return null;
-  return { kind: 'lab', metric: entry.key, ...stored, recordedAt, comparator };
-}
-
-/** Two numbers equal past the float noise of a unit conversion. */
-function sameNumber(a: number, b: number): boolean {
-  return Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
+  return { kind: 'lab', metric: entry.key, ...stored, recordedAt, comparator: q.comparator };
 }
 
 type Row = FileMeasurement | FileLabValue;
@@ -199,7 +214,6 @@ export function importHealthRecords(
   // Copied once and edited in place: a first import can carry years of results.
   const measurements = [...file.measurements];
   const labValues = [...file.labValues];
-  const listOf = (kind: Reading['kind']): Row[] => (kind === 'measurement' ? measurements : labValues);
   const known = new Set<string>();
   /** Each identity's Health Records rows, by list and index. */
   const byIdentity = new Map<string, Array<{ list: Row[]; at: number }>>();
@@ -209,18 +223,19 @@ export function importHealthRecords(
     known.add(externalId);
     if (list[at].source !== 'health_records' || !externalId.includes('#')) return;
     const identity = externalId.slice(0, externalId.indexOf('#'));
-    byIdentity.set(identity, [...(byIdentity.get(identity) ?? []), { list, at }]);
+    const rows = byIdentity.get(identity);
+    if (rows) rows.push({ list, at });
+    else byIdentity.set(identity, [{ list, at }]);
   };
   measurements.forEach((_, i) => remember(measurements, i));
   labValues.forEach((_, i) => remember(labValues, i));
   const taken = new Set(slotIndex(file).keys());
   let changed = false;
 
-  for (const { record, obs } of parsedInOrder(records)) {
+  for (const { identity, obs } of parsedInOrder(records)) {
     if (!obs) { counts.notRead++; continue; }
-    const identity = `${record.sourceId}|${record.resourceType}|${obs.id}`;
     const version = obs.meta?.versionId ?? obs.meta?.lastUpdated
-      ?? `${obs.status}:${obs.valueQuantity?.value ?? ''}:${unitOf(obs.valueQuantity) ?? ''}`;
+      ?? `${obs.status}:${obs.valueQuantity?.value ?? ''}:${statedUnit(obs.valueQuantity) ?? ''}`;
     const externalId = `${identity}#${version}`;
     // AC5: a version already in the record never lands again, after a reinstall too.
     if (known.has(externalId)) { counts.alreadyInRecord++; continue; }
@@ -231,7 +246,7 @@ export function importHealthRecords(
     if (obs.status === 'entered-in-error') {
       if (active) {
         active.list[active.at] = { ...active.list[active.at], status: 'entered-in-error' };
-        taken.delete(slotOf(active.list[active.at]));
+        taken.delete(slotOfRow(active.list[active.at]));
         counts.withdrawn++;
         changed = true;
       } else if (rows.length) counts.alreadyInRecord++;
@@ -248,18 +263,18 @@ export function importHealthRecords(
     if (erasedAt !== null && Date.parse(reading.recordedAt) < erasedAt) { counts.notRead++; continue; }
 
     const slot = slotKey(reading.kind, reading.metric, reading.recordedAt);
-    const list = listOf(reading.kind);
+    const list: Row[] = reading.kind === 'measurement' ? measurements : labValues;
     let correctsId: string | null = null;
     let recordedAt = reading.recordedAt;
     if (active) {
       const old = active.list[active.at];
       // A version that moves the result to another test or day is not read:
       // a correction keeps its slot (agent-access rule 2).
-      if (active.list !== list || slotOf(old) !== slot) { counts.notRead++; continue; }
+      if (active.list !== list || slotOfRow(old) !== slot) { counts.notRead++; continue; }
       const oldUnit = 'unit' in old ? old.unit : undefined;
       const newUnit = reading.kind === 'lab' ? reading.unit : undefined;
       // AC6: a version bump with the same value (and the same limit) appends nothing.
-      if (sameNumber(old.value, reading.value) && oldUnit === newUnit && comparatorOf(old).comparator === reading.comparator) { counts.alreadyInRecord++; continue; }
+      if (sameValue(old.value, reading.value) && oldUnit === newUnit && comparatorOf(old).comparator === reading.comparator) { counts.alreadyInRecord++; continue; }
       list[active.at] = { ...old, status: 'entered-in-error' };
       correctsId = old.id;
       recordedAt = old.recordedAt;
@@ -290,30 +305,29 @@ export function importHealthRecords(
   return { file: changed ? stampUpdatedAt({ ...file, measurements, labValues }, now) : file, counts };
 }
 
-function slotOf(row: Row): string {
-  return 'metricType' in row ? slotKey('measurement', row.metricType, row.recordedAt) : slotKey('lab', row.metricName, row.recordedAt);
-}
-
 /**
  * Each record read once (null when it is not an Observation this reads), in
  * the order the app gave, except that two versions of one result in one batch
  * are taken oldest first by `meta.lastUpdated` when both carry it, so the
  * newer one ends up active.
  */
-function parsedInOrder(records: ClinicalRecordInput[]): Array<{ record: ClinicalRecordInput; obs: Observation | null }> {
+function parsedInOrder(records: ClinicalRecordInput[]): Array<{ identity: string; obs: Observation } | { identity: null; obs: null }> {
   const parsed = records.map((raw) => {
+    const unread = { identity: null, obs: null } as const;
     const record = input.safeParse(raw);
-    if (!record.success) return { record: raw, obs: null };
+    if (!record.success) return unread;
     let json: unknown;
-    try { json = JSON.parse(record.data.json); } catch { return { record: record.data, obs: null }; }
+    try { json = JSON.parse(record.data.json); } catch { return unread; }
     const obs = observation.safeParse(json);
-    return { record: record.data, obs: obs.success ? obs.data : null };
+    if (!obs.success) return unread;
+    return { identity: `${record.data.sourceId}|${record.data.resourceType}|${obs.data.id}`, obs: obs.data };
   });
-  const identityOf = (p: (typeof parsed)[number]) => (p.obs ? `${p.record.sourceId}|${p.record.resourceType}|${p.obs.id}` : null);
   const groups = new Map<string, number[]>();
-  parsed.forEach((p, i) => {
-    const id = identityOf(p);
-    if (id) groups.set(id, [...(groups.get(id) ?? []), i]);
+  parsed.forEach(({ identity }, i) => {
+    if (!identity) return;
+    const positions = groups.get(identity);
+    if (positions) positions.push(i);
+    else groups.set(identity, [i]);
   });
   const order = parsed.map((_, i) => i);
   for (const positions of groups.values()) {

@@ -248,7 +248,7 @@ struct MyDataView: View {
 
     @discardableResult
     private func saved(_ result: RecordStore.ApplyResult) -> RecordStore.ApplyResult {
-        if result == .saved { saves += 1 }
+        if result == .saved() { saves += 1 }
         return result
     }
 }

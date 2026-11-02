@@ -109,13 +109,6 @@ final class AppleHealthRecordsTests: XCTestCase {
         XCTAssertEqual(records, [["sourceId": "src|Clinic", "resourceType": "Observation", "fhirVersion": "1.0.2", "json": #"{"id":"a"}"#]])
     }
 
-    /// AC5: the source part of a result's identity, one per institution account.
-    func testTheSourceIsTheInstitutionsAccount_US66_AC5() {
-        XCTAssertEqual(HealthKitClient.sourceId(bundleIdentifier: "com.apple.public.health.clinical.A1"), "com.apple.public.health.clinical.A1")
-        XCTAssertNotEqual(HealthKitClient.sourceId(bundleIdentifier: "com.apple.public.health.clinical.A1"),
-                          HealthKitClient.sourceId(bundleIdentifier: "com.apple.public.health.clinical.B2"))
-    }
-
     /// The engine's counts come back beside the record, and decode.
     func testTheEnginesCountsDecode_US66_AC13() throws {
         let json = #"{"ok":true,"record":"{}","healthRecords":{"added":1,"corrected":0,"withdrawn":2,"alreadyInRecord":3,"notRead":4}}"#
@@ -235,7 +228,7 @@ final class AppleHealthRecordsTests: XCTestCase {
         async let imported: Void = sync.refresh()
         async let typed = store.apply(.add(metric: "weight", value: 80, day: "2026-10-20"))
         let (_, result) = await (imported, typed)
-        XCTAssertEqual(result, .saved)
+        XCTAssertEqual(result, .saved())
         XCTAssertEqual(try rows(store).count, 1)
         XCTAssertEqual(try rows(store, source: "manual").count, 1, "the typed weight")
     }

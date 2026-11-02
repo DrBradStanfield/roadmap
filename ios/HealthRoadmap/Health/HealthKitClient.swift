@@ -41,40 +41,41 @@ final class HealthKitClient: HealthStoreClient {
     }()
 
     func samples(of kind: HealthKind, after anchor: Data?) async throws -> HealthBatch {
-        let previous = anchor.flatMap { try? NSKeyedUnarchiver.unarchivedObject(ofClass: HKQueryAnchor.self, from: $0) }
-        let descriptor = HKAnchoredObjectQueryDescriptor(predicates: [Self.predicate(kind)], anchor: previous)
-        let result: HKAnchoredObjectQueryDescriptor<HKSample>.Result
-        do {
-            result = try await descriptor.result(for: store)
-        } catch let error as HKError where error.code == .errorDatabaseInaccessible {
-            throw HealthStoreError.locked
-        }
-        // `result.deletedObjects` is ignored on purpose: a reading deleted in Health stays in the record (D6).
+        let (added, data) = try await addedSamples(Self.predicate(kind), after: anchor)
+        // Deletions are ignored on purpose: a reading deleted in Health stays in the record (D6).
         let ownBundle = Bundle.main.bundleIdentifier ?? ""
-        let samples = result.addedSamples
+        let samples = added
             .filter { !Self.isOwn(bundleIdentifier: $0.sourceRevision.source.bundleIdentifier, syncIdentifier: $0.metadata?[HKMetadataKeySyncIdentifier] as? String, ownBundle: ownBundle) }
             .flatMap { Self.readings(from: $0, kind: kind) }
-        let data = try NSKeyedArchiver.archivedData(withRootObject: result.newAnchor, requiringSecureCoding: true)
         return HealthBatch(samples: samples, anchor: data)
     }
 
     func labResults(after anchor: Data?) async throws -> HealthRecordBatch {
+        let (added, data) = try await addedSamples(.clinicalRecord(type: Self.labResults), after: anchor)
+        // Deletions ignored, as for vitals (D6): the engine decides what an amendment does.
+        let records = added.compactMap { sample -> HealthRecord? in
+            guard let resource = sample.fhirResource, let json = String(data: resource.data, encoding: .utf8) else { return nil }
+            // AC5: the source is the bundle id alone (`com.apple.public.health.clinical.<UUID>`),
+            // one per institution account (Apple: a FHIR id is unique only within a resource type
+            // and its source). The institution's name stays out of the record, and a renamed
+            // institution is not a new source.
+            return HealthRecord(sourceId: sample.sourceRevision.source.bundleIdentifier,
+                                resourceType: resource.resourceType.rawValue, fhirVersion: resource.fhirVersion.stringRepresentation, json: json)
+        }
+        return HealthRecordBatch(records: records, anchor: data)
+    }
+
+    /// One anchored query: what was added since `anchor`, and the anchor to keep. A locked phone throws `.locked`.
+    private func addedSamples<Sample: HKSample>(_ predicate: HKSamplePredicate<Sample>, after anchor: Data?) async throws -> (added: [Sample], anchor: Data) {
         let previous = anchor.flatMap { try? NSKeyedUnarchiver.unarchivedObject(ofClass: HKQueryAnchor.self, from: $0) }
-        let descriptor = HKAnchoredObjectQueryDescriptor(predicates: [.clinicalRecord(type: Self.labResults)], anchor: previous)
-        let result: HKAnchoredObjectQueryDescriptor<HKClinicalRecord>.Result
+        let descriptor = HKAnchoredObjectQueryDescriptor(predicates: [predicate], anchor: previous)
+        let result: HKAnchoredObjectQueryDescriptor<Sample>.Result
         do {
             result = try await descriptor.result(for: store)
         } catch let error as HKError where error.code == .errorDatabaseInaccessible {
             throw HealthStoreError.locked
         }
-        // Deletions ignored, as for vitals (D6): the engine decides what an amendment does.
-        let records = result.addedSamples.compactMap { sample -> HealthRecord? in
-            guard let resource = sample.fhirResource, let json = String(data: resource.data, encoding: .utf8) else { return nil }
-            return HealthRecord(sourceId: Self.sourceId(bundleIdentifier: sample.sourceRevision.source.bundleIdentifier),
-                                resourceType: resource.resourceType.rawValue, fhirVersion: resource.fhirVersion.stringRepresentation, json: json)
-        }
-        let data = try NSKeyedArchiver.archivedData(withRootObject: result.newAnchor, requiringSecureCoding: true)
-        return HealthRecordBatch(records: records, anchor: data)
+        return (result.addedSamples, try NSKeyedArchiver.archivedData(withRootObject: result.newAnchor, requiringSecureCoding: true))
     }
 
     func deleteOwnSamples() async throws {
@@ -168,14 +169,6 @@ final class HealthKitClient: HealthStoreClient {
     /// between them): our bundle, or our sync-identifier prefix.
     nonisolated static func isOwn(bundleIdentifier: String?, syncIdentifier: String?, ownBundle: String) -> Bool {
         bundleIdentifier == ownBundle || syncIdentifier?.hasPrefix(syncPrefix) == true
-    }
-
-    /// The source a lab result came through: one per institution account (Apple: a FHIR id is
-    /// unique only within a resource type and its source). Part of the result's identity (AC5).
-    /// The bundle id alone (`com.apple.public.health.clinical.<UUID>`, one per account): the
-    /// institution's name stays out of the record, and a renamed institution is not a new source.
-    nonisolated static func sourceId(bundleIdentifier: String) -> String {
-        bundleIdentifier
     }
 
     // MARK: HealthKit types

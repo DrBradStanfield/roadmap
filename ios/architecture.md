@@ -765,7 +765,7 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   one per institution account; seen on the simulator 2026-11-02): Apple says a FHIR id is
   unique only per type and source. The institution's name stays out of the record. The engine (health-core) reads the JSON and decides what lands, with its counts
   (`added`, `corrected`, `withdrawn`, `alreadyInRecord`, `notRead`).
-- **Same line, same anchor rules as vitals:** `RecordStore.applyNow(records:)`, the store's
+- **Same line, same anchor rules as vitals:** `RecordStore.applyNow(.healthRecords(_))`, its counts in `ApplyResult.saved`; the store's
   one ordered line; the anchor (`HealthSyncMemory.labResultsAnchor`) moves only after the
   record holding the batch is saved, and none is kept until a batch brought results (the
   empty-refusal rule above). Locked phone: as vitals. Deletions in Health are ignored.

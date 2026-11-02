@@ -497,10 +497,11 @@ describe('Health Records (US-66)', () => {
   it('applyEditJson passes the counts to the app; other edits answer as before', () => {
     const recordJson = JSON.stringify(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'));
     const answer = JSON.parse(applyEditJson(recordJson, JSON.stringify({ kind: 'healthRecords', records: [record] }), NOW, 'phone'));
+    expect(Object.keys(answer)).toEqual(['ok', 'record', 'healthRecords']);
     expect(answer.healthRecords).toEqual({ added: 1, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
     expect(JSON.parse(answer.record).measurements[0].source).toBe('health_records');
     const units = JSON.parse(applyEditJson(recordJson, JSON.stringify({ kind: 'units', unitSystem: 'conventional' }), NOW, 'phone'));
-    expect(Object.keys(units).sort()).toEqual(['ok', 'record']);
+    expect(Object.keys(units)).toEqual(['ok', 'record']);
   });
 });
 
