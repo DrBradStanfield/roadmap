@@ -123,7 +123,7 @@ Critically, protein-enriched ultra-processed foods **do not prevent overeating**
 
 **CKD adjustment:** The algorithm reduces to 1.0 g/kg for eGFR < 45 (CKD-3b boundary). This is conservative but aligns with current guidelines for moderate-severe CKD.
 
-**Algorithm links:** `protein-target` suggestion (1.2 g/kg IBW, CKD-adjusted), `lipid-diet` (plant protein sources for lipid management).
+**Algorithm links:** `protein-target` suggestion (1.2 g/kg ideal body weight, CKD-adjusted), `lipid-diet` (plant protein sources for lipid management).
 
 **Algorithm gap:** The `protein-target` suggestion is quantity-focused. It should also emphasise protein source — prioritising plant sources and fish, limiting red/processed meat. This aligns with both the AHA 2026 position and the mortality data.
 
@@ -401,7 +401,7 @@ FODMAPs (fermentable oligosaccharides, disaccharides, monosaccharides, and polyo
 **Fibre:**
 - **Soluble fibre (recommended):** Psyllium husk is ACG-recommended for IBS — it is soluble, gel-forming, and minimally fermented, reducing gas production. Dose: 5-7g/day, titrated slowly.
 - **Insoluble fibre (caution):** Wheat bran and other insoluble fibres may worsen bloating and pain in IBS patients. Should not be the primary fibre source.
-- **Brad's product connection:** MicroVitamin+ Powder includes Psyllium Husk 2.5g per serve — an ACG-recommended, IBS-safe fibre source.
+- **Brad's product connection:** MicroVitamin+ Powder (version 9) includes acacia gum, 5g per serve, a fibre that dissolves without gelling. Version 8 used psyllium husk 2.5g.
 
 **Protein sources for IBS patients:**
 The AHA's priority foods (legumes) are high-FODMAP. IBS-safe protein alternatives that still support heart health:

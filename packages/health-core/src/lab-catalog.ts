@@ -241,7 +241,12 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'shbg', label: 'SHBG', group: 'hormones', unit: 'nmol/L', aliases: ['sex hormone binding globulin', 'shbg (sex hormone binding globulin)'] },
   { key: 'estradiol', label: 'Estradiol', group: 'hormones', unit: 'pmol/L', aliases: ['oestradiol', 'e2'], conversions: { 'pg/ml': 3.671, 'ng/l': 3.671 } }, // estradiol 272.38 g/mol
   { key: 'prolactin', label: 'Prolactin', group: 'hormones', unit: 'mIU/L', aliases: [], unitAliases: ['µiu/ml', 'microiu/ml', 'mciu/ml'] }, // ng/mL is deliberately REFUSED: the mIU factor is assay-dependent (~21.2 for the WHO 3rd IS), so converting would invent precision
-  { key: 'cortisol_am', label: 'Cortisol (morning)', group: 'hormones', unit: 'nmol/L', aliases: ['cortisol', 'am cortisol', 'cortisol, am'], conversions: { 'µg/dl': 27.59 } }, // cortisol 362.46 g/mol
+  // Cortisol is read against the time it was drawn. A name that prints no timing is a
+  // morning cortisol, as most are (Brad 2026-11-02, issue 476); one that prints its
+  // timing goes to that time's entry. Salivary and urine cortisol are not catalogued.
+  { key: 'cortisol_am', label: 'Cortisol (morning)', group: 'hormones', unit: 'nmol/L', aliases: ['cortisol', 'am cortisol', 'cortisol, am', 'cortisol (am)', 'morning cortisol', 'cortisol, morning', 'cortisol morning'], conversions: { 'µg/dl': 27.59 } }, // cortisol 362.46 g/mol
+  { key: 'cortisol_random', label: 'Cortisol (random)', group: 'hormones', unit: 'nmol/L', aliases: ['random cortisol', 'cortisol, random'], conversions: { 'µg/dl': 27.59 } }, // cortisol 362.46 g/mol
+  { key: 'cortisol_pm', label: 'Cortisol (PM)', group: 'hormones', unit: 'nmol/L', aliases: ['pm cortisol', 'cortisol, pm', 'evening cortisol', 'cortisol, evening', 'cortisol (evening)', 'cortisol evening', 'midnight cortisol', 'cortisol, midnight', 'cortisol (midnight)', 'cortisol midnight'], conversions: { 'µg/dl': 27.59 } }, // cortisol 362.46 g/mol
   { key: 'psa_free', label: 'PSA (free)', group: 'hormones', unit: 'µg/L', aliases: ['free psa', 'psa, free'], unitAliases: ['ng/ml'] },
   { key: 'lh', label: 'LH', group: 'hormones', unit: 'IU/L', aliases: ['luteinising hormone', 'luteinizing hormone'], unitAliases: GONADOTROPHIN_ALIASES },
   { key: 'fsh', label: 'FSH', group: 'hormones', unit: 'IU/L', aliases: ['follicle stimulating hormone'], unitAliases: GONADOTROPHIN_ALIASES },
@@ -324,21 +329,6 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'lactate', label: 'Lactate', group: 'metabolic', unit: 'mmol/L', aliases: ['lactic acid'], conversions: { 'mg/dl': 0.111 } }, // lactic acid 90.08 g/mol
   { key: 'fructosamine', label: 'Fructosamine', group: 'metabolic', unit: 'µmol/L', aliases: [] },
 ];
-
-/**
- * The tests US-21 AC19 added. The extraction prompt does not suggest their
- * keys until the #166 Haiku benchmark: a prompt change waits for it. The
- * catalogue still resolves whatever name the model returns.
- */
-export const PROMPT_DEFERRED_KEYS: ReadonlySet<string> = new Set([
-  'egfr_cystatin', 'egfr_combined', 'anion_gap', 'osmolality_serum', 'bilirubin_indirect', 'lipase', 'amylase', 'rdw_sd',
-  'mpv', 'immature_granulocytes', 'reticulocytes', 'nrbc', 'd_dimer', 'fibrinogen', 'total_t4', 'total_t3', 'reverse_t3',
-  't3_uptake', 'thyroglobulin', 'anti_tg', 'trab', 'pth', 'amh', 'bioavailable_testosterone', 'psa_free_percent', 'estrone',
-  'androstenedione', 'oh_progesterone_17', 'dht', 'acth', 'gh', 'hcg', 'red_cell_folate', 'calcium_ionised', 'uibc', 'stfr',
-  'copper', 'caeruloplasmin', 'selenium', 'omega3_index', 'vitamin_a', 'vitamin_e', 'vitamin_c', 'vitamin_b6', 'vitamin_b1',
-  'mma', 'procalcitonin', 'ige', 'rf', 'anti_ccp', 'total_iga', 'ttg_iga', 'nt_probnp', 'bnp', 'troponin_t', 'troponin_i',
-  'c_peptide', 'eag', 'vldl', 'lactate', 'fructosamine',
-]);
 
 const SUPERSCRIPT_DIGITS: Record<string, string> = {
   '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
@@ -637,15 +627,45 @@ const ENTRY_BY_NAME: ReadonlyMap<string, LabCatalogEntry> = (() => {
   return byName;
 })();
 
+/**
+ * `foldName` plus the punctuation reports put around the same words (US-07 AC10,
+ * Brad 2026-11-02): "A.M." and "P.M." lose their dots, and hyphens, dashes,
+ * brackets, commas, colons and slashes become spaces. "Cortisol, A.M.",
+ * "cortisol(am)" and "Cortisol - PM" all fold to the words of a listed name.
+ * Only a name the exact fold misses is tried, so no name that resolved before
+ * moves; a stored row in a punctuated spelling now reads under its entry, as
+ * `labSlotKey` resolves it (a non-SI unit is corrected on load by `migrate.ts`).
+ */
+function looseFold(name: string): string {
+  return foldName(name).replace(/\b([ap])\.\s?m\.?(?![a-z])/g, '$1m').replace(/[-‐‑–—−(),:/]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Every catalogue name's loose fold → its entry, tried only when the exact fold
+ * finds nothing, so no name that resolves today resolves differently. A loose
+ * form two different entries share is ambiguous and resolves to nothing.
+ */
+const ENTRY_BY_LOOSE_NAME: ReadonlyMap<string, LabCatalogEntry | null> = (() => {
+  const byLoose = new Map<string, LabCatalogEntry | null>();
+  for (const [folded, entry] of ENTRY_BY_NAME) {
+    const loose = looseFold(folded);
+    const seen = byLoose.get(loose);
+    byLoose.set(loose, seen === undefined || seen === entry ? entry : null);
+  }
+  return byLoose;
+})();
+
 /** Resolve a report's test name (any casing/spelling) to a catalogue entry.
  *  BOTH sides are folded before comparing, so the underscore/space variance
  *  the LLM extractor and agents produce washes out in either direction:
  *  "free_t4" finds the alias "free t4", and "Vitamin D" finds the key
- *  `vitamin_d`. This is the single resolver, so every consumer gets that
- *  normalization — and the printed name's own factor — for free. */
+ *  `vitamin_d`. A name the exact fold misses is tried once more without its
+ *  punctuation (`looseFold`). This is the single resolver, so every consumer
+ *  gets that normalization — and the printed name's own factor — for free. */
 export function resolveLabCatalogEntry(reportedName: string): LabCatalogEntry | undefined {
-  return ENTRY_BY_NAME.get(foldName(reportedName));
+  return ENTRY_BY_NAME.get(foldName(reportedName)) ?? ENTRY_BY_LOOSE_NAME.get(looseFold(reportedName)) ?? undefined;
 }
+
 
 /** A test's plain label wherever a person reads it: a core metric's, else
  *  the catalogue's, else its name title-cased (US-12 AC19). */
@@ -691,17 +711,19 @@ const GENERIC_NAME_WORDS = new Set([
   'absolute', 'abs', 'average', 'beta', 'brain', 'carbon', 'cardiac', 'combined', 'dioxide', 'gap', 'human',
   'immature', 'index', 'indirect', 'intact', 'ionised', 'ionized', 'nucleated', 'percent', 'pro', 'receptor',
   'reverse', 'soluble', 'terminal', 'tissue', 'type', 'unconjugated', 'unsaturated', 'uptake',
+  // Cortisol by timing (US-07 AC9): clock words, as 'morning' and 'random' above.
+  'evening', 'midnight',
 ]);
 
 /**
  * Short names that are English (or markup) long before they are tests: "na" is
  * not applicable, "gt" is `&gt;` in every rendering bug ever filed, "am" is a
- * clock and half a sentence, "oh" is a sigh, "sat" is a verb, and "hs" is only
+ * clock and half a sentence (and "pm" the other half), "oh" is a sigh, "sat" is a verb, and "hs" is only
  * the prefix of hs-CRP, which `crp` already carries. "ab" is an
  * A/B test and "sd" a standard deviation in any bug report. Everything else short —
  * bp, hb, t3, t4, e2 — stays, so "BP 140/90" and "free T4 15" are refused.
  */
-const SHORT_NAME_WORDS = new Set(['na', 'gt', 'hs', 'am', 'oh', 'sat', 'ab', 'sd']);
+const SHORT_NAME_WORDS = new Set(['na', 'gt', 'hs', 'am', 'pm', 'oh', 'sat', 'ab', 'sd']);
 
 /** "Lp(a)" is one name, not "lp" and "a" — folded before either side is read. */
 export function foldLpa(text: string): string {

@@ -12,11 +12,12 @@ full test suite → tsc typecheck (widget-src + health-core) → builds → Sent
 (`--strategy canary`) → health gates → live WebKit verify — with all deploy
 credentials in GitHub Actions secrets (proven end-to-end: run 31332275404,
 fly-only, shipped v396/v30). Trigger: Actions → Deploy → Run workflow (choose
-surfaces), or automatically when a `ship`-labeled PR merges with an approving
-review (the Tier 3 loop pipeline, docs/loops/deploy-pipeline-proposal.md).
-**The gate is the only check.** It demands an approving review on the FINAL
-commit from a non-bot `OWNER` or `COLLABORATOR`, a green `test` check, and no
-failed checks. Once it passes the deploy runs with no pause: the `production`
+surfaces), or by auto-ship, which dispatches it on `main` after its own
+reviewer, green checks and 30-minute veto window (the Tier 3 loop pipeline,
+docs/loops/deploy-pipeline-proposal.md). There is no PR-merge trigger since
+2026-11-02 (US-46 AC13). **The gate is the only check in this workflow:** it
+runs only for a dispatch on `refs/heads/main`, and the `production`
+environment admits `main` only. Once it passes the deploy runs with no pause: the `production`
 environment lost its 30-minute wait timer on 2026-09-02 by owner decision, and
 has no required reviewer either. The notification issue is a heads-up, not a
 veto; to stop a deploy, cancel the run. CI ships the exact main-tip commit.
@@ -285,7 +286,7 @@ Moved out of CLAUDE.md 2026-09-24 (entropy pass). `.env` has all of them.
   ANTHROPIC_API_KEY, SHOPIFY_*, KLAVIYO_API_KEY/KLAVIYO_LIST_ID (the same
   MicroVitamin pair on both apps, by decision 2026-09-28).
 - **Fly-only**: MCP_ISSUER, MCP_SEAL_KEYS, MCP_CLIENT_HMAC_KEY,
-  OPENAI_APPS_CHALLENGE, GITHUB_ISSUES_TOKEN (edu; the connector files bug
+  GITHUB_ISSUES_TOKEN (edu; the connector files bug
   reports with it, and without it hands the user a link), DROPBOX_APP_KEY/SECRET,
   GOOGLE_DRIVE_CLIENT_ID/SECRET (BOTH Fly apps: `health-tool-app` for the
   widget's Google exchange, edu for the MCP's Drive leg). Setup and rotation:

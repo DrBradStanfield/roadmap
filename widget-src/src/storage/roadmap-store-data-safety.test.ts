@@ -195,8 +195,10 @@ describe('RoadmapStore.deleteUserData (US-11)', () => {
 
     await deviceA.deleteAllData();
 
-    // Device B, still holding its stale populated in-memory copy, flushes.
+    // Device B, still holding its stale populated in-memory copy, saves an
+    // edit (with nothing unsaved a flush writes nothing, US-10 AC5a).
     // mergeFiles' eraseEpoch gate wins wholesale — B's data must NOT come back.
+    deviceB.markReportEmailCaptured();
     await deviceB.flush();
 
     const file = readCloudFile(cloud);
@@ -773,8 +775,7 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
   // raw until it became a merge (US-10 AC5). Both stay pinned.
   it('the mirror keeps the clock of the edit it saves (no rewind to a stale anchor)', async () => {
     const cloud = new MemoryCloud();
-    const seeded = await RoadmapStore.create(new MemoryAdapter(cloud));
-    await seeded.flush();
+    await new MemoryAdapter(cloud).write(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'dev_seed', now: new Date().toISOString() }), null);
     // Backdate the file's last write — the state of a device that has been
     // offline since January.
     const entry = cloud.files.get(ROADMAP_FILE_NAME)!;

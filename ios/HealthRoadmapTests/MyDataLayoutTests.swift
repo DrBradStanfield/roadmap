@@ -234,6 +234,53 @@ final class MyDataLayoutTests: XCTestCase {
         XCTAssertEqual(MetricChart.colors(for: "unknown"), [.accentColor], "an unmapped metric takes the accent colour")
         XCTAssertEqual(MetricChart.colors(for: MyData.bloodPressure).count, 2, "systolic and diastolic")
     }
+
+    /// US-62 AC8/AC9: a row reads its target and previous value from the engine (health-core's
+    /// rowTarget, never worked out here), and a row from an engine before them reads none.
+    func testARowReadsItsTargetAndPreviousValueFromTheEngine_US62() throws {
+        let engine = try HealthEngine()
+        let now = self.now
+        let apply = { (edit: RecordEdit, record: String) throws -> String in
+            let outcome = try engine.blocking { [now] in try $0.apply(edit, to: record, now: now, deviceId: "test") }
+            XCTAssertTrue(outcome.ok, outcome.message ?? "")
+            return try XCTUnwrap(outcome.record)
+        }
+        var shown = try record(engine)
+        shown = try apply(.profile(sex: "male", birthYear: 1970, height: 180), shown)
+        shown = try apply(.add(metric: "ldl", value: 2.9, day: "2026-09-01"), shown)
+        shown = try apply(.add(metric: "ldl", value: 3.4, day: "2026-10-01"), shown)
+        shown = try apply(.add(metric: "hba1c", value: 38, day: "2026-10-01"), shown)
+        let saved = shown
+        let raw = try engine.blocking { [now] in try $0.call("screenJson", [saved, now.formatted(HealthEngine.iso), "test", "{}"]) }
+        var myData = try XCTUnwrap((JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any])?["myData"] as? [String: Any])
+        let decoded = try JSONDecoder().decode(MyData.self, from: JSONSerialization.data(withJSONObject: myData))
+        let ldl = try XCTUnwrap(decoded.bloodTests.first { $0.metric == "ldl" })
+        XCTAssertEqual(ldl.latest?.value, "3.4")
+        XCTAssertEqual(ldl.previous, "2.9")
+        XCTAssertEqual(ldl.target, "Optimal <1.4")
+        XCTAssertNil(decoded.bloodTests.first { $0.metric == "hba1c" }?.previous, "one reading has no previous")
+
+        // An engine before US-62's rows sends neither field: the row draws its date alone.
+        let strip = { (rows: Any?) in (rows as? [[String: Any]] ?? []).map { $0.filter { $0.key != "target" && $0.key != "previous" } } }
+        myData["bloodTests"] = strip(myData["bloodTests"])
+        myData["vitals"] = strip(myData["vitals"])
+        let older = try JSONDecoder().decode(MyData.self, from: JSONSerialization.data(withJSONObject: myData))
+        let olderLdl = try XCTUnwrap(older.bloodTests.first { $0.metric == "ldl" })
+        XCTAssertEqual(olderLdl.latest?.value, "3.4")
+        XCTAssertNil(olderLdl.previous)
+        XCTAssertNil(olderLdl.target)
+    }
+
+    /// US-62 AC8: the section's value column makes room for the widest previous value too, so
+    /// a row's bracketed "(74)" never pushes its value out of line.
+    func testTheValueColumnHoldsTheWidestPreviousValue_US62() {
+        let column = ValueRow.Column([("3.4", "2.9", "mmol/L", nil), ("38", nil, "mmol/mol", nil), (nil, nil, "mmol/L", nil), ("120", "1000", "nmol/L", nil)])
+        XCTAssertEqual(column.value, "000")
+        XCTAssertEqual(column.previous, "0000")
+        XCTAssertEqual(column.unit, "mmol/mol")
+        XCTAssertTrue(column.add)
+        XCTAssertNil(ValueRow.Column([("3.4", nil, "mmol/L", nil)]).previous)
+    }
 }
 
 extension UIColor {
