@@ -218,6 +218,9 @@ for (const seg of segs) {
   if (del) {
     const refuse = (why) => deny(`Branch delete refused: ${why}. A session may delete only its claude/ branches on `
       + "origin that are already merged into main; an unmerged or any other branch delete is still Brad's to run.");
+    // The whole Bash command must be this one plain push: an env prefix (GIT_DIR, GIT_CONFIG_*), a `cd` in a
+    // subshell or pipeline, or an earlier `git remote set-url` would make the push reach a repo this check never read.
+    if (!/^\s*git\s+push(\s+[A-Za-z0-9._/:=@-]+)+\s*$/.test(cmd)) refuse('run the delete as its own command, with nothing before or after it');
     if (del.remote !== 'origin') refuse(`the remote is "${del.remote}", not origin`);
     const names = del.branches.map((b) => b.replace(/^refs\/heads\//, ''));
     names.forEach((n, k) => {
@@ -225,9 +228,13 @@ for (const seg of segs) {
         refuse(`"${del.branches[k]}" is not a literal claude/ branch`);
       }
     });
-    // The check reads origin's fetch URL; the delete goes to its push URL. They must be one repo.
-    const url = gitq(['remote', 'get-url', 'origin']);
-    if (!url || url !== gitq(['remote', 'get-url', '--push', 'origin'])) refuse('the check could not run (origin has no URL, or pushes elsewhere)');
+    // The check reads origin's fetch URL; the delete goes to every push URL (insteadOf rewrites applied). Exactly one
+    // of each, and the same repo.
+    const fetchUrls = gitq(['remote', 'get-url', '--all', 'origin']).split('\n').filter(Boolean);
+    const pushUrls = gitq(['remote', 'get-url', '--push', '--all', 'origin']).split('\n').filter(Boolean);
+    if (fetchUrls.length !== 1 || pushUrls.length !== 1 || fetchUrls[0] !== pushUrls[0]) {
+      refuse('the check could not run (origin needs exactly one URL, the same for fetch and push)');
+    }
     const tips = new Map(gitq(['ls-remote', 'origin', 'refs/heads/main', ...names.map((n) => `refs/heads/${n}`)], 30000)
       .split('\n').filter(Boolean).map((l) => l.split('\t').reverse()));
     const mainTip = tips.get('refs/heads/main');

@@ -180,6 +180,19 @@ t "$S/b" "git push other --delete claude/m1" DENY
 t "$S/b" "git push --repo=origin --delete claude/m1" DENY
 t "$S/b" "git -c core.x=1 push origin --delete claude/m1" DENY
 t "$S/b" "gh pr merge 32 --merge --match-head-commit abc1234 --delete-branch" DENY
+# The delete must be the whole command (review of fd7cf84a): a subshell or piped cd, an env prefix or a remote
+# change before it could send the push to a repo the check never read.
+t "$S/b" "(cd $S/a) && git push origin --delete claude/m1" DENY
+t "$S/b" "cd $S/a | true; git push origin --delete claude/m1" DENY
+t "$S/b" "GIT_DIR=$S/a/.git git push origin --delete claude/m1" DENY
+t "$S/b" "env GIT_CONFIG_COUNT=1 git push origin --delete claude/m1" DENY
+t "$S/b" "git remote set-url --push origin ../x.git && git push origin --delete claude/m1" DENY
+t "$S/b" "git push origin --delete claude/m1 && echo done" DENY
+# Origin must have exactly one URL, the same for fetch and push: git deletes on every push URL.
+git clone -q remote.git c; git -C c config --add remote.origin.pushurl "$S/remote.git"; git -C c config --add remote.origin.pushurl "$S/x.git"
+t "$S/c" "git push origin --delete claude/m1" DENY
+git clone -q remote.git d; git -C d config remote.origin.pushurl "$S/x.git"
+t "$S/d" "git push origin --delete claude/m1" DENY
 # A tip this checkout has not fetched: one `git fetch origin main` brings it, then the check runs.
 (cd a && git pull -q --no-rebase && git commit -q --allow-empty -m three && git push -q origin main main:refs/heads/claude/m3)
 t "$S/b" "git push origin --delete claude/m3" allow
