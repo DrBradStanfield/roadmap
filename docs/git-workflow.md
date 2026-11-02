@@ -139,7 +139,8 @@ Tests: `tests/worktree-guard.test.ts`, `tests/git-push-guard.test.ts` (runs `.cl
 - The push guard refuses a Bash command naming `git` and `push` that it cannot tokenize (an unbalanced quote,
   as in a heredoc with an apostrophe). Put such text in a file instead.
 - Hooks load from the session's settings at start; a hook change applies to new sessions.
-- `npm run test:all` takes a machine-wide lock so one full local run happens at a time (US-66). It lives at
-  `<main checkout>/.git/test-all.lock` (`owner.json` holds pid, start, cwd). A dead holder is taken over by
-  itself; to clear a stuck one, `rm -rf` that directory. Waiters give up after 60 min
-  (`TEST_ALL_LOCK_TIMEOUT_MIN`); workers cap at max(2, cpus/4) (`TEST_ALL_MAX_WORKERS`). CI skips both.
+- `npm run test:all` takes a machine-wide lock so one full local run happens at a time (US-68). It lives at
+  `<main checkout>/.git/test-all.lock` (`owner.json` holds the wrapper and vitest pids, start, cwd).
+  A lock whose pid is dead is taken over by the next run; to clear a stuck one, `rm -rf` that directory.
+  Waiters give up after 60 min (`TEST_ALL_LOCK_TIMEOUT_MIN`); workers cap at max(2, cpus/4)
+  (`TEST_ALL_MAX_WORKERS`). CI skips both; a run with a file argument skips the lock only.
