@@ -25,8 +25,11 @@
  */
 import { sha256Blob } from '../lib/archive-payloads';
 import {
+  type AddLabValueRequest,
+  type AddLabValueResult,
   type BulkRow,
   LiveRefresh,
+  addLabValue as addRecordLabValue,
   RecordSession,
   bulkAppendValues,
   birthInFuture,
@@ -410,6 +413,15 @@ export class RoadmapStore {
     if (this.refuses()) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };
     const { saved, skippedDuplicates, refused } = this.bulkSave(values.map((v) => ({ kind: 'lab' as const, ...v, source: (v.source as MeasurementSource) ?? 'lab_import' })));
     return { saved: saved as ApiLabValue[], skippedDuplicates, errorCount: 0, refused };
+  }
+
+  /** One lab value a person adds, by health-core's one lab add (`addLabValue`, the iPhone's too):
+   *  null when this copy refuses to write (an erase it has not shown). */
+  addLabValue(input: AddLabValueRequest): AddLabValueResult | null {
+    if (this.refuses()) return null;
+    const result = addRecordLabValue(this.file, input, new Date().toISOString());
+    if (result.ok) this.session.edit(() => result.file);
+    return result;
   }
 
   private bulkSave(rows: BulkRow[]): ReturnType<typeof bulkAppendValues> {

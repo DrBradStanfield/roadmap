@@ -6,13 +6,11 @@
 // the cell editor, never a second row (AC13).
 
 import { useEffect, useState, type MutableRefObject } from 'react';
-import { commaQuestion, displayLabUnit, formatLabValue, LAB_CATALOG, LAB_GROUPS, localDay, parseLocalisedNumber, savedLabText, slotKey } from '@roadmap/health-core';
+import { commaQuestion, displayLabUnit, LAB_CATALOG, LAB_GROUPS, localDay, parseLocalisedNumber, resolveLabCatalogEntry, savedLabText, slotKey } from '@roadmap/health-core';
 import { UnitChip } from './UnitChip';
 import { SAVE_ERRORS } from './BloodTestTimeline';
-import { bulkSaveLabValues } from '../lib/roadmap-data';
+import { addLabValue } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
-import { sameAsSaved } from '../lib/blood-test-cell';
-import { labUnitRefusalLine } from '../lib/lab-value-labels';
 import type { CorrectFn } from '../lib/matrix-save';
 import type { ApiLabValue } from '../lib/api-types';
 
@@ -72,22 +70,15 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect, preset, dirtyRe
     setDate(localDay(new Date())); clearNotice();
   };
 
+  // The typed test's catalogue entry, as the record's lab add resolves it (addLabValue): an "Other
+  // test" the catalogue knows ("Ferritin" in ng/mL) is its catalogue test, in its units.
+  const known = entry ?? resolveLabCatalogEntry(metricName);
   /** A saved value as the form names it: "45 µg/L", "< 5 µg/L" (US-12 AC20). */
-  const labelOf = (v: ApiLabValue) => `${savedLabText(v.value, v.comparator)} ${displayLabUnit(v.unit, entry)}`;
+  const labelOf = (v: ApiLabValue) => `${savedLabText(v.value, v.comparator)} ${displayLabUnit(v.unit, known)}`;
   /** The saved value is the one the form describes: this test, this day, this unit. */
   const describes = (v: ApiLabValue) =>
     slotKey('lab', v.metricName, v.recordedAt) === slotKey('lab', metricName, date) &&
-    displayLabUnit(v.unit, entry) === displayLabUnit(unit, entry);
-
-  /** The day already holds this test. Name what is there, and offer to
-   *  replace it when that changes the number in the same unit. */
-  const collided = () => {
-    const slot = slotKey('lab', metricName, date);
-    const there = labValues.find(v => slotKey('lab', v.metricName, v.recordedAt) === slot);
-    if (!there) { setNotice('That test already has a value for that date.'); return; }
-    setNotice(`That test already has ${labelOf(there)} for that date.`);
-    if (onCorrect && describes(there) && !sameAsSaved(value!, formatLabValue(there.value), value!, there.value)) setHeld(there);
-  };
+    displayLabUnit(v.unit, known) === displayLabUnit(unit, known);
 
   // Any change to the form withdraws the offer (clearNotice); Replace still
   // checks, just before it writes, that the form describes the value it names.
@@ -105,26 +96,20 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect, preset, dirtyRe
     setSaving(true);
     clearNotice();
     try {
-      const result = await bulkSaveLabValues([{
-        metricName,
-        value: value!,
-        unit,
-        recordedAt: `${date}T00:00:00.000Z`,
-        source: 'manual',
-      }]);
-      if (result.saved.length > 0) {
+      // health-core's one lab add (US-25 AC25): it files the test, refuses a unit the catalogue does
+      // not take in the upload summary's words (US-21 AC15), and names a held value on that day.
+      const result = await addLabValue({ metricName, unit, value: value!, day: date });
+      if (!result) {
+        setNotice('Could not save — please try again.');
+      } else if (result.ok) {
         trackProductEvent('lab_row_added');
         close();
         onAdded();
-      } else if (result.refused.length > 0) {
-        // A catalogued test typed under "Other" can still name a unit the
-        // catalogue does not take (US-21 phase 3), or a number it refuses in
-        // one it does: say so in the upload summary's words (US-21 AC15).
-        setNotice(labUnitRefusalLine(result.refused[0].key, result.refused[0].unit, result.refused[0].fault));
-      } else if (result.skippedDuplicates > 0) {
-        collided();
       } else {
-        setNotice('Could not save — please try again.');
+        setNotice(result.message);
+        // A held value in the same unit holding another number: offer to replace it (US-21 AC13).
+        const there = result.existingId ? labValues.find(v => v.id === result.existingId) : undefined;
+        if (onCorrect && there) setHeld(there);
       }
     } catch {
       setNotice('Could not save — please try again.');

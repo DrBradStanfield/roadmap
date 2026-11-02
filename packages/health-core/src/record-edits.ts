@@ -31,7 +31,7 @@
  * writer can only edit safely with the lamport discipline this does not take on.
  */
 import {
-  canonicalLabRow, canonicalLabValue, correctionOffScale, type CountFault, foldName, labCountFault, type LabCatalogEntry, labSlotKey,
+  canonicalLabRow, canonicalLabValue, correctionOffScale, type CountFault, displayLabUnit, foldName, labCountFault, type LabCatalogEntry, labSlotKey,
   labUnitRefusal, normalizeLabUnit, resolveLabCatalogEntry, type StoredLabRow,
 } from './lab-catalog';
 import { BLOOD_TEST_METRICS, METRIC_TO_FIELD } from './mappings';
@@ -41,6 +41,7 @@ import { isCalendarDay, isClinicalDay } from './measurement-history';
 import { createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
 import { comparatorOf, type Comparator } from './lab-limits';
+import { labUnitRefusalLine, savedLabText } from './lab-series';
 import { withEffectiveComparator } from './readable-rows';
 import { healthInputSchema, type MeasurementSource, METRIC_TYPES, PRESSURE_ORDER, pressureInverted } from './validation';
 import type { MEASUREMENT_REFUSAL_REASONS } from './product-events';
@@ -445,6 +446,50 @@ export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest
     recordedAt, createdAt: now, ...(request.source ? { source: request.source } : null),
   });
   return { ok: true, file: withRow(file, 'labValues', [...file.labValues, row], now), row };
+}
+
+/** A lab value a person adds (US-25 AC25): the test's name, the unit they read it in, the number and the day. */
+export interface AddLabValueRequest { metricName: string; unit: string; value: number; day?: string }
+
+export type AddLabValueResult =
+  | { ok: true; file: RoadmapFile; row: FileLabValue }
+  | { ok: false; reason: 'invalid-value' | 'invalid-date' | 'unknown-unit' | 'slot-occupied'; message: string; existingId?: string; refused?: LabUnitRefusal };
+
+/**
+ * The one lab add, the web's "+ Add a value" (AddLabTest.tsx) and the iPhone's lab page (US-25
+ * AC25), in words a person reads. A catalogued test given in its catalogue unit is filed under the
+ * catalogue's key, as the web's test picker files it; any other under the name and unit given, the
+ * catalogue converting a unit it knows (the web's "Other test"). Written by the bulk save
+ * (`bulkAppendValues`, source "manual"), so a taken day keeps its one active row: the refusal names
+ * the held row (`existingId`) only when it is another number in the same unit, which a replace
+ * (`correctValue`, in the held row's unit) would correct. Never negative, never after today.
+ */
+export function addLabValue(file: RoadmapFile, request: AddLabValueRequest, now: string): AddLabValueResult {
+  const name = request.metricName.trim();
+  const given = request.unit.trim();
+  if (!name) return { ok: false, reason: 'invalid-value', message: 'A lab value needs a test name.' };
+  if (!Number.isFinite(request.value) || request.value < 0) return { ok: false, reason: 'invalid-value', message: 'A lab value is a number, 0 or more.' };
+  const day = resolveRecordedAt(request.day, { now });
+  if (typeof day !== 'string') return { ok: false, reason: 'invalid-date', message: 'A lab value is for a real day, today or before.' };
+  const entry = resolveLabCatalogEntry(name);
+  const exact = !!entry && displayLabUnit(given, entry) === entry.unit;
+  const metricName = exact ? entry!.key : name;
+  const unit = exact ? entry!.unit : given;
+  const result = bulkAppendValues(file, [{ kind: 'lab', metricName, value: request.value, unit, recordedAt: `${day}T00:00:00.000Z`, source: 'manual' }], now);
+  if (result.saved.length) return { ok: true, file: result.file, row: result.saved[0] as FileLabValue };
+  const [refused] = result.refused;
+  if (refused) return { ok: false, reason: 'unknown-unit', message: labUnitRefusalLine(refused.key, refused.unit, refused.fault), refused };
+  const taken = findActiveInSlot(file, 'lab', metricName, day) as FileLabValue | undefined;
+  if (!taken) return { ok: false, reason: 'slot-occupied', message: 'That test already has a value for that date.' };
+  const takenUnit = displayLabUnit(taken.unit ?? '', entry);
+  const { comparator } = comparatorOf(taken);
+  const replaceable = takenUnit === displayLabUnit(unit, entry)
+    && !sameLabQuantity({ name: taken.metricName, value: taken.value, unit: taken.unit ?? '', comparator }, { name: metricName, value: request.value, unit });
+  return {
+    ok: false, reason: 'slot-occupied',
+    message: `That test already has ${savedLabText(taken.value, comparator)} ${takenUnit} for that date.`,
+    ...(replaceable ? { existingId: taken.id } : null),
+  };
 }
 
 /**

@@ -166,6 +166,15 @@ describe('explicit local-first data path', () => {
     expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'ferritin', unit: 'mg/dL' });
   });
 
+  // Review N2 on PR 641: the one lab add counts a refused spelling as the bulk save does.
+  it('counts a refused lab unit from the one lab add too, key and spelling only', async () => {
+    vi.mocked(trackProductEvent).mockClear();
+    const result = await data.addLabValue({ metricName: 'ferritin', unit: 'mg/dL', value: 80, day: '2024-06-01' });
+    expect(result).toMatchObject({ ok: false, reason: 'unknown-unit' });
+    expect(trackProductEvent).toHaveBeenCalledTimes(1);
+    expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'ferritin', unit: 'mg/dL' });
+  });
+
   // US-21 AC15 · the signal is a spelling to teach the catalogue: a count
   // refused for its NUMBER under a spelling the test takes is not one.
   it('US-21 AC15 — does not count a refusal under a spelling the test takes', async () => {

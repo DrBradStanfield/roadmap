@@ -173,8 +173,10 @@ export async function cloudOpen(provider: Provider, deviceId: string, firstConne
 
 /** Only edits whose number is read in the user's units can be misread after a
  *  unit change: a value, a correction, a height. */
-function dependsOnUnits(edit: Edit): boolean {
-  return edit.kind === 'add' || edit.kind === 'correct' || (edit.kind === 'profile' && edit.height !== undefined);
+export function dependsOnUnits(edit: Edit, file: RoadmapFile): boolean {
+  // A lab value's correction is in the unit its row is stored in, whatever the record's units (review R7).
+  if (edit.kind === 'correct') return file.measurements.some((row) => row.id === edit.id);
+  return edit.kind === 'add' || (edit.kind === 'profile' && edit.height !== undefined);
 }
 
 /** A value or correction of Lp(a), read in Lp(a)'s own unit, which the record holds (US-05 AC2). */
@@ -227,7 +229,7 @@ function editSession(edit: Edit, erase: string, shownUnits: string, nowIso: stri
   const { session } = at;
   // A number is read in the units the screen showed. If another device has
   // changed the units since, the same number would be stored in the wrong ones.
-  if (dependsOnUnits(edit) && shownUnits !== unitsOf(session.file)) {
+  if (dependsOnUnits(edit, session.file) && shownUnits !== unitsOf(session.file)) {
     return refuse('units-changed', 'Your units changed on another device, so this was not saved. Close this and enter the value again.');
   }
   // Lp(a)'s unit is the record's too (US-05 AC2): a number typed in the old one is never

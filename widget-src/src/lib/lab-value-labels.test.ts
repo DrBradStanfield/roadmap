@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { bulkAppendValues, convertValidationErrorsToUnits, createEmptyFile, LAB_CATALOG, labValueLabel, PRESSURE_ORDER, type MetricType } from '@roadmap/health-core';
+import { bulkAppendValues, convertValidationErrorsToUnits, createEmptyFile, LAB_CATALOG, labUnitRefusalLine, labValueLabel, PRESSURE_ORDER, type MetricType } from '@roadmap/health-core';
 import { cellToSI, type CellUnit } from './blood-test-cell';
-import { labUnitRefusalLine, measurementRefusalLine } from './lab-value-labels';
+import { measurementRefusalLine } from './lab-value-labels';
 
 // US-21 AC11 / AC7: a catalogued test printed with no unit is refused, and the
 // line says so plainly instead of "unit not recognised ()" (adversary R3).
