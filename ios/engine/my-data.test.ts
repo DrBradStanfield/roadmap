@@ -268,16 +268,32 @@ describe('myData rows: grade and spoken grade (US-62 AC8, US-25 AC17)', () => {
     }
   });
 
-  it('grades a weight printed as a limit only when certain (US-12 AC21)', () => {
+  it('grades a weight printed as a limit only when certain, with the web\'s note on the row and the history page (US-12 AC21)', () => {
     // A 180 cm man's ideal weight is 78.0 kg (its row target).
-    const weight = (value: number, comparator: '<' | '>') => {
-      const file = adult();
+    const withWeight = (value: number, comparator: '<' | '>', file = adult()) => {
       const row = file.measurements.find((r) => r.metricType === 'weight')!;
       file.measurements.push({ ...row, id: `w-${comparator}${value}`, value, comparator, recordedAt: '2026-10-15' });
-      return rows(myData(file, NOW)).get('weight')!;
+      return file;
     };
-    expect(weight(100, '>')).toMatchObject({ status: 'bad', gradeWords: 'above target' });
-    expect(weight(78, '>')).toMatchObject({ status: null, gradeWords: null });
+    const weightRow = (file: RoadmapFile) => rows(myData(file, NOW)).get('weight')!;
+    expect(weightRow(withWeight(100, '>'))).toMatchObject({ latest: { value: '> 100.0' }, status: 'bad', gradeWords: 'above target', note: null });
+    expect(weightRow(withWeight(78, '>'))).toMatchObject({ status: null, gradeWords: null, note: 'Printed as a limit, so the plan cannot grade it against its cutoff.' });
+    const history = metricHistory(withWeight(78, '>'), 'weight', NOW).rows;
+    expect(history.find((r) => r.id === 'w->78')?.note).toBe('Printed as a limit, so the plan cannot grade it against its cutoff.');
+    expect(history.find((r) => r.id !== 'w->78')?.note).toBeUndefined();
+    // A known minor's weight has no adult line: no grade, and no note, as an exact weight there.
+    expect(weightRow(withWeight(78, '>', edited(adult(), { kind: 'profile', birthYear: 2015 })))).toMatchObject({ status: null, note: null });
+  });
+
+  it('the blood pressure row and history page say the note for a pair the rule leaves open (US-12 AC21)', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+      { kind: 'profile', sex: 'male', birthYear: 1970, height: 180 },
+      { kind: 'bloodPressure', systolic: 125, diastolic: 78, day: '2026-10-02', replace: false });
+    file.measurements.find((row) => row.metricType === 'systolic_bp')!.comparator = '<';
+    const pressure = myData(file, NOW).vitals.find((row) => row.metric === 'blood_pressure')!;
+    expect(pressure).toMatchObject({ latest: { value: '< 125/78' }, status: null, note: 'Printed as a limit, so the plan cannot grade it against its cutoff.' });
+    const [current] = metricHistory(file, 'blood_pressure', NOW).rows;
+    expect(current).toMatchObject({ value: '< 125/78', systolic: '125', note: 'Printed as a limit, so the plan cannot grade it against its cutoff.' });
   });
 
   it('grades no PSA, which the web asks for under screening and never colours', () => {

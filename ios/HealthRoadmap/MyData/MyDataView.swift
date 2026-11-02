@@ -214,7 +214,7 @@ struct MyDataView: View {
     /// The engine's row as a `ValueRow`: its value, target, previous value, trend and grade.
     static func valueRow(_ row: MyData.Row, tint: Color, card: Bool = false, column: ValueRow.Column? = nil) -> ValueRow {
         ValueRow(label: row.label, value: row.latest?.value, unit: row.unit, day: row.latest?.day,
-                 target: row.target, previous: row.previous, grade: row.grade, gradeWords: row.gradeWords,
+                 target: row.target, previous: row.previous, grade: row.grade, gradeWords: row.gradeWords, note: row.note,
                  trend: row.trend ?? [], tint: tint, card: card, column: column)
     }
 

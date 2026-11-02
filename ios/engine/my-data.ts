@@ -17,13 +17,13 @@ import { medicationSchema, supplementSchema, zod3Message } from '../../packages/
 import { customSupplementAdd, customSupplementMatch } from '../../packages/health-core/src/input-form';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
-import { applyFormEdit, formsOf, planOf, rowText, type FormEdit, type FormsView } from './my-data-forms';
+import { applyFormEdit, formsOf, gradeContextOf, planOf, rowText, ungradedLimit, type FormEdit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import { METRIC_GUIDES, type MetricGuide } from '../../packages/health-core/src/metric-guides';
 import { APPLE_LOW_FROM_60, FRIEND_2022_TREADMILL, type Vo2MaxCutPoints } from '../../packages/health-core/src/vo2max-bands';
-import { calculateAge, knownMinorOf } from '../../packages/health-core/src/calculations';
-import { rowTarget, type Grading, type RowTargetPlan } from '../../packages/health-core/src/row-target';
-import { gradeWords, pressureStatus, valueStatus, type GradeContext, type GradeStatus, type PressureReading } from '../../packages/health-core/src/row-grade';
+import { calculateAge } from '../../packages/health-core/src/calculations';
+import { rowTarget } from '../../packages/health-core/src/row-target';
+import { gradeWords, limitUngraded, pressureStatus, valueStatus, type GradeContext, type GradeStatus, type PressureReading } from '../../packages/health-core/src/row-grade';
 import { labSeriesRows } from '../../packages/health-core/src/lab-series';
 import { trendWindow } from '../../packages/health-core/src/recent-trend';
 import { isAlcoholAnswer, type AlcoholAnswer } from '../../packages/health-core/src/types';
@@ -36,7 +36,7 @@ import { applyPressure, BLOOD_PRESSURE, pressureHistory, type PressureEdit } fro
 import { applyChatEdit, type ChatEdit } from './chat-edits';
 import { cellUnitFor, lpaUnitOf, SWITCHABLE, unitsOf, type UnitChoices } from './unit-choices';
 import { cellFromSI, cellLabel, cellRange, isLpaUnit, type CellUnit } from '../../packages/health-core/src/cell-unit';
-import { comparatorOf, isComparator } from '../../packages/health-core/src/lab-limits';
+import { LIMIT_NOT_GRADED, comparatorOf, isComparator } from '../../packages/health-core/src/lab-limits';
 
 /** One row of Vitals or Blood tests: the plan's current value, if any, in the user's units. */
 export interface MyDataRow {
@@ -63,6 +63,9 @@ export interface MyDataRow {
   /** The grade as a screen reader hears it after the value, off target only: "above optimal"
    *  (health-core `gradeWords`); null on target or ungraded. */
   gradeWords: string | null;
+  /** "Printed as a limit, so the plan cannot grade it against its cutoff.": a latest value printed as a
+   *  limit the shared rule leaves ungraded, though there is a plan to grade it by (US-12 AC21); else null. */
+  note: string | null;
 }
 
 export interface MyData {
@@ -225,9 +228,8 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
   const trend = trends(days, now, (metric, valueSI) => cellFromSI(metric as MetricType, valueSI, cellUnitFor(file, metric, choices)));
   // What the web's rows grade against (InputPanel.tsx rowCtx): none for a known minor (US-07 AC6),
   // and the plan's age, weight target and height once there is a plan.
-  const grading: Grading = knownMinorOf(file.profile, new Date(now)) ? null : { sex: file.profile.sex ?? undefined };
-  const basis: RowTargetPlan | null = plan && { age: plan.results.age, idealBodyWeight: plan.results.idealBodyWeight, heightCm: plan.results.heightCm };
-  const graded: GradeContext = { grading, plan: basis };
+  const graded = gradeContextOf(file, now, plan);
+  const { grading, plan: basis } = graded;
   const row = (metric: string): MyDataRow => {
     const latest = current.get(metric);
     const shown = cellUnitFor(file, metric, choices);
@@ -245,6 +247,7 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
       target: rowTarget(metric as MetricType, shown, grading, basis)?.bare ?? null,
       previous: before ? rowText(metric as MetricType, days.get(metric)!.get(before)!, shown) : null,
       ...gradeOf(latest ? valueStatus(metric as MetricType, latest.value, graded, comparatorOf(latest).comparator) : null, metric),
+      note: latest && ungradedLimit(metric as MetricType, latest, graded) ? LIMIT_NOT_GRADED : null,
     };
   };
   const { sex, birthYear, birthMonth, heightCm } = file.profile;
@@ -268,7 +271,7 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
     // PSA is asked for under prostate screening on the web, not with the blood tests.
     bloodTests: BLOOD_TEST_METRICS.filter((metric) => metric !== 'psa').map(row),
     // The web asks for PSA under screening and never colours it.
-    psa: { ...row('psa'), ...gradeOf(null, 'psa') },
+    psa: { ...row('psa'), ...gradeOf(null, 'psa'), note: null },
     labTests: labTestRows(file, now),
     guides: METRIC_GUIDES,
     vo2Bands: vo2BandsOf(sex, birthYear, birthMonth, now),
@@ -426,6 +429,7 @@ function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: st
   // Graded on the stored halves of the pair it shows, as the web grades stored values: a half-pair has
   // no grade, and a half printed as a limit is graded only when certain (US-12 AC21).
   const reading = whole(newest) ? shown.get(newest.id) : undefined;
+  const status = reading ? pressureStatus(reading, graded) : null;
   return {
     metric: BLOOD_PRESSURE, label, unit,
     latest: newest ? { id: newest.id, value: newest.value, day: newest.day } : null,
@@ -433,7 +437,8 @@ function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: st
     switchable: false,
     target,
     previous: previous?.value ?? null,
-    ...gradeOf(reading ? pressureStatus(reading, graded) : null, BLOOD_PRESSURE),
+    ...gradeOf(status, BLOOD_PRESSURE),
+    note: reading && limitUngraded(BLOOD_PRESSURE, status, graded, reading) ? LIMIT_NOT_GRADED : null,
   };
 }
 
@@ -447,7 +452,7 @@ function gradeOf(status: GradeStatus, metric: string): Pick<MyDataRow, 'status' 
  *  symbol and, as on the core rows, is no point on the trend (US-12 AC20). */
 function labTestRows(file: RoadmapFile, now: string): MyDataRow[] {
   return labSeriesRows(file.labValues, new Date(now), true).map(({ seriesKey, label, unit, latest, previous, target, trend }) => ({
-    metric: seriesKey, label, unit, latest, trend, switchable: false, target, previous, ...gradeOf(null, seriesKey),
+    metric: seriesKey, label, unit, latest, trend, switchable: false, target, previous, ...gradeOf(null, seriesKey), note: null,
   }));
 }
 

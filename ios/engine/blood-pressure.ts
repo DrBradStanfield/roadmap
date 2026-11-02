@@ -7,6 +7,7 @@ import { appendMeasurement, correctValue, findActiveInSlot, resolveRecordedAt, s
 import { PRESSURE_ORDER, pressureInverted } from '../../packages/health-core/src/validation';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { formatDisplayValue } from '../../packages/health-core/src/units';
+import { formatValue } from '../../packages/health-core/src/lab-limits';
 import { comparatorOf } from '../../packages/health-core/src/lab-limits';
 import type { PressureReading } from '../../packages/health-core/src/row-grade';
 import type { HistoryRow, MetricHistory } from './my-data-forms';
@@ -189,5 +190,7 @@ function pair(sys: FileMeasurement | undefined, dia: FileMeasurement | undefined
   Omit<HistoryRow, 'id' | 'day' | 'correction'> {
   const systolic = sys ? formatDisplayValue('systolic_bp', sys.value, 'si') : null;
   const diastolic = dia ? formatDisplayValue('diastolic_bp', dia.value, 'si') : null;
-  return { value: `${systolic ?? '–'}/${diastolic ?? '–'}`, systolic, diastolic, status, current: isCurrent };
+  // The pair as read: a half printed as a limit with its symbol, "< 125/78" (US-12 AC20).
+  const shown = (row: FileMeasurement | undefined, metric: 'systolic_bp' | 'diastolic_bp') => row ? formatValue(metric, row.value, 'si', comparatorOf(row).comparator) : '–';
+  return { value: `${shown(sys, 'systolic_bp')}/${shown(dia, 'diastolic_bp')}`, systolic, diastolic, status, current: isCurrent };
 }
