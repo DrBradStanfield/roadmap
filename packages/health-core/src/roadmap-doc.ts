@@ -10,7 +10,7 @@
  *
  * why: mcp-architecture.md §7
  */
-import { fieldsBehind, mergeFiles, rowRootIds } from './merge';
+import { fieldsBehind, mergeFiles, rootIdOf, rowRootIds } from './merge';
 import { isObject, migrateFile, RecordShapeError } from './migrate';
 import type { RoadmapFile } from './roadmap-file';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
@@ -66,7 +66,10 @@ export const ROADMAP_DOC: DocumentSpec<RoadmapFile> = {
     const [epoch, stored] = [ours.meta.eraseEpoch ?? 0, parsed.meta.eraseEpoch ?? 0];
     if (stored < epoch) return 'the erase this save wrote';
     const listed = new Set(ours.erasedRows?.ids);
-    if (rowRootIds(parsed).some((id) => listed.has(id))) return 'a row this save erased';
+    // Roots of listed ids, as withoutListed reads them: an older app's
+    // `X#mv-A` names X's whole family (US-04 AC5a).
+    const roots = new Set([...listed].map(rootIdOf));
+    if (rowRootIds(parsed).some((id) => roots.has(rootIdOf(id)))) return 'a row this save erased';
     // Lists only ever union (mergeErasedRows), so an id missing from the
     // stored list means a concurrent erase replaced ours: a stale copy could
     // then bring that row back (Codex review of PR #299).

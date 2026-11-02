@@ -12,7 +12,7 @@ import { spawnSync } from 'node:child_process';
 import { copyFileSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { mergeLongitudinalInputs, migrateFile, type RoadmapFile } from '@roadmap/health-core';
+import { mergeLongitudinalInputs, migrateFile, toOldShape, type RoadmapFile } from '@roadmap/health-core';
 import { RoadmapStore } from '../widget-src/src/storage/roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../packages/health-core/src/adapter';
@@ -84,10 +84,11 @@ describe('US-33 AC1/AC2 — the guide runs as written', () => {
 
     // The correction appended; it never edited the row it superseded.
     const file: RoadmapFile = JSON.parse(readFileSync(record, 'utf8'));
-    const old = file.measurements.find((m) => m.id === 'sample-ldl-2026-05-12')!;
-    const now = file.measurements.find((m) => m.correctsId === 'sample-ldl-2026-05-12')!;
-    expect(old).toMatchObject({ status: 'entered-in-error', value: 3.6 });
-    expect(now).toMatchObject({ status: 'active', value: 3.1, recordedAt: '2026-05-12' });
+    // LDL is a core row in labValues (US-66 AC1).
+    const old = file.labValues.find((l) => l.id === 'sample-ldl-2026-05-12')!;
+    const now = file.labValues.find((l) => l.correctsId === 'sample-ldl-2026-05-12')!;
+    expect(old).toMatchObject({ core: true, status: 'entered-in-error', value: 3.6 });
+    expect(now).toMatchObject({ core: true, metricName: 'ldl', status: 'active', value: 3.1, recordedAt: '2026-05-12' });
 
     // AC8 as the guide states it: a .bak sibling per write, the newest 3 kept.
     expect(readdirSync(dir).filter((n) => n.includes('.bak-')).length).toBe(3);
@@ -112,8 +113,15 @@ describe('US-33 AC3 — the sample is a record the app can read', () => {
     expect(latest.medications.map((m) => m.medicationKey)).toContain('statin');
   });
 
-  it('passes through migrateFile unchanged', () => {
+  // The sample keeps its blood tests in `measurements` on purpose: it is the
+  // old-shape input the iPhone parity fixtures and the US-66 AC7 golden start
+  // from. Migrate moves them and changes nothing else (US-66 AC2).
+  it('passes through migrateFile with only its blood tests moved and the version stamped 3 (US-66 AC15)', () => {
     const ctx = { deviceId: 'us33_test', now: '2026-09-02T00:00:00Z' };
-    expect(migrateFile(JSON.parse(JSON.stringify(sample)), ctx)).toEqual(sample);
+    const migrated = migrateFile(JSON.parse(JSON.stringify(sample)), ctx);
+    expect(migrated.schemaVersion).toBe(3);
+    expect({ ...migrated, measurements: [], labValues: [] }).toEqual({ ...sample, schemaVersion: 3, measurements: [], labValues: [] });
+    expect(migrated).toEqual(migrateFile(JSON.parse(JSON.stringify(migrated)), ctx));
+    expect(toOldShape(migrated).measurements).toEqual(expect.arrayContaining(sample.measurements));
   });
 });

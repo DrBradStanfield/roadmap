@@ -591,13 +591,14 @@ export async function getChatCompletion(
     // response (model proposed an edit with no prose) is NOT empty — give the
     // thread a short line; the confirmation card carries the detail.
     if (!result.content || result.content.trim().length === 0) {
-      if (proposedEdits.length > 0) {
+      const refused = turn?.refused ?? 0;
+      if (proposedEdits.length > 0 || refused > 0) {
         return {
-          content: toolOnlyAck(proposedEdits, app),
+          content: toolOnlyAck(proposedEdits, app, refused),
           usage,
           isFallback: false,
           stopReason,
-          proposedEdits,
+          ...(proposedEdits.length > 0 ? { proposedEdits } : {}),
           ...(subscriptionProposal ? { subscriptionProposal } : {}),
           ...roadmapRun,
         };

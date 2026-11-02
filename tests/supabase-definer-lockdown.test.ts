@@ -44,13 +44,13 @@ const DEFINERS = functions(SQL).filter((f) => /SECURITY\s+DEFINER/i.test(f.heade
 const definerNames = [...new Set(DEFINERS.map((f) => f.name))];
 
 describe('SECURITY DEFINER lock-down (US-09 AC26)', () => {
-  it('finds the lock-down section and the six definer functions', () => {
+  // correct_measurement and get_latest_measurement_dates left the file with
+  // the v1 health schema (US-09 AC33); they stay live, EXECUTE revoked.
+  it('finds the lock-down section and the four definer functions', () => {
     expect(lockIdx).toBeGreaterThan(0);
     expect(definerNames.sort()).toEqual([
       'add_message_credits',
-      'correct_measurement',
       'deduct_message_credit',
-      'get_latest_measurement_dates',
       'handle_new_user',
       'youtube_bot_cleanup_skipped',
     ]);

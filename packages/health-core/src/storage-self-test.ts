@@ -9,9 +9,11 @@
  * (GitHub Pages harness), in vitest and, on bundle load, in the iPhone app's
  * JavaScriptCore (ios/architecture.md D3, D4). Returns structured results.
  */
+import { createCoreRow } from './blood-tests';
 import {
   createEmptyFile,
   createMeasurement,
+  type FileLabValue,
   type FileMeasurement,
   type FileMedication,
   type RoadmapFile,
@@ -38,12 +40,17 @@ function measurement(id: string, metricType: string, value: number, day: string)
   return createMeasurement({ id, metricType, value, recordedAt: day, createdAt: `${day}T08:00:00Z` });
 }
 
+/** A blood test, as every blood test is stored: a core row in labValues (US-66). */
+function bloodTest(id: string, metric: string, value: number, day: string): FileLabValue {
+  return createCoreRow({ id, metric, value, recordedAt: day, createdAt: `${day}T08:00:00Z` });
+}
+
 function emptyFor(deviceId: string): RoadmapFile {
   return createEmptyFile({ deviceId, now: tick() });
 }
 
-function activeMeasurements(file: RoadmapFile): FileMeasurement[] {
-  return file.measurements.filter((m) => m.status === 'active');
+function activeRows(file: RoadmapFile): Array<FileMeasurement | FileLabValue> {
+  return [...file.measurements, ...file.labValues].filter((m) => m.status === 'active');
 }
 
 /** Wraps an adapter and injects ONE competing write before the first write, to
@@ -92,21 +99,21 @@ export async function runStorageSelfTest(): Promise<SelfTestResult[]> {
     const dev2 = new SyncManager(new MemoryAdapter(cloud), 'dev2', ROADMAP_DOC, { now: tick });
 
     const d1Local = emptyFor('dev1');
-    d1Local.measurements = [measurement('d1_ldl', 'ldl', 2.2, '2026-05-01')];
+    d1Local.labValues = [bloodTest('d1_ldl', 'ldl', 2.2, '2026-05-01')];
     await dev1.save(d1Local);
 
     const d2Local = emptyFor('dev2');
-    d2Local.measurements = [measurement('d2_hba1c', 'hba1c', 36, '2026-05-03')];
+    d2Local.labValues = [bloodTest('d2_hba1c', 'hba1c', 36, '2026-05-03')];
     d2Local.medications = [
       { id: 'med_d2', medicationKey: 'statin', drugName: 'rosuvastatin', doseValue: 10, doseUnit: 'mg', updatedAt: tick(), lamport: 1 } as FileMedication,
     ];
     await dev2.save(d2Local);
 
     const d1Final = await dev1.save(d1Local); // dev1 syncs again, pulls dev2's changes
-    const ids = activeMeasurements(d1Final.file).map((m) => m.id).sort();
+    const ids = activeRows(d1Final.file).map((m) => m.id).sort();
     const meds = d1Final.file.medications.length;
     const pass = ids.length === 2 && ids[0] === 'd1_ldl' && ids[1] === 'd2_hba1c' && meds === 1;
-    check('Two devices converge (no dup/loss)', pass, `active measurements=[${ids}], medications=${meds}`);
+    check('Two devices converge (no dup/loss)', pass, `active values=[${ids}], medications=${meds}`);
   } catch (e) {
     check('Two devices converge (no dup/loss)', false, `threw: ${(e as Error).message}`);
   }
@@ -121,7 +128,7 @@ export async function runStorageSelfTest(): Promise<SelfTestResult[]> {
     const intruder = new SyncManager(intruderAdapter, 'intruder', ROADMAP_DOC, { now: tick });
     const intrude = async () => {
       const local = emptyFor('intruder');
-      local.measurements = [measurement('intruder_psa', 'psa', 1.1, '2026-05-05')];
+      local.labValues = [bloodTest('intruder_psa', 'psa', 1.1, '2026-05-05')];
       await intruder.save(local);
     };
 
@@ -132,7 +139,7 @@ export async function runStorageSelfTest(): Promise<SelfTestResult[]> {
     const saved = await dev.save(local);
 
     const final = await new SyncManager(new MemoryAdapter(cloud), 'reader', ROADMAP_DOC, { now: tick }).load();
-    const ids = activeMeasurements(final).map((m) => m.id).sort();
+    const ids = activeRows(final).map((m) => m.id).sort();
     const pass = saved.attempts >= 1 && ids.includes('devA_weight') && ids.includes('intruder_psa');
     check('Conflict retried & resolved (no loss)', pass, `retries=${saved.attempts}, final active=[${ids}]`);
   } catch (e) {
@@ -146,15 +153,15 @@ export async function runStorageSelfTest(): Promise<SelfTestResult[]> {
     const b = new SyncManager(new MemoryAdapter(cloud), 'devY', ROADMAP_DOC, { now: tick });
 
     const la = emptyFor('devX');
-    la.measurements = [{ ...measurement('x_ldl', 'ldl', 2.1, '2026-05-01'), createdAt: '2026-05-01T08:00:00Z' }];
+    la.labValues = [{ ...bloodTest('x_ldl', 'ldl', 2.1, '2026-05-01'), createdAt: '2026-05-01T08:00:00Z' }];
     await a.save(la);
 
     const lb = emptyFor('devY');
-    lb.measurements = [{ ...measurement('y_ldl', 'ldl', 2.4, '2026-05-01'), createdAt: '2026-05-01T09:00:00Z' }];
+    lb.labValues = [{ ...bloodTest('y_ldl', 'ldl', 2.4, '2026-05-01'), createdAt: '2026-05-01T09:00:00Z' }];
     const merged = await b.save(lb);
 
-    const actives = activeMeasurements(merged.file).filter((m) => m.metricType === 'ldl');
-    const total = merged.file.measurements.filter((m) => m.metricType === 'ldl').length;
+    const actives = merged.file.labValues.filter((m) => m.status === 'active' && m.metricName === 'ldl');
+    const total = merged.file.labValues.filter((m) => m.metricName === 'ldl').length;
     const pass = actives.length === 1 && actives[0].id === 'y_ldl' && total === 2;
     check('Same-day double entry resolves to one active', pass, `active=${actives[0]?.id}, totalRowsKept=${total}`);
   } catch (e) {

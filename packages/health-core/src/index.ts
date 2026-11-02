@@ -279,6 +279,7 @@ export {
 // Local-first storage spine (v2) — the RoadmapFile schema + merge/migrate logic.
 // Browser-coupled cloud adapters live in widget-src/src/storage/, not here.
 export {
+  CORE_BLOOD_UNITS,
   CURRENT_SCHEMA_VERSION,
   createEmptyFile,
   createMeasurement,
@@ -297,6 +298,7 @@ export {
   type SyncStamp,
   type HistoryChangeType,
 } from './roadmap-file';
+export { bloodTableReport, bloodTestRows, createCoreRow, isCoreRow, labRowSlot, toOldShape } from './blood-tests';
 export { fileProfileToApi, fileScreeningRows, screeningFieldName } from './file-inputs';
 export { mergeFiles, rowRootIds, dayOf, localDay, type MergeOptions } from './merge';
 export { buildErasedFile, type EraseInputs } from './erase';
@@ -394,6 +396,8 @@ export {
 export {
   groupLabValues,
   labValueLabel,
+  labUnitRefusalLine,
+  mixedUnitsNote,
   formatLabValue,
   savedLabText,
   labSeriesRows,
@@ -480,7 +484,7 @@ export {
 } from './drive-rest';
 
 // US-35: the slot rule and the bulk save the website and the connector share.
-export { bulkAppendValues, correctValue, moveBloodTest, placeMeasurement, planBloodTestMove, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type MeasurementRefusal, type MoveClash, type MoveKeep, type MovePlan, type MoveRejection, type MoveResult, type SlotState } from './record-edits';
+export { addLabValue, type AddLabValueRequest, type AddLabValueResult, bulkAppendValues, correctValue, moveBloodTest, placeMeasurement, planBloodTestMove, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type MeasurementRefusal, type MoveClash, type MoveKeep, type MovePlan, type MoveRejection, type MoveResult, type SlotState } from './record-edits';
 export { fileNameLine, inflateCapped, isImportableEntryName, zipMemberName, unreadLines, uploadLimitSignal, LIMIT_TEST_WORDS, UNDATED_PREVIOUS, type RefusedLabValue, type UnreadLabValue } from './lab-extraction';
 export { IMPORT_LIMITS } from './import-hints';
 export {

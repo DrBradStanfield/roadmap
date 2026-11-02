@@ -6,7 +6,7 @@ import { IMPORT_LIMITS } from './import-hints';
 import { latestDayOnEarth } from './merge';
 
 /**
- * Valid metric types for the health_measurements table.
+ * Valid metric types for a measurement row in the roadmap file.
  */
 export const METRIC_TYPES = [
   'weight', 'waist',
@@ -375,7 +375,7 @@ export function zod3Message(issue: z.core.$ZodRawIssue): string | undefined {
 }
 
 /**
- * Valid measurement sources for the health_measurements table.
+ * Valid measurement sources for a measurement row in the roadmap file.
  * Tracks where the measurement came from (for Apple HealthKit deduplication, etc.)
  */
 export const MEASUREMENT_SOURCES = [
@@ -384,11 +384,11 @@ export const MEASUREMENT_SOURCES = [
   'fitbit',
   'lab_import',
   'lab_import_edited',  // LLM-extracted then user-corrected at review time
-  'manual_correction',  // Inserted by the correct_measurement RPC
+  'manual_correction',  // A correction row (correctsId set) written by record-edits.ts
 ] as const;
 export type MeasurementSource = typeof MEASUREMENT_SOURCES[number];
 
-/** FHIR-style status for the row's audit state. Mirrors the SQL CHECK constraint on health_measurements.status. */
+/** FHIR-style status for the row's audit state: entered-in-error is sticky (docs/reference.md, FHIR rows). */
 export const MEASUREMENT_STATUS = ['active', 'entered-in-error'] as const;
 export type MeasurementStatus = typeof MEASUREMENT_STATUS[number];
 

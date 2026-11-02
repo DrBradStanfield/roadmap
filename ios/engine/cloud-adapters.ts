@@ -98,8 +98,14 @@ export class PhoneCloudAdapter implements StorageAdapter {
   }
   async disconnect(): Promise<void> {}
 
-  read(fileName: string, signal?: AbortSignal): Promise<ReadResult> {
-    return this.run((cloud) => cloud.read(fileName, signal));
+  /** The record as the newest read found it, the session's open read included:
+   *  what an open compares its moved record with (US-66 AC14). */
+  lastRecord: unknown = null;
+
+  async read(fileName: string, signal?: AbortSignal): Promise<ReadResult> {
+    const result = await this.run((cloud) => cloud.read(fileName, signal));
+    if (fileName === ROADMAP_FILE_NAME) this.lastRecord = result.body;
+    return result;
   }
 
   async write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
