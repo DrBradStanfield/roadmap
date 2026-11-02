@@ -31,6 +31,7 @@ import {
   medicationsToInputs,
   screeningsToInputs,
   type ApiMeasurement,
+  formatValue,
   type ApiMedication,
   type ApiScreening,
   STATIN_NAMES,
@@ -626,12 +627,18 @@ export function InputPanel({
     return choices.some(i => { const cm = feetInchesToCm(parseInt(feet, 10) || 0, i); return cm >= min && cm <= max; });
   };
 
+  /** A saved value as shown, a printed limit with its symbol (US-12 AC20). */
+  const savedText = (field: string, m: ApiMeasurement): string => {
+    const metric = FIELD_METRIC_MAP[field];
+    return metric && m.comparator ? formatValue(metric, m.value, fieldUnit(field), m.comparator) : toDisplay(field, m.value);
+  };
+
   const getPreviousPlaceholder = (field: string): string | undefined => {
     const metric = FIELD_METRIC_MAP[field];
     if (!metric) return undefined;
     const measurement = previousMeasurements.find(m => m.metricType === metric);
     if (!measurement) return undefined;
-    return toDisplay(field, measurement.value);
+    return savedText(field, measurement);
   };
 
   /** The line over an open field whose metric holds a saved value: "Previous:
@@ -765,7 +772,7 @@ export function InputPanel({
     const r = range(field);
     const metric = FIELD_METRIC_MAP[field];
     const previous = metric && previousMeasurements.find(m => m.metricType === metric);
-    const shown = metric && previous ? `${toDisplay(field, previous.value)} ${getDisplayLabel(metric, fieldUnit(field))}` : '';
+    const shown = metric && previous ? `${savedText(field, previous)} ${getDisplayLabel(metric, fieldUnit(field))}` : '';
     const previousLabel = previous && !box ? `${shown} · ${formatShortDate(previous.recordedAt)}` : null;
     const needsAttention = field === 'weightKg' && formStage === 1 && inputs.heightCm !== undefined && inputs.weightKg === undefined;
     // In expanded mode with previous data, show "Previous:" reference instead of placeholder
@@ -892,7 +899,7 @@ export function InputPanel({
       );
     }
 
-    const displayValue = toDisplay(field, measurement.value);
+    const displayValue = savedText(field, measurement);
     const unitLabel = getDisplayLabel(metric, fieldUnit(field));
     const date = formatShortDate(measurement.recordedAt);
 
@@ -2108,7 +2115,7 @@ export function InputPanel({
                     {(() => {
                       const psaMeasurement = previousMeasurements.find(m => m.metricType === 'psa');
                       const psaPreviousLabel = psaMeasurement
-                        ? `${psaMeasurement.value.toFixed(1)} ng/mL · ${formatShortDate(psaMeasurement.recordedAt)}`
+                        ? `${formatValue('psa', psaMeasurement.value, 'si', psaMeasurement.comparator)} ng/mL · ${formatShortDate(psaMeasurement.recordedAt)}`
                         : null;
 
                       return (
