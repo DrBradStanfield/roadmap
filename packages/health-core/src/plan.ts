@@ -218,6 +218,23 @@ export interface Plan extends PlanInputs {
 export const PRESSURE_EXCLUDED = 'the top number is not above the bottom one, so the plan ignores this day’s blood pressure';
 
 /**
+ * What the plan computes from (US-07 AC10): the inputs with every field
+ * validation refused left out, so the rest still plans. A pair left out as
+ * swapped is marked `pressureOrder`, which turns the blood pressure prompt
+ * into "check your reading". Null when the height itself is refused: no plan.
+ * The plan, the web form and the iPhone all strip through this one rule.
+ */
+export function planInputsFrom(inputs: Partial<HealthInputs>, validation: ReturnType<typeof validateHealthInputs>): SuggestionInputs | null {
+  const issues = validation.errors?.issues ?? [];
+  const invalid = new Set(issues.map((i) => String(i.path[0])));
+  if (invalid.has('heightCm')) return null;
+  const stripped: Record<string, unknown> = { ...inputs };
+  for (const field of invalid) stripped[field] = undefined;
+  if (issues.some((i) => i.message === PRESSURE_ORDER)) stripped.pressureOrder = true;
+  return stripped as unknown as SuggestionInputs;
+}
+
+/**
  * The whole plan. Invalid fields are stripped before calculating (the widget
  * does the same), so one bad number costs its own suggestion, not the report.
  * `unitOverrides`: per-metric display units, the web's per-field toggles (US-05), so a
@@ -225,39 +242,30 @@ export const PRESSURE_EXCLUDED = 'the top number is not above the bottom one, so
  */
 export function computePlan(file: RoadmapFile, now = new Date(), unitOverrides?: Partial<Record<MetricType, UnitSystem>>): Plan {
   const derived = derivePlanInputs(file, now);
-  let inputs = derived.inputs;
-  let excluded: string[] = [];
   const day = (metric: string) => {
     const row = derived.currentRows.find((r) => r.metricType === metric);
     return row ? dayOf(row.recordedAt) : null;
   };
 
-  const validation = validateHealthInputs(inputs, { systolicBp: day('systolic_bp'), diastolicBp: day('diastolic_bp') }, now);
-  if (!validation.success && validation.errors) {
-    const invalid = new Set(validation.errors.issues.map((i) => String(i.path[0])));
-    // Sex is not required (US-07 AC8): a bad one is stripped below like any field, and `needsSex` says what it costs.
-    if (invalid.has('heightCm')) {
-      throw new PlanError(
-        `This record has no usable height (${getValidationErrors(validation.errors).heightCm})`,
-        'The plan needs it. Ask the user for their height and set it on the record — with `update_profile` if you ' +
-          'have it, otherwise in the app — then run this again.',
-      );
-    }
-    const stripped = { ...inputs } as Record<string, unknown>;
-    for (const field of invalid) stripped[field] = undefined;
-    inputs = stripped as Partial<HealthInputs>;
-    excluded = [...invalid];
+  const validation = validateHealthInputs(derived.inputs, { systolicBp: day('systolic_bp'), diastolicBp: day('diastolic_bp') }, now);
+  // Sex is not required (US-07 AC8): a bad one is stripped like any field, and `needsSex` says what it costs.
+  const planInputs = planInputsFrom(derived.inputs, validation);
+  if (!planInputs) {
+    throw new PlanError(
+      `This record has no usable height (${getValidationErrors(validation.errors!).heightCm})`,
+      'The plan needs it. Ask the user for their height and set it on the record — with `update_profile` if you ' +
+        'have it, otherwise in the app — then run this again.',
+    );
   }
-  const pressureOrder = validation.errors?.issues.some((i) => i.message === PRESSURE_ORDER) === true;
+  const { pressureOrder, ...inputs } = planInputs;
   return {
     ...derived,
     inputs,
-    excluded,
-    ...(pressureOrder ? { pressureOrder: true } : {}),
+    excluded: [...new Set(validation.errors?.issues.map((i) => String(i.path[0])) ?? [])],
+    ...(pressureOrder ? { pressureOrder } : {}),
     generatedAt: now.toISOString(),
     today: localDay(now),
-    // US-07 AC10: the left-out pair turns the blood pressure prompt into "check your reading".
-    results: calculateHealthResults({ ...inputs, ...(pressureOrder ? { pressureOrder: true } : {}) } as SuggestionInputs, derived.unitSystem, derived.medications, derived.screenings, unitOverrides, now),
+    results: calculateHealthResults(planInputs, derived.unitSystem, derived.medications, derived.screenings, unitOverrides, now),
     due: computeReminderSchedule(file, now),
     labs: derivePlanLabs(file),
   };

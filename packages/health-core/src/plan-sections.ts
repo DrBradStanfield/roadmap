@@ -28,8 +28,10 @@ const GROUPED_CATEGORIES: readonly string[] = ['nutrition', 'screening', 'bloodw
 /** Card order inside the first three sections; any other category follows, in arrival order. */
 const CATEGORY_ORDER: readonly string[] = ['nutrition', 'exercise', 'sleep', 'screening', 'bloodwork', 'medication', 'blood_pressure', 'general'];
 
-/** The missing-measurement prompts lead their section, in this order, ahead of every category (US-07 AC10). */
-const LEADING_IDS: readonly string[] = ['measure-waist', 'measure-bp'];
+/** The missing-measurement prompts, waist then blood pressure: they lead their section, in
+ *  this order, ahead of every category (US-07 AC10). suggestions.ts emits its cards under these ids. */
+export const LEADING_IDS = ['measure-waist', 'measure-bp'] as const;
+const isLeading = (id: string) => (LEADING_IDS as readonly string[]).includes(id);
 
 function highestPriority(suggestions: Suggestion[]): Suggestion['priority'] {
   if (suggestions.some((s) => s.priority === 'urgent')) return 'urgent';
@@ -44,7 +46,7 @@ function orderedCards(suggestions: Suggestion[]): PlanCard[] {
   const cards: PlanCard[] = LEADING_IDS.flatMap((id) => suggestions.filter((s) => s.id === id).map((s) => card([s])));
   const byCategory = new Map<string, Suggestion[]>();
   for (const s of suggestions) {
-    if (!LEADING_IDS.includes(s.id)) byCategory.set(s.category, [...(byCategory.get(s.category) ?? []), s]);
+    if (!isLeading(s.id)) byCategory.set(s.category, [...(byCategory.get(s.category) ?? []), s]);
   }
 
   for (const category of CATEGORY_ORDER) {

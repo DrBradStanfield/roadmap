@@ -1,7 +1,8 @@
 // US-25 AC2: the plan's layout is one function, shared by the web's results
 // panel and the iOS app, so both show the same cards in the same order.
 import { describe, expect, it } from 'vitest';
-import { planSections } from './plan-sections';
+import { LEADING_IDS, planSections } from './plan-sections';
+import { generateSuggestions } from './suggestions';
 import type { Suggestion } from './types';
 
 const s = (id: string, priority: Suggestion['priority'], category: Suggestion['category']): Suggestion =>
@@ -97,5 +98,12 @@ describe('planSections (US-25 AC2)', () => {
       ['Skin Health', [['retinoid'], ['sunscreen']]],
       ['Supplements', [['omega'], ['creatine']]],
     ]);
+  });
+});
+
+describe('US-07 AC10: one source for the leading prompts', () => {
+  it('the engine emits the leading ids first, in their order', () => {
+    const emitted = generateSuggestions({ heightCm: 178 }, { heightCm: 178, age: 40, suggestions: [] }).map((x) => x.id);
+    expect(emitted.slice(0, LEADING_IDS.length)).toEqual([...LEADING_IDS]);
   });
 });

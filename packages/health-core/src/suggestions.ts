@@ -1,4 +1,5 @@
 import type { HealthInputs, HealthResults, SuggestionInputs, Suggestion, MedicationInputs, ScreeningInputs, UsProductCardId } from './types';
+import { LEADING_IDS } from './plan-sections';
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
@@ -244,9 +245,10 @@ export function generateSuggestions(
   const us = (metric: MetricType): UnitSystem => unitOverrides?.[metric] ?? unitSystem;
 
   // === Missing measurements first (US-07 AC10, Brad 2026-11-02): waist, then blood pressure ===
+  const [MEASURE_WAIST, MEASURE_BP] = LEADING_IDS;
   if (results.waistToHeightRatio === undefined) {
     suggestions.push({
-      id: 'measure-waist',
+      id: MEASURE_WAIST,
       category: 'general',
       priority: 'attention',
       title: 'Measure your waist circumference',
@@ -256,7 +258,7 @@ export function generateSuggestions(
   // The blood pressure cards below need both halves; without them, this prompt.
   if (inputs.systolicBp === undefined || inputs.diastolicBp === undefined) {
     suggestions.push({
-      id: 'measure-bp',
+      id: MEASURE_BP,
       category: 'blood_pressure',
       priority: 'attention',
       ...(inputs.pressureOrder

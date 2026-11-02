@@ -8,7 +8,8 @@ import {
   weightMedicationTrigger,
   lipidMarkerFor,
   validateHealthInputs,
-  PRESSURE_ORDER,
+  planInputsFrom,
+  type SuggestionInputs,
   getValidationErrors,
   convertValidationErrorsToUnits,
   detectUnitSystem,
@@ -892,29 +893,14 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     }
 
     const validation = validateHealthInputs(planInputs, pressureDays);
-
-    let inputsForCalc = planInputs;
-    let errors: Record<string, string> | null = null;
-
-    if (!validation.success && validation.errors) {
-      const rawErrors = getValidationErrors(validation.errors);
-      // Convert error messages to user's unit system (e.g., "20 kg" → "44 lbs")
-      errors = convertValidationErrorsToUnits(rawErrors, unitSystem);
-      // Strip invalid fields (all optional) so remaining suggestions still show
-      const invalidFields = new Set(validation.errors.issues.map((i) => i.path[0] as string));
-      if (invalidFields.has('heightCm')) {
-        return { results: null, isValid: false, validationErrors: errors, planBasis: null };
-      }
-      const sanitized = { ...planInputs };
-      for (const field of invalidFields) {
-        (sanitized as Record<string, unknown>)[field] = undefined;
-      }
-      // US-07 AC10: a pair left out as swapped turns the blood pressure prompt into "check your reading".
-      if (validation.errors.issues.some((i) => i.message === PRESSURE_ORDER)) Object.assign(sanitized, { pressureOrder: true });
-      inputsForCalc = sanitized;
+    // Convert error messages to user's unit system (e.g., "20 kg" → "44 lbs")
+    const errors = validation.errors ? convertValidationErrorsToUnits(getValidationErrors(validation.errors), unitSystem) : null;
+    // health-core's one strip (US-07 AC10): refused fields left out so the rest still plans, a swapped pair marked.
+    const calcInputs: SuggestionInputs | null = planInputsFrom(planInputs, validation);
+    if (!calcInputs) {
+      return { results: null, isValid: false, validationErrors: errors, planBasis: null };
     }
 
-    const calcInputs = inputsForCalc as HealthInputs;
     const healthResults = calculateHealthResults(
       calcInputs,
       unitSystem,

@@ -197,8 +197,8 @@ export function buildChatContextJson(payload: unknown): string | null {
   }
   // US-15 AC31: each card's description, from the plan over the medications
   // above, so no unlisted name or out-of-range dose reaches the prompt.
-  const descriptions = new Map(results
-    ? calculateHealthResults(planInputs!, unitSystem, medications, screenings).suggestions.map(s => [s.id, s.description])
+  const descriptions = new Map(planInputs
+    ? calculateHealthResults(planInputs, unitSystem, medications, screenings).suggestions.map(s => [s.id, s.description])
     : []);
   // As plan.ts: a known minor's raw numbers stay; the adult readings go (US-07 AC6).
   const adult = results?.knownMinor ? undefined : results;

@@ -11,7 +11,7 @@ import { PRESSURE_ORDER } from './validation';
 import { importDeviceSamples } from './device-import';
 import { calculateHealthResults } from './calculations';
 import { mergeFiles } from './merge';
-import { computePlan } from './plan';
+import { computePlan, planInputsFrom } from './plan';
 import { validateHealthInputs } from './validation';
 import type { HealthInputs } from './types';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
@@ -176,3 +176,26 @@ describe('US-02 AC8: the plan reads an inverted blood pressure as none (review R
   });
 });
 
+
+describe('US-07 AC10: planInputsFrom, the one strip every plan caller shares', () => {
+  const base = { heightCm: 178, sex: 'male', birthYear: 1971, weightKg: 80 } as HealthInputs;
+  const from = (inputs: Partial<HealthInputs>) => planInputsFrom(inputs, validateHealthInputs(inputs));
+
+  it('passes valid inputs through unchanged, with no pressureOrder', () => {
+    expect(from({ ...base, systolicBp: 120, diastolicBp: 80 })).toEqual({ ...base, systolicBp: 120, diastolicBp: 80 });
+  });
+
+  it('strips a swapped pair and marks it; strips any other invalid field without the mark', () => {
+    const swapped = from({ ...base, systolicBp: 80, diastolicBp: 120 });
+    expect(swapped).toMatchObject({ ...base, pressureOrder: true });
+    expect(swapped?.systolicBp).toBeUndefined();
+    expect(swapped?.diastolicBp).toBeUndefined();
+    const badWeight = from({ ...base, weightKg: 5 });
+    expect(badWeight?.weightKg).toBeUndefined();
+    expect(badWeight?.pressureOrder).toBeUndefined();
+  });
+
+  it('gives no plan without a valid height', () => {
+    expect(from({ ...base, heightCm: 10 })).toBeNull();
+  });
+});
