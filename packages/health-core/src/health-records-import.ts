@@ -111,6 +111,8 @@ const observation = z.object({
   code: z.object({ coding: z.array(z.object({ system: z.string().optional(), code: z.string().optional() })).optional() }),
   valueQuantity: quantity.optional(),
   effectiveDateTime: z.string().max(64).optional(),
+  // effective[x] as a period: its start is the draw (the collection began then).
+  effectivePeriod: z.object({ start: z.string().max(64).optional() }).optional().catch(undefined),
   referenceRange: z.array(z.object({ low: quantity.optional(), high: quantity.optional() })).optional().catch(undefined),
 });
 type Observation = z.infer<typeof observation>;
@@ -131,7 +133,8 @@ function metricOf(obs: Observation): string | null {
 }
 
 /**
- * The row's `recordedAt` (AC3): the draw, never the download. A day alone is
+ * The row's `recordedAt` (AC3): the draw (`effectiveDateTime`, else
+ * `effectivePeriod.start`), never the download. A day alone is
  * that day at `T00:00:00.000Z`, and is "not yet" only past the latest day on
  * earth, so a UK result dated today is not held back an hour; a time keeps
  * its own offset, as device-import keeps a reading's. Null when absent,
@@ -156,7 +159,7 @@ function readingOf(obs: Observation, now: string): Reading | null {
   const metric = metricOf(obs);
   const q = obs.valueQuantity;
   const unit = unitOf(q);
-  const recordedAt = drawnAt(obs.effectiveDateTime, now);
+  const recordedAt = drawnAt(obs.effectiveDateTime ?? obs.effectivePeriod?.start, now);
   if (!metric || typeof q?.value !== 'number' || !unit || !recordedAt) return null;
   if (q.comparator !== undefined && !COMPARATORS.includes(q.comparator)) return null;
   const comparator = q.comparator as Comparator | undefined;

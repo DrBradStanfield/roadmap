@@ -177,17 +177,43 @@ describe('US-66 AC3: the day', () => {
     expect(file.measurements[0].recordedAt).toBe('2026-10-21T08:30:00.000-07:00');
   });
 
-  it('AC3: no effective date, only an effectivePeriod, a month alone or an unreal day does not land', () => {
+  it('AC3: no effective date, a period with no start, a month alone or an unreal day does not land', () => {
     const { effectiveDateTime: _drop, ...noDate } = obs(R4_LDL);
     const { file, counts } = run(empty(), [
       rec(noDate),
-      rec({ ...noDate, effectivePeriod: { start: '2026-10-21T09:30:10+01:00' } }),
+      rec({ ...noDate, effectivePeriod: { end: '2026-10-21T09:30:10+01:00' } }),
       rec(obs(R4_LDL, { effectiveDateTime: '2026-10' })),
       rec(obs(R4_LDL, { effectiveDateTime: '2026-02-30' })),
       rec(obs(R4_LDL, { effectiveDateTime: '2026-10-21T08:30:00' })), // a time with no offset
     ]);
     expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 5 });
     expect(file.measurements).toEqual([]);
+  });
+
+  // HL7's glucose example (f001) dates its draw with effectivePeriod in both versions:
+  // R4 a start only, DSTU2 a start and an end.
+  it('AC3 R4: with no effectiveDateTime, effectivePeriod.start is the draw, its offset kept', () => {
+    const { effectiveDateTime: _drop, ...noDate } = obs(R4_LDL);
+    const { file } = run(empty(), [rec({ ...noDate, effectivePeriod: { start: '2026-10-21T09:30:10+01:00' } })]);
+    expect(file.measurements[0]).toMatchObject({ metricType: 'ldl', recordedAt: '2026-10-21T09:30:10.000+01:00' });
+  });
+
+  it('AC3 DSTU2: effectivePeriod.start is the draw, the end ignored; a date-only start is that day', () => {
+    const { effectiveDateTime: _drop, ...noDate } = obs(DSTU2_HDL);
+    const { file } = run(empty(), [
+      rec({ ...noDate, effectivePeriod: { start: '2026-10-21T09:30:10+01:00', end: '2026-10-24T09:30:10+01:00' } }, { fhirVersion: DSTU2 }),
+      rec({ ...obs(R4_LDL), effectiveDateTime: undefined, effectivePeriod: { start: '2026-10-22' } }, { fhirVersion: DSTU2 }),
+    ]);
+    expect(file.measurements.map((m) => m.recordedAt)).toEqual(['2026-10-21T09:30:10.000+01:00', '2026-10-22T00:00:00.000Z']);
+  });
+
+  it('AC3: effectiveDateTime wins over a period; a period start later than now does not land', () => {
+    const { file, counts } = run(empty(), [
+      rec(obs(R4_LDL, { effectivePeriod: { start: '2026-10-01T09:00:00Z' } })),
+      rec({ ...obs(DSTU2_HDL), effectiveDateTime: undefined, effectivePeriod: { start: '2026-11-02T09:00:00Z' } }, { fhirVersion: DSTU2 }),
+    ]);
+    expect(counts).toMatchObject({ added: 1, notRead: 1 });
+    expect(file.measurements[0].recordedAt).toBe('2026-10-21T00:00:00.000Z');
   });
 
   it('AC3: a result later than now does not land; five minutes of clock skew is not later', () => {
