@@ -122,6 +122,15 @@ async function measurements(view: RenderResult, height = '178', weight = '80') {
   leave(q(view, '#weightKg'));
   await waitFor(async () => expect(await activeWeights()).toEqual([[Number(weight), TODAY]]), { timeout: 2000 });
 }
+/** The birth date with no jump to the email box: the year is completed while
+ *  the month is unset, then the month is set (US-62 AC12, Brad 2026-11-02). */
+function birthWithoutJump(view: RenderResult, month = '5', year = '1975') {
+  const select = q(view, '#birthMonth')!;
+  fireEvent.change(select, { target: { value: month } }); // shows the year field
+  fireEvent.change(select, { target: { value: '' } });
+  type(q(view, '#birthYear'), year);
+  fireEvent.change(select, { target: { value: month } });
+}
 function birth(view: RenderResult, month = '5', year = '1975') {
   fireEvent.change(q(view, '#birthMonth')!, { target: { value: month } });
   type(q(view, '#birthYear'), year);
@@ -215,7 +224,7 @@ describe('US-62 AC12, AC13 (Brad 2026-11-02): boxes while typing, rows after', (
     const view = await open();
     await measurements(view, '185', '90');
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-    birth(view, '6', '1985');
+    birthWithoutJump(view, '6', '1985'); // no jump to the email box: the focus stays in the card
     await waitFor(() => expect(fullForm(view)).toBe(true));
     expect(sectionOrder(view)[0]).toBe('Starting Info');
     expect(q(view, '#weightKg')).toBeTruthy(); // typed here, it stays beside the height for the visit
@@ -767,23 +776,28 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
   const cards = (view: RenderResult) => Array.from(view.container.querySelectorAll('.health-input-panel > .section-card'));
   const aboutLow = (view: RenderResult) => q(view, '.md-about-you');
 
-  it.each([['desktop', false], ['phone', true]])('on %s: "199" on the way to 1990 moves nothing; leaving the card moves About you, as rows, to the foot', async (_, onPhone) => {
+  it.each([['desktop', false], ['phone', true]])('on %s: "199" moves nothing; "1990" jumps on (desktop: the email box; phone: out of the field, still on My data) and About you goes, as rows, to the foot', async (_, onPhone) => {
     phone = onPhone;
     const view = await open();
     await measurements(view);
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
     fireEvent.change(q(view, '#birthMonth')!, { target: { value: '5' } });
     const year = q(view, '#birthYear') as HTMLInputElement;
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); }); // the sex answer's reveal focuses the month
     type(year, '199');
-    type(year, '1990'); // all four answers: the whole form opens, About you stays put
-    await waitFor(() => expect(fullForm(view)).toBe(true));
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect(document.activeElement).toBe(year); // a partial year never jumps
     expect(aboutLow(view)).toBeNull();
-    expect(q(view, '#birthYear')).toBe(year);
     expect(cards(view)[0].querySelector('#birthYear')).toBe(year);
-    act(() => { year.focus(); }); // the stage's reveal may have taken the focus to the month
 
-    leave(year);
+    type(year, '1990'); // complete, in range, the month set: the last answer
     await waitFor(() => expect(aboutLow(view)).toBeTruthy());
+    if (onPhone) {
+      expect(document.activeElement).toBe(document.body);
+      expect(view.getByRole('tab', { name: 'My data' }).getAttribute('aria-selected')).toBe('true');
+    } else {
+      expect(document.activeElement?.id).toBe('guestEmail');
+    }
     expect(cards(view).at(-1)).toBe(aboutLow(view)); // the column's foot
     expect(Array.from(aboutLow(view)!.querySelectorAll('.about-row-label')).map((l) => l.textContent)).toEqual(['Height', 'Sex', 'Birth', 'Alcohol']);
     expect(aboutLow(view)!.querySelector('h3')?.textContent).toContain('About you');
@@ -801,7 +815,7 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
     const view = await open();
     await measurements(view);
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-    birth(view);
+    birthWithoutJump(view);
     await waitFor(() => expect(fullForm(view)).toBe(true));
     const year = q(view, '#birthYear') as HTMLElement;
     act(() => { year.focus(); });
@@ -830,7 +844,7 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
     const view = await open();
     await measurements(view);
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-    birth(view);
+    birthWithoutJump(view);
     await waitFor(() => expect(fullForm(view)).toBe(true));
     const vitalsCard = (q(view, '#waistCm') as HTMLElement).closest('.section-card')!;
     expect(vitalsCard.querySelector('#birthYear, #heightCm')).toBeNull();
@@ -918,7 +932,7 @@ describe('PR 518 review: refused and erased records', () => {
     const view = await open();
     await measurements(view);
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-    birth(view);
+    birthWithoutJump(view);
     await waitFor(() => expect(q(view, '#waistCm')).toBeTruthy());
     const waist = q(view, '#waistCm') as HTMLInputElement;
     type(waist, '3');
@@ -937,7 +951,7 @@ describe('PR 518 review: refused and erased records', () => {
     const view = await open();
     await measurements(view);
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-    birth(view);
+    birthWithoutJump(view);
     await waitFor(() => expect(fullForm(view)).toBe(true));
     const year = q(view, '#birthYear') as HTMLElement;
     act(() => { year.focus(); });
@@ -955,7 +969,7 @@ describe('PR 518 review: refused and erased records', () => {
     const finish = async () => {
       await measurements(view);
       fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-      birth(view);
+      birthWithoutJump(view);
       await waitFor(() => expect(fullForm(view)).toBe(true));
     };
     await finish();

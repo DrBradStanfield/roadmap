@@ -217,7 +217,7 @@ interface InputPanelProps {
   healthDocuments?: ApiDocument[];
   onDocumentDeleted?: (docId: string) => void;
   /** Says whether it jumped: only as the last answer (US-62 AC13). */
-  onAutoFocusEmail?: () => boolean;
+  onAutoFocusEmail?: (stayOnTab?: boolean) => boolean;
   /** A chat edit that filled a grid cell (US-16 AC2): the table opens so the
    *  filled cell shows, phone and desktop. Each new edit is a new object. */
   revealCell?: { field: string } | null;
@@ -1420,6 +1420,13 @@ export function InputPanel({
                 if (num !== undefined && isBirthYearClearlyInvalid(num)) return;
                 typeIn('birthYear', e.target.value);
                 updateField('birthYear', num);
+                // Brad 2026-11-02: a complete year in range, the month set, is the
+                // last answer: on to the email box, or out of the card, so About
+                // you moves without waiting for a blur. "199" never does.
+                const years = identityFieldRange('birthYear')!;
+                if (onAutoFocusEmail && inputs.birthMonth && num !== undefined && /^\d{4}$/.test(e.target.value) && num >= years.min && num <= years.max) {
+                  requestAnimationFrame(() => onAutoFocusEmail(true));
+                }
               }}
               onBlur={rangeWait.settle}
               placeholder=""

@@ -1353,16 +1353,23 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const emailCaptureActive = SHOPIFY_SURFACE;
 
   // Says whether it acted, so a caller spends its once-only jump only then.
-  const handleAutoFocusEmail = useCallback((): boolean => {
-    // Only when the weight was the last answer: a first weight is step 1 (US-62 AC13).
-    if (!emailCaptureActive || stageRef.current !== 4) return false;
-    if (isMobile) {
+  // The jump to the email box once the last onboarding answer is in (US-62
+  // AC13). A weight jumps on a phone to My plan (US-22). A birth year
+  // (`stayOnTab`, Brad 2026-11-02) never changes tab: where the box is not on
+  // screen (a phone, an email already given) it only leaves the field, so
+  // About you moves low (US-62 AC12).
+  const handleAutoFocusEmail = useCallback((stayOnTab = false): boolean => {
+    // Only when the answer was the last one: a first weight is step 1.
+    if (stageRef.current !== 4) return false;
+    if (emailCaptureActive && isMobile && !stayOnTab) {
       selectTab('plan');
       setTimeout(() => document.getElementById('guestEmail')?.focus(), 400);
-    } else {
-      document.getElementById('guestEmail')?.focus();
+      return true;
     }
-    return true;
+    const email = emailCaptureActive && !isMobile ? document.getElementById('guestEmail') : null;
+    if (email) { email.focus(); return true; }
+    if (stayOnTab) (document.activeElement as HTMLElement | null)?.blur();
+    return stayOnTab;
   }, [emailCaptureActive, isMobile, selectTab]);
 
   // Memoised so the UploadModal's matrix doesn't rebuild on unrelated
