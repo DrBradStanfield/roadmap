@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import type { ApiMeasurement } from '@roadmap/health-core';
 import { buildMatrixModel, type FileResult } from './ReviewTable';
 import { offerCoreExtras } from './UploadModal';
+import { parseUnifiedResult, toUnifiedResult } from '@roadmap/health-core/lab-extraction';
 
 const DATE = { day: '01', month: '06', year: '2024' };
 const DAY = '2024-06-01T00:00:00.000Z';
@@ -60,5 +61,25 @@ describe('an offered value on a held day is a conflict (US-66 AC6, US-13 AC3)', 
   it('an equal value is already recorded, not a conflict', () => {
     const { cells } = build(extras({ name: 'LDL Cholesterol', value: 4.5, unit: 'mmol/L' }));
     expect(cells.get('ldl|2024-06-01')).toMatchObject({ state: 'context', id: 'held-ldl' });
+  });
+});
+
+// US-12 AC11a (PR 759 R3): a second LDL the model listed among the core tests
+// under an alias, with its own doubt, is a lab row on a held day; offered back
+// as the LDL value it keeps the model's confidence, question and printed name.
+describe('offerCoreExtras keeps the extractor\'s flag (US-12 AC11a)', () => {
+  it('a held-slot LDL alias is offered low, with its question and printed name', () => {
+    const result = toUnifiedResult(parseUnifiedResult({
+      classification: 'lab_report', reportDate: '2024-06-01', document: null, additionalValues: [],
+      values: [
+        { metric: 'ldl', value: 2.6, unit: 'mmol/L', confidence: 'high' },
+        { metric: 'LDL-Cholesterol', value: 2.9, unit: 'mmol/L', confidence: 'low', question: 'Two LDL rows?', printedName: 'LDL-C' },
+      ],
+    }), 'full');
+    const offered = offerCoreExtras(result);
+    expect(offered.additionalValues).toEqual([]);
+    expect(offered.values.map((v) => [v.metric, v.displayValue, v.confidence])).toEqual([['ldl', 2.6, 'high'], ['ldl', 2.9, 'low']]);
+    expect(offered.values[1]).toMatchObject({ printedName: 'LDL-C' });
+    expect(offered.values[1].question).toContain('Two LDL rows?');
   });
 });

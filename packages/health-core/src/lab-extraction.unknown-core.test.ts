@@ -62,7 +62,7 @@ describe('US-12 AC11a — a core row naming no core metric is never silently dro
       { metric: 'hba1c', value: 5.6, unit: '%', confidence: 'high' },
     ]);
     expect(result.values.map(v => v.metric)).toEqual(['hba1c']);
-    expect(result.additionalValues).toEqual([{ name: 'tsh', value: 4.56, unit: 'mIU/L', referenceLow: null, referenceHigh: null, recordedAt: '2026-10-09' }]);
+    expect(result.additionalValues).toEqual([{ name: 'tsh', value: 4.56, unit: 'mIU/L', referenceLow: null, referenceHigh: null, recordedAt: '2026-10-09', confidence: 'high' }]);
     expect(result.droppedValueCount).toBe(0);
   });
 
@@ -145,5 +145,77 @@ describe('US-12 AC11a — a core row naming no core metric is never silently dro
     expect(result.values.map(v => [v.metric, v.confidence])).toEqual([['ldl', 'low']]);
     expect(result.additionalValues.map(v => v.name)).toEqual(['ferritin']);
     expect(result.droppedValueCount).toBe(0);
+  });
+});
+
+describe('US-12 AC11a review fixes (PR 759)', () => {
+  // C1: weight, waist and height resolve as core names but are not among the 11
+  // the review takes, so as a core row `resolveLabValues` dropped them unseen.
+  it.each(['Body Weight', 'Waist circumference', 'Height'])('a core-list row named "%s" is a lab row, never dropped', (metric) => {
+    const result = extract([{ metric, value: 80, unit: 'kg', confidence: 'high' }]);
+    expect(result.values).toEqual([]);
+    expect(result.additionalValues.map(v => v.name)).toEqual([metric]);
+    expect(result.droppedValueCount).toBe(0);
+  });
+
+  it('a core key whose printed name is "Weight" is a lab row under that name, never dropped', () => {
+    const result = extract([{ metric: 'ldl', value: 80, unit: 'kg', confidence: 'high', printedName: 'Weight' }]);
+    expect(result.values).toEqual([]);
+    expect(result.additionalValues.map(v => [v.name, v.printedName])).toEqual([['Weight', 'Weight']]);
+  });
+
+  // C2: a blank model metric with a printed name is filed by that name, even one
+  // the catalogue does not know; only a row with no name at all is "Not saved".
+  it.each(['', ' '])('a blank metric (%j) with an uncatalogued printed name is a lab row under it', (metric) => {
+    const result = extract([{ metric, value: 12, unit: 'ng/mL', confidence: 'high', printedName: 'Zonulin' }]);
+    expect(result.additionalValues.map(v => [v.name, v.printedName])).toEqual([['Zonulin', 'Zonulin']]);
+    expect(result.droppedValueCount).toBe(0);
+    expect(result.unreadValues).toBeUndefined();
+  });
+
+  it('two blank metrics with different printed names on one day are both saved', () => {
+    const result = extract([
+      { metric: '', value: 12, unit: 'ng/mL', confidence: 'high', printedName: 'Zonulin' },
+      { metric: ' ', value: 40, unit: 'µg/g', confidence: 'high', printedName: 'Calprotectin X' },
+    ]);
+    expect(result.additionalValues.map(v => [v.name, v.value])).toEqual([['Zonulin', 12], ['Calprotectin X', 40]]);
+    expect(result.droppedValueCount).toBe(0);
+  });
+
+  it('the model\'s metric is trimmed before it is filed, with or without a printed name', () => {
+    const result = extract([
+      { metric: ' tsh_x ', value: 1, unit: 'mIU/L', confidence: 'high' },
+      { metric: ' tsh_y ', value: 2, unit: 'mIU/L', confidence: 'high', printedName: 'Unlisted thing' },
+    ]);
+    expect(result.additionalValues.map(v => v.name)).toEqual(['tsh_x', 'tsh_y']);
+  });
+
+  // R1: a printed "Cr" may be chromium; it never files a row as creatinine.
+  it.each([['Cr', 'Cr'], ['CR', 'CR'], ['cr', 'Cr']])('model "%s", printed "%s": a lab row, never core creatinine', (metric, printedName) => {
+    const result = extract([{ metric, value: 0.3, unit: 'µg/L', confidence: 'high', printedName }]);
+    expect(result.values).toEqual([]);
+    expect(result.additionalValues.map(v => v.name)).toEqual([metric]);
+  });
+
+  // R2: a creatinine its unit check refuses holds no slot, so the next serum
+  // creatinine of that day files as core with the model's own flag.
+  it('a refused creatinine leaves the slot to the next one, which keeps its low confidence and question', () => {
+    const result = extract([
+      { metric: 'Creat', value: 3.1, unit: 'mg/mmol', confidence: 'high', printedName: 'Serum Creatinine' },
+      { metric: 'creatinine_serum', value: 80, unit: 'µmol/L', confidence: 'low', question: 'Smudged digit?', printedName: 'Serum Creatinine' },
+    ]);
+    expect(result.values.map(v => [v.metric, v.displayValue, v.confidence])).toEqual([['creatinine', 80, 'low']]);
+    expect(result.values[0].question).toContain('Smudged digit?');
+    expect(result.refusedValues?.map(r => r.value)).toEqual([3.1]);
+  });
+
+  // R3: a held-slot alias stays a lab row that carries the model's flag, so a
+  // caller that offers it as the core value can keep it.
+  it('a held-slot alias lab row carries the model\'s confidence, question and printed name', () => {
+    const result = extract([
+      { metric: 'ldl', value: 2.6, unit: 'mmol/L', confidence: 'high' },
+      { metric: 'LDL-Cholesterol', value: 2.9, unit: 'mmol/L', confidence: 'low', question: 'Two LDL rows?', printedName: 'LDL-C' },
+    ]);
+    expect(result.additionalValues).toEqual([expect.objectContaining({ name: 'LDL-C', value: 2.9, printedName: 'LDL-C', confidence: 'low', question: 'Two LDL rows?' })]);
   });
 });
