@@ -9,12 +9,14 @@ import { useId } from 'react';
 import type React from 'react';
 import { commaQuestion, type MetricType } from '@roadmap/health-core';
 import { describedBy } from '../lib/aria';
+import { useRangeWait } from '../lib/useRangeWait';
 import {
   type CellUnit,
   type Grading,
   blockBadNumericKeys,
   numericCellText,
   hasNumericSyntax,
+  mayStillFit,
   readNumericCell,
   NUMERIC_SYNTAX_GUIDANCE,
   previewStatus,
@@ -71,12 +73,16 @@ export function NumericInputCell({
   onFocus, onBlur, onKeyDown = blockBadNumericKeys, inputRef, note,
 }: NumericInputCellProps) {
   const errorId = useId();
+  const checked = metric && display ? validateTypedValue(metric, value, display) : null;
   const validationError = validationResult !== undefined ? validationResult
     : value !== '' && !hasNumericSyntax(value) ? NUMERIC_SYNTAX_GUIDANCE
-    : metric && display ? validateTypedValue(metric, value, display).error
+    : checked ? checked.error
     : commaQuestion(value) ?? (value !== '' && readNumericCell(value) === undefined ? 'Enter a number' : null);
-  const error = externalError ?? validationError;
-  const status = !grading || error || !metric || !display
+  // US-02 AC9: a range error more digits could still fix waits ("4" on the way to 45 cm).
+  const rangeWait = useRangeWait();
+  const waits = !!validationError && rangeWait.waits('cell', value);
+  const error = externalError ?? (waits ? null : validationError);
+  const status = !grading || error || waits || !metric || !display
     ? null
     : valueSI !== undefined ? statusOf(metric, valueSI, grading) : previewStatus(metric, value, display, grading);
   const insertText = (input: HTMLInputElement, text: string) => {
@@ -99,7 +105,11 @@ export function NumericInputCell({
         size={1}
         value={value}
         // Keep ambiguous syntax invalid instead of joining numeric tokens.
-        onChange={e => onChange(numericCellText(e.target.value))}
+        onChange={e => {
+          const text = numericCellText(e.target.value);
+          rangeWait.typed('cell', text, !!checked && mayStillFit(text, checked.range.min, checked.range.max));
+          onChange(text);
+        }}
         // Read before a text input removes spreadsheet line separators.
         onPaste={e => {
           e.preventDefault();
@@ -110,9 +120,9 @@ export function NumericInputCell({
           e.preventDefault();
           insertText(e.currentTarget, e.dataTransfer.getData('text'));
         }}
-        onKeyDown={onKeyDown}
+        onKeyDown={e => { if (e.key === 'Enter') rangeWait.settle(); onKeyDown(e); }}
         onFocus={onFocus}
-        onBlur={onBlur}
+        onBlur={e => { rangeWait.settle(); onBlur?.(e); }}
         placeholder={placeholder}
         aria-label={ariaLabel}
         aria-invalid={!!error}

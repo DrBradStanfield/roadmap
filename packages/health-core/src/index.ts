@@ -112,6 +112,8 @@ export {
   getValidationErrors,
   convertValidationErrorsToUnits,
   validateInputValue,
+  identityFieldRange,
+  inputRangeFault,
   isBirthYearClearlyInvalid,
   type MetricTypeValue,
   type ValidatedHealthInputs,
