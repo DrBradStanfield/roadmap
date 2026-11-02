@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { applyEdit, myData, newRecord, readNumber, readRecord, Refusal } from './my-data';
 import { metricHistory } from './my-data-forms';
 import { readUnitChoices } from './unit-choices';
-import { healthWritesJson, planJson } from './entry';
-import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { healthWritesJson, planJson, screenJson } from './entry';
+import { createLabValue, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { supplementSchema } from '../../packages/health-core/src/validation';
 import { stampProfile, upsertSupplement } from '../../packages/health-core/src/state-edits';
 import { mergeFiles } from '../../packages/health-core/src/merge';
@@ -897,5 +897,37 @@ describe('one blood-test table (US-66)', () => {
     ] } as RoadmapFile;
     expect(myData(odd, NOW).bloodTests.find((row) => row.metric === 'ldl')).toMatchObject({ latest: { id: core.id, value: '3.1' }, previous: null });
     expect(metricHistory(odd, 'ldl', NOW).rows.map((row) => row.id)).toEqual([core.id]);
+  });
+
+  // AC14 on the phone's own file: Swift's loadPhone writes `movedRecord` once, as it opens.
+  describe('AC14: the phone\'s file is written once in the new shape, as it opens', () => {
+    const moved = (text: string) => (JSON.parse(screenJson(text, NOW, 'phone', '{}')) as { movedRecord?: string }).movedRecord;
+    const oldShape = () => JSON.stringify({ ...base(), measurements: [
+      { id: 'ldl-a', metricType: 'ldl', value: 3.4, recordedAt: '2026-10-01', createdAt: NOW, source: 'manual', status: 'active', correctsId: null, externalId: null },
+      { id: 'w', metricType: 'weight', value: 80, recordedAt: '2026-10-01', createdAt: NOW, source: 'manual', status: 'active', correctsId: null, externalId: null },
+    ] });
+
+    it('an old-shape record gives the moved record to write, every value kept', () => {
+      const written = JSON.parse(moved(oldShape())!) as RoadmapFile;
+      expect(written.measurements.map((row) => row.id)).toEqual(['w']);
+      expect(written.labValues).toEqual([expect.objectContaining({ id: 'ldl-a', metricName: 'ldl', value: 3.4, core: true, status: 'active' })]);
+    });
+
+    it('an old lab row named like a core test, folded on read, gives one too', () => {
+      const printed = createLabValue({ id: 'p', metricName: 'LDL', value: 3.2, unit: 'mmol/L', recordedAt: '2026-05-02', createdAt: NOW });
+      const written = JSON.parse(moved(JSON.stringify({ ...base(), labValues: [printed] }))!) as RoadmapFile;
+      expect(written.labValues.some((row) => row.core === true && row.metricName === 'ldl' && row.value === 3.2)).toBe(true);
+    });
+
+    it('a new-shape record gives none, and the written record gives none on the next open', () => {
+      expect(moved(JSON.stringify(edited(base(), { kind: 'add', metric: 'ldl', value: 3.1, day: '2026-09-01' })))).toBeUndefined();
+      expect(moved(moved(oldShape())!)).toBeUndefined();
+    });
+
+    it('a write the phone refused is asked for again: the same old text gives it on the next open', () => {
+      const text = oldShape();
+      expect(moved(text)).toBeDefined();
+      expect(moved(text)).toBe(moved(text)); // read from the kept record, never a one-shot flag
+    });
   });
 });

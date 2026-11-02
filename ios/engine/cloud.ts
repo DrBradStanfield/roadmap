@@ -21,12 +21,12 @@ import { validDay } from '../../packages/health-core/src/record-edits';
 import { failed, PhoneCloudAdapter, PhoneFileAdapter, type CloudNatives, type Provider } from './cloud-adapters';
 import { eraseChatText } from './app-doors';
 import { labRows, labSaveSummary, type Extraction } from './lab-review';
-import { applyEdit, readRecord, type Edit, type EditOutcome } from './my-data';
+import { applyEdit, movedBloodTests, readRecord, type Edit, type EditOutcome } from './my-data';
 import { lpaUnitOf, readUnitChoices, unitsOf } from './unit-choices';
 
 declare const __native: CloudNatives;
 
-type CloudHost = Extract<RecordHost, { tier: 'cloud' }>;
+type CloudHost = Extract<RecordHost, { tier: 'cloud' }> & { store: PhoneCloudAdapter };
 
 function hostFor(provider: Provider, deviceId: string, phone: PhoneFileAdapter, id: number): CloudHost {
   // The marker generation this session's working copy holds: the one it saw as it
@@ -168,6 +168,10 @@ export async function cloudOpen(provider: Provider, deviceId: string, firstConne
   }
   open = at;
   at.live.start();
+  // US-66 AC14: the open moved blood tests into one table, against the bytes the
+  // cloud holds: written once, as an edit is. A save the cloud refuses waits on
+  // the phone, and the next open, reading the old bytes again, writes it again.
+  if (movedBloodTests(host.store.lastRecord, session.file)) commit(at, session.file, session.eraseIdentity, new Date().toISOString());
   keepPhoneCopy(at);
   return view(at);
 }

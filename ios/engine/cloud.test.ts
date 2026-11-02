@@ -428,6 +428,8 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     // The open moved it (AC2): same id, now a core lab row, which the phone's readsLpa finds through historyJson.
     expect(lpaRows(JSON.parse(record) as RoadmapFile).map((row) => row.id)).toEqual(['old-lpa']);
     expect((JSON.parse(engine.historyJson(record, 'lpa', NOW, 'ios-1')) as { rows: Array<{ id: string }> }).rows.map((row) => row.id)).toEqual(['old-lpa']);
+    // The open writes the moved record (AC14); a re-read waits while that write is pending.
+    expect(await engine.cloudFlush()).toBe('saved');
     // The web switches Lp(a) to mg/L; a correction typed against mg/dL is refused, never read as mg/L.
     const web = JSON.parse(engine.applyEditJson(record, JSON.stringify({ kind: 'lpaUnit', unit: 'mg/L' }), '2026-10-21T09:00:00.000Z', 'web')) as { record: string };
     dropbox.put(JSON.parse(web.record) as RoadmapFile);
@@ -437,6 +439,91 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     expect((JSON.parse(engine.cloudEdit(JSON.stringify({ kind: 'correct', id: 'old-lpa', value: 500 }), erase, 'si', NOW, '{}', 'mg/L')) as { ok: boolean }).ok).toBe(true);
     expect(await engine.cloudFlush()).toBe('saved');
     expect(lpaRows(dropbox.record).find((row) => row.correctsId === 'old-lpa')!.value).toBeCloseTo(125, 9);
+  });
+
+  describe('US-66 AC14: an old-shape cloud record is written once, moved, as it opens', () => {
+    const oldShape = async () => {
+      const old = await recordWith([], 'web');
+      const ldl = { id: 'old-ldl', metricType: 'ldl', value: 3.4, recordedAt: '2026-10-02', createdAt: NOW, source: 'manual', status: 'active', correctsId: null, externalId: null };
+      return { ...old, measurements: [ldl] } as RoadmapFile;
+    };
+    const settle = () => new Promise((resolve) => setTimeout(resolve, 50));
+
+    it('one write with no edits; reopening the written record writes nothing', async () => {
+      const dropbox = new FakeDropbox();
+      dropbox.put(await oldShape());
+      const first = await phone(dropbox);
+      await first.engine.cloudOpen('dropbox', 'ios-1', false);
+      expect(await first.engine.cloudFlush()).toBe('saved');
+      await settle();
+      expect(dropbox.uploads).toBe(1);
+      expect(dropbox.record.measurements).toEqual([]);
+      expect(dropbox.record.labValues).toEqual([expect.objectContaining({ id: 'old-ldl', metricName: 'ldl', value: 3.4, core: true, status: 'active' })]);
+      expect(first.state.pending).toBe(false);
+      await first.engine.cloudClose(false);
+
+      const second = await phone(dropbox, first.state.phoneText);
+      await second.engine.cloudOpen('dropbox', 'ios-1', false);
+      await second.engine.cloudClose(false);
+      await settle();
+      expect(dropbox.uploads).toBe(1);
+    });
+
+    it('a new-shape record writes nothing', async () => {
+      const dropbox = new FakeDropbox();
+      const web = await phone(dropbox);
+      const record = JSON.parse(web.engine.applyEditJson(web.engine.newRecordJson(NOW, 'web', 'en-NZ', 'Pacific/Auckland'), JSON.stringify({ kind: 'add', metric: 'ldl', value: 3.1, day: '2026-10-01' }), NOW, 'web')) as { record: string };
+      dropbox.put(JSON.parse(record.record) as RoadmapFile);
+      const { engine } = await phone(dropbox);
+      await engine.cloudOpen('dropbox', 'ios-1', false);
+      expect(await engine.cloudFlush()).toBe('saved');
+      await engine.cloudClose(false);
+      await settle();
+      expect(dropbox.uploads).toBe(0);
+    });
+
+    it('a write the cloud refused leaves its bytes as they were, and the next open writes', async () => {
+      const dropbox = new FakeDropbox();
+      dropbox.put(await oldShape());
+      const stored = dropbox.file!.text;
+      dropbox.uploadsWork = false;
+      const first = await phone(dropbox);
+      await first.engine.cloudOpen('dropbox', 'ios-1', false);
+      expect(await first.engine.cloudFlush()).toBe('failed');
+      await first.engine.cloudClose(false);
+      await settle();
+      expect(dropbox.file!.text).toBe(stored);
+      // Nothing lost: the moved record waits on the phone, marked for the cloud.
+      expect(first.state.pending).toBe(true);
+      expect((JSON.parse(first.state.phoneText!) as RoadmapFile).labValues.map((row) => row.id)).toEqual(['old-ldl']);
+
+      dropbox.uploadsWork = true;
+      const second = await phone(dropbox, first.state.phoneText);
+      second.state.pending = true;
+      await second.engine.cloudOpen('dropbox', 'ios-1', false);
+      expect(await second.engine.cloudFlush()).toBe('saved');
+      await settle();
+      expect(dropbox.uploads).toBe(1);
+      expect(dropbox.record.measurements).toEqual([]);
+      expect(dropbox.record.labValues.map((row) => row.id)).toEqual(['old-ldl']);
+    });
+
+    it('the next open writes even with no phone copy waiting (another iPhone)', async () => {
+      const dropbox = new FakeDropbox();
+      dropbox.put(await oldShape());
+      dropbox.uploadsWork = false;
+      const first = await phone(dropbox);
+      await first.engine.cloudOpen('dropbox', 'ios-1', false);
+      expect(await first.engine.cloudFlush()).toBe('failed');
+      await first.engine.cloudClose(false);
+      dropbox.uploadsWork = true;
+      const other = await phone(dropbox);
+      await other.engine.cloudOpen('dropbox', 'ios-2', false);
+      expect(await other.engine.cloudFlush()).toBe('saved');
+      await settle();
+      expect(dropbox.uploads).toBe(1);
+      expect(dropbox.record.measurements).toEqual([]);
+    });
   });
 
   it('R3: an edit is refused, and nothing changes, when the phone copy cannot be written', async () => {

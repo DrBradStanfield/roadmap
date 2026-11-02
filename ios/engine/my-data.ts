@@ -4,7 +4,7 @@
 // Values come in and go out in the user's units; the record stores SI. Web
 // twins: the widget's InputPanel.tsx and BloodTestTimeline.tsx, writing through
 // RoadmapStore.
-import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { createEmptyFile, type FileLabValue, type FileMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import type { Plan } from '../../packages/health-core/src/plan';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
@@ -17,7 +17,7 @@ import { stampProfile, upsertMedication, upsertSupplement } from '../../packages
 import { medicationSchema, supplementSchema, zod3Message } from '../../packages/health-core/src/validation';
 import { customSupplementAdd, customSupplementMatch } from '../../packages/health-core/src/input-form';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
-import { currentValueRows, isCoreRow } from '../../packages/health-core/src/blood-tests';
+import { bloodTableReport, currentValueRows, isCoreRow } from '../../packages/health-core/src/blood-tests';
 import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
 import { applyFormEdit, formsOf, planOf, type FormEdit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
@@ -152,8 +152,30 @@ export function readRecord(text: string, now: string, deviceId: string): Roadmap
     if (error instanceof SchemaTooNewError) throw new Refusal('A newer version of Health Roadmap wrote this record. Update the app to open it.');
     throw error;
   }
-  kept = { text, deviceId, file: FREEZE_KEPT ? deepFreeze(file) : file };
+  kept = { text, deviceId, file: FREEZE_KEPT ? deepFreeze(file) : file, moved: movedBloodTests(raw, file) };
   return file;
+}
+
+/**
+ * US-66 AC14: reading `stored`, the record as saved, moved blood tests out of
+ * `measurements` or folded old lab rows named like a core test, so `file` is
+ * written once. A moved record has nothing left to move. The web's twin:
+ * RoadmapStore.writeMovedRecord.
+ */
+export function movedBloodTests(stored: unknown, file: RoadmapFile): boolean {
+  if (typeof stored !== 'object' || stored === null) return false;
+  const rows = <T>(key: string): T[] => {
+    const list = (stored as Record<string, unknown>)[key];
+    return Array.isArray(list) ? list.filter((row): row is T => typeof row === 'object' && row !== null) : [];
+  };
+  const report = bloodTableReport({ measurements: rows<FileMeasurement>('measurements'), labValues: rows<FileLabValue>('labValues') }, file);
+  return report.moved + report.folded > 0;
+}
+
+/** The record to write once, as text, when reading `text` moved it (US-66 AC14); else null. */
+export function movedRecord(text: string, now: string, deviceId: string): string | null {
+  const file = readRecord(text, now, deviceId); // sets `kept` to this text's read
+  return kept!.moved ? JSON.stringify(file) : null;
 }
 
 /**
@@ -167,7 +189,7 @@ export function readRecord(text: string, now: string, deviceId: string): Roadmap
  * `meta.lastDeviceId`. Metadata clock recovery is deterministic even when both
  * stamps are missing or malformed, so migration never depends on `now`.
  */
-let kept: { text: string; deviceId: string; file: RoadmapFile } | null = null;
+let kept: { text: string; deviceId: string; file: RoadmapFile; moved: boolean } | null = null;
 
 /** Under the tests the kept record is frozen, so every engine test checks the
  *  read-only rule on every branch it runs (adversary R1). Never in the app. */
