@@ -268,6 +268,8 @@ export function InputPanel({
     return !bad;
   };
   const hasAutoFocusedEmail = useRef(false);
+  // The birth year's jump (Brad 2026-11-02): once per record, as the weight's is once.
+  const yearJumped = useRef(false);
   // One auto-advance instance per TARGET, so a new keystroke on any source
   // field cancels a pending advance to that target.
   const advanceToWeight = useAutoAdvance();
@@ -455,6 +457,7 @@ export function InputPanel({
   useEffect(() => {
     // An erase takes About you back to the top: the next record starts again (Codex R2).
     setVitalsLeft(aboutYouLow && !vitalsRef.current?.contains(document.activeElement));
+    if (!aboutYouLow) yearJumped.current = false;
   }, [aboutYouLow]);
   const vitalPending = (['weightKg', 'waistCm', 'systolicBp', 'diastolicBp'] as const).some(f => inputs[f] !== undefined);
   const vitalsAsRows = aboutYouLow && vitalsLeft && !vitalPending;
@@ -587,6 +590,10 @@ export function InputPanel({
   const errors = Object.fromEntries(Object.entries(allErrors).filter(([field]) => !rangeWait.waits(field)));
   const typeIn = (field: string, raw: string) => rangeWait.typed(field, raw, mayStillFit(raw, range(field).min, range(field).max));
   // Imperial height, feet then inches: could some inches still bring it in range ("1" may be 10 or 11)?
+  // The feet box hands on to the inches box: only leaving the pair shows the error (Codex R2).
+  const leaveHeightPair = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (!['heightFeet', 'heightInches'].includes((e.relatedTarget as HTMLElement | null)?.id ?? '')) rangeWait.settle();
+  };
   const heightMayFit = (feet: string, inches: string, inFeet: boolean) => {
     const { min, max } = getDisplayRange(FIELD_METRIC_MAP.heightCm!, 'si');
     const choices = inFeet || inches === '' ? [...Array(12).keys()] : inches === '1' ? [1, 10, 11] : [parseInt(inches, 10) || 0];
@@ -1056,7 +1063,8 @@ export function InputPanel({
             }}
             placeholder=""
             maxLength={1}
-            onBlur={rangeWait.settle}
+            onBlur={leaveHeightPair}
+            onKeyDown={settleOnEnter}
             className={errors.heightCm ? 'error' : ''}
           />
           <span className="height-unit">ft</span>
@@ -1088,7 +1096,8 @@ export function InputPanel({
             }}
             placeholder=""
             maxLength={2}
-            onBlur={rangeWait.settle}
+            onBlur={leaveHeightPair}
+            onKeyDown={settleOnEnter}
             className={errors.heightCm ? 'error' : ''}
           />
           <span className="height-unit">in</span>
@@ -1412,7 +1421,7 @@ export function InputPanel({
             <input
               type="number"
               id="birthYear"
-              onKeyDown={blockNonIntegerKeys}
+              onKeyDown={e => { blockNonIntegerKeys(e); settleOnEnter(e); }}
               onWheel={blurOnWheel}
               value={inputs.birthYear || ''}
               onChange={(e) => {
@@ -1422,9 +1431,11 @@ export function InputPanel({
                 updateField('birthYear', num);
                 // Brad 2026-11-02: a complete year in range, the month set, is the
                 // last answer: on to the email box, or out of the card, so About
-                // you moves without waiting for a blur. "199" never does.
+                // you moves without waiting for a blur. "199" never does, nor a
+                // returning user's edit in About you's Birth row (Codex R3).
                 const years = identityFieldRange('birthYear')!;
-                if (onAutoFocusEmail && inputs.birthMonth && num !== undefined && /^\d{4}$/.test(e.target.value) && num >= years.min && num <= years.max) {
+                if (onAutoFocusEmail && !yearJumped.current && !aboutYouLow && reached < 4 && inputs.birthMonth && num !== undefined && /^\d{4}$/.test(e.target.value) && num >= years.min && num <= years.max) {
+                  yearJumped.current = true;
                   requestAnimationFrame(() => onAutoFocusEmail(true));
                 }
               }}

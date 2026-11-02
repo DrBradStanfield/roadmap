@@ -857,8 +857,12 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       // against the record read (US-03 AC6).
       // A value out of range is never in the record (its save refused or
       // skipped it, US-02 AC5), so it rides through too, with its error.
+      // Only within one record: an erase from another device clears this
+      // device's drafts (US-11 AC6, Codex R4).
       const typing = document.activeElement?.id as keyof HealthInputs | undefined;
+      const sameRecord = erase === getShownErase();
       setInputs(prev => {
+        if (!sameRecord) return result.inputs;
         const next: Partial<HealthInputs> = typing && LONGITUDINAL_FIELDS.includes(typing) && prev[typing] !== undefined
           ? { ...result.inputs, [typing]: prev[typing] }
           : { ...result.inputs };

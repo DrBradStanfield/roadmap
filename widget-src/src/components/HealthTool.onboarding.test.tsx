@@ -13,7 +13,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
-import { localDay, ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
+import { CURRENT_SCHEMA_VERSION, localDay, migrateFile, ROADMAP_FILE_NAME, rowRootIds, type RoadmapFile } from '@roadmap/health-core';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveDocuments, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
@@ -880,7 +880,7 @@ describe('US-02 AC5: an out-of-range first-time value stays in its field, its er
     const view = await open();
     await measurements(view);
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-    birth(view);
+    birthWithoutJump(view);
     await waitFor(() => expect(q(view, '#systolicBp')).toBeTruthy());
     const sys = q(view, '#systolicBp') as HTMLInputElement;
     type(sys, '5');
@@ -985,5 +985,75 @@ describe('PR 518 review: refused and erased records', () => {
     await waitFor(() => expect(q(view, '.md-about-you')).toBeTruthy());
     expect(q(view, '#waistCm')).toBe(waist);
     expect(document.activeElement).toBe(waist);
+  });
+});
+
+describe('PR 518 Codex re-check', () => {
+  const errorsShown = (view: RenderResult) => Array.from(view.container.querySelectorAll('.error-message')).map((e) => e.textContent ?? '');
+
+  it('R3: a returning user changing Birth in About you keeps the focus in the editor (no jump to the email box)', async () => {
+    await completeRecord();
+    const view = render(<HealthTool />);
+    fireEvent.click(await waitFor(() => { const b = q(view, '#about-birth'); expect(b).toBeTruthy(); return b as HTMLElement; }));
+    const year = await waitFor(() => { const y = q(view, '[data-about="birth"] #birthYear'); expect(y).toBeTruthy(); return y as HTMLInputElement; });
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); }); // opening the row focuses its month
+    act(() => { year.focus(); });
+    fireEvent.change(year, { target: { value: '1979' } }); // as ArrowDown would
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect(document.activeElement).toBe(year);
+  });
+
+  it('R1: "199" then Enter in the birth year shows its range error', async () => {
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    fireEvent.change(q(view, '#birthMonth')!, { target: { value: '5' } });
+    const year = q(view, '#birthYear') as HTMLInputElement;
+    type(year, '199');
+    expect(errorsShown(view)).not.toContain('Birth year must be after 1900');
+    fireEvent.keyDown(year, { key: 'Enter' });
+    expect(errorsShown(view)).toContain('Birth year must be after 1900');
+  });
+
+  it('R2: imperial height, 1 ft handed on to the inches box shows no error yet', async () => {
+    const view = await open();
+    fireEvent.click(within(q(view, 'label[for="heightCm"]') as HTMLElement).getByRole('button')); // cm to ft/in
+    const feet = await waitFor(() => { const f = q(view, '#heightFeet'); expect(f).toBeTruthy(); return f as HTMLInputElement; });
+    type(feet, '1');
+    await waitFor(() => expect(document.activeElement?.id).toBe('heightInches')); // the hand-off
+    expect(errorsShown(view).filter((t) => /^Height/.test(t))).toEqual([]);
+  });
+
+  it('R4: a first-time waist of 3 left in the form goes when another device erases the record', async () => {
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    birthWithoutJump(view);
+    await waitFor(() => expect(q(view, '#waistCm')).toBeTruthy());
+    const waist = q(view, '#waistCm') as HTMLInputElement;
+    type(waist, '3');
+    leave(waist);
+    await act(async () => { await new Promise((r) => setTimeout(r, 700)); });
+    // Another device erases the record, as its deleteUserData writes it.
+    const adapter = new LocalStorageAdapter();
+    const { body, version } = await adapter.read(ROADMAP_FILE_NAME);
+    const now = new Date(Date.now() + 1000).toISOString();
+    const prior = migrateFile(body, { deviceId: 'other-device', now });
+    const erased = migrateFile(null, { deviceId: 'other-device', now });
+    const epoch = (prior.meta.eraseEpoch ?? 0) + 1;
+    erased.schemaVersion = CURRENT_SCHEMA_VERSION;
+    erased.erasedRows = { fromEpoch: epoch, ids: [...new Set(rowRootIds(prior))].sort() };
+    erased.meta.eraseEpoch = epoch;
+    erased.meta.erasedAt = now;
+    await adapter.write(ROADMAP_FILE_NAME, erased, version);
+    await act(async () => { window.dispatchEvent(new StorageEvent('storage', { key: null })); });
+    await waitFor(() => expect(fullForm(view)).toBe(false), { timeout: 3000 });
+    // The erased record's onboarding again: the old draft must not come back.
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    birthWithoutJump(view);
+    await waitFor(() => expect(q(view, '#waistCm')).toBeTruthy());
+    expect((q(view, '#waistCm') as HTMLInputElement).value).toBe('');
+    expect(errorsShown(view)).not.toContain('Waist must be at least 40 cm');
   });
 });
