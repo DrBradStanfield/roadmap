@@ -1,12 +1,12 @@
 #!/usr/bin/env tsx
-// Mint and stage the OpenAI reviewer sign-in secrets (US-32 AC38; plan:
+// Mint and stage the app reviewer sign-in secrets (US-32 AC38, AC49; plan:
 // docs/reviews/2026-10-01-chatgpt-reviewer-signin-plan.md §4.5). Brad runs it,
 // from his own machine. Two modes, so a re-mint never touches the password:
 //
 //   npx tsx tools/mcp-reviewer-token.ts --password [--username <word>]
 //     Generates the password, shows it ONCE in groups of four, and stages
 //     MCP_REVIEWER_USERNAME and MCP_REVIEWER_PASSWORD_SHA256. Or, at the hidden
-//     prompt, type the password already in the OpenAI form to stage it again.
+//     prompt, type the password already in the review form to stage it again.
 //     A new password changes the generation and ends every reviewer session.
 //
 //   npx tsx tools/mcp-reviewer-token.ts --mint [--expect <account_id>] [--app-key <key>]
@@ -40,6 +40,7 @@ const FLY_APP = 'health-tool-edu';
 export const PASSWORD_ALPHABET = 'abcdefghijkmnpqrstuvwxyz23456789'; // gitleaks:allow, not a secret: public password alphabet
 /** 26 symbols of 5 bits each: 130 bits. */
 export const PASSWORD_LENGTH = 26;
+/** Kept from OpenAI's review: the live username Anthropic's reviewer signs in with was minted with it. */
 const DEFAULT_USERNAME = 'openaireviewer';
 /** The invented reviewer record's profile (plan §4.5). Anything else is not the reviewer's folder. */
 const SYNTHETIC_PROFILE = { birthYear: 1979, heightCm: 178, sex: 'male' };
@@ -229,12 +230,12 @@ export function flag(args: string[], name: string): string | undefined {
 
 async function main(args: string[]): Promise<number> {
   if (args.includes('--password')) {
-    const existing = await prompt('Password already in the OpenAI form, to keep it (Enter for a new one): ', { hidden: true });
+    const existing = await prompt('Password already in the review form, to keep it (Enter for a new one): ', { hidden: true });
     await password({
       username: flag(args, '--username') ?? DEFAULT_USERNAME,
       existing,
       stage: stageWithFlyctl,
-      show: (grouped) => console.log(`\nThe reviewer password, shown once. Copy it to your credentials file and the OpenAI form:\n\n  ${grouped}\n`),
+      show: (grouped) => console.log(`\nThe reviewer password, shown once. Copy it to your credentials file and the review form:\n\n  ${grouped}\n`),
     });
     console.log(`Staged MCP_REVIEWER_USERNAME and MCP_REVIEWER_PASSWORD_SHA256 on ${FLY_APP}. They take effect on the next deploy.`);
     return 0;

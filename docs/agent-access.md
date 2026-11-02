@@ -162,8 +162,8 @@ someone's medical history, or lose their data at the next device sync.
    the side of their line the plan grades them (US-07 AC5). A value within one display
    step of the line can differ from a plain conversion: one step up to the line when the
    plan grades it at or above, or one more decimal place when it grades it below.
-   `get_plan`'s tool description in `mcp-tools.ts` should say this too; it stays frozen
-   while OpenAI reviews the app, so add it once that review is done.
+   `get_plan`'s tool description in `mcp-tools.ts` should say this too. It was held for
+   OpenAI's review, which ended 2026-10-29; adding it is open work (an agent-contract change).
    **Blood pressure (US-02 AC8):** on any day, the active `systolic_bp` must be above the
    active `diastolic_bp`. A write that would leave it at or below is refused
    (`out-of-range`). To change both numbers one at a time, change the bottom number
