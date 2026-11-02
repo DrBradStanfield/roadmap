@@ -17,8 +17,13 @@ import {
   METRIC_LABELS,
   reportedToCanonical,
   UNIT_DEFS,
+  formatLabValue,
   rowTarget,
+  type GradeStatus,
   LIMIT_NOT_GRADED,
+  limitUngraded,
+  savedLabText,
+  savedStatus,
 } from '@roadmap/health-core';
 import { formatShortDate, MONTHS_SHORT } from '../lib/constants';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
@@ -31,20 +36,15 @@ import type { CorrectStatus } from '../storage/roadmap-store';
 import {
   type CellUnit,
   type Grading,
-  type Status,
   blockBadNumericKeys,
   cellFromSI,
   cellLabel,
   cellText,
   cellToSI,
-  formatLabValue,
-  limitUngraded,
   readTypedValue,
   readNumericCell,
   sameAsSaved,
   savedCellText,
-  savedLabText,
-  savedStatus,
   trendGeometry,
   validateTypedValue,
 } from '../lib/blood-test-cell';
@@ -750,7 +750,7 @@ interface ValueCellProps {
    *  than one unit). */
   unit?: string;
   rowId?: string;
-  status: Status;
+  status: GradeStatus;
   pinned: boolean;
   onActivate?: () => void;
   onDeactivate?: () => void;

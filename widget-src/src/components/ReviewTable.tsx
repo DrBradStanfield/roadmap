@@ -27,8 +27,8 @@ import {
 } from '@roadmap/health-core';
 import { getCurrentDateValue } from './DatePicker';
 import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, DocumentResult, UploadHistory } from '../lib/api-types';
-import { pendingRowsFor, rowTarget, type RefusedLabValue } from '@roadmap/health-core';
-import { labUnitRefusalLine, labValueLabel } from '../lib/lab-value-labels';
+import { labValueLabel, pendingRowsFor, rowTarget, type RefusedLabValue } from '@roadmap/health-core';
+import { labUnitRefusalLine } from '../lib/lab-value-labels';
 import { unarchivedOriginals } from '../lib/archive-payloads';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
 import { type CellUnit, type Grading, cellLabel, cellNumber, cellText, cellToSI, hasNumericSyntax, NUMERIC_SYNTAX_GUIDANCE, readNumericCell, readTypedValue, validateTypedValue } from '../lib/blood-test-cell';

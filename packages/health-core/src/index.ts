@@ -262,6 +262,7 @@ export { STAT_CARD_EVIDENCE, getIbwEvidence, getProteinEvidence, getBmiEvidence 
 export type { RefHint, SexedRefHint } from './reference-hints';
 export { REFERENCE_HINTS, refLineFor } from './reference-hints';
 export { type Grading, type RowTarget, type RowTargetPlan, type RowSubject, TARGET_NEEDS_HEIGHT, TARGET_NEEDS_SEX, healthyWaistBelow, rowTarget } from './row-target';
+export { type GradeStatus, type GradeContext, statusOf, bpStatus, simpleStatus, valueStatus, pressureStatus, gradeWords, savedStatus, limitUngraded } from './row-grade';
 export { type CellUnit, isLpaUnit, recordLpaUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel, cellRange, cellNumber, limitCellText } from './cell-unit';
 
 // Sentry PII/PHI scrubbing
@@ -388,6 +389,23 @@ export {
   type LabGroup,
   type LabGroupId,
 } from './lab-catalog';
+
+// US-21 lab tests beyond the core 8, grouped into series (the web's tables and rows, the iPhone's rows)
+export {
+  groupLabValues,
+  labValueLabel,
+  formatLabValue,
+  savedLabText,
+  labSeriesRows,
+  type LabSeriesRow,
+  type LabRowsGroupId,
+  type LabRowsIcon,
+  type LabSeriesPoint,
+  type LabSeries,
+  type LabValueGroup,
+  type LabValueRow,
+} from './lab-series';
+export { trendWindow, recentTrend } from './recent-trend';
 
 // chat-history.json — chat conversations synced to the user's own cloud (Phase 6)
 export {
