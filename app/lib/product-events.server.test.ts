@@ -990,11 +990,15 @@ describe('the upload outcome counter (US-12 AC10)', () => {
     expect(parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata })).toMatchObject({ metadata });
   });
 
+  // Brad 2026-11-02, on pregnancy, fertility and sex-hormone tests: "Name them."
+  it('US-12 AC20: takes a pregnancy or sex-hormone test by its catalogue key, like any other', () => {
+    const metadata = { picked: 1, valuesLimit: 2, valuesLimitUngraded: 2, limitUngradedTests: ['estradiol', 'hcg'] };
+    expect(parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata })).toMatchObject({ metadata });
+  });
+
   it('US-12 AC20: refuses free text, an unknown key, a value, a unit, a comparator, a repeat or an unsorted list', () => {
     for (const limitUngradedTests of [
       ['HDL Cholesterol'], ['vitamin q'], ['hdl > 1.5'], [1.5], ['1.5'], ['mmol/L'], ['>'], ['2026-08-01'], ['ldl', 'ldl'], ['ldl', 'egfr'], [], 'ldl',
-      // Pregnancy, fertility and sex-hormone tests are never named (orchestrator, 2026-11-02).
-      ['hcg'], ['estradiol'], ['testosterone_total'], ['amh'],
     ]) {
       expect(
         parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata: { picked: 1, limitUngradedTests } }),

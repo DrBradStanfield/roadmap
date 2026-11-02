@@ -1323,20 +1323,20 @@ describe('US-12 AC19: a value not saved is named, with why', () => {
   });
 });
 
-// US-12 AC20 usage signal; adversary review of 0a2b89b0 (R8): pregnancy, fertility
-// and sex-hormone tests are never named, only counted as "other".
+// US-12 AC20 usage signal. Brad 2026-11-02, on pregnancy, fertility and
+// sex-hormone tests: "Name them." Only a test the catalogue does not know is "other".
 describe('US-12 AC20: uploadLimitSignal', () => {
-  it('counts limits, the undecided ones, and their keys; a sex-hormone or pregnancy test is "other"', () => {
+  it('counts limits, the undecided ones, and their keys; a pregnancy or sex-hormone test is named; an unknown test is "other"', () => {
     const signal = uploadLimitSignal([{
       values: [{ metric: 'ldl', valueSI: 1.5, comparator: '<' }, { metric: 'lpa', valueSI: 10, comparator: '<' }, { metric: 'hdl', valueSI: 1.2 }],
       additionalValues: [
         { name: 'hCG', value: 20, comparator: '<', referenceLow: null, referenceHigh: 10 },
         { name: 'Estradiol', value: 100, comparator: '<', referenceLow: 50, referenceHigh: 400 },
         { name: 'ferritin', value: 5, comparator: '<', referenceLow: 30, referenceHigh: 300 },
+        { name: 'Made-up marker 7', value: 3, comparator: '<', referenceLow: 1, referenceHigh: 5 },
       ],
     }]);
-    expect(signal).toEqual({ valuesLimit: 5, valuesLimitUngraded: 3, limitUngradedTests: ['ldl', 'other'] });
-    for (const key of ['hcg', 'estradiol', 'testosterone_total', 'progesterone', 'amh', 'shbg']) expect(LIMIT_TEST_WORDS, key).not.toContain(key);
-    expect(LIMIT_TEST_WORDS).toContain('ferritin');
+    expect(signal).toEqual({ valuesLimit: 6, valuesLimitUngraded: 4, limitUngradedTests: ['estradiol', 'hcg', 'ldl', 'other'] });
+    for (const key of ['hcg', 'estradiol', 'testosterone_total', 'progesterone', 'amh', 'shbg', 'ferritin']) expect(LIMIT_TEST_WORDS, key).toContain(key);
   });
 });
