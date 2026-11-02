@@ -727,8 +727,10 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
   // The connector (`metadata`, its prompt alone) refuses only a urine or ratio
   // unit; a blank or unknown one is inferred and stored in SI, as before (D7a,
   // Brad 2026-10-20: "save it as SI unit"; US-12 AC15).
+  const creatinineUnitRefused = (v: { value: number; unit: string }) =>
+    !readPrintedUnit('creatinine', v.value, v.unit) && !(mode === 'metadata' && !isUrineOrRatioUnit(v.unit));
   const refusesCreatinine = (v: { value: number; unit: string; recordedAt?: string; printedMonth?: string }) => {
-    if (readPrintedUnit('creatinine', v.value, v.unit) || (mode === 'metadata' && !isUrineOrRatioUnit(v.unit))) return false;
+    if (!creatinineUnitRefused(v)) return false;
     refusedValues.push({
       metric: 'creatinine', value: v.value, unit: v.unit, reason: creatinineRefusal(v.unit),
       ...(v.recordedAt ? { recordedAt: v.recordedAt } : null), ...(v.printedMonth ? { printedMonth: v.printedMonth } : null),
@@ -770,23 +772,24 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
   // Each row's destination first; then a row re-filed into another core metric
   // takes that slot only if no row that kept its own metric holds it that day,
   // and only the first such row does.
-  const reportDayOf = (d?: string) => (!d || d === parsed.reportDate ? '' : d);
+  const reportDayOf = (d?: string) => (!d || d === reportDay ? '' : d);
   const planned = parsed.values.map(v => {
     const printedName = printedOf(v);
-    if (!printedName) return { v, to: v.metric, lab: false };
+    if (!printedName) return { v, printedName, to: v.metric, lab: false };
     const name = filingName(v.metric, printedName);
     const filed = resolveName(name);
     return filed?.kind === 'core' ? { v, printedName, to: filed.metric, lab: false }
       : { v, printedName, to: name, lab: name !== v.metric };
   });
-  const held = new Set(planned.filter(p => !p.lab && p.to === p.v.metric).map(p => `${p.to}@${reportDayOf(p.v.recordedAt)}`));
+  // A model creatinine its unit check will refuse holds no slot.
+  const held = new Set(planned.filter(p => !p.lab && p.to === p.v.metric && !(p.to === 'creatinine' && creatinineUnitRefused(p.v))).map(p => `${p.to}@${reportDayOf(p.v.recordedAt)}`));
   const coreIn: typeof parsed.values = [];
   const labIn: typeof parsed.additionalValues = [];
   for (const { v, printedName, to, lab } of planned) {
     if (lab) {
       labIn.push({ name: to, value: v.value, unit: v.unit, referenceLow: null, referenceHigh: null, recordedAt: v.recordedAt, printedMonth: v.printedMonth, printedName });
     } else if (to === v.metric || held.has(`${to}@${reportDayOf(v.recordedAt)}`)) {
-      coreIn.push(printedName ? { ...v, printedName } : v);
+      coreIn.push({ ...v, printedName });
     } else {
       held.add(`${to}@${reportDayOf(v.recordedAt)}`);
       coreIn.push({ ...v, metric: to, printedName });
@@ -794,7 +797,7 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
   }
   for (const v of parsed.additionalValues) {
     const printedName = printedOf(v);
-    labIn.push(printedName ? { ...v, name: filingName(v.name, printedName), printedName } : v);
+    labIn.push(printedName ? { ...v, name: filingName(v.name, printedName), printedName } : { ...v, printedName });
   }
   const coreRows = isLab ? coreIn.flatMap(ownDay).filter(v => v.metric !== 'creatinine' || !refusesCreatinine(v)).map(exactMmol) : [];
   const slot = (metric: string, day?: string) => `${metric}@${day ?? ''}`;

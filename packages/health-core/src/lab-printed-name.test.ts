@@ -213,3 +213,24 @@ describe('US-07 AC10 Codex re-check fixes', () => {
   });
 });
 
+describe('US-07 AC10 adversary re-check fixes', () => {
+  it('the connector (metadata) drops a printed name the model sent unasked, on core and lab rows', () => {
+    const result = extract({ values: [core('ldl', 'LDL Cholesterol')], additionalValues: [lab('urine_creatinine', 'Creatinine', 9.8, 'mmol/L')] }, 'metadata');
+    expect(result.values.map((v) => v.printedName)).toEqual([undefined]);
+    expect(result.additionalValues.map((r) => [r.name, r.printedName])).toEqual([['urine_creatinine', undefined]]);
+  });
+
+  it('a report date sent with a time keys days as ownDay does: no two rows in one core slot', () => {
+    const result = toUnifiedResult(parseUnifiedResult({
+      classification: 'lab_report', reportDate: '2026-10-30T09:00:00', document: null, additionalValues: [],
+      values: [{ ...core('hdl', 'HDL', 1.3), recordedAt: '2026-10-30' }, core('ldl', 'HDL Cholesterol', 2.8)],
+    }), 'full');
+    expect(result.values.filter((v) => v.metric === 'hdl')).toHaveLength(1);
+  });
+
+  it('a model creatinine its unit check refuses holds no slot: a printed creatinine can take it', () => {
+    const result = extract({ values: [core('creatinine', 'Creatinine ratio', 3.1, 'mg/mmol'), core('ldl', 'Creatinine', 82, 'µmol/L')] });
+    expect(result.values.map((v) => [v.metric, v.displayValue])).toEqual([['creatinine', 82]]);
+  });
+});
+
