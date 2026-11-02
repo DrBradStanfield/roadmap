@@ -66,7 +66,7 @@ Mirrors the reminder cron skeleton:
 5. On lock acquisition: query Shopify Admin, compute, write metafield.
 6. Sentry instrumentation: `tags: { feature: 'trending_cron' }`.
 
-The lock is row-keyed by `lock_name`. Reminder uses `'reminder_cron'`, trending uses `'trending_cron'`. Lock names are typed as `CronLockName` (union) — see [app/lib/supabase.server.ts:1747](../app/lib/supabase.server.ts#L1747). New crons must add their lock name to the union AND seed a row alongside the existing entries in [supabase/rls-policies.sql](../supabase/rls-policies.sql) (around line 511); a typo silently disables the cron.
+The lock is row-keyed by `lock_name`. Reminder uses `'reminder_cron'`, trending uses `'trending_cron'`. Lock names are typed as `CronLockName` (union) — see [app/lib/supabase.server.ts:1747](../app/lib/supabase.server.ts#L1747). New crons must add their lock name to the union AND seed a row alongside the existing entries in [supabase/rls-policies.sql](../supabase/rls-policies.sql) (its Cron lock table section); a typo silently disables the cron.
 
 ## ShopifyQL query
 

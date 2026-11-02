@@ -207,6 +207,26 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertNotNil(store.correctionHint(for: value.id, metric: "weight", unit: fresh.unit, on: store.screen))
     }
 
+    /// US-25 AC25 (review R2): a lab correction's hint is the tapped row's value, in that row's own
+    /// unit, and none in another: the older zinc row at 12 µmol/L in a series now reported in µg/dL.
+    func testALabCorrectionHintIsInTheRowsOwnUnit_US25_AC25() async throws {
+        let engine = try HealthEngine()
+        let now = Date()
+        let fresh = try engine.blocking { [now] in try $0.newRecord(now: now, deviceId: "test", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!) }
+        var record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(fresh.utf8)) as? [String: Any])
+        let lab = { (id: String, value: Double, unit: String, day: String) -> [String: Any] in
+            ["id": id, "metricName": "zinc_custom", "value": value, "unit": unit, "referenceLow": NSNull(), "referenceHigh": NSNull(),
+             "recordedAt": "\(day)T00:00:00.000Z", "createdAt": "\(day)T09:00:00.000Z", "source": "lab_import", "status": "active", "correctsId": NSNull()]
+        }
+        record["labValues"] = [lab("z1", 12, "µmol/L", "2026-08-01"), lab("z2", 80, "µg/dL", "2026-09-01")]
+        try JSONSerialization.data(withJSONObject: record).write(to: file)
+        let store = try store()
+        _ = await store.chart(for: "zinc custom", series: "lab")
+        XCTAssertEqual(store.correctionHint(for: "z1", metric: "zinc custom", series: "lab", unit: "µmol/L", on: store.screen), "12")
+        XCTAssertNil(store.correctionHint(for: "z1", metric: "zinc custom", series: "lab", unit: "µg/dL", on: store.screen), "never in another unit")
+        XCTAssertNil(store.correctionHint(for: "z1", metric: "zinc custom", unit: "µmol/L", on: store.screen), "nor from a core history of that name")
+    }
+
     /// Re-check N2: the revision moves only when the record or the per-test units change,
     /// so a page keyed on it never asks the engine again for nothing.
     func testTheRevisionMovesOnlyOnAChange() async throws {

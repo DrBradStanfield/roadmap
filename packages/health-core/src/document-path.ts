@@ -90,7 +90,9 @@ export function buildDocumentRef(opts: {
   const date = opts.date && isCalendarDay(opts.date) ? opts.date : localDay(new Date());
   let base = `${date} ${sanitizeTitle(opts.title)}`;
   if (base.length + ext.length > MAX_NAME_LENGTH) {
-    base = base.slice(0, MAX_NAME_LENGTH - ext.length).trimEnd();
+    // A cut between the two halves of an emoji keeps half a character, which
+    // no URL can carry: drop the half (US-14 AC6).
+    base = base.slice(0, MAX_NAME_LENGTH - ext.length).replace(/[\uD800-\uDBFF]$/, '').trimEnd();
   }
 
   const taken = new Set<string>();

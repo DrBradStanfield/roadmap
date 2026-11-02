@@ -192,6 +192,45 @@ export function bandDecides(cutoffs: readonly number[], comparator: Comparator, 
   }
 }
 
+/** How far inside a strict bound a limit's grade is read: never across a line. */
+const insideStep = (bound: number) => Math.max(1e-6, Math.abs(bound) * 1e-6);
+
+/**
+ * The one rule for grading a value printed as a limit against a grade's own
+ * lines (Brad 2026-11-02, "grade only when certain", US-12 AC21): when no
+ * line lies inside the band the limit leaves open (`bandDecides`), every
+ * value the limit allows grades the same, so the grade may read the number a
+ * hair inside the band, returned here; null when a line lies inside it, so
+ * the value gets no grade. An exact value (no comparator) is itself. Never
+ * shown, stored or sent.
+ */
+export function certainValue(lines: readonly number[], comparator: Comparator | undefined, bound: number): number | null {
+  if (!comparator) return bound;
+  if (!Number.isFinite(bound) || !bandDecides(lines, comparator, bound)) return null;
+  return comparator === '<' || comparator === '<=' ? bound - insideStep(bound) : bound + insideStep(bound);
+}
+
+/**
+ * How many of a grade's lines the values a reading allows have reached
+ * (a line is reached at or above it): [fewest, most], worked out exactly from
+ * which side of each line the bound lies and whether it is strict, never by
+ * nudging a number. An exact value reaches the lines at or below it; "< b"
+ * reaches at most those strictly below b, "<= b" those at or below b; "> b"
+ * and ">= b" reach at least those at or below b, and every line at most. For
+ * a grade that is the count of lines reached (a blood pressure half's), the
+ * grade is certain when the two agree (US-12 AC21).
+ */
+export function linesReached(lines: readonly number[], comparator: Comparator | undefined, bound: number): [number, number] {
+  const below = lines.filter((line) => line < bound).length;
+  const atOrBelow = lines.filter((line) => line <= bound).length;
+  switch (comparator) {
+    case '<': return [0, below];
+    case '<=': return [0, atOrBelow];
+    case '>': case '>=': return [atOrBelow, lines.length];
+    default: return [atOrBelow, atOrBelow];
+  }
+}
+
 /**
  * A non-core lab graded by its printed reference range: the number it is
  * graded with, a hair inside the band, when no bound of the range lies in
@@ -201,9 +240,7 @@ export function referenceGradeValue(limit: Pick<InputLimit, 'comparator' | 'boun
   // A bound of exactly 0 is no cutoff: CRP's printed "0-5" must not leave every "< x" undecided.
   // A negative bound is one (base excess "-2 to 2").
   const cutoffs = [referenceLow, referenceHigh].filter((c): c is number => typeof c === 'number' && Number.isFinite(c) && c !== 0);
-  if (!bandDecides(cutoffs, limit.comparator, limit.bound)) return null;
-  const step = Math.max(1e-6, Math.abs(limit.bound) * 1e-6);
-  return limit.comparator === '<' || limit.comparator === '<=' ? limit.bound - step : limit.bound + step;
+  return certainValue(cutoffs, limit.comparator, limit.bound);
 }
 
 /**

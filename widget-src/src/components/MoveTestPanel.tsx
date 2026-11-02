@@ -6,11 +6,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  METRIC_LABELS, METRIC_TO_FIELD,
+  METRIC_LABELS, METRIC_TO_FIELD, isCoreRow, labValueLabel, savedLabText,
   type FileLabValue, type FileMeasurement, type MetricType, type MoveKeep, type MovePlan, type MoveRejection, type UnitSystem,
 } from '@roadmap/health-core';
-import { cellLabel, savedCellText, savedLabText, type CellUnit } from '../lib/blood-test-cell';
-import { labValueLabel } from '../lib/lab-value-labels';
+import { cellLabel, savedCellText, type CellUnit } from '../lib/blood-test-cell';
 import { lpaRowsToCheck, useLpaKept, useLpaUnit } from '../lib/lpa-unit';
 import type { MoveOutcome } from '../storage/roadmap-store';
 import { SAVE_ERRORS, headerDay, useLiveRegion } from './BloodTestTimeline';
@@ -41,7 +40,13 @@ export const MOVE_LPA = "First answer the question about this test's Lp(a) resul
 /** "21 Feb '24", as the column headers read. */
 const shortDay = (day: string) => headerDay(day).join(' ');
 
-const nameOf = (row: Row) => ('metricType' in row ? METRIC_LABELS[row.metricType] ?? row.metricType : labValueLabel(row.metricName));
+/** The core test a row is, or null for an extra lab row: a core blood test is a flagged lab row (US-66 AC1). */
+const coreOf = (row: Row): MetricType | null => ('metricName' in row && isCoreRow(row) ? row.metricName as MetricType : null);
+
+const nameOf = (row: Row) => {
+  const metric = coreOf(row);
+  return metric ? METRIC_LABELS[metric] ?? metric : labValueLabel((row as FileLabValue).metricName);
+};
 
 function refusalText(refusal: MoveRejection): string {
   switch (refusal.reason) {
@@ -117,8 +122,8 @@ function MoveTestPanel({ from, to, api, unitSystem, unitOverrides, bloodTestHist
 
   const unitOf = (metric: MetricType): CellUnit => (metric === 'lpa' ? lpaUnit : unitOverrides?.[METRIC_TO_FIELD[metric]] ?? unitSystem);
   const valueOf = (row: Row) => {
-    if (!('metricType' in row)) return `${savedLabText(row.value, row.comparator)} ${row.unit}`;
-    const metric = row.metricType as MetricType; // a blood test row's, by the plan
+    const metric = coreOf(row);
+    if (!metric) return `${savedLabText(row.value, row.comparator)} ${(row as FileLabValue).unit}`;
     const unit = unitOf(metric);
     return `${savedCellText(metric, row.value, unit, row.comparator)} ${cellLabel(metric, unit)}`;
   };
@@ -147,7 +152,8 @@ function MoveTestPanel({ from, to, api, unitSystem, unitOverrides, bloodTestHist
   };
 
   // The Lp(a) check reads a row's createdAt, which the moved row would lose (adversary R1).
-  const lpaWaits = !refused && lpaRowsToCheck(plan.rows.filter((r): r is FileMeasurement => 'metricType' in r && r.metricType === 'lpa'), unitSystem).length > 0;
+  // A moved Lp(a) row is a core lab row; the check reads it as the measurement it was (US-66 AC9).
+  const lpaWaits = !refused && lpaRowsToCheck(plan.rows.filter(r => coreOf(r) === 'lpa').map(r => ({ ...r, metricType: 'lpa' })), unitSystem).length > 0;
   const answered = !refused && plan.clashes.every(c => answers[c.held.id]);
 
   const press = async () => {

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/health-roadmap-file.schema.json",
   "title": "Health Roadmap record file",
-  "description": "The complete health record for one user: a single JSON document named health-roadmap.json, stored in the user's own cloud (Google Drive, Dropbox, GitHub, WebDAV) or in browser localStorage. Never on our server. Derived from packages/health-core/src/roadmap-file.ts at schemaVersion 2. Unknown properties are preserved on read and write (forward-compatibility rule 1 in migrate.ts), so every object here allows extra keys. Timestamps are ISO 8601 strings. `meta.createdAt`/`meta.updatedAt` use the row stamp grammar on read: an invalid stamp takes its valid companion; if neither is valid, both take the latest valid known stored clock, with the Unix epoch as the floor/default. Mutable row and field `updatedAt` stamps are validated and clamped to the later normalized metadata stamp. Immutable measurement/lab `createdAt` and document `addedAt` are kept as written; a future clinical `createdAt` can take its day slot, so agents must never write one. This schema does not require a timestamp format. Agents: see docs/agent-access.md for the read/write rules.",
+  "description": "The complete health record for one user: a single JSON document named health-roadmap.json, stored in the user's own cloud (Google Drive, Dropbox, GitHub, WebDAV) or in browser localStorage. Never on our server. Derived from packages/health-core/src/roadmap-file.ts at schemaVersion 3. Unknown properties are preserved on read and write (forward-compatibility rule 1 in migrate.ts), so every object here allows extra keys. Timestamps are ISO 8601 strings. `meta.createdAt`/`meta.updatedAt` use the row stamp grammar on read: an invalid stamp takes its valid companion; if neither is valid, both take the latest valid known stored clock, with the Unix epoch as the floor/default. Mutable row and field `updatedAt` stamps are validated and clamped to the later normalized metadata stamp. Immutable measurement/lab `createdAt` and document `addedAt` are kept as written; a future clinical `createdAt` can take its day slot, so agents must never write one. This schema does not require a timestamp format. Agents: see docs/agent-access.md for the read/write rules.",
   "type": "object",
   "required": [
     "schemaVersion",
@@ -22,14 +22,14 @@
   "properties": {
     "schemaVersion": {
       "type": "integer",
-      "enum": [1, 2],
-      "description": "On-disk shape version. A file with a HIGHER version than the reading app understands must not be rewritten — migrate.ts throws SchemaTooNewError rather than downgrade it. 2 marks a file that carries `erasedRows`; every other file is 1 (US-09 AC23)."
+      "enum": [1, 2, 3],
+      "description": "On-disk shape version. A file with a HIGHER version than the reading app understands must not be rewritten — migrate.ts throws SchemaTooNewError rather than downgrade it. 3 marks a file that holds a core blood row (a labValues row with `core: true`, any status; US-66 AC15); 2 a file that carries `erasedRows` and no core row (US-09 AC23); every other file is 1. A version is never lowered."
     },
     "meta": { "$ref": "#/$defs/RoadmapFileMeta" },
     "profile": { "$ref": "#/$defs/RoadmapProfile" },
     "measurements": {
       "type": "array",
-      "description": "Append-only. Core metric values in SI canonical units.",
+      "description": "Append-only. Vitals only since US-66: weight, waist and blood pressure, in SI canonical units. A blood test found here is moved to labValues on read.",
       "items": { "$ref": "#/$defs/FileMeasurement" }
     },
     "medications": {
@@ -76,8 +76,19 @@
     "reminderOptIn": { "$ref": "#/$defs/FileReminderOptIn" },
     "erasedRows": { "$ref": "#/$defs/ErasedRows" }
   },
-  "if": { "required": ["erasedRows"] },
-  "then": { "properties": { "schemaVersion": { "const": 2 } } },
+  "allOf": [
+    {
+      "if": { "required": ["erasedRows"] },
+      "then": { "properties": { "schemaVersion": { "enum": [2, 3] } } }
+    },
+    {
+      "if": {
+        "required": ["labValues"],
+        "properties": { "labValues": { "contains": { "type": "object", "required": ["core"], "properties": { "core": { "const": true } } } } }
+      },
+      "then": { "properties": { "schemaVersion": { "const": 3 } } }
+    }
+  ],
   "$defs": {
     "RoadmapFileMeta": {
       "type": "object",
@@ -101,11 +112,11 @@
 
     "ErasedRows": {
       "type": "object",
-      "description": "Which rows the erases removed (US-09 AC23). Sync bookkeeping: never write or edit it. Every reader drops a row whose root id is listed (the id without any `#dup-…` or `#si` suffix), from every array that carries ids, so an erased row never comes back. A malformed list is dropped whole on read. A file that carries it is schemaVersion 2.",
+      "description": "Which rows the erases removed (US-09 AC23). Sync bookkeeping: never write or edit it. Every reader drops a row whose root id (the id without any `#dup-…`, `#si`, `#core` or `#mv-…` suffix) is the root of a listed id (an older app lists a moved row under its own id), from every array that carries ids, so an erased row never comes back. A malformed list is dropped whole on read. A file that carries it is schemaVersion 2.",
       "required": ["fromEpoch", "ids"],
       "properties": {
         "fromEpoch": { "type": "integer", "minimum": 1, "description": "Every erase from this epoch up to `meta.eraseEpoch` listed its ids; `eraseEpoch + 1` claims nothing. Read only if at most `eraseEpoch + 1`." },
-        "ids": { "type": "array", "items": { "type": "string" }, "description": "The root id of every row an erase removed, sorted and unique." }
+        "ids": { "type": "array", "items": { "type": "string" }, "description": "The root id of every row an erase removed, and a moved row's own id, sorted and unique." }
       }
     },
 
@@ -207,7 +218,7 @@
         "externalId"
       ],
       "properties": {
-        "id": { "type": "string", "description": "Stable unique id. Write a fresh UUID; never reuse one. Read ids as opaque strings: an id containing '#dup-' is a quarantined duplicate the merge created after an id was reused with different content — never write one yourself." },
+        "id": { "type": "string", "description": "Stable unique id. Write a fresh UUID; never reuse one. Read ids as opaque strings: an id containing '#dup-' is a quarantined duplicate the merge created after an id was reused with different content, and an id containing '#mv-' is the app's moved copy of a blood test — never write either one yourself." },
         "metricType": { "$ref": "#/$defs/MetricType" },
         "value": { "type": "number", "description": "SI canonical unit: kg, cm, mmHg, mmol/mol (HbA1c), mmol/L (lipids), g/L (ApoB), µmol/L (creatinine), ng/mL (PSA), nmol/L (Lp(a))." },
         "recordedAt": {
@@ -232,7 +243,7 @@
 
     "FileLabValue": {
       "type": "object",
-      "description": "One immutable lab row for a test outside the core metrics. Same append-only rules as a measurement.",
+      "description": "One immutable blood-test row. Since US-66 every blood test lives here: a core test (`core: true`, metricName the core key, unit its SI unit) or any other test. Same append-only rules as a measurement.",
       "required": [
         "id",
         "metricName",
@@ -247,7 +258,7 @@
         "correctsId"
       ],
       "properties": {
-        "id": { "type": "string", "description": "Stable unique id. Write a fresh UUID; never reuse one. An id containing '#dup-' is a merge-quarantined duplicate, and an id ending '#si' is the app's own unit conversion of the row it corrects — never write either one yourself." },
+        "id": { "type": "string", "description": "Stable unique id. Write a fresh UUID; never reuse one. An id containing '#dup-' is a merge-quarantined duplicate, an id ending '#si' is the app's own unit conversion of the row it corrects, and an id containing '#mv-' is the app's moved copy of a blood test — never write any of them yourself." },
         "metricName": {
           "type": "string",
           "description": "Prefer a catalogue key from packages/health-core/src/lab-catalog.ts (e.g. 'ferritin'). Free text otherwise. Slot key is (metricName, day of recordedAt)."
@@ -265,6 +276,7 @@
           "type": ["string", "null"],
           "description": "Optional. Id and version in the originating system, used for dedup: for a Health Records result, its HealthKit source, resource type and FHIR id, then '#' and its version; a version marker (a row born entered-in-error that only records a version) adds '|m'. Absent on most rows; keep it when you copy a row, never write one yourself."
         },
+        "core": { "const": true, "description": "Present only on a core blood value (US-66): `metricName` is its core key and `unit` its canonical unit. A file holding one is schemaVersion 3." },
         "comparator": { "enum": ["<", "<=", ">", ">="], "description": "Present only on a lab result printed as a limit ('> 60', '<5'; FHIR Quantity.comparator): `value` is then the printed bound, not the result. '<=' and '>=' are the codes for a printed ≤ and ≥. Absent means an exact value. Only a lab upload writes it; a correction is an exact value and carries none. Any other value makes the row unreadable to the app, which keeps it unchanged." }
       }
     },

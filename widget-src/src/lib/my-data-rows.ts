@@ -1,8 +1,8 @@
 // Pure helpers for the phone's My data rows and value pages (US-62 AC8-AC10):
-// one reading per day, newest first, the trend the iPhone draws, and the
-// row's "Oct 2026" date. Data in, data out.
+// one reading per day, newest first, and the row's "Oct 2026" date (the
+// trend's window is health-core's `recentTrend`). Data in, data out.
 
-import { comparatorOf, localDay, type ApiMeasurement, type Comparator } from '@roadmap/health-core';
+import { comparatorOf, type ApiMeasurement, type Comparator } from '@roadmap/health-core';
 import { activeRowIndex } from './matrix-save';
 
 /** One day's active value: a metric's row, or a blood pressure's two halves. */
@@ -10,7 +10,7 @@ export interface DayReading {
   day: string; // yyyy-mm-dd
   id: string;
   value: number; // as stored: SI for a core metric, the systolic half of a pressure
-  dia?: { id: string; value: number };
+  dia?: { id: string; value: number; comparator?: Comparator };
   /** Printed as a limit: `value` is its bound (US-12 AC20). */
   comparator?: Comparator;
 }
@@ -32,20 +32,8 @@ export function pressureReadings(history: ApiMeasurement[]): DayReading[] {
   const dia = new Map(readingsOf(history, 'diastolic_bp').map(r => [r.day, r]));
   return readingsOf(history, 'systolic_bp').flatMap(sys => {
     const d = dia.get(sys.day);
-    return d ? [{ ...sys, dia: { id: d.id, value: d.value } }] : [];
+    return d ? [{ ...sys, dia: { id: d.id, value: d.value, ...comparatorOf(d) } }] : [];
   });
-}
-
-/** The recent days, oldest first, as the iPhone's rows draw them (US-25
- *  AC17f, ios/engine/my-data.ts `trends`): the last 30 days, today
- *  included, or the last seven days however old when those 30 hold fewer
- *  than two. A day after today is left out. `readings` newest first. */
-export function recentTrend(readings: DayReading[], now = new Date()): DayReading[] {
-  const today = localDay(now);
-  const from = new Date(Date.parse(today) - 29 * 86_400_000).toISOString().slice(0, 10);
-  const past = readings.filter(r => r.day <= today).reverse();
-  const recent = past.filter(r => r.day >= from);
-  return recent.length >= 2 ? recent : past.slice(-7);
 }
 
 /** A row's date: "Oct 2026", the day it is filed under. */

@@ -18,7 +18,7 @@ import { MemoryAdapter, MemoryCloud, LocalStorageAdapter } from '../src/storage'
 import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core';
 import { RoadmapStore, PENDING_MIRROR_KEY } from '../src/storage/roadmap-store';
 import { migrateLocalInto, copyDownFrom, liftLocalInto } from './connect';
-import { createEmptyFile } from '@roadmap/health-core';
+import { createEmptyFile, toOldShape } from '@roadmap/health-core';
 
 function readCloudFile(cloud: MemoryCloud): RoadmapFile {
   return JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
@@ -74,7 +74,7 @@ describe('connect helpers lift/copy real data (US-09 AC2/AC3)', () => {
 
     await migrateLocalInto(new MemoryAdapter(cloud));
 
-    const rows = readCloudFile(cloud).measurements.map((m) => [m.metricType, m.value]).sort();
+    const rows = toOldShape(readCloudFile(cloud)).measurements.map((m) => [m.metricType, m.value]).sort();
     expect(rows).toEqual([['ldl', 3.2], ['weight', 80]]);
   });
 
@@ -125,7 +125,7 @@ describe('connect helpers lift/copy real data (US-09 AC2/AC3)', () => {
     await copyDownFrom(new MemoryAdapter(cloud));
 
     const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
-    const rows = (body as RoadmapFile).measurements.map((m) => [m.metricType, m.value]).sort();
+    const rows = toOldShape(body as RoadmapFile).measurements.map((m) => [m.metricType, m.value]).sort();
     expect(rows).toEqual([['ldl', 3.2], ['weight', 80]]);
   });
 

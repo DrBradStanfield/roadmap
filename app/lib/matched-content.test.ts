@@ -12,7 +12,8 @@ import { isMaster, loadBlogIndex, type BlogIndexEntry } from './blog-index.serve
 
 const index = loadBlogIndex();
 const video = index.find(e => e.youtube && e.commerceUrl)!;
-const guideline = index.find(e => e.type === 'guideline')!;
+// Not a condition guide: those load first (US-70 guide-first), which would move the video off the top.
+const guideline = index.find(e => e.type === 'guideline' && e.kind !== 'condition')!;
 
 describe('frontmatter stripped before the model (US-50 AC4)', () => {
   it('a loaded entry carries its body, never its frontmatter block', () => {

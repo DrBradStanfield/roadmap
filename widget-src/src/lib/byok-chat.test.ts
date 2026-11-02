@@ -16,7 +16,9 @@ const state = vi.hoisted(() => ({
 
 vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(null) }));
 vi.mock('./byok-anthropic', () => ({
-  ByokAnthropicError: class ByokAnthropicError extends Error {},
+  ByokAnthropicError: class ByokAnthropicError extends Error {
+    constructor(readonly code: string, message: string) { super(message); }
+  },
   callAnthropicDirectRaw: async (_key: string, body: { system: string }) => {
     state.sent = body;
     state.bodies.push(body);
@@ -221,6 +223,42 @@ describe('US-15 AC33: run_roadmap in the Pages chat', () => {
     const result = JSON.parse(state.bodies[1].messages.at(-1).content[0].content);
     expect(result.applied).toEqual(['sex', 'heightCm', 'age']);
     expect(result.roadmap.profile.knownMinor).toBe(true);
+  });
+
+  it('US-67 AC2: a value that looks like the wrong unit is asked about in a second call, and not proposed', async () => {
+    const suspect = { ...FIELD, input: { field: 'ldlC', value: 3.4, unit: 'mg/dL' } };
+    state.replies = [{ text: '', blocks: [suspect] }, { text: 'Is that mmol/L?', blocks: [{ type: 'text', text: 'Is that mmol/L?' }] }];
+    const { result } = await sendMessage('my LDL is 3.4 mg/dL', null, SNAPSHOT);
+    expect(state.bodies).toHaveLength(2);
+    expect(state.bodies[1].messages.at(-1).content[0].content).toMatch(/^Not saved: this value looks like it may be in a different unit/);
+    expect(result!.content).toBe('Is that mmol/L?');
+    expect(result).not.toHaveProperty('proposedEdits');
+  });
+
+  it('US-16 AC3: a refused medication answer with an empty second reply says it was not saved, never an error', async () => {
+    const misfit = { type: 'tool_use', id: 'toolu_med', name: 'propose_medication_edit', input: { medicationKey: 'ezetimibe', drugName: 'atorvastatin' } };
+    state.replies = [{ text: '', blocks: [misfit] }, { text: '', blocks: [] }];
+    const { result, error } = await sendMessage("I'm on atorvastatin", null, SNAPSHOT);
+    expect(error).toBeNull();
+    expect(result!.content).toBe("One medication change was not saved, as its answer is not one of the listed answers. Tell me which one applies, or choose it yourself.");
+    expect(result).not.toHaveProperty('proposedEdits');
+  });
+
+  it('US-16 AC3 (Codex R1): a refused medication answer with an empty finished second reply shows the not-saved line', async () => {
+    const { ByokAnthropicError } = await import('./byok-anthropic');
+    const misfit = { type: 'tool_use', id: 'toolu_med', name: 'propose_medication_edit', input: { medicationKey: 'ezetimibe', drugName: 'atorvastatin' } };
+    state.replies = [{ text: '', blocks: [misfit] }, new ByokAnthropicError('empty', 'Empty response from Anthropic. Try again.')];
+    const { result, error } = await sendMessage("I'm on atorvastatin", null, SNAPSHOT);
+    expect(error).toBeNull();
+    expect(result!.content).toBe("One medication change was not saved, as its answer is not one of the listed answers. Tell me which one applies, or choose it yourself.");
+  });
+
+  it('an empty first reply is still the chat\'s error', async () => {
+    const { ByokAnthropicError } = await import('./byok-anthropic');
+    state.replies = [new ByokAnthropicError('empty', 'Empty response from Anthropic. Try again.')];
+    const { result, error } = await sendMessage('hello', null, SNAPSHOT);
+    expect(result).toBeNull();
+    expect(error).toEqual({ error: 'Empty response from Anthropic. Try again.' });
   });
 
   it('a failed second call is the chat\'s error, not a partial answer', async () => {

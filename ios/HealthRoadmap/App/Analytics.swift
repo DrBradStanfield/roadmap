@@ -67,6 +67,9 @@ final class Analytics {
         case guideSeen = "Guide seen", guideOpened = "Guide opened"
         /// "Do you drink alcohol?" answered from the plan card's Dismiss (US-60); never the answer.
         case alcoholAnswered = "Alcohol answered"
+        /// A chat reply showed an edit banner; a chat edit was written (US-67 AC6). Never a
+        /// value or a field's name.
+        case chatEditProposed = "Chat edit proposed", chatEditSaved = "Chat edit saved"
         /// US-66: Health showed its lab results sheet (HealthKit said it was needed), and a
         /// batch of lab results landed at least one row. Never a value, a test's name or a count.
         case healthRecordsAsked = "Health Records asked", healthRecordsImported = "Health Records imported"

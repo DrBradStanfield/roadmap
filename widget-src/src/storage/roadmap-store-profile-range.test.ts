@@ -28,7 +28,7 @@ it.each([
   const cloud = new MemoryCloud();
   const store = await RoadmapStore.create(new MemoryAdapter(cloud));
   const result = store.saveChangedMeasurements({ sex: 'male', [field]: value }, {});
-  expect(result).toEqual({ ok: true, birthRefused: null, refused: { [field]: message } });
+  expect(result).toEqual({ ok: true, birthRefused: null, added: [], refused: { [field]: message } });
   await store.flush();
   const file = onDisk(cloud);
   expect(file.profile[field] ?? null).toBeNull();

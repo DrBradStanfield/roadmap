@@ -81,6 +81,10 @@ beta, so it's fine").** Main had kept `2d467ff50c66c42d` so US-61's engine (its 
 above, the contract hashes to `8dee92d80c028ed3`, which `EngineRelease.bridge` and
 `bridge.test.ts` now carry. Builds 3 and 4 stop receiving over-the-air engines: the US-61
 engine and this one reach them only through the next App Store build.
+**Bridge moved, 2026-11-02 (US-67, the chat's edits).** The new `chatEditsJson` door is one
+an older app cannot serve. Merged with US-12 AC20's move below, the contract hashes to
+`8ced272282162ff2`; `EngineRelease.bridge` and `bridge.test.ts` carry it. The chat's writes are new `Edit` kinds (`chatEdits`, `chatUndo`)
+inside the existing `applyEditJson` and `cloudEdit`, so they need no door of their own.
 
 **Bridge moved again, 2026-11-02 (US-12 AC20, D15).** `chatContextJson` now sends `limits`
 (a lab result printed as a limit) and `ChatClient.contextKeys` takes it, so the contract
@@ -92,6 +96,10 @@ than misreport it.
 **Bridge moved a third time, 2026-11-02 (US-66, D10).** The contract now names the `healthRecords` edit, so
 it hashes to `f4ba71cf3e7425f9`. A new app never runs an older over-the-air engine that lacks
 the edit; earlier builds keep their own bridge and get the edit only through the App Store.
+
+**Bridge moved, 2026-11-03 (merge of US-67 and US-66).** Main's `chatEditsJson` door
+(`8ced272282162ff2`) and this branch's `healthRecords` edit (`f4ba71cf3e7425f9`) meet in
+one contract, which hashes to `9bf2188d4f963385`; `EngineRelease.bridge` and `bridge.test.ts` carry it.
 
 Speed, measured 2026-10-21 (Node 22, esbuild bundle, an Intel iMac, the sample record
 padded to 526 rows; `--jitless` stands in for an app's JavaScriptCore, which runs without a
@@ -252,6 +260,18 @@ A signature means "the key holder approved this bundle", nothing more.
   an older app cannot do without stays in the contract and moves the id.
   Second use (2026-11-02, US-62 AC8): My data rows' `target` and `previous`, read as none from
   an older engine (`MyDataLayoutTests.testARowReadsItsTargetAndPreviousValueFromTheEngine_US62`).
+  Third (2026-11-02, D11): rows' `status` and `gradeWords`, and `labTests`
+  (`MyDataLayoutTests.testARowReadsItsGradeFromTheEngine_US62`).
+  Fourth use (2026-11-02, US-66 AC14): `screenJson`'s `movedRecord`, the record to write once
+  when reading the phone's file moved its blood tests into one table. `loadPhone` writes it with
+  the edit path's atomic write and no pending marker (the move changes no value; an open cloud
+  writes its own copy, in `cloudOpen`, through `commit` as an edit does). A field, not a new
+  door, so the bridge id stays: an older app ignores it, an older engine sends none.
+  **Schema 3 (Brad 2026-11-02, US-66 AC15):** a record holding a core blood row is
+  `schemaVersion` 3, so the engine's `schemaVersion` fact becomes 3. Build 3 bundles a
+  schema-2 engine: it refuses a moved record with its "update the app" path (US-65 AC5) and
+  writes nothing, and it refuses an over-the-air engine of schema 3 by the rule below (R7).
+  The iPhone update ships the schema-3 engine in the binary.
 - **The schema is the app's (R7).** A bundle whose record `schemaVersion` differs from the
   bundled engine's is refused. A schema change always needs an app update, so an over-the-
   air engine can never write a record the web or an older phone cannot read.
@@ -1247,6 +1267,18 @@ phones only). Brad decided the order on 2026-10-25.
   all my data". The web's code lives in the widget's adapter, not health-core, so the
   phone repeats the one call in OAuthClient beside Drive's `about`.
 
+**The chat edits the record (2026-11-02, US-67; Brad: copy the web, F11).** The app sends
+`edits: 1`, so the server offers the web's form tools, and the `done` line's `proposedEdits`
+reach Swift as opaque JSON (`OpaqueJSON`), never read. One engine door, `chatEditsJson`, words
+them against the record now, in the person's units; two edit kinds write them through the
+usual path (`applyOnPhone`, or `cloudEdit` with its erase guard): `chatEdits` (part
+`medications` or `review`, the proposals as received, the phone's day) and the engine's own
+Undo edit, passed back as it came. A medication change saves at once with Undo; values,
+height and sex wait in a banner with Save and Not now (`Chat/ChatEdits.swift`). A reply to a
+question asked before an erase, and a banner made before one, write nothing: `RecordStore.ChatMark`
+(the cloud erase, the eraseEpoch and the phone's erase count) is checked in the write's turn,
+and ChatView drops the banners when it moves (US-16 AC2a).
+
 **State 2026-10-22.** On the iPhone, chat answers "not available": the education server leaves
 App Attest off until `APP_ATTEST_TEAM_ID` is set (`app/lib/app-attest.server.ts`), so chat and lab
 upload wait for that secret and the team it names (Brad's personal team P7LB54J2PM now, DR BRAD,
@@ -1269,10 +1301,10 @@ health tool (`data-clarity-mask` on `HealthTool.tsx`'s root). The app matches th
   never a navigation title, which can carry a supplement's name. Nothing is ever unmasked.
 - `AnalyticsMaskingTests` (US-25 AC19) fails if the window is not masked first, if any code
   unmasks, if a text input lacks its mask, or if any file but Analytics.swift calls Clarity.
-- **Custom events, exactly sixteen fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58; "Alcohol answered" for US-60; "Health Records asked" and "Health Records imported" 2026-11-02 for US-66 AC13):**
+- **Custom events, exactly eighteen fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58; "Alcohol answered" for US-60; "Chat edit proposed" and "Chat edit saved" for US-67; "Health Records asked" and "Health Records imported" 2026-11-02 for US-66 AC13):**
   `Analytics.event` sends `ClaritySDK.sendCustomEvent` with a word from one enum,
   `Analytics.Event`: "Tour started", "Tour tip closed 1/2/3", "Tour skipped 1/2/3", "Tile
-  explainer opened", "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened", "Alcohol answered", "Health Records asked", "Health Records imported".
+  explainer opened", "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened", "Alcohol answered", "Chat edit proposed", "Chat edit saved", "Health Records asked", "Health Records imported".
   Never a value, a tile's name, a test's name, a count or any other text; nothing before Clarity starts.
   `AnalyticsMaskingTests` pins the list, so a new word is a test change and a D9 change.
   Views reach the one `Analytics` through the environment (`\.analytics`, set by RootView).
@@ -1374,6 +1406,36 @@ updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.
 - **Two Charts traps:** a material background inside a chart annotation renders black, so
   the callout uses a solid system fill; and the newest axis label clips unless the marks
   use the `.aligned` preset.
+- **Grades and lab test rows come from health-core, through the engine (Brad, 2026-11-02,
+  US-25 AC17, US-62 AC8).** The web's grade (amber, red) and its spoken words lived in
+  widget code (`statusOf`, the vitals grades, `gradeWords`). They moved unchanged into
+  `packages/health-core/src/row-grade.ts`; the widget imports them. `row-grade.parity.test.ts`
+  grades a grid of about 1.68 million inputs and checks its hash against the one recorded from
+  the widget's functions before the move. The lab tests' grouping and row moved the same way
+  (`lab-series.ts` `labSeriesRows`), and so did the trend window (`recent-trend.ts`). The
+  engine serves each row's `status` and `gradeWords` and a `labTests` list; a blood pressure
+  is graded on the stored halves of the pair it shows. Swift reads `status` as a `Grade`
+  (an unknown word reads as none) and only maps the colour (`ValueRow.gradeColor`: amber is the app's
+  `info` tone, red `urgent`, the web's #b91c1c) and joins VoiceOver's words. Why not in
+  Swift: a copy of a clinical line drifts, and an engine fix ships over the air (D3). PSA is
+  not graded, as on the web. A lab test row opens nothing: there is no engine door for a lab
+  series' history and no page for one yet. A value printed as a limit (US-12 AC20) is graded by
+  the web's `savedStatus`; a weight, waist or blood pressure printed as a limit is graded only
+  when certain (US-12 AC21, Brad 2026-11-02), by the same health-core rule the web uses
+  (`certainValue`; a blood pressure by the lines each half can reach, `linesReached`). A limit the rule
+  leaves ungraded, where there is a plan to grade it by, carries the web's "Printed as a limit"
+  note (`limitUngraded`): on the row (`note`, said by VoiceOver where the grade would be) and on
+  the history page (`historyJson` `note`), for weight, waist and blood pressure as for the blood tests.
+
+- **A lab test's page (Brad 2026-11-02, US-25 AC25).** A lab row opens `MetricDetailView`, the
+  metric page, with its history from the history door's optional `series: "lab"` (D14: an older
+  engine fails the read, and the page shows no history). The row itself says it is a lab test
+  (`series`), and the page, its kept history ("lab:<key>", `RecordStore.historyKey`) and its adds go
+  by that, never by name: a lab test filed as "Weight" is not the core weight (review R1). A value
+  is added by a new edit, `labAdd`, in the unit the sheet showed, through health-core's
+  `addLabValue` (the web's add too), and corrected by `labCorrect`, the engine's `correct`, in the
+  row's own unit and free of the record's units. No row is "used" or carries a limit note: lab tests
+  are never graded. A mixed-unit series draws no chart (US-21 AC3a).
 
 **Added 2026-10-26: "About this measure" guides (US-58).** Below Show All Data and Unit, a metric page shows
 "About {title}" (What it is, Why it matters, How to measure or prepare) and its Sources as links, as Apple Health

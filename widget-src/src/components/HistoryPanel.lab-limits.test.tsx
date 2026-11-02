@@ -3,6 +3,7 @@
 // left out of the line, and its tooltip reads with its symbol.
 import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, render, waitFor } from '@testing-library/react';
+import { LIMIT_NOT_GRADED } from '@roadmap/health-core';
 const { charts } = vi.hoisted(() => ({ charts: [] as any[] }));
 vi.mock('chart.js', () => ({
   Chart: class { static register() {} constructor(_canvas: unknown, config: unknown) { charts.push(config); } destroy() {} update() {} },
@@ -69,3 +70,23 @@ it('US-12 AC20: a value page lists a limit with its symbol and charts it hollow,
   expect(line.data.map((p: { y: number }) => p.y)).toEqual([2.8]);
   expect(limits.data.map((p: { y: number; limit: string }) => [p.y, p.limit])).toEqual([[1.5, '< 1.5']]);
 });
+
+it('US-12 AC21: on the value page, a limit\'s colour and note always agree, blood pressure rows included', () => {
+  const vital = (id: string, metricType: string, value: number, day: string, comparator?: '<' | '>') =>
+    ({ id, metricType, value, recordedAt: `${day}T00:00:00.000Z`, createdAt: day, source: 'lab_import', ...(comparator ? { comparator } : {}) }) as any;
+  const ctx = { grading: { sex: 'male' as const }, plan: { age: 50, idealBodyWeight: 70, heightCm: 180 }, unitOf: () => 'si' as const };
+  const page = (subject: any, history: any[]) => render(<ValuePage subject={subject} history={history} labValues={[]} ctx={ctx}
+    onSave={vi.fn()} onClose={() => {}} dirtyRef={{ current: false }}/>);
+  // Weight "> 90" against a 70 kg ideal: certainly red, so no "cannot grade"; "> 70" is open: no colour, the note.
+  const weights = page({ kind: 'core', metric: 'weight' }, [vital('w1', 'weight', 90, '2026-07-01', '>'), vital('w2', 'weight', 70, '2026-08-01', '>')]);
+  const cells = [...weights.container.querySelectorAll('.md-history .bt-cell-value')];
+  expect(cells.map(c => [c.querySelector('.bt-value-num')?.textContent, c.getAttribute('title')])).toEqual([['> 70.0', LIMIT_NOT_GRADED], ['> 90.0', null]]);
+  cleanup();
+  // Blood pressure "< 125/78": open, so no colour and the note; "< 110/< 70" certainly on target.
+  const bp = page({ kind: 'bp' }, [vital('s1', 'systolic_bp', 125, '2026-08-01', '<'), vital('d1', 'diastolic_bp', 78, '2026-08-01'),
+    vital('s2', 'systolic_bp', 110, '2026-07-01', '<'), vital('d2', 'diastolic_bp', 70, '2026-07-01', '<')]);
+  const pairs = [...bp.container.querySelectorAll('.md-history-value')];
+  expect(pairs.map(p => [p.className.replace('md-history-value ', ''), p.getAttribute('title')])).toEqual([['md-status-none', LIMIT_NOT_GRADED], ['md-status-ok', null]]);
+  expect(pairs[0].textContent).toContain('< 125/78');
+});
+

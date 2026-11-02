@@ -46,8 +46,7 @@
  * quarantined row can take the base id a chain points at.
  */
 import {
-  BASE_SCHEMA_VERSION,
-  CURRENT_SCHEMA_VERSION,
+  recordSchemaVersion,
   stableStringify,
   type ErasedRows,
   type RoadmapFile,
@@ -65,7 +64,7 @@ import {
   type SyncStamp,
 } from './roadmap-file';
 import type { MeasurementStatus } from './validation';
-import { labSlotKey } from './lab-catalog';
+import { isFoldRow, labRowSlot, v2FormOf } from './core-rows';
 
 /**
  * Ceiling for the file's counters (`meta.lamport`, `meta.eraseEpoch`) — far
@@ -147,7 +146,7 @@ export function cmpStr(a: string, b: string): number {
  * createdAt, tie-broken by larger id (deterministic + symmetric).
  * Returns true if `a` is newer than `b`.
  */
-function rowIsNewer(a: SlottableRow, b: SlottableRow): boolean {
+export function rowIsNewer(a: SlottableRow, b: SlottableRow): boolean {
   if (a.createdAt !== b.createdAt) return a.createdAt > b.createdAt;
   return a.id > b.id;
 }
@@ -156,9 +155,11 @@ function rowIsNewer(a: SlottableRow, b: SlottableRow): boolean {
  * Content signature of an append-only row, EXCLUDING `id` (the field a second
  * writer may have reused) and any MONOTONIC field merged separately (`status`
  * on a measurement, `deleted` on a document). Same signature = the same fact.
+ * A blood test moved out of `measurements` is signed in its old form, so a
+ * `#dup-` id and its base-id winner do not change with the move (US-66 AC2).
  */
 function contentOf(row: object, omit: readonly string[]): string {
-  const rest = { ...(row as Record<string, unknown>) };
+  const rest = { ...(v2FormOf(row) as Record<string, unknown>) };
   delete rest.id;
   for (const key of omit) delete rest[key];
   return stableStringify(rest);
@@ -192,11 +193,13 @@ export function baseIdOf(id: string): string {
 
 /**
  * The id a row's original was written under: `baseIdOf` with the `#si`
- * conversion suffix stripped too, so an erase that lists a row takes its
- * quarantined copies and its unit conversion with it (US-09 AC23).
+ * conversion, `#core` fold and `#mv-` move suffixes stripped too, so an
+ * erase that lists a row takes its quarantined copies, its unit conversion,
+ * its fold into a core value and its moved copy with it (US-09 AC23, US-66
+ * AC5, US-04 AC5a).
  */
 export function rootIdOf(id: string): string {
-  return id.replace(/(?:#dup-[0-9a-f]{8}|#si)+$/, '');
+  return id.replace(/(?:#dup-[0-9a-f]{8}|#si|#core|#mv-[0-9a-f]{8})+$/, '');
 }
 
 /**
@@ -262,7 +265,7 @@ function unionRows<T extends { id: string }>(
  * arrived already flipped, and nothing here un-flips a monotonic status. The
  * values are still in the file; only the "current value" reads skip them.
  */
-function unionSlotRows<T extends SlottableRow>(rows: T[]): T[] {
+export function unionSlotRows<T extends SlottableRow>(rows: T[]): T[] {
   return unionRows(rows, ['status'], (target, source) => {
     if (source.status === 'entered-in-error') target.status = 'entered-in-error';
   });
@@ -270,13 +273,16 @@ function unionSlotRows<T extends SlottableRow>(rows: T[]): T[] {
 
 /**
  * Merge two lists of append-only rows that obey the one-active-per-slot
- * invariant. Slot = (metricKey, day-of-recordedAt). Generic over the metric
- * field name (`metricType` for measurements, `metricName` for lab values).
+ * invariant. Slot = (metricKey, day-of-recordedAt). `metricKeyOf` reads the
+ * row (`metricType` for measurements, `labRowSlot` for lab values). A row
+ * `yields` is active only when no other active row holds its slot: a fold
+ * into a core value loses to a real one, whatever the clocks say (US-66 AC5).
  */
 function mergeSlotted<T extends SlottableRow>(
   local: T[],
   remote: T[],
   metricKeyOf: (row: T) => string,
+  yields: (row: T) => boolean = () => false,
 ): T[] {
   // 1. Union by id + content. 2. Group by slot.
   const bySlot = new Map<string, T[]>();
@@ -295,7 +301,8 @@ function mergeSlotted<T extends SlottableRow>(
     const actives = rows.filter((r) => r.status === 'active');
     if (actives.length > 1) {
       let winner = actives[0];
-      for (const r of actives) if (rowIsNewer(r, winner)) winner = r;
+      const beats = (a: T, b: T) => (yields(a) === yields(b) ? rowIsNewer(a, b) : yields(b));
+      for (const r of actives) if (beats(r, winner)) winner = r;
       for (const r of rows) {
         if (r.status === 'active' && r.id !== winner.id) r.status = 'entered-in-error';
       }
@@ -637,20 +644,36 @@ export function latestStamp(a: string, b: string): string {
   return ta !== tb ? (ta > tb ? a : b) : a > b ? a : b;
 }
 
+/** The root an app from before US-04 AC5a gives a row: only `#dup-…`, `#si`
+ *  and `#core` stripped, so a moved row's is its own id. */
+function rootBeforeMoveOf(id: string): string {
+  return id.replace(/(?:#dup-[0-9a-f]{8}|#si|#core)+$/, '');
+}
+
 /** The root id of every row in the file: what an erase made now would list
- *  (US-09 AC23). A row whose id is not a string has no root, and is skipped. */
+ *  (US-09 AC23). A row whose id is not a string has no root, and is skipped.
+ *  A moved row is listed under its own id too, as an app from before US-04
+ *  AC5a roots it, so that app drops it. */
 export function rowRootIds(file: RoadmapFile): string[] {
   return (Object.keys(ROW_STAMPS) as StampedArray[]).flatMap((key) =>
-    (file[key] as Array<{ id: unknown }>).flatMap((row) => (typeof row.id === 'string' ? [rootIdOf(row.id)] : [])));
+    (file[key] as Array<{ id: unknown }>).flatMap((row) => (typeof row.id === 'string'
+      ? [...new Set([rootIdOf(row.id), rootBeforeMoveOf(row.id)])]
+      : [])));
 }
 
 /** `file` without the rows `listed` names, from every array that carries ids;
- *  the same object when it names none (US-09 AC23). */
+ *  the same object when it names none (US-09 AC23). A row goes if its root is
+ *  the root of a listed id. An app from before US-04 AC5a lists a moved row
+ *  whose original is gone under the moved row's own id, `X#mv-A`; reducing
+ *  that to `X` also takes `X#mv-B`, the same test moved again on a copy that
+ *  had not seen the erase (Codex review of PR #337). The list itself keeps
+ *  the older spelling, so that app still reads it. */
 export function withoutListed(file: RoadmapFile, listed: ReadonlySet<string>): RoadmapFile {
   if (listed.size === 0) return file;
+  const roots = new Set([...listed].map(rootIdOf));
   const out: Record<string, unknown> = { ...file };
   for (const key of Object.keys(ROW_STAMPS) as StampedArray[]) {
-    out[key] = (file[key] as Array<{ id: unknown }>).filter((row) => typeof row.id !== 'string' || !listed.has(rootIdOf(row.id)));
+    out[key] = (file[key] as Array<{ id: unknown }>).filter((row) => typeof row.id !== 'string' || !roots.has(rootIdOf(row.id)));
   }
   return out as unknown as RoadmapFile;
 }
@@ -748,9 +771,10 @@ export function mergeFiles(
   const listed = new Set(erasedRows?.ids);
   const local = withoutListed(localCopy, listed);
   const remote = withoutListed(remoteCopy, listed);
-  // A listed file is one a reader from before the list must refuse.
+  // A listed file, or one holding a core row, is one an older reader must
+  // refuse (US-09 AC23, US-66 AC15). Never lower than either side.
   const listing = {
-    schemaVersion: Math.max(local.schemaVersion, remote.schemaVersion, erasedRows ? CURRENT_SCHEMA_VERSION : BASE_SCHEMA_VERSION),
+    schemaVersion: Math.max(recordSchemaVersion(local), recordSchemaVersion(remote), recordSchemaVersion({ erasedRows })),
     ...(erasedRows ? { erasedRows } : null),
   };
   // "Delete All My Data" gate: a higher eraseEpoch wins. The union semantics
@@ -839,7 +863,7 @@ export function mergeFiles(
       remote.measurements,
       (r) => r.metricType,
     ),
-    labValues: mergeSlotted<FileLabValue>(local.labValues, remote.labValues, (r) => labSlotKey(r.metricName)),
+    labValues: mergeSlotted<FileLabValue>(local.labValues, remote.labValues, labRowSlot, isFoldRow),
 
     medications: mergeByKey<FileMedication>(
       local.medications,

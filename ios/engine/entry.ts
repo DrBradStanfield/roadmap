@@ -11,8 +11,9 @@ import { cmToFeetInches, formatDisplayValue, fromCanonicalValue, toCanonicalValu
 import { fileNameLine, MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
 import { deviceWrites } from '../../packages/health-core/src/device-export';
 import { usProductSections, type UsPlanSection } from '../../packages/health-core/src/us-products';
-import { applyEdit, myData, newRecord, readNumber, readRecord, readView, type Edit } from './my-data';
-import { metricHistory } from './my-data-forms';
+import { applyEdit, movedRecord, myData, newRecord, readNumber, readRecord, readView, type Edit } from './my-data';
+import { labHistory, metricHistory } from './my-data-forms';
+import { chatEditsPreview } from './chat-edits';
 import { readUnitChoices } from './unit-choices';
 import { phoneReminders } from './reminders';
 import { installShim, type Natives } from './shim';
@@ -86,7 +87,10 @@ export function newRecordJson(nowIso: string, deviceId: string, locale: string, 
  *  `isUS`: the App Store storefront is the US (US-61). `plan.usProducts` is then the sections
  *  ready to draw with Dr Brad's products on the supplement cards of a known adult
  *  (us-products.ts, the web's own overlay); left out when none shows. Anything but `true`,
- *  an app older than it included, gives none. */
+ *  an app older than it included, gives none.
+ *  `movedRecord`: the record as text, when reading `recordJson` moved its blood tests into
+ *  one table (US-66 AC14); the app writes it to the phone's file once, as it opens it. Left
+ *  out when nothing moved, so the written record never gives it again. */
 export function screenJson(recordJson: string, nowIso: string, deviceId: string, unitsJson?: string, isUS?: boolean): string {
   const file = readView(recordJson, nowIso, deviceId);
   const choices = readUnitChoices(unitsJson);
@@ -107,7 +111,8 @@ export function screenJson(recordJson: string, nowIso: string, deviceId: string,
   } catch (error) {
     view = { error: String(error), planError: error instanceof PlanError };
   }
-  return JSON.stringify({ myData: myData(file, nowIso, choices, plan), plan: view });
+  const moved = movedRecord(recordJson, nowIso, deviceId);
+  return JSON.stringify({ myData: myData(file, nowIso, choices, plan), plan: view, ...(moved ? { movedRecord: moved } : null) });
 }
 
 /** One edit, as JSON: `{ ok: true, record }` with the new record as text (and the
@@ -117,6 +122,14 @@ export function applyEditJson(recordJson: string, editJson: string, nowIso: stri
   if (!outcome.ok) return JSON.stringify(outcome);
   const { file, ok, ...extra } = outcome;
   return JSON.stringify({ ok, record: JSON.stringify(file), ...extra });
+}
+
+/** What the chat's proposed edits would do (US-67 AC3), as JSON: `{ medications: { lines, undo } | null,
+ *  review: { lines, refusal, seen } | null }`, in the phone's units; `seen` goes back on the review's
+ *  chatEdits edit, so a Save refuses when the record changed since. `editsJson`: the reply's `proposedEdits` as
+ *  received; `today`: the phone's day. The record is read raw, as the chatEdits edit writes it. */
+export function chatEditsJson(recordJson: string, editsJson: string, nowIso: string, deviceId: string, today: string, unitsJson?: string): string {
+  return JSON.stringify(chatEditsPreview(readRecord(recordJson, nowIso, deviceId), JSON.parse(editsJson), nowIso, today, readUnitChoices(unitsJson)));
 }
 
 /** A typed number as JSON: the number, or null when it is not a plain decimal. */
@@ -148,9 +161,11 @@ export function healthWritesJson(recordJson: string, nowIso: string, deviceId: s
   return JSON.stringify(deviceWrites(readRecord(recordJson, nowIso, deviceId), 'apple_health'));
 }
 
-/** Every value recorded for one metric, newest first, as JSON (US-25 AC9). */
-export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string, unitsJson?: string): string {
-  return JSON.stringify(metricHistory(readView(recordJson, nowIso, deviceId), metric, nowIso, readUnitChoices(unitsJson)));
+/** Every value recorded for one metric, newest first, as JSON (US-25 AC9). `series` "lab": `metric`
+ *  is a lab test's series key (US-25 AC25); an app before it sends none, and is answered as before. */
+export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string, unitsJson?: string, series?: string): string {
+  const file = readView(recordJson, nowIso, deviceId);
+  return JSON.stringify(series === 'lab' ? labHistory(file, metric) : metricHistory(file, metric, nowIso, readUnitChoices(unitsJson)));
 }
 // Chat and lab upload (US-52): app-doors.ts.
 export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson, chatDeleteJson, settledJson, labReviewJson, labSaveSummaryJson } from './app-doors';

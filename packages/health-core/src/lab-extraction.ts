@@ -15,7 +15,7 @@
  */
 import * as z from './zod';
 import { getDisplayRange, rangeFault, reportedToCanonical, toCanonicalValue, type MetricType, type UnitSystem } from './units';
-import { foldName, LAB_CATALOG, LAB_GROUPS, labTestLabel, normalizeLabUnit, resolveLabCatalogEntry, type LabCatalogEntry } from './lab-catalog';
+import { foldName, isLooseCatalogueName, LAB_CATALOG, LAB_GROUPS, labTestLabel, looseFold, normalizeLabUnit, resolveLabCatalogEntry, type LabCatalogEntry } from './lab-catalog';
 import { cutText } from './chat-history';
 import { parseLocalisedNumber } from './parseNumber';
 import { DOCUMENT_TYPES, METRIC_TYPES } from './validation';
@@ -239,9 +239,40 @@ for (const metric of Object.keys(CORE_METRIC_ALIASES) as MetricType[]) {
   for (const alias of [...CORE_METRIC_ALIASES[metric], ...(RESOLVER_ONLY_ALIASES[metric] ?? [])]) CORE_NAME_INDEX.set(foldName(alias), metric);
 }
 
-/** The core metric a printed name is, or null — exact after folding, never a substring. */
+/**
+ * Every core name's loose fold → its metric (US-66 AC4). A loose form two
+ * metrics share, or any catalogue name has, resolves to nothing, so no name
+ * resolves to both a core test and a catalogue entry.
+ */
+const CORE_LOOSE_INDEX: ReadonlyMap<string, MetricType | null> = (() => {
+  const byLoose = new Map<string, MetricType | null>();
+  for (const [folded, metric] of CORE_NAME_INDEX) {
+    const loose = looseFold(folded);
+    const seen = byLoose.get(loose);
+    byLoose.set(loose, isLooseCatalogueName(loose) || (seen !== undefined && seen !== metric) ? null : metric);
+  }
+  return byLoose;
+})();
+
+/**
+ * A name the loose pass never reads: a ratio ("Chol/HDL", "Cholesterol: HDL";
+ * a colon only ends a label like "HbA1c:"), or "Cr" however punctuated, which
+ * may be chromium and keeps its own guard (US-12 AC15).
+ */
+function notLoose(name: string): boolean {
+  return name.includes('/') || /:\s*\S/.test(name.trim()) || looseFold(name) === 'cr';
+}
+
+/**
+ * The core metric a printed name is, or null: exact after folding, never a
+ * substring. A name the exact fold and the catalogue both miss is tried once
+ * more without its punctuation ("LDL - Cholesterol"), unless `notLoose`
+ * keeps it apart (US-66 AC4).
+ */
 export function resolveCoreMetricName(name: string): MetricType | null {
-  return CORE_NAME_INDEX.get(foldName(name)) ?? null;
+  const exact = CORE_NAME_INDEX.get(foldName(name));
+  if (exact || notLoose(name) || resolveLabCatalogEntry(name)) return exact ?? null;
+  return CORE_LOOSE_INDEX.get(looseFold(name)) ?? null;
 }
 
 /** What a printed name resolves to: a core metric, a catalogued test, or nothing. */
@@ -1036,24 +1067,12 @@ export function isImportableEntryName(name: string, extensions: readonly string[
  * `egfr`), else "other". A closed list, so no free text, value, unit or date
  * can ride on it; the server's schema takes these and nothing else.
  */
-/**
- * Pregnancy, fertility and sex-hormone tests are counted as "other", never by
- * name: which of them a visitor had tested says too much (the orchestrator
- * narrowed Brad's "yes" this way on 2026-11-02, pending his word).
- */
-const UNNAMED_LIMIT_TESTS: ReadonlySet<string> = new Set([
-  'hcg', 'estradiol', 'estrone', 'progesterone', 'oh_progesterone_17', 'lh', 'fsh', 'prolactin', 'amh', 'shbg',
-  'testosterone_total', 'free_testosterone', 'free_testosterone_calculated', 'bioavailable_testosterone', 'dht',
-  'androstenedione', 'dhea_s',
-]);
-
-export const LIMIT_TEST_WORDS: readonly string[] = [...new Set([...METRIC_TYPES, ...LAB_CATALOG.map(e => e.key).filter(k => !UNNAMED_LIMIT_TESTS.has(k)), 'other'])];
+export const LIMIT_TEST_WORDS: readonly string[] = [...new Set([...METRIC_TYPES, ...LAB_CATALOG.map(e => e.key), 'other'])];
 
 /** A test's word in that list: its core key, its catalogue key, or "other". */
 function limitTestWord(metricOrName: string): string {
   if ((METRIC_TYPES as readonly string[]).includes(metricOrName)) return metricOrName;
-  const key = resolveLabCatalogEntry(metricOrName)?.key;
-  return key && !UNNAMED_LIMIT_TESTS.has(key) ? key : 'other';
+  return resolveLabCatalogEntry(metricOrName)?.key ?? 'other';
 }
 
 /**

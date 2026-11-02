@@ -33,6 +33,8 @@ function parameters(name: string): string[] {
 const NOW = '2026-10-21T08:00:00.000Z';
 const SAMPLE_ARGS: Record<string, unknown[]> = {
   screenJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'), NOW, 'phone', '{}'],
+  chatEditsJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'),
+    JSON.stringify([{ kind: 'field', field: 'ldlC', displayValue: 3.4, unitSystem: 'si', date: '2026-10-01' }]), NOW, 'phone', '2026-10-21', '{}'],
   historyJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'), 'ldl', NOW, 'phone', '{}'],
 };
 /** A door's answer with its timing fields (`ms`) left out, which differ call to call. */
@@ -92,11 +94,13 @@ describe('bridge contract (US-25 AC18)', () => {
   // 2026-11-01 (Brad: still in beta, no downloads): US-07 AC8's labEgfrOutdated plus
   // US-61's optional isUS and usProducts; builds 3 and 4 no longer take OTA engines. Moved
   // 2026-11-02: US-12 AC20's limits in the chat context; build 5 no longer takes OTA engines.
+  // Moved 2026-11-02 again: US-67's chatEditsJson door, a door an older app cannot serve.
   // Moved again 2026-11-02 for US-66 (D10): the healthRecords edit kind is named in the
   // contract, so an app that sends it never runs an older engine without the case.
-  it('the contract hashes to exactly the bridge id the app serves (f4ba71cf3e7425f9)', () => {
+  // Moved 2026-11-03: the two merged (US-67's door and the healthRecords edit).
+  it('the contract hashes to exactly the bridge id the app serves (9bf2188d4f963385)', () => {
     const bytes = readFileSync(join(__dirname, 'bridge-contract.json'));
-    expect(createHash('sha256').update(bytes).digest('hex').slice(0, 16)).toBe('f4ba71cf3e7425f9');
+    expect(createHash('sha256').update(bytes).digest('hex').slice(0, 16)).toBe('9bf2188d4f963385');
     expect(contract.doors.screenJson.args).toEqual(['recordJson', 'nowIso', 'deviceId', 'unitsJson']);
     expect(optional.doors.screenJson.optionalArgs).toEqual(['isUS']);
   });

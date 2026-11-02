@@ -59,7 +59,9 @@ it.each([
   const rows = fresh.loadAllHistory().filter(r => r.status === 'active' && r.metricType === 'lpa');
   expect(rows.map(r => ({ value: r.value, ...(r.comparator ? { comparator: r.comparator } : {}) }))).toEqual([saved]);
   const persisted = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
-  expect(persisted.measurements.filter((r: { metricType: string }) => r.metricType === 'lpa').map((r: { comparator?: string }) => r.comparator)).toEqual([saved.comparator]);
+  // US-66 AC1: the Lp(a) is a core lab row in the file, with its comparator or none.
+  expect(persisted.measurements).toEqual([]);
+  expect(persisted.labValues.filter((r: { metricName: string; core?: true }) => r.core && r.metricName === 'lpa').map((r: { comparator?: string }) => r.comparator)).toEqual([saved.comparator]);
 });
 
 // Codex review of 0a2b89b0 (C1): a held exact Lp(a) 10 and an offered "< 10" on

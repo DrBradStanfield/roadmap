@@ -5,6 +5,10 @@
  * reload → verify it's there. This is the definitive proof that the cloud
  * adapter + optimistic-concurrency write path work end-to-end.
  *
+ * It does so in its own file beside the record (US-09 AC32). The Dropbox
+ * tokens are shared with the app on this origin, so a person who connected
+ * in the app arrives here connected, and a test LDL must not join their record.
+ *
  * The app key is a PKCE client id — public by design (it appears in the OAuth
  * URL the user sees), so it is safe in this public repo.
  */
@@ -13,6 +17,8 @@ import { DropboxAdapter, getDeviceId, StorageError, SyncManager } from '../src/s
 import { ROADMAP_DOC } from '../src/storage/roadmap-store';
 
 const DROPBOX_APP_KEY = 'xf96vqvjotm5xhx';
+/** The round-trip's own file: the record's shape and sync, never the record. */
+const SELF_TEST_DOC = { ...ROADMAP_DOC, fileName: 'dropbox-self-test.json' };
 
 interface Els {
   status: HTMLElement;
@@ -65,13 +71,14 @@ export async function initDropboxTest(els: Els): Promise<void> {
     if (!adapter) return;
     els.result.textContent = 'Running…';
     try {
-      const sync = new SyncManager<RoadmapFile>(adapter, getDeviceId(), ROADMAP_DOC);
+      const sync = new SyncManager<RoadmapFile>(adapter, getDeviceId(), SELF_TEST_DOC);
       const before = await sync.load();
       const beforeActive = countActive(before.measurements);
       const measurement = createMeasurement({
         id: `dbx_test_${before.meta.lamport + 1}`,
-        metricType: 'ldl',
-        value: 2.1,
+        // A vital: a blood test written to `measurements` moves to `labValues` on the next read (US-66).
+        metricType: 'weight',
+        value: 70.1,
         recordedAt: new Date().toISOString().slice(0, 10),
         createdAt: new Date().toISOString(),
       });
@@ -81,11 +88,11 @@ export async function initDropboxTest(els: Els): Promise<void> {
       const present = reloaded.measurements.some((m) => m.id === measurement.id);
       els.result.textContent = [
         present ? '✓ PASS — wrote to Dropbox and read it back' : '✗ FAIL — record not found after reload',
-        `wrote: ${measurement.id} (ldl 2.1)`,
+        `wrote: ${measurement.id} (weight 70.1)`,
         `dropbox rev: ${saved.version}`,
         `active measurements: ${beforeActive} → ${countActive(reloaded.measurements)}`,
         `schema v${reloaded.schemaVersion} · lamport ${reloaded.meta.lamport}`,
-        'file: /Apps/Health Plan by Dr Brad/health-roadmap.json',
+        `file: /Apps/Health Plan by Dr Brad/${SELF_TEST_DOC.fileName} (your health record is not touched)`,
       ].join('\n');
     } catch (error) {
       const message = error instanceof StorageError ? error.message : (error as Error).message;

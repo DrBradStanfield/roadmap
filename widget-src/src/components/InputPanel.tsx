@@ -1,4 +1,3 @@
-import { profileTitle } from '../lib/profile-title';
 import { SectionIcon } from './icons';
 import { Fragment, useState, useEffect, useLayoutEffect, useRef, type MutableRefObject, type ReactNode } from 'react';
 import { ColumnHeader } from './ColumnHeader';
@@ -351,9 +350,9 @@ export function InputPanel({
   const [valuePage, setValuePage] = useState<ValueSubject | null>(null);
   const [tableOpen, setTableOpen] = useState(false);
   const [seenReveal, setSeenReveal] = useState<{ field: string; grid: boolean } | null>(null);
-  // Only a filled grid cell opens the table; a plain field shows where it is (adversary R6).
-  const revealing = !!revealCell?.grid && revealCell !== seenReveal;
-  const tableShown = tableOpen || revealing;
+  // A chat reveal closes the value page; only a filled grid cell opens the table (adversary R6).
+  const revealing = !!revealCell && revealCell !== seenReveal;
+  const tableShown = tableOpen || (revealing && revealCell.grid);
   const pageShown = !revealing ? valuePage : null;
   // A page is a history entry (a state marker, no URL change), so the phone's
   // back gesture closes it, and "‹ My data" goes back. Typed, unsaved Add
@@ -413,7 +412,8 @@ export function InputPanel({
   }, []);
   const valuePageRef = useRef(valuePage);
   valuePageRef.current = valuePage;
-  // A chat edit that fills a grid cell closes any open page, so the table shows.
+  // A chat edit closes any open page, so the field it filled shows (US-16 AC2):
+  // the table opens only for a grid cell (adversary R6).
   const [sayPanel, panelMessages] = useLiveRegion('md-panel-messages');
   // Read as the reveal renders: the page unmounts in this commit, and its form clears the mark as it goes.
   const revealDropsTyping = useRef(false);
@@ -457,9 +457,9 @@ export function InputPanel({
   const vitalsRef = useRef<HTMLDivElement>(null);
   const [vitalsLeft, setVitalsLeft] = useState(aboutYouLow);
   useEffect(() => {
-    // An erase takes About you back to the top: the next record starts again (Codex R2).
+    // An erase takes About you back to the top: the next record starts again (Codex R2, adversary R4).
     setVitalsLeft(aboutYouLow && !vitalsRef.current?.contains(document.activeElement));
-    if (!aboutYouLow) yearJumped.current = false;
+    if (!aboutYouLow) { yearJumped.current = false; setAboutOpen(new Set()); }
   }, [aboutYouLow]);
   const vitalPending = (['weightKg', 'waistCm', 'systolicBp', 'diastolicBp'] as const).some(f => inputs[f] !== undefined);
   const vitalsAsRows = aboutYouLow && vitalsLeft && !vitalPending;
@@ -526,7 +526,6 @@ export function InputPanel({
   // boxes never turn into rows under someone typing. A missing or refused
   // answer opens its field, which stays open while it is typed in, until Done.
   const [aboutOpen, setAboutOpen] = useState<ReadonlySet<AboutKey>>(new Set());
-  const aboutAutoOpen = useRef(new Set<AboutKey>());
   // The birth year's field, once shown, stays while the birth question does:
   // a year cleared to retype keeps its field, whatever the stage. The
   // question going (an erase) starts it again.
@@ -1192,17 +1191,21 @@ export function InputPanel({
       });
     };
     const done = (key: AboutKey) => {
-      aboutAutoOpen.current.delete(key);
       setAboutOpen(prev => { const next = new Set(prev); next.delete(key); return next; });
       focusById(`about-${key}`);
     };
+    // A missing or refused answer's row opens and stays open while it is
+    // typed in, until Done (one set, updated as it renders).
+    // The render-phase setAboutOpen is safe only because renderAboutRows is a
+    // plain function in InputPanel's own render, not a child component.
+    const opened = rows.filter(row => row.missing && !aboutOpen.has(row.key)).map(row => row.key);
+    if (opened.length > 0) setAboutOpen(prev => new Set([...prev, ...opened]));
     return (
       <ul className="md-rows about-rows">
         {rows.map(row => {
-          if (row.missing) aboutAutoOpen.current.add(row.key);
           return (
             <li key={row.key}>
-              {aboutOpen.has(row.key) || aboutAutoOpen.current.has(row.key) ? (
+              {aboutOpen.has(row.key) || row.missing ? (
                 <div className="about-editor" data-about={row.key}>
                   {row.editor()}
                   <button type="button" className="md-back about-done" onClick={() => done(row.key)}>Done</button>
@@ -1228,7 +1231,7 @@ export function InputPanel({
             className={`health-section-title${canCollapse ? ' health-section-title--collapsible' : ''}`}
             onClick={canCollapse ? () => setPrefillExpanded(!prefillExpanded) : undefined}
           >
-            <SectionIcon section="aboutYou"/>{profileTitle(aboutYouLow)}
+            <SectionIcon section="aboutYou"/>{aboutYouLow ? 'About you' : 'Starting Info'}
             {canCollapse && (
               <span className={`collapse-chevron${prefillExpanded ? ' expanded' : ''}`}>{'\u25B8'}</span>
             )}
@@ -2512,7 +2515,7 @@ export function InputPanel({
               <button type="button" className="md-back md-table-back" onClick={() => showTable(false)}>‹ Show as rows</button>
               {renderBloodTests()}
               {move.panel}
-              <AdditionalLabRows labValues={labValues} onAdded={onLabValueAdded} onCorrect={onCorrectValue} move={move.headers}/>
+              <AdditionalLabRows labValues={labValues} coreValues={bloodTestHistory} onAdded={onLabValueAdded} onCorrect={onCorrectValue} move={move.headers}/>
             </div>
           </div>
         ),

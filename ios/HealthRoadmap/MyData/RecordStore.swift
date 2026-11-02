@@ -304,24 +304,32 @@ final class RecordStore {
     /// The history and its chart's inputs, read by the engine once per `revision` and metric,
     /// off the main thread: a second ask while that read runs (a page and the page above it)
     /// joins it. Kept in `histories`, which a page draws; older revisions' are dropped.
-    func chart(for metric: String) async -> ChartData? {
+    /// `series` "lab": `metric` is a lab test's series key, its own history (US-25 AC25), kept apart
+    /// from a core metric of the same name.
+    func chart(for metric: String, series: String? = nil) async -> ChartData? {
         guard problem == nil else { return nil }
         let revision = revision
-        if let kept = histories[metric], kept.revision == revision { return kept.chart }
-        if let read = reading[metric], read.revision == revision { return await read.task.value }
+        let key = Self.historyKey(metric, series)
+        if let kept = histories[key], kept.revision == revision { return kept.chart }
+        if let read = reading[key], read.revision == revision { return await read.task.value }
         let (units, record, deviceId, engine) = (unitChoices.json, recordJSON, deviceId, engine)
         let task = Task {
-            (try? await engine.history(recordJSON: record, metric: metric, now: .now, deviceId: deviceId, units: units)).map(ChartData.init)
+            (try? await engine.history(recordJSON: record, metric: metric, now: .now, deviceId: deviceId, units: units, series: series)).map(ChartData.init)
         }
-        reading[metric] = (revision, task)
+        reading[key] = (revision, task)
         let chart = await task.value
-        if reading[metric]?.revision == revision { reading[metric] = nil }
+        if reading[key]?.revision == revision { reading[key] = nil }
         // The record moved on while the engine ran: a page asks again for the new one.
         if revision == self.revision {
             histories = histories.filter { $0.value.revision == revision }
-            histories[metric] = KeptHistory(revision: revision, chart: chart)
+            histories[key] = KeptHistory(revision: revision, chart: chart)
         }
         return chart
+    }
+
+    /// A kept history's key: a lab test's is "lab:<series key>", never a core metric's name.
+    nonisolated static func historyKey(_ metric: String, _ series: String?) -> String {
+        series.map { "\($0):\(metric)" } ?? metric
     }
 
     /// Drops every kept chart and running read, on an erase or a unit change: a page opened
@@ -333,15 +341,15 @@ final class RecordStore {
 
     /// The chart last read for `metric`, for a page to draw: it may trail the record by one
     /// engine call, and the page's `.task(id: revision)` brings it up to date.
-    func shownChart(for metric: String) -> ChartData? {
-        problem == nil ? histories[metric]?.chart : nil
+    func shownChart(for metric: String, series: String? = nil) -> ChartData? {
+        problem == nil ? histories[Self.historyKey(metric, series)]?.chart : nil
     }
 
     /// The history read for the record and units as they are now; nil while it trails them
     /// (adversary R2). Only this one may open a correction: a page keeps drawing the older
     /// one, its taps held, until the fresh one lands.
-    func shownHistory(for metric: String) -> MetricHistory? {
-        guard problem == nil, let kept = histories[metric], kept.revision == revision else { return nil }
+    func shownHistory(for metric: String, series: String? = nil) -> MetricHistory? {
+        guard problem == nil, let kept = histories[Self.historyKey(metric, series)], kept.revision == revision else { return nil }
         return kept.chart?.history
     }
 
@@ -349,10 +357,11 @@ final class RecordStore {
     /// history in `unit`, the one the sheet shows (and for Lp(a), its screen's). Nil until one
     /// is read, never a number in another unit ("100 mg/dL" from 100 nmol/L, Codex R2;
     /// "176.4 kg" once the record flips to lb, re-check N1).
-    func correctionHint(for id: String, metric: String, unit: String, on screen: Screen) -> String? {
-        guard let history = shownHistory(for: metric), history.unit == unit,
-              metric != "lpa" || history.unit == screen.lpaUnit else { return nil }
-        return history.rows.first { $0.id == id }?.value
+    /// A lab row is hinted in its own unit (US-25 AC25).
+    func correctionHint(for id: String, metric: String, series: String? = nil, unit: String, on screen: Screen) -> String? {
+        guard let history = shownHistory(for: metric, series: series), let row = history.rows.first(where: { $0.id == id }),
+              (row.unit ?? history.unit) == unit, metric != "lpa" || history.unit == screen.lpaUnit else { return nil }
+        return row.value
     }
 
 
@@ -584,6 +593,78 @@ final class RecordStore {
         try? await engine.convert(value, metric: metric, from: from, to: to)
     }
 
+    // MARK: Chat edits (US-67)
+
+    /// The record a chat question was asked on, or a chat banner made on (US-67 AC5): the
+    /// cloud erase it showed, its eraseEpoch and this phone's erase count. An erase, here or
+    /// by sync, moves one of them, and what was made before it writes nothing (US-16 AC2a).
+    struct ChatMark: Equatable, Sendable {
+        let erase: String?
+        let epoch: Int?
+        let erasures: Int
+
+        /// Whether `now` is the same record, never erased since. Connecting or disconnecting a
+        /// cloud is not an erase: the cloud erase is compared only while both sides have one.
+        func holds(at now: ChatMark) -> Bool {
+            epoch == now.epoch && erasures == now.erasures && (erase == nil || now.erase == nil || erase == now.erase)
+        }
+    }
+
+    var chatMark: ChatMark { ChatMark(erase: cloudErase, epoch: myData?.eraseEpoch, erasures: erasures) }
+
+    /// A chat reply's edits, taken in one turn: the engine's preview against the record now,
+    /// and its medication part written at once, as the web's is (US-67 AC3).
+    struct ChatEditsTaken: Sendable {
+        let preview: ChatEditsPreview
+        /// What writing the medication part did; nil when the reply has none.
+        let medications: ApplyResult?
+        /// The medication part changed the record.
+        let changed: Bool
+        /// The record the banners were made on.
+        let mark: ChatMark
+    }
+
+    /// What became of a reply's edits: nothing is written or shown when the record was
+    /// erased since the question was asked (`moved`) or the engine could not read them.
+    enum ChatEditsOutcome: Sendable {
+        case taken(ChatEditsTaken)
+        case moved
+        case unreadable
+    }
+
+    func takeChatEdits(_ edits: OpaqueJSON, today: String, asked: ChatMark) async -> ChatEditsOutcome {
+        let outcome = await chain { () -> ChatEditsOutcome in
+            guard asked.holds(at: self.chatMark) else { return .moved }
+            guard let preview = try? await self.engine.chatEdits(recordJSON: self.recordJSON, edits: edits, now: .now, deviceId: self.deviceId, today: today, units: self.unitChoices.json)
+            else { return .unreadable }
+            // No medication part, or one the engine refused: nothing is written now. A part with
+            // no Undo is still written (US-67 N3).
+            guard let meds = preview.medications, meds.refusal == nil else {
+                return .taken(ChatEditsTaken(preview: preview, medications: nil, changed: false, mark: self.chatMark))
+            }
+            let before = self.recordJSON
+            let result = await self.applyInTurn(.chatEdits(part: .medications, edits: edits, today: today), as: self.screen)
+            return .taken(ChatEditsTaken(preview: preview, medications: result, changed: self.recordJSON != before, mark: self.chatMark))
+        }.value
+        if case .taken(let taken) = outcome, taken.changed { ownSaves += 1 }
+        return outcome
+    }
+
+    /// A chat banner's Save or Undo, refused when the record was erased since the banner was
+    /// made (`mark`): on the phone an erase leaves `cloudErase` nil, so `applyInTurn`'s check
+    /// alone cannot see it. `changed`: the record moved.
+    func applyChatEdit(_ edit: RecordEdit, on mark: ChatMark) async -> (result: ApplyResult, changed: Bool) {
+        let answer = await chain { () -> (ApplyResult, Bool) in
+            guard mark.holds(at: self.chatMark) else {
+                return (.refused(message: "Your data was deleted since the chat suggested this, so it was not saved.", existingId: nil), false)
+            }
+            let before = self.recordJSON
+            return (await self.applyInTurn(edit, as: self.screen), self.recordJSON != before)
+        }.value
+        if answer.1 { ownSaves += 1 }
+        return answer
+    }
+
     // MARK: Per-test units (US-25 AC17e)
 
     /// Unit switches asked for and not yet landed, per-test or the master one. While one
@@ -640,7 +721,19 @@ final class RecordStore {
 
     /// Lp(a)'s unit as the record holds it now, for an Lp(a) row; nil for any other.
     func lpaUnit(for row: MyData.Row) -> String? {
-        row.metric == "lpa" ? myData?.lpaUnit : nil
+        Self.lpaUnit(for: row, recordUnit: myData?.lpaUnit)
+    }
+
+    /// Lp(a)'s unit only on the core Lp(a) row: a lab test filed as "lpa" is read in its own
+    /// unit, never the record's Lp(a) unit (US-25 AC25, review N1).
+    nonisolated static func lpaUnit(for row: MyData.Row, recordUnit: String?) -> String? {
+        row.series == nil && row.metric == "lpa" ? recordUnit : nil
+    }
+
+    /// A row's input range in `unit`: a core metric's; none for a lab test, whatever its name
+    /// (US-25 AC25, review N1).
+    func inputRange(for row: MyData.Row, in unit: String? = nil) -> ClosedRange<Double>? {
+        row.series == nil ? inputRange(for: row.metric, in: unit) : nil
     }
 
     /// Whether an edit is a typed Lp(a) value, read in Lp(a)'s own unit. Run in a change's
@@ -663,7 +756,7 @@ final class RecordStore {
 
     /// An edit whose number is read in the record's units, as cloud.ts `dependsOnUnits`.
     /// Not feet and inches: they mean the same height in either units.
-    private static func dependsOnUnits(_ edit: RecordEdit) -> Bool {
+    nonisolated static func dependsOnUnits(_ edit: RecordEdit) -> Bool {
         switch edit {
         case .add, .correct: true
         case .profile(_, _, _, let height): height != nil

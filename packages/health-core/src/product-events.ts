@@ -141,7 +141,17 @@ export const PRODUCT_EVENT_NAMES = [
   // the page showed the kept-unchanged line. Metadata `{ count }` only, capped
   // at 1000: never a row, a field name or a value. Once per tab session.
   'record_unreadable_kept',
+  // US-66 AC13: an open moved blood tests into the one table and wrote the
+  // record. Metadata `{ moved, folded, keptApart }`, counts only, each capped
+  // at 1000: never a test name or a value.
+  'blood_tests_unified',
+  // US-07 AC11: a waist or blood pressure was saved, the plan's two prompts.
+  // Metadata `{ measure }` (MEASURES) only: never the value or another metric.
+  'measurement_added',
 ] as const;
+
+/** The `measurement_added` counter's words (US-07 AC11): which prompted measure was saved. */
+export const MEASURES = ['waist', 'blood_pressure'] as const;
 
 /** The `chat_profile_edit` counter's words (US-16 AC2): which profile field, and what the user did. */
 export const CHAT_PROFILE_FIELDS = ['sex', 'heightCm'] as const;
