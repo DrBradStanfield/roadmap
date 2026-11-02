@@ -302,4 +302,18 @@ describe('US-16 AC2: parseProposedEdit — profile edits', () => {
     expect(line).toContain('press Save');
     expect(line).not.toMatch(/saved|updated|pre-filled/i);
   });
+
+  // US-16 AC2b: the profile banner waits for its own Save, so a mixed turn's
+  // line must say so; before, a medication + profile turn said only "Done".
+  it.each([
+    ['medication', [{ medicationKey: 'statin', drugName: 'rosuvastatin', doseValue: 10, doseUnit: 'mg' }], []],
+    ['measurement', [], [{ field: 'ldlC', value: 2.1, unit: 'mmol/L' }]],
+    ['medication and measurement', [{ medicationKey: 'statin', drugName: 'rosuvastatin', doseValue: 10, doseUnit: 'mg' }], [{ field: 'ldlC', value: 2.1, unit: 'mmol/L' }]],
+  ] as const)('US-16 AC2b: a %s turn with a profile edit asks for the profile Save too', (_, meds, fields) => {
+    const profile = parseProposedEdit(PROFILE, { sex: 'female', height: { value: 165, unit: 'cm' } })!;
+    const edits = [...meds.map((m) => parseProposedEdit(MED, m)!), ...fields.map((f) => parseProposedEdit(FIELD, f)!), profile];
+    const line = toolOnlyAck(edits);
+    expect(line).toContain('press Save to add them to your profile');
+    expect(line).toBe(`${toolOnlyAck(edits.filter((e) => e.kind !== 'profile'))} Please check the profile details shown and press Save to add them to your profile.`);
+  });
 });
