@@ -103,6 +103,26 @@ final class TextSizeLayoutTests: XCTestCase {
         return probe.log
     }
 
+    /// US-67 AC3: the chat's edit banners cut no words short at the largest accessibility size
+    /// on an SE, the Undo banner and the Save banner alike; the chat scrolls instead.
+    func testTheChatEditBannersNeverCutTheirWords_US67_AC3() async throws {
+        guard #available(iOS 18, *) else { throw XCTSkip("Text.Layout.isTruncated needs iOS 18") }
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Banner Text \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let store = try RecordStore(folder: folder, engine: HealthEngine(), deviceId: "test")
+        let edits = ChatEdits(store: store)
+        let proposals = #"[{"kind":"medication","medicationKey":"statin","drugName":"atorvastatin","doseValue":20,"doseUnit":"mg"},{"kind":"field","field":"weightKg","displayValue":84,"unitSystem":"si","date":null},{"kind":"profile","sex":null,"heightCm":181}]"#
+        await edits.take(try JSONDecoder().decode(OpaqueJSON.self, from: Data(proposals.utf8)), asked: store.chatMark, today: "2026-11-02")
+        XCTAssertNotNil(edits.saved)
+        XCTAssertNotNil(edits.review)
+        let chat = ScrollView { ChatEditBanners(edits: edits).padding() }
+        let se = screens[0]
+        let texts = try drawnTexts(in: chat, at: largest, screen: se.size)
+        XCTAssertGreaterThan(texts.drawn, 5, "the banners drew their words")
+        XCTAssertEqual(texts.cut, 0, "no words end in …")
+    }
+
     /// US-54 AC8b: the real Apple Health page cuts no words short, its tiles included,
     /// on an SE and a 17e, from the default size to accessibility XL; the page scrolls instead.
     func testTheAppleHealthPageNeverCutsItsWords_US54_AC8b() throws {

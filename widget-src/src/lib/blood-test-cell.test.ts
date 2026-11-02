@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type React from 'react';
-import { formatDisplayValue, fromCanonicalValue, parseLocalisedNumber, toCanonicalValue } from '@roadmap/health-core';
-import { formatLabValue, previewStatus, readTypedValue, sameAsSaved, statusOf, validateTypedValue } from './blood-test-cell';
+import { formatDisplayValue, formatLabValue, fromCanonicalValue, parseLocalisedNumber, statusOf, toCanonicalValue } from '@roadmap/health-core';
+import { previewStatus, readTypedValue, sameAsSaved, validateTypedValue } from './blood-test-cell';
 
 // ---------------------------------------------------------------------------
 // Bug: user typed a value in the Lp(a) text box, hit Enter, the value
@@ -319,5 +319,24 @@ describe('US-03 AC7 — validateTypedValue refuses 0 for lipids and ApoB, takes 
     expect(validateTypedValue('ldl', '0.2', 'si').error).toBeNull();
     expect(validateTypedValue('psa', '0', 'si').error).toBeNull();
     expect(validateTypedValue('lpa', '0', 'si').error).toBeNull();
+  });
+});
+
+import { mayStillFit } from './blood-test-cell';
+
+describe('mayStillFit: a range error waits while more digits could fix it (US-02 AC9)', () => {
+  it.each([
+    ['19', 50, 250, true],   // height, on the way to 190
+    ['1', 50, 250, true],
+    ['9', 20, 300, true],    // weight 90
+    ['6', 60, 250, true],    // systolic 60 to 69
+    ['3', 40, 200, false],   // waist: 30s too small, 300s too big
+    ['5', 60, 250, false],   // systolic: no 50s, and 500 is over
+    ['300', 50, 250, false], // too big already
+    ['0', 50, 250, false],
+    ['19.', 50, 250, false], // a decimal point: no more whole digits
+    ['', 50, 250, false],
+  ])('%s in %s to %s: %s', (typed, min, max, expected) => {
+    expect(mayStillFit(typed, min, max)).toBe(expected);
   });
 });

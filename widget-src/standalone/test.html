@@ -79,7 +79,8 @@
         <h2>Dropbox live sync test</h2>
         <p class="sub" style="margin-top:0">
           Connects to your own Dropbox (App-folder scoped — only <code>/Apps/Health&nbsp;Roadmap&nbsp;by&nbsp;Dr&nbsp;Brad/</code>) and
-          round-trips a record through the real adapter: write → read back → verify. Proves real cloud sync.
+          round-trips a test record through the real adapter: write → read back → verify. Proves real cloud sync.
+          It uses its own file, <code>dropbox-self-test.json</code>, and never touches your health record.
         </p>
         <div id="dbx-status" class="sub" style="margin-top:4px"></div>
         <div id="dbx-actions" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap"></div>

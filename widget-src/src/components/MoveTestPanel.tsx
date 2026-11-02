@@ -6,11 +6,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  METRIC_LABELS, METRIC_TO_FIELD,
+  METRIC_LABELS, METRIC_TO_FIELD, labValueLabel, savedLabText,
   type FileLabValue, type FileMeasurement, type MetricType, type MoveKeep, type MovePlan, type MoveRejection, type UnitSystem,
 } from '@roadmap/health-core';
-import { cellLabel, cellText, formatLabValue, type CellUnit } from '../lib/blood-test-cell';
-import { labValueLabel } from '../lib/lab-value-labels';
+import { cellLabel, savedCellText, type CellUnit } from '../lib/blood-test-cell';
 import { lpaRowsToCheck, useLpaKept, useLpaUnit } from '../lib/lpa-unit';
 import type { MoveOutcome } from '../storage/roadmap-store';
 import { SAVE_ERRORS, headerDay, useLiveRegion } from './BloodTestTimeline';
@@ -117,10 +116,10 @@ function MoveTestPanel({ from, to, api, unitSystem, unitOverrides, bloodTestHist
 
   const unitOf = (metric: MetricType): CellUnit => (metric === 'lpa' ? lpaUnit : unitOverrides?.[METRIC_TO_FIELD[metric]] ?? unitSystem);
   const valueOf = (row: Row) => {
-    if (!('metricType' in row)) return `${formatLabValue(row.value)} ${row.unit}`;
+    if (!('metricType' in row)) return `${savedLabText(row.value, row.comparator)} ${row.unit}`;
     const metric = row.metricType as MetricType; // a blood test row's, by the plan
     const unit = unitOf(metric);
-    return `${cellText(metric, row.value, unit)} ${cellLabel(metric, unit)}`;
+    return `${savedCellText(metric, row.value, unit, row.comparator)} ${cellLabel(metric, unit)}`;
   };
 
   const body = (p: MovePlan) => {

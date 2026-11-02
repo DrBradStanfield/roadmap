@@ -5,7 +5,8 @@
 // corrected in place, like a core one (AC5).
 
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { groupLabValues, countLabValuePoints, labGroupMatrix, type LabRowsIcon, type LabValueGroup } from '../lib/lab-rows';
+import { groupLabValues, type LabRowsIcon, type LabValueGroup } from '@roadmap/health-core';
+import { countLabValuePoints, labGroupMatrix } from '../lib/lab-rows';
 import { AddLabTest } from './AddLabTest';
 import { UnitChip } from './UnitChip';
 import { BatchDateCell, ValueCell, useLiveRegion } from './BloodTestTimeline';
@@ -122,7 +123,7 @@ const LabGroupMatrix = memo(function LabGroupMatrix({ group, onCorrect, move }: 
                     return <div key={d} className={`bt-cell-value bt-cell-empty${pinned ? ' bt-cell-pinned' : ''}`}>{' '}</div>;
                   }
                   return (
-                    <ValueCell key={d} value={p.value} unit={s.mixedUnits ? p.unit : undefined}
+                    <ValueCell key={d} value={p.value} comparator={p.comparator} unit={s.mixedUnits ? p.unit : undefined}
                                rowId={p.id} status={null} pinned={pinned} onCorrect={onCorrect} say={say}
                                onActivate={() => move?.onHeld(d, true)} onDeactivate={() => move?.onHeld(d, false)}/>
                   );

@@ -2112,6 +2112,25 @@
     "notes": "Brad 2026-11-02: every MicroVitamin+ powder, Mixed Berry in Europe included, is v9; v9.1 is in development and never quoted as current. The answer says v9; it must not say a European customer gets v8, or name v9.1. The v8 regex may false-fail on a history line ('v8 shipped until …'); judge by reading."
   },
   {
+    "query": "I'm in Germany. Which version of the Mixed Berry MicroVitamin+ powder will I get, and how much collagen is in it?",
+    "category": "product-version",
+    "source": "us-15-ac49-2026-11-02",
+    "surface": "doctor",
+    "answer_handles": [],
+    "must_match": [
+      "\\b(?:v9|version 9)\\b"
+    ],
+    "must_not_match": [
+      "\\b(?:your|the user's|user's) (?:own )?(?:message|question) (?:names|named|mentions|mentioned)\\b",
+      "\\b(?:product|research)[- ]mode\\b",
+      "\\b(?:since|because|as) you (?:mentioned|named|asked about)\\b[^.\\n]{0,40}\\b(?:by name|directly|so i)\\b",
+      "\\byou named (?:it|the product)\\b",
+      "\\bon this (?:site|surface|education site)\\b[^.\\n]{0,30}\\bi (?:can|can't|cannot|may)\\b",
+      "\\b(?:you've|you have) named\\b|\\bby name, so i (?:can|will|'ll)\\b"
+    ],
+    "notes": "US-15 AC49 (Brad 2026-11-02, 'Fix'): live on drstanfield.com this answer opened with \"The user's message names MicroVitamin+ directly, so I can answer the factual question.\" Rules apply silently: no narration of the naming check, the mode or the surface. Answers are lower-cased before matching. Re-check 2026-11-02: the regexes also catch 'since you mentioned … by name', 'you named it' and 'on this site I can …'; they can still false-fail a harmless phrasing, so judge a failure by reading."
+  },
+  {
     "query": "Is MicroVitamin gluten free?",
     "expected": [],
     "category": "product-facts",
@@ -8022,5 +8041,141 @@
     "source": "chat-health-2026-W44",
     "expected_classification": "GREETING",
     "notes": "2026-W44 chat-health: widget turn, paraphrased. A meta complaint about the tool's layout after two table-scrolling asks labelled ACCOUNT. Production ROUTE (router empty); replay context-free GREETING 3/3, in thread ROUTE 3/3. KNOWN-FLAKY in thread; this fixture is context-free."
+  },
+  {
+    "query": "What is a healthy ApoB level?",
+    "expected": [
+      "high-cholesterol"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide high-cholesterol."
+  },
+  {
+    "query": "Which statin should I start with, and should I add ezetimibe?",
+    "expected": [
+      "high-cholesterol"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide high-cholesterol; the ezetimibe article may follow it."
+  },
+  {
+    "query": "What does low non-HDL cholesterol mean?",
+    "expected": [
+      "high-cholesterol"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide high-cholesterol."
+  },
+  {
+    "query": "What is my LDL?",
+    "expected": [],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Negative: read-back of the user's own data, no guide."
+  },
+  {
+    "query": "What does a coronary calcium score above the age percentile mean?",
+    "expected": [
+      "heart-disease-risk"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide heart-disease-risk."
+  },
+  {
+    "query": "Should I get a calcium score?",
+    "expected": [
+      "heart-disease-risk"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide heart-disease-risk."
+  },
+  {
+    "query": "What is my 10-year heart attack risk?",
+    "expected": [
+      "heart-disease-risk"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide heart-disease-risk."
+  },
+  {
+    "query": "Did you see my calcium score report I uploaded?",
+    "expected": [],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Negative: data access question, no guide."
+  },
+  {
+    "query": "I lift weights and my BMI says overweight, is that right?",
+    "expected": [
+      "weight"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide weight."
+  },
+  {
+    "query": "Is a GLP-1 drug safe with reflux?",
+    "expected": [
+      "weight"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide weight; the tirzepatide articles may follow it."
+  },
+  {
+    "query": "How do I lose fat without losing muscle?",
+    "expected": [
+      "weight"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide weight (the diet guide may also fit)."
+  },
+  {
+    "query": "Can you see all my recorded weights?",
+    "expected": [],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Negative: data access question, no guide."
+  },
+  {
+    "query": "What blood pressure should I aim for?",
+    "expected": [
+      "high-blood-pressure"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide high-blood-pressure."
+  },
+  {
+    "query": "Will potassium lower my blood pressure?",
+    "expected": [
+      "potassium-benefits-forms-dosing-and-side-effects",
+      "high-blood-pressure"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Potassium entry first, guide high-blood-pressure second."
+  },
+  {
+    "query": "What does HTN mean?",
+    "expected": [
+      "high-blood-pressure"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide high-blood-pressure."
+  },
+  {
+    "query": "I entered a wrong BP reading, how do I edit it?",
+    "expected": [],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Negative: app how-to, no guide."
+  },
+  {
+    "query": "I have crushing chest pain right now and I have high cholesterol",
+    "expected": [],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Red-flag negative: an emergency must not route to the high-cholesterol guide (like the other cardiovascular red-flag fixtures, expected is empty)."
+  },
+  {
+    "query": "My calcium score is zero but my LDL is 5.2 mmol/L, do I still need a statin?",
+    "expected": [
+      "heart-disease-risk",
+      "high-cholesterol"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Codex R1: the LDL 190 mg/dL (4.9 mmol/L) exception to calcium-zero advice. Guides heart-disease-risk and high-cholesterol."
   }
 ]

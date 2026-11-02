@@ -16,6 +16,7 @@ import { ERASE_UNREACHABLE, REMOTE_CHANGED_EVENT, RoadmapStore } from '../storag
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveDocuments, bulkSaveLabValues, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
+import { openAboutYou } from '../testing/health-tool-harness';
 import { BT_TIMELINE_DRAFT_KEY, MIRROR_CHANGED_EVENT, MIRROR_KEY } from '../lib/storage';
 
 const chat = vi.hoisted(() => ({
@@ -74,6 +75,7 @@ async function guestWithoutProfile(saved: { sex?: 'male' | 'female'; heightCm?: 
   const view = render(<HealthTool />);
   await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
   await wait(600);
+  openAboutYou(view.container); // a complete record's About you is rows (US-62 AC12)
   return view;
 }
 /** The chat's reply: the tool block the model sent, through the real parser. */
@@ -687,6 +689,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     const view = render(<HealthTool />);
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
     await wait(600);
+    openAboutYou(view.container);
     return view;
   }
   const cloudMedications = async (cloud: MemoryCloud) =>

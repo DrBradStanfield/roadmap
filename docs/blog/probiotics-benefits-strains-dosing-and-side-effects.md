@@ -389,7 +389,7 @@ No interactions between probiotics and vitamins or minerals are established.
 - Fermented foods that are heated after fermentation (sourdough bread, pasteurized sauerkraut, most commercial pickles) do not contain live organisms [20].
 - A food-first approach that includes regular consumption of fermented foods is reasonable for general gut health, but for specific therapeutic effects, targeted supplementation with strains that have clinical evidence is more appropriate.
 
-Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes 2.5 g of psyllium husk — a prebiotic soluble fiber that feeds beneficial gut bacteria and supports digestive health. While not a probiotic itself, prebiotic fiber provides substrate for beneficial microorganisms already present in the gut, complementing any probiotic supplementation strategy.
+Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes 5 g of acacia fiber, from acacia gum, as its fiber for gut health. It dissolves into water without thickening or turning to gel. It is not a probiotic itself.
 
 ## 8. References
 

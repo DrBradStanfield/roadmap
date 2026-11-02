@@ -8,7 +8,7 @@
  * disturbing the type graph. `api.ts` re-exports everything here for back-compat
  * import paths; new code may import directly from `./api-types`.
  */
-import type { HealthInputs, DocumentType, ApiMeasurement, ApiMedication, ApiScreening, MedicationChange, LabUnitRefusal, MeasurementRefusal, RefusedLabValue, UnreadLabValue } from '@roadmap/health-core';
+import type { Comparator, HealthInputs, DocumentType, ApiMeasurement, ApiMedication, ApiScreening, MedicationChange, LabUnitRefusal, MeasurementRefusal, RefusedLabValue, UnreadLabValue } from '@roadmap/health-core';
 import type { ExtractionStopCode } from '@roadmap/health-core/models';
 
 export interface ApiReminderPreference {
@@ -89,6 +89,8 @@ export interface ExtractedValue {
   printedMonth?: string;
   /** The unit was guessed from the number (US-12 AC16). */
   unitGuessed?: true;
+  /** Printed as a limit ("> 60"): the values are its bound (US-12 AC20). */
+  comparator?: Comparator;
 }
 
 /** Document data returned by the LLM for non-lab documents.
@@ -108,9 +110,10 @@ export interface AdditionalLabValue {
   unit: string;
   referenceLow?: number | null;
   referenceHigh?: number | null;
-  /** As on `ExtractedValue` (US-12 AC12, AC14). */
+  /** As on `ExtractedValue` (US-12 AC12, AC14, AC20). */
   recordedAt?: string;
   printedMonth?: string;
+  comparator?: Comparator;
 }
 
 export interface LabImportResult {
@@ -140,6 +143,8 @@ export interface ApiLabValue {
   recordedAt: string;
   source: string;
   createdAt: string;
+  /** Printed as a limit: `value` is its bound (US-12 AC20). */
+  comparator?: Comparator;
 }
 
 /** Saved document from the API */

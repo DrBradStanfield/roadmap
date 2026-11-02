@@ -18,8 +18,10 @@ import { getDisplayRange, rangeFault, reportedToCanonical, toCanonicalValue, typ
 import { foldName, LAB_CATALOG, LAB_GROUPS, labTestLabel, normalizeLabUnit, resolveLabCatalogEntry, type LabCatalogEntry } from './lab-catalog';
 import { cutText } from './chat-history';
 import { parseLocalisedNumber } from './parseNumber';
-import { DOCUMENT_TYPES } from './validation';
+import { DOCUMENT_TYPES, METRIC_TYPES } from './validation';
 import { isCalendarDay } from './measurement-history';
+import { COMPARATORS, comparatorOf, readPrintedLimit, uploadLimitUngraded, type Comparator } from './lab-limits';
+import { METRIC_TO_FIELD } from './mappings';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -46,6 +48,8 @@ export interface ExtractedValue {
   printedMonth?: string;
   /** The printed unit was blank or unknown, so `resolveUnit` guessed it from the number (US-12 AC16). */
   unitGuessed?: true;
+  /** The result was printed as a limit ("> 60"): the values are its bound (US-12 AC20). */
+  comparator?: Comparator;
 }
 
 /** A lab row the extractor would not convert or save: a creatinine whose unit
@@ -60,9 +64,9 @@ export interface RefusedLabValue {
   printedMonth?: string;
 }
 
-/** Why a lab row was left out unread (US-12 AC19): its result was printed as
- *  a limit ("> 60", "<5"), or it could not be read as a number at all. */
-export type UnreadReason = 'limit' | 'unreadable';
+/** Why a lab row was left out unread (US-12 AC19): it could not be read as a
+ *  number. A result printed as a limit is saved since AC20, so it is never here. */
+export type UnreadReason = 'unreadable';
 
 /** A lab row the parse left out, by its test's name and why: never its value
  *  (US-12 AC19), so the person knows which result to look for. */
@@ -77,7 +81,6 @@ export interface UnreadLabValue {
 
 /** The words both review screens show for each reason (US-12 AC19). */
 const UNREAD_REASON_TEXT: Record<UnreadReason, string> = {
-  limit: 'printed as a limit',
   unreadable: 'could not be read',
 };
 
@@ -97,7 +100,8 @@ export function unreadLines({ droppedValueCount = 0, unreadValues = [], refusedV
   };
   for (const v of refusedValues) add(labTestLabel(v.metric), v.reason);
   const named = unreadValues.filter(v => v.name);
-  for (const v of named) add(labTestLabel(v.name), UNREAD_REASON_TEXT[v.reason]);
+  // A server from before US-12 AC20 may still send `limit`: read any word this build does not know as unreadable.
+  for (const v of named) add(labTestLabel(v.name), UNREAD_REASON_TEXT[v.reason] ?? UNREAD_REASON_TEXT.unreadable);
   const labelsByReason = new Map<string, string[]>();
   for (const [label, why] of reasons) {
     const reason = why.length > 1 ? why.map(r => r.replace(/\.$/, '')).join('; ') : why[0];
@@ -159,6 +163,8 @@ export interface AdditionalLabValue {
   recordedAt?: string;
   /** As on `ExtractedValue`. */
   printedMonth?: string;
+  /** As on `ExtractedValue`: `value` is the printed bound. */
+  comparator?: Comparator;
 }
 
 export interface UnifiedExtractionResult {
@@ -337,7 +343,7 @@ export function resolveUnit(metric: MetricType, unitStr: string, value: number):
 }
 
 /** Resolve units for an array of LLM-extracted lab values. Shared by all extraction paths. */
-export function resolveLabValues(rawValues: Array<{ metric: string; value: number; unit: string; confidence: 'high' | 'medium' | 'low'; question?: string; recordedAt?: string; printedMonth?: string; printedName?: string }>): ExtractedValue[] {
+export function resolveLabValues(rawValues: Array<{ metric: string; value: number; unit: string; confidence: 'high' | 'medium' | 'low'; question?: string; recordedAt?: string; printedMonth?: string; printedName?: string; comparator?: Comparator }>): ExtractedValue[] {
   const values: ExtractedValue[] = [];
   for (const v of rawValues) {
     if (!VALID_METRICS.includes(v.metric as MetricType)) continue;
@@ -364,6 +370,7 @@ export function resolveLabValues(rawValues: Array<{ metric: string; value: numbe
       ...(v.printedMonth ? { printedMonth: v.printedMonth } : null),
       ...(v.printedName ? { printedName: v.printedName } : null),
       ...(!confident ? { unitGuessed: true as const } : null),
+      ...comparatorOf(v),
     });
   }
   return values;
@@ -415,7 +422,7 @@ ${VALID_METRICS.map((metric) => `  - "${metric}" — ${CORE_METRIC_ALIASES[metri
   8. A measured blood pressure printed as one reading ("120/80 mmHg") is two TARGET METRICS: systolic_bp 120 and diastolic_bp 80, both in "values".
   9. UNITS, in "values" and "additionalValues" alike: copy each row's unit exactly as the report prints it for that row: the unit beside the result; else the unit printed in that row's own reference range ("200-900 pg/mL" gives "pg/mL"); else the unit in that column's header. NEVER convert a value and NEVER relabel its unit to the one you expect for that test: a result printed in pg/mL is returned in pg/mL, even where pmol/L is more common. If no unit is printed anywhere for the row, return "unit": "" (an empty string). Never guess one.
   10. REFERENCE RANGES: for each "additionalValues" row, return the row's printed reference range as "referenceLow" and "referenceHigh": the numbers as printed, in the row's printed unit, never converted. A one-sided range sets one side ("<5" is referenceHigh 5, ">40" is referenceLow 40) and the other is null; both are null when no range is printed.
-  11. An eGFR printed with < or > (">60", ">90") is returned exactly as printed, as a string: never as its number.
+  11. A result printed with <, >, ≤ or ≥ (">60", "<5", "≤ 0.1") is returned exactly as printed, as a string with its symbol, in "values" and "additionalValues" alike: never as its number alone.
 ${mode === 'full' ? '  12. Every row in "values" and "additionalValues" also has "printedName": the test name exactly as the report prints it.\n' : ''}
   ADDITIONAL VALUES — use these standardized snake_case names when applicable:
 ${LAB_GROUPS.map((group) => [group.label, LAB_CATALOG.filter((entry) => entry.group === group.id).map((entry) => entry.key)] as const)
@@ -596,9 +603,13 @@ const printedNameField = z.unknown().transform(n => {
   return line ? cutText(line, MAX_NAME_LENGTH) : undefined;
 }).optional();
 
+/** Set only by `readableRows` from the printed value, never taken from the model (US-12 AC20). */
+const labComparator = z.enum(COMPARATORS).optional();
+
 const coreValueRow = z.object({
   metric: z.string(),
   value: labValue,
+  comparator: labComparator,
   // Null, missing or blank is "no unit printed", as on an additional row.
   unit: z.string().nullish().transform(u => u?.trim() ?? ''),
   confidence: z.enum(['high', 'medium', 'low']),
@@ -611,6 +622,7 @@ const coreValueRow = z.object({
 const additionalValueRow = z.object({
   name: z.string().trim().min(1),
   value: labValue,
+  comparator: labComparator,
   unit: z.string().nullish().transform(u => u?.trim() ?? ''),
   referenceLow: labBound,
   referenceHigh: labBound,
@@ -634,29 +646,39 @@ const unifiedResultSchema = z.object({
   }).nullable().default(null),
 });
 
-/** A result printed as a limit: "> 60", "<5", "≤ 0.1". Never read as its number (US-12 AC19). */
-const PRINTED_LIMIT = /^\s*[<>≤≥]/;
-
 /** A dropped row by its test's name ("" for none), why and day (US-12 AC19):
  *  an unnamed one keeps its day too, so it leaves the count with its column. */
 function unreadValue(row: unknown): UnreadLabValue {
-  const { metric, name, value, recordedAt } = (row ?? {}) as Record<string, unknown>;
+  const { metric, name, recordedAt } = (row ?? {}) as Record<string, unknown>;
   const test = typeof metric === 'string' ? metric.trim() : typeof name === 'string' ? name.trim() : '';
   const day = labDay.safeParse(recordedAt);
   return {
     name: cutText(test, 80),
-    reason: typeof value === 'string' && PRINTED_LIMIT.test(value) ? 'limit' : 'unreadable',
+    reason: 'unreadable',
     ...(day.success && day.data ? { recordedAt: day.data } : null),
   };
+}
+
+/**
+ * A row as the schema reads it: a value printed as a limit ("> 60", "<5")
+ * becomes its number and its code (US-12 AC20); any `comparator` the model
+ * sent itself is dropped, so only the printed symbol sets one.
+ */
+function withPrintedLimit(row: unknown): unknown {
+  if (row === null || typeof row !== 'object' || Array.isArray(row)) return row;
+  const { comparator: _sent, ...rest } = row as Record<string, unknown>;
+  const limit = typeof rest.value === 'string' ? readPrintedLimit(rest.value) : null;
+  return limit ? { ...rest, value: limit.rest, comparator: limit.comparator } : rest;
 }
 
 /** The rows of `rows` that `schema` reads; the rest are dropped, each to
  *  `unread`. */
 function readableRows<T extends z.ZodTypeAny>(schema: T, rows: unknown[], unread: UnreadLabValue[]): Array<z.output<T>> {
-  return rows.flatMap(row => {
+  return rows.flatMap(raw => {
+    const row = withPrintedLimit(raw);
     const r = schema.safeParse(row);
     if (r.success && !refusedCountRow(row)) return [r.data];
-    unread.push(unreadValue(row));
+    unread.push(unreadValue(raw));
     return [];
   });
 }
@@ -792,7 +814,7 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
   const labIn: typeof parsed.additionalValues = [];
   for (const { v, printedName, to, lab } of planned) {
     if (lab) {
-      labIn.push({ name: to, value: v.value, unit: v.unit, referenceLow: null, referenceHigh: null, recordedAt: v.recordedAt, printedMonth: v.printedMonth, printedName });
+      labIn.push({ name: to, value: v.value, unit: v.unit, referenceLow: null, referenceHigh: null, recordedAt: v.recordedAt, printedMonth: v.printedMonth, printedName, ...comparatorOf(v) });
     } else if (to === v.metric || held.has(`${to}@${reportDayOf(v.recordedAt)}`)) {
       coreIn.push({ ...v, printedName });
     } else {
@@ -813,7 +835,7 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
     const free = !!metric && !taken.has(slot(metric, v.recordedAt));
     const promote = () => {
       taken.add(slot(metric!, v.recordedAt));
-      coreRows.push({ metric: metric!, value: v.value, unit: v.unit, confidence: 'high', recordedAt: v.recordedAt, printedMonth: v.printedMonth, printedName: v.printedName });
+      coreRows.push({ metric: metric!, value: v.value, unit: v.unit, confidence: 'high', recordedAt: v.recordedAt, printedMonth: v.printedMonth, printedName: v.printedName, ...comparatorOf(v) });
     };
     // A creatinine the report itself printed as serum creatinine, with no urine
     // word, is promoted like any core value, its unit checked as a core
@@ -1006,4 +1028,47 @@ export function isImportableEntryName(name: string, extensions: readonly string[
   if (JUNK_PATTERNS.some((pattern) => lower.includes(pattern))) return false;
   if (lower.split('/').some((part) => part.startsWith('.'))) return false;
   return extensions.some((ext) => lower.endsWith(ext));
+}
+
+/**
+ * The words `upload_outcome` `limitUngradedTests` may carry (US-12 AC20, Brad
+ * 2026-11-02): a core metric's key, a lab-catalogue key (the lab eGFR is
+ * `egfr`), else "other". A closed list, so no free text, value, unit or date
+ * can ride on it; the server's schema takes these and nothing else.
+ */
+export const LIMIT_TEST_WORDS: readonly string[] = [...new Set([...METRIC_TYPES, ...LAB_CATALOG.map(e => e.key), 'other'])];
+
+/** A test's word in that list: its core key, its catalogue key, or "other". */
+function limitTestWord(metricOrName: string): string {
+  if ((METRIC_TYPES as readonly string[]).includes(metricOrName)) return metricOrName;
+  return resolveLabCatalogEntry(metricOrName)?.key ?? 'other';
+}
+
+/**
+ * US-12 AC20's usage signal for one run's read files: how many values were
+ * printed as a limit (`valuesLimit`, now saved), how many of those the
+ * grading rule leaves undecided (`valuesLimitUngraded`, judged at upload by
+ * the same cutoffs), and which tests those were, each once, sorted. Never a
+ * value, a comparator or a printed name.
+ */
+export function uploadLimitSignal(results: ReadonlyArray<{
+  values: ReadonlyArray<Pick<ExtractedValue, 'metric' | 'valueSI' | 'comparator'>>;
+  additionalValues: ReadonlyArray<Pick<AdditionalLabValue, 'name' | 'value' | 'comparator' | 'referenceLow' | 'referenceHigh'>>;
+}>): { valuesLimit: number; valuesLimitUngraded: number; limitUngradedTests: string[] } {
+  let valuesLimit = 0;
+  const ungraded: string[] = [];
+  for (const r of results) {
+    for (const v of r.values) {
+      if (!v.comparator) continue;
+      valuesLimit++;
+      if (uploadLimitUngraded({ comparator: v.comparator, field: METRIC_TO_FIELD[v.metric], valueSI: v.valueSI })) ungraded.push(limitTestWord(v.metric));
+    }
+    for (const v of r.additionalValues) {
+      if (!v.comparator) continue;
+      valuesLimit++;
+      const word = limitTestWord(v.name);
+      if (uploadLimitUngraded({ comparator: v.comparator, field: word === 'egfr' ? 'labEgfr' : undefined, value: v.value, referenceLow: v.referenceLow, referenceHigh: v.referenceHigh })) ungraded.push(word);
+    }
+  }
+  return { valuesLimit, valuesLimitUngraded: ungraded.length, limitUngradedTests: [...new Set(ungraded)].sort() };
 }

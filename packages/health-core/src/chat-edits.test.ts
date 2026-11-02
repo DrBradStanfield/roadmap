@@ -4,6 +4,9 @@ import {
   parseProposedEdit,
   parseProposedEdits,
   toolOnlyAck,
+  readProposedEdits,
+  chatMedicationChange,
+  unsavedProfile,
   EDITABLE_FIELDS,
   PROPOSE_FIELD_EDIT_TOOL,
   PROPOSE_MEDICATION_EDIT_TOOL,
@@ -301,5 +304,91 @@ describe('US-16 AC2: parseProposedEdit — profile edits', () => {
     const line = toolOnlyAck([profile]);
     expect(line).toContain('press Save');
     expect(line).not.toMatch(/saved|updated|pre-filled/i);
+  });
+
+  // US-16 AC2b: the profile banner waits for its own Save, so a mixed turn's
+  // line must say so; before, a medication + profile turn said only "Done".
+  it.each([
+    ['medication', [{ medicationKey: 'statin', drugName: 'rosuvastatin', doseValue: 10, doseUnit: 'mg' }], []],
+    ['measurement', [], [{ field: 'ldlC', value: 2.1, unit: 'mmol/L' }]],
+    ['medication and measurement', [{ medicationKey: 'statin', drugName: 'rosuvastatin', doseValue: 10, doseUnit: 'mg' }], [{ field: 'ldlC', value: 2.1, unit: 'mmol/L' }]],
+  ] as const)('US-16 AC2b: a %s turn with a profile edit asks for the profile Save too', (_, meds, fields) => {
+    const profile = parseProposedEdit(PROFILE, { sex: 'female', height: { value: 165, unit: 'cm' } })!;
+    const edits = [...meds.map((m) => parseProposedEdit(MED, m)!), ...fields.map((f) => parseProposedEdit(FIELD, f)!), profile];
+    const line = toolOnlyAck(edits);
+    expect(line).toContain('press Save to add them to your profile');
+    expect(line).toBe(`${toolOnlyAck(edits.filter((e) => e.kind !== 'profile'))} Please check the profile details shown and press Save to add them to your profile.`);
+  });
+});
+
+// US-67 AC3: the app's tool-only line never says a value is saved before Save.
+describe('US-67 AC3: toolOnlyAck in the app', () => {
+  const field = parseProposedEdit(FIELD, { field: 'ldlC', value: 3.4, unit: 'mmol/L' })!;
+  const med = parseProposedEdit(MED, { medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' })!;
+  const profile = parseProposedEdit(PROFILE, { sex: 'male' })!;
+  it('US-67 AC3: a value is ready to save, never pre-filled in a form', () => {
+    expect(toolOnlyAck([field], true)).toBe("I've put that ready to save — check it and press Save.");
+  });
+  it('US-67 AC3: a medication is done with undo from the banner, as on the web', () => {
+    expect(toolOnlyAck([med], true)).toBe(toolOnlyAck([med]));
+  });
+  it('US-67 AC3: both name the undo and the Save, and never the form', () => {
+    const line = toolOnlyAck([field, med], true);
+    expect(line).toMatch(/undo from the banner/);
+    expect(line).toMatch(/press Save/);
+    expect(line).not.toMatch(/form/);
+  });
+  it('US-67 AC3: a profile edit asks for Save, as on the web', () => {
+    expect(toolOnlyAck([profile], true)).toBe(toolOnlyAck([profile]));
+  });
+});
+
+// US-67 AC2: what a client receives is read again; junk never throws.
+describe('US-67 AC2: readProposedEdits', () => {
+  const field = { kind: 'field', field: 'ldlC', displayValue: 3.4, unitSystem: 'si', date: null };
+  it('US-67 AC2: keeps valid edits, leaves out unknown kinds, and names a broken known kind', () => {
+    const read = readProposedEdits([field, { kind: 'future_kind', x: 1 }, { kind: 'field', field: 'ldlC', displayValue: 'x', unitSystem: 'si', date: null }, null, 7]);
+    expect(read.edits).toEqual([field]);
+    expect(read.invalid).toEqual(['field']);
+  });
+  it.each([null, 'x', {}, 3])('US-67 AC2: a list that is not one (%s) is invalid', (raw) => {
+    expect(readProposedEdits(raw)).toEqual({ edits: [], invalid: ['list'] });
+  });
+  it('US-67 AC2: a profile edit with nothing in it, or a bad date, is invalid', () => {
+    expect(readProposedEdits([{ kind: 'profile', sex: null, heightCm: null }]).invalid).toEqual(['profile']);
+    expect(readProposedEdits([{ ...field, date: '2026-11-02T00:00' }]).invalid).toEqual(['field']);
+    expect(readProposedEdits([{ kind: 'medication', medicationKey: '__proto__', drugName: 'x', doseValue: null, doseUnit: null }]).invalid).toEqual(['medication']);
+  });
+});
+
+// US-06 AC12, shared by the web widget and the iPhone engine (US-67 AC4).
+describe('chatMedicationChange: the rows Undo restores and the escalation reset', () => {
+  const edit = (drugName: string, doseValue: number | null = null) => ({ kind: 'medication' as const, medicationKey: 'statin' as const, drugName, doseValue, doseUnit: doseValue ? 'mg' : null });
+  const row = (medicationKey: string, drugName: string, doseValue: number | null = null) => ({ medicationKey, drugName, doseValue, doseUnit: doseValue ? 'mg' : null });
+  it('a key with no row goes back to its unanswered value', () => {
+    expect(chatMedicationChange(edit('atorvastatin', 20), [], new Set(['statin'])).undo).toEqual([row('statin', 'none')]);
+  });
+  it('a new dose resets a held escalation answer, which Undo restores first', () => {
+    const saved = [row('statin', 'atorvastatin', 10), row('statin_escalation', 'not_tolerated')];
+    expect(chatMedicationChange(edit('atorvastatin', 20), saved, new Set(['statin']))).toEqual({
+      undo: [row('statin_escalation', 'not_tolerated'), row('statin', 'atorvastatin', 10)], reset: 'statin_escalation',
+    });
+  });
+  it('the same drug and dose, or an answer the reply states, resets nothing', () => {
+    const saved = [row('statin', 'atorvastatin', 20), row('statin_escalation', 'not_tolerated')];
+    expect(chatMedicationChange(edit('atorvastatin', 20), saved, new Set(['statin'])).reset).toBeNull();
+    expect(chatMedicationChange(edit('rosuvastatin', 10), saved, new Set(['statin', 'statin_escalation'])).reset).toBeNull();
+  });
+  it('an unsaved form row that differs also resets (the web\'s extra)', () => {
+    const saved = [row('statin', 'atorvastatin', 20)];
+    expect(chatMedicationChange(edit('atorvastatin', 20), saved, new Set(['statin']), { drugName: 'atorvastatin', doseValue: 40 }).reset).toBe('statin_escalation');
+  });
+});
+
+describe('unsavedProfile (US-16 AC2)', () => {
+  it('drops what the profile already holds as the user sees it', () => {
+    expect(unsavedProfile({ kind: 'profile', sex: 'male', heightCm: 178.2 }, { sex: 'male', heightCm: 178 }, 'si')).toBeNull();
+    expect(unsavedProfile({ kind: 'profile', sex: 'male', heightCm: 180 }, { sex: 'male', heightCm: 178 }, 'si')).toEqual({ kind: 'profile', sex: null, heightCm: 180 });
+    expect(unsavedProfile({ kind: 'profile', sex: 'female', heightCm: null }, { heightCm: null }, 'si')).toEqual({ kind: 'profile', sex: 'female', heightCm: null });
   });
 });

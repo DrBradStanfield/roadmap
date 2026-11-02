@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { sameBytes } from '../lib/crypto-compare.server';
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import * as Sentry from '@sentry/react-router';
 import { labImportRequestSchema, batchImportRequestSchema } from '../../packages/health-core/src/validation';
@@ -76,9 +77,7 @@ function newPollToken(): string {
 /** Constant-length compare; a missing or differently sized token is simply wrong. */
 function matchesPollToken(expected: string, supplied: string | null): boolean {
   if (!supplied) return false;
-  const a = Buffer.from(expected);
-  const b = Buffer.from(supplied);
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
+  return sameBytes(Buffer.from(expected), Buffer.from(supplied));
 }
 
 /** How long a processing count is reused before the next provider read. */
