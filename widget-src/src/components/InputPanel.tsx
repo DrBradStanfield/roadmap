@@ -169,6 +169,9 @@ interface InputPanelProps {
   onMedicationChange: (medicationKey: string, drugName: string, doseValue: number | null, doseUnit: string | null) => void;
   screenings: ApiScreening[];
   onScreeningChange: (screeningKey: string, value: string) => void;
+  /** The PSA's month and year (US-06 AC15): null until picked, the current month shows meanwhile. */
+  psaDate: DateValue | null;
+  onPsaDateChange: (date: DateValue) => void;
   supplements: ApiSupplement[];
   onSupplementChange: (key: string, name: string, doseValue: number | null, doseUnit: string | null, status?: string, startedAt?: string) => void;
   onSupplementDelete: (key: string) => void;
@@ -247,7 +250,7 @@ export function InputPanel({
   previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
   onCorrectValue, moveTest, onDraftValue,
   medications, onMedicationChange,
-  screenings, onScreeningChange,
+  screenings, onScreeningChange, psaDate, onPsaDateChange,
   supplements, onSupplementChange, onSupplementDelete,
   scheduleLongitudinalSave, flushLongitudinalSave,
   isSavingLongitudinal, fieldsSaved, hasApiResponse,
@@ -574,9 +577,6 @@ export function InputPanel({
       setHeightInches('');
     }
   }, [inputs.heightCm, unitSystem]);
-
-  // PSA date picker state (for prostate section)
-  const [psaDate, setPsaDate] = useState<DateValue>(getCurrentDateValue);
 
   const parseAndConvert = (field: string, value: string): number | undefined => {
     const num = parseLocalisedNumber(value);
@@ -2124,7 +2124,10 @@ export function InputPanel({
                       return (
                         <div className="health-field">
                           <label htmlFor="psa-input">{SCREENING_TEXT.psaLabel}</label>
-                          <div className="psa-inline-row">
+                          {/* Saves once focus leaves the row, so a date picked after the value counts (US-06 AC15). */}
+                          <div className="psa-inline-row" onBlur={(e) => {
+                            if (!unreadable.psa && !e.currentTarget.contains(e.relatedTarget as Node | null)) autoSaveOnBlur();
+                          }}>
                             <input
                               type="number"
                               id="psa-input"
@@ -2146,7 +2149,6 @@ export function InputPanel({
                                 if (unreadable.psa) return;
                                 rangeWait.settle();
                                 setRawInputs(prev => { const next = { ...prev }; delete next.psa; return next; });
-                                autoSaveOnBlur();
                               }}
                               onKeyDown={onNumericEnter}
                               placeholder=""
@@ -2155,7 +2157,7 @@ export function InputPanel({
                               max={range('psa').max}
                               className={errors.psa ? 'error' : ''}
                             />
-                            <InlineDatePicker value={psaDate} onChange={setPsaDate} />
+                            <InlineDatePicker value={psaDate ?? getCurrentDateValue()} onChange={onPsaDateChange} />
                             {autoSaveGate && inputs.psa !== undefined && (
                               <CommitTickButton ariaLabel="Save PSA" onClick={flushLongitudinalSave}/>
                             )}
