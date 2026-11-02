@@ -263,7 +263,7 @@ export function generateSuggestions(
       priority: 'attention',
       ...(inputs.pressureOrder
         ? { title: 'Check your blood pressure reading', description: 'Your last reading looks swapped: the top number (systolic) should be higher than the bottom (diastolic). Check it and add it again.' }
-        : { title: 'Measure your blood pressure', description: `High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. Aim for below ${bpTargetFor(results.age)}/80.` }),
+        : { title: 'Measure your blood pressure', description: 'High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. Aim for below 120/80 (130/80 if you\'re frail).' }),
     });
   }
 

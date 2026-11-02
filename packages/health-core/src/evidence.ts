@@ -291,7 +291,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── General ────────────────────────────────────────────────
 
   'measure-waist': {
-    reason: 'Waist circumference shows how much fat is stored around the middle, which is linked to heart and metabolic risk. A meta-analysis found waist-to-height ratio (WHtR) a better screen for cardiometabolic risk than BMI, so it may flag risk that a healthy BMI hides. The AACE 2025 and NICE guidelines use WHtR alongside BMI: a ratio of 0.5 or more suggests increased risk, and with a BMI of 25–29.9 a ratio below 0.5 indicates healthy body composition.',
+    reason: 'Fat around the middle is linked to heart and metabolic risk. Waist-to-height ratio can flag risk that a healthy BMI misses; the AACE 2025 and NICE guidelines suggest keeping it under 0.5.',
     guidelines: ['AACE 2025', 'NICE'],
     references: [
       { label: 'Ashwell 2012 – WHtR better than BMI for cardiometabolic risk (Obes Rev)', url: 'https://doi.org/10.1111/j.1467-789X.2011.00952.x' },

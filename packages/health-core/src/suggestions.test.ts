@@ -992,6 +992,10 @@ describe('generateSuggestions', () => {
         expect(waistCard(bmi)?.title, `BMI ${bmi}`).toBe('Measure your waist circumference');
         expect(waistCard(bmi)?.description, `BMI ${bmi}`).toBe(text);
       }
+      // Its "why", approved by Brad 2026-11-02, with its tags and reference kept.
+      expect(waistCard(22)?.reason).toBe('Fat around the middle is linked to heart and metabolic risk. Waist-to-height ratio can flag risk that a healthy BMI misses; the AACE 2025 and NICE guidelines suggest keeping it under 0.5.');
+      expect(waistCard(22)?.guidelines).toEqual(['AACE 2025', 'NICE']);
+      expect(waistCard(22)?.references?.map(r => r.url)).toEqual(['https://doi.org/10.1111/j.1467-789X.2011.00952.x']);
     });
 
     it('comes first in engine order, before blood pressure and screenings', () => {
@@ -1008,14 +1012,15 @@ describe('generateSuggestions', () => {
       return generateSuggestions({ ...inputs, ...overrides }, results).find(s => s.id === 'measure-bp');
     };
 
-    it('shows with no blood pressure on record, at attention, with the approved text and the age target', () => {
+    it('shows with no blood pressure on record, at attention, with the approved text and one target for every age', () => {
       const card = bpCard({});
       expect(card).toBeDefined();
       expect(card?.priority).toBe('attention');
       expect(card?.category).toBe('blood_pressure');
       expect(card?.title).toBe('Measure your blood pressure');
-      expect(card?.description).toBe('High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. Aim for below 120/80.');
-      expect(bpCard({}, { age: 70 })?.description).toContain('Aim for below 130/80.');
+      expect(card?.description).toBe('High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. Aim for below 120/80 (130/80 if you\'re frail).');
+      // Brad 2026-11-02: one target sentence at every age, frailty named; this card does not read the age rule.
+      for (const age of [40, 70, undefined]) expect(bpCard({}, { age })?.description, `age ${age}`).toContain("Aim for below 120/80 (130/80 if you're frail).");
       // Its evidence reuses the plan's blood pressure references.
       expect(card?.references?.map(r => r.url)).toContain('https://doi.org/10.1161/HYP.0000000000000065');
       expect(card?.reason).toContain('no symptoms');
