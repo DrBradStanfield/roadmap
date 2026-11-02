@@ -1,49 +1,57 @@
 // @vitest-environment jsdom
 /**
- * US-09 AC5 — where the storage sentence sits, not just what it says.
- *
- * Both defects this pins were invisible to the copy tests: on the plan tab the
- * sentence landed above the email box instead of under the last helper line,
- * and on the input tab it ran to the screen edge because it is a sibling of the
- * cards, not a child, so it missed their mobile gutter.
+ * US-09 AC5 (Brad 2026-11-02): the storage promise is said once, in the plan's
+ * "Where do you want to keep your health record?" card. Starting Info and the
+ * PDF box no longer repeat "Your health record stays in your browser…".
  */
-import { readFileSync } from 'node:fs';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
-import { EMAIL_STORAGE_NOTICE, StorageNoticeContext } from '../lib/storage-notice';
 
-vi.mock('../lib/roadmap-data', () => ({
+vi.mock('../lib/roadmap-data', async original => ({
+  ...(await original<typeof import('../lib/roadmap-data')>()),
   getReportHtml: vi.fn(), sendGuestReport: vi.fn(),
   getReportEmailCaptured: () => false, markReportEmailCaptured: vi.fn(),
 }));
-vi.mock('../lib/server-api', () => ({ trackABConversion: vi.fn(), trackProductEvent: vi.fn() }));
+vi.mock('../lib/server-api', async original => ({
+  ...(await original<typeof import('../lib/server-api')>()),
+  trackABConversion: vi.fn(), trackProductEvent: vi.fn(),
+}));
+vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
+vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('min-width'), media: q, addEventListener() {}, removeEventListener() {} }));
 
 import { GuestEmailCapture } from './ResultsPanel';
+import { InputPanel } from './InputPanel';
 
 afterEach(cleanup);
 
-const hook = {
-  email: '', setEmail: vi.fn(), emailError: '', setEmailError: vi.fn(),
-  state: 'idle' as const, setState: vi.fn(),
-  helperText: 'Get a PDF of your personalized plan.', handleSubmit: vi.fn(),
-};
+const REPEAT = /stays in your browser/;
 
-describe('US-09 AC5 — plan tab, email box', () => {
-  it('the storage sentence follows the reminders helper line, last in the block', () => {
-    const { container } = render(
-      <StorageNoticeContext.Provider value><GuestEmailCapture hook={hook} /></StorageNoticeContext.Provider>,
-    );
-    const notice = container.querySelector('.hr-storage-notice')!;
-    expect(notice.textContent).toBe(EMAIL_STORAGE_NOTICE);
-    expect(notice.previousElementSibling!.className).toBe('email-capture-disclosure');
-    expect(notice.parentElement!.lastElementChild).toBe(notice);
+describe('US-09 AC5 — one storage line, in the plan\'s storage card', () => {
+  it('the PDF box has no storage sentence', () => {
+    const hook = {
+      email: '', setEmail: vi.fn(), emailError: '', setEmailError: vi.fn(),
+      state: 'idle' as const, setState: vi.fn(),
+      helperText: 'Get a PDF of your personalized plan.', handleSubmit: vi.fn(),
+    };
+    const { container } = render(<GuestEmailCapture hook={hook} />);
+    expect(container.querySelector('.email-capture')).not.toBeNull();
+    expect(container.textContent).not.toMatch(REPEAT);
+    expect(container.querySelector('.hr-storage-notice')).toBeNull();
   });
-});
 
-describe('US-09 AC5 — input tab gutter', () => {
-  it('the sentence carries the same mobile gutter as the cards it sits under', () => {
-    const css = readFileSync('widget-src/src/styles.css', 'utf8').replace(/\s+/g, ' ');
-    expect(css).toContain('.section-card { padding: 12px !important; margin-left: 10px; margin-right: 10px; }');
-    expect(css).toContain('.health-input-panel > .hr-storage-notice { margin-left: 10px; margin-right: 10px; }');
+  it('Starting Info has no storage sentence once a value is in', () => {
+    const inputs = { sex: 'male' as const, heightCm: 180, weightKg: 80 };
+    const props = {
+      inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si' as const, onUnitSystemChange: vi.fn(),
+      unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
+      labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
+      onMedicationChange: vi.fn(), onScreeningChange: vi.fn(), supplements: [], onSupplementChange: vi.fn(), screenings: [],
+      onSupplementDelete: vi.fn(), scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
+      fieldsSaved: 2, hasApiResponse: true, formStage: 3 as const, reached: 3 as const, fullForm: false, wasDone: false, aboutYouLow: false, planBasis: {}, grading: {},
+    };
+    const { container } = render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />);
+    expect(container.querySelector('#heightCm')).not.toBeNull();
+    expect(container.textContent).not.toMatch(REPEAT);
+    expect(container.querySelector('.hr-storage-notice')).toBeNull();
   });
 });

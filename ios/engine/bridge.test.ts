@@ -33,6 +33,7 @@ function parameters(name: string): string[] {
 const NOW = '2026-10-21T08:00:00.000Z';
 const SAMPLE_ARGS: Record<string, unknown[]> = {
   screenJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'), NOW, 'phone', '{}'],
+  historyJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'), 'ldl', NOW, 'phone', '{}'],
 };
 /** A door's answer with its timing fields (`ms`) left out, which differ call to call. */
 const untimed = (text: string) => JSON.stringify(JSON.parse(text, (key, value) => (key === 'ms' ? undefined : value)));
@@ -89,12 +90,13 @@ describe('bridge contract (US-25 AC18)', () => {
   // app cannot do without) moves the id and updates this literal; bridge-optional.json is
   // never a way around that, only for additions that work both ways (D3, D14). Moved
   // 2026-11-01 (Brad: still in beta, no downloads): US-07 AC8's labEgfrOutdated plus
-  // US-61's optional isUS and usProducts; builds 3 and 4 no longer take OTA engines.
-  // Moved 2026-11-02 for US-66 (D10): the healthRecords edit kind is named in the
+  // US-61's optional isUS and usProducts; builds 3 and 4 no longer take OTA engines. Moved
+  // 2026-11-02: US-12 AC20's limits in the chat context; build 5 no longer takes OTA engines.
+  // Moved again 2026-11-02 for US-66 (D10): the healthRecords edit kind is named in the
   // contract, so an app that sends it never runs an older engine without the case.
-  it('the contract hashes to exactly the bridge id the app serves (177c634c21856aea)', () => {
+  it('the contract hashes to exactly the bridge id the app serves (f4ba71cf3e7425f9)', () => {
     const bytes = readFileSync(join(__dirname, 'bridge-contract.json'));
-    expect(createHash('sha256').update(bytes).digest('hex').slice(0, 16)).toBe('177c634c21856aea');
+    expect(createHash('sha256').update(bytes).digest('hex').slice(0, 16)).toBe('f4ba71cf3e7425f9');
     expect(contract.doors.screenJson.args).toEqual(['recordJson', 'nowIso', 'deviceId', 'unitsJson']);
     expect(optional.doors.screenJson.optionalArgs).toEqual(['isUS']);
   });

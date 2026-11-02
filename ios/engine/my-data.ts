@@ -4,7 +4,7 @@
 // Values come in and go out in the user's units; the record stores SI. Web
 // twins: the widget's InputPanel.tsx and BloodTestTimeline.tsx, writing through
 // RoadmapStore.
-import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { createEmptyFile, type FileMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import type { Plan } from '../../packages/health-core/src/plan';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
@@ -19,7 +19,7 @@ import { customSupplementAdd, customSupplementMatch } from '../../packages/healt
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
 import { importHealthRecords, type ClinicalRecordInput, type HealthRecordsCounts } from '../../packages/health-core/src/health-records-import';
-import { applyFormEdit, formsOf, planOf, type FormEdit, type FormsView } from './my-data-forms';
+import { applyFormEdit, formsOf, planOf, rowText, type FormEdit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import { METRIC_GUIDES, type MetricGuide } from '../../packages/health-core/src/metric-guides';
 import { APPLE_LOW_FROM_60, FRIEND_2022_TREADMILL, type Vo2MaxCutPoints } from '../../packages/health-core/src/vo2max-bands';
@@ -33,15 +33,17 @@ import {
 } from '../../packages/health-core/src/units';
 import { applyPressure, BLOOD_PRESSURE, pressureHistory, type PressureEdit } from './blood-pressure';
 import { cellUnitFor, lpaUnitOf, SWITCHABLE, unitsOf, type UnitChoices } from './unit-choices';
-import { cellFromSI, cellLabel, cellRange, cellText, isLpaUnit, type CellUnit } from '../../packages/health-core/src/cell-unit';
+import { cellFromSI, cellLabel, cellRange, isLpaUnit, type CellUnit } from '../../packages/health-core/src/cell-unit';
+import { isComparator } from '../../packages/health-core/src/lab-limits';
 
 /** One row of Vitals or Blood tests: the plan's current value, if any, in the user's units. */
 export interface MyDataRow {
   metric: string;
   label: string;
   unit: string;
+  /** `value` reads a lab limit with its symbol, "> 60" (US-12 AC20). */
   latest: { id: string; value: string; day: string } | null;
-  /** The recent days' values (`trends`), oldest first, in the user's units. Unlike the web's
+  /** The recent days' exact values (`trends`), oldest first, in the user's units; a limit is no point on it (US-12 AC20). Unlike the web's
    *  Trend sparkline (BloodTestTimeline.tsx), which draws the full series, iOS shows only
    *  recent data, as Apple Health does (US-25 AC17f). Blood pressure's is its systolic half. */
   trend: number[];
@@ -224,12 +226,12 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
       label: METRIC_LABELS[metric] ?? metric,
       unit: cellLabel(metric as MetricType, shown),
       latest: latest
-        ? { id: latest.id, value: cellText(metric as MetricType, latest.value, shown), day: latest.recordedAt.slice(0, 10) }
+        ? { id: latest.id, value: rowText(metric as MetricType, latest, shown), day: latest.recordedAt.slice(0, 10) }
         : null,
       trend: trend.get(metric) ?? [],
       switchable: SWITCHABLE.has(metric),
       target: rowTarget(metric as MetricType, shown, grading, basis)?.bare ?? null,
-      previous: before ? cellText(metric as MetricType, days.get(metric)!.get(before)!, shown) : null,
+      previous: before ? rowText(metric as MetricType, days.get(metric)!.get(before)!, shown) : null,
     };
   };
   const { sex, birthYear, birthMonth, heightCm } = file.profile;
@@ -417,15 +419,15 @@ function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: st
   };
 }
 
-/** Each metric's active value per day (the slot's first, as findActiveInSlot reads it), in SI, in one pass. */
-function activeDays(file: RoadmapFile): Map<string, Map<string, number>> {
-  const byMetric = new Map<string, Map<string, number>>();
+/** Each metric's active row per day (the slot's first, as findActiveInSlot reads it), in one pass. */
+function activeDays(file: RoadmapFile): Map<string, Map<string, FileMeasurement>> {
+  const byMetric = new Map<string, Map<string, FileMeasurement>>();
   for (const row of file.measurements) {
     if (row.status !== 'active') continue;
-    const days = byMetric.get(row.metricType) ?? new Map<string, number>();
+    const days = byMetric.get(row.metricType) ?? new Map<string, FileMeasurement>();
     byMetric.set(row.metricType, days);
     const day = row.recordedAt.slice(0, 10);
-    if (!days.has(day)) days.set(day, row.value);
+    if (!days.has(day)) days.set(day, row);
   }
   return byMetric;
 }
@@ -434,14 +436,15 @@ function activeDays(file: RoadmapFile): Map<string, Map<string, number>> {
  *  phone's local day, and the 29 before), or the last seven days however old when those 30
  *  hold fewer than two (US-25 AC17f). A day after today (an import that kept another zone's
  *  offset) is left out of both, as the phone leaves out a night dated after today. */
-function trends(byMetric: Map<string, Map<string, number>>, now: string, shown: (metric: string, valueSI: number) => number): Map<string, number[]> {
+function trends(byMetric: Map<string, Map<string, FileMeasurement>>, now: string, shown: (metric: string, valueSI: number) => number): Map<string, number[]> {
   const today = localDay(new Date(now));
   const from = new Date(Date.parse(today) - 29 * 86_400_000).toISOString().slice(0, 10);
   const out = new Map<string, number[]>();
   for (const [metric, days] of byMetric) {
-    const sorted = [...days.keys()].filter((day) => day <= today).sort();
+    // A day whose row is a lab limit has no exact value to draw (US-12 AC20).
+    const sorted = [...days.keys()].filter((day) => day <= today && !isComparator(days.get(day)!.comparator)).sort();
     const recent = sorted.filter((day) => day >= from);
-    out.set(metric, (recent.length >= 2 ? recent : sorted.slice(-7)).map((day) => shown(metric, days.get(day)!)));
+    out.set(metric, (recent.length >= 2 ? recent : sorted.slice(-7)).map((day) => shown(metric, days.get(day)!.value)));
   }
   return out;
 }

@@ -347,7 +347,7 @@
   "check": "AC4",
   "handle": "licorice-and-dgl-benefits-forms-dosing-and-side-effects",
   "match": "heading missing from new body: ### Populations Who Should Avoid All Forms of Licorice (Including DGL)",
-  "reason": "AC4 rename to \"Who Should Avoid Regular Licorice or Ask First\" ratified in decisions.md (licorice item 5: old heading contradicted its intro, last ConsumerLab n-gram) (orchestrator 2026-10-25, masters-new-9).",
+  "reason": "Exception ratified by the orchestrator after a hand check against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-25"
  },

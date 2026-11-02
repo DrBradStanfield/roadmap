@@ -40,6 +40,8 @@ export const SENSITIVE_EXACT_KEYS = new Set([
   'waisttoheightratio', 'waist_to_height_ratio',
   'nonhdlcholesterol', 'non_hdl_cholesterol',
   'egfr',
+  // A lab result printed as a limit (US-12 AC20): its bound, its code, and the plan's limits.
+  'labegfr', 'labegfrlimit', 'limits', 'limit', 'bound', 'comparator',
   // Medications
   'drugname', 'drug_name',
   'dosevalue', 'dose_value',

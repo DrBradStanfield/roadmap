@@ -330,21 +330,6 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'fructosamine', label: 'Fructosamine', group: 'metabolic', unit: 'µmol/L', aliases: [] },
 ];
 
-/**
- * The tests US-21 AC19 added. The extraction prompt does not suggest their
- * keys until the #166 Haiku benchmark: a prompt change waits for it. The
- * catalogue still resolves whatever name the model returns.
- */
-export const PROMPT_DEFERRED_KEYS: ReadonlySet<string> = new Set([
-  'egfr_cystatin', 'egfr_combined', 'anion_gap', 'osmolality_serum', 'bilirubin_indirect', 'lipase', 'amylase', 'rdw_sd',
-  'mpv', 'immature_granulocytes', 'reticulocytes', 'nrbc', 'd_dimer', 'fibrinogen', 'total_t4', 'total_t3', 'reverse_t3',
-  't3_uptake', 'thyroglobulin', 'anti_tg', 'trab', 'pth', 'amh', 'bioavailable_testosterone', 'psa_free_percent', 'estrone',
-  'androstenedione', 'oh_progesterone_17', 'dht', 'acth', 'gh', 'hcg', 'red_cell_folate', 'calcium_ionised', 'uibc', 'stfr',
-  'copper', 'caeruloplasmin', 'selenium', 'omega3_index', 'vitamin_a', 'vitamin_e', 'vitamin_c', 'vitamin_b6', 'vitamin_b1',
-  'mma', 'procalcitonin', 'ige', 'rf', 'anti_ccp', 'total_iga', 'ttg_iga', 'nt_probnp', 'bnp', 'troponin_t', 'troponin_i',
-  'c_peptide', 'eag', 'vldl', 'lactate', 'fructosamine', 'cortisol_random', 'cortisol_pm',
-]);
-
 const SUPERSCRIPT_DIGITS: Record<string, string> = {
   '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
   '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
@@ -651,15 +636,45 @@ const ENTRY_BY_NAME: ReadonlyMap<string, LabCatalogEntry> = (() => {
   return byName;
 })();
 
+/**
+ * `foldName` plus the punctuation reports put around the same words (US-07 AC10,
+ * Brad 2026-11-02): "A.M." and "P.M." lose their dots, and hyphens, dashes,
+ * brackets, commas, colons and slashes become spaces. "Cortisol, A.M.",
+ * "cortisol(am)" and "Cortisol - PM" all fold to the words of a listed name.
+ * Only a name the exact fold misses is tried, so no name that resolved before
+ * moves; a stored row in a punctuated spelling now reads under its entry, as
+ * `labSlotKey` resolves it (a non-SI unit is corrected on load by `migrate.ts`).
+ */
+function looseFold(name: string): string {
+  return foldName(name).replace(/\b([ap])\.\s?m\.?(?![a-z])/g, '$1m').replace(/[-‐‑–—−(),:/]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Every catalogue name's loose fold → its entry, tried only when the exact fold
+ * finds nothing, so no name that resolves today resolves differently. A loose
+ * form two different entries share is ambiguous and resolves to nothing.
+ */
+const ENTRY_BY_LOOSE_NAME: ReadonlyMap<string, LabCatalogEntry | null> = (() => {
+  const byLoose = new Map<string, LabCatalogEntry | null>();
+  for (const [folded, entry] of ENTRY_BY_NAME) {
+    const loose = looseFold(folded);
+    const seen = byLoose.get(loose);
+    byLoose.set(loose, seen === undefined || seen === entry ? entry : null);
+  }
+  return byLoose;
+})();
+
 /** Resolve a report's test name (any casing/spelling) to a catalogue entry.
  *  BOTH sides are folded before comparing, so the underscore/space variance
  *  the LLM extractor and agents produce washes out in either direction:
  *  "free_t4" finds the alias "free t4", and "Vitamin D" finds the key
- *  `vitamin_d`. This is the single resolver, so every consumer gets that
- *  normalization — and the printed name's own factor — for free. */
+ *  `vitamin_d`. A name the exact fold misses is tried once more without its
+ *  punctuation (`looseFold`). This is the single resolver, so every consumer
+ *  gets that normalization — and the printed name's own factor — for free. */
 export function resolveLabCatalogEntry(reportedName: string): LabCatalogEntry | undefined {
-  return ENTRY_BY_NAME.get(foldName(reportedName));
+  return ENTRY_BY_NAME.get(foldName(reportedName)) ?? ENTRY_BY_LOOSE_NAME.get(looseFold(reportedName)) ?? undefined;
 }
+
 
 /** A test's plain label wherever a person reads it: a core metric's, else
  *  the catalogue's, else its name title-cased (US-12 AC19). */

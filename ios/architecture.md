@@ -82,8 +82,15 @@ above, the contract hashes to `8dee92d80c028ed3`, which `EngineRelease.bridge` a
 `bridge.test.ts` now carry. Builds 3 and 4 stop receiving over-the-air engines: the US-61
 engine and this one reach them only through the next App Store build.
 
-**Bridge moved 2026-11-02 (US-66, D10).** The contract now names the `healthRecords` edit, so
-it hashes to `177c634c21856aea`. A new app never runs an older over-the-air engine that lacks
+**Bridge moved again, 2026-11-02 (US-12 AC20, D15).** `chatContextJson` now sends `limits`
+(a lab result printed as a limit) and `ChatClient.contextKeys` takes it, so the contract
+hashes to `49b2af86805825f0`. Build 5 (`8dee92d80c028ed3`) stops receiving over-the-air
+engines from this release on. Had it kept them, its allow-list would drop `limits`; the
+engine no longer sends a limit field's representative, so it would lose that value rather
+than misreport it.
+
+**Bridge moved a third time, 2026-11-02 (US-66, D10).** The contract now names the `healthRecords` edit, so
+it hashes to `f4ba71cf3e7425f9`. A new app never runs an older over-the-air engine that lacks
 the edit; earlier builds keep their own bridge and get the edit only through the App Store.
 
 Speed, measured 2026-10-21 (Node 22, esbuild bundle, an Intel iMac, the sample record
@@ -1632,6 +1639,18 @@ is. Spec: docs/user-stories.md US-61.
   and `EngineBridgeContractTests.swift` (XCTest). Both directions: the Node test calls
   `screenJson` with an old app's four arguments; the XCTest runs the plan on a stand-in for an
   engine before US-61 (four arguments, no `usProducts`).
+
+### D15 · Lab results printed as a limit: the engine says them, Swift draws them (Brad, 2026-11-02, US-12 AC20)
+
+A lab result printed "> 60" or "< 5" is saved with its comparator. The engine owns every
+word: My data, the metric page, the lab review and the plan tiles get strings with the
+symbol, and the grading rule ("only when it decides") runs in health-core. Swift only draws
+a limit point hollow, off the chart's line, from `historyJson`'s optional `bound`; an older
+app finds no number in "< 2.0" and leaves the point off the chart. The phone's chat sends a
+limit as `limits` only, never the field's hidden representative, and `limits` joined
+`ChatClient.contextKeys`, which moved the bridge (build 5 takes no over-the-air engine from
+this release on). Apple Health never gets a limit (device-export.ts). The phone sends no
+`product_events`, so it has no count of limits.
 
 ## Phases
 
