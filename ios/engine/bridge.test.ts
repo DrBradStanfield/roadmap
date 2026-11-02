@@ -32,7 +32,6 @@ function parameters(name: string): string[] {
 /** Contract arguments to call each optional door with (one entry per door in bridge-optional.json). */
 const NOW = '2026-10-21T08:00:00.000Z';
 const SAMPLE_ARGS: Record<string, unknown[]> = {
-  applyEditJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'), '{"kind":"units","unitSystem":"si"}', NOW, 'phone', '{}'],
   screenJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'), NOW, 'phone', '{}'],
 };
 /** A door's answer with its timing fields (`ms`) left out, which differ call to call. */
@@ -91,11 +90,21 @@ describe('bridge contract (US-25 AC18)', () => {
   // never a way around that, only for additions that work both ways (D3, D14). Moved
   // 2026-11-01 (Brad: still in beta, no downloads): US-07 AC8's labEgfrOutdated plus
   // US-61's optional isUS and usProducts; builds 3 and 4 no longer take OTA engines.
-  it('the contract hashes to exactly the bridge id the app serves (8dee92d80c028ed3)', () => {
+  // Moved 2026-11-02 for US-66 (D10): the healthRecords edit kind is named in the
+  // contract, so an app that sends it never runs an older engine without the case.
+  it('the contract hashes to exactly the bridge id the app serves (177c634c21856aea)', () => {
     const bytes = readFileSync(join(__dirname, 'bridge-contract.json'));
-    expect(createHash('sha256').update(bytes).digest('hex').slice(0, 16)).toBe('8dee92d80c028ed3');
+    expect(createHash('sha256').update(bytes).digest('hex').slice(0, 16)).toBe('177c634c21856aea');
     expect(contract.doors.screenJson.args).toEqual(['recordJson', 'nowIso', 'deviceId', 'unitsJson']);
     expect(optional.doors.screenJson.optionalArgs).toEqual(['isUS']);
+  });
+
+  // US-66 (D10): an engine without the healthRecords case would throw on it, so the
+  // edit kind and its answer are in the contract, not an optional addition.
+  it('names the healthRecords edit and its counts in applyEditJson and cloudEdit', () => {
+    expect(contract.doors.applyEditJson.returns).toContain("healthRecords {kind:'healthRecords', records:[{sourceId, resourceType, fhirVersion, json}]}");
+    expect(contract.doors.applyEditJson.returns).toContain('{added, corrected, withdrawn, alreadyInRecord, notRead}');
+    expect(contract.doors.cloudEdit.returns).toContain('healthRecords');
   });
 
   it('every value the engine exports is in the contract', () => {

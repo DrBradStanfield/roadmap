@@ -20,14 +20,14 @@
     "schemaVersion": "number, the record schema the engine writes"
   },
   "doors": {
-    "applyEditJson": { "args": ["recordJson", "editJson", "nowIso", "deviceId", "unitsJson"], "returns": "{ok:true, record} or {ok:false, reason, message}" },
+    "applyEditJson": { "args": ["recordJson", "editJson", "nowIso", "deviceId", "unitsJson"], "returns": "{ok:true, record} or {ok:false, reason, message}; the edit kinds include healthRecords {kind:'healthRecords', records:[{sourceId, resourceType, fhirVersion, json}]} (US-66), whose answer adds healthRecords {added, corrected, withdrawn, alreadyInRecord, notRead}; an engine without that kind must not reach an app that sends it" },
     "chatContextJson": { "args": ["recordJson", "nowIso", "deviceId"], "returns": "chat context JSON; the app forwards every top-level key it holds, labEgfrOutdated included (US-07 AC8: true when a newer creatinine outdates the lab eGFR, so the server's chat plan withholds potassium advice as the engine does); an app whose allow-list lacks a key the engine produces must not run this engine" },
     "chatDeleteJson": { "args": ["historyText", "conversationId", "nowIso", "deviceId"], "returns": "settle handle; read with settledJson" },
     "chatListJson": { "args": ["historyText", "nowIso", "deviceId"], "returns": "conversation list JSON" },
     "chatMessagesJson": { "args": ["historyText", "conversationId", "nowIso", "deviceId"], "returns": "messages JSON" },
     "chatRecordExchangeJson": { "args": ["historyText", "exchangeJson", "nowIso", "deviceId"], "returns": "settle handle; read with settledJson" },
     "cloudClose": { "args": ["copyDown"], "returns": "Promise of JSON" },
-    "cloudEdit": { "args": ["editJson", "erase", "shownUnits", "nowIso", "unitsJson", "shownLpaUnit"], "returns": "JSON outcome" },
+    "cloudEdit": { "args": ["editJson", "erase", "shownUnits", "nowIso", "unitsJson", "shownLpaUnit"], "returns": "JSON outcome; for a healthRecords edit it adds healthRecords, as applyEditJson's" },
     "cloudErase": { "args": ["historyText", "nowIso", "keepChat"], "returns": "Promise of JSON" },
     "cloudFlush": { "args": [], "returns": "Promise of JSON" },
     "cloudHidden": { "args": [], "returns": "JSON" },
