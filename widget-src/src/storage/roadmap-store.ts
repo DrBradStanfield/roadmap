@@ -71,7 +71,7 @@ import {
   type RoadmapFile,
   type RoadmapProfile,
 } from '@roadmap/health-core';
-import { isAlcoholAnswer, inputRangeFault, readableView, ROADMAP_DOC } from '@roadmap/health-core';
+import { isAlcoholAnswer, inputRangeFault, isReadableRow, readableView, ROADMAP_DOC } from '@roadmap/health-core';
 import { type EraseResult, type EraseSteps, type RecordHost, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { webRecordHost } from './web-record-host';
@@ -236,6 +236,12 @@ export class RoadmapStore {
   /** How many entries this build could not read; kept, never shown (US-65). */
   get unreadableCount(): number {
     return this.readable.count;
+  }
+
+  /** Whether the record holds a `key` medication row this build cannot read
+   *  (US-65): a chat change over it offers no Undo (US-67 N3). */
+  holdsUnreadableMedication(key: string): boolean {
+    return this.file.medications.some((m) => m.medicationKey === key && !isReadableRow('medications', m));
   }
 
   get backendId() {
