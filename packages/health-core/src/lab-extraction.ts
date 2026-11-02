@@ -714,19 +714,6 @@ function readableRows<T extends z.ZodTypeAny>(schema: T, rows: unknown[], unread
   });
 }
 
-const isCoreRow = (row: { metric: string }) => VALID_METRICS.includes(row.metric as MetricType);
-
-/** US-12 AC11a: a core row naming no core key, as a lab row under that name,
- *  which AC11 promotes when it resolves. A blank name is neither, so it is
- *  dropped as unread (AC19), unnamed, and counted. A core row stays put. */
-function asLabRow(row: z.output<typeof coreValueRow>, unread: UnreadLabValue[]): Array<z.output<typeof additionalValueRow>> {
-  if (isCoreRow(row)) return [];
-  const name = row.metric.trim();
-  if (name) return [{ name, value: row.value, unit: row.unit, recordedAt: row.recordedAt, printedMonth: row.printedMonth }];
-  unread.push(unreadValue(row));
-  return [];
-}
-
 /** Parses the file's shape, then each value row on its own (US-12 AC8): a row
  *  whose value isn't a readable number, or that is otherwise malformed, is
  *  dropped rather than failing the whole file, and counted in
@@ -734,11 +721,8 @@ function asLabRow(row: z.output<typeof coreValueRow>, unread: UnreadLabValue[]):
 export function parseUnifiedResult(raw: unknown) {
   const parsed = unifiedResultSchema.parse(raw);
   const unreadValues: UnreadLabValue[] = [];
-  const coreRows = readableRows(coreValueRow, parsed.values, unreadValues);
-  const values = coreRows.filter(isCoreRow);
-  // US-12 AC11a: `resolveLabValues` dropped a core row naming no core key unseen.
-  const renamed = coreRows.flatMap(row => asLabRow(row, unreadValues));
-  const additionalValues = [...readableRows(additionalValueRow, parsed.additionalValues, unreadValues), ...renamed];
+  const values = readableRows(coreValueRow, parsed.values, unreadValues);
+  const additionalValues = readableRows(additionalValueRow, parsed.additionalValues, unreadValues);
   const droppedValueCount = parsed.values.length + parsed.additionalValues.length - values.length - additionalValues.length;
   return { ...parsed, values, additionalValues, droppedValueCount, unreadValues };
 }
@@ -817,10 +801,6 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
   const exactMmol = <T extends { metric: string; value: number; unit: string }>(v: T): T =>
     mode === 'metadata' && v.metric === 'creatinine' && /^mmol\/l$/i.test(cleanedCreatinineUnit(v.unit).replace(/\s+/g, ''))
       ? { ...v, value: Math.round(v.value * 1e6) / 1e3, unit: 'µmol/L' } : v;
-  // A dropped row is named only from a column whose values are offered (AC19):
-  // one left out with its column is left out of the count too, as its read
-  // neighbours are never counted.
-  const unreadValues = isLab ? parsed.unreadValues.flatMap(ownDay).map(({ name, reason, recordedAt }) => ({ name, reason, ...(recordedAt ? { recordedAt } : null) })) : [];
   // The name the report printed files the row whenever it resolves exactly to a
   // core metric or a catalogued test; the model's pick stands only when it does
   // not (US-07 AC10, Brad 2026-11-02). So "Cortisol" is a morning cortisol
@@ -846,23 +826,38 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
   // Each row's destination first; then a row re-filed into another core metric
   // takes that slot only if no row that kept its own metric holds it that day,
   // and only the first such row does.
+  // A model metric that is no core key ("LDL-Cholesterol", "tsh") is filed by
+  // its name the same way, never dropped (US-12 AC11a, Brad 2026-11-03): a core
+  // value keeps the model's confidence and question, and creatinine is reached
+  // only through a printed name, never the model's alone (AC11). A row with no
+  // name at all is dropped and counted.
   const reportDayOf = (d?: string) => (!d || d === reportDay ? '' : d);
-  const planned = parsed.values.map(v => {
+  const blank: typeof parsed.values = [];
+  const planned = parsed.values.flatMap(v => {
     const printedName = printedOf(v);
-    if (!printedName) return { v, printedName, to: v.metric, lab: false };
-    const name = filingName(v.metric, printedName);
+    const coreKey = VALID_METRICS.includes(v.metric as MetricType);
+    if (!printedName && coreKey) return [{ v, printedName, name: v.metric, to: v.metric, lab: false }];
+    const name = printedName ? filingName(v.metric, printedName) : v.metric.trim();
+    if (!name) { blank.push(v); return []; }
     const filed = resolveName(name);
-    return filed?.kind === 'core' ? { v, printedName, to: filed.metric, lab: false }
-      : { v, printedName, to: name, lab: name !== v.metric };
+    return filed?.kind === 'core' && (filed.metric !== 'creatinine' || name === printedName) ? [{ v, printedName, name, to: filed.metric, lab: false }]
+      : [{ v, printedName, name, to: name, lab: name !== v.metric || !coreKey }];
   });
+  // A dropped row is named only from a column whose values are offered (AC19):
+  // one left out with its column is left out of the count too, as its read
+  // neighbours are never counted.
+  const unread = [...parsed.unreadValues, ...blank.map(unreadValue)];
+  const unreadValues = isLab ? unread.flatMap(ownDay).map(({ name, reason, recordedAt }) => ({ name, reason, ...(recordedAt ? { recordedAt } : null) })) : [];
   // A model creatinine its unit check will refuse holds no slot.
   const held = new Set(planned.filter(p => !p.lab && p.to === p.v.metric && !(p.to === 'creatinine' && creatinineUnitRefused(p.v))).map(p => `${p.to}@${reportDayOf(p.v.recordedAt)}`));
   const coreIn: typeof parsed.values = [];
   const labIn: typeof parsed.additionalValues = [];
-  for (const { v, printedName, to, lab } of planned) {
-    if (lab) {
-      labIn.push({ name: to, value: v.value, unit: v.unit, referenceLow: null, referenceHigh: null, recordedAt: v.recordedAt, printedMonth: v.printedMonth, printedName, ...comparatorOf(v) });
-    } else if (to === v.metric || held.has(`${to}@${reportDayOf(v.recordedAt)}`)) {
+  for (const { v, printedName, name, to, lab } of planned) {
+    const isHeld = held.has(`${to}@${reportDayOf(v.recordedAt)}`);
+    // A held slot leaves a row the model named by no core key a lab row.
+    if (lab || (isHeld && !VALID_METRICS.includes(v.metric as MetricType))) {
+      labIn.push({ name, value: v.value, unit: v.unit, referenceLow: null, referenceHigh: null, recordedAt: v.recordedAt, printedMonth: v.printedMonth, printedName, ...comparatorOf(v) });
+    } else if (to === v.metric || isHeld) {
       coreIn.push({ ...v, printedName });
     } else {
       held.add(`${to}@${reportDayOf(v.recordedAt)}`);
@@ -911,7 +906,7 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
       ...(parsed.document.summary !== undefined ? { summary: parsed.document.summary } : null),
       metadata: parsed.document.metadata as Record<string, unknown>,
     } : null,
-    droppedValueCount: isLab ? parsed.droppedValueCount - (parsed.unreadValues.length - unreadValues.length) : 0,
+    droppedValueCount: isLab ? parsed.droppedValueCount + blank.length - (unread.length - unreadValues.length) : 0,
     ...(unreadValues.length ? { unreadValues } : null),
     ...(refusedValues.length ? { refusedValues } : null),
   };
