@@ -223,6 +223,31 @@ describe('a PSA typed into the prostate section is saved (US-06 AC15)', () => {
   });
 });
 
+describe('after a save the date box goes back to today (US-06 AC15)', () => {
+  it('a PSA saved on a picked day: the box shows today again, and no "Replaces" for the value just saved', async () => {
+    const { view, psa, day, note } = await page();
+    pick(day, '2025-03-20');
+    type(psa(), '6.5');
+    act(() => psa().blur());
+    await pause(700);
+    await waitFor(async () => expect(await active('psa')).toEqual([[6.5, '2025-03-20']]));
+    await waitFor(() => expect(day.value).toBe(localDay(new Date())));
+    expect(note()).not.toContain('Replaces');
+    expect(note()).toContain('6.5 ng/mL');
+    view.unmount();
+  });
+
+  it('control: a refused day (after today) keeps the picked day, so the user can fix it', async () => {
+    const { view, psa, day } = await page();
+    pick(day, '2099-01-01');
+    type(psa(), '6.5');
+    act(() => psa().blur());
+    await pause(700);
+    expect(day.value).toBe('2099-01-01');
+    view.unmount();
+  });
+});
+
 describe('a second PSA on a day that already holds one (US-06 AC15, Brad 2026-11-03)', () => {
   it('picking that day says "Replaces 6.5 ng/mL", and saving corrects the held row', async () => {
     const { view, psa, day, note } = await page([[6.5, '2025-01-14']]);
@@ -245,7 +270,8 @@ describe('a second PSA on a day that already holds one (US-06 AC15, Brad 2026-11
     expect(note()).not.toContain('Replaces');
     act(() => psa().blur());
     await pause(700);
-    await waitFor(async () => expect(await active('psa')).toEqual([[6.5, '2025-01-14'], [3.2, '2025-01-28']]));
+    // Order on disk is not the point: both readings are active, each on its own day.
+    await waitFor(async () => expect((await active('psa')).sort((x, y) => String(x[1]).localeCompare(String(y[1])))).toEqual([[6.5, '2025-01-14'], [3.2, '2025-01-28']]));
     view.unmount();
   });
 });

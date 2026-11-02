@@ -777,6 +777,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
             }
             return next;
           });
+          // A saved PSA puts its date box back to today, so it never reads "Replaces" the value just saved.
+          if (toSave.some(t => t.values.psa !== undefined && !refused.has(slotOf(t.date, 'psa')))) setPsaDate(null);
           setFieldsSaved(n => n + 1);
         }
 
@@ -814,30 +816,16 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const flushLongitudinalSave = useCallback(() => {
     longitudinalDebounce.commit(() => { void handleSaveLongitudinalRef.current(); });
   }, [longitudinalDebounce]);
-  // The PSA row saves only once focus leaves the whole row, and a closing tab
-  // fires no blur. So on departure, focus still in that row is moved out: the
-  // row's blur queues its save, with its own checks, and it runs now. A second
-  // departure event finds focus gone and nothing waiting (US-06 AC15).
-  useEffect(() => {
-    const onLeave = () => {
-      const focused = document.activeElement;
-      if (!(focused instanceof HTMLElement) || !focused.closest('.psa-inline-row')) return;
-      focused.blur();
-      longitudinalDebounce.flush();
-    };
-    window.addEventListener('beforeunload', onLeave);
-    window.addEventListener('pagehide', onLeave);
-    return () => {
-      window.removeEventListener('beforeunload', onLeave);
-      window.removeEventListener('pagehide', onLeave);
-    };
-  }, [longitudinalDebounce]);
-
   // Stage only queued edits, with the erase they were made against, then flush
   // synchronously: the entrypoint's earlier listener may have flushed first.
-  // A matrix's draft stays on the device instead (US-03 AC5).
+  // A matrix's draft stays on the device instead (US-03 AC5). The PSA row
+  // saves only once focus leaves the whole row, and a closing tab fires no
+  // blur, so focus still in that row is moved out first: its blur queues the
+  // save, with its own checks, and the flush below runs it (US-06 AC15).
   useEffect(() => {
     const onUnload = () => {
+      const focused = document.activeElement;
+      if (focused instanceof HTMLElement && focused.closest('.psa-inline-row')) focused.blur();
       profileDebounce.flush();
       longitudinalDebounce.flush();
       flushRoadmapStoreSync();
