@@ -544,6 +544,7 @@ With no sex on record the plan grades no HDL, so `hdl-low` does not show (US-07 
 
 | Constant | Value | Meaning |
 |----------|-------|---------|
+| normal | 70 | eGFR 70 and over: the tile's "Normal" (named 2026-11-02; was a literal in `getEgfrStatus`) |
 | lowNormal | 60 | eGFR 60-69, no CKD without markers |
 | mildlyDecreased | 45 | CKD-3b boundary, protein adjustment |
 | moderatelyDecreased | 30 | G3b |
@@ -599,6 +600,20 @@ Used when medications are tracked and a lipid is at or above its target: the val
 | Non-HDL | < 1.6 mmol/L | < 62 mg/dL |
 
 ApoB source: Brad's target, extended from the Ez-PAVE LDL-C target trial (Lee 2026) and PESA (Ibanez 2021), and lower than the ESC/EAS 2019 goal of < 65 mg/dL for very high risk.
+
+### Results Printed as a Limit (US-12 AC20)
+
+Source: `lab-limits.ts`. Brad, 2026-11-02: "Only when it decides".
+
+A lab result printed with a symbol ("> 60", "< 5", "≤ 0.1") is saved as its bound with its comparator, never as the bound alone. The plan grades it only when the bound decides: when no cutoff the input is compared against lies inside the band the limit leaves open, so every value in the band grades the same.
+
+- **Two cutoff lists per input.** The plan's grading lines (`LIMIT_CUTOFFS`): every threshold in this section the cards, calculations, gates, on-treatment targets and medication cascades compare the input against, for any sex and any treatment state. eGFR's is 45 alone (the protein cut and the potassium gate); the systolic list holds both targets, 120 and 130; creatinine and PSA have none, since the plan grades neither directly. The label lines (`LIMIT_LABEL_CUTOFFS`): what the tiles' status words and the blood-test grid colours compare it against: eGFR 70, 60, 45, 30 and 15; HDL's and creatinine's grid bands by sex, both sexes listed; PSA 4.0; triglycerides' grid line 2.26. The orchestrator split them on 2026-11-02, because the 70 line drives only a label. Non-HDL's lines are in neither list: non-HDL is derived, and never from a limit. A non-core lab graded by its printed reference range uses that range; a printed bound of exactly 0 is no cutoff (CRP's "0–5" leaves "< 1" decided), while a negative bound is one (base excess "−2 to 2").
+- **Decides when:** `< b` and every cutoff is at or above b; `<= b` and every cutoff is above b; `> b` and every cutoff is at or below b; `>= b` and every cutoff is below b. The same lists for everyone, conservative on purpose. The plan decides against its grading lines. A tile word or grid colour shows only when the limit also decides against the label lines; otherwise the tile shows the limit with no word and the grid no colour.
+- **Decided:** the plan grades a representative strictly inside the band, halfway between the bound and the input range's far end (section 12), so no rounding moves it across the bound. It must pass the input range, or the limit is undecided. It is never shown, stored or sent: every surface shows the bound with its symbol.
+- **Undecided:** the input has no graded value. No card, tile grade or cascade step comes from it, it is not counted missing, and no older exact value stands in for it. It is shown with its limit and "Printed as a limit, so the plan cannot grade it against its cutoff."
+- **Derived values** never use a limit: no non-HDL from a limit HDL or total cholesterol, no eGFR calculated from a limit creatinine, no ratio, trend or percent change. A lab eGFR printed as a limit is graded by the rule above; with an undecided one the plan has no eGFR and does not calculate one from an older creatinine. A newer creatinine printed as a limit leaves an older lab eGFR standing, marked outdated (the same treatment as a newer creatinine the plan cannot read).
+- An undecided ApoB lets the lipid marker fall to non-HDL or LDL, as when there is no ApoB.
+- **Examples:** eGFR "> 90" decides, tile word included; eGFR "> 60" decides for the plan (protein target 1.2 g/kg, potassium advice open) and its tile shows "> 60" with no word; eGFR "> 30" does not decide (45 lies above it); Lp(a) "< 10" nmol/L, PSA "< 0.01" ng/mL and HDL "> 1.5" mmol/L decide; LDL "< 1.5" mmol/L does not (the 1.4 target lies below).
 
 ### VO2 Max Fitness Bands (iPhone app, display only)
 

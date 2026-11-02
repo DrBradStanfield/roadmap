@@ -1,3 +1,5 @@
+import type { InputLimits } from './lab-limits';
+
 /**
  * Health input data from user.
  *
@@ -39,6 +41,9 @@ export interface HealthInputs {
   unitSystem?: 'si' | 'conventional';
   /** US-60: "Do you drink alcohol?", from `profile.alcohol`. Absent: not answered. */
   alcohol?: AlcoholAnswer;
+  /** US-12 AC20: the fields read from a result printed as a limit. Such a field
+   *  holds the plan's representative when the limit decides, else nothing. */
+  limits?: InputLimits;
 }
 
 /** US-60: the two answers to "Do you drink alcohol?". */
@@ -61,6 +66,8 @@ export interface HealthResults {
   apoB?: number;              // g/L (passthrough from inputs)
   ldlC?: number;              // mmol/L (passthrough from inputs)
   eGFR?: number;              // mL/min/1.73m² (CKD-EPI 2021, or the lab's own: US-07 AC7)
+  /** US-12 AC20: the inputs' limits, so every surface shows a limit's bound, never the representative. */
+  limits?: InputLimits;
   /** The eGFR is the lab's printed one, not calculated from creatinine. */
   eGFRFromLab?: true;
   lpa?: number;               // nmol/L (passthrough from inputs)

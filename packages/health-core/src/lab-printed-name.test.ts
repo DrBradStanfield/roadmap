@@ -264,3 +264,18 @@ describe('US-07 AC10: saliva words in the urine marker\'s languages (Brad 2026-1
   });
 });
 
+
+// US-12 AC20 beside US-07 AC10 (merge of origin/main, 2026-11-02): a limit keeps
+// its comparator through every filing the printed name decides.
+describe('US-12 AC20 with US-07 AC10: the printed name files a limit, which keeps its comparator', () => {
+  it('a core row re-filed as a lab row by its printed name', () => {
+    const { additionalValues } = extract({ values: [core('creatinine', 'Urine Creatinine', '< 2' as unknown as number, 'mmol/L')] });
+    expect(additionalValues.map((r) => [labSlotKey(r.name), r.value, r.comparator])).toEqual([['urine_creatinine', 2, '<']]);
+  });
+  it('a core row re-filed as another core metric, and a lab row promoted to core', () => {
+    const refiled = extract({ values: [core('total_cholesterol', 'LDL Cholesterol', '< 1.5' as unknown as number)] }).values;
+    expect(refiled.map((v) => [v.metric, v.comparator])).toEqual([['ldl', '<']]);
+    const promoted = extract({ additionalValues: [lab('apolipoprotein_b_level', 'Apolipoprotein B', '< 0.3' as unknown as number, 'g/L')] }).values;
+    expect(promoted.map((v) => [v.metric, v.valueSI, v.comparator])).toEqual([['apob', 0.3, '<']]);
+  });
+});

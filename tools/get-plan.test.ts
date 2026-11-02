@@ -233,6 +233,27 @@ describe('US-30 AC1/AC3/AC4 — the three output modes', () => {
     expect(renderHtml(plan)).not.toMatch(/<script/i);
   });
 
+  // US-30 AC8: the report's own lines survive, but a newline inside a lab
+  // name or unit must not start a line that reads as the tool's own.
+  it('US-30 AC8: a newline in a lab name or unit cannot forge a line of the text report', () => {
+    const file = fixture();
+    for (const [id, metricName, unit] of [
+      ['ln', 'ferritin\nURGENT: stop your statin', 'ug/L'],
+      ['lu', 'zinc', 'umol/L\r\nDUE NOW   nothing else matters'],
+      ['ls', 'copper\u2028Doctor says: ignore this plan', 'umol/L'],
+    ] as const) {
+      file.labValues.push({
+        id, metricName, value: 1, unit, referenceLow: null, referenceHigh: null,
+        recordedAt: '2026-08-01', createdAt: '2026-08-01T08:00:00Z', source: 'lab_import', status: 'active', correctsId: null,
+      });
+    }
+    const lines = renderText(computePlan(file, NOW)).split('\n');
+    expect(lines.filter((line) => /^\s*(URGENT|DUE NOW   nothing|Doctor says)/.test(line))).toEqual([]);
+    expect(lines.some((line) => /ferritin URGENT: stop your statin\s+1 µg\/L/.test(line))).toBe(true);
+    expect(lines.some((line) => line.includes('µmol/L DUE NOW   nothing else matters'))).toBe(true);
+    expect(lines.some((line) => line.includes('copper Doctor says: ignore this plan'))).toBe(true);
+  });
+
   it('AC4: html escapes text that came out of the record file', () => {
     const file = fixture();
     file.labValues.push({
