@@ -85,7 +85,7 @@ private func follow(_ phase: ScenePhase, _ parts: AppParts) {
     switch phase {
     case .active:
         Task { await parts.sync.foreground() }
-        Task { await parts.health.refresh() }
+        Task { await parts.health.foreground() }
         Task { await parts.updater?.checkIfDue() }
         Task { await parts.store.follow(storefrontIsUS: await AppStoreCountry.current()) }
     case .background:

@@ -143,6 +143,9 @@ someone's medical history, or lose their data at the next device sync.
    Updating a current-state row you legitimately own (a medication, supplement, or
    reminder preference) means setting that row's `updatedAt` to now and leaving its
    `lamport` exactly as you found it, or absent.
+   An `externalId` (on a measurement, or on a lab value from Apple Health Records,
+   `source: "health_records"`, US-72) is the app's dedup key: leave it as you found it,
+   and never write one on a row you add.
 8. **Units.** `measurements[].value` is the SI canonical unit, kg, cm, mmHg. A core blood
    test's lab row carries its SI canonical `value` and `unit` string: `mmol/mol` for HbA1c,
    `mmol/L` for lipids, `g/L` for ApoB, `µmol/L` for creatinine, `ng/mL` for PSA, `nmol/L` for

@@ -209,11 +209,14 @@ final class LiveHealth {
         return reading.map { min(start, calendar.startOfDay(for: $0)) } ?? start
     }
 
-    /// A metric page's days (AC7): 400 days to now, back further to the card's reading.
+    /// A metric page's days (AC7a): the whole history, from the oldest sample's day to now, as
+    /// Weight's page scrolls back to its first reading. HealthKit sums or averages each day, so a
+    /// decade is about 3,650 points. If the oldest cannot be read, 400 days and the card's reading.
     /// Read only once the page leaves D (E4).
     @concurrent
     nonisolated static func readDays(_ store: any LiveHealthStore, _ metric: LiveMetric, reaching reading: Date?, now: Date, calendar: Calendar) async throws -> [LivePoint] {
-        try await days(store, metric, from: pageStart(reaching: reading, back: 400, now: now, calendar: calendar), to: now)
+        let oldest = try await oldest(store, metric, or: reading)
+        return try await days(store, metric, from: pageStart(reaching: oldest, back: 400, now: now, calendar: calendar), to: now)
     }
 
     /// D's hours (AC7): the day holding `day`, up to now, read as the person moves to it.
@@ -225,14 +228,20 @@ final class LiveHealth {
         return try await optional { try await store.points(metric, from: start, to: end, every: .hour) } ?? []
     }
 
-    /// Sleep's page (AC9): the nights of the last 200 days, back further to the card's
-    /// night (its sleep began the evening before the day it is dated).
+    /// Sleep's page (AC9, AC7a): every night, from the oldest sleep sample. If the oldest cannot
+    /// be read, the last 200 days and the card's night (its sleep began the evening before the
+    /// day it is dated).
     @concurrent
     nonisolated static func readNights(_ store: any LiveHealthStore, reaching night: Date?, now: Date, calendar: Calendar) async throws -> [SleepNight] {
         let evening = night.flatMap { calendar.date(byAdding: .day, value: -1, to: $0) }
-        let from = pageStart(reaching: evening, back: 200, now: now, calendar: calendar)
+        let from = pageStart(reaching: try await oldest(store, .sleep, or: evening), back: 200, now: now, calendar: calendar)
         let segments = try await optional { try await store.sleep(from: from, to: now) } ?? []
         return LiveMaths.nights(segments, calendar: calendar)
+    }
+
+    /// The older of the metric's oldest sample and `other`; a failed read gives `other` (AC7a).
+    private nonisolated static func oldest(_ store: any LiveHealthStore, _ metric: LiveMetric, or other: Date?) async throws -> Date? {
+        [try await optional { try await store.earliest(metric) } ?? nil, other].compactMap { $0 }.min()
     }
 
     private nonisolated static func days(_ store: any LiveHealthStore, _ metric: LiveMetric, from: Date, to: Date) async throws -> [LivePoint] {

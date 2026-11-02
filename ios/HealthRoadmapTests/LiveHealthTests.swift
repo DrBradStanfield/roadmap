@@ -512,6 +512,43 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertEqual(LiveMaths.newestNight(nights, today: today)?.day, night, "and D opens on it")
     }
 
+    /// AC7a (Brad 2026-11-03: "We should be importing everything from Apple Health"): a page
+    /// reads the metric's whole history, from its oldest sample, not 400 days; Weight's page
+    /// already scrolls back to its first reading. VO2 max from three years ago, and a night
+    /// from three years ago on the sleep page, both draw.
+    func testAPageReadsTheWholeHistoryFromTheOldestSample_AC7a() async throws {
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let today = utc.startOfDay(for: now)
+        let old = today.addingTimeInterval(-3 * 365 * 86_400)
+        let recent = today.addingTimeInterval(-10 * 86_400)
+        store.set(.vo2Max, days: [LivePoint(start: old, value: 38.0), LivePoint(start: recent, value: 41.2)])
+        let days = try await LiveHealth.readDays(store, .vo2Max, reaching: recent, now: now, calendar: utc)
+        XCTAssertEqual(days.map(\.start), [old, recent], "every reading, back to the oldest")
+        XCTAssertEqual(store.queries.last?.start, old, "one read by day from the oldest sample's day")
+        XCTAssertEqual(store.queries.last?.component, .day)
+        let oldNight = today.addingTimeInterval(-3 * 365 * 86_400)
+        store.set(.sleep, segments: [
+            SleepSegment(stage: .core, start: oldNight.addingTimeInterval(-3600), end: oldNight.addingTimeInterval(6 * 3600), source: "watch"),
+            SleepSegment(stage: .core, start: today.addingTimeInterval(-3600), end: today.addingTimeInterval(6 * 3600), source: "watch"),
+        ])
+        let nights = try await LiveHealth.readNights(store, reaching: today, now: now, calendar: utc)
+        XCTAssertEqual(nights.map(\.day), [oldNight, today], "the sleep page reaches the oldest night too")
+        for range in LiveRange.allCases where range != .day {
+            let geometry = LiveChartGeometry(range: range, now: now, calendar: utc, first: days.first?.start)
+            XCTAssertLessThanOrEqual(geometry.domain.lowerBound, old, "\(range.rawValue) scrolls back to the oldest")
+        }
+    }
+
+    /// AC7a: when the oldest sample cannot be read, the page still reads its 400 days.
+    func testAFailedOldestReadKeeps400Days_AC7a() async throws {
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        store.earliestFails = true
+        _ = try await LiveHealth.readDays(store, .steps, reaching: nil, now: now, calendar: utc)
+        XCTAssertEqual(store.queries.last?.start, utc.startOfDay(for: now).addingTimeInterval(-400 * 86_400))
+    }
+
     /// Adversary R4: a status check that throws keeps what was known; the Turn On row does not flash.
     func testAStatusCheckThatThrowsKeepsTheCards_R4() async {
         let store = FakeLiveStore(due: false)
@@ -804,6 +841,7 @@ final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
         var segments: [SleepSegment] = []
         var calls: [LiveMetric: Int] = [:]
         var failFrom: [LiveMetric: Int] = [:]
+        var earliestFails = false
         init(due: Bool = true) { self.due = due }
     }
 
@@ -834,6 +872,8 @@ final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
         if let delay { try await Task.sleep(for: delay) }
     }
     var queries: [(start: Date, end: Date, component: Calendar.Component)] { with { $0.queries } }
+    /// `earliest` throws, as HealthKit's other errors do.
+    var earliestFails: Bool { get { with { $0.earliestFails } } set { with { $0.earliestFails = newValue } } }
 
     func fill(now: Date) {
         let today = Date(timeIntervalSince1970: (now.timeIntervalSince1970 / 86_400).rounded(.down) * 86_400)
@@ -880,6 +920,16 @@ final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
             case .sleep: return state.segments.map(\.end).max().map { (value: nil, date: $0) }
             default: return state.days[metric]?.filter { $0.value != nil }.max { $0.start < $1.start }.map { (value: $0.value!, date: $0.start.addingTimeInterval(43_200)) }
             }
+        }
+    }
+
+    func earliest(_ metric: LiveMetric) async throws -> Date? {
+        try await wait()
+        return try with { state in
+            if state.locked { throw HealthStoreError.locked }
+            if state.earliestFails { throw HKError(.errorHealthDataUnavailable) }
+            if state.empty.contains(metric) { return nil }
+            return metric == .sleep ? state.segments.map(\.start).min() : state.days[metric]?.map(\.start).min()
         }
     }
 

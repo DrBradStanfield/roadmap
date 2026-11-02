@@ -57,7 +57,8 @@ enum LiveHealthSeed {
                 at = end
             }
         }
-        for week in 0..<52 {
+        // Three years of VO2 max, so a page shows it scrolls back past a year (US-56 AC7a).
+        for week in 0..<156 {
             let day = calendar.date(byAdding: .day, value: -7 * week - 2, to: today)!.addingTimeInterval(18 * 3600)
             quantity(.vo2Max, 40 + 2 * sin(Double(week) / 5), vo2, day, day)
         }
