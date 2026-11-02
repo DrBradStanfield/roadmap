@@ -76,6 +76,7 @@ import {
   followupDateLabel,
   anyScreeningEligible,
   dexaEligible,
+  lungGroupShown,
   lungScreeningAsked,
   customSupplementAdd,
   customSupplementMatch,
@@ -2032,8 +2033,8 @@ export function InputPanel({
               </div>
             )}
 
-            {/* Lung (age 50-80, all genders) */}
-            {age >= 50 && age <= 80 && (
+            {/* Lung (age 50-80, all genders; past 80 only for an abnormal CT, US-07 AC1g) */}
+            {lungGroupShown(age, scr) && (
               <div className="screening-group">
                 <h4>Lung</h4>
 

@@ -1054,6 +1054,8 @@ Lung: the plan does not ask when someone quit. Like the American Cancer Society'
 
 Lung follow-up: once an abnormal low-dose CT is recorded, its follow-up card and its `screening_lung` reminder stay whatever the pack-years, so a later correction below 20 never drops them (Brad 2026-11-03; US-07 AC1f). The age limits (50-80) and the former/current smoker history still apply. Below 20 pack-years no start, overdue or up-to-date card shows. Below 20 the reminder runs exactly while the follow-up card shows: while the follow-up is not yet organized or is scheduled it falls on the routine annual date (12 months after the last CT); once the follow-up is completed with its date, on the earlier of that and the post-follow-up date; a completed follow-up with no date gives neither card nor reminder (at 20+ it falls back to the routine card and reminder).
 
+Lung follow-up past 80: an abnormal low-dose CT's follow-up card, its reminder and its form questions ignore the upper age limit, the same way as below 20 pack-years; routine lung screening (start card, routine overdue/up-to-date card, routine reminder) still stops after 80 (Brad 2026-11-03; US-07 AC1g).
+
 ### Screening Intervals (months)
 
 | Method Key | Months |

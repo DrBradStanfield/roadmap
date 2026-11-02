@@ -1414,7 +1414,7 @@ describe('generateSuggestions', () => {
     });
 
     // Lung
-    it('suggests lung screening for smoker 50+ with 20+ pack-years (USPSTF 2021)', () => {
+    it('suggests lung screening for smoker 50+ with 20+ pack-years (ACS 2023)', () => {
       const { inputs, results } = createTestData({ birthYear: 1970, birthMonth: 1 }, { age: 56 });
       const scr: ScreeningInputs = { lungSmokingHistory: 'current_smoker', lungPackYears: 25 };
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
@@ -1463,6 +1463,17 @@ describe('generateSuggestions', () => {
       expect(lung({ ...abnormal, lungScreening: 'not_yet_started' })).toEqual([]);
       // Review R2: a completed follow-up with no date has no card below 20 (no routine fallback).
       expect(lung({ ...abnormal, lungFollowupStatus: 'completed' })).toEqual([]);
+      // A dated completed follow-up with no last LDCT date: no card (and no reminder, reminder-schedule-eligibility.test.ts).
+      expect(lung({ ...abnormal, lungLastDate: undefined, lungFollowupStatus: 'completed', lungFollowupDate: '2025-03' })).toEqual([]);
+    });
+
+    it('US-07 AC1g: past 80, an abnormal lung CT keeps its follow-up card; routine screening stops (Brad 2026-11-03)', () => {
+      const { inputs, results } = createTestData({ birthYear: 1945, birthMonth: 1 }, { age: 81 });
+      const abnormal: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 25, lungScreening: 'annual_ldct', lungLastDate: '2025-01', lungResult: 'abnormal', lungFollowupStatus: 'not_organized' };
+      const lung = (scr: ScreeningInputs) => generateSuggestions(inputs, results, 'si', undefined, scr).filter(s => s.id.startsWith('screening-lung'));
+      expect(lung(abnormal).map(s => [s.id, s.priority])).toEqual([['screening-lung-followup', 'urgent']]);
+      expect(lung({ ...abnormal, lungResult: 'normal', lungFollowupStatus: undefined })).toEqual([]);
+      expect(lung({ ...abnormal, lungScreening: undefined, lungLastDate: undefined, lungResult: undefined, lungFollowupStatus: undefined })).toEqual([]);
     });
 
     it('US-07 AC1e: no quit window, as ACS 2023 (Brad 2026-11-03): the plan and the roadmap text screen former smokers however long ago they quit', () => {

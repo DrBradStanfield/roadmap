@@ -962,11 +962,11 @@ export function generateSuggestions(
       }
     }
 
-    // Lung (age 50-80, smokers with 20+ pack-years — USPSTF 2021). An abnormal CT keeps its
-    // follow-up card whatever the pack-years (US-07 AC1f, Brad 2026-11-03).
-    const lungSmoker = age >= 50 && age <= 80 &&
+    // Lung (age 50-80, smokers with 20+ pack-years — ACS 2023). An abnormal CT keeps its
+    // follow-up card whatever the pack-years and past 80 (US-07 AC1f, AC1g; Brad 2026-11-03).
+    const lungSmoker = age >= 50 &&
         (screenings.lungSmokingHistory === 'former_smoker' || screenings.lungSmokingHistory === 'current_smoker');
-    if (lungSmoker && (screenings.lungPackYears === undefined || screenings.lungPackYears < LUNG_PACK_YEARS)) {
+    if (lungSmoker && (age > 80 || screenings.lungPackYears === undefined || screenings.lungPackYears < LUNG_PACK_YEARS)) {
       const followup = screenings.lungScreening && screenings.lungScreening !== 'not_yet_started' && screenings.lungLastDate
         && screenings.lungResult === 'abnormal'
         && screeningFollowup('lung', screenings.lungScreening, screenings.lungResult, screenings.lungFollowupStatus, screenings.lungFollowupDate);

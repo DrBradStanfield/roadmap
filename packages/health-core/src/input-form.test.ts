@@ -178,6 +178,13 @@ describe('screeningForm', () => {
     expect(keys(screeningForm(60, 'male', { lungSmokingHistory: 'former_smoker', lungPackYears: 20 }))).toContain('lung_screening');
   });
 
+  it('US-07 AC1g: past 80 the lung questions show only for an abnormal CT, so its follow-up can be closed (Brad 2026-11-03)', () => {
+    const abnormal = { lungSmokingHistory: 'former_smoker', lungPackYears: 25, lungScreening: 'annual_ldct', lungLastDate: '2025-01', lungResult: 'abnormal' } as ScreeningInputs;
+    expect(keys(screeningForm(81, 'male', abnormal)).filter((k) => k.startsWith('lung_'))).toEqual(
+      ['lung_smoking_history', 'lung_pack_years', 'lung_screening', 'lung_last_date', 'lung_result', 'lung_followup_status']);
+    expect(keys(screeningForm(81, 'male', { ...abnormal, lungResult: 'normal' })).filter((k) => k.startsWith('lung_'))).toEqual([]);
+  });
+
   it('US-07 AC1f: below 20 pack-years, recorded LDCT data keeps its questions so the follow-up can be closed', () => {
     const abnormal = { lungSmokingHistory: 'former_smoker', lungPackYears: 15, lungScreening: 'annual_ldct', lungLastDate: '2025-01', lungResult: 'abnormal' } as ScreeningInputs;
     expect(keys(screeningForm(60, 'male', abnormal)).filter((k) => k.startsWith('lung_'))).toEqual(

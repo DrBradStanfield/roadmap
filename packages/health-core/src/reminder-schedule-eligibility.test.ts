@@ -62,22 +62,32 @@ describe('screening reminder eligibility (US-06, algorithm doc table)', () => {
     expect(scheduled(sex, age).has(category)).toBe(expected);
   });
 
-  it('lung needs a smoking history and at least 20 pack-years (US-07 AC1d, USPSTF 2021)', () => {
+  it('lung needs a smoking history and at least 20 pack-years (US-07 AC1d, ACS 2023)', () => {
     expect(scheduled('male', 60, { ...ALL_STARTED, lungPackYears: 19 }).has('screening_lung')).toBe(false);
     expect(scheduled('male', 60, { ...ALL_STARTED, lungPackYears: undefined }).has('screening_lung')).toBe(false);
     expect(scheduled('male', 60, { ...ALL_STARTED, lungSmokingHistory: 'never_smoked' }).has('screening_lung')).toBe(false);
     expect(scheduled('male', 60, { ...ALL_STARTED, lungSmokingHistory: 'current_smoker' }).has('screening_lung')).toBe(true);
   });
 
+  it('US-07 AC1g: past 80 an abnormal lung CT keeps its reminder; a normal one does not (Brad 2026-11-03)', () => {
+    const abnormal: ScreeningInputs = { ...ALL_STARTED, lungPackYears: 25, lungResult: 'abnormal', lungFollowupStatus: 'not_organized' };
+    expect(scheduled('male', 81, abnormal).has('screening_lung')).toBe(true);
+    expect(scheduled('male', 81, { ...abnormal, lungResult: 'normal', lungFollowupStatus: undefined }).has('screening_lung')).toBe(false);
+    expect(scheduled('male', 49, abnormal).has('screening_lung')).toBe(false);
+  });
+
   it('US-07 AC1f: an abnormal lung CT keeps its reminder whatever the pack-years (Brad 2026-11-03)', () => {
     const abnormal: ScreeningInputs = { ...ALL_STARTED, lungPackYears: 15, lungResult: 'abnormal', lungFollowupStatus: 'completed', lungFollowupDate: '2025-03' };
     expect(scheduled('male', 60, abnormal).has('screening_lung')).toBe(true);
     expect(scheduled('male', 60, { ...abnormal, lungFollowupStatus: 'not_organized', lungFollowupDate: undefined }).has('screening_lung')).toBe(true);
-    // A normal result below 20 pack-years still gets no reminder, and the age limits hold.
+    // A normal result below 20 pack-years still gets no reminder; past 80 an abnormal one keeps it (AC1g).
     expect(scheduled('male', 60, { ...abnormal, lungResult: 'normal' }).has('screening_lung')).toBe(false);
-    expect(scheduled('male', 81, abnormal).has('screening_lung')).toBe(false);
+    expect(scheduled('male', 81, abnormal).has('screening_lung')).toBe(true);
+    expect(scheduled('male', 49, abnormal).has('screening_lung')).toBe(false);
     // Review R2: a completed follow-up with no date gives no card below 20, so no reminder either.
     expect(scheduled('male', 60, { ...abnormal, lungFollowupDate: undefined }).has('screening_lung')).toBe(false);
+    // The card needs a last LDCT date, so with a dated completed follow-up but no last date, no reminder either.
+    expect(scheduled('male', 60, { ...abnormal, lungLastDate: undefined }).has('screening_lung')).toBe(false);
   });
 
   it('a screening not yet started schedules nothing', () => {

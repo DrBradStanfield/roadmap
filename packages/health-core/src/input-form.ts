@@ -382,6 +382,11 @@ export function lungScreeningAsked(scr: ScreeningInputs): boolean {
     || !!scr.lungScreening || !!scr.lungLastDate || !!scr.lungResult;
 }
 
+/** The lung questions show from 50 to 80, and past 80 only for an abnormal CT, so its follow-up can be closed (US-07 AC1g). */
+export function lungGroupShown(age: number, scr: ScreeningInputs): boolean {
+  return age >= 50 && (age <= 80 || scr.lungResult === 'abnormal');
+}
+
 /** DEXA applies to women from 50 and men from 70. */
 export function dexaEligible(age: number, sex: string | undefined): boolean {
   return (sex === 'female' && age >= 50) || (sex === 'male' && age >= 70);
@@ -439,7 +444,7 @@ export function screeningForm(age: number | undefined, sex: string | undefined, 
         ? { id: 'cervical', title: 'Cervical', notes: [], fields: started('cervical', 'cervical_method', L.method, O.cervical_method, L.lastScreening) }
         : { id: 'cervical', title: 'Cervical', notes: [X.cervicalStop], fields: [] });
     }
-    if (age >= 50 && age <= 80) {
+    if (lungGroupShown(age, scr)) {
       const history = str('lung_smoking_history');
       const fields = [choice('lung_smoking_history', L.smokingHistory, O.lung_smoking_history)];
       if (history === 'former_smoker' || history === 'current_smoker') {
