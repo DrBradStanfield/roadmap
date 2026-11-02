@@ -233,6 +233,10 @@ for (const seg of segs) {
     // of each, and the same repo.
     const fetchUrls = gitq(['remote', 'get-url', '--all', 'origin']).split('\n').filter(Boolean);
     const pushUrls = gitq(['remote', 'get-url', '--push', '--all', 'origin']).split('\n').filter(Boolean);
+    // A receivepack setting can run a command that reaches another repo, as can an ssh wrapper.
+    if (gitq(['config', '--get-regexp', '^(remote\\.origin\\.receivepack|core\\.sshcommand)$'])) {
+      refuse('the check could not run (origin sets receivepack or an ssh command)');
+    }
     if (fetchUrls.length !== 1 || pushUrls.length !== 1 || fetchUrls[0] !== pushUrls[0]) {
       refuse('the check could not run (origin needs exactly one URL, the same for fetch and push)');
     }

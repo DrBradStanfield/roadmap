@@ -196,6 +196,8 @@ git clone -q remote.git c; git -C c config --add remote.origin.pushurl "$S/remot
 t "$S/c" "git push origin --delete claude/m1" DENY
 git clone -q remote.git d; git -C d config remote.origin.pushurl "$S/x.git"
 t "$S/d" "git push origin --delete claude/m1" DENY
+git clone -q remote.git e; git -C e config remote.origin.receivepack "git-receive-pack $S/x.git; :"
+t "$S/e" "git push origin --delete claude/m1" DENY
 # A tip this checkout has not fetched: one `git fetch origin main` brings it, then the check runs.
 (cd a && git pull -q --no-rebase && git commit -q --allow-empty -m three && git push -q origin main main:refs/heads/claude/m3)
 t "$S/b" "git push origin --delete claude/m3" allow
