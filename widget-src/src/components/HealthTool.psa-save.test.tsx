@@ -257,9 +257,11 @@ describe('a second PSA on a day that already holds one (US-06 AC15, Brad 2026-11
     type(psa(), '3.2');
     act(() => psa().blur());
     await pause(700);
-    await waitFor(async () => expect(await all('psa')).toEqual([
+    // Both rows stay, in no set order on disk: the old one flipped, the new one active.
+    await waitFor(async () => expect(await all('psa')).toEqual(expect.arrayContaining([
       [6.5, '2025-01-14', 'entered-in-error'], [3.2, '2025-01-14', 'active'],
-    ]));
+    ])));
+    expect(await all('psa')).toHaveLength(2);
     view.unmount();
   });
 
