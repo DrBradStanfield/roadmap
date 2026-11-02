@@ -20,7 +20,7 @@ struct MetricEntrySheet: View {
     }
 
     var body: some View {
-        if row.metric == MyData.bloodPressure {
+        if row.series == nil, row.metric == MyData.bloodPressure {
             BloodPressureSheet(store: store, seen: seen, saved: saved)
         } else {
             ValueEntrySheet(title: row.label, unit: store.lpaUnit(for: row) ?? row.unit, current: nil, asksForDay: true) { value, day in
@@ -31,7 +31,7 @@ struct MetricEntrySheet: View {
                 saved(await store.apply(row.series == "lab" ? .labCorrect(id: existingId, value: value) : .correct(id: existingId, value: value), as: seen))
             }
             .lpaUnits(store, row) { seen = seen.showing(lpaUnit: $0) }
-            .reads(in: store.inputRange(for: row.metric, in: store.lpaUnit(for: row)))
+            .reads(in: store.inputRange(for: row, in: store.lpaUnit(for: row)))
         }
     }
 }

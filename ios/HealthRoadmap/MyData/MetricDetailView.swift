@@ -71,7 +71,7 @@ struct MetricDetailView: View {
                 }
             }
             // Apple Health's About section, then its sources (US-58 AC4).
-            if let guide = store.myData?.guides?[row.metric] {
+            if let guide = Self.guide(for: row, in: store.myData?.guides) {
                 GuideSections(guide: guide)
             }
         }
@@ -120,7 +120,12 @@ struct MetricDetailView: View {
     /// The unit a correction is typed and hinted in: Lp(a)'s screen unit; a lab row's own, in
     /// which its correction is stored (US-25 AC25, review R2); else the row's.
     nonisolated static func correctionUnit(_ value: MetricHistory.Row, shown: MyData.Row, lpaUnit: String?) -> String {
-        lpaUnit ?? value.unit ?? shown.unit
+        shown.series == nil ? lpaUnit ?? value.unit ?? shown.unit : value.unit ?? shown.unit
+    }
+
+    /// A core metric's "About" guide (US-58); none for a lab test, whatever its name (review N1).
+    static func guide(for row: MyData.Row, in guides: MetricGuides?) -> MetricGuide? {
+        row.series == nil ? guides?[row.metric] : nil
     }
 
     // MARK: Chart
@@ -194,7 +199,7 @@ struct MetricDetailView: View {
                 }
             }
             .disabled(store.unitSwitches > 0)
-        } else if row.metric == "lpa", let unit = store.myData?.lpaUnit {
+        } else if let unit = store.lpaUnit(for: row) {
             Picker("Unit", selection: Binding(get: { unit }, set: { unit in
                 let choosing = store.chooseLpaUnit(unit) // holds entry now, in the tap
                 Task { lpaRefusal = await choosing.value }
@@ -287,7 +292,7 @@ private struct EditingSheet: View {
         switch editing {
         case .add(let shown, let seen):
             MetricEntrySheet(store: store, row: shown, seen: seen, saved: saved)
-        case .correct(let value, let shown, let seen) where shown.metric == MyData.bloodPressure:
+        case .correct(let value, let shown, let seen) where shown.series == nil && shown.metric == MyData.bloodPressure:
             BloodPressureSheet(store: store, correcting: value, seen: seen, saved: saved)
         case .correct(let value, let shown, let seen):
             // The value and unit as the sheet's screen shows them: Lp(a)'s unit can change in
@@ -299,7 +304,7 @@ private struct EditingSheet: View {
                 saved(await store.apply(shown.series == "lab" ? .labCorrect(id: value.id, value: number) : .correct(id: value.id, value: number), as: seen))
             }
             .lpaUnits(store, shown) { reopen(.correct(value, shown, seen.showing(lpaUnit: $0))) }
-            .reads(in: store.inputRange(for: shown.metric, in: store.lpaUnit(for: shown) == nil ? nil : unit))
+            .reads(in: store.inputRange(for: shown, in: store.lpaUnit(for: shown) == nil ? nil : unit))
         }
     }
 }

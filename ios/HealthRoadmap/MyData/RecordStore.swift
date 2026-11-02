@@ -719,7 +719,19 @@ final class RecordStore {
 
     /// Lp(a)'s unit as the record holds it now, for an Lp(a) row; nil for any other.
     func lpaUnit(for row: MyData.Row) -> String? {
-        row.metric == "lpa" ? myData?.lpaUnit : nil
+        Self.lpaUnit(for: row, recordUnit: myData?.lpaUnit)
+    }
+
+    /// Lp(a)'s unit only on the core Lp(a) row: a lab test filed as "lpa" is read in its own
+    /// unit, never the record's Lp(a) unit (US-25 AC25, review N1).
+    nonisolated static func lpaUnit(for row: MyData.Row, recordUnit: String?) -> String? {
+        row.series == nil && row.metric == "lpa" ? recordUnit : nil
+    }
+
+    /// A row's input range in `unit`: a core metric's; none for a lab test, whatever its name
+    /// (US-25 AC25, review N1).
+    func inputRange(for row: MyData.Row, in unit: String? = nil) -> ClosedRange<Double>? {
+        row.series == nil ? inputRange(for: row.metric, in: unit) : nil
     }
 
     /// Whether an edit is a typed Lp(a) value, read in Lp(a)'s own unit. Run in a change's
