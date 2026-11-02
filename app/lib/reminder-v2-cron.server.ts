@@ -27,6 +27,10 @@ const CONCURRENCY_LIMIT = 5;
 const MACHINE_ID = process.env.FLY_MACHINE_ID || `local-${process.pid}`;
 
 let lastRunDate: string | null = null;
+// Optins this machine has tried to email today. Marked before the send, so a
+// retried pass (US-28 AC3) never emails anyone twice in a day, even when the
+// failed pass sent the mail but could not stamp last_sent.
+let attemptedToday = { day: '', ids: new Set<string>() };
 let cronIntervalId: ReturnType<typeof setInterval> | null = null;
 
 /** Process items in chunks of `limit`, using Promise.allSettled per chunk.
@@ -73,7 +77,7 @@ export function startReminderV2Cron(): void {
       // Marked while the pass runs, so a pass that outlasts the hour is not
       // started twice on this machine; released if it fails, so the next tick
       // re-runs the day (US-28 AC3). The lock row names this machine, so its
-      // re-acquire wins, and the cooldowns skip what the failed pass sent and stamped.
+      // re-acquire wins; attemptedToday skips whoever the failed pass tried to email.
       lastRunDate = todayStr;
       const count = await processV2Reminders(todayStr).catch((passError: unknown) => {
         lastRunDate = null;
@@ -95,7 +99,7 @@ export function stopReminderV2Cron(): void {
   }
 }
 
-type V2Result = 'sent' | 'none-due' | 'all-on-cooldown' | 'email-send-failed' | 'quiet-period';
+type V2Result = 'sent' | 'none-due' | 'all-on-cooldown' | 'email-send-failed' | 'quiet-period' | 'attempted-today';
 
 /**
  * An item is sendable when its due date has arrived AND we haven't nagged
@@ -122,6 +126,11 @@ async function processOneOptin(optin: ReminderV2Optin, todayStr: string): Promis
   if (inQuietPeriod(optin, todayStr)) return 'quiet-period';
   const { due, anyDue } = dueItemsFor(optin, todayStr);
   if (due.length === 0) return anyDue ? 'all-on-cooldown' : 'none-due';
+
+  // At most one attempt per optin per day on this machine, whatever the send's outcome.
+  if (attemptedToday.day !== todayStr) attemptedToday = { day: todayStr, ids: new Set() };
+  if (attemptedToday.ids.has(optin.id)) return 'attempted-today';
+  attemptedToday.ids.add(optin.id);
 
   const unsubscribeUrl = buildUnsubscribeUrl(optin.token);
   // US-23 AC3 — the email is the surviving artifact; AC5's prominent
@@ -162,6 +171,7 @@ export async function processV2Reminders(todayStr: string): Promise<number> {
     'all-on-cooldown': 0,
     'email-send-failed': 0,
     'quiet-period': 0,
+    'attempted-today': 0,
   };
 
   while (true) {
