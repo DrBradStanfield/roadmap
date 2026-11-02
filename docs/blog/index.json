@@ -10853,13 +10853,11 @@
       "aspirin",
       "clopidogrel",
       "Plavix",
-      "bleeding",
-      "vitamin K",
-      "drug interaction"
+      "bleeding"
     ],
     "publishedAt": "",
     "type": "guideline",
-    "summary": "Anticoagulants and antiplatelets: warfarin, apixaban (Eliquis), rivaroxaban, dabigatran, aspirin and clopidogrel; who needs them, INR, bleeding risks, interactions with vitamin K, fish oil and other supplements, and procedures. Built from labels and guidelines.",
+    "summary": "Anticoagulants and antiplatelets: warfarin, apixaban (Eliquis), rivaroxaban, dabigatran, aspirin and clopidogrel; who needs them, INR, bleeding risks, interactions with food, medicines and supplements, and procedures. Built from labels and guidelines.",
     "reviewed": "2026-11-02",
     "kind": "condition"
   },
@@ -11163,7 +11161,9 @@
     "keywords": [
       "osteoarthritis",
       "OA",
-      "arthritis",
+      "knee arthritis",
+      "hip arthritis",
+      "wear and tear arthritis",
       "joint pain",
       "knee pain",
       "hip pain",
@@ -11171,8 +11171,7 @@
       "meniscus",
       "glucosamine",
       "chondroitin",
-      "collagen",
-      "hyaluronic acid",
+      "hyaluronic acid injection",
       "cortisone injection",
       "PRP",
       "NSAIDs",

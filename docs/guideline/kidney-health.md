@@ -19,7 +19,7 @@ thresholds: [{"ref":"EGFR_THRESHOLDS.normal","value":70},{"ref":"EGFR_THRESHOLDS
 - Kidney function is checked with two tests: a blood test for creatinine, which is turned into an eGFR (estimated glomerular filtration rate), and a urine test for albumin, reported as the albumin-to-creatinine ratio (ACR) [1].
 - Chronic kidney disease (CKD) means a kidney problem that lasts at least 3 months. One low result is not enough to diagnose it [1][2].
 - Early CKD usually causes no symptoms, so it is found by testing [7].
-- With CKD, heart disease and stroke are a bigger threat than kidney failure, which only about 2 in 100 people with CKD reach [7].
+- Only about 2 in 100 people with CKD reach kidney failure; heart disease and stroke are among the main causes of death with CKD [7].
 - Blood pressure control, diabetes control, less salt, exercise and not smoking all help [1]. Medicines that protect the kidneys include ACE inhibitors, ARBs and SGLT2 inhibitors [1].
 - Some painkillers (NSAIDs such as ibuprofen), potassium supplements and some herbal products can harm damaged kidneys [1][8].
 - Brad's view: the plan lowers its protein target and drops potassium advice when eGFR falls below 45 (Brad's current guidance, 2 Nov 2026).
@@ -87,13 +87,13 @@ KDIGO asks for a whole-person plan aimed at slowing CKD and preventing its compl
 
 **Salt.** KDIGO suggests under 2 g of sodium a day (about 5 g of salt) for people with CKD [1]. The NHS gives a limit of 6 g of salt a day, about a teaspoon [8].
 
-**Diet.** KDIGO advises a varied diet with more plant foods than animal foods and fewer ultra-processed foods, with a renal dietitian to tailor sodium, potassium, phosphorus and protein [1]. The diet guideline covers eating patterns.
+**Diet.** KDIGO advises a varied diet with more plant foods than animal foods and fewer ultra-processed foods, with a renal dietitian to tailor sodium, potassium, phosphorus and protein [1].
 
 **Protein.** KDIGO suggests 0.8 g per kg of body weight a day in CKD G3 to G5, and advises avoiding more than 1.3 g per kg a day in adults whose CKD is at risk of getting worse [1]. NICE advises against low-protein diets, below 0.6 to 0.8 g per kg a day [2]. The plan's own target is in "Your numbers" and "Brad's view". See the [protein powders page](https://drstanfield.com/blogs/articles/protein-powders-benefits-types-dosing-and-side-effects) for supplements.
 
-**Potassium and salt substitutes.** Damaged kidneys may not clear potassium well, and blood potassium can rise too high [8]. Potassium salt substitutes can help cut sodium, but they are not for people with kidney disease, people told to limit potassium, or people taking a potassium-sparing diuretic, a potassium supplement, an ACE inhibitor or an ARB, unless their doctor agrees. The plan leaves out its potassium suggestion when eGFR is below 45 (Brad's current guidance, 2 Nov 2026). The NHS advises people with CKD to avoid potassium supplements [8]. See the [potassium page](https://drstanfield.com/blogs/articles/potassium-benefits-forms-dosing-and-side-effects).
+**Potassium and salt substitutes.** Damaged kidneys may not clear potassium well, and blood potassium can rise too high [8]. Potassium salt substitutes can help cut sodium, but they are not for people with kidney disease, people told to limit potassium, or people taking a potassium-sparing diuretic, a potassium supplement, an ACE inhibitor or an ARB, unless their doctor agrees (Brad's current guidance, 2 Nov 2026). The NHS advises people with CKD to avoid potassium supplements [8]. See the [potassium page](https://drstanfield.com/blogs/articles/potassium-benefits-forms-dosing-and-side-effects).
 
-**Exercise and weight.** KDIGO recommends at least 150 minutes a week of moderate activity, or as much as your heart and fitness allow, less sitting, and weight loss for people with obesity [1]. The exercise guideline covers how to start.
+**Exercise and weight.** KDIGO recommends at least 150 minutes a week of moderate activity, or as much as your heart and fitness allow, less sitting, and weight loss for people with obesity [1].
 
 **Tobacco.** KDIGO advises people with CKD not to use tobacco products [1].
 
@@ -101,21 +101,21 @@ KDIGO asks for a whole-person plan aimed at slowing CKD and preventing its compl
 
 **Painkillers and supplements.** The NHS advises people with kidney disease to avoid over-the-counter NSAIDs such as ibuprofen unless a health professional advises them [8]. KDIGO asks doctors to review and limit over-the-counter medicines and herbal or dietary products that may harm the kidneys [1].
 
-**Illness.** If you are vomiting or have diarrhoea, keep drinking enough that your urine stays pale [9]. New Zealand guidance tells people to pause some medicines while acutely unwell: sulfonylureas, ACE inhibitors, diuretics, metformin, ARBs, NSAIDs and SGLT2 inhibitors [4]. Ask your doctor for a written plan, including when to restart [1].
+**Illness.** If you are vomiting or have diarrhoea, keep drinking enough that your urine stays pale [9]; with a fluid limit, on dialysis or passing very little urine, follow your own team's fluid advice instead [8]. New Zealand guidance tells people to pause some medicines while acutely unwell: sulfonylureas, ACE inhibitors, diuretics, metformin, ARBs, NSAIDs and SGLT2 inhibitors [4]. Ask your doctor for a written plan, including when to restart [1].
 
 ## Medicines
 
 Most medicines for CKD are chosen by your urine ACR, your eGFR and whether you have diabetes [1][2].
 
-**ACE inhibitors and ARBs** (for example lisinopril, ramipril, losartan, candesartan). KDIGO recommends one for people with CKD and a raised ACR, with or without diabetes, and advises against combining an ACE inhibitor with an ARB [1]. NICE offers one to adults with CKD and an ACR above 30 mg/mmol, and to adults with diabetes from an ACR of 3 mg/mmol [2]. Blood pressure, creatinine and potassium are checked within a few weeks of starting or changing the dose [1]. Their labels warn of high potassium and of swelling of the face and throat, and say not to use potassium supplements or salt substitutes without asking your doctor [20][21]. They can harm an unborn baby; stop them as soon as pregnancy is found [20]. This guide gives no doses for them in reduced kidney function: check with your doctor or pharmacist.
+**ACE inhibitors and ARBs** (for example lisinopril, ramipril, losartan, candesartan). KDIGO recommends one for people with CKD and a raised ACR, with or without diabetes, and advises against combining an ACE inhibitor with an ARB [1]. NICE offers one to adults with CKD and hypertension and an ACR above 30 mg/mmol, to adults without diabetes from an ACR of 70, and to adults with diabetes from an ACR of 3 [2]. Blood pressure, creatinine and potassium are checked within a few weeks of starting or changing the dose [1]. Their labels warn of high potassium and of swelling of the face and throat, and say not to use potassium supplements or salt substitutes without asking your doctor [20][21]. They can harm an unborn baby; stop them as soon as pregnancy is found [20]. This guide gives no doses for them in reduced kidney function: check with your doctor or pharmacist.
 
 **SGLT2 inhibitors** (empagliflozin, dapagliflozin). KDIGO recommends one for adults with type 2 diabetes and CKD with an eGFR of 20 or more, and for adults with CKD and an ACR of 20 mg/mmol or more, or heart failure [1]. In EMPA-KIDNEY (6,609 people with CKD, with or without diabetes), empagliflozin lowered kidney disease progression or cardiovascular death (13.1% vs 16.9% over a median 2 years; hazard ratio 0.72) [11]. In DAPA-CKD (4,304 people), dapagliflozin lowered the main kidney and cardiovascular outcome (9.2% vs 14.5%; hazard ratio 0.61), with similar effects with or without type 2 diabetes [12]. A small, early fall in eGFR is expected when one is started and is generally not a reason to stop [1][4]. The labels warn of ketoacidosis, genital infections and fluid loss [16][17].
 
-**Finerenone** (a non-steroidal mineralocorticoid receptor antagonist). Approved for CKD with type 2 diabetes, added to an ACE inhibitor or ARB [18]. In FIDELIO-DKD (5,734 people) it lowered the main kidney outcome (17.8% vs 21.1%; hazard ratio 0.82); more people stopped it because of high potassium (2.3% vs 0.9%) [14]. In FIND-CKD (1,584 adults with CKD and albuminuria but no diabetes, all on an ACE inhibitor or ARB), finerenone slowed the yearly fall in eGFR (3.3 vs 4.0 a year) and lowered a combined kidney and heart outcome (hazard ratio 0.77); high potassium was its most common side effect [29]. Its label asks for potassium and eGFR checks before and during treatment [18].
+**Finerenone** (a non-steroidal mineralocorticoid receptor antagonist). US-approved for CKD with type 2 or type 1 diabetes and some heart failure, not for CKD without diabetes [18]. In FIDELIO-DKD (5,734 people) it lowered the main kidney outcome (17.8% vs 21.1%; hazard ratio 0.82); more people stopped it because of high potassium (2.3% vs 0.9%) [14]. In FIND-CKD (1,584 adults with CKD and albuminuria but no diabetes, all on an ACE inhibitor or ARB), finerenone slowed the yearly fall in eGFR (3.3 vs 4.0 mL/min/1.73m² a year) and lowered a combined kidney and heart outcome (hazard ratio 0.77); high potassium was the most common adverse event (17.0% vs 13.3% with placebo) [29].
 
 **GLP-1 medicines.** In FLOW (3,533 people with type 2 diabetes and CKD), weekly semaglutide lowered major kidney disease events by 24% (hazard ratio 0.76) and death from any cause by 20% [13].
 
-**Statins.** KDIGO recommends a statin, or a statin with ezetimibe, for adults aged 50 or over with an eGFR below 60 who are not on dialysis [1]. The high cholesterol guideline covers them.
+**Statins.** KDIGO recommends a statin, or a statin with ezetimibe, for adults aged 50 or over with an eGFR below 60 who are not on dialysis [1].
 
 **Aspirin.** After a heart attack, stroke or stent, take it as your doctor directs; it is not for preventing a first event (Brad's current guidance, 2 Nov 2026). KDIGO recommends low-dose aspirin in CKD only for people with established heart or blood vessel disease [1].
 
@@ -132,7 +132,7 @@ Most medicines for CKD are chosen by your urine ACR, your eGFR and whether you h
 - **Potassium.** The potassium card (3,500 to 5,000 mg a day from food) shows only with an eGFR of 45 or more, because impaired kidneys may not clear extra potassium safely (Brad's current guidance, 2 Nov 2026). In his [salt post](https://drstanfield.com/blogs/articles/completely-wrong-about-salt-new-study), Brad says potassium-rich food matters for balancing sodium, while noting the risk of too much potassium in kidney disease [26].
 - **Creatine.** In his [creatine post](https://drstanfield.com/blogs/articles/why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking), Brad explains that creatine raises blood creatinine, which can make kidney function look worse than it is, that the evidence suggests creatine is not a problem with normal kidney function, and that for patients with significant kidney disease he reduces the dose or stops it [23]. In his [post for older adults](https://drstanfield.com/blogs/articles/older-adults-seniors-creatine-supplements), he advises people with chronic kidney disease or on dialysis to discuss creatine with their doctor first [24].
 - **Testing.** In his [blood tests post](https://drstanfield.com/blogs/articles/5-livesaving-blog-tests), Brad lists kidney function (sodium, potassium and creatinine) among the tests every adult should have, with prompt follow-up of an abnormal result [28].
-- **Kidney-protecting medicines.** Brad takes empagliflozin 6.25 mg a day, below the usual 10 mg dose, mainly to protect his kidneys from his high blood pressure; this is off-label, not formally studied and not a recommendation for anyone else (Brad's current guidance, 2 Nov 2026). The plan's SGLT2 inhibitor card describes cardiovascular and kidney protection as proven "in some populations" (Brad's current guidance, 2 Nov 2026). In his [tirzepatide post](https://drstanfield.com/blogs/articles/why-i-take-low-dose-tirzepatide-zepbound), Brad notes that FLOW's kidney benefit was unrelated to weight change [27].
+- **Kidney-protecting medicines.** Brad takes empagliflozin 6.25 mg a day, below the usual 10 mg dose, mainly to protect his kidneys, because high blood pressure strains them over time; this is off-label, not formally studied and not a recommendation for anyone else (Brad's current guidance, 2 Nov 2026). The plan's SGLT2 inhibitor card describes cardiovascular and kidney protection as proven "in some populations" (Brad's current guidance, 2 Nov 2026). In his [tirzepatide post](https://drstanfield.com/blogs/articles/why-i-take-low-dose-tirzepatide-zepbound), Brad notes that FLOW's kidney benefit was unrelated to weight change [27].
 
 ## Who needs extra care
 
@@ -149,7 +149,7 @@ Most medicines for CKD are chosen by your urine ACR, your eGFR and whether you h
 - A first eGFR below 60: NICE repeats it within 2 weeks [2].
 - A raised urine ACR, so it can be confirmed on a morning sample [1][2].
 - Blood in your urine, swollen ankles, feet or hands, tiredness or breathlessness that does not settle [7].
-- An eGFR that drops by more than 20% from one test to the next, beyond normal variation [1].
+- In people with CKD, an eGFR that drops by more than 20% from one test to the next, beyond normal variation [1].
 - Before taking NSAIDs, potassium supplements, a salt substitute or herbal remedies if you have kidney disease [8][22].
 - For the blood tests your doctor asks for after starting or changing an ACE inhibitor, ARB or finerenone [1][18].
 - Guidelines suggest specialist kidney care for, among others, an eGFR below 30, an ACR above 70 mg/mmol, or an ACR above 30 mg/mmol in urine that also contains blood [1][2].
@@ -170,7 +170,7 @@ Blank cells mean the source we saved does not address the point.
 
 **What is a normal eGFR for my age?** The plan calls 70 or more Normal and 60 to 69 Low Normal (Brad's current guidance, 2 Nov 2026). KDIGO calls 90 or more normal and 60 to 89 mildly decreased, which is not CKD without other signs of kidney damage [1]. The equation includes age, so the same creatinine gives a lower eGFR as you get older (Brad's current guidance, 2 Nov 2026).
 
-**Cystatin C or creatinine: which is more accurate?** Creatinine is the usual first test. KDIGO recommends adding cystatin C when the creatinine eGFR is likely to be wrong and the result matters for a decision [1]. Equations using both markers were more accurate than either alone in the study behind the 2021 equations [10]. The plan itself uses the creatinine eGFR (Brad's current guidance, 2 Nov 2026).
+**Cystatin C or creatinine: which is more accurate?** Creatinine is the usual first test. KDIGO recommends adding cystatin C when the creatinine eGFR is likely to be wrong and the result matters for a decision [1]. Equations using both markers were more accurate than creatinine alone in the study behind the 2021 equations [10]. The plan itself uses the creatinine eGFR (Brad's current guidance, 2 Nov 2026).
 
 **Does creatine harm the kidneys?** In healthy people, an expert position stand found up to 30 g a day for 5 years safe and well tolerated [15]. Creatine raises blood creatinine, so the creatinine eGFR can read low without real damage [1][23]. KDIGO's list of supplements with possible kidney harm includes creatine, based on case reports [1]. With kidney disease, talk to your doctor first [23][24]. For creatine and muscle, see the [creatine page](https://drstanfield.com/blogs/articles/creatine-benefits-best-forms-dosing-and-side-effects).
 

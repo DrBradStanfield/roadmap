@@ -1264,6 +1264,9 @@
     "expected": [
       "creatine-benefits-best-forms-dosing-and-side-effects"
     ],
+    "must_not_route": [
+      "kidney-health"
+    ],
     "category": "supplement",
     "source": "production",
     "notes": "Safety-angle creatine query — differs from existing 'Creatine for muscle growth' (use-case angle)"
@@ -8236,6 +8239,9 @@
     "query": "Does creatine help muscle?",
     "expected": [
       "creatine-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "must_not_route": [
+      "kidney-health"
     ],
     "category": "condition-guides",
     "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Negative for kidney-health: the creatine entry, not the guide (likeliest false positive)."

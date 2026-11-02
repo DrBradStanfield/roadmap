@@ -6,7 +6,7 @@ tags: ["Guideline"]
 keywords: ["type 2 diabetes", "diabetes", "prediabetes", "A1c", "HbA1c", "fasting glucose", "blood sugar", "glucose", "insulin resistance", "HOMA-IR", "OGTT", "CGM", "glucose monitor", "metformin", "SGLT2", "empagliflozin", "dapagliflozin", "GLP-1", "semaglutide", "pioglitazone", "berberine", "remission", "low-carb"]
 summary: "Blood sugar, A1c and fasting glucose cut-offs, prediabetes and how to reverse it, insulin resistance (HOMA-IR), diet and exercise, and drugs: metformin, SGLT2 inhibitors, GLP-1 drugs. Built from ADA and NICE standards, trials and Brad's framework."
 reviewed: "2026-11-02"
-sources: [{"name":"guideline","url":"https://pmc.ncbi.nlm.nih.gov/articles/PMC12690183/","checked":"2026-11-02","fingerprint":"PMID:41358893"},{"name":"guideline","url":"https://pmc.ncbi.nlm.nih.gov/articles/PMC12690185/","checked":"2026-11-02","fingerprint":"PMID:41358900"},{"name":"guideline","url":"https://www.nice.org.uk/guidance/ng28","checked":"2026-11-02","fingerprint":"NICE NG28 last updated 18 February 2026"},{"name":"guideline","url":"https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/screening-for-prediabetes-and-type-2-diabetes","checked":"2026-11-02","fingerprint":"USPSTF 2021"},{"name":"guideline","url":"https://kdigo.org/wp-content/uploads/2022/10/KDIGO-2022-Clinical-Practice-Guideline-for-Diabetes-Management-in-CKD.pdf","checked":"2026-11-02","fingerprint":"KDIGO 2022, PMID 36272764"},{"name":"guideline","url":"https://www.diabetes.org.nz/news-and-update/changes-to-hba1c-diagnostic-criteria","checked":"2026-11-02","fingerprint":"Diabetes NZ, HbA1c thresholds from 1 July 2026"},{"name":"label","url":"https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=30658e19-8e6e-49aa-a007-e414224797c5","checked":"2026-11-02","fingerprint":"metformin hydrochloride tablets SPL Oct 2026"},{"name":"label","url":"https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=faf3dd6a-9cd0-39c2-0d2e-232cb3f67565","checked":"2026-11-02","fingerprint":"Jardiance SPL Feb 2026"},{"name":"label","url":"https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=72ad22ae-efe6-4cd6-a302-98aaee423d69","checked":"2026-11-02","fingerprint":"Farxiga SPL Sep 2026"},{"name":"label","url":"https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=adec4fd2-6858-4c99-91d4-531f5f2a2d79","checked":"2026-11-02","fingerprint":"Ozempic SPL Jun 2026"},{"name":"label","url":"https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=d2d7da5d-ad07-4228-955f-cf7e355c8cc0","checked":"2026-11-02","fingerprint":"Mounjaro SPL Sep 2026"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11832527/","checked":"2026-11-02","fingerprint":"PMID:11832527"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/29221645/","checked":"2026-11-02","fingerprint":"PMID:29221645"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/38423026/","checked":"2026-11-02","fingerprint":"PMID:38423026"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/39536238/","checked":"2026-11-02","fingerprint":"PMID:39536238"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/is-the-berberine-hype-justified-should-you-take-it","checked":"2026-11-02","fingerprint":"publishedAt:2025-04-28T17:51:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/5-livesaving-blog-tests","checked":"2026-11-02","fingerprint":"publishedAt:2024-09-04T05:32:23Z"}]
+sources: [{"name":"guideline","url":"https://pmc.ncbi.nlm.nih.gov/articles/PMC12690183/","checked":"2026-11-02","fingerprint":"PMID:41358893"},{"name":"guideline","url":"https://pmc.ncbi.nlm.nih.gov/articles/PMC12690185/","checked":"2026-11-02","fingerprint":"PMID:41358900"},{"name":"guideline","url":"https://www.nice.org.uk/guidance/ng28","checked":"2026-11-02","fingerprint":"NICE NG28 last updated 18 February 2026"},{"name":"guideline","url":"https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/screening-for-prediabetes-and-type-2-diabetes","checked":"2026-11-02","fingerprint":"USPSTF 2021"},{"name":"guideline","url":"https://kdigo.org/wp-content/uploads/2022/10/KDIGO-2022-Clinical-Practice-Guideline-for-Diabetes-Management-in-CKD.pdf","checked":"2026-11-02","fingerprint":"KDIGO 2022, PMID 36272764"},{"name":"guideline","url":"https://www.diabetes.org.nz/news-and-update/changes-to-hba1c-diagnostic-criteria","checked":"2026-11-02","fingerprint":"Diabetes NZ, HbA1c thresholds from 1 July 2026"},{"name":"label","url":"https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=30658e19-8e6e-49aa-a007-e414224797c5","checked":"2026-11-02","fingerprint":"metformin hydrochloride tablets SPL Oct 2026"},{"name":"label","url":"https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=faf3dd6a-9cd0-39c2-0d2e-232cb3f67565","checked":"2026-11-02","fingerprint":"Jardiance SPL Feb 2026"},{"name":"label","url":"https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=72ad22ae-efe6-4cd6-a302-98aaee423d69","checked":"2026-11-02","fingerprint":"Farxiga SPL Sep 2026"},{"name":"label","url":"https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=adec4fd2-6858-4c99-91d4-531f5f2a2d79","checked":"2026-11-02","fingerprint":"Ozempic SPL Jun 2026"},{"name":"label","url":"https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=d2d7da5d-ad07-4228-955f-cf7e355c8cc0","checked":"2026-11-02","fingerprint":"Mounjaro SPL Sep 2026"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11832527/","checked":"2026-11-02","fingerprint":"PMID:11832527"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/39536238/","checked":"2026-11-02","fingerprint":"PMID:39536238"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/is-the-berberine-hype-justified-should-you-take-it","checked":"2026-11-02","fingerprint":"publishedAt:2025-04-28T17:51:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/5-livesaving-blog-tests","checked":"2026-11-02","fingerprint":"publishedAt:2024-09-04T05:32:23Z"}]
 thresholds: [{"ref":"HBA1C_THRESHOLDS.prediabetes","value":38.8},{"ref":"HBA1C_THRESHOLDS.diabetes","value":47.5}]
 ---
 
@@ -27,10 +27,11 @@ thresholds: [{"ref":"HBA1C_THRESHOLDS.prediabetes","value":38.8},{"ref":"HBA1C_T
 
 - If someone with diabetes is unconscious, having a seizure, or cannot swallow safely, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). Do not give food or drink by mouth.
 - Someone with very low blood sugar who is not responding normally, with no glucagon to hand or no recovery within 10 minutes of a glucagon injection, or who has been drinking alcohol: call your emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [14].
-- Diabetes with vomiting, belly pain, deep or fast breathing, fruity-smelling breath, or sleepiness or confusion, or a blood ketone reading over 3 mmol/L: call your emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). This can be diabetic ketoacidosis, which on an SGLT2 inhibitor can happen even when blood sugar is not very high [15, 21].
+- On an SGLT2 inhibitor, blood ketones over 1.5 mmol/L, or confusion, marked drowsiness or struggling to breathe: stop the medicine and call your emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). Ketoacidosis on these medicines can happen even when blood sugar is not very high [21].
+- Diabetes with signs of ketoacidosis (vomiting or belly pain with deep or fast breathing, fruity breath, or sleepiness or confusion), and a blood ketone over 3 mmol/L or no way to test: call your emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [15].
 - Extreme thirst and passing a lot of urine with vomiting, signs of dehydration or new confusion: call your emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). These can be signs of a dangerous high-sugar crisis [3].
 - On an SGLT2 inhibitor, pain, tenderness, redness or swelling of the genitals or the skin between the genitals and the back passage, with fever or feeling unwell: stop the medicine and get emergency care (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). This can be a rare, serious infection [21].
-- On a GLP-1 medicine or tirzepatide, severe belly pain that does not go away, sometimes spreading to your back: stop the medicine and get urgent care; if the pain is severe, call your emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). This can be pancreatitis [23, 24].
+- On a GLP-1 medicine or tirzepatide, belly pain that does not go away, sometimes spreading to your back: stop the medicine and get medical help the same day; if the pain is severe or you are vomiting, call your emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). This can be pancreatitis [23, 24].
 
 ## What it is
 
@@ -42,7 +43,7 @@ Prediabetes means sugar is above normal but below the diabetes line. Risk rises 
 
 **Not every case is type 2.** Younger age, weight loss without trying, ketoacidosis, or needing insulin soon after diagnosis can point to type 1 diabetes in an adult; the ADA advises antibody tests in that case [1].
 
-**Who should be tested.** The ADA advises testing every adult from age 35, and earlier for adults with overweight (a BMI of 25 or more, or 23 or more with Asian ancestry) plus at least one risk factor. Risk factors include a parent, brother or sister with diabetes, heart disease, high blood pressure, polycystic ovary syndrome and inactivity [1]. People with prediabetes should be tested every year; others with normal results at least every three years [1]. The USPSTF advises screening adults aged 35 to 70 with overweight or obesity [12]. Trials have not shown that screening itself lowers deaths, though it finds diabetes earlier [12]. Some medicines raise sugar, including statins, thiazide diuretics, some HIV medicines, antipsychotics and long-term steroids; the ADA advises screening people who take them [1].
+**Who should be tested.** The ADA advises testing every adult from age 35, and earlier for adults with overweight (a BMI of 25 or more, or 23 or more with Asian ancestry) plus at least one risk factor. Risk factors include a parent, brother or sister with diabetes, heart disease, high blood pressure, polycystic ovary syndrome and inactivity [1]. People with prediabetes should be tested every year; others with normal results at least every three years [1]. The USPSTF advises screening adults aged 35 to 70 with overweight or obesity [12]. Screening trials found no fall in deaths over about 10 years, which may have been too short [12]. Some medicines raise sugar, including statins, thiazide diuretics, some HIV medicines, antipsychotics and long-term steroids; the ADA advises considering screening for people who take them [1].
 
 **Statins and diabetes.** Statins may slightly raise the risk of diabetes in people already at high risk. The ADA advises keeping the statin and checking sugar regularly [2].
 
@@ -75,7 +76,7 @@ Without clear symptoms, diabetes needs two abnormal results: two different tests
 
 **Low blood sugar.** Below 3.9 mmol/L (70 mg/dL) is low; below 3.0 mmol/L (54 mg/dL) needs action now [3]. The NHS uses below 4 mmol/L [14].
 
-**HOMA-IR.** This index is worked out from fasting glucose and fasting insulin to estimate insulin resistance. In the 1985 study that built it, it tracked a reference clamp test closely [32]. Brad's plan does not use it (see Brad's view).
+**HOMA-IR.** This index is worked out from fasting glucose and fasting insulin to estimate insulin resistance. In the 1985 study that built it, it tracked a reference clamp test closely, but its estimate is imprecise for one person [32]. Brad's plan does not use it (see Brad's view).
 
 ## What helps
 
@@ -91,7 +92,7 @@ Without clear symptoms, diabetes needs two abnormal results: two different tests
 
 **Continuous glucose monitors.** The ADA finds too little evidence to use a monitor to screen for or diagnose prediabetes or diabetes [1]. For people with diabetes on insulin, or on other medicines that can cause low sugar, the ADA recommends one [4].
 
-**Supplements.** In a 2021 review of 46 trials in type 2 diabetes, berberine, alone or added to standard treatment, lowered HbA1c by 0.73 percentage points on average [33]. Its trials are smaller and shorter than metformin's; see Brad's view and the [berberine entry](https://drstanfield.com/blogs/articles/berberine-benefits-forms-dosing-and-side-effects).
+**Supplements.** In a 2021 review of 46 trials in type 2 diabetes, berberine lowered HbA1c by 0.38 percentage points on average when used alone, and by 0.73 alone or added to standard treatment [33]. Brad calls the effect of berberine alone borderline clinically meaningful ([berberine post](https://drstanfield.com/blogs/articles/is-the-berberine-hype-justified-should-you-take-it)). Its trials are smaller and shorter than metformin's; see Brad's view and the [berberine entry](https://drstanfield.com/blogs/articles/berberine-benefits-forms-dosing-and-side-effects).
 
 ## Medicines
 
@@ -102,8 +103,8 @@ Guidelines choose medicines by more than sugar: heart disease, heart failure, ki
 - **Doses.** Metformin hydrochloride tablets: 500 mg twice a day or 850 mg once a day with meals, rising slowly to at most 2,550 mg a day in divided doses [19]. Metformin hydrochloride extended-release tablets: 500 mg once a day with the evening meal, rising by 500 mg a week to at most 2,000 mg once a day [20].
 - **Side effects.** Bloating, belly discomfort and diarrhoea are common; a slow start or the extended-release form helps [4]. It can lower vitamin B12; the label advises checking B12 every 2 to 3 years [20].
 - **Kidneys.** Not for use with an eGFR below 30; starting it is not recommended at 30 to 45 [19]. KDIGO advises adjusting the dose below 45 [13].
-- **Lactic acidosis** is rare but serious. Risk rises with poor kidney function, heavy drinking, contrast scans, surgery and severe illness. Stop it and contact your doctor promptly if you get unexplained fast breathing, muscle aches or feel very unwell [19, 20].
-- **In prediabetes,** the ADA advises considering metformin for people at high risk, especially those aged 25 to 59 with a BMI of 35 or more, a fasting glucose of 6 mmol/L or more, an HbA1c of 6.0% (42 mmol/mol) or more, or past gestational diabetes [2]. Over about 21 years in the Diabetes Prevention Program, neither metformin nor lifestyle change lowered deaths from any cause, cancer or heart disease, though both prevented diabetes [26].
+- **Lactic acidosis** is rare but serious. Risk rises with poor kidney function, heavy drinking, contrast scans and surgery. Stop it and see a doctor quickly if you get unexplained fast breathing, muscle aches or feel very unwell [19, 20].
+- **In prediabetes,** the ADA advises considering metformin for people at high risk, especially those aged 25 to 59 with a BMI of 35 or more and higher fasting glucose and HbA1c (such as 6 mmol/L and 6.0%), or past gestational diabetes [2]. Over about 21 years in the Diabetes Prevention Program, neither metformin nor lifestyle change lowered deaths from any cause, cancer or heart disease, though both prevented diabetes [26].
 
 **SGLT2 inhibitors (empagliflozin, dapagliflozin, canagliflozin).** They make the kidneys pass extra sugar in the urine.
 
@@ -119,11 +120,9 @@ Guidelines choose medicines by more than sugar: heart disease, heart failure, ki
 - **Evidence.** In SUSTAIN-6, semaglutide lowered a combined count of heart deaths, heart attacks and strokes (6.6% against 8.9%) but had more eye complications from retinopathy [31]. In SURPASS-CVOT, tirzepatide matched dulaglutide for heart events in people with heart disease; it was not shown to be better [24].
 - **Doses.** Ozempic (semaglutide) injection: 0.25 mg once a week for 4 weeks, then 0.5 mg; it may rise to 1 mg and then 2 mg, each after at least 4 weeks [23]. Mounjaro (tirzepatide) injection: 2.5 mg once a week, rising in 2.5 mg steps at least 4 weeks apart, to at most 15 mg [24].
 - **Side effects.** Nausea, vomiting, diarrhoea, belly pain and constipation are the most common [23]. Rats given semaglutide developed thyroid C-cell tumours; whether this happens in people is unknown [23]. Low sugar is more likely when they are added to insulin or a sulfonylurea [23]. Tirzepatide can make birth control pills less reliable for 4 weeks after starting and after each dose rise [24].
-- See the weight guideline for weight doses (Wegovy, Zepbound) and more safety detail.
+**Others.** Sulfonylureas and insulin can cause low sugar and weight gain [3, 4]. Pioglitazone may help after a stroke in people with insulin resistance, at the cost of weight gain, swelling and fractures [2]. The ADA advises considering insulin when there are high-sugar symptoms or HbA1c is above 10% (86 mmol/mol) [4].
 
-**Others.** Sulfonylureas and insulin lower sugar strongly but can cause low sugar and weight gain [4]. Pioglitazone may help after a stroke in people with insulin resistance, at the cost of weight gain, swelling and fractures [2]. The ADA advises considering insulin when there are high-sugar symptoms or HbA1c is above 10% (86 mmol/mol) [4]. Glucagon should be prescribed for everyone on insulin or at high risk of low sugar [3].
-
-**Treating low blood sugar.** If you are awake and your sugar is below 3.9 mmol/L, take glucose or another sugar, not a fatty or protein food, and repeat after 15 minutes if it is still low [3]. Then eat something longer-lasting, such as a sandwich or your next meal [14].
+**Treating low blood sugar.** If you are awake and your sugar is 3.9 mmol/L or below, take about 15 g of fast carbohydrate, ideally glucose (not a fatty or protein food). Recheck after 15 minutes, repeat if still low, and get help if it stays low. People on an automated insulin pump usually need less; on acarbose, use pure glucose. Then eat a snack or meal, as low sugar can return [3, 14].
 
 ## Brad's view (reviewed 2 Nov 2026)
 
@@ -146,7 +145,7 @@ Guidelines choose medicines by more than sugar: heart disease, heart failure, ki
 ## Who needs extra care
 
 - **Pregnancy and planning pregnancy.** The ADA advises planning pregnancy with your diabetes team, including when to stop non-insulin medicines [4]. Stop Ozempic at least 2 months before a planned pregnancy [23]. Jardiance is not recommended in the second and third trimesters [21]. HbA1c reads less reliably in pregnancy [1].
-- **Breastfeeding.** Farxiga is not recommended while breastfeeding [22]. Ask your doctor about any diabetes medicine.
+- **Breastfeeding.** Farxiga is not recommended while breastfeeding [22].
 - **Older adults.** The ADA suggests an HbA1c under 7.0 to 7.5% for healthy older adults, under 8.0% for those with several illnesses or some frailty, and avoiding low sugar above all in very poor health [7]. NICE advises offering an SGLT2 inhibitor to frail people only if they are not at risk of dehydration or low blood pressure from it [8].
 - **Reduced kidney function.** Metformin doses change below an eGFR of 45 and it stops below 30 [13, 19]. SGLT2 inhibitors start at an eGFR of 20 or more for kidney protection [13]. The ADA advises a yearly urine albumin test and eGFR for everyone with type 2 diabetes [5]. For ACE inhibitor or ARB doses in reduced kidney function, check with your doctor or pharmacist.
 - **On insulin or a sulfonylurea.** Adding an SGLT2 inhibitor or GLP-1 medicine may mean lower doses of these, to avoid low sugar [4].
@@ -159,6 +158,8 @@ Guidelines choose medicines by more than sugar: heart disease, heart failure, ki
 - Your HbA1c is in the prediabetes or diabetes range, or you are 35 or older and have never been tested [1, 12].
 - You have diabetes and have not had an eye exam, a foot check for nerve damage, or a kidney check this year [5, 6].
 - You get low sugar often, at night, or without the usual warning signs [14].
+- Blood ketones of 1.6 to 3 mmol/L, if not on an SGLT2 inhibitor: contact your diabetes team now [15].
+- A new foot wound or ulcer, or a red, hot, swollen or discoloured foot: be seen the same day [37].
 - You are on a GLP-1 medicine with vomiting or diarrhoea that does not settle, or vision changes [23].
 - You plan surgery, a contrast scan or a procedure that needs a long fast while on metformin or an SGLT2 inhibitor [20, 21].
 - You are planning a pregnancy [4].
@@ -178,15 +179,11 @@ Guidelines choose medicines by more than sugar: heart disease, heart failure, ki
 
 **Can I reverse prediabetes?** Often, yes. Losing 5 to 7% of your weight and doing 150 minutes of activity a week lowers the risk of diabetes [2, 25].
 
-**Metformin or an SGLT2 inhibitor?** NICE now offers both together for most people [8]. The ADA prefers an SGLT2 inhibitor or GLP-1 medicine with heart failure, heart disease or kidney disease [4]. Brad's plan adds an SGLT2 inhibitor before metformin when its weight trigger is on (Brad's current guidance, 2 Nov 2026).
+**Metformin or an SGLT2 inhibitor?** NICE now offers both together for most people [8]. The ADA prefers an SGLT2 inhibitor or GLP-1 medicine with heart failure, heart disease or kidney disease [4]. Brad's plan adds an SGLT2 inhibitor after a GLP-1 medicine, before metformin, when its weight trigger is on (Brad's current guidance, 2 Nov 2026).
 
 **What does HOMA-IR mean?** An estimate of insulin resistance from fasting glucose and insulin [32]. Brad's plan does not use it (Brad's current guidance, 2 Nov 2026).
 
 **Is insulin resistance the same as prediabetes?** No. Prediabetes is defined by the sugar tests above [1]. Insulin resistance can show up before HbA1c rises, but has no agreed test cut-off (Brad's current guidance, 2 Nov 2026).
-
-**Should I wear a glucose monitor without diabetes?** There is not enough evidence to use one for screening or diagnosis [1]. Brad says it does not change care for prevention ([five blood tests post](https://drstanfield.com/blogs/articles/5-livesaving-blog-tests)).
-
-**Can I take berberine instead of metformin?** Brad advises against it, because its evidence is much thinner ([berberine post](https://drstanfield.com/blogs/articles/is-the-berberine-hype-justified-should-you-take-it)).
 
 ## References
 
@@ -226,5 +223,6 @@ Guidelines choose medicines by more than sugar: heart disease, heart failure, ki
 34. Konopka AR et al. 2019. Metformin inhibits mitochondrial adaptations to aerobic exercise training in older adults. Aging Cell (DOI: 10.1111/acel.12880; PMID 30548390)
 35. Lean MEJ et al. 2024. 5-year follow-up of the randomised Diabetes Remission Clinical Trial (DiRECT) of continued support for weight loss maintenance in the UK: an extension study. Lancet Diabetes Endocrinol (DOI: 10.1016/S2213-8587(23)00385-6; PMID 38423026)
 36. Jastreboff AM et al. 2025. Tirzepatide for obesity treatment and diabetes prevention (SURMOUNT-1, 3-year results). N Engl J Med (DOI: 10.1056/NEJMoa2410819; PMID 39536238)
+37. NICE. Diabetic foot problems: prevention and management (NG19), recommendations. https://www.nice.org.uk/guidance/ng19/chapter/Recommendations
 
 **Brad's material:** the Health Roadmap algorithm (sections 3, 4, 6 and 11), evidence.ts and roadmap_text.html, read 2 Nov 2026, and the posts linked in Brad's view.
