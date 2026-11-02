@@ -2,7 +2,7 @@
 // one reading per day, newest first, the trend the iPhone draws, and the
 // row's "Oct 2026" date. Data in, data out.
 
-import { localDay, type ApiMeasurement } from '@roadmap/health-core';
+import { comparatorOf, localDay, type ApiMeasurement, type Comparator } from '@roadmap/health-core';
 import { activeRowIndex } from './matrix-save';
 
 /** One day's active value: a metric's row, or a blood pressure's two halves. */
@@ -11,6 +11,8 @@ export interface DayReading {
   id: string;
   value: number; // as stored: SI for a core metric, the systolic half of a pressure
   dia?: { id: string; value: number };
+  /** Printed as a limit: `value` is its bound (US-12 AC20). */
+  comparator?: Comparator;
 }
 
 /** The active value per day for `metric` (the slot's first, as the matrices
@@ -19,7 +21,7 @@ export function readingsOf(history: ApiMeasurement[], metric: string): DayReadin
   const days: DayReading[] = [];
   for (const [key, row] of activeRowIndex(history)) {
     const day = key.slice(0, 10);
-    if (row.metricType === metric) days.push({ day, id: row.id, value: row.value });
+    if (row.metricType === metric) days.push({ day, id: row.id, value: row.value, ...comparatorOf(row) });
   }
   return days.sort((a, b) => b.day.localeCompare(a.day));
 }

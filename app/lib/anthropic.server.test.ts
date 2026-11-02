@@ -196,7 +196,7 @@ describe('parseUnifiedResult — tolerates string-typed numeric values', () => {
     expect(result.additionalValues[1]).toMatchObject({ name: 'potassium', value: 4.5 });
   });
 
-  it('drops non-numeric string values (<5, trace, POS) instead of throwing', () => {
+  it('drops non-numeric string values (trace, POS) instead of throwing; "<5" is a limit, kept (US-12 AC20)', () => {
     const result = parseUnifiedResult({
       ...base,
       additionalValues: [
@@ -207,8 +207,7 @@ describe('parseUnifiedResult — tolerates string-typed numeric values', () => {
         { name: 'potassium', value: 4.5, unit: 'mmol/L' },
       ],
     });
-    expect(result.additionalValues).toHaveLength(2);
-    expect(result.additionalValues.map(v => v.name)).toEqual(['sodium', 'potassium']);
+    expect(result.additionalValues.map(v => [v.name, v.value, v.comparator])).toEqual([['sodium', 141, undefined], ['troponin', 5, '<'], ['potassium', 4.5, undefined]]);
   });
 
   // US-12 AC8: a comma is the decimal point, as in parseLocalisedNumber;
@@ -282,9 +281,10 @@ describe('parseUnifiedResult — tolerates string-typed numeric values', () => {
   // The leading token stops at the first non-digit, so "1e3" read as 1 and
   // "0-2" as 0: an exponent, a hex/binary/octal prefix or a range right after
   // the number is a different number, never the first digit of it.
-  it('US-12 AC8: drops, never guesses, "1 234", "<5", ">2000", "trace", "", "1.234,5", "1,234.5", "1,234,567", "250,000 H", "1e3", "5.2e3", "0x10", "0-2", "5 – 7"', () => {
+  it('US-12 AC8: drops, never guesses, "1 234", "<<5", "< 5-10", "trace", "", "1.234,5", "1,234.5", "1,234,567", "250,000 H", "1e3", "5.2e3", "0x10", "0-2", "5 – 7"', () => {
+    // "<5" and ">2000" are limits since US-12 AC20 (saved with a comparator); two symbols or a range are not.
     const refused = [
-      '1 234', '<5', '>2000', 'trace', '', '1.234,5', '1,234.5', '1,234,567', '250,000 H',
+      '1 234', '<<5', '< 5-10', 'trace', '', '1.234,5', '1,234.5', '1,234,567', '250,000 H',
       '1e3', '5.2e3', '5,2E-3', '1e+3', '0x10', '0X1f', '0b1', '0o7', '0-2', '0 - 2', '3.5–5.1', '5 — 7',
     ];
     const result = parseUnifiedResult({
@@ -348,10 +348,13 @@ describe('parseUnifiedResult — tolerates string-typed numeric values', () => {
       values: [
         { metric: 'ldl', value: '2.5', unit: 'mmol/L', confidence: 'high' as const },
         { metric: 'hdl', value: '<0.5', unit: 'mmol/L', confidence: 'low' as const },
+        { metric: 'apob', value: 'trace', unit: 'g/L', confidence: 'low' as const },
       ],
     });
-    expect(result.values).toHaveLength(1);
+    // "<0.5" is a limit since US-12 AC20: its bound and comparator.
+    expect(result.values).toHaveLength(2);
     expect(result.values[0]).toMatchObject({ metric: 'ldl', value: 2.5 });
+    expect(result.values[1]).toMatchObject({ metric: 'hdl', value: 0.5, comparator: '<' });
   });
 
   it('numeric values pass through unchanged', () => {

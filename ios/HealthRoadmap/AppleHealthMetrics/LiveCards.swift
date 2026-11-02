@@ -33,15 +33,27 @@ extension SectionTitle {
 /// The footer under the new cards (AC6, AC4; AC2 since Brad 2026-10-27).
 enum LiveFooter {
     static let shownOnly = "From Apple Health. Kept on this iPhone only, so the cards show at once: not in your record or on the website."
-    /// The path as iOS 27 has it (checked on the simulator 2026-10-25: Health moved under Apps).
-    static let access = "To change what Health Roadmap can read: Settings › Apps › Health › Data Access & Devices › Health Roadmap."
-    /// The Turn On and Reconnect row's words (AC5, AC5b).
+    /// Where Apple Health's settings for this app are (AC5c). iOS 18 moved Health under
+    /// Settings › Apps; the app runs from iOS 17. The iOS 27 path was checked on the simulator
+    /// 2026-11-01 (the app's own Settings page has no Health row); iOS 17's is Apple's known
+    /// layout, not seen on a simulator.
+    static func healthPath(appsMenu: Bool) -> String {
+        "Settings › \(appsMenu ? "Apps › " : "")Health › Data Access & Devices › Health Roadmap"
+    }
+    static var healthPath: String {
+        if #available(iOS 18, *) { return healthPath(appsMenu: true) }
+        return healthPath(appsMenu: false)
+    }
+    static var access: String { "To change what Health Roadmap can read: \(healthPath)." }
+    /// The Turn On and Open Settings row's words (AC5, AC5b).
     static let reconnect = "Heart rate, sleep, VO2 max and steps can show here from Apple Health."
+    /// The line under the row's button: these are Apple Health's settings, and where (AC5c, Brad 2026-11-01).
+    static var healthSettings: String { "The Apple Health settings for this app are in \(healthPath)." }
 }
 
 /// One place's cards (AC5, AC6), each its own section as the vitals are. In Vitals, under
 /// blood pressure: the Turn On row, or heart rate, resting heart rate and sleep, or the
-/// Reconnect row. Under Fitness: VO2 max and steps, not shown when neither has data.
+/// Open Settings row. Under Fitness: VO2 max and steps, not shown when neither has data.
 struct LiveCardsSection: View {
     @Environment(LiveHealth.self) private var live: LiveHealth?
     @Environment(AppleHealthSync.self) private var health: AppleHealthSync?
@@ -61,7 +73,7 @@ struct LiveCardsSection: View {
     /// Vitals shows the Turn On row until Apple's sheet is done (AC4, AC5), only to a person
     /// who connected Apple Health: otherwise My data's Apple Health row is the way in. After it, the
     /// cards with a reading. With none anywhere, after a "Don't Allow" or with an empty Health
-    /// (iOS cannot tell them apart), Vitals shows one calm Reconnect row, never an error or a
+    /// (iOS cannot tell them apart), Vitals shows one calm Open Settings row, never an error or a
     /// greyed line (AC5b, Brad 2026-10-25). Nothing while the answer is unknown or unread.
     static func shown(_ metrics: [LiveMetric], connected: Bool, needsAccess: Bool?, hasRead: Bool, cards: [LiveMetric: LiveCard]) -> Shown {
         let vitals = metrics == LiveMetric.vitals
@@ -107,12 +119,17 @@ struct LiveCardsSection: View {
 }
 
 /// After "Don't Allow", or with nothing in Health (AC5b, Brad 2026-10-25): one calm row in
-/// normal text with a Reconnect button and, under it, where the readings are turned on.
+/// normal text with an Open Settings button and, under it, where Apple Health's settings for the app are (AC5c).
 /// For a person who connected Apple Health before 2026-10-26 and was never asked for the five,
 /// the same row says Turn On (AC5). Either button runs the app's one Health connect while iOS
 /// would still show the sheet, else opens Settings. VoiceOver reads the words as one
 /// element, then the button.
 struct LiveReconnectRow: View {
+    /// The button's words. iOS asks only once, so after the sheet the button almost always
+    /// opens Settings, and says so (AC5c, Brad 2026-11-01: "Reconnect" reconnected nothing).
+    /// While the sheet would still show (a stale answer), the same tap shows it instead.
+    static func title(turnOn: Bool) -> String { turnOn ? "Turn On" : "Open Settings" }
+
     let live: LiveHealth
     let turnOn: Bool
     @Environment(AppleHealthSync.self) private var health: AppleHealthSync?
@@ -122,7 +139,7 @@ struct LiveReconnectRow: View {
     /// What the button does: the one connect, or Settings.
     enum Action { case connect, settings }
 
-    /// Turn On acts on the known answer (the sheet is due). Reconnect checks afresh, since
+    /// Turn On acts on the known answer (the sheet is due). Open Settings checks afresh, since
     /// iOS shows the sheet only once: still due, the connect; answered or unknown, Settings.
     static func action(turnOn: Bool, due: () async throws -> Bool) async -> Action {
         if turnOn { return .connect }
@@ -134,7 +151,7 @@ struct LiveReconnectRow: View {
             Text(LiveFooter.reconnect)
                 .font(.subheadline)
                 .fixedSize(horizontal: false, vertical: true)
-                .accessibilityLabel("\(LiveFooter.reconnect) \(LiveFooter.access)")
+                .accessibilityLabel("\(LiveFooter.reconnect) \(LiveFooter.healthSettings)")
             Button {
                 asking = true
                 Task {
@@ -145,11 +162,11 @@ struct LiveReconnectRow: View {
                     asking = false
                 }
             } label: {
-                Text(turnOn ? "Turn On" : "Reconnect").frame(maxWidth: .infinity)
+                Text(Self.title(turnOn: turnOn)).frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
             .disabled(asking)
-            Text(LiveFooter.access)
+            Text(LiveFooter.healthSettings)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

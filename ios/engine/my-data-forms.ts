@@ -21,7 +21,8 @@ import type { MetricType } from '../../packages/health-core/src/units';
 import { BLOOD_PRESSURE, pressureHistory } from './blood-pressure';
 import { cellUnitFor, systemFor, type UnitChoices } from './unit-choices';
 import type { EditOutcome } from './my-data';
-import { cellLabel, cellText } from '../../packages/health-core/src/cell-unit';
+import { cellFromSI, cellLabel, limitCellText, type CellUnit } from '../../packages/health-core/src/cell-unit';
+import { LIMIT_NOT_GRADED, comparatorOf, isComparator, limitOf, type Comparator } from '../../packages/health-core/src/lab-limits';
 import { medicationAnnotations, medicationChanges } from '../../packages/health-core/src/medication-annotations';
 
 /** A supplement as the tab lists it. */
@@ -70,6 +71,11 @@ export interface HistoryRow {
   diastolic?: string | null;
   /** A blood pressure's active row ids, which a replace sends back as `seenIds`. */
   pairIds?: string[];
+  /** A lab result printed as a limit (US-12 AC20): its bound in the row's unit, where the
+   *  chart plots it, hollow and out of the line. `value` then reads "> 60". Absent otherwise. */
+  bound?: number;
+  /** The plan's word on the current value when it says more than "used": a limit it cannot grade. */
+  note?: string;
 }
 
 export interface MetricHistory {
@@ -99,7 +105,7 @@ export type FormEdit =
   /** A supplement typed by name, not on the list. */
   | { kind: 'customSupplement'; name: string };
 
-/** The record's plan for `now` and `choices`; null when it cannot be made (no usable height or sex). */
+/** The record's plan for `now` and `choices`; null when it cannot be made (no usable height; US-07 AC8). */
 export function planOf(file: RoadmapFile, now: string, choices: UnitChoices): Plan | null {
   try {
     return computePlan(file, new Date(now), choices);
@@ -190,7 +196,9 @@ function buildForms(file: RoadmapFile, now: string, basis: Basis): FormsView {
     screenings,
     screeningNote: screenings.length > 0 ? null
       : basis.age === undefined ? 'Screening questions appear once your sex, birth year and height are in About you.'
-        : 'No screening questions apply at your age and sex yet.',
+        // US-07 AC8: with no sex, the sexed questions wait for it; "at your age and sex" would be wrong.
+        : basis.sex === undefined ? 'Some screening questions depend on your sex. Add it in About you.'
+          : 'No screening questions apply at your age and sex yet.',
     supplements: {
       intro: SUPPLEMENT_TEXT.intro,
       active: listable(file, 'active').map(supplementRow),
@@ -273,9 +281,16 @@ export function applyFormEdit(file: RoadmapFile, edit: Exclude<FormEdit, { kind:
  * included (the app strikes them through). The record is append-only: this
  * view offers corrections, never removal.
  */
+/** A stored value as its cell shows it: a limit with its symbol, at places that keep it true (US-12 AC20). */
+export function rowText(metric: MetricType, row: { value: number; comparator?: Comparator }, unit: CellUnit): string {
+  return limitCellText(metric, row.value, unit, comparatorOf(row).comparator);
+}
+
 export function metricHistory(file: RoadmapFile, metric: string, now = new Date().toISOString(), choices: UnitChoices = {}): MetricHistory {
-  // No plan yet (no usable height or sex): nothing is excluded, and nothing used.
-  const excludedFields = planOf(file, now, {})?.excluded ?? [];
+  // No plan yet (no usable height): nothing is excluded, and nothing used.
+  const plan = planOf(file, now, {});
+  const excludedFields = plan?.excluded ?? [];
+  const ungraded = limitOf(plan?.inputs, METRIC_TO_FIELD[metric])?.graded === false;
   // The web's own pins (US-25 AC9b): none for a metric no medication affects.
   const markers = (medicationAnnotations(medicationChanges(file.medicationHistory))[metric] ?? [])
     .map(({ id, date, label }) => ({ id, day: localDay(new Date(date)), label }));
@@ -296,12 +311,14 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
         || Number(b.status === 'active') - Number(a.status === 'active'))
       .map((row) => ({
         id: row.id,
-        value: cellText(metric as MetricType, row.value, shown),
+        value: rowText(metric as MetricType, row, shown),
         day: row.recordedAt.slice(0, 10),
         status: row.status,
         current: row.id === current?.id,
         // A legacy row may lack the key: only a named row is a correction.
         correction: !!row.correctsId,
+        ...(isComparator(row.comparator) ? { bound: cellFromSI(metric as MetricType, row.value, shown) } : null),
+        ...(ungraded && row.id === current?.id && isComparator(row.comparator) ? { note: LIMIT_NOT_GRADED } : null),
       })),
   };
 }

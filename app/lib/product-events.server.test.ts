@@ -932,7 +932,7 @@ describe('the chat profile-edit counter', () => {
 });
 
 describe('the upload outcome counter (US-12 AC10)', () => {
-  const counts = { picked: 9, withValues: 6, documentOnly: 1, noValues: 0, openFailed: 1, tooLarge: 1, truncated: 1, serverError: 0, limitError: 0, refused: 1, tooLong: 1, valuesDropped: 3, docx: 1, picturesOnly: 1, undatedPrevious: 4, unitsGuessed: 2, unitsRefused: 1 };
+  const counts = { picked: 9, withValues: 6, documentOnly: 1, noValues: 0, openFailed: 1, tooLarge: 1, truncated: 1, serverError: 0, limitError: 0, refused: 1, tooLong: 1, valuesDropped: 3, docx: 1, picturesOnly: 1, undatedPrevious: 4, unitsGuessed: 2, unitsRefused: 1, valuesLimit: 2, valuesLimitUngraded: 1 };
 
   it('takes integer counts from a browser', () => {
     expect(parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata: counts }))
@@ -942,6 +942,10 @@ describe('the upload outcome counter (US-12 AC10)', () => {
   it('refuses a string, a negative, a fraction, a count over 1000 and a value-shaped field', () => {
     for (const metadata of [
       { picked: '9' }, { openFailed: -1 }, { withValues: 1.5 }, { tooLarge: 1001 }, { valuesDropped: 1001 }, { docx: 1.5 }, { docx: 'docx' }, { undatedPrevious: 1.5 }, { undatedPrevious: -1 }, { undatedPrevious: 'undated' }, { unitsGuessed: 1.5 }, { unitsRefused: -1 }, { unitsRefused: 'creatinine' },
+      // US-12 AC19: a count of values printed as a limit, never a test's name.
+      { valuesLimit: 1.5 }, { valuesLimit: -1 }, { valuesLimit: 1001 }, { valuesLimit: 'hdl' }, { picked: 1, valuesLimit: 1, name: 'hdl' },
+      // US-12 AC20: the ungraded count is a count too.
+      { valuesLimitUngraded: 1.5 }, { valuesLimitUngraded: -1 }, { valuesLimitUngraded: 'ldl' },
       { picked: 1, fileName: 'report.pdf' }, { picked: 1, unit: 'mmol/L' }, { picked: 1, value: 4.2 },
     ]) {
       expect(
@@ -961,6 +965,27 @@ describe('the upload outcome counter (US-12 AC10)', () => {
         JSON.stringify(metadata),
       ).toBeNull();
     }
+  });
+
+  // US-12 AC20 (Brad 2026-11-02, "yes"): which tests a limit could not be graded
+  // for, from a closed list only. The one exception to AC19's "a count only".
+  it('US-12 AC20: takes the ungraded limits\' tests as keys from the closed list, each once, sorted', () => {
+    const metadata = { picked: 1, valuesLimit: 3, valuesLimitUngraded: 3, limitUngradedTests: ['egfr', 'ldl', 'other'] };
+    expect(parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata })).toMatchObject({ metadata });
+  });
+
+  it('US-12 AC20: refuses free text, an unknown key, a value, a unit, a comparator, a repeat or an unsorted list', () => {
+    for (const limitUngradedTests of [
+      ['HDL Cholesterol'], ['vitamin q'], ['hdl > 1.5'], [1.5], ['1.5'], ['mmol/L'], ['>'], ['2026-08-01'], ['ldl', 'ldl'], ['ldl', 'egfr'], [], 'ldl',
+      // Pregnancy, fertility and sex-hormone tests are never named (orchestrator, 2026-11-02).
+      ['hcg'], ['estradiol'], ['testosterone_total'], ['amh'],
+    ]) {
+      expect(
+        parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata: { picked: 1, limitUngradedTests } }),
+        JSON.stringify(limitUngradedTests),
+      ).toBeNull();
+    }
+    expect(parseProductEvent({ eventName: 'upload_saved', visitorId: VISITOR, metadata: { limitUngradedTests: ['ldl'] } })).toBeNull();
   });
 
   it('lets no other event carry an outcome count', () => {

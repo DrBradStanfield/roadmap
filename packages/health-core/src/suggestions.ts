@@ -1,7 +1,8 @@
-import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, ScreeningInputs } from './types';
+import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, ScreeningInputs, UsProductCardId } from './types';
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
+import { LIMIT_NOT_GRADED, formatLimit, formatValue, limitOf, limitSIText, type Comparator, type InputLimit, type LimitField } from './lab-limits';
 import {
   type UnitSystem,
   type MetricType,
@@ -38,35 +39,30 @@ const LUTEIN_PIGMENT = 'Lutein and zeaxanthin are the pigments of the macula, th
 const LUTEIN_AREDS = 'In the AREDS trial, a formula containing beta-carotene slowed the progression of macular degeneration. In AREDS2, lutein and zeaxanthin worked as well as beta-carotene, without beta-carotene\'s lung cancer signal in former smokers.';
 
 /**
- * US variants of three supplement cards' text (US-61 AC3), keyed `<id>-us`.
+ * US variants of three supplement cards' text (US-61 AC3), keyed by card id.
  * Only the US product overlay (us-products.ts) reads them: generateSuggestions
  * never emits them, so the plan, chat, agents and the CLI stay the same in
  * every country. No product name here; the product line lives in us-products.ts.
  */
-export const US_SUPPLEMENT_DESCRIPTIONS: Readonly<Record<string, string>> = {
+export const US_SUPPLEMENT_DESCRIPTIONS: Readonly<Partial<Record<UsProductCardId, string>>> = {
   // No WHO dementia sentences (a disease outcome beside a named product).
-  'supplement-micronutrient-base-us': `${BASE_COSMOS} ${BASE_K2}`,
+  'supplement-micronutrient-base': `${BASE_COSMOS} ${BASE_K2}`,
   // Strength and lean mass only: no memory sentence.
-  'supplement-creatine-us': CREATINE_STRENGTH,
+  'supplement-creatine': CREATINE_STRENGTH,
   // Macular pigment only: no macular degeneration outcome.
-  'supplement-lutein-zeaxanthin-us': LUTEIN_PIGMENT,
+  'supplement-lutein-zeaxanthin': LUTEIN_PIGMENT,
 };
 
 /** Dietary advice for elevated lipids — shared between suggestion card and InputPanel medication cascade */
 export const LIPID_DIET_ADVICE = 'Specific foods can lower LDL cholesterol: oats, walnuts, almonds, ground flaxseed, edamame, and replacing butter with extra-virgin olive oil. If you don\'t have IBS or IBD, beans, lentils, chickpeas, and mixed vegetables are also great options. Psyllium husk is a soluble fibre that is well-tolerated even with IBS or IBD; discuss with your doctor whether it fits your routine.';
 
-/** Format a metric value with its display unit, e.g. "5.7%" or "39 mmol/mol" */
-function fmtMetric(metricType: MetricType, value: number, us: UnitSystem): string {
-  return `${formatDisplayValue(metricType, value, us)} ${getDisplayLabel(metricType, us)}`;
+/** Format a metric value with its display unit, e.g. "5.7%", "39 mmol/mol" or a limit's "< 39 mmol/mol" (US-12 AC20). */
+function fmtMetric(metricType: MetricType, value: number, us: UnitSystem, comparator?: Comparator): string {
+  return `${formatValue(metricType, value, us, comparator)} ${getDisplayLabel(metricType, us)}`;
 }
 
 // Metric-specific aliases for readability
 const fmtHba1c = (v: number, us: UnitSystem) => fmtMetric('hba1c', v, us);
-const fmtLdl = (v: number, us: UnitSystem) => fmtMetric('ldl', v, us);
-const fmtHdl = (v: number, us: UnitSystem) => fmtMetric('hdl', v, us);
-const fmtTrig = (v: number, us: UnitSystem) => fmtMetric('triglycerides', v, us);
-const fmtTotalChol = (v: number, us: UnitSystem) => fmtMetric('total_cholesterol', v, us);
-const fmtApoB = (v: number, us: UnitSystem) => fmtMetric('apob', v, us);
 const fmtWeight = (v: number, us: UnitSystem) => fmtMetric('weight', v, us);
 /** A lipid target as a "<X" statement prints it: the first value, at the
  *  display step, that the plan grades at or above it (US-07 AC5). */
@@ -82,6 +78,8 @@ export interface LipidMarker {
   target: number;
   /** At or above the target (Brad, 2026-09-28: the target itself is above target, US-07 AC5). */
   elevated: boolean;
+  /** The marker was printed as a limit that decides (US-12 AC20): shown by its bound. */
+  limit?: InputLimit;
 }
 
 /** A lipid value at or above its on-treatment target: the target itself is
@@ -101,22 +99,23 @@ function lipidMarkerMetric(marker: LipidMarker): MetricType {
  *  the plan grades it, whatever unit it was entered in (US-07 AC5). */
 function fmtMarkerValue(marker: LipidMarker, us: UnitSystem): string {
   const metric = lipidMarkerMetric(marker);
-  return `${formatGradedValue(metric, marker.value, us, marker.target)} ${getDisplayLabel(metric, us)}`;
+  const value = marker.limit ? formatLimit(metric, marker.limit, us) : formatGradedValue(metric, marker.value, us, marker.target);
+  return `${value} ${getDisplayLabel(metric, us)}`;
 }
 
 /** The plan's one lipid marker (ApoB, else non-HDL, else LDL), judged
  *  against its on-treatment target, from the validated inputs and the results
  *  the plan was computed from. Null with no lipid on record. */
 export function lipidMarkerFor(
-  inputs: Pick<HealthInputs, 'apoB' | 'ldlC'>,
+  inputs: Pick<HealthInputs, 'apoB' | 'ldlC' | 'limits'>,
   results: Pick<HealthResults, 'nonHdlCholesterol'>,
 ): LipidMarker | null {
-  const mk = (kind: LipidMarker['kind'], label: string, value: number, target: number): LipidMarker =>
-    ({ kind, label, value, target, elevated: atOrAboveTarget(value, target) });
+  const mk = (kind: LipidMarker['kind'], label: string, value: number, target: number, limit?: InputLimit): LipidMarker =>
+    ({ kind, label, value, target, elevated: atOrAboveTarget(value, target), ...(limit ? { limit } : {}) });
   const T = LIPID_TREATMENT_TARGETS;
-  if (inputs.apoB !== undefined) return mk('apoB', 'ApoB', inputs.apoB, T.apobGl);
+  if (inputs.apoB !== undefined) return mk('apoB', 'ApoB', inputs.apoB, T.apobGl, limitOf(inputs, 'apoB'));
   if (results.nonHdlCholesterol !== undefined) return mk('nonHdl', 'non-HDL cholesterol', results.nonHdlCholesterol, T.nonHdlMmol);
-  if (inputs.ldlC !== undefined) return mk('ldl', 'LDL-c', inputs.ldlC, T.ldlMmol);
+  if (inputs.ldlC !== undefined) return mk('ldl', 'LDL-c', inputs.ldlC, T.ldlMmol, limitOf(inputs, 'ldlC'));
   return null;
 }
 
@@ -242,20 +241,37 @@ export function generateSuggestions(
   const suggestions: Suggestion[] = [];
   /** Resolve effective unit system for a given metric (per-field override or global default) */
   const us = (metric: MetricType): UnitSystem => unitOverrides?.[metric] ?? unitSystem;
+  // An input read from a result printed as a limit shows its bound, never the
+  // value the plan graded it with (US-12 AC20).
+  const shown = (field: LimitField, metric: MetricType, value: number): string => {
+    const limit = limitOf(inputs, field);
+    return fmtMetric(metric, limit?.bound ?? value, us(metric), limit?.comparator);
+  };
+  /** A checklist line for a test saved as a limit with no graded value: held, not missing (US-12 AC20). */
+  const limitLine = (label: string, field: LimitField, metric: MetricType): string[] => {
+    const limit = limitOf(inputs, field);
+    return limit ? [`\u2753 ${label}: ${shown(field, metric, limit.bound)} \u2014 ${LIMIT_NOT_GRADED}`] : [];
+  };
+  const bare = (field: LimitField, value: number): string => {
+    const limit = limitOf(inputs, field);
+    return limit ? limitSIText(field, limit) : String(Math.round(value));
+  };
 
   // === Always-show lifestyle suggestions ===
 
-  // Protein target (core recommendation, adjusted for CKD)
+  // Protein target (core recommendation, adjusted for CKD). Needs sex, as ideal body weight does (US-07 AC8).
   const isCkd = results.eGFR !== undefined && results.eGFR < EGFR_THRESHOLDS.mildlyDecreased;
-  suggestions.push({
-    id: 'protein-target',
-    category: 'nutrition',
-    priority: 'info',
-    title: `Daily protein target: ${results.proteinTarget}g`,
-    description: isCkd
-      ? `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us('weight'))}, aim for ${results.proteinTarget}g of protein daily (1.0g per kg, adjusted for kidney function). Discuss with your doctor.`
-      : `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us('weight'))}, aim for ${results.proteinTarget}g of protein daily. This supports muscle maintenance and metabolic health.`,
-  });
+  if (results.idealBodyWeight !== undefined && results.proteinTarget !== undefined) {
+    suggestions.push({
+      id: 'protein-target',
+      category: 'nutrition',
+      priority: 'info',
+      title: `Daily protein target: ${results.proteinTarget}g`,
+      description: isCkd
+        ? `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us('weight'))}, aim for ${results.proteinTarget}g of protein daily (1.0g per kg, adjusted for kidney function). Discuss with your doctor.`
+        : `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us('weight'))}, aim for ${results.proteinTarget}g of protein daily. This supports muscle maintenance and metabolic health.`,
+    });
+  }
 
   // Low salt — above the age-dependent BP target
   if (inputs.systolicBp !== undefined && inputs.systolicBp > bpTargetFor(results.age)) {
@@ -285,8 +301,10 @@ export function generateSuggestions(
     });
   }
 
-  // High-potassium diet — only when eGFR ≥ 45 (safe kidney function)
-  if (results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildlyDecreased) {
+  // High-potassium diet — only when eGFR ≥ 45 (safe kidney function), from an eGFR no newer
+  // creatinine has outdated (US-07 AC8): potassium advice errs on the cautious side.
+  const potassiumSafe = results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildlyDecreased && !inputs.labEgfrOutdated;
+  if (potassiumSafe) {
     suggestions.push({
       id: 'high-potassium',
       category: 'nutrition',
@@ -397,7 +415,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'urgent',
         title: 'HbA1c in diabetic range',
-        description: `Your HbA1c of ${fmtHba1c(inputs.hba1c, us('hba1c'))} indicates diabetes. This requires medical management and lifestyle intervention.`,
+        description: `Your HbA1c of ${shown('hba1c', 'hba1c', inputs.hba1c)} indicates diabetes. This requires medical management and lifestyle intervention.`,
       });
     } else if (inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) {
       suggestions.push({
@@ -405,7 +423,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'attention',
         title: 'HbA1c indicates prediabetes',
-        description: `Your HbA1c of ${fmtHba1c(inputs.hba1c, us('hba1c'))} is in the prediabetic range. Lifestyle changes now can prevent progression to diabetes.`,
+        description: `Your HbA1c of ${shown('hba1c', 'hba1c', inputs.hba1c)} is in the prediabetic range. Lifestyle changes now can prevent progression to diabetes.`,
       });
     } else {
       suggestions.push({
@@ -413,7 +431,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'info',
         title: 'HbA1c in normal range',
-        description: `Your HbA1c of ${fmtHba1c(inputs.hba1c, us('hba1c'))} is in the normal range. Continue healthy habits to maintain this.`,
+        description: `Your HbA1c of ${shown('hba1c', 'hba1c', inputs.hba1c)} is in the normal range. Continue healthy habits to maintain this.`,
       });
     }
   }
@@ -446,7 +464,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Very high ApoB',
-        description: `Your ApoB of ${fmtApoB(inputs.apoB!, us('apob'))} is very high, indicating significantly elevated cardiovascular risk. ${medicinesShown(results) ? 'Statin therapy and lifestyle intervention are typically recommended.' : 'Discuss treatment, including lifestyle changes, with your doctor.'}`,
+        description: `Your ApoB of ${shown('apoB', 'apob', inputs.apoB!)} is very high, indicating significantly elevated cardiovascular risk. ${medicinesShown(results) ? 'Statin therapy and lifestyle intervention are typically recommended.' : 'Discuss treatment, including lifestyle changes, with your doctor.'}`,
       });
     } else if (inputs.apoB! >= APOB_THRESHOLDS.high) {
       hasElevatedAtherogenicSuggestion = true;
@@ -455,7 +473,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'attention',
         title: 'High ApoB',
-        description: `Your ApoB of ${fmtApoB(inputs.apoB!, us('apob'))} is elevated. Consider lifestyle modifications and discuss treatment options to reduce cardiovascular risk.`,
+        description: `Your ApoB of ${shown('apoB', 'apob', inputs.apoB!)} is elevated. Consider lifestyle modifications and discuss treatment options to reduce cardiovascular risk.`,
       });
     } else if (inputs.apoB! >= APOB_THRESHOLDS.borderline) {
       suggestions.push({
@@ -463,7 +481,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'info',
         title: 'Borderline high ApoB',
-        description: `Your ApoB of ${fmtApoB(inputs.apoB!, us('apob'))} is borderline. Optimal is <${fmtLipidTarget('apob', APOB_THRESHOLDS.borderline, us('apob'))}.`,
+        description: `Your ApoB of ${shown('apoB', 'apob', inputs.apoB!)} is borderline. Optimal is <${fmtLipidTarget('apob', APOB_THRESHOLDS.borderline, us('apob'))}.`,
       });
     }
   }
@@ -477,7 +495,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Very high LDL cholesterol',
-        description: `Your LDL-c of ${fmtLdl(inputs.ldlC, us('ldl'))} is significantly elevated. This may indicate familial hypercholesterolemia. ${medicinesShown(results) ? 'Statin therapy is typically recommended.' : 'Discuss treatment with your doctor.'}`,
+        description: `Your LDL-c of ${shown('ldlC', 'ldl', inputs.ldlC)} is significantly elevated. This may indicate familial hypercholesterolemia. ${medicinesShown(results) ? 'Statin therapy is typically recommended.' : 'Discuss treatment with your doctor.'}`,
       });
     } else if (inputs.ldlC >= LDL_THRESHOLDS.high) {
       hasElevatedAtherogenicSuggestion = true;
@@ -486,7 +504,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'attention',
         title: 'High LDL cholesterol',
-        description: `Your LDL-c of ${fmtLdl(inputs.ldlC, us('ldl'))} is high. Consider lifestyle modifications and discuss medication options.`,
+        description: `Your LDL-c of ${shown('ldlC', 'ldl', inputs.ldlC)} is high. Consider lifestyle modifications and discuss medication options.`,
       });
     } else if (inputs.ldlC >= LDL_THRESHOLDS.borderline) {
       suggestions.push({
@@ -494,7 +512,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'info',
         title: 'Borderline high LDL cholesterol',
-        description: `Your LDL-c of ${fmtLdl(inputs.ldlC, us('ldl'))} is borderline high. Optimal is <${fmtLipidTarget('ldl', LIPID_TREATMENT_TARGETS.ldlMmol, us('ldl'))}.`,
+        description: `Your LDL-c of ${shown('ldlC', 'ldl', inputs.ldlC)} is borderline high. Optimal is <${fmtLipidTarget('ldl', LIPID_TREATMENT_TARGETS.ldlMmol, us('ldl'))}.`,
       });
     }
   }
@@ -545,16 +563,26 @@ export function generateSuggestions(
         const u = us(metric);
         checklist.push(`${icon} ${lipidMarker.label}: ${fmtMarkerValue(lipidMarker, u)} \u2014 target <${fmtLipidTarget(metric, lipidMarker.target, u)}`);
       } else {
-        checklist.push('\u2753 Lipids \u2014 not tested (consider getting ApoB or a lipid panel)');
+        const limited = [
+          ...limitLine('ApoB', 'apoB', 'apob'), ...limitLine('LDL-c', 'ldlC', 'ldl'),
+          ...limitLine('Total cholesterol', 'totalCholesterol', 'total_cholesterol'), ...limitLine('HDL', 'hdlC', 'hdl'),
+        ];
+        checklist.push(...(limited.length ? limited : ['\u2753 Lipids \u2014 not tested (consider getting ApoB or a lipid panel)']));
       }
 
       // Blood pressure, against the plan's age-dependent target
       if (inputs.systolicBp !== undefined && inputs.diastolicBp !== undefined) {
         const sysTarget = bpTargetFor(results.age);
         const onTarget = inputs.systolicBp < sysTarget && inputs.diastolicBp < 80;
-        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} Blood pressure: ${inputs.systolicBp}/${inputs.diastolicBp} mmHg \u2014 target <${sysTarget}/80`);
+        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} Blood pressure: ${bare('systolicBp', inputs.systolicBp)}/${bare('diastolicBp', inputs.diastolicBp)} mmHg \u2014 target <${sysTarget}/80`);
       } else {
-        checklist.push('\u2753 Blood pressure \u2014 not entered');
+        // A half saved as a limit shows with its limit, and an exact other half beside it (US-12 AC20).
+        const halves = ([['Systolic blood pressure', 'systolicBp', 'systolic_bp'], ['Diastolic blood pressure', 'diastolicBp', 'diastolic_bp']] as const)
+          .map(([label, field, metric]) => {
+            const value = inputs[field];
+            return { limited: !!limitOf(inputs, field), line: value !== undefined ? [`\u2753 ${label}: ${shown(field, metric, value)}`] : limitLine(label, field, metric) };
+          });
+        checklist.push(...(halves.some((h) => h.limited) ? halves.flatMap((h) => h.line) : ['\u2753 Blood pressure \u2014 not entered']));
       }
 
       // BMI — consider healthy if <25 or if 25-29.9 with healthy waist-to-height ratio
@@ -567,9 +595,10 @@ export function generateSuggestions(
       // HbA1c
       if (inputs.hba1c !== undefined) {
         const onTarget = inputs.hba1c < HBA1C_THRESHOLDS.prediabetes;
-        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} HbA1c: ${fmtHba1c(inputs.hba1c, us('hba1c'))} \u2014 target <${fmtHba1c(HBA1C_THRESHOLDS.prediabetes, us('hba1c'))}`);
+        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} HbA1c: ${shown('hba1c', 'hba1c', inputs.hba1c)} \u2014 target <${fmtHba1c(HBA1C_THRESHOLDS.prediabetes, us('hba1c'))}`);
       } else {
-        checklist.push('\u2753 HbA1c \u2014 not tested');
+        const limited = limitLine('HbA1c', 'hba1c', 'hba1c');
+        checklist.push(...(limited.length ? limited : ['\u2753 HbA1c \u2014 not tested']));
       }
 
       // Medication status (only when medications are tracked). With no birth
@@ -609,7 +638,7 @@ export function generateSuggestions(
         id: 'lpa-elevated',
         category: 'bloodwork',
         priority: 'attention',
-        title: `Elevated Lp(a): ${Math.round(inputs.lpa)} nmol/L`,
+        title: `Elevated Lp(a): ${bare('lpa', inputs.lpa)} nmol/L`,
         description: `Lp(a) is genetically determined and cannot be changed by diet or lifestyle. With an elevated Lp(a), reducing all other modifiable cardiovascular risk factors is especially important.\n\nYour modifiable risk factors:\n${checklist.join('\n')}`,
       });
     } else if (inputs.lpa >= LPA_THRESHOLDS.normal) {
@@ -617,7 +646,7 @@ export function generateSuggestions(
         id: 'lpa-borderline',
         category: 'bloodwork',
         priority: 'info',
-        title: `Borderline Lp(a): ${Math.round(inputs.lpa)} nmol/L`,
+        title: `Borderline Lp(a): ${bare('lpa', inputs.lpa)} nmol/L`,
         description: 'Your Lp(a) is in the borderline range (75\u2013125 nmol/L). Lp(a) is genetically determined and does not change with lifestyle. Continue to optimize other cardiovascular risk factors.',
       });
     } else {
@@ -625,7 +654,7 @@ export function generateSuggestions(
         id: 'lpa-normal',
         category: 'bloodwork',
         priority: 'info',
-        title: `Lp(a): ${Math.round(inputs.lpa)} nmol/L`,
+        title: `Lp(a): ${bare('lpa', inputs.lpa)} nmol/L`,
         description: 'Your Lp(a) is in the normal range (<75 nmol/L). This is a one-time test \u2014 Lp(a) is genetically determined and does not change significantly over time.',
       });
     }
@@ -640,7 +669,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'attention',
         title: 'High total cholesterol',
-        description: `Your total cholesterol of ${fmtTotalChol(inputs.totalCholesterol, us('total_cholesterol'))} is high. Desirable is <${formatDisplayValue('total_cholesterol', TOTAL_CHOLESTEROL_THRESHOLDS.borderline, us('total_cholesterol'))} ${getDisplayLabel('total_cholesterol', us('total_cholesterol'))}.`,
+        description: `Your total cholesterol of ${shown('totalCholesterol', 'total_cholesterol', inputs.totalCholesterol)} is high. Desirable is <${formatDisplayValue('total_cholesterol', TOTAL_CHOLESTEROL_THRESHOLDS.borderline, us('total_cholesterol'))} ${getDisplayLabel('total_cholesterol', us('total_cholesterol'))}.`,
       });
     } else if (inputs.totalCholesterol >= TOTAL_CHOLESTEROL_THRESHOLDS.borderline) {
       suggestions.push({
@@ -648,13 +677,13 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'info',
         title: 'Borderline high total cholesterol',
-        description: `Your total cholesterol of ${fmtTotalChol(inputs.totalCholesterol, us('total_cholesterol'))} is borderline high. Desirable is <${formatDisplayValue('total_cholesterol', TOTAL_CHOLESTEROL_THRESHOLDS.borderline, us('total_cholesterol'))} ${getDisplayLabel('total_cholesterol', us('total_cholesterol'))}.`,
+        description: `Your total cholesterol of ${shown('totalCholesterol', 'total_cholesterol', inputs.totalCholesterol)} is borderline high. Desirable is <${formatDisplayValue('total_cholesterol', TOTAL_CHOLESTEROL_THRESHOLDS.borderline, us('total_cholesterol'))} ${getDisplayLabel('total_cholesterol', us('total_cholesterol'))}.`,
       });
     }
   }
 
-  // HDL cholesterol (thresholds in mmol/L)
-  if (inputs.hdlC !== undefined) {
+  // HDL cholesterol (thresholds in mmol/L). The line is sex-specific, so no sex, no card (US-07 AC8).
+  if (inputs.hdlC !== undefined && inputs.sex) {
     const lowThreshold = inputs.sex === 'male' ? HDL_THRESHOLDS.lowMale : HDL_THRESHOLDS.lowFemale;
     if (inputs.hdlC < lowThreshold) {
       suggestions.push({
@@ -662,7 +691,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'attention',
         title: 'Low HDL cholesterol',
-        description: `Your HDL of ${fmtHdl(inputs.hdlC, us('hdl'))} is below optimal (${us('hdl') === 'si' ? lowThreshold.toFixed(2) : formatDisplayValue('hdl', lowThreshold, us('hdl'))} ${getDisplayLabel('hdl', us('hdl'))} for ${inputs.sex === 'male' ? 'men' : 'women'}). Exercise and healthy fats can help raise HDL.`,
+        description: `Your HDL of ${shown('hdlC', 'hdl', inputs.hdlC)} is below optimal (${us('hdl') === 'si' ? lowThreshold.toFixed(2) : formatDisplayValue('hdl', lowThreshold, us('hdl'))} ${getDisplayLabel('hdl', us('hdl'))} for ${inputs.sex === 'male' ? 'men' : 'women'}). Exercise and healthy fats can help raise HDL.`,
       });
     }
   }
@@ -675,7 +704,7 @@ export function generateSuggestions(
       category: 'bloodwork',
       priority: 'urgent',
       title: 'Very high triglycerides',
-      description: `Your triglycerides of ${fmtTrig(inputs.triglycerides, us('triglycerides'))} are very high, increasing risk of pancreatitis. Immediate intervention is recommended.`,
+      description: `Your triglycerides of ${shown('triglycerides', 'triglycerides', inputs.triglycerides)} are very high, increasing risk of pancreatitis. Immediate intervention is recommended.`,
     });
   }
 
@@ -686,7 +715,7 @@ export function generateSuggestions(
 
     // Build conditional lifestyle paragraphs for stage 1 & 2
     const bpExtraParagraphs: string[] = [];
-    if (results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildlyDecreased) {
+    if (potassiumSafe) {
       bpExtraParagraphs.push('Increase potassium-rich foods (3,500–5,000mg/day).');
     }
     if (weightMeds.on) {
@@ -701,7 +730,7 @@ export function generateSuggestions(
         category: 'blood_pressure',
         priority: 'urgent',
         title: 'Hypertensive crisis',
-        description: `Your BP of ${sys}/${dia} mmHg is dangerously high. Seek immediate medical attention if accompanied by symptoms.`,
+        description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg is dangerously high. Seek immediate medical attention if accompanied by symptoms.`,
       });
     } else if (sys >= BP_THRESHOLDS.stage2Sys || dia >= BP_THRESHOLDS.stage2Dia) {
       suggestions.push({
@@ -709,7 +738,7 @@ export function generateSuggestions(
         category: 'blood_pressure',
         priority: 'urgent',
         title: 'Stage 2 hypertension',
-        description: `Your BP of ${sys}/${dia} mmHg indicates stage 2 hypertension. ${medicinesShown(results) ? 'Medication is typically recommended at this level.' : 'Discuss treatment with your doctor.'}\n\nLifestyle measures that also help: reduce sodium intake (<1,500mg/day), exercise regularly, and prioritize quality sleep.${bpExtra}`,
+        description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg indicates stage 2 hypertension. ${medicinesShown(results) ? 'Medication is typically recommended at this level.' : 'Discuss treatment with your doctor.'}\n\nLifestyle measures that also help: reduce sodium intake (<1,500mg/day), exercise regularly, and prioritize quality sleep.${bpExtra}`,
       });
     } else if (isBpRaised(sys, dia)) {
       suggestions.push({
@@ -717,7 +746,7 @@ export function generateSuggestions(
         category: 'blood_pressure',
         priority: 'attention',
         title: 'Stage 1 hypertension',
-        description: `Your BP of ${sys}/${dia} mmHg indicates stage 1 hypertension. Target is <${bpTargetFor(results.age)}/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).${bpExtra}`,
+        description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg indicates stage 1 hypertension. Target is <${bpTargetFor(results.age)}/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).${bpExtra}`,
       });
     }
   }
@@ -1060,7 +1089,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Creatine',
-      description: `${CREATINE_STRENGTH} Dr Stanfield considers the memory evidence clear and consistent; formal reviews are more mixed, with the clearest benefit in older adults.`,
+      description: `${CREATINE_STRENGTH} There is also an interesting signal that it may help memory, another possible benefit; formal reviews are mixed, with the clearest benefit in older adults.`,
     },
     {
       id: 'supplement-collagen',
@@ -1081,7 +1110,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'TMG (trimethylglycine)',
-      description: 'TMG lowers blood homocysteine, according to a meta-analysis of randomized trials. Small trials suggest it may improve strength and power. At 4 g a day or more, the doses used in the homocysteine trials, it may modestly raise total cholesterol.',
+      description: 'TMG lowers blood homocysteine, according to a meta-analysis of randomized trials. Small trials suggest it may improve strength and power.',
     },
     {
       id: 'supplement-omega3',

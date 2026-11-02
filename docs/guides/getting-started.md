@@ -2,7 +2,7 @@
 title: "An open-source health record you can connect to your AI"
 description: "The code is public and MIT licensed. Your record is one file in your own cloud, so the website, the command line and an AI with file access can all read it."
 slug: "ai-health-record"
-updated: "2026-10-22"
+updated: "2026-11-02"
 stories: ["US-29", "US-30", "US-31", "US-32", "US-38"]
 ---
 
@@ -79,7 +79,7 @@ Four steps, on any Claude plan. Nothing to install and no special mode to turn o
 
 ## Connect ChatGPT on the web
 
-Five steps, on a paid ChatGPT plan, on the web. There is one extra step compared with Claude: developer mode. OpenAI keeps custom connectors behind it until an app is published through their review, and ours is not published yet. Developer mode is a setting on your own account, not a change to how ChatGPT answers you.
+Five steps, on a paid ChatGPT plan, on the web. There is one extra step compared with Claude: developer mode. OpenAI keeps custom connectors behind it unless an app is listed in ChatGPT, and OpenAI does not list health apps at present. Developer mode is a setting on your own account, not a change to how ChatGPT answers you.
 
 1. Turn developer mode on. Open Settings, then Security, and switch Developer mode on.
 

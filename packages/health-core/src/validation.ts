@@ -1,7 +1,7 @@
 import * as z from './zod';
 import { rangeFault, roundBoundInward, UNIT_DEFS, UnitSystem } from './units';
 import { FIELD_METRIC_MAP } from './mappings';
-import { ALCOHOL_ANSWERS, type HealthInputs } from './types';
+import { ALCOHOL_ANSWERS, SEXES, type HealthInputs } from './types';
 import { IMPORT_LIMITS } from './import-hints';
 import { latestDayOnEarth } from './merge';
 
@@ -16,6 +16,12 @@ export const METRIC_TYPES = [
 
 export type MetricTypeValue = typeof METRIC_TYPES[number];
 
+/** This year in the zone furthest ahead (UTC+14), as `birthInFuture` judges the
+ *  month. Read at each check, so a tab or server left running across New Year
+ *  takes the new year. */
+const latestYear = () => Number(latestDayOnEarth(new Date()).slice(0, 4));
+const notFutureYear = (year: number) => year <= latestYear();
+
 /**
  * Schema for validating health inputs.
  *
@@ -29,7 +35,8 @@ export const healthInputSchema = z.object({
     .number()
     .min(50, 'Height must be at least 50 cm')
     .max(250, 'Height must be at most 250 cm'),
-  sex: z.enum(['male', 'female'], { error: 'Please select male or female' }),
+  // Optional (US-07 AC8): the plan works without it, minus what needs sex.
+  sex: z.enum(SEXES, { error: 'Please select male or female' }).optional(),
 
   // Optional body measurements
   weightKg: z
@@ -47,7 +54,7 @@ export const healthInputSchema = z.object({
   birthYear: z
     .number()
     .min(1900, 'Birth year must be after 1900')
-    .max(new Date().getFullYear(), 'Birth year cannot be in the future')
+    .refine(notFutureYear, 'Birth year cannot be in the future')
     .optional(),
   birthMonth: z
     .number()
@@ -118,6 +125,7 @@ export const healthInputSchema = z.object({
     .max(200, 'eGFR must be at most 200 mL/min/1.73m²')
     .optional(),
   labEgfrDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'eGFR date must be YYYY-MM-DD').optional(),
+  labEgfrOutdated: z.literal(true).optional(),
   // US-60: the profile's alcohol answer. Absent: not answered.
   alcohol: z.enum(ALCOHOL_ANSWERS).optional(),
 });
@@ -139,6 +147,22 @@ export type ValidatedHealthInputs = z.infer<typeof healthInputSchema>;
 function isInputFieldValid(key: string, value: unknown): boolean {
   const shape = healthInputSchema.shape as Record<string, { safeParse: (v: unknown) => { success: boolean } }>;
   return !Object.prototype.hasOwnProperty.call(shape, key) || shape[key].safeParse(value).success;
+}
+
+/** A value the input schema accepts for `field` (an unknown field passes), as `sanitizeInputs` keeps it. */
+export const inRange = (field: string, value: unknown): boolean => isInputFieldValid(field, value);
+
+/** Each numeric input's schema bounds (`minValue`, `maxValue`), read once from the schema. */
+const FIELD_BOUNDS: Readonly<Record<string, { min: number; max: number }>> = Object.fromEntries(
+  Object.entries(healthInputSchema.shape).flatMap(([field, schema]) => {
+    const inner = (schema instanceof z.ZodOptional ? schema.unwrap() : schema) as unknown;
+    return inner instanceof z.ZodNumber ? [[field, { min: inner.minValue ?? -Infinity, max: inner.maxValue ?? Infinity }]] : [];
+  }),
+);
+
+/** A numeric input's schema bounds, or undefined for a field that is not a number. */
+export function fieldBounds(field: string): { min: number; max: number } | undefined {
+  return Object.prototype.hasOwnProperty.call(FIELD_BOUNDS, field) ? FIELD_BOUNDS[field] : undefined;
 }
 
 /**
@@ -198,11 +222,34 @@ export function inputsPressureInverted(inputs: Partial<HealthInputs>, days: Pres
 export const BIRTH_IN_FUTURE = 'Your birth month cannot be in the future.';
 
 /**
+ * US-54 AC5b: what the web says under Birth Month after a save refused a
+ * birth month. The iPhone and the agents refuse before anything changes and
+ * say BIRTH_IN_FUTURE; the web has already put the record's pair back in the
+ * form, so it names what it did not save.
+ */
+export function birthRefusedMessage(year: number, month?: number): string {
+  const name = month ? `${new Date(Date.UTC(2000, month - 1)).toLocaleString('en-US', { month: 'long', timeZone: 'UTC' })} ` : '';
+  return `${name}${year} is in the future, so it was not saved.`;
+}
+
+/**
  * US-54 AC5b: a birth month after this one. "This month" is the one the zone
  * furthest ahead (UTC+14) is in, so no one's own month is refused.
  */
 export function birthInFuture(year: number, month: number, now: string | Date): boolean {
   return `${year}-${String(month).padStart(2, '0')}` > latestDayOnEarth(now).slice(0, 7);
+}
+
+/**
+ * The birth date the plan keeps: a year the schema takes, alone (the plan
+ * reads January) or with a month the schema takes that is not in the future
+ * (US-54 AC5b). The form's birth step is answered by it (US-62 AC13).
+ */
+export function birthKept(inputs: Pick<Partial<HealthInputs>, 'birthYear' | 'birthMonth'>, now: string | Date = new Date()): boolean {
+  const { birthYear, birthMonth } = inputs;
+  if (birthYear === undefined || !isInputFieldValid('birthYear', birthYear)) return false;
+  if (birthMonth === undefined) return true;
+  return isInputFieldValid('birthMonth', birthMonth) && !birthInFuture(birthYear, birthMonth, now);
 }
 
 /**
@@ -225,7 +272,7 @@ export function validateHealthInputs(data: unknown, days?: PressureDays, now: st
   const { birthYear, birthMonth } = inputs;
   const birth = birthYear !== undefined && birthMonth !== undefined
     && isInputFieldValid('birthYear', birthYear) && isInputFieldValid('birthMonth', birthMonth)
-    && birthInFuture(birthYear, birthMonth, now)
+    && !birthKept(inputs, now)
     ? [{ code: 'custom' as const, path: ['birthMonth'], message: BIRTH_IN_FUTURE, input: data }]
     : [];
 
@@ -369,7 +416,7 @@ export const profileUpdateSchema = z.object({
     .number()
     .int()
     .min(1900, 'Birth year must be after 1900')
-    .max(new Date().getFullYear(), 'Birth year cannot be in the future')
+    .refine(notFutureYear, 'Birth year cannot be in the future')
     .optional(),
   birthMonth: z
     .number()
@@ -534,7 +581,7 @@ export type DocumentType = typeof DOCUMENT_TYPES[number];
  * boundary values slightly outside SI ranges, causing false rejections.
  */
 const IDENTITY_FIELD_RANGES: Record<string, { min: number; max: number }> = {
-  birthYear: { min: 1900, max: new Date().getFullYear() },
+  birthYear: { min: 1900, get max() { return latestYear(); } },
   birthMonth: { min: 1, max: 12 },
   systolicBp: { min: 60, max: 250 },
   diastolicBp: { min: 40, max: 150 },
@@ -549,6 +596,21 @@ const IDENTITY_FIELD_RANGES: Record<string, { min: number; max: number }> = {
  * Only validates fields without unit conversion (birthYear, BP, PSA).
  * Unit-conversion fields should rely on HTML min/max + server-side Zod.
  */
+/** The range of a profile or first-time field the unit tables do not hold (birth year 1900 to this year). */
+export function identityFieldRange(field: string): { min: number; max: number } | undefined {
+  return Object.prototype.hasOwnProperty.call(IDENTITY_FIELD_RANGES, field) ? IDENTITY_FIELD_RANGES[field] : undefined;
+}
+
+/** Why a form value (canonical units) is out of its range ("Height must be at
+ *  least 50 cm"), or null; a field the schema does not know, or a clear, has
+ *  none (US-02 AC5). The web store's profile save and the first-time fields'
+ *  save both refuse by it. */
+export function inputRangeFault(field: string, value: unknown): string | null {
+  if (value == null || !Object.prototype.hasOwnProperty.call(healthInputSchema.shape, field)) return null;
+  const parsed = healthInputSchema.shape[field as keyof typeof healthInputSchema.shape].safeParse(value, { error: zod3Message });
+  return parsed.success ? null : parsed.error.issues[0]?.message ?? 'Out of range';
+}
+
 export function validateInputValue(
   field: string,
   value: number | undefined,
