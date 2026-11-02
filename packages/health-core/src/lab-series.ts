@@ -10,6 +10,7 @@
 import { LAB_GROUPS, labSlotKey, resolveLabCatalogEntry, displayLabUnit, type LabGroup, type LabGroupId } from './lab-catalog';
 import { trendWindow } from './recent-trend';
 import { rowTarget } from './row-target';
+import { comparatorOf, limitText, type Comparator } from './lab-limits';
 
 /** A lab test's name for display: its catalogue label, else the snake_case name title-cased. */
 export function labValueLabel(metricName: string): string {
@@ -20,6 +21,12 @@ export function labValueLabel(metricName: string): string {
 /** A lab value as the matrix shows it: up to two decimals, no trailing zeros. */
 export function formatLabValue(v: number): string {
   return String(Math.round(v * 100) / 100);
+}
+
+/** A saved lab value as shown: a limit with its symbol and its bound as
+ *  printed ("< 0.005"), else up to two decimals (US-12 AC20). */
+export function savedLabText(v: number, comparator?: Comparator): string {
+  return comparator ? limitText(v, 0, comparator) : formatLabValue(v);
 }
 
 export type LabRowsGroupId = LabGroupId | 'other';
@@ -37,6 +44,8 @@ export interface LabSeriesPoint {
   value: number;
   unit: string;
   recordedAt: string;
+  /** Printed as a limit: `value` is its bound (US-12 AC20). */
+  comparator?: Comparator;
 }
 
 export interface LabSeries {
@@ -64,7 +73,7 @@ export interface LabValueGroup {
 /** A stored lab value as the grouping reads it. The widget's rows come
  *  pre-filtered to active (RoadmapStore.loadLabValues() applies activeOnly()),
  *  so `status` is optional; a less-filtered source still drops the rest. */
-export type LabValueRow = { id: string; metricName: string; value: number; unit: string; recordedAt: string; status?: string };
+export type LabValueRow = { id: string; metricName: string; value: number; unit: string; recordedAt: string; status?: string; comparator?: unknown };
 
 /** Group + series-ify stored lab values for read-only display. Entered-in-
  *  error rows are excluded; series are sorted oldest→newest; a series
@@ -87,7 +96,7 @@ export function groupLabValues(rows: LabValueRow[]): LabValueGroup[] {
     // means the same unit, typography-normalized otherwise. Relabeling only —
     // nothing is converted here (catalogued tests are converted once, on the
     // write); a unit that still differs flags mixedUnits.
-    series.points.push({ id: row.id, value: row.value, unit: displayLabUnit(row.unit, entry), recordedAt: row.recordedAt });
+    series.points.push({ id: row.id, value: row.value, unit: displayLabUnit(row.unit, entry), recordedAt: row.recordedAt, ...comparatorOf(row) });
   }
 
   const groupDefs: Array<{ id: LabRowsGroupId; label: string; icon: LabRowsIcon }> = [...LAB_GROUPS, OTHER_GROUP];
@@ -125,14 +134,23 @@ export interface LabSeriesRow {
   target: string | null;
   /** The recent values (`trendWindow`), oldest first; none in a series of more than one unit. */
   trend: number[];
+  /** Which trend points were printed as a limit (US-12 AC20); absent with no trend. */
+  trendLimits?: boolean[];
 }
 
 /** Every lab test series as a row, in `groupLabValues`'s order. A series in more
  *  than one unit draws no trend and no previous value: one line or one bracket
- *  would compare unlike numbers (US-21 AC3a). Never graded. */
-export function labSeriesRows(rows: (LabValueRow & { referenceLow?: number | null; referenceHigh?: number | null })[], now = new Date()): LabSeriesRow[] {
+ *  would compare unlike numbers (US-21 AC3a). A value printed as a limit reads
+ *  with its symbol, "< 5" (US-12 AC20); `exactOnly` leaves limits out of the
+ *  trend before its window is taken, as the iPhone's core rows do, where the
+ *  web flags them instead (`trendLimits`, drawn hollow). Never graded. */
+export function labSeriesRows(rows: (LabValueRow & { referenceLow?: number | null; referenceHigh?: number | null })[], now = new Date(), exactOnly = false): LabSeriesRow[] {
   const byId = new Map(rows.map(v => [v.id, v]));
   const recent = trendWindow(now);
+  const trendOf = (points: LabSeriesPoint[]) => {
+    const shown = recent(exactOnly ? points.filter(p => !p.comparator) : points, p => p.recordedAt.slice(0, 10));
+    return { trend: shown.map(p => p.value), trendLimits: shown.map(p => !!p.comparator) };
+  };
   return groupLabValues(rows).flatMap(g => g.series).map(s => {
     const latest = s.points.at(-1)!;
     const previous = s.points.at(-2);
@@ -142,10 +160,10 @@ export function labSeriesRows(rows: (LabValueRow & { referenceLow?: number | nul
       seriesKey: s.seriesKey,
       label: s.label,
       unit: s.unit,
-      latest: { id: latest.id, value: formatLabValue(latest.value), day: latest.recordedAt.slice(0, 10) },
-      previous: previous && sameUnit ? formatLabValue(previous.value) : null,
+      latest: { id: latest.id, value: savedLabText(latest.value, latest.comparator), day: latest.recordedAt.slice(0, 10) },
+      previous: previous && sameUnit ? savedLabText(previous.value, previous.comparator) : null,
       target: rowTarget({ referenceLow: printed?.referenceLow, referenceHigh: printed?.referenceHigh }, 'si', null, null)?.bare ?? null,
-      trend: sameUnit ? recent(s.points, p => p.recordedAt.slice(0, 10)).map(p => p.value) : [],
+      ...(sameUnit ? trendOf(s.points) : { trend: [] }),
     };
   });
 }

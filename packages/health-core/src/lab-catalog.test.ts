@@ -1163,9 +1163,8 @@ describe('US-21 AC19/AC20 — review round: osmolality and reverse T3 spellings,
   });
 
   // What a printed BUN in mg/dL does today, by the name it arrives under. The
-  // assistant routes store the printed name; the website's extractor names a
-  // urea row `urea` (the prompt is unchanged until the #166 benchmark), so a
-  // website BUN in mg/dL is still refused there.
+  // assistant routes store the printed name, and since US-07 AC10 the website
+  // files by it too; a row named only `urea` is still refused in mg/dL.
   it.each([
     ['BUN', 5.355], ['Urea Nitrogen', 5.355], ['Blood Urea Nitrogen (BUN)', 5.355], ['blood_urea_nitrogen', 5.355],
     ['Urea (BUN)', null], ['urea', null],

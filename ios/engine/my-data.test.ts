@@ -10,6 +10,7 @@ import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { supplementSchema } from '../../packages/health-core/src/validation';
 import { stampProfile, upsertSupplement } from '../../packages/health-core/src/state-edits';
 import { mergeFiles } from '../../packages/health-core/src/merge';
+import { gradeWords, savedStatus } from '../../packages/health-core/src/row-grade';
 
 const NOW = '2026-10-21T08:00:00.000Z';
 const LATER = '2026-10-21T09:00:00.000Z';
@@ -256,6 +257,17 @@ describe('myData rows: grade and spoken grade (US-62 AC8, US-25 AC17)', () => {
     expect(shown.get('apob')).toMatchObject({ latest: null, status: null, gradeWords: null });
   });
 
+  it('grades a value printed as a limit by the web\'s rule: only when its bound decides (US-12 AC20)', () => {
+    for (const [value, comparator] of [[5, '>'], [1, '<'], [3, '<']] as const) {
+      const file = adult();
+      const ldl = file.measurements.find((row) => row.metricType === 'ldl')!;
+      file.measurements.push({ ...ldl, id: `limit-${value}${comparator}`, value, comparator, recordedAt: '2026-10-15' });
+      const row = rows(myData(file, NOW)).get('ldl')!;
+      const web = savedStatus('ldl', value, comparator, { sex: 'male' });
+      expect(row).toMatchObject({ status: web, gradeWords: gradeWords(web, 'ldl') });
+    }
+  });
+
   it('grades no PSA, which the web asks for under screening and never colours', () => {
     expect(rows(myData(adult(), NOW)).get('psa')).toMatchObject({ latest: { value: '5.0' }, status: null, gradeWords: null });
   });
@@ -322,6 +334,13 @@ describe('myData lab test rows (US-62 AC8, US-25 AC17)', () => {
     const tests = myData(withLabs(), NOW).labTests;
     expect(tests[2]).toMatchObject({ metric: 'zinc custom', unit: 'µg/dL', latest: { value: '80' }, previous: null, trend: [], target: null });
     expect(tests.every((row) => row.status === null && row.gradeWords === null)).toBe(true);
+  });
+
+  it('reads a lab limit with its symbol and draws it on no trend, as the core rows (US-12 AC20)', () => {
+    const file = withLabs();
+    file.labValues.push(lab('s2', 'sodium', 150, 'mmol/L', '2026-10-10T00:00:00.000Z', { comparator: '>' }));
+    const sodium = myData(file, NOW).labTests.find((row) => row.metric === 'sodium')!;
+    expect(sodium).toMatchObject({ latest: { id: 's2', value: '> 150' }, previous: '140', trend: [140] });
   });
 
   it('is empty for a record with no lab tests', () => {

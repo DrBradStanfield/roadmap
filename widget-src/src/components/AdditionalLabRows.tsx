@@ -123,7 +123,7 @@ const LabGroupMatrix = memo(function LabGroupMatrix({ group, onCorrect, move }: 
                     return <div key={d} className={`bt-cell-value bt-cell-empty${pinned ? ' bt-cell-pinned' : ''}`}>{' '}</div>;
                   }
                   return (
-                    <ValueCell key={d} value={p.value} unit={s.mixedUnits ? p.unit : undefined}
+                    <ValueCell key={d} value={p.value} comparator={p.comparator} unit={s.mixedUnits ? p.unit : undefined}
                                rowId={p.id} status={null} pinned={pinned} onCorrect={onCorrect} say={say}
                                onActivate={() => move?.onHeld(d, true)} onDeactivate={() => move?.onHeld(d, false)}/>
                   );

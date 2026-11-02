@@ -2105,7 +2105,8 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     expect(importHint('no_date')).toContain('fileDates: [{ "file": "<name as listed>", "date": "YYYY-MM-DD" }]');
   });
 
-  // US-12 AC12 is website-only while MCP 1.0.2 is in OpenAI's review: the
+  // US-12 AC12 is website-only, held for OpenAI's MCP 1.0.2 review (ended
+  // 2026-10-29; still held until someone brings the connector level): the
   // shared parse now reads a dated "Prev." column, and import_documents must
   // offer exactly what it did before. Synthetic values, through the real parse.
   it('AC5/AC13 — import_documents does not offer a previous-column value, and fileDates moves only the primary column', () => {
@@ -2289,6 +2290,8 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     expect(importHint('allowance')).toMatch(/allowance for the hour/);
     expect(importHint('time')).toMatch(/Ask again.*already filed are skipped/);
     expect(importHint('too_many')).toMatch(/twenty/);
+    // US-35 AC5b: a whole ZIP refused for its entry count gets this reason too, so the hint names that limit.
+    expect(importHint('too_many')).toContain(`more than ${IMPORT_LIMITS.zipEntries.toLocaleString('en-US')} entries (folders and ignored files included)`);
     // US-35 AC13 (2026-10-19): a file the model cut off or declined is not a bad scan, and
     // the same request stops the same way again, so neither hint invites a retry of the same file.
     // The connector reads at 3,072 output tokens and the website at 10,000, so the website is named first.
@@ -2549,6 +2552,27 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     expect(data.candidates.map((c) => c.sameDayAs)).toEqual([undefined, 'c1']);
     const commit = await runToolOverSync(sync, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [] } }, NOW, { importer: mixed, latestDay: TODAY });
     expect(fits(commit.structured).written).toEqual({ measurements: 1, labValues: 0, corrections: 0, documents: 3 });
+  });
+
+  // US-12 AC20: a result printed as a limit is offered with its code, shown
+  // with its symbol, and the commit writes the code on the row.
+  it('US-12 AC20 — import_documents offers a limit with its comparator, and the commit writes it', async () => {
+    const sync = syncOver(new MemoryCloud());
+    const limited: ImportSurface = { ...surface, async extract() {
+      const report = ldlOnly(2.8, LAB_DAY);
+      report.values.push({ metric: 'hdl', valueSI: 1.5, displayValue: 1.5, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high', comparator: '>' });
+      report.additionalValues.push({ name: 'egfr', value: 60, unit: 'mL/min/1.73m²', comparator: '>' });
+      return { route: 'dropbox', remaining: [], files: [extracted('limits.pdf', report)] };
+    } };
+    const data = fits((await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: limited, latestDay: TODAY })).structured);
+    expect(data.candidates.map((c) => [c.metric, c.comparator, c.displayValue])).toEqual([['ldl', undefined, '2.8'], ['hdl', '>', '> 1.5'], ['egfr', '>', '> 60']]);
+    expect(data.files[0]).not.toHaveProperty('droppedValues');
+    const commit = await runToolOverSync(sync, 'import_documents', { commit: { receipt: data.receipt, accept: data.candidates.map((c) => c.id), replace: [] } }, NOW, { importer: limited, latestDay: TODAY });
+    expect(fits(commit.structured).written).toMatchObject({ measurements: 2, labValues: 1 });
+    const record = await sync.load();
+    expect(record.measurements.find((m) => m.metricType === 'hdl' && m.source === 'lab_import')).toMatchObject({ value: 1.5, comparator: '>' });
+    expect(record.measurements.find((m) => m.metricType === 'ldl' && m.source === 'lab_import')).not.toHaveProperty('comparator');
+    expect(record.labValues.find((l) => l.metricName === 'egfr')).toMatchObject({ value: 60, comparator: '>' });
   });
 
   // US-35 / US-12 AC8: a value the parse refused ("250,000", a malformed row)
@@ -2841,6 +2865,29 @@ describe('US-36 AC9 — two-phase is declared once per tool, and its three mirro
     expect(MCP_TOOLS.filter((t) => t.twoPhase).map((t) => t.name)).toEqual(['correct_value', 'update_profile', 'report_feedback']);
     // The receipt's identity: report_feedback declares its prepared text; the others their arguments.
     expect(MCP_TOOLS.find((t) => t.name === 'report_feedback')!.canonicalArgs!({ kind: 'bug', title: '  A  Title ', detail: 'x' })).toEqual({ kind: 'bug', title: 'a title', detail: 'x' });
+  });
+});
+
+describe('US-12 AC20 — file_results takes a limit with the same four codes, and refuses any other', () => {
+  it('a core and a lab limit become candidates with their comparator, shown with the symbol', () => {
+    const { payload } = prepared(labCall([
+      row('lpa', 'Lipoprotein(a)', 10, 'nmol/L', { comparator: '<' }),
+      row('egfr', 'eGFR', 90, 'mL/min/1.73m²', { comparator: '>' }),
+    ]));
+    expect(payload.candidates.map((c) => [c.metric, c.value, c.comparator, c.displayValue])).toEqual([['lpa', 10, '<', '< 10'], ['egfr', 90, '>', '> 90']]);
+  });
+
+  it('a comparator that is not one of the four codes is refused, nothing read', () => {
+    for (const comparator of ['≥', '=', 'gt', '>>']) {
+      expect(fileResultsInput.safeParse(labCall([row('lpa', 'Lipoprotein(a)', 10, 'nmol/L', { comparator } as never)])).success, comparator).toBe(false);
+    }
+  });
+
+  it('a held exact value and an offered limit of the same number are different results', () => {
+    const file = base();
+    file.measurements.push(createMeasurement({ id: 'held', metricType: 'lpa', value: 10, recordedAt: LAB_DAY, createdAt: NOW }));
+    const { payload } = prepared(labCall([row('lpa', 'Lipoprotein(a)', 10, 'nmol/L', { comparator: '<' })]), file);
+    expect(payload.candidates[0].slot.state).toBe('held_different');
   });
 });
 
@@ -3325,9 +3372,11 @@ describe('US-36 AC11 — tools/list stays inside ChatGPT’s budget', () => {
   // prose), so 16,400 is ≈4,280 tokens and the cushion is ~14%, not the ~20% a
   // 4-chars-per-token rule of thumb would suggest. Tighten the prose before
   // raising this again; past ~17,500 characters the list stops fitting.
-  it('keeps name + description + inputSchema under 16,400 characters across all nine tools (≈4,280 tokens of the 5,000 cap)', () => {
+  // Raised to 16,500 on 2026-11-02 (US-12 AC20): the lab-limit sentences and
+  // `comparator` field, with file_results' privacy wording kept word for word.
+  it('keeps name + description + inputSchema under 16,500 characters across all nine tools (≈4,310 tokens of the 5,000 cap)', () => {
     const chars = MCP_TOOLS.reduce((sum, { name, description, inputSchema }) => sum + JSON.stringify({ name, description, inputSchema }).length, 0);
-    expect(chars).toBeLessThanOrEqual(16_400);
+    expect(chars).toBeLessThanOrEqual(16_500);
   });
 });
 

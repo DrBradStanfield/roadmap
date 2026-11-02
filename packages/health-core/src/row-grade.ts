@@ -24,6 +24,8 @@ import {
   waistToHeightRatio,
 } from './units';
 import { getLipidStatus } from './calculations';
+import { METRIC_TO_FIELD } from './mappings';
+import { isLimitField, limitLabelValue, limitRepresentative, type Comparator } from './lab-limits';
 
 export type GradeStatus = 'ok' | 'warn' | 'bad' | null;
 
@@ -114,12 +116,35 @@ export interface GradeContext {
   plan: RowTargetPlan | null;
 }
 
+/** A saved core limit's input field, when the plan can read one (US-12 AC20). */
+function limitField(metric: MetricType) {
+  const field = METRIC_TO_FIELD[metric];
+  return field && isLimitField(field) ? field : null;
+}
+
+/** A limit the plan cannot grade: it shows no colour, and says `LIMIT_NOT_GRADED`. */
+export function limitUngraded(metric: MetricType, bound: number, comparator?: Comparator): boolean {
+  const field = limitField(metric);
+  return !!comparator && (!field || limitRepresentative(field, comparator, bound) === null);
+}
+
+/** A saved core value's colour. A limit is coloured only when its bound
+ *  decides against the plan's lines and the grid's own colour bands, and
+ *  never by the bound itself (US-12 AC20). */
+export function savedStatus(metric: MetricType, si: number, comparator: Comparator | undefined, grading: Grading): GradeStatus {
+  if (!comparator) return statusOf(metric, si, grading);
+  const field = limitField(metric);
+  const graded = field ? limitLabelValue(field, comparator, si) : null;
+  return graded === null ? null : statusOf(metric, graded, grading);
+}
+
 /** A value's grade, as the grids colour it: the blood tests by their lines,
- *  weight and waist by the plan; none for a known minor's adult lines. */
-export function valueStatus(metric: MetricType, si: number, { grading, plan }: GradeContext): GradeStatus {
+ *  a limit only when its bound decides (US-12 AC20), weight and waist by the
+ *  plan; none for a known minor's adult lines. */
+export function valueStatus(metric: MetricType, si: number, { grading, plan }: GradeContext, comparator?: Comparator): GradeStatus {
   if (metric === 'weight') return simpleStatus('weight', si, grading ? plan?.idealBodyWeight : undefined);
   if (metric === 'waist') return simpleStatus('waist', si, undefined, plan?.heightCm);
-  return statusOf(metric, si, grading);
+  return savedStatus(metric, si, comparator, grading);
 }
 
 /** A pressure's grade against the plan's systolic target; none without a plan or for a known minor. */

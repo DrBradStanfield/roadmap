@@ -32,7 +32,7 @@ Source: `calculations.ts`
 
 ### Ideal Body Weight (Peterson Formula, 2016)
 
-`IBW = 2.2 × BMI_target + 3.5 × BMI_target × (height_m − 1.5)` kg
+`Ideal Body Weight = 2.2 × BMI_target + 3.5 × BMI_target × (height_m − 1.5)` kg
 
 Sex-specific target BMIs (based on mortality meta-analyses):
 - **Male:** BMI target = 24 (optimal mortality range 23–26)
@@ -43,8 +43,8 @@ Sex-specific target BMIs (based on mortality meta-analyses):
 
 ### Daily Protein Target
 
-- **Normal:** `round(IBW * 1.2)` grams/day
-- **CKD (eGFR < 45):** `round(IBW * 1.0)` grams/day
+- **Normal:** `round(Ideal Body Weight * 1.2)` grams/day
+- **CKD (eGFR < 45):** `round(Ideal Body Weight * 1.0)` grams/day
 
 The CKD adjustment uses strict less-than: at exactly eGFR 45, the normal 1.2 multiplier applies.
 
@@ -442,11 +442,13 @@ Non-HDL cholesterol is deliberately not catalogued. The app derives it from tota
 - **AMH** converts at the 140 kDa dimer convention (7.14 pmol/L per ng/mL), as insulin's 6.00 is one. Growth hormone in mIU/L and soluble transferrin receptor in nmol/L are assay-dependent and refused.
 - **Left out:** the free thyroxine index (two scales share the name), every unitless ratio and index (TC/HDL, INR, free androgen index, HOMA-IR, A/G, BUN/creatinine), PT and APTT in seconds, base excess, and a bare "T4", "T3" or "troponin", which can mean either test. A printed one stays an uncatalogued row with its printed unit.
 
-AC20 adds the comma, bracket and "absolute" spellings US, AU and NZ reports print for tests already catalogued ("Bilirubin, Total", "ALT (SGPT)", "Neutrophils (Absolute)"). There is no punctuation fold: each spelling is listed. "Urea Nitrogen (BUN)" takes BUN's mg/dL factor; "Urea (BUN)" does not (see the `urea` row). The extraction prompt is unchanged: it does not yet suggest the new keys, the new core names or `bun`; that prompt change waits for the #166 Haiku benchmark. What a US BUN in mg/dL does today depends on the name it arrives under. Under a printed nitrogen name ("BUN", "Urea Nitrogen", "Blood Urea Nitrogen (BUN)", or the extractor's `blood_urea_nitrogen`) it converts at ×0.357. Under "Urea (BUN)" or the bare `urea` it is refused. The assistant routes (`file_results`, `add_lab_values`) store the printed name, so they convert. The website stores the extractor's snake_case name, and the prompt still suggests only `urea` for a urea row, so a website BUN in mg/dL is still refused there. The core resolver (not the prompt) gained the printed names on Brad's own reports ("Cholesterol (HDL)", "Cholesterol (LDL) (calculated)") and six more ("HDL-Cholesterol", "LDL-Cholesterol", "LDL Chol Calc (NIH)", "Glycated haemoglobin (HbA1c)", "PSA, Total", "Prostate Specific Ag"). A direct LDL is not yet a core alias: which LDL wins a day with both is open (US-21 AC19 notes).
+AC20 adds the comma, bracket and "absolute" spellings US, AU and NZ reports print for tests already catalogued ("Bilirubin, Total", "ALT (SGPT)", "Neutrophils (Absolute)"). Each of these spellings is listed. Since US-07 AC10 (Brad 2026-11-02), a name no listed spelling matches is tried once more without its punctuation: "A.M." and "P.M." lose their dots, and hyphens, dashes, brackets, commas, colons and slashes become spaces. That second try never changes how a name that already resolves resolves; a form two tests share resolves to nothing; a name that stays uncatalogued keeps its own slot, and core metric names are untouched. "Urea Nitrogen (BUN)" takes BUN's mg/dL factor; "Urea (BUN)" does not (see the `urea` row). The extraction prompt offers every catalogue name (US-07 AC10, Brad 2026-11-02: "release now"); it still does not suggest the new core names or `bun`, which the resolver alone knows. What a US BUN in mg/dL does today depends on the name it arrives under. Under a printed nitrogen name ("BUN", "Urea Nitrogen", "Blood Urea Nitrogen (BUN)", or the extractor's `blood_urea_nitrogen`) it converts at ×0.357. Under "Urea (BUN)" or the bare `urea` it is refused. The assistant routes (`file_results`, `add_lab_values`) store the printed name, so they convert. The website now files a row by the name the report printed when it resolves (US-07 AC10), so a website "BUN" in mg/dL converts too; a row the model names only `urea` is still refused in mg/dL. The core resolver (not the prompt) gained the printed names on Brad's own reports ("Cholesterol (HDL)", "Cholesterol (LDL) (calculated)") and six more ("HDL-Cholesterol", "LDL-Cholesterol", "LDL Chol Calc (NIH)", "Glycated haemoglobin (HbA1c)", "PSA, Total", "Prostate Specific Ag"). A direct LDL is not yet a core alias: which LDL wins a day with both is open (US-21 AC19 notes).
 
 Three-file sync: `evidence.ts` and `roadmap_text.html` are untouched because no threshold, suggestion or user-facing sentence changes — only the unit a stored number is expressed in. This holds for the 2026-10-20 additions too: no suggestion reads a catalogued test (`suggestions.ts` never reads `labValues`), so they are record-keeping only. If any of them ever drives a suggestion, all three files change.
 
-**Cortisol by timing (US-07 AC9, Brad 2026-11-02, issue 476).** Cortisol is read against the time it was drawn, so each timing has its own entry, in nmol/L at the same 27.59 µg/dL factor. A name that prints no timing ("Cortisol") is a morning cortisol, `cortisol_am` "Cortisol (morning)", since most cortisol tests are drawn in the morning. AM or morning spellings go there too. A random cortisol goes to `cortisol_random` "Cortisol (random)". A PM, evening or (blood) midnight cortisol goes to `cortisol_pm` "Cortisol (PM)". Salivary and urine cortisol are not catalogued: they keep their printed names. A row stored earlier under a random or PM name was uncatalogued; slots are computed on read, so it now reads under its new entry, and one printed in µg/dL is converted at load by an appended correction row (`migrate.ts`, as for every newly catalogued test). A bare "Cortisol" row stays in `cortisol_am`. The upload prompt's name list does not offer the two new keys until the #166 benchmark (`PROMPT_DEFERRED_KEYS`).
+**Cortisol by timing (US-07 AC9, Brad 2026-11-02, issue 476).** Cortisol is read against the time it was drawn, so each timing has its own entry, in nmol/L at the same 27.59 µg/dL factor. A name that prints no timing ("Cortisol") is a morning cortisol, `cortisol_am` "Cortisol (morning)", since most cortisol tests are drawn in the morning. AM or morning spellings go there too. A random cortisol goes to `cortisol_random` "Cortisol (random)". A PM, evening or (blood) midnight cortisol goes to `cortisol_pm` "Cortisol (PM)". Salivary and urine cortisol are not catalogued: they keep their printed names. A row stored earlier under a random or PM name was uncatalogued; slots are computed on read, so it now reads under its new entry, and one printed in µg/dL is converted at load by an appended correction row (`migrate.ts`, as for every newly catalogued test). A bare "Cortisol" row stays in `cortisol_am`. The upload prompt offers all three cortisol names (US-07 AC10, Brad 2026-11-02: "just switch over"). Punctuated spellings ("Cortisol, A.M.", "cortisol-pm", "P.M. cortisol") reach the same entries through the second, punctuation-free try above.
+
+**Printed name decides (US-07 AC10, Brad 2026-11-02).** On a website or BYOK upload the model also returns each row's name as the report prints it. When that printed name resolves (the exact lookup or the punctuation-free one, never part of a name) to a core metric or a catalogued test, it decides where the row is filed, over the model's pick: a bare "Cortisol" is a morning cortisol whatever key the model chose, and a printed urine creatinine is a lab row, never serum creatinine. When it resolves to nothing, the model's pick stands. Specimen: when one name says urine or saliva and the other does not, the one that says it wins, for every test (a plain "Sodium" under a URINE heading stays urine sodium); for creatinine, a row the model listed among other tests is promoted when its printed name is a serum creatinine name; the unit check still refuses urine-only units. No review flag is added. A row with no printed name is filed as before. No row is edited; the connector, chat and agent paths are unchanged.
 
 ---
 
@@ -542,6 +544,7 @@ With no sex on record the plan grades no HDL, so `hdl-low` does not show (US-07 
 
 | Constant | Value | Meaning |
 |----------|-------|---------|
+| normal | 70 | eGFR 70 and over: the tile's "Normal" (named 2026-11-02; was a literal in `getEgfrStatus`) |
 | lowNormal | 60 | eGFR 60-69, no CKD without markers |
 | mildlyDecreased | 45 | CKD-3b boundary, protein adjustment |
 | moderatelyDecreased | 30 | G3b |
@@ -597,6 +600,20 @@ Used when medications are tracked and a lipid is at or above its target: the val
 | Non-HDL | < 1.6 mmol/L | < 62 mg/dL |
 
 ApoB source: Brad's target, extended from the Ez-PAVE LDL-C target trial (Lee 2026) and PESA (Ibanez 2021), and lower than the ESC/EAS 2019 goal of < 65 mg/dL for very high risk.
+
+### Results Printed as a Limit (US-12 AC20)
+
+Source: `lab-limits.ts`. Brad, 2026-11-02: "Only when it decides".
+
+A lab result printed with a symbol ("> 60", "< 5", "≤ 0.1") is saved as its bound with its comparator, never as the bound alone. The plan grades it only when the bound decides: when no cutoff the input is compared against lies inside the band the limit leaves open, so every value in the band grades the same.
+
+- **Two cutoff lists per input.** The plan's grading lines (`LIMIT_CUTOFFS`): every threshold in this section the cards, calculations, gates, on-treatment targets and medication cascades compare the input against, for any sex and any treatment state. eGFR's is 45 alone (the protein cut and the potassium gate); the systolic list holds both targets, 120 and 130; creatinine and PSA have none, since the plan grades neither directly. The label lines (`LIMIT_LABEL_CUTOFFS`): what the tiles' status words and the blood-test grid colours compare it against: eGFR 70, 60, 45, 30 and 15; HDL's and creatinine's grid bands by sex, both sexes listed; PSA 4.0; triglycerides' grid line 2.26. The orchestrator split them on 2026-11-02, because the 70 line drives only a label. Non-HDL's lines are in neither list: non-HDL is derived, and never from a limit. A non-core lab graded by its printed reference range uses that range; a printed bound of exactly 0 is no cutoff (CRP's "0–5" leaves "< 1" decided), while a negative bound is one (base excess "−2 to 2").
+- **Decides when:** `< b` and every cutoff is at or above b; `<= b` and every cutoff is above b; `> b` and every cutoff is at or below b; `>= b` and every cutoff is below b. The same lists for everyone, conservative on purpose. The plan decides against its grading lines. A tile word or grid colour shows only when the limit also decides against the label lines; otherwise the tile shows the limit with no word and the grid no colour.
+- **Decided:** the plan grades a representative strictly inside the band, halfway between the bound and the input range's far end (section 12), so no rounding moves it across the bound. It must pass the input range, or the limit is undecided. It is never shown, stored or sent: every surface shows the bound with its symbol.
+- **Undecided:** the input has no graded value. No card, tile grade or cascade step comes from it, it is not counted missing, and no older exact value stands in for it. It is shown with its limit and "Printed as a limit, so the plan cannot grade it against its cutoff."
+- **Derived values** never use a limit: no non-HDL from a limit HDL or total cholesterol, no eGFR calculated from a limit creatinine, no ratio, trend or percent change. A lab eGFR printed as a limit is graded by the rule above; with an undecided one the plan has no eGFR and does not calculate one from an older creatinine. A newer creatinine printed as a limit leaves an older lab eGFR standing, marked outdated (the same treatment as a newer creatinine the plan cannot read).
+- An undecided ApoB lets the lipid marker fall to non-HDL or LDL, as when there is no ApoB.
+- **Examples:** eGFR "> 90" decides, tile word included; eGFR "> 60" decides for the plan (protein target 1.2 g/kg, potassium advice open) and its tile shows "> 60" with no word; eGFR "> 30" does not decide (45 lies above it); Lp(a) "< 10" nmol/L, PSA "< 0.01" ng/mL and HDL "> 1.5" mmol/L decide; LDL "< 1.5" mmol/L does not (the 1.4 target lies below).
 
 ### VO2 Max Fitness Bands (iPhone app, display only)
 

@@ -19,7 +19,7 @@ import * as z from './zod';
 import type { HealthInputs } from './types';
 import { reportedToCanonical, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
 import { FIELD_TO_METRIC } from './mappings';
-import { healthInputSchema, PRESSURE_ORDER, pressureInverted, sanitizeInputs } from './validation';
+import { fieldBounds, inRange, PRESSURE_ORDER, pressureInverted, sanitizeInputs } from './validation';
 import { ISO_DATE } from './measurement-history';
 import { latestDayOnEarth } from './merge';
 import { resolveRecordedAt } from './record-edits';
@@ -145,15 +145,11 @@ const numeric = (v: unknown) =>
 const obj = (v: unknown) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {}) as Record<string, unknown>;
 /** A field the schema knows: the result never names the model's own string. */
 const isEditable = (f: unknown): f is EditableField => typeof f === 'string' && (EDITABLE_FIELDS as readonly string[]).includes(f);
-/** A value the input schema accepts for `field`: sanitizeInputs drops anything out of range. */
-const inRange = (field: string, value: unknown) => field in sanitizeInputs({ [field]: value } as Partial<HealthInputs>);
 /** Why an SI value is out of its field's range, by kind of field and direction; null when it is in range. */
 function outOfRange(field: string, si: number): string | null {
   if (inRange(field, si)) return null;
   if (BODY_FIELDS.includes(field)) return REASONS.body;
-  const schema = (healthInputSchema.shape as Record<string, z.ZodTypeAny>)[field];
-  const max = (schema instanceof z.ZodOptional ? schema.unwrap() : schema) as z.ZodNumber;
-  const above = si > (max.maxValue ?? Infinity);
+  const above = si > (fieldBounds(field)?.max ?? Infinity);
   if (BP_FIELDS.includes(field)) return above ? REASONS.bpAbove : REASONS.bpBelow;
   return above ? REASONS.labAbove : REASONS.labBelow;
 }
