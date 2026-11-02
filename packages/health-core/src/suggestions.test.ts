@@ -832,7 +832,7 @@ describe('generateSuggestions', () => {
 
     // US-07 AC13 (Brad, 2026-11-02): a potassium-enriched salt substitute, with its exclusions,
     // except when the eGFR is below 45 (the potassium card's gate).
-    const SUBSTITUTE = ' A potassium-enriched salt substitute can also help cut sodium, but not if you have kidney disease, have been told to limit potassium, or take a potassium-sparing diuretic, a potassium supplement, an ACE inhibitor or an ARB, unless your doctor agrees.';
+    const SUBSTITUTE = ' A potassium-enriched salt substitute can also help cut sodium, but not if you have kidney disease or diabetes, have been told to limit potassium, or take a potassium-sparing diuretic, a potassium supplement, an ACE inhibitor or an ARB, unless your doctor agrees.';
     const SALT = 'Aim for less than 1,500mg of sodium daily. Most excess sodium comes from processed foods. Reducing sodium can help lower blood pressure.';
     it.each([
       ['no eGFR', undefined, SALT + SUBSTITUTE],
@@ -1289,18 +1289,29 @@ describe('generateSuggestions', () => {
 
     // US-07 AC5: the sentence reads true at exactly the target.
     it.each([
-      { name: 'LDL 1.4', values: { ldlC: 1.4 }, text: 'Your LDL-c is 1.4 mmol/L; the treatment target is below 1.4 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Statins are not used in pregnancy: if you are planning a pregnancy, stop before you try to conceive and talk to your doctor.' },
-      { name: 'ApoB 0.5', values: { apoB: 0.5 }, text: 'Your ApoB is 0.50 g/L; the treatment target is below 0.50 g/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Statins are not used in pregnancy: if you are planning a pregnancy, stop before you try to conceive and talk to your doctor.' },
+      { name: 'LDL 1.4', values: { ldlC: 1.4 }, text: 'Your LDL-c is 1.4 mmol/L; the treatment target is below 1.4 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Statins are not used in pregnancy: don\'t start one if you are pregnant or planning a pregnancy.' },
+      { name: 'ApoB 0.5', values: { apoB: 0.5 }, text: 'Your ApoB is 0.50 g/L; the treatment target is below 0.50 g/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Statins are not used in pregnancy: don\'t start one if you are pregnant or planning a pregnancy.' },
     ])('med-statin at exactly the target, $name, shows and reads true (US-07 AC5)', ({ values, text }) => {
       const { inputs, results } = createTestData(values);
       expect(generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin')?.description).toBe(text);
     });
 
-    // US-07 AC14 (Brad, 2026-11-02): "no statins in pregnancy", on the card itself, sourced in its reason.
+    // US-07 AC14: every card for someone already on a statin says to talk to the doctor about stopping first.
+    it.each([
+      ['med-statin-dose', { statin: { drug: 'pravastatin', dose: null }, ezetimibe: 'yes' }],
+      ['med-statin-increase', { statin: { drug: 'pravastatin', dose: 20 }, ezetimibe: 'yes' }],
+      ['med-statin-switch', { statin: { drug: 'atorvastatin', dose: 80 }, ezetimibe: 'yes' }],
+    ] as const)('%s ends with the pregnancy line for people on a statin (US-07 AC14)', (id, meds) => {
+      const { inputs, results } = createTestData({ ldlC: 3.0 });
+      expect(generateSuggestions(inputs, results, 'si', meds as MedicationInputs).find(s => s.id === id)?.description)
+        .toMatch(/ Statins are not used in pregnancy: if you are planning a pregnancy, talk to your doctor about stopping first\.$/);
+    });
+
+  // US-07 AC14 (Brad, 2026-11-02): "no statins in pregnancy", on the card itself, sourced in its reason.
     it('the statin card says statins are not used in pregnancy, and its reason cites the FDA and NICE (US-07 AC14)', () => {
       const { inputs, results } = createTestData({ ldlC: 3.0 });
       const card = generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin');
-      expect(card?.description).toMatch(/ Statins are not used in pregnancy: if you are planning a pregnancy, stop before you try to conceive and talk to your doctor\.$/);
+      expect(card?.description).toMatch(/ Statins are not used in pregnancy: don't start one if you are pregnant or planning a pregnancy\.$/);
       expect(card?.reason).toContain('The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive.');
       expect(card?.references?.map(r => r.url)).toEqual(expect.arrayContaining([
         'https://www.fda.gov/drugs/drug-safety-and-availability/fda-requests-removal-strongest-warning-against-using-cholesterol-lowering-statins-during-pregnancy',
@@ -1311,7 +1322,7 @@ describe('generateSuggestions', () => {
     it('med-statin at exactly the non-HDL target of 1.6 shows (US-07 AC5)', () => {
       const { inputs, results } = createTestData({}, { nonHdlCholesterol: 1.6 });
       expect(generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin')?.description)
-        .toBe('Your non-HDL cholesterol is 1.6 mmol/L; the treatment target is below 1.6 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Statins are not used in pregnancy: if you are planning a pregnancy, stop before you try to conceive and talk to your doctor.');
+        .toBe('Your non-HDL cholesterol is 1.6 mmol/L; the treatment target is below 1.6 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Statins are not used in pregnancy: don\'t start one if you are pregnant or planning a pregnancy.');
     });
 
     it.each([
@@ -3422,7 +3433,7 @@ describe('US-06 AC8: the dose cards', () => {
       category: 'medication',
       priority: 'attention',
       title: 'Add your statin dose',
-      description: "Your LDL-c is 3.0 mmol/L; the treatment target is below 1.4 mmol/L. Your statin dose isn't recorded, and your next step depends on it. A higher dose or a more potent statin may help. Add your current dose to see which.",
+      description: "Your LDL-c is 3.0 mmol/L; the treatment target is below 1.4 mmol/L. Your statin dose isn't recorded, and your next step depends on it. A higher dose or a more potent statin may help. Add your current dose to see which. Statins are not used in pregnancy: if you are planning a pregnancy, talk to your doctor about stopping first.",
       reason: 'Statin strength depends on both the drug and the dose. Doubling a statin dose typically lowers LDL by a further 6–7% (the "rule of 6"), and rosuvastatin 40mg gives the largest reduction (~63%). Which step comes next depends on the dose you take now.',
     });
     expect(statinDose!.guidelines).toEqual(increase!.guidelines);

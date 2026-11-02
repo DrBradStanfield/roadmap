@@ -260,7 +260,7 @@ Source list: `MEDICATION_KEYS` in `validation.ts` without the two escalation key
 
 **What it is.** A daily 180 mg tablet (Nexletol) that lowers LDL cholesterol. It also comes combined with ezetimibe (Nexlizet).
 
-**Why it matters.** In the CLEAR Outcomes trial, people who could not take statins had 13% fewer major heart and blood vessel events on bempedoic acid. It can also be used alongside a statin for extra lowering.
+**Why it matters.** In the CLEAR Outcomes trial, people who could not take statins had 13% fewer major heart and blood vessel events on bempedoic acid. It can be taken with a statin, but this plan suggests it only to people who cannot take a statin.
 
 **How it works, and side effects to discuss with your doctor.**
 - It blocks an enzyme in the liver that sits earlier in the same cholesterol-making pathway statins act on.

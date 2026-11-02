@@ -242,7 +242,8 @@ describe('medicationForm', () => {
     const intolerant = { drug: 'not_tolerated', dose: null };
     const lipidKeys = (meds: MedicationInputs) => keys(medicationForm(meds, elevated)).filter((k) => k !== 'glp1');
     expect(lipidKeys({ statin: intolerant })).toEqual(['statin', 'pcsk9i']);
-    expect(lipidKeys({ statin: intolerant, pcsk9i: 'not_tolerated' })).toEqual(['statin', 'pcsk9i']);
+    // Interim default, pending Brad: a PCSK9 inhibitor not tolerated still moves on to ezetimibe.
+    expect(lipidKeys({ statin: intolerant, pcsk9i: 'not_tolerated' })).toEqual(['statin', 'pcsk9i', 'ezetimibe']);
     expect(lipidKeys({ statin: intolerant, pcsk9i: 'yes' })).toEqual(['statin', 'pcsk9i', 'ezetimibe']);
     expect(lipidKeys({ statin: intolerant, pcsk9i: 'yes', ezetimibe: 'yes' })).toEqual(['statin', 'pcsk9i', 'ezetimibe', 'bempedoic_acid']);
     expect(field(medicationForm({ statin: intolerant, pcsk9i: 'yes', ezetimibe: 'yes' }, elevated), 'bempedoic_acid').hint)

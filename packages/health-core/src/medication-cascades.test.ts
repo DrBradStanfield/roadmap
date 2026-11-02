@@ -101,12 +101,12 @@ describe('US-06 AC5: lipidCascade agrees with the plan on every medication combi
         const cascade = lipidCascade(meds);
         const label = JSON.stringify(meds);
         expect(cascade.suggest, label).toEqual(steps(meds));
-        // Statin not tolerated (US-06 AC13): the PCSK9 inhibitor opens first, then, while it is taken,
-        // ezetimibe and then bempedoic acid.
+        // Statin not tolerated (US-06 AC13): the PCSK9 inhibitor opens first, then, once it is
+        // answered any way but "not yet", ezetimibe and then bempedoic acid.
         const intolerant = statin?.drug === 'not_tolerated';
-        const onPcsk9i = pcsk9i === 'yes';
-        expect(cascade.ezetimibeReached, label).toBe(intolerant ? onPcsk9i : !cascade.suggest.includes('statin'));
-        expect(cascade.bempedoicAcidReached, label).toBe(intolerant && onPcsk9i && !cascade.suggest.includes('ezetimibe'));
+        const pcsk9iAnswered = !!pcsk9i && pcsk9i !== 'not_yet';
+        expect(cascade.ezetimibeReached, label).toBe(intolerant ? pcsk9iAnswered : !cascade.suggest.includes('statin'));
+        expect(cascade.bempedoicAcidReached, label).toBe(intolerant && pcsk9iAnswered && !cascade.suggest.includes('ezetimibe'));
         expect(cascade.pcsk9iReached, label).toBe(intolerant || (cascade.ezetimibeReached && !cascade.suggest.includes('ezetimibe')
           && !cascade.suggest.includes('statin-increase') && !cascade.suggest.includes('statin-switch')
           && !cascade.suggest.includes('statin-dose')));
@@ -285,49 +285,47 @@ describe('US-06 AC12: each UNANSWERED_OF value leaves the medication steps as no
 
 // US-06 AC13 (Brad, 2026-11-02): a statin not tolerated goes to the PCSK9 inhibitor first,
 // "Ezetimibe doesn't have evidence as a sole agent"; ezetimibe and then bempedoic acid follow
-// only while the PCSK9 inhibitor is taken and the marker is still above target. Bempedoic acid
-// "would only be used if statin intolerant": never on a statin.
+// while the marker is still above target. Bempedoic acid "would only be used if statin
+// intolerant": never on a statin. Interim default, pending Brad: a PCSK9 inhibitor declined ('no')
+// or not tolerated still moves on to ezetimibe and bempedoic acid.
 describe('US-06 AC13: statin not tolerated: PCSK9 inhibitor, then ezetimibe, then bempedoic acid', () => {
   const intolerant = { drug: 'not_tolerated', dose: null };
 
-  it('suggests the PCSK9 inhibitor first, whatever ezetimibe says, and opens no other step', () => {
+  it('suggests the PCSK9 inhibitor first, whatever ezetimibe says, while it is unanswered or not yet tried', () => {
     for (const ezetimibe of withUnset([...EZETIMIBE_OPTIONS.map((o) => o.value)]))
-      for (const pcsk9i of withUnset(['not_yet', 'no'] as MedicationInputs['pcsk9i'][])) {
+      for (const pcsk9i of withUnset(['not_yet'] as MedicationInputs['pcsk9i'][])) {
         expect(lipidCascade({ statin: intolerant, ezetimibe, pcsk9i }), `${ezetimibe} ${pcsk9i}`).toEqual({
           ezetimibeReached: false, bempedoicAcidReached: false, escalation: null, pcsk9iReached: true, suggest: ['pcsk9i'],
         });
       }
   });
 
-  it('on the PCSK9 inhibitor: ezetimibe next, then bempedoic acid once ezetimibe is answered', () => {
-    expect(lipidCascade({ statin: intolerant, pcsk9i: 'yes' })).toEqual({
-      ezetimibeReached: true, bempedoicAcidReached: false, escalation: null, pcsk9iReached: true, suggest: ['ezetimibe'],
-    });
+  it.each(['yes', 'no', 'not_tolerated'] as const)('PCSK9 inhibitor %s: ezetimibe next, then bempedoic acid once ezetimibe is answered', (pcsk9i) => {
+    for (const ezetimibe of withUnset(['not_yet', 'no'] as MedicationInputs['ezetimibe'][])) {
+      expect(lipidCascade({ statin: intolerant, pcsk9i, ezetimibe }), String(ezetimibe)).toEqual({
+        ezetimibeReached: true, bempedoicAcidReached: false, escalation: null, pcsk9iReached: true, suggest: ['ezetimibe'],
+      });
+    }
     for (const ezetimibe of ['yes', 'not_tolerated', 'ezetimibe'] as MedicationInputs['ezetimibe'][]) {
       for (const bempedoicAcid of withUnset(['not_yet', 'none'] as MedicationInputs['bempedoicAcid'][])) {
-        expect(lipidCascade({ statin: intolerant, ezetimibe, pcsk9i: 'yes', bempedoicAcid }), `${ezetimibe} ${bempedoicAcid}`).toEqual({
+        expect(lipidCascade({ statin: intolerant, ezetimibe, pcsk9i, bempedoicAcid }), `${ezetimibe} ${bempedoicAcid}`).toEqual({
           ezetimibeReached: true, bempedoicAcidReached: true, escalation: null, pcsk9iReached: true, suggest: ['bempedoic-acid'],
         });
       }
       for (const bempedoicAcid of ['bempedoic_acid', 'bempedoic_acid_ezetimibe', 'not_tolerated'] as MedicationInputs['bempedoicAcid'][]) {
-        expect(lipidCascade({ statin: intolerant, ezetimibe, pcsk9i: 'yes', bempedoicAcid }).suggest, String(bempedoicAcid)).toEqual([]);
+        expect(lipidCascade({ statin: intolerant, ezetimibe, pcsk9i, bempedoicAcid }).suggest, String(bempedoicAcid)).toEqual([]);
       }
-    }
-  });
-
-  it('a PCSK9 inhibitor not tolerated shows no further card and opens neither ezetimibe nor bempedoic acid', () => {
-    for (const ezetimibe of withUnset([...EZETIMIBE_OPTIONS.map((o) => o.value)])) {
-      expect(lipidCascade({ statin: intolerant, ezetimibe, pcsk9i: 'not_tolerated' }), String(ezetimibe)).toMatchObject({
-        ezetimibeReached: false, bempedoicAcidReached: false, suggest: [],
-      });
     }
   });
 
   it('never suggests or opens bempedoic acid on a statin, even with ezetimibe and a PCSK9 inhibitor (AC9 stays true)', () => {
     for (const [drug, { doses }] of Object.entries(STATIN_DRUGS)) {
       const top = doses[doses.length - 1];
-      const cascade = lipidCascade({ statin: { drug, dose: top }, ezetimibe: 'yes', statinEscalation: 'not_tolerated', pcsk9i: 'yes' });
-      expect(cascade, drug).toMatchObject({ bempedoicAcidReached: false, suggest: [] });
+      for (const pcsk9i of ['yes', 'no', 'not_tolerated'] as MedicationInputs['pcsk9i'][]) {
+        const cascade = lipidCascade({ statin: { drug, dose: top }, ezetimibe: 'yes', statinEscalation: 'not_tolerated', pcsk9i });
+        expect(cascade.bempedoicAcidReached, `${drug} ${pcsk9i}`).toBe(false);
+        expect(cascade.suggest, `${drug} ${pcsk9i}`).not.toContain('bempedoic-acid');
+      }
     }
   });
 
@@ -337,6 +335,8 @@ describe('US-06 AC13: statin not tolerated: PCSK9 inhibitor, then ezetimibe, the
     const cards = (inputs: HealthInputs, m: MedicationInputs) => planSteps(inputs, 'med-')(m);
     expect(cards(above, { statin: intolerant, ezetimibe: 'yes' })).toEqual(['pcsk9i']);
     expect(cards(above, { statin: intolerant, pcsk9i: 'yes' })).toEqual(['ezetimibe']);
+    expect(cards(above, { statin: intolerant, pcsk9i: 'not_tolerated' })).toEqual(['ezetimibe']);
+    expect(cards(above, { statin: intolerant, pcsk9i: 'no', ezetimibe: 'yes' })).toEqual(['bempedoic-acid']);
     expect(cards(above, { statin: intolerant, pcsk9i: 'yes', ezetimibe: 'yes' })).toEqual(['bempedoic-acid']);
     expect(cards(atTarget, { statin: intolerant, pcsk9i: 'yes', ezetimibe: 'yes' })).toEqual([]);
   });

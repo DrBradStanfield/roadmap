@@ -116,6 +116,29 @@ describe('US-07 AC8: potassium advice needs an eGFR no newer creatinine has outd
       expect(potassium(plan(inputs))).toEqual({ card: true, bp: true });
     }
   });
+  // US-07 AC13 (Codex review, 2026-11-02): the low-salt card's salt substitute line takes the
+  // same caution. An old eGFR of 70 with a newer creatinine of 300 µmol/L and no sex: the plan
+  // keeps the old eGFR, marks it outdated, and leaves the line out.
+  const substitute = (r: ReturnType<typeof plan>) =>
+    /salt substitute/.test(r.suggestions.find((s) => s.id === 'low-salt')?.description ?? '');
+
+  it('an outdated lab eGFR leaves the salt substitute line out of the low-salt card (US-07 AC13)', () => {
+    const inputs = withLabEgfr<Partial<HealthInputs>>({ heightCm: 170, birthYear: 1960, creatinine: 300, ...bp }, '2026-08-01', lab, '2026-09-01');
+    expect(inputs.labEgfrOutdated).toBe(true);
+    const r = plan(inputs);
+    expect(r.eGFR).toBe(70);
+    expect(r.suggestions.some((s) => s.id === 'low-salt')).toBe(true);
+    expect(substitute(r)).toBe(false);
+  });
+
+  it('no eGFR at all, nothing outdated: the line shows (US-07 AC13)', () => {
+    expect(substitute(plan({ heightCm: 170, birthYear: 1960, ...bp }))).toBe(true);
+  });
+
+  it('a current lab eGFR of 70: the line shows (US-07 AC13)', () => {
+    const inputs = withLabEgfr<Partial<HealthInputs>>({ heightCm: 170, birthYear: 1960, creatinine: 80, ...bp }, '2026-05-01', lab, '2026-09-01');
+    expect(substitute(plan(inputs))).toBe(true);
+  });
 });
 
 describe('US-07 AC7 + AC8: withLabEgfr without sex', () => {
