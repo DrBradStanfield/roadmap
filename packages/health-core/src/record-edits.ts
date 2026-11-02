@@ -526,7 +526,6 @@ export function correctValue(file: RoadmapFile, request: CorrectValueRequest): E
     if (invalid) return invalid;
     if (lab) {
       // A correction is an exact value (US-12 AC20): the old row's limit stays behind.
-      // A correction is an exact value (US-12 AC20): the old row's limit stays behind.
       const { comparator: _limit, ...exact } = lab;
       const row: FileLabValue = {
         ...exact, id: newId(), value: newValue, unit: CORE_BLOOD_UNITS[lab.metricName], createdAt: now,
