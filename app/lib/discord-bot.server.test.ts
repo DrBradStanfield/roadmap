@@ -38,7 +38,7 @@ describe('US-15 AC27: stored text cuts keep surrogate pairs whole (Sentry 6Y)', 
       authorId: 'u1',
       userMessage: 'hi ' + 'x'.repeat(76) + '😀' + ' and more',
       userDiscordMessageId: 'm1',
-      assistantContent: 'Sorry',
+      assistantContent: 'Sorry', silent: false,
       assistantDiscordMessageIds: ['m2'],
       usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 },
       isFallback: true,
@@ -70,7 +70,7 @@ describe('US-15 AC27: stored text cuts keep surrogate pairs whole (Sentry 6Y)', 
 describe('US-15 AC37: router_output_tokens on the Discord row', () => {
   const turn = {
     conversationId: null, authorId: 'u1', userMessage: 'hello', userDiscordMessageId: 'm1',
-    assistantContent: 'Hi', assistantDiscordMessageIds: ['m2'],
+    assistantContent: 'Hi', silent: false, assistantDiscordMessageIds: ['m2'],
     usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 },
     isFallback: false, contextRecent: [],
   };

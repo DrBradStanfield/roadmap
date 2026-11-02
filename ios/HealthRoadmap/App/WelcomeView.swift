@@ -14,12 +14,70 @@ struct WelcomeView: View {
     @State private var choosingCloud = false
     /// Signed in, but the cloud record did not open: say so, and stay (US-54 AC2).
     @State private var notOpened = false
-    @Environment(\.dynamicTypeSize) private var textSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// The size the story's scenes need (WelcomeStory.needs), and the width they get. Unknown
+    /// until measured, so the first frame shows the words, never a cut story.
+    @State private var storyNeeds = CGSize(width: CGFloat.infinity, height: .infinity)
+    @State private var width = CGFloat.zero
+
+    /// The story shows only where every scene fits its card whole; elsewhere (larger text, a
+    /// narrow phone) its words scroll above the buttons, which stay on screen (US-54 AC8b).
+    private var showsStory: Bool {
+        storyNeeds.width <= width && storyNeeds.height <= WelcomeStory.height
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer(minLength: 12)
+            if showsStory {
+                Spacer(minLength: 12)
+                heading
+                Spacer(minLength: 16)
+                // What the app does and where the data lives, told as a story (Brad 2026-10-23).
+                WelcomeStory()
+                    .opacity(shown ? 1 : 0)
+                    .offset(y: shown || reduceMotion ? 0 : 20)
+                Spacer(minLength: 16)
+                disclaimer
+            } else {
+                ScrollView {
+                    VStack(spacing: 16) {
+                        heading
+                        Text(WelcomeStory.summary).font(.body).multilineTextAlignment(.center)
+                            .opacity(shown ? 1 : 0)
+                        disclaimer
+                    }
+                    .padding(.top, 12)
+                }
+                .scrollBounceBehavior(.basedOnSize)
+            }
+            Button("Get started", action: getStarted)
+            .buttonStyle(.accent)
+            .padding(.top, 16)
+            .accessibilityIdentifier("welcome.start")
+            if sync != nil {
+                Button("I already use Health Roadmap") { choosingCloud = true }
+                    .padding(.top, 10)
+                    .accessibilityIdentifier("welcome.existing")
+            }
+        }
+        .background(alignment: .topLeading) {
+            WelcomeStory.needs.hidden().onGeometryChange(for: CGSize.self) { $0.size } action: { storyNeeds = $0 }
+        }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        .sheet(isPresented: $choosingCloud) {
+            if let sync { cloudChooser(sync) }
+        }
+        .padding(.horizontal, 28)
+        .padding(.bottom, 12)
+        .onAppear {
+            withAnimation(.spring(duration: 0.8, bounce: 0.35)) { shown = true }
+        }
+        .sensoryFeedback(.impact(weight: .light), trigger: shown && !reduceMotion)
+    }
+
+    private var heading: some View {
+        VStack(spacing: 0) {
             hero
                 .scaleEffect(shown || reduceMotion ? 1 : 0.6)
                 .opacity(shown ? 1 : 0)
@@ -31,42 +89,14 @@ struct WelcomeView: View {
                 .font(.headline)
                 .foregroundStyle(.secondary)
                 .padding(.top, 4)
-            Spacer(minLength: 16)
-            // What the app does and where the data lives, told as a story (Brad 2026-10-23).
-            Group {
-                if textSize.isAccessibilitySize {
-                    ScrollView { Text(WelcomeStory.summary).font(.body).multilineTextAlignment(.center) }
-                } else {
-                    WelcomeStory()
-                }
-            }
-            .opacity(shown ? 1 : 0)
-            .offset(y: shown || reduceMotion ? 0 : 20)
+        }
+    }
 
-            Spacer(minLength: 16)
-            Text("For education only, not medical advice. Talk to your doctor before you change anything about your health or medicines.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-            Button("Get started", action: getStarted)
-            .buttonStyle(.accent)
-            .padding(.top, 16)
-            .accessibilityIdentifier("welcome.start")
-            if sync != nil {
-                Button("I already use Health Roadmap") { choosingCloud = true }
-                    .padding(.top, 10)
-                    .accessibilityIdentifier("welcome.existing")
-            }
-        }
-        .sheet(isPresented: $choosingCloud) {
-            if let sync { cloudChooser(sync) }
-        }
-        .padding(.horizontal, 28)
-        .padding(.bottom, 12)
-        .onAppear {
-            withAnimation(.spring(duration: 0.8, bounce: 0.35)) { shown = true }
-        }
-        .sensoryFeedback(.impact(weight: .light), trigger: shown && !reduceMotion)
+    private var disclaimer: some View {
+        Text("For education only, not medical advice. Talk to your doctor before you change anything about your health or medicines.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
     }
 
     /// The app icon's mark: a road that ends at a heart.

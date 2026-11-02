@@ -6,24 +6,16 @@
  * which acts as a dumb scheduler: it stores only each item's label + due date
  * and emails when the date arrives — even if the user never reopens the app.
  *
- * Contrast with `reminders.ts` (v1): that answers "what is overdue right now"
- * for the server-side cron that re-computes daily from Supabase. The v2 server
- * cannot re-compute anything (it has no health data), so this function must
- * emit future dates. Eligibility rules and intervals are kept 1:1 with v1:
- * an item is overdue in v1 exactly when its earliest candidate due date here
- * is in the past.
+ * The server cannot re-compute anything (it has no health data), so this
+ * function must emit future dates: an item is overdue exactly when its
+ * earliest candidate due date is in the past.
  *
  * Privacy invariant: `label` + `dueAt` are EVERYTHING the server learns about
  * the user's health. Labels name the procedure ("Colonoscopy") — personalised
  * and specific is the point — but never carry results, values, or reasoning.
- *
- * TODO (convergence, once v2 is proven in prod): re-express v1's
- * computeDueReminders as computeNextDueDates(...).filter(dueAt <= today) so
- * the eligibility rules live ONCE — the v1-parity test is the gate for that
- * refactor. Until then any guideline change must be applied to BOTH files.
  */
 import type { ScreeningInputs } from './types';
-import { getPostFollowupDueDate, getScreeningNextDueDate } from './types';
+import { getPostFollowupDueDate, getScreeningNextDueDate, isSex } from './types';
 import type {
   MeasurementDates,
   MedicationRecord,
@@ -248,7 +240,7 @@ export function computeNextDueDates(
  * per-category reminder preferences.
  *
  * Never returns an empty schedule (US-23 AC6, Brad 2026-08-14): when nothing
- * is due within the next 12 months — including the missing-demographics case,
+ * is due within the next 12 months — including the no-birth-year case,
  * where no eligibility rule can run at all — the schedule is floored with one
  * "Annual health check-in" item 12 months out. A colonoscopy-every-10-years
  * user must not get a decade of silence; every enrolled person gets at least
@@ -280,8 +272,10 @@ export function computeReminderSchedule(file: RoadmapFile, now: Date): ReminderS
 }
 
 function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleItem[] {
-  const { sex, birthYear, birthMonth } = file.profile;
-  if (!sex || !birthYear) return []; // no demographics → no eligibility rules can run
+  const { birthYear, birthMonth } = file.profile;
+  if (!birthYear) return []; // no age → no eligibility rules can run
+  // No sex (or one that is not male or female) drops only the sexed screenings (US-07 AC8).
+  const sex = isSex(file.profile.sex) ? file.profile.sex : undefined;
   let age = now.getUTCFullYear() - birthYear;
   if (birthMonth && now.getUTCMonth() + 1 < birthMonth) age -= 1;
 

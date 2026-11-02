@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { computeReminderSchedule, computeNextDueDates, SCHEDULE_LABELS } from './reminder-schedule';
-import { computeDueReminders, REMINDER_CATEGORIES, type ReminderProfile } from './reminders';
+import { REMINDER_CATEGORIES, type ReminderProfile } from './reminders';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
 import type { ScreeningInputs } from './types';
 import { computePlan } from './plan';
@@ -107,8 +107,8 @@ describe('computeNextDueDates — blood tests & medication review', () => {
   });
 });
 
-describe('v1 parity — overdue in v1 ⟺ dueAt in the past here', () => {
-  it('matches computeDueReminders on a mixed overdue/upcoming case', () => {
+describe('overdue ⟺ dueAt in the past', () => {
+  it('splits a mixed overdue/upcoming case as the retired v1 engine did', () => {
     const screenings = {
       colorectalMethod: 'fit_annual',
       colorectalLastDate: '2024-01', // overdue (due 2025-01)
@@ -118,10 +118,9 @@ describe('v1 parity — overdue in v1 ⟺ dueAt in the past here', () => {
     } as unknown as ScreeningInputs;
     const measurementDates = { hba1c: '2024-06-01' }; // overdue
     const schedule = computeNextDueDates(MALE_60, screenings, measurementDates, []);
-    const v1 = computeDueReminders(MALE_60, screenings, measurementDates, [], NOW);
     const overdueCategories = schedule.filter((i) => new Date(i.dueAt) <= NOW).map((i) => i.category).sort();
-    expect(overdueCategories).toEqual(v1.reminders.map((r) => r.category).sort());
-    // and the schedule ALSO carries the future item v1 cannot see
+    expect(overdueCategories).toEqual(['blood_test_hba1c', 'screening_colorectal']);
+    // and the schedule also carries the future item
     expect(schedule.find((i) => i.category === 'screening_prostate')!.dueAt).toBe('2027-01-01');
   });
 });

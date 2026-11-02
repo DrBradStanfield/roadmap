@@ -6,8 +6,9 @@
 import {
   LPA_UNITS, UNIT_DEFS, canonicalToReported, formatDisplayValue, fromCanonicalValue, getDisplayLabel, getDisplayRange,
   lookupUnit, reportedToCanonical, toCanonicalValue, unitDecimalPlaces,
-  type LpaUnit, type MetricType, type UnitSystem,
+  type LpaUnit, type MetricType, type UnitSystem, type ValidationRange,
 } from './units';
+import { limitNumber, withComparator, type Comparator } from './lab-limits';
 
 /** The unit a core cell is typed and shown in: one of its metric's two
  *  systems, or, for Lp(a), one of the three units its field takes (US-05
@@ -49,6 +50,17 @@ export function cellText(metric: MetricType, valueSI: number, unit: CellUnit): s
   return cellFromSI(metric, valueSI, unit).toFixed(cellDecimalPlaces(metric, unit));
 }
 
+/** A core value's number in a cell's unit: a limit's bound rounded away from
+ *  its band, so the shown limit stays true in any unit (US-12 AC20); else `cellText`. */
+export function cellNumber(metric: MetricType, valueSI: number, unit: CellUnit, comparator?: Comparator | null): string {
+  return comparator ? limitNumber(cellFromSI(metric, valueSI, unit), cellDecimalPlaces(metric, unit), comparator) : cellText(metric, valueSI, unit);
+}
+
+/** A stored value as a cell or row shows it: a limit with its symbol, "> 1.55"; else `cellText` (US-12 AC20). */
+export function limitCellText(metric: MetricType, valueSI: number, unit: CellUnit, comparator?: Comparator | null): string {
+  return withComparator(cellNumber(metric, valueSI, unit, comparator), comparator);
+}
+
 /** The unit's label: the system's for the metric, or the Lp(a) unit itself. */
 export function cellLabel(metric: MetricType, unit: CellUnit): string {
   return isSystem(unit) ? getDisplayLabel(metric, unit) : unit;
@@ -56,8 +68,8 @@ export function cellLabel(metric: MetricType, unit: CellUnit): string {
 
 /** The range a value typed in `unit` must fall in: the system's, or the
  *  canonical range in that Lp(a) unit (0–3000 mg/L). */
-export function cellRange(metric: MetricType, unit: CellUnit): { min: number; max: number } {
+export function cellRange(metric: MetricType, unit: CellUnit): ValidationRange {
   if (isSystem(unit)) return getDisplayRange(metric, unit);
-  const { min, max } = UNIT_DEFS[metric].validationRange.si; // Lp(a)'s canonical unit is its SI one
-  return { min: cellFromSI(metric, min, unit), max: cellFromSI(metric, max, unit) };
+  const range = UNIT_DEFS[metric].validationRange.si; // Lp(a)'s canonical unit is its SI one
+  return { ...range, min: cellFromSI(metric, range.min, unit), max: cellFromSI(metric, range.max, unit) };
 }

@@ -30,6 +30,9 @@ import { bytesToBase64, base64ToBytes } from '../lib/base64';
 
 const CONFIG_KEY = 'health_roadmap_github';
 const API = 'https://api.github.com';
+/** A document read or upload gets Drive's upload cap: a large original on a
+ *  slow link must not be cut at `fetchOrFail`'s 30 s (US-09 AC13e). */
+const DOCUMENT_TIMEOUT_MS = 300_000;
 
 export interface GitHubConfig {
   /** Fine-grained PAT, scoped to one repo, Contents read+write. Stored locally only. */
@@ -125,10 +128,11 @@ export class GitHubAdapter implements StorageAdapter {
       content: bytesToBase64(new TextEncoder().encode(JSON.stringify(body))),
     };
     if (expectedVersion) payload.sha = expectedVersion; // omitted on first create
-    const res = await fetch(this.contentsUrl(fileName), {
+    const res = await fetchOrFail('GitHub', this.contentsUrl(fileName), {
       method: 'PUT',
       headers: this.headers(),
       body: JSON.stringify(payload),
+      mayHaveWritten: true,
     });
     // 409 (sha out of date) / 422 (sha mismatch, or "already exists" on create) → conflict.
     if (res.status === 409 || res.status === 422) {
@@ -143,9 +147,9 @@ export class GitHubAdapter implements StorageAdapter {
 
   async readDocument(ref: string): Promise<Blob> {
     const url = this.contentsUrl(ref);
-    let res = await fetch(url, { headers: this.headers() });
+    let res = await fetchOrFail('GitHub', url, { headers: this.headers(), timeoutMs: DOCUMENT_TIMEOUT_MS });
     const legacy = res.status === 404 ? legacyDocumentUrl(url, this.contentsUrl(''), ref) : null;
-    if (legacy) res = await fetch(legacy, { headers: this.headers() });
+    if (legacy) res = await fetchOrFail('GitHub', legacy, { headers: this.headers(), timeoutMs: DOCUMENT_TIMEOUT_MS });
     if (!res.ok) throw new StorageError(`GitHub document read failed (${res.status}).`);
     const json = (await res.json()) as { content?: string };
     if (!json.content) throw new StorageError(`GitHub document empty or too large (>1 MB).`);
@@ -156,16 +160,17 @@ export class GitHubAdapter implements StorageAdapter {
     await this.ensurePrivate();
     const content = bytesToBase64(new Uint8Array(await bytes.arrayBuffer()));
     const put = (sha?: string): Promise<Response> =>
-      fetch(this.contentsUrl(ref), {
+      fetchOrFail('GitHub', this.contentsUrl(ref), {
         method: 'PUT',
         headers: this.headers(),
         body: JSON.stringify(sha ? { message: `Update ${ref}`, content, sha } : { message: `Update ${ref}`, content }),
+        timeoutMs: DOCUMENT_TIMEOUT_MS,
       });
     // Documents use write-once ids, so the create usually succeeds without a
     // sha; only on an overwrite conflict do we fetch the sha and retry once.
     let res = await put();
     if (res.status === 409 || res.status === 422) {
-      const head = await fetch(this.contentsUrl(ref), { headers: this.headers() });
+      const head = await fetchOrFail('GitHub', this.contentsUrl(ref), { headers: this.headers() });
       const sha = head.ok ? ((await head.json()) as { sha?: string }).sha : undefined;
       res = await put(sha);
     }
@@ -182,7 +187,7 @@ export class GitHubAdapter implements StorageAdapter {
    */
   private async assertPrivate(): Promise<void> {
     if (!this.config) throw new StorageError('GitHub is not connected.');
-    const res = await fetch(`${API}/repos/${this.config.owner}/${this.config.repo}`, {
+    const res = await fetchOrFail('GitHub', `${API}/repos/${this.config.owner}/${this.config.repo}`, {
       headers: this.headers(),
     });
     if (res.status === 401 || res.status === 403) {

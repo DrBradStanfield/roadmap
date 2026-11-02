@@ -26,6 +26,7 @@
  *    typed lane has held since US-23.
  */
 import { randomBytes } from 'node:crypto';
+import * as Sentry from '@sentry/react-router';
 import * as z from '../../packages/health-core/src/zod';
 import { REMINDER_CATEGORIES } from '../../packages/health-core/src/reminders';
 import { SCHEDULE_LABELS } from '../../packages/health-core/src/reminder-schedule';
@@ -166,14 +167,23 @@ export async function verifyGoogleIdToken(idToken: string): Promise<string | nul
   try {
     const res = await fetch(
       `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`,
+      { signal: AbortSignal.timeout(10_000) }, // a stalled Google reads as unverified (US-09 AC31)
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      // A 4xx is the token's own problem. A 5xx or 429 is Google's, and it
+      // blocks every Google opt-in, so it is reported (US-17 AC7a).
+      if (res.status >= 500 || res.status === 429) {
+        Sentry.captureMessage('Google tokeninfo failed', { level: 'warning', tags: { feature: 'reminders_v2' }, extra: { status: res.status } });
+      }
+      return null;
+    }
     const claims = (await res.json()) as Record<string, string>;
     const ourClientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
     if (!ourClientId || claims.aud !== ourClientId) return null;
     if (claims.email_verified !== 'true' || !claims.email) return null;
     return claims.email.toLowerCase();
-  } catch {
+  } catch (error) {
+    Sentry.captureException(error, { tags: { feature: 'reminders_v2' } }); // no answer from Google (US-17 AC7a)
     return null;
   }
 }
@@ -443,22 +453,31 @@ export async function deleteByEmail(email: string): Promise<boolean> {
   return (data?.length ?? 0) > 0;
 }
 
-/** Page through all reminder opt-ins (cron). */
+/**
+ * Page through all reminder opt-ins (cron) by id: each page starts after the
+ * last id already read. Rows are deleted while the cron walks (a bounce from
+ * its own sends, a complaint, an erase), and with an offset every row deleted
+ * from a page already read made the next page skip one that was still there.
+ */
 export async function getOptinsBatch(
   limit: number,
-  offset: number,
+  afterId: string | null,
 ): Promise<ReminderV2Optin[]> {
-  const { data, error } = await requireAdmin()
+  const query = requireAdmin()
     .from('reminder_optin_v2')
-    .select('id, email, provider, schedule, last_sent, token, created_at')
-    .order('created_at', { ascending: true })
-    .range(offset, offset + limit - 1);
+    .select('id, email, provider, schedule, last_sent, token, created_at');
+  const { data, error } = await (afterId === null ? query : query.gt('id', afterId))
+    .order('id', { ascending: true })
+    .limit(limit);
   if (error) throw new Error(`reminder_optin_v2 select failed: ${error.message}`);
   return (data ?? []) as ReminderV2Optin[];
 }
 
 /** How long a switched-off row keeps its address and token before deletion. */
 export const TOMBSTONE_TTL_DAYS = 90;
+
+/** Ids per tombstone DELETE: 100 uuids keep its URL near 4 KB. */
+const TOMBSTONE_DELETE_BATCH = 100;
 
 /**
  * Delete tombstones — rows a toggle-off, an erase or an email-link unsubscribe
@@ -467,9 +486,13 @@ export const TOMBSTONE_TTL_DAYS = 90;
  * delete let optin → cancel → optin mint a fresh plan-ready email each cycle;
  * keeping it FOREVER, address and token included, is what this bounds.
  *
- * The emptiness test runs here rather than in the filter: `schedule` is jsonb
- * and PostgREST has no length operator, so the query narrows by age and the
- * rows are checked in JS. A row with no `updated_at` is never taken.
+ * The query asks for emptied rows only (`schedule` equals the jsonb `[]`), not
+ * just old ones: a live row whose user has not been back in 90 days is old
+ * too, and PostgREST answers at most 1000 rows, so 1000 of those used to fill
+ * the page ahead of every tombstone. A larger backlog clears 1000 a day. The
+ * JS check stays as a second guard. Deletes go {@link TOMBSTONE_DELETE_BATCH}
+ * ids per request, since the ids ride in the URL. A row with no `updated_at`
+ * is never taken.
  *
  * Residual, stated: past the window a replayed optin on that address is `isNew`
  * again and earns one more plan-ready email — at most one per address per 90
@@ -481,7 +504,8 @@ export async function purgeTombstones(nowMs: number): Promise<number> {
   const { data, error } = await admin
     .from('reminder_optin_v2')
     .select('id, schedule')
-    .lt('updated_at', cutoff);
+    .lt('updated_at', cutoff)
+    .eq('schedule', '[]');
   if (error) throw new Error(`reminder_optin_v2 tombstone select failed: ${error.message}`);
 
   const ids = (data ?? [])
@@ -489,11 +513,13 @@ export async function purgeTombstones(nowMs: number): Promise<number> {
     .map((row) => row.id as string);
   if (ids.length === 0) return 0;
 
-  const { error: delError } = await admin
-    .from('reminder_optin_v2')
-    .delete()
-    .in('id', ids);
-  if (delError) throw new Error(`reminder_optin_v2 tombstone delete failed: ${delError.message}`);
+  for (let i = 0; i < ids.length; i += TOMBSTONE_DELETE_BATCH) {
+    const { error: delError } = await admin
+      .from('reminder_optin_v2')
+      .delete()
+      .in('id', ids.slice(i, i + TOMBSTONE_DELETE_BATCH));
+    if (delError) throw new Error(`reminder_optin_v2 tombstone delete failed: ${delError.message}`);
+  }
   return ids.length;
 }
 

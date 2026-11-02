@@ -8,17 +8,28 @@
 # the exfiltration prize). Therefore: true pre-receive REJECTION is not
 # available here. This is the strongest enforceable response instead:
 #
-#   Non-Brad push touching .github/workflows/** →
-#     1. immediately DISABLE every workflow file the push added/modified
+#   Any push to main touching .github/workflows/** → a 🚨 issue assigned to
+#   Brad with an @mention (bot issues alone email nobody), whoever pushed it:
+#   agent and loop sessions push as DrBradStanfield too, so the actor proves
+#   nothing (GHSA-rmrp-qfvm-jf2p, 2026-11-02). Brad confirms each one.
+#   A push by any OTHER actor is also neutralized at once:
+#     1. DISABLE every workflow file the push added/modified
 #     2. CANCEL any runs those workflows started from the same push
-#     3. open a 🚨 issue (native email to Brad) with the response playbook
-#   Daily scheduled audit backstops the tripwire-deleted-in-same-push case;
-#   the product-health loop's weekly git-log check is the out-of-band layer.
+#   Daily scheduled audit: any commit on main's first-parent line in the last
+#   26 h that changed workflow files with no successful push check at that sha
+#   (a merge made with GITHUB_TOKEN, which starts no workflow; an intermediate
+#   commit of a multi-commit push; a check that failed before alerting).
+#   Residual, stated (US-46 AC13): a push that edits or deletes THIS file
+#   silences both checks, since a push runs the pushed copy and the schedule
+#   runs main's. Nothing outside this repo's main watches for that; the
+#   product-health loop's weekly git-log review runs with the same identity.
 #
 # Residual (documented, accepted): a same-push-triggered malicious run may
-# execute for a few seconds before cancellation — which is why the deploy
-# credentials live behind the 'production' environment wait timer and only the
-# spend-capped ANTHROPIC_API_KEY exists at repo level.
+# execute for a few seconds before cancellation. Only the spend-capped
+# ANTHROPIC_API_KEY exists at repo level, but the 'production' environment has
+# had no wait timer or required reviewer since 2026-09-02 (deploy.yml), so a
+# run that names that environment can read the deploy secrets (Fly, Shopify,
+# Sentry) in those seconds. That is why the playbook below revokes them.
 #
 # Editing this file is Brad-only (constitution Guardrails).
 
@@ -41,33 +52,59 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Neutralize and alert on non-Brad workflow-file changes
+      # The audit reads main's first-parent history; the push check needs no checkout.
+      - uses: actions/checkout@v5
+        if: github.event_name == 'schedule'
+        with:
+          fetch-depth: 500
+      - name: Alert Brad on every workflow-file change; neutralize non-Brad ones
         env:
           GH_TOKEN: ${{ github.token }}
           ACTOR: ${{ github.actor }}
           EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
         run: |
           set -euo pipefail
+          # Only this workflow's own issue (author github-actions, exact title)
+          # takes the alert, never a look-alike anyone can open first.
+          TITLE="🚨 SECURITY: workflow files changed on main"
           alert() {
-            existing=$(gh issue list -R "${GITHUB_REPOSITORY}" --state open \
-              --search "SECURITY: workflow files in:title" --json number --jq '.[0].number // empty')
+            body="@DrBradStanfield $1"
+            existing=$(gh issue list -R "${GITHUB_REPOSITORY}" --state open --author app/github-actions \
+              --search "SECURITY workflow files in:title" --json number,title \
+              | jq -r --arg t "${TITLE}" '[.[] | select(.title == $t)][0].number // empty')
             if [ -n "${existing}" ]; then
-              gh issue comment "${existing}" -R "${GITHUB_REPOSITORY}" --body "$1"
+              gh issue comment "${existing}" -R "${GITHUB_REPOSITORY}" --body "${body}"
             else
-              gh issue create -R "${GITHUB_REPOSITORY}" \
-                --title "🚨 SECURITY: workflow files changed by a non-Brad actor" \
-                --body "$1"
+              gh issue create -R "${GITHUB_REPOSITORY}" --title "${TITLE}" \
+                --assignee DrBradStanfield --body "${body}"
             fi
           }
 
           if [ "${EVENT}" = "push" ]; then
+            # What changed: the workflow folder's files and blob shas before and
+            # after the push, compared by content. No merge base (a force-push
+            # rollback still shows), no file cap. If the old side cannot be read
+            # (a new branch, a rewritten history), every file counts as changed.
+            listing() { gh api "repos/${GITHUB_REPOSITORY}/contents/.github/workflows?ref=$1" --jq '[.[] | {path, sha}]'; }
+            after=$(listing "${GITHUB_SHA}" || echo '[]')
+            before=$(listing "${BEFORE}" 2>/dev/null || echo '[]')
+            changes=$(jq -n --argjson a "${after}" --argjson b "${before}" '
+              ($b | map({(.path): .sha}) | add // {}) as $old | ($a | map({(.path): .sha}) | add // {}) as $new
+              | [($a[] | select($old[.path] != .sha) | {filename: .path, status: "changed"}),
+                 ($b[] | select($new[.path] == null) | {filename: .path, status: "removed"})]')
             if [ "${ACTOR}" = "DrBradStanfield" ]; then
-              echo "Workflow change pushed by DrBradStanfield — OK."
+              # Agents and loops push as this account too: tell Brad, never disable.
+              files=$(echo "${changes}" | jq -r '.[].filename')
+              alert "workflow files changed on main, pushed as **${ACTOR}** (commit ${GITHUB_SHA}). Agent and loop sessions push as this account too: if you did not make or merge this, treat it as tampering.
+          Files: ${files}
+          Commit: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}
+          Playbook if it was not you: (1) disable the changed workflows in the Actions tab; (2) git revert on main;
+          (3) revoke the 'production' environment secrets, rotate ANTHROPIC_API_KEY."
               exit 0
             fi
             # 1) Disable every workflow file this push added or modified.
-            touched=$(jq -r '[.commits[].added[], .commits[].modified[]] | unique | .[]
-                             | select(startswith(".github/workflows/"))' "${GITHUB_EVENT_PATH}")
+            touched=$(echo "${changes}" | jq -r '.[] | select(.status != "removed") | .filename')
             disabled=""
             for f in ${touched}; do
               wf=$(basename "${f}")
@@ -94,20 +131,21 @@ jobs:
             exit 0
           fi
 
-          # Scheduled audit: last 8 days of commits touching workflow files,
-          # attributed to any account other than Brad. (Commits from Brad's
-          # Mac with an unmapped local email have a null author login — not
-          # flagged; the push path above and the product-health loop's weekly
-          # log review cover that gap.)
-          since=$(date -u -d '8 days ago' +%Y-%m-%dT%H:%M:%SZ)
-          suspicious=$(gh api "repos/${GITHUB_REPOSITORY}/commits?path=.github/workflows&since=${since}&per_page=100" \
-            --jq '[.[] | select(.author.login != null and .author.login != "DrBradStanfield")
-                   | {sha: .sha[0:8], who: .author.login, msg: (.commit.message | split("\n")[0])}]')
-          count=$(echo "${suspicious}" | jq 'length')
+          # Scheduled audit: commits on main's FIRST-PARENT line (what was pushed
+          # or merged onto main, not a PR's own commits) in the last 26 h that
+          # changed workflow files with no SUCCESSFUL push check at that sha.
+          # Every author counts: agents push as DrBradStanfield too.
+          checked=$(gh run list -R "${GITHUB_REPOSITORY}" --workflow workflow-integrity.yml --event push \
+            --limit 100 --json headSha,conclusion --jq '[.[] | select(.conclusion == "success") | .headSha]')
+          missed=$(git log --first-parent --since='26 hours ago' --format='%H%x09%an%x09%s' HEAD -- .github/workflows \
+            | jq -R -s --argjson checked "${checked}" '[split("\n")[] | select(length > 0) | split("\t")
+                | select(.[0] as $s | $checked | index($s) | not)
+                | {sha: .[0][0:8], who: .[1], msg: .[2]}]')
+          count=$(echo "${missed}" | jq 'length')
           if [ "${count}" -gt 0 ]; then
-            alert "Daily audit: ${count} workflow-file commit(s) in the last 8 days not attributed to DrBradStanfield:
+            alert "daily audit: ${count} workflow-file commit(s) on main in the last 26 h that the push check never ran on:
           \`\`\`json
-          ${suspicious}
+          ${missed}
           \`\`\`"
           else
             echo "Daily audit clean."

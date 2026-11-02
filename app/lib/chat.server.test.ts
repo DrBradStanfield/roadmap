@@ -13,7 +13,7 @@ import {
   FALLBACK_RESPONSE,
 } from './chat.server';
 import { REFUSAL_RESPONSES } from '../../packages/health-core/src/models';
-import { chatContextOf, MINOR_CHAT_RULE, NO_PLAN_CHAT_RULE } from '../../packages/health-core/src/chat-context';
+import { chatContextOf, MINOR_CHAT_RULE, NO_PLAN_CHAT_RULE, NO_SEX_CHAT_RULE } from '../../packages/health-core/src/chat-context';
 import { MAX_HISTORY_TURN_CHARS } from '../../packages/health-core/src/chat-history';
 import { CHAT_EDIT_TOOLS, EDITABLE_FIELDS } from '../../packages/health-core/src/chat-edits';
 import { loadBlogIndex } from './blog-index.server';
@@ -165,15 +165,29 @@ describe('buildSystemBlocks', () => {
       expect(text).toContain(NO_PLAN_CHAT_RULE);
     }
     expect(NO_PLAN_CHAT_RULE).toMatch(/without grading them/);
-    expect(NO_PLAN_CHAT_RULE).toMatch(/ask them for the missing sex or height/);
+    expect(NO_PLAN_CHAT_RULE).toMatch(/ask them for the missing height \(and sex, if `missingInputs` names it\)/);
     expect(NO_PLAN_CHAT_RULE).not.toContain('cannot save');
-    expect(NO_PLAN_CHAT_RULE).toMatch(/one plain sentence why: the roadmap needs height and sex to work out the plan/);
+    expect(NO_PLAN_CHAT_RULE).toMatch(/one plain sentence why: the roadmap needs height to work out the plan/);
     // Review R2 (2026-10-20): a plan computed this turn from stated values wins (AC33), without naming the tool.
     expect(NO_PLAN_CHAT_RULE).toMatch(/and no tool result this turn holds a plan/);
     expect(NO_PLAN_CHAT_RULE).not.toContain('run_roadmap');
-    // Review R4: eGFR needs more than sex.
-    expect(NO_PLAN_CHAT_RULE).toMatch(/kidney function, as a calculated eGFR needs sex, age and creatinine/);
     expect(NO_PLAN_CHAT_RULE).not.toMatch(/\u2014/);
+  });
+
+  // US-07 AC8: no sex is a plan with cards but none of the sex parts; its own rule, on every surface.
+  it('US-07 AC8: the base prompt carries the no-sex rule on every surface, byte-identical to health-core\'s', () => {
+    for (const surfaceContext of [undefined, 'DOCTOR', 'BRAND']) {
+      expect(buildSystemBlocks('{}', { surfaceContext })[0].text).toContain(NO_SEX_CHAT_RULE);
+    }
+    expect(NO_SEX_CHAT_RULE).toMatch(/`missingInputs` naming `sex`, the plan has no ideal body weight, protein target/);
+    // Review R4: eGFR needs more than sex.
+    expect(NO_SEX_CHAT_RULE).toMatch(/calculated eGFR \(it needs sex, age and creatinine\)/);
+    expect(NO_SEX_CHAT_RULE).toMatch(/never work them out yourself or assume a sex; say they need sex, and ask for it/);
+    // Codex R2 on PR 402: a plan computed this turn from a stated sex wins (AC33), without naming the tool.
+    expect(NO_SEX_CHAT_RULE).toMatch(/unless a tool result this turn gives the sex; then use that plan/);
+    expect(NO_SEX_CHAT_RULE).not.toContain('run_roadmap');
+    expect(NO_PLAN_CHAT_RULE).not.toMatch(/names `sex`/);
+    expect(NO_SEX_CHAT_RULE).not.toMatch(/\u2014/);
   });
 
   // US-16 AC2 (2026-10-20, Brad: "the chatbot should be asking the user to input the missing values,
@@ -359,13 +373,14 @@ describe('resolveChatContext — client inputs', () => {
   });
 
   // US-15 AC36 (2026-10-18): this used to return no context, so the chat said the user had no data.
-  it('US-15 AC36: unusable required fields give the no-plan context: the values, the field named, never its value', () => {
-    for (const [payload, field] of [[{ heightCm: 9999, sex: 'male', ldlC: 2.1 }, 'heightCm'], [{ heightCm: 180, sex: 'martian', ldlC: 2.1 }, 'sex']] as const) {
+  // US-07 AC8: an unusable sex is dropped like any field, and the plan runs without it.
+  it('US-15 AC36: an unusable height gives the no-plan context, an unusable sex a plan without it: the field named, never its value', () => {
+    for (const [payload, field, plan] of [[{ heightCm: 9999, sex: 'male', ldlC: 2.1 }, 'heightCm', false], [{ heightCm: 180, sex: 'martian', ldlC: 2.1 }, 'sex', true]] as const) {
       const { json, parsed } = contextOf(payload)!;
       expect(parsed.latestValues).toEqual({ ldlC: '2.1' });
       expect(parsed.excludedFields).toEqual([field]);
       expect(parsed.missingInputs).toContain(field);
-      expect(parsed).not.toHaveProperty('currentSuggestions');
+      expect('currentSuggestions' in parsed).toBe(plan);
       expect(json).not.toMatch(/9999|martian/);
     }
   });

@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { sameBytes } from '../lib/crypto-compare.server';
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import * as Sentry from '@sentry/react-router';
 import { labImportRequestSchema, batchImportRequestSchema } from '../../packages/health-core/src/validation';
@@ -7,6 +8,7 @@ import { extractOneFile, withDaysItReads, withRefusalsItReads } from '../lib/lab
 import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
 import { createQuotaCounter, DAY_MS, machineFiles } from '../lib/rate-limiter';
 import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '../lib/local-first-route.server';
+import { SMALL_BODY_CAP } from '../lib/capped-body.server';
 import { activeBatches, armSweep, MAX_ACTIVE_BATCHES, type BatchPollResult } from '../lib/lab-batches.server';
 
 /**
@@ -45,6 +47,22 @@ function consumeQuota(ip: string, count: number): boolean {
   return false;
 }
 
+const dailyLimit = () => Response.json(
+  { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
+  { status: 429 },
+);
+
+/**
+ * US-12 AC17b: with no file left today for this IP or the machine, only a poll
+ * can succeed, so no more than a poll's body is read, and a larger one gets the
+ * daily-limit answer.
+ */
+function bodyLimit(ip: string): { cap: number; tooLarge: () => Response } {
+  const spent = ipQuota.remaining(ip) === 0 || machineFiles.remaining('machine') === 0;
+  if (spent) return { cap: SMALL_BODY_CAP, tooLarge: dailyLimit };
+  return { cap: 200 * 1024 * 1024, tooLarge: () => Response.json({ success: false, error: 'Request too large' }, { status: 413 }) };
+}
+
 /** Hand back files charged for a batch Anthropic certainly did not create. */
 function refundQuota(ip: string, count: number): void {
   ipQuota.refund(ip, count);
@@ -59,9 +77,7 @@ function newPollToken(): string {
 /** Constant-length compare; a missing or differently sized token is simply wrong. */
 function matchesPollToken(expected: string, supplied: string | null): boolean {
   if (!supplied) return false;
-  const a = Buffer.from(expected);
-  const b = Buffer.from(supplied);
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
+  return sameBytes(Buffer.from(expected), Buffer.from(supplied));
 }
 
 /** How long a processing count is reused before the next provider read. */
@@ -125,12 +141,11 @@ export async function action({ request }: ActionFunctionArgs) {
     return Response.json({ success: false, error: 'Forbidden' }, { status: 403 });
   }
   const ip = getClientIp(request, 'shopify');
+  const limit = bodyLimit(ip);
 
   try {
-    const body = await parseSimpleRequestJson(request, 200 * 1024 * 1024);
-    if (body === BODY_TOO_LARGE) {
-      return Response.json({ success: false, error: 'Request too large' }, { status: 413 });
-    }
+    const body = await parseSimpleRequestJson(request, limit.cap);
+    if (body === BODY_TOO_LARGE) return limit.tooLarge();
 
     // --- Batch poll --- (costs no quota; it reads a batch already paid for)
     const poll = body as { batchId?: unknown; pollToken?: unknown } | null;
@@ -146,12 +161,7 @@ export async function action({ request }: ActionFunctionArgs) {
       if (activeBatches.size >= MAX_ACTIVE_BATCHES) {
         return Response.json({ success: false, error: 'Server busy. Please try again later.' }, { status: 429 });
       }
-      if (!consumeQuota(ip, files.length)) {
-        return Response.json(
-          { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
-          { status: 429 },
-        );
-      }
+      if (!consumeQuota(ip, files.length)) return dailyLimit();
       // A timeout or network failure may still have made the batch: it stays charged.
       const { batchId } = await createBatch(files).catch((err: unknown) => {
         if (err instanceof BatchRefusedError) refundQuota(ip, files.length);
@@ -168,12 +178,7 @@ export async function action({ request }: ActionFunctionArgs) {
     if (!validation.success) {
       return Response.json({ success: false, error: 'Invalid request' }, { status: 400 });
     }
-    if (!consumeQuota(ip, 1)) {
-      return Response.json(
-        { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
-        { status: 429 },
-      );
-    }
+    if (!consumeQuota(ip, 1)) return dailyLimit();
 
     return extractOneFile(validation.data, () => ({ remaining: ipQuota.remaining(ip) }));
   } catch (error) {

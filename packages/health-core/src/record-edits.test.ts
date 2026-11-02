@@ -933,3 +933,38 @@ describe('US-21 AC21 — the ceiling at the write doors', () => {
     if (!corrected.ok) expect(corrected.message).toContain('not a measured value');
   });
 });
+
+// US-03 AC7 (Brad, 2026-10-31): the record's own writes refuse a lipid or ApoB of 0.
+describe('US-03 AC7 — the record refuses 0 for lipids and ApoB, and takes it for PSA and Lp(a)', () => {
+  it.each([
+    ['ldl', 'LDL-c'], ['total_cholesterol', 'Total cholesterol'], ['hdl', 'HDL'], ['triglycerides', 'Triglycerides'], ['apob', 'ApoB'],
+  ])('appendMeasurement refuses %s 0, in SI and in US units', (metricType, label) => {
+    for (const unit of [undefined, UNIT_DEFS[metricType as MetricType].label.conventional]) {
+      const result = appendMeasurement(base(), { metricType, value: 0, unit, recordedAt: '2026-08-01', now: NOW });
+      expect(result).toMatchObject({ ok: false, reason: 'out-of-range', message: `${label} must be above 0 (got 0)` });
+    }
+  });
+
+  it('a correction to 0 is refused and leaves the old row active', () => {
+    const file = base();
+    const result = correctValue(file, { id: 'm1', newValue: 0, now: NOW });
+    expect(result).toMatchObject({ ok: false, reason: 'out-of-range', message: 'LDL-c must be above 0 (got 0)' });
+    expect(file.measurements.find(m => m.id === 'm1')?.status).toBe('active');
+  });
+
+  it('an upload save (bulkAppendValues) refuses LDL 0 below the range and saves PSA and Lp(a) 0', () => {
+    const result = bulkAppendValues(base(), [
+      { kind: 'measurement', metricType: 'ldl', value: 0, recordedAt: '2026-08-01', source: 'lab_import' },
+      { kind: 'measurement', metricType: 'psa', value: 0, recordedAt: '2026-08-01', source: 'lab_import' },
+      { kind: 'measurement', metricType: 'lpa', value: 0, recordedAt: '2026-08-01', source: 'lab_import' },
+    ], NOW);
+    expect(result.measurementRefusals).toEqual([
+      { index: 0, metricType: 'ldl', reason: 'out-of-range', message: 'LDL-c must be above 0', bound: 'below' },
+    ]);
+    expect(result.saved.map(row => ['metricType' in row && row.metricType, row.value])).toEqual([['psa', 0], ['lpa', 0]]);
+  });
+
+  it('a tiny positive LDL still saves', () => {
+    expect(ok(appendMeasurement(base(), { metricType: 'ldl', value: 0.2, recordedAt: '2026-08-01', now: NOW })).row.value).toBe(0.2);
+  });
+});

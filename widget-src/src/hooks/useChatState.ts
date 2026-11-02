@@ -50,6 +50,8 @@ interface UseChatStateOptions {
 export const MAX_CHARS = 8000;
 const CUT_NOTICE = `Your message was cut at ${MAX_CHARS.toLocaleString('en')} characters.`;
 const NO_PENDING: ChatPending = { thinking: '', text: '', status: '', sources: [] };
+/** How long another tab's reply in flight may lock this tab's chat with no word from it (US-15 AC17a). */
+export const REMOTE_PENDING_MS = 5 * 60_000;
 
 export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemoteConversationSelected, onProposeEdit }: UseChatStateOptions) {
   const [instanceId] = useState(generateInstanceId);
@@ -91,6 +93,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   const activeConversationIdRef = useRef(activeConversationId);
   const messagesRef = useRef(messages);
   const isLoadingConvsRef = useRef(false);
+  const ownSendRef = useRef(false); // this tab's own send is in flight (US-15 AC17a)
   const isLoadingRef = useRef(isLoading);
   // Bumped by each thread load and by a reply landing on screen: a load that
   // started before either is stale (US-15 AC7a).
@@ -138,7 +141,9 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
   // BroadcastChannel subscription — sync state from other instances
   useEffect(() => {
-    return subscribeSync((msg) => {
+    // A tab closed mid-reply never says the reply ended (US-15 AC17a).
+    let remotePending: ReturnType<typeof setTimeout> | undefined;
+    const unsubscribe = subscribeSync((msg) => {
       if (msg.instanceId === instanceId) return;
 
       if (msg.type === 'input') {
@@ -158,6 +163,9 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         setActiveConversationId(payload.activeConversationId);
         setMessages(payload.messages);
         setIsLoading(payload.isLoading);
+        clearTimeout(remotePending);
+        // The expiry never ends this tab's own send.
+        if (payload.isLoading) remotePending = setTimeout(() => { if (!ownSendRef.current) setIsLoading(false); }, REMOTE_PENDING_MS);
         setIsLocalSender(false);
         setError(payload.error);
         return;
@@ -180,6 +188,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         return;
       }
     });
+    return () => { unsubscribe(); clearTimeout(remotePending); };
   }, [instanceId, onRemoteConversationSelected]);
 
   const dropThread = useCallback((id: string) => {
@@ -291,6 +300,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     // blog bubble and the chatbot embed from the widget's saved copy. The
     // reader runs here, so each message carries what is saved now, even a save
     // made after the page loaded (US-15 AC10). None degrades to the empty context.
+    ownSendRef.current = true;
     const { result, error: sendError } = await sendMessage(
       trimmed,
       currentConvId,
@@ -299,6 +309,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       handleDelta,
       Boolean(onProposeEditRef.current),
     );
+    ownSendRef.current = false;
     const approach = endStream();
     // Another thread was opened while the reply was in flight (US-15 AC7a): it stays
     // on screen, and the reply stays with the thread it was sent from.

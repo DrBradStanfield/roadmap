@@ -11,6 +11,8 @@ struct SleepPage: View {
     let live: LiveHealth
     /// The card's night: the page reads back to it and opens on it (Codex R2).
     let reading: Date?
+    /// Sleep's "About" guide (US-58 AC7); nil shows none.
+    var guide: MetricGuide? = nil
     @State private var range = LiveMetric.sleep.opening
     @State private var nights: [SleepNight] = []
     @State private var read = false
@@ -25,7 +27,7 @@ struct SleepPage: View {
     @State private var readFor: ReadFor?
 
     var body: some View {
-        LivePageFrame(metric: .sleep, ranges: LiveRange.sleep, range: $range, empty: read && !nights.contains(where: \.hasSleep), key: live.wakes) { shows in
+        LivePageFrame(metric: .sleep, ranges: LiveRange.sleep, range: $range, empty: read && !nights.contains(where: \.hasSleep), key: live.wakes, guide: guide) { shows in
             await load(ReadFor(wakes: live.wakes, shows: shows))
         } reset: {
             selected = nil

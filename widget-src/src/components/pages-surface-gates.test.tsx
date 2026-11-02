@@ -9,6 +9,7 @@
  * the form used to render there and fail after submit.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { statTiles } from '@roadmap/health-core';
 import { cleanup, render } from '@testing-library/react';
 import { calculateHealthResults } from '@roadmap/health-core';
 
@@ -30,7 +31,7 @@ async function renderPlan(shopify: boolean) {
   vi.resetModules();
   vi.doMock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: shopify, LOCAL_FIRST: true }));
   const { ResultsPanel } = await import('./ResultsPanel');
-  return render(<ResultsPanel results={results} isValid unitSystem="si" formStage={2} />);
+  return render(<ResultsPanel results={results} isValid tiles={results ? statTiles(results, { unitSystem: 'si' }) : []} formStage={2} />);
 }
 
 afterEach(() => { cleanup(); vi.doUnmock('../lib/build-flags'); vi.resetModules(); });

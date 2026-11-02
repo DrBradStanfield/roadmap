@@ -41,7 +41,11 @@ export function measurementRefusalLine({ metricType, reason, message, bound }: M
   if (message === PRESSURE_ORDER) return `Blood pressure not saved: ${PRESSURE_ORDER[0].toLowerCase()}${PRESSURE_ORDER.slice(1)} Check the report, then enter it again.`;
   const metric = metricType as MetricType;
   const edge = bound === 'below' ? 'min' : 'max';
-  const [side, end] = bound === 'below' ? ['below', 'lowest'] : ['above', 'highest'];
-  const limit = roundBoundInward(cellFromSI(metric, UNIT_DEFS[metric].validationRange.si[edge], unit), cellDecimalPlaces(metric, unit), edge);
-  return `${label} not saved: ${side} ${limit.toLocaleString('en-US')} ${cellLabel(metric, unit)}, the ${end} value this tool accepts. Check the report, then enter it again.`;
+  const range = UNIT_DEFS[metric].validationRange.si;
+  const limit = `${roundBoundInward(cellFromSI(metric, range[edge], unit), cellDecimalPlaces(metric, unit), edge).toLocaleString('en-US')} ${cellLabel(metric, unit)}`;
+  // A floor the value may not equal (US-03 AC7): 0 is not "below 0".
+  const clause = bound === 'below'
+    ? range.minExclusive ? `the value must be above ${limit}` : `below ${limit}, the lowest value this tool accepts`
+    : `above ${limit}, the highest value this tool accepts`;
+  return `${label} not saved: ${clause}. Check the report, then enter it again.`;
 }

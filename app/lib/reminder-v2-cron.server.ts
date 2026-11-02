@@ -131,7 +131,7 @@ async function processOneOptin(optin: ReminderV2Optin, todayStr: string): Promis
   void recordServerEvent('reminder_sent', { provider: optin.provider, count: due.length });
 
   // Record per-category send dates. If this write fails the next run would
-  // re-send, so surface it at error level (same posture as the v1 cron).
+  // re-send, so surface it at error level.
   const lastSent = { ...optin.last_sent };
   for (const item of due) lastSent[item.category] = todayStr;
   try {
@@ -150,7 +150,7 @@ export async function processV2Reminders(todayStr: string): Promise<number> {
   let sent = 0;
   let errors = 0;
   let total = 0;
-  let offset = 0;
+  let afterId: string | null = null;
   const skips: Record<Exclude<V2Result, 'sent'>, number> = {
     'none-due': 0,
     'all-on-cooldown': 0,
@@ -159,7 +159,7 @@ export async function processV2Reminders(todayStr: string): Promise<number> {
   };
 
   while (true) {
-    const batch = await getOptinsBatch(BATCH_SIZE, offset);
+    const batch = await getOptinsBatch(BATCH_SIZE, afterId);
     if (batch.length === 0) break;
     total += batch.length;
 
@@ -182,7 +182,7 @@ export async function processV2Reminders(todayStr: string): Promise<number> {
       }
     }
 
-    offset += BATCH_SIZE;
+    afterId = batch[batch.length - 1].id; // keyset, not offset: see getOptinsBatch
     if (batch.length < BATCH_SIZE) break;
   }
 
@@ -203,5 +203,5 @@ export async function processV2Reminders(todayStr: string): Promise<number> {
   return sent;
 }
 
-// Auto-start on module import (same pattern as the v1 crons)
+// Auto-start on module import (same pattern as trending-cron.server.ts)
 startReminderV2Cron();

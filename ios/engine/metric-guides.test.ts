@@ -22,6 +22,13 @@ describe('guides through the screen door (US-58 AC3)', () => {
     expect(rows.map((r: { metric: string }) => r.metric)).toContain('blood_pressure');
   });
 
+  it('has a guide for each Apple Health page, by the app\'s LiveMetric.guideKey (US-58 AC7)', () => {
+    for (const key of ['heart_rate', 'resting_heart_rate', 'sleep', 'vo2_max', 'steps']) {
+      expect(myData.guides[key], key).toBeDefined();
+      expect(myData.guides[key].sources.length, key).toBeGreaterThan(0);
+    }
+  });
+
   it('has a guide for every drug question, and none for a dose or escalation answer', () => {
     const keys: string[] = myData.medications.flatMap((s: { groups: Array<{ fields: Array<{ key?: string }> }> }) =>
       s.groups.flatMap((g) => g.fields.map((f) => f.key ?? '')));

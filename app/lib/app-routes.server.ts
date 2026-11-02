@@ -10,7 +10,6 @@ import { appGate, appLimits, appRoutesOff, ipBucket, supabaseKeyStore, type KeyS
 import { SMALL_BODY_CAP } from './capped-body.server';
 import { extractOneFile } from './lab-extract-one.server';
 import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson } from './local-first-route.server';
-import { machineFiles } from './rate-limiter';
 
 /** 2 MB, the web chat's own cap (api.chat.ts). */
 const APP_CHAT_BODY_CAP = 2 * 1024 * 1024;
@@ -21,7 +20,7 @@ const json = (status: number, body: object) => Response.json(body, { status, hea
 const unavailable = () => json(503, { success: false, error: 'This is not available right now. Please try again later.', reason: 'unavailable' });
 export const postOnly = () => json(405, { success: false, error: 'POST only' });
 
-/** POST attest/challenge: stateless (HMAC'd, 5 minutes), so it costs no storage. */
+/** POST attest/challenge: HMAC'd, 5 minutes, so issuing one stores nothing; using one spends it (AC1a). */
 export function appChallenge(request: Request): Response {
   if (request.method !== 'POST') return postOnly();
   if (appRoutesOff() || !attestConfig()) return unavailable();
@@ -38,24 +37,39 @@ export async function appRegister(request: Request, store: KeyStore = supabaseKe
   if (request.method !== 'POST') return postOnly();
   const config = attestConfig();
   if (appRoutesOff() || !config) return unavailable();
-  if (!appLimits.register.take(ipBucket(getClientIp(request, 'fly')), 1)) return registerRefused(429, 'limit');
+  const ip = ipBucket(getClientIp(request, 'fly'));
+  const attempt = appLimits.register.reserve(ip, 1);
+  if (!attempt) return registerRefused(429, 'limit');
 
   const body = await parseSimpleRequestJson(request, SMALL_BODY_CAP) as { keyId?: unknown; attestation?: unknown; challenge?: unknown } | typeof BODY_TOO_LARGE | null;
   if (body === BODY_TOO_LARGE) return registerRefused(413, 'too_large');
-  if (!body || typeof body !== 'object' || !validKeyId(body.keyId) || typeof body.attestation !== 'string') return registerRefused(400, 'bad_request');
-  if (!challengeValid(body.challenge)) return registerRefused(401, 'bad_challenge');
+  if (!body || typeof body !== 'object') return registerRefused(400, 'bad_request');
+  // Checked and spent with no await between, so two requests cannot both use it, and
+  // before the other fields, so a malformed attempt spends it too (AC1a, Codex R1).
+  if (!challengeValid(body.challenge) || !appLimits.challenges.take(body.challenge, 1)) return registerRefused(401, 'bad_challenge');
+  if (!validKeyId(body.keyId) || typeof body.attestation !== 'string') return registerRefused(400, 'bad_request');
 
   let key;
   try {
-    key = verifyAttestation({ keyId: body.keyId, attestation: Buffer.from(body.attestation, 'base64'), challenge: body.challenge as string, config });
+    key = verifyAttestation({ keyId: body.keyId, attestation: Buffer.from(body.attestation, 'base64'), challenge: body.challenge, config });
   } catch (error) {
     return registerRefused(401, error instanceof AttestError ? error.reason : 'bad_attestation');
   }
+  // A success spends the larger success cap instead of an attempt, so an IP's
+  // neighbours are blocked only by failing attempts (AC1b). Reserved before the insert.
+  const success = appLimits.registered.reserve(ip, 1);
+  if (!success) return registerRefused(429, 'limit');
+  let inserted;
   try {
-    if ((await store.insert(key)) === 'exists') return registerRefused(409, 'key_exists');
+    inserted = await store.insert(key);
   } catch {
+    // An outage is not a failed attempt: both units go back, as in the gate.
+    success();
+    attempt();
     return registerRefused(503, 'store_unavailable');
   }
+  if (inserted === 'exists') { success(); return registerRefused(409, 'key_exists'); }
+  attempt();
   return json(200, { success: true });
 }
 
@@ -72,7 +86,7 @@ export async function appChat(request: Request, store?: KeyStore): Promise<Respo
   return webChatAction({ request: inner, params: {}, context } as unknown as Parameters<typeof webChatAction>[0]);
 }
 
-/** POST lab-import: the gate, then the web's single-file extraction; proposed values back, nothing stored (AC7). */
+/** POST lab-import: the gate (which also spends the web's file cap, AC4d), then the web's single-file extraction; proposed values back, nothing stored (AC7). */
 export async function appLabImport(request: Request, store?: KeyStore): Promise<Response> {
   if (appRoutesOff()) return unavailable();
   const gate = await appGate(request, { kind: 'lab', bodyCap: APP_LAB_BODY_CAP, store });
@@ -85,9 +99,5 @@ export async function appLabImport(request: Request, store?: KeyStore): Promise<
   }
   const validation = labImportRequestSchema.safeParse(parsed);
   if (!validation.success) return json(400, { success: false, error: 'Invalid request' });
-  // The web's and the connector's dollar ceiling, spent here too (AC4).
-  if (!machineFiles.take('machine', 1)) {
-    return json(429, { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.', reason: 'limit' });
-  }
   return extractOneFile(validation.data);
 }

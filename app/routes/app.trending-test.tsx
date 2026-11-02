@@ -9,8 +9,6 @@ import { computeAndWriteTrending } from "../lib/trending-cron.server";
 /**
  * Manual trigger for the trending cron — it rewrites live trending rows, so
  * the run is a POST, not a page view.
- *
- * Delete this route once trending cron is confirmed working.
  */
 export async function loader({ request }: LoaderFunctionArgs) {
   await authenticateOwnerAdmin(request);

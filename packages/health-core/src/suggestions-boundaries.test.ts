@@ -8,8 +8,11 @@
  * clock is set with the local Date constructor and holds in any TZ.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { generateSuggestions } from './suggestions';
-import { getBMICategory } from './calculations';
+import { getBMICategory, getLipidStatus } from './calculations';
+import { SUGGESTION_EVIDENCE } from './evidence';
+import { TRIGLYCERIDES_THRESHOLDS } from './units';
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs, Suggestion } from './types';
 
 const chol = (mgdl: number) => mgdl / 38.67;
@@ -90,6 +93,26 @@ describe('US-07 AC1: lipid tiers at each exact line (doc §3, §4)', () => {
     expect(below150).not.toContain('reduce-alcohol');
     expect(ids(plan({ triglycerides: trig(500) - BELOW }))).not.toContain('trig-very-high');
     expect(byId(plan({ triglycerides: trig(500) }), 'trig-very-high')?.priority).toBe('urgent');
+  });
+
+  // US-07 AC1b: the line is 500 mg/dL exactly (5.64525 mmol/L). Its printed SI
+  // figure is that line rounded half-up to 2 dp, 5.65, the first 2-dp value the
+  // plan grades Very High; 5.64 gets no urgent card, so it must not be printed.
+  it('very high triglycerides: every printed mmol/L line is 500 mg/dL rounded half-up, which fires the card; 0.01 below does not', () => {
+    const printed = Math.round(TRIGLYCERIDES_THRESHOLDS.veryHigh * 100) / 100;
+    expect(printed).toBe(5.65);
+    expect(getLipidStatus(printed, TRIGLYCERIDES_THRESHOLDS)).toBe('Very High');
+    expect(byId(plan({ triglycerides: printed }), 'trig-very-high')?.priority).toBe('urgent');
+    expect(getLipidStatus(printed - 0.01, TRIGLYCERIDES_THRESHOLDS)).toBe('High');
+    expect(ids(plan({ triglycerides: printed - 0.01 }))).not.toContain('trig-very-high');
+
+    const figure = (text: string, re: RegExp) => Number(text.match(re)?.[1]);
+    const reason = SUGGESTION_EVIDENCE['trig-very-high'].reason;
+    expect(figure(reason, /≥500 mg\/dL \/ ≥(\d+\.\d+) mmol\/L/)).toBe(printed);
+    const algo = readFileSync(new URL('../../../health_roadmap_algorithm.md', import.meta.url), 'utf8');
+    expect(figure(algo, /\| `trig-very-high` \| triglycerides >= (\d+\.\d+) mmol\/L \(500 mg\/dL\)/)).toBe(printed);
+    expect(figure(algo, /\| Very high \| (\d+\.\d+) \| 500 \|/)).toBe(printed);
+    expect(figure(algo, /very high triglycerides from (\d+\.\d+) mmol\/L/)).toBe(printed);
   });
 
   it('HDL low: men below 40 mg/dL, women below 50; the line itself is not low, and the text names the sex', () => {

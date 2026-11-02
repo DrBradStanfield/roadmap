@@ -7,14 +7,16 @@
 
 - **Lock.** A write takes an exclusive `.lock` sibling (atomic `wx` open) for
   the whole check-backup-replace sequence, so a second writer on the same
-  machine waits its turn instead of racing the first. A lock older than 10
-  seconds is treated as abandoned and cleared.
+  machine waits its turn instead of racing the first. A lock is never taken
+  over, however old: the second writer waits up to 5 seconds, then gives up
+  with nothing changed and asks you to retry. Remove a lock by hand only when
+  no writer can resume.
 - **Backups.** Before every write, the record is copied beside itself as
   `<file>.bak-<ISO timestamp>`. The newest three are kept; older ones are
   pruned on the same write.
-- **Temp-file-then-rename.** The new bytes go to `<file>.tmp-<pid>`, then
-  `renameSync` swaps it over the original, so a crash mid-write leaves the old
-  file whole rather than half-written.
+- **Temp-file-then-rename.** The new bytes go to `<file>.tmp-<random hex>`, a
+  name nothing can be waiting at, then `renameSync` swaps it over the original,
+  so a crash mid-write leaves the old file whole rather than half-written.
 - **Conflict check.** Each write compares a SHA-256 of the bytes it read
   against what's on disk now. A mismatch throws `ConflictError`, which
   `sync-manager.ts` catches, re-reads, and re-merges before retrying.

@@ -13,6 +13,17 @@ struct MyData: Decodable {
         let heightUnit: String
         /// A US height in feet and inches, by health-core's `cmToFeetInches`; nil in metric (AC17).
         let feetInches: FeetInches?
+        /// "Do you drink alcohol?" (US-60); nil when not answered, from an older engine, or
+        /// unreadable. Read leniently, so a value this app does not know never hides My data.
+        var alcohol: Lenient<Alcohol>? = nil
+    }
+
+    /// The answer to "Do you drink alcohol?" (US-60), as the record stores it.
+    enum Alcohol: String, Decodable, Sendable, CaseIterable {
+        case noDrinking = "none"
+        case drinks
+
+        var label: String { self == .noDrinking ? "I don't drink" : "I drink" }
     }
 
     struct FeetInches: Decodable, Equatable, Hashable {
@@ -45,6 +56,12 @@ struct MyData: Decodable {
         let trend: [Double]?
         /// Whether this test has its own Metric/US choice (AC17e); nil from an older engine.
         let switchable: Bool?
+        /// The target the value is read against, as the web's row prints it under the name
+        /// ("Optimal <1.4"; health-core's rowTarget, US-62 AC9); nil when none, or from an older engine.
+        var target: String? = nil
+        /// The value before the latest, in the same units, shown in brackets (US-62 AC8); nil
+        /// with one reading, or from an older engine.
+        var previous: String? = nil
 
         var id: String { metric }
     }
@@ -56,6 +73,9 @@ struct MyData: Decodable {
     let lpaUnit: String?
     /// The record's erase count; nil from an engine older than US-54 AC7.
     let eraseEpoch: Int?
+    /// US-65: how many entries the engine could not read and kept unchanged, as one line;
+    /// nil when there are none, or from an older engine.
+    var unreadableNote: String? = nil
     let profile: Profile
     let vitals: [Row]
     let bloodTests: [Row]
@@ -146,6 +166,8 @@ enum RecordEdit: Encodable, Equatable {
     /// the active rows the user saw (`seenIds`), so a change from elsewhere refuses it (AC17).
     case bloodPressure(systolic: Double, diastolic: Double, day: String, replace: Bool, seenIds: [String] = [])
     case units(String)
+    /// "Do you drink alcohol?" (US-60); nil is "Not answered", which clears it.
+    case alcohol(MyData.Alcohol?)
     /// Lp(a)'s unit, written to the record as the web's three-unit control writes it (US-05 AC2).
     case lpaUnit(String)
     /// A new value for a day, YYYY-MM-DD.
@@ -160,8 +182,16 @@ enum RecordEdit: Encodable, Equatable {
     /// as JSON text, the refs ticked, and the report's day.
     case labImport(extractionJSON: String, refs: [String], reportDay: String)
 
+    /// A new birth year. A stored month that would then be in the future moves back to the
+    /// latest one in the same edit, as onboarding's wheel does (US-54 AC5b, review R4).
+    static func birthYear(_ year: Int, storedMonth: Int?, now: Date) -> RecordEdit {
+        let latest = DayText.latestBirthMonth(year: year, now: now)
+        guard let storedMonth, storedMonth > latest else { return .profile(birthYear: year) }
+        return .profile(birthYear: year, birthMonth: latest)
+    }
+
     private enum Key: String, CodingKey {
-        case kind, sex, birthYear, birthMonth, height, heightFeet, heightInches, systolic, diastolic, replace, seenIds, unitSystem, unit, metric, value, day, id, extractionJson, refs, reportDay, samples
+        case kind, alcohol, sex, birthYear, birthMonth, height, heightFeet, heightInches, systolic, diastolic, replace, seenIds, unitSystem, unit, metric, value, day, id, extractionJson, refs, reportDay, samples
     }
 
     func encode(to encoder: Encoder) throws {
@@ -187,6 +217,9 @@ enum RecordEdit: Encodable, Equatable {
         case .units(let unitSystem):
             try json.encode("units", forKey: .kind)
             try json.encode(unitSystem, forKey: .unitSystem)
+        case .alcohol(let answer):
+            try json.encode("alcohol", forKey: .kind)
+            try json.encode(answer?.rawValue, forKey: .alcohol)
         case .lpaUnit(let unit):
             try json.encode("lpaUnit", forKey: .kind)
             try json.encode(unit, forKey: .unit)

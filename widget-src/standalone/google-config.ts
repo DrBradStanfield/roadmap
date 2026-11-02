@@ -11,7 +11,7 @@
 // this module too (storage-copy / reminders tests do), or the import throws.
 import { DRIVE_FILE_SCOPE } from '../src/storage';
 
-export const GOOGLE_DRIVE_CLIENT_ID =
+const GOOGLE_DRIVE_CLIENT_ID =
   '687809032623-dh4f91ravotu2cdactok13i2eirfadcs.apps.googleusercontent.com';
 
 /**
@@ -22,7 +22,7 @@ export const GOOGLE_DRIVE_CLIENT_ID =
  * to Brad's server (§10) — via a signed ID token from the code flow, or a
  * one-time userinfo read on the popup path. No extra Drive access.
  */
-export const GOOGLE_DRIVE_SCOPE = `openid email ${DRIVE_FILE_SCOPE}`;
+const GOOGLE_DRIVE_SCOPE = `openid email ${DRIVE_FILE_SCOPE}`;
 
 /**
  * Brad's stateless token-exchange endpoint (decision record §14) — the only
@@ -30,7 +30,7 @@ export const GOOGLE_DRIVE_SCOPE = `openid email ${DRIVE_FILE_SCOPE}`;
  * token lives in the user's browser. If unreachable, the adapter falls back to
  * the GIS popup path, so this is a soft dependency.
  */
-export const GOOGLE_EXCHANGE_URL = 'https://health-tool-app.fly.dev/api/google-token';
+const GOOGLE_EXCHANGE_URL = 'https://health-tool-app.fly.dev/api/google-token';
 
 export function googleDriveConfig(): import('../src/storage').GoogleDriveConfig {
   return {

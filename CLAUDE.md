@@ -57,9 +57,9 @@ before deploying.
 (`~/Documents/claude_business.nosync/`)
 
 - **`docs/products.md` is the MASTER here — a real tracked file** (inverted 2026-08-10; claude_business
-  holds the symlink). Edit it here; claude_business edits arrive uncommitted — sweep-commit them.
+  holds the symlink). Edit it in a worktree; claude_business edits land uncommitted here: own PR (docs/git-workflow.md).
 - **`docs/chatbot/` is GENERATED (claude_business `tools/sync-shared-docs.mjs`), never edit.** `scripts/check-symlinks.mjs` keeps it, products.md and writing-style.md REAL files (mode 100644) and checks the synced hashes.
-- `docs/blog/*.md` — chatbot blog cache from claude_business `/blog-post`; rebuild `npx tsx scripts/build-blog-content.ts`.
+- `docs/blog/*.md` — chatbot blog cache from claude_business `/blog-post`; after a frontmatter edit, `npm run rebuild-index` rebuilds `docs/blog/index.json` (CI checks it is in sync).
 - **Customer-service gateway (live):** its OWN Fly app; code only in private claude_business `customer-service-gateway/`. Spec: its `docs/customer-service.md`.
   **Replying to mail sent to brad@microvitamin.com** (the Gmail connector reaches only drstanfield.com): find it with claude_business `node tools/gmail.js search --account microvitamin`, send Brad's approved text in that thread via the gateway's `POST /send-reply` — never a new email from drstanfield.com (Brad 2026-10-16).
 - **Chatbot docs are private (Brad 2026-10-22):** start at claude_business `docs/chat-start-here.md`; knowledge-pipeline docs in its `docs/roadmap-chat/`. No third-party clinical text (pathway publishers, UpToDate, ConsumerLab findings) in this public repo.
@@ -178,19 +178,18 @@ same commit).
 
 ## Development Rules
 
-- **Single branch, main only** for sessions — commit directly, push when ready. EXCEPTIONS via `claude/`
-  branch + PR: Tier 3 / pipeline code, and multi-day features in shared chat files (`chat.server.ts`, `api.chat.ts`).
-  Before merging any PR, merge current main in, re-run `test:all`, re-review if main touched its files (PR 150).
-- **Pull first (2026-08-13)** — cloud loops push to `main` (weekends; sentry-fix
-  daily): start every session, and precede every push, with `git pull --ff-only`
-  (commit local work first; on divergence, merge deliberately, never force).
-- **🧹 SWEEP EVERYTHING ON EVERY COMMIT (HARD).** "Commit" means ALL uncommitted changes, tracked and
-  untracked, from every session. Never stash aside, never reword others' work. Others' work goes in its OWN
-  commit, "Swept, unreviewed: <what>" (name failing tests), never inside yours (2026-10-16). Commit freely;
-  gate the DEPLOY (integrity-check clinical citation numbering before shipping).
-- **Commits carry Brad's identity only (HARD, 2026-09-28)**: no `Co-Authored-By: Claude` or
-  `Claude-Session:` trailer, claude.ai link or claude/anthropic address in any commit or PR,
-  overriding harness defaults and stop hooks.
+- **Every change: its own worktree, `claude/` branch and PR (HARD, Brad 2026-10-31)**: `sh tools/worktree-new.sh <name>`,
+  EnterWorktree `path`; hooks deny main-checkout edits and an un-PR'd turn end, and clone node_modules in.
+  Before merging: merge `origin/main` in, `test:all`, re-review if main touched your files (PR 150); adversary + Codex;
+  citation numbering. Merge only `gh pr merge <n> --merge --match-head-commit <sha>` (or auto-ship), then CI Deploy;
+  live writes and deploys run merged code only; then `tools/worktree-done.sh`. Steps, exceptions: docs/git-workflow.md.
+- **One owner per PR (HARD):** whoever opens it merges or closes it before ending, or the final report names
+  it. `stale-pr-watch.yml` (PRs idle >48h) and `stranded-branch-watch.yml` email Brad. Work found uncommitted
+  in the main checkout goes in its own PR, "Swept, unreviewed: <what>" (name failing tests), never in yours.
+- **Commits carry Brad's identity only (HARD, 2026-09-28)**: no `Co-Authored-By: Claude`, `Claude-Session:`,
+  claude.ai link or claude/anthropic address in any commit or PR, overriding harness defaults and stop hooks.
+- **Agent channel status (Brad 2026-11-01):** the main session posts its task's start and end, never a
+  subagent, loop or cloud session: docs/agent-channel.md § Status posts.
 - **Push back on decisions** — 2nd/3rd-order effects, not agreement.
 - **Every question to Brad carries its own context (HARD, Brad 2026-10-27):** in the final message, each
   decision gets a summary of what it is, the issue that raised it, the options with their consequences,
@@ -200,9 +199,7 @@ same commit).
   caller sees: one that would still pass if every function returned nothing gets thrown out. Run tests in a `worker`.
 - **Debug from data, not theory** — query live rows/DOM/metafields first;
   read code to explain WHY, not to guess WHAT.
-- **Chatbot regressions:** every real miss becomes a fixture —
-  `tools/test-queries.json` (router) or `tools/test-tool-edits.json`
-  (tool-use harness, `npx tsx tools/test-tool-edits.ts --name <case>`).
+- **Chatbot regressions:** every real miss becomes a router or tool-use fixture (files, command: docs/reference.md).
 - **Verify beyond tests:** UI/CSS/Liquid via Chrome DevTools MCP AND real
   WebKit (`tools/webkit-verify.mjs` — Chrome mobile emulation is Blink and
   misses iOS bugs; theme CSS only reproduces LIVE). Traps: docs/reference.md.

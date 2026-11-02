@@ -22,9 +22,10 @@
  *    Profile and screenings also stamp each field (`fieldStamps`), so they
  *    merge field by field.
  */
-import type { Suggestion, ScreeningInputs } from './types';
+import type { AlcoholAnswer, Suggestion, ScreeningInputs } from './types';
 import type { MeasurementSource, MeasurementStatus, DocumentType } from './validation';
 import type { LpaUnit } from './units';
+import type { Comparator } from './lab-limits';
 
 /** A file no erase has listed rows in. New files start here, and stay here
  *  until an erase lists what it removed (US-09 AC23). */
@@ -104,6 +105,12 @@ export interface RoadmapProfile extends FieldStamped {
    * button instead, so returning users aren't re-asked for their email.
    */
   reportEmailCaptured?: boolean;
+  /**
+   * The answer to "Do you drink alcohol?" (US-60). Absent: never answered.
+   * null: answered, then cleared with "Not answered" (a stamped clear, as
+   * US-10 AC9 clears any profile field). The plan drops `reduce-alcohol` for 'none'.
+   */
+  alcohol?: AlcoholAnswer | null;
 }
 
 /** One immutable measurement row (mirrors a `health_measurements` row, camelCase). */
@@ -117,6 +124,9 @@ export interface FileMeasurement {
   status: MeasurementStatus; // 'active' | 'entered-in-error'
   correctsId: string | null; // id of the row this one corrects
   externalId: string | null; // e.g. HealthKit sample UUID (dedup)
+  /** A result printed as a limit (US-12 AC20, FHIR Quantity.comparator):
+   *  `value` is the printed bound. Absent: an exact value. Only a lab upload sets it. */
+  comparator?: Comparator;
 }
 
 /** A non-core lab value (beyond the 14 canonical metrics), append-only. */
@@ -132,6 +142,8 @@ export interface FileLabValue {
   source: MeasurementSource;
   status: MeasurementStatus;
   correctsId: string | null;
+  /** As on `FileMeasurement`: `value` is the printed bound. */
+  comparator?: Comparator;
 }
 
 /**
@@ -284,7 +296,7 @@ export function createEmptyFile(opts: { deviceId: string; now: string }): Roadma
  */
 export function createMeasurement(
   fields: Pick<FileMeasurement, 'id' | 'metricType' | 'value' | 'recordedAt' | 'createdAt'> &
-    Partial<Pick<FileMeasurement, 'source' | 'status' | 'correctsId' | 'externalId'>>,
+    Partial<Pick<FileMeasurement, 'source' | 'status' | 'correctsId' | 'externalId' | 'comparator'>>,
 ): FileMeasurement {
   return {
     source: 'manual',
@@ -298,7 +310,7 @@ export function createMeasurement(
 /** The lab-value twin of `createMeasurement`: one row shape for every writer. */
 export function createLabValue(
   fields: Pick<FileLabValue, 'id' | 'metricName' | 'value' | 'unit' | 'recordedAt' | 'createdAt'> &
-    Partial<Pick<FileLabValue, 'referenceLow' | 'referenceHigh' | 'source' | 'status' | 'correctsId'>>,
+    Partial<Pick<FileLabValue, 'referenceLow' | 'referenceHigh' | 'source' | 'status' | 'correctsId' | 'comparator'>>,
 ): FileLabValue {
   return {
     referenceLow: null,

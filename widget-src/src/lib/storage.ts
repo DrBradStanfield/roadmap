@@ -2,6 +2,7 @@ import type { HealthInputs, ApiMeasurement, ApiMedication, ApiScreening, ChatCon
 import type { UnitSystem } from '@roadmap/health-core';
 import {
   sanitizeInputs, mergeLongitudinalInputs, chatContextOf, detectUnitSystem, PREFILL_FIELDS, withLabEgfr, dayOf, localDay,
+  isComparator, labEgfrFrom,
 } from '@roadmap/health-core';
 import type { ApiReminderPreference } from './api-types';
 
@@ -13,6 +14,19 @@ export const MIRROR_KEY = 'health_roadmap_data';
  *  arrives as a `storage` event for MIRROR_KEY instead. */
 export const MIRROR_CHANGED_EVENT = 'hr:inputs-changed';
 const UNIT_PREF_KEY = 'health_roadmap_unit_system';
+
+/** Set once this page must stop writing health data to the device: its own
+ *  log-off, or, in a cloud-mode page, another tab's (US-09 AC2c). It lives in
+ *  this module, which every device writer imports, so the mirror and the
+ *  matrix drafts check the same latch as the record's device copy (US-09 AC2e).
+ *  Never reset in the page: log-off navigates away. */
+let healthWritesStopped = false;
+export function stopLocalHealthWrites(): void {
+  healthWritesStopped = true;
+}
+export function localHealthWritesStopped(): boolean {
+  return healthWritesStopped;
+}
 
 interface StoredData {
   inputs: Partial<HealthInputs>;
@@ -40,6 +54,9 @@ export interface LoadedData {
  * (labEgfrOf over the record's lab rows). Tells the page.
  */
 export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasurements?: ApiMeasurement[], medications?: ApiMedication[], screenings?: ApiScreening[], reminderPreferences?: ApiReminderPreference[], labEgfr?: LabEgfr | null): void {
+  // After log-off the mirror stays gone: a cloud tab's later saves end here
+  // (patchMirror too) and would put the health copy back (US-09 AC2e).
+  if (healthWritesStopped) return;
   try {
     const data: StoredData = {
       inputs,
@@ -47,7 +64,9 @@ export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasur
       medications,
       screenings,
       reminderPreferences,
-      labEgfr,
+      // A lab eGFR printed as a limit keeps its limit and drops the plan's
+      // representative, which an older embed would read as exact (US-12 AC20).
+      labEgfr: labEgfr?.labEgfrLimit ? { labEgfrDate: labEgfr.labEgfrDate, labEgfrLimit: labEgfr.labEgfrLimit } : labEgfr,
       savedAt: new Date().toISOString(),
     };
     localStorage.setItem(MIRROR_KEY, JSON.stringify(data));
@@ -96,6 +115,9 @@ export function loadFromLocalStorage(): LoadedData | null {
       if (sanitizedInputs[field] !== undefined) (inputs as Record<string, unknown>)[field] = sanitizedInputs[field];
     }
     const lab = sanitizeInputs({ labEgfr: data.labEgfr?.labEgfr, labEgfrDate: data.labEgfr?.labEgfrDate });
+    // A lab eGFR printed as a limit (US-12 AC20): its code and bound, graded again by the plan's rule.
+    const sentLimit = data.labEgfr?.labEgfrLimit;
+    const limit = sentLimit && isComparator(sentLimit.comparator) && Number.isFinite(sentLimit.bound) ? sentLimit : null;
 
     return {
       inputs,
@@ -104,11 +126,15 @@ export function loadFromLocalStorage(): LoadedData | null {
       // or corrupted NaN/Infinity values.
       previousMeasurements: (data.previousMeasurements ?? [])
         .filter(m => m.value != null && (m.value as unknown) !== '' && Number.isFinite(Number(m.value)))
+        // A comparator this build cannot read makes the row unreadable, as in the record (US-12 AC20, US-65).
+        .filter(m => m.comparator === undefined || isComparator(m.comparator))
         .map(m => ({ ...m, value: Number(m.value) })),
       medications: data.medications ?? [],
       screenings: data.screenings ?? [],
       reminderPreferences: data.reminderPreferences ?? [],
-      labEgfr: lab.labEgfr !== undefined && lab.labEgfrDate !== undefined ? { labEgfr: lab.labEgfr, labEgfrDate: lab.labEgfrDate } : null,
+      labEgfr: lab.labEgfrDate === undefined ? null
+        : limit ? labEgfrFrom(limit.bound, lab.labEgfrDate, limit.comparator)
+        : lab.labEgfr !== undefined ? labEgfrFrom(lab.labEgfr, lab.labEgfrDate) : null,
     };
   } catch (error) {
     console.warn('Failed to load from localStorage:', error);
@@ -161,7 +187,7 @@ export const DRAFTS_CLEARED_EVENT = 'hr:drafts-cleared';
 
 /** Remove both matrices' unsaved drafts: an erase, made here or on another
  *  device, leaves none behind (US-11). */
-export function clearMatrixDrafts(): void {
+function clearMatrixDrafts(): void {
   safeRemoveItem(BT_TIMELINE_DRAFT_KEY);
   safeRemoveItem(VITALS_DRAFT_KEY);
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(DRAFTS_CLEARED_EVENT));

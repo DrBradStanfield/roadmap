@@ -55,7 +55,8 @@ struct MyDataView: View {
                 MetricDetailView(store: store, row: row, saved: saved)
             }
             .navigationDestination(item: $liveDetail) { metric in
-                if let live { LiveHealthPage(live: live, metric: metric, bands: metric == .vo2Max ? store.myData?.vo2Bands?.value : nil) }
+                if let live { LiveHealthPage(live: live, metric: metric, bands: metric == .vo2Max ? store.myData?.vo2Bands?.value : nil,
+                                              guide: store.myData?.guides?[metric.guideKey]) }
             }
             // Read from Health each time My data shows and on return to the app; nothing is kept (US-56 AC2).
             .task { await live?.refresh() }
@@ -71,7 +72,7 @@ struct MyDataView: View {
             if let data = store.myData {
                 List {
                     vitals(data)
-                    // Under blood pressure: heart rate, resting heart rate and sleep, or the Turn On or Reconnect row (US-56 AC5, AC6).
+                    // Under blood pressure: heart rate, resting heart rate and sleep, or the Turn On or Open Settings row (US-56 AC5, AC6).
                     LiveCardsSection(metrics: LiveMetric.vitals) { liveDetail = $0 }
                     LiveCardsSection(metrics: LiveMetric.fitness, bands: data.vo2Bands?.value.map { [.vo2Max: $0] } ?? [:]) { liveDetail = $0 }
                     metrics(data.bloodTests) {
@@ -84,6 +85,13 @@ struct MyDataView: View {
                     RemindersSection()
                     aboutYou(data)
                     AppleHealthSection()
+                    // US-65: entries the engine could not read are kept unchanged; one calm line says how many.
+                    if let note = data.unreadableNote {
+                        Section {
+                        } footer: {
+                            Text(note)
+                        }
+                    }
                     RecordSection(store: store, sync: sync)
                     Section {
                     } footer: {
@@ -115,7 +123,7 @@ struct MyDataView: View {
             .pickerStyle(.segmented)
             .disabled(picking)
 
-            Picker("Birth year", selection: binding(data.profile.birthYear ?? 0) { .profile(birthYear: $0) }) {
+            Picker("Birth year", selection: binding(data.profile.birthYear ?? 0) { .birthYear($0, storedMonth: data.profile.birthMonth, now: .now) }) {
                 if data.profile.birthYear == nil { Text("Not set").tag(0) }
                 ForEach(DayText.birthYears(now: .now), id: \.self) { Text(String($0)).tag($0) }
             }
@@ -123,7 +131,7 @@ struct MyDataView: View {
 
             Picker("Birth month", selection: binding(data.profile.birthMonth ?? 0) { .profile(birthMonth: $0) }) {
                 if data.profile.birthMonth == nil { Text("Not set").tag(0) }
-                ForEach(1...12, id: \.self) { Text(DayText.monthName($0)).tag($0) }
+                ForEach(DayText.birthMonths(year: data.profile.birthYear ?? 0, now: .now, keeping: data.profile.birthMonth), id: \.self) { Text(DayText.monthName($0)).tag($0) }
             }
             .disabled(picking)
 
@@ -133,21 +141,16 @@ struct MyDataView: View {
             .tint(.primary)
             .disabled(store.unitSwitches > 0)
 
+            // US-60: the answer the reduce-alcohol card's Dismiss asks for; "Not answered" clears it.
+            Picker("Alcohol", selection: binding(data.profile.alcohol?.value) { .alcohol($0) }) {
+                Text("Not answered").tag(MyData.Alcohol?.none)
+                ForEach(MyData.Alcohol.allCases, id: \.self) { Text($0.label).tag(Optional($0)) }
+            }
+            .disabled(picking)
+
             LabeledContent("Units") { units(data) }
         } header: {
             SectionTitle.aboutYou()
-        }
-    }
-
-    /// A section title with controls at its trailing end, large enough to hit easily.
-    private func header(_ title: SectionTitle, @ViewBuilder trailing: () -> some View) -> some View {
-        HStack(spacing: 14) {
-            title
-            Spacer()
-            trailing()
-                .labelStyle(.iconOnly)
-                .font(.title3)
-                .textCase(nil)
         }
     }
 
@@ -164,7 +167,7 @@ struct MyDataView: View {
 
     private func metrics(_ rows: [MyData.Row], @ViewBuilder header: () -> some View) -> some View {
         Section {
-            let column = ValueRow.Column(rows.map { ($0.latest?.value, $0.unit, nil) })
+            let column = ValueRow.Column(rows.map { ($0.latest?.value, $0.previous, $0.unit, nil) })
             ForEach(rows) { metric($0, column: column) }
         } header: {
             header()
@@ -180,10 +183,11 @@ struct MyDataView: View {
                 metric(row, card: row.latest != nil)
             } header: {
                 if index == 0 {
-                    header(.vitals()) {
+                    ControlsHeader(title: .vitals()) {
                         Button { addingLabs = true } label: {
                             Label("Add medical records", systemImage: "plus")
                         }
+                        .accessibilityHint("Upload a lab report or clinic letter")
                         Button { showSync = true } label: {
                             Label("Sync", systemImage: SyncStatusText.symbol(sync.status, provider: sync.provider))
                         }
@@ -199,7 +203,7 @@ struct MyDataView: View {
         // A unit switch still landing would open a sheet on the old choices (AC17e).
         Button { open(row) } label: {
             ValueRow(label: row.label, value: row.latest?.value, unit: row.unit, day: row.latest?.day,
-                     trend: row.trend ?? [], tint: MetricChart.colors(for: row.metric)[0], card: card,
+                     target: row.target, previous: row.previous, trend: row.trend ?? [], tint: MetricChart.colors(for: row.metric)[0], card: card,
                      column: column)
         }
         .tint(.primary)
@@ -246,5 +250,34 @@ struct MyDataView: View {
     private func saved(_ result: RecordStore.ApplyResult) -> RecordStore.ApplyResult {
         if result == .saved { saves += 1 }
         return result
+    }
+}
+
+/// A section title with controls at its trailing end, large enough to hit easily.
+struct ControlsHeader<Trailing: View>: View {
+    let title: SectionTitle
+    @ViewBuilder let trailing: Trailing
+
+    var body: some View {
+        // The buttons go under the title when both do not fit on one line: beside them at the
+        // largest text sizes, "Vitals" broke mid-word as "Vi-tals" (US-25 AC17g, break-it 2026-10-30).
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 14) {
+                title.fixedSize()
+                Spacer()
+                buttons
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                title
+                HStack(spacing: 14) { buttons }
+            }
+        }
+    }
+
+    private var buttons: some View {
+        trailing
+            .labelStyle(.iconOnly)
+            .font(.title3)
+            .textCase(nil)
     }
 }

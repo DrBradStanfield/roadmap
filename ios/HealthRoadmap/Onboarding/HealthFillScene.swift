@@ -9,8 +9,9 @@ import SwiftUI
 struct HealthFillScene: View {
     @State private var filled = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var textSize
 
-    private static let items: [(symbol: String, tint: Color, name: String)] = [
+    static let items: [(symbol: String, tint: Color, name: String)] = [
         ("person.fill", .orange, "Sex"),
         ("calendar", .red, "Birth date"),
         ("ruler.fill", .purple, "Height"),
@@ -20,7 +21,7 @@ struct HealthFillScene: View {
     ]
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10), GridItem(.flexible())], spacing: 10) {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Self.spacing), count: Self.columns(at: textSize)), spacing: Self.spacing) {
             ForEach(Self.items.indices, id: \.self) { index in
                 tile(Self.items[index], lit: index < filled)
             }
@@ -56,6 +57,14 @@ struct HealthFillScene: View {
             }
         }
         .scaleEffect(lit || reduceMotion ? 1 : 0.96)
+    }
+
+    static let spacing = 10.0
+
+    /// Fewer columns as the text grows, so no name is cut ("Blood p…" at accessibility
+    /// sizes in three columns, US-54 AC8b).
+    static func columns(at size: DynamicTypeSize) -> Int {
+        size >= .accessibility3 ? 1 : size.isAccessibilitySize ? 2 : 3
     }
 
     /// Ticks the tiles one by one, holds, then starts again.

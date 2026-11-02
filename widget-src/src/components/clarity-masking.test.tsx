@@ -62,7 +62,7 @@ describe('Clarity masking — health values never reach a session recording', ()
 
   it('masks the React widget root', () => {
     expect(src('./HealthTool.tsx')).toContain(
-      "className={`health-tool${planBarVisible ? ' health-tool--plan-bar' : ''}`} data-clarity-mask=\"true\"",
+      '<div className="health-tool" ref={rootRef} data-clarity-mask="true">',
     );
   });
 

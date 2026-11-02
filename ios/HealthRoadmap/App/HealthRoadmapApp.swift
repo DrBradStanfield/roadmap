@@ -78,7 +78,8 @@ final class Launch {
 /// return, and saves what waits before iOS suspends the app, asking iOS for the
 /// few seconds that save needs. Coming on screen (launch included, so the app is
 /// caught up if it became active while its parts were built) also reads what is new
-/// in Apple Health and looks for a newer engine, at most once in 6 hours (US-25 AC18).
+/// in Apple Health and looks for a newer engine, at most once in 6 hours (US-25 AC18),
+/// and asks StoreKit for the storefront, which changes only in Settings (US-61).
 @MainActor
 private func follow(_ phase: ScenePhase, _ parts: AppParts) {
     switch phase {
@@ -86,6 +87,7 @@ private func follow(_ phase: ScenePhase, _ parts: AppParts) {
         Task { await parts.sync.foreground() }
         Task { await parts.health.refresh() }
         Task { await parts.updater?.checkIfDue() }
+        Task { await parts.store.follow(storefrontIsUS: await AppStoreCountry.current()) }
     case .background:
         let task = BackgroundTask()
         Task {
@@ -154,6 +156,8 @@ struct AppParts {
         let files = try await LaunchFiles.read()
         // The newest verified downloaded engine, or the bundled one (ios/architecture.md D3).
         let engine = try await EngineBoot(folder: files.engineFolder, bundled: files.bundled, foreground: foreground).start().engine
+        // The last storefront StoreKit gave (US-61), so the first draw never waits on it.
+        await engine.useStorefront(isUS: AppStoreCountry.saved())
         let store = try await RecordStore.open(folder: files.record, engine: engine, deviceId: files.deviceId)
         return AppParts(engine: engine, store: store, files: files, reminderTaps: reminderTaps, health: health)
     }

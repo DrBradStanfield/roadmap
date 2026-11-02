@@ -38,6 +38,7 @@ import { loadMatchedContent } from '../app/lib/matched-content';
 import { buildYouTubePlatformContext, loadedHandles } from '../app/lib/youtube-context';
 import { routerView, routerIndexBlock, preferMasters } from '../app/lib/router-view';
 import { stripFrontmatter } from '../app/lib/frontmatter';
+import { isUnreadableAnswer } from '../app/lib/chat-classifier.server';
 import {
   CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, PROMPT_CACHE, ROUTER_MODEL, getArg as getArgOf, modelParams, parseClassification, SILENT_ON_YOUTUBE, type Classification,
 } from '../packages/health-core/src/models';
@@ -212,18 +213,25 @@ async function callAnthropic(body: object): Promise<{ ok: boolean; text: string;
   if (data.stop_reason === 'refusal') return { ok: false, text: '', raw: { stop_reason: 'refusal' } };
   // Thinking blocks come first on Sonnet; join every text block, as production does.
   const text = (data.content ?? []).filter(c => c.type === 'text').map(c => c.text ?? '').join('');
+  // No text is a transport failure, as production's "No text in Anthropic response" throw: it fails open.
+  if (!text && data.stop_reason !== 'max_tokens') return { ok: false, text: '', raw: { status: res.status, error: 'No text in Anthropic response' } };
   return { ok: true, text, raw: data };
 }
 
-async function classify(comment: string): Promise<{ classification: Classification; raw: string }> {
+/** `error` in production's shape (chat-classifier.server.ts), so the bot's skip rule applies as is. */
+async function classify(comment: string): Promise<{ classification: Classification; raw: string; error: string | null }> {
   const body = {
     ...modelParams(CLASSIFIER_MODEL, CLASSIFIER_MAX_TOKENS),
     system: [{ type: 'text', text: CLASSIFIER_PROMPT, cache_control: PROMPT_CACHE }],
     messages: [{ role: 'user', content: `(new conversation, no prior turns)\n\nCurrent message: ${comment}\n\nClassification:` }],
   };
   const result = await callAnthropic(body);
-  if (!result.ok) return { classification: 'ERROR', raw: JSON.stringify(result.raw) };
-  return { classification: parseClassification(result.text), raw: result.text };
+  if (!result.ok) {
+    const error = result.raw?.stop_reason === 'refusal' ? 'refusal' : `HTTP ${result.raw?.status}`;
+    return { classification: 'ERROR', raw: JSON.stringify(result.raw), error };
+  }
+  const classification = parseClassification(result.text);
+  return { classification, raw: result.text, error: classification === 'ERROR' ? `unparseable: ${result.text.slice(0, 60)}` : null };
 }
 
 async function routeQuery(comment: string): Promise<{ handles: string[]; raw: string; error: string | null }> {
@@ -307,10 +315,13 @@ async function processOne(c: YouTubeComment, blogPost: BlogPost): Promise<DryRun
   }
 
   const cls = await classify(c.text);
-  if (SILENT_ON_YOUTUBE.has(cls.classification)) {
+  // As production (US-15 AC48): a refusal or a non-label answer is skipped too; a transport error still fails open.
+  const unreadable = isUnreadableAnswer(cls);
+  if (SILENT_ON_YOUTUBE.has(cls.classification) || unreadable) {
     return {
       comment: c, filter, classification: cls.classification,
-      willPost: false, skipReason: `classifier=${cls.classification} (silent skip)`,
+      willPost: false,
+      skipReason: `${unreadable ? `classifier=ERROR (${cls.error!.split(':')[0]})` : `classifier=${cls.classification}`} (silent skip)`,
     };
   }
 

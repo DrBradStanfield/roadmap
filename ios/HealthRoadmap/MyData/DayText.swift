@@ -33,6 +33,12 @@ enum DayText {
         date(day)?.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, timeZone: .gmt)) ?? day
     }
 
+    /// "Oct 2026" from YYYY-MM-DD, a My data row's date as the web's rows print it (US-62 AC8);
+    /// the text as given if it is not a day.
+    static func monthYear(_ day: String) -> String {
+        date(day)?.formatted(Date.FormatStyle(timeZone: .gmt).month(.abbreviated).year()) ?? day
+    }
+
     /// A card's day or time, as Apple Health writes it on its cards (US-25 AC17, US-56 AC6):
     /// "Today" (or, with `time`, the time of a reading today), "Yesterday", then the short date.
     static func when(_ date: Date, time: Bool = false, now: Date, calendar: Calendar) -> String {
@@ -75,6 +81,27 @@ enum DayText {
     /// "January" for 1, in the phone's language.
     static func monthName(_ month: Int) -> String {
         gregorian.monthSymbols[month - 1]
+    }
+
+    /// The latest birth month for `year`: this year's is this month (US-54 AC5b), as the zone
+    /// furthest ahead (UTC+14) counts them, like the engine's own rule (merge.ts latestDayOnEarth).
+    /// So the menu and the clamp never lower a month the engine accepts.
+    static func latestBirthMonth(year: Int, now: Date) -> Int {
+        year == furthestAhead.component(.year, from: now) ? furthestAhead.component(.month, from: now) : 12
+    }
+
+    /// Gregorian at UTC+14, where every day on Earth has already begun. Made once.
+    private static let furthestAhead: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 14 * 3600)!
+        return calendar
+    }()
+
+    /// Birth months a picker offers for `year`, and the month `keeping` when it is later,
+    /// so a month stored in the future (by the web, say) still shows (review R4).
+    static func birthMonths(year: Int, now: Date, keeping stored: Int? = nil) -> [Int] {
+        let latest = latestBirthMonth(year: year, now: now)
+        return Array(1...latest) + (stored.map { $0 > latest ? [$0] : [] } ?? [])
     }
 
     /// Birth years a picker offers, newest first.

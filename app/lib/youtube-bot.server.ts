@@ -1,7 +1,7 @@
 /**
  * YouTube comment auto-replier.
  *
- * Auto-starts on module import (same pattern as reminder-cron.server.ts and
+ * Auto-starts on module import (same pattern as reminder-v2-cron.server.ts and
  * discord-bot.server.ts). Polls the YouTube Data API every 30 minutes for new
  * top-level comments across all of Brad's videos (one channel-wide call via
  * `allThreadsRelatedToChannelId`), runs the exact chatbot pipeline on each
@@ -27,7 +27,7 @@
  */
 import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin } from './supabase.server';
-import { classifyMessage, shouldFireRouter } from './chat-classifier.server';
+import { classifyMessage, isUnreadableAnswer, shouldFireRouter } from './chat-classifier.server';
 import { routeQuery, sanitizeForRouter, ROUTER_VERSION, type RouterResult } from './chat-router.server';
 import { cutText } from '../../packages/health-core/src/chat-history';
 import { SILENT_ON_YOUTUBE } from '../../packages/health-core/src/models';
@@ -64,6 +64,7 @@ const CRISIS = /\b(die|suicid\w*|kill (myself|me)|chest pain|can'?t breathe|cann
 const FOLLOWUP_MIN_WORDS = 3;             // follow-ups are naturally shorter ("does it cause blindness?")
 const MAX_CHANNEL_REPLIES_PER_THREAD = 2; // hard cap: initial reply + at most ONE follow-up (screenshot-risk control)
 const FOLLOWUP_THREADS_PER_TICK = 25;     // bound the per-tick comments.list calls
+const YOUTUBE_TIMEOUT_MS = 15_000;        // per Google call; a stalled socket must not hold the tick (US-09 AC31)
 
 const PLATFORM_YOUTUBE = 'youtube';
 
@@ -86,6 +87,8 @@ const REFRESH_TOKEN = process.env.YOUTUBE_BOT_REFRESH_TOKEN;
 // ---------------------------------------------------------------------------
 
 let isRunning = false;
+/** One tick at a time per machine: a tick reads the daily cap at its start (US-27 AC3). */
+let tickInFlight = false;
 let cronIntervalId: ReturnType<typeof setInterval> | null = null;
 let cachedAccessToken: string | null = null;
 let cachedAccessTokenExpiresAt = 0;
@@ -125,10 +128,10 @@ export function startYouTubeBot(): void {
   console.log(`YouTube bot started (cron every ${POLL_INTERVAL_MS / 60_000} min, daily cap ${DAILY_REPLY_CAP})`);
 
   // Run first tick after a short delay to avoid blocking app boot.
-  setTimeout(() => { tick().catch(logTickError); }, 30_000);
+  setTimeout(() => { runTick().catch(logTickError); }, 30_000);
 
   cronIntervalId = setInterval(() => {
-    tick().catch(logTickError);
+    runTick().catch(logTickError);
   }, POLL_INTERVAL_MS);
 
   isRunning = true;
@@ -141,6 +144,19 @@ export function stopYouTubeBot(): void {
   }
   isRunning = false;
   console.log('YouTube bot stopped');
+}
+
+async function runTick(): Promise<void> {
+  if (tickInFlight) {
+    console.log('YouTube bot: previous tick still running, skipping this one');
+    return;
+  }
+  tickInFlight = true;
+  try {
+    await tick();
+  } finally {
+    tickInFlight = false;
+  }
 }
 
 function logTickError(err: unknown): void {
@@ -166,6 +182,7 @@ async function getAccessToken(): Promise<string> {
       refresh_token: REFRESH_TOKEN!,
       grant_type: 'refresh_token',
     }).toString(),
+    signal: AbortSignal.timeout(YOUTUBE_TIMEOUT_MS),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
@@ -202,6 +219,7 @@ async function listRecentThreads(token: string): Promise<YouTubeThread[]> {
 
   const res = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(YOUTUBE_TIMEOUT_MS),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
@@ -257,7 +275,7 @@ async function listReplies(token: string, topLevelCommentId: string): Promise<Yo
   url.searchParams.set('maxResults', '100');
   url.searchParams.set('textFormat', 'plainText');
 
-  const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+  const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(YOUTUBE_TIMEOUT_MS) });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
     throw new Error(`YouTube replies list failed: ${res.status} ${body.slice(0, 200)}`);
@@ -297,7 +315,7 @@ async function resolveHandle(token: string, channelId: string): Promise<string |
     const url = new URL('https://www.googleapis.com/youtube/v3/channels');
     url.searchParams.set('id', channelId);
     url.searchParams.set('part', 'snippet');
-    const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(YOUTUBE_TIMEOUT_MS) });
     if (!res.ok) throw new Error(`channels.list ${res.status}`);
     const data = await res.json() as { items?: Array<{ snippet?: { customUrl?: string } }> };
     handle = data.items?.[0]?.snippet?.customUrl ?? null;
@@ -350,6 +368,7 @@ async function postReply(token: string, parentCommentId: string, text: string): 
         textOriginal: text,
       },
     }),
+    signal: AbortSignal.timeout(YOUTUBE_TIMEOUT_MS),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
@@ -582,7 +601,7 @@ export async function persistYouTubeTurn(p: {
     }
 
     // The assistant half. Only when the LLM actually produced output: a
-    // classifier silent skip (GREETING or SPAM) never reached the model, and a fallback
+    // classifier silent skip (GREETING, SPAM or an unreadable answer) never reached the model, and a fallback
     // produced no genuine answer, so neither gets a fabricated assistant row.
     let assistantMessageId: string | null = null;
     if (outcome.llmOutput) {
@@ -882,10 +901,12 @@ export async function runPipeline(
 
   const classifierResult = await classifyMessage(sanitized);
   const { classification } = classifierResult;
-  if (SILENT_ON_YOUTUBE.has(classification)) {
+  const unreadable = isUnreadableAnswer(classifierResult);
+  if (SILENT_ON_YOUTUBE.has(classification) || unreadable) {
     return {
       posted: false,
-      skipReason: `classifier=${classification}`,
+      // 'refusal' or 'unparseable' only; the raw model text stays out of the reason.
+      skipReason: unreadable ? `classifier=ERROR (${classifierResult.error!.split(':')[0]})` : `classifier=${classification}`,
       classification,
       routerHandles: [],
       routerResult: null,
@@ -1147,8 +1168,9 @@ async function tick(): Promise<void> {
 
       // Main-LLM failure (fallback path inside getChatCompletion) is transient —
       // un-claim so the next tick can retry once Anthropic recovers. Genuine
-      // SKIP_NO_REPLY / GREETING or SPAM / blog-missing / refusal cases leave the claim
-      // intact so we don't waste LLM tokens re-evaluating the same comment.
+      // SKIP_NO_REPLY / GREETING or SPAM / unreadable classifier answer (US-15
+      // AC48) / blog-missing / refusal cases leave the claim intact so we don't
+      // waste LLM tokens re-evaluating the same comment.
       if (shouldUnclaim(outcome)) await unclaimComment(thread.topLevelCommentId);
       skippedThisTick++;
       continue;

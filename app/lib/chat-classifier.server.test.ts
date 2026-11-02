@@ -11,7 +11,7 @@ vi.mock('./anthropic.server', () => ({ callAnthropicWithUsage: call }));
 vi.mock('@sentry/react-router', () => ({ captureMessage: vi.fn(), captureException: vi.fn() }));
 
 import * as Sentry from '@sentry/react-router';
-import { classifyMessage } from './chat-classifier.server';
+import { classifyMessage, isUnreadableAnswer } from './chat-classifier.server';
 
 const usage = { inputTokens: 37, outputTokens: 8, cacheReadTokens: 923, cacheWriteTokens: 0 };
 
@@ -58,3 +58,48 @@ describe('spam label (US-15 AC41)', () => {
   });
 });
 
+
+describe('unreadable classifier answers (US-15 AC48)', () => {
+  beforeEach(() => call.mockReset());
+
+  it('US-15 AC48: a refusal or a non-label answer is unreadable; a timeout, an API failure or a label is not', async () => {
+    call.mockResolvedValue({ content: '', contentBlocks: [], usage, stopReason: 'refusal', refusalCategory: 'bio' });
+    expect(isUnreadableAnswer(await classifyMessage('a question'))).toBe(true);
+    call.mockResolvedValue({ content: 'PROMOTION', contentBlocks: [], usage, stopReason: 'end_turn' });
+    expect(isUnreadableAnswer(await classifyMessage('a question'))).toBe(true);
+    call.mockRejectedValue(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+    const timedOut = await classifyMessage('a question');
+    expect(timedOut).toMatchObject({ classification: 'ERROR', error: 'timeout' });
+    expect(isUnreadableAnswer(timedOut)).toBe(false);
+    call.mockRejectedValue(new Error('Anthropic API 529: overloaded'));
+    expect(isUnreadableAnswer(await classifyMessage('a question'))).toBe(false);
+    call.mockResolvedValue({ content: 'ROUTE', contentBlocks: [], usage, stopReason: 'end_turn' });
+    expect(isUnreadableAnswer(await classifyMessage('a question'))).toBe(false);
+  });
+});
+
+describe('missing classifier prompt (US-15 AC48)', () => {
+  it('US-15 AC48: an unreadable prompt file fails open without calling the model, and reaches Sentry once', async () => {
+    vi.resetModules();
+    call.mockReset();
+    const fs = (await import('fs')).default;
+    const read = vi.spyOn(fs, 'readFileSync').mockImplementation(() => { throw new Error('ENOENT'); });
+    const sentry = await import('@sentry/react-router');
+    vi.mocked(sentry.captureMessage).mockClear();
+    const fresh = await import('./chat-classifier.server');
+    try {
+      const first = await fresh.classifyMessage('Got my peptides from VendorX');
+      const second = await fresh.classifyMessage('a question');
+      for (const result of [first, second]) {
+        expect(result).toMatchObject({ classification: 'ERROR', routerSkipped: false, error: 'no prompt' });
+        expect(fresh.isUnreadableAnswer(result)).toBe(false);
+        expect(fresh.shouldFireRouter(result)).toBe(true);
+      }
+      expect(call).not.toHaveBeenCalled();
+      expect(sentry.captureMessage).toHaveBeenCalledTimes(1);
+      expect(sentry.captureMessage).toHaveBeenCalledWith('Chat classifier: prompt missing', expect.objectContaining({ level: 'error' }));
+    } finally {
+      read.mockRestore();
+    }
+  });
+});

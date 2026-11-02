@@ -4,7 +4,7 @@
  * Read-only: no editing, no unit conversion — values render as-reported
  * (see decisions in docs/user-stories.md § US-21).
  */
-import { LAB_GROUPS, labSlotKey, resolveLabCatalogEntry, displayLabUnit, type LabGroup, type LabGroupId } from '@roadmap/health-core';
+import { LAB_GROUPS, comparatorOf, labSlotKey, resolveLabCatalogEntry, displayLabUnit, type Comparator, type LabGroup, type LabGroupId } from '@roadmap/health-core';
 import { labValueLabel } from './lab-value-labels';
 import type { ApiLabValue } from './api-types';
 
@@ -23,6 +23,8 @@ export interface LabSeriesPoint {
   value: number;
   unit: string;
   recordedAt: string;
+  /** Printed as a limit: `value` is its bound (US-12 AC20). */
+  comparator?: Comparator;
 }
 
 export interface LabSeries {
@@ -74,7 +76,7 @@ export function groupLabValues(rows: LabValueRow[]): LabValueGroup[] {
     // means the same unit, typography-normalized otherwise. Relabeling only —
     // nothing is converted here (catalogued tests are converted once, on the
     // write); a unit that still differs flags mixedUnits.
-    series.points.push({ id: row.id, value: row.value, unit: displayLabUnit(row.unit, entry), recordedAt: row.recordedAt });
+    series.points.push({ id: row.id, value: row.value, unit: displayLabUnit(row.unit, entry), recordedAt: row.recordedAt, ...comparatorOf(row) });
   }
 
   const groupDefs: Array<{ id: LabRowsGroupId; label: string; icon: LabRowsIcon }> = [...LAB_GROUPS, OTHER_GROUP];
@@ -129,18 +131,21 @@ export function countLabValuePoints(groups: LabValueGroup[]): number {
 
 /** One history series per lab SLOT (US-10) — "Vitamin D" and `vitamin_d` are
  *  one chart, not two — labelled from the catalogue when the test is known.
+ *  `units` holds each distinct display unit, as the table shows them (US-21 AC3a).
  *  Series come back sorted by label; rows keep their loaded order. */
 export function groupLabHistory(rows: LabValueRow[]): {
   keys: string[];
-  series: Record<string, { label: string; rows: LabValueRow[] }>;
+  series: Record<string, { label: string; rows: LabValueRow[]; units: string[] }>;
 } {
-  const series: Record<string, { label: string; rows: LabValueRow[] }> = {};
+  const series: Record<string, { label: string; rows: LabValueRow[]; units: string[] }> = {};
   for (const row of rows) {
     const key = labSlotKey(row.metricName);
     if (!series[key]) {
-      series[key] = { label: labValueLabel(row.metricName), rows: [] };
+      series[key] = { label: labValueLabel(row.metricName), rows: [], units: [] };
     }
     series[key].rows.push(row);
+    const unit = displayLabUnit(row.unit, resolveLabCatalogEntry(row.metricName));
+    series[key].units = [...new Set([...series[key].units, unit])];
   }
   const keys = Object.keys(series).sort((a, b) => series[a].label.localeCompare(series[b].label));
   return { keys, series };
