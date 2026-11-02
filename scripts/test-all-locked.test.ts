@@ -56,22 +56,6 @@ describe('test:all lock (US-68 AC1)', () => {
     release(dir);
     expect(fs.existsSync(dir)).toBe(false);
   });
-
-  it('a real run releases the lock on exit and on SIGTERM', async () => {
-    const script = `
-      import { tryAcquire, release } from ${JSON.stringify(path.resolve(__dirname, 'test-all-locked.mjs'))};
-      const d = ${JSON.stringify(dir)};
-      tryAcquire(d);
-      process.on('exit', () => release(d));
-      process.on('SIGTERM', () => process.exit(143));
-      console.log('held'); setInterval(() => {}, 1000);`;
-    const child = spawn(process.execPath, ['--input-type=module', '-e', script], { stdio: ['ignore', 'pipe', 'inherit'] });
-    await new Promise((r) => child.stdout!.once('data', r));
-    expect(fs.existsSync(dir)).toBe(true);
-    child.kill('SIGTERM');
-    await new Promise((r) => child.once('exit', r));
-    expect(fs.existsSync(dir)).toBe(false);
-  });
 });
 
 describe('worker cap and CI (US-68 AC2, AC3)', () => {
@@ -92,6 +76,13 @@ describe('worker cap and CI (US-68 AC2, AC3)', () => {
     expect(timeoutMinutes({ TEST_ALL_LOCK_TIMEOUT_MIN: '2' })).toBe(2);
     expect(isTargeted(['--reporter=dot'])).toBe(false);
     expect(isTargeted(['--reporter=dot', 'a.test.ts'])).toBe(true);
+    expect(isTargeted(['--reporter', 'verbose'])).toBe(false);
+    expect(isTargeted(['-t', 'foo'])).toBe(false);
+    expect(isTargeted(['--shard', '1/2'])).toBe(false);
+    expect(isTargeted(['--shard=1/2', '--silent'])).toBe(false);
+    expect(isTargeted(['packages/health-core'])).toBe(true);
+    expect(isTargeted(['x.test.ts', '-t', 'foo'])).toBe(true);
+    expect(isTargeted(['scripts/*.mjs'])).toBe(true);
   });
 
   it('passes extra args through, and adds no cap in CI', () => {
@@ -133,6 +124,18 @@ describe('lock holder liveness and takeover races (US-68 AC1)', () => {
     try { expect(tryAcquire(dir)).toBe(false); } finally { (fs as any).renameSync = real; }
     expect(readHolder(dir).pid).toBe(process.ppid);
     expect(fs.readdirSync(base).filter((f) => f.includes('stale'))).toEqual([]);
+  });
+
+  it('names the vitest pid when only its group is alive', async () => {
+    const grp = spawn(process.execPath, ['-e', 'setInterval(()=>{},1000)'], { detached: true, stdio: 'ignore' });
+    try {
+      fs.mkdirSync(dir);
+      fs.writeFileSync(path.join(dir, 'owner.json'), JSON.stringify({ pid: deadPid(), child: grp.pid, started: 's', cwd: 'c' }));
+      const lines: string[] = [];
+      await expect(acquire(dir, { pollMs: 10, timeoutMs: 30, log: (l: string) => lines.push(l) })).rejects.toThrow();
+      expect(lines[0]).toContain(`vitest pid ${grp.pid} is alive`);
+      expect(lines[0]).not.toContain('rm -rf');
+    } finally { process.kill(-grp.pid!, 'SIGKILL'); }
   });
 
   it('prints the rm hint only for a stale holder', async () => {
@@ -200,14 +203,30 @@ ${body}`, { mode: 0o755 });
     expect(fs.existsSync(path.join(proj, '.git', 'test-all.lock'))).toBe(false);
   });
 
-  it('a second signal force-kills the child group', async () => {
-    fakeVitest("process.on('SIGTERM', () => {}); setInterval(() => {}, 1000);");
+  it('a later signal (over 1 s on) force-kills a child that ignores SIGTERM', async () => {
+    fakeVitest("process.on('SIGTERM', () => note('sigterm ' + process.pid)); note('pid ' + process.pid); setInterval(() => {}, 1000);");
     const c = run();
-    await waitFor(() => logText().includes('start'));
+    await waitFor(() => logText().includes('pid '));
+    const pid = Number(/pid (\d+)/.exec(logText())![1]);
     c.kill('SIGTERM');
-    await new Promise((r) => setTimeout(r, 150));
+    await waitFor(() => logText().includes('sigterm'));
+    expect(logText()).toContain('sigterm ' + pid);
+    await new Promise((r) => setTimeout(r, 1200));
     c.kill('SIGTERM');
     expect(await exited(c)).toBe(143);
+    expect(() => process.kill(pid, 0)).toThrow(); // SIGKILL reached the child: it is gone
+    expect(fs.existsSync(path.join(proj, '.git', 'test-all.lock'))).toBe(false);
+  });
+
+  it('two SIGINTs 10 ms apart (npm) let vitest stop gracefully', async () => {
+    fakeVitest("process.on('SIGINT', () => setTimeout(() => { note('graceful'); process.exit(0); }, 300)); setInterval(() => {}, 1000);");
+    const c = run();
+    await waitFor(() => logText().includes('start'));
+    c.kill('SIGINT');
+    await new Promise((r) => setTimeout(r, 10));
+    c.kill('SIGINT');
+    expect(await exited(c)).toBe(130);
+    expect(logText()).toContain('graceful');
     expect(fs.existsSync(path.join(proj, '.git', 'test-all.lock'))).toBe(false);
   });
 

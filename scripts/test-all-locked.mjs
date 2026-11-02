@@ -80,7 +80,8 @@ export async function acquire(dir, { timeoutMs = 60 * 60_000, pollMs = 3000, log
   while (!tryAcquire(dir)) {
     if (!told) {
       const h = readHolder(dir);
-      const hint = holderAlive(h) ? `do not remove; pid ${h.pid} is alive` : `looks stale; to clear: rm -rf ${dir}`;
+      const hint = !holderAlive(h) ? `looks stale; to clear: rm -rf ${dir}`
+        : alive(h.pid) ? `do not remove; pid ${h.pid} is alive` : `do not remove; vitest pid ${h.child} is alive`;
       log(`test:all is locked by pid ${h?.pid ?? '?'} (started ${h?.started ?? '?'}, in ${h?.cwd ?? '?'}); waiting (${hint})`);
       told = true;
     }
@@ -94,8 +95,10 @@ export const workerCap = (env = process.env, cpus = os.cpus().length) =>
 
 export const inCI = (env = process.env) => !!env.CI && env.CI !== 'false' && env.CI !== '0';
 export const timeoutMinutes = (env = process.env) => (Number(env.TEST_ALL_LOCK_TIMEOUT_MIN) > 0 ? Number(env.TEST_ALL_LOCK_TIMEOUT_MIN) : 60);
-/** A targeted run names files or filters: any argument that is not a flag. */
-export const isTargeted = (extra) => extra.some((a) => !a.startsWith('-'));
+/** A targeted run names a test path or glob. A flag's value (`--reporter verbose`, `-t foo`) is not one. */
+export const isTargeted = (extra) =>
+  extra.some((a, i) => !a.startsWith('-') && !(i > 0 && extra[i - 1].startsWith('-') && !extra[i - 1].includes('=')) &&
+    (a.includes('/') || a.includes('.test.') || /\.(ts|tsx|mjs|js)$/.test(a)));
 
 export function vitestArgs(extra, env = process.env) {
   return inCI(env) ? ['run', ...extra] : ['run', `--maxWorkers=${workerCap(env)}`, ...extra];
@@ -117,16 +120,20 @@ async function main() {
   const dir = lockDir();
   if (locked) await acquire(dir, { timeoutMs: timeoutMinutes() * 60_000 });
 
-  // Own process group, so signals and the lock cover vitest's workers too.
-  const child = spawn(bin, vitestArgs(extra), { stdio: 'inherit', detached: true });
-  if (locked) recordChild(dir, child.pid);
-  let signals = 0;
+  // Own process group (not in CI), so signals and the lock cover vitest's workers too.
+  const child = spawn(bin, vitestArgs(extra), { stdio: 'inherit', detached: !inCI() });
+  const kill = (sig) => { try { process.kill(inCI() ? child.pid : -child.pid, sig); } catch { /* gone */ } };
+  if (locked) {
+    try { recordChild(dir, child.pid); } catch (e) { kill('SIGKILL'); release(dir); console.error(`test:all: ${e.message}`); process.exit(1); }
+  }
+  let firstSignal = 0;
   let exitCode = null;
   child.on('error', (e) => { console.error(`test:all: could not start vitest (${e.code ?? e.message})`); exitCode = 1; if (locked) release(dir); process.exit(1); });
   for (const [name, num] of [['SIGINT', 2], ['SIGTERM', 15]]) {
     process.on(name, () => {
-      exitCode = 128 + num;
-      try { process.kill(-child.pid, ++signals > 1 ? 'SIGKILL' : name); } catch { /* group gone */ }
+      // npm forwards one Ctrl-C as several signals within milliseconds: only a later one escalates.
+      if (!firstSignal) { firstSignal = Date.now(); exitCode = 128 + num; kill(name); }
+      else if (Date.now() - firstSignal > 1000) kill('SIGKILL');
     });
   }
   child.on('exit', (code, sig) => {
