@@ -9,9 +9,13 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, waitFor } from '@testing-library/react';
-import type { RoadmapFile } from '@roadmap/health-core';
-import { flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveScreening, saveSupplement } from '../lib/roadmap-data';
+import { MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME, type RoadmapFile, type WriteResult } from '@roadmap/health-core';
+import {
+  addMeasurement, flushRoadmapStore, initRoadmapStore, loadAllHistory, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveScreening,
+  saveSupplement,
+} from '../lib/roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
+import { isSyncPending } from '../storage';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -94,6 +98,24 @@ describe('US-06 AC13: a list change made just before the tab goes away is saved'
     });
   });
 
+  // One handler for every event: the vitals field the user left is saved too,
+  // on hide as well as on unload. Unmounting drops a save still waiting, so
+  // only one the handler ran reaches the record.
+  it.each(Object.keys(leave))('%s: a first-time weight the user left is saved, not left waiting', async event => {
+    await initRoadmapStore(new LocalStorageAdapter());
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {});
+    await flushRoadmapStore();
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(view.container.querySelector('#weightKg')).not.toBeNull());
+    const weight = view.container.querySelector<HTMLInputElement>('#weightKg')!;
+    fireEvent.change(weight, { target: { value: '82' } });
+    act(() => { fireEvent.blur(view.container.querySelector('#weightKg')!); });
+    act(() => leave[event]());
+    view.unmount();
+    await act(async () => { await flushRoadmapStore(); });
+    await waitFor(async () => expect((await loadAllHistory()).filter(m => m.metricType === 'weight').map(m => m.value)).toEqual([82]));
+  });
+
   it('a hidden page that comes back runs each flushed save once: a stop made after it stays', async () => {
     const view = await page('.supplement-dose');
     fireEvent.change(view.container.querySelector('.supplement-dose')!, { target: { value: '50' } });
@@ -120,5 +142,62 @@ describe('US-06 AC13: a list change made just before the tab goes away is saved'
     expect(onDevice().medications.find(m => m.medicationKey === 'glp1')?.doseValue).toBe(1);
     await act(async () => { await new Promise(r => setTimeout(r, 400)); await flushRoadmapStore(); });
     expect(onDevice().medications.find(m => m.medicationKey === 'glp1')?.doseValue).toBe(1.7);
+  });
+});
+
+/** A cloud whose save never answers: the page goes before the request ends. */
+class StalledCloud extends MemoryAdapter {
+  async write(): Promise<WriteResult> {
+    return new Promise<WriteResult>(() => {});
+  }
+}
+
+describe('US-06 AC13: a cloud page keeps a change its stalled save had not landed', () => {
+  afterEach(async () => {
+    Reflect.deleteProperty(document, 'visibilityState');
+    // The harness flushes the store after each test: give it one that answers.
+    await initRoadmapStore(new MemoryAdapter(new MemoryCloud()));
+  });
+
+  /** The same GLP-1 user, saved in a cloud; the page then runs on a cloud whose saves hang. */
+  async function cloudPage(cloud: MemoryCloud) {
+    await initRoadmapStore(new MemoryAdapter(cloud));
+    await saveChangedMeasurements({ sex: 'female', heightCm: 178, birthYear: 1960, birthMonth: 1 }, {});
+    await addMeasurement('weight', 101.4, '2026-09-01');
+    await saveMedication('glp1', 'semaglutide_injection', 1, 'mg');
+    await flushRoadmapStore();
+    await initRoadmapStore(new StalledCloud(cloud));
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(view.container.querySelector('#glp1-dose')).not.toBeNull());
+    return view;
+  }
+  const cloudDose = (cloud: MemoryCloud) =>
+    (JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile).medications.find(m => m.medicationKey === 'glp1')?.doseValue;
+
+  it.each(Object.keys(leave))('%s: the device copy holds it at once, marked for sync, and the next load sends it up', async event => {
+    const cloud = new MemoryCloud();
+    const view = await cloudPage(cloud);
+    fireEvent.change(view.container.querySelector('#glp1-dose')!, { target: { value: '1.7' } });
+    act(() => leave[event]());
+    expect(onDevice().medications.find(m => m.medicationKey === 'glp1')?.doseValue).toBe(1.7);
+    expect(isSyncPending()).toBe(true);
+    expect(cloudDose(cloud)).toBe(1);
+    view.unmount();
+    // The next page load reaches the cloud, and the marked device copy goes up.
+    await initRoadmapStore(new MemoryAdapter(cloud));
+    await flushRoadmapStore();
+    expect(cloudDose(cloud)).toBe(1.7);
+    expect(isSyncPending()).toBe(false);
+  });
+
+  it('after another tab logs off, leaving writes nothing to the device (US-09 AC2c)', async () => {
+    const cloud = new MemoryCloud();
+    const view = await cloudPage(cloud);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_signal', newValue: '1' }));
+    localStorage.clear(); // the other tab's device wipe
+    fireEvent.change(view.container.querySelector('#glp1-dose')!, { target: { value: '1.7' } });
+    act(() => leave['visibilitychange: hidden']());
+    expect(localStorage.getItem('health_roadmap_file_v2')).toBeNull();
+    expect(isSyncPending()).toBe(false);
   });
 });

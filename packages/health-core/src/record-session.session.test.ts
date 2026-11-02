@@ -200,6 +200,91 @@ describe('RecordSession: a failed save (US-09 AC4, US-10 AC5)', () => {
   });
 });
 
+/** A cloud whose save never answers: the page goes before the request ends. */
+class StalledStore extends TestStore {
+  async write(): Promise<WriteResult> {
+    this.writes += 1;
+    return new Promise<WriteResult>(() => {});
+  }
+}
+
+/** The fake cloud host, its device copy given the synchronous face localStorage has on the web. */
+function withDeviceSync(fake: Fake, stopped = false): { host: RecordHost; device: TestStore } {
+  const device = new TestStore(fake.mirrorCloud);
+  if (fake.host.tier !== 'cloud') throw new Error('cloud host expected');
+  return { host: { ...fake.host, mirror: { ...fake.host.mirror, sync: device, writesStopped: () => stopped } }, device };
+}
+
+describe('RecordSession: a cloud page goes away before its save lands (US-06 AC13, US-10 AC5)', () => {
+  it('writes the unsaved change to the device copy at once, marked for sync, and the next session lifts it up', async () => {
+    const store = new StalledStore();
+    const fake = fakeHost(store);
+    const { host } = withDeviceSync(fake);
+    const session = await RecordSession.open(host);
+    add(session, 'late');
+    session.flushSync();
+    // Synchronously, with the cloud save still in the air.
+    expect(ids(stored(fake.mirrorCloud))).toEqual(['late']);
+    expect(fake.pending.value).toBe(true);
+    expect(store.cloud.files.has(ROADMAP_FILE_NAME)).toBe(false);
+
+    const next = await RecordSession.open({ ...host, store: new TestStore(store.cloud) });
+    expect(ids(next.file)).toEqual(['late']);
+    await next.flush();
+    expect(ids(stored(store.cloud))).toEqual(['late']);
+    expect(fake.pending.value).toBe(false);
+  });
+
+  it('merges into the device copy: a row only it holds stays, and a row this copy erased does not come back', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const { host } = withDeviceSync(fake);
+    const session = await RecordSession.open(host);
+    add(session, 'erased');
+    await session.flush();
+    expect((await session.erase()).success).toBe(true);
+    // A device copy from before the erase, which also holds a row of its own.
+    const before = structuredClone(session.file);
+    before.meta.eraseEpoch = 0;
+    before.meta.erasedAt = undefined;
+    before.erasedRows = undefined;
+    before.measurements = [weight('erased', 80, '2026-10-01'), weight('device-only', 70, '2026-09-01')];
+    fake.mirrorCloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(before), version: 1 });
+    add(session, 'late', 82, '2026-10-03');
+    store.write = () => new Promise<WriteResult>(() => {}); // the save now hangs
+    session.flushSync();
+    const device = stored(fake.mirrorCloud);
+    expect(ids(device)).toEqual(['device-only', 'late']);
+    expect(device.meta.eraseEpoch).toBe(1);
+    expect(fake.pending.value).toBe(true);
+  });
+
+  it('writes and marks nothing on the device after log-off (US-09 AC2c)', async () => {
+    const store = new StalledStore();
+    const fake = fakeHost(store);
+    const { host, device } = withDeviceSync(fake, true);
+    const session = await RecordSession.open(host);
+    add(session, 'late');
+    const writes = device.writes;
+    session.flushSync();
+    expect(device.writes).toBe(writes);
+    expect(fake.mirrorCloud.files.has(ROADMAP_FILE_NAME)).toBe(false);
+    expect(fake.pending.value).toBe(false);
+  });
+
+  it('does nothing when nothing is unsaved', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const { host } = withDeviceSync(fake);
+    const session = await RecordSession.open(host);
+    add(session, 'a');
+    await session.flush();
+    session.flushSync();
+    expect(fake.mirrorCloud.files.has(ROADMAP_FILE_NAME)).toBe(false);
+    expect(fake.pending.value).toBe(false);
+  });
+});
+
 describe('RecordSession: erase (US-09 AC23, US-11)', () => {
   it('refuses on a session that runs on-device because the cloud could not be read, before anything moves', async () => {
     const store = new TestStore();
