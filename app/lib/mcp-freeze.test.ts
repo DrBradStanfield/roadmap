@@ -15,6 +15,10 @@
  * US-32 AC52 (2026-10-21): four descriptions rewritten to name their sibling
  * tools (Glama's tool-quality grade). MCP_TOOLS and tools/list re-pinned on the
  * same held branch, so the verdict brings one freeze bump.
+ *
+ * US-66 AC11 (2026-11-02): read_record, add_measurement and add_lab_values say
+ * every blood test is a labValues row; tool layer v3. MCP_TOOLS and tools/list
+ * re-pinned with Brad's yes (OpenAI rejected the app and it is not resubmitted).
  */
 import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
@@ -27,10 +31,10 @@ const sha256 = (value: unknown) => createHash('sha256').update(JSON.stringify(va
 describe('US-35 AC13 — the published connector text is frozen during the 1.0.2 review', () => {
   it.each([
     ['INSTRUCTIONS', INSTRUCTIONS, '765b597e650f5e6e19169462ee9aa5746ec78d46ac8680bc9224e64825bbf26d'],
-    ['MCP_TOOLS', MCP_TOOLS, '88d3e15924613c03bafa48da0be1ee058e5568c25a73410a873a29595a4a7d59'],
+    ['MCP_TOOLS', MCP_TOOLS, 'f9e34af359f0590560d558e9ad77c8e6b4e0b394d515d519f1b2bee757ab8184'],
     ['MCP_PROMPTS', MCP_PROMPTS, 'a159ee16a3ce5fefc23ed8f90178a852551350795731fabd30ca7a5f6267c140'],
     ['SERVER_INFO', SERVER_INFO, 'ce1110c13b5b005a4f14f0068138039eecd7fddc888032f08479060ad2da400f'],
-  ] as const)('%s hashes to its pinned value (cab5615a; AC52 re-pin)', (_name, value, pinned) => {
+  ] as const)('%s hashes to its pinned value (cab5615a; AC52 re-pin; US-66 re-pin)', (_name, value, pinned) => {
     expect(sha256(value)).toBe(pinned);
   });
 });
@@ -43,6 +47,6 @@ describe('US-32 AC50 — the tools/list answer itself is pinned', () => {
       instructions: INSTRUCTIONS,
       callTool: async () => ({ errorMessage: 'not called' }),
     })) as { result: { tools: unknown } };
-    expect(sha256(answer.result.tools)).toBe('111a51a8b8b6f34f525b65cf3e6de1d561f03c58ee9156427d385f16c7731bf0');
+    expect(sha256(answer.result.tools)).toBe('f2b0aeb93e6238b177a63ad03e76a724d1d74db8cfbacf5fb635956394f82393');
   });
 });

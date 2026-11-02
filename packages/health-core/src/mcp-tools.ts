@@ -2351,9 +2351,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'screenings and documents. Use it for raw values, history and row ids, and before add_measurement, ' +
       'add_lab_values or correct_value; get_plan computes the plan. Rows are never deleted: a superseded value stays with status ' +
       '"entered-in-error", so read `status: "active"` rows as the current truth. Use each row\'s `current` flag for ' +
-      'the value the plan counts. Sync bookkeeping is left out. measurements holds weight, waist and blood pressure; ' +
-      'labValues holds every blood test, the plan\'s nine flagged `core`. Vitals and core tests are SI (`units`); a catalogued lab ' +
-      'is converted to SI; an unknown test keeps the unit it was reported in.',
+      'the value the plan counts. Sync bookkeeping is left out. Blood tests are in labValues, the plan\'s flagged ' +
+      '`core`. Values are SI (`units`). A catalogued lab is converted to SI; an unknown test keeps the unit it was reported in.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -2397,7 +2396,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     _meta: invocation('Adding your measurement…', 'Added your measurement'),
     title: 'Add a core measurement',
     description:
-      `Append one core-metric value (${METRIC_TYPES.join(', ')}); a blood test is filed in labValues, flagged \`core\`. Give the value in SI units, or pass ` +
+      `Append one core-metric value (${METRIC_TYPES.join(', ')}). Give the value in SI units, or pass ` +
       '`unit` with the unit it was reported in and it is converted. One value per metric per day: if that day ' +
       'already holds a value the call is refused and you should use correct_value instead. Only when the user ' +
       'asked to add a value; a failed correction is never turned into an add.',
@@ -2430,7 +2429,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     _meta: invocation('Adding your lab results…', 'Added your lab results'),
     title: 'Add lab results',
     description:
-      `Append blood tests (ferritin, TSH, LDL, …), up to ${MAX_LAB_ROWS_PER_CALL} rows per call; a core test is filed as its core value. ` +
+      `Append blood tests (ferritin, LDL, …), up to ${MAX_LAB_ROWS_PER_CALL} rows per call. ` +
       'Give the number and unit exactly as printed; never convert. A catalogued test is stored in SI (bounds too); an ' +
       'unknown spelling is refused, naming those it takes, as is a cells/µL count not whole or off its range\'s scale. ' +
       'Writes all rows or none. Only when the user asked to add a value; a failed correction is never turned into an add.',

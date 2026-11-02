@@ -3311,7 +3311,7 @@ describe('US-36 AC5 — slots, dedup and the commit are import_documents’ own'
     for (const rule of ['never inferred', 'reference', 'previous', 'every result line', 'sample date', 'DD/MM', 'ASK the user', '< or >', 'WAIT for the user', 'never reaches our server']) {
       expect(tool.description, rule).toContain(rule);
     }
-    expect(TOOL_LAYER_VERSION).toBe(2);
+    expect(TOOL_LAYER_VERSION).toBe(3); // v3: every blood test in labValues (US-66 AC11)
   });
 });
 
