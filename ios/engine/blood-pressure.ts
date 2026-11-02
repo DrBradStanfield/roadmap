@@ -114,14 +114,14 @@ export function pressureHistory(file: RoadmapFile, excludedFields: readonly stri
     let stateAt = -1;
     const snapshots: Array<{ id: string; sys?: FileMeasurement; dia?: FileMeasurement; rows: FileMeasurement[] }> = [];
     for (const write of writes(onDay)) {
-      const shown = { ...state, ...Object.fromEntries(write.map((row) => [row.metricType, row])) };
+      const afterWrite = { ...state, ...Object.fromEntries(write.map((row) => [row.metricType, row])) };
       const before = snapshots.at(-1);
-      const same = before && before.sys?.value === shown.systolic_bp?.value && before.dia?.value === shown.diastolic_bp?.value;
+      const same = before && before.sys?.value === afterWrite.systolic_bp?.value && before.dia?.value === afterWrite.diastolic_bp?.value;
       // Nothing new: the same values again, written only by rows now set aside.
       if (same && write.every((row) => row.status !== 'active')) continue;
-      snapshots.push({ id: write.map((row) => row.id).join('+'), sys: shown.systolic_bp, dia: shown.diastolic_bp, rows: write });
+      snapshots.push({ id: write.map((row) => row.id).join('+'), sys: afterWrite.systolic_bp, dia: afterWrite.diastolic_bp, rows: write });
       if (!write.every(lost)) {
-        state = shown;
+        state = afterWrite;
         stateAt = snapshots.length - 1;
       }
     }
