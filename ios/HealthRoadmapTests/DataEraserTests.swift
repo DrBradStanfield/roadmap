@@ -461,7 +461,7 @@ final class DataEraserTests: XCTestCase {
         try await Task.sleep(for: .milliseconds(50))
         let imported = await app.store.applyNow(.add(metric: "weight", value: 81, day: "2026-10-02"))
         guard case .erased = await erase.value else { return XCTFail("the erase did not finish") }
-        XCTAssertEqual(imported, .saved)
+        XCTAssertEqual(imported, .saved())
         let onDisk = try object(String(contentsOf: phoneFile, encoding: .utf8))
         XCTAssertEqual(rows(onDisk), 1, "the import is in the erased record, not written over")
         XCTAssertEqual(epoch(onDisk), 1)

@@ -302,11 +302,11 @@ describe('US-06, US-07 AC1: screening eligibility at each age gate, one year eit
     expect(has('female', 30, 'screening-cervical', { cervicalMethod: 'not_yet_started' })).toBe(true);
   });
 
-  it('lung: 50 to 80, former or current smoker, 15+ pack-years', () => {
-    const smoker: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 15 };
+  it('lung: 50 to 80, former or current smoker, 20+ pack-years (US-07 AC1d, USPSTF 2021)', () => {
+    const smoker: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 20 };
     expect([49, 50, 80, 81].map((a) => has('male', a, 'screening-lung', smoker))).toEqual([false, true, true, false]);
-    expect(has('female', 60, 'screening-lung', { lungSmokingHistory: 'current_smoker', lungPackYears: 15 })).toBe(true);
-    expect(has('male', 60, 'screening-lung', { lungSmokingHistory: 'former_smoker', lungPackYears: 14 })).toBe(false);
+    expect(has('female', 60, 'screening-lung', { lungSmokingHistory: 'current_smoker', lungPackYears: 20 })).toBe(true);
+    expect(has('male', 60, 'screening-lung', { lungSmokingHistory: 'former_smoker', lungPackYears: 19 })).toBe(false);
     expect(has('male', 60, 'screening-lung', { lungSmokingHistory: 'former_smoker' })).toBe(false);
     expect(has('male', 60, 'screening-lung', { lungSmokingHistory: 'never_smoked', lungPackYears: 30 })).toBe(false);
     expect(has('male', 60, 'screening-lung', { lungPackYears: 30 })).toBe(false);

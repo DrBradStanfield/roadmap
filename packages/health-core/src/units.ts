@@ -542,16 +542,19 @@ export const UNIT_SWAP_FLOORS: Partial<Record<MetricType, number>> = {
 // Locale detection
 // ---------------------------------------------------------------------------
 
-/** Countries that use conventional (US) units: US, Liberia, Myanmar. */
-const CONVENTIONAL_COUNTRIES = new Set(['US', 'LR', 'MM']);
+/** Countries that use conventional (US) units: US, Liberia, Myanmar, and the
+ *  US territories (Puerto Rico, US Virgin Islands, Guam, Northern Mariana
+ *  Islands, American Samoa), whose labs print US units (US-05 AC5). */
+const CONVENTIONAL_COUNTRIES = new Set(['US', 'LR', 'MM', 'PR', 'VI', 'GU', 'MP', 'AS']);
 
-/** IANA timezone identifiers for the United States. */
+/** IANA timezone identifiers for the United States and its territories. */
 const US_TIMEZONES = new Set([
   'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
   'America/Anchorage', 'America/Phoenix', 'America/Adak', 'America/Detroit',
   'America/Boise', 'America/Juneau', 'America/Sitka', 'America/Yakutat',
   'America/Nome', 'America/Menominee', 'America/Metlakatla',
   'Pacific/Honolulu',
+  'America/Puerto_Rico', 'America/St_Thomas', 'Pacific/Guam', 'Pacific/Saipan', 'Pacific/Pago_Pago',
 ]);
 
 function isUSTimezone(tz: string): boolean {
@@ -731,6 +734,24 @@ export const LPA_THRESHOLDS = {
   normal: 75,     // <75 nmol/L is normal
   elevated: 125,  // ≥125 nmol/L is elevated
 } as const;
+
+/**
+ * A value as it prints beside its grade: HbA1c and Lp(a) by
+ * `formatGradedValue` at each of their grade lines (5.7 and 6.5 %, 75 and
+ * 125 nmol/L), so 47 mmol/mol reads 6.45 % in the prediabetic range, not
+ * 6.5 %. The lines are many display steps apart, so at most one moves the
+ * number. Any other metric prints as `formatDisplayValue` (US-07 AC15).
+ */
+export function formatGradedReading(metric: MetricType, canonical: number, system: UnitSystem): string {
+  const lines = metric === 'hba1c' ? Object.values(HBA1C_THRESHOLDS)
+    : metric === 'lpa' ? Object.values(LPA_THRESHOLDS) : [];
+  const shown = formatDisplayValue(metric, canonical, system);
+  for (const line of lines) {
+    const graded = formatGradedValue(metric, canonical, system, line);
+    if (graded !== shown) return graded;
+  }
+  return shown;
+}
 
 // ---------------------------------------------------------------------------
 // Feet/inches conversion helpers (for US height display)

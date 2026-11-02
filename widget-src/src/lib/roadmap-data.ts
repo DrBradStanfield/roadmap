@@ -114,6 +114,11 @@ export function getUnreadableCount(): number {
   return store?.unreadableCount ?? 0;
 }
 
+/** US-67 N3: whether the record holds a `key` medication row this build cannot read. */
+export function holdsUnreadableMedication(key: string, answered = false): boolean {
+  return store?.holdsUnreadableMedication(key, answered) ?? false;
+}
+
 // --- lead capture (Shopify surface) ---
 export function getReportEmailCaptured(): boolean {
   return store?.getReportEmailCaptured() ?? false;

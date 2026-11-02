@@ -68,7 +68,8 @@ three together. Brad's rule (2026-10-22): over-declare rather than under-declare
   upload send data through our server to Anthropic. The record itself never leaves the
   phone except to the user's own Dropbox or Google Drive, which is not collection by us.
 - **Health & Fitness > Health.** Collected. The record summary each chat question carries
-  (including values imported from Apple Health), and the lab values read from an uploaded
+  (including values imported from Apple Health and lab results from Health Records, which
+  Apple's definition of this type names: "data from the Clinical Health Records API"), and the lab values read from an uploaded
   report. Purpose: App Functionality only. Linked to the user's identity: Yes, because an
   uploaded report carries the patient's name and Anthropic may keep API inputs for a time.
   Used for tracking: No. Heart rate, resting heart rate, sleep and VO2 max are not part of
@@ -149,6 +150,17 @@ declares the three rows below; declare them as written.
   Apple Health, never kept: ... holds them in memory while it is open, and never saves or
   sends them."). To see them on a device without a watch, add sample data in the Health
   app first.
+- Health Records (clinical records, the `health-records` HealthKit entitlement; for the
+  version that adds it): where the iPhone supports Health Records (Canada, the UK and the
+  US), the same Apple Health request also asks to read lab results; Health shows them on
+  their own sheet. The app reads lab results only (never conditions, medications or
+  other record types), turns each one it recognises (cholesterol, HbA1c, ApoB,
+  creatinine, PSA, Lp(a), ferritin, TSH, eGFR) into a value in the person's record so
+  their plan uses their latest blood tests, and writes nothing back (clinical records are
+  read-only). The record stays on the iPhone or in the Dropbox or Google Drive the person
+  connects; lab results reach our server only inside the record summary a chat question
+  carries, after the user agrees to the chat. To test: on a simulator, Health › Browse ›
+  Health Records › Add Account, choose a sample institution, then open the app.
 - Guideline 5.1.3: HealthKit data is not used for advertising or marketing, not sold,
   and not stored in iCloud by us. It reaches our server only inside the record summary
   a chat question carries, after the user agrees to the chat; the server keeps no copy

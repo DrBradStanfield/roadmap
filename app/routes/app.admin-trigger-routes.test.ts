@@ -1,27 +1,23 @@
 /**
- * The three manual-trigger admin pages send real email and rewrite real rows.
+ * The manual-trigger admin pages send real email and rewrite real rows.
  * A loader runs on any plain visit — a refresh, a back button, an admin link
  * prefetch — so rendering the page must do nothing at all; the work happens
  * only on a deliberate POST, and only for the shop ADMIN_SHOP_DOMAIN names.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const processV2Reminders = vi.fn(async () => 3);
 const computeAndWriteTrending = vi.fn(async () => [{ slug: 'a' }]);
 const runYouTubeBotSummaryOnce = vi.fn(async () => undefined);
 const adminAuth = vi.fn(async () => ({ session: { shop: 'drstanfield.myshopify.com' } }));
 
 vi.mock('../shopify.server', () => ({ authenticate: { admin: (r: Request) => adminAuth(r) } }));
-vi.mock('../lib/reminder-v2-cron.server', () => ({ processV2Reminders: (d: string) => processV2Reminders(d) }));
 vi.mock('../lib/trending-cron.server', () => ({ computeAndWriteTrending: () => computeAndWriteTrending() }));
 vi.mock('../lib/youtube-bot-summary-cron.server', () => ({ runYouTubeBotSummaryOnce: () => runYouTubeBotSummaryOnce() }));
 
-const reminders = await import('./app.reminders-v2-test');
 const trending = await import('./app.trending-test');
 const youtube = await import('./app.youtube-bot-summary-test');
 
 const PAGES = [
-  { name: 'reminders-v2-test', mod: reminders, sideEffect: processV2Reminders },
   { name: 'trending-test', mod: trending, sideEffect: computeAndWriteTrending },
   { name: 'youtube-bot-summary-test', mod: youtube, sideEffect: runYouTubeBotSummaryOnce },
 ];
