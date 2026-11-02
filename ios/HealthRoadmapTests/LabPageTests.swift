@@ -135,8 +135,8 @@ final class LabPageTests: XCTestCase {
     }
 
     /// Review N1: a lab test filed as "lpa" is read in its own unit, never the record's Lp(a)
-    /// unit (nmol/L): its add and correction show and save its unit, and its page has no Lp(a)
-    /// picker. A lab test filed as "HDL" shows no core HDL guide. Each is printed in a unit
+    /// unit (nmol/L): its correction shows and saves its unit, its add is refused, and its page
+    /// has no Lp(a) picker. A lab test filed as "HDL" shows no core HDL guide. Each is printed in a unit
     /// that does not convert, so US-66 AC5 keeps it a lab test rather than folding it into the
     /// core value.
     func testALabTestNamedLikeACoreMetricUsesNoneOfItsUnitsGuideOrRange_US25_AC25() throws {
@@ -153,15 +153,17 @@ final class LabPageTests: XCTestCase {
         let labLpa = try XCTUnwrap(decoded.labTests?.first { $0.metric == "lpa" })
         let coreLpa = try XCTUnwrap(decoded.bloodTests.first { $0.metric == "lpa" })
         XCTAssertEqual(labLpa.unit, "mg")
-        // No Lp(a) unit, so no picker and no Lp(a) reading of the number: the add sheet shows mg.
+        // No Lp(a) unit, so no picker and no Lp(a) reading of the number.
         XCTAssertNil(RecordStore.lpaUnit(for: labLpa, recordUnit: decoded.lpaUnit))
         XCTAssertEqual(RecordStore.lpaUnit(for: coreLpa, recordUnit: decoded.lpaUnit), "nmol/L")
+        // US-66 AC5: a new value goes on the core Lp(a) row, so the lab row's add is refused.
         let added = try engine.blocking { [now] in try $0.apply(.labAdd(series: labLpa.metric, value: 42, day: "2026-10-01", unit: labLpa.unit), to: saved, now: now, deviceId: "test") }
-        let afterAdd = try engine.blocking { [now] in try $0.history(recordJSON: try XCTUnwrap(added.record), metric: "lpa", now: now, deviceId: "test", series: "lab") }
-        XCTAssertEqual(afterAdd.rows.first?.value, "42")
-        XCTAssertEqual(afterAdd.rows.first?.unit, "mg", "the add saves mg")
+        XCTAssertFalse(added.ok)
+        XCTAssertNil(added.record)
         // The correction shows mg whatever Lp(a)'s unit, and saves in it.
-        let older = try XCTUnwrap(afterAdd.rows.first { $0.id == "a1" })
+        let history = try engine.blocking { [now] in try $0.history(recordJSON: saved, metric: "lpa", now: now, deviceId: "test", series: "lab") }
+        let older = try XCTUnwrap(history.rows.first { $0.id == "a1" })
+        XCTAssertEqual(older.unit, "mg")
         XCTAssertEqual(MetricDetailView.correctionUnit(older, shown: labLpa, lpaUnit: "nmol/L"), "mg")
         let corrected = try engine.blocking { [now] in try $0.apply(.labCorrect(id: "a1", value: 45), to: saved, now: now, deviceId: "test") }
         let afterCorrect = try engine.blocking { [now] in try $0.history(recordJSON: try XCTUnwrap(corrected.record), metric: "lpa", now: now, deviceId: "test", series: "lab") }
