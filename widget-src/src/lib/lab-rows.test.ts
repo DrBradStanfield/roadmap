@@ -236,4 +236,14 @@ describe('US-10: groupLabHistory (history charts)', () => {
     expect(series['some novel assay'].rows).toHaveLength(2);
     expect(series['some novel assay'].label).toBe('Some Novel Assay');
   });
+
+  it('takes a row with no unit, as readers accept one, with no unit rather than throwing (US-65)', () => {
+    const { keys, series } = groupLabHistory([
+      row({ id: 'a', metricName: 'zinc', value: 12, unit: null as unknown as string }),
+      row({ id: 'b', metricName: 'zinc', value: 13, unit: 'µmol/L' }),
+    ]);
+    expect(keys).toEqual(['zinc']);
+    expect(series.zinc.units).toEqual(['', 'µmol/L']);
+    expect(series.zinc.rows.map((r) => r.id)).toEqual(['a', 'b']);
+  });
 });

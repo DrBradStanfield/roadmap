@@ -48,7 +48,7 @@ export function groupLabHistory<Row extends LabValueRow>(rows: Row[]): {
       series[key] = { label: labValueLabel(row.metricName), rows: [], units: [] };
     }
     series[key].rows.push(row);
-    const unit = displayLabUnit(row.unit, resolveLabCatalogEntry(row.metricName));
+    const unit = displayLabUnit(row.unit ?? '', resolveLabCatalogEntry(row.metricName)); // no unit: shown with none (US-65)
     series[key].units = [...new Set([...series[key].units, unit])];
   }
   const keys = Object.keys(series).sort((a, b) => series[a].label.localeCompare(series[b].label));
