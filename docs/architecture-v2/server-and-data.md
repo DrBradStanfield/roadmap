@@ -49,7 +49,7 @@ Supabase survives, but only as a chat-history + A/B store. All per-user health d
 - `chat_conversations`, `chat_messages`, `chat_match_events`, `guest_chat_sessions` — every row kept, identity/IP/error fields scrubbed, pseudonymous session token preserved so a user's turns stay linked. For training.
 - `profiles` — kept as pseudonymous FK anchors (demographics nulled, synthetic `anon-…@deleted.invalid` email).
 - `ab_tests`, `ab_events` — untouched.
-- `audit_logs` — kept, `user_id` nulled.
+- `audit_logs` — kept, `user_id` nulled. That left identifiers behind (US-15 AC49): `USER_CREATED` rows kept the profile id and the Shopify customer id, and `GUEST_SESSION_CREATED` rows from 2026-04-02 to 2026-09-10 kept the raw IP. New rows carry neither; the old ones wait on [supabase/audit-logs-residue-2026-11.sql](../../supabase/audit-logs-residue-2026-11.sql).
 
 #### Deleted
 

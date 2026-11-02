@@ -238,7 +238,7 @@ export async function getOrCreateSupabaseUser(
     if (nameError) throw new Error('Profile name update failed');
   }
 
-  logAudit(userId, 'USER_CREATED', 'user', userId, { shopifyCustomerId });
+  logAudit(userId, 'USER_CREATED', 'user', userId);
   cacheUserId(shopifyCustomerId, userId);
   return userId;
 }

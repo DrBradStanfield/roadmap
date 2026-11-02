@@ -145,6 +145,17 @@ describe('Shopify principal reuse', () => {
     expect(state.create).toHaveBeenCalledWith(expect.objectContaining({ app_metadata: { shopify_customer_id: customer } }));
     expect(profiles[0]).toMatchObject({ id: 'new', shopify_customer_id: customer });
   });
+
+  // US-15 AC49 (GHSA-w5p5-hmp4-7qmp): the audit row outlives the profile's link,
+  // so it must not carry the Shopify customer id itself.
+  it('writes a USER_CREATED audit row that holds no Shopify customer id', async () => {
+    const customer = identity(); state.create.mockResolvedValueOnce({ data: { user: { id: 'new' } }, error: null });
+    expect(await mapUser(customer, email)).toBe('new');
+    const created = audits.filter((a) => a.action === 'USER_CREATED');
+    expect(created).toHaveLength(1);
+    expect(created[0]).toMatchObject({ user_id: 'new', resource_type: 'user', resource_id: 'new', metadata: null });
+    expect(JSON.stringify(audits)).not.toContain(customer);
+  });
   it('does not overwrite a conflicting profile inserted after the precheck', async () => {
     competingInsert = true;
     state.create.mockResolvedValueOnce({ data: { user: { id: 'racing' } }, error: null });
