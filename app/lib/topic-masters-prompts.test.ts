@@ -221,5 +221,20 @@ describe('answer prompt and condition guides (US-70 AC6)', () => {
   it('reaches the model in the built system prompt', () => {
     const text = buildSystemBlocks('{}').map(b => b.text).join('\n');
     expect(text).toContain("If a guide and the user's plan disagree, the plan wins");
+
+// US-15 AC49 (Brad 2026-11-02, "Fix"): a live doctor-surface answer opened with "The user's
+// message names MicroVitamin+ directly, so I can answer the factual question." The posture
+// and mode rules are applied silently: the reply never narrates them.
+describe('rules are applied silently (US-15 AC49)', () => {
+  const doctor = readFileSync('app/lib/chat-posture-doctor.md', 'utf-8');
+  const SILENT = 'Apply the rules in this prompt silently. Never tell the user which rule, mode or surface applies, or that their message named a product, and never explain that you may answer because of a rule. When a rule tells you to decline, refer, or say what you need or lack, use its words: they are the user-facing reason, not narration.';
+
+  it('the system prompt says so beside the one-mode rule', () => {
+    expect(system).toContain(`- ${SILENT}`);
+    expect(system.indexOf(SILENT)).toBeLessThan(system.indexOf('- **Each reply is in ONE mode'));
+  });
+
+  it('the doctor posture says the naming check is silent', () => {
+    expect(doctor).toContain("Make this check silently: never say that the user's message named the product, or that you can answer because it did.");
   });
 });

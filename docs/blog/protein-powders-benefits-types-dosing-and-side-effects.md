@@ -293,7 +293,7 @@ Because plant proteins hold a smaller share of essential amino acids, matching w
 
 ### Protein Powder as Part of MicroVitamin+ Powder
 
-Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder), in its v8 formula, includes 12.5 g of collagen peptides and 5 g of creatine monohydrate alongside all 26 core ingredients of the MicroVitamin capsules, plus 2.5 g of psyllium husk and 1 g of extra taurine: 30 ingredients in total. The v8 powder is sold in the USA and every other market except Europe's Unflavored powder, which has moved to v9: it swaps the psyllium for 5 g of acacia fibre, drops potassium and changes some other doses. Combining creatine with protein supports enhanced strength gains and muscle recovery. The creatine component provides an evidence-based complement to dietary protein intake for adults seeking to maintain muscle mass and physical performance.
+Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes 10 g of collagen peptides and 5 g of creatine monohydrate alongside all 25 core ingredients of the MicroVitamin capsules, plus 5 g of acacia fiber. Its larger dose of magnesium taurate gives 2.09 g of taurine. Combining creatine with protein supports enhanced strength gains and muscle recovery. The creatine component provides an evidence-based complement to dietary protein intake for adults seeking to maintain muscle mass and physical performance.
 
 ### Mixing and Preparation
 

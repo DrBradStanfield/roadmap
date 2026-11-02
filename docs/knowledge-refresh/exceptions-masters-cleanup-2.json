@@ -667,7 +667,7 @@
   "check": "AC2",
   "handle": "protein-powders-benefits-types-dosing-and-side-effects",
   "match": "token \"82000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Older adults (50+) | 0.45–0.55 | 1.0–1.2 | 68–82 g/day |\"",
-  "reason": "Derived arithmetic (review R9, orchestrator 2026-10-22): 1.2 g/kg x 68.0 kg (150 lb) = 82 g/day; no source states a per-person gram figure, and the old ConsumerLab quote may not be used.",
+  "reason": "Exception ratified by the orchestrator after a hand check against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-22"
  },
@@ -675,7 +675,7 @@
   "check": "AC2",
   "handle": "protein-powders-benefits-types-dosing-and-side-effects",
   "match": "token \"109000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Point beyond which a 49-study review found no added muscle benefit | 0.73 | 1.6 | 109 g/day |\"",
-  "reason": "Derived arithmetic (review R9, orchestrator 2026-10-22): 1.6 g/kg (Morton 2018 [48]) x 68.0 kg (150 lb) = 109 g/day; the old ConsumerLab quote (109.5 g) may not be used.",
+  "reason": "Exception ratified by the orchestrator after a hand check against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-22"
  },

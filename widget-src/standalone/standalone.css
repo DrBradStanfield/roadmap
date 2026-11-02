@@ -30,7 +30,7 @@
 .hr-sync {
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px;
   background: #f0faf8; border: 1px solid #b2dfdb; border-radius: 10px;
-  padding: 10px 14px; font-size: 13.5px; color: #1c2b33; margin-bottom: 12px;
+  padding: 10px 14px; font-size: 13.5px; color: #1c2b33;
 }
 /* De-greened (Brad, 2026-06-17): the connected-cloud status now matches the
    neutral plan cards. Card styling is byte-identical to .email-capture (the
@@ -43,7 +43,6 @@
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   padding: 20px;
-  margin-bottom: 16px;
 }
 .hr-sync-status { font-weight: 600; }
 /* Provider name as the (only) manage affordance — opens the picker, where
