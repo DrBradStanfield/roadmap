@@ -13,7 +13,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, waitFor } from '@testing-library/react';
-import { localDay, ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
+import { localDay, ROADMAP_FILE_NAME, toOldShape, type RoadmapFile } from '@roadmap/health-core';
 import { flushRoadmapStore, initRoadmapStore, saveScreening } from '../lib/roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
@@ -64,9 +64,10 @@ async function page() {
   };
 }
 
+// A PSA is a core blood test, stored as a core lab row since US-66; read here as the measurement it was.
 async function onDisk(): Promise<RoadmapFile> {
   await act(async () => { await flushRoadmapStore(); });
-  return (await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)).body as RoadmapFile;
+  return toOldShape((await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)).body as RoadmapFile);
 }
 const active = async (metric: string) =>
   (await onDisk()).measurements.filter(m => m.metricType === metric && m.status === 'active')
