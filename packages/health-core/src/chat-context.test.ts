@@ -714,3 +714,33 @@ describe('US-07 AC11: the chat plan asks for the waist first, then the blood pre
     expect(swapped.currentSuggestions.find((s: { id: string }) => s.id === 'measure-bp')?.title).toBe('Check your blood pressure reading');
   });
 });
+
+describe('US-06 AC14: the chat plan reads the saved PSA, as the plan does', () => {
+  // A man of 56 who will screen; his PSA is a dated measurement, not a screening answer.
+  const psa = (value: number, recordedAt: string) => ({ metricType: 'psa', value, recordedAt });
+  const contextWithPsa = (rows: ReturnType<typeof psa>[], answers: ApiScreening[] = [scr('prostate_discussion', 'will_screen')]) => {
+    const json = buildChatContextJson(chatContextOf(PROFILE, 'si', [], answers, rows));
+    if (json === null) throw new Error('no context');
+    return JSON.parse(json);
+  };
+
+  it('a saved PSA of 6.5 puts "Elevated PSA" and the PSA-due card in the chat plan', () => {
+    const context = contextWithPsa([psa(2.1, '2024-03-01T08:00:00Z'), psa(6.5, '2025-09-03T08:00:00Z')]);
+    const elevated = context.currentSuggestions.find((s: { id: string }) => s.id === 'screening-prostate-elevated');
+    expect(elevated?.description).toBe('Your PSA of 6.5 ng/mL is above the typical reference range (≤4.0). Discuss with your doctor — elevated PSA can have multiple causes.');
+    // Due Sep 2026, so overdue from then on, whatever today is.
+    expect(ids(context)).toContain('screening-prostate-overdue');
+    // `screenings` stays the record's own answers, as the plan's does.
+    expect(context.screenings).toEqual({ prostateDiscussion: 'will_screen' });
+  });
+
+  it('chose not to screen (Brad 2026-11-03): the chat plan still shows "Elevated PSA"', () => {
+    const context = contextWithPsa([psa(6.5, '2025-09-03T08:00:00Z')], [scr('prostate_discussion', 'elected_not_to')]);
+    expect(ids(context).filter((id: string) => id.startsWith('screening-prostate'))).toEqual(['screening-prostate-elevated']);
+  });
+
+  it('control: the newest PSA is 2.1, so no "Elevated PSA"', () => {
+    const context = contextWithPsa([psa(6.5, '2024-03-01T08:00:00Z'), psa(2.1, '2025-09-03T08:00:00Z')]);
+    expect(ids(context)).not.toContain('screening-prostate-elevated');
+  });
+});

@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { computePlan } from './plan';
 import { computeReminderSchedule } from './reminder-schedule';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
+import { moveBloodMeasurements } from './blood-tests';
 
 const NOW = new Date('2026-06-15T12:00:00Z');
 
@@ -133,5 +134,33 @@ describe('a PSA row the plan cannot use leaves the old answers standing (US-06 A
   it('the range ends are usable: 0 and 10000 ng/mL', () => {
     expect(prostate(record([[0, '2025-09-03']], answers)).cards).toEqual(['PSA test up to date: Next PSA test due Sep 2026.']);
     expect(prostate(record([[10000, '2025-09-03']], answers)).cards).toContain(ELEVATED('10000.0'));
+  });
+});
+
+describe('a saved PSA as main stores it: a core lab row (US-06 AC14, US-66 AC7)', () => {
+  it('a PSA of 6.5 in labValues drives the cards and the reminder, as the same row in measurements does', () => {
+    const old = record([[6.5, '2025-09-03']]);
+    const moved = { ...old, ...moveBloodMeasurements(old.measurements, old.labValues) };
+    expect(moved.measurements).toEqual([]);
+    expect(prostate(moved)).toEqual({
+      cards: ['PSA test up to date: Next PSA test due Sep 2026.', ELEVATED('6.5')],
+      due: ['2026-09-01'],
+      pushed: ['2026-09-01'],
+    });
+  });
+});
+
+describe('Brad 2026-11-03: a high PSA shows whatever the screening answer (US-06 AC14)', () => {
+  it('chose not to screen: a saved 6.5 shows "Elevated PSA", and no PSA-due card or reminder', () => {
+    const p = prostate(record([[6.5, '2025-09-03']], { prostateDiscussion: 'elected_not_to' }));
+    expect(p.cards).toEqual([ELEVATED('6.5')]);
+    expect(p.due).toEqual([]);
+    expect(p.pushed).toEqual([]);
+  });
+
+  it('control: chose not to screen and a PSA of 3.0, no prostate card at all', () => {
+    const p = prostate(record([[3.0, '2025-09-03']], { prostateDiscussion: 'elected_not_to' }));
+    expect(p.cards).toEqual([]);
+    expect(p.pushed).toEqual([]);
   });
 });

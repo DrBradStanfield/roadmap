@@ -1101,8 +1101,10 @@ overdue = now > nextDue
 
 ### Prostate-Specific
 
-- PSA > 4.0 ng/mL -> `screening-prostate-elevated` (attention)
-- `elected_not_to` -> no suggestion shown
+- PSA > 4.0 ng/mL -> `screening-prostate-elevated` (attention), whatever the screening answer
+- `elected_not_to` -> no screening card and no PSA reminder; a saved PSA above 4.0 still shows `screening-prostate-elevated` (Brad 2026-11-03)
+- Where the PSA comes from (US-06 AC14): the newest active `psa` row, its value and its day, a core lab row since US-66. The old answers `prostate_psa_value` and `prostate_last_date` count only when there is no usable row or when they are newer by date, value and day together; an answer that gives only a month loses to a row from that month. The web plan, `computePlan`, the reminder schedule and the chat's plan all read it this way.
+- A PSA typed in the prostate section (US-06 AC15) is saved as a `psa` row on the day picked beside it (a full date, today until changed; never after today), as every blood test is dated. That day is also the last PSA test for the due card and the reminder: no client asks for or writes `prostate_last_date` any more.
 
 ### DEXA-Specific
 

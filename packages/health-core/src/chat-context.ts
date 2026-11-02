@@ -65,7 +65,7 @@ import {
   healthInputSchema, inRange, inputsPressureInverted, sanitizeInputs, excludedInputFields, MEDICATION_KEYS, SCREENING_KEYS,
 } from './validation';
 import {
-  FIELD_UNITS, LONGITUDINAL_FIELDS, METRIC_TO_FIELD, medicationsToInputs, screeningRange, screeningsToInputs,
+  FIELD_UNITS, LONGITUDINAL_FIELDS, METRIC_TO_FIELD, medicationsToInputs, screeningRange, screeningsToInputs, withPsaMeasurement,
   type ApiMedication, type ApiScreening,
 } from './mappings';
 import {
@@ -211,10 +211,13 @@ export function buildChatContextJson(payload: unknown): string | null {
   const unitSystem: UnitSystem = raw.unitSystem === 'conventional' ? 'conventional' : 'si';
   const medicationRowsOnRecord = medicationRows(raw.medications);
   const screenings = screeningsToInputs(screeningRows(raw.screenings));
+  // US-06 AC14: the prostate cards read the newest saved PSA, as computePlan does; `screenings` stays the answers.
+  const psa = measurementHistory.psa?.reduce((a, b) => (b.date > a.date ? b : a));
+  const planScreenings = withPsaMeasurement(screenings, psa && { value: psa.value, recordedAt: psa.date });
   // US-07 AC11: a left-out pair turns the blood pressure prompt into "check your reading".
   const planInputs = parsed.success ? { ...inputs, ...(pressure ? { pressureOrder: true as const } : {}) } as SuggestionInputs : null;
   const results = planInputs
-    ? calculateHealthResults(planInputs, unitSystem, medicationsToInputs(medicationRowsOnRecord), screenings)
+    ? calculateHealthResults(planInputs, unitSystem, medicationsToInputs(medicationRowsOnRecord), planScreenings)
     : null;
   // An unlisted drug name must never reach the prompt, so it reads UNLISTED
   // here, and a dose shows only within (0, MAX_DOSE]. The plan above used the
@@ -230,7 +233,7 @@ export function buildChatContextJson(payload: unknown): string | null {
   // US-15 AC31: each card's description, from the plan over the medications
   // above, so no unlisted name or out-of-range dose reaches the prompt.
   const descriptions = new Map(planInputs
-    ? calculateHealthResults(planInputs, unitSystem, medications, screenings).suggestions.map(s => [s.id, s.description])
+    ? calculateHealthResults(planInputs, unitSystem, medications, planScreenings).suggestions.map(s => [s.id, s.description])
     : []);
   // As plan.ts: a known minor's raw numbers stay; the adult readings go (US-07 AC6).
   const adult = results?.knownMinor ? undefined : results;
