@@ -12,7 +12,7 @@ import { spawnSync } from 'node:child_process';
 import { copyFileSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { mergeLongitudinalInputs, migrateFile, type RoadmapFile } from '@roadmap/health-core';
+import { mergeLongitudinalInputs, migrateFile, toOldShape, type RoadmapFile } from '@roadmap/health-core';
 import { RoadmapStore } from '../widget-src/src/storage/roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../packages/health-core/src/adapter';
@@ -113,8 +113,14 @@ describe('US-33 AC3 — the sample is a record the app can read', () => {
     expect(latest.medications.map((m) => m.medicationKey)).toContain('statin');
   });
 
-  it('passes through migrateFile unchanged', () => {
+  // The sample keeps its blood tests in `measurements` on purpose: it is the
+  // old-shape input the iPhone parity fixtures and the US-66 AC7 golden start
+  // from. Migrate moves them and changes nothing else (US-66 AC2).
+  it('passes through migrateFile with only its blood tests moved', () => {
     const ctx = { deviceId: 'us33_test', now: '2026-09-02T00:00:00Z' };
-    expect(migrateFile(JSON.parse(JSON.stringify(sample)), ctx)).toEqual(sample);
+    const migrated = migrateFile(JSON.parse(JSON.stringify(sample)), ctx);
+    expect({ ...migrated, measurements: [], labValues: [] }).toEqual({ ...sample, measurements: [], labValues: [] });
+    expect(migrated).toEqual(migrateFile(JSON.parse(JSON.stringify(migrated)), ctx));
+    expect(toOldShape(migrated).measurements).toEqual(expect.arrayContaining(sample.measurements));
   });
 });
