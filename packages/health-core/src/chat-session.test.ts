@@ -301,6 +301,31 @@ describe('US-11 AC2d: a chat delete is reported only once the stored file holds 
     expect((await ChatSession.open(cloudHost(store))).listConversations()).toEqual([]);
   });
 
+  // Review 2026-11-02: the carry is cumulative. The stale copy lands after
+  // attempts 1 and 2, so attempt 3 must still hold what attempt 1 read.
+  it('a delete replaced twice still keeps the tombstone its first read brought in', async () => {
+    class OverwrittenTwice extends OverwrittenOnce {
+      n = 0;
+      async write(name: string, body: object, expected: string | null, signal?: AbortSignal) {
+        const r = await super.write(name, body, expected, signal);
+        if (++this.n >= 2) { this.stale = null; this.always = false; }
+        return r;
+      }
+    }
+    const store = new OverwrittenTwice();
+    const a = await ChatSession.open(cloudHost(store));
+    await exchange(a, 'c1');
+    await exchange(a, 'c2');
+    const b = (await store.read('chat-history.json')).body as { meta: { lamport: number } };
+    await (await ChatSession.open(cloudHost(store))).deleteConversation('c2');
+    store.n = 0; store.always = true;
+    store.stale = { ...b, meta: { ...b.meta, lamport: b.meta.lamport + 10 } };
+    await a.deleteConversation('c1');
+    expect(store.n).toBe(3);
+    expect((await ChatSession.open(cloudHost(store))).listConversations()).toEqual([]);
+    expect(a.listConversations()).toEqual([]);
+  });
+
   it('eraseAll fails, never reports success, when every write is replaced', async () => {
     const { store, s } = await twoLive();
     store.always = true;
