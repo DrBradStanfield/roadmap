@@ -165,13 +165,19 @@ struct MyDataView: View {
         .fixedSize()
     }
 
-    /// `labs`: the lab tests beyond the core ones, after them as on the web (US-62 AC8). They open
-    /// nothing yet: the app has no page for a lab test's history.
+    /// `labs`: the lab tests beyond the core ones, after them as on the web (US-62 AC8). Each opens
+    /// its own page, as the web's does (US-25 AC25).
     private func metrics(_ rows: [MyData.Row], labs: [MyData.Row] = [], @ViewBuilder header: () -> some View) -> some View {
         Section {
             let column = ValueRow.Column((rows + labs).map { ($0.latest?.value, $0.previous, $0.unit, nil) })
             ForEach(rows) { metric($0, column: column) }
-            ForEach(labs) { Self.valueRow($0, tint: MetricChart.labTint, column: column) }
+            ForEach(labs) { lab in
+                Button { open(lab) } label: {
+                    Self.valueRow(lab, tint: MetricChart.labTint, column: column)
+                }
+                .tint(.primary)
+                .disabled(store.unitSwitches > 0)
+            }
         } header: {
             header()
         }

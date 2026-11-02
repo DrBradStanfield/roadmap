@@ -20,16 +20,18 @@ struct MetricEntrySheet: View {
     }
 
     var body: some View {
-        if row.metric == MyData.bloodPressure {
+        if row.series == nil, row.metric == MyData.bloodPressure {
             BloodPressureSheet(store: store, seen: seen, saved: saved)
         } else {
             ValueEntrySheet(title: row.label, unit: store.lpaUnit(for: row) ?? row.unit, current: nil, asksForDay: true) { value, day in
-                saved(await store.apply(.add(metric: row.metric, value: value, day: day), as: seen))
+                // A lab test's value, by the row's own kind, in the unit this sheet shows (US-25 AC25).
+                let edit: RecordEdit = row.series == "lab" ? .labAdd(series: row.metric, value: value, day: day, unit: row.unit) : .add(metric: row.metric, value: value, day: day)
+                return saved(await store.apply(edit, as: seen))
             } replace: { existingId, value in
-                saved(await store.apply(.correct(id: existingId, value: value), as: seen))
+                saved(await store.apply(row.series == "lab" ? .labCorrect(id: existingId, value: value) : .correct(id: existingId, value: value), as: seen))
             }
             .lpaUnits(store, row) { seen = seen.showing(lpaUnit: $0) }
-            .reads(in: store.inputRange(for: row.metric, in: store.lpaUnit(for: row)))
+            .reads(in: store.inputRange(for: row, in: store.lpaUnit(for: row)))
         }
     }
 }
