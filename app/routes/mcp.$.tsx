@@ -19,6 +19,7 @@
  * so this code ships before the secrets do.
  */
 import crypto from 'node:crypto';
+import { sameBytes } from '../lib/crypto-compare.server';
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
 import { getClientIp } from '../lib/local-first-route.server';
 import { cappedBody } from '../lib/capped-body.server';
@@ -129,9 +130,7 @@ function readCookie(request: Request, name: string): string | null {
 }
 
 function sameNonce(returned: string, expected: string): boolean {
-  const a = Buffer.from(returned, 'utf8');
-  const b = Buffer.from(expected, 'utf8');
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
+  return sameBytes(Buffer.from(returned, 'utf8'), Buffer.from(expected, 'utf8'));
 }
 
 function segment(params: Record<string, string | undefined>): string {
