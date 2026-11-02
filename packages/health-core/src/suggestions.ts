@@ -1,6 +1,6 @@
 import type { HealthInputs, HealthResults, SuggestionInputs, Suggestion, MedicationInputs, ScreeningInputs, UsProductCardId } from './types';
 import { SUGGESTION_EVIDENCE } from './evidence';
-import { POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
+import { LUNG_PACK_YEARS, POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
 import { LIMIT_NOT_GRADED, formatLimit, formatValue, limitOf, limitSIText, type Comparator, type InputLimit, type LimitField } from './lab-limits';
 import {
@@ -8,6 +8,7 @@ import {
   type MetricType,
   formatDisplayValue,
   formatTargetLine,
+  formatGradedReading,
   formatGradedValue,
   getDisplayLabel,
   HBA1C_THRESHOLDS,
@@ -245,7 +246,9 @@ export function generateSuggestions(
   // value the plan graded it with (US-12 AC20).
   const shown = (field: LimitField, metric: MetricType, value: number): string => {
     const limit = limitOf(inputs, field);
-    return fmtMetric(metric, limit?.bound ?? value, us(metric), limit?.comparator);
+    // HbA1c reads on the side of its grade lines (US-07 AC15); any other metric prints as formatValue does.
+    return limit ? fmtMetric(metric, limit.bound, us(metric), limit.comparator)
+      : `${formatGradedReading(metric, value, us(metric))} ${getDisplayLabel(metric, us(metric))}`;
   };
   /** A checklist line for a test saved as a limit with no graded value: held, not missing (US-12 AC20). */
   const limitLine = (label: string, field: LimitField, metric: MetricType): string[] => {
@@ -254,7 +257,8 @@ export function generateSuggestions(
   };
   const bare = (field: LimitField, value: number): string => {
     const limit = limitOf(inputs, field);
-    return limit ? limitSIText(field, limit) : String(Math.round(value));
+    // Lp(a) reads on the side of its grade lines (US-07 AC15).
+    return limit ? limitSIText(field, limit) : field === 'lpa' ? formatGradedReading('lpa', value, 'si') : String(Math.round(value));
   };
 
   // === Missing measurements first (US-07 AC11, Brad 2026-11-02): waist, then blood pressure ===
@@ -958,10 +962,10 @@ export function generateSuggestions(
       }
     }
 
-    // Lung (age 50-80, smokers with 15+ pack-years — USPSTF 2021)
+    // Lung (age 50-80, smokers with 20+ pack-years — USPSTF 2021)
     if (age >= 50 && age <= 80 &&
         (screenings.lungSmokingHistory === 'former_smoker' || screenings.lungSmokingHistory === 'current_smoker') &&
-        screenings.lungPackYears !== undefined && screenings.lungPackYears >= 15) {
+        screenings.lungPackYears !== undefined && screenings.lungPackYears >= LUNG_PACK_YEARS) {
       if (!screenings.lungScreening || screenings.lungScreening === 'not_yet_started') {
         suggestions.push({
           id: 'screening-lung',

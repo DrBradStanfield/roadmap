@@ -446,6 +446,90 @@ describe('US-35 AC7 — extract then commit, end to end through hostedImporter',
     const data = OUTPUTS.import_documents.parse(extract.structured);
     expect(data.files).toEqual([expect.objectContaining({ name: 'labs.pdf', status: 'extracted', droppedValues: 3, hint: expect.stringMatching(/^3 values on this report could not be read/) })]);
   });
+
+  // US-35 AC7a: a ZIP member that does not fit the receipt waits under the
+  // ZIP's own name. Its own name (`labs.zip/b.pdf`) is not a file in the folder
+  // root, so a call naming it was refused whole.
+  it('a ZIP member left for the next call comes back under the ZIP\'s name, and that call reads it', async () => {
+    const cloud = new MemoryCloud();
+    const zip = new JSZip();
+    zip.file('a.pdf', PDF);
+    zip.file('b.pdf', new Uint8Array([...PDF, 1]));
+    zip.file('inner.zip', new Uint8Array([0x50, 0x4b, 0x03, 0x04]));
+    cloud.docs.set('labs.zip', new Blob([new Uint8Array(await zip.generateAsync({ type: 'uint8array' }))]));
+    const adapter = new MemoryAdapter(cloud);
+    await adapter.write(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'test', now: NOW }), null);
+    const panel = (prefix: string, n: number) => ({
+      ...report, values: [],
+      additionalValues: Array.from({ length: n }, (_, i) => ({ name: `${prefix} test ${i}`, value: i + 1, unit: 'U/L' })),
+    });
+    const pdfB = Buffer.from([...PDF, 1]).toString('base64');
+    setImportSeams({ extract: async (pages) => (pages[0].content === pdfB ? panel('b', 150) : panel('a', 200)) });
+    const call = (args: unknown) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'import_documents', args, NOW, {
+      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 }),
+    });
+
+    const first = OUTPUTS.import_documents.parse((await call({})).structured);
+    expect(first.candidates).toHaveLength(200);
+    // b.pdf and the skipped inner.zip after it wait under the ZIP's own name, once.
+    expect(first.remaining).toEqual(['labs.zip']);
+    const commit = await call({ commit: { receipt: first.receipt, accept: first.candidates.map((c) => c.id), replace: [], approval: APPROVED } });
+    expect(commit.isError).toBe(false);
+
+    const again = await call({ fileNames: first.remaining });
+    expect(again.isError).toBe(false);
+    const second = OUTPUTS.import_documents.parse(again.structured);
+    expect(second.files.map((f) => [f.name, f.status])).toEqual([
+      ['labs.zip/a.pdf', 'already_imported'], ['labs.zip/b.pdf', 'extracted'], ['labs.zip/inner.zip', 'skipped'],
+    ]);
+    expect(second.candidates).toHaveLength(150);
+    expect(new Set(second.candidates.map((c) => c.sourceFileName))).toEqual(new Set(['labs.zip/b.pdf']));
+    expect(second.remaining).toEqual([]);
+  });
+
+  // A member the read did not extract (here a damaged c.pdf) that sits after the
+  // waiting one waits too, and under the ZIP's name as well: under its own name
+  // the next call would be refused whole.
+  it('a damaged ZIP member after the waiting one also waits under the ZIP\'s name', async () => {
+    const cloud = new MemoryCloud();
+    const zip = new JSZip();
+    zip.file('a.pdf', PDF);
+    zip.file('b.pdf', new Uint8Array([...PDF, 1]));
+    zip.file('c.pdf', new Uint8Array([...PDF, 2]));
+    cloud.docs.set('labs.zip', new Blob([new Uint8Array(await zip.generateAsync({ type: 'uint8array' }))]));
+    const adapter = new MemoryAdapter(cloud);
+    await adapter.write(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'test', now: NOW }), null);
+    const panel = (prefix: string, n: number) => ({
+      ...report, values: [],
+      additionalValues: Array.from({ length: n }, (_, i) => ({ name: `${prefix} test ${i}`, value: i + 1, unit: 'U/L' })),
+    });
+    const pdfB = Buffer.from([...PDF, 1]).toString('base64');
+    const pdfC = Buffer.from([...PDF, 2]).toString('base64');
+    setImportSeams({
+      extract: async (pages) => {
+        if (pages[0].content === pdfC) throw new Error('damaged PDF');
+        return pages[0].content === pdfB ? panel('b', 150) : panel('a', 200);
+      },
+    });
+    const call = (args: unknown) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'import_documents', args, NOW, {
+      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 }),
+    });
+
+    const first = OUTPUTS.import_documents.parse((await call({})).structured);
+    expect(first.candidates).toHaveLength(200);
+    expect(first.remaining).toEqual(['labs.zip']);
+    const commit = await call({ commit: { receipt: first.receipt, accept: first.candidates.map((c) => c.id), replace: [], approval: APPROVED } });
+    expect(commit.isError).toBe(false);
+
+    const again = await call({ fileNames: first.remaining });
+    expect(again.isError).toBe(false);
+    const second = OUTPUTS.import_documents.parse(again.structured);
+    expect(second.files.map((f) => [f.name, f.status])).toEqual([
+      ['labs.zip/a.pdf', 'already_imported'], ['labs.zip/b.pdf', 'extracted'], ['labs.zip/c.pdf', 'failed'],
+    ]);
+    expect(second.candidates).toHaveLength(150);
+    expect(second.remaining).toEqual([]);
+  });
 });
 
 describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete that fails is only counted', () => {
@@ -961,7 +1045,8 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
     if (!('files' in bundle)) throw new Error(bundle.refusal);
     const skipped = bundle.files.filter((f) => f.status === 'skipped');
     expect(skipped).toHaveLength(21);
-    expect(skipped.at(-1)).toEqual({ name: zipMemberName('many.zip', '(and 860 more)'), status: 'skipped', reason: 'too_many' });
+    // It carries its ZIP's name like every member (US-35 AC7a), so if it has to wait it waits as `many.zip`.
+    expect(skipped.at(-1)).toEqual({ name: zipMemberName('many.zip', '(and 860 more)'), status: 'skipped', reason: 'too_many', zip: 'many.zip' });
     // Its own twenty-plus is not a deferral: asking again opens the same twenty.
     expect(bundle.remaining).toEqual([]);
   });

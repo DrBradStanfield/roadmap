@@ -88,14 +88,18 @@ struct PlanList: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 28) {
-                    // The web's Quick Stats, above the suggestions as there (US-25 AC22).
-                    if !tiles.isEmpty { SummaryTiles(tiles: tiles) }
+                    // The web's Quick Stats, above the suggestions as there (US-25 AC22),
+                    // under a heading that scrolls with them, as the sections' do (AC26).
+                    if !tiles.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            PlanHeading(title: Self.snapshots)
+                            SummaryTiles(tiles: tiles)
+                        }
+                    }
 
                     ForEach(sections) { section in
                         VStack(alignment: .leading, spacing: 12) {
-                            Text(section.title)
-                                .font(.title3.weight(.semibold))
-                                .padding(.horizontal, 4)
+                            PlanHeading(title: section.title)
                                 .modifier(RiseIn())
                             ForEach(section.cards) { card in
                                 // Tour tip 2 (US-57 AC6): the first Foundation step; its Next opens tip 3 on My data.
@@ -160,6 +164,21 @@ struct PlanList: View {
 
     /// The scroll id of the Foundation section's first card.
     private static let foundationCard = "tour.foundation"
+    /// The tiles' heading, as the web's (ResultsPanel.tsx, US-62 AC16).
+    static let snapshots = "Your health snapshots"
+}
+
+/// A heading on the plan: the tiles' and each section's alike. The screen has no title bar
+/// (US-25 AC26), so VoiceOver's headings rotor moves between these.
+struct PlanHeading: View {
+    let title: String
+
+    var body: some View {
+        Text(title)
+            .font(.title3.weight(.semibold))
+            .padding(.horizontal, 4)
+            .accessibilityAddTraits(.isHeader)
+    }
 }
 
 /// A card rises in the first time any of it scrolls into view, then stays (Brad 2026-10-23).

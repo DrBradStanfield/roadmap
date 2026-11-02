@@ -21,7 +21,7 @@ final class AppStoreScreenshots: XCTestCase {
         let tabs = app.tabBars
         XCTAssertTrue(tabs.buttons["My data"].waitForExistence(timeout: 15), "the seeded record opens on the tabs, not onboarding")
 
-        // My plan, scrolled until Next Steps sits just below the title bar: its first cards show whole.
+        // My plan, scrolled until Next Steps sits near the top (no title bar, US-25 AC26): its first cards show whole.
         tabs.buttons["My plan"].tap()
         let nextSteps = app.staticTexts["Next Steps"]
         XCTAssertTrue(nextSteps.waitForExistence(timeout: 10), "the Next Steps heading")
