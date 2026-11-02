@@ -18,6 +18,7 @@ const NOW = '2026-09-01T09:00:00Z';
 const TODAY = NOW.slice(0, 10);
 const DAY = '2026-08-20';
 const SPLIT = 'If the report has result lines this call did not carry, send them now with the same sourceFileName, before any commit: once filed, the report reads as already imported.';
+const PER_RECEIPT = 'for each receipt, one call per receipt (each part numbers its ids from c1)';
 const part = (values: unknown[]) => ({ sourceFileName: 'Results.pdf', classification: 'lab_report', collectedOn: DAY, values });
 const first = part([{ metric: 'ldl', printedName: 'LDL Cholesterol', value: 2.8, unit: 'mmol/L' }]);
 const second = part([{ metric: 'Ferritin', printedName: 'Ferritin', value: 180, unit: 'ug/L' }]);
@@ -61,6 +62,20 @@ describe('US-36 AC7a — a long report split over file_results calls', () => {
     expect(read.next.indexOf(SPLIT)).toBeLessThan(read.next.indexOf('Then call file_results with commit'));
   });
 
+  // Each part has its own receipt, and each receipt numbers its candidates from
+  // c1, so "commit the receipt" let an assistant commit one part and leave the
+  // others to expire unfiled. Every part's `next` says to commit each receipt.
+  it('each part of a multi-part read says to commit each receipt, one call per receipt', async () => {
+    const { call } = setup();
+    const a = await call('file_results', first);
+    const b = await call('file_results', second);
+    expect(a.receipt).not.toBe(b.receipt);
+    for (const part of [a, b]) {
+      expect(part.next).toContain(`Then call file_results with commit ${PER_RECEIPT}: the receipt, accept (ids to file)`);
+      expect(part.next).not.toContain('with commit: the receipt');
+    }
+  });
+
   it('every part read before the first commit lands, under one document', async () => {
     const { sync, call, commit } = setup();
     const a = await call('file_results', first);
@@ -96,5 +111,6 @@ describe('US-36 AC7a — a long report split over file_results calls', () => {
     expect(folder.candidates).toHaveLength(1);
     expect(folder.next).toContain('Then call import_documents with commit');
     expect(folder.next).not.toContain(SPLIT);
+    expect(folder.next).not.toContain(PER_RECEIPT);
   });
 });

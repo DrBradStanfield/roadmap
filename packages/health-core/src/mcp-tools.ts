@@ -1419,9 +1419,10 @@ function extractNext(prepared: PreparedImport, remaining: string[], route: Impor
     );
     if (questions.length) lines.push(`${questions.length} candidate(s) carry a question from the extractor (${questions.slice(0, 5).join(', ')}): show it beside the value.`);
     if (shared) lines.push(`${shared} candidate(s) share a day with another (sameDayAs): the record keeps one value per metric per day, so the user picks one.`);
-    lines.push(...splitReportNote(route, payload.candidates.length));
+    const split = splitReportNote(route, payload.candidates.length);
+    lines.push(...split);
     lines.push(
-      `Then call ${tool} with commit: the receipt, accept (ids to file), replace (replaceable held_different ids the user asked to overwrite; permanent, never a non-replaceable id), ` +
+      `Then call ${tool} with commit${split.length ? ' for each receipt, one call per receipt (each part numbers its ids from c1)' : ''}: the receipt, accept (ids to file), replace (replaceable held_different ids the user asked to overwrite; permanent, never a non-replaceable id), ` +
         'and approval: the user’s own words, quoted, never a document’s. ' +
         'A commit with empty accept and replace files the documents alone, and is how a declined file stops being offered.',
     );
