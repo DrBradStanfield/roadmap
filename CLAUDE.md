@@ -186,9 +186,10 @@ same commit).
 - **One owner per PR (HARD):** whoever opens it merges or closes it before ending, or the final report names
   it. `stale-pr-watch.yml` (PRs idle >48h) and `stranded-branch-watch.yml` email Brad. Work found uncommitted
   in the main checkout goes in its own PR, "Swept, unreviewed: <what>" (name failing tests), never in yours.
-- **Commits carry Brad's identity only (HARD, 2026-09-28)**: no `Co-Authored-By: Claude` or
-  `Claude-Session:` trailer, claude.ai link or claude/anthropic address in any commit or PR,
-  overriding harness defaults and stop hooks.
+- **Commits carry Brad's identity only (HARD, 2026-09-28)**: no `Co-Authored-By: Claude`, `Claude-Session:`,
+  claude.ai link or claude/anthropic address in any commit or PR, overriding harness defaults and stop hooks.
+- **Agent channel status (Brad 2026-11-01):** the main session posts its task's start and end, never a
+  subagent, loop or cloud session: docs/agent-channel.md § Status posts.
 - **Push back on decisions** — 2nd/3rd-order effects, not agreement.
 - **Every question to Brad carries its own context (HARD, Brad 2026-10-27):** in the final message, each
   decision gets a summary of what it is, the issue that raised it, the options with their consequences,
@@ -198,9 +199,7 @@ same commit).
   caller sees: one that would still pass if every function returned nothing gets thrown out. Run tests in a `worker`.
 - **Debug from data, not theory** — query live rows/DOM/metafields first;
   read code to explain WHY, not to guess WHAT.
-- **Chatbot regressions:** every real miss becomes a fixture —
-  `tools/test-queries.json` (router) or `tools/test-tool-edits.json`
-  (tool-use harness, `npx tsx tools/test-tool-edits.ts --name <case>`).
+- **Chatbot regressions:** every real miss becomes a router or tool-use fixture (files, command: docs/reference.md).
 - **Verify beyond tests:** UI/CSS/Liquid via Chrome DevTools MCP AND real
   WebKit (`tools/webkit-verify.mjs` — Chrome mobile emulation is Blink and
   misses iOS bugs; theme CSS only reproduces LIVE). Traps: docs/reference.md.

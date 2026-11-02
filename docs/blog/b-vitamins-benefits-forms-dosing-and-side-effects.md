@@ -119,7 +119,7 @@ Folate labels use "dietary folate equivalents" (DFE), which give folic acid extr
 
 Absorption of B12 is limited by intrinsic factor — only about 1.5 mcg can be actively absorbed from a single dose via intrinsic factor, with an additional approximately 1% absorbed passively through diffusion [50]. Because the intrinsic-factor route saturates, B12 in food and B12 in a supplement are absorbed better when taken hours apart [50].
 
-Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) includes a full B-complex with methylated B12 (12 mcg) and methylated folate (200 mcg DFE) alongside, in the USA formula, B1 (0.9 mg), B2 (0.975 mg), B3 as nicotinamide (16 mg), B5 (3.75 mg), B6 as P5P (1.275 mg), and biotin (22.5 mcg) — low, evidence-based doses designed to fill dietary gaps without megadosing.
+Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) includes a full B-complex with methylated B12 (12 mcg) and methylated folate (400 mcg DFE) alongside B1 as thiamine mononitrate (1.2 mg), B2 (1.3 mg), B3 as nicotinamide (16 mg), B5 (5 mg), B6 as P5P (1.7 mg), and biotin (30 mcg): evidence-based doses designed to fill dietary gaps without megadosing.
 
 ## 3. Evidence for Health Benefits
 

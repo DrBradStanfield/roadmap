@@ -8,7 +8,7 @@
 # label) → opens the veto issue (native email to Brad) → waits 30 min →
 # re-verifies (sha unchanged, still open, no 'hold') → if the branch is behind
 # main, merges main into it via the API and re-runs 'test' on the new head
-# (US-46 AC5; up to 3 rounds) → labels 'ship' → merges at that exact sha → dispatches deploy.yml, which runs its own gate job (the
+# (US-46 AC5; up to 3 rounds) → merges at that exact sha → dispatches deploy.yml, which runs its own gate job (the
 # 'production' environment itself has had no wait timer or reviewer since
 # 2026-09-02). Total path to production ≈ 35 min, up to ~80 min when the
 # branch is behind main, two veto emails.
@@ -229,7 +229,6 @@ jobs:
             || skip "main keeps moving; branch still behind after 3 updates"
 
           step="merging"
-          gh pr edit "${PR}" -R "${GITHUB_REPOSITORY}" --add-label ship || true
           gh pr merge "${PR}" -R "${GITHUB_REPOSITORY}" --merge --match-head-commit "${HEAD_SHA}"
           merged=1
           step="merged; dispatching deploy.yml (merge already happened)"

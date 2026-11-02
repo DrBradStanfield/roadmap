@@ -1297,13 +1297,17 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       'the insulin-like growth factor 1 row is missing',
       'the IGF-1 row is missing',
       'the non-blocking call ran 3 times',
+      // US-07 AC9: the cortisol timing words are clocks in a bug report.
+      'the reminder email arrived at 3 pm instead of the morning',
+      'sync failed every evening for 2 days, and once at midnight 4 times',
     ]) {
       expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
     }
     for (const detail of ['fasting glucose 5.4', 'my fasting 5.4 was dropped', 'plasma 5.4 went in the wrong row',
       // A name of many words is one name: the distance runs from its end, so
       // the generic words inside it cannot carry the value out of reach.
-      'insulin-like growth factor 1 was 200', '200 was my insulin-like growth factor 1', 'IGF-1 was 200']) {
+      'insulin-like growth factor 1 was 200', '200 was my insulin-like growth factor 1', 'IGF-1 was 200',
+      'my cortisol pm 300 was filed as morning', 'midnight cortisol 50 is missing']) {
       expect(reportFeedback({ ...GOOD, detail }, NOW), detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
     }
   });
@@ -2101,7 +2105,8 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     expect(importHint('no_date')).toContain('fileDates: [{ "file": "<name as listed>", "date": "YYYY-MM-DD" }]');
   });
 
-  // US-12 AC12 is website-only while MCP 1.0.2 is in OpenAI's review: the
+  // US-12 AC12 is website-only, held for OpenAI's MCP 1.0.2 review (ended
+  // 2026-10-29; still held until someone brings the connector level): the
   // shared parse now reads a dated "Prev." column, and import_documents must
   // offer exactly what it did before. Synthetic values, through the real parse.
   it('AC5/AC13 — import_documents does not offer a previous-column value, and fileDates moves only the primary column', () => {
@@ -2285,6 +2290,8 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     expect(importHint('allowance')).toMatch(/allowance for the hour/);
     expect(importHint('time')).toMatch(/Ask again.*already filed are skipped/);
     expect(importHint('too_many')).toMatch(/twenty/);
+    // US-35 AC5b: a whole ZIP refused for its entry count gets this reason too, so the hint names that limit.
+    expect(importHint('too_many')).toContain(`more than ${IMPORT_LIMITS.zipEntries.toLocaleString('en-US')} entries (folders and ignored files included)`);
     // US-35 AC13 (2026-10-19): a file the model cut off or declined is not a bad scan, and
     // the same request stops the same way again, so neither hint invites a retry of the same file.
     // The connector reads at 3,072 output tokens and the website at 10,000, so the website is named first.
