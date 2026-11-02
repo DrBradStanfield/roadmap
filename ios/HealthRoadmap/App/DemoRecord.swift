@@ -50,6 +50,7 @@ struct NoLiveHealth: LiveHealthStore {
     func points(_ metric: LiveMetric, from start: Date, to end: Date, every component: Calendar.Component) async throws -> [LivePoint] { [] }
     func latest(_ metric: LiveMetric) async throws -> (value: Double?, date: Date)? { nil }
     func sleep(from start: Date, to end: Date) async throws -> [SleepSegment] { [] }
+    func earliest(_ metric: LiveMetric) async throws -> Date? { nil }
 }
 
 /// Notifications, absent: the phone's pending reminders are never listed, removed or added.

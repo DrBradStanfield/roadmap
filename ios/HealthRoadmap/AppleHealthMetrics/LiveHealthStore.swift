@@ -20,6 +20,8 @@ protocol LiveHealthStore: Sendable {
     func latest(_ metric: LiveMetric) async throws -> (value: Double?, date: Date)?
     /// Sleep samples overlapping `start` to `end`.
     func sleep(from start: Date, to end: Date) async throws -> [SleepSegment]
+    /// When the metric's oldest sample began, however old: a page reads back to it (AC7a).
+    func earliest(_ metric: LiveMetric) async throws -> Date?
 }
 
 /// The real `LiveHealthStore`, on the app's one `HKHealthStore.app`, read off the main thread. Its calendar
@@ -92,6 +94,14 @@ final class LiveHealthKitStore: LiveHealthStore {
                                                  sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)], limit: 1)
         let samples = try await Self.locking { try await descriptor.result(for: store) }
         return samples.first.map { ($0.quantity.doubleValue(for: Self.unit(metric)), $0.endDate) }
+    }
+
+    @concurrent
+    func earliest(_ metric: LiveMetric) async throws -> Date? {
+        guard let type = Self.type(of: metric) as? HKSampleType else { return nil }
+        let descriptor = HKSampleQueryDescriptor(predicates: [.sample(type: type)],
+                                                 sortDescriptors: [SortDescriptor(\.startDate)], limit: 1)
+        return try await Self.locking { try await descriptor.result(for: store) }.first?.startDate
     }
 
     @concurrent
