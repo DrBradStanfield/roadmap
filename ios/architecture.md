@@ -81,6 +81,10 @@ beta, so it's fine").** Main had kept `2d467ff50c66c42d` so US-61's engine (its 
 above, the contract hashes to `8dee92d80c028ed3`, which `EngineRelease.bridge` and
 `bridge.test.ts` now carry. Builds 3 and 4 stop receiving over-the-air engines: the US-61
 engine and this one reach them only through the next App Store build.
+**Bridge moved, 2026-11-02 (US-67, the chat's edits).** The new `chatEditsJson` door is one
+an older app cannot serve. Merged with US-12 AC20's move below, the contract hashes to
+`8ced272282162ff2`; `EngineRelease.bridge` and `bridge.test.ts` carry it. The chat's writes are new `Edit` kinds (`chatEdits`, `chatUndo`)
+inside the existing `applyEditJson` and `cloudEdit`, so they need no door of their own.
 
 **Bridge moved again, 2026-11-02 (US-12 AC20, D15).** `chatContextJson` now sends `limits`
 (a lab result printed as a limit) and `ChatClient.contextKeys` takes it, so the contract
@@ -1157,6 +1161,18 @@ phones only). Brad decided the order on 2026-10-25.
   all my data". The web's code lives in the widget's adapter, not health-core, so the
   phone repeats the one call in OAuthClient beside Drive's `about`.
 
+**The chat edits the record (2026-11-02, US-67; Brad: copy the web, F11).** The app sends
+`edits: 1`, so the server offers the web's form tools, and the `done` line's `proposedEdits`
+reach Swift as opaque JSON (`OpaqueJSON`), never read. One engine door, `chatEditsJson`, words
+them against the record now, in the person's units; two edit kinds write them through the
+usual path (`applyOnPhone`, or `cloudEdit` with its erase guard): `chatEdits` (part
+`medications` or `review`, the proposals as received, the phone's day) and the engine's own
+Undo edit, passed back as it came. A medication change saves at once with Undo; values,
+height and sex wait in a banner with Save and Not now (`Chat/ChatEdits.swift`). A reply to a
+question asked before an erase, and a banner made before one, write nothing: `RecordStore.ChatMark`
+(the cloud erase, the eraseEpoch and the phone's erase count) is checked in the write's turn,
+and ChatView drops the banners when it moves (US-16 AC2a).
+
 **State 2026-10-22.** On the iPhone, chat answers "not available": the education server leaves
 App Attest off until `APP_ATTEST_TEAM_ID` is set (`app/lib/app-attest.server.ts`), so chat and lab
 upload wait for that secret and the team it names (Brad's personal team P7LB54J2PM now, DR BRAD,
@@ -1179,10 +1195,10 @@ health tool (`data-clarity-mask` on `HealthTool.tsx`'s root). The app matches th
   never a navigation title, which can carry a supplement's name. Nothing is ever unmasked.
 - `AnalyticsMaskingTests` (US-25 AC19) fails if the window is not masked first, if any code
   unmasks, if a text input lacks its mask, or if any file but Analytics.swift calls Clarity.
-- **Custom events, exactly fourteen fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58; "Alcohol answered" for US-60):**
+- **Custom events, exactly sixteen fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58; "Alcohol answered" for US-60; "Chat edit proposed" and "Chat edit saved" for US-67):**
   `Analytics.event` sends `ClaritySDK.sendCustomEvent` with a word from one enum,
   `Analytics.Event`: "Tour started", "Tour tip closed 1/2/3", "Tour skipped 1/2/3", "Tile
-  explainer opened", "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened", "Alcohol answered".
+  explainer opened", "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened", "Alcohol answered", "Chat edit proposed", "Chat edit saved".
   Never a value, a tile's name or any other text; nothing before Clarity starts.
   `AnalyticsMaskingTests` pins the list, so a new word is a test change and a D9 change.
   Views reach the one `Analytics` through the environment (`\.analytics`, set by RootView).

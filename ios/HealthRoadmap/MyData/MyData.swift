@@ -181,6 +181,20 @@ enum RecordEdit: Encodable, Equatable {
     /// The ticked values of an uploaded lab report (US-52 AC8): the server's extraction
     /// as JSON text, the refs ticked, and the report's day.
     case labImport(extractionJSON: String, refs: [String], reportDay: String)
+    /// A chat reply's edits (US-67): the server's proposals as received, never read here, and
+    /// the phone's local day. The engine parses, converts and writes `part` of them. `seen`:
+    /// the review preview's own token, passed back on Save as it came (nil: none).
+    case chatEdits(part: ChatEditPart, edits: OpaqueJSON, today: String, seen: OpaqueJSON? = nil)
+    /// An edit the engine made itself (a chat medication change's Undo), passed back as it came.
+    case engineEdit(OpaqueJSON)
+
+    /// Which part of a chat reply's edits an edit writes (US-67 AC3).
+    enum ChatEditPart: String, Encodable {
+        /// Saved at once, with Undo, as on the web.
+        case medications
+        /// Values, height and sex: saved only on Save.
+        case review
+    }
 
     /// A new birth year. A stored month that would then be in the future moves back to the
     /// latest one in the same edit, as onboarding's wheel does (US-54 AC5b, review R4).
@@ -191,10 +205,12 @@ enum RecordEdit: Encodable, Equatable {
     }
 
     private enum Key: String, CodingKey {
-        case kind, alcohol, sex, birthYear, birthMonth, height, heightFeet, heightInches, systolic, diastolic, replace, seenIds, unitSystem, unit, metric, value, day, id, extractionJson, refs, reportDay, samples
+        case kind, alcohol, sex, birthYear, birthMonth, height, heightFeet, heightInches, systolic, diastolic, replace, seenIds, unitSystem, unit, metric, value, day, id, extractionJson, refs, reportDay, samples, part, edits, today, seen
     }
 
     func encode(to encoder: Encoder) throws {
+        // The engine's own edit is its JSON exactly, so it is written before any key is.
+        if case .engineEdit(let edit) = self { return try edit.encode(to: encoder) }
         var json = encoder.container(keyedBy: Key.self)
         switch self {
         case .profile(let sex, let birthYear, let birthMonth, let height):
@@ -242,6 +258,14 @@ enum RecordEdit: Encodable, Equatable {
             try json.encode(extractionJSON, forKey: .extractionJson)
             try json.encode(refs, forKey: .refs)
             try json.encode(reportDay, forKey: .reportDay)
+        case .chatEdits(let part, let edits, let today, let seen):
+            try json.encode("chatEdits", forKey: .kind)
+            try json.encode(part, forKey: .part)
+            try json.encode(edits, forKey: .edits)
+            try json.encode(today, forKey: .today)
+            try json.encodeIfPresent(seen, forKey: .seen)
+        case .engineEdit:
+            break // written above
         }
     }
 }

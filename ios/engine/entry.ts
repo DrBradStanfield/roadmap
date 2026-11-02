@@ -13,6 +13,7 @@ import { deviceWrites } from '../../packages/health-core/src/device-export';
 import { usProductSections, type UsPlanSection } from '../../packages/health-core/src/us-products';
 import { applyEdit, myData, newRecord, readNumber, readRecord, readView, type Edit } from './my-data';
 import { metricHistory } from './my-data-forms';
+import { chatEditsPreview } from './chat-edits';
 import { readUnitChoices } from './unit-choices';
 import { phoneReminders } from './reminders';
 import { installShim, type Natives } from './shim';
@@ -114,6 +115,14 @@ export function screenJson(recordJson: string, nowIso: string, deviceId: string,
 export function applyEditJson(recordJson: string, editJson: string, nowIso: string, deviceId: string, unitsJson?: string): string {
   const outcome = applyEdit(readRecord(recordJson, nowIso, deviceId), JSON.parse(editJson) as Edit, nowIso, readUnitChoices(unitsJson));
   return JSON.stringify(outcome.ok ? { ok: true, record: JSON.stringify(outcome.file) } : outcome);
+}
+
+/** What the chat's proposed edits would do (US-67 AC3), as JSON: `{ medications: { lines, undo } | null,
+ *  review: { lines, refusal, seen } | null }`, in the phone's units; `seen` goes back on the review's
+ *  chatEdits edit, so a Save refuses when the record changed since. `editsJson`: the reply's `proposedEdits` as
+ *  received; `today`: the phone's day. The record is read raw, as the chatEdits edit writes it. */
+export function chatEditsJson(recordJson: string, editsJson: string, nowIso: string, deviceId: string, today: string, unitsJson?: string): string {
+  return JSON.stringify(chatEditsPreview(readRecord(recordJson, nowIso, deviceId), JSON.parse(editsJson), nowIso, today, readUnitChoices(unitsJson)));
 }
 
 /** A typed number as JSON: the number, or null when it is not a plain decimal. */
