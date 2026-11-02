@@ -373,12 +373,13 @@ export function anyScreeningEligible(age: number, sex: string | undefined): bool
 }
 
 /**
- * The LDCT question opens at 20 pack-years, or whenever LDCT data is already recorded, so an
- * abnormal result's follow-up can be closed after pack-years drop below 20 (US-07 AC1f).
+ * The LDCT question opens at 20 pack-years, or once it has any answer (or LDCT data is recorded),
+ * so an abnormal result's follow-up can be closed below 20, and "Not yet started" below 20 keeps
+ * the question to pick LDCT again (US-07 AC1f).
  */
 export function lungScreeningAsked(scr: ScreeningInputs): boolean {
   return (scr.lungPackYears !== undefined && scr.lungPackYears >= LUNG_PACK_YEARS)
-    || scr.lungScreening === 'annual_ldct' || !!scr.lungLastDate || !!scr.lungResult;
+    || !!scr.lungScreening || !!scr.lungLastDate || !!scr.lungResult;
 }
 
 /** DEXA applies to women from 50 and men from 70. */

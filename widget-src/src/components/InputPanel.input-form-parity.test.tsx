@@ -112,8 +112,13 @@ describe('US-25 AC8, US-06 — the web screening cards are screeningForm', () =>
       lung_smoking_history: 'former_smoker', lung_pack_years: '15', lung_screening: 'annual_ldct', lung_last_date: '2025-01', lung_result: 'abnormal',
     } });
     expect(container.querySelector('#lung-followup-status')).not.toBeNull();
+    cleanup();
     const none = renderPanel({ sex: 'male', basis: { age: 60 }, screenings: { lung_smoking_history: 'former_smoker', lung_pack_years: '15' } });
     expect(none.querySelector('#lung-screening')).toBeNull();
+    cleanup();
+    // Review R4: after "Not yet started" the question stays, so LDCT can be picked again.
+    const notYet = renderPanel({ sex: 'male', basis: { age: 60 }, screenings: { lung_smoking_history: 'former_smoker', lung_pack_years: '15', lung_screening: 'not_yet_started' } });
+    expect(notYet.querySelector('#lung-screening')).not.toBeNull();
   });
 });
 

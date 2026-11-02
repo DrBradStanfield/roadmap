@@ -183,7 +183,9 @@ describe('screeningForm', () => {
     expect(keys(screeningForm(60, 'male', abnormal)).filter((k) => k.startsWith('lung_'))).toEqual(
       ['lung_smoking_history', 'lung_pack_years', 'lung_screening', 'lung_last_date', 'lung_result', 'lung_followup_status']);
     // No lung data: the start question stays gated at 20.
-    expect(keys(screeningForm(60, 'male', { lungSmokingHistory: 'former_smoker', lungPackYears: 15, lungScreening: 'not_yet_started' }))).not.toContain('lung_screening');
+    expect(keys(screeningForm(60, 'male', { lungSmokingHistory: 'former_smoker', lungPackYears: 15 }))).not.toContain('lung_screening');
+    // Review R4: "Not yet started" clears the chain but keeps the question, so LDCT can be picked again.
+    expect(keys(screeningForm(60, 'male', { lungSmokingHistory: 'former_smoker', lungPackYears: 15, lungScreening: 'not_yet_started' }))).toContain('lung_screening');
   });
 });
 

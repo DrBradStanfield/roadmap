@@ -140,12 +140,15 @@ function screeningSchedule(
     ));
   }
 
-  // Lung (age 50-80, smoker with 20+ pack-years — USPSTF 2021; an abnormal CT keeps its reminder
-  // whatever the pack-years, US-07 AC1f)
+  // Lung (age 50-80, smoker with 20+ pack-years — ACS 2023). Below 20, an abnormal CT keeps its
+  // reminder exactly while the plan shows its follow-up card (US-07 AC1f): a last date, and a
+  // completed follow-up only with its date.
+  const lungFollowupCard = s.lungResult === 'abnormal' && !!s.lungLastDate && (s.lungFollowupStatus !== 'completed'
+    || getPostFollowupDueDate('lung', s.lungScreening, s.lungResult, s.lungFollowupStatus, s.lungFollowupDate) !== null);
   if (
     age >= 50 && age <= 80 &&
     (s.lungSmokingHistory === 'former_smoker' || s.lungSmokingHistory === 'current_smoker') &&
-    ((s.lungPackYears !== undefined && s.lungPackYears >= LUNG_PACK_YEARS) || s.lungResult === 'abnormal') &&
+    ((s.lungPackYears !== undefined && s.lungPackYears >= LUNG_PACK_YEARS) || lungFollowupCard) &&
     s.lungScreening && s.lungScreening !== 'not_yet_started'
   ) {
     push('screening_lung', 'Lung screening (low-dose CT)', earliest(

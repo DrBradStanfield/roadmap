@@ -1043,7 +1043,7 @@ Source: `suggestions.ts` (screening section) + `types.ts` (intervals/follow-up)
 | Colorectal | 35-75 | Both | — |
 | Breast | 40+ | Female | 40-44 optional (info), 45+ recommended (attention) |
 | Cervical | 25-65 | Female | — |
-| Lung | 50-80 | Both | Former/current smoker AND >= 20 pack-years (USPSTF 2021) |
+| Lung | 50-80 | Both | Former/current smoker AND >= 20 pack-years (ACS 2023; no quit window) |
 | Prostate | 45+ | Male | Shared decision |
 | Endometrial | 45+ | Female | Abnormal bleeding = urgent |
 | DEXA | Female >= 50, Male >= 70 | Both | — |
@@ -1052,7 +1052,7 @@ With no sex on record only the unsexed screenings (colorectal, lung) show (US-07
 
 Lung: the plan does not ask when someone quit. Like the American Cancer Society's 2023 guideline, a former smoker with >= 20 pack-years stays eligible however long ago they quit (Brad 2026-11-03; US-07 AC1e).
 
-Lung follow-up: once an abnormal low-dose CT is recorded, its follow-up card and its `screening_lung` reminder stay whatever the pack-years, so a later correction below 20 never drops them (Brad 2026-11-03; US-07 AC1f). The age limits (50-80) and the former/current smoker history still apply. Below 20 pack-years no start, overdue or up-to-date card shows.
+Lung follow-up: once an abnormal low-dose CT is recorded, its follow-up card and its `screening_lung` reminder stay whatever the pack-years, so a later correction below 20 never drops them (Brad 2026-11-03; US-07 AC1f). The age limits (50-80) and the former/current smoker history still apply. Below 20 pack-years no start, overdue or up-to-date card shows. Below 20 the reminder runs exactly while the follow-up card shows: while the follow-up is not yet organized or is scheduled it falls on the routine annual date (12 months after the last CT); once the follow-up is completed with its date, on the earlier of that and the post-follow-up date; a completed follow-up with no date gives neither card nor reminder (at 20+ it falls back to the routine card and reminder).
 
 ### Screening Intervals (months)
 

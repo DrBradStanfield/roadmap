@@ -1461,6 +1461,8 @@ describe('generateSuggestions', () => {
       // Below 20 with a normal result: no start, overdue or up-to-date card.
       expect(lung({ ...abnormal, lungResult: 'normal' })).toEqual([]);
       expect(lung({ ...abnormal, lungScreening: 'not_yet_started' })).toEqual([]);
+      // Review R2: a completed follow-up with no date has no card below 20 (no routine fallback).
+      expect(lung({ ...abnormal, lungFollowupStatus: 'completed' })).toEqual([]);
     });
 
     it('US-07 AC1e: no quit window, as ACS 2023 (Brad 2026-11-03): the plan and the roadmap text screen former smokers however long ago they quit', () => {
@@ -1470,8 +1472,13 @@ describe('generateSuggestions', () => {
       const root = join(dirname(fileURLToPath(import.meta.url)), '../../..');
       const html = readFileSync(join(root, 'roadmap_text.html'), 'utf8');
       const lung = html.slice(html.indexOf('Lung Cancer:'), html.indexOf('Prostate Cancer:'));
-      expect(lung).toContain('Have a 20 pack-year smoking history, whether you still smoke or have quit.');
+      expect(lung).toContain('Have a smoking history of 20 pack-years or more, whether they still smoke or have quit.');
+      const ev = SUGGESTION_EVIDENCE['screening-lung'];
+      expect(ev.reason).toContain('however long ago they quit');
+      expect(ev.guidelines).toEqual(['ACS 2023', 'USPSTF 2021']);
+      expect(ev.references.map(r => r.url)).toContain('https://doi.org/10.3322/caac.21811');
       expect(lung).not.toMatch(/15 years/);
+      expect(html).toContain('November 2026: Lung cancer screening now follows the American Cancer Society');
       expect(lung).toContain('After Age 80:');
       expect(readFileSync(join(root, 'health_roadmap_algorithm.md'), 'utf8')).toMatch(/does not ask when someone quit[^\n]*American Cancer Society/);
     });

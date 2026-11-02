@@ -76,6 +76,8 @@ describe('screening reminder eligibility (US-06, algorithm doc table)', () => {
     // A normal result below 20 pack-years still gets no reminder, and the age limits hold.
     expect(scheduled('male', 60, { ...abnormal, lungResult: 'normal' }).has('screening_lung')).toBe(false);
     expect(scheduled('male', 81, abnormal).has('screening_lung')).toBe(false);
+    // Review R2: a completed follow-up with no date gives no card below 20, so no reminder either.
+    expect(scheduled('male', 60, { ...abnormal, lungFollowupDate: undefined }).has('screening_lung')).toBe(false);
   });
 
   it('a screening not yet started schedules nothing', () => {
