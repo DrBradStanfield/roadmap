@@ -1,6 +1,6 @@
 ---
-title: "Concerning NR and NMN Supplement Result"
-url: "https://drstanfield.com/blogs/articles/concerning-nr-and-nmn-supplement-result"
+title: "NR in Parkinson's: What the NOPARK Trial Found"
+url: "https://drstanfield.com/blogs/articles/nr-in-parkinsons-what-the-nopark-trial-found"
 commerceUrl: "https://microvitamin.com/blogs/articles/nr-nmn-evidence-nopark-trial"
 youtube: "https://www.youtube.com/watch?v=z0JSQt4OruM"
 publishedAt: "2026-10-29T06:26:43Z"

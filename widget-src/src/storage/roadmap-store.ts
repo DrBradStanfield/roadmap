@@ -74,7 +74,7 @@ import {
   type RoadmapFile,
   type RoadmapProfile,
 } from '@roadmap/health-core';
-import { bloodTableReport, inputRangeFault, isAlcoholAnswer, isCoreRow, readableView, ROADMAP_DOC, ROADMAP_FILE_NAME, type FileLabValue, type FileMeasurement } from '@roadmap/health-core';
+import { bloodTableReport, inputRangeFault, isAlcoholAnswer, isCoreRow, isReadableRow, readableView, ROADMAP_DOC, ROADMAP_FILE_NAME, type FileLabValue, type FileMeasurement } from '@roadmap/health-core';
 import { currentValueRows } from '@roadmap/health-core/blood-tests';
 import { type EraseResult, type EraseSteps, type RecordHost, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
@@ -301,6 +301,14 @@ export class RoadmapStore {
   /** How many entries this build could not read; kept, never shown (US-65). */
   get unreadableCount(): number {
     return this.readable.count;
+  }
+
+  /** Whether the record holds a `key` medication row this build cannot read
+   *  (US-65): a chat change over it offers no Undo (US-67 N3). `answered`: only
+   *  a row that is not 'not_yet', the escalation answer a chat change resets
+   *  as the iPhone engine reads it (US-06 AC12). */
+  holdsUnreadableMedication(key: string, answered = false): boolean {
+    return this.file.medications.some((m) => m.medicationKey === key && !isReadableRow('medications', m) && !(answered && m.drugName === 'not_yet'));
   }
 
   get backendId() {

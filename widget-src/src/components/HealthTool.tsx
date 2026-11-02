@@ -80,6 +80,7 @@ import {
   loadUnitPreference,
   safeSetItem,
   safeRemoveItem,
+  localHealthWritesStopped,
 } from '../lib/storage';
 import {
   loadLatestMeasurements,
@@ -89,7 +90,9 @@ import {
   getShownErase,
   markEraseShown,
   clearOffFileAfterErase,
+  flushRoadmapStoreSync,
   loadLatestMeasurementsSync,
+  holdsUnreadableMedication,
   loadAllHistory,
   loadAllHistorySync,
   loadLabValues,
@@ -617,6 +620,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // Save any unsaved profile/demographic fields (height, sex, birthYear, birthMonth, unitSystem).
   // Returns true if saved or nothing to save; false on failure.
   async function flushPendingProfileSave(erase?: string): Promise<boolean> {
+    if (getBackendKind() === 'local' && localHealthWritesStopped()) return true;
     const autoSaveFields = [...PREFILL_FIELDS, 'unitSystem' as keyof HealthInputs];
     const currentPrefill: Partial<HealthInputs> = {};
     const previousPrefill: Partial<HealthInputs> = {};
@@ -634,6 +638,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       writeRefused();
       return false;
     }
+    if (getBackendKind() === 'local' && localHealthWritesStopped()) return true;
     const refused = result.birthRefused;
     // A value out of range was refused (US-02 AC5): it stays in the form, unsaved, its error shown.
     const kept = new Set(Object.keys(result.refused ?? {}) as Array<keyof HealthInputs>);
@@ -656,20 +661,22 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     // The form is clean again — apply any remote change held back while it
     // was dirty (US-34 AC4). Not while a refused value is still in the form:
     // the re-read would replace it and its error (US-02 AC5); the relay
-    // waits for the save that takes it.
-    if (!result.refused) remoteRelay.saved();
+    // waits for the save that takes it. Nor while an edit made during the
+    // await is unsaved: read the latest form, not this save's snapshot.
+    if (!result.refused && !autoSaveFields.some(f => inputsRef.current[f] !== inputs[f])) remoteRelay.saved();
     return true;
   }
 
   // Auto-save demographics + height only (debounced)
+  const profileDebounce = useDebouncedSave(500);
   useEffect(() => {
     if (!hasApiResponse) return;
 
     const erase = getShownErase(); // as the edit was made, not as the timer fires
-    const timeout = setTimeout(() => { void flushPendingProfileSave(erase); }, 500);
+    profileDebounce.schedule(() => { void flushPendingProfileSave(erase); });
 
-    return () => clearTimeout(timeout);
-  }, [inputs, hasApiResponse]);
+    return () => profileDebounce.cancel();
+  }, [inputs, hasApiResponse, profileDebounce]);
 
   // The saved-value editor's correction, core or lab (US-04, US-21 AC5),
   // then the page re-reads the record.
@@ -802,18 +809,29 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     longitudinalDebounce.commit(() => { void handleSaveLongitudinalRef.current(); });
   }, [longitudinalDebounce]);
 
-  // Tab-close safety net for the first-time vitals fields: a field the user
-  // left has its save waiting (500 ms); it runs before the page unloads. A
-  // matrix's draft stays on the device instead (US-03 AC5).
+  // Stage only queued edits, with the erase they were made against, then flush
+  // synchronously: the entrypoint's earlier listener may have flushed first.
+  // A matrix's draft stays on the device instead (US-03 AC5).
   useEffect(() => {
-    const onUnload = () => longitudinalDebounce.flush();
+    const onUnload = () => {
+      profileDebounce.flush();
+      longitudinalDebounce.flush();
+      flushRoadmapStoreSync();
+    };
+    const onHidden = () => {
+      if (document.visibilityState !== 'hidden') return;
+      profileDebounce.flush();
+      flushRoadmapStoreSync();
+    };
     window.addEventListener('beforeunload', onUnload);
     window.addEventListener('pagehide', onUnload);
+    document.addEventListener('visibilitychange', onHidden);
     return () => {
       window.removeEventListener('beforeunload', onUnload);
       window.removeEventListener('pagehide', onUnload);
+      document.removeEventListener('visibilitychange', onHidden);
     };
-  }, [longitudinalDebounce]);
+  }, [longitudinalDebounce, profileDebounce]);
 
   // A lab upload starts: both matrices commit their drafts, then the fields
   // save (US-03 AC5), before any file is read.
@@ -1072,6 +1090,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       // A refusal of this erase's own leftovers is not news (adversary R3).
       refusedFor.current = getEraseIdentity();
       longitudinalDebounce.cancel();
+      profileDebounce.cancel();
       // A save the form scheduled before the erase is pre-erase (US-16 AC2a).
       for (const timers of [medSaveTimers, screeningSaveTimers, supSaveTimers]) {
         for (const timer of timers.current.values()) clearTimeout(timer);
@@ -1086,7 +1105,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       window.alert(result.error || 'Failed to delete data. Please try again.');
     }
     return result.success;
-  }, [longitudinalDebounce]);
+  }, [longitudinalDebounce, profileDebounce]);
 
   // One field's new value, from the form or the chat. A weight or waist
   // keeps the unit its caller converted it from (typedIn). One update per
@@ -1206,9 +1225,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // Chatbot-driven form edits (the chat proposes; this routes to the real form)
   // ---------------------------------------------------------------------------
   // A one-shot undo for a medication change the chat just applied (meds
-  // auto-save, so the chat states the change + offers Undo): every row the
-  // change wrote, as it was before.
-  const [medUndo, setMedUndo] = useState<ChatMedicationRow[] | null>(null);
+  // auto-save, so the chat states the change; only this banner offers Undo): every row the
+  // change wrote, as it was before. 'unavailable': the change replaced a row
+  // this build cannot read, so the banner offers no Undo (US-67 N3).
+  const [medUndo, setMedUndo] = useState<ChatMedicationRow[] | 'unavailable' | null>(null);
   // The form's medications, unsaved changes included: a chat change is
   // judged against these as well as the saved ones (US-06 AC12).
   const medicationsRef = useRef(medications);
@@ -1239,21 +1259,26 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   }, [handleInputChange]);
 
   /** Apply one chat medication edit; returns the rows it wrote, as they were
-   *  before, for Undo. `stated` holds every key the same reply names. */
+   *  before, for Undo, or null when it replaces a row this build cannot read
+   *  (US-65): Undo could not put that row back (US-67 N3). `stated` holds
+   *  every key the same reply names. */
   const applyMedicationEdit = useCallback((edit: ProposedMedicationEdit, stated: ReadonlySet<string>) => {
     // Snapshot the prior values FIRST so Undo can restore them: the saved
     // ones, from the copy the banner's erase check reads (US-16 AC2a).
     // The rule is health-core's, shared with the iPhone (US-06 AC12, US-67 AC4):
     // a new drug or dose resets the drug's escalation answer, escalation first,
     // unless the same reply states it. Flat mode too: the chat changes the drug
-    // on purpose. An answer the form holds but has not saved yet was about the
-    // old drug too: it is reset as well, and only the saved one is Undo's to restore.
+    // on purpose. An answer the form holds but has not saved yet, or one this
+    // build cannot read, was about the old drug too: it is reset as well, as on
+    // the iPhone, and only the readable saved one is Undo's to restore.
     const saved = loadLatestMeasurementsSync()?.medications ?? [];
     const onForm = medicationsRef.current.find(m => m.medicationKey === edit.medicationKey);
     const { undo, reset } = chatMedicationChange(edit, saved, stated, onForm);
-    if (reset && (undo.some(m => m.medicationKey === reset) || medSaveTimers.current.has(reset))) handleMedicationChange(reset, 'not_yet', null, null);
+    const resets = !!reset && (undo.some(m => m.medicationKey === reset) || medSaveTimers.current.has(reset) || holdsUnreadableMedication(reset, true));
+    const undoable = ![edit.medicationKey, resets && reset].some(key => key && holdsUnreadableMedication(key));
+    if (resets) handleMedicationChange(reset, 'not_yet', null, null);
     handleMedicationChange(edit.medicationKey, edit.drugName, edit.doseValue, edit.doseUnit);
-    return undo;
+    return undoable ? undo : null;
   }, [handleMedicationChange]);
 
   // Only what the profile does not already hold shows, however it changed since.
@@ -1276,18 +1301,25 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     let inGrid = false;
     const stated = new Set(edits.flatMap(e => (e.kind === 'medication' ? [e.medicationKey] : [])));
     // Undo restores every medication row the reply changed, the last edit
-    // first. Field edits are drafts the person saves or discards.
+    // first; one Undo covers the whole reply, so a row it cannot restore
+    // means none (US-67 N3). Field edits are drafts the person saves or discards.
     const undo: ChatMedicationRow[] = [];
+    let undoable = true;
     for (const edit of edits) {
       switch (edit.kind) {
         case 'field': if (applyFieldEdit(edit)) inGrid = true; editedField ??= edit.field; break;
-        case 'medication': undo.unshift(...applyMedicationEdit(edit, stated)); break;
+        case 'medication': {
+          const rows = applyMedicationEdit(edit, stated);
+          if (rows) undo.unshift(...rows); else undoable = false;
+          break;
+        }
         case 'profile': break; // merged below
         // A kind this build does not know writes nothing (an older server's reply, or a newer one's).
         default: break;
       }
     }
-    if (undo.length > 0) setMedUndo(undo);
+    if (!undoable) setMedUndo('unavailable');
+    else if (undo.length > 0) setMedUndo(undo);
     // A reply's profile proposal replaces any pending one; within the reply, a
     // later stated field wins. A field already saved with the same value (as
     // the user sees it) needs no Save.
@@ -1308,7 +1340,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   }, [applyFieldEdit, applyMedicationEdit, unitSystem, eraseUnshown, selectTab]);
 
   const undoMedEdit = useCallback(() => {
-    if (!medUndo) return;
+    if (!Array.isArray(medUndo)) return;
     // The store holds an erase the screen does not show: write nothing (US-16 AC2a).
     if (!eraseUnshown()) for (const m of medUndo) handleMedicationChange(m.medicationKey, m.drugName, m.doseValue, m.doseUnit);
     setMedUndo(null);
@@ -1505,15 +1537,18 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       />
 
       {/* Undo banner for a medication the chat just changed (meds auto-save, so
-          the chat applies + states the change and offers an explicit Undo). */}
+          the chat applies + states the change; this banner offers the Undo). */}
       {/* Both portal outside the masked widget root, so their column carries
           the Clarity mask (US-09 AC8), and stacks them (styles.css .chat-banners). */}
       {(medUndo || pendingProfile) && createPortal(
         <div className="chat-banners no-print" data-clarity-mask="true">
           {medUndo && (
             <div className="chat-med-undo" role="status">
-              <span className="chat-med-undo-text">Medication updated from chat.</span>
-              <button type="button" className="chat-med-undo-btn" onClick={undoMedEdit}>Undo</button>
+              <span className="chat-med-undo-text">
+                Medication updated from chat.
+                {medUndo === 'unavailable' && " Undo isn't available: an earlier entry couldn't be read."}
+              </span>
+              {medUndo !== 'unavailable' && <button type="button" className="chat-med-undo-btn" onClick={undoMedEdit}>Undo</button>}
               <button
                 type="button"
                 className="chat-med-undo-dismiss"
