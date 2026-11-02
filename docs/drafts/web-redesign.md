@@ -332,8 +332,9 @@ is phone-only.
   refused, exactly as the grid's `expected` slots do today (adversary R10).
 - Row and capsule status classes join US-09 AC7d's Sentry breadcrumb scrub list, or a
   tap on a row would leak its grade (adversary R12).
-- **The grid stays on desktop, unchanged.** On a phone it stays one tap away as **"All
-  results as a table"**, at the foot of Blood tests: every result on every date, side
+- **Rows on desktop too** (Brad 2026-11-02: "I want the rows on desktop too"). The grid
+  stays one click away, on phone and desktop, as **"All results as a table"**, at the
+  foot of Blood tests: every result on every date, side
   by side, scrolling sideways. It is the same grid, so it also serves for typing in a
   whole lab report and moving a test to another day. Nothing the grid does today is
   lost.
