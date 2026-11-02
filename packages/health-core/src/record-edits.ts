@@ -37,7 +37,7 @@ import {
 import { bloodTestKeyOf, coreStored, createCoreRow, isBloodTestKey, isCoreRow, labRowSlot } from './blood-tests';
 import { METRIC_TO_FIELD } from './mappings';
 import { resolveCoreMetricName } from './lab-extraction';
-import { dayOf, latestStamp, localDay } from './merge';
+import { dayOf, latestStamp, localDay, rootIdOf } from './merge';
 import { isCalendarDay, isClinicalDay } from './measurement-history';
 import { CORE_BLOOD_UNITS, createLabValue, createMeasurement, recordSchemaVersion, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { canonicalToReported, reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
@@ -779,9 +779,12 @@ export function moveBloodTest(file: RoadmapFile, request: MoveBloodTestRequest):
     if (clash && request.keep[clash.held.id] !== 'moving') continue; // `held`, or the same quantity
     if (clash) flip.add(clash.held.id);
     const recordedAt = plan.to + row.recordedAt.slice(10);
+    // The moved copy keeps its original's root id, so an erase that listed
+    // the original takes it too, on a copy that had not seen the erase (AC5a).
+    const id = `${rootIdOf(row.id)}#mv-${newId().slice(0, 8)}`;
     added.push('metricType' in row
-      ? createMeasurement({ id: newId(), metricType: row.metricType, value: row.value, recordedAt, createdAt: now, source, correctsId: row.id, ...comparatorOf(row) })
-      : { ...row, id: newId(), recordedAt, createdAt: now, source, status: 'active', correctsId: row.id });
+      ? createMeasurement({ id, metricType: row.metricType, value: row.value, recordedAt, createdAt: now, source, correctsId: row.id, ...comparatorOf(row) })
+      : { ...row, id, recordedAt, createdAt: now, source, status: 'active', correctsId: row.id });
   }
   const flipped = <T extends ClinicalRow>(r: T): T => (flip.has(r.id) ? { ...r, status: 'entered-in-error' } : r);
   const next = stampUpdatedAt({

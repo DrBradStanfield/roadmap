@@ -193,12 +193,13 @@ export function baseIdOf(id: string): string {
 
 /**
  * The id a row's original was written under: `baseIdOf` with the `#si`
- * conversion and `#core` fold suffixes stripped too, so an erase that lists a
- * row takes its quarantined copies, its unit conversion and its fold into a
- * core value with it (US-09 AC23, US-66 AC5).
+ * conversion, `#core` fold and `#mv-` move suffixes stripped too, so an
+ * erase that lists a row takes its quarantined copies, its unit conversion,
+ * its fold into a core value and its moved copy with it (US-09 AC23, US-66
+ * AC5, US-04 AC5a).
  */
 export function rootIdOf(id: string): string {
-  return id.replace(/(?:#dup-[0-9a-f]{8}|#si|#core)+$/, '');
+  return id.replace(/(?:#dup-[0-9a-f]{8}|#si|#core|#mv-[0-9a-f]{8})+$/, '');
 }
 
 /**
@@ -643,20 +644,36 @@ export function latestStamp(a: string, b: string): string {
   return ta !== tb ? (ta > tb ? a : b) : a > b ? a : b;
 }
 
+/** The root an app from before US-04 AC5a gives a row: only `#dup-…`, `#si`
+ *  and `#core` stripped, so a moved row's is its own id. */
+function rootBeforeMoveOf(id: string): string {
+  return id.replace(/(?:#dup-[0-9a-f]{8}|#si|#core)+$/, '');
+}
+
 /** The root id of every row in the file: what an erase made now would list
- *  (US-09 AC23). A row whose id is not a string has no root, and is skipped. */
+ *  (US-09 AC23). A row whose id is not a string has no root, and is skipped.
+ *  A moved row is listed under its own id too, as an app from before US-04
+ *  AC5a roots it, so that app drops it. */
 export function rowRootIds(file: RoadmapFile): string[] {
   return (Object.keys(ROW_STAMPS) as StampedArray[]).flatMap((key) =>
-    (file[key] as Array<{ id: unknown }>).flatMap((row) => (typeof row.id === 'string' ? [rootIdOf(row.id)] : [])));
+    (file[key] as Array<{ id: unknown }>).flatMap((row) => (typeof row.id === 'string'
+      ? [...new Set([rootIdOf(row.id), rootBeforeMoveOf(row.id)])]
+      : [])));
 }
 
 /** `file` without the rows `listed` names, from every array that carries ids;
- *  the same object when it names none (US-09 AC23). */
+ *  the same object when it names none (US-09 AC23). A row goes if its root is
+ *  the root of a listed id. An app from before US-04 AC5a lists a moved row
+ *  whose original is gone under the moved row's own id, `X#mv-A`; reducing
+ *  that to `X` also takes `X#mv-B`, the same test moved again on a copy that
+ *  had not seen the erase (Codex review of PR #337). The list itself keeps
+ *  the older spelling, so that app still reads it. */
 export function withoutListed(file: RoadmapFile, listed: ReadonlySet<string>): RoadmapFile {
   if (listed.size === 0) return file;
+  const roots = new Set([...listed].map(rootIdOf));
   const out: Record<string, unknown> = { ...file };
   for (const key of Object.keys(ROW_STAMPS) as StampedArray[]) {
-    out[key] = (file[key] as Array<{ id: unknown }>).filter((row) => typeof row.id !== 'string' || !listed.has(rootIdOf(row.id)));
+    out[key] = (file[key] as Array<{ id: unknown }>).filter((row) => typeof row.id !== 'string' || !roots.has(rootIdOf(row.id)));
   }
   return out as unknown as RoadmapFile;
 }
