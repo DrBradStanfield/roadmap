@@ -263,7 +263,7 @@ The mortality data strongly favours plant protein sources (legumes, nuts, pea pr
 
 **Algorithm link:** `protein-target` suggestion. See the Diet guideline's Feature 4 for full protein evidence including cancer, kidney, and source data.
 
-**Product connection:** MicroVitamin+ Powder includes Creatine 5g (supports RT adaptations and muscle preservation) and Collagen 12.5g.
+**Product connection:** MicroVitamin+ Powder includes Creatine 5g (supports RT adaptations and muscle preservation) and Collagen 10g.
 
 ### References
 - Morton 2018, protein supplementation and muscle meta-analysis, BJSM (DOI: 10.1136/bjsports-2017-097608)

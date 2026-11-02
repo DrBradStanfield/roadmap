@@ -63,6 +63,8 @@ export {
   SEX_DB,
   UNIT_SYSTEM_DB,
   encodeSex,
+  isSex,
+  SEXES,
   decodeSex,
   encodeUnitSystem,
   decodeUnitSystem,
@@ -100,6 +102,8 @@ export {
   healthInputSchema,
   PRESSURE_ORDER,
   pressureInverted,
+  birthInFuture,
+  birthRefusedMessage,
   sanitizeInputs,
   excludedInputFields,
   measurementSchema,
@@ -108,6 +112,8 @@ export {
   getValidationErrors,
   convertValidationErrorsToUnits,
   validateInputValue,
+  identityFieldRange,
+  inputRangeFault,
   isBirthYearClearlyInvalid,
   type MetricTypeValue,
   type ValidatedHealthInputs,
@@ -160,6 +166,9 @@ export {
   type ApiScreening,
   screeningsToInputs,
   computeFormStage,
+  opensFullForm,
+  type FormStage,
+  type RecordHoldings,
 } from './mappings';
 
 // Reminders
@@ -189,6 +198,8 @@ export {
   HBA1C_THRESHOLDS,
   LDL_THRESHOLDS,
   HDL_THRESHOLDS,
+  HDL_GRID_BANDS,
+  CREATININE_GRID_BANDS,
   TRIGLYCERIDES_THRESHOLDS,
   TOTAL_CHOLESTEROL_THRESHOLDS,
   NON_HDL_THRESHOLDS,
@@ -245,7 +256,8 @@ export { STAT_CARD_EVIDENCE, getIbwEvidence, getProteinEvidence, getBmiEvidence 
 
 // Reference-range hints (blood-test matrix + legacy form labels)
 export type { RefHint, SexedRefHint } from './reference-hints';
-export { REFERENCE_HINTS, refHintFor, refLineFor, lpaRefHint } from './reference-hints';
+export { REFERENCE_HINTS, refLineFor } from './reference-hints';
+export { type Grading, type RowTarget, type RowTargetPlan, type RowSubject, TARGET_NEEDS_HEIGHT, TARGET_NEEDS_SEX, healthyWaistBelow, rowTarget } from './row-target';
 export { type CellUnit, isLpaUnit, recordLpaUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel, cellRange } from './cell-unit';
 
 // Sentry PII/PHI scrubbing
@@ -298,6 +310,7 @@ export { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertS
 export { isTakingDrug } from './history-change';
 export { recordedTime, medicationAnnotations, medicationChanges, type ChartAnnotation, type MedicationChange } from './medication-annotations';
 export { migrateFile, SchemaTooNewError, RecordShapeError } from './migrate';
+export { readableView, unreadableNote } from './readable-rows';
 
 // v2 reminder schedule (client-computed; the server is a dumb scheduler — §10)
 export {
@@ -347,7 +360,7 @@ export {
 
 // The chat's plan context: what a client sends, and the sanitizing builder
 // both chats read it through (US-15 AC11)
-export { chatContextOf, buildChatContextJson, MINOR_CHAT_RULE, NO_PLAN_CHAT_RULE, type ChatContextPayload } from './chat-context';
+export { chatContextOf, buildChatContextJson, MINOR_CHAT_RULE, NO_PLAN_CHAT_RULE, NO_SEX_CHAT_RULE, type ChatContextPayload } from './chat-context';
 
 // US-15 AC33: run the plan code on values stated in the chat; the one-round tool loop every chat shares
 export { chatToolsFor, withRoadmapRound, type ChatTurnMessage } from './run-roadmap';
@@ -446,7 +459,7 @@ export {
 
 // US-35: the slot rule and the bulk save the website and the connector share.
 export { bulkAppendValues, correctValue, moveBloodTest, placeMeasurement, planBloodTestMove, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type MeasurementRefusal, type MoveClash, type MoveKeep, type MovePlan, type MoveRejection, type MoveResult, type SlotState } from './record-edits';
-export { fileNameLine, inflateCapped, isImportableEntryName, zipMemberName, UNDATED_PREVIOUS, type RefusedLabValue } from './lab-extraction';
+export { fileNameLine, inflateCapped, isImportableEntryName, zipMemberName, unreadLines, UNDATED_PREVIOUS, type RefusedLabValue, type UnreadLabValue } from './lab-extraction';
 export { IMPORT_LIMITS } from './import-hints';
 export {
   MEDICATION_TEXT, SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, SUPPLEMENT_TEXT, SUPPLEMENT_DOSE_UNITS,

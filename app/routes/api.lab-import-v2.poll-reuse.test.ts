@@ -16,7 +16,7 @@ const lines = [JSON.stringify({ custom_id: 'file-0', result: { type: 'succeeded'
   content: [], stop_reason: 'refusal', stop_details: { category: 'bio' },
 } } })];
 
-function request(body: object, timestamp = Date.now() / 1000, valid = true) {
+function request(body: object, timestamp = Math.floor(Date.now() / 1000), valid = true) {
   const query = new URLSearchParams({ shop: 'synthetic.myshopify.com', timestamp: String(timestamp) });
   const message = [...query].sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}=${v}`).join('');
   query.set('signature', valid ? crypto.createHmac('sha256', SECRET).update(message).digest('hex') : '0'.repeat(64));

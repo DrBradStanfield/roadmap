@@ -86,7 +86,10 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   too; value-free by design — while n is tiny these are Brad's own
   verification, not adoption); `guide_opened` split by `placement`
   (header|footer|plan_footer), read against `results_viewed`; the web
-  redesign's (US-62 AC1, once the widget sends them): phone `tool_opened` →
+  redesign's (US-62 AC1, once the widget sends them; **`results_viewed` was
+  redefined 2026-11-01, live from that deploy (US-62 AC5): plan on screen, no
+  longer plan mounted, so phone counts before it run high; never trend across
+  it**): phone `tool_opened` →
   `results_viewed` share is its primary metric (`device` phone|desktop),
   `onboarding_step` by `step`, `onboarding_done`, `signin_opened` by
   `placement` (top_bar|plan_panel); `lpa_unit_selected`
@@ -126,11 +129,6 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   posted), escalations and security handling. Its schedule and report file do
   not apply. Log in its `ledger.csv`, `metrics.csv` and `feature-backlog.csv`;
   the report gets one line, and drafted replies for Brad go in it verbatim.
-- **OpenAI app review status** (Gmail MCP; the portal needs a login):
-  search for a verdict on submission `C-jVtw19jIhBb8` ("Health by Dr Brad"
-  v1.0.2, receipt 2026-10-13T23:55Z; v1.0.1 rejected 2026-09-30, v1.0.0
-  2026-09-15). If it has moved (approved or rejected), lead the report with it
-  as Brad's next action (#60 is closed as superseded).
 - **Newer-Sonnet check** (audit `claude_business docs/roadmap-chat/chat-audit-2026-09-29.md` §4.3, US-15
   AC18). Run `npx tsx tools/check-newer-model.ts` (needs
   `ANTHROPIC_TEST_API_KEY`). Exit 0 = nothing newer; 1 = a named gap. On exit

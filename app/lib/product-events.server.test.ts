@@ -35,9 +35,12 @@ describe('parseProductEvent', () => {
       if (SERVER_ONLY.has(eventName)) continue;
       // US-62 AC1: these three need their key, tested with it below.
       if (['tool_opened', 'onboarding_step', 'signin_opened'].includes(eventName)) continue;
-      expect(parseProductEvent({ eventName, visitorId: VISITOR })).toEqual({
+      // US-61 AC8: the two US product events need their product.
+      const metadata = eventName.startsWith('us_product_') ? { metadata: { product: 'sleep' } } : {};
+      expect(parseProductEvent({ eventName, visitorId: VISITOR, ...metadata })).toEqual({
         eventName,
         visitorId: VISITOR,
+        ...metadata,
       });
     }
   });
@@ -260,6 +263,13 @@ describe('the email-arrival counters', () => {
       ]) {
         expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata })).toBeNull();
       }
+    }
+  });
+
+  it('US-61 AC8: refuses the two US product events without a product', () => {
+    for (const eventName of ['us_product_shown', 'us_product_link_clicked']) {
+      expect(parseProductEvent({ eventName, visitorId: VISITOR })).toBeNull();
+      expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata: {} })).toBeNull();
     }
   });
 
@@ -922,7 +932,7 @@ describe('the chat profile-edit counter', () => {
 });
 
 describe('the upload outcome counter (US-12 AC10)', () => {
-  const counts = { picked: 9, withValues: 6, documentOnly: 1, noValues: 0, openFailed: 1, tooLarge: 1, truncated: 1, serverError: 0, limitError: 0, refused: 1, tooLong: 1, valuesDropped: 3, docx: 1, picturesOnly: 1, undatedPrevious: 4, unitsGuessed: 2, unitsRefused: 1 };
+  const counts = { picked: 9, withValues: 6, documentOnly: 1, noValues: 0, openFailed: 1, tooLarge: 1, truncated: 1, serverError: 0, limitError: 0, refused: 1, tooLong: 1, valuesDropped: 3, docx: 1, picturesOnly: 1, undatedPrevious: 4, unitsGuessed: 2, unitsRefused: 1, valuesLimit: 2 };
 
   it('takes integer counts from a browser', () => {
     expect(parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata: counts }))
@@ -932,6 +942,8 @@ describe('the upload outcome counter (US-12 AC10)', () => {
   it('refuses a string, a negative, a fraction, a count over 1000 and a value-shaped field', () => {
     for (const metadata of [
       { picked: '9' }, { openFailed: -1 }, { withValues: 1.5 }, { tooLarge: 1001 }, { valuesDropped: 1001 }, { docx: 1.5 }, { docx: 'docx' }, { undatedPrevious: 1.5 }, { undatedPrevious: -1 }, { undatedPrevious: 'undated' }, { unitsGuessed: 1.5 }, { unitsRefused: -1 }, { unitsRefused: 'creatinine' },
+      // US-12 AC19: a count of values printed as a limit, never a test's name.
+      { valuesLimit: 1.5 }, { valuesLimit: -1 }, { valuesLimit: 1001 }, { valuesLimit: 'hdl' }, { picked: 1, valuesLimit: 1, name: 'hdl' },
       { picked: 1, fileName: 'report.pdf' }, { picked: 1, unit: 'mmol/L' }, { picked: 1, value: 4.2 },
     ]) {
       expect(

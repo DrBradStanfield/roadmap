@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { MemoryAdapter, ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
+import { openAboutYou } from '../testing/health-tool-harness';
 
 // Real form, data layer, session and device storage; no off-device requests.
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -42,6 +43,7 @@ beforeEach(async () => {
   ({ HealthTool } = await import('./HealthTool'));
   await data.initRoadmapStore(new LocalStorageAdapter());
   await data.saveChangedMeasurements({ sex: 'male', heightCm: 178, birthMonth: 5, unitSystem: 'si' }, {});
+  await data.addMeasurement('weight', 80, '2026-10-01'); // the onboarding's first steps done: the birth year shows (US-62 AC13)
   await data.flushRoadmapStore();
 });
 afterEach(() => {
@@ -53,12 +55,13 @@ afterEach(() => {
 async function form() {
   const view = render(<HealthTool />);
   await act(async () => {}); // hydration, not the 500 ms autosave
+  openAboutYou(view.container); // a row opens to its field (US-62 AC12)
   const year = view.container.querySelector<HTMLInputElement>('#birthYear')!;
   expect(year).toBeTruthy();
   const { trackProductEvent } = await import('../lib/server-api');
   vi.mocked(trackProductEvent).mockClear();
   // An edit can re-render the field, so a blur goes to the one on the page.
-  const live = () => view.container.querySelector<HTMLInputElement>('#birthYear')!;
+  const live = () => { openAboutYou(view.container); return view.container.querySelector<HTMLInputElement>('#birthYear')!; };
   return { view, year, live };
 }
 
@@ -217,6 +220,7 @@ it.each(['departure', 'debounce'] as const)(
     const cloud = new MemoryAdapter();
     await data.initRoadmapStore(cloud);
     await data.saveChangedMeasurements({ sex: 'male', heightCm: 178, birthMonth: 5, unitSystem: 'si' }, {});
+    await data.addMeasurement('weight', 80, '2026-10-01');
     await data.flushRoadmapStore();
     const { year } = await form();
     // The cloud tab receives the real content-free cross-tab signal.
@@ -293,7 +297,9 @@ it('US-34 AC4: clearing an unsaved refused year releases a held update even with
   expect(await appliedRemote()).toBe(1);
 });
 
-it('US-34 AC4: an edit arriving while a valid save awaits also holds remote replay', async () => {
+// '197' is refused and rides through a re-read (US-02 AC5); '1976' is valid
+// and would be replaced by it, so only the latest-form check keeps it.
+it.each(['197', '1976'])('US-34 AC4: an edit (%s) arriving while a valid save awaits also holds remote replay', async typed => {
   await data.saveChangedMeasurements({ birthYear: 1975 }, {});
   const { view, year } = await form();
   const save = data.saveChangedMeasurements;
@@ -306,11 +312,11 @@ it('US-34 AC4: an edit arriving while a valid save awaits also holds remote repl
   });
   fireEvent.change(view.container.querySelector('#heightCm')!, { target: { value: '180' } });
   await act(async () => { await vi.advanceTimersByTimeAsync(500); });
-  fireEvent.change(year, { target: { value: '197' } });
+  fireEvent.change(year, { target: { value: typed } });
   await remoteMonth();
   await act(async () => { release(); });
   const liveYear = view.container.querySelector<HTMLInputElement>('#birthYear')!;
-  expect(liveYear.value).toBe('197');
+  expect(liveYear.value).toBe(typed);
   expect(await appliedRemote()).toBe(0);
   fireEvent.change(liveYear, { target: { value: '1976' } });
   await act(async () => { await vi.advanceTimersByTimeAsync(1500); });
@@ -319,7 +325,8 @@ it('US-34 AC4: an edit arriving while a valid save awaits also holds remote repl
   expect(await appliedRemote()).toBe(1);
 });
 
-// A blur refuses an out-of-range year; the refusal is not a clear.
+// An out-of-range year left by blur stays in the box, unsaved (US-02 AC5);
+// the refusal is not a clear.
 it.each(['beforeunload', 'visibilitychange', 'pagehide', 'debounce'] as const)(
   'US-01 AC4: a refused year blurred before %s keeps the saved year through reload', async mode => {
     await data.saveChangedMeasurements({ birthYear: 1975 }, {});
@@ -327,7 +334,7 @@ it.each(['beforeunload', 'visibilitychange', 'pagehide', 'debounce'] as const)(
     const { view, year, live } = await form();
     fireEvent.change(year, { target: { value: '197' } });
     fireEvent.blur(live());
-    expect(live().value).toBe('1975');
+    expect(live().value).toBe('197');
     if (mode === 'debounce') await act(async () => { await vi.advanceTimersByTimeAsync(1500); });
     else depart(mode);
     expect(saved().profile.birthYear).toBe(1975);
@@ -342,6 +349,7 @@ it('US-09 AC2c: a held remote update released after another tab logs off does no
   const cloud = new MemoryAdapter();
   await data.initRoadmapStore(cloud);
   await data.saveChangedMeasurements({ sex: 'male', heightCm: 178, birthMonth: 5, unitSystem: 'si' }, {});
+  await data.addMeasurement('weight', 80, '2026-10-01');
   await data.flushRoadmapStore();
   const { year } = await form();
   fireEvent.change(year, { target: { value: '1975' } });

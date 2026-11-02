@@ -15,6 +15,8 @@ struct LabReviewView: View {
     let position: (Int, Int)
     /// A save is under way; the sheet around the review holds its Close too.
     @Binding var saving: Bool
+    /// Sends the report again after a failure that may mend (US-52 AC7a); nil: none.
+    var tryAgain: (() -> Void)? = nil
     let onDone: () -> Void
 
     @State private var review: LabReview?
@@ -38,7 +40,10 @@ struct LabReviewView: View {
                 if result.truncated { Text("Only the first 20 pages were read.").foregroundStyle(.secondary) }
             }
             if let failure = result.failure {
-                Section { Text(failure) }
+                Section {
+                    Text(failure)
+                    if let tryAgain { Button("Try again", systemImage: "arrow.clockwise", action: tryAgain) }
+                }
             } else if let review {
                 reviewSections(review)
             }
@@ -105,7 +110,7 @@ struct LabReviewView: View {
             }
             if !review.notSaved.isEmpty || review.unreadCount > 0 {
                 Section("Not saved") {
-                    ForEach(review.notSaved, id: \.label) { Text("\($0.label): \($0.reason)") }
+                    ForEach(Array(review.notSaved.enumerated()), id: \.offset) { Text("\($0.element.label): \($0.element.reason)") }
                     if review.unreadCount > 0 { Text("\(review.unreadCount) value\(review.unreadCount == 1 ? "" : "s") could not be read.") }
                 }
             }

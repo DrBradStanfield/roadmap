@@ -116,5 +116,9 @@ and refresh themselves. The local stdio server, same file the CLI guide describe
 
 ## What this means for us
 
+Update 2026-11-02: OpenAI declined the ChatGPT app on 2026-10-29 (health apps are out of
+scope for its directory), and Brad will not resubmit. ChatGPT users connect through developer
+mode, as before; nothing here waits on OpenAI.
+
 None of this is a second ChatGPT submission. ChatGPT is the only surface where review buys
 *connection*; for Claude it buys discovery and needs a Team org; elsewhere, nothing to submit to.

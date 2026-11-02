@@ -87,10 +87,10 @@ const sha256 = (...parts: Uint8Array[]) => {
 };
 
 // ---------------------------------------------------------------------------
-// Challenges: stateless, HMAC'd, 5 minutes
+// Challenges: HMAC'd, 5 minutes, spent on first use (`appLimits.challenges`)
 // ---------------------------------------------------------------------------
 
-const CHALLENGE_TTL_MS = 5 * 60_000;
+export const CHALLENGE_TTL_MS = 5 * 60_000;
 
 function challengeKey(env: NodeJS.ProcessEnv = process.env): Buffer {
   const secret = env.SHOPIFY_API_SECRET;
@@ -107,10 +107,11 @@ export function newChallenge(now = Date.now(), env: NodeJS.ProcessEnv = process.
   return Buffer.concat([head, mac]).toString('base64url');
 }
 
-export function challengeValid(challenge: unknown, now = Date.now(), env: NodeJS.ProcessEnv = process.env): boolean {
+export function challengeValid(challenge: unknown, now = Date.now(), env: NodeJS.ProcessEnv = process.env): challenge is string {
   if (typeof challenge !== 'string' || challenge.length > 100) return false;
   const raw = Buffer.from(challenge, 'base64url');
-  if (raw.length !== 56) return false;
+  // One spelling per challenge: the decoder skips padding and stray characters, and the spent set is keyed on the string (US-52 AC1a).
+  if (raw.length !== 56 || raw.toString('base64url') !== challenge) return false;
   const head = raw.subarray(0, 24);
   const mac = crypto.createHmac('sha256', challengeKey(env)).update(head).digest();
   if (!crypto.timingSafeEqual(mac, raw.subarray(24))) return false;
