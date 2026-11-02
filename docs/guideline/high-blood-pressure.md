@@ -51,7 +51,7 @@ The Health Roadmap uses these blood pressure tiers, in mmHg (Brad's current guid
 
 - Either number on its own can put you in a tier. The plan counts a diastolic above 80 (81 or more) as raised.
 - **Target under 65:** below 120/80. **Target at 65 or older:** below 130/80.
-- **Crisis:** a reading of 180/120 or more on either number is dangerously high; with symptoms, get help now (above). Without symptoms it is still dangerously high and urgent (Brad's current guidance, 2 Nov 2026). Wait 5 minutes and recheck; if it is still that high, contact your doctor the same day [9].
+- **Crisis:** a reading of 180/120 or more on either number is dangerously high; with symptoms, get help now (above). Without symptoms it is still dangerously high and urgent (Brad's current guidance, 2 Nov 2026). Wait 5 minutes and recheck; if it is still that high, call your doctor [9].
 - The plan's potassium advice (3,500 to 5,000 mg a day from food) shows only when kidney function is good enough, an eGFR of 45 or more.
 
 These tiers follow the US categories, which call 120 to 129 systolic elevated, 130 to 139 or 80 to 89 stage 1, and 140 or 90 and above stage 2 [2]. Other countries draw the lines differently (see "Where guidelines differ").

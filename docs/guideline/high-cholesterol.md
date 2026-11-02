@@ -113,7 +113,7 @@ Ezetimibe blocks cholesterol absorption in the gut. The dose is 10 mg once daily
 
 ### Bempedoic acid
 
-Bempedoic acid blocks liver cholesterol production one step before statins act. The dose is 180 mg once daily [Nexletol label]. In people who could not take statins, it lowered major cardiovascular events (11.7% against 13.3%) over about 40 months, with more gout and gallstones [CLEAR Outcomes]. The label warns of raised uric acid and tendon rupture, and limits simvastatin to 20 mg and pravastatin to 40 mg alongside it [Nexletol label].
+Bempedoic acid blocks liver cholesterol production earlier in the same pathway that statins act on. The dose is 180 mg once daily [Nexletol label]. In people who could not take statins, it lowered major cardiovascular events (11.7% against 13.3%) over about 40 months, with more gout and gallstones [CLEAR Outcomes]. The label warns of raised uric acid and tendon rupture, and limits simvastatin to 20 mg and pravastatin to 40 mg alongside it [Nexletol label].
 
 ### PCSK9 drugs
 
