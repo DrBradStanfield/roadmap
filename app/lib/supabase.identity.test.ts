@@ -146,7 +146,7 @@ describe('Shopify principal reuse', () => {
     expect(profiles[0]).toMatchObject({ id: 'new', shopify_customer_id: customer });
   });
 
-  // US-15 AC49 (GHSA-w5p5-hmp4-7qmp): the audit row outlives the profile's link,
+  // US-15 AC50: the audit row outlives the profile's link,
   // so it must not carry the Shopify customer id itself.
   it('writes a USER_CREATED audit row that holds no Shopify customer id', async () => {
     const customer = identity(); state.create.mockResolvedValueOnce({ data: { user: { id: 'new' } }, error: null });
