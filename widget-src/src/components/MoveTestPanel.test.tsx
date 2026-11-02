@@ -247,7 +247,7 @@ describe('US-04 AC5: the panel', () => {
     expect(moveButton().disabled).toBe(false);
     fireEvent.click(moveButton());
     await wait(0);
-    expect(onMove).toHaveBeenCalledWith(FROM, TO, ['ldl1', 'psa1', 'lpa1', 'fer1'], {});
+    expect(onMove).toHaveBeenCalledWith(FROM, TO, ['ldl1', 'psa1', 'fer1', 'lpa1'], {});
   });
 });
 

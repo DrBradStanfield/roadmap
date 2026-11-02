@@ -78,10 +78,10 @@ async function seed(profile: Record<string, unknown> = { sex: 'male', heightCm: 
   await flushRoadmapStore();
 }
 
-/** The record's own rows, as stored. */
+/** The record's own rows, as stored: a blood test is a core lab row (US-66), read as the measurement it was. */
 function fileRows(metric: string) {
   const file = JSON.parse(localStorage.getItem('health_roadmap_file_v2')!);
-  return (file.measurements as Array<{ id: string; metricType: string; value: number; recordedAt: string; status: string; correctsId: string | null }>)
+  return (toOldShape(file).measurements as Array<{ id: string; metricType: string; value: number; recordedAt: string; status: string; correctsId: string | null }>)
     .filter(r => r.metricType === metric);
 }
 

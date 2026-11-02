@@ -2038,7 +2038,8 @@ describe('US-32 AC29 — the counter records why a call was refused', () => {
     const old = whole.labValues[0];
     expect(old.recordedAt).toContain('2026-01-01');
     (recordServerEvent as unknown as { mockClear(): void }).mockClear();
-    const refused = await callTool(access, 'correct_value', { id: old.id, expectedValue: old.value, newValue: old.value + 1 });
+    const value = old.value as number; // the read_record schema types a lab row's value loosely
+    const refused = await callTool(access, 'correct_value', { id: old.id, expectedValue: value, newValue: value + 1 });
     expect(refused.isError).toBe(true);
     expect(toolCallEvents().at(-1)).toMatchObject({ outcome: 'refused', reason: 'too-old' });
   });
