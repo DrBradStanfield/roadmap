@@ -226,6 +226,46 @@ describe('US-66 AC3: the day', () => {
     expect(counts).toMatchObject({ added: 1, notRead: 2 });
   });
 
+  // Apple's simulator sample accounts (Sample Institution A, read 2026-11-02): DSTU2
+  // Observations that carry `issued` and no effective date. Values made up.
+  const APPLE_SAMPLE_DSTU2 = {
+    resourceType: 'Observation', id: '3fb9cf6c-3a2d-4c09-a3c2-7d3f2d8e1a10', status: 'final',
+    category: { coding: [{ system: 'http://hl7.org/fhir/observation-category', code: 'laboratory' }] },
+    code: { coding: [{ system: 'http://loinc.org', code: '2093-3', display: 'Cholesterol' }], text: 'Cholesterol' },
+    subject: { reference: 'Patient/1' },
+    issued: '2026-10-21T14:34:00+01:00',
+    valueQuantity: { value: 190, unit: 'mg/dL', system: 'http://unitsofmeasure.org', code: 'mg/dL' },
+    referenceRange: [{ text: '<200 mg/dL' }],
+  };
+
+  it('AC3 DSTU2 (Apple\'s sample shape): an Observation with only `issued` lands on the issued day, its offset kept', () => {
+    const { file, counts } = run(empty(), [rec(APPLE_SAMPLE_DSTU2, { fhirVersion: DSTU2 })]);
+    expect(counts).toEqual({ added: 1, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
+    expect(file.measurements).toEqual([expect.objectContaining({
+      metricType: 'total_cholesterol', recordedAt: '2026-10-21T14:34:00.000+01:00', source: 'health_records', status: 'active',
+    })]);
+  });
+
+  it('AC3: effectiveDateTime and effectivePeriod.start each win over `issued`', () => {
+    const { file } = run(empty(), [
+      rec({ ...APPLE_SAMPLE_DSTU2, effectiveDateTime: '2026-10-19' }, { fhirVersion: DSTU2 }),
+      rec({ ...APPLE_SAMPLE_DSTU2, id: 'b', effectivePeriod: { start: '2026-10-18' } }, { fhirVersion: DSTU2 }),
+    ]);
+    expect(file.measurements.map((m) => m.recordedAt)).toEqual(['2026-10-19T00:00:00.000Z', '2026-10-18T00:00:00.000Z']);
+  });
+
+  it('AC3, AC10: an `issued` later than now, unreadable, or before the erase does not land', () => {
+    const erased: RoadmapFile = { ...empty(), meta: { ...empty().meta, erasedAt: '2026-10-22T00:00:00.000Z' } };
+    const { file, counts } = run(erased, [
+      rec({ ...APPLE_SAMPLE_DSTU2, id: 'a', issued: '2026-11-02T09:30:00Z' }, { fhirVersion: DSTU2 }),
+      rec({ ...APPLE_SAMPLE_DSTU2, id: 'b', issued: '2026-02-30T09:30:00Z' }, { fhirVersion: DSTU2 }),
+      rec({ ...APPLE_SAMPLE_DSTU2, id: 'c' }, { fhirVersion: DSTU2 }),
+      rec({ ...APPLE_SAMPLE_DSTU2, id: 'd', issued: '2026-10-23T09:30:00Z' }, { fhirVersion: DSTU2 }),
+    ]);
+    expect(counts).toMatchObject({ added: 1, notRead: 3 });
+    expect(file.measurements.map((m) => m.recordedAt)).toEqual(['2026-10-23T09:30:00.000Z']);
+  });
+
   it('AC3: a date-only result dated today where the day has begun lands (a UK morning before UTC midnight)', () => {
     // 23:30 UTC on 1 Nov is already 2 Nov somewhere on earth.
     const { file } = run(empty(), [rec(obs(R4_LDL, { effectiveDateTime: '2026-11-02' }))], '2026-11-01T23:30:00.000Z');
@@ -459,11 +499,33 @@ describe('US-66 AC6: amended or corrected', () => {
     expect(file.meta.updatedAt).toBe(LATER);
   });
 
-  it('AC6: a newer version with the same value appends nothing', () => {
+  it('AC6: a newer version with the same value appends a correction with the same value and the new version (re-check R1)', () => {
     const first = run(empty(), [rec(obs(R4_LDL))]).file;
+    const old = first.measurements[0];
     const { file, counts } = run(first, [rec(obs(R4_LDL, { status: 'amended', meta: { versionId: '2' } }))], LATER);
-    expect(counts.alreadyInRecord).toBe(1);
-    expect(file).toBe(first);
+    expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 1, notRead: 0 });
+    expect(file.measurements).toEqual([
+      { ...old, status: 'entered-in-error' },
+      expect.objectContaining({
+        value: 4.6, recordedAt: old.recordedAt, status: 'active', correctsId: old.id,
+        externalId: `${SOURCE}|Observation|ldlcholesterol#|2|amended|4.6||mmol/L`,
+      }),
+    ]);
+  });
+
+  it('AC6, AC5: v1, then v3 with the same value, then an unseen older v2 is stale: nothing changes (re-check R1)', () => {
+    const v1 = rec(obs(R4_LDL, { meta: { versionId: '1' } }));
+    const v3 = rec(obs(R4_LDL, { meta: { versionId: '3' } }));
+    const held = run(run(empty(), [v1]).file, [v3], LATER).file;
+    expect(held.measurements.filter((m) => m.status === 'active').map((m) => m.externalId)).toEqual([`${SOURCE}|Observation|ldlcholesterol#|3|final|4.6||mmol/L`]);
+    for (const v2 of [
+      rec(obs(R4_LDL, { meta: { versionId: '2' }, status: 'entered-in-error' })),
+      rec(obs(R4_LDL, { meta: { versionId: '2' }, status: 'amended', valueQuantity: { value: 3.9, unit: 'mmol/L' } })),
+    ]) {
+      const { file, counts } = run(held, [v2], LATER);
+      expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 1, notRead: 0 });
+      expect(file).toBe(held);
+    }
   });
 
   it('AC6: a catalogue lab\'s amendment is a correction too', () => {
@@ -513,51 +575,109 @@ describe('US-66 AC7 and AC8: withdrawn, and the person\'s call', () => {
     expect(file).toBe(typed.file);
   });
 
-  it('AC8: once withdrawn, no later version of that result lands', () => {
+  it('AC8: a result the lab withdrew lands again when the lab sends a new version', () => {
     const first = run(empty(), [rec(obs(R4_LDL))]).file;
     const withdrawn = run(first, [rec(obs(R4_LDL, { status: 'entered-in-error', meta: { versionId: '2' } }))], LATER).file;
     const { file, counts } = run(withdrawn, [rec(obs(R4_LDL, { status: 'corrected', meta: { versionId: '3' }, valueQuantity: { value: 3.3, unit: 'mmol/L' } }))], LATER);
-    expect(counts.alreadyInRecord).toBe(1);
-    expect(file).toBe(withdrawn);
+    expect(counts).toEqual({ added: 1, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
+    expect(file.measurements.map((m) => [m.value, m.status])).toEqual([[4.6, 'entered-in-error'], [3.3, 'active']]);
   });
 
-  it('AC8: a result the person corrected by hand keeps their value against a later version', () => {
+  it('AC8: a result the person marked entered-in-error stays out in that version, and lands in a new one', () => {
+    const once = run(empty(), [rec(obs(R4_LDL))]).file;
+    const rejected: RoadmapFile = { ...once, measurements: once.measurements.map((m) => ({ ...m, status: 'entered-in-error' as const })) };
+    expect(run(rejected, [rec(obs(R4_LDL))], LATER).file).toBe(rejected);
+    const { file, counts } = run(rejected, [rec(obs(R4_LDL, { status: 'amended', meta: { versionId: '2' } }))], LATER);
+    expect(counts.added).toBe(1);
+    expect(file.measurements.filter((m) => m.status === 'active').map((m) => m.externalId)).toEqual([`${SOURCE}|Observation|ldlcholesterol#|2|amended|4.6||mmol/L`]);
+  });
+
+  it('AC8: after the person\'s rejection, an unseen older version is stale and stays out', () => {
+    const v2 = run(empty(), [rec(obs(R4_LDL, { meta: { versionId: '2' } }))]).file;
+    const rejected: RoadmapFile = { ...v2, measurements: v2.measurements.map((m) => ({ ...m, status: 'entered-in-error' as const })) };
+    const { file, counts } = run(rejected, [rec(obs(R4_LDL, { meta: { versionId: '1' }, valueQuantity: { value: 3.9, unit: 'mmol/L' } }))], LATER);
+    expect(counts.alreadyInRecord).toBe(1);
+    expect(file).toBe(rejected);
+  });
+
+  it('AC8, AC9: a result the person corrected by hand is corrected again by the lab\'s new version', () => {
     const first = run(empty(), [rec(obs(R4_LDL))]).file;
     const fixed = correctValue(first, { id: first.measurements[0].id, newValue: 4.2, now: LATER });
     if (!fixed.ok) throw new Error('setup');
+    const theirs = fixed.file.measurements.find((m) => m.status === 'active')!;
+    const same = run(fixed.file, [rec(obs(R4_LDL))], LATER);
+    expect(same.file).toBe(fixed.file);
     const { file, counts } = run(fixed.file, [rec(obs(R4_LDL, { status: 'amended', meta: { versionId: '2' }, valueQuantity: { value: 3.9, unit: 'mmol/L' } }))], LATER);
-    expect(counts.alreadyInRecord).toBe(1);
-    expect(file).toBe(fixed.file);
+    expect(counts.corrected).toBe(1);
+    expect(file.measurements.find((m) => m.id === theirs.id)?.status).toBe('entered-in-error');
+    expect(file.measurements.filter((m) => m.status === 'active')).toEqual([expect.objectContaining({ value: 3.9, correctsId: theirs.id, source: 'health_records' })]);
+  });
+
+  it('AC7: a withdrawn result frees its day for a typed value', () => {
+    const first = run(empty(), [rec(obs(R4_LDL))]).file;
+    const withdrawn = run(first, [rec(obs(R4_LDL, { status: 'entered-in-error', meta: { versionId: '2' } }))], LATER).file;
+    expect(appendMeasurement(withdrawn, { metricType: 'ldl', value: 3, recordedAt: '2026-10-21', now: LATER }).ok).toBe(true);
   });
 });
 
-describe('US-66 AC9: typed and uploaded values win', () => {
-  it('AC9: a typed value on the day holds it; the result is counted as already in the record', () => {
+describe('US-66 AC9: the import wins a conflict', () => {
+  it('AC9: a typed value with a different value on the day is corrected by the result, keeping its recordedAt', () => {
     const typed = appendMeasurement(empty(), { metricType: 'ldl', value: 3.1, recordedAt: '2026-10-21', now: NOW });
     if (!typed.ok) throw new Error('setup');
+    const theirs = typed.file.measurements[0];
+    const { file, counts } = run(typed.file, [rec(obs(R4_LDL, { effectiveDateTime: '2026-10-21T08:30:00-07:00' }))], LATER);
+    expect(counts).toEqual({ added: 0, corrected: 1, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
+    expect(file.measurements).toEqual([
+      { ...theirs, status: 'entered-in-error' },
+      expect.objectContaining({
+        metricType: 'ldl', value: 4.6, recordedAt: theirs.recordedAt, createdAt: LATER, source: 'health_records', status: 'active',
+        correctsId: theirs.id, externalId: `${SOURCE}|Observation|ldlcholesterol#|1|final|4.6||mmol/L`,
+      }),
+    ]);
+  });
+
+  it('AC9: a typed value with the same value appends nothing; the result is counted as already in the record', () => {
+    const typed = appendMeasurement(empty(), { metricType: 'ldl', value: 4.6, recordedAt: '2026-10-21', now: NOW });
+    if (!typed.ok) throw new Error('setup');
     const { file, counts } = run(typed.file, [rec(obs(R4_LDL))], LATER);
-    expect(counts.alreadyInRecord).toBe(1);
+    expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 1, notRead: 0 });
     expect(file).toBe(typed.file);
   });
 
-  it('AC9: an uploaded lab value on the day holds it too', () => {
+  it('AC9: a typed exact value with the result printed as a limit is a conflict', () => {
+    const typed = appendMeasurement(empty(), { metricType: 'psa', value: 0.01, recordedAt: '2026-10-21', now: NOW });
+    if (!typed.ok) throw new Error('setup');
+    const { file, counts } = run(typed.file, [rec(lab('2857-1', 0.01, 'ng/mL', { valueQuantity: { value: 0.01, unit: 'ng/mL', comparator: '<' } }))], LATER);
+    expect(counts.corrected).toBe(1);
+    expect(file.measurements.filter((m) => m.status === 'active')).toEqual([expect.objectContaining({ comparator: '<', source: 'health_records' })]);
+  });
+
+  it.each(['manual', 'manual_correction', 'lab_import', 'lab_import_edited', 'apple_health'] as const)('AC9: an active %s row with another value is corrected', (source) => {
+    const typed = appendMeasurement(empty(), { metricType: 'ldl', value: 3.1, recordedAt: '2026-10-21', now: NOW });
+    if (!typed.ok) throw new Error('setup');
+    const held: RoadmapFile = { ...typed.file, measurements: typed.file.measurements.map((m) => ({ ...m, source })) };
+    const { file, counts } = run(held, [rec(obs(R4_LDL))], LATER);
+    expect(counts.corrected).toBe(1);
+    expect(file.measurements.map((m) => [m.source, m.status, m.value])).toEqual([[source, 'entered-in-error', 3.1], ['health_records', 'active', 4.6]]);
+  });
+
+  it('AC9: an uploaded lab value on the day is corrected by a different result, and kept by the same one', () => {
     const uploaded = appendLabValue(empty(), { metricName: 'ferritin', value: 90, unit: 'µg/L', recordedAt: '2026-10-21', now: NOW, source: 'lab_import' });
     if (!uploaded.ok) throw new Error('setup');
+    const same = run(uploaded.file, [rec(lab('2276-4', 90, 'ng/mL'))], LATER);
+    expect(same.counts.alreadyInRecord).toBe(1);
+    expect(same.file).toBe(uploaded.file);
     const { file, counts } = run(uploaded.file, [rec(lab('2276-4', 85, 'ng/mL'))], LATER);
-    expect(counts.alreadyInRecord).toBe(1);
-    expect(file).toBe(uploaded.file);
+    expect(counts.corrected).toBe(1);
+    expect(file.labValues.map((l) => [l.source, l.status, l.value, l.correctsId])).toEqual([
+      ['lab_import', 'entered-in-error', 90, null], ['health_records', 'active', 85, uploaded.file.labValues[0].id],
+    ]);
   });
 
   it('AC9: a second institution\'s result for the same test and day does not replace the first', () => {
     const { file, counts } = run(empty(), [rec(obs(R4_LDL)), rec(obs(R4_LDL, { valueQuantity: { value: 4.4, unit: 'mmol/L' } }), { sourceId: 'hk-source:Other' })]);
     expect(counts).toMatchObject({ added: 1, alreadyInRecord: 1 });
     expect(file.measurements.map((m) => m.value)).toEqual([4.6]);
-  });
-
-  it('AC9: a withdrawn result frees its day for a typed value, not for the next import of it', () => {
-    const first = run(empty(), [rec(obs(R4_LDL))]).file;
-    const withdrawn = run(first, [rec(obs(R4_LDL, { status: 'entered-in-error', meta: { versionId: '2' } }))], LATER).file;
-    expect(appendMeasurement(withdrawn, { metricType: 'ldl', value: 3, recordedAt: '2026-10-21', now: LATER }).ok).toBe(true);
   });
 });
 

@@ -1,3 +1,4 @@
+import HealthKit
 import XCTest
 @testable import HealthRoadmap
 
@@ -377,6 +378,17 @@ final class HealthSampleTests: XCTestCase {
         XCTAssertTrue(HealthKitClient.isOwn(bundleIdentifier: "com.drstanfield.healthroadmap", syncIdentifier: nil, ownBundle: "com.drstanfield.healthroadmap"))
         XCTAssertTrue(HealthKitClient.isOwn(bundleIdentifier: "com.apple.Health", syncIdentifier: "healthroadmap:abc", ownBundle: "com.drstanfield.healthroadmap"))
         XCTAssertFalse(HealthKitClient.isOwn(bundleIdentifier: "com.withings.wiScaleNG", syncIdentifier: nil, ownBundle: "com.drstanfield.healthroadmap"))
+    }
+
+    /// US-25 AC13: Apple refuses `HKCorrelationType` for background delivery, so blood
+    /// pressure is observed as its two halves; lab results come last, only where offered.
+    func testObservedTypesHaveNoCorrelation_US25_AC13() {
+        XCTAssertEqual(HealthKitClient.observedTypes([.bloodPressure], labResults: false),
+                       [HKQuantityType(.bloodPressureSystolic), HKQuantityType(.bloodPressureDiastolic)])
+        let all = HealthKitClient.observedTypes(HealthKind.allCases, labResults: true)
+        XCTAssertFalse(all.contains { $0 is HKCorrelationType })
+        XCTAssertEqual(all.last, HealthKitClient.labResults)
+        XCTAssertEqual(all.count, HealthKind.allCases.count + 2, "every kind, blood pressure twice, lab results once")
     }
 
     func testAWriteLandsAtNoonOnItsDay() throws {

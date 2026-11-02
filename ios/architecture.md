@@ -660,6 +660,9 @@ Decisions made building it (agent, 2026-10-21; Brad to confirm):
 - **"Not yet happened" compares instants**, with five minutes for a device clock running
   ahead: a reading's day is the day where it was taken, which in a zone ahead of the phone's
   is already the phone's tomorrow (fix-scoped re-check, 2026-10-21).
+- **Blood pressure is observed as its two halves** (2026-11-02): Apple refuses `HKCorrelationType` for background
+  delivery, so `observe` registers the systolic and diastolic quantity types; the import still reads the correlation.
+  One reading fires both observers, and `refresh` folds the second into the running import.
 - **Height** is the profile's: Apple Health fills an empty height and never replaces one.
   It is not written back: the profile has no source, so an imported height would echo.
 - **Blood glucose is not read.** It is a catalogue lab value, and lab rows have no

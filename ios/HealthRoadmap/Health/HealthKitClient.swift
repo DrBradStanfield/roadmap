@@ -149,8 +149,7 @@ final class HealthKitClient: HealthStoreClient {
         // Lab results too, where Health Records works (US-66). If background delivery is refused
         // for them, the observer still runs while the app is open, and unlock and coming to the
         // foreground refresh as for vitals.
-        let records: [HKSampleType] = supportsHealthRecords ? [Self.labResults] : []
-        for type in kinds.map(Self.sampleType) + records {
+        for type in Self.observedTypes(kinds, labResults: supportsHealthRecords) {
             // Background delivery wakes the app when Health gets data; it needs the
             // background-delivery entitlement, and fails quietly without it.
             store.enableBackgroundDelivery(for: type, frequency: .immediate) { _, _ in }
@@ -207,9 +206,12 @@ final class HealthKitClient: HealthStoreClient {
             : [HKQuantityType(identifier(kind))]
     }
 
-    /// What is queried: blood pressure as the correlation, so both halves come together.
-    private static func sampleType(_ kind: HealthKind) -> HKSampleType {
-        kind == .bloodPressure ? HKCorrelationType(.bloodPressure) : HKQuantityType(identifier(kind))
+    /// What is observed: blood pressure as its two halves, because Apple refuses
+    /// `HKCorrelationType` for background delivery. One reading fires both observers;
+    /// `AppleHealthSync.refresh` folds the second into the run already going.
+    nonisolated static func observedTypes(_ kinds: [HealthKind], labResults: Bool) -> [HKSampleType] {
+        let vitals: [HKSampleType] = kinds.flatMap(quantityTypes)
+        return labResults ? vitals + [Self.labResults] : vitals
     }
 
     private static func predicate(_ kind: HealthKind) -> HKSamplePredicate<HKSample> {
