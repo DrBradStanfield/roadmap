@@ -351,9 +351,9 @@ export function InputPanel({
   const [valuePage, setValuePage] = useState<ValueSubject | null>(null);
   const [tableOpen, setTableOpen] = useState(false);
   const [seenReveal, setSeenReveal] = useState<{ field: string; grid: boolean } | null>(null);
-  // Only a filled grid cell opens the table; a plain field shows where it is (adversary R6).
-  const revealing = !!revealCell?.grid && revealCell !== seenReveal;
-  const tableShown = tableOpen || revealing;
+  // A chat reveal closes the value page; only a filled grid cell opens the table (adversary R6).
+  const revealing = !!revealCell && revealCell !== seenReveal;
+  const tableShown = tableOpen || (revealing && revealCell.grid);
   const pageShown = !revealing ? valuePage : null;
   // A page is a history entry (a state marker, no URL change), so the phone's
   // back gesture closes it, and "‹ My data" goes back. Typed, unsaved Add
@@ -413,7 +413,8 @@ export function InputPanel({
   }, []);
   const valuePageRef = useRef(valuePage);
   valuePageRef.current = valuePage;
-  // A chat edit that fills a grid cell closes any open page, so the table shows.
+  // A chat edit closes any open page, so the field it filled shows (US-16 AC2):
+  // the table opens only for a grid cell (adversary R6).
   const [sayPanel, panelMessages] = useLiveRegion('md-panel-messages');
   // Read as the reveal renders: the page unmounts in this commit, and its form clears the mark as it goes.
   const revealDropsTyping = useRef(false);

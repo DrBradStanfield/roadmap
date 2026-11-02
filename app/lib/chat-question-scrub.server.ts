@@ -105,20 +105,45 @@ const holdsUnitValue = (span: string, after: string) =>
 /** May placeholder `kind` stand for `span`, given the question's text `after` it (US-15 AC44a)? */
 const mayStandFor = (kind: string, span: string, after: string) => covers(kind, span) && !holdsUnitValue(span, after);
 
+/** Lower-case words a proper noun may hold ("University of Otago", "van Dijk"). */
+const JOINERS = new Set(['of', 'the', 'de', 'da', 'di', 'du', 'del', 'la', 'le', 'van', 'von', 'der', 'den']);
+/**
+ * Is `span` a proper noun: no digit, and every word starting with a capital
+ * letter or a joining word, the first a capital (US-15 AC44c)? So "Alice has
+ * cancer" is not a name. A single capitalised drug name still passes (AC44).
+ */
+function isProperNoun(span: string): boolean {
+  const words = span.split(' ');
+  return !DIGIT.test(span) && /^\p{Lu}/u.test(span) && words.every((w) => /^\p{Lu}/u.test(w) || JOINERS.has(w));
+}
+
+/**
+ * May age placeholder `kind` stand for `span`? Only a number of 1 to 3 digits, and
+ * only as its own decade, 90 and over as `[age 90+]` (US-15 AC44b). A masked
+ * widget age (`#`) has no decade to check.
+ */
+function coversAge(kind: string, span: string): boolean {
+  if (!/^[\d#]{1,3}$/.test(span)) return false;
+  if (span.includes('#')) return true;
+  const n = Number(span);
+  return kind === (n >= 90 ? '[age 90+]' : `[age ${Math.floor(n / 10)}0s]`);
+}
+
 /**
  * May this placeholder stand for this span of the question? Each kind covers
  * only what it names, so a swap cannot swallow a "not", a clause or a dose:
  * never a word that changes meaning (MEANING), never a sentence break (titles
  * like "Dr." aside), a word limit per kind, and a shape per kind. An age is
- * only its number; an id one token with 4 or more digits or letters and
- * digits mixed; a contact detail an email, a web address, a phone (a run of 7
+ * only its number, as its own decade; an id one token with 4 or more digits
+ * or letters and digits mixed; a contact detail an email, a web address, a phone (a run of 7
  * or more digits) or a numbered street address; a date a month or a d/m
- * shape; a name, a place or a job (an employer or school) a capitalised word with no digit.
+ * shape; a name, a place or a job (an employer or school) capitalised words
+ * with no digit (isProperNoun).
  * Doubt is a skip: a question lost is safer than a question changed.
  */
 function covers(kind: string, span: string): boolean {
   const k = kind.toLowerCase();
-  if (k.startsWith('[age')) return /^[\d#]{1,3}$/.test(span);
+  if (k.startsWith('[age')) return coversAge(k, span);
   const words = span.split(' ').length;
   const limit = ({ '[id]': 1, '[date]': 3, '[name]': 4, '[job]': 4, '[place]': 6 } as Record<string, number>)[k] ?? 8;
   // A title's full stop ("Dr. Lee") is no sentence break.
@@ -130,7 +155,7 @@ function covers(kind: string, span: string): boolean {
       return /@/.test(span) || /:\/\/|\bwww\./i.test(span) || /[\d#]{7,}/.test(span.replace(/[\s()+-]/g, '')) ||
         (/^[\d#]/.test(span) && STREET.test(span));
     case '[date]': return MONTH.test(span) || /^[\d#]{1,2}[/-][\d#]{1,2}$/.test(span);
-    default: return /\p{Lu}/u.test(span) && !DIGIT.test(span); // [name], [place], [job]: proper nouns
+    default: return isProperNoun(span); // [name], [place], [job]
   }
 }
 
