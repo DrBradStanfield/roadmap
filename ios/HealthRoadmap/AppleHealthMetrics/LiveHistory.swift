@@ -2,7 +2,8 @@ import Foundation
 
 /// Each US-56 page's history, kept on this iPhone so a page draws at once (AC7a; Brad
 /// 2026-11-03: "store it so that we can quickly load it and we don't have to keep fetching
-/// it"). One file per metric (its days) and one for sleep (its samples), beside the cards' kept
+/// it"). One file per metric for its days, one for its last week of hours (D), and one for
+/// sleep's samples, beside the cards' kept
 /// readings in Application Support/Apple Health: out of backups, apart from the record, so no
 /// sync, export or chat summary reaches them. An actor, so reading, decoding, merging, grouping
 /// nights and writing all run off the main thread; pages get only the finished arrays.
@@ -18,6 +19,7 @@ actor LiveHistory {
     /// Where the files go; nil keeps them in memory only.
     private let folder: URL?
     private var days: [LiveMetric: KeptDays] = [:]
+    private var hours: [LiveMetric: KeptHours] = [:]
     private var sleep: KeptSleep?
     /// Bumped by `removeAll()`: a read begun before it is not kept.
     private var epoch = 0
@@ -63,6 +65,28 @@ actor LiveHistory {
         return points
     }
 
+    /// The metric's kept hours (the last week, for D), or nil when none are kept yet.
+    func keptHours(_ metric: LiveMetric) -> [LivePoint]? {
+        loadHours(metric)?.points
+    }
+
+    /// Reads the hours of the day holding `day` (D), keeps them with the rest of the last week,
+    /// and returns that day's hours.
+    func refreshHours(_ store: any LiveHealthStore, _ metric: LiveMetric, day: Date, now: Date, calendar: Calendar) async throws -> [LivePoint] {
+        let begun = epoch
+        let start = calendar.startOfDay(for: day)
+        let end = calendar.date(byAdding: .day, value: 1, to: start) ?? now
+        let read = try await LiveHealth.readHours(store, metric, day: day, now: now, calendar: calendar).filter { $0.start >= start && $0.start < end }
+        try Task.checkCancellation()
+        guard begun == epoch else { return read }
+        let week = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: now)) ?? start
+        let others = (loadHours(metric)?.points ?? []).filter { ($0.start < start || $0.start >= end) && $0.start >= week }
+        let file = KeptHours(points: (others + read).sorted { $0.start < $1.start })
+        hours[metric] = file
+        write(file, to: Self.hoursFile(metric))
+        return read
+    }
+
     /// Sleep's `refreshDays`: new samples since the kept ones (all of them the first time),
     /// grouped into nights.
     func refreshNights(_ store: any LiveHealthStore, now: Date, calendar: Calendar) async throws -> [SleepNight] {
@@ -92,19 +116,30 @@ actor LiveHistory {
     func removeAll() {
         epoch += 1
         days = [:]
+        hours = [:]
         sleep = nil
-        for metric in LiveMetric.allCases { remove(metric == .sleep ? Self.sleepFile : "history-\(metric.rawValue).json") }
+        for metric in LiveMetric.allCases {
+            remove(metric == .sleep ? Self.sleepFile : "history-\(metric.rawValue).json")
+            if metric != .sleep { remove(Self.hoursFile(metric)) }
+        }
     }
 
     // MARK: Files
 
     private static let sleepFile = "history-sleep.json"
+    private static func hoursFile(_ metric: LiveMetric) -> String { "hours-\(metric.rawValue).json" }
 
     private struct KeptDays: Codable {
         static let current = 1
         var version = current
         /// The first day read: a sample older than it (an import) reads the whole history again.
         let oldest: Date
+        let points: [LivePoint]
+    }
+
+    private struct KeptHours: Codable {
+        static let current = 1
+        var version = current
         let points: [LivePoint]
     }
 
@@ -119,6 +154,13 @@ actor LiveHistory {
         if let cached = days[metric] { return cached }
         let file = read(KeptDays.self, from: "history-\(metric.rawValue).json").flatMap { $0.version == KeptDays.current ? $0 : nil }
         days[metric] = file
+        return file
+    }
+
+    private func loadHours(_ metric: LiveMetric) -> KeptHours? {
+        if let cached = hours[metric] { return cached }
+        let file = read(KeptHours.self, from: Self.hoursFile(metric)).flatMap { $0.version == KeptHours.current ? $0 : nil }
+        hours[metric] = file
         return file
     }
 

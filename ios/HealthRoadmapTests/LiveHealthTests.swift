@@ -571,6 +571,26 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertNil(none, "nothing kept yet: the page reads its 400 days")
     }
 
+    /// AC7a: D's hours draw from the kept last week, after a relaunch too; each day read replaces
+    /// that day's kept hours, and days older than a week are dropped.
+    func testDsHoursAreKeptForAWeek_AC7a() async throws {
+        let store = FakeLiveStore(due: false)
+        let today = utc.startOfDay(for: now)
+        let hourly = (0..<10 * 24).map { LivePoint(start: today.addingTimeInterval(Double(-$0) * 3600), value: 70) }
+        store.set(.heartRate, days: hourly)
+        let folder = try folder()
+        let history = LiveHistory(folder: folder)
+        let old = today.addingTimeInterval(-9 * 86_400)
+        _ = try await history.refreshHours(store, .heartRate, day: old, now: now, calendar: utc)
+        let todays = try await history.refreshHours(store, .heartRate, day: now, now: now, calendar: utc)
+        XCTAssertEqual(store.queries.last?.component, .hour)
+        let kept = await LiveHistory(folder: folder).keptHours(.heartRate)
+        XCTAssertEqual(kept, todays, "today's hours kept, the day nine days back dropped")
+        let again = try await history.refreshHours(store, .heartRate, day: now, now: now, calendar: utc)
+        let keptAgain = await history.keptHours(.heartRate)
+        XCTAssertEqual(keptAgain, again, "a day read again replaces its hours, never doubles them")
+    }
+
     /// AC7a: after the first, a read asks only from three days before the newest kept day (sleep:
     /// its newest sample), and the result is the same as reading everything.
     func testALaterReadAsksOnlyFromTheLastKeptDays_AC7a() async throws {
@@ -636,14 +656,18 @@ final class LiveHealthTests: XCTestCase {
         store.fill(now: now)
         let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
         func histories() throws -> [String] {
-            try FileManager.default.contentsOfDirectory(atPath: folder.path(percentEncoded: false)).filter { $0.hasPrefix("history-") }.sorted()
+            try FileManager.default.contentsOfDirectory(atPath: folder.path(percentEncoded: false)).filter { $0.hasPrefix("history-") || $0.hasPrefix("hours-") }.sorted()
         }
         func fill() async throws {
-            for metric in LiveMetric.allCases where metric != .sleep { _ = try await live.history.refreshDays(store, metric, now: now, calendar: utc) }
+            for metric in LiveMetric.allCases where metric != .sleep {
+                _ = try await live.history.refreshDays(store, metric, now: now, calendar: utc)
+                _ = try await live.history.refreshHours(store, metric, day: now, now: now, calendar: utc)
+            }
             _ = try await live.history.refreshNights(store, now: now, calendar: utc)
         }
         try await fill()
-        XCTAssertEqual(try histories(), ["history-heartRate.json", "history-restingHeartRate.json", "history-sleep.json", "history-steps.json", "history-vo2Max.json"])
+        XCTAssertEqual(try histories(), ["history-heartRate.json", "history-restingHeartRate.json", "history-sleep.json", "history-steps.json", "history-vo2Max.json",
+                                         "hours-heartRate.json", "hours-restingHeartRate.json", "hours-steps.json", "hours-vo2Max.json"])
         let onMain = await live.history.wroteOnMain
         XCTAssertFalse(onMain, "every write ran off the main thread")
         await live.forget()

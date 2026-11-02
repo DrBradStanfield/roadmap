@@ -947,7 +947,7 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   again deletes it, and `DataEraser` calls `forget()` (file gone, cards empty, nothing shown until
   the next read). `forget()` bumps a generation: a refresh begun before it, and one queued during
   it, keeps nothing (Codex R1, adversary R4). The file holds each card's trend values too (up to
-  30 daily values, or the last seven readings), so the trend line draws in the first frame. Since 2026-11-03 each page's days and sleep's samples are kept too (`LiveHistory`, below); D's hours are never kept. "Today",
+  30 daily values, or the last seven readings), so the trend line draws in the first frame. Since 2026-11-03 each page's days, its last week of hours (D) and sleep's samples are kept too (`LiveHistory`, below). "Today",
   times and the VO2 max band are worked out at draw time from the card's date and `now`. The app
   has no Apple Health disconnect of its own (access is changed in Settings), so the erase and an
   empty read are the only other reset paths. Rejected: UserDefaults (it is backed up and is the
@@ -981,7 +981,8 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   page opens is slow ("store it so that we can quickly load it and we don't have to keep fetching
   it. And that load needs to not be in the user interface main thread"). This reverses AC2's
   2026-10-27 line that pages are read fresh. How: the `LiveHistory` actor keeps one file per
-  metric (`history-<metric>.json`, sleep's holding its samples) beside the cards' file, under the
+  metric (`history-<metric>.json`, sleep's holding its samples) and its last week of hours
+  (`hours-<metric>.json`, for D) beside the cards' file, under the
   same rules (out of backups, complete-until-first-unlock, apart from the record, deleted by Delete
   all my data, access reset or an empty Health). A page draws the kept history first; with none
   (a first visit) it draws 400 days (sleep 200 nights) while the whole history is read and kept;

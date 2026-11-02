@@ -134,8 +134,13 @@ struct LiveMetricPage: View {
         }
         // A cancelled read (the page left, or the key moved) marks nothing read (N1).
         if wanted.day {
+            // The kept week of hours draws at once, then each day in view is read and kept (AC7a).
+            if hours.isEmpty, let kept = await live.history.keptHours(metric), !Task.isCancelled {
+                hours = kept
+                rebuild()
+            }
             for day in wanted.days where !hoursRead.contains(day) {
-                guard let read = try? await LiveHealth.readHours(store, metric, day: day, now: now, calendar: calendar), !Task.isCancelled else { return }
+                guard let read = try? await live.history.refreshHours(store, metric, day: day, now: now, calendar: calendar), !Task.isCancelled else { return }
                 let merged = (hours.filter { calendar.startOfDay(for: $0.start) != day } + read).sorted { $0.start < $1.start }
                 if merged != hours { hours = merged }
                 hoursRead.insert(day)
