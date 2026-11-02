@@ -230,7 +230,7 @@ describe('US-15 AC33: run_roadmap in the Pages chat', () => {
     expect(state.bodies).toHaveLength(2);
     expect(state.bodies[1].messages.at(-1).content[0].content).toMatch(/^Not saved: this value looks like it may be in a different unit/);
     expect(result!.content).toBe('Is that mmol/L?');
-    expect(result!.proposedEdits).toEqual([]);
+    expect(result).not.toHaveProperty('proposedEdits');
   });
 
   it('a failed second call is the chat\'s error, not a partial answer', async () => {
