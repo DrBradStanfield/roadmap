@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import crypto from 'node:crypto';
 import { verifyResendSignature, parseResendEvent } from './resend-webhook.server';
 
@@ -21,6 +21,23 @@ describe('US-22 verifyResendSignature', () => {
   const id = 'msg_123';
   const now = 1_700_000_000;
   const ts = String(now);
+
+  // The compare is pinned: an equal length goes through timingSafeEqual, any
+  // other length is a mismatch without it and never throws.
+  it('compares an equal-length signature in constant time and refuses another length without throwing', () => {
+    const good = sign(body, id, ts).slice(3);
+    const wrong = (good[0] === 'A' ? 'B' : 'A') + good.slice(1);
+    const tse = vi.spyOn(crypto, 'timingSafeEqual');
+    try {
+      expect(verifyResendSignature(body, { id, timestamp: ts, signature: `v1,${wrong}` }, SECRET, now)).toEqual({ ok: false, reason: 'signature mismatch' });
+      expect(tse).toHaveBeenCalledWith(Buffer.from(wrong), Buffer.from(good));
+      tse.mockClear();
+      expect(verifyResendSignature(body, { id, timestamp: ts, signature: `v1,${good.slice(1)} v1,${good}A` }, SECRET, now)).toEqual({ ok: false, reason: 'signature mismatch' });
+      expect(tse).not.toHaveBeenCalled();
+    } finally {
+      tse.mockRestore();
+    }
+  });
 
   it('accepts a correctly signed, fresh request', () => {
     const result = verifyResendSignature(body, { id, timestamp: ts, signature: sign(body, id, ts) }, SECRET, now);

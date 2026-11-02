@@ -307,6 +307,8 @@ private struct HistoryRow: View {
                     Text("Entered in error").font(.caption).foregroundStyle(.secondary)
                 } else if row.current && excluded {
                     Text("Not used: outside the range your plan accepts").font(.caption).foregroundStyle(.orange)
+                } else if let note = row.note {
+                    Text(note).font(.caption).foregroundStyle(.secondary)
                 } else if row.current {
                     Text("Used in your plan").font(.caption).foregroundStyle(.tint)
                 } else if row.correction {

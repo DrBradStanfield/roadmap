@@ -175,7 +175,8 @@ describe('scrubBreadcrumb — ui.click and ui.input element names', () => {
 
   // A class can say what the element shows: a result's status, a suggestion's
   // priority, a document's type, a lab group. Those classes go; the rest stay.
-  const VALUE_CLASSES = 'status-urgent bt-status-bad review-doc-type--discharge_summary '
+  // md-status-*: the phone's My data rows and value pages (US-62 AC8).
+  const VALUE_CLASSES = 'status-urgent bt-status-bad md-status-warn review-doc-type--discharge_summary '
     + 'health-record-type--lab_report suggestion-urgent alr-group-icon--thyroid';
   const KEPT = 'body > div.hr-panel > span.stat-status';
 

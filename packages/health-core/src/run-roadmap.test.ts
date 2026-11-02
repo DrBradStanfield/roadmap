@@ -103,7 +103,7 @@ describe('US-15 AC33: runRoadmap overlays stated values and returns the plan cod
     expect(none.contextJson).toBeNull();
     const text = JSON.parse(roadmapResultText(none));
     expect(text.roadmap).toBeNull();
-    expect(text.note).toMatch(/sex and height/);
+    expect(text.note).toMatch(/needs at least the user's height/);
 
     const run = runRoadmap(null, { values, sex: 'female', height: { value: 165, unit: 'cm' }, age: new Date().getFullYear() - 1970 });
     expect(run.applied).toEqual(['ldlC', 'hba1c', 'systolicBp', 'diastolicBp', 'sex', 'heightCm', 'age']);
@@ -856,11 +856,11 @@ describe('US-15 AC33: the protein target is withheld only when the run loses kid
     }
   });
 
-  it('no sex or height: no plan, and no protein reason (US-15 AC36 sends the values, but run_roadmap still answers no plan)', () => {
+  it('no height: no plan, and no protein reason (US-15 AC36 sends the values, but run_roadmap still answers no plan)', () => {
     const r = runRoadmap({}, { values: [val('creatinine', 90, 'µmol/L'), val('ldlC', 4.1, 'mmol/L')] });
     expect(r.contextJson).toBeNull();
     expect(r.rejected).toEqual([]);
-    expect(JSON.parse(roadmapResultText(r)).note).toMatch(/sex and height/);
+    expect(JSON.parse(roadmapResultText(r)).note).toMatch(/needs at least the user's height/);
   });
 
   it('a saved creatinine but no saved age, nothing stated about kidneys: the card shows as the saved plan does', () => {
@@ -885,5 +885,32 @@ describe('US-15 AC33: a stated age is rounded down, never refused for not being 
     expect(byYear.knownMinor).toBe(true);
     expect(profile(18.2)).not.toHaveProperty('knownMinor');
     expect(profile(18.2).age).toBe(18);
+  });
+});
+
+// US-07 AC8 (adversary S1 on PR 402): a saved creatinine newer than the lab eGFR, with no sex,
+// leaves the lab eGFR marked outdated, so no potassium advice. A stated sex lets the creatinine
+// compete: the lab eGFR and its mark go together, and the calculated eGFR opens the advice.
+describe('US-07 AC8: a stated sex clears the outdated lab eGFR mark', () => {
+  const NOW = new Date('2026-09-01T12:00:00.000Z');
+  const flagged = {
+    unitSystem: 'si', medications: [], screenings: [],
+    heightCm: 165, birthYear: 1960, birthMonth: 1, creatinine: 80,
+    labEgfr: 52, labEgfrDate: '2026-06-01', labEgfrOutdated: true,
+    measurementHistory: { creatinine: [{ date: '2026-08-01', value: 80 }] },
+  };
+  const ids = (json: string | null) => ctx(json).currentSuggestions.map((s: { id: string }) => s.id);
+
+  it('no sex: the lab eGFR stands, with no potassium card', () => {
+    const out = runRoadmap(flagged, {}, NOW);
+    expect(ctx(out.contextJson).derivedValues.eGFR).toBe(52);
+    expect(ids(out.contextJson)).not.toContain('high-potassium');
+  });
+
+  it('a stated sex: the calculated eGFR, and the potassium card', () => {
+    const out = runRoadmap(flagged, { sex: 'female' }, NOW);
+    // Creatinine 80 µmol/L at 66, female (CKD-EPI 2021): 70.
+    expect(ctx(out.contextJson).derivedValues.eGFR).toBe(70);
+    expect(ids(out.contextJson)).toContain('high-potassium');
   });
 });

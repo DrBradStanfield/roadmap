@@ -43,7 +43,7 @@ connector holds cannot see files dropped into the folder.
 
 ## Limits (all from `IMPORT_LIMITS` in `import-hints.ts`)
 
-- PDF or image ≤ 5 MB; ZIP ≤ 20 MB and ≤ 20 entries (`MAX_IMPORT_FILES_PER_CALL`),
+- PDF or image ≤ 5 MB; ZIP ≤ 20 MB listing ≤ 1,000 members (`IMPORT_LIMITS.zipEntries`, folders included; no ZIP64); a call opens ≤ 20 ZIP members in all (`MAX_IMPORT_FILES_PER_CALL`, US-35 AC5b),
   inflate counted on the stream, type by magic bytes, nested ZIPs skipped.
   The website takes 10 MB per file (`websiteFileMb`), and the hint says so.
 - 30 files per connection per day (`importFiles` in `mcp-grants.server.ts`);

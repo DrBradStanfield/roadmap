@@ -4,7 +4,7 @@
  * Read-only: no editing, no unit conversion — values render as-reported
  * (see decisions in docs/user-stories.md § US-21).
  */
-import { LAB_GROUPS, labSlotKey, resolveLabCatalogEntry, displayLabUnit, type LabGroup, type LabGroupId } from '@roadmap/health-core';
+import { LAB_GROUPS, comparatorOf, labSlotKey, resolveLabCatalogEntry, displayLabUnit, type Comparator, type LabGroup, type LabGroupId } from '@roadmap/health-core';
 import { labValueLabel } from './lab-value-labels';
 import type { ApiLabValue } from './api-types';
 
@@ -23,6 +23,8 @@ export interface LabSeriesPoint {
   value: number;
   unit: string;
   recordedAt: string;
+  /** Printed as a limit: `value` is its bound (US-12 AC20). */
+  comparator?: Comparator;
 }
 
 export interface LabSeries {
@@ -74,7 +76,7 @@ export function groupLabValues(rows: LabValueRow[]): LabValueGroup[] {
     // means the same unit, typography-normalized otherwise. Relabeling only —
     // nothing is converted here (catalogued tests are converted once, on the
     // write); a unit that still differs flags mixedUnits.
-    series.points.push({ id: row.id, value: row.value, unit: displayLabUnit(row.unit, entry), recordedAt: row.recordedAt });
+    series.points.push({ id: row.id, value: row.value, unit: displayLabUnit(row.unit, entry), recordedAt: row.recordedAt, ...comparatorOf(row) });
   }
 
   const groupDefs: Array<{ id: LabRowsGroupId; label: string; icon: LabRowsIcon }> = [...LAB_GROUPS, OTHER_GROUP];

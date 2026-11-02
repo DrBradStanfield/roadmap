@@ -101,11 +101,6 @@ System font stack — renders native on every OS with zero FOIT/FOUT:
 - Full-width, `10px 16px` padding, `14px` font, `6px` radius (slightly tighter than base)
 - Used at top of input panel on mobile
 
-**Mobile View Plan (`.mobile-view-plan-btn`)**
-- Fixed, full-width, bottom of screen on mobile
-- Background: `var(--color-brand)` (#00a38b), radius 8px, padding 14px 20px
-- `box-shadow: 0 -2px 12px rgba(0,0,0,0.15)` — lifts above page
-
 **Ghost / Link**
 - No background, `#0066cc` text, underline on hover
 - Use: Tertiary actions, "View history" links
@@ -183,11 +178,11 @@ System font stack — renders native on every OS with zero FOIT/FOUT:
 - Hover: `rgba(0,163,139,0.08)` background, `#00a38b` border
 - Use: Switch individual field units (e.g., lbs ↔ kg)
 
-### Mobile Tab Bar (`.mobile-tab-bar`)
-- Sticky at top, white background, `border-bottom: 1px solid #ddd`
-- Each tab: `flex: 1`, `14px` font, weight `500`, `#666` default
-- Active (`.mobile-tab--active`): color `#00a38b`, `border-bottom: 2px solid #00a38b`
-- Hidden on desktop (shown only at ≤768px)
+### Bottom Tab Bar (`.hr-tabbar`, `BottomTabBar.tsx`)
+- Sticky at the widget's foot (never fixed), opaque `#f8f8fa` (no blur: text must not show through), `border-top: 1px solid` the grey border
+- Each tab: `flex: 1`, a 26px line icon over a `10px` label, weight `500`, `--color-gray-medium` default
+- Active (`.hr-tab--active`): `--color-brand-text`
+- Hidden on desktop (shown only at ≤768px); a sticky child never leaves the widget, so it never floats over the page
 
 ### Pill Badges
 - Radius: `9999px`
@@ -243,14 +238,14 @@ Desktop: `grid-template-columns: 5fr 6fr; gap: 32px`
 ### Breakpoints
 | Name | Width | Key Changes |
 |------|-------|-------------|
-| Mobile | ≤768px | Single column, tab bar visible, cards compact (12px padding), hero image hidden |
+| Mobile | ≤768px | Single column, bottom tab bar visible, cards compact (12px padding), hero image hidden |
 | Desktop | >768px | Two-panel grid (5fr/6fr), tab bar hidden, results panel sticky |
 
 ### Mobile Specifics
-- Tab bar: sticky at top, `z-index: 10`, white background
-- Two tabs: "Enter Data" / "View Plan" (or similar)
-- Swiper handles tab switching — CSS scroll-snap, no JS touch handlers
-- Fixed "View Plan" button at bottom (`position: fixed; bottom: 12px; left: 15px; right: 15px`)
+- Bottom tab bar, as on the iPhone: My data, My plan, Chat; icons over labels, the active tab in `--color-brand-text`
+- Sticky at the widget's foot, never fixed, so it shows only with the widget; pads for `env(safe-area-inset-bottom)`
+- Plain React state picks the tab; the other panels stay mounted but hidden, and each tab keeps its scroll position
+- A slim top bar holds the storage button (Sign in) above every tab
 - Stats grid: `repeat(2, 1fr)` on mobile
 - Hero: single column, image hidden, heading centered
 
@@ -298,11 +293,11 @@ Desktop: `grid-template-columns: 5fr 6fr; gap: 32px`
 - Previous value shown as a small clickable label below the input (links to history chart)
 - "Save New Values" button appends an immutable record — never overwrites
 
-### Progressive Disclosure
-- Stage 1: Units, Sex, Height
-- Stage 2 (unlocks): Birth Month, Birth Year
-- Stage 3 (unlocks): Weight, Waist
-- Stage 4 (unlocks): BP, Blood Tests, Medications, Screenings
+### Progressive Disclosure (the onboarding, US-62 AC13)
+- Stage 1: Units, Height, Weight (shows the BMI tile)
+- Stage 2 (unlocks): Sex, its why-text under it
+- Stage 3 (unlocks): Birth Month, Birth Year, the why-text under them
+- Stage 4 (unlocks): Waist, BP, Blood Tests, Medications, Screenings, Supplements, the chats
 - The next-to-fill field gets `.field-attention` pulsing highlight class
 
 ### Medication Cascade UI

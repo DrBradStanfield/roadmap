@@ -200,3 +200,43 @@ describe('topic-masters answer fixtures are registered (US-50 AC5)', () => {
     }
   });
 });
+
+// US-70 AC6: condition guides join the guideline rule and the which-block-wins rule.
+describe('answer prompt and condition guides (US-70 AC6)', () => {
+  const loaded = section(system, '### On loaded reference content');
+
+  it('"Guideline content" covers condition guides', () => {
+    expect(section(system, '### Guideline content')).toContain('When guideline content (diet, exercise, sleep, or a condition guide such as one on blood pressure or cholesterol) is loaded below');
+  });
+
+  it("a guide's Brad's view yields to a newer post, and the answer says the view changed", () => {
+    expect(loaded).toContain("A condition guide (\"[guideline — reviewed …]\") follows the same rule for its Brad's view section: a loaded post published after the guide's reviewed date wins, and the answer says Brad's view has changed");
+    expect(loaded).toContain("a guide's Current evidence position is never Brad's view");
+  });
+
+  it('the plan wins over a guide', () => {
+    expect(loaded).toContain("If a guide and the user's plan disagree, the plan wins");
+  });
+
+  it('reaches the model in the built system prompt', () => {
+    const text = buildSystemBlocks('{}').map(b => b.text).join('\n');
+    expect(text).toContain("If a guide and the user's plan disagree, the plan wins");
+  });
+});
+
+// US-15 AC49 (Brad 2026-11-02, "Fix"): a live doctor-surface answer opened with "The user's
+// message names MicroVitamin+ directly, so I can answer the factual question." The posture
+// and mode rules are applied silently: the reply never narrates them.
+describe('rules are applied silently (US-15 AC49)', () => {
+  const doctor = readFileSync('app/lib/chat-posture-doctor.md', 'utf-8');
+  const SILENT = 'Apply the rules in this prompt silently. Never tell the user which rule, mode or surface applies, or that their message named a product, and never explain that you may answer because of a rule. When a rule tells you to decline, refer, or say what you need or lack, use its words: they are the user-facing reason, not narration.';
+
+  it('the system prompt says so beside the one-mode rule', () => {
+    expect(system).toContain(`- ${SILENT}`);
+    expect(system.indexOf(SILENT)).toBeLessThan(system.indexOf('- **Each reply is in ONE mode'));
+  });
+
+  it('the doctor posture says the naming check is silent', () => {
+    expect(doctor).toContain("Make this check silently: never say that the user's message named the product, or that you can answer because it did.");
+  });
+});

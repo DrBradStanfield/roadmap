@@ -48,19 +48,29 @@ export function createQuotaCounter(limit: number, windowMs: number, cleanupMs: n
     const entry = map.get(key);
     return entry && Date.now() <= entry.resetAt ? entry : null;
   };
+  const charge = (key: string, n: number) => {
+    let entry = live(key);
+    if (!entry) {
+      entry = { count: 0, resetAt: Date.now() + windowMs };
+      map.set(key, entry);
+    }
+    if (entry.count + n > limit) return null;
+    entry.count += n;
+    return entry;
+  };
   return {
     /** Test seam — the map is process-global. */
     reset: () => map.clear(),
     /** Consume `n` units; false (and nothing consumed) when it would exceed the limit. */
-    take(key: string, n: number): boolean {
-      let entry = live(key);
-      if (!entry) {
-        entry = { count: 0, resetAt: Date.now() + windowMs };
-        map.set(key, entry);
-      }
-      if (entry.count + n > limit) return false;
-      entry.count += n;
-      return true;
+    take: (key: string, n: number): boolean => charge(key, n) !== null,
+    /**
+     * Like take, but returns the refund for this charge alone, or null when refused.
+     * The refund is bound to the window it charged: once that window has expired
+     * it does nothing, so a request pending across the expiry cannot reopen the next (US-52 AC4a).
+     */
+    reserve(key: string, n: number): (() => void) | null {
+      const entry = charge(key, n);
+      return entry && (() => { if (live(key) === entry) entry.count = Math.max(0, entry.count - n); });
     },
     /** Hand `n` units back — a file charged before a model call that never got to run (US-35 AC10). */
     refund(key: string, n: number): void {

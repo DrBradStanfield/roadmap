@@ -24,6 +24,9 @@ import {
   fileNameLine,
   unifiedSystemPrompt,
   UNDATED_PREVIOUS,
+  unreadLines,
+  uploadLimitSignal,
+  LIMIT_TEST_WORDS,
 } from './lab-extraction';
 import { oneLine } from './plan';
 
@@ -312,7 +315,7 @@ describe('US-35 AC2/AC5: isImportableEntryName', () => {
 // US-12 AC8 — dot thousands on a count, apostrophe thousands, and a count of
 // the rows the parse dropped
 // ---------------------------------------------------------------------------
-import { canonicalLabRow, LAB_CATALOG, LAB_GROUPS, labSlotKey, PROMPT_DEFERRED_KEYS, resolveLabCatalogEntry } from './lab-catalog';
+import { canonicalLabRow, LAB_CATALOG, LAB_GROUPS, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
 
 describe('US-12 AC8: an ambiguous number is refused, and the refusal is counted', () => {
   // A null optional field is not an unreadable value: the row stays.
@@ -592,9 +595,11 @@ describe('US-12 AC8: an ambiguous number is refused, and the refusal is counted'
         { metric: 'ldl', value: 'trace', unit: 'mmol/L', confidence: 'high' },
         { metric: 'hdl', value: 1.3, unit: 'mmol/L', confidence: 'very high' },
       ],
-      additionalValues: [{ name: null, value: 141, unit: 'mmol/L' }, { name: 'k', value: '<5', unit: '' }],
+      additionalValues: [{ name: null, value: 141, unit: 'mmol/L' }, { name: 'k', value: '<<5', unit: '' }, { name: 'na', value: '<5', unit: '' }],
     });
+    // "<<5" has two symbols; "<5" is a limit, saved since US-12 AC20.
     expect(mixed.droppedValueCount).toBe(4);
+    expect(mixed.additionalValues).toEqual([{ name: 'na', value: 5, comparator: '<', unit: '' }]);
     // A document's stray value rows are discarded with the values, not reported.
     expect(toUnifiedResult({ ...mixed, classification: 'clinic_letter' }, 'full').droppedValueCount).toBe(0);
   });
@@ -711,21 +716,36 @@ describe('US-12 AC11: the prompt splits a printed blood pressure into its two co
 });
 
 // US-07 AC7 made a lab eGFR drive the plan, so an eGFR printed ">60" must never
-// arrive as 60 (graded "Low Normal"). US-12 AC8 already drops a value string
-// that does not start with its number; the prompt now asks for exactly that.
-describe('US-07 AC7: an eGFR printed with < or > is returned as printed, as a string, and dropped', () => {
-  it('both prompt modes carry the rule', () => {
+// arrive as 60. Since US-12 AC20 every result printed with a symbol is asked
+// for as printed and saved as a limit: its bound and its comparator.
+describe('US-12 AC20: a result printed with <, >, ≤ or ≥ is returned as printed, and read as a limit', () => {
+  it('both prompt modes carry the rule, for every result, not only eGFR', () => {
     for (const mode of ['full', 'metadata'] as const) {
-      expect(unifiedSystemPrompt(mode)).toContain('An eGFR printed with < or > (">60", ">90") is returned exactly as printed, as a string: never as its number.');
+      expect(unifiedSystemPrompt(mode)).toContain('A result printed with <, >, ≤ or ≥ (">60", "<5", "≤ 0.1") is returned exactly as printed, as a string with its symbol, in "values" and "additionalValues" alike: never as its number alone.');
     }
   });
-  it('an eGFR returned as ">60" is dropped, never read as 60', () => {
+  it('an eGFR returned as ">60" is its bound and comparator, never an exact 60', () => {
     const parsed = parseUnifiedResult({
       classification: 'lab_report', reportDate: '2026-07-01', values: [], document: null,
       additionalValues: [{ name: 'egfr', value: '>60', unit: 'mL/min/1.73m²' }],
     });
-    expect(parsed.additionalValues).toEqual([]);
-    expect(parsed.droppedValueCount).toBe(1);
+    expect(parsed.additionalValues).toEqual([{ name: 'egfr', value: 60, comparator: '>', unit: 'mL/min/1.73m²' }]);
+    expect(parsed.droppedValueCount).toBe(0);
+  });
+  it('a comparator the model sent on its own is never taken: only the printed symbol sets one', () => {
+    const parsed = parseUnifiedResult({
+      classification: 'lab_report', reportDate: '2026-07-01', document: null, additionalValues: [],
+      values: [{ metric: 'hdl', value: 1.5, comparator: '>', unit: 'mmol/L', confidence: 'high' }],
+    });
+    expect(parsed.values[0]).not.toHaveProperty('comparator');
+  });
+  it('a core limit keeps its comparator through unit resolution, in the printed unit\'s conversion', () => {
+    const result = toUnifiedResult(parseUnifiedResult({
+      classification: 'lab_report', reportDate: '2026-07-01', document: null, additionalValues: [],
+      values: [{ metric: 'hdl', value: '> 60', unit: 'mg/dL', confidence: 'high' }, { metric: 'lpa', value: '≤5', unit: 'nmol/L', confidence: 'high' }],
+    }), 'full');
+    expect(result.values.map(v => [v.metric, v.comparator, v.displayValue])).toEqual([['hdl', '>', 60], ['lpa', '<=', 5]]);
+    expect(result.values[0].valueSI).toBeCloseTo(60 / 38.67, 3);
   });
 });
 
@@ -848,13 +868,13 @@ describe('US-21 AC4: the prompt suggests the lab catalogue keys, and only those'
           return key;
         });
       });
-      // Every key but the AC19 tests, held back until the #166 benchmark.
-      expect([...named].sort()).toEqual(LAB_CATALOG.map(e => e.key).filter(k => !PROMPT_DEFERRED_KEYS.has(k)).sort());
+      // Every catalogue key (US-07 AC10, Brad 2026-11-02: "release now").
+      expect([...named].sort()).toEqual(LAB_CATALOG.map(e => e.key).sort());
     });
-    // US-21 AC19/AC20: the catalogue grew, the prompt did not. Its two name
-    // lists are pinned to what main rendered before (2026-10-20); a change here
-    // is a prompt change and waits for the #166 Haiku benchmark.
-    it(`${mode}: the TARGET METRICS and ADDITIONAL VALUES lists are unchanged by the catalogue additions`, () => {
+    // The prompt's two name lists, pinned: a change here is a prompt change. The
+    // AC19 tests joined on Brad's call without the #166 benchmark (US-07 AC10,
+    // 2026-11-02: "release now"), since the printed name now files the row.
+    it(`${mode}: the TARGET METRICS and ADDITIONAL VALUES lists are pinned`, () => {
       const prompt = unifiedSystemPrompt(mode);
       const target = prompt.slice(prompt.indexOf('TARGET METRICS (use these exact keys):'), prompt.indexOf('CRITICAL RULES')).trimEnd().split('\n').slice(1);
       expect(target).toEqual([
@@ -871,14 +891,14 @@ describe('US-21 AC4: the prompt suggests the lab catalogue keys, and only those'
         '  - "diastolic_bp" — Diastolic Blood Pressure, Diastolic BP, DBP',
       ]);
       expect(block(prompt)).toEqual([
-        '  Renal & electrolytes: sodium, potassium, chloride, bicarbonate, urea, urate, urine_acr, urine_creatinine, urine_pcr, cystatin_c, egfr',
-        '  Liver: alt, ast, ggt, alp, bilirubin_total, bilirubin_direct, ldh, albumin, total_protein, globulin',
-        '  Blood count: haemoglobin, haematocrit, rbc, wbc, platelets, neutrophils, lymphocytes, monocytes, eosinophils, basophils, mcv, mch, mchc, rdw',
-        '  Thyroid: tsh, ft4, ft3, anti_tpo',
-        '  Hormones: testosterone_total, free_testosterone, free_testosterone_calculated, shbg, estradiol, prolactin, cortisol_am, psa_free, lh, fsh, progesterone, dhea_s, igf1',
-        '  Vitamins & minerals: vitamin_d, vitamin_b12, b12_active, folate, ferritin, iron, tibc, transferrin, transferrin_sat, magnesium, calcium_corrected, calcium_total, phosphate, zinc',
-        '  Inflammation: crp, esr',
-        '  Metabolic: glucose, glucose_random, insulin, apoa1, homocysteine, ck',
+        '  Renal & electrolytes: sodium, potassium, chloride, bicarbonate, urea, urate, urine_acr, urine_creatinine, urine_pcr, cystatin_c, egfr, egfr_cystatin, egfr_combined, anion_gap, osmolality_serum',
+        '  Liver: alt, ast, ggt, alp, bilirubin_total, bilirubin_direct, ldh, albumin, total_protein, globulin, bilirubin_indirect, lipase, amylase',
+        '  Blood count: haemoglobin, haematocrit, rbc, wbc, platelets, neutrophils, lymphocytes, monocytes, eosinophils, basophils, mcv, mch, mchc, rdw, rdw_sd, mpv, immature_granulocytes, reticulocytes, nrbc, d_dimer, fibrinogen',
+        '  Thyroid: tsh, ft4, ft3, anti_tpo, total_t4, total_t3, reverse_t3, t3_uptake, thyroglobulin, anti_tg, trab',
+        '  Hormones: testosterone_total, free_testosterone, free_testosterone_calculated, shbg, estradiol, prolactin, cortisol_am, cortisol_random, cortisol_pm, psa_free, lh, fsh, progesterone, dhea_s, igf1, pth, amh, bioavailable_testosterone, psa_free_percent, estrone, androstenedione, oh_progesterone_17, dht, acth, gh, hcg',
+        '  Vitamins & minerals: vitamin_d, vitamin_b12, b12_active, folate, ferritin, iron, tibc, transferrin, transferrin_sat, magnesium, calcium_corrected, calcium_total, phosphate, zinc, red_cell_folate, calcium_ionised, uibc, stfr, copper, caeruloplasmin, selenium, omega3_index, vitamin_a, vitamin_e, vitamin_c, vitamin_b6, vitamin_b1, mma',
+        '  Inflammation: crp, esr, procalcitonin, ige, rf, anti_ccp, total_iga, ttg_iga',
+        '  Metabolic: glucose, glucose_random, insulin, apoa1, homocysteine, ck, nt_probnp, bnp, troponin_t, troponin_i, c_peptide, eag, vldl, lactate, fructosamine',
         '  Any other test: use the best descriptive snake_case name.',
       ]);
     });
@@ -923,7 +943,7 @@ describe('US-12 AC12: a previous-results column with its own printed date become
     expect(prompt).not.toContain('even if those historical columns are dated');
   });
 
-  it('metadata (the connector, held during the MCP 1.0.2 review): the base rule, every previous column ignored', () => {
+  it('metadata (the connector, held since the MCP 1.0.2 review): the base rule, every previous column ignored', () => {
     const prompt = unifiedSystemPrompt('metadata');
     expect(prompt).toContain('If the report shows previous/historical results (in a "Previous" column, "Last visit" column, trend graph, or any side-by-side layout), IGNORE them completely. Extract ONLY values from the current report\'s primary column, even if those historical columns are dated. Return at most ONE entry per metric — never duplicate a metric in the output.');
     expect(prompt).not.toContain('recordedAt');
@@ -1194,5 +1214,129 @@ describe('US-12 AC8: a row with no printedMonth or question is read, not dropped
     expect(parsed.droppedValueCount).toBe(0);
     expect(parsed.values).toEqual([{ metric: 'hdl', value: 1.2, unit: 'mmol/L', confidence: 'high' }]);
     expect(parsed.additionalValues).toEqual([{ name: 'Ferritin', value: 120, unit: 'ug/L' }]);
+  });
+});
+
+describe('US-12 AC19: a value not saved is named, with why', () => {
+  const report = { classification: 'lab_report' as const, reportDate: '2026-01-01', document: null };
+
+  it('names each dropped row by its test as unreadable, never its value; a limit ("> 60", "<5") is saved instead (AC20)', () => {
+    const parsed = parseUnifiedResult({
+      ...report,
+      values: [
+        { metric: 'ldl', value: 2.5, unit: 'mmol/L', confidence: 'high' },
+        { metric: 'hdl', value: '> 60', unit: 'mg/dL', confidence: 'high' },
+        { metric: 'lpa', value: '<5', unit: 'nmol/L', confidence: 'high' },
+      ],
+      additionalValues: [
+        { name: 'vitamin_d', value: '≥ 250', unit: 'nmol/L' },
+        { name: 'platelets', value: '250,000', unit: 'cells/µL' },
+        { name: 'crp', value: 'trace', unit: 'mg/L' },
+        { name: 'ferritin', value: '<< 5', unit: 'ug/L' },
+        { name: 'folate', value: '< 5-10', unit: 'nmol/L' },
+        { value: 'trace', unit: 'mg/L' },
+        { name: 'sodium', value: 141, unit: 'mmol/L' },
+      ],
+    });
+    const result = toUnifiedResult(parsed, 'full');
+    expect(result.droppedValueCount).toBe(5);
+    // Two symbols or a range stay unreadable.
+    expect(result.unreadValues).toEqual([
+      { name: 'platelets', reason: 'unreadable' }, { name: 'crp', reason: 'unreadable' },
+      { name: 'ferritin', reason: 'unreadable' }, { name: 'folate', reason: 'unreadable' }, { name: '', reason: 'unreadable' },
+    ]);
+    expect(result.values.map(v => [v.metric, v.comparator])).toEqual([['ldl', undefined], ['hdl', '>'], ['lpa', '<']]);
+    expect(result.additionalValues.map(v => [v.name, v.value, v.comparator])).toEqual([['vitamin_d', 250, '>='], ['sodium', 141, undefined]]);
+    expect(JSON.stringify(result.unreadValues)).not.toMatch(/\d/);
+  });
+
+  it('leaves the field out when nothing was dropped, and on a document that is not a lab report', () => {
+    const good = toUnifiedResult(parseUnifiedResult({ ...report, values: [], additionalValues: [{ name: 'sodium', value: 141, unit: 'mmol/L' }] }), 'full');
+    expect(good).not.toHaveProperty('unreadValues');
+    const letter = toUnifiedResult(parseUnifiedResult({ ...report, classification: 'clinic_letter', values: [{ metric: 'hdl', value: 'trace', unit: 'mg/dL', confidence: 'high' }], additionalValues: [] }), 'full');
+    expect(letter).not.toHaveProperty('unreadValues');
+  });
+
+  it('unreadLines: each test once, with every reason; tests with the same reasons share a line; the unnamed are counted', () => {
+    expect(unreadLines({ droppedValueCount: 5, unreadValues: [
+      { name: 'hdl', reason: 'unreadable' }, { name: 'crp', reason: 'unreadable' }, { name: 'lpa', reason: 'unreadable' }, { name: 'hdl', reason: 'unreadable' },
+    ] })).toEqual({ lines: [
+      { label: 'HDL Cholesterol, CRP, Lp(a)', reason: 'could not be read' },
+    ], otherCount: 1 });
+    expect(unreadLines({})).toEqual({ lines: [], otherCount: 0 });
+    // US-12 AC20: a server from before it still sends `limit` on the wire; it reads as unreadable, never a throw.
+    const olderServer = JSON.parse('{"droppedValueCount":1,"unreadValues":[{"name":"hdl","reason":"limit"}]}');
+    expect(unreadLines(olderServer).lines).toEqual([{ label: 'HDL Cholesterol', reason: 'could not be read' }]);
+  });
+
+  it('unreadLines: one test under two reasons, or refused and unread at once, is one line, so no two lines share a label', () => {
+    const { lines } = unreadLines({
+      droppedValueCount: 3,
+      unreadValues: [{ name: 'hdl', reason: 'unreadable' }, { name: 'hdl', reason: 'unreadable' }, { name: 'creatinine', reason: 'unreadable' }],
+      refusedValues: [{ metric: 'creatinine', value: 2, unit: 'mg/mmol', reason: 'This unit is usually a urine result.' }],
+    });
+    expect(lines).toEqual([
+      { label: 'Creatinine', reason: 'This unit is usually a urine result; could not be read' },
+      { label: 'HDL Cholesterol', reason: 'could not be read' },
+    ]);
+    expect(new Set(lines.map(l => l.label)).size).toBe(lines.length);
+  });
+
+  it('names a dropped row only from a column whose values are offered, and leaves one cut with its column out of the count', () => {
+    const rows = [
+      { metric: 'hdl', value: 1.2, unit: 'mmol/L', confidence: 'high' },
+      { metric: 'hdl', value: 'trace', unit: 'mmol/L', confidence: 'high', recordedAt: '2027-03-01' },
+      { metric: 'lpa', value: 'trace', unit: 'nmol/L', confidence: 'high', recordedAt: UNDATED_PREVIOUS },
+      { metric: 'ldl', value: 'trace', unit: 'mmol/L', confidence: 'high', recordedAt: '2025-06-01' },
+    ];
+    const parsed = parseUnifiedResult({ ...report, values: rows, additionalValues: [] });
+    // A future day is no column; an undated one is offered only by the full prompt.
+    const full = toUnifiedResult(parsed, 'full');
+    expect(full.values.map(v => v.metric)).toEqual(['hdl']);
+    expect(full.unreadValues).toEqual([{ name: 'lpa', reason: 'unreadable', recordedAt: UNDATED_PREVIOUS }, { name: 'ldl', reason: 'unreadable', recordedAt: '2025-06-01' }]);
+    expect(full.droppedValueCount).toBe(2);
+    const connector = toUnifiedResult(parsed, 'metadata');
+    expect(connector.unreadValues).toEqual([{ name: 'ldl', reason: 'unreadable', recordedAt: '2025-06-01' }]);
+    expect(connector.droppedValueCount).toBe(1);
+  });
+
+  // Re-check R1: an unnamed row left out with its column left the count with
+  // "1 value could not be read" for a row in a column never offered.
+  it('an unnamed dropped row is counted only from an offered column, never shown', () => {
+    const parsed = parseUnifiedResult({ ...report, values: [], additionalValues: [
+      { value: 'trace', unit: 'mg/L' },
+      { value: 'trace', unit: 'mg/L', recordedAt: '2027-03-01' },
+      { value: 'trace', unit: 'mg/L', recordedAt: UNDATED_PREVIOUS },
+    ] });
+    const full = toUnifiedResult(parsed, 'full');
+    expect(full.droppedValueCount).toBe(2);
+    expect(unreadLines(full)).toEqual({ lines: [], otherCount: 2 });
+    const connector = toUnifiedResult(parsed, 'metadata');
+    expect(connector.droppedValueCount).toBe(1);
+    expect(unreadLines(connector)).toEqual({ lines: [], otherCount: 1 });
+  });
+
+  it('cuts a long name without halving an emoji', () => {
+    const name = `${'a'.repeat(79)}😀`;
+    const [v] = toUnifiedResult(parseUnifiedResult({ ...report, values: [], additionalValues: [{ name, value: 'trace', unit: '' }] }), 'full').unreadValues!;
+    expect(v.name).toBe('a'.repeat(79));
+  });
+});
+
+// US-12 AC20 usage signal; adversary review of 0a2b89b0 (R8): pregnancy, fertility
+// and sex-hormone tests are never named, only counted as "other".
+describe('US-12 AC20: uploadLimitSignal', () => {
+  it('counts limits, the undecided ones, and their keys; a sex-hormone or pregnancy test is "other"', () => {
+    const signal = uploadLimitSignal([{
+      values: [{ metric: 'ldl', valueSI: 1.5, comparator: '<' }, { metric: 'lpa', valueSI: 10, comparator: '<' }, { metric: 'hdl', valueSI: 1.2 }],
+      additionalValues: [
+        { name: 'hCG', value: 20, comparator: '<', referenceLow: null, referenceHigh: 10 },
+        { name: 'Estradiol', value: 100, comparator: '<', referenceLow: 50, referenceHigh: 400 },
+        { name: 'ferritin', value: 5, comparator: '<', referenceLow: 30, referenceHigh: 300 },
+      ],
+    }]);
+    expect(signal).toEqual({ valuesLimit: 5, valuesLimitUngraded: 3, limitUngradedTests: ['ldl', 'other'] });
+    for (const key of ['hcg', 'estradiol', 'testosterone_total', 'progesterone', 'amh', 'shbg']) expect(LIMIT_TEST_WORDS, key).not.toContain(key);
+    expect(LIMIT_TEST_WORDS).toContain('ferritin');
   });
 });

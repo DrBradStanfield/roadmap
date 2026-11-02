@@ -6,6 +6,7 @@ import {
   labReviewJson, labSaveSummaryJson, settledJson,
 } from './app-doors';
 import { applyEdit, newRecord } from './my-data';
+import { erasePhoneJson } from './erase';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { chatContextOf } from '../../packages/health-core/src/chat-context';
 
@@ -103,6 +104,33 @@ describe('US-52 AC8: the lab review and the write', () => {
     expect(review.unreadCount).toBe(1);
     // A report with no full day asks the user.
     expect(JSON.parse(reviewOf({ ...extraction, reportDate: '2026-10' })).reportDay).toBeNull();
+  });
+
+  // US-12 AC19 (break-it pass 2026-11-01): unread rows said only "2 values could not be
+  // read"; now each is named, with why. A limit is saved since AC20 (lab-limits.test.ts).
+  it('US-12 AC19: names each value the server could not read under "Not saved", one line per reason, and counts only the unnamed', () => {
+    const unread = { ...extraction, droppedValueCount: 5, unreadValues: [
+      { name: 'hdl', reason: 'unreadable' }, { name: 'lpa', reason: 'unreadable' }, { name: 'vitamin_d', reason: 'unreadable' }, { name: 'hdl', reason: 'unreadable' },
+    ] };
+    const review = JSON.parse(reviewOf(unread));
+    expect(review.notSaved).toEqual([
+      { label: 'Creatinine', reason: 'unit unknown' },
+      { label: 'HDL Cholesterol, Lp(a), Vitamin D (25-OH)', reason: 'could not be read' },
+    ]);
+    expect(review.unreadCount).toBe(1);
+  });
+
+  // Review R1: two lines with one label had one SwiftUI id (LabReviewView keys rows).
+  it('US-12 AC19: lists each label once: one test read twice, and a refused and an unread creatinine', () => {
+    const both = { ...extraction, droppedValueCount: 3, unreadValues: [
+      { name: 'hdl', reason: 'unreadable' }, { name: 'hdl', reason: 'unreadable' }, { name: 'creatinine', reason: 'unreadable' },
+    ] };
+    const { notSaved, unreadCount } = JSON.parse(reviewOf(both));
+    expect(notSaved).toEqual([
+      { label: 'Creatinine', reason: 'unit unknown; could not be read' },
+      { label: 'HDL Cholesterol', reason: 'could not be read' },
+    ]);
+    expect(unreadCount).toBe(0);
   });
 
   it('writes only the ticked values through bulkAppendValues, skipping a held day and refusing a bad unit', () => {
@@ -222,5 +250,13 @@ describe('US-52 AC13d / US-14 AC4: a held metadata-only row, as the web\'s card 
     other.documents.push(heldRow({ type: 'pathology_report', title: 'Blood test results', extractedText: '', metadata: { labArchive: true } }), heldRow({ fileRef: 'Clinic letters/x.pdf', contentHash: 'sha256-cc' }));
     expect(JSON.parse(reviewOf(letter, other, 'Letter.pdf', 'sha256-aa')).document.held).toBe(false);
     expect(JSON.parse(reviewOf(letter, other, 'Letter.pdf', 'sha256-cc')).document.held).toBe(false);
+  });
+});
+
+describe('US-25 AC6b: a settled door marks words meant for the person (review R8)', () => {
+  it('a Refusal settles as refused; any other failure does not', async () => {
+    expect(await door(() => erasePhoneJson('[]', null, NOW, DEVICE)))
+      .toEqual({ ok: false, message: 'This file is not a health record.', refused: true });
+    expect(await door(() => erasePhoneJson('{"hello":1}', null, NOW, DEVICE))).toMatchObject({ ok: false, refused: false });
   });
 });

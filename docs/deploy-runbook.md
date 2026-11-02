@@ -12,11 +12,12 @@ full test suite → tsc typecheck (widget-src + health-core) → builds → Sent
 (`--strategy canary`) → health gates → live WebKit verify — with all deploy
 credentials in GitHub Actions secrets (proven end-to-end: run 31332275404,
 fly-only, shipped v396/v30). Trigger: Actions → Deploy → Run workflow (choose
-surfaces), or automatically when a `ship`-labeled PR merges with an approving
-review (the Tier 3 loop pipeline, docs/loops/deploy-pipeline-proposal.md).
-**The gate is the only check.** It demands an approving review on the FINAL
-commit from a non-bot `OWNER` or `COLLABORATOR`, a green `test` check, and no
-failed checks. Once it passes the deploy runs with no pause: the `production`
+surfaces), or by auto-ship, which dispatches it on `main` after its own
+reviewer, green checks and 30-minute veto window (the Tier 3 loop pipeline,
+docs/loops/deploy-pipeline-proposal.md). There is no PR-merge trigger since
+2026-11-02 (US-46 AC13). **The gate is the only check in this workflow:** it
+runs only for a dispatch on `refs/heads/main`, and the `production`
+environment admits `main` only. Once it passes the deploy runs with no pause: the `production`
 environment lost its 30-minute wait timer on 2026-09-02 by owner decision, and
 has no required reviewer either. The notification issue is a heads-up, not a
 veto; to stop a deploy, cancel the run. CI ships the exact main-tip commit.
@@ -28,24 +29,35 @@ the workflow (auto-mode blocks production deploys — a human clicks Run).
 Full manual deploy (widget + Shopify extensions + backend):
 
 ```bash
+# 0. Only merged code ships, cut from the main checkout (Brad 2026-10-31/11-01, docs/git-workflow.md). Never deploy
+#    from a session worktree or a claude/ branch. From the main checkout's root, tools/release-checkout.sh makes a
+#    detached checkout of exactly origin/main outside the repo (`shopify app deploy` refuses while any worktree
+#    sits inside it; docs/reference.md, 2026-10-01), links .env, runs its own `npm ci`, checks HEAD is origin/main
+#    with no tracked change, and prints the folder. It refuses a folder that already exists. If it fails, run
+#    nothing below.
+D="$(bash tools/release-checkout.sh)" && cd "$D" || { echo "STOP: step 0 failed; do not run the steps below" >&2; false; }
+#    Every later step starts with inrel: it stops unless the shell is in that release checkout, never the main one.
+inrel() { [ -f .git ] && [ -n "${D:-}" ] && [ "$(pwd -P)" = "$D" ] || { echo "STOP: not in the release checkout (${D:-none}); see step 0" >&2; return 1; }; }
+#    When done: cd back, `git worktree remove --force "$D"` (--force: the build output).
+
 # 1. Build the live v2 widget bundle (from project root). build:shopify-prod
 #    emits health-plan-v2.js + the upload bundle into the extension assets.
 #    (build:widget only builds the side bundles: upload, site-chat, chatbot.)
-npm run build:shopify-prod
+inrel && npm run build:shopify-prod
 
 # 2. Upload WIDGET sourcemaps to Sentry (requires SENTRY_AUTH_TOKEN in .env — local only).
 #    sentry:sourcemaps uploads from extensions/health-tool-widget/assets, which holds the
 #    main v2 bundle (step 1) PLUS the side bundles (site-chat, chatbot). build:shopify-prod
 #    only emits the main v2 + upload bundles, so run build:widget first to refresh the
 #    side bundles' maps too, or their Sentry maps go stale.
-npm run build:widget
-cd widget-src && npm run sentry:sourcemaps && cd ..
+inrel && npm run build:widget
+inrel && cd widget-src && npm run sentry:sourcemaps && cd ..
 
 # 3. Remove sourcemaps before Shopify deploy (they push the extension over the 10MB limit)
-rm -f extensions/health-tool-widget/assets/*.map
+inrel && rm -f extensions/health-tool-widget/assets/*.map
 
 # 4. Deploy Shopify extensions to CDN (--allow-updates, as deploy.yml does; CLI 4 has no --force)
-npx shopify app deploy --allow-updates
+inrel && npx shopify app deploy --allow-updates
 
 # 5. (RETIRED 2026-08-10 — no symlink dance. docs/products.md is now a real tracked
 #    file in this repo; the Docker build ships it as-is. Just make sure product-content
@@ -53,11 +65,12 @@ npx shopify app deploy --allow-updates
 
 # 5a. Shared chatbot docs must be current (2026-10-14). docs/writing-style.md and the
 #     generated docs/chatbot/answer-bank.md come from the private claude_business repo.
-#     Run in claude_business; a non-zero exit means stale or diverged copies: do NOT deploy.
-#     Fix with `node tools/sync-shared-docs.mjs` there, commit both repos, then deploy.
+#     Run in claude_business against the release checkout; a non-zero exit means stale or diverged copies:
+#     do NOT deploy. Fix with `node tools/sync-shared-docs.mjs --road <a roadmap worktree>` there (never the
+#     roadmap main checkout), land both repos' PRs, then start again from step 0.
 #     (CI cannot see claude_business: its guard, scripts/check-symlinks.mjs, only checks
 #     each copy against the hash its last sync recorded.)
-(cd ~/Library/CloudStorage/Dropbox/YouTube/multivitamin\ \&\ others/claude_business && node tools/sync-shared-docs.mjs --check)
+inrel && (cd ~/Documents/claude_business.nosync && node tools/sync-shared-docs.mjs --check --road "$D")
 
 # 6. Deploy backend to Fly.io (MUST run from project root where Dockerfile lives).
 #    THERE ARE TWO FLY APPS sharing the same Dockerfile + the same chatbot knowledge files:
@@ -77,12 +90,12 @@ npx shopify app deploy --allow-updates
 #      skips/garbles the server map upload.
 
 # 6a. Commerce / brand app (default config — fly.toml):
-fly deploy -c fly.toml \
+inrel && fly deploy -c fly.toml \
   --build-arg SENTRY_RELEASE="health-tool-app@$(git rev-parse --short HEAD)" \
   --build-secret sentry_auth_token="$(grep -E '^SENTRY_AUTH_TOKEN=' .env | cut -d= -f2-)"
 
 # 6b. Education / doctor app (fly.edu.toml):
-fly deploy -c fly.edu.toml \
+inrel && fly deploy -c fly.edu.toml \
   --build-arg SENTRY_RELEASE="health-tool-edu@$(git rev-parse --short HEAD)" \
   --build-secret sentry_auth_token="$(grep -E '^SENTRY_AUTH_TOKEN=' .env | cut -d= -f2-)"
 
@@ -104,7 +117,7 @@ fly status -c fly.edu.toml  # health-tool-edu
 **Shopify account-link proof ships in a fixed order (US-09 AC27, 2026-10-21).** The new code accepts a link only when `app_metadata.shopify_customer_id` proves it, and no existing link has that yet. Deploy before step (c) and every linked customer chats as a guest until it runs. In order:
 (a) Turn off public sign-up: Supabase Dashboard → Authentication → "Allow new users to sign up" off, or Management API `PATCH /v1/projects/{ref}/config/auth` with `{"disable_signup": true}`. The server creates customers and guests with service-role `admin.createUser`, which this does not block.
 (b) Apply, as postgres in one transaction, the `handle_new_user` change and the profiles section of `supabase/rls-policies.sql` (trigger reads `raw_app_meta_data`; drop the "Users can update own profile" policy; `REVOKE ALL ON profiles FROM anon, authenticated`; `GRANT SELECT ON profiles TO authenticated`). Check that the trigger reads only `raw_app_meta_data` and that only `authenticated | SELECT` remains.
-(c) `npx tsx --env-file=.env tools/backfill-shopify-link-proof.ts` (dry run: expect `to_write` = `confirmed` = `linked_profiles` and every skip 0; investigate any skip first), then the same with `--execute` (expect `verified` = `written`, `write_failed` 0). A second dry run shows `already_proven` = `linked_profiles`.
+(c) From the main checkout, at exactly `origin/main` with no tracked change (`tools/write-gate.mjs` refuses `--execute` otherwise; docs/git-workflow.md): `npx tsx --env-file=.env tools/backfill-shopify-link-proof.ts` (dry run: expect `to_write` = `confirmed` = `linked_profiles` and every skip 0; investigate any skip first), then the same with `--execute` (expect `verified` = `written`, `write_failed` 0). A second dry run shows `already_proven` = `linked_profiles`.
 (d) Deploy both Fly apps.
 (e) Once every machine of both apps runs the new code (`fly status` for each), run the dry run again: an old machine may have linked a new customer between (c) and (d) without `app_metadata`. If `to_write` > 0, run `--execute`. Then check `audit_logs` for `PAID_ORDER_UNPROVEN_LINK` rows: each is a paid message pack the webhook did not credit (order id and profile id, no customer id); credit it by hand once the link is proven. Sentry should show no "Shopify link without admin-written proof" warnings.
 
@@ -133,6 +146,26 @@ the teardown commits and rebuild the legacy entry from source.
 |---|---|---|---|---|
 | Shopify storefront — prod **and** edu apps (post-split: microvitamin.com + drstanfield.com/pages/roadmap) | `npm run build:shopify-prod` | `'true'` | `'true'` | None |
 | GitHub Pages / self-host | `npm run build:pages` | `'true'` | undefined (false) | `chat-api.ts → byok-chat.ts`, `upload-api.ts → byok-upload.ts` |
+
+**Two localhosts.** `npm run dev:pages` (port 5173) is the Pages build. `npm run
+dev:shopify` (port 5174, `vite.config.shopify-dev.ts`) is the storefront build
+with `VITE_SHOPIFY_SURFACE`, so the email box, Save as PDF gating, the feedback
+form and the US-61 product blocks render. It serves the real `app-block.liquid`
+(an unknown Liquid tag fails the page, so it cannot drift) inside
+drstanfield.com's live theme stylesheets, inline theme styles and wrapper
+markup, fetched once per server start and rebuilt from safe parts (stylesheet
+hrefs, CSS text, wrapper tag/id/class), so collisions like `div:empty` show
+before a deploy. Theme scripts are left out, so WebKit on the live page still
+checks after. Every `/apps/health-tool-1` call is a local stub (events, A/B and
+feedback accept; the email box accepts; chat lists nothing; lab import 503s).
+The absolute Brad-server URLs in widget source (the Google token exchange,
+reminders) are rewritten in this dev build only to `/__brad-server/…`, which
+answers 503 locally, and Sentry is off on every loopback host. So no call
+reaches Brad's servers. Real third parties still answer: Dropbox and Google
+sign-in, and the live theme's stylesheets. Query switches: `?skip_email_gate=true`
+(`/pages/start`), `?country=NZ` (hides US-61 blocks), `?theme=off`. Never
+`shopify app dev`. For `.claude/launch.json` (gitignored):
+`{ "name": "web-shopify", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev:shopify"], "port": 5174 }`.
 
 (Both the production and education Shopify apps build from this same
 shopify-prod config family — see "Shopify app configs" below. **⚠️ §12 split is
@@ -232,7 +265,7 @@ to both — deploy twice, see "Shopify app configs".**)
   unset. Same `metafieldsSet` call as the name; no redeploy needed after the extension is live.
 
 **Important deploy notes:**
-- **`docs/products.md` is a real tracked file (since 2026-08-10)** — the old pre-deploy symlink dance is retired. The master lives HERE; `claude_business/docs/products.md` is now the symlink pointing back at this repo. If a claude_business session edits product content through that symlink, the change appears as an uncommitted modification in THIS repo — commit it (sweep rule) before deploying, or `fly deploy` ships it uncommitted.
+- **`docs/products.md` is a real tracked file (since 2026-08-10)** — the old pre-deploy symlink dance is retired. The master lives HERE; `claude_business/docs/products.md` is now the symlink pointing back at this repo. If a claude_business session edits product content through that symlink, the change appears as an uncommitted modification in THIS repo — land it in its own PR (docs/git-workflow.md) before deploying; only merged code ships.
 - `fly deploy` must be run from the **project root** (`/roadmap/`), not a subdirectory. The Dockerfile is at root level. Do NOT use `--app` flag — Fly reads `fly.toml` from the current directory.
 - `npx shopify app deploy --allow-updates` — in a non-interactive environment (CI, Claude Code) the CLI needs `--allow-updates`, `--allow-deletes` or `--no-release`, since it cannot ask for confirmation. deploy.yml uses `--allow-updates`; a release that removes an extension needs `--allow-deletes`. CLI 4 (deploy.yml pins 4.9.4) rejects the old `--force`: "Nonexistent flag".
 - `SENTRY_AUTH_TOKEN` is never a Fly RUNTIME secret (the running server only needs `SENTRY_DSN`, set on BOTH Fly apps: edu got it only on 2026-10-13, so diff `fly secrets list` across the apps). For sourcemap uploads it's used two ways: locally for the WIDGET maps (step 2), and passed into the Fly BUILD as a `--build-secret sentry_auth_token=...` (step 6) for the SERVER maps. As a build secret it's mounted only for the `npm run build` RUN in the Dockerfile and never persists in any image layer. The server source-map config lives in `vite.config.ts` (`sentryConfig`) + `react-router.config.ts` (`sentryOnBuildEnd`); when the build secret is absent the upload disables itself gracefully (build stays green).
@@ -253,7 +286,7 @@ Moved out of CLAUDE.md 2026-09-24 (entropy pass). `.env` has all of them.
   ANTHROPIC_API_KEY, SHOPIFY_*, KLAVIYO_API_KEY/KLAVIYO_LIST_ID (the same
   MicroVitamin pair on both apps, by decision 2026-09-28).
 - **Fly-only**: MCP_ISSUER, MCP_SEAL_KEYS, MCP_CLIENT_HMAC_KEY,
-  OPENAI_APPS_CHALLENGE, GITHUB_ISSUES_TOKEN (edu; the connector files bug
+  GITHUB_ISSUES_TOKEN (edu; the connector files bug
   reports with it, and without it hands the user a link), DROPBOX_APP_KEY/SECRET,
   GOOGLE_DRIVE_CLIENT_ID/SECRET (BOTH Fly apps: `health-tool-app` for the
   widget's Google exchange, edu for the MCP's Drive leg). Setup and rotation:

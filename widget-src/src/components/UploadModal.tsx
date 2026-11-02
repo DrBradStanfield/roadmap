@@ -1,7 +1,7 @@
 import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota } from '../lib/upload-api';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { IMPORT_LIMITS, METRIC_LABELS, UNDATED_PREVIOUS, zipMemberName, type DocumentPayload, type LabUnitRefusal, type MeasurementRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
+import { IMPORT_LIMITS, METRIC_LABELS, UNDATED_PREVIOUS, unreadLines, uploadLimitSignal, zipMemberName, comparatorOf, type DocumentPayload, type UnreadLabValue, type LabUnitRefusal, type MeasurementRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
@@ -125,10 +125,11 @@ const MAX_FILES = IMPORT_LIMITS.websiteFiles; // also the server's per-IP daily 
 const MAX_FILE_SIZE = IMPORT_LIMITS.websiteFileMb * 1024 * 1024; // the connector's hint names this number
 
 /** Why a file was not fully read (US-12 AC9). Each is also its `upload_outcome` count. */
-type FileNoticeReason = Exclude<UploadOutcomeKey, 'picked' | 'withValues' | 'docx' | 'undatedPrevious' | 'unitsGuessed' | 'unitsRefused'>;
+type FileNoticeReason = Exclude<UploadOutcomeKey, 'picked' | 'withValues' | 'docx' | 'undatedPrevious' | 'unitsGuessed' | 'unitsRefused' | 'valuesLimit' | 'valuesLimitUngraded'>;
 /** `name` is the file's whole path, its identity; the list shows it short (`noticeName`).
- *  `count` is how many the notice stands for (values dropped); `text` overrides the reason's. */
-interface FileNotice { name: string; reason: FileNoticeReason; count?: number; text?: string }
+ *  `count` is how many the notice stands for (values dropped), `unread` the ones that
+ *  name their test (US-12 AC19); `text` overrides the reason's. */
+interface FileNotice { name: string; reason: FileNoticeReason; count?: number; unread?: UnreadLabValue[]; text?: string }
 const FILE_NOTICE_TEXT: Record<Exclude<FileNoticeReason, 'valuesDropped'>, string> = {
   openFailed: 'Could not open it. It may be password-protected, damaged, or not a PDF, photo or .docx file.',
   tooLarge: `Too large to read. The limit is ${IMPORT_LIMITS.websiteFileMb} MB per file.`,
@@ -149,9 +150,15 @@ const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
 const OVER_LIMIT_TEXT = `Not read. It is over the ${MAX_FILES}-file limit for one upload. Upload it separately.`;
 const LEGACY_DOC_TEXT = 'Word .doc files cannot be read. Save it as a PDF or .docx, then upload that.';
 
-function noticeText({ reason, count = 1, text }: FileNotice): string {
+function noticeText({ reason, count = 1, unread = [], text }: FileNotice): string {
   if (text) return text;
-  if (reason === 'valuesDropped') return `${count} value${count === 1 ? '' : 's'} could not be read.`;
+  if (reason === 'valuesDropped') {
+    // Each value that names its test is named, with why; the rest are counted (US-12 AC19).
+    const { lines, otherCount } = unreadLines({ droppedValueCount: count, unreadValues: unread });
+    const text = lines.map(l => `${l.label}: ${l.reason}, not saved.`);
+    if (otherCount > 0) text.push(`${otherCount} ${text.length ? 'other ' : ''}value${otherCount === 1 ? '' : 's'} could not be read.`);
+    return text.join(' ');
+  }
   return (!SHOPIFY_SURFACE && BYOK_NOTICE_TEXT[reason]) || FILE_NOTICE_TEXT[reason];
 }
 
@@ -207,7 +214,7 @@ async function readPages(upload: HealthUploadAPI, { fileName: name, getFile }: R
 
 /** A file the server read, as a review row; values its parse refused are named (US-12 AC9). */
 function readResult(fileName: string, result: LabImportResult, notices: FileNotice[]): FileResult {
-  if (result.droppedValueCount) notices.push({ name: fileName, reason: 'valuesDropped', count: result.droppedValueCount });
+  if (result.droppedValueCount) notices.push({ name: fileName, reason: 'valuesDropped', count: result.droppedValueCount, unread: result.unreadValues });
   return { fileName, reportDate: result.reportDate, values: result.values, additionalValues: result.additionalValues || [], document: result.document ?? undefined, refusedValues: result.refusedValues };
 }
 
@@ -224,15 +231,18 @@ function unreadResult(fileName: string, errorCode: UploadErrorCode | undefined, 
 /** US-12 AC10: one run's counts, integers only. Never a name, unit or value.
  *  `docx` is how many of the picked files were .docx (AC13); `values` holds
  *  value counts: `undatedPrevious` from an undated previous column (AC14),
- *  `unitsGuessed` (AC16) and `unitsRefused` (AC15). A zero is never
- *  sent: every key is optional, so a server a deploy behind meets a new key
- *  only once it counts something. */
-function trackUploadOutcome(picked: number, withValues: number, docx: number, notices: FileNotice[], values: Partial<Record<'undatedPrevious' | 'unitsGuessed' | 'unitsRefused', number>> = {}): void {
+ *  `unitsGuessed` (AC16), `unitsRefused` (AC15), and the read files' limits
+ *  (`uploadLimitSignal`, AC20): `valuesLimit`, `valuesLimitUngraded`, and the
+ *  closed-list keys of the ungraded tests, the one non-count. A zero, or an
+ *  empty list, is never sent: every key is optional, so a server a deploy
+ *  behind meets a new key only once it counts something. */
+function trackUploadOutcome(picked: number, withValues: number, docx: number, notices: FileNotice[], values: Partial<Record<'undatedPrevious' | 'unitsGuessed' | 'unitsRefused' | 'valuesLimit' | 'valuesLimitUngraded', number>> = {}, limitUngradedTests: string[] = []): void {
   const counts: Partial<Record<UploadOutcomeKey, number>> = { picked, withValues, docx, ...values };
   for (const n of notices) counts[n.reason] = (counts[n.reason] ?? 0) + (n.count ?? 1);
-  trackProductEvent('upload_outcome', Object.fromEntries(
-    UPLOAD_OUTCOME_KEYS.filter(k => counts[k]).map(k => [k, Math.min(counts[k]!, UPLOAD_OUTCOME_MAX)]),
-  ));
+  trackProductEvent('upload_outcome', {
+    ...Object.fromEntries(UPLOAD_OUTCOME_KEYS.filter(k => counts[k]).map(k => [k, Math.min(counts[k]!, UPLOAD_OUTCOME_MAX)])),
+    ...(limitUngradedTests.length ? { limitUngradedTests } : null),
+  });
 }
 
 /** Values the extractor refused rather than guessed, each with why (US-12 AC15).
@@ -431,8 +441,9 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         values.unitsGuessed += r.values.filter(v => v.unitGuessed).length;
         values.unitsRefused += r.refusedValues?.length ?? 0;
       }
+      const { limitUngradedTests, ...limits } = uploadLimitSignal(finished.filter(r => !r.error));
       setNotices(runNotices);
-      trackUploadOutcome(tooLarge.length + names.length, withValues, docx, runNotices, values);
+      trackUploadOutcome(tooLarge.length + names.length, withValues, docx, runNotices, { ...values, ...limits }, limitUngradedTests);
     };
 
     try {
@@ -722,6 +733,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         // Set only when the reviewer ticked "Replace" on an occupied slot —
         // the store then corrects that row instead of skipping the upload.
         correctsId: v.correctsId,
+        ...comparatorOf(v),
       }));
       // Blobs travel INSIDE the payload (attached at processing time, and only
       // when the backend can archive them) — no name-keyed re-join here.
@@ -748,6 +760,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         recordedAt: lv.recordedAt,
         source: 'lab_import' as const,
         correctsId: lv.correctsId,
+        ...comparatorOf(lv),
       }));
 
       // Each branch settles before the session becomes dismissible. One

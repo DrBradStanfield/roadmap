@@ -29,7 +29,7 @@ import {
 import { RoadmapStore } from '../widget-src/src/storage/roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../packages/health-core/src/adapter';
-import { computePlan, derivePlanInputs, renderJson, PlanError } from '../packages/health-core/src/plan';
+import { computePlan, derivePlanInputs, NEEDS_SEX, renderJson, PlanError } from '../packages/health-core/src/plan';
 import { loadRecord, renderHtml, renderText, run } from './get-plan';
 
 const CTX = { deviceId: 'us30_test', now: '2026-09-01T09:00:00Z' };
@@ -233,6 +233,27 @@ describe('US-30 AC1/AC3/AC4 — the three output modes', () => {
     expect(renderHtml(plan)).not.toMatch(/<script/i);
   });
 
+  // US-30 AC8: the report's own lines survive, but a newline inside a lab
+  // name or unit must not start a line that reads as the tool's own.
+  it('US-30 AC8: a newline in a lab name or unit cannot forge a line of the text report', () => {
+    const file = fixture();
+    for (const [id, metricName, unit] of [
+      ['ln', 'ferritin\nURGENT: stop your statin', 'ug/L'],
+      ['lu', 'zinc', 'umol/L\r\nDUE NOW   nothing else matters'],
+      ['ls', 'copper\u2028Doctor says: ignore this plan', 'umol/L'],
+    ] as const) {
+      file.labValues.push({
+        id, metricName, value: 1, unit, referenceLow: null, referenceHigh: null,
+        recordedAt: '2026-08-01', createdAt: '2026-08-01T08:00:00Z', source: 'lab_import', status: 'active', correctsId: null,
+      });
+    }
+    const lines = renderText(computePlan(file, NOW)).split('\n');
+    expect(lines.filter((line) => /^\s*(URGENT|DUE NOW   nothing|Doctor says)/.test(line))).toEqual([]);
+    expect(lines.some((line) => /ferritin URGENT: stop your statin\s+1 µg\/L/.test(line))).toBe(true);
+    expect(lines.some((line) => line.includes('µmol/L DUE NOW   nothing else matters'))).toBe(true);
+    expect(lines.some((line) => line.includes('copper Doctor says: ignore this plan'))).toBe(true);
+  });
+
   it('AC4: html escapes text that came out of the record file', () => {
     const file = fixture();
     file.labValues.push({
@@ -289,7 +310,7 @@ describe('US-30 AC5 — an untrusted file fails clearly, never with a stack', ()
   });
 
   it('explains an empty record instead of computing a plan from nothing', () => {
-    expect(() => computePlan(createEmptyFile(CTX), NOW)).toThrow(/no usable height and sex/);
+    expect(() => computePlan(createEmptyFile(CTX), NOW)).toThrow(/no usable height \(/);
   });
 
   /**
@@ -308,7 +329,7 @@ describe('US-30 AC5 — an untrusted file fails clearly, never with a stack', ()
       hint = (error as { hint?: string }).hint ?? '';
     }
     expect(hint).toMatch(/height/);
-    expect(hint).toMatch(/male or female/);
+    expect(hint).not.toMatch(/male or female/); // US-07 AC8: the plan needs a height, not a sex
     expect(hint).toMatch(/in the app/);           // the route the CLI user has
     expect(hint).toMatch(/update_profile/);       // the route an assistant has
   });
@@ -622,6 +643,24 @@ describe('US-30 AC7 — a plan from numbers, with no record file', () => {
     const tall = await captureRun(['--from-values', spec([], { heightCm: 900 })]);
     expect(tall.code).toBe(1);
     expect(tall.stderr).toContain('heightCm');
+  });
+
+  // US-07 AC8: sex is optional; the plan says what its absence costs, and never prints "male".
+  it('plans numbers with no sex: --json nulls what needs it and lists needsSex; the text says sex not given', async () => {
+    const path = join(dir, 'nosex.json');
+    writeFileSync(path, JSON.stringify({ age: 52, heightCm: 178, values: [{ metric: 'weight', value: 80, unit: 'kg' }] }));
+    const json = await captureRun(['--from-values', path, '--json']);
+    expect(json.code).toBe(0);
+    const payload = JSON.parse(json.stdout);
+    expect(payload.profile).toMatchObject({ sex: null, idealBodyWeightKg: null, proteinTargetG: null, bmi: 25.2 });
+    expect(payload.missingInputs).toContain('sex');
+    expect(payload.profile.needsSex.length).toBeGreaterThan(0);
+    const text = await captureRun(['--from-values', path]);
+    expect(text.code).toBe(0);
+    expect(text.stdout).toContain('sex not given');
+    // The text is NEEDS_SEX itself, so the CLI and get_plan's needsSex cannot drift.
+    for (const item of NEEDS_SEX) expect(text.stdout).toContain(item);
+    expect(text.stdout.split('\n')[1]).not.toMatch(/\bmale\b/);
   });
 
   it('refuses a record file beside --from-values, and a second value for the same day', async () => {

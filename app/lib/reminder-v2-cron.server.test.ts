@@ -173,3 +173,181 @@ describe('reminder v2 cron — tombstone retention', () => {
     expect(Sentry.captureException).toHaveBeenCalled();
   });
 });
+
+// US-28 AC3: the day is done only once a pass has finished. A read error after
+// the lock is won (the same platform fault AC1/AC2 were written for) used to
+// end the day on this machine, and the lock row, which names this machine,
+// ended it on the other one too: nobody due that day was emailed.
+describe('reminder v2 cron tick — US-28 AC3: a failed pass leaves the day open', () => {
+  let stop: (() => void) | null = null;
+  const dueRow = {
+    id: 'row-due',
+    email: 'due@example.com',
+    provider: 'typed' as const,
+    schedule: [{ category: 'blood_test_lipids', label: 'Lipid panel', dueAt: '2026-08-01' }],
+    last_sent: {},
+    token: 'tok',
+    created_at: '2026-08-01T00:00:00Z',
+  };
+
+  async function loadTick() {
+    // The retention tests above leave NODE_ENV stubbed to production, which
+    // would let the import self-start a second interval beside ours.
+    vi.unstubAllEnvs();
+    const loaded = await loadCron();
+    stop = loaded.cron.stopReminderV2Cron;
+    const { sendReminderEmail } = await import('./email.server');
+    const { purgeTombstones } = await import('./reminder-v2.server');
+    const sendMock = vi.mocked(sendReminderEmail);
+    sendMock.mockResolvedValue(true);
+    vi.mocked(purgeTombstones).mockReset().mockResolvedValue(0);
+    loaded.optinsMock.mockReset();
+    // The lock row names this machine for today, so its own re-acquire wins.
+    loaded.lockMock.mockResolvedValue(true);
+    return { ...loaded, sendMock };
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-28T07:30:00Z'));
+  });
+
+  afterEach(() => {
+    stop?.();
+    stop = null;
+    vi.unstubAllEnvs();
+    vi.useRealTimers();
+  });
+
+  it('re-runs the day on the next tick after an opt-in read error, and the due user is emailed', async () => {
+    const { cron, lockMock, optinsMock, sendMock } = await loadTick();
+    optinsMock
+      .mockRejectedValueOnce(new Error('reminder_optin_v2 select failed: fetch failed'))
+      .mockResolvedValueOnce([dueRow])
+      .mockResolvedValue([]);
+
+    const Sentry = await import('@sentry/react-router');
+    vi.mocked(Sentry.captureException).mockClear();
+
+    cron.startReminderV2Cron();
+    await vi.advanceTimersByTimeAsync(HOUR_MS); // 08:30: lock won, first read fails
+    expect(sendMock).not.toHaveBeenCalled();
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1); // still reported
+
+    await vi.advanceTimersByTimeAsync(HOUR_MS); // 09:30: the day is still open
+    expect(lockMock).toHaveBeenCalledTimes(2);
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    expect(sendMock.mock.calls[0][0]).toBe('due@example.com');
+  });
+
+  it('a failure on a later page re-runs the day too', async () => {
+    const { cron, optinsMock, sendMock } = await loadTick();
+    const page = Array.from({ length: 50 }, (_, i) => ({ ...dueRow, id: `p1-${i}`, email: `p1-${i}@example.com` }));
+    optinsMock
+      .mockResolvedValueOnce(page)
+      .mockRejectedValueOnce(new Error('reminder_optin_v2 select failed: fetch failed'))
+      .mockResolvedValueOnce([dueRow])
+      .mockResolvedValue([]);
+
+    cron.startReminderV2Cron();
+    await vi.advanceTimersByTimeAsync(HOUR_MS); // page 1 sent, page 2 read fails
+    await vi.advanceTimersByTimeAsync(HOUR_MS); // retried
+    const emailed = sendMock.mock.calls.map((c) => c[0]);
+    expect(emailed).toContain('due@example.com');
+  });
+
+  it('after a pass that finished, the rest of the day does nothing', async () => {
+    const { cron, lockMock, optinsMock, sendMock } = await loadTick();
+    optinsMock.mockResolvedValueOnce([dueRow]).mockResolvedValue([]);
+
+    cron.startReminderV2Cron();
+    await vi.advanceTimersByTimeAsync(HOUR_MS);
+    await vi.advanceTimersByTimeAsync(HOUR_MS);
+    await vi.advanceTimersByTimeAsync(HOUR_MS);
+    expect(lockMock).toHaveBeenCalledTimes(1);
+    expect(optinsMock).toHaveBeenCalledTimes(1);
+    expect(sendMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('a pass still running at the next tick is not started a second time on this machine', async () => {
+    const { cron, lockMock, optinsMock } = await loadTick();
+    // The first read never answers within the hour (a stalled send or read):
+    // the next tick must not start a second pass over rows not yet stamped.
+    optinsMock.mockImplementationOnce(() => new Promise(() => {}));
+
+    cron.startReminderV2Cron();
+    await vi.advanceTimersByTimeAsync(HOUR_MS); // pass starts and hangs
+    await vi.advanceTimersByTimeAsync(HOUR_MS); // next tick
+    await vi.advanceTimersByTimeAsync(HOUR_MS);
+    expect(lockMock).toHaveBeenCalledTimes(1);
+    expect(optinsMock).toHaveBeenCalledTimes(1);
+  });
+
+  // Adversarial review of PR #434: page 1 is emailed, its last_sent writes
+  // fail, then a page-2 read throws. The retried pass re-reads page 1 with
+  // last_sent still empty; without a per-day record it emailed them again,
+  // every hour until a pass finished.
+  it('a retried pass never emails the same optin twice in a day, but reaches the rest', async () => {
+    const { cron, optinsMock, sendMock } = await loadTick();
+    const { recordSent } = await import('./reminder-v2.server');
+    vi.mocked(recordSent).mockReset().mockRejectedValue(new Error('reminder_optin_v2 update failed'));
+    const page1 = Array.from({ length: 50 }, (_, i) => ({ ...dueRow, id: `p1-${i}`, email: `p1-${i}@example.com` }));
+    const page2Row = { ...dueRow, id: 'p2-0', email: 'p2-0@example.com' };
+    optinsMock
+      .mockResolvedValueOnce(page1)
+      .mockRejectedValueOnce(new Error('reminder_optin_v2 select failed: fetch failed'))
+      .mockResolvedValueOnce(page1) // last_sent never stamped
+      .mockResolvedValueOnce([page2Row])
+      .mockResolvedValue([]);
+
+    cron.startReminderV2Cron();
+    await vi.advanceTimersByTimeAsync(HOUR_MS); // page 1 sent, stamps fail, page 2 read fails
+    await vi.advanceTimersByTimeAsync(HOUR_MS); // retried
+    await vi.advanceTimersByTimeAsync(HOUR_MS); // the pass finished: nothing more
+    const emailed = sendMock.mock.calls.map((c) => c[0]);
+    for (const row of page1) expect(emailed.filter((e) => e === row.email)).toHaveLength(1);
+    expect(emailed.filter((e) => e === 'p2-0@example.com')).toHaveLength(1);
+    expect(sendMock).toHaveBeenCalledTimes(51);
+  });
+
+  it('the once-a-day record resets on a new day', async () => {
+    const { cron, optinsMock, sendMock } = await loadTick();
+    const { recordSent } = await import('./reminder-v2.server');
+    vi.mocked(recordSent).mockReset().mockRejectedValue(new Error('reminder_optin_v2 update failed'));
+    const page1 = Array.from({ length: 50 }, (_, i) => ({ ...dueRow, id: `p1-${i}`, email: `p1-${i}@example.com` }));
+    optinsMock
+      .mockResolvedValueOnce(page1)
+      .mockRejectedValueOnce(new Error('reminder_optin_v2 select failed: fetch failed'))
+      .mockResolvedValueOnce(page1) // same-day retry: already attempted
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce(page1) // next day: still due, last_sent never stamped
+      .mockResolvedValue([]);
+
+    cron.startReminderV2Cron();
+    await vi.advanceTimersByTimeAsync(HOUR_MS); // 08-28 08:30: page 1 sent, page 2 read fails
+    await vi.advanceTimersByTimeAsync(HOUR_MS); // 08-28 09:30: retried, nobody re-sent
+    expect(sendMock).toHaveBeenCalledTimes(50);
+
+    await vi.advanceTimersByTimeAsync(23 * HOUR_MS); // through 08-29 08:30
+    expect(sendMock).toHaveBeenCalledTimes(100);
+    expect(sendMock.mock.calls[50][0]).toBe('p1-0@example.com');
+  });
+
+  // Review of 5fb9f7e5: a pass from an earlier day that is still running must
+  // not reset a newer day's record, or that day's retry emails people twice.
+  it("an earlier day's pass never resets a newer day's record", async () => {
+    const { cron, optinsMock, sendMock } = await loadTick();
+    const { recordSent } = await import('./reminder-v2.server');
+    vi.mocked(recordSent).mockReset().mockRejectedValue(new Error('reminder_optin_v2 update failed'));
+    optinsMock
+      .mockResolvedValueOnce([dueRow]).mockResolvedValueOnce([]) // 08-29 pass
+      .mockResolvedValueOnce([dueRow]).mockResolvedValueOnce([]) // a stalled 08-28 pass resumes
+      .mockResolvedValueOnce([dueRow]).mockResolvedValue([]); // 08-29 retry, last_sent never stamped
+
+    await cron.processV2Reminders('2026-08-29');
+    await cron.processV2Reminders('2026-08-28');
+    const before = sendMock.mock.calls.length;
+    await cron.processV2Reminders('2026-08-29');
+    expect(sendMock).toHaveBeenCalledTimes(before);
+  });
+});

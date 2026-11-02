@@ -1,39 +1,36 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import type { AlcoholAnswer, HealthResults, Suggestion } from '@roadmap/health-core';
+import type { HealthResults, Suggestion } from '@roadmap/health-core';
 import {
-  type UnitSystem,
-  type MetricType,
   type SuggestionEvidence,
-  statTiles,
   statTileText,
+  type StatTile,
   planSections,
-  medicinesShown,
   type PlanCard,
 } from '@roadmap/health-core';
 // US-61 AC5: called only under SHOPIFY_SURFACE, so the Pages build drops the module.
-import { usProductBlocks, type UsProductBlock, type UsProductOverlay } from '@roadmap/health-core/us-products';
+import { usProductSections, type UsPlanCard, type UsPlanSection, type UsProduct, type UsProductBlock } from '@roadmap/health-core/us-products';
 import { getReportHtml, sendGuestReport, getReportEmailCaptured, markReportEmailCaptured } from '../lib/roadmap-data';
 import { trackABConversion, trackProductEvent } from '../lib/server-api';
 import { EMAIL_REGEX } from '../lib/email';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { getSkipEmailGate } from '../lib/assistant-config';
 import { ColumnHeader } from './ColumnHeader';
-import { StorageNotice } from '../lib/storage-notice';
+import { GuideLink } from './GuideLink';
 import { FeedbackForm } from './FeedbackForm';
-import { alcoholDismiss } from './AlcoholQuestion';
+import { alcoholDismiss, type AlcoholQuestion } from './AlcoholQuestion';
+import { CategoryIcon } from './icons';
 import { getMarketCountry } from '../lib/market-country';
 import { observeVisibility } from '../lib/observe-visibility';
 interface ResultsPanelProps {
   results: HealthResults | null;
   isValid: boolean;
-  unitSystem: UnitSystem;
-  unitOverrides?: Partial<Record<MetricType, UnitSystem>>;
   hasUnsavedLongitudinal?: boolean;
   onSaveLongitudinal?: () => Promise<unknown>;
   /** Resolves true once the data is erased (false if cancelled or failed). */
   onDeleteData?: () => Promise<boolean>;
   isDeleting?: boolean;
-  sex?: 'male' | 'female';
+  /** The plan's tiles, computed once in HealthTool (`statTiles`). */
+  tiles: StatTile[];
   showEmailCapture?: boolean;
   formStage?: number;
   /** Cloud connection controls shared by Shopify and Pages. Hidden for new users
@@ -43,10 +40,8 @@ interface ResultsPanelProps {
   /** The local-first email-reminders section (US-17), rendered as its own block
    *  lower in the plan — not bolted onto the sync line at the top. */
   remindersSection?: React.ReactNode;
-  /** The panel's height changed outside its usual triggers (the phone's tab Swiper re-measures). */
-  onLayoutChange?: () => void;
-  /** US-60: save the answer the "Reduce alcohol intake" card's Dismiss asks for; absent once answered. */
-  onAlcoholAnswer?: (answer: AlcoholAnswer) => void;
+  /** US-60: the question the "Reduce alcohol intake" card's Dismiss asks, and its save. */
+  alcoholQuestion?: AlcoholQuestion;
 }
 
 function StatCard({ label, value, status, evidence }: {
@@ -128,7 +123,6 @@ function SuggestionEvidence({ suggestion, open, onToggle }: { suggestion: Sugges
   );
 }
 
-type AlcoholAnswerFn = (answer: AlcoholAnswer) => void;
 
 /** US-61 AC4: Brad's product on a US adult's supplement card, at the card's foot. Never printed. */
 function UsProductBlockView({ block }: { block: UsProductBlock }) {
@@ -148,9 +142,7 @@ function UsProductBlockView({ block }: { block: UsProductBlock }) {
   );
 }
 
-const NO_US_OVERLAY: UsProductOverlay = { blocks: [], ownershipLine: null };
-
-function SuggestionCard({ suggestion, highlighted, fadingOut, onAlcoholAnswer, usBlock }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; onAlcoholAnswer?: AlcoholAnswerFn; usBlock?: UsProductBlock }) {
+function SuggestionCard({ suggestion, highlighted, fadingOut, alcoholQuestion, usBlock }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; alcoholQuestion?: AlcoholQuestion; usBlock?: UsProductBlock }) {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const hasEvidence = suggestionHasEvidence(suggestion);
   const isSupplementCard = suggestion.category === 'supplements';
@@ -165,11 +157,14 @@ function SuggestionCard({ suggestion, highlighted, fadingOut, onAlcoholAnswer, u
     <div className={`suggestion-card ${priorityColors[suggestion.priority]}${isSupplementCard ? ' supplement-card' : ''}${isSkinCard ? ' skin-card' : ''}${highlightClass}${hasEvidence ? ' suggestion-card-clickable' : ''}`}>
       {!isSpecialCard && (
         <div className="suggestion-header">
-          <span className={`suggestion-badge ${priorityColors[suggestion.priority]}`}>
-            {suggestion.priority === 'urgent' && '⚠️ '}
-            {suggestion.category.replace(/_/g, ' ')}
+          <span className="suggestion-header-lead">
+            <CategoryIcon category={suggestion.category}/>
+            <span className={`suggestion-badge ${priorityColors[suggestion.priority]}`}>
+              {suggestion.priority === 'urgent' && '⚠️ '}
+              {suggestion.category.replace(/_/g, ' ')}
+            </span>
           </span>
-          {alcoholDismiss(suggestion, onAlcoholAnswer)}
+          {alcoholDismiss(suggestion, alcoholQuestion)}
         </div>
       )}
       <div className="suggestion-body" onClick={toggleEvidence}>
@@ -197,13 +192,13 @@ function SuggestionCard({ suggestion, highlighted, fadingOut, onAlcoholAnswer, u
   );
 }
 
-function GroupedSubsection({ suggestion, highlighted, fadingOut, onAlcoholAnswer }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; onAlcoholAnswer?: AlcoholAnswerFn }) {
+function GroupedSubsection({ suggestion, highlighted, fadingOut, alcoholQuestion }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; alcoholQuestion?: AlcoholQuestion }) {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const hasEvidence = suggestionHasEvidence(suggestion);
   const highlightClass = fadingOut ? ' suggestion-highlight suggestion-fade-out'
     : highlighted ? ' suggestion-highlight' : '';
 
-  const dismiss = alcoholDismiss(suggestion, onAlcoholAnswer);
+  const dismiss = alcoholDismiss(suggestion, alcoholQuestion);
   const toggleEvidence = hasEvidence ? () => setEvidenceOpen(o => !o) : undefined;
 
   return (
@@ -226,41 +221,38 @@ function GroupedSubsection({ suggestion, highlighted, fadingOut, onAlcoholAnswer
   );
 }
 
-function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, onAlcoholAnswer }: { card: PlanCard; highlightedIds?: Set<string>; fadingOutIds?: Set<string>; onAlcoholAnswer?: AlcoholAnswerFn }) {
+function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, alcoholQuestion }: { card: PlanCard; highlightedIds?: Set<string>; fadingOutIds?: Set<string>; alcoholQuestion?: AlcoholQuestion }) {
   const { suggestions, category, priority: highestPriority } = card;
 
   return (
     <div className={`suggestion-card grouped-card ${priorityColors[highestPriority]}`}>
       <div className="suggestion-header">
-        <span className={`suggestion-badge ${priorityColors[highestPriority]}`}>
-          {highestPriority === 'urgent' && '⚠️ '}
-          {category.replace(/_/g, ' ')}
+        <span className="suggestion-header-lead">
+          <CategoryIcon category={category}/>
+          <span className={`suggestion-badge ${priorityColors[highestPriority]}`}>
+            {highestPriority === 'urgent' && '⚠️ '}
+            {category.replace(/_/g, ' ')}
+          </span>
         </span>
       </div>
       <div className="grouped-subsections">
         {suggestions.map((s) => (
-          <GroupedSubsection key={s.id} suggestion={s} highlighted={highlightedIds?.has(s.id)} fadingOut={fadingOutIds?.has(s.id)} onAlcoholAnswer={onAlcoholAnswer} />
+          <GroupedSubsection key={s.id} suggestion={s} highlighted={highlightedIds?.has(s.id)} fadingOut={fadingOutIds?.has(s.id)} alcoholQuestion={alcoholQuestion} />
         ))}
       </div>
     </div>
   );
 }
 
-/** US-61 AC2: a US card's own text and references, in place of the card's, when it has them. */
-function withUsText(suggestion: Suggestion, block?: UsProductBlock): Suggestion {
-  return block?.description ? { ...suggestion, description: block.description, references: block.references } : suggestion;
-}
-
-/** A section's cards: grouped ones as one card, the rest one card each (layout: planSections).
- *  `usBlocks` (US-61) sit on single cards only. */
-function renderCards(cards: PlanCard[], highlightedIds: Set<string>, fadingOutIds: Set<string>, onAlcoholAnswer?: AlcoholAnswerFn, usBlocks?: ReadonlyMap<string, UsProductBlock>) {
+/** A section's cards: grouped ones as one card, the rest one card each (layout: planSections;
+ *  US-61's blocks and text: usProductSections). */
+function renderCards(cards: UsPlanCard[], highlightedIds: Set<string>, fadingOutIds: Set<string>, alcoholQuestion?: AlcoholQuestion) {
   return cards.map((card) => {
     if (card.suggestions.length > 1) {
-      return <GroupedSuggestionCard key={card.category} card={card} highlightedIds={highlightedIds} fadingOutIds={fadingOutIds} onAlcoholAnswer={onAlcoholAnswer} />;
+      return <GroupedSuggestionCard key={card.category} card={card} highlightedIds={highlightedIds} fadingOutIds={fadingOutIds} alcoholQuestion={alcoholQuestion} />;
     }
     const s = card.suggestions[0];
-    const usBlock = usBlocks?.get(s.id);
-    return <SuggestionCard key={s.id} suggestion={withUsText(s, usBlock)} highlighted={highlightedIds.has(s.id)} fadingOut={fadingOutIds.has(s.id)} onAlcoholAnswer={onAlcoholAnswer} usBlock={usBlock} />;
+    return <SuggestionCard key={s.id} suggestion={s} highlighted={highlightedIds.has(s.id)} fadingOut={fadingOutIds.has(s.id)} alcoholQuestion={alcoholQuestion} usBlock={s.usProduct} />;
   });
 }
 
@@ -419,14 +411,6 @@ function ReminderSignup({ hook }: { hook: GuestEmailHook }) {
         </button>
       </div>
       {emailError && <span className="email-capture-error">{emailError}</span>}
-      {/* US-23 AC4 + AC11 — the same disclosure, worded for a sign-up that no
-          longer stands between the visitor and their plan. */}
-      <p className="email-capture-disclosure">
-        Signing up adds you to the <strong>MicroVitamin mailing list</strong> (Dr Brad's
-        supplement company), and we'll email you when a check-up or blood test is due. We store only
-        check-up names and dates, never your results. Every email has a one-click unsubscribe.
-      </p>
-      <StorageNotice surface="email" className="email-guest-helper" />
     </div>
   );
 }
@@ -449,7 +433,7 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
   if (hook.gateSkipped) return <ReminderSignup hook={hook} />;
 
   return (
-    <div className={`email-capture no-print${formStage === 3 ? ' field-attention' : ''}`}>
+    <div className={`email-capture no-print${formStage === 4 ? ' field-attention' : ''}`}>
       <p className="email-guest-helper">{helperText}</p>
       <div className="email-capture-row">
         <input
@@ -472,22 +456,11 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
       </div>
       {emailError && <span className="email-capture-error">{emailError}</span>}
       <PdfNote show={!!pdfBlocked && !!emailError} />
-      {/* US-23 AC4 — typing the email IS the reminders enrolment (opt-out
-          model), so the disclosure sits beside the box, not behind a click.
-          Names what crosses (check-up names + dates) and the way out.
-          US-23 AC11 — it also names the list: the server records marketing
-          consent, and every sign-up joins MicroVitamin's list. */}
-      <p className="email-capture-disclosure">
-        Getting your plan adds you to the <strong>MicroVitamin mailing list</strong> (Dr Brad's
-        supplement company), and we'll email you when a check-up or blood test is due. We store only
-        check-up names and dates, never your results. Every email has a one-click unsubscribe.
-      </p>
-      <StorageNotice surface="email" className="email-guest-helper" />
     </div>
   );
 }
 
-export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, onDeleteData, isDeleting, sex, showEmailCapture, formStage, syncControl, remindersSection, onLayoutChange, onAlcoholAnswer }: ResultsPanelProps) {
+export function ResultsPanel({ results, isValid, hasUnsavedLongitudinal, onSaveLongitudinal, onDeleteData, isDeleting, tiles, showEmailCapture, formStage, syncControl, remindersSection, alcoholQuestion }: ResultsPanelProps) {
   // Track highlighted (new/changed) suggestion IDs
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
   const [fadingOutIds, setFadingOutIds] = useState<Set<string>>(new Set());
@@ -532,13 +505,6 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
     const timer = setTimeout(() => { settledRef.current = true; }, 3000);
     return () => clearTimeout(timer);
   }, []);
-
-  // Funnel signal: the user reached actual results (suggestions rendered).
-  // trackProductEvent self-throttles to once per tab session.
-  const hasSuggestions = (results?.suggestions?.length ?? 0) > 0;
-  useEffect(() => {
-    if (hasSuggestions) trackProductEvent('results_viewed');
-  }, [hasSuggestions]);
 
   // Detect new/changed suggestions
   useEffect(() => {
@@ -593,20 +559,18 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
   // Shared state for guest email capture (top + bottom instances stay in sync)
   const guestEmailHook = useGuestEmailCapture(() => printReport('capture'));
 
-  // The note (and the capture box it can sit in) changes the plan's height.
-  useEffect(() => { onLayoutChange?.(); }, [pdfBlocked, guestEmailHook.emailError, guestEmailHook.state]);
   // Above the early return, as hooks must be; worked out again only when their inputs change.
-  const tiles = useMemo(() => (results ? statTiles(results, { unitSystem, unitOverrides, sex }) : []), [results, unitSystem, unitOverrides, sex]);
 
   // US-61 AC5: Brad's products for a known adult in the US, on the Shopify build only.
-  const usOverlay = useMemo(() => (SHOPIFY_SURFACE && results
-    ? usProductBlocks(results.suggestions, medicinesShown(results), getMarketCountry() === 'US', 'web')
-    : NO_US_OVERLAY), [results]);
-  const usBlocks = useMemo(() => new Map(usOverlay.blocks.map((b) => [b.suggestionId, b])), [usOverlay]);
+  const sections = useMemo((): UsPlanSection[] => {
+    if (!results) return [];
+    const plain = planSections(results.suggestions);
+    return (SHOPIFY_SURFACE && usProductSections(plain, results, getMarketCountry() === 'US', 'web')) || plain;
+  }, [results]);
   // US-61 AC8: once the Supplements section is on screen, one count per product
   // (trackProductEvent keeps one per product per tab session).
   const supplementsRef = useRef<HTMLDivElement>(null);
-  const usProducts = [...new Set(usOverlay.blocks.map((b) => b.product))].join(' ');
+  const usProducts = [...new Set(sections.flatMap((section) => section.cards.flatMap((card) => card.suggestions.flatMap((s) => s.usProduct?.product ?? []))))].join(' ');
   useEffect(() => {
     const el = supplementsRef.current;
     if (!el || !usProducts) return;
@@ -614,7 +578,7 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
     return observeVisibility(el, (visible) => {
       if (!visible || counted) return;
       counted = true;
-      for (const product of usProducts.split(' ') as UsProductBlock['product'][]) trackProductEvent('us_product_shown', { product });
+      for (const product of usProducts.split(' ') as UsProduct[]) trackProductEvent('us_product_shown', { product });
     });
   }, [usProducts]);
 
@@ -630,37 +594,42 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
     return (
       <div className="health-results-panel">
         <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={null} muted />
-        {syncControl?.({ hasData: false, attention })}
-        <div className="plan-empty-preview">
-          <p className="plan-empty-intro">
-            <strong>Here's what your plan will look like.</strong> Real suggestions appear once you fill in your details.
-          </p>
-          <div className="stats-grid plan-empty-stats">
-            <div className="stat-card stat-card--awaiting">
-              <span className="stat-label">BMI</span>
-              <span className="stat-value">—</span>
-              <span className="stat-status">Awaiting</span>
+        {/* The column's scroller, under its header, so the header never scrolls away (US-62). */}
+        <div className="hr-col-body">
+          {syncControl?.({ hasData: false, attention })}
+          <div className="plan-empty-preview">
+            <p className="plan-empty-intro">
+              <strong>Here's what your plan will look like.</strong> Real suggestions appear once you fill in your details.
+            </p>
+            <div className="stats-grid plan-empty-stats">
+              <div className="stat-card stat-card--awaiting">
+                <span className="stat-label">BMI</span>
+                <span className="stat-value">—</span>
+                <span className="stat-status">Awaiting</span>
+              </div>
+              <div className="stat-card stat-card--awaiting">
+                <span className="stat-label">Ideal Body Weight</span>
+                <span className="stat-value">—</span>
+                <span className="stat-status">Awaiting</span>
+              </div>
+              <div className="stat-card stat-card--awaiting">
+                <span className="stat-label">Protein Target</span>
+                <span className="stat-value">—</span>
+                <span className="stat-status">Awaiting</span>
+              </div>
             </div>
-            <div className="stat-card stat-card--awaiting">
-              <span className="stat-label">Ideal Body Weight (IBW)</span>
-              <span className="stat-value">—</span>
-              <span className="stat-status">Awaiting</span>
-            </div>
-            <div className="stat-card stat-card--awaiting">
-              <span className="stat-label">Protein Target</span>
-              <span className="stat-value">—</span>
-              <span className="stat-status">Awaiting</span>
-            </div>
-          </div>
-          <div className="plan-empty-example">
-            <span className="plan-empty-example-label">Example suggestion</span>
-            <div className="suggestion-card priority-low plan-empty-example-card">
-              <div className="suggestion-body">
-                <h4 className="suggestion-title">Increase potassium-rich foods</h4>
-                <p className="suggestion-desc">Aim for 3,500–5,000mg of potassium daily from fruits, vegetables, and legumes. High potassium intake supports healthy blood pressure and cardiovascular function.</p>
+            <div className="plan-empty-example">
+              <span className="plan-empty-example-label">Example suggestion</span>
+              <div className="suggestion-card priority-low plan-empty-example-card">
+                <div className="suggestion-body">
+                  <h4 className="suggestion-title">Increase potassium-rich foods</h4>
+                  <p className="suggestion-desc">Aim for 3,500–5,000mg of potassium daily from fruits, vegetables, and legumes. High potassium intake supports healthy blood pressure and cardiovascular function.</p>
+                </div>
               </div>
             </div>
           </div>
+          {/* US-38 AC1: the open-source link shows before a plan exists too. */}
+          <GuideLink />
         </div>
       </div>
     );
@@ -702,91 +671,96 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
   return (
     <div className="health-results-panel">
       <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={planHeaderMeta} actions={planHeaderMeta !== null} />
-      {/* Cloud connection */}
-      {syncControl?.({ hasData: true, attention })}
-      {emailCapture && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />}
-
-      {/* Quick Stats */}
-      <section className="quick-stats">
-        <div className="stats-grid">
-          {tiles.map((tile) => (
-            <StatCard
-              key={tile.key}
-              label={tile.label}
-              value={statTileText(tile)}
-              status={tile.status && { label: tile.status.label, className: tile.status.tone ? `status-${tile.status.tone}` : '' }}
-              evidence={tile.evidence}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* Suggestions */}
-      <section className="suggestions-section">
-        {planSections(results.suggestions).map((section) => (
-          <div key={section.key} ref={section.key === 'supplements' ? supplementsRef : undefined} className={`suggestions-group${section.key === 'skin' || section.key === 'supplements' ? ` ${section.key}-group` : ''}`}>
-            <h4 className={`suggestions-group-title ${section.key}`}>{section.title}</h4>
-            {renderCards(section.cards, highlightedIds, fadingOutIds, onAlcoholAnswer, section.key === 'supplements' ? usBlocks : undefined)}
-            {section.key === 'supplements' && usOverlay.ownershipLine && <p className="us-ownership no-print">{usOverlay.ownershipLine}</p>}
+      <div className="hr-col-body">
+        {/* Quick Stats: the snapshot tiles lead the plan */}
+        <section className="quick-stats">
+          <div className="stats-grid">
+            {tiles.map((tile) => (
+              <StatCard
+                key={tile.key}
+                label={tile.label}
+                value={statTileText(tile)}
+                status={tile.status && { label: tile.status.label, className: tile.status.tone ? `status-${tile.status.tone}` : '' }}
+                evidence={tile.evidence}
+              />
+            ))}
           </div>
-        ))}
-      </section>
+        </section>
 
-      {/* Health Records — documents from uploads */}
+        {/* The numbers first, then where the record lives and the PDF (Brad 2026-11-02). */}
+        {syncControl?.({ hasData: true, attention })}
+        {emailCapture && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />}
 
-      {/* Report Actions (bottom). Hidden on the Shopify
-          v2 surface (the email-capture button is the PDF path there). */}
-      {!SHOPIFY_SURFACE && (
-        <div className="report-actions no-print">
-          <button type="button" className="action-btn" onClick={() => handlePrint('bottom')} disabled={printStatus === 'loading'}>
-            {printLabel}
-          </button>
-          <PdfNote show={pdfBlocked === 'bottom'} />
+        {/* Suggestions */}
+        <section className="suggestions-section">
+          {sections.map((section) => (
+            <div key={section.key} ref={section.key === 'supplements' ? supplementsRef : undefined} className={`suggestions-group${section.key === 'skin' || section.key === 'supplements' ? ` ${section.key}-group` : ''}`}>
+              <h4 className={`suggestions-group-title ${section.key}`}>{section.title}</h4>
+              {renderCards(section.cards, highlightedIds, fadingOutIds, alcoholQuestion)}
+              {section.ownershipLine && <p className="us-ownership no-print">{section.ownershipLine}</p>}
+            </div>
+          ))}
+        </section>
+
+        {/* Health Records — documents from uploads */}
+
+        {/* Report Actions (bottom). Hidden on the Shopify
+            v2 surface (the email-capture button is the PDF path there). */}
+        {!SHOPIFY_SURFACE && (
+          <div className="report-actions no-print">
+            <button type="button" className="action-btn" onClick={() => handlePrint('bottom')} disabled={printStatus === 'loading'}>
+              {printLabel}
+            </button>
+            <PdfNote show={pdfBlocked === 'bottom'} />
+          </div>
+        )}
+
+        {/* Disclaimer */}
+        <div className="health-disclaimer">
+          <strong>Disclaimer:</strong> This tool is for educational purposes only
+          and is not a substitute for professional medical advice. Always consult
+          with your healthcare provider before making any health decisions.
+          Suggestions are based on general guidelines and may not apply to your
+          individual situation.
         </div>
-      )}
 
-      {/* Disclaimer */}
-      <div className="health-disclaimer">
-        <strong>Disclaimer:</strong> This tool is for educational purposes only
-        and is not a substitute for professional medical advice. Always consult
-        with your healthcare provider before making any health decisions.
-        Suggestions are based on general guidelines and may not apply to your
-        individual situation.
-      </div>
+        {/* Email reminders (US-17 cloud opt-in). The server-backed per-category
+            ReminderSettings that used to share this slot died with the v1 CRUD
+            layer — both v2 builds always pass remindersSection, so it was
+            unreachable (deleted 2026-08-13). US-07 AC6: none for a known minor,
+            who is never enrolled and must see no mailing-list box. */}
+        {adult && remindersSection}
 
-      {/* Email reminders (US-17 cloud opt-in). The server-backed per-category
-          ReminderSettings that used to share this slot died with the v1 CRUD
-          layer — both v2 builds always pass remindersSection, so it was
-          unreachable (deleted 2026-08-13). US-07 AC6: none for a known minor,
-          who is never enrolled and must see no mailing-list box. */}
-      {adult && remindersSection}
+        {/* US-44: the gate-skipped reminders box renders once, at the top. */}
+        {emailCapture && !guestEmailHook.gateSkipped && <GuestEmailCapture hook={guestEmailHook} pdfBlocked={pdfBlocked === 'capture'} />}
 
-      {/* US-44: the gate-skipped reminders box renders once, at the top. */}
-      {emailCapture && !guestEmailHook.gateSkipped && <GuestEmailCapture hook={guestEmailHook} pdfBlocked={pdfBlocked === 'capture'} />}
+        {SHOPIFY_SURFACE && <FeedbackForm />}
 
-      {SHOPIFY_SURFACE && <FeedbackForm />}
+        {/* US-38 AC1: the open-source link, at the foot of the plan. */}
+        <GuideLink />
 
-      <div className="privacy-notice-link">
-        <a
-          href="https://drstanfield.com/pages/connector-privacy"
-          target="_blank"
-          rel="noopener"
-        >
-          How your health data is handled
-        </a>
-      </div>
-
-      {onDeleteData && (
-        <div className="delete-data-section">
-          <button
-            className="delete-data-link"
-            onClick={async () => { if (await onDeleteData()) setPdfOpened(false); }}
-            disabled={isDeleting}
+        <div className="privacy-notice-link">
+          <a
+            href="https://drstanfield.com/pages/connector-privacy"
+            target="_blank"
+            rel="noopener"
           >
-            {isDeleting ? 'Deleting...' : 'Delete All My Data'}
-          </button>
+            How your health data is handled
+          </a>
         </div>
-      )}
+
+        {onDeleteData && (
+          <div className="delete-data-section">
+            <button
+              className="delete-data-link"
+              onClick={async () => { if (await onDeleteData()) setPdfOpened(false); }}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete All My Data'}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
