@@ -179,6 +179,26 @@ describe('US-21 phase 2 — AddLabTest', () => {
     });
   });
 
+  // Review R3 on PR 641: under "Other test", Ferritin typed in ng/mL is the catalogue's µg/L by
+  // another name. The record offers to replace a held 45 µg/L, so Replace must really replace it.
+  it('an "Other" test the catalogue knows, in a unit it treats as its own, replaces the held value', async () => {
+    const there = {
+      id: 'held3', metricName: 'ferritin', value: 45, unit: 'µg/L', referenceLow: null, referenceHigh: null,
+      recordedAt: `${todayIso}T00:00:00.000Z`, source: 'manual', createdAt: `${todayIso}T08:00:00.000Z`,
+    };
+    holding(there);
+    const onCorrect = vi.fn().mockResolvedValue('ok');
+    const utils = render(<AddLabTest onAdded={vi.fn()} labValues={[there]} onCorrect={onCorrect} />);
+    fireEvent.click(utils.getByRole('button', { name: /add a blood test/i }));
+    fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });
+    fireEvent.change(utils.getByLabelText('Test name'), { target: { value: 'Ferritin' } });
+    fireEvent.change(utils.getByLabelText('Unit'), { target: { value: 'ng/mL' } });
+    fireEvent.change(utils.getByLabelText('Value'), { target: { value: '54' } });
+    fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+    fireEvent.click(await utils.findByRole('button', { name: 'Replace 45 µg/L with 54' }));
+    await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('held3', 54));
+  });
+
   // US-21 AC15 · a refusal reads as the upload summary does: a person never
   // sees the assistant's copy of it.
   describe('US-21 AC15 — a refused unit under "Other" shows the person’s wording', () => {

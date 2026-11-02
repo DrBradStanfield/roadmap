@@ -6,7 +6,7 @@
 // the cell editor, never a second row (AC13).
 
 import { useEffect, useState, type MutableRefObject } from 'react';
-import { commaQuestion, displayLabUnit, LAB_CATALOG, LAB_GROUPS, localDay, parseLocalisedNumber, savedLabText, slotKey } from '@roadmap/health-core';
+import { commaQuestion, displayLabUnit, LAB_CATALOG, LAB_GROUPS, localDay, parseLocalisedNumber, resolveLabCatalogEntry, savedLabText, slotKey } from '@roadmap/health-core';
 import { UnitChip } from './UnitChip';
 import { SAVE_ERRORS } from './BloodTestTimeline';
 import { addLabValue } from '../lib/roadmap-data';
@@ -70,12 +70,15 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect, preset, dirtyRe
     setDate(localDay(new Date())); clearNotice();
   };
 
+  // The typed test's catalogue entry, as the record's lab add resolves it (addLabValue): an "Other
+  // test" the catalogue knows ("Ferritin" in ng/mL) is its catalogue test, in its units.
+  const known = entry ?? resolveLabCatalogEntry(metricName);
   /** A saved value as the form names it: "45 µg/L", "< 5 µg/L" (US-12 AC20). */
-  const labelOf = (v: ApiLabValue) => `${savedLabText(v.value, v.comparator)} ${displayLabUnit(v.unit, entry)}`;
+  const labelOf = (v: ApiLabValue) => `${savedLabText(v.value, v.comparator)} ${displayLabUnit(v.unit, known)}`;
   /** The saved value is the one the form describes: this test, this day, this unit. */
   const describes = (v: ApiLabValue) =>
     slotKey('lab', v.metricName, v.recordedAt) === slotKey('lab', metricName, date) &&
-    displayLabUnit(v.unit, entry) === displayLabUnit(unit, entry);
+    displayLabUnit(v.unit, known) === displayLabUnit(unit, known);
 
   // Any change to the form withdraws the offer (clearNotice); Replace still
   // checks, just before it writes, that the form describes the value it names.
