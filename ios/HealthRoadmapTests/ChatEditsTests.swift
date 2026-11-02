@@ -244,4 +244,30 @@ final class ChatEditsTests: XCTestCase {
         XCTAssertEqual(store.recordJSON, erased)
         XCTAssertEqual(try sent(engine), [])
     }
+
+    // MARK: The engine's own door (no stand-in)
+
+    /// The real `chatEditsJson` and edit kinds: a medication change lands and its Undo takes
+    /// it back; a weight waits for Save, then lands.
+    func testTheEnginesDoorSavesAndUndoes_US67_AC3_AC4() async throws {
+        let engine = try HealthEngine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        let edits = ChatEdits(store: store)
+        await edits.take(try json(#"[{"kind":"medication","medicationKey":"statin","drugName":"atorvastatin","doseValue":20,"doseUnit":"mg"}]"#), asked: store.chatMark, today: today)
+        XCTAssertNotNil(edits.saved, edits.problem ?? "no banner")
+        XCTAssertTrue(store.recordJSON.contains("atorvastatin"))
+        await edits.undo()
+        XCTAssertNil(edits.problem)
+        XCTAssertNil(edits.saved)
+
+        await edits.take(try json(#"[{"kind":"field","field":"weightKg","displayValue":84,"unitSystem":"si","date":null}]"#), asked: store.chatMark, today: today)
+        XCTAssertNil(edits.review?.refusal)
+        XCTAssertFalse(edits.review?.lines.isEmpty ?? true)
+        let (record, deviceId) = (store.recordJSON, store.deviceId)
+        XCTAssertEqual(try engine.blocking { try $0.history(recordJSON: record, metric: "weight", now: .now, deviceId: deviceId) }.rows.count, 0, "nothing before Save")
+        await edits.save()
+        XCTAssertNil(edits.review)
+        let saved = store.recordJSON
+        XCTAssertEqual(try engine.blocking { try $0.history(recordJSON: saved, metric: "weight", now: .now, deviceId: deviceId) }.rows.count, 1)
+    }
 }
