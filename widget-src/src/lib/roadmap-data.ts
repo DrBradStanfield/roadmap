@@ -42,6 +42,8 @@ export async function initRoadmapStore(adapter: StorageAdapter, cloudUnreachable
   // The page about to render shows this erase; it moves the mark as it shows
   // another, and the store refuses a write made against an older one (US-16 AC2a).
   store.showErase(store.eraseIdentity);
+  // US-66 AC13: the open moved blood tests into one table and wrote it: counts only, never a name or value.
+  void store.bloodTablesUnified.then((report) => { if (report) trackProductEvent('blood_tests_unified', report); });
   // Both surfaces init here, so this is the one place the live re-read starts
   // (US-34). It runs for the life of the page; nothing unmounts the data layer.
   store.startLiveRefresh();

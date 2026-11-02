@@ -74,8 +74,8 @@ describe('explicit local-first data path', () => {
     expect(await data.correctValue(added.row.id, 3.1)).toBe('ok');
     await flushRoadmapStore();
     const persisted = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
-    expect(persisted.measurements).toHaveLength(2);
-    expect(persisted.measurements.find((row: { id: string }) => row.id === added.row.id).status).toBe('entered-in-error');
+    expect(persisted.labValues).toHaveLength(2); // a blood test is a core lab row (US-66)
+    expect(persisted.labValues.find((row: { id: string }) => row.id === added.row.id).status).toBe('entered-in-error');
     expect((await data.loadLatestMeasurements())?.previousMeasurements).toMatchObject([{ value: 3.1 }]);
     expect(fetch).not.toHaveBeenCalled();
   });
