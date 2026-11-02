@@ -1384,7 +1384,7 @@ const ALLOWED_HOSTS = ["consumerlab.com", "ods.od.nih.gov", "pubmed.ncbi.nlm.nih
 /** A condition guide's reference hosts (US-70 AC2): public records, plus the guideline and label sites its own `sources:` names. */
 function guideHosts(text: string): string[] {
   const sources: unknown = parseFrontmatter(text)?.sources;
-  const named = Array.isArray(sources) ? sources.map((x: { url?: unknown }) => hostOf(String(x?.url ?? ""))).filter(Boolean) : [];
+  const named = Array.isArray(sources) ? sources.map((x: { url?: unknown }) => hostOf(String(x?.url ?? ""))).filter((h) => h && !/(^|\.)consumerlab\.com$/.test(h)) : [];
   return ["ods.od.nih.gov", "pubmed.ncbi.nlm.nih.gov", "doi.org", "dailymed.nlm.nih.gov", "accessdata.fda.gov", ...named];
 }
 const URL_RE = /https?:\/\/[^\s)\]>]+/g;

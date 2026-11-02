@@ -16,9 +16,9 @@ import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { getSkipEmailGate } from '../lib/assistant-config';
 import { ColumnHeader } from './ColumnHeader';
 import { GuideLink } from './GuideLink';
-import { StorageNotice } from '../lib/storage-notice';
 import { FeedbackForm } from './FeedbackForm';
 import { alcoholDismiss, type AlcoholQuestion } from './AlcoholQuestion';
+import { CategoryIcon } from './icons';
 import { getMarketCountry } from '../lib/market-country';
 import { observeVisibility } from '../lib/observe-visibility';
 interface ResultsPanelProps {
@@ -157,9 +157,12 @@ function SuggestionCard({ suggestion, highlighted, fadingOut, alcoholQuestion, u
     <div className={`suggestion-card ${priorityColors[suggestion.priority]}${isSupplementCard ? ' supplement-card' : ''}${isSkinCard ? ' skin-card' : ''}${highlightClass}${hasEvidence ? ' suggestion-card-clickable' : ''}`}>
       {!isSpecialCard && (
         <div className="suggestion-header">
-          <span className={`suggestion-badge ${priorityColors[suggestion.priority]}`}>
-            {suggestion.priority === 'urgent' && '⚠️ '}
-            {suggestion.category.replace(/_/g, ' ')}
+          <span className="suggestion-header-lead">
+            <CategoryIcon category={suggestion.category}/>
+            <span className={`suggestion-badge ${priorityColors[suggestion.priority]}`}>
+              {suggestion.priority === 'urgent' && '⚠️ '}
+              {suggestion.category.replace(/_/g, ' ')}
+            </span>
           </span>
           {alcoholDismiss(suggestion, alcoholQuestion)}
         </div>
@@ -224,9 +227,12 @@ function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, alcoholQues
   return (
     <div className={`suggestion-card grouped-card ${priorityColors[highestPriority]}`}>
       <div className="suggestion-header">
-        <span className={`suggestion-badge ${priorityColors[highestPriority]}`}>
-          {highestPriority === 'urgent' && '⚠️ '}
-          {category.replace(/_/g, ' ')}
+        <span className="suggestion-header-lead">
+          <CategoryIcon category={category}/>
+          <span className={`suggestion-badge ${priorityColors[highestPriority]}`}>
+            {highestPriority === 'urgent' && '⚠️ '}
+            {category.replace(/_/g, ' ')}
+          </span>
         </span>
       </div>
       <div className="grouped-subsections">
@@ -405,14 +411,6 @@ function ReminderSignup({ hook }: { hook: GuestEmailHook }) {
         </button>
       </div>
       {emailError && <span className="email-capture-error">{emailError}</span>}
-      {/* US-23 AC4 + AC11 — the same disclosure, worded for a sign-up that no
-          longer stands between the visitor and their plan. */}
-      <p className="email-capture-disclosure">
-        Signing up adds you to the <strong>MicroVitamin mailing list</strong> (Dr Brad's
-        supplement company), and we'll email you when a check-up or blood test is due. We store only
-        check-up names and dates, never your results. Every email has a one-click unsubscribe.
-      </p>
-      <StorageNotice surface="email" className="email-guest-helper" />
     </div>
   );
 }
@@ -458,17 +456,6 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
       </div>
       {emailError && <span className="email-capture-error">{emailError}</span>}
       <PdfNote show={!!pdfBlocked && !!emailError} />
-      {/* US-23 AC4 — typing the email IS the reminders enrolment (opt-out
-          model), so the disclosure sits beside the box, not behind a click.
-          Names what crosses (check-up names + dates) and the way out.
-          US-23 AC11 — it also names the list: the server records marketing
-          consent, and every sign-up joins MicroVitamin's list. */}
-      <p className="email-capture-disclosure">
-        Getting your plan adds you to the <strong>MicroVitamin mailing list</strong> (Dr Brad's
-        supplement company), and we'll email you when a check-up or blood test is due. We store only
-        check-up names and dates, never your results. Every email has a one-click unsubscribe.
-      </p>
-      <StorageNotice surface="email" className="email-guest-helper" />
     </div>
   );
 }
@@ -607,40 +594,43 @@ export function ResultsPanel({ results, isValid, hasUnsavedLongitudinal, onSaveL
     return (
       <div className="health-results-panel">
         <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={null} muted />
-        {syncControl?.({ hasData: false, attention })}
-        <div className="plan-empty-preview">
-          <p className="plan-empty-intro">
-            <strong>Here's what your plan will look like.</strong> Real suggestions appear once you fill in your details.
-          </p>
-          <div className="stats-grid plan-empty-stats">
-            <div className="stat-card stat-card--awaiting">
-              <span className="stat-label">BMI</span>
-              <span className="stat-value">—</span>
-              <span className="stat-status">Awaiting</span>
+        {/* The column's scroller, under its header, so the header never scrolls away (US-62). */}
+        <div className="hr-col-body">
+          {syncControl?.({ hasData: false, attention })}
+          <div className="plan-empty-preview">
+            <p className="plan-empty-intro">
+              <strong>Here's what your plan will look like.</strong> Real suggestions appear once you fill in your details.
+            </p>
+            <div className="stats-grid plan-empty-stats">
+              <div className="stat-card stat-card--awaiting">
+                <span className="stat-label">BMI</span>
+                <span className="stat-value">—</span>
+                <span className="stat-status">Awaiting</span>
+              </div>
+              <div className="stat-card stat-card--awaiting">
+                <span className="stat-label">Ideal Body Weight</span>
+                <span className="stat-value">—</span>
+                <span className="stat-status">Awaiting</span>
+              </div>
+              <div className="stat-card stat-card--awaiting">
+                <span className="stat-label">Protein Target</span>
+                <span className="stat-value">—</span>
+                <span className="stat-status">Awaiting</span>
+              </div>
             </div>
-            <div className="stat-card stat-card--awaiting">
-              <span className="stat-label">Ideal Body Weight</span>
-              <span className="stat-value">—</span>
-              <span className="stat-status">Awaiting</span>
-            </div>
-            <div className="stat-card stat-card--awaiting">
-              <span className="stat-label">Protein Target</span>
-              <span className="stat-value">—</span>
-              <span className="stat-status">Awaiting</span>
-            </div>
-          </div>
-          <div className="plan-empty-example">
-            <span className="plan-empty-example-label">Example suggestion</span>
-            <div className="suggestion-card priority-low plan-empty-example-card">
-              <div className="suggestion-body">
-                <h4 className="suggestion-title">Increase potassium-rich foods</h4>
-                <p className="suggestion-desc">Aim for 3,500–5,000mg of potassium daily from fruits, vegetables, and legumes. High potassium intake supports healthy blood pressure and cardiovascular function.</p>
+            <div className="plan-empty-example">
+              <span className="plan-empty-example-label">Example suggestion</span>
+              <div className="suggestion-card priority-low plan-empty-example-card">
+                <div className="suggestion-body">
+                  <h4 className="suggestion-title">Increase potassium-rich foods</h4>
+                  <p className="suggestion-desc">Aim for 3,500–5,000mg of potassium daily from fruits, vegetables, and legumes. High potassium intake supports healthy blood pressure and cardiovascular function.</p>
+                </div>
               </div>
             </div>
           </div>
+          {/* US-38 AC1: the open-source link shows before a plan exists too. */}
+          <GuideLink />
         </div>
-        {/* US-38 AC1: the open-source link shows before a plan exists too. */}
-        <GuideLink />
       </div>
     );
   }
@@ -681,94 +671,96 @@ export function ResultsPanel({ results, isValid, hasUnsavedLongitudinal, onSaveL
   return (
     <div className="health-results-panel">
       <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={planHeaderMeta} actions={planHeaderMeta !== null} />
-      {/* Cloud connection */}
-      {syncControl?.({ hasData: true, attention })}
-      {emailCapture && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />}
-
-      {/* Quick Stats */}
-      <section className="quick-stats">
-        <div className="stats-grid">
-          {tiles.map((tile) => (
-            <StatCard
-              key={tile.key}
-              label={tile.label}
-              value={statTileText(tile)}
-              status={tile.status && { label: tile.status.label, className: tile.status.tone ? `status-${tile.status.tone}` : '' }}
-              evidence={tile.evidence}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* Suggestions */}
-      <section className="suggestions-section">
-        {sections.map((section) => (
-          <div key={section.key} ref={section.key === 'supplements' ? supplementsRef : undefined} className={`suggestions-group${section.key === 'skin' || section.key === 'supplements' ? ` ${section.key}-group` : ''}`}>
-            <h4 className={`suggestions-group-title ${section.key}`}>{section.title}</h4>
-            {renderCards(section.cards, highlightedIds, fadingOutIds, alcoholQuestion)}
-            {section.ownershipLine && <p className="us-ownership no-print">{section.ownershipLine}</p>}
+      <div className="hr-col-body">
+        {/* Quick Stats: the snapshot tiles lead the plan */}
+        <section className="quick-stats">
+          <div className="stats-grid">
+            {tiles.map((tile) => (
+              <StatCard
+                key={tile.key}
+                label={tile.label}
+                value={statTileText(tile)}
+                status={tile.status && { label: tile.status.label, className: tile.status.tone ? `status-${tile.status.tone}` : '' }}
+                evidence={tile.evidence}
+              />
+            ))}
           </div>
-        ))}
-      </section>
+        </section>
 
-      {/* Health Records — documents from uploads */}
+        {/* The numbers first, then where the record lives and the PDF (Brad 2026-11-02). */}
+        {syncControl?.({ hasData: true, attention })}
+        {emailCapture && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />}
 
-      {/* Report Actions (bottom). Hidden on the Shopify
-          v2 surface (the email-capture button is the PDF path there). */}
-      {!SHOPIFY_SURFACE && (
-        <div className="report-actions no-print">
-          <button type="button" className="action-btn" onClick={() => handlePrint('bottom')} disabled={printStatus === 'loading'}>
-            {printLabel}
-          </button>
-          <PdfNote show={pdfBlocked === 'bottom'} />
+        {/* Suggestions */}
+        <section className="suggestions-section">
+          {sections.map((section) => (
+            <div key={section.key} ref={section.key === 'supplements' ? supplementsRef : undefined} className={`suggestions-group${section.key === 'skin' || section.key === 'supplements' ? ` ${section.key}-group` : ''}`}>
+              <h4 className={`suggestions-group-title ${section.key}`}>{section.title}</h4>
+              {renderCards(section.cards, highlightedIds, fadingOutIds, alcoholQuestion)}
+              {section.ownershipLine && <p className="us-ownership no-print">{section.ownershipLine}</p>}
+            </div>
+          ))}
+        </section>
+
+        {/* Health Records — documents from uploads */}
+
+        {/* Report Actions (bottom). Hidden on the Shopify
+            v2 surface (the email-capture button is the PDF path there). */}
+        {!SHOPIFY_SURFACE && (
+          <div className="report-actions no-print">
+            <button type="button" className="action-btn" onClick={() => handlePrint('bottom')} disabled={printStatus === 'loading'}>
+              {printLabel}
+            </button>
+            <PdfNote show={pdfBlocked === 'bottom'} />
+          </div>
+        )}
+
+        {/* Disclaimer */}
+        <div className="health-disclaimer">
+          <strong>Disclaimer:</strong> This tool is for educational purposes only
+          and is not a substitute for professional medical advice. Always consult
+          with your healthcare provider before making any health decisions.
+          Suggestions are based on general guidelines and may not apply to your
+          individual situation.
         </div>
-      )}
 
-      {/* Disclaimer */}
-      <div className="health-disclaimer">
-        <strong>Disclaimer:</strong> This tool is for educational purposes only
-        and is not a substitute for professional medical advice. Always consult
-        with your healthcare provider before making any health decisions.
-        Suggestions are based on general guidelines and may not apply to your
-        individual situation.
-      </div>
+        {/* Email reminders (US-17 cloud opt-in). The server-backed per-category
+            ReminderSettings that used to share this slot died with the v1 CRUD
+            layer — both v2 builds always pass remindersSection, so it was
+            unreachable (deleted 2026-08-13). US-07 AC6: none for a known minor,
+            who is never enrolled and must see no mailing-list box. */}
+        {adult && remindersSection}
 
-      {/* Email reminders (US-17 cloud opt-in). The server-backed per-category
-          ReminderSettings that used to share this slot died with the v1 CRUD
-          layer — both v2 builds always pass remindersSection, so it was
-          unreachable (deleted 2026-08-13). US-07 AC6: none for a known minor,
-          who is never enrolled and must see no mailing-list box. */}
-      {adult && remindersSection}
+        {/* US-44: the gate-skipped reminders box renders once, at the top. */}
+        {emailCapture && !guestEmailHook.gateSkipped && <GuestEmailCapture hook={guestEmailHook} pdfBlocked={pdfBlocked === 'capture'} />}
 
-      {/* US-44: the gate-skipped reminders box renders once, at the top. */}
-      {emailCapture && !guestEmailHook.gateSkipped && <GuestEmailCapture hook={guestEmailHook} pdfBlocked={pdfBlocked === 'capture'} />}
+        {SHOPIFY_SURFACE && <FeedbackForm />}
 
-      {SHOPIFY_SURFACE && <FeedbackForm />}
+        {/* US-38 AC1: the open-source link, at the foot of the plan. */}
+        <GuideLink />
 
-      {/* US-38 AC1: the open-source link, at the foot of the plan. */}
-      <GuideLink />
-
-      <div className="privacy-notice-link">
-        <a
-          href="https://drstanfield.com/pages/connector-privacy"
-          target="_blank"
-          rel="noopener"
-        >
-          How your health data is handled
-        </a>
-      </div>
-
-      {onDeleteData && (
-        <div className="delete-data-section">
-          <button
-            className="delete-data-link"
-            onClick={async () => { if (await onDeleteData()) setPdfOpened(false); }}
-            disabled={isDeleting}
+        <div className="privacy-notice-link">
+          <a
+            href="https://drstanfield.com/pages/connector-privacy"
+            target="_blank"
+            rel="noopener"
           >
-            {isDeleting ? 'Deleting...' : 'Delete All My Data'}
-          </button>
+            How your health data is handled
+          </a>
         </div>
-      )}
+
+        {onDeleteData && (
+          <div className="delete-data-section">
+            <button
+              className="delete-data-link"
+              onClick={async () => { if (await onDeleteData()) setPdfOpened(false); }}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete All My Data'}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

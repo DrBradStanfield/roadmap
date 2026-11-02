@@ -2302,6 +2302,12 @@ describe("US-70 AC1 condition guides: --guides", () => {
     addGuide(refs("1. Trial. [PMID 12345678](https://pubmed.ncbi.nlm.nih.gov/87654321/)"));
     expect(fails(grun().AC7).join("\n")).toContain("PMID link text 12345678 differs from its URL id 87654321");
   });
+  // Re-check R1: a ConsumerLab URL in the guide's own sources: never makes consumerlab.com an allowed reference host.
+  it("refuses a ConsumerLab reference even when the guide's sources: lists a consumerlab.com URL", () => {
+    const g = SOUND.replaceAll("https://example.org/guideline", "https://www.consumerlab.com/reviews/x");
+    addGuide(g);
+    expect(fails(grun().AC7).join("\n")).toMatch(/unknown host consumerlab\.com/);
+  });
   it("takes a guide's reference to a host its sources: names, DailyMed, doi.org and Brad's video posts", () => {
     put("docs/blog/other.md", "---\ntitle: \"O\"\n---\n\nA video post.\n");
     addGuide(SOUND.replace("1. Example guideline. https://example.org/guideline", [

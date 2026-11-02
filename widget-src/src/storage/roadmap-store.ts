@@ -66,11 +66,12 @@ import {
   type LpaUnit,
   type MeasurementRefusal,
   type MeasurementSource,
+  type Comparator,
   type ReminderScheduleItem,
   type RoadmapFile,
   type RoadmapProfile,
 } from '@roadmap/health-core';
-import { isAlcoholAnswer, readableView, ROADMAP_DOC } from '@roadmap/health-core';
+import { isAlcoholAnswer, inputRangeFault, readableView, ROADMAP_DOC } from '@roadmap/health-core';
 import { type EraseResult, type EraseSteps, type RecordHost, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { webRecordHost } from './web-record-host';
@@ -165,7 +166,9 @@ export type MoveOutcome = { status: Exclude<CorrectStatus, 'invalid'> } | { stat
 /** A birth month in the future that a save refused (US-54 AC5b): the pair judged. */
 export interface BirthRefusal { birthYear: number; birthMonth: number | undefined }
 /** A profile save: refused by the erase, or saved with any birth month it refused. */
-export type ProfileSave = { ok: false } | { ok: true; birthRefused: BirthRefusal | null };
+/** A profile value outside its range, by field, with why (US-02 AC5): never written. */
+export type ProfileRangeRefusal = Partial<Record<keyof HealthInputs, string>>;
+export type ProfileSave = { ok: false } | { ok: true; birthRefused: BirthRefusal | null; refused?: ProfileRangeRefusal };
 export interface BulkSaveResult {
   saved: ApiMeasurement[];
   skippedDuplicates: number;
@@ -181,13 +184,14 @@ export interface BulkLabValuesResult {
 /** One reviewed upload row. `correctsId` is set only when the reviewer ticked
  *  "Replace" on a slot another writer (a connector, another device) already
  *  holds — it turns the write into a FHIR correction instead of a skip. */
+/** `comparator`: a result printed as a limit, saved as printed (US-12 AC20). */
 export interface BulkMeasurementInput {
-  metricType: string; value: number; recordedAt: string; source: MeasurementSource; correctsId?: string;
+  metricType: string; value: number; recordedAt: string; source: MeasurementSource; correctsId?: string; comparator?: Comparator;
 }
 export interface BulkLabValueInput {
   metricName: string; value: number; unit: string;
   referenceLow?: number | null; referenceHigh?: number | null;
-  recordedAt: string; source?: string; correctsId?: string;
+  recordedAt: string; source?: string; correctsId?: string; comparator?: Comparator;
 }
 
 // --- small pure helpers ---
@@ -348,12 +352,13 @@ export class RoadmapStore {
    *  replaces in the form with the record's pair. */
   saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): ProfileSave {
     if (this.refuses(erase)) return { ok: false };
-    const birthRefused = this.applyProfileChanges(current, previous, erase);
+    const refused: ProfileRangeRefusal = {};
+    const birthRefused = this.applyProfileChanges(current, previous, erase, refused);
     // diffInputsToMeasurements (health-core) owns the field→metric map + change detection.
     for (const { metricType, value } of diffInputsToMeasurements(current, previous)) {
       this.addMeasurement(metricType, value, undefined, erase);
     }
-    return { ok: true, birthRefused };
+    return Object.keys(refused).length > 0 ? { ok: true, birthRefused, refused } : { ok: true, birthRefused };
   }
 
   saveMedication(medicationKey: string, drugName: string, doseValue: number | null = null, doseUnit: string | null = null, erase?: string): boolean {
@@ -561,12 +566,16 @@ export class RoadmapStore {
 
   // =================================================================== private
 
-  private applyProfileChanges(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): BirthRefusal | null {
+  private applyProfileChanges(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string, outOfRange: ProfileRangeRefusal = {}): BirthRefusal | null {
     const changes: Record<string, unknown> = {};
     for (const field of [...PREFILL_FIELDS, 'unitSystem'] as const) {
       // A cleared form field is absent from current, but is still a write.
       // Keep its key as null so the field stamp carries the clear (US-10 AC9).
       if (current[field] !== previous[field]) changes[field] = current[field] ?? null;
+      // US-02 AC5: a value outside its range never reaches the file, whatever
+      // the caller ("19" on the way to 190, left or not); the rest still write.
+      const fault = inputRangeFault(field, changes[field]);
+      if (fault) { delete changes[field]; outOfRange[field] = fault; }
     }
     // US-54 AC5b: a birth month after this one writes neither changed half, as
     // update_profile refuses it; a year alone is judged with January. Judged as

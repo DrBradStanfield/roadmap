@@ -16,13 +16,15 @@ import {
   METRIC_TO_FIELD,
   bpTargetFor,
   cellLabel,
-  cellText,
   rowTarget,
+  LIMIT_NOT_GRADED,
+  type Comparator,
 } from '@roadmap/health-core';
-import { formatLabValue, statusOf, type Status } from '../lib/blood-test-cell';
+import { limitUngraded, savedCellText, savedLabText, savedStatus, trendGeometry, type Status } from '../lib/blood-test-cell';
 import { monthYear, pressureReadings, readingsOf, recentTrend, type DayReading } from '../lib/my-data-rows';
 import { groupLabValues } from '../lib/lab-rows';
 import { bpStatus, simpleStatus } from './StartingInfoVitals';
+import { SectionIcon, type SectionKey } from './icons';
 import type { ApiLabValue } from '../lib/api-types';
 
 /** What a row opens: a core metric, the blood pressure, or a lab test's series (`labSlotKey`). */
@@ -50,11 +52,12 @@ export interface RowContext {
 }
 
 /** A value's grade, as the grids colour it: the blood tests by their lines,
- *  weight and waist by the plan; none for a known minor's adult lines. */
-export function valueStatus(metric: MetricType, si: number, { grading, plan }: RowContext): Status {
+ *  a limit only when its bound decides (US-12 AC20), weight and waist by the
+ *  plan; none for a known minor's adult lines. */
+export function valueStatus(metric: MetricType, si: number, { grading, plan }: RowContext, comparator?: Comparator): Status {
   if (metric === 'weight') return simpleStatus('weight', si, grading ? plan?.idealBodyWeight : undefined);
   if (metric === 'waist') return simpleStatus('waist', si, undefined, plan?.heightCm);
-  return statusOf(metric, si, grading);
+  return savedStatus(metric, si, comparator, grading);
 }
 
 /** A pressure's grade against the plan's systolic target; none without a plan or for a known minor. */
@@ -92,10 +95,20 @@ interface RowModel {
   previous: string | null;
   unit: string;
   trend: number[];
+  /** Which trend points were printed as a limit: hollow, off the line (US-12 AC20). */
+  trendLimits?: boolean[];
+  /** Said beside a latest value the plan cannot grade (`LIMIT_NOT_GRADED`). */
+  note?: string;
   tint: string;
   status: Status;
   /** The metric the grade is read for (`gradeWords`). */
   graded: string;
+}
+
+/** A row's trend points, and which were printed as a limit. */
+function trendOf(readings: DayReading[]): Pick<RowModel, 'trend' | 'trendLimits'> {
+  const recent = recentTrend(readings);
+  return { trend: recent.map(r => r.value), trendLimits: recent.map(r => !!r.comparator) };
 }
 
 function coreRow(metric: MetricType, history: ApiMeasurement[], ctx: RowContext): RowModel {
@@ -107,12 +120,13 @@ function coreRow(metric: MetricType, history: ApiMeasurement[], ctx: RowContext)
     label: METRIC_LABELS[metric] ?? metric,
     target: rowTarget(metric, unit, ctx.grading, ctx.plan)?.bare ?? null,
     day: latest?.day ?? null,
-    latest: latest ? cellText(metric, latest.value, unit) : null,
-    previous: previous ? cellText(metric, previous.value, unit) : null,
+    latest: latest ? savedCellText(metric, latest.value, unit, latest.comparator) : null,
+    previous: previous ? savedCellText(metric, previous.value, unit, previous.comparator) : null,
     unit: cellLabel(metric, unit),
-    trend: recentTrend(readings).map(r => r.value),
+    ...trendOf(readings),
+    ...(latest && limitUngraded(metric, latest.value, latest.comparator) ? { note: LIMIT_NOT_GRADED } : {}),
     tint: TINT[metric] ?? LAB_TINT,
-    status: latest ? valueStatus(metric, latest.value, ctx) : null,
+    status: latest ? valueStatus(metric, latest.value, ctx, latest.comparator) : null,
     graded: metric,
   };
 }
@@ -139,7 +153,7 @@ function pressureRow(history: ApiMeasurement[], ctx: RowContext): RowModel {
 function labRows(labValues: ApiLabValue[]): RowModel[] {
   const byId = new Map(labValues.map(v => [v.id, v]));
   return groupLabValues(labValues).flatMap(g => g.series).map((s): RowModel => {
-    const readings = [...s.points].reverse().map(p => ({ day: p.recordedAt.slice(0, 10), id: p.id, value: p.value }));
+    const readings: DayReading[] = [...s.points].reverse().map(p => ({ day: p.recordedAt.slice(0, 10), id: p.id, value: p.value, comparator: p.comparator }));
     const [latest, previous] = readings;
     const printed = byId.get(latest.id);
     // A series in more than one unit draws no trend: one line would be a false one (US-21 AC3a).
@@ -150,10 +164,10 @@ function labRows(labValues: ApiLabValue[]): RowModel[] {
       label: s.label,
       target: rowTarget(target, 'si', null, null)?.bare ?? null,
       day: latest.day,
-      latest: formatLabValue(latest.value),
-      previous: previous && sameUnit ? formatLabValue(previous.value) : null,
+      latest: savedLabText(latest.value, latest.comparator),
+      previous: previous && sameUnit ? savedLabText(previous.value, previous.comparator) : null,
       unit: s.unit,
-      trend: sameUnit ? recentTrend(readings).map(r => r.value) : [],
+      ...(sameUnit ? trendOf(readings) : { trend: [] }),
       tint: LAB_TINT,
       status: null,
       graded: '',
@@ -163,21 +177,14 @@ function labRows(labValues: ApiLabValue[]): RowModel[] {
 
 /** A value's recent days as a small line, as the iPhone draws it (ValueRow.swift
  *  `Sparkline`): the metric's colour, a fading fill under it and a dot on the
- *  newest day. Nothing for fewer than two days. */
-export function RowTrend({ points, tint, width = 44, height = 18 }: { points: number[]; tint: string; width?: number; height?: number }) {
+ *  newest day. Nothing for fewer than two days. A day printed as a limit
+ *  (`limits[i]`) is a hollow dot at its bound, off the line (US-12 AC20). */
+export function RowTrend({ points, limits, tint, width = 44, height = 18 }: { points: number[]; limits?: boolean[]; tint: string; width?: number; height?: number }) {
   const fill = `md-fill${useId().replace(/:/g, '')}`; // one gradient per row
   if (points.length < 2) return <span className="md-row-trend" aria-hidden="true">{' '}</span>;
-  const low = Math.min(...points), high = Math.max(...points);
-  const span = high - low || 1;
-  const pad = 2;
-  const spot = (v: number, i: number) => [
-    pad + (i / (points.length - 1)) * (width - pad * 2),
-    height - pad - ((v - low) / span) * (height - pad * 2),
-  ] as const;
-  const coords = points.map(spot);
-  const line = coords.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const { coords, exact, line, area } = trendGeometry(points, limits, width, height, height);
   const [lastX, lastY] = coords[coords.length - 1];
-  const area = `${line} L${(width - pad).toFixed(1)},${height} L${pad},${height} Z`;
+  const lastLimit = !!limits?.[coords.length - 1];
   return (
     <svg className="md-row-trend" width={width} height={height} aria-hidden="true" focusable="false">
       <defs>
@@ -186,9 +193,13 @@ export function RowTrend({ points, tint, width = 44, height = 18 }: { points: nu
           <stop offset="1" stopColor={tint} stopOpacity="0"/>
         </linearGradient>
       </defs>
-      <path d={area} fill={`url(#${fill})`}/>
-      <path d={line} fill="none" stroke={tint} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-      <circle cx={lastX} cy={lastY} r="2" fill={tint}/>
+      {area && <path d={area} fill={`url(#${fill})`}/>}
+      {area && <path d={line} fill="none" stroke={tint} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>}
+      {exact.length === 1 && exact[0] !== coords[coords.length - 1] && <circle cx={exact[0][0]} cy={exact[0][1]} r="1.75" fill={tint}/>}
+      {coords.map(([x, y], i) => limits?.[i] && i < coords.length - 1 && (
+        <circle key={i} className="md-trend-limit" cx={x} cy={y} r="1.75" fill="none" stroke={tint} strokeWidth="1"/>
+      ))}
+      <circle className={lastLimit ? 'md-trend-limit' : undefined} cx={lastX} cy={lastY} r="2" fill={lastLimit ? 'none' : tint} stroke={lastLimit ? tint : undefined} strokeWidth={lastLimit ? 1 : undefined}/>
     </svg>
   );
 }
@@ -203,15 +214,15 @@ function MetricRow({ row, onOpen }: { row: RowModel; onOpen: (subject: ValueSubj
           <span className="md-row-label">{row.label}</span>
           {meta && <span className="md-row-meta">{meta}</span>}
         </span>
-        <RowTrend points={row.trend} tint={row.tint}/>
+        <RowTrend points={row.trend} limits={row.trendLimits} tint={row.tint}/>
         <span className="md-row-reading">
           {row.latest ? (
             <>
               <span className="md-row-value" aria-hidden="true">
-                <span className={`md-row-latest md-status-${row.status ?? 'none'}`}>{row.latest}</span>
+                <span className={`md-row-latest md-status-${row.status ?? 'none'}`} title={row.note}>{row.latest}</span>
                 {row.previous && <span className="md-row-prev"> ({row.previous})</span>}
               </span>
-              <span className="hr-sr-only">{[row.latest, gradeWords(row.status, row.graded), row.previous && `previous ${row.previous}`].filter(Boolean).join(', ')}</span>
+              <span className="hr-sr-only">{[row.latest, gradeWords(row.status, row.graded) ?? row.note, row.previous && `previous ${row.previous}`].filter(Boolean).join(', ')}</span>
               <span className="md-row-unit">{row.unit}</span>
             </>
           ) : <span className="md-row-add">Add</span>}
@@ -221,10 +232,14 @@ function MetricRow({ row, onOpen }: { row: RowModel; onOpen: (subject: ValueSubj
   );
 }
 
-function RowSection({ title, rows, onOpen, children }: { title: string; rows: RowModel[]; onOpen: (s: ValueSubject) => void; children?: React.ReactNode }) {
+function RowSection({ title, icon, action, rows, onOpen, children }: { title: string; icon: SectionKey; action?: React.ReactNode; rows: RowModel[]; onOpen: (s: ValueSubject) => void; children?: React.ReactNode }) {
   return (
     <section className="md-section" aria-label={title}>
-      <h3 className="health-section-title md-section-title">{title}</h3>
+      {/* The title, and on its right the section's own action (Upload lab results, Brad 2026-11-02). */}
+      <div className="md-section-head">
+        <h3 className="health-section-title md-section-title"><SectionIcon section={icon}/>{title}</h3>
+        {action}
+      </div>
       <ul className="md-rows">
         {rows.map(row => <MetricRow key={row.subject.kind === 'lab' ? row.subject.seriesKey : row.subject.kind === 'bp' ? 'bp' : row.subject.metric} row={row} onOpen={onOpen}/>)}
       </ul>
@@ -236,13 +251,13 @@ function RowSection({ title, rows, onOpen, children }: { title: string; rows: Ro
 export function VitalsRows({ history, ctx, onOpen, withoutWeight }: { history: ApiMeasurement[]; ctx: RowContext; onOpen: (s: ValueSubject) => void; withoutWeight?: boolean }) {
   // The weight asked beside the height shows there alone (US-62 AC13).
   const rows = [...(withoutWeight ? [] : [coreRow('weight', history, ctx)]), coreRow('waist', history, ctx), pressureRow(history, ctx)];
-  return <RowSection title="Vitals" rows={rows} onOpen={onOpen}/>;
+  return <RowSection title="Vitals" icon="vitals" rows={rows} onOpen={onOpen}/>;
 }
 
-export function BloodTestRows({ history, labValues, ctx, onOpen, children }: {
-  history: ApiMeasurement[]; labValues: ApiLabValue[]; ctx: RowContext; onOpen: (s: ValueSubject) => void; children?: React.ReactNode;
+export function BloodTestRows({ history, labValues, ctx, onOpen, action, children }: {
+  history: ApiMeasurement[]; labValues: ApiLabValue[]; ctx: RowContext; onOpen: (s: ValueSubject) => void; action?: React.ReactNode; children?: React.ReactNode;
 }) {
   const labs = useMemo(() => labRows(labValues), [labValues]);
   const rows = [...BLOOD_ROWS.map(m => coreRow(m, history, ctx)), ...labs];
-  return <RowSection title="Blood tests" rows={rows} onOpen={onOpen}>{children}</RowSection>;
+  return <RowSection title="Blood tests" icon="bloodTests" action={action} rows={rows} onOpen={onOpen}>{children}</RowSection>;
 }
