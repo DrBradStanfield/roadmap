@@ -259,14 +259,32 @@ describe('US-66 AC4: not read, counted', () => {
     expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 8 });
   });
 
-  it('AC4: a result with <, <=, > or >= is held back for now (US-12 AC20 seam); R4\'s "ad" is not a bound', () => {
+  it('AC4 (US-12 AC20): a PSA "<0.01" lands with its comparator, the bound in the stored unit', () => {
+    const { file, counts } = run(empty(), [rec(lab('2857-1', 0.01, 'ng/mL', { valueQuantity: { value: 0.01, unit: 'ng/mL', comparator: '<' } }))]);
+    expect(counts.added).toBe(1);
+    expect(file.measurements).toEqual([expect.objectContaining({ metricType: 'psa', value: 0.01, comparator: '<', source: 'health_records' })]);
+  });
+
+  it('AC4 (US-12 AC20): an eGFR ">90" lands as a lab value with its comparator', () => {
+    const { file, counts } = run(empty(), [rec(lab('98979-8', 90, 'mL/min/{1.73_m2}', { valueQuantity: { value: 90, unit: 'mL/min/{1.73_m2}', comparator: '>' } }))]);
+    expect(counts.added).toBe(1);
+    expect(file.labValues).toEqual([expect.objectContaining({ metricName: 'egfr', value: 90, unit: 'mL/min/1.73m²', comparator: '>', source: 'health_records' })]);
+  });
+
+  it('AC4: each of <, <=, > and >= is kept; R4\'s "ad" is not a bound, so not read', () => {
     const records = ['<', '<=', '>', '>=', 'ad'].map((comparator, i) => rec(lab('2857-1', 0.01, 'ng/mL', {
-      id: `psa-${i}`, valueQuantity: { value: 0.01, unit: 'ng/mL', comparator },
+      id: `psa-${i}`, effectiveDateTime: `2026-10-0${i + 1}`, valueQuantity: { value: 0.01, unit: 'ng/mL', comparator },
     })));
-    const before = empty();
-    const { file, counts } = run(before, records);
-    expect(counts.notRead).toBe(5);
-    expect(file).toBe(before);
+    const { file, counts } = run(empty(), records);
+    expect(counts).toMatchObject({ added: 4, notRead: 1 });
+    expect(file.measurements.map((m) => m.comparator)).toEqual(['<', '<=', '>', '>=']);
+  });
+
+  it('AC6: a newer version that turns an exact result into a limit is a correction', () => {
+    const first = run(empty(), [rec(lab('2857-1', 0.01, 'ng/mL'))]).file;
+    const { file, counts } = run(first, [rec(lab('2857-1', 0.01, 'ng/mL', { status: 'amended', meta: { versionId: '2' }, valueQuantity: { value: 0.01, unit: 'ng/mL', comparator: '<' } }))], LATER);
+    expect(counts.corrected).toBe(1);
+    expect(file.measurements.map((m) => [m.status, m.comparator])).toEqual([['entered-in-error', undefined], ['active', '<']]);
   });
 
   it('AC4: not an Observation, not DSTU2 or R4, broken JSON, a malformed id or a source with "#": not read', () => {

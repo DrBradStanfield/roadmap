@@ -27,6 +27,7 @@ import * as z from './zod';
 import { recordedAtOf } from './device-import';
 import { normalizeLabUnit, resolveLabCatalogEntry } from './lab-catalog';
 import { isClinicalDay } from './measurement-history';
+import { comparatorOf, isComparator, type Comparator } from './lab-limits';
 import { latestDayOnEarth } from './merge';
 import { measurementValueFault, newId, slotKey, slotIndex, stampUpdatedAt, toStoredLab } from './record-edits';
 import { createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
@@ -67,6 +68,8 @@ export const HEALTH_RECORDS_LOINC: Readonly<Record<string, string>> = {
   '10835-7': 'lpa', '43583-4': 'lpa',
   '2276-4': 'ferritin',
   '3016-3': 'tsh',
+  // eGFR the lab printed (US-07 AC7), CKD-EPI 2021 and CKD-EPI only (NLM Clinical Tables, 2026-11-02); MDRD (33914-3) left out.
+  '98979-8': 'egfr', '62238-1': 'egfr',
 };
 
 const LOINC = 'http://loinc.org';
@@ -117,8 +120,6 @@ const observation = z.object({
 });
 type Observation = z.infer<typeof observation>;
 
-type Comparator = '<' | '<=' | '>' | '>=';
-const COMPARATORS: readonly string[] = ['<', '<=', '>', '>='];
 
 /** The unit a Quantity states: its UCUM code when it has one, else the printed unit. */
 function unitOf(q: z.infer<typeof quantity> | undefined): string | undefined {
@@ -161,8 +162,9 @@ function readingOf(obs: Observation, now: string): Reading | null {
   const unit = unitOf(q);
   const recordedAt = drawnAt(obs.effectiveDateTime ?? obs.effectivePeriod?.start, now);
   if (!metric || typeof q?.value !== 'number' || !unit || !recordedAt) return null;
-  if (q.comparator !== undefined && !COMPARATORS.includes(q.comparator)) return null;
-  const comparator = q.comparator as Comparator | undefined;
+  // US-12 AC20: a result printed as a limit keeps its comparator; `value` is the bound. FHIR's `ad` is not read.
+  if (q.comparator !== undefined && !isComparator(q.comparator)) return null;
+  const comparator = q.comparator;
   if ((METRIC_TYPES as readonly string[]).includes(metric)) {
     const si = reportedToCanonical(metric as MetricType, q.value, normalizeLabUnit(unit));
     if (!si || measurementValueFault(metric, si.valueSI)) return null;
@@ -244,10 +246,6 @@ export function importHealthRecords(
     if (!reading) { counts.notRead++; continue; }
     // AC10 (D6): the erase removed the rows that would have deduplicated it.
     if (erasedAt !== null && Date.parse(reading.recordedAt) < erasedAt) { counts.notRead++; continue; }
-    // US-12 AC20 seam: a result printed with <, <=, > or >= is held back until
-    // rows carry a comparator. Then delete this branch and pass `reading.comparator`
-    // into createMeasurement / createLabValue below; the bound is already converted.
-    if (reading.comparator !== undefined) { counts.notRead++; continue; }
 
     const slot = slotKey(reading.kind, reading.metric, reading.recordedAt);
     const list = listOf(reading.kind);
@@ -260,8 +258,8 @@ export function importHealthRecords(
       if (active.list !== list || slotOf(old) !== slot) { counts.notRead++; continue; }
       const oldUnit = 'unit' in old ? old.unit : undefined;
       const newUnit = reading.kind === 'lab' ? reading.unit : undefined;
-      // AC6: a version bump with the same value appends nothing.
-      if (sameNumber(old.value, reading.value) && oldUnit === newUnit) { counts.alreadyInRecord++; continue; }
+      // AC6: a version bump with the same value (and the same limit) appends nothing.
+      if (sameNumber(old.value, reading.value) && oldUnit === newUnit && comparatorOf(old).comparator === reading.comparator) { counts.alreadyInRecord++; continue; }
       list[active.at] = { ...old, status: 'entered-in-error' };
       correctsId = old.id;
       recordedAt = old.recordedAt;
@@ -274,12 +272,12 @@ export function importHealthRecords(
     const row: Row = reading.kind === 'measurement'
       ? createMeasurement({
         id: newId(), metricType: reading.metric, value: reading.value, recordedAt, createdAt: now,
-        source: 'health_records', correctsId, externalId,
+        source: 'health_records', correctsId, externalId, ...comparatorOf(reading),
       })
       : createLabValue({
         id: newId(), metricName: reading.metric, value: reading.value, unit: reading.unit,
         referenceLow: reading.referenceLow, referenceHigh: reading.referenceHigh,
-        recordedAt, createdAt: now, source: 'health_records', correctsId, externalId,
+        recordedAt, createdAt: now, source: 'health_records', correctsId, externalId, ...comparatorOf(reading),
       });
     list.push(row);
     remember(list, list.length - 1);
