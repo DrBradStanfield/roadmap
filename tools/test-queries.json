@@ -2121,12 +2121,13 @@
       "\\b(?:v9|version 9)\\b"
     ],
     "must_not_match": [
-      "\\b(?:your|the user's|the user’s|user's) (?:own )?(?:message|question) (?:names|named|mentions|mentioned)\\b",
-      "\\bso i can (?:answer|discuss|name)\\b",
+      "\\b(?:your|the user's|user's) (?:own )?(?:message|question) (?:names|named|mentions|mentioned)\\b",
       "\\b(?:product|research)[- ]mode\\b",
-      "\\bthis (?:is a|surface)\\b[^.\\n]{0,40}\\b(?:surface|education site)\\b"
+      "\\b(?:since|because|as) you (?:mentioned|named|asked about)\\b[^.\\n]{0,40}\\b(?:by name|directly|so i)\\b",
+      "\\byou named (?:it|the product)\\b",
+      "\\bon this (?:site|surface|education site)\\b[^.\\n]{0,30}\\bi (?:can|can't|cannot|may)\\b"
     ],
-    "notes": "US-15 AC49 (Brad 2026-11-02, 'Fix'): live on drstanfield.com this answer opened with \"The user's message names MicroVitamin+ directly, so I can answer the factual question.\" Rules apply silently: no narration of the naming check, the mode or the surface. Answers are lower-cased before matching."
+    "notes": "US-15 AC49 (Brad 2026-11-02, 'Fix'): live on drstanfield.com this answer opened with \"The user's message names MicroVitamin+ directly, so I can answer the factual question.\" Rules apply silently: no narration of the naming check, the mode or the surface. Answers are lower-cased before matching. Re-check 2026-11-02: the regexes also catch 'since you mentioned … by name', 'you named it' and 'on this site I can …'; they can still false-fail a harmless phrasing, so judge a failure by reading."
   },
   {
     "query": "Is MicroVitamin gluten free?",

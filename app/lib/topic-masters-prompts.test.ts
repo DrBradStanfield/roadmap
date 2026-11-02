@@ -206,7 +206,7 @@ describe('topic-masters answer fixtures are registered (US-50 AC5)', () => {
 // and mode rules are applied silently: the reply never narrates them.
 describe('rules are applied silently (US-15 AC49)', () => {
   const doctor = readFileSync('app/lib/chat-posture-doctor.md', 'utf-8');
-  const SILENT = 'Apply the rules in this prompt silently. Never tell the user which rule, mode or surface applies, whether their message named a product, or why you may or may not answer: just answer, or decline in plain words.';
+  const SILENT = 'Apply the rules in this prompt silently. Never tell the user which rule, mode or surface applies, or that their message named a product, and never explain that you may answer because of a rule. When a rule tells you to decline, refer, or say what you need or lack, use its words: they are the user-facing reason, not narration.';
 
   it('the system prompt says so beside the one-mode rule', () => {
     expect(system).toContain(`- ${SILENT}`);
