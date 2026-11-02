@@ -12,6 +12,11 @@ import { stampProfile, upsertSupplement } from '../../packages/health-core/src/s
 import { mergeFiles } from '../../packages/health-core/src/merge';
 
 const NOW = '2026-10-21T08:00:00.000Z';
+/** Every value row, any status, read by metric: the vitals, and the blood tests as core lab rows (US-66 AC1). */
+const valueRows = (file: RoadmapFile) => [
+  ...file.measurements,
+  ...file.labValues.filter((row) => row.core === true).map((row) => ({ ...row, metricType: row.metricName })),
+];
 const LATER = '2026-10-21T09:00:00.000Z';
 
 function edited(file: RoadmapFile, ...edits: Parameters<typeof applyEdit>[1][]): RoadmapFile {
@@ -59,7 +64,7 @@ describe('myData (AC5)', () => {
       { kind: 'add', metric: 'ldl', value: 100, day: '2026-09-01' },
       { kind: 'bloodPressure', systolic: 128, diastolic: 82, day: '2026-09-02', replace: false },
       { kind: 'bloodPressure', systolic: 121, diastolic: 78, day: '2026-10-02', replace: false });
-    const wrong = file.measurements.find((row) => row.metricType === 'ldl' && row.recordedAt.startsWith('2026-10-01'))!;
+    const wrong = valueRows(file).find((row) => row.metricType === 'ldl' && row.recordedAt.startsWith('2026-10-01'))!;
     file = edited(file, { kind: 'correct', id: wrong.id, value: 120 });
     const data = myData(file);
     // The corrected 130 is gone, its correction in its place.
@@ -101,7 +106,7 @@ describe('myData (AC5)', () => {
     const typed = applyEdit(file, { kind: 'add', metric: 'ldl', value: 116, day: '2026-09-01' }, NOW, ldlInUs);
     if (!typed.ok) throw new Error(typed.message);
     file = typed.file;
-    expect(file.measurements.find((row) => row.metricType === 'ldl')!.value).toBeCloseTo(3.0, 1);
+    expect(valueRows(file).find((row) => row.metricType === 'ldl')!.value).toBeCloseTo(3.0, 1);
     const data = myData(file, NOW, ldlInUs);
     expect(data.bloodTests.find((row) => row.metric === 'ldl')).toMatchObject({ unit: 'mg/dL', latest: { value: '116' }, switchable: true });
     expect(data.vitals.find((row) => row.metric === 'weight')).toMatchObject({ unit: 'kg', switchable: true });
@@ -110,10 +115,10 @@ describe('myData (AC5)', () => {
     expect(data.psa).toMatchObject({ switchable: false });
     expect(metricHistory(file, 'ldl', NOW, ldlInUs).unit).toBe('mg/dL');
     // A correction is read in the row's units too.
-    const ldlRow = file.measurements.find((row) => row.metricType === 'ldl')!;
+    const ldlRow = valueRows(file).find((row) => row.metricType === 'ldl')!;
     const corrected = applyEdit(file, { kind: 'correct', id: ldlRow.id, value: 120 }, NOW, ldlInUs);
     if (!corrected.ok) throw new Error(corrected.message);
-    expect(corrected.file.measurements.find((row) => row.correctsId === ldlRow.id)!.value).toBeCloseTo(3.1, 1);
+    expect(corrected.file.labValues.find((row) => row.correctsId === ldlRow.id)!.value).toBeCloseTo(3.1, 1);
   });
 
   it('keeps only real choices for switchable tests (US-25 AC17e)', () => {
@@ -184,7 +189,7 @@ describe('myData rows: target and previous value (US-62 AC8, AC9)', () => {
   });
 
   const idOf = (file: RoadmapFile, metric: string, day: string) =>
-    file.measurements.find((row) => row.metricType === metric && row.status === 'active' && row.recordedAt.startsWith(day))!.id;
+    valueRows(file).find((row) => row.metricType === metric && row.status === 'active' && row.recordedAt.startsWith(day))!.id;
 
   it('takes a corrected earlier day\'s new value as the previous one, never the struck row (US-04)', () => {
     const file = adult();
@@ -200,8 +205,8 @@ describe('myData rows: target and previous value (US-62 AC8, AC9)', () => {
 
   it('counts a day after today as the latest, as the web\'s rows do, while the trend leaves it out (US-25 AC17f)', () => {
     const file = adult();
-    const held = file.measurements.find((row) => row.id === idOf(file, 'ldl', '2026-10-01'))!;
-    const ahead = { ...file, measurements: [...file.measurements, { ...held, id: 'ahead-ldl', value: 3.8, recordedAt: '2026-10-23', createdAt: NOW }] };
+    const held = file.labValues.find((row) => row.id === idOf(file, 'ldl', '2026-10-01'))!;
+    const ahead = { ...file, labValues: [...file.labValues, { ...held, id: 'ahead-ldl', value: 3.8, recordedAt: '2026-10-23', createdAt: NOW }] };
     const ldl = rows(myData(ahead, NOW)).get('ldl');
     expect(ldl).toMatchObject({ latest: { value: '3.8', day: '2026-10-23' }, previous: '3.4' });
     expect(ldl?.trend).toEqual([2.9, 3.4]);
@@ -748,16 +753,16 @@ describe('Lp(a) unit (US-05 AC2, US-25 AC20)', () => {
 
   it('reads a typed value in the chosen unit, and a correction too', () => {
     const base = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
-    const stored = (file: RoadmapFile) => file.measurements.find((row) => row.metricType === 'lpa' && row.status === 'active')!.value;
+    const stored = (file: RoadmapFile) => valueRows(file).find((row) => row.metricType === 'lpa' && row.status === 'active')!.value;
     // US-05 AC1's pairs: 156 mg/dL is 390 nmol/L; 93 mg/L is 23.25.
     expect(stored(edited(inUnit(base, 'mg/dL'), { kind: 'add', metric: 'lpa', value: 156, day: '2026-09-01' }))).toBeCloseTo(390, 9);
     expect(stored(edited(inUnit(base, 'mg/L'), { kind: 'add', metric: 'lpa', value: 93, day: '2026-09-01' }))).toBeCloseTo(23.25, 9);
     expect(stored(edited(base, { kind: 'add', metric: 'lpa', value: 75, day: '2026-09-01' }))).toBe(75);
     const file = inUnit(withLpa('en-NZ', 'Pacific/Auckland'), 'mg/dL');
-    const row = file.measurements.find((r) => r.metricType === 'lpa')!;
+    const row = valueRows(file).find((r) => r.metricType === 'lpa')!;
     // 50 mg/dL over a shown 49.6 corrects it to 125 (US-05 AC2).
     const corrected = edited(file, { kind: 'correct', id: row.id, value: 50 });
-    expect(corrected.measurements.find((r) => r.correctsId === row.id)!.value).toBeCloseTo(125, 9);
+    expect(corrected.labValues.find((r) => r.correctsId === row.id)!.value).toBeCloseTo(125, 9);
     // Over the range, said in the unit typed in, as the web's cellRange says it (review R2).
     expect(applyEdit(file, { kind: 'add', metric: 'lpa', value: 301, day: '2026-09-02' }, NOW))
       .toMatchObject({ ok: false, reason: 'out-of-range', message: 'Lp(a) must be at most 300 mg/dL (got 301)' });
@@ -853,5 +858,44 @@ describe('alcohol (US-60)', () => {
     expect(ids(answer(heavy, 'drinks'))).toContain('reduce-alcohol');
     expect(ids(answer(heavy, 'none'))).not.toContain('reduce-alcohol');
     expect(ids(answer(answer(heavy, 'none'), null, '2026-10-21T10:00:00.000Z'))).toContain('reduce-alcohol');
+  });
+});
+
+// US-66: every blood test is a core lab row; the phone's view models and metric ids stay (AC12).
+describe('one blood-test table (US-66)', () => {
+  const base = () => newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+
+  it('AC6: the phone\'s add and correction write core lab rows in the core unit, nothing in measurements', () => {
+    let file = edited(base(), { kind: 'add', metric: 'hba1c', value: 41, day: '2026-09-01' });
+    expect(file.measurements).toEqual([]);
+    expect(file.labValues).toEqual([expect.objectContaining({ metricName: 'hba1c', unit: 'mmol/mol', value: 41, core: true, status: 'active' })]);
+    file = edited(file, { kind: 'correct', id: file.labValues[0].id, value: 43 });
+    expect(file.labValues.map((row) => [row.value, row.status, row.core])).toEqual([[41, 'entered-in-error', true], [43, 'active', true]]);
+    expect(myData(file, NOW).bloodTests.find((row) => row.metric === 'hba1c')!.latest).toMatchObject({ value: '43', day: '2026-09-01' });
+  });
+
+  it('AC2, AC7: an old-shape record\'s blood tests show in My data, its trend and its history once read', () => {
+    const old = { ...base(), measurements: [
+      { id: 'ldl-a', metricType: 'ldl', value: 3.4, recordedAt: '2026-10-01', createdAt: NOW, source: 'manual', status: 'active', correctsId: null, externalId: null },
+      { id: 'ldl-b', metricType: 'ldl', value: 3.0, recordedAt: '2026-10-10', createdAt: NOW, source: 'manual', status: 'active', correctsId: null, externalId: null },
+    ] };
+    const file = readRecord(JSON.stringify(old), NOW, 'phone');
+    expect(file.measurements).toEqual([]);
+    expect(myData(file, NOW).bloodTests.find((row) => row.metric === 'ldl')).toMatchObject({ latest: { id: 'ldl-b', value: '3.0' }, previous: '3.4', trend: [3.4, 3.0] });
+    expect(metricHistory(file, 'ldl', NOW).rows.map((row) => [row.id, row.current])).toEqual([['ldl-b', true], ['ldl-a', false]]);
+  });
+
+  it('AC7, AC8: only a core row in its core unit is a blood test; a plain lab row named like one is not shown as one', () => {
+    const file = edited(base(), { kind: 'add', metric: 'ldl', value: 3.1, day: '2026-09-01' });
+    const core = file.labValues[0];
+    const odd = { ...file, labValues: [
+      ...file.labValues,
+      // A hand edit: a core row in another unit counts nowhere.
+      { ...core, id: 'wrong-unit', value: 120, unit: 'mg/dL', recordedAt: '2026-10-01' },
+      // Not flagged core: an extra lab row, never the LDL row's value.
+      { ...core, id: 'plain', value: 2.2, recordedAt: '2026-10-02', core: undefined },
+    ] } as RoadmapFile;
+    expect(myData(odd, NOW).bloodTests.find((row) => row.metric === 'ldl')).toMatchObject({ latest: { id: core.id, value: '3.1' }, previous: null });
+    expect(metricHistory(odd, 'ldl', NOW).rows.map((row) => row.id)).toEqual([core.id]);
   });
 });

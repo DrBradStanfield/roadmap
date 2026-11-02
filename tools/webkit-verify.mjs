@@ -123,16 +123,18 @@ async function inspect(browser, deviceName, viewport) {
         schemaVersion: 1,
         meta: { createdAt: now, updatedAt: now, lastDeviceId: 'webkit-smoke', lamport: 0 },
         profile: { sex: 'male', heightCm: 178, birthYear: 1985, birthMonth: 6, unitSystem: 'si', updatedAt: now, lamport: 0 },
-        measurements: [
-          ['hba1c', 35, '2025-01-01T00:00:00.000Z'],
-          ['hba1c', 36, '2025-07-01T00:00:00.000Z'],
-          ['ldl', 2.4, '2025-01-01T00:00:00.000Z'],
-        ].map(([metricType, value, recordedAt], i) => ({
-          id: `webkit-${i}`, metricType, value, recordedAt, createdAt: recordedAt,
-          source: 'manual', status: 'active', correctsId: null, externalId: null,
-        })),
+        measurements: [],
         medications: [], medicationHistory: [], supplements: [], supplementHistory: [],
-        screenings: { updatedAt: now, lamport: 0 }, labValues: [], documents: [],
+        // Every blood test is a core row in labValues, in its SI unit (US-66 AC1).
+        labValues: [
+          ['hba1c', 35, 'mmol/mol', '2025-01-01T00:00:00.000Z'],
+          ['hba1c', 36, 'mmol/mol', '2025-07-01T00:00:00.000Z'],
+          ['ldl', 2.4, 'mmol/L', '2025-01-01T00:00:00.000Z'],
+        ].map(([metricName, value, unit, recordedAt], i) => ({
+          id: `webkit-${i}`, metricName, value, unit, referenceLow: null, referenceHigh: null, core: true,
+          recordedAt, createdAt: recordedAt, source: 'manual', status: 'active', correctsId: null, externalId: null,
+        })),
+        screenings: { updatedAt: now, lamport: 0 }, documents: [],
         reminderPreferences: [], recommendationSnapshots: [],
       }));
       localStorage.setItem('health_roadmap_file_v2_rev', '0');

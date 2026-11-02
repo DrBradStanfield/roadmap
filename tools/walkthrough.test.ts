@@ -84,10 +84,11 @@ describe('US-33 AC1/AC2 — the guide runs as written', () => {
 
     // The correction appended; it never edited the row it superseded.
     const file: RoadmapFile = JSON.parse(readFileSync(record, 'utf8'));
-    const old = file.measurements.find((m) => m.id === 'sample-ldl-2026-05-12')!;
-    const now = file.measurements.find((m) => m.correctsId === 'sample-ldl-2026-05-12')!;
-    expect(old).toMatchObject({ status: 'entered-in-error', value: 3.6 });
-    expect(now).toMatchObject({ status: 'active', value: 3.1, recordedAt: '2026-05-12' });
+    // LDL is a core row in labValues (US-66 AC1).
+    const old = file.labValues.find((l) => l.id === 'sample-ldl-2026-05-12')!;
+    const now = file.labValues.find((l) => l.correctsId === 'sample-ldl-2026-05-12')!;
+    expect(old).toMatchObject({ core: true, status: 'entered-in-error', value: 3.6 });
+    expect(now).toMatchObject({ core: true, metricName: 'ldl', status: 'active', value: 3.1, recordedAt: '2026-05-12' });
 
     // AC8 as the guide states it: a .bak sibling per write, the newest 3 kept.
     expect(readdirSync(dir).filter((n) => n.includes('.bak-')).length).toBe(3);
