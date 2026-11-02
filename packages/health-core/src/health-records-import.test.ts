@@ -753,6 +753,18 @@ describe('US-66 AC2: UCUM unit spellings', () => {
   });
 });
 
+describe('US-66 AC2: eGFR codes', () => {
+  it('AC2: an MDRD eGFR (33914-3) lands as egfr (Brad 2026-11-02); the race-specific MDRD codes do not', () => {
+    const { file, counts } = run(empty(), [
+      rec(lab('33914-3', 72, 'mL/min/{1.73_m2}')),
+      rec(lab('48642-3', 72, 'mL/min/{1.73_m2}', { effectiveDateTime: '2026-10-22' })),
+      rec(lab('48643-1', 72, 'mL/min/{1.73_m2}', { effectiveDateTime: '2026-10-23' })),
+    ]);
+    expect(counts).toMatchObject({ added: 1, notRead: 2 });
+    expect(file.labValues).toEqual([expect.objectContaining({ metricName: 'egfr', value: 72, unit: 'mL/min/1.73m²', source: 'health_records' })]);
+  });
+});
+
 describe('US-66 AC2: the SI labs\' molar and mass-or-moles lipid codes', () => {
   it.each([
     ['14646-4', 'hdl', 1.3], ['39469-2', 'ldl', 2.9], ['22748-8', 'ldl', 2.9],

@@ -74,8 +74,9 @@ export const HEALTH_RECORDS_LOINC: Readonly<Record<string, string>> = {
   '10835-7': 'lpa', '43583-4': 'lpa',
   '2276-4': 'ferritin',
   '3016-3': 'tsh',
-  // eGFR the lab printed (US-07 AC7), CKD-EPI 2021 and CKD-EPI only (NLM Clinical Tables, 2026-11-02); MDRD (33914-3) left out.
-  '98979-8': 'egfr', '62238-1': 'egfr',
+  // eGFR the lab printed (US-07 AC7): CKD-EPI 2021, CKD-EPI (NLM Clinical Tables, 2026-11-02) and MDRD
+  // (33914-3; Brad 2026-11-02). The race-specific MDRD codes (48642-3, 48643-1) are left out.
+  '98979-8': 'egfr', '62238-1': 'egfr', '33914-3': 'egfr',
 };
 
 const LOINC = 'http://loinc.org';
