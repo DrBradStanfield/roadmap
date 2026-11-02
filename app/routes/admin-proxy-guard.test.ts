@@ -27,7 +27,6 @@ vi.mock('../lib/supabase.server', () => ({
   createABTest: mocks.job, updateABTestStatus: mocks.job, getABTestResults: mocks.job,
 }));
 vi.mock('../lib/trending-cron.server', () => ({ computeAndWriteTrending: mocks.job }));
-vi.mock('../lib/reminder-v2-cron.server', () => ({ processV2Reminders: mocks.job }));
 vi.mock('../lib/youtube-bot-summary-cron.server', () => ({ runYouTubeBotSummaryOnce: mocks.job }));
 
 import * as app from './app';
@@ -35,7 +34,6 @@ import * as appIndex from './app._index';
 import * as auth from './auth.$';
 import * as abTesting from './app.ab-testing';
 import * as trending from './app.trending-test';
-import * as reminders from './app.reminders-v2-test';
 import * as youtube from './app.youtube-bot-summary-test';
 
 const SIGNED = '?logged_in_customer_id=&path_prefix=%2Fapps%2Fhealth-tool-1&shop=x.myshopify.com&timestamp=1780000000&signature=' + 'a'.repeat(64);
@@ -64,8 +62,6 @@ const ENTRY_POINTS: [string, string, Handler | undefined, 'GET' | 'POST'][] = [
   ['/app/ab-testing action', '/app/ab-testing', abTesting.action as Handler, 'POST'],
   ['/app/trending-test loader', '/app/trending-test', trending.loader as Handler, 'GET'],
   ['/app/trending-test action', '/app/trending-test', trending.action as Handler, 'POST'],
-  ['/app/reminders-v2-test loader', '/app/reminders-v2-test', reminders.loader as Handler, 'GET'],
-  ['/app/reminders-v2-test action', '/app/reminders-v2-test', reminders.action as Handler, 'POST'],
   ['/app/youtube-bot-summary-test loader', '/app/youtube-bot-summary-test', youtube.loader as Handler, 'GET'],
   ['/app/youtube-bot-summary-test action', '/app/youtube-bot-summary-test', youtube.action as Handler, 'POST'],
 ];
@@ -118,7 +114,7 @@ describe('one guarded admin authenticator (US-09 AC24)', () => {
 
   it('every route that uses the admin authenticator is covered above', () => {
     const covered = new Set(['app.tsx', 'app._index.tsx', 'auth.$.tsx', 'app.ab-testing.tsx', 'app.trending-test.tsx',
-      'app.reminders-v2-test.tsx', 'app.youtube-bot-summary-test.tsx']);
+      'app.youtube-bot-summary-test.tsx']);
     const users = sourceFiles(ROUTES_DIR)
       .filter((f) => /authenticateAdmin|authenticateOwnerAdmin|runAdminTrigger/.test(readFileSync(f, 'utf8')))
       .map((f) => path.relative(ROUTES_DIR, f));

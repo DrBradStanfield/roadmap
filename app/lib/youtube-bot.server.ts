@@ -55,7 +55,7 @@ import type { AnthropicUsage } from './anthropic.server';
 const POLL_INTERVAL_MS = 30 * 60_000; // 30 minutes
 const COMMENTS_PER_TICK = 100;        // YouTube returns up to 100 per page
 const DAILY_REPLY_CAP = 50;           // hard ceiling on posts per day
-const PER_VIDEO_REPLY_CAP = 10;       // ceiling per video lifetime
+export const PER_VIDEO_REPLY_CAP = 30; // ceiling per video lifetime
 const COMMENT_MAX_AGE_DAYS = 7;       // ignore comments older than this
 const MIN_WORDS = 5;                  // ≥5 words to be considered substantive
 const CRISIS = /\b(die|suicid\w*|kill (myself|me)|chest pain|can'?t breathe|cannot breathe|overdos\w*)\b/i;
