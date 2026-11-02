@@ -24,11 +24,11 @@ import {
 } from '@roadmap/health-core';
 import { getCurrentDateValue } from './DatePicker';
 import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, DocumentResult, UploadHistory } from '../lib/api-types';
-import { pendingRowsFor, type RefusedLabValue } from '@roadmap/health-core';
+import { pendingRowsFor, rowTarget, type RefusedLabValue } from '@roadmap/health-core';
 import { labUnitRefusalLine, labValueLabel } from '../lib/lab-value-labels';
 import { unarchivedOriginals } from '../lib/archive-payloads';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
-import { type CellUnit, type Grading, cellHint, cellLabel, cellText, cellToSI, hasNumericSyntax, NUMERIC_SYNTAX_GUIDANCE, readNumericCell, readTypedValue, validateTypedValue } from '../lib/blood-test-cell';
+import { type CellUnit, type Grading, cellLabel, cellText, cellToSI, hasNumericSyntax, NUMERIC_SYNTAX_GUIDANCE, readNumericCell, readTypedValue, validateTypedValue } from '../lib/blood-test-cell';
 import { useLpaUnit } from '../lib/lpa-unit';
 import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
@@ -1451,12 +1451,10 @@ function describeRow(row: MatrixRow, display: CellUnit, grading: Grading): { lab
     // Same reference-range hint InputPanel + BloodTestTimeline show so
     // users have the same context when reviewing as when reading the
     // live timeline, and withheld from a known minor there too (US-07 AC6).
-    const refLabel = cellHint(row.metric, display, grading);
+    const refLabel = rowTarget(row.metric, display, grading, null)?.full ?? null;
     return { label, unitLabel, refLabel };
   }
-  const refLabel = (row.referenceLow != null || row.referenceHigh != null)
-    ? `Ref: ${row.referenceLow ?? '–'}–${row.referenceHigh ?? '–'}`
-    : null;
+  const refLabel = rowTarget({ referenceLow: row.referenceLow, referenceHigh: row.referenceHigh }, display, grading, null)?.full ?? null;
   return { label: row.displayName, unitLabel: row.unit, refLabel };
 }
 

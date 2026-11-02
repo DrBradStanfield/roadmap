@@ -1,4 +1,4 @@
-import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, ScreeningInputs } from './types';
+import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, ScreeningInputs, UsProductCardId } from './types';
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
@@ -38,18 +38,18 @@ const LUTEIN_PIGMENT = 'Lutein and zeaxanthin are the pigments of the macula, th
 const LUTEIN_AREDS = 'In the AREDS trial, a formula containing beta-carotene slowed the progression of macular degeneration. In AREDS2, lutein and zeaxanthin worked as well as beta-carotene, without beta-carotene\'s lung cancer signal in former smokers.';
 
 /**
- * US variants of three supplement cards' text (US-61 AC3), keyed `<id>-us`.
+ * US variants of three supplement cards' text (US-61 AC3), keyed by card id.
  * Only the US product overlay (us-products.ts) reads them: generateSuggestions
  * never emits them, so the plan, chat, agents and the CLI stay the same in
  * every country. No product name here; the product line lives in us-products.ts.
  */
-export const US_SUPPLEMENT_DESCRIPTIONS: Readonly<Record<string, string>> = {
+export const US_SUPPLEMENT_DESCRIPTIONS: Readonly<Partial<Record<UsProductCardId, string>>> = {
   // No WHO dementia sentences (a disease outcome beside a named product).
-  'supplement-micronutrient-base-us': `${BASE_COSMOS} ${BASE_K2}`,
+  'supplement-micronutrient-base': `${BASE_COSMOS} ${BASE_K2}`,
   // Strength and lean mass only: no memory sentence.
-  'supplement-creatine-us': CREATINE_STRENGTH,
+  'supplement-creatine': CREATINE_STRENGTH,
   // Macular pigment only: no macular degeneration outcome.
-  'supplement-lutein-zeaxanthin-us': LUTEIN_PIGMENT,
+  'supplement-lutein-zeaxanthin': LUTEIN_PIGMENT,
 };
 
 /** Dietary advice for elevated lipids — shared between suggestion card and InputPanel medication cascade */
@@ -245,17 +245,19 @@ export function generateSuggestions(
 
   // === Always-show lifestyle suggestions ===
 
-  // Protein target (core recommendation, adjusted for CKD)
+  // Protein target (core recommendation, adjusted for CKD). Needs sex, as ideal body weight does (US-07 AC8).
   const isCkd = results.eGFR !== undefined && results.eGFR < EGFR_THRESHOLDS.mildlyDecreased;
-  suggestions.push({
-    id: 'protein-target',
-    category: 'nutrition',
-    priority: 'info',
-    title: `Daily protein target: ${results.proteinTarget}g`,
-    description: isCkd
-      ? `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us('weight'))}, aim for ${results.proteinTarget}g of protein daily (1.0g per kg, adjusted for kidney function). Discuss with your doctor.`
-      : `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us('weight'))}, aim for ${results.proteinTarget}g of protein daily. This supports muscle maintenance and metabolic health.`,
-  });
+  if (results.idealBodyWeight !== undefined && results.proteinTarget !== undefined) {
+    suggestions.push({
+      id: 'protein-target',
+      category: 'nutrition',
+      priority: 'info',
+      title: `Daily protein target: ${results.proteinTarget}g`,
+      description: isCkd
+        ? `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us('weight'))}, aim for ${results.proteinTarget}g of protein daily (1.0g per kg, adjusted for kidney function). Discuss with your doctor.`
+        : `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us('weight'))}, aim for ${results.proteinTarget}g of protein daily. This supports muscle maintenance and metabolic health.`,
+    });
+  }
 
   // Low salt — above the age-dependent BP target
   if (inputs.systolicBp !== undefined && inputs.systolicBp > bpTargetFor(results.age)) {
@@ -285,8 +287,10 @@ export function generateSuggestions(
     });
   }
 
-  // High-potassium diet — only when eGFR ≥ 45 (safe kidney function)
-  if (results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildlyDecreased) {
+  // High-potassium diet — only when eGFR ≥ 45 (safe kidney function), from an eGFR no newer
+  // creatinine has outdated (US-07 AC8): potassium advice errs on the cautious side.
+  const potassiumSafe = results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildlyDecreased && !inputs.labEgfrOutdated;
+  if (potassiumSafe) {
     suggestions.push({
       id: 'high-potassium',
       category: 'nutrition',
@@ -653,8 +657,8 @@ export function generateSuggestions(
     }
   }
 
-  // HDL cholesterol (thresholds in mmol/L)
-  if (inputs.hdlC !== undefined) {
+  // HDL cholesterol (thresholds in mmol/L). The line is sex-specific, so no sex, no card (US-07 AC8).
+  if (inputs.hdlC !== undefined && inputs.sex) {
     const lowThreshold = inputs.sex === 'male' ? HDL_THRESHOLDS.lowMale : HDL_THRESHOLDS.lowFemale;
     if (inputs.hdlC < lowThreshold) {
       suggestions.push({
@@ -686,7 +690,7 @@ export function generateSuggestions(
 
     // Build conditional lifestyle paragraphs for stage 1 & 2
     const bpExtraParagraphs: string[] = [];
-    if (results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildlyDecreased) {
+    if (potassiumSafe) {
       bpExtraParagraphs.push('Increase potassium-rich foods (3,500–5,000mg/day).');
     }
     if (weightMeds.on) {
@@ -1060,7 +1064,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Creatine',
-      description: `${CREATINE_STRENGTH} Dr Stanfield considers the memory evidence clear and consistent; formal reviews are more mixed, with the clearest benefit in older adults.`,
+      description: `${CREATINE_STRENGTH} There is also an interesting signal that it may help memory, another possible benefit; formal reviews are mixed, with the clearest benefit in older adults.`,
     },
     {
       id: 'supplement-collagen',

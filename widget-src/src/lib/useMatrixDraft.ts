@@ -143,6 +143,9 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
   return {
     draft: { date, values },
     backfills: state.backfills,
+    /** Any typed text kept, valid or not, restored or displaced: what the
+     *  phone's "Unsaved values" cue reports (US-62 AC11). */
+    holdsText: holdsAny(state.draft.values) || holdsAny(state.backfills),
     /** What the user typed into a cell, verbatim, and the unit it is in when
      *  a unit switch must keep the quantity. `byHand` false: the chat filled
      *  it, and the user has not typed into it since. */

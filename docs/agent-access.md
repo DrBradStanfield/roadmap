@@ -153,14 +153,17 @@ someone's medical history, or lose their data at the next device sync.
    `inputs.labEgfr` (mL/min/1.73m²) and `inputs.labEgfrDate` (YYYY-MM-DD) are set only
    when the plan's eGFR is the lab's printed one (US-07 AC7): the latest active lab `egfr`
    row, used when it is from the creatinine's day or later, or when no eGFR can be
-   calculated (no birth year, or a creatinine the plan excludes). They are derived, never
-   stored: write lab values, not these fields.
+   calculated (no birth year, no sex, or a creatinine the plan excludes). `inputs.labEgfrOutdated`
+   is `true` when a creatinine newer than that lab eGFR exists but the plan cannot use it
+   yet (no sex or no birth year): the lab eGFR still shows and still sets the protein
+   target, but the plan gives no potassium advice from it (US-07 AC8). All three are
+   derived, never stored: write lab values, not these fields.
    One exception to "converted": LDL and ApoB, the lipids with a target line, print on
    the side of their line the plan grades them (US-07 AC5). A value within one display
    step of the line can differ from a plain conversion: one step up to the line when the
    plan grades it at or above, or one more decimal place when it grades it below.
-   `get_plan`'s tool description in `mcp-tools.ts` should say this too; it stays frozen
-   while OpenAI reviews the app, so add it once that review is done.
+   `get_plan`'s tool description in `mcp-tools.ts` should say this too. It was held for
+   OpenAI's review, which ended 2026-10-29; adding it is open work (an agent-contract change).
    **Blood pressure (US-02 AC8):** on any day, the active `systolic_bp` must be above the
    active `diastolic_bp`. A write that would leave it at or below is refused
    (`out-of-range`). To change both numbers one at a time, change the bottom number
@@ -230,6 +233,13 @@ Validate your result against the schema before you write it back.
   those clamps it does not repair rows, and it does not warn. A measurement or lab row
   whose `recordedAt` does not start with a real calendar day (`YYYY-MM-DD`) is removed
   at the next sync.
+- **A row or profile field the app cannot read stays in the file, unshown** (US-65). A
+  metric or medication key the app version does not know, or a wrong type on a field it
+  reads (a string `value`, a string `heightCm`), is left exactly where it is: every
+  version still merges, erases and corrects it, but the screens, `read_record` and
+  `get_plan` skip it, the write tools never repeat its value, and the app shows a one-line
+  count. Fix it by writing a corrected row. The hosted connector cannot repair a hidden
+  profile field (its expected-value check can never match it): use the app or the stdio server.
 - **Unknown fields survive at the top level and inside rows**: migrate and merge both
   spread what they do not recognise, so an older app will not strip something a newer
   one added. **`meta` is the exception:** `mergeFiles` rebuilds it from its five known
@@ -246,7 +256,7 @@ Validate your result against the schema before you write it back.
   and leave the superseded one where it is. If you convert such a row yourself you will
   make a second, competing correction.
 - **A thin plan is not a clean bill of health.** On a record holding no measurement at
-  all, `get_plan` still returns `protein-target`, `exercise` and `sleep` — they rest on
+  all, `get_plan` still returns `protein-target` (when sex is known), `exercise` and `sleep` — they rest on
   no value whatever — plus the screening, skin and supplement cards, which follow from
   sex and age alone, and `fiber`, which shows whenever lipids are NOT elevated, absent
   lipids included: read it as "no lipid card", never as "lipids fine". Every other
@@ -269,6 +279,18 @@ Validate your result against the schema before you write it back.
   `adults-only` card, a `null` in those four profile fields means "withheld". In any
   other plan a `null` means the inputs are missing (no creatinine, no weight): read
   `missingInputs` for which.
+- **The plan needs a height, not a sex** (US-07 AC8, 2026-10-31). A record with a height
+  and no sex gets a plan without every part that needs sex: `profile.sex`,
+  `profile.idealBodyWeightKg` and `profile.proteinTargetG` are `null`, there is no
+  `protein-target` card, no calculated eGFR (a lab-printed eGFR still shows), no
+  `hdl-low` card and no breast, cervical, prostate, endometrial or bone-density screening.
+  `missingInputs` names `sex`, and `profile.needsSex` lists those parts in words (`[]` once sex
+  is set). Do not work them out yourself or assume a sex; ask the user, then
+  `update_profile`. A stored sex that is not `male` or `female` counts as none (the
+  record is not changed). `due` keeps every reminder that does not depend on sex (blood
+  tests, medication review, colorectal and lung screening); only the sexed screenings
+  drop out. Only a missing or unusable height still fails, with a hint that asks
+  for it.
 
 ## The hosted path (US-32 Phase 1)
 

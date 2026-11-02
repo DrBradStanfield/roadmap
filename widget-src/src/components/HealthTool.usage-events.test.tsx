@@ -107,18 +107,18 @@ describe('US-62 AC4: tool_opened', () => {
 });
 
 describe('US-62 AC5: results_viewed when the plan is on screen', () => {
-  it('on a phone: not while Input is active, then once on switching to Plan', async () => {
+  it('on a phone: not while My data is active, then once on switching to My plan', async () => {
     phone = true;
     const view = await renderPlan();
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
-    expect(named('results_viewed')).toHaveLength(0); // all three slides are mounted, the plan is not seen
+    expect(named('results_viewed')).toHaveLength(0); // all three panels are mounted, the plan is not seen
 
-    fireEvent.click(view.getByRole('tab', { name: 'Plan' }));
+    fireEvent.click(view.getByRole('tab', { name: 'My plan' }));
     await waitFor(() => expect(named('results_viewed')).toHaveLength(1));
     expect(named('results_viewed')[0].metadata).toBeUndefined(); // the name alone, as before
 
-    fireEvent.click(view.getByRole('tab', { name: 'Input' }));
-    fireEvent.click(view.getByRole('tab', { name: 'Plan' }));
+    fireEvent.click(view.getByRole('tab', { name: 'My data' }));
+    fireEvent.click(view.getByRole('tab', { name: 'My plan' }));
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
     expect(named('results_viewed')).toHaveLength(1); // once per tab
   });
@@ -157,7 +157,7 @@ describe('US-62: the Pages build sends no events', () => {
     surface.shopify = false;
     phone = isPhone;
     const view = await renderPlan();
-    if (isPhone) fireEvent.click(view.getByRole('tab', { name: 'Plan' }));
+    if (isPhone) fireEvent.click(view.getByRole('tab', { name: 'My plan' }));
     else scrollIntoViewport('.health-tool-right');
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
     expect(sent).toEqual([]);

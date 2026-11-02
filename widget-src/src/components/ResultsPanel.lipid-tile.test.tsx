@@ -5,6 +5,7 @@
  * "Above optimal" in amber, as ApoB's Borderline is amber at its 0.5 target.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { statTiles } from '@roadmap/health-core';
 import { cleanup, render } from '@testing-library/react';
 import { calculateHealthResults, toCanonicalValue, type HealthInputs, type UnitSystem } from '@roadmap/health-core';
 
@@ -20,7 +21,7 @@ afterEach(cleanup);
 /** The lipid tiles for these lab values. */
 function lipidTiles(values: Partial<HealthInputs>, unitSystem: UnitSystem = 'si') {
   const results = calculateHealthResults({ heightCm: 175, sex: 'male', ...values });
-  const view = render(<ResultsPanel results={results} isValid unitSystem={unitSystem} />);
+  const view = render(<ResultsPanel results={results} isValid tiles={statTiles(results, { unitSystem })} />);
   return Array.from(view.container.querySelectorAll('.stat-card'))
     .filter((c) => /LDL|Non-HDL|ApoB/.test(c.querySelector('.stat-label')?.textContent ?? ''));
 }

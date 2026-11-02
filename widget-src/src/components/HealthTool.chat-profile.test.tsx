@@ -11,11 +11,12 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, fireEvent, waitFor, act, type RenderResult } from '@testing-library/react';
-import { parseProposedEdit, ROADMAP_FILE_NAME, CURRENT_SCHEMA_VERSION, MemoryAdapter, MemoryCloud, migrateFile, rowRootIds, type ProposedEdit, type RoadmapFile, type StorageAdapter } from '@roadmap/health-core';
+import { createEmptyFile, parseProposedEdit, ROADMAP_FILE_NAME, CURRENT_SCHEMA_VERSION, MemoryAdapter, MemoryCloud, migrateFile, rowRootIds, type ProposedEdit, type RoadmapFile, type StorageAdapter } from '@roadmap/health-core';
 import { ERASE_UNREACHABLE, REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveDocuments, bulkSaveLabValues, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
+import { openAboutYou } from '../testing/health-tool-harness';
 import { BT_TIMELINE_DRAFT_KEY, MIRROR_CHANGED_EVENT, MIRROR_KEY } from '../lib/storage';
 
 const chat = vi.hoisted(() => ({
@@ -56,7 +57,9 @@ import { ERASE_DONE_CHAT_UNREAD, HealthTool, WRITE_REFUSED } from './HealthTool'
 /** The guest's record as this browser holds it, after every pending save. */
 async function recordOnDisk(): Promise<RoadmapFile> {
   await act(async () => { await flushRoadmapStore(); });
-  return (await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)).body as RoadmapFile;
+  // A record nothing was saved to is never written (US-10 AC5a): read it as empty.
+  const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
+  return (body ?? createEmptyFile({ deviceId: 'test', now: new Date().toISOString() })) as RoadmapFile;
 }
 const wait = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
 const banner = () => document.body.querySelector('.chat-profile-proposal[role="status"]') as HTMLElement | null;
@@ -72,6 +75,7 @@ async function guestWithoutProfile(saved: { sex?: 'male' | 'female'; heightCm?: 
   const view = render(<HealthTool />);
   await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
   await wait(600);
+  openAboutYou(view.container); // a complete record's About you is rows (US-62 AC12)
   return view;
 }
 /** The chat's reply: the tool block the model sent, through the real parser. */
@@ -214,7 +218,7 @@ describe('US-16 AC2: the proposal banner, after review', () => {
 
   it('never names a field that already holds the value, even after the form changes under the banner', async () => {
     localStorage.setItem('health_roadmap_unit_system', 'si');
-    const view = await guestWithoutProfile({ sex: 'female' });
+    const view = await guestWithoutProfile({ sex: 'female', heightCm: 170 }); // sex shows once height and weight are in (US-62 AC13)
     reply({ sex: 'male', height: { value: 178, unit: 'cm' } });
     expect(banner()!.textContent).toContain('Male (replaces Female)');
     // The user picks Male in the form: their own entry outranks the proposal, which goes.
@@ -222,7 +226,7 @@ describe('US-16 AC2: the proposal banner, after review', () => {
     expect(banner()).toBeNull();
     await wait(1500);
     expect((await recordOnDisk()).profile.sex).toBe('male');
-    expect((await recordOnDisk()).profile).not.toHaveProperty('heightCm');
+    expect((await recordOnDisk()).profile.heightCm).toBe(170);
   });
 
   it('a height typed in the form clears the proposal', async () => {
@@ -685,6 +689,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     const view = render(<HealthTool />);
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
     await wait(600);
+    openAboutYou(view.container);
     return view;
   }
   const cloudMedications = async (cloud: MemoryCloud) =>

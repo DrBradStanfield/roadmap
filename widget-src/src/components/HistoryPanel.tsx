@@ -89,14 +89,17 @@ function showSelectedEvent(labels: Record<string, { display: boolean }>, selecte
 }
 
 // Generic time-series line chart — used for both core metrics and additional lab values
-function TimeSeriesChart({
+export function TimeSeriesChart({
   title,
+  showTitle = true,
   data,
   unit,
   color,
   annotations,
 }: {
   title: string;
+  /** False where a heading above already names the chart (the value page, US-62 AC14). */
+  showTitle?: boolean;
   data: Array<{ x: number; y: number }>;
   unit: string;
   color: string;
@@ -211,9 +214,9 @@ function TimeSeriesChart({
 
   return (
     <div className="metric-chart-container">
-      <h3>{title}</h3>
+      {showTitle && <h3>{title}</h3>}
       <div className="metric-chart-canvas-wrap">
-        <canvas ref={canvasRef} />
+        <canvas ref={canvasRef} {...(!showTitle && { role: 'img', 'aria-label': `${title} chart` })} />
       </div>
       {annotations && annotations.length > 0 && (
         <ol className="metric-chart-events" aria-label={`${title} recorded medication changes`}>
@@ -238,7 +241,7 @@ interface HistoryPanelProps {
 }
 
 /** US-21 AC3a: a test reported in more than one unit is listed, not charted. */
-function MixedUnitsNote({ label, units }: { label: string; units: string[] }) {
+export function MixedUnitsNote({ label, units }: { label: string; units: string[] }) {
   return (
     <div className="metric-chart-container">
       <h3>{label}</h3>
