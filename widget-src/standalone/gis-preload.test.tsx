@@ -6,7 +6,7 @@
  * user activation and the popup is blocked, so GIS loads when the bar mounts,
  * and a click that still beats it says so instead of starting a doomed popup.
  */
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, fireEvent, cleanup } from '@testing-library/react';
 
 vi.mock('./google-config', () => ({
@@ -23,7 +23,15 @@ vi.mock('./connect', async (original) => ({
 
 import { GIS_LOADING, StorageBar } from './sync-control';
 
+// The GIS loader polls for window.google every 50 ms for up to 10 s, and the
+// script never arrives here. On real timers those polls outlive the file and
+// fire after jsdom has gone ("window is not defined", flaky in CI), so they run
+// on fake timers and are dropped after each test.
+beforeEach(() => { vi.useFakeTimers(); });
+
 afterEach(() => {
+  vi.clearAllTimers();
+  vi.useRealTimers();
   cleanup();
   delete (window as unknown as { google?: unknown }).google;
   document.querySelectorAll('script[src*="gsi/client"]').forEach((s) => s.remove());

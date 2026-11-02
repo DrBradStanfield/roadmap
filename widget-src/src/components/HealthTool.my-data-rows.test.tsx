@@ -10,7 +10,7 @@
  * are checked where they live.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
+import { act, cleanup, configure, fireEvent, render, waitFor, within } from '@testing-library/react';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveLabValues, correctValue, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
@@ -32,6 +32,11 @@ vi.mock('../lib/chat-api', async original => ({
 }));
 import { HealthTool } from './HealthTool';
 import { trackProductEvent } from '../lib/server-api';
+
+// Adversary R7 (2026-11-02): each Add waits on the store's real async save. Under a
+// loaded full run that took longer than waitFor's default 1 s, so two AC10 tests
+// failed now and then. A wider wait budget; the assertions are unchanged.
+configure({ asyncUtilTimeout: 5000 });
 
 const stops: Array<() => void> = [];
 let phone = true;
@@ -128,6 +133,18 @@ describe('US-62 AC8: one row per value on a phone', () => {
     expect(apob.querySelector('.md-row-meta')!.textContent).toBe('Optimal <0.50');
   });
 
+  it('a returning record\'s rows show its saved values from the first render, never Add (CI WebKit, PR 421)', async () => {
+    await seed();
+    // The first render, before any effect or promise settles: what a slow phone paints first.
+    const view = render(<HealthTool />);
+    const values = () => Object.fromEntries(['HbA1c', 'LDL Cholesterol', 'Weight', 'Blood Pressure', 'Sodium']
+      .map(name => [name, row(view, name)?.querySelector('.md-row-value')?.textContent ?? null]));
+    const expected = { 'HbA1c': '36', 'LDL Cholesterol': '3.4 (2.9)', 'Weight': '81.0 (84.0)', 'Blood Pressure': '126/80 (132/84)', 'Sodium': '139' };
+    expect(values()).toEqual(expected);
+    await act(async () => { await new Promise(r => setTimeout(r, 20)); });
+    expect(values()).toEqual(expected);
+  });
+
   it('a known minor: no adult targets on the rows, the waist target stays (US-07 AC6)', async () => {
     const year = new Date().getFullYear() - 12;
     await seed({ sex: 'male', heightCm: 150, birthYear: year, birthMonth: 1 });
@@ -138,6 +155,31 @@ describe('US-62 AC8: one row per value on a phone', () => {
     expect(row(view, 'Weight').querySelector('.md-row-meta')!.textContent).toBe('Oct 2026');
     expect(row(view, 'Blood Pressure').querySelector('.md-row-meta')!.textContent).toBe('Oct 2026');
     expect(row(view, 'Waist').querySelector('.md-row-meta')!.textContent).toBe('Target <75 · Oct 2026');
+  });
+});
+
+describe('US-62 AC15: the iPhone\'s symbols', () => {
+  it('each section title carries its tinted symbol, and each plan card its category square, hidden from screen readers', async () => {
+    await seed();
+    const view = await renderTool();
+    const panel = view.container.querySelector<HTMLElement>('.health-input-panel')!;
+    for (const [title, icon] of [['Vitals', 'heart'], ['Blood tests', 'drop'], [/^About you/, 'person']] as const) {
+      const heading = within(panel).getByRole('heading', { name: title }); // the symbol adds nothing to the name
+      const symbol = heading.querySelector<HTMLElement>('.section-icon')!;
+      expect(symbol.dataset.icon).toBe(icon);
+      expect(symbol.getAttribute('aria-hidden')).toBe('true');
+      expect(symbol.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+    }
+    const squares = await waitFor(() => {
+      const found = Array.from(view.container.querySelectorAll<HTMLElement>('.suggestion-card .category-icon'));
+      expect(found.length).toBeGreaterThan(0);
+      return found;
+    });
+    for (const square of squares) {
+      expect(square.getAttribute('aria-hidden')).toBe('true');
+      expect(square.querySelector('svg')).not.toBeNull();
+      expect(square.textContent).toBe('');
+    }
   });
 });
 
@@ -157,6 +199,22 @@ describe('US-62 AC10: the value page', () => {
     fireEvent.click(within(page).getByRole('button', { name: '‹ My data' }));
     await waitFor(() => expect(view.container.querySelector('.md-page')).toBeNull());
     expect(view.container.querySelector('.health-input-panel')!.className).not.toContain('md-page-open');
+  });
+
+  it('US-62 AC14: the title is a card title, and the chart does not repeat it (a pressure keeps its two names)', async () => {
+    await seed();
+    const view = await renderTool();
+    fireEvent.click(row(view, 'LDL Cholesterol'));
+    let page = view.container.querySelector<HTMLElement>('.md-page')!;
+    expect(within(page).getByRole('heading', { name: 'LDL Cholesterol' }).className).toContain('health-section-title');
+    await waitFor(() => expect(page.querySelector('canvas')).not.toBeNull());
+    expect(within(page).getAllByRole('heading', { name: 'LDL Cholesterol' })).toHaveLength(1);
+    expect(within(page).getByRole('img', { name: 'LDL Cholesterol chart' })).toBeTruthy();
+    fireEvent.click(within(page).getByRole('button', { name: '‹ My data' }));
+    fireEvent.click(await waitFor(() => row(view, 'Blood Pressure')));
+    page = view.container.querySelector<HTMLElement>('.md-page')!;
+    await waitFor(() => expect(page.querySelectorAll('canvas')).toHaveLength(2));
+    expect([...page.querySelectorAll('.metric-chart-container h3')].map(h => h.textContent)).toEqual(['Systolic', 'Diastolic']);
   });
 
   it('Add on a new day appends one active row, in the unit typed', async () => {
@@ -300,17 +358,23 @@ describe('US-62 AC12: About you low on a phone', () => {
   });
 });
 
-describe('US-62 AC9: desktop keeps the grids, with the same text', () => {
-  it('no rows; the grids\' hints and targets read exactly as before rowTarget', async () => {
+describe('US-62 AC9, AC11 (Brad 2026-11-02): desktop shows the rows too, the grids one click away with the same text', () => {
+  it('rows first; "All results as a table" shows the grids, whose hints and targets read exactly as before rowTarget', async () => {
     phone = false;
     await seed();
     // A first visit fills the device's mirror; the second opens the vitals grid, as a returning visit does.
     await renderTool();
     cleanup();
     const view = await renderTool();
-    await waitFor(() => expect(view.container.querySelector('.bt-row[data-metric] ~ .bt-row, .bt-timeline .bt-ref-label')).not.toBeNull());
+    expect(row(view, 'LDL Cholesterol').querySelector('.md-row-value')!.textContent).toBe('3.4 (2.9)');
+    expect(row(view, 'Weight')).toBeTruthy();
+    const tables = () => [...view.container.querySelectorAll<HTMLElement>('.md-table')];
+    expect(tables().length).toBe(2);
+    expect(tables().every(t => t.hidden)).toBe(true);
+    fireEvent.click(view.getByRole('button', { name: 'All results as a table' }));
+    expect(tables().every(t => !t.hidden)).toBe(true);
     expect(view.container.querySelector('.md-row')).toBeNull();
-    expect(view.container.querySelector('.md-table')).toBeNull();
+    await waitFor(() => expect(view.container.querySelector('.bt-row[data-metric] ~ .bt-row, .bt-timeline .bt-ref-label')).not.toBeNull());
     const refs = (selector: string) => [...view.container.querySelectorAll(`${selector} .bt-ref-label`)].map(e => e.textContent);
     expect(refs('.bt-timeline:not(.alr-matrix)').filter(t => t !== 'Units vary between reports')).toEqual(expect.arrayContaining([
       'Normal: <39 mmol/mol', 'Normal: 60–110 µmol/L', 'Optimal: <0.50 g/L', 'Optimal: <1.4 mmol/L',

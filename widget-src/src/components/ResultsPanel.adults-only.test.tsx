@@ -9,6 +9,7 @@
  * the medicine cards give way to one "Add your birth year" card.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { statTiles } from '@roadmap/health-core';
 import { cleanup, render } from '@testing-library/react';
 import { calculateHealthResults } from '@roadmap/health-core';
 
@@ -25,7 +26,7 @@ describe('US-07 AC6: a plan holding only the adults-only card', () => {
   it('renders the one card under one heading, with no empty group and the values still shown', () => {
     // Ten years old on any clock.
     const results = calculateHealthResults({ heightCm: 150, sex: 'female', weightKg: 45, birthYear: new Date().getFullYear() - 10 });
-    const { container } = render(<ResultsPanel results={results} isValid unitSystem="si" />);
+    const { container } = render(<ResultsPanel results={results} isValid tiles={results ? statTiles(results, { unitSystem: 'si' }) : []} />);
 
     const cards = container.querySelectorAll('.suggestion-card');
     expect(cards).toHaveLength(1);
@@ -46,7 +47,7 @@ describe('US-07 AC6: a minor\'s tiles hold values, not adult readings', () => {
       heightCm: 150, sex: 'female', weightKg: 60, birthYear: new Date().getFullYear() - 10,
       ldlC: 4.9, hba1c: 50, lpa: 200, creatinine: 60,
     });
-    const { container } = render(<ResultsPanel results={results} isValid unitSystem="si" />);
+    const { container } = render(<ResultsPanel results={results} isValid tiles={results ? statTiles(results, { unitSystem: 'si' }) : []} />);
 
     const tiles = Array.from(container.querySelectorAll('.stat-card'));
     const byLabel = new Map(tiles.map((t) => [t.querySelector('.stat-label')?.textContent, t]));
@@ -68,9 +69,9 @@ describe('US-07 AC6: a minor\'s tiles hold values, not adult readings', () => {
       heightCm: 150, sex: 'female', weightKg: 60, birthYear: new Date().getFullYear() - 40,
       ldlC: 4.9, hba1c: 50, lpa: 200, creatinine: 60,
     });
-    const { container } = render(<ResultsPanel results={results} isValid unitSystem="si" />);
+    const { container } = render(<ResultsPanel results={results} isValid tiles={results ? statTiles(results, { unitSystem: 'si' }) : []} />);
     const labels = Array.from(container.querySelectorAll('.stat-label')).map((l) => l.textContent);
-    expect(labels).toEqual(expect.arrayContaining(['BMI', 'Ideal Body Weight (IBW)', 'Protein Target', 'LDL Cholesterol', 'eGFR', 'Lp(a)', 'HbA1c']));
+    expect(labels).toEqual(expect.arrayContaining(['BMI', 'Ideal Body Weight', 'Protein Target', 'LDL Cholesterol', 'eGFR', 'Lp(a)', 'HbA1c']));
     expect(container.querySelectorAll('.stat-status').length).toBeGreaterThanOrEqual(6);
   });
 });
@@ -78,7 +79,7 @@ describe('US-07 AC6: a minor\'s tiles hold values, not adult readings', () => {
 describe('US-07 AC6: with no birth year, one card in place of the medicines', () => {
   it('renders "Add your birth year" once, and no medication card', () => {
     const results = calculateHealthResults({ heightCm: 175, sex: 'male', weightKg: 115, waistCm: 115, ldlC: 4.9 }, 'si', {});
-    const { container } = render(<ResultsPanel results={results} isValid unitSystem="si" />);
+    const { container } = render(<ResultsPanel results={results} isValid tiles={results ? statTiles(results, { unitSystem: 'si' }) : []} />);
     const titles = Array.from(container.querySelectorAll('.suggestion-title')).map((t) => t.textContent);
     expect(titles.filter((t) => t === 'Add your birth year')).toHaveLength(1);
     expect(titles).not.toContain('Consider starting a statin');
@@ -97,14 +98,14 @@ describe('US-07 AC6: no reminders section for a known minor', () => {
 
   it('a known minor sees no reminders section', () => {
     const results = calculateHealthResults({ heightCm: 150, sex: 'female', weightKg: 45, birthYear: new Date().getFullYear() - 10 });
-    const { queryByTestId } = render(<ResultsPanel results={results} isValid unitSystem="si" remindersSection={section} />);
+    const { queryByTestId } = render(<ResultsPanel results={results} isValid tiles={results ? statTiles(results, { unitSystem: 'si' }) : []} remindersSection={section} />);
     expect(queryByTestId('reminders')).toBeNull();
   });
 
   it('an adult and an unknown age still see it', () => {
     for (const birthYear of [new Date().getFullYear() - 40, undefined]) {
       const results = calculateHealthResults({ heightCm: 150, sex: 'female', weightKg: 60, ...(birthYear ? { birthYear } : {}) });
-      const { queryByTestId, unmount } = render(<ResultsPanel results={results} isValid unitSystem="si" remindersSection={section} />);
+      const { queryByTestId, unmount } = render(<ResultsPanel results={results} isValid tiles={results ? statTiles(results, { unitSystem: 'si' }) : []} remindersSection={section} />);
       expect(queryByTestId('reminders')).not.toBeNull();
       unmount();
     }

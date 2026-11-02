@@ -46,9 +46,10 @@ beat and the open-source line are his additions.
 
 ## Video B — "Add the ChatGPT connector"
 
-**Hold until OpenAI returns the 1.0.0 verdict** (issue #60). A video showing a
-connector nobody can add generates support mail, and if the verdict is a
-rejection it has to come down.
+**The hold is over.** It waited on OpenAI's verdict (issue #60). OpenAI declined
+the app on 2026-10-29, and Brad will not resubmit (2026-11-02), so ChatGPT users
+add the connector through developer mode for good. Whether this video is made,
+showing that route, is Brad's call.
 
 Same spine, two beats differ from Video A:
 

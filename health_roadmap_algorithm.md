@@ -32,20 +32,23 @@ Source: `calculations.ts`
 
 ### Ideal Body Weight (Peterson Formula, 2016)
 
-`IBW = 2.2 × BMI_target + 3.5 × BMI_target × (height_m − 1.5)` kg
+`Ideal Body Weight = 2.2 × BMI_target + 3.5 × BMI_target × (height_m − 1.5)` kg
 
 Sex-specific target BMIs (based on mortality meta-analyses):
 - **Male:** BMI target = 24 (optimal mortality range 23–26)
 - **Female:** BMI target = 22 (optimal mortality range 20–23)
 - **Minimum:** `max(result, 30)` kg
 - Rounded to 1 decimal place
+- **No sex on record:** no ideal body weight. There is no unisex target BMI, so the plan never falls back to either one (US-07 AC8).
 
 ### Daily Protein Target
 
-- **Normal:** `round(IBW * 1.2)` grams/day
-- **CKD (eGFR < 45):** `round(IBW * 1.0)` grams/day
+- **Normal:** `round(Ideal Body Weight * 1.2)` grams/day
+- **CKD (eGFR < 45):** `round(Ideal Body Weight * 1.0)` grams/day
 
 The CKD adjustment uses strict less-than: at exactly eGFR 45, the normal 1.2 multiplier applies.
+
+The target is worked out from ideal body weight, so it needs sex too: with no sex on record there is no protein target (US-07 AC8).
 
 ### BMI
 
@@ -92,12 +95,14 @@ Input: creatinine in umol/L. Internal conversion: `Cr_mg_dL = Cr_umol_L / 88.4`.
 
 Rounded to nearest integer (mL/min/1.73m^2).
 
+**No sex on record:** no calculated eGFR. The equation has no unisex form, so the plan never falls back to either branch (US-07 AC8). A lab-printed eGFR still stands (below).
+
 **Source (US-07 AC7, Brad 2026-10-27).** The plan reads one eGFR, chosen from two candidates by `withLabEgfr` (`plan.ts`):
 
 - (a) the eGFR above, calculated from the latest active creatinine and dated by that row;
 - (b) the latest active lab `egfr` row: the creatinine eGFR the lab printed, stored in mL/min/1.73m². `egfr_cystatin` and `egfr_combined` are never used.
 
-The newer by measurement day wins. On the same day the lab's eGFR wins: the lab worked it out from a real serum creatinine, and ours may come from a misread row. Only one exists: that one. Candidate (a) exists only when the plan can calculate it: a known birth year and a creatinine inside its input range (10–2650 µmol/L). Otherwise the lab eGFR stands, whatever the creatinine's day. Neither: no eGFR. A creatinine with no date (typed and not yet saved, or stated in the chat without a date) counts as today's, the day it would be saved with; an unsaved blood-test draft counts on the day it is dated. A creatinine is never worked back from an eGFR. The lab eGFR needs no age, and is rounded to the nearest integer. It drives the same rules as the calculated one: the CKD protein target, the potassium gate and the eGFR tile. A known minor's eGFR is withheld either way (section on adult readings). With a lab eGFR, creatinine is not a missing plan input.
+The newer by measurement day wins. On the same day the lab's eGFR wins: the lab worked it out from a real serum creatinine, and ours may come from a misread row. Only one exists: that one. Candidate (a) exists only when the plan can calculate it: a known birth year, a known sex (US-07 AC8) and a creatinine inside its input range (10–2650 µmol/L). Otherwise the lab eGFR stands, whatever the creatinine's day. Neither: no eGFR. A creatinine with no date (typed and not yet saved, or stated in the chat without a date) counts as today's, the day it would be saved with; an unsaved blood-test draft counts on the day it is dated. A creatinine is never worked back from an eGFR. The lab eGFR needs no age, and is rounded to the nearest integer. It drives the same rules as the calculated one: the CKD protein target, the potassium gate and the eGFR tile. One exception (US-07 AC8, orchestrator's call 2026-11-01, the cautious side): when a creatinine newer than the lab eGFR exists but the plan cannot calculate from it (no sex or no birth year), the lab eGFR still shows and still sets the protein target, but it does not open the potassium advice (`labEgfrOutdated`). Potassium advice needs an eGFR that no newer creatinine has outdated. A known minor's eGFR is withheld either way (section on adult readings). With a lab eGFR, creatinine is not a missing plan input.
 
 ### Non-HDL Cholesterol
 
@@ -332,6 +337,8 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `prolactin` | mIU/L | microiu/ml | 1 | µIU/mL with the prefix spelled out |
 | `prolactin` | mIU/L | mciu/ml | 1 | µIU/mL with the mc prefix (as mcg) |
 | `cortisol_am` | nmol/L | µg/dl | 27.59 | cortisol 362.46 g/mol |
+| `cortisol_random` | nmol/L | µg/dl | 27.59 | cortisol 362.46 g/mol |
+| `cortisol_pm` | nmol/L | µg/dl | 27.59 | cortisol 362.46 g/mol |
 | `psa_free` | µg/L | ng/ml | 1 | ng/mL and µg/L are the same number |
 | `lh` | IU/L | miu/ml | 1 | mIU/mL and IU/L are the same number |
 | `lh` | IU/L | u/l | 1 | U/L is IU/L, printed short |
@@ -435,9 +442,13 @@ Non-HDL cholesterol is deliberately not catalogued. The app derives it from tota
 - **AMH** converts at the 140 kDa dimer convention (7.14 pmol/L per ng/mL), as insulin's 6.00 is one. Growth hormone in mIU/L and soluble transferrin receptor in nmol/L are assay-dependent and refused.
 - **Left out:** the free thyroxine index (two scales share the name), every unitless ratio and index (TC/HDL, INR, free androgen index, HOMA-IR, A/G, BUN/creatinine), PT and APTT in seconds, base excess, and a bare "T4", "T3" or "troponin", which can mean either test. A printed one stays an uncatalogued row with its printed unit.
 
-AC20 adds the comma, bracket and "absolute" spellings US, AU and NZ reports print for tests already catalogued ("Bilirubin, Total", "ALT (SGPT)", "Neutrophils (Absolute)"). There is no punctuation fold: each spelling is listed. "Urea Nitrogen (BUN)" takes BUN's mg/dL factor; "Urea (BUN)" does not (see the `urea` row). The extraction prompt is unchanged: it does not yet suggest the new keys, the new core names or `bun`; that prompt change waits for the #166 Haiku benchmark. What a US BUN in mg/dL does today depends on the name it arrives under. Under a printed nitrogen name ("BUN", "Urea Nitrogen", "Blood Urea Nitrogen (BUN)", or the extractor's `blood_urea_nitrogen`) it converts at ×0.357. Under "Urea (BUN)" or the bare `urea` it is refused. The assistant routes (`file_results`, `add_lab_values`) store the printed name, so they convert. The website stores the extractor's snake_case name, and the prompt still suggests only `urea` for a urea row, so a website BUN in mg/dL is still refused there. The core resolver (not the prompt) gained the printed names on Brad's own reports ("Cholesterol (HDL)", "Cholesterol (LDL) (calculated)") and six more ("HDL-Cholesterol", "LDL-Cholesterol", "LDL Chol Calc (NIH)", "Glycated haemoglobin (HbA1c)", "PSA, Total", "Prostate Specific Ag"). A direct LDL is not yet a core alias: which LDL wins a day with both is open (US-21 AC19 notes).
+AC20 adds the comma, bracket and "absolute" spellings US, AU and NZ reports print for tests already catalogued ("Bilirubin, Total", "ALT (SGPT)", "Neutrophils (Absolute)"). Each of these spellings is listed. Since US-07 AC10 (Brad 2026-11-02), a name no listed spelling matches is tried once more without its punctuation: "A.M." and "P.M." lose their dots, and hyphens, dashes, brackets, commas, colons and slashes become spaces. That second try never changes how a name that already resolves resolves; a form two tests share resolves to nothing; a name that stays uncatalogued keeps its own slot, and core metric names are untouched. "Urea Nitrogen (BUN)" takes BUN's mg/dL factor; "Urea (BUN)" does not (see the `urea` row). The extraction prompt offers every catalogue name (US-07 AC10, Brad 2026-11-02: "release now"); it still does not suggest the new core names or `bun`, which the resolver alone knows. What a US BUN in mg/dL does today depends on the name it arrives under. Under a printed nitrogen name ("BUN", "Urea Nitrogen", "Blood Urea Nitrogen (BUN)", or the extractor's `blood_urea_nitrogen`) it converts at ×0.357. Under "Urea (BUN)" or the bare `urea` it is refused. The assistant routes (`file_results`, `add_lab_values`) store the printed name, so they convert. The website now files a row by the name the report printed when it resolves (US-07 AC10), so a website "BUN" in mg/dL converts too; a row the model names only `urea` is still refused in mg/dL. The core resolver (not the prompt) gained the printed names on Brad's own reports ("Cholesterol (HDL)", "Cholesterol (LDL) (calculated)") and six more ("HDL-Cholesterol", "LDL-Cholesterol", "LDL Chol Calc (NIH)", "Glycated haemoglobin (HbA1c)", "PSA, Total", "Prostate Specific Ag"). A direct LDL is not yet a core alias: which LDL wins a day with both is open (US-21 AC19 notes).
 
 Three-file sync: `evidence.ts` and `roadmap_text.html` are untouched because no threshold, suggestion or user-facing sentence changes — only the unit a stored number is expressed in. This holds for the 2026-10-20 additions too: no suggestion reads a catalogued test (`suggestions.ts` never reads `labValues`), so they are record-keeping only. If any of them ever drives a suggestion, all three files change.
+
+**Cortisol by timing (US-07 AC9, Brad 2026-11-02, issue 476).** Cortisol is read against the time it was drawn, so each timing has its own entry, in nmol/L at the same 27.59 µg/dL factor. A name that prints no timing ("Cortisol") is a morning cortisol, `cortisol_am` "Cortisol (morning)", since most cortisol tests are drawn in the morning. AM or morning spellings go there too. A random cortisol goes to `cortisol_random` "Cortisol (random)". A PM, evening or (blood) midnight cortisol goes to `cortisol_pm` "Cortisol (PM)". Salivary and urine cortisol are not catalogued: they keep their printed names. A row stored earlier under a random or PM name was uncatalogued; slots are computed on read, so it now reads under its new entry, and one printed in µg/dL is converted at load by an appended correction row (`migrate.ts`, as for every newly catalogued test). A bare "Cortisol" row stays in `cortisol_am`. The upload prompt offers all three cortisol names (US-07 AC10, Brad 2026-11-02: "just switch over"). Punctuated spellings ("Cortisol, A.M.", "cortisol-pm", "P.M. cortisol") reach the same entries through the second, punctuation-free try above.
+
+**Printed name decides (US-07 AC10, Brad 2026-11-02).** On a website or BYOK upload the model also returns each row's name as the report prints it. When that printed name resolves (the exact lookup or the punctuation-free one, never part of a name) to a core metric or a catalogued test, it decides where the row is filed, over the model's pick: a bare "Cortisol" is a morning cortisol whatever key the model chose, and a printed urine creatinine is a lab row, never serum creatinine. When it resolves to nothing, the model's pick stands. Specimen: when one name says urine or saliva and the other does not, the one that says it wins, for every test (a plain "Sodium" under a URINE heading stays urine sodium); for creatinine, a row the model listed among other tests is promoted when its printed name is a serum creatinine name; the unit check still refuses urine-only units. No review flag is added. A row with no printed name is filed as before. No row is edited; the connector, chat and agent paths are unchanged.
 
 ---
 
@@ -500,6 +511,9 @@ The Optimal line for LDL and non-HDL is the plan's on-treatment target (below). 
 |-----|--------------|-------|
 | Male | < 1.03 | < 40 |
 | Female | < 1.29 | < 50 |
+| Not on record | no threshold | no threshold |
+
+With no sex on record the plan grades no HDL, so `hdl-low` does not show (US-07 AC8).
 
 ### Triglycerides (mmol/L)
 
@@ -534,6 +548,19 @@ The Optimal line for LDL and non-HDL is the plan's on-treatment target (below). 
 | mildlyDecreased | 45 | CKD-3b boundary, protein adjustment |
 | moderatelyDecreased | 30 | G3b |
 | severelyDecreased | 15 | G4 |
+
+**Labels (`getEgfrStatus`; US-07 AC9, Brad 2026-11-02, issue 474).** From 60 down the tile and card use KDIGO 2024's names and cut points. Normal and Low Normal are the tool's own bands: KDIGO calls 60-89 mildly decreased (G2), and G1-G2 are not chronic kidney disease without other markers of kidney damage.
+
+| eGFR | Label | KDIGO 2024 |
+|------|-------|------------|
+| >= 70 | Normal | tool's own (G1 >= 90 normal or high; G2 60-89 mildly decreased) |
+| 60-69 | Low Normal | tool's own (G2 mildly decreased) |
+| 45-59 | Mildly to Moderately Decreased | G3a |
+| 30-44 | Moderately to Severely Decreased | G3b |
+| 15-29 | Severely Decreased | G4 |
+| < 15 | Kidney Failure | G5 |
+
+Source: KDIGO 2024 CKD guideline (Kidney Int 2024; DOI: 10.1016/j.kint.2023.10.018), cited on the card.
 
 ### ApoB (g/L)
 
@@ -622,6 +649,10 @@ The plan is built for adults aged 18 and over (US-07 AC6, 2026-10-14; amended th
 | 18 or over | The plan below, unchanged. |
 | Unknown (no birth year) | The plan below, except the medicine cards. Medicine cards need a known age of 18 or over. When the plan would show any, they give way to one card where the first stood: `add-birth-year` (general, info), "Add your birth year": "Medicine suggestions need your age. Add your birth year to see them." Every other card is unchanged. The standalone lipid cards (`apob-*`, `non-hdl-*`, `ldl-*`, `total-chol-*`) never give way to the lipid cascade here, because the cascade is not shown. No weight card gives way to the weight cascade, at any age. The kept cards suggest no medicine in their own text: `apob-very-high` ends "Discuss treatment, including lifestyle changes, with your doctor." and `ldl-very-high` "Discuss treatment with your doctor." in place of their statin sentence, `bp-stage2` says "Discuss treatment with your doctor." in place of "Medication is typically recommended at this level.", `bp-stage1` and `bp-stage2` keep their weight-loss sentences but leave out "GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.", and the `lpa-elevated` checklist leaves out its "not started" medicine lines. One exception, by decision: `ldl-high` keeps "Consider lifestyle modifications and discuss medication options." It names no medicine, and discussing is not suggesting. |
 
+**Unknown sex (US-07 AC8, Brad 2026-10-31).** The plan needs only a height. A stored sex that is not male or female counts as none (the record is not changed). With no sex on record it is the plan above, minus every part that needs sex: the ideal body weight, the protein target and its `protein-target` card, a calculated eGFR (a lab-printed one still stands, and a calculated one cannot outrank it; when a newer creatinine exists, that lab eGFR opens no potassium advice), the `hdl-low` card, and the sex-specific screenings (breast, cervical, prostate, endometrial, bone density), as cards and as reminders in `due` (section 11). Nothing falls back to a male or female default. BMI, the waist-to-height ratio and every unsexed card are unchanged. `get_plan` returns `profile.sex`, `idealBodyWeightKg` and `proteinTargetG` as `null`, names `sex` in `missingInputs`, and lists the missing parts in `profile.needsSex`. No usable height is still no plan. The website's blood-test grids and My data rows give HDL and creatinine no colour and no spoken grade with no sex on record, and assume no sex (US-62 AC13); their hints show both lines ("Optimal: >1.0/>1.3" for HDL; "Normal: 60–110 (men) / 45–90 (women)" for creatinine, "Normal 60–110/45–90" in a row). With sex, each is coloured on its own line: HDL ok from 1.03 mmol/L (men) or 1.29 (women), red below 1.03; creatinine ok to 110 µmol/L (men) or 90 (women), red from 1.3 × that ceiling. The numbers live in `units.ts` (`HDL_GRID_BANDS`, `CREATININE_GRID_BANDS`).
+
+Three-file sync for US-07 AC8: `evidence.ts` needs no change. No card's reason, guideline tag or citation changes, and the sex-specific "why" texts (ideal body weight, BMI) are built only when sex is known. `roadmap_text.html` needs no change. It describes how each number is worked out, which is unchanged when sex is known, and its eGFR sentence ("uses your creatinine level along with your age and sex") stays true: with no sex there is no calculated eGFR.
+
 The medicine cards are the `medication` category: `weight-glp1`; `weight-med-glp1`, `-glp1-dose`, `-glp1-increase`, `-glp1-switch`, `-sglt2i`, `-metformin`; `med-statin`, `-ezetimibe`, `-bempedoic-acid`, `-statin-dose`, `-statin-increase`, `-statin-switch`, `-pcsk9i`.
 
 The gate's age (`isKnownMinor`) is the one in section 1, except that a missing birth month is strict: the person is a minor until 1 January of the year after the year they turn 18 (birth year + 19), so no one counts as 18 early. Someone born in 2008 with no month is a minor through 31 December 2026 and an adult from 1 January 2027. A known month keeps the birthday-month rule. The gate reads the date at UTC−12, the zone furthest behind, whatever zone it runs in (the hosted server runs in UTC), so no one anywhere counts as 18 early: the new month or year starts for the gate at 12:00 UTC on its first day (born November 2008: an adult from 1 November 2026 12:00 UTC; born 2008 with no month: from 1 January 2027 12:00 UTC). Every other age keeps the January default and the local date, so that person's profile reads 18 beside the adults-only card through 2026 (accepted). Every surface (the plan, the reminder schedule, the form, the chat context) asks the gate over the birth year and month the plan keeps (`knownMinorOf`): one outside the plan's bounds (birth year 1900 to this year, month 1 to 12) counts as missing, so no surface calls someone a minor while the plan has no age for them.
@@ -645,17 +676,19 @@ Three-file sync for this section's 2026-10-14 amendments (the strict missing-mon
 
 | ID | Category | What | Evidence |
 |----|----------|------|----------|
-| `protein-target` | nutrition | Daily protein target (CKD-adjusted if eGFR < 45) | ISSN 2017 |
+| `protein-target` | nutrition | Daily protein target (CKD-adjusted if eGFR < 45). Needs sex: absent with no sex on record (US-07 AC8) | ISSN 2017 |
 | `fiber` | nutrition | 25-35g fiber daily | Reynolds 2019 |
 | `exercise` | exercise | At least 150 min moderate cardio, or 75 min vigorous, or a mix (1 vigorous min = 2 moderate) + 2-3 resistance sessions/week | WHO 2020; Physical Activity Guidelines 2018 |
 | `sleep` | sleep | 7-9 hours nightly | Cappuccio 2010 |
+
+**Exercise safety (display text, Brad 2026-11-01):** roadmap_text.html's Exercise safety paragraph says only: stop if you get chest pain, dizziness, fainting, palpitations or unusual breathlessness, and see your doctor before you exercise again (Franklin 2020, AHA scientific statement, DOI: 10.1161/CIR.0000000000000749). The Apple Watch heart rate paragraph above it says (Brad 2026-11-02 moved it there, so the safety paragraph gives one instruction): get emergency care for chest pain, whatever your pulse (Gulati 2021, AHA/ACC chest pain guideline, DOI: 10.1161/CIR.0000000000001029), or for a racing pulse with fainting, dizziness or breathlessness (NHS Arrhythmia, 2024, www.nhs.uk/conditions/arrhythmia). A very slow pulse with fainting, dizziness or breathlessness needs prompt medical care (Kusumoto 2019, ACC/AHA/HRS bradycardia guideline, DOI: 10.1161/CIR.0000000000000628). The heart rate guide (`heart_rate` in `metric-guides.ts`) states the last two lines and cites Gulati 2021, NHS 2024 and Kusumoto 2019. No card or threshold changes.
 
 ### Conditional Lifestyle Suggestions
 
 | ID | Condition | Priority | Notes |
 |----|-----------|----------|-------|
 | `low-salt` | systolicBp > 120 (age < 65) or > 130 (age >= 65) | info | Target: <1,500 mg/day (ACC/AHA 2017) |
-| `high-potassium` | eGFR >= 45 (safe kidney function) | info | |
+| `high-potassium` | eGFR >= 45 (safe kidney function), from an eGFR no newer creatinine has outdated (US-07 AC8, section 1) | info | |
 | `trig-nutrition` | triglycerides 150 mg/dL (about 1.7 mmol/L) or more | attention | Its text names "limit alcohol" among the key measures, except for someone who answered "I don't drink": then "Key measures: reduce sugar intake, and reduce total fat and calorie intake." (US-60, Brad 2026-10-31). Its evidence reason is one text for everyone: "reducing sugar and total calorie intake, and reducing alcohol for people who drink." |
 | `reduce-alcohol` | (BMI >= 30, OR (BMI >= 25 AND WHtR >= 0.5), OR triglycerides 150 mg/dL (about 1.7 mmol/L) or more), and the person has not answered "I don't drink" | attention | "I drink" or no answer keeps the card (US-60) |
 
@@ -715,7 +748,7 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 
 | ID | Condition | Priority |
 |----|-----------|----------|
-| `hdl-low` | HDL < sex-specific threshold | attention |
+| `hdl-low` | HDL < sex-specific threshold; never with no sex on record | attention |
 | `trig-very-high` | triglycerides >= 5.65 mmol/L (500 mg/dL) — pancreatitis risk | urgent |
 
 `trig-very-high` is the same for everyone, the alcohol answer included: its evidence reason keeps "strict alcohol and sugar avoidance" on purpose for a non-drinker too (US-60 C3, Brad 2026-10-31). It is an urgent safety card, and the advice does no harm to someone who does not drink.
@@ -731,7 +764,7 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 Stage 1 shows age-dependent target: < 120/80 for age < 65, < 130/80 for age >= 65.
 
 Stage 1 and 2 include conditional extra paragraphs:
-- If eGFR >= 45: potassium recommendation
+- If eGFR >= 45, from an eGFR no newer creatinine has outdated (US-07 AC8, section 1): potassium recommendation
 - If the weight-medication trigger is on (section 6): weight loss + GLP-1 mention (the GLP-1 sentence only for a known age of 18 or over; US-07 AC6)
 
 ---
@@ -904,6 +937,8 @@ The same trigger drives the cascade (medications tracked), the standalone `weigh
 
 **Condition:** GLP-1 dose recorded (when listed) AND GLP-1 escalation handled or not possible AND sglt2i is null, undefined, or drug is `'none'`.
 
+**Evidence (US-07 AC9, Brad 2026-11-02, issue 473):** the card offers the drug through the proactive weight trigger above, a deliberate choice; its claim of proven cardiovascular and kidney protection is population-specific ("in some populations"). References: EMPA-REG OUTCOME (Zinman 2015), DAPA-HF (McMurray 2019), DAPA-CKD (Heerspink 2020), the five-trial heart failure meta-analysis (Vaduganathan 2022) and SMART-C (Neuen 2025).
+
 ### Step 4: Metformin (`weight-med-metformin`)
 
 **Condition:** SGLT2i handled (on one or not tolerated) AND metformin is `undefined` or `'none'`.
@@ -982,6 +1017,8 @@ Source: `suggestions.ts` (screening section) + `types.ts` (intervals/follow-up)
 | Prostate | 45+ | Male | Shared decision |
 | Endometrial | 45+ | Female | Abnormal bleeding = urgent |
 | DEXA | Female >= 50, Male >= 70 | Both | — |
+
+With no sex on record only the unsexed screenings (colorectal, lung) show (US-07 AC8).
 
 ### Screening Intervals (months)
 
@@ -1067,55 +1104,71 @@ links** (compliance: listing generic ingredients is protected health information
 naming/linking a branded product is advertising a therapeutic good).
 
 **US overlay exception (US-61, Brad 2026-10-31).** The engine emits these generic
-cards in every country, and runRoadmap, get_plan, the CLI, the chat context and the
-PDF never carry a product. Only the screen (the Shopify web build and the iPhone app)
+cards in every country, and runRoadmap, get_plan, the CLI and the chat context never
+carry a product. The PDF never carries a product name, link or ownership line; it clones
+the screen, so the US text below (which names no product) may appear. Only the screen (the Shopify web build and the iPhone app)
 adds a product block (`us-products.ts`) for a known adult in the US: MicroVitamin+ on
 the micronutrient base, creatine, collagen, lutein and zeaxanthin and TMG cards; Sleep
 on the sleep card; none on omega-3 or fiber; one ownership line under the section. On
-three cards the overlay also swaps in a US text, kept beside the generic one under an
-explicit `-us` key (`US_SUPPLEMENT_DESCRIPTIONS` in suggestions.ts,
-`US_SUPPLEMENT_REFERENCES` in evidence.ts), so no disease outcome sits beside a named
-product: `supplement-micronutrient-base-us` drops the WHO 2026 dementia sentences and
+three cards the overlay also swaps in a US text, kept beside the generic one in maps
+keyed by card id (`US_SUPPLEMENT_DESCRIPTIONS` in suggestions.ts,
+`US_SUPPLEMENT_REFERENCES` in evidence.ts; the keys lost their `-us` suffix on
+2026-11-01, a rename only, with no text changed), so no disease outcome sits beside a named
+product: `supplement-micronutrient-base` drops the WHO 2026 dementia sentences and
 reference (COSMOS and the vitamin K2 / warfarin sentence stay);
-`supplement-creatine-us` keeps the strength and lean mass sentence and Kreider 2017
-only; `supplement-lutein-zeaxanthin-us` keeps the macular pigment sentences and Wilson
-2021 only (no AREDS outcome).
+`supplement-creatine` keeps the strength and lean mass sentence and Kreider 2017
+only; `supplement-lutein-zeaxanthin` keeps the macular pigment sentences and Wilson
+2021 only (no AREDS outcome). Supplement cards carry no `reason`, so their "Why this
+suggestion?" panel is the reference list alone, and the swapped US references cover it.
 
 | ID | Title | Ingredients / notes | Evidence |
 |----|-------|---------------------|----------|
 | `supplement-micronutrient-base` | Micronutrient base | Methylated B-complex; vitamin D3 + K2; magnesium taurate; trace minerals (glycinate); lutein + zeaxanthin; TMG; lycopene | COSMOS meta-analysis of 3 cognition sub-studies, men 60+ and women 65+ (Vyas 2024): global cognition and episodic memory, about 2 years less cognitive ageing. Executive function improved in COSMOS-Mind only (Baker 2023), so it is not a headline claim. WHO 2026 dementia guideline recommends against B, E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia without a diagnosed deficiency (strong recommendation, moderate certainty; stated reason: 'unexpected harmful effects that outweigh any potential benefits'); it validated its 2019 advice without reassessing supplements and did not cite COSMOS. Vitamin K2 caveat: in healthy volunteers on a vitamin K antagonist, MK-7 at 10–20 mcg/day lowered the INR to a clinically relevant degree in at least 40–60%, and 45 mcg/day lowered the group mean INR by about 40% (Theuwissen 2013). The authors concluded that MK-7 supplements should be avoided with VKA therapy. The card keeps the softer instruction: it asks anyone on warfarin (Coumadin, Marevan) or another vitamin K antagonist to check with their doctor or anticoagulation clinic before starting or stopping K2 |
-| `supplement-creatine` | Creatine | Creatine monohydrate, 3–5 g/day | Strength/lean mass (Kreider 2017). Cognition: that the memory evidence is clear and consistent is Dr Stanfield's judgement, not a trial finding; formal reviews are more mixed. Avgerinos 2018 (systematic review) and two meta-analyses (Prokopidis 2023; Xu 2024, 16 RCTs, 492 adults) reported better memory, but both meta-analyses pooled several non-independent tests per participant (Prokopidis authors' reply 2023; Citherlet 2026 commentary on Xu). The Prokopidis authors' reanalysis found no clear overall memory benefit (SMD 0.19, P = 0.15) except in older adults aged 66–76 (SMD 0.80). Xu 2024: no effect on overall cognition or executive function; GRADE certainty moderate for memory, low for attention and processing speed. EFSA 2024: cause-and-effect not established for any cognitive domain; a working-memory effect only at 20 g/day for 5–7 days, not at 2.2–14 g/day or 5 g/day for 6 weeks after a 5-day loading phase. Text only: the card is always shown and no rule or dose changed |
+| `supplement-creatine` | Creatine | Creatine monohydrate, 3–5 g/day | Strength/lean mass (Kreider 2017). Cognition: an interesting signal that creatine may help memory, another possible benefit (Brad 2026-11-02; it was 'clear and consistent', his judgement); formal reviews are mixed. Avgerinos 2018 (systematic review) and two meta-analyses (Prokopidis 2023; Xu 2024, 16 RCTs, 492 adults) reported better memory, but both meta-analyses pooled several non-independent tests per participant (Prokopidis authors' reply 2023; Citherlet 2026 commentary on Xu). The Prokopidis authors' reanalysis found no clear overall memory benefit (SMD 0.19, P = 0.15) except in older adults aged 66–76 (SMD 0.80). Xu 2024: no effect on overall cognition or executive function; GRADE certainty moderate for memory, low for attention and processing speed. EFSA 2024: cause-and-effect not established for any cognitive domain; a working-memory effect only at 20 g/day for 5–7 days, not at 2.2–14 g/day or 5 g/day for 6 weeks after a 5-day loading phase. Text only: the card is always shown and no rule or dose changed |
 | `supplement-collagen` | Collagen peptides | Hydrolyzed collagen peptides; may improve skin hydration and elasticity | Skin hydration/elasticity meta-analysis (Batool 2026) |
-| `supplement-lutein-zeaxanthin` | Lutein and zeaxanthin | The macular pigments. No disease claim in the card's own advice; the AREDS lines report the trials | Macular pigment optical density rises with L/Z supplements, more at higher doses (Wilson 2021, Adv Nutr: 46 studies, 3,189 adults with healthy eyes; +0.04 at 5 to <20 mg/day, +0.11 at ≥20 mg/day). AREDS (2001): a formula of vitamins C and E, beta-carotene and zinc slowed progression of macular degeneration in people at risk. AREDS2 (2013, JAMA): 10 mg lutein + 2 mg zeaxanthin worked as well as beta-carotene in that formula, without beta-carotene's excess lung cancers, mostly in former smokers. Framing rule (Brad): never write that adding L/Z "did not significantly slow progression". Adults only, like every supplement card (US-61) |
-| `supplement-tmg` | TMG (trimethylglycine) | Betaine. Card: "lowers blood homocysteine … Small trials suggest it may improve strength and power" | Homocysteine: meta-analysis of 5 RCTs in healthy adults, ≥4 g/day for 6–24 weeks, −1.23 µmol/L (McRae 2013). Strength and power: small trials with mixed results, much weaker than creatine's (Lee 2010; Pryor 2012, cycling sprint; Nobari 2021, young soccer players). The homocysteine-to-dementia link stays off the card. Adults only (US-61) |
+| `supplement-lutein-zeaxanthin` | Lutein and zeaxanthin | The macular pigments. No disease claim in the card's own advice; the AREDS lines report the trials | Macular pigment optical density rises with L/Z supplements, more at higher doses (Wilson 2021, Adv Nutr: 46 studies, 3,189 adults with healthy eyes; +0.04 at 5 to <20 mg/day, +0.11 at ≥20 mg/day). AREDS (2001): a formula of vitamins C and E, beta-carotene and zinc slowed progression of macular degeneration in people with intermediate macular degeneration. AREDS2 (2013, JAMA): 10 mg lutein + 2 mg zeaxanthin worked as well as beta-carotene in that formula, without beta-carotene's excess lung cancers, mostly in former smokers. At 10 years, lung cancer OR 1.82 (95% CI 1.06 to 3.12) with beta-carotene and 1.15 (0.79 to 1.66, not significant) with lutein and zeaxanthin (AREDS2 Report 28, Chew 2022). Framing rule (Brad): never write that adding L/Z "did not significantly slow progression". Adults only, like every supplement card (US-61) |
+| `supplement-tmg` | TMG (trimethylglycine) | Betaine. Card: "lowers blood homocysteine … Small trials suggest it may improve strength and power." | Homocysteine: meta-analysis of 5 RCTs in healthy adults, ≥4 g/day for 6–24 weeks, −1.23 µmol/L (McRae 2013). Strength and power: small trials with mixed results, much weaker than creatine's (Lee 2010; Pryor 2012, cycling sprint; Nobari 2021, young soccer players). Lipids: 6 RCTs at ≥4 g/day for 6–24 weeks, total cholesterol +0.34 mmol/L (95% CI 0.02 to 0.65), no significant effect on LDL, HDL or triglycerides; the authors say it "may moderately increase" it (Zawieja 2021, J Diet Suppl). Not on the card (Brad 2026-11-01: the card does not advocate those doses). The homocysteine-to-dementia link stays off the card. Adults only (US-61) |
 | `supplement-omega3` | Omega-3 | EPA/DHA, up to 1 g/day combined | CV benefits (Bernasconi 2021). The cognitive benefit of B vitamins may depend on good omega-3 status: in one trial, VITACOG, B vitamins slowed brain atrophy only with good omega-3 status, which was measured, not randomised (Jernerén 2015, Oulhaj 2016). The Dutch FACIT trial found the reverse: 800 mcg/day folic acid improved global cognition and processing speed only with lower omega-3 (van Soest 2021; 791 adults aged 50–70 with raised homocysteine; post hoc). WHO 2026 guideline recommends against omega-3, B, E and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia without a diagnosed deficiency (strong recommendation, moderate certainty; stated reason: 'unexpected harmful effects that outweigh any potential benefits'); it validated its 2019 advice without reassessing supplements, did not consider the omega-3 analyses of VITACOG or FACIT, and does not address omega-3 for heart health. That everyone may reasonably consider up to 1 g/day is Dr Stanfield's judgement, not a trial finding: CV benefit may rise with dose, but so may atrial fibrillation risk: AF HR 1.49 in trials testing >1 g/day vs 1.12 at ≤1 g/day (Gencer 2021). The card asks people with AF or on a blood thinner to check with their doctor first. Text only: the card is always shown and no dose is recorded or checked |
 | `supplement-sleep` | Sleep support | Low-dose melatonin; glycine; magnesium glycinate. Timing (3 to 4 hours before the person wants to fall asleep) appears in roadmap_text only; the card carries no timing | Melatonin may reduce sleep onset latency (Low 2020); a longer gap between dose and bedtime predicted faster sleep onset, and the authors suggest about 3 hours (Cruz-Sanabria 2024; pooled trials of other doses and forms, not 0.8 mg sustained-release) |
+
+**The page's Supplements section (roadmap_text.html, Brad 2026-11-02)** is education text, not
+a card, and may say more than the cards do. Its headings give the doses Brad takes. Beyond the
+cards it reports: the homocysteine and Alzheimer's link (Yu 2020: trials that lowered homocysteine with B
+vitamins promising but not conclusive, "more research is needed", and TMG not tested); the lutein AREDS lines, as on the generic card; a fiber
+entry framed only as a gap in intake (Quagliani 2017), with no cholesterol or blood pressure
+claim; glycine (Inagawa 2006, Yamadera 2007, Bannai 2012) and magnesium bisglycinate
+(Schuster 2025) for sleep; hyaluronic acid. GlyNAC sits under "Worth watching". "Medications That I Take" adds tirzepatide (Krumholz 2024, SURMOUNT-1 blood pressure) and empagliflozin (EMPA-KIDNEY 2023; canagliflozin in the ITP, Miller 2020), each labelled off-label; no card covers them. No card,
+rule or dose changes. `evidence.ts` gains only AREDS2 Report 28 on the lutein card, the
+source for its "no lung cancer signal" (the 2013 paper compared beta-carotene with none).
 
 ---
 
 ## 10. Progressive Disclosure
 
-Source: `mappings.ts` -> `computeFormStage(inputs, saved)`
+Source: `mappings.ts` -> `computeFormStage(inputs, saved)` and `opensFullForm(stage, saved)`
 
-New users see fields revealed in 3 stages. Returning users with a saved weight or any saved blood test skip to stage 3. The widget shows this stage, and the storefront chatbot embed stays muted below stage 3; both call the same function, the embed on the widget's saved copy (US-15 AC10).
+The form is the onboarding (US-62 AC13, Brad 2026-10-31): the stage is the first answer the record lacks. Each answer saves as it lands (the weight when its field is left, one active row per day), so a reload resumes at the first missing answer. Every step is required; there is no Skip. The widget shows the stage, and the storefront chatbot embed stays muted below stage 4; both call the same function, the embed on the widget's saved copy (US-15 AC10).
 
 `saved` is the newest saved row per metric. Its values fill the longitudinal fields the form leaves empty (`mergeLongitudinalInputs`), so a value typed in the form wins over the saved one.
 
-A value opens a stage only when it is plausible: inside its SI validation range in `UNIT_DEFS` (height 50–250 cm, weight 20–300 kg). A half-typed "1" of "180" does not open stage 2.
+A value opens a stage only when it is plausible: inside its SI validation range in `UNIT_DEFS` (height 50–250 cm, weight 20–300 kg). A half-typed "1" of "180" does not open the next stage. Sex counts only as male or female. The birth date counts once the plan would keep it: a year from 1900 to this year, alone (the plan reads January, as the iPhone does) or with a month 1–12 not in the future (`validateInputValue`, `birthInFuture`). The form asks month and year; a year alone passes the step.
 
-| Stage | Gate Condition | Fields Visible | Attention Glow |
-|-------|---------------|----------------|----------------|
-| 1 | Always | Units, Sex, Height | Sex |
-| 2 | `sex` set AND a plausible `heightCm` | Weight, Waist, BP, Birth Month/Year | Weight |
-| 3 | a plausible `weightKg`, typed or saved; OR any saved blood test (`BLOOD_TEST_METRICS`) | Blood Tests, Medications, Screening, Bone Density, Supplements | None (Email for guests) |
+| Stage | The record lacks | Asks (with the why-text under the question) | The plan then shows | Attention Glow |
+|-------|------------------|---------------------------------------------|---------------------|----------------|
+| 1 | a plausible `heightCm` or `weightKg`, typed or saved | Height and weight | (after it) the BMI tile | Height, then Weight |
+| 2 | `sex` | Sex | (after it) ideal body weight and the protein target | Sex |
+| 3 | a usable `birthYear` (and a usable `birthMonth` when one is given) | Birth month and year | (after it) the age-based plan | Birth month, year |
+| 4 | nothing | The rest of the form: vitals, blood tests, medications, screening, bone density, supplements, alcohol | Everything; the chat and the embed unmute | None (Email for guests) |
 
-Logic checks from stage 3 down (short-circuit), so returning users skip to full form. The blood-test rule lets a lab import with no weight open the whole form.
+A record holding more than the four answers opens the whole form at any stage (`opensFullForm`): any saved value but the weight (a blood test, a waist, a blood pressure), or a medication, screening, supplement, lab test or document. The missing profile questions are pinned at the top and glow; the chat and the embed still wait for stage 4. The widget keeps the highest stage reached on the record it shows: it only rises, so whatever was unlocked (the whole form included) stays open while a profile answer is edited (a height cleared to retype); an erase starts the onboarding again. The chats' muting follows the stage itself.
+
+The plan needs only a height (US-07 AC8), so it computes from step 1; what needs sex or age waits for those answers. Children (B9): no new rule before the birth date; once it arrives, a known minor gets today's handling (`knownMinorOf`).
 
 ### Field Categories
 
 **PREFILL_FIELDS** (auto-saved with debounce): `heightCm`, `sex`, `birthYear`, `birthMonth`, `alcohol` (US-60). `unitSystem` is also auto-saved but not in the array.
 
-**LONGITUDINAL_FIELDS** (immutable time-series, "Save New Values" button): `weightKg`, `waistCm`, `hba1c`, `creatinine`, `psa`, `apoB`, `ldlC`, `totalCholesterol`, `hdlC`, `triglycerides`, `systolicBp`, `diastolicBp`, `lpa`.
+**LONGITUDINAL_FIELDS** (immutable time-series; the first-time fields, the onboarding's weight among them, save when left, 500 ms later; the matrices save on leaving the grid or "Save New Values"): `weightKg`, `waistCm`, `hba1c`, `creatinine`, `psa`, `apoB`, `ldlC`, `totalCholesterol`, `hdlC`, `triglycerides`, `systolicBp`, `diastolicBp`, `lpa`.
 
 ---
 
@@ -1146,6 +1199,10 @@ Triggers when ANY active medication (drug name not in `['none', 'not_yet', 'not_
 ### Screening Reminders
 
 Same eligibility criteria as the suggestion algorithm (section 8). Checks both initial screening overdue and post-follow-up overdue. Only triggers for screenings the user has started (not `'not_yet_started'`).
+
+### Missing Profile Fields
+
+The schedule needs a birth year: without one it holds only the annual check-in floor. It does not need a sex (US-07 AC8): with no sex on record (or one that is not male or female) the blood-test, medication-review, colorectal and lung reminders run as usual, and only the sexed screenings (breast, cervical, prostate, bone density) drop out.
 
 ### Preference Filtering
 

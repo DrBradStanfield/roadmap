@@ -85,6 +85,13 @@ input[type="number"] {
   border-color: var(--color-brand-text);
 }
 
+/* US-65: the one calm line about entries this build could not read. */
+.hr-unreadable-note {
+  margin: 0 16px 12px;
+  font-size: 14px;
+  color: var(--color-gray-medium);
+}
+
 /* Health Tool Container */
 .health-tool {
   font-family: var(--font-family-base);
@@ -105,7 +112,7 @@ input[type="number"] {
 /* Two-Panel Layout */
 .health-tool-content {
   display: grid;
-  grid-template-columns: 5fr 6fr;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
   gap: 32px;
   align-items: stretch;
 }
@@ -125,17 +132,6 @@ input[type="number"] {
     padding: 12px !important;
     margin-left: 10px;
     margin-right: 10px;
-  }
-
-  /* US-09 AC5 — the storage line is a sibling of the cards, not a child, so it
-     needs their gutter; without it the sentence runs to the screen edge. */
-  .health-input-panel > .hr-storage-notice {
-    margin-left: 10px;
-    margin-right: 10px;
-  }
-
-  .field-hint-attention--centered {
-    margin-top: 15px !important;
   }
 
   .health-tool-right {
@@ -166,10 +162,16 @@ input[type="number"] {
     margin-bottom: 0;
   }
 
+  /* One gap between cards on both tabs: My data's cards and the plan's
+     sections (desktop keeps 20px), US-62 AC14. */
+  .hr-tabpanel .health-input-panel,
+  .hr-tabpanel .hr-col-body {
+    gap: 16px;
+  }
+
   .hr-tabpanel .health-tool-right {
     position: static;
     max-height: none;
-    overflow-y: visible;
   }
 
   /* US-20 AC6: the bottom tab bar, as on the iPhone. Sticky at the widget's
@@ -187,6 +189,7 @@ input[type="number"] {
   }
 
   .hr-tab {
+    position: relative;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -204,6 +207,17 @@ input[type="number"] {
 
   .hr-tab--active {
     color: var(--color-brand-text);
+  }
+
+  /* US-62 AC13: something new on this tab (a tile on My plan). */
+  .hr-tab-dot {
+    position: absolute;
+    top: 6px;
+    left: calc(50% + 10px);
+    width: 0;
+    height: 0;
+    border: 4px solid var(--color-brand); /* a border, so forced colours still draw it */
+    border-radius: 50%;
   }
 
   .hr-tab-icon {
@@ -236,7 +250,28 @@ input[type="number"] {
   position: sticky;
   top: 24px;
   max-height: calc(100vh - 48px);
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* US-62: the plan column's header stays put; only the body under it scrolls.
+   The body always has its scrollbar (overflow-y: scroll, as scrollbar-gutter is
+   not kept by WebKit until it overflows), so the plan never narrows when it grows
+   past the screen; overlay scrollbars (a Mac trackpad) take no room at all. The
+   header keeps the same room where the browser honours scrollbar-gutter. */
+@media (min-width: 769px) {
+  .health-tool-right .health-results-panel {
+    min-height: 0;
+  }
+  .health-tool-right .hr-col-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: scroll;
+  }
+  .health-tool-right .hr-col-header {
+    overflow-y: hidden;
+    scrollbar-gutter: stable;
+  }
 }
 
 /* Input Panel */
@@ -384,7 +419,7 @@ input[type="number"] {
   min-height: var(--control-height);
   border: var(--control-border);
   border-radius: var(--control-radius);
-  background: #fff;
+  background-color: #fff;
 }
 
 .health-tool .health-field input,
@@ -394,6 +429,25 @@ input[type="number"] {
   font-size: var(--control-font-size);
   line-height: normal;
   transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+/* Every drop-down draws one chevron, inset from the right edge, in place of
+   the browser's own arrow, which WebKit and the theme push flush against the
+   border (Brad 2026-11-02). Specificity 0,3,1 beats the theme's select rules
+   and the padding shorthands above. */
+.health-tool select:not([multiple]):not([size]) {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%236b7280' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 8px;
+  padding-right: 36px;
+}
+/* The 80px dose-unit select: a compact inset, so "capsules" is not clipped. */
+.health-tool select.supplement-unit:not([multiple]):not([size]) {
+  background-position: right 6px center;
+  padding-right: 20px;
 }
 
 .health-tool .health-field input:focus,
@@ -474,26 +528,24 @@ input[type="number"] {
 }
 
 .field-hint-attention--centered {
-  margin-top: 0;
+  /* Clear of the why-line above it, at every stage and width. */
+  margin-top: 20px;
   text-align: center;
 }
-/* Stage-2 helper sits right under the birth-info wrapper which has no
-   bottom padding, so it needs explicit breathing room. The stage-1
-   helper sits under .sex-height-row whose input fields already provide
-   visual whitespace, so it's left at margin-top: 0. */
-.prefill-fields-wrapper + .field-hint-attention--centered {
-  margin-top: 20px;
-}
 
+/* US-62 AC13: height and weight, two equal boxes side by side, phone and desktop. */
 .sex-height-row {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
+}
+/* The row is one field: 16px to the next question, as between every field. */
+.sex-height-row > .health-field {
+  margin-bottom: 0;
 }
 
 @media (min-width: 768px) {
   .sex-height-row {
-    grid-template-columns: 1fr 1fr;
     gap: 20px;
   }
 
@@ -513,6 +565,33 @@ input[type="number"] {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+
+/* US-62 AC13: each profile question below the height row. */
+.profile-step {
+  margin-top: 16px;
+}
+
+/* US-62 AC13: why a question is asked, shown under it (it was a tooltip). */
+.field-why {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-gray-medium);
+}
+
+.profile-step .health-field-group .health-field {
+  margin-bottom: 0;
+}
+
+.profile-step + .health-field {
+  margin-top: 16px;
+}
+
+/* About you's card travels to the column's foot (US-62 AC12): never the
+   browser's scroll anchor, so the page does not follow it down. */
+.about-card {
+  overflow-anchor: none;
 }
 
 /* A drug name and its dose. The name keeps room for its longest label
@@ -601,12 +680,25 @@ input[type="number"] {
   min-height: 100%;
 }
 
+/* One rhythm down the plan: 20px between its sections (the tiles, the storage
+   card, the PDF card, each suggestions group, the footer), as between column
+   1's cards (8px gap + 12px card margin). The gap is the only spacing, so the
+   sections' own margins go; the tiles keep their tighter 12px inside. */
+.hr-col-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.health-results-panel > .hr-col-body > * {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 .plan-empty-preview {
   display: flex;
   flex-direction: column;
   gap: 16px;
   flex: 1;
-  margin-bottom: 12px;
 }
 
 .plan-empty-intro {
@@ -685,7 +777,7 @@ input[type="number"] {
 }
 
 /* Two tiles a row on a phone. After the base rule, or the base rule wins. A
-   long title ("Ideal Body Weight (IBW)") wraps rather than spill at 320px. */
+   long title ("Ideal Body Weight") wraps rather than spill at 320px. */
 @media (max-width: 768px) {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -793,7 +885,6 @@ input[type="number"] {
 
 /* Suggestions */
 .suggestions-group {
-  margin-top: 15px;
   margin-bottom: 20px;
 }
 
@@ -997,6 +1088,12 @@ input[type="number"] {
   font-size: 18px;
   color: var(--color-text-heading);
 }
+.alcohol-dialog-note {
+  margin: 0 0 16px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--color-text-heading);
+}
 .alcohol-dialog-actions {
   display: flex;
   justify-content: center;
@@ -1010,6 +1107,29 @@ input[type="number"] {
   margin-bottom: 8px;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+/* US-62 AC15: the iPhone's symbols. A section title's tinted symbol sits
+   before its words; a plan card leads with its category's symbol on a 40px
+   square tinted at 14% (radius 12, as CategoryIcon). */
+.section-icon {
+  display: inline-flex;
+  vertical-align: -3px;
+  margin-right: 8px;
+}
+.suggestion-header-lead {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.category-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
 }
 
 .suggestion-badge {
@@ -1168,7 +1288,6 @@ input[type="number"] {
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   padding: 20px;
-  margin-bottom: 16px;
 }
 
 .email-capture-row {
@@ -1215,19 +1334,6 @@ input[type="number"] {
   margin-top: 6px;
 }
 
-/* US-23 AC4 — the always-visible reminders disclosure under the email box. */
-.email-capture-disclosure {
-  color: #5a6b73;
-  font-size: 12px;
-  line-height: 1.45;
-  margin: 8px 0 0;
-}
-
-.email-capture-disclosure strong {
-  font-weight: 600;
-  color: var(--color-gray-dark);
-}
-
 .action-btn-small {
   font-family: inherit;
   font-size: 12px;
@@ -1255,7 +1361,7 @@ input[type="number"] {
    styles bare `a` inside the widget; the doubled class outranks it. */
 .hr-guide-card.hr-guide-card {
   display: block;
-  margin: 16px 0 4px;
+  margin: 0;
   padding: 12px 16px;
   background: #fff;
   border: 1px solid var(--color-gray-border);
@@ -1281,7 +1387,6 @@ input[type="number"] {
   display: flex;
   justify-content: center;
   gap: 12px;
-  margin: 8px 0 16px;
 }
 
 .action-btn {
@@ -1716,7 +1821,6 @@ input[type="number"] {
 
 .privacy-notice-link {
   text-align: center;
-  margin-top: 10px;
 }
 
 .privacy-notice-link a {
@@ -1886,7 +1990,7 @@ input[type="number"] {
 }
 .hr-skeleton-content {
   display: grid;
-  grid-template-columns: 5fr 6fr;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
   gap: 32px;
   align-items: start;
 }
@@ -1896,11 +2000,12 @@ input[type="number"] {
   gap: 16px;
   min-width: 0;
 }
-/* Column header placeholder (matches .hr-col-header: 20px tall + 12px margin). */
+/* Column header placeholder: 32px with its margins, plus the 16px gap, is the
+   real header's 28px + 12px margin + 8px gap, so the cards do not jump. */
 .hr-skel-colhead {
   height: 20px;
   width: 160px;
-  margin: 0 4px 8px;
+  margin: 4px 4px 8px;
 }
 /* Card placeholder (matches .section-card: white frame, 12px radius, 24px pad). */
 .hr-skel-card {
@@ -1909,7 +2014,7 @@ input[type="number"] {
   padding: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
-.hr-skel-card + .hr-skel-card { margin-top: -4px; }
+.hr-skel-card + .hr-skel-card { margin-top: 4px; } /* 20px apart, as the cards */
 /* Generic shimmer line/block inside a card. */
 .hr-skel-line {
   height: 14px;
@@ -1946,7 +2051,7 @@ input[type="number"] {
 
 /* ≥1200px: 3-column (input / results / chat), matching .health-tool-content. */
 @media (min-width: 1200px) {
-  .hr-skeleton-content { grid-template-columns: 1fr 1fr 0.95fr; }
+  .hr-skeleton-content { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.95fr); }
 }
 /* Mobile-only tab-bar strip (shown only inside the ≤768px block below). */
 .hr-skel-tabbar { display: none; }
@@ -3900,6 +4005,10 @@ input[type="number"] {
   gap: 12px;
   padding: 0 4px;
   margin-bottom: 12px;
+  /* All three headers one height, the height of the tallest thing any holds
+     (column 1's Sign in pill, the plan's Save as PDF), so every column's first
+     card starts on one line. */
+  min-height: 28px;
 }
 .hr-col-title {
   font-size: 12px;
@@ -3910,6 +4019,12 @@ input[type="number"] {
   display: flex;
   align-items: center;
   gap: 10px;
+  /* One line: a wrapped title would make its header taller than the others. */
+  white-space: nowrap;
+}
+/* Narrow three-column widths: tighter tracking keeps the plan's title on one line. */
+@media (min-width: 1200px) and (max-width: 1439px) {
+  .hr-col-title { letter-spacing: 0.4px; }
 }
 .hr-col-step {
   display: inline-flex;
@@ -3983,7 +4098,7 @@ input[type="number"] {
 /* ─── 3-column layout (≥1200px viewport) ─────────────────────── */
 @media (min-width: 1200px) {
   .health-tool-content {
-    grid-template-columns: 1fr 1fr 0.95fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.95fr);
   }
 }
 
@@ -3991,7 +4106,6 @@ input[type="number"] {
   position: sticky;
   top: 24px;
   max-height: calc(100vh - 48px);
-  overflow-y: auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -4054,10 +4168,6 @@ input[type="number"] {
 
   .chat-embed .chat-header-sub {
     display: none;
-  }
-
-  .plan-empty-preview {
-    margin-bottom: 0;
   }
 }
 
@@ -5269,9 +5379,8 @@ input[type="number"] {
   }
 }
 
-/* US-62 AC8-AC11: the phone's My data rows and value pages, the iPhone's
-   layout (ValueRow.swift). Rendered only at 768px or less; desktop keeps the
-   grids. */
+/* US-62 AC8-AC11: My data rows and value pages, the iPhone's layout
+   (ValueRow.swift), on phone and desktop; the grids sit one click away. */
 .hr-sr-only {
   position: absolute;
   width: 1px;
@@ -5283,15 +5392,19 @@ input[type="number"] {
   white-space: nowrap;
   border: 0;
 }
-.health-input-panel.md-page-open > :not(.md-page) {
+.health-input-panel.md-page-open > :not(.md-page, .hr-col-header) {
   display: none !important;
 }
 .md-table[hidden] {
   display: none !important;
 }
-.section-card--bt .md-section,
-.section-card--bt .md-table-back {
-  margin: 12px 12px 0;
+/* The rows' inset is every card's: on a phone the card's own 12px padding
+   (forced on every card there), on desktop, where this card has none, 24px. */
+@media (min-width: 769px) {
+  .section-card--bt .md-section,
+  .section-card--bt .md-table-back {
+    margin: 24px 24px 4px;
+  }
 }
 .md-section-title {
   margin-bottom: 4px;
@@ -5301,10 +5414,12 @@ input[type="number"] {
   margin: 0;
   padding: 0;
 }
-.md-rows > li + li .md-row {
+.md-rows > li + li .md-row,
+.about-rows > li + li .about-row {
   border-top: 1px solid var(--bt-ink-100, #eceef0);
 }
-.md-row {
+.md-row,
+.about-row {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -5319,7 +5434,8 @@ input[type="number"] {
   text-align: left;
   cursor: pointer;
 }
-.md-row:focus-visible {
+.md-row:focus-visible,
+.about-row:focus-visible {
   outline: 2px solid var(--color-brand-text);
   outline-offset: 2px;
 }
@@ -5373,6 +5489,29 @@ input[type="number"] {
   color: var(--color-brand-text);
   font-size: 15px;
 }
+/* US-62 AC12: About you as rows; a tap opens the field in the row's place. */
+.about-row {
+  min-height: 48px;
+}
+.about-row-label {
+  flex: 1 1 auto;
+  font-size: 15px;
+}
+.about-row-value {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+.about-rows > li + li .about-editor {
+  border-top: 1px solid var(--bt-ink-100, #eceef0);
+}
+.about-editor {
+  padding: 12px 0 0;
+}
+.about-done {
+  display: block;
+  margin-left: auto;
+}
 .md-status-warn { color: var(--color-grade-warn-text); }
 .md-status-bad { color: var(--color-grade-bad-text); }
 .md-unsaved {
@@ -5392,9 +5531,24 @@ input[type="number"] {
 }
 .md-foot {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  justify-content: center;
   padding: 8px 0 12px;
+}
+/* A section's title with its action on the right, centred on one line. */
+.md-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.md-section-head > .health-section-title {
+  margin: 0;
+  min-width: 0;
+}
+.md-head-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 .md-foot-btn,
 .md-back,
@@ -5407,9 +5561,6 @@ input[type="number"] {
   color: var(--color-brand-text);
   cursor: pointer;
 }
-.md-foot-btn + .md-foot-btn {
-  margin-left: auto;
-}
 .md-page {
   background: #fff;
   border-radius: 12px;
@@ -5417,9 +5568,16 @@ input[type="number"] {
   padding: 8px 12px 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
+/* Desktop: the page is a card like the ones it replaces, under the column's
+   header, so its top lines up with the plan's and the chat's (US-62 AC14). */
+@media (min-width: 769px) {
+  .md-page {
+    margin: 0 0 12px;
+    padding: 16px 24px 24px;
+  }
+}
+/* The card title's style (health-section-title), US-62 AC14. */
 .md-page-title {
-  font-size: 22px;
-  font-weight: 700;
   margin: 4px 0 2px;
 }
 .md-page-title:focus {

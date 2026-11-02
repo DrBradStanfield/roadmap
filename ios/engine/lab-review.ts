@@ -6,7 +6,9 @@ import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { bulkAppendValues, validDay, type BulkRow } from '../../packages/health-core/src/record-edits';
 import { METRIC_LABELS } from '../../packages/health-core/src/mappings';
 import { documentView, pendingRowsFor } from '../../packages/health-core/src/document-save';
-import type { AdditionalLabValue, DocumentResult, ExtractedValue, RefusedLabValue } from '../../packages/health-core/src/lab-extraction';
+import { unreadLines, type AdditionalLabValue, type DocumentResult, type ExtractedValue, type RefusedLabValue, type UnreadLabValue } from '../../packages/health-core/src/lab-extraction';
+import { labTestLabel } from '../../packages/health-core/src/lab-catalog';
+import { isReadableRow } from '../../packages/health-core/src/readable-rows';
 
 /** The server's answer (`data` of POST /api/app/v1/lab-import). */
 export interface Extraction {
@@ -16,6 +18,8 @@ export interface Extraction {
   additionalValues?: AdditionalLabValue[];
   refusedValues?: RefusedLabValue[];
   droppedValueCount?: number;
+  /** The dropped rows that name their test, with why (US-12 AC19). */
+  unreadValues?: UnreadLabValue[];
   /** A letter, discharge summary or other document: what the web files (US-52 AC13d). */
   document?: DocumentResult | null;
 }
@@ -58,9 +62,10 @@ export interface LabReview {
   /** The report's day when it printed a full one; null asks the user to pick. */
   reportDay: string | null;
   items: LabReviewItem[];
-  /** Rows the server would not convert (US-12 AC15), named for "Not saved". */
+  /** Rows the server would not convert (US-12 AC15) and the rows it could not
+   *  read that name their test (AC19): "Not saved", each label on one line only. */
   notSaved: Array<{ label: string; reason: string }>;
-  /** Rows the extractor could not read at all (US-12 AC8). */
+  /** Rows the extractor could not read that name no test (US-12 AC8). */
   unreadCount: number;
   /** The document to file, when the file is not a lab report. */
   document: DocumentReview | null;
@@ -76,18 +81,24 @@ function alreadySaved(file: RoadmapFile | null, sourceFileName: string | null): 
 function documentReview(document: DocumentResult, now: string, file: RoadmapFile | null, sourceFileName: string | null, contentHash: string | null): DocumentReview {
   const text = document.contentMarkdown ?? '';
   // The newest metadata-only shown-document row for these bytes, as the web's card reads it.
-  const held = file ? pendingRowsFor(file.documents.filter((d) => !d.deleted).map(documentView), contentHash, false)[0] : undefined;
+  // Found among every row, as the save finds it; its title and date are shown only when
+  // a reader can read it (US-65), else the extraction's own.
+  const live = file ? file.documents.filter((d) => !d.deleted) : [];
+  const found = pendingRowsFor(live.map(documentView), contentHash, false)[0];
+  const readable = found && isReadableRow('documents', live.find((d) => d.id === found.id));
+  const held = readable ? found : undefined;
   return {
     classification: document.classification,
     title: held?.title ?? document.title,
     documentDate: ownDay((held ? held.documentDate : document.documentDate) ?? undefined, now),
     preview: text.length > 300 ? `${text.slice(0, 300)}...` : text,
     alreadySaved: alreadySaved(file, sourceFileName),
-    held: !!held,
+    held: !!found,
   };
 }
 
 export function labReview(extraction: Extraction, now: string, file: RoadmapFile | null = null, sourceFileName: string | null = null, contentHash: string | null = null): LabReview {
+  const notSaved = unreadLines(extraction);
   const items: LabReviewItem[] = [
     ...(extraction.values ?? []).map((v, i) => ({
       ref: `v${i}`,
@@ -100,7 +111,7 @@ export function labReview(extraction: Extraction, now: string, file: RoadmapFile
     })),
     ...(extraction.additionalValues ?? []).map((v, i) => ({
       ref: `a${i}`,
-      label: v.printedName ?? v.name,
+      label: labTestLabel(v.name),
       value: String(v.value),
       unit: v.unit,
       day: ownDay(v.recordedAt, now),
@@ -111,8 +122,8 @@ export function labReview(extraction: Extraction, now: string, file: RoadmapFile
     isLabReport: extraction.classification === 'lab_report',
     reportDay: ownDay(extraction.reportDate ?? undefined, now),
     items,
-    notSaved: (extraction.refusedValues ?? []).map((r) => ({ label: METRIC_LABELS[r.metric] ?? r.metric, reason: r.reason })),
-    unreadCount: extraction.droppedValueCount ?? 0,
+    notSaved: notSaved.lines,
+    unreadCount: notSaved.otherCount,
     document: extraction.classification !== 'lab_report' && extraction.document
       ? documentReview(extraction.document, now, file, sourceFileName, contentHash)
       : null,
