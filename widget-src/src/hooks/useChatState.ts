@@ -91,11 +91,16 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   const activeConversationIdRef = useRef(activeConversationId);
   const messagesRef = useRef(messages);
   const isLoadingConvsRef = useRef(false);
+  const isLoadingRef = useRef(isLoading);
+  // Bumped by each thread load and by a reply landing on screen: a load that
+  // started before either is stale (US-15 AC7a).
+  const loadGenRef = useRef(0);
   useEffect(() => {
     conversationsRef.current = conversations;
     activeConversationIdRef.current = activeConversationId;
     messagesRef.current = messages;
-  }, [conversations, activeConversationId, messages]);
+    isLoadingRef.current = isLoading;
+  }, [conversations, activeConversationId, messages, isLoading]);
 
   // Offline detection
   useEffect(() => {
@@ -197,9 +202,11 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         const latest = result.conversations[0];
         activeConversationIdRef.current = latest.id; // dropThread reads it after the await
         setActiveConversationId(latest.id);
+        const gen = ++loadGenRef.current;
         const msgs = await loadConversation(latest.id);
         if (!msgs) { dropThread(latest.id); return; }
-        if (activeConversationIdRef.current !== latest.id) return; // the guest opened another thread meanwhile (US-15 AC7a)
+        // The guest opened another thread, or a reply landed, meanwhile (US-15 AC7a).
+        if (activeConversationIdRef.current !== latest.id || gen !== loadGenRef.current) return;
         setMessages(msgs);
       }
     }
@@ -210,10 +217,12 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     activeConversationIdRef.current = id;
     setActiveConversationId(id);
     setError(null);
+    const gen = ++loadGenRef.current;
     const msgs = await loadConversation(id);
     // The server no longer recognizes this guest thread (US-15 AC6a), even if another is open now.
     if (!msgs) { dropThread(id); return; }
-    if (activeConversationIdRef.current !== id) return; // another thread was opened meanwhile (US-15 AC7a)
+    // Another thread was opened, or a reply landed, meanwhile (US-15 AC7a).
+    if (activeConversationIdRef.current !== id || gen !== loadGenRef.current) return;
     setMessages(msgs);
     postSync({
       instanceId,
@@ -222,7 +231,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         conversations: conversationsRef.current,
         activeConversationId: id,
         messages: msgs,
-        isLoading: false,
+        isLoading: isLoadingRef.current, // a reply still in flight is not over (US-15 AC7a)
         error: null,
       },
       ts: Date.now(),
@@ -295,6 +304,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     // on screen, and the reply stays with the thread it was sent from.
     const shownId = activeConversationIdRef.current;
     const stayed = shownId === currentConvId;
+    // The list as it is now: a thread dropped during the send stays dropped (US-15 AC7a).
+    const convsNow = conversationsRef.current;
 
     if (sendError) {
       const withoutOptimistic = stayed ? optimisticMessages.filter(m => m.id !== optimisticMsg.id) : messagesRef.current;
@@ -306,7 +317,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         instanceId,
         type: 'state',
         payload: {
-          conversations: currentConvs,
+          conversations: convsNow,
           activeConversationId: shownId,
           messages: withoutOptimistic,
           isLoading: false,
@@ -330,6 +341,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       // and drop the old thread from the list, since opening it would 404.
       const restarted = currentConvId !== null && result.conversationId !== currentConvId;
       const finalMessages = stayed ? [...(restarted ? [optimisticMsg] : optimisticMessages), assistantMsg] : messagesRef.current;
+      if (stayed) loadGenRef.current++; // a load started before the reply would replace it
       setMessages(finalMessages);
       if ((approach.thinking || approach.sources.length > 0) && !result.isFallback) {
         setApproachById(prev => ({ ...prev, [assistantMsg.id]: approach }));
@@ -346,7 +358,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         setCardsById(prev => ({ ...prev, [assistantMsg.id]: { card, phase: 'idle' } }));
       }
 
-      let finalConversations = currentConvs;
+      let finalConversations = convsNow;
       let finalConvId = shownId;
       if (!currentConvId || restarted) {
         if (stayed) { finalConvId = result.conversationId; setActiveConversationId(finalConvId); }
@@ -355,7 +367,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
           title: trimmed.slice(0, 80),
           updatedAt: new Date().toISOString(),
           createdAt: new Date().toISOString(),
-        }, ...currentConvs.filter(c => c.id !== currentConvId)];
+        }, ...convsNow.filter(c => c.id !== currentConvId)];
         setConversations(finalConversations);
       }
 
