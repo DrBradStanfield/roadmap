@@ -7,7 +7,7 @@
  * Read-only: no editing, no unit conversion — values render as-reported
  * (see decisions in docs/user-stories.md § US-21).
  */
-import { LAB_GROUPS, labSlotKey, resolveLabCatalogEntry, displayLabUnit, type LabGroup, type LabGroupId } from './lab-catalog';
+import { LAB_GROUPS, labSlotKey, labUnitRefusalNote, labUnitTaken, resolveLabCatalogEntry, displayLabUnit, type CountFault, type LabGroup, type LabGroupId } from './lab-catalog';
 import { trendWindow } from './recent-trend';
 import { rowTarget } from './row-target';
 import { comparatorOf, limitText, type Comparator } from './lab-limits';
@@ -16,6 +16,26 @@ import { comparatorOf, limitText, type Comparator } from './lab-limits';
 export function labValueLabel(metricName: string): string {
   return resolveLabCatalogEntry(metricName)?.label
     ?? metricName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+/**
+ * What a person reads when the record refused a lab value's unit: the unit a
+ * catalogued test is stored in, or, for a unit it does take, that the number was
+ * refused, and a note on what to look for instead, where there is one (US-21 AC15). Never the store's
+ * message, which is the copy an assistant reads.
+ */
+export function labUnitRefusalLine(key: string, unit: string, fault?: CountFault): string {
+  const entry = resolveLabCatalogEntry(key);
+  const note = labUnitRefusalNote(entry, unit, fault);
+  if (fault === 'scale') return `${labValueLabel(key)}: ${note}.`;
+  if (fault === 'ceiling') return `${note}.`;
+  const takes = entry ? ` This test takes ${entry.unit}.` : '';
+  const lead = labUnitTaken(entry, unit)
+    ? `${labValueLabel(key)}: the number was not saved.`
+    : !unit.trim()
+      ? `${labValueLabel(key)}: no unit was printed, so it was not saved.${takes}`
+      : `${labValueLabel(key)}: unit not recognised (${unit}). It was not saved.${takes}`;
+  return note ? `${lead} ${note}.` : lead;
 }
 
 /** A lab value as the matrix shows it: up to two decimals, no trailing zeros. */

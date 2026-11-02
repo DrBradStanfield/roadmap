@@ -394,6 +394,7 @@ export {
 export {
   groupLabValues,
   labValueLabel,
+  labUnitRefusalLine,
   formatLabValue,
   savedLabText,
   labSeriesRows,
