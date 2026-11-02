@@ -1,7 +1,9 @@
 import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota } from '../lib/upload-api';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { IMPORT_LIMITS, METRIC_LABELS, UNDATED_PREVIOUS, unreadLines, zipMemberName, type DocumentPayload, type UnreadLabValue, type LabUnitRefusal, type MeasurementRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
+import { IMPORT_LIMITS, METRIC_LABELS, UNDATED_PREVIOUS, UNIT_DEFS, reportedToCanonical, unreadLines, zipMemberName, type DocumentPayload, type UnreadLabValue, type LabUnitRefusal, type MeasurementRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
+import { bloodTestKeyOf } from '@roadmap/health-core/blood-tests';
+import { resolveLabValues } from '@roadmap/health-core/lab-extraction';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
@@ -215,7 +217,33 @@ async function readPages(upload: HealthUploadAPI, { fileName: name, getFile }: R
 /** A file the server read, as a review row; values its parse refused are named (US-12 AC9). */
 function readResult(fileName: string, result: LabImportResult, notices: FileNotice[]): FileResult {
   if (result.droppedValueCount) notices.push({ name: fileName, reason: 'valuesDropped', count: result.droppedValueCount, unread: result.unreadValues });
-  return { fileName, reportDate: result.reportDate, values: result.values, additionalValues: result.additionalValues || [], document: result.document ?? undefined, refusedValues: result.refusedValues };
+  return { fileName, reportDate: result.reportDate, ...offerCoreExtras(result), document: result.document ?? undefined };
+}
+
+/**
+ * Brad D5 (US-66 AC6): an extra value named like a core test, creatinine
+ * excepted (US-12 AC11), is offered as that core value. The extractor moves
+ * one into a free slot; one it left is offered here. In a unit the test takes
+ * it joins the core row, where a held day shows the conflict (US-13 AC3) and
+ * a second reading of a day is listed as hidden (US-12 AC14). In any other
+ * unit it is listed as not saved, with why (US-12 AC19).
+ */
+export function offerCoreExtras(result: Pick<FileResult, 'values' | 'additionalValues' | 'refusedValues'>): Pick<FileResult, 'values' | 'additionalValues' | 'refusedValues'> {
+  const values = [...result.values];
+  const additionalValues: FileResult['additionalValues'] = [];
+  const refusedValues = [...(result.refusedValues ?? [])];
+  for (const v of result.additionalValues ?? []) {
+    const metric = bloodTestKeyOf(v.name);
+    if (!metric || metric === 'creatinine') { additionalValues.push(v); continue; }
+    const day = { ...(v.recordedAt ? { recordedAt: v.recordedAt } : null), ...(v.printedMonth ? { printedMonth: v.printedMonth } : null) };
+    if (reportedToCanonical(metric, v.value, v.unit)) {
+      values.push(...resolveLabValues([{ metric, value: v.value, unit: v.unit, confidence: 'high', ...day }]));
+    } else {
+      const { si, conventional } = UNIT_DEFS[metric].label;
+      refusedValues.push({ metric, value: v.value, unit: v.unit, reason: `This test is measured in ${si === conventional ? si : `${si} or ${conventional}`}.`, ...day });
+    }
+  }
+  return { values, additionalValues, ...(refusedValues.length ? { refusedValues } : null) };
 }
 
 /** The notice for a file's own error code; anything else is a server error. */

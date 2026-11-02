@@ -70,8 +70,9 @@ export async function initDropboxTest(els: Els): Promise<void> {
       const beforeActive = countActive(before.measurements);
       const measurement = createMeasurement({
         id: `dbx_test_${before.meta.lamport + 1}`,
-        metricType: 'ldl',
-        value: 2.1,
+        // A vital: a blood test written to `measurements` moves to `labValues` on the next read (US-66).
+        metricType: 'weight',
+        value: 70.1,
         recordedAt: new Date().toISOString().slice(0, 10),
         createdAt: new Date().toISOString(),
       });
@@ -81,7 +82,7 @@ export async function initDropboxTest(els: Els): Promise<void> {
       const present = reloaded.measurements.some((m) => m.id === measurement.id);
       els.result.textContent = [
         present ? '✓ PASS — wrote to Dropbox and read it back' : '✗ FAIL — record not found after reload',
-        `wrote: ${measurement.id} (ldl 2.1)`,
+        `wrote: ${measurement.id} (weight 70.1)`,
         `dropbox rev: ${saved.version}`,
         `active measurements: ${beforeActive} → ${countActive(reloaded.measurements)}`,
         `schema v${reloaded.schemaVersion} · lamport ${reloaded.meta.lamport}`,

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME } from '@roadmap/health-core';
+import { createEmptyFile, createMeasurement, MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME } from '@roadmap/health-core';
 import { ERASE_UNREACHABLE, RoadmapStore } from '../storage/roadmap-store';
 import { initRoadmapStore, flushRoadmapStore } from './roadmap-data';
 import * as data from './roadmap-data';
@@ -216,5 +216,42 @@ describe('explicit local-first data path', () => {
 
     expect(trackProductEvent).toHaveBeenCalledTimes(1);
     expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'ferritin' });
+  });
+});
+
+// US-66 AC13: the page that moves a record into one blood-test table counts it, once, by counts only.
+describe('blood_tests_unified', () => {
+  beforeEach(() => {
+    vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockReturnValue(() => {});
+  });
+  afterEach(() => {
+    vi.resetAllMocks();
+    vi.restoreAllMocks();
+  });
+
+  async function oldShapeCloud(): Promise<MemoryCloud> {
+    const cloud = new MemoryCloud();
+    const file = createEmptyFile({ deviceId: 'old_app', now: '2026-11-01T00:00:00.000Z' });
+    file.measurements.push(createMeasurement({ id: 'ldl1', metricType: 'ldl', value: 4.2, recordedAt: '2026-08-01T00:00:00.000Z', createdAt: '2026-08-01T00:00:00.000Z' }));
+    await new MemoryAdapter(cloud).write(ROADMAP_FILE_NAME, file, null);
+    return cloud;
+  }
+  const unified = () => vi.mocked(trackProductEvent).mock.calls.filter(call => call[0] === 'blood_tests_unified');
+
+  it('is sent once the moved record is written, with counts and nothing else', async () => {
+    const cloud = await oldShapeCloud();
+    await initRoadmapStore(new MemoryAdapter(cloud));
+    await vi.waitFor(() => expect(unified()).toEqual([['blood_tests_unified', { moved: 1, folded: 0, keptApart: 0 }]]));
+    expect(JSON.stringify(unified())).not.toMatch(/4\.2|ldl/);
+  });
+
+  it('is not sent by the next open, which has nothing to move', async () => {
+    const cloud = await oldShapeCloud();
+    await initRoadmapStore(new MemoryAdapter(cloud));
+    await vi.waitFor(() => expect(unified()).toHaveLength(1));
+    vi.mocked(trackProductEvent).mockClear();
+    await initRoadmapStore(new MemoryAdapter(cloud));
+    await flushRoadmapStore();
+    expect(unified()).toEqual([]);
   });
 });
