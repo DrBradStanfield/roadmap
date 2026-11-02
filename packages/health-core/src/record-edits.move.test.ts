@@ -361,6 +361,7 @@ describe('US-04 AC5a: an older app erases a moved row whose original an earlier 
   const LEGACY_ERASED_AT = '2026-08-31T09:00:00.000Z'; // before the move (NOW)
   const OLDER = { deviceId: 'older_app', now: '2026-09-02T09:00:00Z' };
   const UPDATED = { deviceId: 'updated_app', now: '2026-09-03T09:00:00Z' };
+  const OTHER = '2024-01-15';
 
   /** The updated app's epoch-1 copy: a legacy erase that listed nothing
    *  dropped every original and kept the moved rows made after it (US-09 AC20). */
@@ -410,6 +411,45 @@ describe('US-04 AC5a: an older app erases a moved row whose original an earlier 
     for (const merged of [mergeFiles(copy, erased, UPDATED), mergeFiles(erased, copy, UPDATED)]) {
       expect(rows(merged)).toEqual([]);
     }
+  });
+
+  // Codex review of PR #337 (2026-11-02): the older app listed only `X#mv-A`;
+  // a copy without that erase then moved the test again, writing `X#mv-B`.
+  // Every listed id is reduced to its root too, so `X`'s whole family goes.
+  it('drops a moved row made again on a copy that had not seen the older erase, in either merge order', () => {
+    const copy = prunedParents();
+    const erased = olderAppErase(copy);
+    const again = moved(copy, {}, TO, OTHER).file;
+    expect(activeOn(again, OTHER).length).toBe(4);
+    for (const merged of [mergeFiles(again, erased, UPDATED), mergeFiles(erased, again, UPDATED)]) {
+      expect(rows(merged)).toEqual([]);
+      // The list keeps the older app's spelling, so that app still reads it.
+      expect(merged.erasedRows!.ids).toEqual(erased.erasedRows!.ids);
+    }
+  });
+
+  it('drops that moved-again row on read, from a file that lists only the first move', () => {
+    const copy = prunedParents();
+    const erased = olderAppErase(copy);
+    const again = moved(copy, {}, TO, OTHER).file;
+    const written = JSON.parse(JSON.stringify({ ...erased, measurements: again.measurements, labValues: again.labValues }));
+    expect(rows(migrateFile(written, UPDATED))).toEqual([]);
+  });
+
+  it('keeps another test whose id merely starts with a listed root', () => {
+    const copy = prunedParents();
+    const erased = olderAppErase(copy);
+    const again = moved(copy, {}, TO, OTHER).file;
+    again.measurements.push(
+      m('ldl10', 'hba1c', 38, '2024-04-01', { createdAt: UPDATED.now }),
+      m('ldl1x#mv-0123abcd', 'hba1c', 39, '2024-05-01', { createdAt: UPDATED.now }),
+    );
+    again.labValues.push(lab('fer1#mv-012', 'ferritin', 90, 'ug/L', '2024-06-01', { createdAt: UPDATED.now }));
+    for (const merged of [mergeFiles(again, erased, UPDATED), mergeFiles(erased, again, UPDATED)]) {
+      expect(rows(merged).map((r) => r.id).sort()).toEqual(['fer1#mv-012', 'ldl10', 'ldl1x#mv-0123abcd']);
+    }
+    const written = JSON.parse(JSON.stringify({ ...erased, measurements: again.measurements, labValues: again.labValues }));
+    expect(rows(migrateFile(written, UPDATED)).map((r) => r.id).sort()).toEqual(['fer1#mv-012', 'ldl10', 'ldl1x#mv-0123abcd']);
   });
 
   it('keeps a value typed on the epoch-1 copy that the older erase never saw', () => {

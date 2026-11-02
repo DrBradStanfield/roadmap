@@ -657,14 +657,17 @@ export function rowRootIds(file: RoadmapFile): string[] {
 
 /** `file` without the rows `listed` names, from every array that carries ids;
  *  the same object when it names none (US-09 AC23). A row goes if its root is
- *  listed, or its own id as an app from before US-04 AC5a roots it: that app
- *  lists a moved row whose original is gone under the moved row's own id. */
+ *  the root of a listed id. An app from before US-04 AC5a lists a moved row
+ *  whose original is gone under the moved row's own id, `X#mv-A`; reducing
+ *  that to `X` also takes `X#mv-B`, the same test moved again on a copy that
+ *  had not seen the erase (Codex review of PR #337). The list itself keeps
+ *  the older spelling, so that app still reads it. */
 export function withoutListed(file: RoadmapFile, listed: ReadonlySet<string>): RoadmapFile {
   if (listed.size === 0) return file;
+  const roots = new Set([...listed].map(rootIdOf));
   const out: Record<string, unknown> = { ...file };
   for (const key of Object.keys(ROW_STAMPS) as StampedArray[]) {
-    out[key] = (file[key] as Array<{ id: unknown }>).filter((row) => typeof row.id !== 'string'
-      || !(listed.has(rootIdOf(row.id)) || listed.has(rootBeforeMoveOf(row.id))));
+    out[key] = (file[key] as Array<{ id: unknown }>).filter((row) => typeof row.id !== 'string' || !roots.has(rootIdOf(row.id)));
   }
   return out as unknown as RoadmapFile;
 }
