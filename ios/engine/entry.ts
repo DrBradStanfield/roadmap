@@ -118,7 +118,8 @@ export function applyEditJson(recordJson: string, editJson: string, nowIso: stri
 }
 
 /** What the chat's proposed edits would do (US-67 AC3), as JSON: `{ medications: { lines, undo } | null,
- *  review: { lines, refusal } | null }`, in the phone's units. `editsJson`: the reply's `proposedEdits` as
+ *  review: { lines, refusal, seen } | null }`, in the phone's units; `seen` goes back on the review's
+ *  chatEdits edit, so a Save refuses when the record changed since. `editsJson`: the reply's `proposedEdits` as
  *  received; `today`: the phone's day. The record is read raw, as the chatEdits edit writes it. */
 export function chatEditsJson(recordJson: string, editsJson: string, nowIso: string, deviceId: string, today: string, unitsJson?: string): string {
   return JSON.stringify(chatEditsPreview(readRecord(recordJson, nowIso, deviceId), JSON.parse(editsJson), nowIso, today, readUnitChoices(unitsJson)));
