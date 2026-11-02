@@ -77,18 +77,44 @@ export function isReadableRow(key: RowArray, row: unknown): boolean {
 }
 
 /**
- * US-12 AC20, older builds: a build before limits corrected a lab row by
- * copying it (`...labRow`), so its correction of "> 60" to 85 carries the old
- * comparator and reads "> 85". This build never writes a manual correction
- * that changes the value and keeps a comparator (a correction is exact; a
- * move keeps the value; an import's Replace is `lab_import`), so such a row
- * is read as the exact value it is. The file keeps it as written.
+ * US-12 AC20, older builds: a row's comparator as this build reads it. A build
+ * before limits corrected a lab row by copying it (`...labRow`), so "> 60"
+ * corrected to 85 was written "> 85", and its moves copied that row again.
+ * This build never writes a manual correction that changes the value and
+ * keeps a comparator (a correction is exact; a move keeps the value; an
+ * import's Replace is `lab_import`). So the chain is walked back through rows
+ * of the same value (moves) to the first row whose value differs from its
+ * parent: when that row is such a manual correction, every row after it is
+ * exact. The file keeps them as written; readers and moves use this.
  */
-function olderBuildCorrection(row: Row, rows: Row[]): boolean {
-  if (row.comparator === undefined || typeof row.correctsId !== 'string' || row.source !== 'manual_correction') return false;
-  const corrected = rows.find((r) => r.id === row.correctsId);
-  return !!corrected && corrected.value !== row.value;
+export function effectiveComparator<R extends { id: string; value: number; correctsId?: string | null; comparator?: unknown; source?: unknown }>(
+  rows: readonly R[], row: R,
+): R['comparator'] | undefined {
+  if (row.comparator === undefined || typeof row.correctsId !== 'string') return row.comparator;
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  let current = row;
+  for (let steps = 0; typeof current.correctsId === 'string' && steps < 1000; steps++) {
+    const parent = byId.get(current.correctsId);
+    if (!parent) break;
+    if (parent.value !== current.value) {
+      return current.source === 'manual_correction' && current.comparator !== undefined ? undefined : row.comparator;
+    }
+    current = parent;
+  }
+  return row.comparator;
 }
+
+/** The row as this build reads it: without a comparator an older build carried over by mistake. */
+export function withEffectiveComparator<R extends { id: string; value: number; correctsId?: string | null; comparator?: unknown; source?: unknown }>(
+  rows: readonly R[], row: R,
+): R {
+  if (row.comparator === undefined || effectiveComparator(rows, row) !== undefined) return row;
+  const { comparator: _copied, ...exact } = row;
+  return exact as R;
+}
+
+const olderBuildCorrection = (row: Row, rows: Row[]) =>
+  row.comparator !== undefined && effectiveComparator(rows as Array<Row & { id: string; value: number }>, row as Row & { id: string; value: number }) === undefined;
 
 /** Whether a reader would show this row at all: a corrected or deleted one it would
  *  not, so it never keeps the line alive (US-65 AC4). */
@@ -134,11 +160,7 @@ export function readableView(file: RoadmapFile): ReadableView {
     }
     for (const key of repaired) {
       const rows = out[key] as Row[];
-      out[key] = rows.map((row) => {
-        if (!olderBuildCorrection(row, rows)) return row;
-        const { comparator: _copied, ...exact } = row;
-        return exact;
-      });
+      out[key] = rows.map((row) => withEffectiveComparator(rows as Array<Row & { id: string; value: number }>, row as Row & { id: string; value: number }));
     }
     if (badFields.length > 0) out.profile = Object.fromEntries(Object.entries(profile).filter(([field]) => !badFields.includes(field)));
     view = { file: out as unknown as RoadmapFile, count };

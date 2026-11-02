@@ -63,9 +63,12 @@ describe('US-12 AC20: the chat context and a lab limit', () => {
 
   // Adversary review of 0a2b89b0 (R5).
   it('a client limit whose bound is outside the input range is refused and named in excludedFields, as an exact value would be', () => {
-    const json = JSON.parse(buildChatContextJson({ ...base, unitSystem: 'si', medications: [], screenings: [], limits: { ldlC: { comparator: '<', bound: 99 } } })!);
+    const json = JSON.parse(buildChatContextJson({ ...base, unitSystem: 'si', medications: [], screenings: [], ldlC: 5, limits: { ldlC: { comparator: '<', bound: 99 } } })!);
     expect(json.latestValues).not.toHaveProperty('ldlC');
     expect(json.excludedFields).toEqual(['ldlC']);
+    // The in-range number sent beside it grades nothing either (re-check of c4db4745).
+    expect(json.currentSuggestions.some((s: { id: string }) => s.id.startsWith('ldl-'))).toBe(false);
+    expect(JSON.stringify(json)).not.toMatch(/"ldlC":\s*5|LDL-c of/);
   });
 
   // Adversary review of 0a2b89b0 (R4).
@@ -73,5 +76,8 @@ describe('US-12 AC20: the chat context and a lab limit', () => {
     const json = JSON.parse(buildChatContextJson({ ...base, unitSystem: 'si', medications: [], screenings: [], diastolicBp: 90,
       limits: { systolicBp: { comparator: '<', bound: 100 } } })!); // graded at 80, under the diastolic 90
     expect(json.latestValues).not.toHaveProperty('systolicBp');
+    // No systolic limit survives anywhere in the context (re-check of c4db4745).
+    // (missingInputs and excludedFields still name the field, as for an exact inverted pair.)
+    expect(JSON.stringify({ ...json, missingInputs: [], excludedFields: [] })).not.toMatch(/systolicBp|< 100|Systolic blood pressure/);
   });
 });

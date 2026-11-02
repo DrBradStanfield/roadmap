@@ -160,3 +160,14 @@ it('US-12 AC20: a blood pressure the wrong way up leaves the plan with its limit
   expect(payload.inputs.systolicBp).toBeUndefined();
   expect(payload.inputs).not.toHaveProperty('limits');
 });
+
+// Re-check of c4db4745 (N5): a mixed blood pressure shows both halves.
+it('US-12 AC20: the Lp(a) checklist shows an exact half beside a half saved as a limit', () => {
+  const plan = computePlan(record([
+    { metricType: 'lpa', value: 150 }, { metricType: 'systolic_bp', value: 125, comparator: '<' }, { metricType: 'diastolic_bp', value: 78 },
+  ]), NOW);
+  const card = plan.results.suggestions.find((s) => s.id === 'lpa-elevated')!;
+  expect(card.description).toContain(`Systolic blood pressure: < 125 mmHg — ${LIMIT_NOT_GRADED}`);
+  expect(card.description).toContain('Diastolic blood pressure: 78 mmHg');
+  expect(card.description).not.toContain('Blood pressure — not entered');
+});

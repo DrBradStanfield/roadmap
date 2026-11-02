@@ -108,4 +108,35 @@ describe('US-12 AC20: an older build\'s correction of a limit is read as exact',
     const replaced = fileWith(lab('a', 75, { status: 'entered-in-error' }), lab('b', 60, { comparator: '>', correctsId: 'a' }));
     expect(readableView(replaced).file.labValues.find((l) => l.id === 'b')?.comparator).toBe('>');
   });
+
+  // Re-check of c4db4745 (both reviewers): a move must not undo the repair.
+  const move = (file: ReturnType<typeof fileWith>, from: string, to: string) => {
+    const result = moveBloodTest(file, { from, to, now: NOW, keep: {}, expectedIds: file.labValues.filter((l) => l.status === 'active' && l.recordedAt.startsWith(from)).map((l) => l.id) });
+    if (!result.ok) throw new Error(result.message);
+    return result;
+  };
+
+  it('a repaired row moved on this build stays exact, in the view and in the row it writes', () => {
+    const file = fileWith(lab('a', 60, { comparator: '>', status: 'entered-in-error' }), lab('b', 85, { comparator: '>', correctsId: 'a', source: 'manual_correction' }));
+    const moved = move(file, '2026-10-10', '2026-10-08');
+    expect(moved.rows[0]).toMatchObject({ value: 85, correctsId: 'b' });
+    expect(moved.rows[0]).not.toHaveProperty('comparator');
+    expect(readableView(moved.file).file.labValues.find((l) => l.status === 'active')).not.toHaveProperty('comparator');
+  });
+
+  it('an older build\'s chain (its correction, then its move copying the row) reads exact', () => {
+    const file = fileWith(
+      lab('a', 60, { comparator: '>', status: 'entered-in-error' }),
+      lab('b', 85, { comparator: '>', correctsId: 'a', source: 'manual_correction', status: 'entered-in-error' }),
+      lab('c', 85, { comparator: '>', correctsId: 'b', source: 'manual_correction', recordedAt: '2026-10-08' }),
+    );
+    expect(readableView(file).file.labValues.find((l) => l.id === 'c')).not.toHaveProperty('comparator');
+  });
+
+  it('a genuine limit moved twice keeps its symbol', () => {
+    const once = move(fileWith(lab('a', 60, { comparator: '>' })), '2026-10-10', '2026-10-08');
+    const twice = move(once.file, '2026-10-08', '2026-10-06');
+    expect(twice.rows[0]).toMatchObject({ value: 60, comparator: '>' });
+    expect(readableView(twice.file).file.labValues.find((l) => l.status === 'active')?.comparator).toBe('>');
+  });
 });

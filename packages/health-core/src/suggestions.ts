@@ -576,8 +576,13 @@ export function generateSuggestions(
         const onTarget = inputs.systolicBp < sysTarget && inputs.diastolicBp < 80;
         checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} Blood pressure: ${bare('systolicBp', inputs.systolicBp)}/${bare('diastolicBp', inputs.diastolicBp)} mmHg \u2014 target <${sysTarget}/80`);
       } else {
-        const limited = [...limitLine('Systolic blood pressure', 'systolicBp', 'systolic_bp'), ...limitLine('Diastolic blood pressure', 'diastolicBp', 'diastolic_bp')];
-        checklist.push(...(limited.length ? limited : ['\u2753 Blood pressure \u2014 not entered']));
+        // A half saved as a limit shows with its limit, and an exact other half beside it (US-12 AC20).
+        const halves = ([['Systolic blood pressure', 'systolicBp', 'systolic_bp'], ['Diastolic blood pressure', 'diastolicBp', 'diastolic_bp']] as const)
+          .map(([label, field, metric]) => {
+            const value = inputs[field];
+            return { limited: !!limitOf(inputs, field), line: value !== undefined ? [`\u2753 ${label}: ${shown(field, metric, value)}`] : limitLine(label, field, metric) };
+          });
+        checklist.push(...(halves.some((h) => h.limited) ? halves.flatMap((h) => h.line) : ['\u2753 Blood pressure \u2014 not entered']));
       }
 
       // BMI — consider healthy if <25 or if 25-29.9 with healthy waist-to-height ratio

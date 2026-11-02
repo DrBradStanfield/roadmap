@@ -221,8 +221,9 @@ someone's medical history, or lose their data at the next device sync.
     its `comparator`. Older app builds (before 2026-11-02) do not know the field: they
     read the bound as an exact value; a correction of a limit one of them made carries the
     old symbol, and this app reads such a manual correction (`source: "manual_correction"`,
-    a changed value) as exact; a move one of them made drops the symbol for good, so the
-    bound stands as an exact value. The app does not repair that by itself.
+    a changed value) as exact, and every later move of it too, theirs or this app's. A lab
+    row one of them moved kept its symbol; a core measurement one of them moved dropped it
+    for good, so its bound stands as an exact value. The app does not repair that by itself.
 
 Validate your result against the schema before you write it back.
 

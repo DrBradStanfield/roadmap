@@ -185,6 +185,8 @@ export function buildChatContextJson(payload: unknown): string | null {
   const { limits: _sent, ...sent } = raw;
   let sanitized = sanitizeInputs(sent as Partial<HealthInputs>);
   for (const [field, limit] of Object.entries(limits)) sanitized = withRowValue(sanitized, field as LimitField, limit.bound, limit.comparator);
+  // A refused limit leaves its field out entirely: a number sent beside it is no value either.
+  for (const field of outOfRange) delete sanitized[field];
   const measurementHistory = historyOf(raw.measurementHistory);
   // US-02 AC8: a blood pressure the wrong way up from one day is no blood
   // pressure, for the plan and for latestValues alike.

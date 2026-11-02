@@ -41,6 +41,7 @@ import { isCalendarDay, isClinicalDay } from './measurement-history';
 import { createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
 import { comparatorOf, type Comparator } from './lab-limits';
+import { withEffectiveComparator } from './readable-rows';
 import { healthInputSchema, type MeasurementSource, METRIC_TYPES, PRESSURE_ORDER, pressureInverted } from './validation';
 import type { MEASUREMENT_REFUSAL_REASONS } from './product-events';
 
@@ -569,6 +570,9 @@ export type MoveRejection = Omit<EditRejection, 'reason'> & { reason: EditReject
 
 export type MoveResult = { ok: true; file: RoadmapFile; rows: ClinicalRow[] } | MoveRejection;
 
+/** A clinical row with the comparator this build reads in it (`effectiveComparator`). */
+const effective = <R extends ClinicalRow>(file: RoadmapFile, row: R): R =>
+  withEffectiveComparator<ClinicalRow>('metricType' in row ? file.measurements : file.labValues, row) as R;
 const isBloodTestRow = (row: ClinicalRow) => !('metricType' in row) || BLOOD_TEST_METRICS.includes(row.metricType);
 const metricOf = (row: ClinicalRow) => ('metricType' in row ? row.metricType : row.metricName);
 
@@ -589,7 +593,8 @@ export function planBloodTestMove(file: RoadmapFile, from: string, to: string, c
   if (typeof day !== 'string') return day;
   if (day === from) return reject('same-day', `The test is already on ${from}`);
   const fromSlots = new Map<string, ClinicalRow>();
-  for (const row of activeOn(file, from, isBloodTestRow)) {
+  // Each row as this build reads it (US-12 AC20): an older build's stray comparator is not moved on.
+  for (const row of activeOn(file, from, isBloodTestRow).map((r) => effective(file, r))) {
     const slot = slotOfRow(row);
     const twin = fromSlots.get(slot);
     if (twin) return reject('duplicate-slot', `${metricOf(row)} has two values on ${from}; correct one first`, twin);
@@ -599,7 +604,7 @@ export function planBloodTestMove(file: RoadmapFile, from: string, to: string, c
   if (rows.length === 0) return reject('empty-day', `No blood test value is saved on ${from}`);
 
   const toSlots = new Map<string, ClinicalRow[]>();
-  for (const row of activeOn(file, day)) {
+  for (const row of activeOn(file, day).map((r) => effective(file, r))) {
     const slot = slotOfRow(row);
     toSlots.set(slot, [...(toSlots.get(slot) ?? []), row]);
   }

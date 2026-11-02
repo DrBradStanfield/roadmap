@@ -96,31 +96,43 @@ describe('US-12 AC20 — the cutoff set holds every threshold', () => {
   };
   /** The plan's own files: what they compare an input against must be a grading line (adversary R7). */
   const PLAN_FILES = ['suggestions.ts', 'medication-cascades.ts', 'calculations.ts', 'evidence.ts', 'plan.ts', 'reminders.ts', 'reminder-schedule.ts'];
-  /** The tiles and grids, and the constants' own file: label lines may be matched too. */
-  const LABEL_FILES = ['stat-tiles.ts', 'units.ts', '../../../widget-src/src/lib/blood-test-cell.ts'];
-  /** The code a scan reads: comments out, and calculations.ts's `get…Status` functions, the tiles' status words. */
-  const codeOf = (file: string) => readFileSync(join(here, file), 'utf8').replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '')
-    .replace(/export function get\w+Status\([^)]*\)[^{]*\{[\s\S]*?\n\}/g, '');
-  const linesFor = (file: string, field: LimitField) => (PLAN_FILES.includes(file) ? LIMIT_CUTOFFS[field] : ALL_LINES(field));
+  /** The tiles and grids: their comparisons must be label lines. */
+  const LABEL_FILES = ['stat-tiles.ts', '../../../widget-src/src/lib/blood-test-cell.ts'];
+  const STATUS_FUNCTIONS = /export function get\w+Status\([^)]*\)[^{]*\{[\s\S]*?\n\}/g;
+  const source = (file: string) => readFileSync(join(here, file), 'utf8').replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '');
+  /** calculations.ts's `get…Status` functions are the tiles' status words: label code, not the plan's. */
+  const planCode = (file: string) => source(file).replace(STATUS_FUNCTIONS, '');
+  const statusCode = () => (source('calculations.ts').match(STATUS_FUNCTIONS) ?? []).join('\n');
 
-  it.each([...PLAN_FILES, ...LABEL_FILES])('%s compares a graded input with no literal outside its lines', (file) => {
+  /** Each comparison of a graded input with a numeric literal, as [input, literal]. */
+  const literals = (code: string) => {
     const name = Object.keys(NAMES).join('|');
     const pattern = new RegExp(String.raw`\b(${name})\b\s*(?:<=|>=|<|>)\s*(\d+(?:\.\d+)?)\b|\b(\d+(?:\.\d+)?)\s*(?:<=|>=|<|>)\s*(?:[\w.]*\.)?(${name})\b`, 'g');
-    const found = [...codeOf(file).matchAll(pattern)].map((m) => [NAMES[m[1] ?? m[4]], Number(m[2] ?? m[3])] as const);
-    for (const [field, literal] of found) expect(linesFor(file, field), `${file}: ${field} against ${literal}`).toContain(literal);
-  });
-
-  it.each(PLAN_FILES)('%s uses only grading lines from the threshold constants', (file) => {
+    return [...code.matchAll(pattern)].map((m) => [NAMES[m[1] ?? m[4]], Number(m[2] ?? m[3]), m[0]] as const);
+  };
+  /** Each threshold constant member the code reads, as [input, value, text]; a derived input's are skipped. */
+  const constants = (code: string) => {
     const pattern = new RegExp(String.raw`\b(${Object.keys(CONSTANT_FIELDS).join('|')})\b(?:\.(\w+))?`, 'g');
-    for (const [, name, member] of codeOf(file).matchAll(pattern)) {
+    return [...code.matchAll(pattern)].flatMap(([text, name, member]) => {
       const constant = (units as Record<string, unknown>)[name];
       const fields = CONSTANT_FIELDS[name];
-      if (typeof constant === 'number' ? false : !member) continue;
-      const field = typeof fields === 'object' && fields !== null ? fields[member!] : fields;
-      const value = typeof constant === 'number' ? constant : (constant as Record<string, unknown>)[member!];
-      if (field === null || typeof value !== 'number') continue;
-      expect(LIMIT_CUTOFFS[field!], `${file}: ${name}.${member}`).toContain(value);
-    }
+      const field = typeof fields === 'object' && fields !== null ? fields[member ?? ''] : fields;
+      const value = typeof constant === 'number' ? constant : member ? (constant as Record<string, unknown>)[member] : undefined;
+      return field && typeof value === 'number' ? [[field, value, text] as const] : [];
+    });
+  };
+
+  /** Each scan, its lines, and the fewest comparisons it must find (so an empty match fails). */
+  const SCANS: Array<[string, () => string, (field: LimitField) => readonly number[], number]> = [
+    ['plan files', () => PLAN_FILES.map(planCode).join('\n'), (field) => LIMIT_CUTOFFS[field], 40],
+    ['calculations.ts get…Status', statusCode, (field) => LIMIT_LABEL_CUTOFFS[field], 8],
+    ['tiles and grids', () => LABEL_FILES.map(source).join('\n'), (field) => LIMIT_LABEL_CUTOFFS[field], 10],
+  ];
+
+  it.each(SCANS)('%s compare a graded input only against their own lines', (_name, code, lines, minimum) => {
+    const found = [...literals(code()), ...constants(code())];
+    expect(found.length).toBeGreaterThanOrEqual(minimum);
+    for (const [field, value, text] of found) expect(lines(field), `${text} (${field} ${value})`).toContain(value);
   });
 });
 
@@ -224,10 +236,15 @@ describe('US-12 AC20 — every conversion a limit passes through keeps its order
 });
 
 // Adversary review of 0a2b89b0 (R8).
-describe('US-12 AC20: a reference bound at or below 0 is no cutoff', () => {
+describe('US-12 AC20: a reference bound of exactly 0 is no cutoff; a negative one is', () => {
   it('CRP "< 1" with a printed range of 0-5 decides', async () => {
     const { referenceGradeValue } = await import('./lab-limits');
     expect(referenceGradeValue({ comparator: '<', bound: 1 }, 0, 5)).not.toBeNull();
     expect(referenceGradeValue({ comparator: '<', bound: 6 }, 0, 5)).toBeNull();
+  });
+  it('base excess with a range of -2 to 2: "< 1" does not decide (-2 lies below), "> 3" does', async () => {
+    const { referenceGradeValue } = await import('./lab-limits');
+    expect(referenceGradeValue({ comparator: '<', bound: 1 }, -2, 2)).toBeNull();
+    expect(referenceGradeValue({ comparator: '>', bound: 3 }, -2, 2)).not.toBeNull();
   });
 });
