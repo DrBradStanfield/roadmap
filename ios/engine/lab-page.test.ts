@@ -185,6 +185,11 @@ describe('core rows and the lab test pages (US-66 AC8)', () => {
     expect(JSON.parse(historyJson(JSON.stringify(both()), 'creatinine', NOW, 'phone', '{}', 'lab')).rows.map((r: { id: string }) => r.id)).toEqual(['u1']);
   });
 
+  it('the kept-apart page never adds a core value (US-66 AC5)', () => {
+    const out = applyEdit(both(), { kind: 'labAdd', series: 'creatinine', value: 10, day: '2026-10-01', unit: 'mmol/L' }, NOW);
+    expect(out).toMatchObject({ ok: false, reason: 'core-name', message: 'Add this test from its row in Blood tests.' });
+  });
+
   it('a lab page of core rows alone is no lab test', () => {
     expect(applyEdit(both(), { kind: 'labAdd', series: 'ldl', value: 3.1, day: '2026-10-01' }, NOW)).toMatchObject({ ok: false, reason: 'not-found' });
   });
