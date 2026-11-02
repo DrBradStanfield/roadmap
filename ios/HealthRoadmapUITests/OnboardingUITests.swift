@@ -233,7 +233,8 @@ final class OnboardingUITests: XCTestCase {
         // Every tile explains itself, for good (AC5).
         app.tabBars.buttons["My plan"].tap()
         let tile = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Ideal Body Weight'")).firstMatch
-        for _ in 0..<4 where !tile.isHittable { app.swipeDown() }
+        // Clear of the clock: with no title bar a tile half under it still reads as hittable (US-25 AC26).
+        for _ in 0..<4 where !tile.isHittable || tile.frame.minY < 100 { app.swipeDown() }
         tile.tap()
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'A healthy weight for your height and sex'")).firstMatch.waitForExistence(timeout: 5),
                       "the tile's what-it-is")
