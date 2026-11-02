@@ -28,4 +28,12 @@ extension HealthEngine {
     func deleteChat(historyJSON: String?, conversationId: String, now: Date, deviceId: String) throws -> String {
         try settled(String.self, "chatDeleteJson", [historyJSON ?? NSNull(), conversationId, now.formatted(Self.iso), deviceId])
     }
+
+    /// What a chat reply's edits come to against `recordJSON` (US-67): the engine parses
+    /// the server's proposals, converts each from its stated unit and words the lines in
+    /// `units` (the per-test choices). Nothing is written here.
+    func chatEdits(recordJSON: String, edits: OpaqueJSON, now: Date, deviceId: String, today: String, units: String) throws -> ChatEditsPreview {
+        let json = try call("chatEditsJson", [recordJSON, edits.text, now.formatted(Self.iso), deviceId, today, units])
+        return try JSONDecoder().decode(ChatEditsPreview.self, from: Data(json.utf8))
+    }
 }
