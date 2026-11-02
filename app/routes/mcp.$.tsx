@@ -48,7 +48,7 @@ import {
   providerTag,
 } from '../lib/mcp-providers.server';
 import { packSealed, unpackSealed } from '../lib/mcp-seal.server';
-import { reviewerClient, reviewerFailures, reviewerGeneration, reviewerLoginMatches, reviewerOffered, reviewerRefreshToken, reviewerReview } from '../lib/mcp-reviewer.server';
+import { reviewerClient, reviewerFailures, reviewerGeneration, reviewerLoginMatches, reviewerOffered, reviewerRefreshToken } from '../lib/mcp-reviewer.server';
 import type { McpOAuthDetail, McpOAuthReason } from '../../packages/health-core/src/product-events';
 import { REPO_PUBLIC } from '../../packages/health-core/src/plan';
 
@@ -167,7 +167,7 @@ async function authorizeScreen(request: Request, url: URL): Promise<Response> {
   // A bare visit is a person who typed or followed the address, not a client
   // that failed a check: no row, no fetch, and a sentence that says where to go.
   if (!url.searchParams.get('client_id')) {
-    return html(page('Start from ChatGPT', '<p class="lede">This page opens when you connect Health by Dr Brad from ChatGPT. Go back to ChatGPT and press Connect.</p>'));
+    return html(page('Start from your assistant', '<p class="lede">This page opens when you connect Health by Dr Brad from your assistant. Go back to your assistant and press Connect.</p>'));
   }
   // The label, not the id: a client id is caller-chosen text, and an id we do
   // not recognise is `other` — the same word every refusal below carries.
@@ -361,8 +361,8 @@ async function consentGiven(request: Request): Promise<Response> {
 }
 
 /**
- * An app reviewer pressed Sign in (US-32 AC38, AC49). The exact pinned ChatGPT,
- * Codex, Claude or Claude Code client, the Dropbox state, and the secrets set — or the page they came from
+ * Anthropic's reviewer pressed Sign in (US-32 AC38, AC49). The exact pinned Claude
+ * or Claude Code client, the Dropbox state, and the secrets set — or the page they came from
  * could not have shown the form. The password is the only security boundary;
  * the limiter counts failures alone and only stops noise. Nothing here logs
  * or echoes what was typed.
@@ -636,16 +636,14 @@ function clientSource(client: McpClient): string {
 /**
  * The app reviewer box (US-32 AC38, AC49): open, and above everything else on the
  * page, because the reviewer pressed the first button inside two seconds. It
- * exists only for the exact pinned ChatGPT, Codex, Claude and Claude Code clients,
- * worded for the review that client's vendor runs, only while the reviewer
+ * exists only for the exact pinned Claude and Claude Code clients, only while
+ * Anthropic's review is pending, only while the reviewer
  * secrets are set, and only with Dropbox on offer. `error` is our own
  * sentence; what was typed is never echoed.
  */
-function reviewerBox(state: string, review: 'OpenAI' | 'Anthropic', error?: string): string {
-  const heading = review === 'OpenAI' ? 'OpenAI app reviewers' : 'Anthropic reviewers';
-  const scope = review === 'OpenAI' ? 'OpenAI’s app review' : 'Anthropic’s connector review';
-  return `<h2>${heading}: sign in here</h2>
-<p class="lede">For ${scope} only. This is not your Dropbox or Google password.</p>
+function reviewerBox(state: string, error?: string): string {
+  return `<h2>Anthropic reviewers: sign in here</h2>
+<p class="lede">For Anthropic’s connector review only. This is not your Dropbox or Google password.</p>
 ${error ? `<p class="err" role="alert">${escapeHtml(error)}</p>` : ''}<form method="post" class="reviewer">
 <input type="hidden" name="state" value="${escapeHtml(state)}">
 <input type="hidden" name="reviewer" value="1">
@@ -663,8 +661,7 @@ ${error ? `<p class="err" role="alert">${escapeHtml(error)}</p>` : ''}<form meth
  */
 function consentPage(client: McpClient, offers: Array<{ provider: McpProvider; state: string }>, error?: string): string {
   const dropbox = offers.find(({ provider }) => provider === 'dropbox');
-  const review = reviewerReview(client.clientId);
-  const reviewer = dropbox && review && reviewerOffered(client.clientId, dropbox.provider) ? reviewerBox(dropbox.state, review, error) : '';
+  const reviewer = dropbox && reviewerOffered(client.clientId, dropbox.provider) ? reviewerBox(dropbox.state, error) : '';
   // The custody clause follows the TOKEN, not the whole feature: a token set
   // with a malformed password hash keeps the box off but still sits on this server.
   const reviewerTokenHeld = reviewerRefreshToken() !== '';
@@ -685,7 +682,7 @@ function consentPage(client: McpClient, offers: Array<{ provider: McpProvider; s
     'Where do you want to keep your health record?',
     `${reviewer ? '<h2>Everyone else: choose where your record is kept</h2>\n' : ''}<p class="lede"><span class="who">${escapeHtml(client.name)}</span> wants to connect to your health record.</p>
 <p class="lede">That name is the app’s own, not ours. What we can tell you about it: ${escapeHtml(clientSource(client))}.</p>
-<p class="lede">Your health record is yours, and yours alone. Keep it in your own ${escapeHtml(clouds)}. Your assistant reads and writes one file there, plus a temporary imports folder while an import is pending. Our server never stores your health record. We keep a count of connector use: which tool ran, from which assistant, whether it worked, and when.${reviewerTokenHeld ? ' While an OpenAI or Anthropic app review is pending, we also hold the Dropbox credential of one invented reviewer account.' : ''}</p>
+<p class="lede">Your health record is yours, and yours alone. Keep it in your own ${escapeHtml(clouds)}. Your assistant reads and writes one file there, plus a temporary imports folder while an import is pending. Our server never stores your health record. We keep a count of connector use: which tool ran, from which assistant, whether it worked, and when.${reviewerTokenHeld ? ' While Anthropic’s connector review is pending, we also hold the Dropbox credential of one invented reviewer account.' : ''}</p>
 <div class="pick">${buttons}</div>
 ${offers.some(({ provider }) => provider === 'google') ? '<p class="lede">Importing lab files: drop a file into the chat on either cloud, on any device, and your assistant reads it. With Dropbox you can also put files in the folder; with Google Drive the folder cannot be read, so the chat or the website’s upload are the ways in.</p>' : ''}
 <h2>What the assistant can do</h2>

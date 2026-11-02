@@ -1498,8 +1498,9 @@ export function prepareImport(
       const printed = (value: { printedName?: string }) => (value.printedName ? { printedName: oneLine(value.printedName).slice(0, MAX_NAME_LENGTH) } : null);
       // A day of its own on the folder route is a dated previous-results column
       // the shared parse now reads for the website (US-12 AC12). Held off the
-      // connector until the MCP 1.0.2 review ends: left out, as the old prompt
-      // left it out. The assistant's own per-line day (US-36 AC1) is kept.
+      // connector for OpenAI's MCP 1.0.2 review (ended 2026-10-29; releasing it
+      // is open work): left out, as the old prompt left it out. The assistant's
+      // own per-line day (US-36 AC1) is kept.
       const previousColumn = (value: { recordedAt?: string }) => bundle.route !== 'assistant' && !!value.recordedAt;
       for (const value of result.values) {
         if (candidates.length >= MAX_IMPORT_CANDIDATES) break;
