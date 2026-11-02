@@ -3,7 +3,7 @@
 // the widget's own (widget-src/src/lib/blood-test-cell.test.ts), run here against
 // health-core; the rest pin the vitals grades and words the widget had no test for.
 import { describe, expect, it } from 'vitest';
-import { bpStatus, gradeWords, pressureStatus, simpleStatus, statusOf, valueStatus } from './row-grade';
+import { bpStatus, gradeWords, limitUngraded, pressureStatus, savedStatus, simpleStatus, statusOf, valueStatus } from './row-grade';
 
 describe('statusOf: the widget\'s cases (US-07 AC5, US-03 AC7, US-62 AC13, US-07 AC6)', () => {
   it.each([
@@ -78,5 +78,28 @@ describe('gradeWords: said only off target (US-62 AC8)', () => {
     expect([gradeWords('warn', 'hdl'), gradeWords('bad', 'hdl'), gradeWords('warn', 'weight'), gradeWords('bad', 'weight')])
       .toEqual(['below optimal', 'low', 'outside target', 'above target']);
     expect([gradeWords('ok', 'ldl'), gradeWords(null, 'ldl')]).toEqual([null, null]);
+  });
+});
+
+// US-12 AC20: a value printed as a limit is graded only when its bound decides, never by the bound
+// itself (moved from the widget's blood-test-cell.ts with the merge of PR 615).
+describe('savedStatus and limitUngraded: a limit is graded only when its bound decides (US-12 AC20)', () => {
+  it('grades LDL <3 nothing and calls it ungraded, though 3 itself is amber', () => {
+    expect(statusOf('ldl', 3, {})).toBe('warn');
+    expect(savedStatus('ldl', 3, '<', {})).toBeNull();
+    expect(limitUngraded('ldl', 3, '<')).toBe(true);
+  });
+
+  it('grades a limit whose bound decides: LDL >5 red, LDL <1 plain', () => {
+    expect(savedStatus('ldl', 5, '>', {})).toBe('bad');
+    expect(savedStatus('ldl', 1, '<', {})).toBe('ok');
+    expect([limitUngraded('ldl', 5, '>'), limitUngraded('ldl', 1, '<')]).toEqual([false, false]);
+  });
+
+  it('grades an exact value as statusOf does, and passes the limit through valueStatus', () => {
+    expect(savedStatus('ldl', 3, undefined, {})).toBe('warn');
+    expect(limitUngraded('ldl', 3)).toBe(false);
+    expect(valueStatus('ldl', 3, { grading: {}, plan: null }, '<')).toBeNull();
+    expect(savedStatus('ldl', 5, '>', null)).toBeNull();
   });
 });
