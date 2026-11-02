@@ -149,7 +149,7 @@ Compact inventory. Tests sit beside their file (`*.test.ts`) and are not listed.
 
 **Shopify extension (`extensions/health-tool-widget/`):** `blocks/app-block.liquid` (skeleton + A/B inline script, passes customer data) · `chat-embed.liquid` · `chatbot-embed.liquid` · `clarity-embed.liquid` · built `assets/` (`health-plan-v2.js/.css`, `health-plan-v2-HistoryPanel.js`, `health-upload.js`, `health-site-chat.*`, `health-chatbot-embed.*`).
 
-**Infrastructure:** `supabase/rls-policies.sql` (operational schema + RLS; retired v1 tables still declared) · `.github/workflows/`: `ci.yml` (tests on PRs + pushes to main), `deploy.yml` (gate, Pages WebKit smoke, full suite, `tsc --noEmit` for widget-src + health-core, builds, Sentry maps, Shopify ×2, Fly ×2 canary, health gates, live WebKit verify), `pages.yml`, `claude-review.yml` + `auto-ship.yml` (Tier 3 loop pipeline), `loop-issue-notify.yml`, `stranded-branch-watch.yml`, `stale-pr-watch.yml` (open PRs idle >48h, one refreshed issue), `workflow-integrity.yml` · `fly.toml` / `fly.edu.toml`, `shopify.app.toml` / `shopify.app.edu.toml`.
+**Infrastructure:** `supabase/rls-policies.sql` (operational schema + RLS; the v1 health schema left it 2026-11-02, US-09 AC33) · `.github/workflows/`: `ci.yml` (tests on PRs + pushes to main), `deploy.yml` (gate, Pages WebKit smoke, full suite, `tsc --noEmit` for widget-src + health-core, builds, Sentry maps, Shopify ×2, Fly ×2 canary, health gates, live WebKit verify), `pages.yml`, `claude-review.yml` + `auto-ship.yml` (Tier 3 loop pipeline), `loop-issue-notify.yml`, `stranded-branch-watch.yml`, `stale-pr-watch.yml` (open PRs idle >48h, one refreshed issue), `workflow-integrity.yml` · `fly.toml` / `fly.edu.toml`, `shopify.app.toml` / `shopify.app.edu.toml`.
 
 ## Data Model
 
@@ -172,7 +172,7 @@ Health data lives in the user's own file ([roadmap-file.ts](../packages/health-c
 - `product_events`: usage events, metadata filtered to a closed allow-list (`recordProductEvent`, `app/lib/product-events.server.ts`). `feedback_submissions`: a mirror of each feedback email (email, message, customer id).
 - `app_attest_keys`: the iPhone app's App Attest public keys, counters and today's use counts; service role only, no IP or content (US-52, the App Attest section of `supabase/rls-policies.sql`).
 - `ab_tests` / `ab_events`: A/B testing. `audit_logs`: HIPAA audit trail (user_id nullable, anonymized). `cron_lock`, `youtube_bot_log`: ops. Plus Shopify session storage (`SESSION_DATABASE_URL`).
-- **Retired/purged June 2026:** `health_measurements`, `medications`, `medication_history`, `supplements`, `supplement_history`, `lab_values`, `health_documents`, `screenings`, and the v1 reminder tables `reminder_preferences` / `reminder_log`. Their CREATE TABLE statements still sit in `rls-policies.sql` but the rows are gone and v2 never touches them.
+- **Retired/purged June 2026:** `health_measurements`, `medications`, `medication_history`, `supplements`, `supplement_history`, `lab_values`, `health_documents`, `screenings`, and the v1 reminder tables `reminder_preferences` / `reminder_log`. The tables still exist live, empty, and v2 never touches them. `rls-policies.sql` no longer creates the first eight, their functions, or the `profiles` columns `sex`, `birth_year`, `birth_month`, `height` and `unit_system` (US-09 AC33); it still declares the two reminder tables.
 
 Run `supabase/rls-policies.sql` in the SQL Editor to set up the operational schema + RLS.
 
