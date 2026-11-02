@@ -422,10 +422,10 @@ const IN = String.raw`(?:[^.!?]|[.!?](?!\s|$))*`;
 const POINTER_CLAUSE = new RegExp(String.raw`;\s*(?:[^;.!?]|[.!?](?!\s|$))*\bCurrent view\b(?:[^;.!?]|[.!?](?!\s|$))*([.!?])(?=\s|$)`, 'g');
 // The boundary reads the previous sentence's end by lookbehind, never consuming it, so the next sentence can match too.
 const DROP_SENTENCE = new RegExp(String.raw`(?:^|(?<=[.!?])\s+(?!\s))(?!Disclosure:)${IN}(?:\b(?:Current view|MicroVitamin)\b|${VIEW} (?:above|below)\b)${IN}[.!?](?=\s|$)`, 'g');
-const US_ONLY = new RegExp(String.raw`(?:^|(?<=[.!?])\s+(?!\s))${IN}\bthird[-\s]party\s+tested\b${IN}[.!?](?=\s|$)`, 'gi');
+const US_ONLY = new RegExp(String.raw`(?:^|(?<=[.!?])\s+(?!\s))${IN}\bthird(?:-|\s+)party\s+tested\b${IN}[.!?](?=\s|$)`, 'gi');
 const dropPointers = (text) =>
   text.replace(POINTER_PAREN, '').replace(POINTER_CLAUSE, '$1').replace(DROP_SENTENCE, '')
-    .replace(US_ONLY, (m) => (/\bMicroVitamin\b|\bSleep by Dr Brad\b/.test(m) ? '' : m));
+    .replace(US_ONLY, (m) => (/\bMicroVitamin\b|\bSleep\s+by\s+Dr\s+Brad\b/.test(m) ? '' : m));
 
 // A caveat that limits the evidence for a claim survives the product drop when it names no product and does not lean
 // on the dropped sentence before it: "AREDS2 was not a prevention trial in people without AMD." stays;

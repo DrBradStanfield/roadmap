@@ -505,9 +505,9 @@ describe('build-master-html (US-50 AC9)', () => {
     expect(text).not.toContain('Disclosure');
     expect(text).toContain('Pick a third-party tested, low-dose multivitamin from labdoor.com.');
     // Soft-wrapped or unhyphenated, the claim still goes; a generic "Sleep ..." sentence is not the product (review 2026-11-02).
-    const more = MASTER.replace('Magnesium matters, p < 0.05 [1].', 'Kept first.\n\n- Sleep by Dr Brad is third-party\n  tested by Labdoor.\n- Disclosure: MicroVitamin is third party tested.\n- Sleep supplements are rarely third-party tested, so check for a seal.');
+    const more = MASTER.replace('Magnesium matters, p < 0.05 [1].', 'Kept first.\n\n- Sleep by Dr Brad is third-party\n  tested by Labdoor.\n- Disclosure: MicroVitamin is third party tested.\n- Sleep by Dr\n  Brad is third\n  party tested too.\n- Sleep supplements are rarely third-party tested, so check for a seal.');
     const t2 = build(more, { store: 'commerce' }).html.replace(/<[^>]+>/g, '');
-    expect(t2).not.toMatch(/Sleep by Dr Brad|Disclosure/);
+    expect(t2).not.toMatch(/Sleep by Dr|Disclosure|tested too/);
     expect(t2).toContain('Sleep supplements are rarely third-party tested, so check for a seal.');
     expect(build(md, { store: 'edu' }).html).toContain('Disclosure: MicroVitamin Capsules and Sleep are third-party tested');
   });
