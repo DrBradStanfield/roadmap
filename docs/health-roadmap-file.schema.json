@@ -147,6 +147,10 @@
         "reportEmailCaptured": {
           "type": ["boolean", "null"],
           "description": "Monotonic: set true once the user submits an email for their plan. Never set back to false."
+        },
+        "alcohol": {
+          "enum": ["none", "drinks", null],
+          "description": "The answer to \"Do you drink alcohol?\" (US-60): 'none' (I don't drink) or 'drinks' (I drink). Absent: never answered; null: cleared. The plan leaves out its reduce-alcohol suggestion for 'none'."
         }
       }
     },

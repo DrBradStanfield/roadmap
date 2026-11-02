@@ -117,3 +117,19 @@ describe('measurementRefusalLine: the stated bound is one the value really faile
     expect(convertValidationErrorsToUnits({ ldlC: 'LDL-c must be at most 12.9 mmol/L' }, 'conventional').ldlC).toBe('LDL-c must be at most 498 mg/dL');
   });
 });
+
+// US-03 AC7 (Brad, 2026-10-31): a lipid of 0 refused by the record is not
+// "below 0"; the line says the value must be above it.
+describe('US-03 AC7 — measurementRefusalLine for a lipid of 0', () => {
+  it('says the value must be above 0, in the unit the cell shows', () => {
+    expect(measurementRefusalLine({ index: 0, metricType: 'ldl', reason: 'out-of-range', message: 'synthetic', bound: 'below' }, 'conventional'))
+      .toBe('LDL Cholesterol not saved: the value must be above 0 mg/dL. Check the report, then enter it again.');
+    expect(measurementRefusalLine({ index: 0, metricType: 'apob', reason: 'out-of-range', message: 'synthetic', bound: 'below' }, 'si'))
+      .toBe('ApoB not saved: the value must be above 0 g/L. Check the report, then enter it again.');
+  });
+
+  it('keeps the ceiling wording for a lipid above its range', () => {
+    expect(measurementRefusalLine({ index: 0, metricType: 'triglycerides', reason: 'out-of-range', message: 'synthetic', bound: 'above' }, 'conventional'))
+      .toBe('Triglycerides not saved: above 2,001 mg/dL, the highest value this tool accepts. Check the report, then enter it again.');
+  });
+});

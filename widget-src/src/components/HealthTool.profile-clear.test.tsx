@@ -4,7 +4,7 @@ import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react
 import { ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
 
 // Only off-device boundaries are mocked; the form, autosave and store are real.
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -17,9 +17,12 @@ vi.mock('../lib/chat-api', async original => ({
   listConversations: () => Promise.resolve(null), getChatGate: () => null,
 }));
 import { HealthTool } from './HealthTool';
+import { openAboutYou } from '../testing/health-tool-harness';
 
 const stops: Array<() => void> = [];
 const saved = () => new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME).body as RoadmapFile;
+/** A profile field, its About you row opened first (a complete record's About you is rows, US-62 AC12). */
+const profileField = <T extends Element>(root: HTMLElement, id: string) => { openAboutYou(root); return root.querySelector<T>(`#${id}`); };
 const tick = () => act(async () => { await vi.advanceTimersByTimeAsync(1800); });
 
 beforeEach(async () => {
@@ -37,6 +40,7 @@ beforeEach(async () => {
   });
   await initRoadmapStore(new LocalStorageAdapter());
   await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 5, unitSystem: 'si' }, {});
+  await addMeasurement('weight', 80, '2026-10-01'); // the onboarding done: the birth date shows (US-62 AC13)
   await flushRoadmapStore();
 });
 afterEach(async () => {
@@ -51,7 +55,7 @@ it.each([
 ] as const)('US-10 AC9: clearing %s survives autosave and a fresh store/component load', async (field, initial) => {
   const view = render(<HealthTool />);
   const input = await waitFor(() => {
-    const el = view.container.querySelector<HTMLInputElement | HTMLSelectElement>(`#${field}`);
+    const el = profileField<HTMLInputElement | HTMLSelectElement>(view.container, field);
     expect(el?.value).toBe(initial);
     return el!;
   });
@@ -63,13 +67,13 @@ it.each([
   view.unmount();
   await act(async () => { await initRoadmapStore(new LocalStorageAdapter()); });
   const reloaded = render(<HealthTool />);
-  await waitFor(() => expect(reloaded.container.querySelector<HTMLInputElement | HTMLSelectElement>(`#${field}`)?.value).toBe(''));
+  await waitFor(() => expect(profileField<HTMLInputElement | HTMLSelectElement>(reloaded.container, field)?.value).toBe(''));
 });
 
 it('US-10 AC9: changing Birth Month to another value still survives autosave and a fresh load', async () => {
   const view = render(<HealthTool />);
   const month = await waitFor(() => {
-    const el = view.container.querySelector<HTMLSelectElement>('#birthMonth');
+    const el = profileField<HTMLSelectElement>(view.container, 'birthMonth');
     expect(el?.value).toBe('5'); return el!;
   });
   fireEvent.change(month, { target: { value: '6' } });
@@ -79,5 +83,5 @@ it('US-10 AC9: changing Birth Month to another value still survives autosave and
   view.unmount();
   await act(async () => { await initRoadmapStore(new LocalStorageAdapter()); });
   const reloaded = render(<HealthTool />);
-  await waitFor(() => expect(reloaded.container.querySelector<HTMLSelectElement>('#birthMonth')?.value).toBe('6'));
+  await waitFor(() => expect(profileField<HTMLSelectElement>(reloaded.container, 'birthMonth')?.value).toBe('6'));
 });

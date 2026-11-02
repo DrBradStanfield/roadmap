@@ -659,7 +659,7 @@
   "check": "AC4",
   "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
   "match": "heading missing from new body: ### Acrylamide",
-  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (Cocoa review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "reason": "Exception ratified by the orchestrator after a hand check against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-26"
  },
@@ -675,7 +675,7 @@
   "check": "AC4",
   "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
   "match": "heading missing from new body: ### Fat Content",
-  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (Cocoa review, Ratified line) (orchestrator 2026-10-26, masters-new-15).",
+  "reason": "Exception ratified by the orchestrator after a hand check against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-26"
  },

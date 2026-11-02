@@ -207,8 +207,9 @@ async function pullRouting(): Promise<RoutingEvent[]> {
  *  imports nothing from the server, so the string is repeated, not shared. */
 const PURGED_TEXT = '[removed after 30 days]';
 
-/** Routing rows join messages by message_id; a row with none (the widget, or a
- *  YouTube turn the LLM never answered) gets a key of its own. */
+/** Routing rows join messages by message_id; a row with none (the widget, a
+ *  YouTube turn the LLM never answered, or a silent Discord SPAM turn, US-15
+ *  AC48) gets a key of its own. */
 const routingKey = (r: RoutingEvent) => r.message_id ?? `routing-${r.created_at}-${r.conversation_id}`;
 
 /**
@@ -374,6 +375,12 @@ function escapeHtml(s: string): string {
     .replace(/'/g, '&#39;');
 }
 
+// A markdown link [label](url) as an anchor. Web and mail addresses only: a
+// javascript: link from a chat would run on click.
+function linkHtml(link: string, label: string, url: string): string {
+  return /^(https?:|mailto:)/i.test(url) ? `<a href="${url}" target="_blank" rel="noopener">${label}</a>` : link;
+}
+
 // Tiny markdown → HTML for bot responses. Handles: ```code blocks```, `inline code`,
 // **bold**, *italic*, # / ## / ### headers, - / * bullets, [link](url), paragraphs.
 // Anything else is escaped as plain text. Not a full MD parser — bot replies use a
@@ -400,7 +407,7 @@ function renderMessageContent(raw: string): string {
     // pulled the line through bullet handling
     s = s.replace(/(^|[^*])\*([^*\n]+)\*([^*]|$)/g, '$1<em>$2</em>$3');
     // links — [text](url)
-    s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, linkHtml);
     return s;
   };
 
@@ -529,7 +536,7 @@ function renderHtml(messages: Message[], routingById: Map<string, RoutingEvent>)
           const title = skipped
             ? `Classifier said ${route.classification} — router was bypassed (HONOR_SKIP=true)`
             : `Classifier said ${route.classification} — router fired as normal`;
-          classifierHtml = `<span class="classifier-badge ${cls}" title="${title}">${escapeHtml(route.classification)}${skipped ? ' · skip' : ''}</span>`;
+          classifierHtml = `<span class="classifier-badge ${cls}" title="${escapeHtml(title)}">${escapeHtml(route.classification)}${skipped ? ' · skip' : ''}</span>`;
         }
         routerLine = `<div class="router-meta">${classifierHtml}→ ${handles} <span class="muted">(${route.router_latency_ms ?? '?'}ms, ${cacheStr})</span>${errorHtml}</div>`;
       }
@@ -597,7 +604,7 @@ function renderHtml(messages: Message[], routingById: Map<string, RoutingEvent>)
             <span>Conv ID: ${convId}</span>
             <span>User ID: ${msgs[0].user_id || 'undefined'}</span>
             <span>Started: ${msgs[0].created_at}</span>
-            ${externalId ? `<span>Discord: ${externalId}</span>` : ''}
+            ${externalId ? `<span>Discord: ${escapeHtml(externalId)}</span>` : ''}
           </div>
           ${turnsHtml}
         </div>

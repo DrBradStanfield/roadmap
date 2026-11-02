@@ -9,7 +9,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { isLpaUnit, localDay, type LpaUnit, type UnitSystem } from '@roadmap/health-core';
 import type { CellUnit } from './blood-test-cell';
-import { DRAFTS_CLEARED_EVENT, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
+import { DRAFTS_CLEARED_EVENT, localHealthWritesStopped, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
 import type { SaveTask } from './matrix-save';
 
 type Typed<K extends string> = Partial<Record<K, string>>;
@@ -118,6 +118,10 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
   const typedHere = (key: K) => metaOf([null, key])?.typedOn === PAGE;
 
   useEffect(() => {
+    // After log-off, typed values stay on screen only: writing them would put
+    // health values back on a device the user meant to leave clean (US-09 AC2e).
+    // Removing a draft is always safe, so a stale one does not stay behind.
+    if (localHealthWritesStopped()) { safeRemoveItem(storageKey); return; }
     if (holdsAny(state.draft.values) || holdsAny(state.backfills)) safeSetItem(storageKey, JSON.stringify(state));
     else safeRemoveItem(storageKey);
   }, [storageKey, state]);
@@ -139,6 +143,9 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
   return {
     draft: { date, values },
     backfills: state.backfills,
+    /** Any typed text kept, valid or not, restored or displaced: what the
+     *  phone's "Unsaved values" cue reports (US-62 AC11). */
+    holdsText: holdsAny(state.draft.values) || holdsAny(state.backfills),
     /** What the user typed into a cell, verbatim, and the unit it is in when
      *  a unit switch must keep the quantity. `byHand` false: the chat filled
      *  it, and the user has not typed into it since. */

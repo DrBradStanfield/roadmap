@@ -8,9 +8,10 @@ searches the knowledge base:
 - **`mcp-server.ts`**: a stdio MCP server. Point Claude Desktop or Claude
   Code at it and it exposes the record as named tools (read, compute plan,
   add a value, add a lab panel, correct a value, change one of the four
-  profile fields, report a problem: eight in all). The eighth,
+  profile fields, report a problem, file the results the assistant read from
+  a document you gave it, import documents: nine in all). The ninth,
   `import_documents`, is hosted-only: this local server lists it but refuses
-  it, having no model and no network. Setup:
+  it, having no model and no network. `file_results` works here. Setup:
   [docs/guides/connect-claude-desktop.md](../docs/guides/connect-claude-desktop.md).
 - **`edit-record.ts`**: the CLI that writes to the record, `add` and
   `correct`, one value per call.

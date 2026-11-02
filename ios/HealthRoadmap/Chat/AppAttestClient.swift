@@ -28,6 +28,16 @@ actor AppAttestClient {
         }
     }
 
+    /// A request that failed on the way, in plain words, never URLSession's ("The request
+    /// timed out.", US-52 AC6d, AC7a). `subject` is what was asked: "The chat".
+    static func words(for error: URLError, subject: String) -> String {
+        switch error.code {
+        case .timedOut: "\(subject) took too long to answer. Please try again."
+        case .networkConnectionLost: "The connection dropped before the answer finished. Please try again."
+        default: "\(subject) could not be reached. Check your connection, then try again."
+        }
+    }
+
     private let session: URLSession
     private var busy = false
     private var waiters: [CheckedContinuation<Void, Never>] = []
@@ -38,7 +48,8 @@ actor AppAttestClient {
 
     /// POSTs `body` to `path` and returns the open response once its headers have
     /// arrived. A 401 for a lost key or a stale counter is retried once, with a new
-    /// key or a fresh assertion. Any other non-2xx status throws with the server's words.
+    /// key or a fresh assertion. Any other non-2xx status throws with the server's words, or
+    /// plain ones when it gave none (a gateway's HTML page; US-52 AC6d).
     func post(_ path: String, body: Data) async throws -> (URLSession.AsyncBytes, HTTPURLResponse) {
         await acquire()
         defer { release() }
@@ -57,7 +68,7 @@ actor AppAttestClient {
                 if answer.reason == "unknown_key" { Keychain.delete() }
                 continue
             }
-            throw Failure.server(status: http.statusCode, message: answer.error ?? "The server refused the request (\(http.statusCode)).")
+            throw Failure.server(status: http.statusCode, message: answer.error ?? "The server could not answer just now. Please try again later.")
         }
         throw Failure.badResponse
     }

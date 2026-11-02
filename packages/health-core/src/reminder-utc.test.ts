@@ -13,7 +13,6 @@ process.env.TZ = 'Pacific/Auckland';
 
 import { describe, it, expect } from 'vitest';
 import { computeReminderSchedule, computeNextDueDates } from './reminder-schedule';
-import { computeDueReminders } from './reminders';
 import { createEmptyFile, type RoadmapFile } from './roadmap-file';
 
 function fileWith(profile: Partial<RoadmapFile['profile']>, screenings: Record<string, unknown> = {}): RoadmapFile {
@@ -51,32 +50,21 @@ describe('reminder dates are UTC calendar arithmetic (US-23 AC6b)', () => {
     expect(after.find((i) => i.category === 'screening_prostate')?.dueAt).toBe('2026-09-01');
   });
 
-  it('v1 reads a medication review as overdue on the same UTC day v2 dates it', () => {
-    // 2024-02-29T12:00Z is 1 March in Auckland; 12 local months on is
-    // 2025-02-28T12:00Z, a day before v2's due date.
+  it('dates a medication review on the UTC day twelve months on', () => {
+    // 2024-02-29T12:00Z is 1 March in Auckland; twelve local months on would be
+    // 2025-02-28T12:00Z, a day early.
     const meds = [{ medicationKey: 'statin', drugName: 'atorvastatin', updatedAt: '2024-02-29T12:00:00Z' }];
     const male = { sex: 'male' as const, age: 60 };
     expect(computeNextDueDates(male, undefined, {}, meds)[0].dueAt).toBe('2025-03-01');
-    const due = (iso: string) => computeDueReminders(male, undefined, {}, meds, new Date(iso)).reminders.map((r) => r.category);
-    expect(due('2025-02-28T23:00:00Z')).not.toContain('medication_review');
-    expect(due('2025-03-01T12:00:01Z')).toContain('medication_review');
   });
 
-  // Codex R2 (2026-10-21): v1's screening checks compared the instant with the
-  // local midnight types.ts builds, so in Auckland a PSA due 1 September read
-  // overdue at 2026-08-31T13:00Z, still 31 August in UTC.
-  it('v1 reads a screening as overdue on its UTC due day, in every zone', () => {
+  it('dates a screening on its due month, in every zone', () => {
     const screenings = { prostateDiscussion: 'will_screen' as const, prostateLastDate: '2025-09' };
     const male = { sex: 'male' as const, age: 60 };
-    const psa = (iso: string) => computeDueReminders(male, screenings, {}, [], new Date(iso))
-      .reminders.some((r) => r.category === 'screening_prostate');
     try {
       for (const zone of ['UTC', 'Pacific/Auckland', 'America/Los_Angeles']) {
         process.env.TZ = zone; // a forks child re-reads it on the next Date call
         expect(computeNextDueDates(male, screenings, {}, [])[0].dueAt, zone).toBe('2026-09-01');
-        expect(psa('2026-08-31T13:00:00Z'), zone).toBe(false);
-        expect(psa('2026-08-31T23:59:59Z'), zone).toBe(false);
-        expect(psa('2026-09-01T00:00:01Z'), zone).toBe(true);
       }
     } finally {
       process.env.TZ = 'Pacific/Auckland';

@@ -581,18 +581,20 @@ export class RecordSession {
 
   /**
    * Serialized read-merge-write, run by saveLoop(). A call made while a save
-   * runs joins it: the save goes round again for the new changes, and the
-   * call answers when the whole save ends. A later pass that fails fails the
-   * call too: a false failure, never a false success. Answering at once let
+   * runs joins it, and answers when the whole save ends. It never forces
+   * another pass itself: every change made meanwhile does that in touch(), so
+   * a debounce firing mid-pass or an empty flush adds no write (US-10 AC5a).
+   * A later pass that fails fails the call too: a false failure, never a false success. Answering at once let
    * an awaited flush, and so an erase, report a save that had not happened
    * (US-11 AC7).
    * @returns false when the save failed (already reported to the host).
    */
   private persist(): Promise<boolean> {
-    if (this.running) {
-      this.dirtyDuringPersist = true;
-      return this.running;
-    }
+    // Nothing to save writes nothing: a save always merges, and every merge
+    // moves the lamport on. Covers an empty flush and the debounce left over
+    // from an edit a save's own next pass already took (US-10 AC5a).
+    if (this.running) return this.running;
+    if (!this.unsaved) return Promise.resolve(true);
     return (this.running = this.saveLoop());
   }
 

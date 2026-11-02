@@ -131,7 +131,7 @@ async function processOneOptin(optin: ReminderV2Optin, todayStr: string): Promis
   void recordServerEvent('reminder_sent', { provider: optin.provider, count: due.length });
 
   // Record per-category send dates. If this write fails the next run would
-  // re-send, so surface it at error level (same posture as the v1 cron).
+  // re-send, so surface it at error level.
   const lastSent = { ...optin.last_sent };
   for (const item of due) lastSent[item.category] = todayStr;
   try {
@@ -203,5 +203,5 @@ export async function processV2Reminders(todayStr: string): Promise<number> {
   return sent;
 }
 
-// Auto-start on module import (same pattern as the v1 crons)
+// Auto-start on module import (same pattern as trending-cron.server.ts)
 startReminderV2Cron();

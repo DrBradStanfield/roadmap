@@ -12,7 +12,7 @@
 import type { ApiProfile, ApiScreening } from './mappings';
 import type { FileScreenings, RoadmapProfile } from './roadmap-file';
 import type { ScreeningInputs } from './types';
-import { encodeSex, encodeUnitSystem } from './types';
+import { encodeSex, encodeUnitSystem, isSex } from './types';
 import { SCREENING_KEYS } from './validation';
 
 /** A screening key as stored (`colorectal_last_date`) → its ScreeningInputs field. */
@@ -23,13 +23,15 @@ export function screeningFieldName(key: string): keyof ScreeningInputs {
 /** The file's profile as an ApiProfile. Names are never stored in the file. */
 export function fileProfileToApi(p: RoadmapProfile): ApiProfile {
   return {
-    sex: p.sex ? encodeSex(p.sex) : null,
+    // Anything but male or female is no sex (US-07 AC8): encodeSex would read it as female.
+    sex: isSex(p.sex) ? encodeSex(p.sex) : null,
     birthYear: p.birthYear ?? null,
     birthMonth: p.birthMonth ?? null,
     unitSystem: p.unitSystem ? encodeUnitSystem(p.unitSystem) : null,
     firstName: null,
     lastName: null,
     height: p.heightCm ?? null,
+    alcohol: p.alcohol ?? null,
   };
 }
 

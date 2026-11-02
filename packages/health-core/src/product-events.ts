@@ -121,6 +121,26 @@ export const PRODUCT_EVENT_NAMES = [
   // US-15 AC44: one daily purge run's question archive. Server-originated.
   // Metadata `{ eligible, kept, skipped }`, counts only: never a question.
   'chat_question_archived',
+  // US-60: "Do you drink alcohol?" was answered in the plan card's Dismiss
+  // dialog (not About you). Name only: whether someone drinks is health information.
+  'alcohol_question_answered',
+  // US-61 AC8: the US product blocks were scrolled into view, and a block's
+  // link was clicked. Metadata `{ product }` only: never the card it sat on,
+  // since which cards show can reveal a health state.
+  'us_product_shown',
+  'us_product_link_clicked',
+  // US-62 AC1, the web redesign's usage signal. `tool_opened` is the
+  // denominator, metadata `{ device }` (TOOL_DEVICES); `onboarding_step` names
+  // the step (ONBOARDING_STEPS), never its answer; `onboarding_done` is the
+  // name alone; `signin_opened` carries its own SIGNIN_PLACEMENTS.
+  'tool_opened',
+  'onboarding_step',
+  'onboarding_done',
+  'signin_opened',
+  // US-65 AC6: the record opened with entries this build could not read, so
+  // the page showed the kept-unchanged line. Metadata `{ count }` only, capped
+  // at 1000: never a row, a field name or a value. Once per tab session.
+  'record_unreadable_kept',
 ] as const;
 
 /** The `chat_profile_edit` counter's words (US-16 AC2): which profile field, and what the user did. */
@@ -202,8 +222,16 @@ export type McpToolName = (typeof MCP_TOOL_NAMES)[number] | (typeof MCP_KNOWLEDG
 
 /** The `mcp_import` counter's three closed vocabularies (US-35 usage signal). */
 export const MCP_IMPORT_ROUTES = ['dropbox', 'drive_refused', 'assistant'] as const;
-/** The `guide_opened` counter's surfaces (US-38): the column header, or its mobile foot. */
-export const GUIDE_PLACEMENTS = ['header', 'footer'] as const;
+/** The `guide_opened` counter's surfaces (US-38): the column header, or its
+ *  mobile foot; `plan_footer` is the redesign's foot of the plan (US-62 AC1). */
+export const GUIDE_PLACEMENTS = ['header', 'footer', 'plan_footer'] as const;
+/** The `signin_opened` counter's surfaces (US-62 AC1). Its own list: a
+ *  guide placement on a sign-in row, or the reverse, would split both counts. */
+export const SIGNIN_PLACEMENTS = ['top_bar', 'plan_panel'] as const;
+/** The `tool_opened` counter's device (US-62 AC1). */
+export const TOOL_DEVICES = ['phone', 'desktop'] as const;
+/** The `onboarding_step` counter's step names (US-62 AC1): which question, never its answer. */
+export const ONBOARDING_STEPS = ['measurements', 'sex', 'birth'] as const;
 /** The `upload_outcome` counter's integer counts (US-12 AC10): files seen, then
  *  how each ended. `truncated` overlaps the rest and `valuesDropped` counts value
  *  rows the parse refused, not files; the others sum to `picked`. `refused` and
@@ -212,8 +240,10 @@ export const GUIDE_PLACEMENTS = ['header', 'footer'] as const;
  *  is a .docx of pictures and no text (US-12 AC13). `undatedPrevious` counts
  *  value rows read from an undated previous column, not files (AC14).
  *  `unitsGuessed` counts values whose unit was guessed (AC16) and `unitsRefused`
- *  creatinine rows refused rather than guessed (AC15): values, not files. */
-export const UPLOAD_OUTCOME_KEYS = ['picked', 'withValues', 'documentOnly', 'noValues', 'openFailed', 'tooLarge', 'truncated', 'serverError', 'limitError', 'refused', 'tooLong', 'valuesDropped', 'docx', 'picturesOnly', 'undatedPrevious', 'unitsGuessed', 'unitsRefused'] as const;
+ *  creatinine rows refused rather than guessed (AC15): values, not files.
+ *  `valuesLimit` counts the `valuesDropped` rows printed as a limit, such as
+ *  "> 60" (AC19): a part of that count, never a test's name. */
+export const UPLOAD_OUTCOME_KEYS = ['picked', 'withValues', 'documentOnly', 'noValues', 'openFailed', 'tooLarge', 'truncated', 'serverError', 'limitError', 'refused', 'tooLong', 'valuesDropped', 'docx', 'picturesOnly', 'undatedPrevious', 'unitsGuessed', 'unitsRefused', 'valuesLimit'] as const;
 export type UploadOutcomeKey = (typeof UPLOAD_OUTCOME_KEYS)[number];
 /** The most one count may say; the server refuses more, so the client clamps. */
 export const UPLOAD_OUTCOME_MAX = 1000;
@@ -332,7 +362,7 @@ export const MCP_OAUTH_REASONS = [
   'token-replayed',
   /** The refresh token was dead, expired or tampered with. */
   'token-dead-refresh',
-  // US-32 AC38, OpenAI's reviewer sign-in on our own consent page.
+  // US-32 AC38, AC49, the app reviewer sign-in on our own consent page.
   /** A wrong reviewer username or password. */
   'reviewer-credentials',
   /** A reviewer sign-in refused by the failures-only limiter. */

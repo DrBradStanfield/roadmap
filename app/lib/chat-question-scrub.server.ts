@@ -15,6 +15,7 @@
 import * as z from '../../packages/health-core/src/zod';
 import { CLASSIFIER_MODEL, modelParams } from '../../packages/health-core/src/models';
 import { callAnthropicWithUsage } from './anthropic.server';
+import { SCRUB_UNITS } from '../../packages/health-core/src/sentry-scrub';
 
 /** Per call. The purge's own 5-minute budget bounds the run. */
 export const SCRUB_TIMEOUT_MS = 15_000;
@@ -62,6 +63,32 @@ export function backstop(text: string): string {
     .replace(/#\d{4,}\b/g, '[id]');
 }
 
+/**
+ * What the code pass cannot replace but can see (US-15 AC44e). A social
+ * handle: `@` then a letter (any script) or `_`, not after a word, a dot or an
+ * `@`, so an email or a dose like "@5000IU" is not one. A name the person gave:
+ * "my name is", "my name's" or "call me" then a capital, read in the QUESTION, since the model's answer may
+ * lower-case the name and `isScrubOf` would still accept it. Each needs a
+ * `[name]` after the same phrase in the kept copy, or the copy is skipped.
+ */
+const HANDLE = /(?<![\w.@])@[\p{L}_]/u;
+const INTRO = /\b(my\s+name\s+is|my\s+name['’]s|call\s+me)(?=[\s:,]+["'“‘«„‚‹]?\s*(\S))/gi;
+/** Each intro's phrase and the first character after it, in order; the lookahead never swallows a next phrase. */
+const intros = (text: string) =>
+  [...text.matchAll(INTRO)].map((m) => ({ phrase: m[1].toLowerCase().replace(/\s+/g, ' '), next: text.slice(text.indexOf(m[2], m.index + m[1].length)) }));
+/**
+ * Pair the question's intros with the copy's in order (swaps never reorder);
+ * a capital in the question needs `[name]` in the copy. A count or a phrase
+ * that differs is doubt, so a skip.
+ */
+function leavesName(question: string, kept: string): boolean {
+  const asked = intros(question);
+  const saved = intros(kept);
+  if (asked.length !== saved.length) return true;
+  return asked.some((a, i) => a.phrase !== saved[i].phrase || (/^\p{Lu}/u.test(a.next) && !/^\[name\]/i.test(saved[i].next)));
+}
+const leavesIdentity = (question: string, kept: string) => HANDLE.test(kept) || leavesName(question, kept);
+
 const collapse = (text: string) => text.replace(/\s+/g, ' ').trim();
 const MONTH = /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/i;
 /** Words that change what a question means; a placeholder never covers one. */
@@ -69,6 +96,14 @@ const MEANING = /\b(?:not|no|never|cannot|without|unless|except|but|if|than|less
 const STREET = /\b(?:st|street|rd|road|ave|avenue|lane|ln|drive|dr|pl|place|cres|crescent|way|tce|terrace|blvd|boulevard|ct|court|close|hwy|highway)\b/i;
 /** A masked widget digit (`#`) counts as a digit. */
 const DIGIT = /[\d#]/;
+/** A digit then a dose or lab unit (the Sentry scrub's list, longest first; inches left out, as there). */
+const UNIT_VALUE = new RegExp(`[\\d#]\\s*(?:${SCRUB_UNITS.filter((u) => u !== 'in' && u !== '"')
+  .sort((a, b) => b.length - a.length).map((u) => u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(?![a-z])`, 'gi');
+/** Is a digit of `span` a dose or lab value, its unit in the span or just after it (US-15 AC44a)? */
+const holdsUnitValue = (span: string, after: string) =>
+  [...`${span} ${after}`.matchAll(UNIT_VALUE)].some((m) => m.index < span.length);
+/** May placeholder `kind` stand for `span`, given the question's text `after` it (US-15 AC44a)? */
+const mayStandFor = (kind: string, span: string, after: string) => covers(kind, span) && !holdsUnitValue(span, after);
 
 /**
  * May this placeholder stand for this span of the question? Each kind covers
@@ -125,7 +160,8 @@ function isScrubOf(question: string, scrubbed: string): boolean {
     const last = i === swaps.length - 1;
     const at = last ? ql.length - piece.length : ql.indexOf(piece, cursor + 1);
     if (at <= cursor || (last && !ql.endsWith(piece))) return false;
-    if (!covers(swaps[i], q.slice(cursor, at).trim())) return false;
+    const span = q.slice(cursor, at).trim();
+    if (!mayStandFor(swaps[i], span, q.slice(at))) return false;
     cursor = at + piece.length;
   }
   return true;
@@ -163,7 +199,8 @@ export async function scrubQuestion(text: string, deps: ScrubDeps = {}): Promise
     if (!parsed.success) return null;
     const scrubbed = parsed.data.scrubbed.trim();
     if (!scrubbed || !isScrubOf(question, scrubbed)) return null;
-    return backstop(scrubbed);
+    const kept = backstop(scrubbed);
+    return leavesIdentity(question, kept) ? null : kept;
   } catch {
     // A failed or timed-out call is a skip, never rethrown or logged here; the caller counts it.
     return null;

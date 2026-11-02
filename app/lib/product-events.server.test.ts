@@ -33,9 +33,14 @@ describe('parseProductEvent', () => {
   it('accepts every client-emittable event name', () => {
     for (const eventName of PRODUCT_EVENT_NAMES) {
       if (SERVER_ONLY.has(eventName)) continue;
-      expect(parseProductEvent({ eventName, visitorId: VISITOR })).toEqual({
+      // US-62 AC1: these three need their key, tested with it below.
+      if (['tool_opened', 'onboarding_step', 'signin_opened'].includes(eventName)) continue;
+      // US-61 AC8: the two US product events need their product.
+      const metadata = eventName.startsWith('us_product_') ? { metadata: { product: 'sleep' } } : {};
+      expect(parseProductEvent({ eventName, visitorId: VISITOR, ...metadata })).toEqual({
         eventName,
         visitorId: VISITOR,
+        ...metadata,
       });
     }
   });
@@ -227,6 +232,52 @@ describe('the email-arrival counters', () => {
     expect(parseProductEvent({ eventName: 'blood_test_moved', visitorId: VISITOR, metadata: { count: 4 } })).toBeNull();
     expect(parseProductEvent({ eventName: 'blood_test_moved', visitorId: VISITOR, metadata: { provider: 'dropbox' } })).toBeNull();
   });
+
+  it('US-60: takes alcohol_question_answered from a browser by name alone, never with an answer', () => {
+    expect(parseProductEvent({ eventName: 'alcohol_question_answered', visitorId: VISITOR })).toEqual({
+      eventName: 'alcohol_question_answered',
+      visitorId: VISITOR,
+    });
+    for (const metadata of [{ answer: 'none' }, { choice: 'saved' }, { field: 'sex' }, { provider: 'dropbox' }, { count: 1 }]) {
+      expect(parseProductEvent({ eventName: 'alcohol_question_answered', visitorId: VISITOR, metadata })).toBeNull();
+    }
+  });
+
+  it('US-61 AC8: takes the two US product events with a product word, and nothing else', () => {
+    for (const eventName of ['us_product_shown', 'us_product_link_clicked']) {
+      for (const product of ['microvitamin_plus', 'sleep']) {
+        expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata: { product } })).toEqual({
+          eventName, visitorId: VISITOR, metadata: { product },
+        });
+      }
+      // No card id (a health-state leak), no other key, no other product word.
+      for (const metadata of [
+        { product: 'sleep', id: 'supplement-sleep' },
+        { product: 'sleep', key: 'x' },
+        { product: 'sleep', count: 1 },
+        { product: 'sleep', provider: 'dropbox' },
+        { product: 'microvitamin' },
+        { product: 'fiber' },
+        { product: 'MicroVitamin+' },
+        { count: 1 },
+      ]) {
+        expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata })).toBeNull();
+      }
+    }
+  });
+
+  it('US-61 AC8: refuses the two US product events without a product', () => {
+    for (const eventName of ['us_product_shown', 'us_product_link_clicked']) {
+      expect(parseProductEvent({ eventName, visitorId: VISITOR })).toBeNull();
+      expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata: {} })).toBeNull();
+    }
+  });
+
+  it('US-61 AC8: no other event may carry a product', () => {
+    for (const eventName of ['results_viewed', 'chat_opened', 'alcohol_question_answered', 'upload_outcome']) {
+      expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata: { product: 'sleep' } })).toBeNull();
+    }
+  });
 });
 
 /** US-38 — the guide link's counter: which surface sent someone to the hub. */
@@ -252,6 +303,74 @@ describe('the guide-link counter', () => {
         metadata: { placement: 'sidebar' },
       }).success,
     ).toBe(false);
+  });
+});
+
+/** US-62 AC1 — the web redesign's counters: closed words only, never a value. */
+describe('the web redesign counters (US-62 AC1)', () => {
+  const ok = (eventName: string, metadata?: Record<string, unknown>) =>
+    expect(parseProductEvent({ eventName, visitorId: VISITOR, ...(metadata ? { metadata } : {}) }), JSON.stringify({ eventName, metadata }))
+      .toEqual({ eventName, visitorId: VISITOR, ...(metadata ? { metadata } : {}) });
+  const refused = (eventName: string, metadata: Record<string, unknown>) =>
+    expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata }), JSON.stringify({ eventName, metadata })).toBeNull();
+
+  it('refuses tool_opened, onboarding_step and signin_opened without their key (adversary R2)', () => {
+    for (const eventName of ['tool_opened', 'onboarding_step', 'signin_opened']) {
+      expect(parseProductEvent({ eventName, visitorId: VISITOR }), eventName).toBeNull();
+      refused(eventName, {});
+    }
+    refused('tool_opened', { step: 'sex' });
+    refused('onboarding_step', { device: 'phone' });
+    refused('signin_opened', { device: 'phone' });
+  });
+
+  it('takes tool_opened with a device, phone or desktop, and nothing else', () => {
+    ok('tool_opened', { device: 'phone' });
+    ok('tool_opened', { device: 'desktop' });
+    for (const metadata of [{ device: 'tablet' }, { device: 'Phone' }, { device: 1 }, { device: 'phone', placement: 'top_bar' }, { device: 'phone', count: 1 }, { device: 'phone', provider: 'dropbox' }, { device: 'phone', weight: 80 }]) {
+      refused('tool_opened', metadata);
+    }
+  });
+
+  it('takes onboarding_step with its step name, and never a value', () => {
+    for (const step of ['measurements', 'sex', 'birth']) ok('onboarding_step', { step });
+    // The answer itself, a value, the server-only connector words and any other key are refused.
+    for (const metadata of [{ step: 'male' }, { step: '1980' }, { step: 'propose' }, { step: 'confirm' }, { step: 'sex', sex: 'male' }, { step: 'birth', count: 1980 }, { step: 'measurements', field: 'heightCm' }, { step: 'sex', choice: 'saved' }]) {
+      refused('onboarding_step', metadata);
+    }
+  });
+
+  it('takes onboarding_done by name alone', () => {
+    ok('onboarding_done');
+    for (const metadata of [{ step: 'birth' }, { count: 3 }, { device: 'phone' }, { provider: 'dropbox' }]) refused('onboarding_done', metadata);
+  });
+
+  it('takes signin_opened with its own placements, never the guide link\'s', () => {
+    ok('signin_opened', { placement: 'top_bar' });
+    ok('signin_opened', { placement: 'plan_panel' });
+    for (const metadata of [{ placement: 'header' }, { placement: 'footer' }, { placement: 'plan_footer' }, { placement: 'sidebar' }, { placement: 'top_bar', provider: 'dropbox' }, { placement: 'top_bar', device: 'phone' }]) {
+      refused('signin_opened', metadata);
+    }
+  });
+
+  it('takes guide_opened at the new plan_footer, never at a sign-in placement or with another key', () => {
+    for (const placement of ['header', 'footer', 'plan_footer']) ok('guide_opened', { placement });
+    for (const metadata of [{ placement: 'top_bar' }, { placement: 'plan_panel' }, { placement: 'plan_footer', device: 'phone' }, { placement: 'header', count: 1 }]) {
+      refused('guide_opened', metadata);
+    }
+  });
+
+  it('keeps device, step and placement off every other browser event', () => {
+    for (const eventName of ['results_viewed', 'chat_opened', 'cloud_connect_started', 'upload_outcome', 'alcohol_question_answered']) {
+      for (const metadata of [{ device: 'phone' }, { step: 'sex' }, { placement: 'top_bar' }, { placement: 'header' }]) refused(eventName, metadata);
+    }
+  });
+
+  it('none of the new events is server-only, so a browser can send them', () => {
+    for (const eventName of ['tool_opened', 'onboarding_step', 'onboarding_done', 'signin_opened']) {
+      expect(PRODUCT_EVENT_NAMES).toContain(eventName);
+      expect(SERVER_ONLY.has(eventName)).toBe(false);
+    }
   });
 });
 
@@ -499,6 +618,34 @@ describe('recordServerEvent — the server path validates too', () => {
       { tool: 'correct_value', client: 'chatgpt', outcome: 'ok', step: 'confirm' },
       { client: 'chatgpt', provider: 'dropbox' },
       { tool: 'correct_value', client: 'chatgpt', outcome: 'ok' },
+    ]);
+  });
+
+  // US-62 AC1: the browser route records through this same door, so the
+  // server's wider `step` list must still keep an onboarding step whole, and
+  // must not let a connector word ride on it or an onboarding word on a tool call.
+  it('stores the redesign counters whole on the browser path, and keeps step words on their own event (US-62 AC1)', async () => {
+    const { recordProductEvent } = await import('./product-events.server');
+    for (const body of [
+      { eventName: 'tool_opened', visitorId: VISITOR, metadata: { device: 'phone' } },
+      { eventName: 'onboarding_step', visitorId: VISITOR, metadata: { step: 'birth' } },
+      { eventName: 'signin_opened', visitorId: VISITOR, metadata: { placement: 'plan_panel' } },
+      { eventName: 'guide_opened', visitorId: VISITOR, metadata: { placement: 'plan_footer' } },
+    ]) {
+      const parsed = parseProductEvent(body);
+      expect(parsed).not.toBeNull();
+      await recordProductEvent(parsed!);
+    }
+    await recordServerEvent('onboarding_step', { step: 'confirm' } as never);
+    // @ts-expect-error a server producer's step is only propose or confirm (adversary N2)
+    await recordServerEvent('mcp_tool_call', { tool: 'correct_value', client: 'chatgpt', outcome: 'ok', step: 'sex' });
+    expect(inserts.map((row) => [row.event_name, row.metadata])).toEqual([
+      ['tool_opened', { device: 'phone' }],
+      ['onboarding_step', { step: 'birth' }],
+      ['signin_opened', { placement: 'plan_panel' }],
+      ['guide_opened', { placement: 'plan_footer' }],
+      ['onboarding_step', null],
+      ['mcp_tool_call', { tool: 'correct_value', client: 'chatgpt', outcome: 'ok' }],
     ]);
   });
 
@@ -785,7 +932,7 @@ describe('the chat profile-edit counter', () => {
 });
 
 describe('the upload outcome counter (US-12 AC10)', () => {
-  const counts = { picked: 9, withValues: 6, documentOnly: 1, noValues: 0, openFailed: 1, tooLarge: 1, truncated: 1, serverError: 0, limitError: 0, refused: 1, tooLong: 1, valuesDropped: 3, docx: 1, picturesOnly: 1, undatedPrevious: 4, unitsGuessed: 2, unitsRefused: 1 };
+  const counts = { picked: 9, withValues: 6, documentOnly: 1, noValues: 0, openFailed: 1, tooLarge: 1, truncated: 1, serverError: 0, limitError: 0, refused: 1, tooLong: 1, valuesDropped: 3, docx: 1, picturesOnly: 1, undatedPrevious: 4, unitsGuessed: 2, unitsRefused: 1, valuesLimit: 2 };
 
   it('takes integer counts from a browser', () => {
     expect(parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata: counts }))
@@ -795,6 +942,8 @@ describe('the upload outcome counter (US-12 AC10)', () => {
   it('refuses a string, a negative, a fraction, a count over 1000 and a value-shaped field', () => {
     for (const metadata of [
       { picked: '9' }, { openFailed: -1 }, { withValues: 1.5 }, { tooLarge: 1001 }, { valuesDropped: 1001 }, { docx: 1.5 }, { docx: 'docx' }, { undatedPrevious: 1.5 }, { undatedPrevious: -1 }, { undatedPrevious: 'undated' }, { unitsGuessed: 1.5 }, { unitsRefused: -1 }, { unitsRefused: 'creatinine' },
+      // US-12 AC19: a count of values printed as a limit, never a test's name.
+      { valuesLimit: 1.5 }, { valuesLimit: -1 }, { valuesLimit: 1001 }, { valuesLimit: 'hdl' }, { picked: 1, valuesLimit: 1, name: 'hdl' },
       { picked: 1, fileName: 'report.pdf' }, { picked: 1, unit: 'mmol/L' }, { picked: 1, value: 4.2 },
     ]) {
       expect(

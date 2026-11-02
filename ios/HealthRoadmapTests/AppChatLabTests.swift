@@ -179,6 +179,24 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertThrowsError(try engine.blocking { [now, extraction] in try $0.labSaveSummary(recordJSON: held, extractionJSON: extraction, refs: ["v0"], reportDay: "2099-01-01", now: now, deviceId: "test") }.get())
     }
 
+    /// US-12 AC19 (break-it pass 2026-11-01): HDL printed "> 60" and Lp(a) "<5" said only
+    /// "2 values could not be read". The review now names them, with why.
+    func testEachValueNotReadIsNamedWithWhy() throws {
+        let engine = try HealthEngine()
+        let unread = #"""
+        {"classification":"lab_report","reportDate":"2026-10-01",
+         "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
+         "additionalValues":[], "droppedValueCount":4,
+         "unreadValues":[{"name":"hdl","reason":"limit"},{"name":"lpa","reason":"limit"},{"name":"hdl","reason":"unreadable"}]}
+        """#
+        let review = try engine.blocking { [now] in try $0.labReview(extractionJSON: unread, now: now) }
+        // One test under two reasons is one line: each label once (review R1).
+        XCTAssertEqual(review.notSaved, [LabReview.NotSaved(label: "HDL Cholesterol", reason: "printed as a limit; could not be read"),
+                                         LabReview.NotSaved(label: "Lp(a)", reason: "printed as a limit")])
+        XCTAssertEqual(review.unreadCount, 1)
+        XCTAssertEqual(review.items.map(\.label), ["LDL Cholesterol"])
+    }
+
     // MARK: AC13d: documents
 
     func testALetterGetsTheWebsDocumentCard() throws {

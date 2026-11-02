@@ -116,14 +116,15 @@ export function getBMICategory(bmi: number, waistToHeightRatio?: number): string
 
 /**
  * Get eGFR status label.
- * Uses CKD staging: Normal (≥70), Low Normal (60-69), Mildly Decreased (45-59),
- * Moderately Decreased (30-44), Severely Decreased (15-29), Kidney Failure (<15).
+ * KDIGO 2024 names from 60 down; Normal (≥70) and Low Normal (60-69) are the tool's own
+ * (algorithm §3): Mildly to Moderately Decreased (45-59, G3a), Moderately to Severely
+ * Decreased (30-44, G3b), Severely Decreased (15-29), Kidney Failure (<15).
  */
 export function getEgfrStatus(egfr: number): string {
   if (egfr >= 70) return 'Normal';
   if (egfr >= EGFR_THRESHOLDS.lowNormal) return 'Low Normal';
-  if (egfr >= EGFR_THRESHOLDS.mildlyDecreased) return 'Mildly Decreased';
-  if (egfr >= EGFR_THRESHOLDS.moderatelyDecreased) return 'Moderately Decreased';
+  if (egfr >= EGFR_THRESHOLDS.mildlyDecreased) return 'Mildly to Moderately Decreased';
+  if (egfr >= EGFR_THRESHOLDS.moderatelyDecreased) return 'Moderately to Severely Decreased';
   if (egfr >= EGFR_THRESHOLDS.severelyDecreased) return 'Severely Decreased';
   return 'Kidney Failure';
 }
@@ -191,14 +192,12 @@ export function missingPlanInputs(inputs: Partial<HealthInputs>): Array<(typeof 
  * Main calculation function - takes all inputs and returns all results
  */
 export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSystem, medications?: MedicationInputs, screenings?: ScreeningInputs, unitOverrides?: Partial<Record<MetricType, UnitSystem>>, now = new Date()): HealthResults {
-  // Calculate ideal body weight and protein target (always available with height + sex)
-  const ibw = calculateIBW(inputs.heightCm, inputs.sex);
-  const proteinTarget = calculateProteinTarget(ibw);
+  // Ideal body weight and protein target need sex: no female or male default (US-07 AC8)
+  const ibw = inputs.sex ? calculateIBW(inputs.heightCm, inputs.sex) : undefined;
 
   const results: HealthResults = {
     heightCm: inputs.heightCm,
-    idealBodyWeight: Math.round(ibw * 10) / 10,
-    proteinTarget,
+    ...(ibw !== undefined ? { idealBodyWeight: Math.round(ibw * 10) / 10, proteinTarget: calculateProteinTarget(ibw) } : {}),
     suggestions: [],
   };
 
@@ -250,21 +249,21 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
   }
   if (knownMinorOf(inputs, now)) results.knownMinor = true;
 
-  // US-07 AC7: the lab's printed eGFR when withLabEgfr chose it; else from creatinine + age + sex
+  // US-07 AC7: the lab's printed eGFR when withLabEgfr chose it; else from creatinine + age + sex (AC8: no sex, none)
   if (inputs.labEgfr !== undefined) {
     results.eGFR = Math.round(inputs.labEgfr);
     results.eGFRFromLab = true;
-  } else if (inputs.creatinine !== undefined && results.age !== undefined) {
+  } else if (inputs.creatinine !== undefined && results.age !== undefined && inputs.sex) {
     results.eGFR = Math.round(calculateEGFR(inputs.creatinine, results.age, inputs.sex));
   }
 
   // Adjust protein target for CKD Stage 3b+ (eGFR < 45): 1.0g/kg instead of 1.2g/kg
-  if (results.eGFR !== undefined && results.eGFR < EGFR_THRESHOLDS.mildlyDecreased) {
+  if (ibw !== undefined && results.eGFR !== undefined && results.eGFR < EGFR_THRESHOLDS.mildlyDecreased) {
     results.proteinTarget = Math.round(ibw * 1.0);
   }
 
   // Generate personalized suggestions based on all inputs and results
-  results.suggestions = generateSuggestions(inputs, results, unitSystem, medications, screenings, unitOverrides);
+  results.suggestions = generateSuggestions(inputs, results, unitSystem, medications, screenings, unitOverrides, now);
 
   return results;
 }

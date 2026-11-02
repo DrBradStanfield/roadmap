@@ -61,7 +61,7 @@ async function persisted(): Promise<RoadmapFile> {
 }
 
 async function seed(): Promise<void> {
-  await seedGuest({ sex: 'male', heightCm: 178, birthYear: 1980 }, [['weight', 80]]);
+  await seedGuest({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, [['weight', 80]]);
 }
 
 describe('US-06: collision-safe custom supplement additions', () => {

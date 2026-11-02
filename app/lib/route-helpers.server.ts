@@ -8,11 +8,6 @@ import { authenticate } from '../shopify.server';
 import { getOrCreateSupabaseUser, createUserClient } from './supabase.server';
 import { verifyAppProxySignature } from './local-first-route.server';
 
-/** Customer IDs exempt from rate limits (env: comma-separated Shopify customer IDs). */
-export const EXEMPT_CUSTOMERS = new Set(
-  (process.env.RATE_LIMIT_EXEMPT_CUSTOMERS || '').split(',').map(s => s.trim()).filter(Boolean),
-);
-
 /**
  * The Shopify customer ID from the app proxy request — the ONE reader of
  * `logged_in_customer_id` (US-09 AC24). Null unless the query passes our own

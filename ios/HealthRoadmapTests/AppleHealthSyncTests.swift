@@ -195,6 +195,35 @@ final class AppleHealthSyncTests: XCTestCase {
         XCTAssertGreaterThan(health.saved.last?.version ?? 0, first.version)
     }
 
+    /// US-25 AC14b: a record holding rows the save path would refuse (a damaged file, a
+    /// hand edit) writes none of them to Health, through the real engine; an in-range
+    /// value beside them still goes, unchanged.
+    func testImpossibleValuesInTheRecordNeverReachHealth_US25_AC14b() async throws {
+        do {
+            let (store, _) = try parts()
+            for (day, kg) in [("2026-10-17", 71.0), ("2026-10-18", 72.0), ("2026-10-19", 73.0), ("2026-10-20", 80.0)] {
+                await XCTAssertSaved(await store.apply(.add(metric: "weight", value: kg, day: day)))
+            }
+        }
+        // Plant the bad values straight into the file. 1e400 reads back as Infinity.
+        let file = RecordStore.file(in: folder)
+        var text = try String(contentsOf: file, encoding: .utf8)
+        for (typed, planted) in [("71", "1e308"), ("72", "-5"), ("73", "1e400")] {
+            let before = text
+            text = text.replacingOccurrences(of: "\"value\":\(typed),", with: "\"value\":\(planted),")
+            XCTAssertNotEqual(text, before, "planted \(planted)")
+        }
+        try text.write(to: file, atomically: true, encoding: .utf8)
+
+        let (store, engine) = try parts()
+        let health = FakeHealthStore()
+        let sync = sync(store, engine, health)
+        await sync.connect()
+        await sync.refresh()
+        XCTAssertEqual(health.saved.map(\.values), [["weight": 80]])
+        guard case .upToDate = sync.status else { return XCTFail("status \(sync.status)") }
+    }
+
     func testOneRefusedWriteDoesNotBlockTheOthers() async throws {
         let (store, engine) = try parts()
         // Both values typed, and Health set to refuse the first, before Health connects:
@@ -274,6 +303,29 @@ final class AppleHealthSyncTests: XCTestCase {
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 82, day: "2026-10-20")))
         await sync.refresh()
         XCTAssertTrue(health.saved.isEmpty)
+    }
+
+    /// US-25 AC15b (break-it pass 2026-10-30): after "Don't Allow" nothing can be written
+    /// and nothing comes in, so the section says Health is not connected, never "Up to date".
+    func testAfterDontAllowTheSectionSaysNotConnected_US25_AC15b() async throws {
+        let (store, engine) = try parts()
+        let health = FakeHealthStore()
+        health.writable = []
+        let sync = sync(store, engine, health)
+        await sync.connect()
+        XCTAssertEqual(sync.status, .notAllowed)
+        XCTAssertEqual(AppleHealthSection.text(sync.status), "Apple Health isn't connected")
+    }
+
+    /// A person who allowed reading but not writing still gets their readings: up to date.
+    func testReadingsWithoutWriteAccessAreUpToDate_US25_AC15b() async throws {
+        let (store, engine) = try parts()
+        let health = FakeHealthStore()
+        health.writable = []
+        health.pending[.weight] = [Self.morning]
+        let sync = sync(store, engine, health)
+        await sync.connect()
+        guard case .upToDate = sync.status else { return XCTFail("status \(sync.status)") }
     }
 
     func testNotConnectedReadsAndWritesNothing() async throws {

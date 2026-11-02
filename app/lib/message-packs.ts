@@ -1,6 +1,7 @@
 /**
  * Message pack configuration — single source of truth for pack sizes, prices, and variant IDs.
- * Used by both api.chat.ts (pack URLs for frontend) and webhooks.orders-paid.ts (credit amounts).
+ * Used by webhooks.orders-paid.ts (credit amounts). buildPackUrls has no caller since the
+ * per-user chat limits were removed (893c71b9); it was kept for a future limit.
  */
 
 const PACK_CONFIG = [

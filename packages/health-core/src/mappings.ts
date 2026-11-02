@@ -7,10 +7,11 @@
  * Demographics (sex, birthYear, birthMonth, unitSystem) are stored on the
  * profiles table, not as measurements. Use diffProfileFields() for those.
  */
-import type { HealthInputs } from './types';
-import { encodeSex, decodeSex, encodeUnitSystem, decodeUnitSystem } from './types';
-import { CANONICAL_UNITS, UNIT_DEFS, type MetricType } from './units';
+import type { AlcoholAnswer, HealthInputs } from './types';
+import { encodeSex, decodeSex, encodeUnitSystem, decodeUnitSystem, isAlcoholAnswer, isSex } from './types';
+import { CANONICAL_UNITS, rangeFault, UNIT_DEFS, type MetricType, type ValidationRange } from './units';
 import { parseLocalisedNumber } from './parseNumber';
+import { birthKept } from './validation';
 
 /**
  * Maps HealthInputs field names to metric_type values for storage in the
@@ -100,11 +101,12 @@ export const METRIC_LABELS: Record<string, string> = {
 };
 
 /**
- * Fields that are always pre-filled from saved data (demographics + height).
+ * Fields that are always pre-filled from saved data (demographics + height,
+ * and the alcohol answer, US-60).
  * These are mutable profile-level data or rarely-changing measurements.
  */
 export const PREFILL_FIELDS: ReadonlyArray<keyof HealthInputs> = [
-  'heightCm', 'sex', 'birthYear', 'birthMonth',
+  'heightCm', 'sex', 'birthYear', 'birthMonth', 'alcohol',
 ];
 
 /**
@@ -423,6 +425,8 @@ export interface ApiProfile {
   firstName: string | null;
   lastName: string | null;
   height: number | null;
+  /** US-60: the alcohol answer; absent or null when not answered. */
+  alcohol?: AlcoholAnswer | null;
 }
 
 /**
@@ -457,6 +461,10 @@ export function measurementsToInputs(
     }
     if (profile.height != null) {
       (inputs as any).heightCm = profile.height;
+    }
+    // The file may be hand-edited: only the two answers count (US-60).
+    if (isAlcoholAnswer(profile.alcohol)) {
+      inputs.alcohol = profile.alcohol;
     }
   }
 
@@ -545,33 +553,56 @@ export function diffProfileFields(
   return Object.keys(changes).length > 0 ? changes : null;
 }
 
+/** The onboarding step the form is on: 1–3, or 4 once it is done. */
+export type FormStage = 1 | 2 | 3 | 4;
+
 /**
- * The progressive disclosure stage (1–3). The widget shows it, and the
- * chatbot embed unmutes at 3, so both read this one rule (US-15 AC10).
+ * The form is the onboarding (US-01 AC1, US-62 AC13): the stage is the first
+ * answer the record lacks. The widget shows it, and the chatbot embed unmutes
+ * at 4, so both read this one rule (US-15 AC10).
  *
- * Stage 1: Always (units, sex, height shown)
- * Stage 2: sex AND a plausible heightCm (weight, waist, BP, birth month/year shown)
- * Stage 3: a plausible weightKg (blood tests, medications, screening shown),
- *          or any saved blood test (a lab import with no weight still opens
- *          the whole form)
+ * Stage 1: a plausible height and weight (the BMI tile)
+ * Stage 2: sex (the healthy weight and the protein target)
+ * Stage 3: the birth year, with its month when given (the age-based plan)
+ * Stage 4: all four known: the rest of the form, the chat and the embed
  *
  * `saved` holds the newest saved row per metric; they fill the fields the
  * inputs leave empty (mergeLongitudinalInputs), so a typed value wins.
  * "Plausible" = inside the canonical SI validation range (UNIT_DEFS in
  * units.ts) — a half-typed "1" of "180" must NOT open the next stage; the
- * gate opens only once the value could be a real measurement.
- *
- * Checks from stage 3 downward so returning users with data skip to full form.
+ * gate opens only once the value could be a real measurement. The birth date
+ * counts once the plan would keep it: a year from 1900, alone (the plan reads
+ * January, as the iPhone does) or with a month not in the future. The form
+ * asks both.
  */
 export function computeFormStage(
   inputs: Partial<HealthInputs>,
   saved: ReadonlyArray<Pick<ApiMeasurement, 'metricType' | 'value'>> = [],
-): 1 | 2 | 3 {
+): FormStage {
   const merged = mergeLongitudinalInputs(inputs, saved);
-  const plausible = (v: number | undefined, r: { min: number; max: number }) =>
-    v !== undefined && v >= r.min && v <= r.max;
-  if (plausible(merged.weightKg, UNIT_DEFS.weight.validationRange.si)) return 3;
-  if (saved.some(m => BLOOD_TEST_METRICS.includes(m.metricType))) return 3;
-  if (merged.sex !== undefined && plausible(merged.heightCm, UNIT_DEFS.height.validationRange.si)) return 2;
-  return 1;
+  const plausible = (v: number | undefined, r: ValidationRange) => v !== undefined && !rangeFault(r, v);
+  if (!plausible(merged.heightCm, UNIT_DEFS.height.validationRange.si)) return 1;
+  if (!plausible(merged.weightKg, UNIT_DEFS.weight.validationRange.si)) return 1;
+  if (!isSex(merged.sex)) return 2;
+  return birthKept(merged) ? 4 : 3;
+}
+
+/** What a record holds beyond its profile, as `opensFullForm` reads it. */
+export interface RecordHoldings {
+  saved: ReadonlyArray<Pick<ApiMeasurement, 'metricType'>>;
+  medications?: ReadonlyArray<unknown>;
+  screenings?: ReadonlyArray<unknown>;
+  supplements?: ReadonlyArray<unknown>;
+  documents?: ReadonlyArray<unknown>;
+  labValues?: ReadonlyArray<unknown>;
+}
+
+/** The whole form shows once the onboarding is done, or at once for a record
+ *  holding more than the onboarding's answers: any saved value but the
+ *  weight (a blood test, a waist, a blood pressure), a medication,
+ *  screening, supplement, lab test or document. The missing questions are
+ *  pinned at the top (US-01 AC3). */
+export function opensFullForm(stage: FormStage, record: RecordHoldings): boolean {
+  const { saved, ...lists } = record;
+  return stage === 4 || saved.some(m => m.metricType !== 'weight') || Object.values(lists).some(list => (list?.length ?? 0) > 0);
 }

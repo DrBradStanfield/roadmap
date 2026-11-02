@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { lpaRefHint, refHintFor } from './reference-hints';
+import { lpaRefHint } from './reference-hints';
+import { rowTarget } from './row-target';
 import {
   lookupUnit,
   reportedToCanonical,
@@ -31,6 +32,8 @@ import {
   type MetricType,
   type UnitSystem,
   hasUnitChoice,
+  rangeFault,
+  formatRange,
 } from './units';
 import { METRIC_TYPES } from './validation';
 import { getLpaStatus } from './calculations';
@@ -278,7 +281,8 @@ describe('getDisplayRange', () => {
 
   it('returns conventional range for weight', () => {
     const range = getDisplayRange('weight', 'conventional');
-    expect(range.min).toBe(44);
+    // 20 kg is 44.09 lbs: 44 would store 19.96 kg, under the record's floor (US-05 AC2b).
+    expect(range.min).toBe(45);
     expect(range.max).toBe(661);
   });
 });
@@ -639,8 +643,8 @@ describe('lipid reference hints (US-07 AC5)', () => {
     ['ldl', 'Optimal: <1.4 mmol/L', 'Optimal: <55 mg/dL'],
     ['apob', 'Optimal: <0.50 g/L', 'Optimal: <50 mg/dL'],
   ] as const)('%s', (metric, si, conv) => {
-    expect(refHintFor(metric, 'si')).toBe(si);
-    expect(refHintFor(metric, 'conventional')).toBe(conv);
+    expect(rowTarget(metric, 'si', {}, null)?.full).toBe(si);
+    expect(rowTarget(metric, 'conventional', {}, null)?.full).toBe(conv);
   });
 });
 
@@ -649,5 +653,27 @@ describe('hasUnitChoice (US-12 AC11: a fixed unit gets a static chip)', () => {
     expect(hasUnitChoice('ldl')).toBe(true);
     expect(hasUnitChoice('systolic_bp')).toBe(false);
     expect(hasUnitChoice('psa')).toBe(false);
+  });
+});
+
+// US-03 AC7: a lipid's floor is exclusive (0 is refused); every other floor is inclusive.
+describe('US-03 AC7 — rangeFault and formatRange honour an exclusive floor', () => {
+  it('refuses the floor itself only when it is exclusive', () => {
+    const ldl = UNIT_DEFS.ldl.validationRange.si;
+    expect([0, 0.01, 12.9, 12.91, -1].map((n) => rangeFault(ldl, n))).toEqual(['below', null, null, 'above', 'below']);
+    const psa = UNIT_DEFS.psa.validationRange.si;
+    expect([0, -0.1, 10000, 10001].map((n) => rangeFault(psa, n))).toEqual([null, 'below', null, 'above']);
+  });
+
+  it('prints an inclusive range with an en dash and an exclusive one in words', () => {
+    expect(formatRange(UNIT_DEFS.psa.validationRange.si, 'ng/mL')).toBe('0–10000 ng/mL');
+    expect(formatRange(UNIT_DEFS.ldl.validationRange.conventional, 'mg/dL')).toBe('above 0, up to 500 mg/dL');
+  });
+
+  it('gives each lipid the same exclusive floor in both systems', () => {
+    for (const m of ['ldl', 'hdl', 'total_cholesterol', 'triglycerides', 'apob'] as const) {
+      const { si, conventional } = UNIT_DEFS[m].validationRange;
+      expect([si.minExclusive, conventional.minExclusive], m).toEqual([true, true]);
+    }
   });
 });

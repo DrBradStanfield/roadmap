@@ -9,11 +9,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import { InputPanel } from './InputPanel';
+import { openAboutYou } from '../testing/health-tool-harness';
 
 vi.mock('../lib/server-api', async importOriginal => ({ ...await importOriginal<typeof import('../lib/server-api')>(), trackProductEvent: vi.fn() }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
 afterEach(cleanup);
+// InputPanel reads the phone breakpoint (US-62 AC8); jsdom has no matchMedia. Desktop unless a test sets `phone`.
+let phone = false;
+vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('max-width') ? phone : !phone, media: q, addEventListener() {}, removeEventListener() {} }));
+afterEach(() => { phone = false; });
 
 const renderPanel = () => {
   const inputs = { sex: 'male' as const, heightCm: 180, birthYear: 1960, birthMonth: 1, weightKg: 80, waistCm: 90, psa: 2 };
@@ -31,9 +36,10 @@ const renderPanel = () => {
       { id: 's3', screeningKey: 'lung_pack_years', value: '25', updatedAt: '' },
     ],
     onSupplementDelete: vi.fn(), scheduleLongitudinalSave, flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
-    fieldsSaved: 0, hasApiResponse: true, formStage: 3 as const, planBasis: { age: 66 }, grading: {},
+    fieldsSaved: 0, hasApiResponse: true, formStage: 4 as const, reached: 4 as const, fullForm: true, wasDone: true, aboutYouLow: true, planBasis: { age: 66 }, grading: {},
   };
   const view = render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />);
+  openAboutYou(view.container); // wasDone: About you is rows; open each, so the height box shows (US-62 AC12)
   const box = (id: string) => view.container.querySelector<HTMLInputElement>(`#${id}`)!;
   return { ...view, box, onChange, onScreeningChange, scheduleLongitudinalSave };
 };
@@ -84,4 +90,14 @@ describe('US-02 AC7: an unreadable number box is not a clear', () => {
     typeEmpty(p.box('lung-pack-years'));
     expect(p.onScreeningChange).toHaveBeenLastCalledWith('lung_pack_years', '');
   });
+});
+
+// US-62 AC12: on a phone, About you sits low; its height box keeps the same rule.
+it('on a phone too, an unreadable height keeps the saved value', () => {
+  phone = true;
+  const p = renderPanel();
+  expect(p.container.querySelector('.md-about-you #heightCm')).not.toBeNull();
+  typeUnreadable(p.box('heightCm'));
+  expect(callsFor(p.onChange, 'heightCm')).toEqual([]);
+  expect(p.getByText('Enter a number')).toBeTruthy();
 });

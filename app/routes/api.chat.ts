@@ -1,7 +1,7 @@
 /**
  * Chat API — CRUD for conversations + LLM chat via Shopify app proxy.
  *
- * GET  /api/chat                         — List conversations + daily remaining
+ * GET  /api/chat                         — List conversations
  * GET  /api/chat?conversationId=xxx      — Load conversation messages
  * POST /api/chat { message, conversationId? } — Send message, get response
  * DELETE /api/chat { conversationId }    — Delete conversation
@@ -114,17 +114,20 @@ async function getAuthOrGuest(
   // lives in THEIR cloud, never our DB, so even a logged-in Shopify customer has
   // no server-side health record to read. Force the guest path — context comes
   // from the client-supplied `guestInputs`, conversations store under the guest
-  // session — while still verifying the app-proxy HMAC via getAuthenticatedUser.
-  // Brad pays either way; this only changes WHERE the context comes from.
+  // session. Only the app-proxy HMAC is checked: no customer lookup, no user
+  // link (US-15 AC7b). Brad pays either way; this only changes WHERE the
+  // context comes from.
   forceGuest = false,
 ): Promise<AuthResult> {
-  // Try authenticated user first (also verifies HMAC internally)
-  const auth = await getAuthenticatedUser(request);
-  if (auth && !forceGuest) {
-    return { ...auth, isGuest: false };
+  if (forceGuest) {
+    await authenticate.public.appProxy(request);
+  } else {
+    // Try authenticated user first (also verifies HMAC internally)
+    const auth = await getAuthenticatedUser(request);
+    if (auth) return { ...auth, isGuest: false };
   }
 
-  // Guest path — HMAC was already verified inside getAuthenticatedUser
+  // Guest path — the HMAC was verified above
   const ip = getClientIp(request, 'shopify');
   const session = await getOrCreateGuestSession(ip, sessionToken);
   return {

@@ -1,7 +1,7 @@
 import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota } from '../lib/upload-api';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { IMPORT_LIMITS, METRIC_LABELS, UNDATED_PREVIOUS, zipMemberName, type DocumentPayload, type LabUnitRefusal, type MeasurementRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
+import { IMPORT_LIMITS, METRIC_LABELS, UNDATED_PREVIOUS, unreadLines, zipMemberName, type DocumentPayload, type UnreadLabValue, type LabUnitRefusal, type MeasurementRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
@@ -18,6 +18,7 @@ import { recordFailure } from '../lib/error-diagnostics';
 import { openBackendPicker, UPLOAD_STORAGE_NOTICE } from '../lib/storage-notice';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { isDocx, isLegacyDoc } from '../lib/file-kinds';
+import type { HealthUploadAPI } from '../upload-entry';
 
 class UploadError extends Error {
   constructor(message: string, public code: UploadErrorCode) {
@@ -120,25 +121,15 @@ const PROGRESS_MESSAGES = [
   'Reviewing scan results...',
 ];
 
-// Types for the upload processing bundle (loaded lazily)
-interface HealthUploadAPI {
-  extractFromPdf: (file: File) => Promise<{ pages: PageContent[]; truncated: boolean }>;
-  isPdf: (file: File) => boolean;
-  getZipEntries: (file: File) => Promise<Array<{ name: string; entry: { async: (type: 'blob') => Promise<Blob> } }>>;
-  isZip: (file: File) => boolean;
-  resizeImage: (file: File, maxDim: number) => Promise<string>;
-  isImage: (file: File) => boolean;
-  docxToText: (data: ArrayBuffer) => Promise<{ text: string; truncated: boolean; picturesOnly: boolean }>;
-}
-
 const MAX_FILES = IMPORT_LIMITS.websiteFiles; // also the server's per-IP daily limit (US-12 AC17)
 const MAX_FILE_SIZE = IMPORT_LIMITS.websiteFileMb * 1024 * 1024; // the connector's hint names this number
 
 /** Why a file was not fully read (US-12 AC9). Each is also its `upload_outcome` count. */
-type FileNoticeReason = Exclude<UploadOutcomeKey, 'picked' | 'withValues' | 'docx' | 'undatedPrevious' | 'unitsGuessed' | 'unitsRefused'>;
+type FileNoticeReason = Exclude<UploadOutcomeKey, 'picked' | 'withValues' | 'docx' | 'undatedPrevious' | 'unitsGuessed' | 'unitsRefused' | 'valuesLimit'>;
 /** `name` is the file's whole path, its identity; the list shows it short (`noticeName`).
- *  `count` is how many the notice stands for (values dropped); `text` overrides the reason's. */
-interface FileNotice { name: string; reason: FileNoticeReason; count?: number; text?: string }
+ *  `count` is how many the notice stands for (values dropped), `unread` the ones that
+ *  name their test (US-12 AC19); `text` overrides the reason's. */
+interface FileNotice { name: string; reason: FileNoticeReason; count?: number; unread?: UnreadLabValue[]; text?: string }
 const FILE_NOTICE_TEXT: Record<Exclude<FileNoticeReason, 'valuesDropped'>, string> = {
   openFailed: 'Could not open it. It may be password-protected, damaged, or not a PDF, photo or .docx file.',
   tooLarge: `Too large to read. The limit is ${IMPORT_LIMITS.websiteFileMb} MB per file.`,
@@ -159,9 +150,15 @@ const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
 const OVER_LIMIT_TEXT = `Not read. It is over the ${MAX_FILES}-file limit for one upload. Upload it separately.`;
 const LEGACY_DOC_TEXT = 'Word .doc files cannot be read. Save it as a PDF or .docx, then upload that.';
 
-function noticeText({ reason, count = 1, text }: FileNotice): string {
+function noticeText({ reason, count = 1, unread = [], text }: FileNotice): string {
   if (text) return text;
-  if (reason === 'valuesDropped') return `${count} value${count === 1 ? '' : 's'} could not be read.`;
+  if (reason === 'valuesDropped') {
+    // Each value that names its test is named, with why; the rest are counted (US-12 AC19).
+    const { lines, otherCount } = unreadLines({ droppedValueCount: count, unreadValues: unread });
+    const text = lines.map(l => `${l.label}: ${l.reason}, not saved.`);
+    if (otherCount > 0) text.push(`${otherCount} ${text.length ? 'other ' : ''}value${otherCount === 1 ? '' : 's'} could not be read.`);
+    return text.join(' ');
+  }
   return (!SHOPIFY_SURFACE && BYOK_NOTICE_TEXT[reason]) || FILE_NOTICE_TEXT[reason];
 }
 
@@ -217,7 +214,7 @@ async function readPages(upload: HealthUploadAPI, { fileName: name, getFile }: R
 
 /** A file the server read, as a review row; values its parse refused are named (US-12 AC9). */
 function readResult(fileName: string, result: LabImportResult, notices: FileNotice[]): FileResult {
-  if (result.droppedValueCount) notices.push({ name: fileName, reason: 'valuesDropped', count: result.droppedValueCount });
+  if (result.droppedValueCount) notices.push({ name: fileName, reason: 'valuesDropped', count: result.droppedValueCount, unread: result.unreadValues });
   return { fileName, reportDate: result.reportDate, values: result.values, additionalValues: result.additionalValues || [], document: result.document ?? undefined, refusedValues: result.refusedValues };
 }
 
@@ -239,7 +236,11 @@ function unreadResult(fileName: string, errorCode: UploadErrorCode | undefined, 
  *  only once it counts something. */
 function trackUploadOutcome(picked: number, withValues: number, docx: number, notices: FileNotice[], values: Partial<Record<'undatedPrevious' | 'unitsGuessed' | 'unitsRefused', number>> = {}): void {
   const counts: Partial<Record<UploadOutcomeKey, number>> = { picked, withValues, docx, ...values };
-  for (const n of notices) counts[n.reason] = (counts[n.reason] ?? 0) + (n.count ?? 1);
+  for (const n of notices) {
+    counts[n.reason] = (counts[n.reason] ?? 0) + (n.count ?? 1);
+    // Values printed as a limit (US-12 AC19): a count only, never a test's name.
+    counts.valuesLimit = (counts.valuesLimit ?? 0) + (n.unread?.filter(v => v.reason === 'limit').length ?? 0);
+  }
   trackProductEvent('upload_outcome', Object.fromEntries(
     UPLOAD_OUTCOME_KEYS.filter(k => counts[k]).map(k => [k, Math.min(counts[k]!, UPLOAD_OUTCOME_MAX)]),
   ));
@@ -355,7 +356,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   // Load the upload bundle lazily — cached promise prevents duplicate script injection
   const loadPromiseRef = useRef<Promise<HealthUploadAPI> | null>(null);
   const loadUploadBundle = useCallback((): Promise<HealthUploadAPI> => {
-    if ((window as any).HealthUpload) return Promise.resolve((window as any).HealthUpload);
+    if (window.HealthUpload) return Promise.resolve(window.HealthUpload);
     if (loadPromiseRef.current) return loadPromiseRef.current;
 
     const root = document.getElementById('health-tool-root');
@@ -366,8 +367,9 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       const script = document.createElement('script');
       script.src = src;
       script.onload = () => {
-        if ((window as any).HealthUpload) {
-          resolve((window as any).HealthUpload);
+        const upload = window.HealthUpload;
+        if (upload) {
+          resolve(upload);
         } else {
           loadPromiseRef.current = null;
           reject(new Error('Upload bundle loaded but HealthUpload not found'));

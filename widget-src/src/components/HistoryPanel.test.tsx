@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 const { charts, event } = vi.hoisted(() => ({ charts: [] as any[], event: vi.fn() }));
 vi.mock('chart.js', () => ({
-  Chart: class { static register() {} constructor(_canvas: unknown, config: unknown) { charts.push(config); } destroy() {} },
+  Chart: class { static register() {} constructor(_canvas: unknown, config: unknown) { charts.push(config); } destroy() {} update() {} },
   LineController: {}, LineElement: {}, PointElement: {}, LinearScale: {}, TimeScale: {}, Tooltip: {}, Filler: {},
 }));
 vi.mock('chartjs-plugin-annotation', () => ({ default: {} }));

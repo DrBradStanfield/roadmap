@@ -1,13 +1,12 @@
 # Production deploy — the ONLY sanctioned headless path to Shopify + Fly.
 #
 # Part of the Tier 3 "ship" pipeline (docs/loops/deploy-pipeline-proposal.md):
-# author agent opens a PR -> independent reviewer approves -> merge (with the
-# `ship` label) fires this workflow. All deploy credentials live ONLY in GitHub
-# Actions secrets — no agent environment ever holds them (confused-deputy
-# defense; see the proposal doc).
+# author agent opens a PR -> independent reviewer approves -> auto-ship merges
+# and dispatches this workflow on main. All deploy credentials live ONLY in the
+# 'production' environment — no agent environment ever holds them
+# (confused-deputy defense; see the proposal doc).
 #
-# Also manually runnable (workflow_dispatch) so Brad's build sessions can use
-# the same deterministic path instead of deploying from the Mac.
+# Brad's build sessions dispatch it the same way instead of deploying from the Mac.
 #
 # Secrets required:
 #   FLY_DEPLOY_TOKEN_PROD   app-scoped deploy token for health-tool-app
@@ -32,8 +31,10 @@ on:
         type: choice
         options: [all, fly-only, shopify-only]
         default: all
-  pull_request:
-    types: [closed]
+# No pull_request trigger (GHSA-v69g-jc5m-3993, 2026-11-02): auto-ship and
+# people deploy by dispatching on main. The labelled-merge path it replaced was
+# unused. This file alone cannot keep the secrets on main (a branch runs its own
+# copy): the 'production' environment's deployment-branch rule, main only, does.
 
 # One deploy at a time; later runs queue rather than interleave.
 concurrency:
@@ -42,56 +43,17 @@ concurrency:
 
 jobs:
   gate:
-    # PR path: only merged same-repo PRs labeled `ship` (fork PRs get no
-    # secrets and would fail confusingly — security audit LOW-9).
-    # Dispatch path: a human clicked, or auto-ship.yml dispatched after its
-    # own reviewer + 30-min veto gate.
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.pull_request.merged == true &&
-       github.event.pull_request.head.repo.full_name == github.repository &&
-       contains(github.event.pull_request.labels.*.name, 'ship'))
+    # Dispatch only, from main: a human clicked, or auto-ship.yml dispatched
+    # after its own reviewer + 30-min veto gate. The environment's main-only
+    # branch rule refuses any other ref too; this stops it before the notice.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       issues: write # veto-window notification issue
-      pull-requests: read
     outputs:
       notify_issue: ${{ steps.notify.outputs.issue }}
     steps:
-      - name: Verify a HUMAN approving review on the FINAL commit + green checks
-        if: github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR: ${{ github.event.pull_request.number }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -euo pipefail
-          # Security audit HIGH-1: an approval only counts if it is (a) on the
-          # exact final commit (no stale approvals), (b) from a non-bot (the
-          # claude-review bot's opinion is advisory, never the gate), and
-          # (c) from the OWNER or a COLLABORATOR (no sockpuppet approvals on
-          # a public repo).
-          approvals=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/reviews" \
-            | jq --arg sha "$HEAD_SHA" '[.[] | select(
-                .state=="APPROVED" and .commit_id==$sha and .user.type!="Bot"
-                and (.author_association=="OWNER" or .author_association=="COLLABORATOR")
-              )] | length')
-          echo "Human approving reviews on ${HEAD_SHA}: ${approvals}"
-          if [ "${approvals}" -lt 1 ]; then
-            echo "::error::No human (owner/collaborator) approval on the final commit of PR #${PR} — refusing to deploy."
-            exit 1
-          fi
-          # The named 'test' check must have succeeded (an empty check list is
-          # a failure, not a pass — audit LOW-7), and nothing may have failed.
-          checks=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs")
-          bad=$(echo "$checks" | jq '[.check_runs[] | select(.conclusion != null and (.conclusion | IN("success","neutral","skipped")) | not)] | length')
-          ok=$(echo "$checks" | jq '[.check_runs[] | select(.name=="test" and .conclusion=="success")] | length')
-          if [ "${bad}" -gt 0 ] || [ "${ok}" -lt 1 ]; then
-            echo "::error::PR #${PR}: required 'test' check not green (successful-test=${ok}, non-green=${bad})."
-            exit 1
-          fi
-
       # Zero-click autonomy relies on a VISIBLE veto window: this issue is
       # Brad's native-email notification that a deploy is pending. The
       # 'production' environment has had no wait timer or reviewer since
@@ -124,7 +86,7 @@ jobs:
             --title "🚀 Deploying: ${subject}" \
             --assignee DrBradStanfield \
             --body "$(printf '%s\n' \
-              "@DrBradStanfield — production deploy starts in ~30 min." \
+              "@DrBradStanfield, production deploy is starting. There is no wait timer: production changes begin once the Pages smoke, the tests and the builds pass, usually 6 to 10 minutes after this email." \
               "" \
               "## What is shipping" \
               "**${subject}**" \
@@ -138,7 +100,7 @@ jobs:
               "Surfaces: ${surfaces} · commit \`${GITHUB_SHA}\` · triggered by ${GITHUB_ACTOR} (${GITHUB_EVENT_NAME})" \
               "" \
               "## To veto" \
-              "Cancel the run before the timer ends: ${url}" \
+              "Cancel the run within those minutes. Once a Shopify or Fly step has started, cancelling may not undo it: ${url}" \
               "" \
               "---" \
               "This issue auto-closes when live verification passes (a still-open issue = failed or in-flight deploy)." \
@@ -220,18 +182,13 @@ jobs:
     # the only check for manual deploys (auto-ship's own 30-min wait step is
     # the Tier 3 veto window, separate from this environment).
     environment: production
+    # The token needs only the checkout; the credentials are the secrets below.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v5
         with:
           ref: main # always deploy main tip — never a PR snapshot
-
-      - name: Assert main tip IS the gated merge commit (PR path — audit MED-5)
-        if: github.event_name == 'pull_request'
-        env:
-          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
-        run: |
-          [ "$(git rev-parse HEAD)" = "$MERGE_SHA" ] || {
-            echo "::error::main moved past the gated commit — re-ship or dispatch deliberately."; exit 1; }
 
       - name: Guard — products.md must be a real file (not a symlink)
         run: |
@@ -276,17 +233,17 @@ jobs:
 
       # ---------- Shopify (both apps, same assets) ----------
       - name: Pin Shopify CLI
-        if: github.event_name == 'pull_request' || inputs.surfaces != 'fly-only'
+        if: inputs.surfaces != 'fly-only'
         run: npm i -g @shopify/cli@4.9.4
 
       - name: Deploy Shopify extensions — prod app (microvitamin)
-        if: github.event_name == 'pull_request' || inputs.surfaces != 'fly-only'
+        if: inputs.surfaces != 'fly-only'
         env:
           SHOPIFY_CLI_PARTNERS_TOKEN: ${{ secrets.SHOPIFY_CLI_PARTNERS_TOKEN_PROD }}
         run: shopify app deploy --allow-updates --config shopify.app.toml
 
       - name: Deploy Shopify extensions — edu app (drstanfield)
-        if: github.event_name == 'pull_request' || inputs.surfaces != 'fly-only'
+        if: inputs.surfaces != 'fly-only'
         env:
           SHOPIFY_CLI_PARTNERS_TOKEN: ${{ secrets.SHOPIFY_CLI_PARTNERS_TOKEN_EDU }}
         run: shopify app deploy --allow-updates --config shopify.app.edu.toml
@@ -295,10 +252,10 @@ jobs:
       # SHA-pinned (audit MED-4): @master on a secret-bearing job is a supply-
       # chain hole. This SHA = tag v1/1.6.
       - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # v1 / 1.6
-        if: github.event_name == 'pull_request' || inputs.surfaces != 'shopify-only'
+        if: inputs.surfaces != 'shopify-only'
 
       - name: Fly deploy — health-tool-app (commerce)
-        if: github.event_name == 'pull_request' || inputs.surfaces != 'shopify-only'
+        if: inputs.surfaces != 'shopify-only'
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_TOKEN_PROD }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -308,7 +265,7 @@ jobs:
             --build-secret sentry_auth_token="$SENTRY_AUTH_TOKEN"
 
       - name: Fly deploy — health-tool-edu (education)
-        if: github.event_name == 'pull_request' || inputs.surfaces != 'shopify-only'
+        if: inputs.surfaces != 'shopify-only'
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_TOKEN_EDU }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -318,7 +275,7 @@ jobs:
             --build-secret sentry_auth_token="$SENTRY_AUTH_TOKEN"
 
       - name: Health gates
-        if: github.event_name == 'pull_request' || inputs.surfaces != 'shopify-only'
+        if: inputs.surfaces != 'shopify-only'
         env:
           FLY_TOKEN_PROD: ${{ secrets.FLY_DEPLOY_TOKEN_PROD }}
           FLY_TOKEN_EDU: ${{ secrets.FLY_DEPLOY_TOKEN_EDU }}

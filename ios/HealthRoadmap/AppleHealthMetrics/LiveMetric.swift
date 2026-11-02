@@ -70,6 +70,10 @@ enum LiveMetric: String, CaseIterable, Identifiable, Codable, CodingKeyRepresent
         }
     }
 
+    /// The key of its "About" guide in health-core's METRIC_GUIDES (US-58 AC7): the same
+    /// snake-case key as its graph colour (Brad's decision 1, 2026-10-31).
+    var guideKey: String { paletteKey }
+
     /// The range its page opens on, as Apple Health's: the day for heart rate, steps and
     /// sleep; the week for resting heart rate, one value a day; six months for VO2 max, a
     /// few a month.

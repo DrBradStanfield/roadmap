@@ -14,7 +14,7 @@
 import { deadlineSignal } from './adapter';
 import { dayOf, daysBetween } from './merge';
 import { stampProfile } from './state-edits';
-import { displayLabUnit, foldLpa, LAB_CATALOG, type LabCatalogEntry, labSlotKey, metricNameWords, resolveLabCatalogEntry } from './lab-catalog';
+import { displayLabUnit, foldLpa, LAB_CATALOG, labSlotKey, metricNameWords } from './lab-catalog';
 import { ISO_DATE, latestActivePerMetric } from './measurement-history';
 import {
   type AdditionalLabValue,
@@ -23,7 +23,10 @@ import {
   FOLDER_IMPORT_EXTENSIONS,
   isImportableEntryName,
   MAX_FILE_NAME_LENGTH,
+  MAX_NAME_LENGTH,
   resolveCoreMetricName,
+  resolveName,
+  type ResolvedName,
   type UnifiedExtractionResult,
   VALID_METRICS,
 } from './lab-extraction';
@@ -48,13 +51,14 @@ import {
 } from './record-edits';
 import type { FileDocument, FileLabValue, FileMeasurement, RoadmapFile, RoadmapProfile } from './roadmap-file';
 import type { SyncManager } from './sync-manager';
-import { CANONICAL_UNITS, formatDisplayValue, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
+import { CANONICAL_UNITS, formatDisplayValue, formatRange, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, unitSystemOf, type MetricType, type UnitSystem } from './units';
 import { DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS, IMPORT_REFUSALS, importHint } from './import-hints';
 import { type McpImportRoute, type McpRefusalReason } from './product-events';
 import { LAB_ARCHIVE_TITLE } from './document-path';
 import { documentRow, labArchiveFields, type DocumentFields } from './document-rows';
-import { DOCUMENT_TYPES, type DocumentType, healthInputSchema, METRIC_TYPES, PRESSURE_ORDER, pressureInverted, zod3Message } from './validation';
+import { BIRTH_IN_FUTURE, birthInFuture, DOCUMENT_TYPES, type DocumentType, healthInputSchema, METRIC_TYPES, PRESSURE_ORDER, pressureInverted, zod3Message } from './validation';
 import * as z from './zod';
+import { isReadableRow, readableView } from './readable-rows';
 
 /**
  * Rows one `add_lab_values` call may write. A lab panel is the case this tool
@@ -64,16 +68,8 @@ import * as z from './zod';
  */
 export const MAX_LAB_ROWS_PER_CALL = 50;
 
-/**
- * Longest test name or unit a tool will take, and longest row id. Neither is a
- * clinical limit — a real test name is a few words and an id is a UUID (~45
- * chars with a duplicate suffix). They exist because nothing else bounds the
- * bytes one call can put in the user's file: without them a single call can
- * write megabytes of a string into a record that has to be read back whole.
- */
-export const MAX_NAME_LENGTH = 120;
 /** Longest file name a source or a folder entry keeps: a file system's own bound, and what `fileNames` must match. */
-export { MAX_FILE_NAME_LENGTH };
+export { MAX_FILE_NAME_LENGTH, MAX_NAME_LENGTH };
 /** Unrecognized lines one extract answers with; the model's output cap would otherwise bound them at ~30 KB. */
 export const MAX_UNRECOGNIZED_LINES = 50;
 /** One such line: a printed name, a value, a unit, the reason and the way round it (US-36 AC2). */
@@ -517,7 +513,7 @@ export const importDocumentsOutput = z.object({
  */
 export type ToolOutcome =
   | { status: 'ok'; text: string; data: unknown; file?: RoadmapFile }
-  | { status: 'rejected'; text: string; reason?: McpRefusalReason }
+  | { status: 'rejected'; text: string; reason?: McpRefusalReason; /** The person's words, for a surface a person reads; never sent to an agent. */ message?: string }
   | { status: 'invalid-args'; text: string };
 
 /** Per-row sync bookkeeping and device identifiers: the merge's, never what the record says. */
@@ -618,10 +614,12 @@ export function getPlan(file: RoadmapFile, now: string): ToolOutcome {
 function rejection(result: EditRejection): ToolOutcome {
   const held = result.existing;
   if (result.reason === 'slot-occupied' && held) {
+    // A value no reader can read is never echoed (US-65 AC3): it may be anything.
+    const holds = readableSlotRow(held) ? oneLine(String(held.value)) : 'a value this app cannot read';
     return {
       status: 'rejected',
       reason: result.reason,
-      text: `${oneLine(result.message)}. That day already holds ${held.value} in row ${oneLine(held.id)}. ` +
+      text: `${oneLine(result.message)}. That day already holds ${holds} in row ${oneLine(held.id)}. ` +
         'Nothing was written. To change it, call correct_value with that row id — never add a second value to the same day.',
     };
   }
@@ -735,6 +733,29 @@ export function correctValueTool(
 }
 
 /**
+ * The first profile value a person at the form could not type, in plain words
+ * ending with a full stop: the app's own ranges, then a birth month after this
+ * one (US-54 AC5b, `birthInFuture`). A year alone is judged with the stored
+ * month, and a month alone with the stored year.
+ */
+function profileFault(
+  file: RoadmapFile,
+  request: Partial<Record<(typeof PROFILE_FIELDS)[number], unknown>>,
+  now: string,
+): { field: (typeof PROFILE_FIELDS)[number]; message: string } | undefined {
+  for (const field of PROFILE_FIELDS) {
+    if (request[field] === undefined) continue;
+    const parsed = healthInputSchema.shape[field].safeParse(request[field], { error: zod3Message });
+    if (!parsed.success) return { field, message: `${oneLine(parsed.error.issues[0]?.message ?? 'out of range')}.` };
+  }
+  if (request.birthYear === undefined && request.birthMonth === undefined) return undefined;
+  const year = (request.birthYear ?? file.profile.birthYear) as number | undefined;
+  const month = (request.birthMonth ?? file.profile.birthMonth ?? 1) as number;
+  if (year === undefined || !birthInFuture(year, month, now)) return undefined;
+  return { field: request.birthMonth === undefined ? 'birthYear' : 'birthMonth', message: BIRTH_IN_FUTURE };
+}
+
+/**
  * Change who the record is about: sex, birth year, birth month, height (US-34).
  *
  * Each profile field is last-write-wins: `mergeFiles` picks each field's
@@ -757,15 +778,6 @@ export function updateProfile(
     return { status: 'rejected', text: `Name at least one of ${PROFILE_FIELDS.join(', ')}. Nothing was written.` };
   }
 
-  // The app's own ranges, with the app's own words: a connector cannot write
-  // what a person sitting at the form could not type.
-  for (const field of named) {
-    const parsed = healthInputSchema.shape[field].safeParse(request[field], { error: zod3Message });
-    if (!parsed.success) {
-      return { status: 'rejected', text: `${field}: ${oneLine(parsed.error.issues[0]?.message ?? 'out of range')}. Nothing was written.` };
-    }
-  }
-
   const stored = file.profile;
   for (const field of PROFILE_FIELDS) {
     const claim = request.expected?.[field] ?? undefined;
@@ -775,6 +787,11 @@ export function updateProfile(
       return { status: 'rejected', text: `The record does not hold the ${field} you expected. Read the record, then update. Nothing was written.` };
     }
   }
+
+  // After the expectations: the future-month rule reads stored fields (US-32 AC5/AC22).
+  // The agent gets the field key and tail; the iPhone shows `message` as it is (US-54 AC5c).
+  const fault = profileFault(file, request, now);
+  if (fault) return { status: 'rejected', text: `${fault.field}: ${fault.message} Nothing was written.`, message: fault.message };
 
   const changed = named.filter((field) => request[field] !== stored[field]);
   if (changed.length === 0) {
@@ -786,12 +803,15 @@ export function updateProfile(
   // connector write beat a concurrent one made in the app, whenever it was
   // made. The merge reads wall-clock time first (US-10 AC8), the honest
   // answer to "who wrote last".
+  // A stored value no reader can read is never echoed (US-65 AC3): `from` is null, the text says so.
+  const shown = readableView(file).file.profile;
+  const hidden = (field: (typeof PROFILE_FIELDS)[number]) => stored[field] != null && shown[field] === undefined;
   return {
     status: 'ok',
     file: stampProfile(file, Object.fromEntries(changed.map((field) => [field, request[field]])) as Partial<RoadmapProfile>, now),
-    text: changed.map((field) => `${field}: ${stored[field] ?? 'not set'} → ${request[field]}`).join('\n'),
+    text: changed.map((field) => `${field}: ${hidden(field) ? 'a value this app cannot read' : shown[field] ?? 'not set'} → ${request[field]}`).join('\n'),
     data: {
-      changed: changed.map((field) => ({ field, from: stored[field] ?? null, to: request[field] as string | number })),
+      changed: changed.map((field) => ({ field, from: hidden(field) ? null : shown[field] ?? null, to: request[field] as string | number })),
     },
   };
 }
@@ -1243,11 +1263,13 @@ export function isAlreadyImported(file: RoadmapFile, name: string, contentHash: 
   const live = file.documents.filter((d) => !d.deleted);
   const byHash = contentHash === '' ? undefined : live.find((d) => d.contentHash === contentHash);
   if (byHash) return { row: byHash, by: 'hash' };
+  // The name paths read only documents this build reads (US-65): a hidden one's name may be anything.
+  const named = live.filter((d) => isReadableRow('documents', d));
   const sameName = (d: FileDocument) => d.sourceFileName != null && dedupFileName(d.sourceFileName) === dedupFileName(name);
-  const byNameDate = contentHash === '' && date ? live.find((d) => sameName(d) && d.date === date) : undefined;
+  const byNameDate = contentHash === '' && date ? named.find((d) => sameName(d) && d.date === date) : undefined;
   if (byNameDate) return { row: byNameDate, by: 'name_date' };
   // A dated candidate against a hashless row dated differently is the portal's next `Results.pdf`, not a twin.
-  const byName = live.find((d) => d.contentHash === '' && sameName(d) && (!date || !d.date || d.date === date));
+  const byName = named.find((d) => d.contentHash === '' && sameName(d) && (!date || !d.date || d.date === date));
   return byName ? { row: byName, by: 'name' } : null;
 }
 
@@ -1306,7 +1328,8 @@ export function folderNudge(file: RoadmapFile, entryNames: string[]): z.infer<ty
 
 /** The sentence for an `already_imported` entry: which row, when, and the way past it (AC13). Names a file, never a title. */
 function alreadyImportedHint(match: ImportedMatch | null): string {
-  if (!match) return 'Already in the record. Nothing to do.';
+  // A hidden document's date and name are never echoed (US-65 AC3).
+  if (!match || !isReadableRow('documents', match.row)) return 'Already in the record. Nothing to do.';
   const when = match.row.date ?? dayOf(match.row.addedAt);
   const as = match.row.sourceFileName ? ` as ${oneLine(match.row.sourceFileName)}` : '';
   if (match.by === 'hash') return `Already in the record: the same file was filed on ${when}${as}. Nothing to do.`;
@@ -1321,6 +1344,11 @@ function fromDocument(text: string | undefined | null): string | undefined {
 }
 
 /** What a candidate finds in its slot (AC6): a core metric by its displayed string, a lab by quantity (`sameLabQuantity`, the website's rule too). */
+/** Whether a reader can read the row holding a slot (US-65): only then is its value shown or compared. */
+function readableSlotRow(row: FileMeasurement | FileLabValue): boolean {
+  return isReadableRow('metricType' in row ? 'measurements' : 'labValues', row);
+}
+
 function slotFor(
   existing: FileMeasurement | FileLabValue | undefined,
   candidate: Omit<ImportCandidate, 'id' | 'sameDayAs' | 'slot'>,
@@ -1329,6 +1357,8 @@ function slotFor(
   system: UnitSystem,
 ): ImportCandidate['slot'] {
   if (!existing) return { state: 'free' };
+  // A row no reader can read holds the day, with nothing to show or compare (US-65 AC3).
+  if (!readableSlotRow(existing)) return { state: 'held_different', existingRowId: existing.id, replaceable: false };
   const state: SlotState = 'metricType' in existing
     ? slotState(formatDisplayValue(existing.metricType as MetricType, existing.value, system), candidate.displayValue)
     : sameLabQuantity(
@@ -1404,7 +1434,7 @@ export function prepareImport(
   ctx: EditContext & { maxCorrectionAgeDays?: number; payloadId: string },
 ): PreparedImport {
   const latestDay = ctx.latestDay ?? dayOf(ctx.now);
-  const system: UnitSystem = file.profile.unitSystem ?? 'si';
+  const system = unitSystemOf(file.profile);
   const files: Array<z.infer<typeof importFileOutput>> = [];
   const candidates: ImportCandidate[] = [];
   const documents: ImportDocument[] = [];
@@ -1463,8 +1493,9 @@ export function prepareImport(
       const printed = (value: { printedName?: string }) => (value.printedName ? { printedName: oneLine(value.printedName).slice(0, MAX_NAME_LENGTH) } : null);
       // A day of its own on the folder route is a dated previous-results column
       // the shared parse now reads for the website (US-12 AC12). Held off the
-      // connector until the MCP 1.0.2 review ends: left out, as the old prompt
-      // left it out. The assistant's own per-line day (US-36 AC1) is kept.
+      // connector for OpenAI's MCP 1.0.2 review (ended 2026-10-29; releasing it
+      // is open work): left out, as the old prompt left it out. The assistant's
+      // own per-line day (US-36 AC1) is kept.
       const previousColumn = (value: { recordedAt?: string }) => bundle.route !== 'assistant' && !!value.recordedAt;
       for (const value of result.values) {
         if (candidates.length >= MAX_IMPORT_CANDIDATES) break;
@@ -1580,16 +1611,6 @@ export function prepareImport(
 // file_results — the assistant read the file; the server checks every row (US-36)
 // ---------------------------------------------------------------------------
 
-/** What a printed name or a claimed `metric` resolves to: a core metric, a catalogued test, or nothing. */
-type ResolvedName = { kind: 'core'; metric: MetricType } | { kind: 'lab'; key: string; entry: LabCatalogEntry } | null;
-
-function resolveName(name: string): ResolvedName {
-  const core = resolveCoreMetricName(name);
-  if (core) return { kind: 'core', metric: core };
-  const entry = resolveLabCatalogEntry(name);
-  return entry ? { kind: 'lab', key: entry.key, entry } : null;
-}
-
 const describeName = (resolved: ResolvedName): string => (resolved?.kind === 'core' ? resolved.metric : resolved?.kind === 'lab' ? resolved.key : 'nothing this record knows');
 
 /**
@@ -1681,7 +1702,7 @@ export function fileResultsBundle(request: FileResultsSource, file: RoadmapFile,
         refuse(check.reason === 'unknown-unit'
           ? `${oneLine(check.message)}. Check the unit column; if the report really prints that, tell the user and do not file it.`
           : check.reason === 'out-of-range'
-            ? `${oneLine(check.message)} (${si.min}–${si.max} ${def.label.si}; ${conv.min}–${conv.max} ${def.label.conventional}). Check the unit; if the report really says that, tell the user and do not file it.`
+            ? `${oneLine(check.message)} (${formatRange(si, def.label.si)}; ${formatRange(conv, def.label.conventional)}). Check the unit; if the report really says that, tell the user and do not file it.`
             : `${oneLine(check.message)}.`);
         continue;
       }
@@ -1765,7 +1786,7 @@ export function importDocumentsCommit(
     const current = held.get(slot);
     const moved = c.slot.state === 'free'
       ? current !== undefined
-      : !current || current.id !== c.slot.existingRowId || current.value !== c.slot.existingValue;
+      : !current || current.id !== c.slot.existingRowId || (readableSlotRow(current) ? current.value : undefined) !== c.slot.existingValue;
     if (moved) {
       return {
         status: 'rejected',
@@ -2839,10 +2860,11 @@ export function callTool(
   switch (name) {
     case 'report_feedback':
       return reportFeedback(parsed.data as z.infer<typeof reportFeedbackInput>, now, context.dryRun, context.canFile);
+    // The read tools see only what this build reads; the rest stays in the file (US-65 AC3).
     case 'read_record':
-      return readRecord(record, parsed.data as z.infer<typeof readRecordInput>);
+      return readRecord(readableView(record).file, parsed.data as z.infer<typeof readRecordInput>);
     case 'get_plan':
-      return getPlan(record, now);
+      return getPlan(readableView(record).file, now);
     case 'add_measurement':
       return addMeasurement(record, parsed.data as z.infer<typeof addMeasurementInput>, context);
     case 'add_lab_values':

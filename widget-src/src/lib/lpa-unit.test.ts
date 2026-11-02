@@ -4,6 +4,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { ApiMeasurement, MeasurementSource, UnitSystem } from '@roadmap/health-core';
 import { effectiveLpaUnit, keepLpaAsIs, lpaRowsToCheck } from './lpa-unit';
+import { LPA_CHECK_KEPT_KEY, stopLocalHealthWrites } from './storage';
 
 describe('US-05 AC2 — the unit Lp(a)’s field opens in', () => {
   it('with nothing chosen: mg/dL in US units, nmol/L in any other', () => {
@@ -109,5 +110,12 @@ describe('US-05 AC3 — the Lp(a) rows the page asks about', () => {
     }
     expect(localStorage.length).toBe(0);
     expect(lpaRowsToCheck([lpa({ id: 'r3' }), lpa({ id: 'r4' })], 'conventional').map((c) => c.row.id)).toEqual(['r4']);
+  });
+
+  it("US-09 AC2e: after another tab's log-off, a row kept as saved is kept on this page only, so a move is not left waiting", () => {
+    stopLocalHealthWrites(); // last in this file: the latch lasts for the module's life
+    keepLpaAsIs('r5');
+    expect(localStorage.getItem(LPA_CHECK_KEPT_KEY)).toBeNull();
+    expect(lpaRowsToCheck([lpa({ id: 'r5' }), lpa({ id: 'r6' })], 'conventional').map((c) => c.row.id)).toEqual(['r6']);
   });
 });

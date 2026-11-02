@@ -171,6 +171,31 @@ final class EngineUpdaterTests: XCTestCase {
         XCTAssertEqual(after.proven, [onTrial], "the first pass overwrote the confirmed trial")
     }
 
+    /// US-25 AC18: the "trying" mark is cleared once the user's record is drawn. A
+    /// confirm whose state write fails (the folder cannot be written) is tried again at
+    /// the next draw, so the next launch does not mark a good release bad.
+    func testAConfirmWhoseWriteFailsIsTriedAgainAtTheNextDraw() throws {
+        let onTrial = fixture.version(daysAfterBundled: 1).version
+        var state = EngineFolder.State()
+        state.trying = onTrial
+        try folder.write(state)
+        let trial = EngineTrial(version: onTrial, folder: folder, bundled: fixture.bundled.facts.version)
+        let path = folder.url.path(percentEncoded: false)
+        addTeardownBlock { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: path) }
+
+        try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: path)
+        trial.confirm()
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: path)
+        XCTAssertEqual(try folder.readState(bundled: 0).trying, onTrial, "the write did not fail, so this test proves nothing")
+        XCTAssertFalse(trial.confirmed)
+
+        trial.confirm()
+        XCTAssertTrue(trial.confirmed)
+        let after = try folder.readState(bundled: 0)
+        XCTAssertNil(after.trying, "a launch now would mark a release that drew the record bad")
+        XCTAssertEqual(after.proven, [onTrial])
+    }
+
     func testTheFloorOnlyRises() async throws {
         let bundle = release.bundle
         let manifest = fixture.manifest(version: release.version, issued: ManifestCheck.versionDate(release.version)!, bundle: bundle) {

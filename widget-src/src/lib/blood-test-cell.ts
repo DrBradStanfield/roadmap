@@ -5,41 +5,37 @@
 import {
   commaQuestion,
   parseLocalisedNumber,
+  rangeFault,
   cellLabel,
   cellRange,
   cellToSI,
-  refHintFor,
-  lpaRefHint,
   HBA1C_THRESHOLDS,
   LDL_THRESHOLDS,
   getLipidStatus,
   TOTAL_CHOLESTEROL_THRESHOLDS,
-  HDL_THRESHOLDS,
+  HDL_GRID_BANDS,
+  CREATININE_GRID_BANDS,
   TRIGLYCERIDES_THRESHOLDS,
   APOB_THRESHOLDS,
   LPA_THRESHOLDS,
   PSA_THRESHOLDS,
   type CellUnit,
   type MetricType,
+  type ValidationRange,
 } from '@roadmap/health-core';
 
 import type React from 'react';
 
 export type Status = 'ok' | 'warn' | 'bad' | null;
 
-/** Whom a value is graded for against adult thresholds: their sex (some lines
- *  differ by it), or null to grade nothing, as for a known minor (US-07 AC6). */
-export type Grading = { sex?: 'male' | 'female' } | null;
+// Whom a value is graded for (null: a known minor, US-07 AC6) lives in
+// health-core beside rowTarget, which reads it too.
+export type { Grading } from '@roadmap/health-core';
+import type { Grading } from '@roadmap/health-core';
 
 // The unit a cell is shown and typed in, and its conversions, live in health-core
 // (cell-unit.ts), which the iPhone app reads too.
 export { type CellUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel } from '@roadmap/health-core';
-
-/** The reference hint under the unit: the metric's, or Lp(a)'s in its unit. */
-export function cellHint(metric: MetricType, unit: CellUnit, grading: Grading): string | null {
-  if (!grading) return null;
-  return unit === 'si' || unit === 'conventional' ? refHintFor(metric, unit, grading.sex) : lpaRefHint(unit);
-}
 
 // Keystroke filters (US-02 AC4). Most of our numeric cells are type="text"
 // (for inputMode/pattern control), and even type="number" doesn't reject
@@ -142,12 +138,25 @@ export function readTypedValue(metric: MetricType, typed: string, display: CellU
   return hasNumericSyntax(typed) ? parseLocalisedNumber(typed, cellRange(metric, display)) : undefined;
 }
 
+/** Whether a whole number still being typed could reach the range with more
+ *  digits ("19" on the way to 190), so its range error waits for the field to
+ *  be left (US-02 AC9). A number too big, or one no further digit can bring in
+ *  ("3" for a waist of 40 to 200 cm), is wrong already and says so at once. */
+export function mayStillFit(typed: string, min: number, max: number): boolean {
+  const n = Number(typed);
+  if (!/^\d+$/.test(typed) || n === 0) return false;
+  for (let lo = n * 10, span = 10; lo <= max; lo *= 10, span *= 10) {
+    if (lo + span - 1 >= min) return true;
+  }
+  return false;
+}
+
 /** Validate a typed display-unit value against the metric's range. */
 export function validateTypedValue(
   metric: MetricType,
   typed: string,
   display: CellUnit,
-): { error: string | null; range: { min: number; max: number } } {
+): { error: string | null; range: ValidationRange } {
   const range = cellRange(metric, display);
   if (typed === '') return { error: null, range };
   if (!hasNumericSyntax(typed)) return { error: NUMERIC_SYNTAX_GUIDANCE, range };
@@ -157,15 +166,17 @@ export function validateTypedValue(
   // a mg/dL number into an mmol/L field can see the unit mismatch instead
   // of a bare "Max 22.6".
   const unit = cellLabel(metric, display);
-  if (n < range.min) return { error: `Min ${range.min} ${unit}`, range };
-  if (n > range.max) return { error: `Max ${range.max} ${unit}`, range };
+  const fault = rangeFault(range, n);
+  if (fault === 'below') return { error: `${range.minExclusive ? 'Must be above' : 'Min'} ${range.min} ${unit}`, range };
+  if (fault === 'above') return { error: `Max ${range.max} ${unit}`, range };
   return { error: null, range };
 }
 
 /** Clinical threshold mapping. Returns null for metrics whose status is
- *  judged elsewhere (e.g. creatinine → eGFR). */
+ *  judged elsewhere (e.g. creatinine → eGFR), and for a value the plan leaves
+ *  out as out of range, such as a stored LDL 0 (US-03 AC7). */
 export function statusOf(metric: MetricType, siValue: number, grading: Grading): Status {
-  if (!grading || siValue == null || Number.isNaN(siValue)) return null;
+  if (!grading || siValue == null || Number.isNaN(siValue) || rangeFault(cellRange(metric, 'si'), siValue)) return null;
   const { sex } = grading;
   switch (metric) {
     case 'hba1c':
@@ -182,11 +193,11 @@ export function statusOf(metric: MetricType, siValue: number, grading: Grading):
       if (siValue >= TOTAL_CHOLESTEROL_THRESHOLDS.borderline) return 'warn';
       return 'ok';
     case 'hdl': {
-      // Higher is better. lowFemale (~1.29) is the more conservative "ok"
-      // gate. Below lowMale (~1.03) = bad. Between = warn.
-      const okGate = sex === 'male' ? HDL_THRESHOLDS.lowMale : HDL_THRESHOLDS.lowFemale;
-      if (siValue >= okGate) return 'ok';
-      if (siValue >= HDL_THRESHOLDS.lowMale) return 'warn';
+      // Higher is better. No sex, no grade: never assume one (US-62 AC13).
+      if (!sex) return null;
+      const { okFrom, badBelow } = HDL_GRID_BANDS[sex];
+      if (siValue >= okFrom) return 'ok';
+      if (siValue >= badBelow) return 'warn';
       return 'bad';
     }
     case 'triglycerides':
@@ -204,12 +215,10 @@ export function statusOf(metric: MetricType, siValue: number, grading: Grading):
     case 'psa':
       return siValue >= PSA_THRESHOLDS.normal ? 'warn' : 'ok';
     case 'creatinine': {
-      // No formal threshold (eGFR is the clinical gate). Use the adult
-      // reference range as the ok ceiling, mild elevation → warn,
-      // significant elevation (≥30% over) → bad.
-      const max = sex === 'female' ? 90 : 110; // µmol/L
-      if (siValue >= max * 1.3) return 'bad';
-      if (siValue > max) return 'warn';
+      if (!sex) return null; // the ceiling differs by sex; never assume one (US-62 AC13)
+      const { okMax, badFrom } = CREATININE_GRID_BANDS[sex];
+      if (siValue >= badFrom) return 'bad';
+      if (siValue > okMax) return 'warn';
       return 'ok';
     }
     default:

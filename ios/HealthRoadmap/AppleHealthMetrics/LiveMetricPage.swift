@@ -8,11 +8,13 @@ struct LiveHealthPage: View {
     let metric: LiveMetric
     /// The person's VO2 max bands, handed only to VO2 max's page (AC8); nil shows none.
     var bands: Vo2MaxBands? = nil
+    /// The metric's "About" guide (US-58 AC7), shown at the foot of its page; nil shows none.
+    var guide: MetricGuide? = nil
 
     var body: some View {
         let reading = live.cards[metric]?.date
         Group {
-            if metric == .sleep { SleepPage(live: live, reading: reading) } else { LiveMetricPage(live: live, metric: metric, reading: reading, bands: bands) }
+            if metric == .sleep { SleepPage(live: live, reading: reading, guide: guide) } else { LiveMetricPage(live: live, metric: metric, reading: reading, bands: bands, guide: guide) }
         }
         // Clarity's fixed screen name "Apple Health metric" while a page shows (usage signal).
         .onAppear { live.pagesOpen += 1 }
@@ -34,6 +36,7 @@ struct LiveMetricPage: View {
     let reading: Date?
     /// VO2 max's fitness bands for the person's age and sex (AC8).
     let bands: Vo2MaxBands?
+    let guide: MetricGuide?
     @State private var range: LiveRange
     @State private var days: [LivePoint] = []
     @State private var daysRead = false
@@ -49,11 +52,12 @@ struct LiveMetricPage: View {
     /// The day that was today when the page last read, so D follows midnight (N5).
     @State private var today: Date
 
-    init(live: LiveHealth, metric: LiveMetric, reading: Date?, bands: Vo2MaxBands? = nil) {
+    init(live: LiveHealth, metric: LiveMetric, reading: Date?, bands: Vo2MaxBands? = nil, guide: MetricGuide? = nil) {
         self.live = live
         self.metric = metric
         self.reading = reading
         self.bands = bands
+        self.guide = guide
         _range = State(initialValue: metric.opening)
         let first = metric.opening == .day ? LiveHealth.pageStart(reaching: reading, back: 7, now: live.now(), calendar: live.calendar) : reading
         let geometry = LiveChartGeometry(range: metric.opening, now: live.now(), calendar: live.calendar, first: first)
@@ -72,7 +76,7 @@ struct LiveMetricPage: View {
         let geometry = geometry
         let inView = geometry.inView(range.isShort ? points : days, by: \.start, from: scrolledTo)
         let wanted = Wanted(wakes: live.wakes, range: range, days: range == .day ? geometry.daysInView(from: scrolledTo) : [])
-        LivePageFrame(metric: metric, ranges: LiveRange.allCases, range: $range, empty: isEmpty, key: wanted) { shows in
+        LivePageFrame(metric: metric, ranges: LiveRange.allCases, range: $range, empty: isEmpty, key: wanted, guide: guide) { shows in
             await load(wanted, shows: shows)
         } reset: {
             selected = nil
@@ -232,6 +236,8 @@ struct LivePageFrame<Key: Equatable, Content: View, Below: View>: View {
     @Binding var range: LiveRange
     let empty: Bool
     let key: Key
+    /// The metric's guide, below everything else, as a record metric's page ends (US-58 AC7).
+    let guide: MetricGuide?
     /// Reads for `key`; its argument counts the page's appearances, so a page shown again
     /// (back through the tab bar) reads again, as each showing must (AC2, Codex R1 2026-10-26).
     let load: (Int) async -> Void
@@ -264,6 +270,7 @@ struct LivePageFrame<Key: Equatable, Content: View, Below: View>: View {
                 .padding(.vertical, 6)
             }
             below
+            if let guide { GuideSections(guide: guide) }
         }
         .metricPageList(title: metric.label)
         .onAppear { shows += 1 }

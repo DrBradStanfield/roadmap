@@ -15,10 +15,16 @@
  *   day's two halves are written together, keyed by the systolic chain, once
  *   both are there and neither came from the store.
  * - Only the vitals a store holds. Blood tests are not quantity samples there.
+ * - Never a value the save path would refuse (`measurementValueFault`): a bad row
+ *   from a damaged file, a hand edit or another device's bug is skipped, never
+ *   clamped, so other apps never read it from the store (US-25 AC14b). A blood
+ *   pressure with a bad half is not written, nor one the wrong way up
+ *   (`pressureInverted`, US-02 AC8).
  */
 import { dayOf } from './merge';
+import { measurementValueFault } from './record-edits';
 import type { FileMeasurement, RoadmapFile } from './roadmap-file';
-import type { MeasurementSource } from './validation';
+import { pressureInverted, type MeasurementSource } from './validation';
 
 export interface DeviceWrite {
   /** The root id of the correction chain: the same for every correction of one value. */
@@ -63,6 +69,7 @@ export function deviceWrites(file: RoadmapFile, source: MeasurementSource): Devi
       if (isPressure) storeDays.add(day);
       continue;
     }
+    if (measurementValueFault(row.metricType, row.value)) continue;
     if (!isPressure) {
       writes.push({ syncId: root.id, version: length, day, values: { [row.metricType]: row.value } });
       continue;
@@ -72,7 +79,7 @@ export function deviceWrites(file: RoadmapFile, source: MeasurementSource): Devi
     else pressure.set(day, { ...pair, diastolic: { row, length } });
   }
   for (const [day, { systolic, diastolic }] of pressure) {
-    if (!systolic || !diastolic || storeDays.has(day)) continue;
+    if (!systolic || !diastolic || storeDays.has(day) || pressureInverted(systolic.row.value, diastolic.row.value)) continue;
     writes.push({
       syncId: systolic.root,
       // A correction of either half lengthens its chain, so the sum rises.

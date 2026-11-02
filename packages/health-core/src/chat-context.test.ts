@@ -9,7 +9,8 @@
  * allowlist or a bound.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { buildChatContextJson, chatContextOf } from './chat-context';
+import { buildChatContextJson, chatContextOf, NO_SEX_CHAT_RULE } from './chat-context';
+import { NEEDS_SEX, withLabEgfr } from './plan';
 import { calculateHealthResults } from './calculations';
 import { medicationsToInputs } from './mappings';
 import type { HealthInputs } from './types';
@@ -243,7 +244,6 @@ describe('US-07 AC6: the chat context marks a known minor', () => {
   };
 
   it.each([
-    ['no sex', { ...MINOR, sex: undefined }],
     ['no height', { ...MINOR, heightCm: undefined }],
     ['an invalid height', { ...MINOR, heightCm: 9999 }],
   ])('US-07 AC6: a known minor with %s still gets a context marked knownMinor, with the saved values and no plan', (_, inputs) => {
@@ -253,6 +253,14 @@ describe('US-07 AC6: the chat context marks a known minor', () => {
     expect(context.latestValues).toEqual({ ldlC: '4.2' });
     expect(context).not.toHaveProperty('currentSuggestions');
     expect(JSON.stringify(context)).not.toContain('9999');
+  });
+
+  // US-07 AC8: no sex is a plan, so a known minor with no sex gets the minor's plan: the one card.
+  it('US-07 AC6, AC8: a known minor with no sex gets a context marked knownMinor, with only the adults-only card', () => {
+    const context = contextWithout({ ...MINOR, sex: undefined });
+    expect(context.profile).toMatchObject({ unitSystem: 'si', knownMinor: true });
+    expect(context.latestValues).toEqual({ ldlC: '4.2' });
+    expect(context.currentSuggestions.map((s: { id: string }) => s.id)).toEqual(['adults-only']);
   });
 
   it('US-07 AC6: an invalid height is named in excludedFields, a missing one is not', () => {
@@ -318,12 +326,15 @@ describe('US-15 AC36: no plan still sends what is saved', () => {
     );
   });
 
-  it('US-15 AC36: no sex: missingInputs names sex, and the saved height is in the profile', () => {
+  it('US-07 AC8, US-15 AC36: no sex is a plan without its sex parts: missingInputs names sex, and no protein card', () => {
     const context = build({ ...SAVED, sex: undefined, heightCm: 168 });
     expect(context.profile).toMatchObject({ heightCm: 168, unitSystem: 'si' });
     expect(context.profile).not.toHaveProperty('sex');
     expect(context.missingInputs).toEqual(['sex', 'apoB', 'creatinine']);
-    expect(context).not.toHaveProperty('currentSuggestions');
+    expect(context.derivedValues.bmi).toBe(24.8);
+    const ids = context.currentSuggestions.map((s: { id: string }) => s.id);
+    expect(ids.length).toBeGreaterThan(0);
+    expect(ids).not.toContain('protein-target');
   });
 
   it('US-15 AC36: neither sex nor height: both named; a known minor is still the minor context', () => {
@@ -337,8 +348,20 @@ describe('US-15 AC36: no plan still sends what is saved', () => {
   it('US-15 AC36: an out-of-range value is named in excludedFields and never printed', () => {
     const context = build({ ...SAVED, ldlC: 99, heightCm: 999 });
     expect(context.excludedFields).toEqual(['ldlC', 'heightCm']);
-    expect(context.latestValues.ldlC).toBe('3.9'); // the saved series, as on the plan path
+    // US-03 AC7: the plan reads as if no LDL was entered, so no older value stands in.
+    expect(context.latestValues).not.toHaveProperty('ldlC');
     expect(JSON.stringify(context)).not.toMatch(/\b99\b|999/);
+  });
+
+  it('US-03 AC7: a stored LDL 0 is excluded, and the older LDL never fills latestValues', () => {
+    const history = [
+      { metricType: 'ldl', value: 3.0, recordedAt: '2026-08-01' },
+      { metricType: 'ldl', value: 0, recordedAt: '2026-09-01' },
+    ];
+    const context = JSON.parse(buildChatContextJson(chatContextOf({ ...SAVED, ldlC: 0, heightCm: 168 }, 'si', [], [], history))!);
+    expect(context.excludedFields).toEqual(['ldlC']);
+    expect(context.latestValues).not.toHaveProperty('ldlC');
+    expect(context.latestValues).toMatchObject({ hba1c: '40', systolicBp: '138' });
   });
 
   it('US-15 AC36: the boundary holds: an unknown key and an unlisted drug name never reach the prompt', () => {
@@ -607,9 +630,10 @@ describe('US-15 AC31: the context carries the plan\'s own verdicts', () => {
     expect(minor.currentSuggestions.map((s: { id: string }) => s.id)).toEqual(['adults-only']);
   });
 
-  it('US-15 AC31, AC36: no plan, no derived values (a height alone is saved data, so it gets the no-plan context)', () => {
+  it('US-15 AC31, US-07 AC8: a height alone makes a plan without sex, and missingInputs names sex', () => {
     const context = JSON.parse(buildChatContextJson(chatContextOf({ heightCm: 170 }, 'si', [], [], []))!);
-    expect(context).not.toHaveProperty('derivedValues');
+    expect(context.derivedValues).toEqual({});
+    expect(context.currentSuggestions.map((s: { id: string }) => s.id)).not.toContain('protein-target');
     expect(context.missingInputs).toEqual(['sex', 'birthYear', 'weightKg', 'waistCm', 'systolicBp', 'hba1c', 'apoB', 'creatinine']);
   });
 
@@ -644,3 +668,40 @@ describe('US-15 AC31: the context carries the plan\'s own verdicts', () => {
   });
 });
 
+// US-07 AC8 (adversary S2 on PR 402): the outdated lab eGFR mark crosses the chat boundary,
+// so the server's chat plan withholds potassium advice as the widget's plan does.
+describe('US-07 AC8: labEgfrOutdated reaches the chat plan', () => {
+  const lab = { labEgfr: 70, labEgfrDate: '2026-06-01' };
+  const bp = { systolicBp: 145, diastolicBp: 92 };
+  const ids = (inputs: Partial<HealthInputs>) =>
+    JSON.parse(buildChatContextJson(chatContextOf(inputs, 'si', [], [], []))!).currentSuggestions.map((s: { id: string }) => s.id);
+
+  it('no sex and a newer creatinine: the chat plan has no potassium card', () => {
+    const inputs = withLabEgfr<Partial<HealthInputs>>({ heightCm: 170, birthYear: 1960, creatinine: 80, ...bp }, '2026-08-01', lab, '2026-09-01');
+    expect(inputs.labEgfrOutdated).toBe(true);
+    expect(ids(inputs)).not.toContain('high-potassium');
+  });
+
+  it('the control: the same lab eGFR with no newer creatinine opens it', () => {
+    const inputs = withLabEgfr<Partial<HealthInputs>>({ heightCm: 170, birthYear: 1960, creatinine: 80, ...bp }, '2026-05-01', lab, '2026-09-01');
+    expect(ids(inputs)).toContain('high-potassium');
+  });
+});
+
+// US-07 AC8: the chat rule keeps its own wording (agent contract, clinical
+// text), but names every part NEEDS_SEX lists, so the two cannot drift.
+describe('US-07 AC8: NO_SEX_CHAT_RULE names every NEEDS_SEX item', () => {
+  const NAMED: Array<[RegExp, RegExp]> = [
+    [/idealBodyWeightKg/, /ideal body weight, protein target/],
+    [/eGFR/, /calculated eGFR/],
+    [/low-HDL/, /HDL verdict/],
+    [/sex-specific screening/, /sex-specific screening/],
+  ];
+  it('each NEEDS_SEX item has its words in the rule, and no item is left unmatched', () => {
+    expect(NEEDS_SEX).toHaveLength(NAMED.length);
+    NEEDS_SEX.forEach((item, i) => {
+      expect(item, `item ${i}`).toMatch(NAMED[i][0]);
+      expect(NO_SEX_CHAT_RULE, `item ${i}`).toMatch(NAMED[i][1]);
+    });
+  });
+});

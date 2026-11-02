@@ -65,9 +65,11 @@ function auth(accessToken: string): Record<string, string> {
   return { Authorization: `Bearer ${accessToken}` };
 }
 
-/** Drive's query language quotes with `'`; a name carrying one must escape it. */
+/** Drive's query language quotes with `'` and escapes with `\`, so a name
+ *  must escape both, the backslash first. Otherwise a name ending in `\`
+ *  swallows its closing quote and breaks the query. */
 function quoted(name: string): string {
-  return name.replace(/'/g, "\\'");
+  return name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
 /** The provider's user-facing name. One copy: the adapter's `label`, the

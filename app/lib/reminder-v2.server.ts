@@ -26,6 +26,7 @@
  *    typed lane has held since US-23.
  */
 import { randomBytes } from 'node:crypto';
+import * as Sentry from '@sentry/react-router';
 import * as z from '../../packages/health-core/src/zod';
 import { REMINDER_CATEGORIES } from '../../packages/health-core/src/reminders';
 import { SCHEDULE_LABELS } from '../../packages/health-core/src/reminder-schedule';
@@ -167,13 +168,21 @@ export async function verifyGoogleIdToken(idToken: string): Promise<string | nul
     const res = await fetch(
       `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`,
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      // A 4xx is the token's own problem. A 5xx or 429 is Google's, and it
+      // blocks every Google opt-in, so it is reported (US-17 AC7a).
+      if (res.status >= 500 || res.status === 429) {
+        Sentry.captureMessage('Google tokeninfo failed', { level: 'warning', tags: { feature: 'reminders_v2' }, extra: { status: res.status } });
+      }
+      return null;
+    }
     const claims = (await res.json()) as Record<string, string>;
     const ourClientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
     if (!ourClientId || claims.aud !== ourClientId) return null;
     if (claims.email_verified !== 'true' || !claims.email) return null;
     return claims.email.toLowerCase();
-  } catch {
+  } catch (error) {
+    Sentry.captureException(error, { tags: { feature: 'reminders_v2' } }); // no answer from Google (US-17 AC7a)
     return null;
   }
 }

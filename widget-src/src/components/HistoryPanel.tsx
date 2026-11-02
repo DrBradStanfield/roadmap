@@ -79,15 +79,27 @@ const LAB_VALUE_PALETTE = [
   '#d946ef', '#64748b', '#e11d48', '#059669', '#7c3aed',
 ];
 
+/** No chart animation when the person asks for reduced motion (US-06 AC4a); the default otherwise. */
+const chartAnimation = () => (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? false : undefined);
+
+/** Show only the chosen event's number and redraw the kept chart, not a new one (US-06 AC4a). */
+function showSelectedEvent(labels: Record<string, { display: boolean }>, selectedId: string | null, chart: Chart | null): void {
+  for (const [id, label] of Object.entries(labels)) label.display = id === selectedId;
+  if (selectedId) chart?.update('none');
+}
+
 // Generic time-series line chart — used for both core metrics and additional lab values
-function TimeSeriesChart({
+export function TimeSeriesChart({
   title,
+  showTitle = true,
   data,
   unit,
   color,
   annotations,
 }: {
   title: string;
+  /** False where a heading above already names the chart (the value page, US-62 AC14). */
+  showTitle?: boolean;
   data: Array<{ x: number; y: number }>;
   unit: string;
   color: string;
@@ -96,6 +108,10 @@ function TimeSeriesChart({
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartRef = useRef<Chart | null>(null);
+  // Choosing an event only moves its number (US-06 AC4a): the chart is kept, not rebuilt.
+  const selectedRef = useRef(selectedEventId);
+  selectedRef.current = selectedEventId;
+  const labelsRef = useRef<Record<string, { display: boolean }>>({});
 
   useEffect(() => {
     if (!canvasRef.current || data.length === 0) return;
@@ -110,6 +126,9 @@ function TimeSeriesChart({
     if (chartRef.current) {
       chartRef.current.destroy();
     }
+    const labels: Record<string, { display: boolean }> = {};
+    labelsRef.current = labels;
+    const keep = <T extends { display: boolean }>(id: string, label: T) => (labels[id] = label);
 
     chartRef.current = new Chart(canvasRef.current, {
       type: 'line',
@@ -129,6 +148,7 @@ function TimeSeriesChart({
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: chartAnimation(),
         plugins: {
           tooltip: {
             callbacks: {
@@ -148,11 +168,11 @@ function TimeSeriesChart({
               borderColor: MED_ANNOTATION_COLOR,
               borderDash: [4, 4],
               borderWidth: 1,
-              label: {
+              label: keep(id, {
                 z: 1, // Keep the selected number above later event lines at the same date.
-                content: String(index + 1), display: id === selectedEventId, position: 'start' as const,
+                content: String(index + 1), display: id === selectedRef.current, position: 'start' as const,
                 backgroundColor: MED_ANNOTATION_COLOR, font: { size: 10 }, padding: { x: 4, y: 2 },
-              },
+              }),
             }])),
           } : undefined,
         },
@@ -188,13 +208,15 @@ function TimeSeriesChart({
         chartRef.current = null;
       }
     };
-  }, [data, title, unit, color, annotations, selectedEventId]);
+  }, [data, title, unit, color, annotations]);
+
+  useEffect(() => showSelectedEvent(labelsRef.current, selectedEventId, chartRef.current), [selectedEventId]);
 
   return (
     <div className="metric-chart-container">
-      <h3>{title}</h3>
+      {showTitle && <h3>{title}</h3>}
       <div className="metric-chart-canvas-wrap">
-        <canvas ref={canvasRef} />
+        <canvas ref={canvasRef} {...(!showTitle && { role: 'img', 'aria-label': `${title} chart` })} />
       </div>
       {annotations && annotations.length > 0 && (
         <ol className="metric-chart-events" aria-label={`${title} recorded medication changes`}>
@@ -216,6 +238,16 @@ function TimeSeriesChart({
 interface HistoryPanelProps {
   /** Pre-select one metric (lightbox embedding). Falls back to ?metric= (the Shopify page). */
   initialMetric?: string;
+}
+
+/** US-21 AC3a: a test reported in more than one unit is listed, not charted. */
+export function MixedUnitsNote({ label, units }: { label: string; units: string[] }) {
+  return (
+    <div className="metric-chart-container">
+      <h3>{label}</h3>
+      <p className="history-note">Units vary between reports ({units.map((u) => u || 'no unit').join(', ')}), so this test is not charted.</p>
+    </div>
+  );
 }
 
 export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
@@ -299,6 +331,13 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
     return { grouped: g, metricTypes: Object.keys(g).sort() };
   }, [measurements]);
 
+  // Each chart's points, built once per load: a fresh array every render would
+  // rebuild every chart on any tick (US-06 AC4a).
+  const chartData = useMemo(() => Object.fromEntries(metricTypes.map((mt) => [mt, grouped[mt].map((m) => ({
+    x: chartTimestamp(m.recordedAt),
+    y: toDisplayValue(mt, m.value, unitSystem),
+  }))])), [grouped, metricTypes, unitSystem]);
+
   // One series per lab slot key, so spelling variants share a chart (US-10).
   const { labSeries, labMetricNames, labColorMap } = useMemo(() => {
     const { keys, series } = groupLabHistory(labVals);
@@ -308,6 +347,10 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
     });
     return { labSeries: series, labMetricNames: keys, labColorMap: colors };
   }, [labVals]);
+  const labChartData = useMemo(() => Object.fromEntries(labMetricNames.map((name) => [name, labSeries[name].rows.map((v) => ({
+    x: chartTimestamp(v.recordedAt),
+    y: v.value,
+  }))])), [labSeries, labMetricNames]);
 
   return (
     <div className="history-panel">
@@ -358,10 +401,7 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
               <TimeSeriesChart
                 key={mt}
                 title={METRIC_LABELS[mt] || mt}
-                data={grouped[mt].map((m) => ({
-                  x: chartTimestamp(m.recordedAt),
-                  y: toDisplayValue(mt, m.value, unitSystem),
-                }))}
+                data={chartData[mt]}
                 unit={getUnitLabel(mt, unitSystem)}
                 color={METRIC_COLORS[mt] || '#0066cc'}
                 annotations={annotationsByMetric[mt]}
@@ -392,16 +432,15 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
               {labMetricNames
                 .filter((name) => selectedLabMetrics.has(name))
                 .map((name) => {
-                  // Use the unit from the first value (consistent per metric)
-                  const unit = labSeries[name].rows[0]?.unit || '';
+                  const { units } = labSeries[name];
+                  // One line through values in different units would be a false trend (US-21 AC3a).
+                  if (units.length > 1) return <MixedUnitsNote key={name} label={labSeries[name].label} units={units} />;
+                  const [unit] = units;
                   return (
                     <TimeSeriesChart
                       key={name}
                       title={labSeries[name].label}
-                      data={labSeries[name].rows.map((v) => ({
-                        x: chartTimestamp(v.recordedAt),
-                        y: v.value,
-                      }))}
+                      data={labChartData[name]}
                       unit={unit}
                       color={labColorMap[name]}
                     />

@@ -128,6 +128,13 @@ export class SyncManager<T extends SyncedFile> {
           throw error;
         }
       } catch (error) {
+        // The read itself can conflict: a Drive copy found in discovery was
+        // gone by its version read. The remote moved, as on a write conflict,
+        // so read and merge again rather than fail the save (US-10 AC4c).
+        if (error instanceof ConflictError) {
+          lastError = error;
+          continue;
+        }
         // Later reads, schema gates, access failures and cancellation cannot
         // undo an earlier write. Preserve the cause, but not its no-write/status certainty.
         if (!mayHaveWritten) throw error;

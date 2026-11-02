@@ -1,4 +1,4 @@
-# Web app redesign to match the iPhone app: plan (draft 3, 2026-10-30)
+# Web app redesign to match the iPhone app: plan (draft 5, 2026-10-31)
 
 Brad asked for this after using the iPhone app. Beside it, the web app looks shabby,
 especially on a phone. He wants:
@@ -9,8 +9,29 @@ especially on a phone. He wants:
 - better onboarding.
 
 Nothing is built yet. Draft 1 went to a fresh Opus adversary, which found five
-blockers, and Codex reviewed draft 2. This draft fixes both; see "Review" at the
-end.
+blockers, and Codex reviewed draft 2. Draft 3 fixed both; see "Review" at the end.
+Draft 4 takes Brad's answers of 2026-10-31 (next section).
+
+## Brad's answers, 2026-10-31
+
+- **Sign in** replaces the "Supercharge this tool" button in the same spot.
+  Supercharge moves to a card at the foot of My plan, keeping its name. Agreed.
+- **No onboarding screen and no "Already have a record?" step.** The layout stays; the
+  Sign in button is the way back to a saved record. The form itself becomes the
+  onboarding: a new question order, with snapshot cards appearing as each answer
+  lands (section 4).
+- **Bottom tab bar** agreed, with Swiper removed cleanly: no dead code (section 5).
+- **Plan cards stay as they are.** No two-line collapse.
+- **Blood tests on phones:** Brad likes the grid but prefers the iPhone's cleaner look,
+  and wants the previous value visible. Decided: target · date on the left, trend line,
+  value with the previous one in brackets and the unit under it (section 5).
+- **Rollout:** a deploy updates every page that carries the block, so a hidden page
+  only isolates the new layout if old and new both ship behind a switch. Brad prefers
+  localhost, then production, then fix there. Draft 4 does that (section "How we roll
+  it out").
+- **Green:** #00a38b is the brand and matches Brad's scrubs. Draft 4 keeps it as the
+  brand and adds a deeper shade of the same hue only where white text sits on green
+  (section 1, call B1).
 
 ## What we have today (checked on localhost and in the code)
 
@@ -98,7 +119,7 @@ It never moves.
 
 ## Recommendations
 
-### 1. One design language, behind one scoping class
+### 1. One design language
 
 - Take the iPhone's values for the web:
   - the light grey background;
@@ -106,19 +127,31 @@ It never moves.
   - the system font;
   - section symbols as inline SVG;
   - status capsules on the tiles.
-- New styles live under one class (`.hr-v2`) on the widget root, so old and new run
-  side by side behind the switch. The old CSS is deleted only when the switch goes away.
+- New styles replace old ones in the same commit; nothing runs side by side.
 - **Contrast is a requirement, not a copy.** The iPhone's grey secondary text is about
   3.4:1 on white and fails, so the web keeps a darker grey, about #5a6b73 (4.97:1).
   Every text and background pair must reach 4.5:1 on both white and grey. That
   includes the capsules, whose text gets a deeper colour than its tint.
+- **Green stays #00a38b, the colour of Brad's scrubs.** It works everywhere except
+  under small white text: white on #00a38b is 3.18:1, and normal text needs 4.5:1.
+  Dark text on it passes (#1c2b33 is 4.58:1). So:
+  - #00a38b: the brand, for non-text marks only: logo, chart lines, tile edges, fills
+    with dark labels. As text it fails on the grey page (2.85:1, adversary R7).
+  - **#007C6A**, the same hue made deeper, for every green text, link and white-label
+    button: 5.13:1 under white text and 4.6:1 on the #F2F2F7 grey. Draft 4's #008270
+    passed on white but fell to 4.25:1 on grey.
+  - The iPhone's #0B7A55 is a greener, different hue. Matching the web to it would move
+    the brand off the scrubs. The better fix is the other way: give the iPhone #007C6A
+    too, so both apps share one pair (B1).
+  - For reference, the store's email pop-up already uses a darker green
+    (#157551, measured live), so a deeper shade beside #00a38b is not new to the site.
 - Dark mode: the tokens get a second set of values later. Light ships first, because
   the Shopify theme around the widget is light.
 
 ### 2. The top bar and "Sign in"
 
 A slim bar sits at the top of the widget. The label on its right comes from
-`storageState()`, so it never claims what is not true:
+`storageState()` (guest, connected, reconnect) plus `pendingSync` for "Saving…", so it never claims what is not true:
 
 | State | Label | Tap opens |
 |---|---|---|
@@ -157,57 +190,90 @@ command line."
   events are rejected.
 - This changes where the 2026-09-11 link lives, so it is Brad's call (B3).
 
-### 4. Onboarding, before the layout moves
+### 4. Onboarding: the form builds the plan as you answer
 
-This comes before the mobile shell, because About you can only sit low once onboarding
-asks for it.
+Brad, 2026-10-31: no separate onboarding screen and no sign-in step first. The layout
+stays. The Sign in button in the top bar is how a returning person opens their record.
+The form's own order changes, so the plan builds in front of the person, one card at a
+time.
 
-**Who sees it.** One rule, checked in this order (Codex R1):
+**The order, and what each answer unlocks:**
 
-1. An email arrival shows its US-22 notice first. Onboarding waits until it is
-   dismissed.
-2. A cloud that is connected but cannot be read yet (reconnect, or still loading) asks
-   nothing. It shows the reconnect state and waits. Questions never start from a record
-   we have not read.
-3. Once the record is open, onboarding runs if the record lacks sex, birth year or
-   height, or weight on a record with no weight at all. It asks only what is missing,
-   starting at the first gap. That holds for a new browser, a half-finished one and a
-   connected cloud record alike.
-4. A record that has all of them skips onboarding.
-5. After "Delete all my data", the record is empty again, so rule 3 runs the
-   questions, on this device and on any other once the higher erase count arrives (US-54
-   AC7). A connected cloud stays connected. A completion flag in localStorage, keyed to
-   the erase count, only stops the tour from showing twice. It never goes in the
-   record.
+| Step | Asks | Then shows |
+|---|---|---|
+| 1 | Height and weight | The BMI tile |
+| 2 | Sex, with one line on why | Healthy weight (IBW) and the protein target |
+| 3 | Birth month and year, with one line on why | The age-based plan: blood pressure target, screenings, the rest of the form |
 
-**Welcome.**
+- **The why-text shows, not hidden in a tooltip** (Brad, 2026-10-31). It reuses today's
+  tooltip text word for word, under each question. Sex: "Used to calculate ideal body
+  weight, kidney function, and screening programs." Birth date: "Used to calculate
+  age-based screening suggestions (cancer, bone density) and kidney function." The
+  tooltips go (`InputPanel.tsx` 794, 1064), so the text lives in one place.
+- Each answer saves (weight on leaving its field; see below). Each new tile appears in
+  My plan as soon as it can be worked out, and on phones the plan tab shows a small dot so the
+  person knows something new arrived.
+- **Every step is required, no Skip**, the iPhone's rule. The rest of the form opens
+  only after step 3.
+- **Resume at the first missing answer** (Codex R1). Someone who saves height and weight
+  and then leaves comes back to the sex question. Tests: reload after step 1 and after
+  step 2.
 
-- **"I already have a record: sign in"** comes first and is prominent.
-- It runs the picker, then waits until the cloud record has opened. Then it asks only
-  for what is missing (the US-54 AC2 rule).
-- "Get started" sits beside it.
+**What this changes underneath** (adversary R1–R4, draft 5):
 
-**Questions:** sex, birth month and year, height, weight. Each has a progress bar and
-Back.
-
-- **Every question is required. No Skip**, as on the iPhone. Weight unlocks stage 3,
-  and without it half of My data stays hidden.
-- Native HTML inputs and selects. No wheel pickers, which feel wrong on Android.
-
-**Nothing is written until the last answer** (fixes R1). The answers stay in memory.
-
-- On the last step, before saving, the screen repeats one line: "Already have a record
-  in Dropbox or Google Drive? Sign in instead."
-- Then all four answers go through the existing routes in one save. The profile goes
-  through its edit, and weight through the matrix-save rule (one active row per day).
-- This narrows, but cannot remove, the risk that a returning person types new answers
-  and then connects their old cloud. Newest wins, field by field. The same risk exists
-  today with the form and on the iPhone.
+- **The stage rule.** Today any plausible weight, typed or saved, opens stage 3
+  (`mappings.ts` 579), so step 1 would open the whole form, unmute the chat and the
+  microvitamin.com chatbot embed (US-15 AC10, `chatbot-embed.tsx`), and start the email
+  glow. `computeFormStage` is redefined from what the record lacks: stage 1 asks
+  height and weight; stage 2 sex; stage 3 birth date; the full form, the chat and the
+  embed open only when all four are known. A saved blood test still opens the full
+  form, with the missing profile questions pinned at the top. Re-pin
+  `mappings.test.ts`, US-01 AC1/AC3, US-15 AC10 and the §10 table.
+- **Weight saves when the person leaves the field** (B10, Brad 2026-10-31), using the grid's existing
+  commit-on-leave and its one-active-row-per-day rule. Today weight is longitudinal
+  and waits for "Save New Values" (`StartingInfoVitals.tsx` 477-499), so a step-1
+  weight would be lost on leaving the page. Height, sex and birth date already save
+  as typed.
+- **The engine change, aimed at the right places.** `calculateHealthResults` already
+  returns without sex; the real gates are the Zod schema (`validation.ts` 31, used by
+  `chat-context.ts`), the widget (`HealthTool.tsx` 772, 787) and `plan.ts` 236-243,
+  which throws `PlanError` asking the agent for sex. Once sex can be missing, these
+  quietly give wrong answers and the compiler will not catch them:
+  - `calculateIBW` falls to the female target (`calculations.ts` 15);
+  - `calculateEGFR` takes the male branch (89-97);
+  - the HDL card uses the female threshold and says "for women" (`suggestions.ts` 656, 663);
+  - the protein-target card always renders (`suggestions.ts` 248-256), so it would read
+    "undefinedg";
+  - `statTiles` always pushes the IBW and protein tiles (123-136).
+  Each one gets an explicit "needs sex" gate and a test with `sex: undefined` that fails
+  today. **`withLabEgfr` too** (`plan.ts` 160-168; whole-tree Codex review, 2026-10-31): it
+  drops a lab eGFR whenever a newer creatinine and a birth year exist, without asking
+  for sex. With sex missing, the calculated eGFR is then gated off, so the person
+  loses both (US-07 AC7). A calculated eGFR may only outrank the lab's once sex is
+  usable; regression test: no sex, an older lab eGFR, a newer creatinine, and the lab
+  eGFR is kept. Callers to update: `stat-tiles.ts`, `suggestions.ts`, `plan.ts` and its
+  PlanError hint, `NO_PLAN_CHAT_RULE` (US-15 AC36), `tools/get-plan.ts`,
+  `ios/engine/bridge-contract.json` and Swift's `.needsDetails` mapping
+  (`HealthEngine.swift` 151), plus a rebuilt iPhone engine and Brad's signed engine
+  update. Adversary and Codex review it, since it is clinical and changes what agents
+  read.
+- **Three-file scope.** Beyond §10 it touches algorithm §1 (IBW, protein always
+  present), §3 (HDL by sex), §4 (the always-shown protein row and the "Unknown (no
+  birth year)" row, 621-623) and `roadmap_text.html` 546 (eGFR "uses ... your age and
+  sex"). `evidence.ts` likely unchanged; the commit says why.
+- **Children (B9): left as today** (Brad, 2026-10-31). No new rule for the steps before
+  the birth date; once it arrives, a known minor gets today's handling (`knownMinorOf`).
+  The new order still asks birth date before the full form, where today it is optional.
+- A returning person on a new device who answers before tapping Sign in: weight is a
+  new dated reading, which is right. Height, sex and now birth date (required, where
+  today it was optional) follow newest-wins (`merge.ts` 813), so typed values replace
+  stored ones. That is today's behaviour, now with one more field exposed.
 
 **After the plan appears:** a three-tip tour in the iPhone's words (US-57). It can be
 dismissed.
 
-**Desktop:** keeps the progressive form for now (B6).
+**Desktop:** the same new order, since it is the same form. Only the phone's tab dot
+is phone-only.
 
 ### 5. The mobile web becomes the iPhone layout
 
@@ -216,36 +282,82 @@ dismissed.
 - It is sticky inside the widget and shows only while the widget is on screen
   (IntersectionObserver). It must not float over the rest of the Shopify homepage.
 - It replaces the fixed "See Your Personalized Plan" button.
-- It replaces the Swiper with plain tab switching. That removes the sideways pan, the
-  Swiper dependency, `styles.css` 231-250, `ResultsPanel`'s `onLayoutChange` prop and
-  `HealthTool.swiper.test.tsx`. Only `HealthTool.tsx` uses Swiper.
-- Each tab keeps its own scroll position.
+- **Swiper goes completely, in the same commit** (Brad: no dead code). Only
+  `HealthTool.tsx` imports it. The commit deletes:
+  - the `swiper` dependency in `widget-src/package.json`, and its CSS import;
+  - `swiperRef`, `liveSwiper()` and the three call sites that re-measure or move it
+    (`HealthTool.tsx` around 838-856, 1141, 1232; lines drift, find by name);
+  - the `<Swiper>`/`<SwiperSlide>` block (around 1263-1292), replaced by three panels
+    where only the active one renders visibly;
+  - `ResultsPanel`'s `onLayoutChange` prop, which exists only to re-measure Swiper, and
+    the source-string assertion on it in `ResultsPanel.skip-gate.test.tsx` 252-265;
+  - `styles.css` 231-250, the chat-slide autoHeight rule (4546-4552) and the Swiper
+    comments near 4750 and 4936; `HealthTool.swiper.test.tsx`, replaced by a tab test;
+  - `MobileTabBar.tsx` (the top tabs) and the Liquid skeleton's top tab bar
+    (`hr-skel-tabbar` in `app-block.liquid`), which moves to the bottom so first paint
+    does not shift (adversary R13);
+  - the Swiper comment in `AlcoholQuestion.tsx` (its portal stays only if a
+    transformed parent remains; otherwise it goes too).
+- Plain React state picks the tab; no library. Each tab keeps its own scroll position.
 - Tab semantics: `role="tablist"`, arrow keys, `aria-selected`.
 
 **My data:** the iPhone's sections and order, as grouped cards, with About you low.
 
-- Vitals and blood tests become rows showing name, latest value, date and status.
-- A row opens the value's page (chart, history, add a value), built on today's history
-  panel.
-- The blood-test matrix stays on desktop. On a phone it is "Edit as table", for typing
-  in a whole lab report.
+- **Blood tests and vitals: one row per value** (Brad's layout, 2026-10-31):
+  - left: the name, and under it **target · date** ("Normal <5.7% · Oct 2026"). The
+    targets are what the web grid shows today and the iPhone lacks. **Every target
+    the web shows today must survive** (Codex R2). `refHintFor` covers only some
+    blood tests. Lp(a) comes from `lpaRefHint` in the chosen unit, and blood
+    pressure, weight and waist targets come from the plan (`StartingInfoVitals`), and
+    catalogue tests carry their own printed `referenceLow`/`referenceHigh`. So one
+    health-core function, `rowTarget(metric, unit, grading, plan)`, gathers all four
+    sources, and the minor rule moves into it from the widget's `cellHint`
+    (`blood-test-cell.ts` 41-44). The web grid, the new rows and the iPhone all call it;
+  - the target carries no unit, since the unit shows on the right: `RefHint` gains a
+    unit-free field rather than trimming strings ("Normal: <5.7%" has no space before
+    its unit). Before sex is known, the combined hint ("Optimal: >1.0/>1.3") is sized
+    for 375px too (adversary R6);
+  - middle: the trend line, as the iPhone draws it now;
+  - right: the latest value with the previous one in brackets, smaller and grey,
+    and the unit under it: **"81 (74)" / "mg/dL"** (Brad, 2026-10-31, replacing "was").
+    A first result shows the value alone. Screen readers hear "81, previous 74", since
+    brackets alone say nothing out loud.
+  - A known minor loses only the adult targets, as today. **The waist target stays**,
+    because waist-to-height applies to children too (US-07 AC6; Codex R3). A row with
+    no target (PSA, eGFR, which is derived, and any catalogue test printed without a
+    range) shows just the date.
+- Tapping a row opens the value's page: chart, full history, add a value, correct one.
+  It is built on today's history panel. **Its Add keeps the one-active-row-per-day
+  rule**: a second value on a day that already has one becomes a correction or is
+  refused, exactly as the grid's `expected` slots do today (adversary R10).
+- Row and capsule status classes join US-09 AC7d's Sentry breadcrumb scrub list, or a
+  tap on a row would leak its grade (adversary R12).
+- **Rows on desktop too** (Brad 2026-11-02: "I want the rows on desktop too"). The grid
+  stays one click away, on phone and desktop, as **"All results as a table"**, at the
+  foot of Blood tests: every result on every date, side
+  by side, scrolling sideways. It is the same grid, so it also serves for typing in a
+  whole lab report and moving a test to another day. Nothing the grid does today is
+  lost.
 
-**My plan:**
-
-- Two-column tiles, one column at large text sizes.
-- Cards with a title and two lines that expand on tap, with `aria-expanded`.
+**My plan: unchanged in structure** (Brad, 2026-10-31). The cards keep today's web
+layout. It gets the new tokens only.
 
 **Chat:** unchanged inside, restyled.
 
 **A "+" on My data** for adding values and uploading a lab report, as on the iPhone.
 
-**Every web-only control gets a home.** The inventory is below. Nothing is dropped
-without a decision.
+**Every control keeps a home.** The web form has controls the iPhone layout has no
+place for: correcting a value, moving a test to another day, the feedback button,
+"Delete all my data", the email box and Save as PDF. Moving to rows and tabs must not
+lose any of them. The table further down names where each one ends up.
 
-**Hero on a phone:** see B4. The hero renders before JavaScript, so hiding it on return
-visits from JavaScript would make the page jump. Recommended: one compact hero on
-phones, always, with a small photo and the headline on one row (about 120px). It needs
-no JavaScript, and the page does not jump.
+**Hero on a phone: compact, approved and being built (Brad, 2026-10-31).** Nothing was broken. It is a
+trade of space. Today it is not compact. The photo stacks above the headline and
+paragraph, 371px tall on a 375 × 812 phone (measured live), so the form starts halfway
+down the first screen, and the email pop-up covers the rest. Recommended: one compact
+hero on phones, always: a small round photo beside the headline on one row, the
+paragraph cut to one line, about 120px. Pure CSS in the Liquid block, no JavaScript, so
+the page never jumps.
 
 ### 6. Desktop
 
@@ -257,11 +369,11 @@ opens, so it changes look, not structure.
 
 | Control today | New home |
 |---|---|
-| Sex, height, birth date, units (Starting info) | Onboarding, then My data › About you (low) |
+| Sex, height, birth date, units (Starting info) | The form's first three steps, then My data › About you (low) |
 | Weight, waist, blood pressure (vitals matrix) | My data › Vitals rows › value page › Add |
-| Blood-test matrix, additional blood tests | My data › Blood tests rows; "Edit as table" for both |
+| Blood-test matrix, additional blood tests | My data › Blood tests rows; "All results as a table" for both |
 | Corrections (US-04, US-21 AC5) | Value page history row › Correct |
-| Move a test to another day (shipped 29 Oct) | "Edit as table" date header, as now |
+| Move a test to another day (shipped 29 Oct) | "All results as a table" date header, as now |
 | Per-field unit switch | Value page › Unit |
 | Upload lab results, keep documents | My data "+" › Upload; documents under My data › Your record |
 | Medications, supplements, screening, bone density | My data sections, as now, restyled |
@@ -285,14 +397,23 @@ opens, so it changes look, not structure.
     the denominator.
   - `onboarding_step` with the step's name, never the value. The widget throttles
     events once per name per tab (`server-api.ts`), which would keep only the first
-    step. So the throttle key includes the step name, like `upload_outcome`'s exception
-    (`PER_ACTION_EVENT_NAMES`), with a test that four steps in one tab all arrive
-    (Codex R3);
+    step. So the throttle key adds the step as a detail suffix, the way `choice` and
+    `product` events do, so each step counts once per tab. Not `PER_ACTION_EVENT_NAMES`,
+    which skips the throttle and would count a re-answered step twice (adversary N3).
+    A test checks three steps in one tab all arrive (Codex R3);
   - `onboarding_done`;
   - `signin_opened` with its placement;
   - `guide_opened` `plan_footer`.
-  - Every new name and value goes into the server's closed list first, and the server
-    deploys before the widget.
+  - Every new name, metadata key (`tool_opened`'s device, `onboarding_step`'s step) and
+    placement goes into the server's closed list. **CI deploys the widget before the
+    server** (`deploy.yml` 282-292 before 300-310), so the server change ships in its
+    own PR and deploy first, and the widget that sends the events ships in a later
+    one (adversary R5).
+- **`results_viewed` is pinned before the baseline** (adversary R9). Today it fires when
+  ResultsPanel mounts with suggestions, and all three Swiper slides mount, so it fires
+  without the plan being seen. Phase 0 changes it to fire when the plan is actually on
+  screen (the plan tab or column visible), on the old layout, so before and after
+  count the same thing.
 - **Clarity masking.** Onboarding, value pages and sheets that render outside the
   widget root carry `data-clarity-mask`, as the lightbox, chat and upload modal do
   (US-09 AC8).
@@ -304,38 +425,57 @@ opens, so it changes look, not structure.
 
 ## How we roll it out
 
-- **Localhost first.** Each phase is built against `npm run dev:pages` (port 5173) and
-  shown in the browser pane at phone width. Brad and I iterate there.
-- **Then a hidden Shopify page.** A block setting, like US-44's `skip_email_gate`, turns
-  `.hr-v2` on for one page. Its SEO setting keeps it out of the sitemap. This is where
-  the theme CSS shows up, and Brad checks it on his phone. Real WebKit
-  (`tools/webkit-verify.mjs`) runs on it too.
-- **No A/B test** (draft 1 was wrong). No variant delivery exists today: the Liquid
-  assigns none and no widget code reads one. Cloud connects run at 5 to 19 a week, too
-  few to power a test. Instead: a before-and-after read over two weeks either side,
-  plus Brad's own check. The primary metric is the share of phone `tool_opened` tabs
-  that go on to `results_viewed`. The denominator is counted before onboarding starts,
-  so people who give up part way still count (Codex R2). Stage 3 cannot be the metric:
-  onboarding requires weight, so everyone who sees a plan would reach it.
-- **Pages.** It gets the new layout when Shopify does, through a build flag. Its hero is
-  a separate copy in `index.html`.
-- **Rollback.** Until the old code is deleted, rollback means turning the block setting
-  off. After deletion, it is a git revert.
-- **Size.** The goal is a net fall in production lines. The Swiper code and the mobile
-  half of the matrix CSS go, and new styles replace old ones rather than sit beside them.
-  I will measure it per phase rather than guess now.
+- **Localhost first, as close to Shopify as we can get** (adversary R8). `dev:pages` is
+  the Pages build, which lacks the email box, Save as PDF gating, the feedback form and
+  the US-61 product blocks, all controls this plan moves. So phase 1 adds a localhost
+  entry built with `VITE_SHOPIFY_SURFACE` and a stubbed app proxy (never `shopify app
+  dev`). Brad and I iterate there at phone width.
+- **Then straight to production** (Brad, 2026-10-31). A deploy updates every page that
+  carries the block: the homepage, /pages/roadmap and /pages/start. A hidden page would
+  only isolate the new layout if old and new both shipped behind a switch, which means
+  two layouts in the code for weeks. With CLAUDE.md's "production is the acceptance
+  environment" and low traffic, shipping straight is the better trade.
+- **Making that safer:**
+  - small phases, each deployed alone, so a bad one is one revert;
+  - real WebKit (`tools/webkit-verify.mjs`) and Brad's phone on the live page minutes
+    after each deploy, since the theme CSS only shows live;
+  - **the live theme's CSS on localhost is the key check** (Brad, 2026-10-31). Phase 1
+    starts by loading drstanfield.com's theme stylesheets into the localhost page, with
+    the same wrapper markup the block sits in, so collisions like `div:empty` show
+    before a deploy. It is partial: the theme's inline section styles, settings
+    variables and script-injected styles will not all come across, so WebKit on the
+    live page still checks after.
+  - Sentry and Clarity watched for the first day after each phase.
+- **No A/B test.** No variant delivery exists today, and cloud connects run at 5 to 19 a
+  week, too few to power one. Instead: a before-and-after read over two weeks either
+  side. The primary metric is the share of phone `tool_opened` tabs that go on to
+  `results_viewed`. `tool_opened` ships first, on the old layout, so the "before"
+  exists.
+- **Pages** gets the new layout in the same build. Its hero is a separate copy in
+  `index.html`.
+- **No switch, no `.hr-v2` scoping class.** Without a hidden page, the old styles are
+  replaced, not kept beside the new. Rollback is a git revert.
+- **Size.** The goal is a net fall in production lines: Swiper, the mobile half of the
+  grid CSS and the replaced styles all go. Measured per phase.
 
 ## Phases
 
-0. **Decisions and baseline.** Brad answers the calls below. Ship `tool_opened` on the
-   old layout and collect two weeks. Write
-   the new story and the AC changes to US-01, US-02, US-04, US-09, US-11, US-15, US-16,
-   US-18, US-20, US-21, US-22 AC13, US-23, US-25 AC3, US-38 and US-44.
-1. **Tokens, the top bar and the Supercharge card.** Behind `.hr-v2`.
-2. **Onboarding.**
-3. **Mobile shell:** bottom tab bar, no Swiper, My plan cards and tiles, About you low.
-4. **My data rows, value pages and "Edit as table".**
-5. **Before-and-after read, switch on for everyone, delete the old layout.**
+0. **Decisions and baseline.** First a server-only PR adds the new event names and keys,
+   and deploys. Then a widget PR ships `tool_opened` and the pinned `results_viewed` on
+   the old layout; two weeks of baseline follow while later phases build on localhost.
+   Write the new story and the AC changes to US-01, US-02, US-03, US-04, US-05, US-06,
+   US-07 (AC6 and the plan without sex), US-08, US-09 (AC7d), US-11, US-12, US-13,
+   US-14, US-15 (AC10, AC36), US-16, US-18, US-19, US-20, US-21, US-22 AC13, US-23,
+   US-25 AC3, US-30 and US-32 (`get_plan` stops refusing a record without sex),
+   US-38 and US-44 (adversary R11).
+1. **Tokens, greens, the top bar and the Supercharge card.**
+2. **The engine works without sex**, each sex-dependent output gated and tested, then
+   **the new form order** with tiles appearing as answers land. Clinical three-file
+   rule, adversary and Codex; the iPhone engine is rebuilt and Brad signs the update.
+3. **Mobile shell:** bottom tab bar, Swiper deleted, About you low. (The compact hero
+   shipped on its own: PR 387, live 2026-10-31.)
+4. **My data rows (`rowTarget`), value pages and "All results as a table".**
+5. **Before-and-after read.**
 
 Every phase follows the same steps:
 
@@ -344,39 +484,21 @@ Every phase follows the same steps:
 - /simplify;
 - adversary and Codex, for anything touching storage, sign-in or saving;
 - `test:all`;
-- WebKit;
-- deploy behind the switch, and Brad checks it on the hidden page.
+- each phase is its own worktree branch and PR (CLAUDE.md, 2026-10-31);
+- deploy to production, then WebKit and Brad's phone on the live page.
 
 ## Calls for Brad
 
-- **B1. Which green.** The web's #00a38b, or the iPhone's #0B7A55 (#33D18F dark)?
-  - Recommendation: the iPhone's. One brand, and white text on #00a38b fails contrast
-    today.
-  - Cost: the storefront theme around the tool may use #00a38b, so the tool's buttons
-    would be a shade darker than the theme's.
-- **B2. The bar's word for a guest.**
-  - Recommendation: "Sign in". It is what a returning person looks for.
-  - Its costs:
-    - a guest who never saved to a cloud may tap it expecting their plan. The picker's
-      first line answers that.
-    - "Sign in" hints at an account, though US-01 AC4 promises the tool works with
-      none.
-    - the storefront theme may already have its own account login. I will check that
-      on the live page.
-  - Alternatives: "Open my record", or "Save & sync".
-- **B3. Supercharge.** Foot of My plan, with its name kept (recommended); or also in the
-  sign-in sheet (not recommended, because of the privacy wording); or keep the desktop
-  header button beside the bar.
-- **B4. The hero on a phone.** A compact hero always (recommended: no jump, no
-  JavaScript); or the full hero on first visit and none after (the page jumps on return
-  visits).
-- **B5. The blood-test matrix on a phone.** Rows that open a value page, with "Edit as
-  table" (recommended); or keep the matrix as it is.
-- **B6. Onboarding on desktop.** Phone first, then decide from the results
-  (recommended); or both at once.
-- **B7. Rollout.** A hidden page and a before-and-after read (recommended); or build A/B
-  variant delivery first (more work, and too little traffic to power it).
-- **B8. Dark mode.** Later (recommended), or in phase 1.
+Decided 2026-10-31: Sign in in Supercharge's spot, labelled "Sign in"; Supercharge to
+the foot of My plan; the form as onboarding in the new order, with visible why-text;
+the engine changed to work without sex; tab bar with Swiper removed; plan cards
+unchanged; localhost (with the live theme CSS) then production; #00a38b brand plus
+#007C6A (draft 5; was #008270) for green text and white-label buttons, and the iPhone moves to it too; lab rows with target ·
+date, the previous value in brackets and the unit under it, plus "All results as a
+table"; the compact phone hero (live); B9 children left as today; B10 the step-1 weight
+saves when the person leaves the field.
+
+- **B8. Dark mode.** Later (recommended).
 
 ## Review
 
@@ -384,8 +506,9 @@ Draft 1 went to a fresh Opus adversary (2026-10-30). Draft 2 accepts its five bl
 findings:
 
 - R1: onboarding would have saved each answer as given, and on a new phone those
-  answers could overwrite the cloud record. Now nothing is written until the last answer,
-  with the sign-in path offered first.
+  answers could overwrite the cloud record. Draft 3 wrote nothing until the last
+  answer. Brad's draft-4 decision (the form as onboarding, no sign-in step) replaced
+  that; the newest-wins exposure is stated in section 4.
 - R2: draft 1 had Skips, which Brad ruled out on iOS. Now every answer is required.
 - R3: the A/B machinery does not exist, and traffic is too thin. Now a before-and-after
   read.
@@ -419,3 +542,19 @@ them:
 
 R4 asked for this change's size: the plan is a doc, so net production LOC is 0 and
 nothing was deleted.
+
+Draft 4 (Brad's answers) went to a fresh Opus adversary and to Codex on 2026-10-31.
+Draft 5 accepts all of it:
+
+- Codex R1: resume at the first missing answer. Codex R2: every target the web shows
+  today survives (`rowTarget`). Codex R3: the waist target stays for children.
+- Adversary R1 (blocking): weight opened the full form. The stage rule is redefined
+  from what the record lacks.
+- Adversary R2 (blocking): the engine change was aimed at the wrong function and would
+  have given silent wrong answers (female IBW, male eGFR, "undefinedg" protein). Each
+  sex-dependent output is now gated and tested.
+- R3 three-file scope and B9 reframed; R4 weight saves on leaving its field; R5 the
+  server deploys in its own PR first; R6 `rowTarget` sources and a unit-free hint
+  field; R7 #007C6A replaces #008270; R8 a Shopify-surface localhost entry; R9
+  `results_viewed` pinned; R10 the Add sheet keeps the day rule; R11 the story list;
+  R12 the Sentry scrub; R13 the Swiper and skeleton leftovers; N1-N6 folded in.

@@ -2323,16 +2323,18 @@ describe('generateSuggestions', () => {
   });
 
   describe('Supplement suggestions', () => {
-    it('always includes five generic supplement profiles', () => {
+    it('always includes seven generic supplement profiles (US-61 AC1)', () => {
       const { inputs, results } = createTestData();
       const suggestions = generateSuggestions(inputs, results);
 
       const supplements = suggestions.filter(s => s.category === 'supplements');
-      expect(supplements).toHaveLength(5);
+      expect(supplements).toHaveLength(7);
       expect(supplements.map(s => s.id)).toEqual([
         'supplement-micronutrient-base',
         'supplement-creatine',
         'supplement-collagen',
+        'supplement-lutein-zeaxanthin',
+        'supplement-tmg',
         'supplement-omega3',
         'supplement-sleep',
       ]);
@@ -3016,19 +3018,21 @@ describe('Evidence attachment', () => {
   // on good omega-3 levels (VITACOG), but FACIT found the reverse (van Soest 2021);
   // the omega-3 card carries the WHO 2026 note, and the reason drops the unhedged
   // "important role in cognitive protection".
-  it('US-07 AC1: creatine card attributes the memory view to Dr Stanfield; reviews are mixed', () => {
+  it('US-07 AC1: creatine card calls memory an interesting signal; reviews are mixed (Brad 2026-11-02)', () => {
     const { inputs, results } = createTestData({}, { bmi: 22 });
     const creatine = generateSuggestions(inputs, results, 'si').find(s => s.id === 'supplement-creatine')!;
 
-    expect(creatine.description).toContain('Dr Stanfield considers the memory evidence clear and consistent');
-    expect(creatine.description).toContain('formal reviews are more mixed, with the clearest benefit in older adults');
+    expect(creatine.description).toContain('There is also an interesting signal that it may help memory, another possible benefit');
+    expect(creatine.description).toContain('formal reviews are mixed, with the clearest benefit in older adults');
+    expect(creatine.description).not.toContain('clear and consistent');
     expect(creatine.description).not.toMatch(/consistently find/i);
     expect(creatine.description).not.toMatch(/emerging evidence/i);
     expect(creatine.description).not.toMatch(/women/i);
     expect(creatine.description).not.toContain('—');
 
     const reason = SUGGESTION_EVIDENCE['supplement-creatine'].reason;
-    expect(reason).toContain('his judgement, not a trial finding');
+    expect(reason).toContain('an interesting signal that creatine may help memory, another possible benefit. Formal reviews are mixed.');
+    expect(reason).not.toContain('clear and consistent');
     expect(reason).toContain('A systematic review (Avgerinos 2018)');
     expect(reason).toContain('no clear overall memory benefit except in older adults');
     expect(reason).toContain('no effect on overall cognition or executive function');
@@ -3064,6 +3068,42 @@ describe('Evidence attachment', () => {
     const sleepGuide = readFileSync(join(root, 'docs/guideline/sleep.md'), 'utf8');
     expect(sleepGuide).toContain('taken 3 to 4 hours before sleep');
     expect(sleepGuide).toContain('Brad\'s cut-off is 3 to 4 hours after waking');
+  });
+
+  it('US-61 AC9: the page\'s Supplements section covers every supplement card, with no fiber disease claim (Brad 2026-11-02)', () => {
+    const root = join(dirname(fileURLToPath(import.meta.url)), '../../..');
+    const html = readFileSync(join(root, 'roadmap_text.html'), 'utf8');
+    const section = html.slice(html.indexOf('<h2 id="supplements">'), html.indexOf('<h3>Supplements/Medications Worth Watching'));
+    const watching = html.slice(html.indexOf('<h3>Supplements/Medications Worth Watching'), html.indexOf('<h3>Supplements Not Included Here'));
+    // Every supplement card has its entry, under the dose Brad takes.
+    for (const heading of ['Creatine Monohydrate 5g', 'Omega-3 1g', 'Low-dose Multivitamin', 'Lutein 10mg &amp; Zeaxanthin 2mg',
+      'Trimethylglycine 500mg', 'Collagen Peptides 10g', 'Hyaluronic Acid 200mg', 'Acacia Fiber 5g', 'Sleep support']) {
+      expect(section, heading).toContain(heading);
+    }
+    // Fiber is a gap in intake, never a cholesterol or blood pressure claim.
+    expect(section).not.toContain('Psyllium');
+    expect(section).toContain('about 95% of adults and children fall short.[139]');
+    expect(section).not.toMatch(/fib(?:er|re)[^<]*(?:cholesterol|blood pressure)/i);
+    // AREDS framing (Brad): never "did not significantly slow progression".
+    expect(section).toContain('In AREDS2, 10 mg of lutein and 2 mg of zeaxanthin worked as well as beta-carotene in that formula.');
+    expect(section).toContain('lutein and zeaxanthin did not.[138, 144]');
+    expect(section).not.toMatch(/did not significantly/i);
+    // TMG: the card's words, and the Alzheimer's link as an open question.
+    expect(section).toContain('Small trials suggest it may improve strength and power.[64-66]');
+    expect(section).toContain('promising but not conclusive, and more research is needed. Those trials did not test TMG.[63]');
+    expect(section).not.toContain('findings are inconsistent');
+    // Sleep lists the card's three ingredients, each with its trials.
+    expect(section).toContain('low-dose melatonin, glycine and magnesium glycinate');
+    expect(section).toContain('[140, 141]');
+    expect(section).toContain('[143]');
+    // GlyNAC is watched, not suggested.
+    expect(section).not.toContain('GlyNAC');
+    expect(watching).toContain('GlyNAC');
+    // The page names no product (AC9), anywhere.
+    expect(html).not.toMatch(/microvitamin|sleep by dr brad/i);
+    // Brad's current medicines (2026-11-02), each off-label one labelled so.
+    for (const heading of ['Rosuvastatin 5mg + Ezetimibe 10mg', 'Tirzepatide 2.5mg weekly', 'Empagliflozin 6.25mg daily']) expect(section).toContain(heading);
+    expect(section.match(/off-label and against current guidelines/g)).toHaveLength(2);
   });
 
   it('US-07 AC1: omega-3 card and reason give VITACOG and the reverse FACIT finding, and the WHO 2026 note', () => {
