@@ -169,7 +169,7 @@ export async function processV2Reminders(todayStr: string): Promise<number> {
   let sent = 0;
   let errors = 0;
   let total = 0;
-  let offset = 0;
+  let afterId: string | null = null;
   const skips: Record<Exclude<V2Result, 'sent'>, number> = {
     'none-due': 0,
     'all-on-cooldown': 0,
@@ -179,7 +179,7 @@ export async function processV2Reminders(todayStr: string): Promise<number> {
   };
 
   while (true) {
-    const batch = await getOptinsBatch(BATCH_SIZE, offset);
+    const batch = await getOptinsBatch(BATCH_SIZE, afterId);
     if (batch.length === 0) break;
     total += batch.length;
 
@@ -202,7 +202,7 @@ export async function processV2Reminders(todayStr: string): Promise<number> {
       }
     }
 
-    offset += BATCH_SIZE;
+    afterId = batch[batch.length - 1].id; // keyset, not offset: see getOptinsBatch
     if (batch.length < BATCH_SIZE) break;
   }
 
