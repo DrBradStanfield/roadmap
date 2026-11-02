@@ -21,6 +21,7 @@ import { cellLabel, cellText } from '../../packages/health-core/src/cell-unit';
 import { BEMPEDOIC_ACID_OPTIONS, GLP1_NAMES, METFORMIN_OPTIONS, SGLT2I_NAMES, STATIN_NAMES } from '../../packages/health-core/src/types';
 import { applyPressure } from './blood-pressure';
 import { cellUnitFor, unitsOf, type UnitChoices } from './unit-choices';
+import { readableView } from '../../packages/health-core/src/readable-rows';
 
 /** The chat's edits, as Swift passes them back to cloudEdit or applyEditJson. */
 export type ChatEdit =
@@ -48,12 +49,24 @@ type Outcome = { ok: true; file: RoadmapFile } | { ok: false; reason: string; me
 const UNREADABLE = 'The chat\'s suggestion could not be read, so nothing was saved.';
 const NOTHING_SAVED = 'Nothing was saved.';
 const STALE = `Your record changed on another device while this was shown. ${NOTHING_SAVED}`;
+/** A held row or profile value this build cannot read (US-65 AC2): named, never shown. */
+const UNREADABLE_HELD = 'a value this app cannot read';
+const NOT_PREPARED = `This could not be prepared. ${NOTHING_SAVED}`;
+
+/** A part's work, so a failure in one part refuses that part alone and never sinks the reply. */
+function guarded<T>(work: () => T, failed: T): T {
+  try {
+    return work();
+  } catch {
+    return failed;
+  }
+}
 
 /** What each part of a reply would do to `file`. Nothing is written. */
 export function chatEditsPreview(file: RoadmapFile, rawEdits: unknown, now: string, today: string, choices: UnitChoices = {}): ChatEditsPreview {
   const read = readProposedEdits(rawEdits);
-  const meds = medicationPart(file, read.edits, read.invalid, now);
-  const review = reviewPart(file, read.edits, read.invalid, today, now, choices);
+  const meds = guarded(() => medicationPart(file, read.edits, read.invalid, now), { ok: false as const });
+  const review = guarded(() => reviewPart(file, read.edits, read.invalid, today, now, choices), { file, lines: [], seen: [], refusal: NOT_PREPARED });
   return {
     medications: meds.ok && meds.lines.length > 0 ? { lines: meds.lines, undo: { kind: 'chatUndo', medications: meds.undo } } : null,
     review: review.lines.length > 0 || review.refusal ? { lines: review.lines, refusal: review.refusal, seen: review.seen } : null,
@@ -65,11 +78,11 @@ export function applyChatEdit(file: RoadmapFile, edit: ChatEdit, now: string, ch
   if (edit.kind === 'chatUndo') return undoMedications(file, edit.medications, now);
   const read = readProposedEdits(edit.edits);
   if (edit.part === 'medications') {
-    const meds = medicationPart(file, read.edits, read.invalid, now);
+    const meds = guarded(() => medicationPart(file, read.edits, read.invalid, now), { ok: false as const });
     return meds.ok ? { ok: true, file: meds.file } : { ok: false, reason: 'invalid-value', message: UNREADABLE };
   }
   if (edit.part !== 'review') return { ok: false, reason: 'invalid-value', message: UNREADABLE };
-  const review = reviewPart(file, read.edits, read.invalid, edit.today, now, choices);
+  const review = guarded(() => reviewPart(file, read.edits, read.invalid, edit.today, now, choices), { file, lines: [], seen: [], refusal: NOT_PREPARED });
   // The banner named values another device has since changed: its "replaces" would be wrong.
   if (edit.seen !== undefined && JSON.stringify(edit.seen) !== JSON.stringify(review.seen)) {
     return { ok: false, reason: 'record-changed', message: STALE };
@@ -90,7 +103,8 @@ function medicationPart(file: RoadmapFile, edits: ProposedEdit[], invalid: strin
   if (invalid.includes('medication') || invalid.includes('list')) return { ok: false };
   const meds = edits.filter((e): e is ProposedMedicationEdit => e.kind === 'medication');
   const stated = new Set(meds.map((e) => e.medicationKey));
-  const saved = file.medications;
+  // A row this build cannot read (US-65) counts as none: its Undo writes the key's unanswered value.
+  const saved = readableView(file).file.medications;
   let next = file;
   const lines: ChatLine[] = [];
   const undo: ChatMedicationRow[] = [];
