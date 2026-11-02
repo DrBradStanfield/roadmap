@@ -286,7 +286,7 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
   const shown = cellUnitFor(file, metric, choices);
   // A blood test's rows are its core lab rows in the core unit (US-66 AC7); a vital's, its measurements.
   const rows = [
-    ...file.measurements.filter((row) => row.metricType === metric),
+    ...file.measurements.filter((row) => row.metricType === metric && !(metric in CORE_BLOOD_UNITS)),
     ...file.labValues.filter((row) => isCoreRow(row) && row.metricName === metric && row.unit === CORE_BLOOD_UNITS[metric])
       .map((row) => ({ ...row, metricType: metric })),
   ];
