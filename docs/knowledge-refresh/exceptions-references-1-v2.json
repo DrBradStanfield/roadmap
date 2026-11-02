@@ -3,7 +3,7 @@
   "check": "AC4",
   "handle": "lithium-benefits-forms-dosing-and-side-effects",
   "match": "heading missing from new body: ### Neurotransmitter Modulation",
-  "reason": "Section rested only on Grokipedia; Removed on the 2026-09-29 ruling: an empty heading is worse than none. Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
+  "reason": "Exception ratified by the orchestrator after a hand check against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-08"
  },
@@ -107,7 +107,7 @@
   "check": "AC4",
   "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
   "match": "claimed deletion still in body: If you take creatine, inform your physician before blood tests measuring creatinine, or stop supplementation 2 weeks ...",
-  "reason": "The stale deletion claim stays in the append-only report. Orchestrator 2026-10-08. Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
+  "reason": "Exception ratified by the orchestrator after a hand check against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-08"
  },

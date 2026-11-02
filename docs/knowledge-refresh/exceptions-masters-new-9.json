@@ -347,7 +347,7 @@
   "check": "AC4",
   "handle": "licorice-and-dgl-benefits-forms-dosing-and-side-effects",
   "match": "heading missing from new body: ### Populations Who Should Avoid All Forms of Licorice (Including DGL)",
-  "reason": "Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
+  "reason": "Exception ratified by the orchestrator after a hand check against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-25"
  },

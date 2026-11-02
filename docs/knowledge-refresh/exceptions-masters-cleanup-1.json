@@ -203,7 +203,7 @@
   "check": "AC4",
   "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
   "match": "heading missing from new body: ### Nickel Sensitivity",
-  "reason": "Declared in addendum-12. Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
+  "reason": "Exception ratified by the orchestrator after a hand check against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-22"
  },
@@ -339,7 +339,7 @@
   "check": "AC7",
   "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
   "match": "product mentions rose 3 -> 4",
-  "reason": "The extra product mention is that disclosure (listed in ask_brad). Ratified by the orchestrator at integration (2026-10-22). Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
+  "reason": "Exception ratified by the orchestrator after a hand check against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-22"
  },
@@ -347,7 +347,7 @@
   "check": "AC7",
   "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
   "match": "report says product mentions 3 -> 3, recomputed 3 -> 4",
-  "reason": "The extra product mention is that disclosure (listed in ask_brad). Ratified by the orchestrator at integration (2026-10-22). Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
+  "reason": "Exception ratified by the orchestrator after a hand check against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-22"
  },
