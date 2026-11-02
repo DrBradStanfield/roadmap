@@ -8,6 +8,8 @@
  * (see decisions in docs/user-stories.md § US-21).
  */
 import { LAB_GROUPS, labSlotKey, resolveLabCatalogEntry, displayLabUnit, type LabGroup, type LabGroupId } from './lab-catalog';
+import { trendWindow } from './recent-trend';
+import { rowTarget } from './row-target';
 
 /** A lab test's name for display: its catalogue label, else the snake_case name title-cased. */
 export function labValueLabel(metricName: string): string {
@@ -109,4 +111,41 @@ export function groupLabValues(rows: LabValueRow[]): LabValueGroup[] {
     result.push({ id: def.id, label: def.label, icon: def.icon, series });
   }
   return result;
+}
+
+/** A lab test's row, as the web's phone rows and the iPhone's My data draw it (US-62 AC8). */
+export interface LabSeriesRow {
+  seriesKey: string;
+  label: string;
+  unit: string;
+  latest: { id: string; value: string; day: string };
+  /** The value before the latest, as reported; null with one value, or in a series of more than one unit. */
+  previous: string | null;
+  /** The newest value's printed range, "Ref 30–400"; null when none was printed. */
+  target: string | null;
+  /** The recent values (`trendWindow`), oldest first; none in a series of more than one unit. */
+  trend: number[];
+}
+
+/** Every lab test series as a row, in `groupLabValues`'s order. A series in more
+ *  than one unit draws no trend and no previous value: one line or one bracket
+ *  would compare unlike numbers (US-21 AC3a). Never graded. */
+export function labSeriesRows(rows: (LabValueRow & { referenceLow?: number | null; referenceHigh?: number | null })[], now = new Date()): LabSeriesRow[] {
+  const byId = new Map(rows.map(v => [v.id, v]));
+  const recent = trendWindow(now);
+  return groupLabValues(rows).flatMap(g => g.series).map(s => {
+    const latest = s.points.at(-1)!;
+    const previous = s.points.at(-2);
+    const printed = byId.get(latest.id);
+    const sameUnit = !s.mixedUnits;
+    return {
+      seriesKey: s.seriesKey,
+      label: s.label,
+      unit: s.unit,
+      latest: { id: latest.id, value: formatLabValue(latest.value), day: latest.recordedAt.slice(0, 10) },
+      previous: previous && sameUnit ? formatLabValue(previous.value) : null,
+      target: rowTarget({ referenceLow: printed?.referenceLow, referenceHigh: printed?.referenceHigh }, 'si', null, null)?.bare ?? null,
+      trend: sameUnit ? recent(s.points, p => p.recordedAt.slice(0, 10)).map(p => p.value) : [],
+    };
+  });
 }

@@ -7,7 +7,7 @@
 
 import { useId } from 'react';
 import type React from 'react';
-import { commaQuestion, type MetricType } from '@roadmap/health-core';
+import { commaQuestion, statusOf, type MetricType } from '@roadmap/health-core';
 import { describedBy } from '../lib/aria';
 import {
   type CellUnit,
@@ -18,7 +18,6 @@ import {
   readNumericCell,
   NUMERIC_SYNTAX_GUIDANCE,
   previewStatus,
-  statusOf,
   validateTypedValue,
 } from '../lib/blood-test-cell';
 

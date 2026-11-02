@@ -17,9 +17,7 @@ import {
 
 import type React from 'react';
 
-// A value's grade lives in health-core (row-grade.ts), which the iPhone app reads too.
-export { type GradeStatus as Status, statusOf } from '@roadmap/health-core';
-import type { GradeStatus as Status } from '@roadmap/health-core';
+import type { GradeStatus } from '@roadmap/health-core';
 
 // Whom a value is graded for (null: a known minor, US-07 AC6) lives in
 // health-core beside rowTarget, which reads it too.
@@ -67,8 +65,6 @@ export function bpSysAdvance(typed: string): BpAdvance {
   return 'stay';
 }
 
-// A lab value as the matrix shows it lives in health-core (lab-series.ts), which the iPhone reads too.
-export { formatLabValue } from '@roadmap/health-core';
 
 /**
  * A typed value that changes nothing, so saving it writes nothing (US-03
@@ -153,7 +149,7 @@ export function validateTypedValue(
 /** Live status from a typed display value (parsed + canonicalised). */
 export function previewStatus(
   metric: MetricType, typed: string, display: CellUnit, grading: Grading,
-): Status {
+): GradeStatus {
   const n = readTypedValue(metric, typed, display);
   if (n === undefined) return null;
   return statusOf(metric, cellToSI(metric, n, display), grading);

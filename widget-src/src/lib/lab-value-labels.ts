@@ -1,9 +1,6 @@
 import { METRIC_LABELS, PRESSURE_ORDER, UNIT_DEFS, labUnitRefusalNote, labUnitTaken, labValueLabel, resolveLabCatalogEntry, roundBoundInward, type LabUnitRefusal, type MeasurementRefusal, type MetricType } from '@roadmap/health-core';
 import { cellDecimalPlaces, cellFromSI, cellLabel, type CellUnit } from './blood-test-cell';
 
-// A lab test's display name lives in health-core (lab-series.ts), which the iPhone reads too.
-export { labValueLabel };
-
 /**
  * What a person reads when the record refused a lab value's unit: the unit a
  * catalogued test is stored in, or, for a unit it does take, that the number was

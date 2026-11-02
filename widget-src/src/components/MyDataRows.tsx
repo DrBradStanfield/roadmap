@@ -7,9 +7,9 @@ import { useId, useMemo } from 'react';
 import {
   type ApiMeasurement,
   type CellUnit,
+  type GradeStatus,
   type Grading,
   type MetricType,
-  type RowSubject,
   type RowTargetPlan,
   BLOOD_TEST_METRICS,
   METRIC_LABELS,
@@ -17,13 +17,13 @@ import {
   cellLabel,
   cellText,
   gradeWords,
+  labSeriesRows,
   pressureStatus,
+  recentTrend,
   rowTarget,
   valueStatus,
 } from '@roadmap/health-core';
-import { formatLabValue, type Status } from '../lib/blood-test-cell';
-import { monthYear, pressureReadings, readingsOf, recentTrend, type DayReading } from '../lib/my-data-rows';
-import { groupLabValues } from '../lib/lab-rows';
+import { monthYear, pressureReadings, readingsOf, type DayReading } from '../lib/my-data-rows';
 import type { ApiLabValue } from '../lib/api-types';
 
 /** What a row opens: a core metric, the blood pressure, or a lab test's series (`labSlotKey`). */
@@ -50,9 +50,6 @@ export interface RowContext {
   unitOf: (metric: MetricType) => CellUnit;
 }
 
-// A value's grade and its spoken words live in health-core (row-grade.ts), which the iPhone reads too.
-export { gradeWords, pressureStatus, valueStatus };
-
 /** A pressure as the grid prints it: "128/82". */
 export const pressureText = (r: DayReading) => `${Math.round(r.value)}/${Math.round(r.dia!.value)}`;
 
@@ -66,7 +63,7 @@ interface RowModel {
   unit: string;
   trend: number[];
   tint: string;
-  status: Status;
+  status: GradeStatus;
   /** The metric the grade is read for (`gradeWords`). */
   graded: string;
 }
@@ -108,30 +105,11 @@ function pressureRow(history: ApiMeasurement[], ctx: RowContext): RowModel {
   };
 }
 
-/** The lab tests beyond the core ones, one row per series, as the grid groups them. */
+/** The lab tests beyond the core ones, one row per series, as the grid groups them (health-core's `labSeriesRows`). */
 function labRows(labValues: ApiLabValue[]): RowModel[] {
-  const byId = new Map(labValues.map(v => [v.id, v]));
-  return groupLabValues(labValues).flatMap(g => g.series).map((s): RowModel => {
-    const readings = [...s.points].reverse().map(p => ({ day: p.recordedAt.slice(0, 10), id: p.id, value: p.value }));
-    const [latest, previous] = readings;
-    const printed = byId.get(latest.id);
-    // A series in more than one unit draws no trend: one line would be a false one (US-21 AC3a).
-    const sameUnit = !s.mixedUnits;
-    const target: RowSubject = { referenceLow: printed?.referenceLow, referenceHigh: printed?.referenceHigh };
-    return {
-      subject: { kind: 'lab', seriesKey: s.seriesKey },
-      label: s.label,
-      target: rowTarget(target, 'si', null, null)?.bare ?? null,
-      day: latest.day,
-      latest: formatLabValue(latest.value),
-      previous: previous && sameUnit ? formatLabValue(previous.value) : null,
-      unit: s.unit,
-      trend: sameUnit ? recentTrend(readings).map(r => r.value) : [],
-      tint: LAB_TINT,
-      status: null,
-      graded: '',
-    };
-  });
+  return labSeriesRows(labValues).map(({ seriesKey, label, target, latest, previous, unit, trend }): RowModel => ({
+    subject: { kind: 'lab', seriesKey }, label, target, day: latest.day, latest: latest.value, previous, unit, trend, tint: LAB_TINT, status: null, graded: '',
+  }));
 }
 
 /** A value's recent days as a small line, as the iPhone draws it (ValueRow.swift

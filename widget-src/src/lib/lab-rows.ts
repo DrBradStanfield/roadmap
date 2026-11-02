@@ -4,24 +4,7 @@
  * Read-only: no editing, no unit conversion — values render as-reported
  * (see decisions in docs/user-stories.md § US-21).
  */
-import { labSlotKey, resolveLabCatalogEntry, displayLabUnit, labValueLabel, type LabValueGroup, type LabSeriesPoint } from '@roadmap/health-core';
-import type { ApiLabValue } from './api-types';
-
-// The grouping itself lives in health-core (lab-series.ts), which the iPhone reads too.
-export {
-  groupLabValues,
-  type LabRowsGroupId,
-  type LabRowsIcon,
-  type LabSeriesPoint,
-  type LabSeries,
-  type LabValueGroup,
-} from '@roadmap/health-core';
-
-/** ApiLabValue as loaded by the widget already comes pre-filtered to active
- *  rows (RoadmapStore.loadLabValues() applies activeOnly()), so `status`
- *  isn't on the type. Accept it optionally anyway so this stays correct if
- *  ever fed a less-filtered source. */
-type LabValueRow = ApiLabValue & { status?: string };
+import { labSlotKey, resolveLabCatalogEntry, displayLabUnit, labValueLabel, type LabValueGroup, type LabSeriesPoint, type LabValueRow } from '@roadmap/health-core';
 
 /** Column dates (yyyy-mm-dd, ascending) + per-series point lookup for
  *  rendering a group as a date-column matrix (US-21 AC1 — same layout as the
@@ -54,11 +37,11 @@ export function countLabValuePoints(groups: LabValueGroup[]): number {
  *  one chart, not two — labelled from the catalogue when the test is known.
  *  `units` holds each distinct display unit, as the table shows them (US-21 AC3a).
  *  Series come back sorted by label; rows keep their loaded order. */
-export function groupLabHistory(rows: LabValueRow[]): {
+export function groupLabHistory<Row extends LabValueRow>(rows: Row[]): {
   keys: string[];
-  series: Record<string, { label: string; rows: LabValueRow[]; units: string[] }>;
+  series: Record<string, { label: string; rows: Row[]; units: string[] }>;
 } {
-  const series: Record<string, { label: string; rows: LabValueRow[]; units: string[] }> = {};
+  const series: Record<string, { label: string; rows: Row[]; units: string[] }> = {};
   for (const row of rows) {
     const key = labSlotKey(row.metricName);
     if (!series[key]) {

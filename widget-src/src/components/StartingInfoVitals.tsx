@@ -31,6 +31,7 @@ import {
   parseLocalisedNumber,
   bpStatus,
   simpleStatus,
+  type GradeStatus,
   bpTargetFor,
   rowTarget,
   PRESSURE_ORDER,
@@ -39,7 +40,6 @@ import {
 import type { PlanBasis } from './InputPanel';
 import { slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import {
-  type Status,
   blockBadNumericKeys,
   blockNonIntegerKeys,
   bpSysAdvance,
@@ -687,7 +687,7 @@ function BpInputCell({
   dia: string;
   /** Why the pair cannot be saved as it stands (`SAME_SLOT`). */
   clash?: string;
-  previewStatus: Status;
+  previewStatus: GradeStatus;
   onSysChange: (v: string) => void;
   onDiaChange: (v: string) => void;
   onEnter: () => void;

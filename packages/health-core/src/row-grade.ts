@@ -25,12 +25,12 @@ import {
 } from './units';
 import { getLipidStatus } from './calculations';
 
-export type Status = 'ok' | 'warn' | 'bad' | null;
+export type GradeStatus = 'ok' | 'warn' | 'bad' | null;
 
 /** Clinical threshold mapping. Returns null for metrics whose status is
  *  judged elsewhere (e.g. creatinine → eGFR), and for a value the plan leaves
  *  out as out of range, such as a stored LDL 0 (US-03 AC7). */
-export function statusOf(metric: MetricType, siValue: number, grading: Grading): Status {
+export function statusOf(metric: MetricType, siValue: number, grading: Grading): GradeStatus {
   if (!grading || siValue == null || Number.isNaN(siValue) || rangeFault(cellRange(metric, 'si'), siValue)) return null;
   const { sex } = grading;
   switch (metric) {
@@ -83,28 +83,28 @@ export function statusOf(metric: MetricType, siValue: number, grading: Grading):
 
 // ── Vitals: their lines depend on the plan (IBW for weight, WHtR < 0.5 for waist, BP target) ──
 
-function weightStatus(siKg: number | null | undefined, ibw?: number): Status {
+function weightStatus(siKg: number | null | undefined, ibw?: number): GradeStatus {
   if (siKg == null || Number.isNaN(siKg) || ibw == null) return null;
   if (siKg >= ibw - 5 && siKg <= ibw + 2) return 'ok';
   if (siKg <= ibw + 5) return 'warn';
   return 'bad';
 }
 /** 'ok' exactly when the plan counts the waist as healthy (US-06 AC5). */
-function waistStatus(siCm: number | null | undefined, heightCm?: number): Status {
+function waistStatus(siCm: number | null | undefined, heightCm?: number): GradeStatus {
   if (siCm == null || Number.isNaN(siCm) || heightCm == null) return null;
   if (!isWaistToHeightElevated(waistToHeightRatio(siCm, heightCm))) return 'ok';
   if (siCm <= heightCm * 0.5 + 8) return 'warn';
   return 'bad';
 }
 /** Neutral with no systolic target: there is no plan (US-06 AC5). */
-export function bpStatus(sys: number | null | undefined, dia: number | null | undefined, sysTarget: number | undefined): Status {
+export function bpStatus(sys: number | null | undefined, dia: number | null | undefined, sysTarget: number | undefined): GradeStatus {
   if (sys == null || dia == null || Number.isNaN(sys) || Number.isNaN(dia) || sysTarget === undefined) return null;
   const diaTarget = 80;
   if (sys < sysTarget && dia < diaTarget) return 'ok';
   if (sys < sysTarget + 10 && dia < diaTarget + 5) return 'warn';
   return 'bad';
 }
-export function simpleStatus(metric: 'weight' | 'waist', si: number | null | undefined, ibwKg?: number, planHeightCm?: number): Status {
+export function simpleStatus(metric: 'weight' | 'waist', si: number | null | undefined, ibwKg?: number, planHeightCm?: number): GradeStatus {
   return metric === 'weight' ? weightStatus(si, ibwKg) : waistStatus(si, planHeightCm);
 }
 
@@ -116,14 +116,14 @@ export interface GradeContext {
 
 /** A value's grade, as the grids colour it: the blood tests by their lines,
  *  weight and waist by the plan; none for a known minor's adult lines. */
-export function valueStatus(metric: MetricType, si: number, { grading, plan }: GradeContext): Status {
+export function valueStatus(metric: MetricType, si: number, { grading, plan }: GradeContext): GradeStatus {
   if (metric === 'weight') return simpleStatus('weight', si, grading ? plan?.idealBodyWeight : undefined);
   if (metric === 'waist') return simpleStatus('waist', si, undefined, plan?.heightCm);
   return statusOf(metric, si, grading);
 }
 
 /** A pressure's grade against the plan's systolic target; none without a plan or for a known minor. */
-export function pressureStatus(r: { value: number; dia?: { value: number } }, { grading, plan }: GradeContext): Status {
+export function pressureStatus(r: { value: number; dia?: { value: number } }, { grading, plan }: GradeContext): GradeStatus {
   return bpStatus(r.value, r.dia?.value, plan && grading ? bpTargetFor(plan.age) : undefined);
 }
 
@@ -138,7 +138,7 @@ const LINE_WORD: Record<string, string> = {
  *  previous 2.9"): the colour says it on screen. Said only off target, so no
  *  word can contradict the printed target. Weight's amber covers both sides
  *  of its target, and HDL is better higher. */
-export function gradeWords(status: Status, metric: string): string | null {
+export function gradeWords(status: GradeStatus, metric: string): string | null {
   if (!status || status === 'ok') return null;
   if (metric === 'hdl') return status === 'bad' ? 'low' : 'below optimal';
   if (metric === 'weight') return status === 'bad' ? 'above target' : 'outside target';

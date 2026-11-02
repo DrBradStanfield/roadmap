@@ -17,19 +17,21 @@ import {
   cellText,
   cellToSI,
   localDay,
+  groupLabValues,
   pressureInverted,
+  pressureStatus,
   rowTarget,
+  valueStatus,
 } from '@roadmap/health-core';
 import { blockBadNumericKeys, blockNonIntegerKeys, readTypedValue, sameAsSaved, validateTypedValue } from '../lib/blood-test-cell';
 import { activeRowIndex, slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import { pressureReadings, readingsOf, type DayReading } from '../lib/my-data-rows';
-import { groupLabValues } from '../lib/lab-rows';
 import { chartTimestamp, formatShortDate } from '../lib/constants';
 import { getShownErase } from '../lib/roadmap-data';
 import { ErrorBoundary } from './ErrorBoundary';
 import { SAVE_ERRORS, ValueCell, useLiveRegion } from './BloodTestTimeline';
 import { AddLabTest } from './AddLabTest';
-import { pressureStatus, pressureText, tintOf, valueStatus, type RowContext, type ValueSubject } from './MyDataRows';
+import { pressureText, tintOf, type RowContext, type ValueSubject } from './MyDataRows';
 import type { ApiLabValue } from '../lib/api-types';
 
 // The chart library loads with the chart, never with the form (as the history lightbox loads it).

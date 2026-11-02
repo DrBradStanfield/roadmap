@@ -6,11 +6,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  METRIC_LABELS, METRIC_TO_FIELD,
+  METRIC_LABELS, METRIC_TO_FIELD, formatLabValue, labValueLabel,
   type FileLabValue, type FileMeasurement, type MetricType, type MoveKeep, type MovePlan, type MoveRejection, type UnitSystem,
 } from '@roadmap/health-core';
-import { cellLabel, cellText, formatLabValue, type CellUnit } from '../lib/blood-test-cell';
-import { labValueLabel } from '../lib/lab-value-labels';
+import { cellLabel, cellText, type CellUnit } from '../lib/blood-test-cell';
 import { lpaRowsToCheck, useLpaKept, useLpaUnit } from '../lib/lpa-unit';
 import type { MoveOutcome } from '../storage/roadmap-store';
 import { SAVE_ERRORS, headerDay, useLiveRegion } from './BloodTestTimeline';
