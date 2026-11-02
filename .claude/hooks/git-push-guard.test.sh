@@ -188,6 +188,9 @@ t "$S/b" "GIT_DIR=$S/a/.git git push origin --delete claude/m1" DENY
 t "$S/b" "env GIT_CONFIG_COUNT=1 git push origin --delete claude/m1" DENY
 t "$S/b" "git remote set-url --push origin ../x.git && git push origin --delete claude/m1" DENY
 t "$S/b" "git push origin --delete claude/m1 && echo done" DENY
+t "$S/b" "git push --dry-run origin --delete claude/m1
+git remote set-url --push origin ../x.git
+git push origin --delete claude/m1" DENY
 # Origin must have exactly one URL, the same for fetch and push: git deletes on every push URL.
 git clone -q remote.git c; git -C c config --add remote.origin.pushurl "$S/remote.git"; git -C c config --add remote.origin.pushurl "$S/x.git"
 t "$S/c" "git push origin --delete claude/m1" DENY

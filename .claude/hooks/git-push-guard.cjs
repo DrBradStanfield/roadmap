@@ -220,7 +220,8 @@ for (const seg of segs) {
       + "origin that are already merged into main; an unmerged or any other branch delete is still Brad's to run.");
     // The whole Bash command must be this one plain push: an env prefix (GIT_DIR, GIT_CONFIG_*), a `cd` in a
     // subshell or pipeline, or an earlier `git remote set-url` would make the push reach a repo this check never read.
-    if (!/^\s*git\s+push(\s+[A-Za-z0-9._/:=@-]+)+\s*$/.test(cmd)) refuse('run the delete as its own command, with nothing before or after it');
+    // Spaces and tabs only: a newline separates commands in Bash.
+    if (!/^[ \t]*git[ \t]+push([ \t]+[A-Za-z0-9._/:=@-]+)+[ \t]*$/.test(cmd)) refuse('run the delete as its own command, with nothing before or after it');
     if (del.remote !== 'origin') refuse(`the remote is "${del.remote}", not origin`);
     const names = del.branches.map((b) => b.replace(/^refs\/heads\//, ''));
     names.forEach((n, k) => {
