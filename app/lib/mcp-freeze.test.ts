@@ -3,14 +3,16 @@
  * tool definition (names, descriptions, input and output schemas, annotations,
  * _meta), the prompts, the server info, and `tools/list` as the shared
  * dispatch serializes it (US-32 AC50: the definitions are not the wire). A
- * wording change in a RESULT moves none of them.
+ * wording change in a RESULT moves none of them; a change to what initialize,
+ * tools/list or prompts/list answers fails here until the pins are re-taken on
+ * purpose, with the reason written below.
  *
  * History: US-35 AC13 froze this text on 2026-10-19 while MCP 1.0.2 was in
- * OpenAI's review. That freeze ended on 2026-10-29, when OpenAI declined 1.0.2
- * on scope (commit 84ff1cbf; docs/ai-discoverability.md). The pins stay so any
- * change to the published text is made on purpose, while the Claude directory
- * review (submitted 2026-10-21) is open: a change fails here until its pins
- * are re-taken in the same commit, with the reason written below.
+ * OpenAI's review. That review ended 2026-10-29, declined on scope (commit
+ * 84ff1cbf; docs/ai-discoverability.md; Brad 2026-11-02: no resubmission), so
+ * the freeze's reason is gone. The pins stay as a tripwire, also while the
+ * Claude directory review (submitted 2026-10-21) is open, until Brad decides
+ * whether to keep or drop them.
  *
  * Re-taken 2026-11-02 for US-12 AC20: read_record and get_plan say a value
  * with a comparator is a lab limit, not the number; file_results takes a
@@ -28,7 +30,7 @@ import { dispatchRpc, SERVER_INFO } from '../../packages/health-core/src/mcp-rpc
 
 const sha256 = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
-describe('US-35 AC13 — the published connector text changes only on purpose', () => {
+describe('US-35 AC13 — the published connector text is pinned, and changes only on purpose', () => {
   it.each([
     ['INSTRUCTIONS', INSTRUCTIONS, '73f64dc05693aab921d50b60db290f33b37a02a51b8e509c9eb941c44f88ffae'],
     ['MCP_TOOLS', MCP_TOOLS, '47f8fda97a26a1c59f371e54f2c8db24d954380a427cf53373ffd86bc9657877'],

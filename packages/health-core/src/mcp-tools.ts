@@ -14,7 +14,7 @@
 import { deadlineSignal } from './adapter';
 import { dayOf, daysBetween } from './merge';
 import { stampProfile } from './state-edits';
-import { displayLabUnit, foldLpa, LAB_CATALOG, type LabCatalogEntry, labSlotKey, metricNameWords, resolveLabCatalogEntry } from './lab-catalog';
+import { displayLabUnit, foldLpa, LAB_CATALOG, labSlotKey, metricNameWords } from './lab-catalog';
 import { ISO_DATE, latestActivePerMetric } from './measurement-history';
 import {
   type AdditionalLabValue,
@@ -23,7 +23,10 @@ import {
   FOLDER_IMPORT_EXTENSIONS,
   isImportableEntryName,
   MAX_FILE_NAME_LENGTH,
+  MAX_NAME_LENGTH,
   resolveCoreMetricName,
+  resolveName,
+  type ResolvedName,
   type UnifiedExtractionResult,
   VALID_METRICS,
 } from './lab-extraction';
@@ -66,16 +69,8 @@ import { isReadableRow, readableView } from './readable-rows';
  */
 export const MAX_LAB_ROWS_PER_CALL = 50;
 
-/**
- * Longest test name or unit a tool will take, and longest row id. Neither is a
- * clinical limit — a real test name is a few words and an id is a UUID (~45
- * chars with a duplicate suffix). They exist because nothing else bounds the
- * bytes one call can put in the user's file: without them a single call can
- * write megabytes of a string into a record that has to be read back whole.
- */
-export const MAX_NAME_LENGTH = 120;
 /** Longest file name a source or a folder entry keeps: a file system's own bound, and what `fileNames` must match. */
-export { MAX_FILE_NAME_LENGTH };
+export { MAX_FILE_NAME_LENGTH, MAX_NAME_LENGTH };
 /** Unrecognized lines one extract answers with; the model's output cap would otherwise bound them at ~30 KB. */
 export const MAX_UNRECOGNIZED_LINES = 50;
 /** One such line: a printed name, a value, a unit, the reason and the way round it (US-36 AC2). */
@@ -1504,8 +1499,9 @@ export function prepareImport(
       const printed = (value: { printedName?: string }) => (value.printedName ? { printedName: oneLine(value.printedName).slice(0, MAX_NAME_LENGTH) } : null);
       // A day of its own on the folder route is a dated previous-results column
       // the shared parse now reads for the website (US-12 AC12). Held off the
-      // connector until the MCP 1.0.2 review ends: left out, as the old prompt
-      // left it out. The assistant's own per-line day (US-36 AC1) is kept.
+      // connector for OpenAI's MCP 1.0.2 review (ended 2026-10-29; releasing it
+      // is open work): left out, as the old prompt left it out. The assistant's
+      // own per-line day (US-36 AC1) is kept.
       const previousColumn = (value: { recordedAt?: string }) => bundle.route !== 'assistant' && !!value.recordedAt;
       for (const value of result.values) {
         if (candidates.length >= MAX_IMPORT_CANDIDATES) break;
@@ -1621,16 +1617,6 @@ export function prepareImport(
 // ---------------------------------------------------------------------------
 // file_results — the assistant read the file; the server checks every row (US-36)
 // ---------------------------------------------------------------------------
-
-/** What a printed name or a claimed `metric` resolves to: a core metric, a catalogued test, or nothing. */
-type ResolvedName = { kind: 'core'; metric: MetricType } | { kind: 'lab'; key: string; entry: LabCatalogEntry } | null;
-
-function resolveName(name: string): ResolvedName {
-  const core = resolveCoreMetricName(name);
-  if (core) return { kind: 'core', metric: core };
-  const entry = resolveLabCatalogEntry(name);
-  return entry ? { kind: 'lab', key: entry.key, entry } : null;
-}
 
 const describeName = (resolved: ResolvedName): string => (resolved?.kind === 'core' ? resolved.metric : resolved?.kind === 'lab' ? resolved.key : 'nothing this record knows');
 

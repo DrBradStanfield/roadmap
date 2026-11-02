@@ -286,7 +286,7 @@ Moved out of CLAUDE.md 2026-09-24 (entropy pass). `.env` has all of them.
   ANTHROPIC_API_KEY, SHOPIFY_*, KLAVIYO_API_KEY/KLAVIYO_LIST_ID (the same
   MicroVitamin pair on both apps, by decision 2026-09-28).
 - **Fly-only**: MCP_ISSUER, MCP_SEAL_KEYS, MCP_CLIENT_HMAC_KEY,
-  OPENAI_APPS_CHALLENGE, GITHUB_ISSUES_TOKEN (edu; the connector files bug
+  GITHUB_ISSUES_TOKEN (edu; the connector files bug
   reports with it, and without it hands the user a link), DROPBOX_APP_KEY/SECRET,
   GOOGLE_DRIVE_CLIENT_ID/SECRET (BOTH Fly apps: `health-tool-app` for the
   widget's Google exchange, edu for the MCP's Drive leg). Setup and rotation:

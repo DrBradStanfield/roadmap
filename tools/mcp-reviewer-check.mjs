@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Is the OpenAI reviewer sign-in live on this machine? (US-32 AC38; plan
+// Is the app reviewer sign-in live on this machine? (US-32 AC38, AC49; plan
 // docs/reviews/2026-10-01-chatgpt-reviewer-signin-plan.md §4.5.)
 //
 // Fly secrets cannot be read back, so this runs INSIDE the machine, where they
