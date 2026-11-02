@@ -304,9 +304,11 @@ export class RoadmapStore {
   }
 
   /** Whether the record holds a `key` medication row this build cannot read
-   *  (US-65): a chat change over it offers no Undo (US-67 N3). */
-  holdsUnreadableMedication(key: string): boolean {
-    return this.file.medications.some((m) => m.medicationKey === key && !isReadableRow('medications', m));
+   *  (US-65): a chat change over it offers no Undo (US-67 N3). `answered`: only
+   *  a row that is not 'not_yet', the escalation answer a chat change resets
+   *  as the iPhone engine reads it (US-06 AC12). */
+  holdsUnreadableMedication(key: string, answered = false): boolean {
+    return this.file.medications.some((m) => m.medicationKey === key && !isReadableRow('medications', m) && !(answered && m.drugName === 'not_yet'));
   }
 
   get backendId() {

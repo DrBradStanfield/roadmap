@@ -1207,7 +1207,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // Chatbot-driven form edits (the chat proposes; this routes to the real form)
   // ---------------------------------------------------------------------------
   // A one-shot undo for a medication change the chat just applied (meds
-  // auto-save, so the chat states the change + offers Undo): every row the
+  // auto-save, so the chat states the change; only this banner offers Undo): every row the
   // change wrote, as it was before. 'unavailable': the change replaced a row
   // this build cannot read, so the banner offers no Undo (US-67 N3).
   const [medUndo, setMedUndo] = useState<ChatMedicationRow[] | 'unavailable' | null>(null);
@@ -1250,12 +1250,13 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     // The rule is health-core's, shared with the iPhone (US-06 AC12, US-67 AC4):
     // a new drug or dose resets the drug's escalation answer, escalation first,
     // unless the same reply states it. Flat mode too: the chat changes the drug
-    // on purpose. An answer the form holds but has not saved yet was about the
-    // old drug too: it is reset as well, and only the saved one is Undo's to restore.
+    // on purpose. An answer the form holds but has not saved yet, or one this
+    // build cannot read, was about the old drug too: it is reset as well, as on
+    // the iPhone, and only the readable saved one is Undo's to restore.
     const saved = loadLatestMeasurementsSync()?.medications ?? [];
     const onForm = medicationsRef.current.find(m => m.medicationKey === edit.medicationKey);
     const { undo, reset } = chatMedicationChange(edit, saved, stated, onForm);
-    const resets = !!reset && (undo.some(m => m.medicationKey === reset) || medSaveTimers.current.has(reset));
+    const resets = !!reset && (undo.some(m => m.medicationKey === reset) || medSaveTimers.current.has(reset) || holdsUnreadableMedication(reset, true));
     const undoable = ![edit.medicationKey, resets && reset].some(key => key && holdsUnreadableMedication(key));
     if (resets) handleMedicationChange(reset, 'not_yet', null, null);
     handleMedicationChange(edit.medicationKey, edit.drugName, edit.doseValue, edit.doseUnit);
@@ -1518,7 +1519,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       />
 
       {/* Undo banner for a medication the chat just changed (meds auto-save, so
-          the chat applies + states the change and offers an explicit Undo). */}
+          the chat applies + states the change; this banner offers the Undo). */}
       {/* Both portal outside the masked widget root, so their column carries
           the Clarity mask (US-09 AC8), and stacks them (styles.css .chat-banners). */}
       {(medUndo || pendingProfile) && createPortal(

@@ -467,6 +467,23 @@ describe('US-67 N3: no Undo after the chat replaces a medicine entry this build 
     expect(document.querySelector('.chat-med-undo')!.textContent).toContain(NO_UNDO);
   });
 
+  // US-06 AC12, US-67 N3 (Brad 2026-11-03): one reply saves the same record on both
+  // clients. The answer is about the old dose, so it is stale whether or not this
+  // build can read it; the web resets it as the iPhone engine does (ios/engine
+  // chat-edits.test.ts, "the same record as the web"), and offers no Undo.
+  it('an unreadable escalation answer, reset by a chat statin dose change: not yet, the statin saves, no Undo, the fixed line', async () => {
+    await pageWithUnreadable([['statin', 'rosuvastatin', 20], ['statin_escalation', 'not_tolerated']], 'statin_escalation');
+    act(() => chat.props!.onProposeEdit([{ ...atorvastatin20, drugName: 'rosuvastatin', doseValue: 40 }]));
+    await settle();
+    expect(await recorded()).toMatchObject({ statin: 'rosuvastatin@40', statin_escalation: 'not_yet@null' });
+    await flushRoadmapStore();
+    const raw = JSON.parse(localStorage.getItem('health_roadmap_file_v2')!).medications;
+    expect(raw.filter((m: { medicationKey: string }) => m.medicationKey === 'statin_escalation'))
+      .toEqual([expect.objectContaining({ drugName: 'not_yet', doseValue: null, doseUnit: null })]);
+    expect(document.querySelector('.chat-med-undo-btn')).toBeNull();
+    expect(document.querySelector('.chat-med-undo')!.textContent).toContain(NO_UNDO);
+  });
+
   // One banner at a time: the newest reply decides whether Undo shows.
   it('reply 1 readable then reply 2 replaces an unreadable row: the old Undo goes, the fixed line shows', async () => {
     await pageWithUnreadable([['statin', 'rosuvastatin', 20], ['glp1', 'tirzepatide', 5]], 'glp1');

@@ -925,10 +925,11 @@ describe('US-67 AC3: the app\'s words for the form tools', () => {
 
   // The pin moved once on purpose (US-67 AC2, Brad 2026-11-02): propose_field_edit asks about
   // a value that looks implausible for its unit. It moved again with US-16 AC3 (Brad 2026-11-02):
-  // propose_medication_edit lists each key's own answers (a drug key: "or another drug's generic name"). Any other move is a cache-prefix change to explain.
+  // propose_medication_edit lists each key's own answers (a drug key: "or another drug's generic name"). It moved
+  // again with US-67 N3 (Brad 2026-11-03, "Option 1"): propose_medication_edit never promises an Undo. Any other move is a cache-prefix change to explain.
   it('US-67 AC3: the web\'s tools are byte-identical to the pinned ones (prompt cache prefix)', () => {
     const sha = (x: unknown) => createHash('sha256').update(JSON.stringify(x)).digest('hex');
-    expect(sha(CHAT_TOOLS)).toBe('51f6fb34106766b3ba7aece463be75b542868692f2ce82daf14eb095a6145503');
+    expect(sha(CHAT_TOOLS)).toBe('af16b13b33b395a71c41fccaa84ba5216aac9d1499f3a79cef6828ab7318f2ca');
     expect(chatToolsFor(said)).toBe(CHAT_TOOLS);
     expect(chatToolsFor(said, true, false)).toBe(CHAT_TOOLS);
   });
@@ -960,7 +961,9 @@ describe('US-67 AC3: the app\'s words for the form tools', () => {
     const byId = (app: boolean) => Object.fromEntries(roadmapToolResults(blocks, PROFILE, undefined, app)!.results.map(r => [r.tool_use_id, r.content]));
     const app = byId(true);
     expect(app.ok).toBe('Shown to the user to review and Save; nothing is saved until they press Save.');
-    expect(app.med).toMatch(/at once.*undo/);
+    expect(app.med).toBe('Saved to the user\'s medications at once.');
+    // US-67 N3: neither stub teaches the model an Undo the banner may not offer.
+    expect(byId(false).med).toBe('Sent to the user\'s form; medications save at once.');
     expect(app.profile).toBe('Shown to the user to confirm; nothing is saved until they press Save.');
     expect(app.bad).toMatch(/^Not applied/);
     expect(JSON.stringify([app.ok, app.med, app.profile, app.bad])).not.toMatch(/pre-filled|Pre-filled|form/);
@@ -1019,7 +1022,7 @@ describe('US-67 AC2: a value that looks like the wrong unit is asked about, not 
     const send = vi.fn().mockResolvedValueOnce(reply(use('v', 'propose_field_edit', val('ldlC', 3.4, 'mg/dL')), statin)).mockResolvedValueOnce(asked);
     const turn = await withRoadmapRound(said, send, PROFILE);
     const results = send.mock.calls[1][0].messages.at(-1).content;
-    expect(results.map((r: { content: string }) => r.content)).toEqual([UNIT_SUSPECT, 'Sent to the user\'s form; medications save at once and the user can undo.']);
+    expect(results.map((r: { content: string }) => r.content)).toEqual([UNIT_SUSPECT, 'Sent to the user\'s form; medications save at once.']);
     expect(turn.proposedEdits).toEqual([{ kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' }]);
   });
 
@@ -1067,7 +1070,7 @@ describe('US-16 AC3: a medication answer the question does not offer is asked ab
     )).mockResolvedValueOnce(asked);
     const turn = await withRoadmapRound(said, send, PROFILE);
     const results = send.mock.calls[1][0].messages.at(-1).content.map((r: { content: string }) => r.content);
-    const SENT = 'Sent to the user\'s form; medications save at once and the user can undo.';
+    const SENT = 'Sent to the user\'s form; medications save at once.';
     expect(results).toEqual([SENT, ASK, SENT]);
     expect(turn.proposedEdits).toEqual([
       { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' },
