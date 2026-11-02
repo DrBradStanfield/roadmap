@@ -186,3 +186,34 @@ describe('US-07 AC11: across the lines, grades are unchanged and the number agre
     }
   });
 });
+
+// The merge with main's US-12 AC20 rewrote the tile, card and currentValues
+// lines this file pins: a result saved as a limit still prints as that limit.
+describe('US-07 AC11 with US-12 AC20: a result saved as a limit prints as the limit, not by the grade lines', () => {
+  function limitPlan(rows: Array<{ metricType: string; value: number }>) {
+    const file = createEmptyFile({ deviceId: 'graded_display', now: NOW.toISOString() });
+    Object.assign(file.profile, { sex: 'male', heightCm: 175, birthYear: 1975, birthMonth: 1, unitSystem: 'si' });
+    file.measurements = rows.map((r, i) => createMeasurement({
+      id: `m${i}`, ...r, comparator: '<', recordedAt: '2026-10-01T00:00:00.000Z', createdAt: '2026-10-01T00:00:00.000Z',
+    }));
+    const plan = computePlan(file, NOW);
+    const tiles = statTiles(plan.results, { unitSystem: 'si', sex: 'male' });
+    return { plan, payload: planPayload(plan), tile: (key: string) => tiles.find((t) => t.key === key)?.value };
+  }
+
+  it('HbA1c "< 30" mmol/mol and Lp(a) "< 10" nmol/L: tile, card and currentValues show the limit', () => {
+    const { payload, tile } = limitPlan([{ metricType: 'hba1c', value: 30 }, { metricType: 'lpa', value: 10 }]);
+    expect(tile('hba1c')).toBe('< 30');
+    expect(tile('lpa')).toBe('< 10');
+    expect(payload.suggestions.find((s) => s.id === 'hba1c-normal')?.description).toContain('Your HbA1c of < 30 mmol/mol');
+    expect(payload.suggestions.find((s) => s.id === 'lpa-normal')?.title).toBe('Lp(a): < 10 nmol/L');
+    expect(payload.currentValues.find((v) => v.metric === 'hba1c')?.value).toBe('< 30');
+    expect(payload.currentValues.find((v) => v.metric === 'lpa')?.value).toBe('< 10');
+  });
+
+  it('a limit that does not decide (HbA1c "< 45", Lp(a) "< 100") still shows on its tile as printed', () => {
+    const { tile } = limitPlan([{ metricType: 'hba1c', value: 45 }, { metricType: 'lpa', value: 100 }]);
+    expect(tile('hba1c')).toBe('< 45');
+    expect(tile('lpa')).toBe('< 100');
+  });
+});
