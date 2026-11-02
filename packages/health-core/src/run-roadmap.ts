@@ -26,7 +26,7 @@ import { resolveRecordedAt } from './record-edits';
 import { knownMinorOf } from './calculations';
 import { buildChatContextJson } from './chat-context';
 import {
-  APP_CHAT_EDIT_TOOLS, CHAT_EDIT_TOOLS, EDITABLE_FIELDS, PROPOSE_FIELD_EDIT_TOOL, PROPOSE_PROFILE_EDIT_TOOL, parseProposedEdit, parseProposedEdits,
+  APP_CHAT_EDIT_TOOLS, CHAT_EDIT_TOOLS, EDITABLE_FIELDS, PROPOSE_FIELD_EDIT_TOOL, PROPOSE_PROFILE_EDIT_TOOL, medicationAnswerMisfit, parseProposedEdit, parseProposedEdits,
   type EditableField, type ProposedEdit,
 } from './chat-edits';
 
@@ -397,6 +397,13 @@ function unitSuspect(b: ChatContentBlock): boolean {
   return askUnit(metric, { valueSI: toCanonicalValue(metric, edit.displayValue, edit.unitSystem), system: edit.unitSystem });
 }
 
+/** The tool_result telling the model to ask before it proposes: a suspect value (UNIT_SUSPECT) or a medication
+ *  answer its question does not offer (US-16 AC3); null for the rest. */
+function askFirst(b: ChatContentBlock): string | null {
+  if (unitSuspect(b)) return UNIT_SUSPECT;
+  return b.type === 'tool_use' && b.name ? medicationAnswerMisfit(b.name, b.input) : null;
+}
+
 /** The tool_result for a form tool: pre-filled or saved only when the client will apply it (parseProposedEdit accepts it). */
 function formToolStub(b: ChatContentBlock, app: boolean): string {
   const edit = b.name ? parseProposedEdit(b.name, b.input) : null;
@@ -416,12 +423,13 @@ function mergedRunInput(inputs: unknown[]): Record<string, unknown> {
 }
 
 /**
- * The tool_result blocks for a reply that called run_roadmap or proposed a value
- * that looks like the wrong unit (`unitSuspect`), one per tool_use in order, or
- * null when it did neither. `counts` is null without a run_roadmap call. However many run_roadmap calls
+ * The tool_result blocks for a reply that called run_roadmap, proposed a value
+ * that looks like the wrong unit (`unitSuspect`) or a medication answer its
+ * question does not offer (`askFirst`), one per tool_use in order, or null when
+ * it did none of these. `counts` is null without a run_roadmap call. However many run_roadmap calls
  * the reply holds, the plan runs once, on all their values under one cap, and
  * answers the first; the others get a fixed stub. A suspect value gets
- * UNIT_SUSPECT. Any other tool gets `otherResult`'s text when it gives one,
+ * UNIT_SUSPECT, a misfit medication answer the ask. Any other tool gets `otherResult`'s text when it gives one,
  * else the form tools' stub.
  */
 export function roadmapToolResults(
@@ -432,13 +440,13 @@ export function roadmapToolResults(
 ): { results: ToolResultBlock[]; counts: RoadmapRoundCounts | null } | null {
   const uses = blocks.filter(b => b.type === 'tool_use');
   const runs = uses.filter(b => b.name === RUN_ROADMAP_TOOL.name);
-  if (runs.length === 0 && !uses.some(unitSuspect)) return null;
+  if (runs.length === 0 && !uses.some(b => askFirst(b) !== null)) return null;
   const run = runs.length > 0 ? runRoadmap(guestInputs, mergedRunInput(runs.map(b => b.input))) : null;
   const results = uses.map((b): ToolResultBlock => ({
     type: 'tool_result',
     tool_use_id: b.id,
     content: run && b === runs[0] ? roadmapResultText(run) : b.name === RUN_ROADMAP_TOOL.name ? NOT_RUN
-      : unitSuspect(b) ? UNIT_SUSPECT : otherResult?.(b, blocks) ?? formToolStub(b, app),
+      : askFirst(b) ?? otherResult?.(b, blocks) ?? formToolStub(b, app),
   }));
   return { results, counts: run ? { applied: run.applied.length, rejected: run.rejected.length } : null };
 }
@@ -452,7 +460,8 @@ export function roadmapToolResults(
  * reply is the answer. A failed second call throws, as a failed first one does;
  * `onRound` has a run_roadmap round's counts before that call, so a caller keeps them.
  * `otherResult` answers a tool only the transport knows (roadmapToolResults).
- * `app`: the iPhone app's stub words (US-67 AC3).
+ * `app`: the iPhone app's stub words (US-67 AC3). `refused`: the medication
+ * answers the round asked about rather than saved (US-16 AC3), for toolOnlyAck.
  */
 export async function withRoadmapRound<R extends { contentBlocks: ChatContentBlock[] }>(
   messages: ChatTurnMessage[],
@@ -461,15 +470,16 @@ export async function withRoadmapRound<R extends { contentBlocks: ChatContentBlo
   onRound?: (counts: RoadmapRoundCounts) => void,
   otherResult?: ToolResultFor,
   app = false,
-): Promise<{ first: R; final: R; counts: RoadmapRoundCounts | null; proposedEdits: ProposedEdit[] }> {
+): Promise<{ first: R; final: R; counts: RoadmapRoundCounts | null; proposedEdits: ProposedEdit[]; refused: number }> {
   const first = await send({ messages });
   const round = roadmapToolResults(first.contentBlocks, guestInputs, otherResult, app);
-  if (!round) return { first, final: first, counts: null, proposedEdits: parseProposedEdits(first.contentBlocks) };
+  if (!round) return { first, final: first, counts: null, proposedEdits: parseProposedEdits(first.contentBlocks), refused: 0 };
   if (round.counts) onRound?.(round.counts);
   const final = await send({
     messages: [...messages, { role: 'assistant', content: first.contentBlocks }, { role: 'user', content: round.results }],
     tool_choice: { type: 'none' },
   });
   const proposed = [...first.contentBlocks, ...final.contentBlocks].filter(b => !unitSuspect(b));
-  return { first, final, counts: round.counts, proposedEdits: parseProposedEdits(proposed) };
+  const refused = first.contentBlocks.filter(b => b.type === 'tool_use' && !!b.name && medicationAnswerMisfit(b.name, b.input) !== null).length;
+  return { first, final, counts: round.counts, proposedEdits: parseProposedEdits(proposed), refused };
 }

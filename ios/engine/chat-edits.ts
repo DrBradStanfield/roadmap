@@ -7,7 +7,7 @@
 // from the same function that writes it, so the banner and the write agree.
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import {
-  chatMedicationChange, readProposedEdits, unsavedProfile,
+  chatMedicationChange, MEDICATION_ANSWERS, readProposedEdits, unsavedProfile,
   type ChatMedicationRow, type ProposedEdit, type ProposedFieldEdit, type ProposedMedicationEdit, type ProposedProfileEdit,
 } from '../../packages/health-core/src/chat-edits';
 import { FIELD_TO_METRIC, METRIC_LABELS } from '../../packages/health-core/src/mappings';
@@ -18,7 +18,6 @@ import { upsertMedication } from '../../packages/health-core/src/state-edits';
 import { medicationSchema, PRESSURE_ORDER } from '../../packages/health-core/src/validation';
 import { cmToFeetInches, getDisplayLabel, toCanonicalValue, type MetricType } from '../../packages/health-core/src/units';
 import { cellLabel, cellText } from '../../packages/health-core/src/cell-unit';
-import { BEMPEDOIC_ACID_OPTIONS, GLP1_NAMES, METFORMIN_OPTIONS, SGLT2I_NAMES, STATIN_NAMES } from '../../packages/health-core/src/types';
 import { applyPressure } from './blood-pressure';
 import { cellUnitFor, unitsOf, type UnitChoices } from './unit-choices';
 import { isReadableRow, readableView } from '../../packages/health-core/src/readable-rows';
@@ -153,15 +152,10 @@ const MEDICATION_NAMES: Record<string, string> = {
   bempedoic_acid: 'Bempedoic acid', glp1: 'GLP-1 medication', glp1_escalation: 'GLP-1 higher dose or switch',
   sglt2i: 'SGLT2 inhibitor', metformin: 'Metformin',
 };
-/** The answers the chat may give for any key, in the form's words; 'none' is "not taking" here, not "haven't tried". */
-const STATUS_WORDS: Record<string, string> = { none: 'Not taking', not_yet: 'Not yet', yes: 'Yes', no: 'No', not_tolerated: 'Not tolerated' };
-const DRUG_WORDS = new Map<string, string>(
-  [...STATIN_NAMES, ...BEMPEDOIC_ACID_OPTIONS, ...GLP1_NAMES, ...SGLT2I_NAMES, ...METFORMIN_OPTIONS].map((o) => [o.value, o.label]),
-);
-
-/** "Statin: Atorvastatin 20 mg". */
+/** "Statin: Atorvastatin 20 mg". The answer reads as its own question's form option ("Haven't tried yet" for a
+ *  statin's 'none', "No" for ezetimibe's 'no'); an unlisted drug the form takes reads as its name. */
 function medicationLine(edit: ProposedMedicationEdit): string {
-  const own = Object.prototype.hasOwnProperty.call(STATUS_WORDS, edit.drugName) ? STATUS_WORDS[edit.drugName] : DRUG_WORDS.get(edit.drugName);
+  const own = MEDICATION_ANSWERS[edit.medicationKey].find((o) => o.value === edit.drugName)?.label;
   const drug = own ?? edit.drugName.charAt(0).toUpperCase() + edit.drugName.slice(1).replace(/_/g, ' ');
   const dose = edit.doseValue !== null ? ` ${edit.doseValue}${edit.doseUnit ? ` ${edit.doseUnit}` : ''}` : '';
   return `${MEDICATION_NAMES[edit.medicationKey] ?? edit.medicationKey}: ${drug}${dose}`;
