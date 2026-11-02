@@ -208,8 +208,8 @@ describe('US-67 AC3: medications save at once, with Undo', () => {
     expect(med$(back.file, 'ezetimibe')!.drugName).toBe('not_yet');
   });
 
-  it('US-67 AC4: a stop reads "Not taking", and the same drug again shows nothing', () => {
-    expect(preview(onStatin(), [med('statin', 'none')]).medications!.lines).toEqual([{ text: 'Statin: Not taking' }]);
+  it('US-67 AC4: a statin\'s \'none\' reads as the form\'s "Haven\'t tried yet", and the same drug again shows nothing', () => {
+    expect(preview(onStatin(), [med('statin', 'none')]).medications!.lines).toEqual([{ text: "Statin: Haven't tried yet" }]);
     expect(preview(onStatin(), [med('statin', 'atorvastatin', 10)]).medications).toBeNull();
   });
 
@@ -433,5 +433,50 @@ describe('US-67 AC4: unreadable rows in the pair and the escalation, and a medic
     expect(apply(metric(), 'medications', broken)).toMatchObject({ ok: false, message: shown.medications!.refusal });
     // A list that is not one is said once, by the review part.
     expect(preview(metric(), 'garbage').medications).toBeNull();
+  });
+});
+
+describe("US-67 AC3: the medication banner names each answer in its form's own words", () => {
+  it.each([
+    ['statin', 'none', "Statin: Haven't tried yet"],
+    ['statin', 'not_tolerated', 'Statin: Not tolerated'],
+    ['statin', 'rosuvastatin', 'Statin: Rosuvastatin'],
+    ['ezetimibe', 'not_yet', "Ezetimibe: Haven't tried yet"],
+    ['ezetimibe', 'yes', 'Ezetimibe: Yes'],
+    ['ezetimibe', 'no', 'Ezetimibe: No'],
+    ['ezetimibe', 'not_tolerated', 'Ezetimibe: Not tolerated'],
+    ['statin_escalation', 'not_yet', 'Statin higher dose or switch: Not tried'],
+    ['statin_escalation', 'not_tolerated', "Statin higher dose or switch: Didn't tolerate"],
+    ['pcsk9i', 'not_yet', "PCSK9 inhibitor: Haven't tried yet"],
+    ['pcsk9i', 'yes', 'PCSK9 inhibitor: Yes'],
+    ['pcsk9i', 'no', 'PCSK9 inhibitor: No'],
+    ['pcsk9i', 'not_tolerated', 'PCSK9 inhibitor: Not tolerated'],
+    ['bempedoic_acid', 'not_yet', "Bempedoic acid: Haven't tried yet"],
+    ['bempedoic_acid', 'none', 'Bempedoic acid: Not taking'],
+    ['bempedoic_acid', 'bempedoic_acid', 'Bempedoic acid: Nexletol (bempedoic acid 180mg)'],
+    ['bempedoic_acid', 'not_tolerated', 'Bempedoic acid: Not tolerated'],
+    ['glp1', 'none', "GLP-1 medication: Haven't tried yet"],
+    ['glp1', 'other', 'GLP-1 medication: Other GLP-1'],
+    ['glp1', 'tirzepatide', 'GLP-1 medication: Tirzepatide (Mounjaro/Zepbound)'],
+    ['glp1', 'not_tolerated', 'GLP-1 medication: Not tolerated'],
+    ['glp1_escalation', 'not_yet', 'GLP-1 higher dose or switch: Not tried'],
+    ['glp1_escalation', 'not_tolerated', "GLP-1 higher dose or switch: Didn't tolerate"],
+    ['sglt2i', 'none', "SGLT2 inhibitor: Haven't tried yet"],
+    ['sglt2i', 'empagliflozin', 'SGLT2 inhibitor: Empagliflozin (Jardiance)'],
+    ['sglt2i', 'not_tolerated', 'SGLT2 inhibitor: Not tolerated'],
+    ['metformin', 'none', "Metformin: Haven't tried yet"],
+    ['metformin', 'xr_1000', 'Metformin: XR 1000mg/day'],
+    ['metformin', 'not_tolerated', 'Metformin: Not tolerated'],
+  ])('US-67 AC3: %s %s reads "%s"', (key, value, text) => {
+    expect(preview(metric(), [med(key, value)]).medications!.lines).toEqual([{ text }]);
+  });
+
+  it('US-67 AC3: the user\'s words read as the answer they save: "not yet" a statin, "not taking" ezetimibe', () => {
+    expect(preview(metric(), [med('statin', 'not yet')]).medications!.lines).toEqual([{ text: "Statin: Haven't tried yet" }]);
+    expect(preview(metric(), [med('ezetimibe', 'not taking')]).medications!.lines).toEqual([{ text: 'Ezetimibe: No' }]);
+  });
+
+  it('US-67 AC3: an unlisted drug the form takes reads as its name, with its dose', () => {
+    expect(preview(metric(), [med('statin', 'lovastatin', 20)]).medications!.lines).toEqual([{ text: 'Statin: Lovastatin 20 mg' }]);
   });
 });
