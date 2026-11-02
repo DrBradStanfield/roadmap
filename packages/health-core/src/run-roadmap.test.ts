@@ -1083,6 +1083,23 @@ describe('US-16 AC3: a medication answer the question does not offer is asked ab
     expect(turn.proposedEdits).toEqual([{ kind: 'medication', medicationKey: 'ezetimibe', drugName: 'no', doseValue: null, doseUnit: null }]);
   });
 
+  it.each(['not yet', 'not_yet ', 'none '])('US-16 AC3 R1: a GLP-1 "%s" is saved as none with no second call', async (drugName) => {
+    const send = vi.fn().mockResolvedValueOnce(reply(use('m', 'propose_medication_edit', { medicationKey: 'glp1', drugName })));
+    const turn = await withRoadmapRound(said, send, PROFILE);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(turn.proposedEdits).toEqual([{ kind: 'medication', medicationKey: 'glp1', drugName: 'none', doseValue: null, doseUnit: null }]);
+    expect(turn.refused).toBe(0);
+  });
+
+  it.each(['not taking', 'stopped', 'N/A', '   '])('US-16 AC3 R1: a statin "%s" is asked about in a second call, and counted as refused', async (drugName) => {
+    const send = vi.fn().mockResolvedValueOnce(reply(use('m', 'propose_medication_edit', { medicationKey: 'statin', drugName }))).mockResolvedValueOnce(asked);
+    const turn = await withRoadmapRound(said, send, PROFILE);
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(send.mock.calls[1][0].messages.at(-1).content[0].content).toMatch(/^Not saved: .* is not an answer to the statin question\. Ask the user which of these applies/);
+    expect(turn.proposedEdits).toEqual([]);
+    expect(turn.refused).toBe(1);
+  });
+
   it('US-16 AC3: a misfit beside run_roadmap is asked in the same one round', async () => {
     const send = vi.fn()
       .mockResolvedValueOnce(reply(use('r', 'run_roadmap', { values: [val('ldlC', 3.4, 'mmol/L')] }), use('m', 'propose_medication_edit', { medicationKey: 'ezetimibe', drugName: 'atorvastatin' })))

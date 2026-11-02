@@ -231,8 +231,8 @@ export async function sendMessage(
     proposedEdits = turn.proposedEdits;
     // Tool-only response (the model proposed an edit with no prose): give the
     // chat thread something to show. The confirmation card carries the detail.
-    if (!content && proposedEdits.length > 0) {
-      content = toolOnlyAck(proposedEdits);
+    if (!content && (proposedEdits.length > 0 || turn.refused > 0)) {
+      content = toolOnlyAck(proposedEdits, false, turn.refused);
     }
     // A reply cut off before any text: an error, never a blank answer saved to
     // history (the transport lets an empty max_tokens stop through for uploads).

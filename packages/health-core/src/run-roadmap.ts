@@ -460,7 +460,8 @@ export function roadmapToolResults(
  * reply is the answer. A failed second call throws, as a failed first one does;
  * `onRound` has a run_roadmap round's counts before that call, so a caller keeps them.
  * `otherResult` answers a tool only the transport knows (roadmapToolResults).
- * `app`: the iPhone app's stub words (US-67 AC3).
+ * `app`: the iPhone app's stub words (US-67 AC3). `refused`: the medication
+ * answers the round asked about rather than saved (US-16 AC3), for toolOnlyAck.
  */
 export async function withRoadmapRound<R extends { contentBlocks: ChatContentBlock[] }>(
   messages: ChatTurnMessage[],
@@ -469,15 +470,16 @@ export async function withRoadmapRound<R extends { contentBlocks: ChatContentBlo
   onRound?: (counts: RoadmapRoundCounts) => void,
   otherResult?: ToolResultFor,
   app = false,
-): Promise<{ first: R; final: R; counts: RoadmapRoundCounts | null; proposedEdits: ProposedEdit[] }> {
+): Promise<{ first: R; final: R; counts: RoadmapRoundCounts | null; proposedEdits: ProposedEdit[]; refused: number }> {
   const first = await send({ messages });
   const round = roadmapToolResults(first.contentBlocks, guestInputs, otherResult, app);
-  if (!round) return { first, final: first, counts: null, proposedEdits: parseProposedEdits(first.contentBlocks) };
+  if (!round) return { first, final: first, counts: null, proposedEdits: parseProposedEdits(first.contentBlocks), refused: 0 };
   if (round.counts) onRound?.(round.counts);
   const final = await send({
     messages: [...messages, { role: 'assistant', content: first.contentBlocks }, { role: 'user', content: round.results }],
     tool_choice: { type: 'none' },
   });
   const proposed = [...first.contentBlocks, ...final.contentBlocks].filter(b => !unitSuspect(b));
-  return { first, final, counts: round.counts, proposedEdits: parseProposedEdits(proposed) };
+  const refused = first.contentBlocks.filter(b => b.type === 'tool_use' && !!b.name && medicationAnswerMisfit(b.name, b.input) !== null).length;
+  return { first, final, counts: round.counts, proposedEdits: parseProposedEdits(proposed), refused };
 }

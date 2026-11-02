@@ -58,7 +58,7 @@ function fieldToMetric(field: string): MetricType | null {
 type MedicationKey = (typeof MEDICATION_KEYS)[number];
 
 /** Each medication question's own answers, as its form saves them, with the form's words. */
-const ANSWERS: Record<MedicationKey, ReadonlyArray<{ value: string; label: string }>> = {
+export const MEDICATION_ANSWERS: Record<MedicationKey, ReadonlyArray<{ value: string; label: string }>> = {
   statin: STATIN_NAMES, ezetimibe: EZETIMIBE_OPTIONS, statin_escalation: escalationOptions(null), pcsk9i: PCSK9I_OPTIONS,
   bempedoic_acid: BEMPEDOIC_ACID_OPTIONS, glp1: GLP1_NAMES, glp1_escalation: escalationOptions(null), sglt2i: SGLT2I_NAMES,
   metformin: METFORMIN_OPTIONS,
@@ -66,31 +66,53 @@ const ANSWERS: Record<MedicationKey, ReadonlyArray<{ value: string; label: strin
 /** A drug question also takes a drug name the form does not list, as the plan's unlisted-drug rules expect. */
 const DRUG_KEYS: ReadonlySet<string> = new Set(['statin', 'glp1', 'sglt2i']);
 const YES = (names: string[]) => names.map((n): [string, string] => [n, 'yes']);
-/** The user's words that mean one of the question's own answers (Brad 2026-11-02): "not taking" ezetimibe or a
- *  PCSK9 inhibitor is "no"; "not yet" a drug is its "haven't tried yet" ('none'); the drug's own name is "yes". */
-const SAME_ANSWER: Partial<Record<MedicationKey, ReadonlyMap<string, string>>> = {
-  ezetimibe: new Map([['none', 'no'], ...YES(['ezetimibe'])]),
-  pcsk9i: new Map([['none', 'no'], ...YES(['pcsk9i', 'evolocumab', 'alirocumab', 'inclisiran', 'repatha', 'praluent', 'leqvio'])]),
-  statin: new Map([['not_yet', 'none']]), glp1: new Map([['not_yet', 'none']]),
-  sglt2i: new Map([['not_yet', 'none']]), metformin: new Map([['not_yet', 'none']]),
+/** The brands an option's own label names, each to the option's value: the single words in its parentheses
+ *  ("Semaglutide injection (Ozempic/Wegovy)") and a one-word name before them ("Nexletol (bempedoic acid
+ *  180mg)"), never a word of the value itself (US-16 AC3, review R2). */
+const brandsOf = ({ value, label }: { value: string; label: string }): Array<[string, string]> => {
+  const paren = /^(.*?) \((.*)\)$/.exec(label);
+  if (!paren) return [];
+  return [paren[1], ...paren[2].split('/')].filter((w) => /^[A-Za-z]+$/.test(w))
+    .map((w) => w.toLowerCase()).filter((w) => !value.split('_').includes(w)).map((w) => [w, value]);
 };
+/** The user's words that mean one of the question's own answers (Brad 2026-11-02): "not taking" ezetimibe or a
+ *  PCSK9 inhibitor is "no"; "not yet" a drug is its "haven't tried yet" ('none'); the drug's own name is "yes";
+ *  a brand its option's label names is that option. */
+const SAME_ANSWER = new Map(MEDICATION_KEYS.map((key) => [key, new Map<string, string>([
+  ...MEDICATION_ANSWERS[key].flatMap(brandsOf),
+  ...(key === 'ezetimibe' || key === 'pcsk9i' ? [['none', 'no'], ['not_taking', 'no'], ...YES([key])] as Array<[string, string]> : []),
+  ...(key === 'pcsk9i' ? YES(['evolocumab', 'alirocumab', 'inclisiran', 'repatha', 'praluent', 'leqvio']) : []),
+  ...(DRUG_KEYS.has(key) || key === 'metformin' ? [['not_yet', 'none']] as Array<[string, string]> : []),
+])]));
 /** Every answer and name some question knows: under another drug question it is that question's, never a drug name. */
 const KNOWN: ReadonlySet<string> = new Set([
-  ...Object.values(ANSWERS).flatMap((options) => options.map((o) => o.value)),
-  ...Object.values(SAME_ANSWER).flatMap((m) => [...m!.keys()]),
+  ...Object.values(MEDICATION_ANSWERS).flatMap((options) => options.map((o) => o.value)),
+  ...[...SAME_ANSWER.values()].flatMap((m) => [...m.keys()]),
 ]);
+/** Words that make an answer a status, not a drug's name (review R1). */
+const STATUS_WORDS: ReadonlySet<string> = new Set(['not', 'no', 'none', 'yet', 'never', 'stopped', 'taking', 'n/a']);
 
-/** The value a chat answer saves as, or null when it is none of the question's answers (the model must ask). */
+/** A drug name the form does not list: a letter first, then letters, digits, spaces, dots, slashes or hyphens,
+ *  at most 40 characters (chat-context's unlisted-name rule), and no status word. */
+function unlistedDrug(name: string): boolean {
+  const lower = name.toLowerCase();
+  return /^[a-z][a-z0-9 .\/-]{0,39}$/.test(lower) && !lower.includes('n/a')
+    && !lower.split(/[\s.\/-]+/).some((w) => STATUS_WORDS.has(w));
+}
+
+/** The value a chat answer saves as, or null when it is none of the question's answers (the model must ask).
+ *  The answer is read as a token: trimmed, lower case, runs of spaces or hyphens as '_' ("Not yet" is not_yet). */
 function savedAnswer(key: MedicationKey, drugName: string): string | null {
-  const lower = drugName.toLowerCase();
-  const own = SAME_ANSWER[key]?.get(lower) ?? ANSWERS[key].find((o) => o.value === lower)?.value;
+  const stated = drugName.trim();
+  const token = stated.toLowerCase().replace(/[\s-]+/g, '_');
+  const own = SAME_ANSWER.get(key)?.get(token) ?? MEDICATION_ANSWERS[key].find((o) => o.value === token)?.value;
   if (own) return own;
-  return DRUG_KEYS.has(key) && !KNOWN.has(lower) ? drugName : null;
+  return DRUG_KEYS.has(key) && !KNOWN.has(token) && unlistedDrug(stated) ? stated : null;
 }
 
 /** "'not_yet' (Haven't tried yet), 'yes' (Yes), …": a question's answers for the model. */
 function answersText(key: MedicationKey): string {
-  const listed = ANSWERS[key].map((o) => `'${o.value}' (${o.label})`).join(', ');
+  const listed = MEDICATION_ANSWERS[key].map((o) => `'${o.value}' (${o.label})`).join(', ');
   return DRUG_KEYS.has(key) ? `${listed}, or another drug's name as stated` : listed;
 }
 
@@ -256,9 +278,19 @@ export const APP_CHAT_EDIT_TOOLS = [
  * measurement waits for Save; a medication saves at once with an undo banner;
  * a profile change waits for its own banner's Save, so a mixed turn says so
  * too (US-16 AC2b). `app`: the iPhone app's words (US-67 AC3), which has a Save
- * banner, not a form.
+ * banner, not a form. `refused`: medication answers not saved, as their question
+ * does not offer them (US-16 AC3), which the line names and asks about.
  */
-export function toolOnlyAck(edits: ProposedEdit[], app = false): string {
+export function toolOnlyAck(edits: ProposedEdit[], app = false, refused = 0): string {
+  const refusal = refused === 0 ? ''
+    : refused === 1 ? "One medication change was not saved, as its answer is not one of the form's options. Tell me which option applies, or choose it yourself."
+    : `${refused} medication changes were not saved, as their answers are not among the form's options. Tell me which options apply, or choose them yourself.`;
+  if (edits.length === 0) return refusal;
+  return refusal ? `${editsAck(edits, app)} ${refusal}` : editsAck(edits, app);
+}
+
+/** The line for the edits that were sent. */
+function editsAck(edits: ProposedEdit[], app: boolean): string {
   const others = edits.filter((e) => e.kind !== 'profile');
   if (others.length === edits.length) return formAck(edits, app);
   return others.length === 0
