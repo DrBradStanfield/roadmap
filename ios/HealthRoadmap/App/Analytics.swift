@@ -67,6 +67,9 @@ final class Analytics {
         case guideSeen = "Guide seen", guideOpened = "Guide opened"
         /// "Do you drink alcohol?" answered from the plan card's Dismiss (US-60); never the answer.
         case alcoholAnswered = "Alcohol answered"
+        /// A chat reply showed an edit banner; a chat edit was written (US-67 AC6). Never a
+        /// value or a field's name.
+        case chatEditProposed = "Chat edit proposed", chatEditSaved = "Chat edit saved"
 
         /// A tour tip closed (its Next or Done, a tap outside it, leaving it, its action, or no anchor) or skipped.
         static func tip(_ step: TourStep, skipped: Bool) -> Event? {

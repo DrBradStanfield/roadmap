@@ -474,3 +474,15 @@ describe('dropLongStrings', () => {
     expect(out.ctx.ok).toBe('k');
   });
 });
+
+// Adversary review of 0a2b89b0 (R3): a lab limit's bound, code and the plan's limits never reach Sentry.
+describe('US-12 AC20: lab limit keys are scrubbed', () => {
+  it('filters bound, comparator, limit, limits, labEgfr and labEgfrLimit', () => {
+    const out = scrubSensitiveData({
+      bound: 60, comparator: '>', limit: { bound: 60 }, limits: { labEgfr: { comparator: '>', bound: 60, graded: true } },
+      labEgfr: 130, labegfr: 130, labEgfrLimit: { comparator: '>', bound: 60 }, page: 'plan',
+    }) as Record<string, unknown>;
+    for (const key of ['bound', 'comparator', 'limit', 'limits', 'labEgfr', 'labegfr', 'labEgfrLimit']) expect(out[key], key).toBe('[Filtered]');
+    expect(out.page).toBe('plan');
+  });
+});

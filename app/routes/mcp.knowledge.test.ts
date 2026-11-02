@@ -39,9 +39,10 @@ const NOW = '2026-10-21T10:00:00.000Z';
 /**
  * sha256 of the hosted `tools/list` response body for request id 1, taken at
  * b625b92f before these tools existed. Off, the body must still be these bytes.
- * Re-taken on purpose for US-32 AC50 and AC51 (annotations.title on every tool; only spec fields published; 2026-10-21), and for AC52 (sibling tools named in four descriptions; 2026-10-21).
+ * Re-taken on purpose for US-32 AC50 and AC51 (annotations.title on every tool; only spec fields published; 2026-10-21), and for AC52 (sibling tools named in four descriptions; 2026-10-21), and for US-12 AC20
+ * (read_record, get_plan and file_results say a `comparator` marks a lab limit; file_results takes one; 2026-11-02).
  */
-const TOOLS_LIST_SHA256_BEFORE = 'c98e4ddb7e0aef116e678a3135e10359b09a8108e84ec4b3b065e719b0925a36';
+const TOOLS_LIST_SHA256_BEFORE = '719352adb6ffa713c91d20d4882f2f36685627cb192a820e2aded87c3f9f2e31';
 
 const NINE_TOOLS = [
   'read_record', 'get_plan', 'add_measurement', 'add_lab_values',
@@ -380,7 +381,8 @@ describe('US-41 AC11 — only what is public under Brad\'s name: video articles 
   const notServed = index.filter((e) => !isServed(e));
 
   it('serves the two sets and nothing else', () => {
-    expect(notServed.filter((e) => e.type === 'guideline').map((e) => e.handle).sort()).toEqual(['diet', 'exercise', 'sleep']);
+    // US-70: condition guides are guidelines too, so the connector serves none of them (AC11 unchanged).
+    expect(notServed.filter((e) => e.type === 'guideline').map((e) => e.handle).sort()).toEqual(['diet', 'exercise', 'heart-disease-risk', 'high-blood-pressure', 'high-cholesterol', 'sleep', 'weight']);
     expect(notServed.every((e) => e.type === 'guideline' || (e.type === 'reference' && !e.reviewed))).toBe(true);
     expect(index.filter(isServed).every((e) => (e.type ?? 'article') === 'article' || (e.type === 'reference' && !!e.reviewed))).toBe(true);
   });
