@@ -56,6 +56,7 @@ export {
   POST_FOLLOWUP_INTERVALS,
   SCREENING_FOLLOWUP_INFO,
   SCREENING_MIN_AGE,
+  LUNG_PACK_YEARS,
   isScreeningEligible,
   // Supplement options
   SUPPLEMENT_OPTIONS,
