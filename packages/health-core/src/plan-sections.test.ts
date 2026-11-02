@@ -102,8 +102,13 @@ describe('planSections (US-25 AC2)', () => {
 });
 
 describe('US-07 AC10: one source for the leading prompts', () => {
-  it('the engine emits the leading ids first, in their order', () => {
-    const emitted = generateSuggestions({ heightCm: 178 }, { heightCm: 178, age: 40, suggestions: [] }).map((x) => x.id);
-    expect(emitted.slice(0, LEADING_IDS.length)).toEqual([...LEADING_IDS]);
+  it('the engine emits the leading ids first, in their order, each on its own card', () => {
+    const emitted = generateSuggestions({ heightCm: 178 }, { heightCm: 178, age: 40, suggestions: [] });
+    expect(emitted.slice(0, LEADING_IDS.length).map((x) => x.id)).toEqual([...LEADING_IDS]);
+    // Adversary B: an id names its card's content, so a reorder of the list cannot swap them.
+    expect(emitted.find((x) => x.id === 'measure-waist')).toMatchObject({ title: 'Measure your waist circumference', category: 'general' });
+    expect(emitted.find((x) => x.id === 'measure-waist')?.reason).toContain('Waist-to-height');
+    expect(emitted.find((x) => x.id === 'measure-bp')).toMatchObject({ title: 'Measure your blood pressure', category: 'blood_pressure' });
+    expect(emitted.find((x) => x.id === 'measure-bp')?.reason).toContain('blood pressure');
   });
 });

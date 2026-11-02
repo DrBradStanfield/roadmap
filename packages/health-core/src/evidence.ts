@@ -429,7 +429,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Blood Pressure ─────────────────────────────────────────
 
   'measure-bp': {
-    reason: 'High blood pressure usually causes no symptoms, so a reading is the only way to know. Home readings with an automated upper-arm cuff, taken seated after a few minutes of rest, are a practical way to track it; every 2–4 weeks is enough to see a trend.\n\nThis plan aims for <120/80 mmHg under 65, as some doctors do, based on the SPRINT and ESPRIT trials, and <130/80 mmHg at 65 or older.',
+    reason: 'High blood pressure usually causes no symptoms, so a reading is the only way to know. Home readings with an automated upper-arm cuff, taken seated after a few minutes of rest, are a practical way to track it; every 2–4 weeks is enough to see a trend.\n\nThis plan aims for <120/80 mmHg, as some doctors do, based on the SPRINT and ESPRIT trials, or <130/80 mmHg if you\'re frail.',
     guidelines: ['ACC/AHA 2017', 'SPRINT 2015', 'ESPRIT 2024'],
     references: [REF_BP_2017, ...REFS_BP_TRIALS],
   },

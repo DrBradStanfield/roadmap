@@ -1024,6 +1024,9 @@ describe('generateSuggestions', () => {
       // Its evidence reuses the plan's blood pressure references.
       expect(card?.references?.map(r => r.url)).toContain('https://doi.org/10.1161/HYP.0000000000000065');
       expect(card?.reason).toContain('no symptoms');
+      // Brad 2026-11-02: the reason's target has no age either.
+      expect(card?.reason).toContain("This plan aims for <120/80 mmHg, as some doctors do, based on the SPRINT and ESPRIT trials, or <130/80 mmHg if you're frail.");
+      expect(card?.reason).not.toMatch(/65/);
     });
 
     it('asks to check a reading the plan left out as swapped, with the approved text (Brad 2026-11-02)', () => {
