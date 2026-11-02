@@ -69,7 +69,10 @@ export async function dispatchRpc(incoming: unknown, surface: RpcSurface): Promi
   const isNotification = message.id === undefined;
   const method = typeof message.method === 'string' ? message.method : '';
   const params = (message.params ?? {}) as Record<string, unknown>;
-  if (!method) return isNotification ? null : rpcFailure(id, INVALID_REQUEST, 'A request needs a method');
+  // A notification is never answered, and never runs a tool: the result would
+  // have nowhere to go (US-32 AC55).
+  if (isNotification) return null;
+  if (!method) return rpcFailure(id, INVALID_REQUEST, 'A request needs a method');
 
   switch (method) {
     case 'initialize': {
@@ -109,6 +112,6 @@ export async function dispatchRpc(incoming: unknown, surface: RpcSurface): Promi
         : rpcFailure(id, INTERNAL_ERROR, outcome.errorMessage);
     }
     default:
-      return isNotification ? null : rpcFailure(id, METHOD_NOT_FOUND, `Unknown method ${method}`);
+      return rpcFailure(id, METHOD_NOT_FOUND, `Unknown method ${method}`);
   }
 }

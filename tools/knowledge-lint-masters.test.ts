@@ -144,6 +144,79 @@ describe('US-50 AC7 static: the real docs/blog files', () => {
   });
 });
 
+// US-70 AC1: condition-guide shape, in test:all, on `kind: condition` guidelines only.
+describe('US-70 AC1 static: condition guides (guide-shape)', () => {
+  const SOUND = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'fixtures', 'condition-guide', 'sound.md'), 'utf8');
+  const guide = (raw = SOUND) => entryFrom({ handle: 'g', type: 'guideline', title: 'g' }, raw);
+  const items = (raw: string) => staticMasterFindings([guide(raw)], '', CFG).fails.map((f) => `${f.rule}: ${f.item}`);
+
+  it('passes the sound fixture', () => {
+    expect(items(SOUND)).toEqual([]);
+  });
+  it('fails a guide over 35,000 characters', () => {
+    expect(items(SOUND.replace('Text.', 'x'.repeat(35_000)))).toEqual([expect.stringMatching(/^guide-shape: runs \d+ characters \(at most 35000\)$/)]);
+  });
+  it('fails a missing section, a repeated one and one out of order', () => {
+    expect(items(SOUND.replace('## Medicines\n', ''))).toEqual(['guide-shape: needs one "## Medicines" section (found 0)']);
+    expect(items(SOUND.replace('## Common questions\n', '## Common questions\n\nA.\n\n## Common questions\n'))).toEqual(['guide-shape: needs one "## Common questions" section (found 2)']);
+    expect(items(SOUND.replace('## In short', '## Tmp').replace('## What it is', '## In short').replace('## Tmp', '## What it is')))
+      .toEqual(['guide-shape: "## Get help now" is out of the template order', 'guide-shape: "## What it is" is out of the template order']);
+  });
+  it('takes "Current evidence position" for the view, and refuses an undated Brad\'s view', () => {
+    expect(items(SOUND.replace("## Brad's view (reviewed 2 Nov 2026)", '## Current evidence position'))).toEqual([]);
+    expect(items(SOUND.replace("## Brad's view (reviewed 2 Nov 2026)", "## Brad's view"))).toEqual([
+      'guide-shape: needs one "## Brad\'s view (reviewed D Mon YYYY) or Current evidence position" section (found 0)']);
+  });
+  it('fails a red flag without the exact emergency line, and any other version of the line', () => {
+    expect(items(SOUND.replace('now (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).\n- Chest', 'now.\n- Chest'))).toEqual([
+      expect.stringMatching(/^guide-shape: a red flag lacks the exact emergency line \(111 in NZ, 000 in Australia, 911 in the US, 999 in the UK\): - Blood pressure of 180/)]);
+    expect(items(SOUND.replace('Text.', 'Call 111 in NZ or 911 in the US.'))).toEqual(['guide-shape: 1 other version(s) of the emergency line; copy (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) exactly']);
+    expect(items(SOUND.replace(/^- Blood[^\n]*\n- Chest[^\n]*\n/m, ''))).toEqual(['guide-shape: "## Get help now" has no red-flag bullets']);
+  });
+  // Review A5: any emergency-number list counts, whatever its first country or number, and Get help now holds bullets only.
+  it('counts any emergency-number list, whatever its first country or number: each must be the exact line', () => {
+    const other = (list: string) => items(SOUND.replace('## Medicines\n\nText.', `## Medicines\n\nCall ${list}.`));
+    const one = ['guide-shape: 1 other version(s) of the emergency line; copy (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) exactly'];
+    expect(other('(112 in NZ, 000 in Australia, 911 in the US, 999 in the UK)')).toEqual(one);
+    expect(other('(000 in Australia, 111 in NZ, 911 in the US, 999 in the UK)')).toEqual(one);
+    expect(other('(999 in the UK, 911 in the US, 000 in Australia)')).toEqual(one);
+    expect(other('000 in Australia')).toEqual(one);
+    expect(items(SOUND.replace('now (111 in NZ', 'now (111 in New Zealand'))).toEqual([
+      expect.stringMatching(/^guide-shape: a red flag lacks the exact emergency line .*: - Blood pressure of 180/), one[0]]);
+  });
+  it('fails any non-blank, non-bullet line in Get help now, a wrapped bullet included', () => {
+    expect(items(SOUND.replace('## Get help now\n\n', '## Get help now\n\nCall now if:\n'))).toEqual(['guide-shape: "## Get help now" has a line that is not a red-flag bullet: Call now if:']);
+    expect(items(SOUND.replace('arm: call your emergency number now (111', 'arm: call your emergency number now\n  (111'))).toEqual([
+      'guide-shape: "## Get help now" has a line that is not a red-flag bullet: (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).',
+      expect.stringMatching(/^guide-shape: a red flag lacks the exact emergency line .*: - Chest pain/)]);
+  });
+  it('fails bad keys: a licensed source name, no thresholds, a malformed threshold, a bad reviewed date', () => {
+    expect(items(SOUND.replace('"name":"guideline"', '"name":"consumerlab"'))).toEqual(['guide-shape: sources: item 0 name must be one of guideline, label, pubmed, nih-ods, brad-video']);
+    expect(items(SOUND.replace(/^thresholds:.*\n/m, ''))).toEqual(['guide-shape: thresholds: must be a single-line, non-empty JSON array']);
+    expect(items(SOUND.replace('"value":180', '"value":"180"'))).toEqual(['guide-shape: thresholds: item 0 needs {"ref": "CONSTANT.key", "value": <number>}']);
+    expect(items(SOUND.replace('reviewed: "2026-11-02"', 'reviewed: 2026-11-02'))).toEqual(['guide-shape: reviewed: must be a quoted valid date, "YYYY-MM-DD"']);
+  });
+  // Review A3: one definition, parseFrontmatter(raw)?.kind === 'condition', so a single-quoted kind is a guide too.
+  it("treats kind: 'condition', single-quoted, as a guide", () => {
+    const single = SOUND.replace('kind: "condition"', "kind: 'condition'");
+    expect(items(single)).toEqual([]);
+    expect(items(single.replace('## Medicines\n', ''))).toEqual(['guide-shape: needs one "## Medicines" section (found 0)']);
+  });
+  it('exempts a guideline with no kind: condition, whatever its size (diet.md, sleep.md)', () => {
+    const plain = SOUND.replace('kind: "condition"\n', '').replace('Text.', 'x'.repeat(60_000));
+    expect(items(plain)).toEqual([]);
+  });
+  it('a lint-allowlist.json waiver drops one finding in test:all', () => {
+    const files = {
+      'docs/blog/index.json': JSON.stringify([{ handle: 'g', type: 'guideline', title: 'g', summary: '', keywords: [] }]),
+      'docs/guideline/g.md': SOUND.replace('## Medicines\n', ''),
+    };
+    expect(staticMasterChecks(mkRoot(files)).fails.map((f) => f.rule)).toEqual(['guide-shape']);
+    const allow = { 'docs/loops/chat-health/lint-allowlist.json': JSON.stringify({ entries: [{ rule: 'guide-shape', handle: 'g', item: 'needs one "## Medicines" section (found 0)', reason: 'Testing', date: '2026-11-02', who: 'Brad' }] }) };
+    expect(staticMasterChecks(mkRoot({ ...files, ...allow })).fails).toEqual([]);
+  });
+});
+
 describe('US-50 AC7 weekly checks (date-dependent, never in test:all)', () => {
   const none = () => null;
   it('flags a master reviewed before its newest linked post', () => {

@@ -7,7 +7,7 @@
 
 import { useId } from 'react';
 import type React from 'react';
-import { commaQuestion, LIMIT_NOT_GRADED, type Comparator, type MetricType } from '@roadmap/health-core';
+import { commaQuestion, LIMIT_NOT_GRADED, limitUngraded, savedStatus, type Comparator, type MetricType } from '@roadmap/health-core';
 import { describedBy } from '../lib/aria';
 import { useRangeWait } from '../lib/useRangeWait';
 import {
@@ -20,9 +20,7 @@ import {
   readNumericCell,
   NUMERIC_SYNTAX_GUIDANCE,
   comparatorSymbol,
-  limitUngraded,
   previewStatus,
-  savedStatus,
   validateTypedValue,
 } from '../lib/blood-test-cell';
 

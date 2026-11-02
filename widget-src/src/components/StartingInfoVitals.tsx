@@ -13,8 +13,8 @@
 // add a new reading for any vital at one date.
 //
 // Status thresholds (IBW for weight, WHtR < 0.5 for waist, BP < 120/80) depend
-// on user demographics that the shared `statusOf` in `lib/blood-test-cell.ts`
-// doesn't carry, so they live here. Everything else reuses the `.bt-*` CSS,
+// on the plan; they live in health-core (row-grade.ts) beside `statusOf`, so
+// the iPhone grades by the same lines. Everything else reuses the `.bt-*` CSS,
 // the matrix's `Sparkline`, `NumericInputCell`, `DraftDateCell`, and `UnitChip`.
 
 import { useEffect, useId, useMemo, useRef, useState, type MutableRefObject } from 'react';
@@ -29,8 +29,9 @@ import {
   formatDisplayValue,
   getDisplayLabel,
   parseLocalisedNumber,
-  waistToHeightRatio,
-  isWaistToHeightElevated,
+  bpStatus,
+  simpleStatus,
+  type GradeStatus,
   bpTargetFor,
   rowTarget,
   PRESSURE_ORDER,
@@ -39,7 +40,6 @@ import {
 import type { PlanBasis } from './InputPanel';
 import { slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import {
-  type Status,
   blockBadNumericKeys,
   blockNonIntegerKeys,
   bpSysAdvance,
@@ -146,33 +146,6 @@ const ROWS: RowConfig[] = [
   { kind: 'simple', metric: 'waist', field: 'waistCm', label: 'Waist Circumference' },
   { kind: 'bp', label: 'Blood Pressure' },
 ];
-
-// ── Status thresholds (demographic-dependent — live here) ────────────────
-
-function weightStatus(siKg: number | null | undefined, ibw?: number): Status {
-  if (siKg == null || Number.isNaN(siKg) || ibw == null) return null;
-  if (siKg >= ibw - 5 && siKg <= ibw + 2) return 'ok';
-  if (siKg <= ibw + 5) return 'warn';
-  return 'bad';
-}
-/** 'ok' exactly when the plan counts the waist as healthy (US-06 AC5). */
-function waistStatus(siCm: number | null | undefined, heightCm?: number): Status {
-  if (siCm == null || Number.isNaN(siCm) || heightCm == null) return null;
-  if (!isWaistToHeightElevated(waistToHeightRatio(siCm, heightCm))) return 'ok';
-  if (siCm <= heightCm * 0.5 + 8) return 'warn';
-  return 'bad';
-}
-/** Neutral with no systolic target: there is no plan (US-06 AC5). */
-export function bpStatus(sys: number | null | undefined, dia: number | null | undefined, sysTarget: number | undefined): Status {
-  if (sys == null || dia == null || Number.isNaN(sys) || Number.isNaN(dia) || sysTarget === undefined) return null;
-  const diaTarget = 80;
-  if (sys < sysTarget && dia < diaTarget) return 'ok';
-  if (sys < sysTarget + 10 && dia < diaTarget + 5) return 'warn';
-  return 'bad';
-}
-export function simpleStatus(metric: 'weight' | 'waist', si: number | null | undefined, ibwKg?: number, planHeightCm?: number): Status {
-  return metric === 'weight' ? weightStatus(si, ibwKg) : waistStatus(si, planHeightCm);
-}
 
 // ── Date helpers ─────────────────────────────────────────────────────────
 
@@ -716,7 +689,7 @@ function BpInputCell({
   dia: string;
   /** Why the pair cannot be saved as it stands (`SAME_SLOT`). */
   clash?: string;
-  previewStatus: Status;
+  previewStatus: GradeStatus;
   onSysChange: (v: string) => void;
   onDiaChange: (v: string) => void;
   onEnter: () => void;

@@ -1,11 +1,5 @@
-import { METRIC_LABELS, PRESSURE_ORDER, UNIT_DEFS, labUnitRefusalNote, labUnitTaken, resolveLabCatalogEntry, roundBoundInward, type LabUnitRefusal, type MeasurementRefusal, type MetricType } from '@roadmap/health-core';
+import { METRIC_LABELS, PRESSURE_ORDER, UNIT_DEFS, labUnitRefusalNote, labUnitTaken, labValueLabel, resolveLabCatalogEntry, roundBoundInward, type LabUnitRefusal, type MeasurementRefusal, type MetricType } from '@roadmap/health-core';
 import { cellDecimalPlaces, cellFromSI, cellLabel, type CellUnit } from './blood-test-cell';
-
-/** A lab test's name for display: its catalogue label, else the snake_case name title-cased. */
-export function labValueLabel(metricName: string): string {
-  return resolveLabCatalogEntry(metricName)?.label
-    ?? metricName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-}
 
 /**
  * What a person reads when the record refused a lab value's unit: the unit a

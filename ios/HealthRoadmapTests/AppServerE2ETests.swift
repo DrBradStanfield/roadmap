@@ -23,7 +23,7 @@ final class AppServerE2ETests: XCTestCase {
             switch event {
             case .status(let text): statuses.append(text)
             case .text(let text): streamed += text
-            case .done(let content, _, let error): XCTAssertNil(error); final = content
+            case .done(let content, _, let error, _): XCTAssertNil(error); final = content
             default: break
             }
         }

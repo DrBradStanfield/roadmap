@@ -5,7 +5,8 @@
 // corrected in place, like a core one (AC5).
 
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { groupLabValues, countLabValuePoints, labGroupMatrix, type LabRowsIcon, type LabValueGroup } from '../lib/lab-rows';
+import { groupLabValues, type LabRowsIcon, type LabValueGroup } from '@roadmap/health-core';
+import { countLabValuePoints, labGroupMatrix } from '../lib/lab-rows';
 import { AddLabTest } from './AddLabTest';
 import { UnitChip } from './UnitChip';
 import { BatchDateCell, ValueCell, useLiveRegion } from './BloodTestTimeline';

@@ -1,4 +1,4 @@
-import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, ScreeningInputs, UsProductCardId } from './types';
+import type { HealthInputs, HealthResults, SuggestionInputs, Suggestion, MedicationInputs, ScreeningInputs, UsProductCardId } from './types';
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
@@ -219,7 +219,7 @@ export function medicinesShown(results: Pick<HealthResults, 'age' | 'knownMinor'
  * `now` is the moment screening due dates are measured against (US-31 AC11).
  */
 export function generateSuggestions(
-  inputs: HealthInputs,
+  inputs: SuggestionInputs,
   results: HealthResults,
   unitSystem: UnitSystem = 'si',
   medications?: MedicationInputs,
@@ -260,6 +260,28 @@ export function generateSuggestions(
     // Lp(a) reads on the side of its grade lines (US-07 AC11).
     return limit ? limitSIText(field, limit) : field === 'lpa' ? formatGradedReading('lpa', value, 'si') : String(Math.round(value));
   };
+
+  // === Missing measurements first (US-07 AC11, Brad 2026-11-02): waist, then blood pressure ===
+  if (results.waistToHeightRatio === undefined) {
+    suggestions.push({
+      id: 'measure-waist',
+      category: 'general',
+      priority: 'attention',
+      title: 'Measure your waist circumference',
+      description: 'Fat around the middle raises heart and metabolic risk, even at a healthy weight. Aim for a waist under half your height. Add your waist measurement.',
+    });
+  }
+  // The blood pressure cards below need both halves; without them, this prompt.
+  if (inputs.systolicBp === undefined || inputs.diastolicBp === undefined) {
+    suggestions.push({
+      id: 'measure-bp',
+      category: 'blood_pressure',
+      priority: 'attention',
+      ...(inputs.pressureOrder
+        ? { title: 'Check your blood pressure reading', description: 'Your last reading looks swapped: the top number (systolic) should be higher than the bottom (diastolic). Check it and add it again.' }
+        : { title: 'Measure your blood pressure', description: 'High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. Aim for below 120/80 (130/80 if you\'re frail).' }),
+    });
+  }
 
   // === Always-show lifestyle suggestions ===
 
@@ -398,17 +420,6 @@ export function generateSuggestions(
         suggestions.push({ id: `weight-med-${step}`, category: 'medication', priority, title, description });
       }
     }
-  }
-
-  // Prompt to measure waist circumference when BMI 25-29.9 and waist data missing
-  if (results.bmi !== undefined && results.bmi >= 25 && results.bmi < 30 && results.waistToHeightRatio === undefined) {
-    suggestions.push({
-      id: 'measure-waist',
-      category: 'general',
-      priority: 'attention',
-      title: 'Measure your waist circumference',
-      description: 'With a BMI in the 25\u201330 range, waist circumference helps determine whether your body composition poses health risks. Keep your waist below half your height. Enter your waist measurement above for a more accurate assessment.',
-    });
   }
 
   // HbA1c suggestions (thresholds in mmol/mol IFCC)

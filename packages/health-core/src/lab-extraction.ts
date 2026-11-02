@@ -1036,24 +1036,12 @@ export function isImportableEntryName(name: string, extensions: readonly string[
  * `egfr`), else "other". A closed list, so no free text, value, unit or date
  * can ride on it; the server's schema takes these and nothing else.
  */
-/**
- * Pregnancy, fertility and sex-hormone tests are counted as "other", never by
- * name: which of them a visitor had tested says too much (the orchestrator
- * narrowed Brad's "yes" this way on 2026-11-02, pending his word).
- */
-const UNNAMED_LIMIT_TESTS: ReadonlySet<string> = new Set([
-  'hcg', 'estradiol', 'estrone', 'progesterone', 'oh_progesterone_17', 'lh', 'fsh', 'prolactin', 'amh', 'shbg',
-  'testosterone_total', 'free_testosterone', 'free_testosterone_calculated', 'bioavailable_testosterone', 'dht',
-  'androstenedione', 'dhea_s',
-]);
-
-export const LIMIT_TEST_WORDS: readonly string[] = [...new Set([...METRIC_TYPES, ...LAB_CATALOG.map(e => e.key).filter(k => !UNNAMED_LIMIT_TESTS.has(k)), 'other'])];
+export const LIMIT_TEST_WORDS: readonly string[] = [...new Set([...METRIC_TYPES, ...LAB_CATALOG.map(e => e.key), 'other'])];
 
 /** A test's word in that list: its core key, its catalogue key, or "other". */
 function limitTestWord(metricOrName: string): string {
   if ((METRIC_TYPES as readonly string[]).includes(metricOrName)) return metricOrName;
-  const key = resolveLabCatalogEntry(metricOrName)?.key;
-  return key && !UNNAMED_LIMIT_TESTS.has(key) ? key : 'other';
+  return resolveLabCatalogEntry(metricOrName)?.key ?? 'other';
 }
 
 /**

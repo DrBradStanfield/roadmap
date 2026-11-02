@@ -111,6 +111,9 @@ struct MetricChart: View {
         palette[metric] ?? [.accentColor]
     }
 
+    /// Every lab test beyond the core ones shares one slate, the web's (MyDataRows.tsx LAB_TINT), as PSA's.
+    nonisolated static var labTint: Color { palette["psa"]![0] }
+
     /// Hand-chosen pairs, light then dark, 0xRRGGBB: each reads as a line on its card (3:1,
     /// MyDataLayoutTests) and is calmer in dark mode (Brad 2026-10-23). Built once.
     nonisolated static let palette: [String: [Color]] = [
