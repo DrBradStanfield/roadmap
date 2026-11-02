@@ -1450,6 +1450,19 @@ describe('generateSuggestions', () => {
       expect(screeningForm(60, 'male', scr).flatMap((s) => s.groups.flatMap((g) => g.fields.map((f) => ('key' in f ? f.key : ''))))).not.toContain('lung_screening');
     });
 
+    it('US-07 AC1f: an abnormal lung CT keeps its follow-up card when pack-years drop below 20 (Brad 2026-11-03)', () => {
+      const { inputs, results } = createTestData({ birthYear: 1966, birthMonth: 1 }, { age: 60 });
+      const abnormal: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 15, lungScreening: 'annual_ldct', lungLastDate: '2025-01', lungResult: 'abnormal' };
+      const lung = (scr: ScreeningInputs) => generateSuggestions(inputs, results, 'si', undefined, scr).filter(s => s.id.startsWith('screening-lung'));
+      const followup = lung(abnormal);
+      expect(followup.map(s => s.id)).toEqual(['screening-lung-followup']);
+      expect(followup[0].priority).toBe('urgent');
+      expect(lung({ ...abnormal, lungFollowupStatus: 'scheduled' }).map(s => s.title)).toEqual(['Lung follow-up scheduled']);
+      // Below 20 with a normal result: no start, overdue or up-to-date card.
+      expect(lung({ ...abnormal, lungResult: 'normal' })).toEqual([]);
+      expect(lung({ ...abnormal, lungScreening: 'not_yet_started' })).toEqual([]);
+    });
+
     it('US-07 AC1e: no quit window, as ACS 2023 (Brad 2026-11-03): the plan and the roadmap text screen former smokers however long ago they quit', () => {
       const { inputs, results } = createTestData({ birthYear: 1950, birthMonth: 1 }, { age: 76 });
       const scr: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 20 };

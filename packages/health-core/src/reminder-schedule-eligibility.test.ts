@@ -69,6 +69,15 @@ describe('screening reminder eligibility (US-06, algorithm doc table)', () => {
     expect(scheduled('male', 60, { ...ALL_STARTED, lungSmokingHistory: 'current_smoker' }).has('screening_lung')).toBe(true);
   });
 
+  it('US-07 AC1f: an abnormal lung CT keeps its reminder whatever the pack-years (Brad 2026-11-03)', () => {
+    const abnormal: ScreeningInputs = { ...ALL_STARTED, lungPackYears: 15, lungResult: 'abnormal', lungFollowupStatus: 'completed', lungFollowupDate: '2025-03' };
+    expect(scheduled('male', 60, abnormal).has('screening_lung')).toBe(true);
+    expect(scheduled('male', 60, { ...abnormal, lungFollowupStatus: 'not_organized', lungFollowupDate: undefined }).has('screening_lung')).toBe(true);
+    // A normal result below 20 pack-years still gets no reminder, and the age limits hold.
+    expect(scheduled('male', 60, { ...abnormal, lungResult: 'normal' }).has('screening_lung')).toBe(false);
+    expect(scheduled('male', 81, abnormal).has('screening_lung')).toBe(false);
+  });
+
   it('a screening not yet started schedules nothing', () => {
     const notStarted: ScreeningInputs = {
       ...ALL_STARTED,

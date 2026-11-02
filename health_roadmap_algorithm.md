@@ -1052,6 +1052,8 @@ With no sex on record only the unsexed screenings (colorectal, lung) show (US-07
 
 Lung: the plan does not ask when someone quit. Like the American Cancer Society's 2023 guideline, a former smoker with >= 20 pack-years stays eligible however long ago they quit (Brad 2026-11-03; US-07 AC1e).
 
+Lung follow-up: once an abnormal low-dose CT is recorded, its follow-up card and its `screening_lung` reminder stay whatever the pack-years, so a later correction below 20 never drops them (Brad 2026-11-03; US-07 AC1f). The age limits (50-80) and the former/current smoker history still apply. Below 20 pack-years no start, overdue or up-to-date card shows.
+
 ### Screening Intervals (months)
 
 | Method Key | Months |
