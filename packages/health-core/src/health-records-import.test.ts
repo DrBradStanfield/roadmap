@@ -877,6 +877,21 @@ describe('US-72 AC9: the import wins a conflict', () => {
     expect(file.labValues.filter((m) => m.status === 'active')).toEqual([expect.objectContaining({ value: 3.0, source: 'health_records' })]);
   });
 
+  // Codex: two phones can each import the same version under their own row id (AC5); the
+  // person's correction of either copy is their call, whichever copy the merge left newest.
+  it('AC8: a correction of one of two copies of the newest version, merged, stands against a re-stamp', () => {
+    const phoneA = run(empty(), [ldl(4.6, '1', 'final')], at(1)).file;
+    const phoneB = run(empty(), [ldl(4.6, '1', 'final')], at(2)).file;
+    const fixed = correctValue(phoneA, { id: phoneA.labValues[0].id, newValue: 4.2, now: at(3) });
+    if (!fixed.ok) throw new Error('setup');
+    const merged = mergeFiles(fixed.file, phoneB, { deviceId: 'phone', now: at(4) });
+    expect(merged.labValues.filter((m) => m.status === 'active')).toEqual([expect.objectContaining({ value: 4.2, source: 'manual_correction' })]);
+    expect(merged.labValues.filter((m) => m.source === 'health_records').map((m) => m.status)).toEqual(['entered-in-error', 'entered-in-error']);
+    const { file, counts } = run(merged, [ldl(4.6, '2')], at(5));
+    expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 1, notRead: 0 });
+    expect(file.labValues.filter((m) => m.status === 'active')).toEqual([expect.objectContaining({ value: 4.2, source: 'manual_correction' })]);
+  });
+
   it('AC5, AC9: a lost merge\'s marker carries the version\'s content, so a deleted day stays empty for it', () => {
     const phone = run(empty(), [ldl(4.6, '1', 'final')], at(1)).file;
     const web = appendMeasurement(empty(), { metricType: 'ldl', value: 3.1, recordedAt: '2026-10-21', now: at(2) });
