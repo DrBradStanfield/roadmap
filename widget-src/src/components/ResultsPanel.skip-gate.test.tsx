@@ -33,15 +33,12 @@ vi.mock('../lib/build-flags', () => ({ get SHOPIFY_SURFACE() { return mocks.shop
 vi.mock('../lib/assistant-config', () => ({ getSkipEmailGate: () => mocks.skip.value }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
 import { ResultsPanel, REMINDER_SIGNUP_LABEL, REMINDER_SIGNUP_DONE, GUEST_CAPTURE_BUTTON_LABEL, PDF_WINDOW_BLOCKED } from './ResultsPanel';
-import { EMAIL_STORAGE_NOTICE, StorageNoticeContext } from '../lib/storage-notice';
 
 const results = calculateHealthResults({ heightCm: 175, sex: 'male' });
 
 function plan(props: Partial<React.ComponentProps<typeof ResultsPanel>> = {}) {
   return (
-    <StorageNoticeContext.Provider value>
-      <ResultsPanel results={results} isValid tiles={results ? statTiles(results, { unitSystem: 'si' }) : []} showEmailCapture formStage={3} {...props} />
-    </StorageNoticeContext.Provider>
+    <ResultsPanel results={results} isValid tiles={results ? statTiles(results, { unitSystem: 'si' }) : []} showEmailCapture formStage={3} {...props} />
   );
 }
 function showPlan(props: Partial<React.ComponentProps<typeof ResultsPanel>> = {}) {
@@ -82,23 +79,16 @@ describe('US-44 AC2 — gate skipped: Save as PDF straight away, nothing persist
 });
 
 describe('US-44 AC3/AC4 — the optional reminders line', () => {
-  it('renders once, labelled, with the MicroVitamin list disclosure and the storage sentence last', () => {
+  it('renders once, labelled, with no mailing-list notice (Brad 2026-11-02) and no storage sentence (US-09 AC5)', () => {
     const view = showPlan();
     const inputs = view.container.querySelectorAll('input[type="email"]');
     expect(inputs).toHaveLength(1);
     expect(view.getByLabelText(REMINDER_SIGNUP_LABEL)).toBe(inputs[0]);
     const box = inputs[0].closest('.email-capture')!;
     expect(box.classList.contains('field-attention')).toBe(false);
-    const disclosure = box.querySelector('.email-capture-disclosure')!;
-    expect(disclosure.textContent).toBe(
-      'Signing up adds you to the MicroVitamin mailing list (Dr Brad\'s supplement company), and ' +
-        'we\'ll email you when a check-up or blood test is due. We store only check-up names and dates, ' +
-        'never your results. Every email has a one-click unsubscribe.',
-    );
-    expect(disclosure.querySelector('strong')?.textContent).toBe('MicroVitamin mailing list');
-    const notice = box.querySelector('.hr-storage-notice')!;
-    expect(notice.textContent).toBe(EMAIL_STORAGE_NOTICE);
-    expect(box.lastElementChild).toBe(notice);
+    expect(box.querySelector('.email-capture-disclosure')).toBeNull();
+    expect(box.textContent).not.toContain('MicroVitamin mailing list');
+    expect(box.querySelector('.hr-storage-notice')).toBeNull();
   });
 
   it('submitting enrols through the same capture call, opens no print window and marks the record captured', async () => {
@@ -520,5 +510,27 @@ describe('US-07 AC6 — a known minor gets Save as PDF and no email box', () => 
     mocks.skip.value = false;
     const view = showPlan();
     expect(view.getAllByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL }).length).toBeGreaterThan(0);
+  });
+});
+
+describe('US-62 AC14 (Brad 2026-11-02): the plan column, top to bottom', () => {
+  it('the snapshot tiles lead, then the storage card, then the PDF box, then the suggestions; the header sits above the scroller', () => {
+    mocks.skip.value = false;
+    const syncControl = ({ hasData }: { hasData: boolean }) => (hasData ? <div className="hr-sync">Where do you want to keep your health record?</div> : null);
+    const view = showPlan({ syncControl });
+    const at = (selector: string) => {
+      const el = view.container.querySelector(selector);
+      expect(el, selector).not.toBeNull();
+      return el!;
+    };
+    const order = ['.quick-stats', '.hr-sync', '.email-capture', '.suggestions-section'].map(at);
+    for (let i = 1; i < order.length; i++) {
+      expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+    // Siblings in the one body, so the column's single gap spaces them alike.
+    const body = at('.health-results-panel > .hr-col-body');
+    for (const el of order) expect(el.parentElement).toBe(body);
+    // The header is the body's sibling, outside the scroller, so it never scrolls away.
+    expect(body.contains(at('.health-results-panel > .hr-col-header'))).toBe(false);
   });
 });
