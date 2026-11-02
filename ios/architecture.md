@@ -82,6 +82,10 @@ above, the contract hashes to `8dee92d80c028ed3`, which `EngineRelease.bridge` a
 `bridge.test.ts` now carry. Builds 3 and 4 stop receiving over-the-air engines: the US-61
 engine and this one reach them only through the next App Store build.
 
+**Bridge moved 2026-11-02 (US-66, D10).** The contract now names the `healthRecords` edit, so
+it hashes to `177c634c21856aea`. A new app never runs an older over-the-air engine that lacks
+the edit; earlier builds keep their own bridge and get the edit only through the App Store.
+
 Speed, measured 2026-10-21 (Node 22, esbuild bundle, an Intel iMac, the sample record
 padded to 526 rows; `--jitless` stands in for an app's JavaScriptCore, which runs without a
 JIT): build the plan 1.3 ms with JIT, 1.6 ms without; merge two copies 3.2 ms vs 4.6 ms.
@@ -765,6 +769,17 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
 - **Usage signal (D9):** "Health Records asked" when HealthKit said the lab results request
   was needed (`statusForAuthorizationRequest` before asking), "Health Records imported" when
   a batch's `added + corrected > 0`.
+- **Checked on the simulator 2026-11-02 (iOS 27, region US, Sample Institution A added in
+  Health › Browse › Health Records › Add Account).** The one request shows Health Records'
+  own sheet FIRST (how sharing works, the accounts, "You Should Know", Lab Results with our
+  purpose string and Privacy Policy link, then "Automatically Share" or "Ask Before Sharing"
+  for new records), then the vitals sheet. The app read 3 results, source
+  `com.apple.public.health.clinical.<UUID>|Sample Location A`, all DSTU2 Observations. None
+  landed: all three carry `issued` and no `effectiveDateTime`, so AC3 refuses them (one is a
+  panel with no value). So "rows appear in My data" is unproven on Apple's sample data.
+- **Gotcha:** an onboarding UI test that waits for the vitals sheet
+  (`UIA.Health.AuthSheet.AllCategoryButton`) meets the Health Records sheet first on a
+  simulator where `supportsHealthRecords()` is true (a US region, or an account added).
 
 **Writing.** Values typed in the app go to Apple Health. The sync identifier is the root id
 of the correction chain, with a rising version, so a correction replaces our sample instead
