@@ -148,6 +148,9 @@ describe('US-62 AC13: each step reveals the next', () => {
     expect(view.getByText(WHY_SEX)).toBeTruthy();
     expect(q(view, '#birthMonth')).toBeNull();
     expect(fullForm(view)).toBe(false);
+    // Brad 2026-11-02: once a sex is chosen its why-line goes (About you's Sex row keeps it).
+    fireEvent.click(view.getByRole('radio', { name: 'Female' }));
+    expect(view.queryByText(WHY_SEX)).toBeNull();
   });
 
   it('sex adds the healthy weight and protein target, then asks the birth date with its why-text', async () => {

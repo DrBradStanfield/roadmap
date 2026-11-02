@@ -981,7 +981,9 @@ export function InputPanel({
           </button>
         ))}
       </div>
-      <p className="field-why">Used to calculate ideal body weight, kidney function, and screening programs.</p>
+      {/* Brad 2026-11-02: the why-line asks; once answered it goes. About you's
+          Sex row keeps it: someone opening it is reconsidering. */}
+      {(!inputs.sex || aboutYouLow) && <p className="field-why">Used to calculate ideal body weight, kidney function, and screening programs.</p>}
       {errors.sex && <span className="error-message">{errors.sex}</span>}
     </div>
   );
