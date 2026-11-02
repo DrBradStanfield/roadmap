@@ -223,6 +223,16 @@ describe('US-15 AC33: run_roadmap in the Pages chat', () => {
     expect(result.roadmap.profile.knownMinor).toBe(true);
   });
 
+  it('US-67 AC2: a value that looks like the wrong unit is asked about in a second call, and not proposed', async () => {
+    const suspect = { ...FIELD, input: { field: 'ldlC', value: 3.4, unit: 'mg/dL' } };
+    state.replies = [{ text: '', blocks: [suspect] }, { text: 'Is that mmol/L?', blocks: [{ type: 'text', text: 'Is that mmol/L?' }] }];
+    const { result } = await sendMessage('my LDL is 3.4 mg/dL', null, SNAPSHOT);
+    expect(state.bodies).toHaveLength(2);
+    expect(state.bodies[1].messages.at(-1).content[0].content).toMatch(/^Not saved: this value looks like it may be in a different unit/);
+    expect(result!.content).toBe('Is that mmol/L?');
+    expect(result!.proposedEdits).toEqual([]);
+  });
+
   it('a failed second call is the chat\'s error, not a partial answer', async () => {
     state.replies = [{ text: '', blocks: [RUN] }, new TypeError('network down')];
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
