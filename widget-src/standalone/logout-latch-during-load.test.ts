@@ -12,6 +12,8 @@
  * Same harness as logout-persistence.test.ts (second module graph standing in
  * for another tab, simulated `storage` events, in-memory provider only).
  */
+import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryAdapter } from '@roadmap/health-core';
 
@@ -190,5 +192,95 @@ describe('US-09 AC2f: a tab still loading when another tab logs off', () => {
     await expect(store.flush()).rejects.toThrow();
     expect(localStorage.getItem(FILE_KEY)).toBeNull();
     expect(localStorage.getItem(PENDING_KEY)).toBeNull();
+  });
+});
+
+/** The other tab's modules, from a fresh module graph. */
+async function otherTab() {
+  vi.resetModules();
+  return {
+    storage: await import('../src/storage/roadmap-store'),
+    local: await import('../src/storage/local-storage-adapter'),
+    connect: await import('./connect'),
+  };
+}
+type OtherTab = Awaited<ReturnType<typeof otherTab>>;
+type Resolved = import('./connect').ResolvedBackend;
+
+/** app.tsx's main() from its first line through the first record load: the
+ *  real source, run with the other tab's modules. `resolveBackend` stands in
+ *  for the wait before any cloud host exists (an OAuth code exchange, or a
+ *  remembered Drive's token refresh). Same slice-and-run approach as
+ *  logout-persistence.test.ts's installLifecycle. */
+async function runMainUntilLoaded(other: OtherTab, resolveBackend: () => Promise<{ resolved: Resolved }>) {
+  const source = readFileSync(new URL('./app.tsx', import.meta.url), 'utf8');
+  const start = source.indexOf('async function main() {');
+  const load = source.indexOf('await startOnBackend(', start);
+  expect(start).toBeGreaterThan(0);
+  expect(load).toBeGreaterThan(start);
+  const body = source.slice(source.indexOf('{', start) + 1, source.indexOf('\n', load));
+  let store!: Awaited<ReturnType<OtherTab['storage']['RoadmapStore']['create']>>;
+  const backend: string = await runInNewContext(`(async () => {${body}\n  return backend;\n})()`, {
+    initSentry: () => {},
+    takeEmailFlag: () => false,
+    resolveBackend,
+    startOnBackend: other.connect.startOnBackend,
+    initRoadmapStore: async (adapter: Resolved['adapter']) => { store = await other.storage.RoadmapStore.create(adapter); },
+    noteOtherTabsLogOffWhileLoading: other.local.noteOtherTabsLogOffWhileLoading,
+  });
+  return { backend, store };
+}
+
+describe('US-09 AC2f: a log-off before any cloud host exists (standalone main())', () => {
+  // Brad's agent (2026-11-02): the note started only when webRecordHost built
+  // a cloud host, after main()'s first await, so a log-off during the OAuth
+  // code exchange or the Drive token refresh was still missed.
+  it.each([
+    ['the OAuth code exchange (Dropbox return)', 'dropbox'],
+    ['a remembered Drive token refresh', 'google-drive'],
+  ] as const)('latches when the log-off comes during %s', async (_wait, backend) => {
+    const other = await otherTab();
+    const cloud = new SlowFirstReadCloud();
+    cloud.firstRead.resolve();
+    const waiting = deferred();
+    const running = runMainUntilLoaded(other, async () => {
+      await waiting.promise;
+      // The Dropbox return lifts the device copy up first (app.tsx).
+      if (backend === 'dropbox') await other.connect.liftLocalInto(cloud, 'dropbox');
+      return { resolved: { adapter: cloud, backend } };
+    });
+
+    await connect.logOff('local'); // another tab logs off during the wait
+
+    waiting.resolve();
+    const { backend: started, store } = await running;
+    expect(started).toBe(backend);
+    expect(other.local.roadmapLocalWritesStopped()).toBe(true);
+
+    store.addMeasurement('weight', 81, '2026-01-01');
+    cloud.fail = true;
+    await expect(store.flush()).rejects.toThrow();
+    expect(localStorage.getItem(FILE_KEY)).toBeNull();
+    expect(localStorage.getItem(PENDING_KEY)).toBeNull();
+    expect(localStorage.getItem(UNRELATED_KEY)).toBe('keep');
+  });
+
+  it('does not latch when that wait ends on the device copy (Drive refresh failed)', async () => {
+    const other = await otherTab();
+    const waiting = deferred();
+    const running = runMainUntilLoaded(other, async () => {
+      await waiting.promise;
+      return { resolved: { adapter: new other.local.LocalStorageAdapter(), backend: 'local', reconnect: 'google-drive' } };
+    });
+
+    await connect.logOff('local');
+
+    waiting.resolve();
+    const { backend: started, store } = await running;
+    expect(started).toBe('local');
+    expect(other.local.roadmapLocalWritesStopped()).toBe(false);
+    store.addMeasurement('weight', 81, '2026-01-01');
+    await store.flush();
+    expect(localStorage.getItem(FILE_KEY)).not.toBeNull(); // its only copy is kept
   });
 });

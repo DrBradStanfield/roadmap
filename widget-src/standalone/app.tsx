@@ -19,6 +19,7 @@ import { resolveMarketCountry, setMarketCountry } from '../src/lib/market-countr
 import { autoEnrolReminders, cancelRemindersForErase, pushReminderSchedule } from './reminders';
 import { RemindersEnrolledNotice } from './reminders-control';
 import { DropboxAdapter, GoogleDriveAdapter } from '../src/storage';
+import { noteOtherTabsLogOffWhileLoading } from '../src/storage/local-storage-adapter';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
 import { SyncControl, RemindersSection } from './sync-control';
@@ -82,6 +83,11 @@ async function resolveBackend(): Promise<{ resolved: ResolvedBackend; refused?: 
 
 async function main() {
   initSentry();
+  // Before the first await (US-09 AC2f): another tab's log-off signal is set
+  // and removed at once, so note one heard during the OAuth code exchange or
+  // a Drive token refresh too. A cloud load that succeeds latches on it; a
+  // page that ends on the device copy never does.
+  noteOtherTabsLogOffWhileLoading();
   // Before the first await (US-22 AC13): an OAuth return rewrites the URL.
   const fromEmail = takeEmailFlag();
   const { resolved, refused } = await resolveBackend();

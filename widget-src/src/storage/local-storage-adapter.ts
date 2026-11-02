@@ -54,7 +54,8 @@ let logOffHeardWhileLoading = false;
 function noteLogOffSignal(event: Event): void {
   if ((event as StorageEvent).key === LOG_OFF_SIGNAL_KEY) logOffHeardWhileLoading = true;
 }
-/** A cloud host was just built and its first read may still be running. The
+/** The page is starting (standalone main(), before its first await) or a
+ *  cloud host was just built, and its first read may still be running. The
  *  log-off signal is set and removed at once, so note one heard now; the page
  *  latches on it only if a cloud load succeeds (latchOnOtherTabsLogOff, via
  *  mirror.opened()). A load that fails falls back to the device, whose copy is
