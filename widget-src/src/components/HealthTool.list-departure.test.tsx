@@ -16,6 +16,8 @@ import {
 } from '../lib/roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { isSyncPending } from '../storage';
+import { DropboxAdapter } from '../storage/dropbox';
+import { GoogleDriveAdapter } from '../storage/drive';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -152,6 +154,25 @@ class StalledCloud extends MemoryAdapter {
   }
 }
 
+/** Dropbox's and Drive's own adapter classes, so the page builds the host it
+ *  builds for them; their requests go to `cloud`, and every save hangs, as a
+ *  request the closing page kills (Brad's agent, 2026-11-02). */
+const PROVIDERS = {
+  Dropbox: () => new DropboxAdapter({ clientId: 'synthetic', redirectUri: 'https://example.test/' }),
+  'Google Drive': () => new GoogleDriveAdapter({
+    clientId: 'synthetic', scope: 'synthetic', redirectUri: 'https://example.test/', exchangeUrl: 'https://example.test/token',
+  }),
+};
+function stalledProvider(provider: keyof typeof PROVIDERS, cloud: MemoryCloud) {
+  const adapter = PROVIDERS[provider]();
+  const transport = new StalledCloud(cloud);
+  const calls = transport as unknown as Record<string, ((...args: unknown[]) => unknown) | undefined>;
+  for (const method of ['connect', 'isConnected', 'disconnect', 'read', 'write', 'readDocument', 'writeDocument', 'list', 'remove', 'watch']) {
+    Object.assign(adapter, { [method]: calls[method]?.bind(transport) });
+  }
+  return adapter;
+}
+
 describe('US-06 AC13: a cloud page keeps a change its stalled save had not landed', () => {
   afterEach(async () => {
     Reflect.deleteProperty(document, 'visibilityState');
@@ -160,13 +181,13 @@ describe('US-06 AC13: a cloud page keeps a change its stalled save had not lande
   });
 
   /** The same GLP-1 user, saved in a cloud; the page then runs on a cloud whose saves hang. */
-  async function cloudPage(cloud: MemoryCloud) {
+  async function cloudPage(cloud: MemoryCloud, stalled: () => Parameters<typeof initRoadmapStore>[0] = () => new StalledCloud(cloud)) {
     await initRoadmapStore(new MemoryAdapter(cloud));
     await saveChangedMeasurements({ sex: 'female', heightCm: 178, birthYear: 1960, birthMonth: 1 }, {});
     await addMeasurement('weight', 101.4, '2026-09-01');
     await saveMedication('glp1', 'semaglutide_injection', 1, 'mg');
     await flushRoadmapStore();
-    await initRoadmapStore(new StalledCloud(cloud));
+    await initRoadmapStore(stalled());
     const view = render(<HealthTool />);
     await waitFor(() => expect(view.container.querySelector('#glp1-dose')).not.toBeNull());
     return view;
@@ -184,6 +205,21 @@ describe('US-06 AC13: a cloud page keeps a change its stalled save had not lande
     expect(cloudDose(cloud)).toBe(1);
     view.unmount();
     // The next page load reaches the cloud, and the marked device copy goes up.
+    await initRoadmapStore(new MemoryAdapter(cloud));
+    await flushRoadmapStore();
+    expect(cloudDose(cloud)).toBe(1.7);
+    expect(isSyncPending()).toBe(false);
+  });
+
+  it.each(Object.keys(PROVIDERS) as Array<keyof typeof PROVIDERS>)('%s: pagehide puts the change on the device at once, marked, and the next load sends it up', async provider => {
+    const cloud = new MemoryCloud();
+    const view = await cloudPage(cloud, () => stalledProvider(provider, cloud));
+    fireEvent.change(view.container.querySelector('#glp1-dose')!, { target: { value: '1.7' } });
+    act(() => leave.pagehide());
+    view.unmount(); // the page is gone: no timer or later turn can rescue the save
+    expect(onDevice().medications.find(m => m.medicationKey === 'glp1')?.doseValue).toBe(1.7);
+    expect(isSyncPending()).toBe(true);
+    expect(cloudDose(cloud)).toBe(1);
     await initRoadmapStore(new MemoryAdapter(cloud));
     await flushRoadmapStore();
     expect(cloudDose(cloud)).toBe(1.7);
