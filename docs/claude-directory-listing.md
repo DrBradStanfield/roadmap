@@ -18,7 +18,7 @@ Answers for each step of the submission form at **claude.ai/directory/manage →
 
 Anthropic's checklist asks every tool for a title plus `readOnlyHint: true` or `destructiveHint: true`. Seven tools carry one of the two set true. `add_measurement` and `add_lab_values` carry explicit `readOnlyHint: false` and `destructiveHint: false`, because they only ever add a row and never change or remove one. Brad decided to keep them that way.
 
-- **Considered and declined: mark both destructive.** Claude would then ask before every add. It is the conservative reading, and it passes the check. ChatGPT reads the same labels, so its approval prompt changes too, and OpenAI's tool scan would differ from the 1.0.2 submission while it is in review.
+- **Considered and declined: mark both destructive.** Claude would then ask before every add. It is the conservative reading, and it passes the check. ChatGPT reads the same labels, so its approval prompt changes too, and OpenAI's tool scan would differ from the 1.0.2 submission while it is in review. (That last reason ended with OpenAI's review on 2026-10-29; the first stands.)
 - **Chosen: leave them.** The portal flags them. A reviewer may accept the explanation in the form (append-only, refused on a duplicate day), or may ask for the change.
 
 Decision: submit with them unchanged and the explanation below. Flip them only if Anthropic asks.

@@ -15,8 +15,9 @@ Today a new user sees one welcome screen, taps "Get started", and lands on the f
 data form. It has about thirty rows. Nothing says which ones the plan needs. A person who
 fills in nothing gets "Your plan needs a few details" on My plan.
 
-The plan runs on two things, sex and height (health-core's one `PlanError` asks for
-them). Birth year adds age, which the screenings wait for. Weight makes the plan much
+The plan runs on height alone (health-core's one `PlanError` asks for it; US-07 AC8,
+2026-10-31). Sex adds the healthy weight, protein target, a calculated eGFR, the HDL
+verdict and the sexed screenings. Birth year adds age, which the screenings wait for. Weight makes the plan much
 better. Everything else can come later.
 
 ## What Apple does

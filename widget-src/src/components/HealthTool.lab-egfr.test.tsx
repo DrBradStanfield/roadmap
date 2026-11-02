@@ -59,7 +59,7 @@ describe('US-07 AC7: the widget reads the lab eGFR', () => {
     await waitFor(() => expect(seen.results?.eGFR).toBe(40));
     const results = seen.results!;
     expect(eGFRTile(view.container)).toContain('40');
-    expect(results.proteinTarget).toBe(Math.round(results.idealBodyWeight * 1.0));
+    expect(results.proteinTarget).toBe(Math.round(results.idealBodyWeight! * 1.0));
     expect(results.suggestions.map((s) => s.id)).not.toContain('high-potassium');
     await waitFor(() => expect(seen.chat).toBeTruthy());
     expect(chatEGFR()).toBe(40);

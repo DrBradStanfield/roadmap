@@ -20,6 +20,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import {
   type ApiMeasurement,
+  type FormStage,
   type HealthInputs,
   type MetricType,
   type UnitSystem,
@@ -42,6 +43,7 @@ import {
   blockBadNumericKeys,
   blockNonIntegerKeys,
   bpSysAdvance,
+  mayStillFit,
   readTypedValue,
   validateTypedValue,
 } from '../lib/blood-test-cell';
@@ -49,6 +51,7 @@ import { VITALS_DRAFT_KEY } from '../lib/storage';
 import { describedBy } from '../lib/aria';
 import { useDraftMirror, useMatrixDraft, type CellRef } from '../lib/useMatrixDraft';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
+import { useRangeWait } from '../lib/useRangeWait';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { usePrefillRef } from '../lib/usePrefillRef';
 import { Sparkline, ValueCell, BatchDateCell, BackfillCell, SAVE_ERRORS, SAVE_FAILED, SAME_SLOT, useLiveRegion } from './BloodTestTimeline';
@@ -75,10 +78,9 @@ interface StartingInfoVitalsProps {
   /** The draft values the plan and the chat may read, in SI; undefined
    *  leaves the field to the record. */
   onDraftValue: (field: keyof HealthInputs, value: number | undefined) => void;
-  /** Used to pulse the weight draft cell at stage 2 (the progressive-
-   *  disclosure gate that unlocks the blood-test panel): no weight in what
-   *  the plan reads, the draft's own included. */
-  formStage: 1 | 2 | 3;
+  /** Used to pulse the weight draft cell at stage 1 (US-62 AC13: no weight
+   *  in what the plan reads, the draft's own included). */
+  formStage: FormStage;
   /** What the plan was computed from (US-06 AC5): its age sets the
    *  blood-pressure target, its weight target (kg) the weight line and its
    *  validated height (cm) the waist line. Null until there is a plan. */
@@ -87,7 +89,9 @@ interface StartingInfoVitalsProps {
   knownMinor?: boolean;
   /** Called after the user types a valid weight — continues the
    *  height → weight → email focus chain from the legacy form. */
-  onAutoFocusEmail?: () => void;
+  onAutoFocusEmail?: () => boolean;
+  /** The weight is asked beside the height (US-62 AC13): its row is left out, so it shows once. */
+  withoutWeight?: boolean;
   /** Per-field unit overrides — clicking the weight/waist chip toggles
    *  just that metric's display unit (kg ↔ lbs, cm ↔ inches). */
   unitOverrides: Record<string, UnitSystem>;
@@ -262,9 +266,10 @@ export function vitalsCellsOf(
 
 export function StartingInfoVitals({
   vitalsHistory, unitSystem, onSave, onCorrectValue,
-  onDraftValue, formStage, plan, knownMinor, onAutoFocusEmail, unitOverrides, onToggleFieldUnit,
+  onDraftValue, formStage, plan, knownMinor, onAutoFocusEmail, withoutWeight, unitOverrides, onToggleFieldUnit,
   prefillRef, flushRef, onHoldsText,
 }: StartingInfoVitalsProps) {
+  const rows = withoutWeight ? ROWS.filter(r => r.kind !== 'simple' || r.metric !== 'weight') : ROWS;
   // The plan's systolic target; none, and no BP colours, with no plan. A known
   // minor gets no adult weight or BP target or colour (US-07 AC6); the waist
   // line, half the height, is also used in children, so it stays.
@@ -305,6 +310,14 @@ export function StartingInfoVitals({
     holdsText,
     draft, backfills, type, setDate, unitOf, expected, clashes, taken, lends, settle, refusal,
   } = useMatrixDraft<VitalsKey>(VITALS_DRAFT_KEY, { onScreen, rowsUnder, latestDay, cellOf: key => (key === 'dia' ? 'sys' : key) });
+  // No weight typed here while its row is hidden (the weight shows beside the
+  // height): a restored or earlier draft goes, so nothing unseen is lent to
+  // the plan or saved (US-62 AC13).
+  useEffect(() => {
+    if (!withoutWeight) return;
+    if (draft.values.weight) type([null, 'weight'], '', unitFor('weight'));
+    for (const [day, typed] of Object.entries(backfills)) if (typed?.weight) type([day, 'weight'], '', unitFor('weight'));
+  }, [withoutWeight]);
   // On a phone the grid sits hidden under rows: tell the page it holds typed text (US-62 AC11).
   useEffect(() => { onHoldsText?.(holdsText); }, [holdsText]);
   const [activeCell, setActiveCell] = useState<string | null>(null);
@@ -370,15 +383,10 @@ export function StartingInfoVitals({
       if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
       if (/^\d{2,3}$/.test(typed) && n >= 30 && n <= 400) {
         const couldExtend = /^\d{2}$/.test(typed) && n * 10 <= 400;
-        if (!couldExtend) {
-          focusedEmailRef.current = true;
-          requestAnimationFrame(() => onAutoFocusEmail());
-        } else {
-          focusTimerRef.current = setTimeout(() => {
-            focusedEmailRef.current = true;
-            onAutoFocusEmail();
-          }, 800);
-        }
+        // The once-only jump is spent only if it happened (not before the last answer).
+        const jump = () => { if (onAutoFocusEmail()) focusedEmailRef.current = true; };
+        if (!couldExtend) requestAnimationFrame(jump);
+        else focusTimerRef.current = setTimeout(jump, 800);
       }
     }
   };
@@ -416,6 +424,8 @@ export function StartingInfoVitals({
     }
 
     if (metric !== 'weight' && metric !== 'waist') return null;
+    // The weight asked beside the height has no row here: its edit goes to that field (US-62 AC13).
+    if (metric === 'weight' && withoutWeight) return null;
     if (date && column && column[metric] == null) {
       type([date, metric], typed, fromUnit, false);
       return flash(`${date}.${metric}`);
@@ -516,8 +526,8 @@ export function StartingInfoVitals({
             </div>
 
             {/* Metric rows */}
-            {ROWS.map((row, rowIdx) => {
-              const last = rowIdx === ROWS.length - 1 ? ' bt-row-last' : '';
+            {rows.map((row, rowIdx) => {
+              const last = rowIdx === rows.length - 1 ? ' bt-row-last' : '';
               const ref = refLabel(row);
               const nameCell = (
                 <div className="bt-cell-name">
@@ -541,7 +551,7 @@ export function StartingInfoVitals({
                 const lastSi = row.metric === 'weight' ? trend.lastW : trend.lastWa;
                 const lastStatus = lastSi != null ? simpleStatus(row.metric, lastSi, ibwKg, planHeightCm) : null;
                 return (
-                  <div key={row.metric} className={`bt-row${last}`}>
+                  <div key={row.metric} className={`bt-row${last}`} data-metric={row.metric}>
                     {nameCell}
                     {columns.map((c, colIdx) => {
                       if (c.kind === 'draft') {
@@ -555,7 +565,7 @@ export function StartingInfoVitals({
                             validationResult={typedError(null, row.metric)}
                             externalError={clashes(row.metric) || taken(row.metric) ? SAME_SLOT : refusal([null, row.metric])}
                             placeholder="—"
-                            wrapperClass={`bt-cell-input bt-cell-draft${formStage === 2 && row.metric === 'weight' ? ' field-attention' : ''}`}
+                            wrapperClass={`bt-cell-input bt-cell-draft${formStage === 1 && row.metric === 'weight' ? ' field-attention' : ''}`}
                             active={activeCell === cellId}
                             onChange={v => setSimpleDraft(row.metric, v)}
                             onFocus={() => setActiveCell(cellId)}
@@ -727,13 +737,26 @@ function BpInputCell({
   // sanitised in the change handlers below.
   const onKey: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
     blockNonIntegerKeys(e);
-    if (e.key === 'Enter') { e.preventDefault(); onEnter(); }
+    if (e.key === 'Enter') { e.preventDefault(); rangeWait.settle(); onEnter(); }
+  };
+  // US-02 AC9: the half being typed keeps back a range error more digits
+  // could still fix ("6" on the way to 65); leaving it or Enter shows it.
+  const rangeWait = useRangeWait();
+  const check = (half: 'sys' | 'dia', text: string) => validateTypedValue(half === 'sys' ? 'systolic_bp' : 'diastolic_bp', text, 'si');
+  const typedHalf = (half: 'sys' | 'dia', text: string) => {
+    const { range } = check(half, text);
+    rangeWait.typed(half, text, mayStillFit(text, range.min, range.max));
+  };
+  const rangeError = (half: 'sys' | 'dia', text: string) => {
+    const { error } = check(half, text);
+    return error && !rangeWait.waits(half, text) ? error : undefined;
   };
   // Auto-advance systolic → diastolic (US-02 AC6): immediately for an
   // unambiguous 3-digit value, after 800ms for a plausible 2-digit one.
   // Never steal focus if the user already left systolic or dia has content.
   const handleSysChange = (raw: string) => {
     const v = raw.replace(/[^0-9]/g, '');
+    typedHalf('sys', v);
     onSysChange(v);
     if (advanceTimer.current) { window.clearTimeout(advanceTimer.current); advanceTimer.current = null; }
     if (dia !== '') return;
@@ -745,13 +768,13 @@ function BpInputCell({
       }, 800);
     }
   };
-  const handleDiaChange = (raw: string) => onDiaChange(raw.replace(/[^0-9]/g, ''));
+  const handleDiaChange = (raw: string) => { const v = raw.replace(/[^0-9]/g, ''); typedHalf('dia', v); onDiaChange(v); };
   // Visible range validation (US-02 AC5) — same inline-error pattern as
   // NumericInputCell (this is the one cell that can't reuse it directly).
   // A pair the wrong way up is the pair's error, as a clash is (US-02 AC8).
   const pairError = clash ?? (pressureInverted(parseLocalisedNumber(sys), parseLocalisedNumber(dia)) ? PRESSURE_ORDER : undefined);
-  const sysError = validateTypedValue('systolic_bp', sys, 'si').error ?? pairError;
-  const diaError = validateTypedValue('diastolic_bp', dia, 'si').error ?? pairError;
+  const sysError = rangeError('sys', sys) ?? pairError;
+  const diaError = rangeError('dia', dia) ?? pairError;
   const error = sysError ?? diaError;
   // Each half's visible error describes it; a title would be captured with
   // the page (US-13 AC10). One error for the pair (a clash) shows once, and
@@ -781,12 +804,12 @@ function BpInputCell({
         <input ref={sysRef} className={`bt-input${active ? ' bt-input-active' : ''}${sysError ? ' bt-input-error' : ''}`}
                inputMode="numeric" pattern="[0-9]*" placeholder="sys" size={1} aria-label="Systolic blood pressure"
                aria-invalid={!!sysError} aria-describedby={describedBy(sysError && sysErrorId, diaOwnError && diaError === pairError && diaErrorId)}
-               value={sys} onChange={e => handleSysChange(e.target.value)} onKeyDown={onKey}/>
+               value={sys} onChange={e => handleSysChange(e.target.value)} onKeyDown={onKey} onBlur={rangeWait.settle}/>
         <span className="bt-vitals-bp-sep">/</span>
         <input ref={diaRef} className={`bt-input${active ? ' bt-input-active' : ''}${diaError ? ' bt-input-error' : ''}`}
                inputMode="numeric" pattern="[0-9]*" placeholder="dia" size={1} aria-label="Diastolic blood pressure"
                aria-invalid={!!diaError} aria-describedby={describedBy(diaError && (diaOwnError ? diaErrorId : sysErrorId))}
-               value={dia} onChange={e => handleDiaChange(e.target.value)} onKeyDown={onKey}/>
+               value={dia} onChange={e => handleDiaChange(e.target.value)} onKeyDown={onKey} onBlur={rangeWait.settle}/>
       </div>
       <div className="bt-cell-foot">
         {sysError && <span id={sysErrorId} className="bt-input-error-text">{sysError}</span>}

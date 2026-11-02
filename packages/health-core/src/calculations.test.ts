@@ -525,14 +525,14 @@ describe('getEgfrStatus', () => {
     expect(getEgfrStatus(69)).toBe('Low Normal');
   });
 
-  it('classifies Mildly Decreased (45-59)', () => {
-    expect(getEgfrStatus(45)).toBe('Mildly Decreased');
-    expect(getEgfrStatus(59)).toBe('Mildly Decreased');
+  it('classifies Mildly to Moderately Decreased (45-59, G3a)', () => {
+    expect(getEgfrStatus(45)).toBe('Mildly to Moderately Decreased');
+    expect(getEgfrStatus(59)).toBe('Mildly to Moderately Decreased');
   });
 
-  it('classifies Moderately Decreased (30-44)', () => {
-    expect(getEgfrStatus(30)).toBe('Moderately Decreased');
-    expect(getEgfrStatus(44)).toBe('Moderately Decreased');
+  it('classifies Moderately to Severely Decreased (30-44, G3b)', () => {
+    expect(getEgfrStatus(30)).toBe('Moderately to Severely Decreased');
+    expect(getEgfrStatus(44)).toBe('Moderately to Severely Decreased');
   });
 
   it('classifies Severely Decreased (15-29)', () => {

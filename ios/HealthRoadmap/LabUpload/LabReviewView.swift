@@ -110,7 +110,7 @@ struct LabReviewView: View {
             }
             if !review.notSaved.isEmpty || review.unreadCount > 0 {
                 Section("Not saved") {
-                    ForEach(review.notSaved, id: \.label) { Text("\($0.label): \($0.reason)") }
+                    ForEach(Array(review.notSaved.enumerated()), id: \.offset) { Text("\($0.element.label): \($0.element.reason)") }
                     if review.unreadCount > 0 { Text("\(review.unreadCount) value\(review.unreadCount == 1 ? "" : "s") could not be read.") }
                 }
             }

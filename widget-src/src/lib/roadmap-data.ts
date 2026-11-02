@@ -15,7 +15,7 @@ import {
   resolveLabCatalogEntry,
 } from '@roadmap/health-core';
 import { MEASUREMENT_REFUSALS_WITH_METRIC } from '@roadmap/health-core/product-events';
-import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome } from '../storage/roadmap-store';
+import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
@@ -103,6 +103,11 @@ export function getInitialInputsSync(): Partial<HealthInputs> {
   return store ? store.getPrefillInputs() : {};
 }
 
+/** US-65: how many record entries this build could not read (kept unchanged, not shown). */
+export function getUnreadableCount(): number {
+  return store?.unreadableCount ?? 0;
+}
+
 // --- lead capture (Shopify surface) ---
 export function getReportEmailCaptured(): boolean {
   return store?.getReportEmailCaptured() ?? false;
@@ -146,15 +151,23 @@ export function loadLatestMeasurementsSync(): LatestMeasurementsResult | null {
  *  HealthTool's load and the email landing notice (US-22 AC13), so "empty"
  *  cannot mean two things. */
 export function hasSavedRecord(result: LatestMeasurementsResult | null): result is LatestMeasurementsResult {
-  return !!result && (Object.keys(result.inputs).length > 0 || result.previousMeasurements.length > 0 || result.medications.length > 0 || result.screenings.length > 0);
+  // Supplements and documents count too: a record of only those still opens the whole form (US-62 AC13).
+  return !!result && (Object.keys(result.inputs).length > 0 || result.previousMeasurements.length > 0 || result.medications.length > 0 || result.screenings.length > 0
+    || result.supplements.length > 0 || result.documents.length > 0);
 }
 export async function loadAllHistory(): Promise<ApiMeasurement[]> {
+  return loadAllHistorySync();
+}
+export function loadAllHistorySync(): ApiMeasurement[] {
   return store ? store.loadAllHistory() : [];
 }
 export async function loadMedicationHistory(): Promise<ApiMedicationHistory[]> {
   return store ? store.loadMedicationHistory() : [];
 }
 export async function loadLabValues(): Promise<ApiLabValue[] | null> {
+  return loadLabValuesSync();
+}
+export function loadLabValuesSync(): ApiLabValue[] | null {
   return store ? store.loadLabValues() : null;
 }
 
@@ -176,8 +189,8 @@ export function previewMove(from: string, to: string): MovePlan | MoveRejection 
 export async function moveBloodTest(from: string, to: string, expectedIds: string[], keep: MoveKeep, erase?: string): Promise<MoveOutcome> {
   return store ? store.moveBloodTest(from, to, expectedIds, keep, erase) : { status: 'error' };
 }
-export async function saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): Promise<boolean> {
-  return store ? store.saveChangedMeasurements(current, previous, erase) : false;
+export async function saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): Promise<ProfileSave> {
+  return store ? store.saveChangedMeasurements(current, previous, erase) : { ok: false };
 }
 export async function saveMedication(medicationKey: string, drugName: string, doseValue: number | null = null, doseUnit: string | null = null, erase?: string): Promise<boolean> {
   return store ? store.saveMedication(medicationKey, drugName, doseValue, doseUnit, erase) : false;

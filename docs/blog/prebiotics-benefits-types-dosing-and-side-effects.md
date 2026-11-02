@@ -78,7 +78,7 @@ PHGG is guar gum that has been partly broken down, so it does not thicken liquid
 
 Acacia fiber (gum arabic) is a soluble fiber with prebiotic effects [3]. In a 4-week trial in 180 adults with IBS-C, 10 g a day raised stool frequency compared with placebo [18].
 
-Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) is switching its fiber from psyllium husk to acacia fiber. The v9 powder has 5 g of acacia fiber. The powder sold in the US today still has 2.5 g of psyllium husk until it moves to v9. Both add collagen and creatine to the core MicroVitamin formula: 26 ingredients in the US v8 formula, 25 listed ingredients in the UK and EU v9 formula. The trial above used 10 g of acacia fiber a day, twice the amount in one scoop.
+Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) has 5 g of acacia fiber in each scoop. It adds collagen and creatine to the 25 core ingredients of MicroVitamin. The trial above used 10 g of acacia fiber a day, twice the amount in one scoop.
 
 ### Glucomannan
 

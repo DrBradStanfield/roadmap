@@ -7,11 +7,11 @@
  */
 import { readCappedBytes } from './capped-body.server';
 import { getClientIp } from './local-first-route.server';
-import { createQuotaCounter, DAY_MS } from './rate-limiter';
+import { createQuotaCounter, DAY_MS, machineFiles } from './rate-limiter';
 import { supabaseAdmin } from './supabase.server';
 import {
   assertionSignatureValid, attestConfig, AttestError, devBypassAllowed, parseAssertion,
-  requestClientData, validKeyId, type AttestEnvironment, type AttestedKey,
+  requestClientData, validKeyId, CHALLENGE_TTL_MS, type AttestEnvironment, type AttestedKey,
 } from './app-attest.server';
 
 export type AppUseKind = 'chat' | 'lab';
@@ -26,7 +26,7 @@ export interface KeyStore {
   get(keyId: string): Promise<{ publicKey: string; environment: AttestEnvironment } | null>;
   /** 'exists' when the key id is already stored: a replayed attestation never resets a counter. */
   insert(key: AttestedKey): Promise<'ok' | 'exists'>;
-  /** Advance the counter if higher and count one use against the key's daily cap, atomically (`app_attest_use`). */
+  /** Advance the counter if higher and count one use against the key's daily cap, atomically (`app_attest_use`). A cap of 0 advances the counter alone ('limit'). */
   use(keyId: string, counter: number, kind: AppUseKind, cap: number): Promise<UseOutcome>;
 }
 
@@ -88,10 +88,16 @@ export const appLimits = {
     // Never more than 15% of the web's shared file cap, whatever the env says (AC4, Codex R7).
     lab: createQuotaCounter(Math.min(num(process.env.APP_LAB_DAILY_CAP, 300), Math.floor(0.15 * num(process.env.AI_DAILY_FILE_CAP, 2000))), DAY_MS, 30 * 60_000),
   },
-  /** Refused signed requests per IP per day; past it, no key lookup or body read (adversary code R3). */
-  failures: createQuotaCounter(50, DAY_MS, 30 * 60_000),
-  /** Registration attempts per IP per day, counted before verifying (R11). */
+  /** Signed requests refused before their signature verified, per IP per day; past it, no key lookup or body read (adversary code R3). A backstop: a verified key's failures are its own (AC4c). */
+  failures: createQuotaCounter(200, DAY_MS, 30 * 60_000),
+  /** A verified key's refused requests (stale counter, key gone) per day, so one broken device stops only itself (US-52 AC4c). */
+  keyFailures: createQuotaCounter(20, DAY_MS, 30 * 60_000),
+  /** Registration attempts per IP per day, counted before verifying (R11); a success hands its attempt back (AC1b). */
   register: createQuotaCounter(10, DAY_MS, 30 * 60_000),
+  /** Successful registrations per IP per day (US-52 AC1b). */
+  registered: createQuotaCounter(50, DAY_MS, 30 * 60_000),
+  /** Challenges used, each once, success or failure (US-52 AC1a). A minute longer than a challenge lives, for clock skew between machines. */
+  challenges: createQuotaCounter(1, CHALLENGE_TTL_MS + 60_000, 60_000),
   /** The dev bypass's per-key count, since no key row exists for it. */
   dev: { chat: createQuotaCounter(PER_KEY_DAILY.chat, DAY_MS, 30 * 60_000), lab: createQuotaCounter(PER_KEY_DAILY.lab, DAY_MS, 30 * 60_000) },
 };
@@ -129,7 +135,7 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
     const body = await readBody(request, opts.bodyCap);
     if (!body || body === 'too_large') return refuse(413, 'too_large', 'Request too large');
     if (!appLimits.dev[kind].take(dev, 1)) return overLimit();
-    return takeShared(kind, ip) ? { body } : overLimit();
+    return reserveShared(kind, ip) ? { body } : overLimit();
   }
 
   const config = attestConfig(env);
@@ -141,12 +147,17 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
   // A refused signed request costs a key read and maybe a body read: past
   // the IP's failure budget, nothing more is read. The unit is reserved before
   // any await, so a parallel burst cannot all pass the check (US-52 AC4a); a
-  // request that is not refused as abuse hands it back to the window it charged, at the one refund below.
+  // request not refused before its signature verifies hands it back to the window it charged, at the one refund below.
   const refund = appLimits.failures.reserve(ip, 1);
   if (!refund) { logRefusal(kind, 'failure_limit'); return overLimit(); }
   let charged = false;
   const failed = (reason: string) => { charged = true; logRefusal(kind, reason); return unauthorized(reason); };
+  /** A refusal after the signature verified: the key's own budget holds it, so the IP's unit goes back (AC4c). */
+  const keyFailed = (reason: string) => { logRefusal(kind, reason); return unauthorized(reason); };
   try {
+    // A key past its own failure budget reads nothing more. By the header's key id, read-only;
+    // it costs only this lookup, so the IP's unit goes back and the key's budget is never charged (US-52 AC4c).
+    if (appLimits.keyFailures.remaining(keyId) === 0) { logRefusal(kind, 'key_failure_limit'); return overLimit(); }
     let assertion;
     try {
       assertion = parseAssertion(header, config.appId);
@@ -176,29 +187,42 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
     if (!body) { logRefusal(kind, 'body_read_failed'); return refuse(400, 'body_read_failed', 'The request did not arrive whole. Please try again.'); }
     if (!assertionSignatureValid(assertion, requestClientData(request.method, path, body), key.publicKey)) return failed('bad_signature');
 
-    let outcome: UseOutcome;
-    try {
-      outcome = await store.use(keyId, assertion.counter, kind, PER_KEY_DAILY[kind]);
-    } catch {
-      logRefusal(kind, 'store_unavailable');
-      return unavailable();
-    }
-    if (outcome === 'unknown') return failed('unknown_key');
-    if (outcome === 'stale') return failed('stale_counter');
-    if (outcome === 'limit') { logRefusal(kind, 'key_limit'); return overLimit(); }
-    return takeShared(kind, ip) ? { body } : overLimit();
+    // The signature is the key's own from here, so its refusals charge the key, not
+    // the IP: one broken device stops only itself. Reserved before the key's step, so
+    // its parallel replays cannot all pass; refused here, nothing shared is reserved (US-52 AC4c).
+    const keyRefund = appLimits.keyFailures.reserve(keyId, 1);
+    if (!keyRefund) { logRefusal(kind, 'key_failure_limit'); return overLimit(); }
+    // The shared units are reserved before the key's use, so a request they refuse
+    // spends none of the key's day; the counter still advances, through a cap of 0 (US-52 AC4b).
+    const shared = reserveShared(kind, ip);
+    const outcome: UseOutcome | null = await store.use(keyId, assertion.counter, kind, shared ? PER_KEY_DAILY[kind] : 0).catch(() => null);
+    if (outcome !== 'ok') shared?.();
+    if (outcome === 'unknown') return keyFailed('unknown_key');
+    if (outcome === 'stale') return keyFailed('stale_counter');
+    keyRefund();
+    if (!outcome) { logRefusal(kind, 'store_unavailable'); return unavailable(); }
+    if (outcome === 'limit') { if (shared) logRefusal(kind, 'key_limit'); return overLimit(); }
+    return { body };
   } finally {
     if (!charged) refund();
   }
 }
 
-/** The per-IP and per-machine counts, all or nothing. */
-function takeShared(kind: AppUseKind, ip: string): boolean {
-  if (!appLimits.ip[kind].take(ip, 1)) { logRefusal(kind, 'ip_limit'); return false; }
-  if (appLimits.machine[kind].take('machine', 1)) return true;
-  appLimits.ip[kind].refund(ip, 1);
-  logRefusal(kind, 'machine_limit');
-  return false;
+/**
+ * The per-IP and per-machine counts, and for a lab file the web's shared file
+ * cap (US-35 AC10), all or nothing: their refund, or null when any is full (US-52 AC4d).
+ */
+function reserveShared(kind: AppUseKind, ip: string): (() => void) | null {
+  const ipBack = appLimits.ip[kind].reserve(ip, 1);
+  if (!ipBack) { logRefusal(kind, 'ip_limit'); return null; }
+  const machineBack = appLimits.machine[kind].reserve('machine', 1);
+  if (!machineBack) { ipBack(); logRefusal(kind, 'machine_limit'); return null; }
+  const fileBack = kind === 'lab' ? machineFiles.reserve('machine', 1) : () => {};
+  if (fileBack) return () => { ipBack(); machineBack(); fileBack(); };
+  ipBack();
+  machineBack();
+  logRefusal(kind, 'file_limit');
+  return null;
 }
 
 /** The raw bytes, as the app hashed them (R2: never a UTF-8 round trip): 'too_large' past the cap, null when the stream failed. */

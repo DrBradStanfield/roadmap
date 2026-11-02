@@ -8,7 +8,7 @@ place of the placeholders. This repository is public: real values never go in it
 
 This file is the only home of the Variant C paste block; [the listing](../chatgpt-app-listing.md#variant-c-sign-in-on-our-own-consent-page-102)
 says why Variant C replaced A and B. It ends with the sample report positive test case 4 attaches. The box on the consent page shows only while
-the three reviewer secrets are set ([runbook](../deploy-runbook-mcp.md#the-openai-reviewer-sign-in-us-32-ac38)).
+the three reviewer secrets are set ([runbook](../deploy-runbook-mcp.md#the-reviewer-sign-in-us-32-ac38-ac49)).
 
 > Login URL: https://chatgpt.com
 > Username: `[REVIEWER_USERNAME]`

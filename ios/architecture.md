@@ -62,6 +62,26 @@ R1):** from 60 its `p20`, the Low line, is Apple's Low Cardio Fitness alert line
 `2d467ff50c66c42d` (D3) and an older app refuses any engine that serves it; `bridge.test.ts`
 fails if the contract stops naming it.
 
+**The engine without sex moves the bridge (2026-11-01, US-07 AC8, Codex R1 on PR 402).** The
+engine's chat context gained a key, `labEgfrOutdated`: true when a creatinine newer than the
+lab eGFR exists but cannot be used yet (no sex or no birth year), so the server's chat plan
+withholds potassium advice as the engine's own plan does. The app forwards only the keys in
+`ChatClient.contextKeys`. A binary built before the key would take the new engine over the air
+and strip it, and its chat would give the advice the plan withheld. So `chatContextJson`'s
+returns in `bridge-contract.json` name the key and the rule (an app whose allow-list lacks a
+key the engine produces must not run it), the bridge id moved from `d0ffd9e53f8499b3` to
+`dc156e7c19dc8573`, and `EngineRelease.bridge` and the allow-list moved with it. Older binaries
+keep their bridge's engines and never read the new one's releases; the change needs an App
+Store build. `ios/engine/chat-context-keys.test.ts` holds the previous binary's bridge and
+allow-list, and fails if the engine produces a key that list lacks while the bridge id is
+unchanged.
+**Bridge moved again, 2026-11-01 (Brad: "We don't have any downloads yet, and we're still in
+beta, so it's fine").** Main had kept `2d467ff50c66c42d` so US-61's engine (its optional
+`isUS` and `usProducts`) could reach builds 3 and 4 over the air; merged with the change
+above, the contract hashes to `8dee92d80c028ed3`, which `EngineRelease.bridge` and
+`bridge.test.ts` now carry. Builds 3 and 4 stop receiving over-the-air engines: the US-61
+engine and this one reach them only through the next App Store build.
+
 Speed, measured 2026-10-21 (Node 22, esbuild bundle, an Intel iMac, the sample record
 padded to 526 rows; `--jitless` stands in for an app's JavaScriptCore, which runs without a
 JIT): build the plan 1.3 ms with JIT, 1.6 ms without; merge two copies 3.2 ms vs 4.6 ms.
@@ -211,6 +231,16 @@ A signature means "the key holder approved this bundle", nothing more.
   events. `bridge.test.ts` (Node) and `EngineBridgeContractTests` (XCTest) fail if either
   side drifts from the file, so an engine that needs a new native cannot reach an app
   without it: it lands in a new `bridge-<id>` folder that old apps never read.
+  **Both-way additions keep the id (2026-10-31, US-61, D14):** `ios/engine/bridge-optional.json`,
+  never hashed, holds only an optional trailing argument (an older app sends one fewer and
+  the engine answers as before) or an optional return field (an older engine leaves it out
+  and the app reads none). Both tests count a door's arity as its contract args plus its
+  optional ones; `bridge.test.ts` also checks each optional argument trails the contract ones
+  by name in `entry.ts`, and that every optional door, called with only its contract args,
+  answers as it does with them undefined. A missing return field is tested per feature. Anything
+  an older app cannot do without stays in the contract and moves the id.
+  Second use (2026-11-02, US-62 AC8): My data rows' `target` and `previous`, read as none from
+  an older engine (`MyDataLayoutTests.testARowReadsItsTargetAndPreviousValueFromTheEngine_US62`).
 - **The schema is the app's (R7).** A bundle whose record `schemaVersion` differs from the
   bundled engine's is refused. A schema change always needs an app update, so an over-the-
   air engine can never write a record the web or an older phone cannot read.
@@ -258,7 +288,7 @@ A signature means "the key holder approved this bundle", nothing more.
   confirms in one place, `RecordStore.display`, whenever a draw of the user's record
   (launch, an edit, a unit switch, a cloud record, a return to the app) planned it; orchestrator's
   call, 2026-10-22, moved into the store 2026-10-25. It confirms only when the plan worked
-  or met health-core's own PlanError (no height or sex), never when the engine threw
+  or met health-core's own PlanError (no height; US-07 AC8), never when the engine threw
   (review R5, N1), and a later draw that plans re-checks a trial the first draw left open.
   So a crash or hang on the real record counts, not only one on the self-test's fixture,
   while quitting does not: the store draws the record before the first screen. What that
@@ -774,7 +804,7 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   atomically, `.completeFileProtectionUntilFirstUserAuthentication` (a launch after the first unlock
   reads it). Read synchronously in `init` (a few hundred bytes), so the first frame has the cards;
   a missing, damaged or other-version file is none. Kept cards count as access granted and read, so
-  `LiveCardsSection.shown` draws them, never Turn On or Reconnect, until the first read. A read that
+  `LiveCardsSection.shown` draws them, never the Turn On or Open Settings row, until the first read. A read that
   changes the cards replaces the file (`keep`), one with none always deletes it (even a file the
   launch could not read, adversary R3), a locked or cancelled read changes nothing, a sheet due
   again deletes it, and `DataEraser` calls `forget()` (file gone, cards empty, nothing shown until
@@ -805,7 +835,7 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   `SleepPage` (D's stages over the night, W/M/6M stacked nights with stage averages, its chart its
   own view, E3). Both pages share `LivePageFrame` (picker, empty line, footnote, read, range
   reset), `ScrollingChart` (axes, scroll, scrub, haptic, calendar) with `SelectionRule`, and
-  `PageHeadline`, which `MetricDetailView` uses too. Every metric page, MetricDetailView's included, takes `metricPageList` (inset grouped, inline title, an 8 pt top margin so the picker sits under the title; Brad 2026-10-25). While the sheet is still due for the five and Apple Health is connected (so only for someone connected before 2026-10-26) Vitals shows `LiveReconnectRow` with **Turn On** (US-56 AC5; the "Show from Apple Health" card is gone; not connected, My data's Apple Health row is the one way in), and after "Don't Allow" (or an empty Health) the same row with **Reconnect** (AC5b). Turn On runs `connect()` on the known answer; Reconnect checks the status afresh and runs it while the sheet is due, else opens Settings (`LiveReconnectRow.action`); iOS 27's app page in Settings has no Health row, so the row names Settings › Apps › Health › Data Access & Devices. **A page always shows its card's reading
+  `PageHeadline`, which `MetricDetailView` uses too. Every metric page, MetricDetailView's included, takes `metricPageList` (inset grouped, inline title, an 8 pt top margin so the picker sits under the title; Brad 2026-10-25). While the sheet is still due for the five and Apple Health is connected (so only for someone connected before 2026-10-26) Vitals shows `LiveReconnectRow` with **Turn On** (US-56 AC5; the "Show from Apple Health" card is gone; not connected, My data's Apple Health row is the one way in), and after "Don't Allow" (or an empty Health) the same row with **Open Settings** (AC5b; "Reconnect" until 2026-11-01, AC5c). Turn On runs `connect()` on the known answer; Open Settings checks the status afresh and runs it while the sheet is due, else opens Settings (`LiveReconnectRow.action`); Settings opens at its top and iOS 27's app page there has no Health row, so the row names the path, chosen by OS (`LiveFooter.healthPath`: Settings › Apps › Health › Data Access & Devices › Health Roadmap from iOS 18, Settings › Health › … on iOS 17). **A page always shows its card's reading
   (Codex R2, adversary R7):** it reads 400 days (sleep 200) or back to the reading, opens with it in
   view (`LiveChartGeometry.opening`, the window's own length so a 31-day month still holds it),
   reads D's hours a day at a time as the scroll reaches a day (D scrolls a week back, or to the reading's day: a 400-day hourly domain took Swift Charts several seconds to lay out on the simulator), and reads the days only once the
@@ -993,7 +1023,9 @@ later.
 **Limits.**
 - Per key, exact and shared across machines (in `app_attest_use`, R4): 60 chat turns and
   30 lab files per UTC day.
-- Per IP, in memory: 10 registration attempts, 200 turns, 200 files a day. IPv6 is keyed
+- Per IP, in memory: 10 failed registration attempts and 50 successful registrations
+  (US-52 AC1b; a success hands its attempt back, and a store outage or a 409 hands the
+  success unit back, an outage the attempt too), 200 turns, 200 files a day. IPv6 is keyed
   on its /64, which one subscriber holds whole, so rotating addresses inside it buys
   nothing. IPv4 is keyed on the address, so phones behind one carrier NAT share a bucket:
   the price of having one; 200 is set high for that reason.
@@ -1001,9 +1033,22 @@ later.
   files (default 300). Lab files also spend the web's per-machine file cap
   (`machineFiles`, `AI_DAILY_FILE_CAP`, 2000), but the app's own cap is smaller, so the
   app can never use up the web's and the connector's uploads (R5); the code also holds it
-  at or under 15% of `AI_DAILY_FILE_CAP` whatever the env says.
-- Per IP, refused signed requests: 50 a day. Past that, the gate reads neither the key nor
-  the body (code review R3).
+  at or under 15% of `AI_DAILY_FILE_CAP` whatever the env says. The gate reserves the
+  per-IP, per-machine and file-cap units together, all or nothing, before the key's use,
+  so the file cap refusing spends no other count (US-52 AC4d, 2026-11-01).
+- Per IP, signed requests refused before their signature verifies (a bad or garbage
+  assertion, an unknown key, a development key refused, an oversized body, a bad
+  signature): 200 a day. Past that, the gate reads neither the key nor the body (code
+  review R3).
+- Per key, in memory, refusals after the signature verifies (a stale counter, or a key
+  gone at the counter step): 20 a day, each handing the IP's unit back, so a broken phone
+  whose requests verify stops only itself (US-52 AC4c, 2026-11-01). A key past its 20 is
+  refused before the key read, by the header's key id, read-only: no key or body read,
+  and the IP's unit goes back. A parallel burst of one key's replays still does its key
+  reads, body reads and signature checks before 20 win the reserve. Residual: unverified
+  refusals from any client share the IP's 200, so a hostile client behind one IP can still
+  lock its neighbours out, after 200 instead of 50. Brad to decide: let a key id that
+  verified successfully on this machine in this window skip the IP backstop.
 - In memory means cap x machines, reset whenever a machine restarts: on deploy and on
   Fly's idle stop and start (`auto_stop_machines`). The per-key cap holds exactly; the
   machine caps bound the worst case.
@@ -1127,10 +1172,10 @@ health tool (`data-clarity-mask` on `HealthTool.tsx`'s root). The app matches th
   never a navigation title, which can carry a supplement's name. Nothing is ever unmasked.
 - `AnalyticsMaskingTests` (US-25 AC19) fails if the window is not masked first, if any code
   unmasks, if a text input lacks its mask, or if any file but Analytics.swift calls Clarity.
-- **Custom events, exactly thirteen fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58):**
+- **Custom events, exactly fourteen fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58; "Alcohol answered" for US-60):**
   `Analytics.event` sends `ClaritySDK.sendCustomEvent` with a word from one enum,
   `Analytics.Event`: "Tour started", "Tour tip closed 1/2/3", "Tour skipped 1/2/3", "Tile
-  explainer opened", "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened".
+  explainer opened", "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened", "Alcohol answered".
   Never a value, a tile's name or any other text; nothing before Clarity starts.
   `AnalyticsMaskingTests` pins the list, so a new word is a test change and a D9 change.
   Views reach the one `Analytics` through the environment (`\.analytics`, set by RootView).
@@ -1289,6 +1334,7 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
 - `scripts/release-engine.mjs` (`npm run engine:build`, loading `release-build.mjs`), `scripts/sign-engine.mjs` (run directly), `scripts/engine-keygen.mjs`,
   `scripts/engine-signing.mjs`: signed over-the-air releases into `engine-release/` (D3).
   `engine/bridge-contract.json` is the native bridge's contract; its hash is the bridge id.
+  `engine/bridge-optional.json` holds the both-way additions that keep it (D3, D14).
   Tested by `scripts/release-engine.test.ts`, `scripts/signing-key-guard.test.ts` and
   `engine/bridge.test.ts`.
 - `scripts/ui-test.sh`: the UI tests, one at a time, each on a fresh install (US-54).
@@ -1348,7 +1394,8 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
     through the engine; `RecordFile` is the file on disk and the engine steps that read and
     write it; `MyData.swift` is the engine's view of the record and the
     `RecordEdit` the tab sends; `MyDataView`, `ValueRow` (a row, a vitals card, its
-    sparkline), `ValueEntrySheet` and `DayText` draw it. `SheetSave` is a sheet's save and
+    sparkline; the row follows the web's MyDataRows.tsx, without grade colours: "target · date" under the name, the value
+    with the previous one in brackets, both served by the engine, US-62 AC8), `ValueEntrySheet` and `DayText` draw it. `SheetSave` is a sheet's save and
     the "Not saved" alert (`refusalAlert`, over `App/MessageAlert.swift`).
     The form sections (US-25 AC8): `FormModels` (the engine's question JSON and `FormEdit`),
     `FormFieldRow` (one question: menu, month wheel, number or dated value),
@@ -1461,9 +1508,15 @@ A new user answers sex, birth month and year, height and weight, one per screen,
 ### D13 · "Do you drink alcohol?": one profile answer, the engine drops the card (Brad, 2026-10-31, US-60)
 
 Only the reduce-alcohol suggestion has a Dismiss button (keyed off its id in
-`PlanCardView`), shown only while the answer is unanswered. It opens the app's usual
-confirmation dialog, attached to the button so its arrow points there, "I don't drink"
-or "I drink"; the answer is checked against the screen recorded at the tap. Plan:
+`PlanCardView`), shown while the card is on the plan. It opens the app's usual
+confirmation dialog, attached to the button so its arrow points there. Unanswered:
+"Do you drink alcohol?", "I don't drink" or "I drink". A drinker (Brad 2026-11-01): "Do
+you still drink alcohol?", "I've stopped" (saves `none`) or "I still drink", which saves
+nothing and shows one line in an alert on the same button (`messageAlert`, no title):
+the card stays because its advice applies to anyone who drinks, and About you changes the
+answer. `AlcoholQuestion` holds the prompt per answer and is nil for a non-drinker, whose
+card the engine has already dropped. Any save is checked against the screen recorded at
+the tap. Plan:
 [docs/drafts/alcohol-question.md](../docs/drafts/alcohol-question.md).
 - **The answer is a profile field** (`profile.alcohol`), written by the engine's own edit
   (`{kind: 'alcohol'}` in `engine/my-data.ts`, health-core's `stampProfile`), so it merges
@@ -1473,12 +1526,14 @@ or "I drink"; the answer is checked against the screen recorded at the tap. Plan
   the card. The plan animates on the answer alone (`.animation(value:)` on it: the save
   lands after an await, outside any `withAnimation`), so the card fades out and the rest
   close up while nothing else on the plan animates.
-- **Never re-asked.** "I drink" keeps the card, without its Dismiss; About you is the only
-  place to change it.
+- **Asked again only on a tap.** "I drink" keeps the card; its Dismiss now asks whether
+  they still drink (it once vanished, which left a drinker who had stopped no way off the
+  card but About you).
 - **No new bridge.** The edit and the field ride the existing `applyEditJson`/`screenJson`
   doors; the contract file is unchanged. Swift reads the field leniently, so a value it
   does not know shows as "Not answered", never a broken My data.
-- **Usage signal:** Clarity's "Alcohol answered", sent from the plan's dialog only, never
+- **Usage signal:** Clarity's "Alcohol answered", sent from the plan's dialog only, once
+  saved ("I've stopped" counts; "I still drink" saves nothing and sends nothing), never
   the answer (D9). The chat allow-list (`ChatClient.contextKeys`) carries health-core's
   new `alcohol` key, so the chat knows a non-drinker.
 
@@ -1491,27 +1546,49 @@ is. Spec: docs/user-stories.md US-61.
 - **Why the storefront.** StoreKit's `Storefront.current` is the App Store country of the
   Apple ID, the same market the app is sold in, and needs no permission, no location and no
   network call of ours. The phone's region is a display setting anyone changes; the record's
-  units say nothing about the market. Nil (no Apple ID, StoreKit cannot say) is not the US.
+  units say nothing about the market. Nil (no Apple ID, StoreKit cannot say) keeps the saved
+  answer and writes nothing; with nothing ever saved it is not the US (`AppStoreCountry.remember`).
   `AppStoreCountry` keeps the last answer in the app's defaults, so a launch draws the plan
   at once with it; each return to the app asks StoreKit again (the storefront changes only in
   Settings) and a change redraws (`RecordStore.follow(storefrontIsUS:)`). Under the tests it
   is always false. DEBUG only, compiled out of Release: the launch argument
   `-StorefrontCountry USA` (or `NZL`) stands in for StoreKit, for simulator checks.
 - **The engine stays the one source.** `screenJson` takes `isUS` as a new last argument and
-  answers `plan.usProducts`, health-core's `usProductBlocks` (us-products.ts, the web's own
-  overlay) with the adult rule `medicinesShown`, the web's. Only `true` counts. Every word,
-  link and card choice is the engine's, so a wording or mapping change ships over the air
-  (D3), and an engine release that empties the mapping removes the blocks (no kill switch,
-  Brad). The sections stay the web's `planSections`, product-free; Swift places each block on
-  its card, swaps in the card's US text and references when the block has them
-  (`USProducts.applied`), and draws the ownership line on the Supplements section once.
-- **Bridge change.** The new argument moved the bridge id from `2d467ff50c66c42d` to
-  `d0ffd9e53f8499b3` (D3), so the overlay needs an App Store build: an older app keeps its
-  bridge's engines and never reads the new one's releases.
+  answers `plan.usProducts`: health-core's `usProductSections` (us-products.ts, the web's own
+  overlay), the sections ready to draw. It applies the adult rule `medicinesShown` itself, the
+  web's. Only `true` counts. Every word, link, card choice and place is the engine's, so a
+  wording or mapping change ships over the air (D3), and an engine release that empties the
+  mapping removes the blocks (no kill switch, Brad). `plan.sections` stays the web's
+  `planSections`, product-free; `usProducts` is left out when no block shows. Swift decides
+  nothing: it draws `usProducts` when present, else `sections` (simplified 2026-11-01; the
+  first cut had Swift and the web each place blocks, swap text and add the line).
+  **Host pin:** decoding refuses a block whose link is not https on `microvitamin.com` (host
+  compared without case), and then the whole `usProducts`, so the plan shows plain: a signed
+  engine can choose among those product pages but cannot point a link anywhere else.
+- **No bridge change (corrected 2026-10-31, adversary review).** The change works both ways,
+  so the id stays `2d467ff50c66c42d` and over-the-air engines keep reaching builds 3 and 4.
+  An older app sends four arguments: `isUS` is undefined, so it gets no blocks. An older
+  engine ignores the fifth argument and sends no `usProducts`, which Swift decodes as none.
+  `isUS` and `usProducts` are recorded in `bridge-optional.json`, not the hashed contract
+  (D3). `usProducts` changed shape on 2026-11-01, from `{blocks, ownershipLine}` to the
+  sections ready to draw; no build before US-61 reads it, so the change is safe for builds 3
+  and 4. A first cut moved the id to `d0ffd9e53f8499b3`, which would have cut builds 3 and 4
+  off every later engine; it never shipped.
+  **The rule:** `bridge.test.ts` pins the id as a literal. A real bridge change (anything an
+  older app cannot do without) moves the id and updates that literal; `bridge-optional.json`
+  is never a way around one, only a place for additions that work both ways.
+- **Costs, accepted (2026-11-01, review of the /simplify change):** for a US adult, `screenJson`
+  ships the sections twice (`sections`, product-free, plus `usProducts`, ready to draw), and the
+  plan's `ms` timing includes the overlay. A product link that fails the https microvitamin.com pin
+  drops the whole overlay, so the plan draws plain and nothing records it; only a bad signed engine
+  can cause that, and plain is the approved non-US view.
 - **Taps only, no new Clarity word.** The links carry `utm_source=health-tool&utm_medium=ios`,
   so taps and orders show in Shopify, and nothing from the record enters a URL. No impression
   is counted: a Clarity event would add a word to D9's fixed list, which US-61 leaves as it is.
-- **Tests:** `ios/engine/us-products.test.ts` (Node), `USProductsTests.swift` (XCTest).
+- **Tests:** `ios/engine/us-products.test.ts` and `bridge.test.ts` (Node), `USProductsTests.swift`
+  and `EngineBridgeContractTests.swift` (XCTest). Both directions: the Node test calls
+  `screenJson` with an old app's four arguments; the XCTest runs the plan on a stand-in for an
+  engine before US-61 (four arguments, no `usProducts`).
 
 ## Phases
 
@@ -1568,3 +1645,13 @@ is. Spec: docs/user-stories.md US-61.
 - **Hardware:** the build Mac is Intel. macOS 26 is the last Intel release, so a later
   required Xcode may need Apple silicon.
 - **Two release paths:** binary changes still go through App Review; plan for it.
+- **Follow-up: the eGFR choice into the engine (simplify on PRs 402 and 421, 2026-11-01, deferred).** Today
+  each surface picks lab against calculated eGFR (`withLabEgfr`) before `calculateHealthResults`, and
+  `labEgfrOutdated` rides on the inputs. The altitude review asks that `calculateHealthResults` make the
+  choice and return `labEgfrOutdated` as a result. Deferred: it changes the engine contract and the bridge,
+  so it needs its own PR, review and engine release.
+- **Follow-up: the "cannot plan" sentence (US-07 AC8, 2026-11-01).** Since the engine plans
+  without sex, health-core's `PlanError` means no usable height only, but `PlanView`'s
+  `.needsDetails` text still says "Add your sex and height on My data". It is left as it is
+  until an app release that ships with the new engine, so a new app on an old engine never
+  under-asks. Then build the sentence from the profile, naming only what is missing.
