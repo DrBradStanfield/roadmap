@@ -176,13 +176,22 @@ export function stopDiscordBot(): void {
 
 type GuildMessage = OmitPartialGroupDMChannel<Message<boolean>>;
 
+/** In an excluded channel or a thread under one (US-63 AC12). A thread's
+ *  `channelId` is its own id, so the parent is checked too; a plain channel's
+ *  `parentId` is its category, which never counts. */
+function isExcludedChannel(message: GuildMessage): boolean {
+  if (DISCORD_EXCLUDED_CHANNEL_IDS.has(message.channelId)) return true;
+  const parentId = message.channel.isThread() ? message.channel.parentId : null;
+  return parentId != null && DISCORD_EXCLUDED_CHANNEL_IDS.has(parentId);
+}
+
 async function handleMessage(message: GuildMessage): Promise<void> {
   // ----- Early exits (cheap, fall through as quickly as possible) -----
   if (message.author.bot) return;
   if (message.guild?.id !== DISCORD_GUILD_ID) return;   // DMs (null guild) and other servers
   if (message.system) return;                            // system / join messages
   if (message.mentions.everyone) return;                 // @everyone / @here — server-wide broadcasts, never meant for the bot
-  if (DISCORD_EXCLUDED_CHANNEL_IDS.has(message.channelId)) return; // explicitly blocked channels
+  if (isExcludedChannel(message)) return;                // explicitly blocked channels and their threads
 
   const content = message.content?.trim() ?? '';
   if (!content) return;                                  // attachment-only, stickers, etc.

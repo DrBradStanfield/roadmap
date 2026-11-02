@@ -15,6 +15,7 @@
  *   day's two halves are written together, keyed by the systolic chain, once
  *   both are there and neither came from the store.
  * - Only the vitals a store holds. Blood tests are not quantity samples there.
+ * - Never a value printed as a limit (US-12 AC20): the store holds exact numbers only.
  * - Never a value the save path would refuse (`measurementValueFault`): a bad row
  *   from a damaged file, a hand edit or another device's bug is skipped, never
  *   clamped, so other apps never read it from the store (US-25 AC14b). A blood
@@ -57,7 +58,7 @@ export function deviceWrites(file: RoadmapFile, source: MeasurementSource): Devi
   type Half = { row: FileMeasurement; length: number };
   const writes: DeviceWrite[] = [];
   const pressure = new Map<string, { systolic?: Half & { root: string }; diastolic?: Half }>();
-  /** Days with a store-sourced half: that day's pair is not written at all. */
+  /** Days with a store-sourced half, or a half printed as a limit: that day's pair is not written at all. */
   const storeDays = new Set<string>();
   for (const row of file.measurements) {
     if (row.status !== 'active') continue;
@@ -65,7 +66,9 @@ export function deviceWrites(file: RoadmapFile, source: MeasurementSource): Devi
     if (!SINGLE_METRICS.has(row.metricType) && !isPressure) continue;
     const { root, length } = chainOf(row);
     const day = dayOf(row.recordedAt);
-    if (root.source === source || row.source === source) {
+    // A result printed as a limit is never a store's exact sample, nor half of
+    // one (US-12 AC20): any `comparator` key at all, valid or not, keeps it out.
+    if (root.source === source || row.source === source || 'comparator' in row) {
       if (isPressure) storeDays.add(day);
       continue;
     }

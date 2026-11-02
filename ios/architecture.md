@@ -81,6 +81,17 @@ beta, so it's fine").** Main had kept `2d467ff50c66c42d` so US-61's engine (its 
 above, the contract hashes to `8dee92d80c028ed3`, which `EngineRelease.bridge` and
 `bridge.test.ts` now carry. Builds 3 and 4 stop receiving over-the-air engines: the US-61
 engine and this one reach them only through the next App Store build.
+**Bridge moved, 2026-11-02 (US-67, the chat's edits).** The new `chatEditsJson` door is one
+an older app cannot serve. Merged with US-12 AC20's move below, the contract hashes to
+`8ced272282162ff2`; `EngineRelease.bridge` and `bridge.test.ts` carry it. The chat's writes are new `Edit` kinds (`chatEdits`, `chatUndo`)
+inside the existing `applyEditJson` and `cloudEdit`, so they need no door of their own.
+
+**Bridge moved again, 2026-11-02 (US-12 AC20, D15).** `chatContextJson` now sends `limits`
+(a lab result printed as a limit) and `ChatClient.contextKeys` takes it, so the contract
+hashes to `49b2af86805825f0`. Build 5 (`8dee92d80c028ed3`) stops receiving over-the-air
+engines from this release on. Had it kept them, its allow-list would drop `limits`; the
+engine no longer sends a limit field's representative, so it would lose that value rather
+than misreport it.
 
 Speed, measured 2026-10-21 (Node 22, esbuild bundle, an Intel iMac, the sample record
 padded to 526 rows; `--jitless` stands in for an app's JavaScriptCore, which runs without a
@@ -241,6 +252,8 @@ A signature means "the key holder approved this bundle", nothing more.
   an older app cannot do without stays in the contract and moves the id.
   Second use (2026-11-02, US-62 AC8): My data rows' `target` and `previous`, read as none from
   an older engine (`MyDataLayoutTests.testARowReadsItsTargetAndPreviousValueFromTheEngine_US62`).
+  Third (2026-11-02, D11): rows' `status` and `gradeWords`, and `labTests`
+  (`MyDataLayoutTests.testARowReadsItsGradeFromTheEngine_US62`).
 - **The schema is the app's (R7).** A bundle whose record `schemaVersion` differs from the
   bundled engine's is refused. A schema change always needs an app update, so an over-the-
   air engine can never write a record the web or an older phone cannot read.
@@ -1150,6 +1163,18 @@ phones only). Brad decided the order on 2026-10-25.
   all my data". The web's code lives in the widget's adapter, not health-core, so the
   phone repeats the one call in OAuthClient beside Drive's `about`.
 
+**The chat edits the record (2026-11-02, US-67; Brad: copy the web, F11).** The app sends
+`edits: 1`, so the server offers the web's form tools, and the `done` line's `proposedEdits`
+reach Swift as opaque JSON (`OpaqueJSON`), never read. One engine door, `chatEditsJson`, words
+them against the record now, in the person's units; two edit kinds write them through the
+usual path (`applyOnPhone`, or `cloudEdit` with its erase guard): `chatEdits` (part
+`medications` or `review`, the proposals as received, the phone's day) and the engine's own
+Undo edit, passed back as it came. A medication change saves at once with Undo; values,
+height and sex wait in a banner with Save and Not now (`Chat/ChatEdits.swift`). A reply to a
+question asked before an erase, and a banner made before one, write nothing: `RecordStore.ChatMark`
+(the cloud erase, the eraseEpoch and the phone's erase count) is checked in the write's turn,
+and ChatView drops the banners when it moves (US-16 AC2a).
+
 **State 2026-10-22.** On the iPhone, chat answers "not available": the education server leaves
 App Attest off until `APP_ATTEST_TEAM_ID` is set (`app/lib/app-attest.server.ts`), so chat and lab
 upload wait for that secret and the team it names (Brad's personal team P7LB54J2PM now, DR BRAD,
@@ -1172,10 +1197,10 @@ health tool (`data-clarity-mask` on `HealthTool.tsx`'s root). The app matches th
   never a navigation title, which can carry a supplement's name. Nothing is ever unmasked.
 - `AnalyticsMaskingTests` (US-25 AC19) fails if the window is not masked first, if any code
   unmasks, if a text input lacks its mask, or if any file but Analytics.swift calls Clarity.
-- **Custom events, exactly fourteen fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58; "Alcohol answered" for US-60):**
+- **Custom events, exactly sixteen fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58; "Alcohol answered" for US-60; "Chat edit proposed" and "Chat edit saved" for US-67):**
   `Analytics.event` sends `ClaritySDK.sendCustomEvent` with a word from one enum,
   `Analytics.Event`: "Tour started", "Tour tip closed 1/2/3", "Tour skipped 1/2/3", "Tile
-  explainer opened", "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened", "Alcohol answered".
+  explainer opened", "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened", "Alcohol answered", "Chat edit proposed", "Chat edit saved".
   Never a value, a tile's name or any other text; nothing before Clarity starts.
   `AnalyticsMaskingTests` pins the list, so a new word is a test change and a D9 change.
   Views reach the one `Analytics` through the environment (`\.analytics`, set by RootView).
@@ -1277,6 +1302,23 @@ updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.
 - **Two Charts traps:** a material background inside a chart annotation renders black, so
   the callout uses a solid system fill; and the newest axis label clips unless the marks
   use the `.aligned` preset.
+- **Grades and lab test rows come from health-core, through the engine (Brad, 2026-11-02,
+  US-25 AC17, US-62 AC8).** The web's grade (amber, red) and its spoken words lived in
+  widget code (`statusOf`, the vitals grades, `gradeWords`). They moved unchanged into
+  `packages/health-core/src/row-grade.ts`; the widget imports them. `row-grade.parity.test.ts`
+  grades a grid of about 1.68 million inputs and checks its hash against the one recorded from
+  the widget's functions before the move. The lab tests' grouping and row moved the same way
+  (`lab-series.ts` `labSeriesRows`), and so did the trend window (`recent-trend.ts`). The
+  engine serves each row's `status` and `gradeWords` and a `labTests` list; a blood pressure
+  is graded on the stored halves of the pair it shows. Swift reads `status` as a `Grade`
+  (an unknown word reads as none) and only maps the colour (`ValueRow.gradeColor`: amber is the app's
+  `info` tone, red `urgent`, the web's #b91c1c) and joins VoiceOver's words. Why not in
+  Swift: a copy of a clinical line drifts, and an engine fix ships over the air (D3). PSA is
+  not graded, as on the web. A lab test row opens nothing: there is no engine door for a lab
+  series' history and no page for one yet. A value printed as a limit (US-12 AC20) is graded by
+  the web's `savedStatus`; a blood pressure with a half saved as a limit gets no grade on the
+  iPhone until Brad decides (the web's is unchanged). The row does not yet show the web's
+  "Printed as a limit" note on an ungraded limit; the history page does (`historyJson` `note`).
 
 **Added 2026-10-26: "About this measure" guides (US-58).** Below Show All Data and Unit, a metric page shows
 "About {title}" (What it is, Why it matters, How to measure or prepare) and its Sources as links, as Apple Health
@@ -1589,6 +1631,18 @@ is. Spec: docs/user-stories.md US-61.
   and `EngineBridgeContractTests.swift` (XCTest). Both directions: the Node test calls
   `screenJson` with an old app's four arguments; the XCTest runs the plan on a stand-in for an
   engine before US-61 (four arguments, no `usProducts`).
+
+### D15 · Lab results printed as a limit: the engine says them, Swift draws them (Brad, 2026-11-02, US-12 AC20)
+
+A lab result printed "> 60" or "< 5" is saved with its comparator. The engine owns every
+word: My data, the metric page, the lab review and the plan tiles get strings with the
+symbol, and the grading rule ("only when it decides") runs in health-core. Swift only draws
+a limit point hollow, off the chart's line, from `historyJson`'s optional `bound`; an older
+app finds no number in "< 2.0" and leaves the point off the chart. The phone's chat sends a
+limit as `limits` only, never the field's hidden representative, and `limits` joined
+`ChatClient.contextKeys`, which moved the bridge (build 5 takes no over-the-air engine from
+this release on). Apple Health never gets a limit (device-export.ts). The phone sends no
+`product_events`, so it has no count of limits.
 
 ## Phases
 

@@ -44,6 +44,7 @@ import {
   printable,
   renderJson,
   SCHEMA_URL,
+  shownValue,
   type DisplayRow,
   type Plan,
 } from '../packages/health-core/src/plan';
@@ -194,7 +195,8 @@ export function renderText(plan: Plan, from = 'your record file', schemaVersion 
   out.push(profileLine(plan));
   out.push(`Computed ${plan.today} from ${from}. Not medical advice — take it to your doctor.`);
 
-  const row = (r: DisplayRow) => `  ${r.label.padEnd(20)} ${String(r.value).padStart(6)} ${r.unit.padEnd(9)} ${r.date}${r.excluded ? `  (excluded — ${r.excludedReason ?? 'out of range'})` : ''}`;
+  // A lab name and unit come out of the record: one line each (US-30 AC8).
+  const row = (r: DisplayRow) => `  ${oneLine(r.label).padEnd(20)} ${shownValue(r).padStart(6)} ${oneLine(r.unit).padEnd(9)} ${r.date}${r.excluded ? `  (excluded — ${r.excludedReason ?? 'out of range'})` : ''}${r.notGraded ? `  (${r.notGraded})` : ''}`;
   const values = currentValues(plan);
   out.push('', 'CURRENT VALUES');
   if (values.length === 0) out.push('  (none recorded yet)');
@@ -252,7 +254,7 @@ export function renderHtml(plan: Plan, from = 'your own record file', schemaVers
   const { overdue, upcoming } = dueSplit(plan);
   const values = currentValues(plan);
   const rows = (items: DisplayRow[]) =>
-    items.map((i) => `<tr><th>${esc(i.label)}</th><td>${esc(i.value)} ${esc(i.unit)}${i.excluded ? ` <span class="ex">(excluded — ${esc(i.excludedReason ?? 'out of range')})</span>` : ''}</td><td>${esc(i.date)}</td></tr>`).join('\n');
+    items.map((i) => `<tr><th>${esc(i.label)}</th><td>${esc(shownValue(i))} ${esc(i.unit)}${i.excluded ? ` <span class="ex">(excluded — ${esc(i.excludedReason ?? 'out of range')})</span>` : ''}${i.notGraded ? ` <span class="ex">(${esc(i.notGraded)})</span>` : ''}</td><td>${esc(i.date)}</td></tr>`).join('\n');
 
   const suggestions = byPriority(plan.results.suggestions)
     .map(

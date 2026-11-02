@@ -6,12 +6,12 @@
 // the cell editor, never a second row (AC13).
 
 import { useEffect, useState, type MutableRefObject } from 'react';
-import { commaQuestion, displayLabUnit, LAB_CATALOG, LAB_GROUPS, localDay, parseLocalisedNumber, slotKey } from '@roadmap/health-core';
+import { commaQuestion, displayLabUnit, formatLabValue, LAB_CATALOG, LAB_GROUPS, localDay, parseLocalisedNumber, savedLabText, slotKey } from '@roadmap/health-core';
 import { UnitChip } from './UnitChip';
 import { SAVE_ERRORS } from './BloodTestTimeline';
 import { bulkSaveLabValues } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
-import { formatLabValue, sameAsSaved } from '../lib/blood-test-cell';
+import { sameAsSaved } from '../lib/blood-test-cell';
 import { labUnitRefusalLine } from '../lib/lab-value-labels';
 import type { CorrectFn } from '../lib/matrix-save';
 import type { ApiLabValue } from '../lib/api-types';
@@ -72,8 +72,8 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect, preset, dirtyRe
     setDate(localDay(new Date())); clearNotice();
   };
 
-  /** A saved value as the form names it: "45 µg/L". */
-  const labelOf = (v: ApiLabValue) => `${formatLabValue(v.value)} ${displayLabUnit(v.unit, entry)}`;
+  /** A saved value as the form names it: "45 µg/L", "< 5 µg/L" (US-12 AC20). */
+  const labelOf = (v: ApiLabValue) => `${savedLabText(v.value, v.comparator)} ${displayLabUnit(v.unit, entry)}`;
   /** The saved value is the one the form describes: this test, this day, this unit. */
   const describes = (v: ApiLabValue) =>
     slotKey('lab', v.metricName, v.recordedAt) === slotKey('lab', metricName, date) &&

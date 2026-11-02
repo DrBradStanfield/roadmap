@@ -309,15 +309,29 @@ async function callHostedTool(
     // change, or the app folder removed. Read off the status the adapter kept,
     // never the message text.
     if (error instanceof StorageError && (error.status === 401 || error.status === 403)) {
-      return refuse(
-        `${provider} refused this connection’s access to the record. Nothing was read and nothing was written. ` +
-          'Ask the user to reconnect the connector, which grants it again.',
-        'no-record',
-      );
+      return refuse(accessRefusedText(error, provider), 'no-record');
     }
     const failed = describeStorageFailure(error, `The record in ${provider}`);
     return refuse(`${failed.message}. ${failed.hint}`, 'no-record');
   }
+}
+
+/**
+ * What a refused access token (401/403) tells the assistant. A refusal on the
+ * save's verify read comes after the upload stored the change, and SyncManager
+ * marks it may-have-landed: the shared wording then says both, reconnect and
+ * read the record before retrying (US-10 AC4a). Before any upload, nothing was
+ * read or written.
+ */
+function accessRefusedText(error: StorageError, provider: string): string {
+  if (error.hint?.includes('landed')) {
+    const failed = describeStorageFailure(error, `The record in ${provider}`);
+    return `${failed.message}. ${failed.hint}`;
+  }
+  return (
+    `${provider} refused this connection’s access to the record. Nothing was read and nothing was written. ` +
+    'Ask the user to reconnect the connector, which grants it again.'
+  );
 }
 
 // ---------------------------------------------------------------------------
