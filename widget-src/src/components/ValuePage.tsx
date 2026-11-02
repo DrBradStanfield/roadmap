@@ -17,19 +17,24 @@ import {
   cellText,
   cellToSI,
   localDay,
+  groupLabValues,
+  limitUngraded,
+  LIMIT_NOT_GRADED,
   pressureInverted,
+  pressureStatus,
   rowTarget,
+  savedLabText,
+  valueStatus,
 } from '@roadmap/health-core';
-import { blockBadNumericKeys, blockNonIntegerKeys, readTypedValue, sameAsSaved, savedCellText, savedLabText, validateTypedValue } from '../lib/blood-test-cell';
+import { blockBadNumericKeys, blockNonIntegerKeys, readTypedValue, sameAsSaved, savedCellText, validateTypedValue } from '../lib/blood-test-cell';
 import { activeRowIndex, slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import { pressureReadings, readingsOf, type DayReading } from '../lib/my-data-rows';
-import { groupLabValues } from '../lib/lab-rows';
 import { chartTimestamp, formatShortDate } from '../lib/constants';
 import { getShownErase } from '../lib/roadmap-data';
 import { ErrorBoundary } from './ErrorBoundary';
 import { SAVE_ERRORS, ValueCell, useLiveRegion } from './BloodTestTimeline';
 import { AddLabTest } from './AddLabTest';
-import { pressureStatus, pressureText, tintOf, valueStatus, type RowContext, type ValueSubject } from './MyDataRows';
+import { pressureText, tintOf, type RowContext, type ValueSubject } from './MyDataRows';
 import type { ApiLabValue } from '../lib/api-types';
 
 // The chart library loads with the chart, never with the form (as the history lightbox loads it).
@@ -112,7 +117,7 @@ export function ValuePage({ subject, history, labValues, ctx, onSave, onCorrect,
 
       <h4 className="md-page-subtitle">Add a value</h4>
       {subject.kind === 'lab'
-        ? latestLab && <AddLabTest onAdded={onLabAdded ?? (() => {})} labValues={labValues} onCorrect={onCorrect}
+        ? latestLab && <AddLabTest onAdded={onLabAdded ?? (() => {})} labValues={labValues} coreValues={history} onCorrect={onCorrect}
                                    preset={{ metricName: latestLab.metricName, unit: lab!.unit }} dirtyRef={dirtyRef}/>
         : <AddValue key={correcting?.id ?? 'new'} metric={metric} history={history} unit={unit} start={correcting}
                     onSave={onSave} say={say} onDone={() => setCorrecting(null)} dirtyRef={dirtyRef}/>}
@@ -125,13 +130,12 @@ export function ValuePage({ subject, history, labValues, ctx, onSave, onCorrect,
               <span className="md-history-day">{formatShortDate(r.day)}</span>
               {subject.kind === 'bp' ? (
                 <span className="md-history-bp">
-                  <span className={`md-history-value md-status-${pressureStatus(r, ctx) ?? 'none'}`}>{pressureText(r)} mmHg</span>
+                  <PressureValue reading={r} ctx={ctx}/>
                   <button type="button" className="md-history-correct" onClick={() => setCorrecting(r)}
                           aria-label={`Correct the reading of ${formatShortDate(r.day)}`}>Correct</button>
                 </span>
               ) : metric ? (
-                <ValueCell metric={metric} display={unit} grading={ctx.grading} value={r.value} comparator={r.comparator} rowId={r.id}
-                           status={valueStatus(metric, r.value, ctx, r.comparator)} pinned={false} onCorrect={onCorrect} say={say}/>
+                <CoreValue metric={metric} unit={unit} reading={r} ctx={ctx} onCorrect={onCorrect} say={say}/>
               ) : (
                 <ValueCell value={r.value} comparator={r.comparator} unit={lab?.mixedUnits ? lab.points.find(p => p.id === r.id)?.unit : undefined}
                            rowId={r.id} status={null} pinned={false} onCorrect={onCorrect} say={say}/>
@@ -144,6 +148,27 @@ export function ValuePage({ subject, history, labValues, ctx, onSave, onCorrect,
       {subject.kind !== 'lab' && <p className="md-page-hint">To change units, use About you or All results as a table.</p>}
       {messages}
     </section>
+  );
+}
+
+/** A history row's core value: its grade, and the limit note only when the plan's rule leaves a
+ *  limit ungraded, so the colour and the note always agree (US-12 AC21). */
+function CoreValue({ metric, unit, reading, ctx, onCorrect, say }: {
+  metric: MetricType; unit: CellUnit; reading: DayReading; ctx: RowContext; onCorrect?: CorrectFn; say: (m: string) => void;
+}) {
+  const status = valueStatus(metric, reading.value, ctx, reading.comparator);
+  return <ValueCell metric={metric} display={unit} grading={ctx.grading} value={reading.value} comparator={reading.comparator} rowId={reading.id}
+                    status={status} ungraded={limitUngraded(metric, status, ctx, reading)} pinned={false} onCorrect={onCorrect} say={say}/>;
+}
+
+/** A history row's blood pressure, coloured as graded; a limit pair the rule leaves ungraded says why. */
+function PressureValue({ reading, ctx }: { reading: DayReading; ctx: RowContext }) {
+  const status = pressureStatus(reading, ctx);
+  const ungraded = limitUngraded('blood_pressure', status, ctx, reading);
+  return (
+    <span className={`md-history-value md-status-${status ?? 'none'}`} title={ungraded ? LIMIT_NOT_GRADED : undefined}>
+      {pressureText(reading)} mmHg{ungraded && <span className="hr-sr-only">, {LIMIT_NOT_GRADED}</span>}
+    </span>
   );
 }
 

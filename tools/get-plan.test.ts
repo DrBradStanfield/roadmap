@@ -22,6 +22,7 @@ import {
   mergeLongitudinalInputs,
   migrateFile,
   screeningsToInputs,
+  toOldShape,
   type FileLabValue,
   type HealthInputs,
   type RoadmapFile,
@@ -206,8 +207,10 @@ describe('US-30 AC1/AC3/AC4 — the three output modes', () => {
 
   it('AC1/AC4: a record whose only rows are unknown metrics shows the empty state, not an empty table', () => {
     const file = fixture();
+    // The blood tests are core rows in labValues (US-66 AC1); only the extra lab rows stay.
+    file.labValues = file.labValues.filter((l) => !l.core);
     file.measurements = file.measurements
-      .filter((m) => m.metricType === 'ldl')
+      .filter((m) => m.metricType === 'weight')
       .map((m) => ({ ...m, metricType: 'unicorn_index' }));
     const plan = computePlan(file, NOW);
     expect(renderText(plan)).toContain('(none recorded yet)');
@@ -267,21 +270,25 @@ describe('US-30 AC1/AC3/AC4 — the three output modes', () => {
   });
 });
 
-// US-09 AC23 (adversary R6): an erase makes the record schemaVersion 2. The
-// text and HTML name the record's own version; the JSON plan keeps its shape's.
+// US-09 AC23 (adversary R6): an erase makes the record schemaVersion 2; a core
+// blood row makes it 3 (US-66 AC15). The text and HTML name the record's own
+// version; the JSON plan keeps its shape's.
 describe('US-09 AC23 — the report names the record\'s real schemaVersion', () => {
-  it('prints schemaVersion 2 for a listed record, and the JSON plan stays at 1', async () => {
+  it('prints schemaVersion 2 for a listed vitals-only record, 3 once it holds blood tests, and the JSON plan stays at 1', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'get-plan-'));
     const path = join(dir, 'health-roadmap.json');
-    writeFileSync(path, JSON.stringify({ ...fixture(), schemaVersion: 2, erasedRows: { fromEpoch: 1, ids: ['gone'] }, meta: { ...fixture().meta, eraseEpoch: 1 } }));
+    const vitals = { ...fixture(), labValues: fixture().labValues.filter((row) => row.core !== true) }; // the migrated blood tests out
+    writeFileSync(path, JSON.stringify({ ...vitals, schemaVersion: 2, erasedRows: { fromEpoch: 1, ids: ['gone'] }, meta: { ...fixture().meta, eraseEpoch: 1 } }));
     const html = join(dir, 'plan.html');
     try {
       expect((await captureRun([path])).stdout).toContain('Record: schemaVersion 2 ·');
       expect((await captureRun([path, '--html', html])).code).toBe(0);
       expect(readFileSync(html, 'utf8')).toContain('record schemaVersion 2.');
       expect(JSON.parse((await captureRun([path, '--json'])).stdout).schemaVersion).toBe(1);
-      writeFileSync(path, JSON.stringify(fixture()));
+      writeFileSync(path, JSON.stringify({ ...vitals, schemaVersion: 1 }));
       expect((await captureRun([path])).stdout).toContain('Record: schemaVersion 1 ·');
+      writeFileSync(path, JSON.stringify(fixture()));
+      expect((await captureRun([path])).stdout).toContain('Record: schemaVersion 3 ·');
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -335,7 +342,9 @@ describe('US-30 AC5 — an untrusted file fails clearly, never with a stack', ()
   });
 
   it('loads a null-riddled file through migrateFile and still computes', async () => {
-    const file = fixture();
+    // Old shape on disk (blood tests in measurements), so nulling labValues
+    // leaves the core values to arrive through the move (US-66 AC2).
+    const file = toOldShape(fixture());
     const mangled = {
       ...file,
       measurements: file.measurements,
@@ -480,6 +489,8 @@ describe('US-30 follow-up — an ignored value is never shown as a plan input', 
   it('US-29 AC4 / US-30 AC5: omits malformed undated measurements without reporting a tool bug', async () => {
     const file = fixture();
     file.measurements = file.measurements.map((m) => ({ ...m, recordedAt: undefined as unknown as string }));
+    // The core blood tests are lab rows now (US-66 AC1): undate them too.
+    file.labValues = file.labValues.map((l) => (l.core ? { ...l, recordedAt: undefined as unknown as string } : l));
     const { dir, path } = writeFixture(file);
     const originalBytes = readFileSync(path);
 
@@ -550,6 +561,22 @@ describe('US-30 AC7 — a plan from numbers, with no record file', () => {
     const mg = await captureRun(['--from-values', spec([{ metric: 'ldl', value: 123.8, unit: 'mg/dL' }]), '--json']);
     const si = await captureRun(['--from-values', spec([{ metric: 'ldl', value: 3.2, unit: 'mmol/L' }]), '--json']);
     expect(JSON.parse(mg.stdout).inputs.ldlC).toBeCloseTo(JSON.parse(si.stdout).inputs.ldlC, 2);
+  });
+
+  it('US-66 AC6: a core blood test under `test` is the same core value as under `metric`', async () => {
+    const asMetric = await captureRun(['--from-values', spec([{ metric: 'ldl', value: 123.8, unit: 'mg/dL', date: '2026-08-20' }]), '--json']);
+    const asTest = await captureRun(['--from-values', spec([{ test: 'LDL Cholesterol', value: 123.8, unit: 'mg/dL', date: '2026-08-20' }]), '--json']);
+    expect(asTest.code).toBe(0);
+    expect(JSON.parse(asTest.stdout).inputs.ldlC).toBeCloseTo(3.2, 2);
+    expect(stable(asTest.stdout)).toBe(stable(asMetric.stdout));
+    expect(JSON.parse(asTest.stdout).labValues).toEqual([]); // a core value, never an extra lab row
+    // One slot: the same test under both names on one day is refused.
+    const both = await captureRun(['--from-values', spec([
+      { metric: 'ldl', value: 3.2, unit: 'mmol/L', date: '2026-08-20' },
+      { test: 'LDL Cholesterol', value: 3.3, unit: 'mmol/L', date: '2026-08-20' },
+    ])]);
+    expect(both.code).toBe(1);
+    expect(both.stderr).toContain('ldl already has a value on 2026-08-20');
   });
 
   it('shows mg/dL when unitSystem is conventional', async () => {

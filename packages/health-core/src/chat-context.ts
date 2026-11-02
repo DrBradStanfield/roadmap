@@ -58,11 +58,8 @@
  *     the plan's gating field names it lacks. uploadedDocuments is always empty.
  * Every other key is dropped.
  */
-import type { HealthInputs } from './types';
-import {
-  STATIN_NAMES, EZETIMIBE_OPTIONS, BEMPEDOIC_ACID_OPTIONS, PCSK9I_OPTIONS,
-  GLP1_NAMES, SGLT2I_NAMES, METFORMIN_OPTIONS,
-} from './types';
+import type { HealthInputs, SuggestionInputs } from './types';
+import { MEDICATION_ANSWERS } from './chat-edits';
 import { rangeFault, type UnitSystem } from './units';
 import {
   healthInputSchema, inRange, inputsPressureInverted, sanitizeInputs, excludedInputFields, MEDICATION_KEYS, SCREENING_KEYS,
@@ -214,8 +211,10 @@ export function buildChatContextJson(payload: unknown): string | null {
   const unitSystem: UnitSystem = raw.unitSystem === 'conventional' ? 'conventional' : 'si';
   const medicationRowsOnRecord = medicationRows(raw.medications);
   const screenings = screeningsToInputs(screeningRows(raw.screenings));
-  const results = parsed.success
-    ? calculateHealthResults(inputs as HealthInputs, unitSystem, medicationsToInputs(medicationRowsOnRecord), screenings)
+  // US-07 AC11: a left-out pair turns the blood pressure prompt into "check your reading".
+  const planInputs = parsed.success ? { ...inputs, ...(pressure ? { pressureOrder: true as const } : {}) } as SuggestionInputs : null;
+  const results = planInputs
+    ? calculateHealthResults(planInputs, unitSystem, medicationsToInputs(medicationRowsOnRecord), screenings)
     : null;
   // An unlisted drug name must never reach the prompt, so it reads UNLISTED
   // here, and a dose shows only within (0, MAX_DOSE]. The plan above used the
@@ -230,8 +229,8 @@ export function buildChatContextJson(payload: unknown): string | null {
   }
   // US-15 AC31: each card's description, from the plan over the medications
   // above, so no unlisted name or out-of-range dose reaches the prompt.
-  const descriptions = new Map(results
-    ? calculateHealthResults(inputs as HealthInputs, unitSystem, medications, screenings).suggestions.map(s => [s.id, s.description])
+  const descriptions = new Map(planInputs
+    ? calculateHealthResults(planInputs, unitSystem, medications, screenings).suggestions.map(s => [s.id, s.description])
     : []);
   // As plan.ts: a known minor's raw numbers stay; the adult readings go (US-07 AC6).
   const adult = results?.knownMinor ? undefined : results;
@@ -330,22 +329,11 @@ const ageOf = (inputs: Partial<HealthInputs>) =>
 // Row sanitizers
 // ---------------------------------------------------------------------------
 
-const values = (options: ReadonlyArray<{ value: string }>) => options.map(o => o.value);
-const ESCALATION = ['not_yet', 'not_tolerated'];
-
 /** The drug names each medication slot can hold: the form's own options, plus
  *  the FHIR drug name that ezetimibe and PCSK9i rows carry with a dose. */
-const DRUG_NAMES: Record<(typeof MEDICATION_KEYS)[number], ReadonlySet<string>> = {
-  statin: new Set(values(STATIN_NAMES)),
-  ezetimibe: new Set([...values(EZETIMIBE_OPTIONS), 'ezetimibe']),
-  statin_escalation: new Set(ESCALATION),
-  pcsk9i: new Set([...values(PCSK9I_OPTIONS), 'pcsk9i']),
-  bempedoic_acid: new Set(values(BEMPEDOIC_ACID_OPTIONS)),
-  glp1: new Set(values(GLP1_NAMES)),
-  glp1_escalation: new Set(ESCALATION),
-  sglt2i: new Set(values(SGLT2I_NAMES)),
-  metformin: new Set(values(METFORMIN_OPTIONS)),
-};
+const DRUG_NAMES: ReadonlyMap<string, ReadonlySet<string>> = new Map(MEDICATION_KEYS.map((key) => [key, new Set([
+  ...MEDICATION_ANSWERS[key].map(o => o.value), ...(key === 'ezetimibe' || key === 'pcsk9i' ? [key] : []),
+])]));
 
 /** Largest dose, in mg, the prompt shows (the form's largest is 180). */
 const MAX_DOSE = 1000;
@@ -370,11 +358,12 @@ function medicationRows(raw: unknown): MedicationRow[] {
   if (!Array.isArray(raw)) return [];
   return raw.flatMap((row) => {
     const { medicationKey, drugName, doseValue } = fields(row);
-    if (typeof medicationKey !== 'string' || !own(DRUG_NAMES, medicationKey)) return [];
+    const names = typeof medicationKey === 'string' ? DRUG_NAMES.get(medicationKey) : undefined;
+    if (typeof medicationKey !== 'string' || !names) return [];
     // medicationsToInputs skips a name that is not a string, as if no row were
     // recorded, so this row goes too rather than reading as an answered UNLISTED.
     if (typeof drugName !== 'string') return [];
-    const listed = DRUG_NAMES[medicationKey as keyof typeof DRUG_NAMES].has(drugName);
+    const listed = names.has(drugName);
     const bounded = UNLISTED_NAME.test(drugName);
     // The widget's plan reads the saved dose as it is, so this one does too.
     const dose = typeof doseValue === 'number' && Number.isFinite(doseValue) ? doseValue : null;

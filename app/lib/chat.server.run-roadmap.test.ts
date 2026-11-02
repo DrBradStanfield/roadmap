@@ -43,6 +43,15 @@ function replies(...responses: Array<Response | Error>) {
 const user = [{ role: 'user' as const, content: 'analyse my data: LDL 4.1 mmol/L, HbA1c 41 mmol/mol' }];
 
 describe('US-15 AC33: the run_roadmap round (JSON path)', () => {
+  // The transport throws on an empty end_turn (the fallback, as for every round); an empty max_tokens comes through.
+  it('US-16 AC3: a refused medication answer with an empty second reply says it was not saved, never the fallback', async () => {
+    const misfit = { type: 'tool_use', id: 'toolu_med', name: 'propose_medication_edit', input: { medicationKey: 'ezetimibe', drugName: 'atorvastatin' } };
+    replies(json('tool_use', [misfit]), json('max_tokens', []));
+    const result = await getChatCompletion([], user, true, undefined, { guestInputs: PROFILE });
+    expect(result).toMatchObject({ isFallback: false, content: "One medication change was not saved, as its answer is not one of the listed answers. Tell me which one applies, or choose it yourself." });
+    expect(result).not.toHaveProperty('proposedEdits');
+  });
+
   it('two calls: the second replays the first reply, answers each tool_use, offers no tools, and is the answer', async () => {
     const { bodies } = replies(
       json('tool_use', [THINKING, { type: 'text', text: 'Let me run that.' }, RUN, FIELD]),

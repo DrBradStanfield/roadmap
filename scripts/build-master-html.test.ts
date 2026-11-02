@@ -480,6 +480,38 @@ describe('build-master-html (US-50 AC9)', () => {
     expect(build(md, { store: 'edu' }).html).toContain("Brad's view above concerns");
   });
 
+  it('US-50 AC9: adjacent product sentences on separate physical lines all go, not every other one (Codex R1, 2026-11-02)', () => {
+    const md = MASTER.replace('Magnesium matters, p < 0.05 [1].', 'MicroVitamin has 8 mg.\nMicroVitamin has 9 mg.\nMicroVitamin has 10 mg.\nIndependent evidence remains.');
+    const c = build(md, { store: 'commerce' });
+    const text = c.html.replace(/<[^>]+>/g, '');
+    expect(text).not.toMatch(/has (8|9|10) mg/);
+    expect(c.html).toContain('<p>Independent evidence remains.</p>');
+  });
+
+  it('US-50 AC9: a Potassium Fiber Drink card links its product under its own eyebrow, not "From the MicroVitamin range"', () => {
+    const card = { handle: 'magnesium-test-shop', heading: ['1. Overview'], text: 'Potassium Fiber Drink has 500 mg of potassium.', linkText: 'See Potassium Fiber Drink', product: 'potassium-fiber-drink' };
+    const { html } = build(MASTER, { store: 'commerce', callouts: [card] });
+    expect(html).toContain('<p style="margin:0 0 6px;font-weight:700;">Also on microvitamin.com</p>\n<p style="margin:0;">Potassium Fiber Drink has 500 mg of potassium. <a href="/products/potassium-fiber-drink" target="_blank" rel="noopener">See Potassium Fiber Drink</a></p>');
+    expect(html).not.toContain('From the MicroVitamin range');
+    // Published, that card is counted like any other, so a rebuild cannot drop it silently.
+    expect(() => build(MASTER, { store: 'commerce', liveHtml: html })).toThrow(/1 product callout\(s\)/);
+    expect(() => build(MASTER, { store: 'commerce', callouts: [{ ...card, product: 'potassium-gummies' }] })).toThrow(/unknown product "potassium-gummies"/);
+  });
+
+  it('US-50 AC9: commerce drops a sentence saying a MicroVitamin or Sleep product is "third-party tested", disclosure or not (US-only claim, 2026-11-02)', () => {
+    const md = MASTER.replace('Magnesium matters, p < 0.05 [1].', 'Choose single-ingredient products; testers such as Labdoor publish results. Disclosure: MicroVitamin Capsules and Sleep are third-party tested by Labdoor under its program.\n\nPick a third-party tested, low-dose multivitamin from labdoor.com.');
+    const text = build(md, { store: 'commerce' }).html.replace(/<[^>]+>/g, '');
+    expect(text).toContain('Choose single-ingredient products; testers such as Labdoor publish results.\n');
+    expect(text).not.toContain('Disclosure');
+    expect(text).toContain('Pick a third-party tested, low-dose multivitamin from labdoor.com.');
+    // Soft-wrapped or unhyphenated, the claim still goes; a generic "Sleep ..." sentence is not the product (review 2026-11-02).
+    const more = MASTER.replace('Magnesium matters, p < 0.05 [1].', 'Kept first.\n\n- Sleep by Dr Brad is third-party\n  tested by Labdoor.\n- Disclosure: MicroVitamin is third party tested.\n- Sleep by Dr\n  Brad is third\n  party tested too.\n- Sleep supplements are rarely third-party tested, so check for a seal.');
+    const t2 = build(more, { store: 'commerce' }).html.replace(/<[^>]+>/g, '');
+    expect(t2).not.toMatch(/Sleep by Dr|Disclosure|tested too/);
+    expect(t2).toContain('Sleep supplements are rarely third-party tested, so check for a seal.');
+    expect(build(md, { store: 'edu' }).html).toContain('Disclosure: MicroVitamin Capsules and Sleep are third-party tested');
+  });
+
   it('US-50 AC9: a dropped product paragraph keeps its caveat sentences that name no product and stand alone', () => {
     const P = '[MicroVitamin](https://drstanfield.com/products/microvitamin)';
     const md = MASTER.replace('Magnesium matters, p < 0.05 [1].', [

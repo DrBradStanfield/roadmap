@@ -8,6 +8,7 @@ import { ChatSession } from '../../packages/health-core/src/chat-session';
 import { fileScreeningRows } from '../../packages/health-core/src/file-inputs';
 import type { ApiMedication } from '../../packages/health-core/src/mappings';
 import { derivePlanInputs } from '../../packages/health-core/src/plan';
+import { currentValueRows } from '../../packages/health-core/src/blood-tests';
 import type { RecordHost } from '../../packages/health-core/src/record-host';
 import { labReview, labRows, labSaveSummary, type Extraction } from './lab-review';
 import { readRecord, readView, Refusal } from './my-data';
@@ -16,7 +17,8 @@ import { readRecord, readView, Refusal } from './my-data';
 export function chatContextJson(recordJson: string, nowIso: string, deviceId: string): string {
   const file = readView(recordJson, nowIso, deviceId);
   const { inputs, unitSystem } = derivePlanInputs(file);
-  const dated = file.measurements.filter((m) => m.status === 'active');
+  // The vitals and the core blood-test rows, as the plan reads them (US-66 AC7).
+  const dated = currentValueRows(file);
   return JSON.stringify(chatContextOf(inputs, unitSystem, file.medications as unknown as ApiMedication[], fileScreeningRows(file.screenings), dated));
 }
 

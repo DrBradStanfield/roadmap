@@ -1,6 +1,7 @@
 // Types
 export type {
   HealthInputs,
+  SuggestionInputs,
   HealthResults,
   Suggestion,
   SuggestionReference,
@@ -243,6 +244,9 @@ export {
   PROPOSE_MEDICATION_EDIT_TOOL,
   toolOnlyAck,
   parseProposedEdit,
+  chatMedicationChange,
+  unsavedProfile,
+  type ChatMedicationRow,
   type EditableField,
   type ProposedEdit,
   type ProposedFieldEdit,
@@ -258,6 +262,7 @@ export { STAT_CARD_EVIDENCE, getIbwEvidence, getProteinEvidence, getBmiEvidence 
 export type { RefHint, SexedRefHint } from './reference-hints';
 export { REFERENCE_HINTS, refLineFor } from './reference-hints';
 export { type Grading, type RowTarget, type RowTargetPlan, type RowSubject, TARGET_NEEDS_HEIGHT, TARGET_NEEDS_SEX, healthyWaistBelow, rowTarget } from './row-target';
+export { type GradeStatus, type GradeContext, statusOf, bpStatus, valueStatus, pressureStatus, type PressureReading, gradeWords, savedStatus, limitUngraded } from './row-grade';
 export { type CellUnit, isLpaUnit, recordLpaUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel, cellRange, cellNumber, limitCellText } from './cell-unit';
 
 // Sentry PII/PHI scrubbing
@@ -274,6 +279,7 @@ export {
 // Local-first storage spine (v2) — the RoadmapFile schema + merge/migrate logic.
 // Browser-coupled cloud adapters live in widget-src/src/storage/, not here.
 export {
+  CORE_BLOOD_UNITS,
   CURRENT_SCHEMA_VERSION,
   createEmptyFile,
   createMeasurement,
@@ -292,6 +298,7 @@ export {
   type SyncStamp,
   type HistoryChangeType,
 } from './roadmap-file';
+export { bloodTableReport, bloodTestRows, createCoreRow, isCoreRow, labRowSlot, toOldShape } from './blood-tests';
 export { fileProfileToApi, fileScreeningRows, screeningFieldName } from './file-inputs';
 export { mergeFiles, rowRootIds, dayOf, localDay, type MergeOptions } from './merge';
 export { buildErasedFile, type EraseInputs } from './erase';
@@ -385,6 +392,25 @@ export {
   type LabGroupId,
 } from './lab-catalog';
 
+// US-21 lab tests beyond the core 8, grouped into series (the web's tables and rows, the iPhone's rows)
+export {
+  groupLabValues,
+  labValueLabel,
+  labUnitRefusalLine,
+  mixedUnitsNote,
+  formatLabValue,
+  savedLabText,
+  labSeriesRows,
+  type LabSeriesRow,
+  type LabRowsGroupId,
+  type LabRowsIcon,
+  type LabSeriesPoint,
+  type LabSeries,
+  type LabValueGroup,
+  type LabValueRow,
+} from './lab-series';
+export { trendWindow, recentTrend } from './recent-trend';
+
 // chat-history.json — chat conversations synced to the user's own cloud (Phase 6)
 export {
   CHAT_HISTORY_SCHEMA_VERSION,
@@ -458,7 +484,7 @@ export {
 } from './drive-rest';
 
 // US-35: the slot rule and the bulk save the website and the connector share.
-export { bulkAppendValues, correctValue, moveBloodTest, placeMeasurement, planBloodTestMove, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type MeasurementRefusal, type MoveClash, type MoveKeep, type MovePlan, type MoveRejection, type MoveResult, type SlotState } from './record-edits';
+export { addLabValue, type AddLabValueRequest, type AddLabValueResult, bulkAppendValues, correctValue, moveBloodTest, placeMeasurement, planBloodTestMove, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type MeasurementRefusal, type MoveClash, type MoveKeep, type MovePlan, type MoveRejection, type MoveResult, type SlotState } from './record-edits';
 export { fileNameLine, inflateCapped, isImportableEntryName, zipMemberName, unreadLines, uploadLimitSignal, LIMIT_TEST_WORDS, UNDATED_PREVIOUS, type RefusedLabValue, type UnreadLabValue } from './lab-extraction';
 export { IMPORT_LIMITS } from './import-hints';
 export {
@@ -470,6 +496,8 @@ export {
 
 // US-07 AC7: the lab's printed eGFR, when it is the plan's.
 export { labEgfrFrom, labEgfrOf, withLabEgfr, type LabEgfr } from './plan';
+// US-07 AC11: the one strip of refused inputs every plan caller shares.
+export { planInputsFrom } from './plan';
 
 // US-25 AC22: the plan's summary tiles, the web's Quick Stats and the phone's My plan tiles.
 export { statTiles, statTileText, type StatTile, type StatTileOptions, type StatTileStatus, type StatTone } from './stat-tiles';

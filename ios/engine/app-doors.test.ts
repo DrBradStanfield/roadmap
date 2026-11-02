@@ -9,6 +9,7 @@ import { applyEdit, newRecord } from './my-data';
 import { erasePhoneJson } from './erase';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { chatContextOf } from '../../packages/health-core/src/chat-context';
+import { currentValueRows } from '../../packages/health-core/src/blood-tests';
 
 const NOW = '2026-10-21T08:00:00.000Z';
 const DEVICE = 'ios-test';
@@ -44,7 +45,7 @@ describe('US-52 AC5: the chat context', () => {
     // Byte for byte what health-core builds for the same inputs.
     expect(context).toEqual(JSON.parse(JSON.stringify(chatContextOf(
       { ...context, unitSystem: undefined, medications: undefined, screenings: undefined, measurementHistory: undefined }, 'si', [], [],
-      file.measurements.filter((m) => m.status === 'active'),
+      currentValueRows(file),
     ))));
   });
 });
@@ -145,11 +146,14 @@ describe('US-52 AC8: the lab review and the write', () => {
     const out = applyEdit(file, { kind: 'labImport', extractionJson: JSON.stringify(extraction), refs, reportDay: '2026-10-01' }, NOW);
     if (!out.ok) throw new Error(out.message);
     file = out.file;
-    const hba1c = file.measurements.find((m) => m.metricType === 'hba1c');
-    expect(hba1c).toMatchObject({ value: 40, recordedAt: '2025-04-02', source: 'lab_import', status: 'active' });
-    expect(file.labValues).toHaveLength(1);
-    expect(file.labValues[0]).toMatchObject({ source: 'lab_import', recordedAt: '2026-10-01' });
-    expect(file.measurements.filter((m) => m.metricType === 'ldl')).toHaveLength(1); // the typed value stays
+    // A core value is a core lab row (US-66 AC1, AC6); the extra one stays a plain lab row (AC8).
+    const core = (metric: string) => file.labValues.filter((l) => l.core === true && l.metricName === metric);
+    expect(core('hba1c')).toEqual([expect.objectContaining({ value: 40, unit: 'mmol/mol', recordedAt: '2025-04-02', source: 'lab_import', status: 'active' })]);
+    const extras = file.labValues.filter((l) => l.core !== true);
+    expect(extras).toHaveLength(1);
+    expect(extras[0]).toMatchObject({ source: 'lab_import', recordedAt: '2026-10-01' });
+    expect(core('ldl')).toHaveLength(1); // the typed value stays
+    expect(file.measurements).toEqual([]);
   });
 
   it('refuses a future or missing report day, and a ref not in the report', () => {
