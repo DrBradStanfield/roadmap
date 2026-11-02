@@ -43,7 +43,9 @@ describe('US-67 AC4: values from their stated unit to SI', () => {
     const [row] = active(saved(metric(), 'review', edits), 'ldl');
     expect(row.value).toBeCloseTo(130 / 38.67, 3);
     expect(row.recordedAt.slice(0, 10)).toBe(DAY);
-    expect(preview(metric(), edits).review).toEqual({ lines: [{ text: 'LDL Cholesterol 3.4 mmol/L on 1 Oct', replaces: null }], refusal: null });
+    expect(preview(metric(), edits).review).toEqual({
+      lines: [{ text: 'LDL Cholesterol 3.4 mmol/L on 1 Oct', replaces: null }], refusal: null, seen: [['ldl:2026-10-01', null]],
+    });
     // The phone's own LDL choice (My data's units) is what the banner shows.
     expect(preview(metric(), edits, '{"ldl":"conventional"}').review!.lines[0].text).toBe('LDL Cholesterol 130 mg/dL on 1 Oct');
   });
@@ -265,5 +267,47 @@ describe('US-67 AC1: the app\'s chat context is what run_roadmap reads', () => {
     const plan = JSON.parse(run.contextJson!);
     expect(plan.latestValues).toMatchObject({ ldlC: '3.4', weightKg: '80' });
     expect(plan.profile).toMatchObject({ sex: 'male', heightCm: 178 });
+  });
+});
+
+describe('US-67 AC3: a Save checks the record still holds what the banner named', () => {
+  const review = (edits: unknown, seen?: unknown) => ({ kind: 'chatEdits' as const, part: 'review' as const, edits, today: TODAY, ...(seen !== undefined ? { seen } : null) });
+  const STALE = 'Your record changed on another device while this was shown. Nothing was saved.';
+
+  it('US-67 AC4: an unchanged record saves with the banner\'s seen', () => {
+    const held = saved(metric(), 'review', [field('ldlC', 3.1, 'mmol/L'), field('systolicBp', 120, 'mmHg'), field('diastolicBp', 80, 'mmHg')]);
+    const edits = [field('ldlC', 3.4, 'mmol/L'), field('systolicBp', 128, 'mmHg'), field('diastolicBp', 82, 'mmHg'), profile({ sex: 'male' })];
+    const { seen } = preview(held, edits).review!;
+    const ldl = active(held, 'ldl')[0].id;
+    const [sys, dia] = [active(held, 'systolic_bp')[0].id, active(held, 'diastolic_bp')[0].id];
+    expect(seen).toEqual([['ldl:2026-10-01', ldl], ['bp:2026-10-01', [sys, dia]], ['profile:sex', null]]);
+    const outcome = applyEdit(held, review(edits, seen), NOW);
+    expect(outcome.ok).toBe(true);
+    expect(active((outcome as { file: RoadmapFile }).file, 'ldl')[0].value).toBe(3.4);
+  });
+
+  it('US-67 AC3: a value another device corrected since the banner is refused, and nothing is written', () => {
+    const held = saved(metric(), 'review', [field('ldlC', 3.1, 'mmol/L')]);
+    const edits = [field('ldlC', 3.4, 'mmol/L'), field('weightKg', 80, 'kg')];
+    const { seen } = preview(held, edits).review!;
+    const moved = saved(held, 'review', [field('ldlC', 3.2, 'mmol/L')]);
+    expect(applyEdit(moved, review(edits, seen), NOW)).toEqual({ ok: false, reason: 'record-changed', message: STALE });
+    // A day that was empty and now holds a value is a change too.
+    const empty = metric();
+    const fresh = preview(empty, [field('ldlC', 3.4, 'mmol/L')]).review!.seen;
+    expect(applyEdit(held, review([field('ldlC', 3.4, 'mmol/L')], fresh), NOW)).toMatchObject({ ok: false, message: STALE });
+  });
+
+  it('US-67 AC3: a profile value changed since the banner is refused', () => {
+    const edits = [profile({ height: { value: 180, unit: 'cm' } })];
+    const { seen } = preview(metric(), edits).review!;
+    const moved = saved(metric(), 'review', [profile({ height: { value: 170, unit: 'cm' } })]);
+    expect(applyEdit(moved, review(edits, seen), NOW)).toMatchObject({ ok: false, reason: 'record-changed' });
+  });
+
+  it('US-67 AC3: junk in seen refuses; no seen behaves as before', () => {
+    const held = saved(metric(), 'review', [field('ldlC', 3.1, 'mmol/L')]);
+    expect(applyEdit(held, review([field('ldlC', 3.4, 'mmol/L')], 'junk'), NOW)).toMatchObject({ ok: false, message: STALE });
+    expect(applyEdit(held, review([field('ldlC', 3.4, 'mmol/L')]), NOW).ok).toBe(true);
   });
 });

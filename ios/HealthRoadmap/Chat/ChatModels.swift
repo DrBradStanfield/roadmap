@@ -125,6 +125,8 @@ struct ChatEditsPreview: Decodable, Equatable, Sendable {
         let lines: [Line]
         /// Why none of it can be saved, in the engine's words; then there is no Save.
         let refusal: String?
+        /// What the preview was made against, passed back on Save as it came; absent from an older engine.
+        let seen: OpaqueJSON?
     }
 
     let medications: Medications?

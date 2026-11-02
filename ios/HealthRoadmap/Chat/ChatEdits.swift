@@ -22,6 +22,8 @@ final class ChatEdits {
         var refusal: String?
         let edits: OpaqueJSON
         let today: String
+        /// The preview's `seen`, passed back on Save.
+        let seen: OpaqueJSON?
         let mark: RecordStore.ChatMark
     }
 
@@ -62,7 +64,7 @@ final class ChatEdits {
             shown = true
         }
         if let preview = taken.preview.review {
-            review = Review(lines: preview.lines, refusal: preview.refusal, edits: edits, today: today, mark: taken.mark)
+            review = Review(lines: preview.lines, refusal: preview.refusal, edits: edits, today: today, seen: preview.seen, mark: taken.mark)
             shown = true
         }
         if shown { send(.chatEditProposed) }
@@ -74,7 +76,7 @@ final class ChatEdits {
         guard let asked = review, asked.refusal == nil, !busy else { return }
         busy = true
         defer { busy = false }
-        let (result, changed) = await store.applyChatEdit(.chatEdits(part: .review, edits: asked.edits, today: asked.today), on: asked.mark)
+        let (result, changed) = await store.applyChatEdit(.chatEdits(part: .review, edits: asked.edits, today: asked.today, seen: asked.seen), on: asked.mark)
         // Dropped, or replaced by a newer reply's banner, meanwhile: that one stays.
         guard review?.id == asked.id else { return }
         switch result {

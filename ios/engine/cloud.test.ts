@@ -91,6 +91,7 @@ interface Engine {
   cloudLabImport(extraction: string, refs: string, reportDay: string, erase: string, units: string, now: string, unitsJson: string): string;
   labSaveSummaryJson(record: string, extraction: string, refs: string, reportDay: string, now: string, device: string): string;
   cloudEdit(edit: string, erase: string, units: string, now: string, unitsJson?: string, shownLpaUnit?: string): string;
+  chatEditsJson(record: string, edits: string, now: string, device: string, today: string, unitsJson?: string): string;
   cloudVisible(): string;
   cloudFlush(): Promise<string>;
   cloudRefresh(): Promise<string>;
@@ -276,6 +277,28 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     expect(dropbox.record.medications).toEqual([]);
     // With the erase the screen now shows, the same edit is taken.
     expect((JSON.parse(engine.cloudEdit(review, view.erase, 'si', NOW)) as { ok: boolean }).ok).toBe(true);
+  });
+
+  it('US-67 AC3: a banner whose replaced value another device changed is refused through cloudEdit; an unchanged one saves', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine } = await phone(dropbox);
+    const { erase, record } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string; record: string };
+    const edits = [{ kind: 'field', field: 'weightKg', displayValue: 82, unitSystem: 'si', date: '2026-10-01' }];
+    const { review } = JSON.parse(engine.chatEditsJson(record, JSON.stringify(edits), NOW, 'ios-1', '2026-10-21')) as { review: { seen: unknown; lines: Array<{ replaces: string | null }> } };
+    expect(review.lines[0].replaces).toBe('80.0 kg');
+    const save = JSON.stringify({ kind: 'chatEdits', part: 'review', today: '2026-10-21', edits, seen: review.seen });
+    // Another device corrects the day's weight before Save.
+    const web = JSON.parse(engine.applyEditJson(JSON.stringify(dropbox.record), JSON.stringify({ kind: 'correct', id: dropbox.record.measurements[0].id, value: 79 }), NOW, 'web')) as { record: string };
+    dropbox.put(JSON.parse(web.record) as RoadmapFile);
+    expect(await engine.cloudRefresh()).toBe('changed');
+    expect(JSON.parse(engine.cloudEdit(save, erase, 'si', NOW))).toMatchObject({ ok: false, reason: 'record-changed' });
+    // A banner drawn on the record as it is now saves.
+    const now = JSON.parse(engine.chatEditsJson(JSON.stringify(dropbox.record), JSON.stringify(edits), NOW, 'ios-1', '2026-10-21')) as { review: { seen: unknown } };
+    const fresh = JSON.stringify({ kind: 'chatEdits', part: 'review', today: '2026-10-21', edits, seen: now.review.seen });
+    expect((JSON.parse(engine.cloudEdit(fresh, erase, 'si', NOW)) as { ok: boolean }).ok).toBe(true);
+    await engine.cloudFlush();
+    expect(dropbox.record.measurements.filter((m) => m.status === 'active').map((m) => m.value)).toEqual([82]);
   });
 
   it('AC11d: a save the cloud cannot take waits on the phone, marked pending, and goes up with the next session', async () => {

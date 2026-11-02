@@ -24,8 +24,10 @@ import { cellUnitFor, unitsOf, type UnitChoices } from './unit-choices';
 
 /** The chat's edits, as Swift passes them back to cloudEdit or applyEditJson. */
 export type ChatEdit =
-  /** One part of a reply's `proposedEdits`, exactly as the server sent them. `today`: the phone's day, YYYY-MM-DD. */
-  | { kind: 'chatEdits'; part: 'medications' | 'review'; edits: unknown; today: string }
+  /** One part of a reply's `proposedEdits`, exactly as the server sent them. `today`: the phone's day, YYYY-MM-DD.
+   *  `seen`: the review preview's `seen`, passed back as it came; when the record no longer
+   *  holds what the banner named, the review part is refused (US-67 AC3). */
+  | { kind: 'chatEdits'; part: 'medications' | 'review'; edits: unknown; today: string; seen?: unknown }
   /** The medications part's Undo: each row as it was, written in order (chatEditsPreview's `undo`). */
   | { kind: 'chatUndo'; medications: ChatMedicationRow[] };
 
@@ -34,13 +36,18 @@ export interface ChatReviewLine { text: string; replaces: string | null }
 
 export interface ChatEditsPreview {
   medications: { lines: ChatLine[]; undo: ChatEdit } | null;
-  review: { lines: ChatReviewLine[]; refusal: string | null } | null;
+  /** `seen`: opaque to Swift. The rows and profile values the lines name, as the record held them. */
+  review: { lines: ChatReviewLine[]; refusal: string | null; seen: Seen } | null;
 }
+
+/** For each line, in order: its key and what the record held there (a row id, a pair's ids, a profile value, or null). */
+type Seen = Array<[string, unknown]>;
 
 type Outcome = { ok: true; file: RoadmapFile } | { ok: false; reason: string; message: string };
 
 const UNREADABLE = 'The chat\'s suggestion could not be read, so nothing was saved.';
 const NOTHING_SAVED = 'Nothing was saved.';
+const STALE = `Your record changed on another device while this was shown. ${NOTHING_SAVED}`;
 
 /** What each part of a reply would do to `file`. Nothing is written. */
 export function chatEditsPreview(file: RoadmapFile, rawEdits: unknown, now: string, today: string, choices: UnitChoices = {}): ChatEditsPreview {
@@ -49,7 +56,7 @@ export function chatEditsPreview(file: RoadmapFile, rawEdits: unknown, now: stri
   const review = reviewPart(file, read.edits, read.invalid, today, now, choices);
   return {
     medications: meds.ok && meds.lines.length > 0 ? { lines: meds.lines, undo: { kind: 'chatUndo', medications: meds.undo } } : null,
-    review: review.lines.length > 0 || review.refusal ? { lines: review.lines, refusal: review.refusal } : null,
+    review: review.lines.length > 0 || review.refusal ? { lines: review.lines, refusal: review.refusal, seen: review.seen } : null,
   };
 }
 
@@ -63,6 +70,10 @@ export function applyChatEdit(file: RoadmapFile, edit: ChatEdit, now: string, ch
   }
   if (edit.part !== 'review') return { ok: false, reason: 'invalid-value', message: UNREADABLE };
   const review = reviewPart(file, read.edits, read.invalid, edit.today, now, choices);
+  // The banner named values another device has since changed: its "replaces" would be wrong.
+  if (edit.seen !== undefined && JSON.stringify(edit.seen) !== JSON.stringify(review.seen)) {
+    return { ok: false, reason: 'record-changed', message: STALE };
+  }
   return review.refusal ? { ok: false, reason: 'chat-refused', message: review.refusal } : { ok: true, file: review.file };
 }
 
@@ -140,16 +151,18 @@ const BP_FIELDS = new Set(['systolicBp', 'diastolicBp']);
  * value becomes a correction (rows are never changed: correctsId and
  * entered-in-error); the same value again writes nothing. The profile writes
  * only what it does not already hold (the web's unsavedProfile). The first
- * refusal refuses the whole part. Lines are in the phone's units.
+ * refusal refuses the whole part. Lines are in the phone's units. `seen`:
+ * what the record held for each line, so a Save can tell the record moved.
  */
 function reviewPart(file: RoadmapFile, edits: ProposedEdit[], invalid: string[], today: string, now: string, choices: UnitChoices):
-  { file: RoadmapFile; lines: ChatReviewLine[]; refusal: string | null } {
+  { file: RoadmapFile; lines: ChatReviewLine[]; refusal: string | null; seen: Seen } {
   const lines: ChatReviewLine[] = [];
-  const refuse = (message: string) => ({ file, lines, refusal: `${message} ${NOTHING_SAVED}` });
-  if (invalid.includes('field') || invalid.includes('profile') || invalid.includes('list')) return { file, lines, refusal: UNREADABLE };
+  const seen: Seen = [];
+  const refuse = (message: string) => ({ file, lines, seen, refusal: `${message} ${NOTHING_SAVED}` });
+  if (invalid.includes('field') || invalid.includes('profile') || invalid.includes('list')) return { file, lines, seen, refusal: UNREADABLE };
   const fields = edits.filter((e): e is ProposedFieldEdit => e.kind === 'field');
   const profiles = edits.filter((e): e is ProposedProfileEdit => e.kind === 'profile');
-  if (fields.length === 0 && profiles.length === 0) return { file, lines, refusal: null };
+  if (fields.length === 0 && profiles.length === 0) return { file, lines, seen, refusal: null };
   if (!isRealDay(today) || today > latestDayOnEarth(now)) return refuse('This iPhone\'s date could not be read.');
 
   // One value per metric and day, the later stated winning; the first one's place in the reply kept.
@@ -198,6 +211,7 @@ function reviewPart(file: RoadmapFile, edits: ProposedEdit[], invalid: string[],
       next = result.file;
       const was = held.some(Boolean) ? `${held[0] ? Math.round(held[0].value) : '–'}/${held[1] ? Math.round(held[1].value) : '–'} mmHg` : null;
       lines.push({ text: `Blood pressure ${Math.round(pair.systolic)}/${Math.round(pair.diastolic)} mmHg ${dayText(day, today)}`, replaces: was });
+      seen.push([key, held.map((row) => row?.id ?? null)]);
       continue;
     }
     const { metric, day, valueSI } = values.get(key)!;
@@ -215,6 +229,7 @@ function reviewPart(file: RoadmapFile, edits: ProposedEdit[], invalid: string[],
       text: `${label} ${cellText(metric, valueSI, shown)} ${unit} ${dayText(day, today)}`,
       replaces: held ? `${cellText(metric, held.value, shown)} ${unit}` : null,
     });
+    seen.push([key, held?.id ?? null]);
   }
 
   if (profiles.length > 0) {
@@ -226,11 +241,17 @@ function reviewPart(file: RoadmapFile, edits: ProposedEdit[], invalid: string[],
       if (outcome.status !== 'ok') return refuse('Your height is outside what the record accepts.');
       next = outcome.file ?? next;
       const { sex, heightCm } = file.profile;
-      if (pending.sex) lines.push({ text: `Sex: ${pending.sex}`, replaces: sex ?? null });
-      if (pending.heightCm !== null) lines.push({ text: `Height ${heightText(pending.heightCm, system)}`, replaces: typeof heightCm === 'number' ? heightText(heightCm, system) : null });
+      if (pending.sex) {
+        lines.push({ text: `Sex: ${pending.sex}`, replaces: sex ?? null });
+        seen.push(['profile:sex', sex ?? null]);
+      }
+      if (pending.heightCm !== null) {
+        lines.push({ text: `Height ${heightText(pending.heightCm, system)}`, replaces: typeof heightCm === 'number' ? heightText(heightCm, system) : null });
+        seen.push(['profile:heightCm', heightCm ?? null]);
+      }
     }
   }
-  return { file: next, lines, refusal: null };
+  return { file: next, lines, seen, refusal: null };
 }
 
 function heightText(cm: number, system: 'si' | 'conventional'): string {

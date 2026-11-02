@@ -33,18 +33,19 @@ final class ChatEditsTests: XCTestCase {
                 var meds = list.filter(function (x) { return x.kind === 'medication'; });
                 var rest = list.filter(function (x) { return x.kind !== 'medication'; });
                 return JSON.stringify({
-                  medications: meds.length ? { lines: [{ text: 'Statin: atorvastatin 20 mg' }], undo: { kind: 'stubUndo', put: [1.5, null, true] } } : null,
+                  medications: meds.length ? { lines: [{ text: 'Statin: atorvastatin 20 mg' }], undo: { kind: 'chatUndo', medications: [1.5, null, true] } } : null,
                   review: rest.length ? {
                     lines: [{ text: 'Weight 80 kg', replaces: '82 kg' }, { text: 'Height 178 cm', replaces: null }],
-                    refusal: list.some(function (x) { return x.refuse; }) ? 'That weight is outside the range the app can save.' : null
+                    refusal: list.some(function (x) { return x.refuse; }) ? 'That weight is outside the range the app can save.' : null,
+                    seen: { revision: 'r1', at: [2, 0.5] }
                   } : null
                 });
               };
               o.applyEditJson = function (record, edit, now, device, units) {
                 var sent = JSON.parse(edit);
-                if (sent.kind === 'chatEdits' || sent.kind === 'stubUndo') {
+                if (sent.kind === 'chatEdits' || sent.kind === 'chatUndo') {
                   __sent.push(sent);
-                  edit = JSON.stringify(sent.kind === 'stubUndo' ? { kind: 'add', metric: 'waist', value: 91, day: '2026-01-02' }
+                  edit = JSON.stringify(sent.kind === 'chatUndo' ? { kind: 'add', metric: 'waist', value: 91, day: '2026-01-02' }
                     : sent.part === 'medications' ? { kind: 'add', metric: 'waist', value: 90, day: '2026-01-01' }
                     : { kind: 'add', metric: 'weight', value: 80, day: sent.today });
                 }
@@ -109,6 +110,9 @@ final class ChatEditsTests: XCTestCase {
             "kind": "chatEdits", "part": "review", "today": today,
             "edits": try JSONSerialization.jsonObject(with: Data(values.utf8)),
         ] as NSDictionary)
+        let withSeen = try JSONEncoder().encode(RecordEdit.chatEdits(part: .review, edits: edits, today: today, seen: try json(#"{"r":1}"#)))
+        XCTAssertEqual((try JSONSerialization.jsonObject(with: withSeen) as? NSDictionary)?["seen"] as? NSDictionary, ["r": 1])
+        XCTAssertNil((try JSONSerialization.jsonObject(with: chat) as? NSDictionary)?["seen"], "no seen, no key")
         // The engine's own Undo goes back exactly as it came, with no key added.
         let undo = #"{"kind":"medicationUndo","rows":[{"key":"statin","drug":null,"dose":2.5}]}"#
         let back = try JSONEncoder().encode(RecordEdit.engineEdit(try json(undo)))
@@ -130,7 +134,7 @@ final class ChatEditsTests: XCTestCase {
 
         let saved = store.recordJSON
         await edits.undo()
-        XCTAssertEqual(try sent(engine).last, ["kind": "stubUndo", "put": [1.5, NSNull(), true]], "the engine's Undo, as it came")
+        XCTAssertEqual(try sent(engine).last, ["kind": "chatUndo", "medications": [1.5, NSNull(), true]], "the engine's Undo, as it came")
         XCTAssertNotEqual(store.recordJSON, saved)
         XCTAssertNil(edits.saved)
         XCTAssertEqual(events, [.chatEditSaved, .chatEditProposed], "an Undo is not a chat edit saved")
@@ -147,7 +151,8 @@ final class ChatEditsTests: XCTestCase {
         XCTAssertEqual(events, [.chatEditProposed])
 
         await edits.save()
-        XCTAssertEqual(try sent(engine), [["kind": "chatEdits", "part": "review", "today": today, "edits": try JSONSerialization.jsonObject(with: Data(values.utf8))]])
+        XCTAssertEqual(try sent(engine), [["kind": "chatEdits", "part": "review", "today": today, "edits": try JSONSerialization.jsonObject(with: Data(values.utf8)),
+                                           "seen": ["revision": "r1", "at": [2, 0.5]]]], "the preview's seen goes back as it came")
         XCTAssertNotEqual(store.recordJSON, before)
         XCTAssertNil(edits.review)
         XCTAssertEqual(events, [.chatEditProposed, .chatEditSaved])
