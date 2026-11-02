@@ -60,4 +60,53 @@ final class ZZRecordsProbe: XCTestCase {
             if !tapped { break }
         }
     }
+
+    @MainActor
+    func testStep3() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "-welcomed", "YES", "-onboarded", "YES"]
+        app.launch()
+        XCTAssertTrue(app.tabBars.buttons["My data"].waitForExistence(timeout: 60))
+        let connect = app.buttons["Connect Apple Health"].firstMatch
+        for _ in 0..<12 where !connect.isHittable { app.swipeUp() }
+        let sheet = XCUIApplication(bundleIdentifier: "com.apple.HealthPrivacyService")
+        let all = sheet.cells["UIA.Health.AuthSheet.AllCategoryButton"]
+        for _ in 0..<3 where !all.exists {
+            connect.tap()
+            _ = all.waitForExistence(timeout: 40)
+        }
+        dump(sheet, "8-sheet0")
+        let words = ["Next", "Share", "Allow", "Continue", "Done", "OK"]
+        var lastTapped = ""
+        for step in 0..<16 {
+            var tapped = false
+            // Turn on whatever is off (Lab Results, or the vitals list).
+            if all.exists, all.isHittable, lastTapped != "all" {
+                tapAt(all, in: sheet); tapped = true; lastTapped = "all"
+            } else if let off = sheet.switches.allElementsBoundByIndex.first(where: { $0.isHittable && ($0.value as? String) == "0" }), lastTapped != "switch" {
+                tapAt(off, in: sheet); tapped = true; lastTapped = "switch"
+            } else {
+                for word in words {
+                    let match = sheet.descendants(matching: .any).matching(NSPredicate(format: "label ==[c] %@", word)).allElementsBoundByIndex.first { $0.isHittable && $0.isEnabled && ($0.elementType == .button || $0.elementType == .cell) }
+                    if let match { tapAt(match, in: sheet); tapped = true; lastTapped = word; break }
+                }
+            }
+            if !tapped { sheet.swipeUp(); lastTapped = "swipe" }
+            sleep(4)
+            dump(sheet, "8-sheet\(step + 1)-\(lastTapped)")
+            if !sheet.exists || sheet.state == .notRunning { break }
+        }
+        app.activate()
+        sleep(20)
+        dump(app, "9-after")
+        let blood = app.staticTexts["Blood tests"].firstMatch
+        for _ in 0..<12 where !blood.isHittable { app.swipeDown() }
+        sleep(2)
+        dump(app, "9-blood")
+    }
+
+    func tapAt(_ button: XCUIElement, in sheet: XCUIApplication) {
+        let frame = button.frame
+        sheet.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: frame.midX, dy: frame.midY)).tap()
+    }
 }

@@ -138,6 +138,8 @@ export interface FileLabValue {
   source: MeasurementSource;
   status: MeasurementStatus;
   correctsId: string | null;
+  /** The originating system's identity and version, `identity#version` (US-66 AC5); absent on rows before it. */
+  externalId?: string | null;
 }
 
 /**
@@ -304,7 +306,7 @@ export function createMeasurement(
 /** The lab-value twin of `createMeasurement`: one row shape for every writer. */
 export function createLabValue(
   fields: Pick<FileLabValue, 'id' | 'metricName' | 'value' | 'unit' | 'recordedAt' | 'createdAt'> &
-    Partial<Pick<FileLabValue, 'referenceLow' | 'referenceHigh' | 'source' | 'status' | 'correctsId'>>,
+    Partial<Pick<FileLabValue, 'referenceLow' | 'referenceHigh' | 'source' | 'status' | 'correctsId' | 'externalId'>>,
 ): FileLabValue {
   return {
     referenceLow: null,

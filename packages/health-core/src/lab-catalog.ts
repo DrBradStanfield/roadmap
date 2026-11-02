@@ -366,6 +366,15 @@ export function normalizeLabUnit(raw: string): string {
   // Greek small mu (U+03BC) → micro sign (U+00B5): LLM extraction emits
   // either; left unmapped they'd falsely flag mixedUnits against each other.
   u = u.replace(/μ/g, 'µ');
+  // UCUM, as Health Records feeds print it (US-66 AC2). No accepted spelling
+  // holds a brace or a square bracket, so these can only turn a refusal into a
+  // match. Per body surface area is a term of its own; any other {annotation}
+  // is a label UCUM gives no value to ("%{HbA1c}" is %); a bracketed unit
+  // keeps its letters ("m[IU]/L" is mIU/L, "mm[Hg]" is mmHg). A brace after a
+  // space is not UCUM ("mmol/L {H}" is a flag) and is left to be refused.
+  u = u.replace(/\{1\.73_?m2\}/gi, '1.73m2');
+  u = u.replace(/(^|[^\s{}])\{[^{}\s]*\}/g, '$1');
+  u = u.replace(/\[([^[\]\s]+)\]/g, '$1');
   // Cell-count notation: optional x/×, "10", then e/^/*/** and digits, the
   // digits bracketed with or without one ("x10(3)", "10^(9)"), or already
   // superscript ("x10³", "10³"; US-21 AC22).

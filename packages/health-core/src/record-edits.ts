@@ -209,14 +209,14 @@ function toCanonicalUnit(metricType: string, value: number, unit: string | undef
 
 /**
  * Rule 8 for a lab value: the row a catalogued test is STORED in, or the
- * refusal. The three write doors — `appendLabValue`, `bulkAppendValues` and
- * the lab branch of `correctValue` — all come here, because a second opinion
+ * refusal. The write doors — `appendLabValue`, `bulkAppendValues`, the lab
+ * branch of `correctValue` and the Health Records import — all come here, because a second opinion
  * about a factor is a wrong lab result.
  *
  * A test the catalogue does not know is returned untouched: there is no SI
  * definition to convert it to, and refusing it would throw the value away.
  */
-function toStoredLab(
+export function toStoredLab(
   entry: LabCatalogEntry | undefined, value: number, unit: string,
   referenceLow?: number | null, referenceHigh?: number | null,
 ): StoredLabRow | (EditRejection & { fault?: CountFault }) {
