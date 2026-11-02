@@ -120,6 +120,17 @@ const BASIC_LONGITUDINAL_FIELDS: FieldConfig[] = [
 const optionElements = (options: FormOption[]) =>
   options.map(opt => <option key={opt.value} value={opt.value} disabled={opt.disabled}>{opt.label}</option>);
 
+/** What a screening's month and year pickers show: a date still being picked
+ *  (year or month blank, but not both, so nothing is saved yet) as picked,
+ *  else the saved date. A finished pick has just written it, and clearing
+ *  both has just cleared it. A cleared or changed answer then shows as the
+ *  record holds it, not as last picked (US-06 AC16). */
+function shownDate(
+  picking: { year: string; month: string } | undefined, savedYear: string | undefined, savedMonth: string | undefined,
+): { year: string; month: string } {
+  return picking && !picking.year !== !picking.month ? picking : { year: savedYear ?? '', month: savedMonth ?? '' };
+}
+
 /** What the form reads from the plan, so it never recommends, targets or
  *  steps through what the plan does not (US-06 AC5). HealthTool computes it
  *  beside the plan, from the same validated inputs and results: the plan's
@@ -684,9 +695,7 @@ export function InputPanel({
     const savedValue = readScreening(scr, key);
     const [savedYear, savedMonth] = savedValue.split('-');
 
-    const localState = dateInputs[key];
-    const displayYear = localState?.year ?? savedYear ?? '';
-    const displayMonth = localState?.month ?? savedMonth ?? '';
+    const { year: displayYear, month: displayMonth } = shownDate(dateInputs[key], savedYear, savedMonth);
 
     const availableYears = futureOnly
       ? Array.from({ length: 6 }, (_, i) => currentYear + i)
