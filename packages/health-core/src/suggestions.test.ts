@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { generateSuggestions, weightMedicationTrigger, lipidMarkerFor, joinWithAnd } from './suggestions';
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { LIPID_TREATMENT_TARGETS, NON_HDL_THRESHOLDS, type UnitSystem } from './units';
-import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
+import type { HealthInputs, HealthResults, MedicationInputs, SuggestionInputs, ScreeningInputs } from './types';
 import {
   canIncreaseGlp1Dose, shouldSuggestGlp1Switch, canIncreaseDose, shouldSuggestSwitch, getCurrentPotency, gradedDose,
   GLP1_DRUGS, STATIN_DRUGS,
@@ -964,38 +964,87 @@ describe('generateSuggestions', () => {
     });
   });
 
-  describe('Measure waist circumference suggestion', () => {
-    it('shows when BMI 25-29.9 and no waist data', () => {
-      const { inputs, results } = createTestData({}, { bmi: 26 });
-      const suggestions = generateSuggestions(inputs, results);
-      const waistSuggestion = suggestions.find(s => s.id === 'measure-waist');
-      expect(waistSuggestion).toBeDefined();
-      expect(waistSuggestion?.priority).toBe('attention');
-      expect(waistSuggestion?.description).toContain('waist');
+  describe('Measure waist circumference suggestion (US-07 AC11)', () => {
+    const waistCard = (bmi?: number, waistToHeightRatio?: number) => {
+      const { inputs, results } = createTestData({}, { bmi, waistToHeightRatio });
+      return generateSuggestions(inputs, results).find(s => s.id === 'measure-waist');
+    };
+
+    it('shows at BMI 22, 27 and 33 with no waist, and with no weight yet (Brad 2026-11-02)', () => {
+      for (const bmi of [22, 27, 33, undefined]) {
+        const card = waistCard(bmi);
+        expect(card, `BMI ${bmi}`).toBeDefined();
+        expect(card?.priority).toBe('attention');
+        expect(card?.description).toContain('half your height');
+      }
     });
 
-    it('does not show when BMI 25-29.9 and waist data is present (healthy)', () => {
-      const { inputs, results } = createTestData({}, { bmi: 26, waistToHeightRatio: 0.45 });
-      const suggestions = generateSuggestions(inputs, results);
-      expect(suggestions.find(s => s.id === 'measure-waist')).toBeUndefined();
+    it('is absent once a waist is on record, healthy or elevated, at any BMI', () => {
+      for (const bmi of [22, 27, 33, undefined]) {
+        expect(waistCard(bmi, 0.45), `BMI ${bmi} healthy`).toBeUndefined();
+        expect(waistCard(bmi, 0.55), `BMI ${bmi} elevated`).toBeUndefined();
+      }
     });
 
-    it('does not show when BMI 25-29.9 and waist data is present (elevated)', () => {
-      const { inputs, results } = createTestData({}, { bmi: 26, waistToHeightRatio: 0.55 });
-      const suggestions = generateSuggestions(inputs, results);
-      expect(suggestions.find(s => s.id === 'measure-waist')).toBeUndefined();
+    it('says the same approved text at every BMI, and with no weight (Brad 2026-11-02)', () => {
+      const text = 'Fat around the middle raises heart and metabolic risk, even at a healthy weight. Aim for a waist under half your height. Add your waist measurement.';
+      for (const bmi of [22, 27, 33, 40, undefined]) {
+        expect(waistCard(bmi)?.title, `BMI ${bmi}`).toBe('Measure your waist circumference');
+        expect(waistCard(bmi)?.description, `BMI ${bmi}`).toBe(text);
+      }
+      // Its "why", approved by Brad 2026-11-02, with its tags and reference kept.
+      expect(waistCard(22)?.reason).toBe('Fat around the middle is linked to heart and metabolic risk. Waist-to-height ratio can flag risk that a healthy BMI misses; the AACE 2025 and NICE guidelines suggest keeping it under 0.5.');
+      expect(waistCard(22)?.guidelines).toEqual(['AACE 2025', 'NICE']);
+      expect(waistCard(22)?.references?.map(r => r.url)).toEqual(['https://doi.org/10.1111/j.1467-789X.2011.00952.x']);
     });
 
-    it('does not show when BMI < 25', () => {
-      const { inputs, results } = createTestData({}, { bmi: 23 });
-      const suggestions = generateSuggestions(inputs, results);
-      expect(suggestions.find(s => s.id === 'measure-waist')).toBeUndefined();
+    it('comes first in engine order, before blood pressure and screenings', () => {
+      const { inputs, results } = createTestData({}, { bmi: 22, age: 50 });
+      const suggestions = generateSuggestions(inputs, results, 'si', {}, { colorectalMethod: 'not_yet_started' });
+      expect(suggestions.some(s => s.id.startsWith('screening-colorectal'))).toBe(true);
+      expect(suggestions.map(s => s.id).slice(0, 2)).toEqual(['measure-waist', 'measure-bp']);
+    });
+  });
+
+  describe('Measure blood pressure suggestion (US-07 AC11)', () => {
+    const bpCard = (overrides: Partial<SuggestionInputs>, resultOverrides: Partial<HealthResults> = {}) => {
+      const { inputs, results } = createTestData({}, resultOverrides);
+      return generateSuggestions({ ...inputs, ...overrides }, results).find(s => s.id === 'measure-bp');
+    };
+
+    it('shows with no blood pressure on record, at attention, with the approved text and one target for every age', () => {
+      const card = bpCard({});
+      expect(card).toBeDefined();
+      expect(card?.priority).toBe('attention');
+      expect(card?.category).toBe('blood_pressure');
+      expect(card?.title).toBe('Measure your blood pressure');
+      expect(card?.description).toBe('High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. Aim for below 120/80 (130/80 if you\'re frail).');
+      // Brad 2026-11-02: one target sentence at every age, frailty named; this card does not read the age rule.
+      for (const age of [40, 70, undefined]) expect(bpCard({}, { age })?.description, `age ${age}`).toContain("Aim for below 120/80 (130/80 if you're frail).");
+      // Its evidence reuses the plan's blood pressure references.
+      expect(card?.references?.map(r => r.url)).toContain('https://doi.org/10.1161/HYP.0000000000000065');
+      expect(card?.reason).toContain('no symptoms');
+      // Brad 2026-11-02: the reason's target has no age either.
+      expect(card?.reason).toContain("This plan aims for <120/80 mmHg, as some doctors do, based on the SPRINT and ESPRIT trials, or <130/80 mmHg if you're frail.");
+      expect(card?.reason).not.toMatch(/65/);
     });
 
-    it('does not show when BMI >= 30', () => {
-      const { inputs, results } = createTestData({}, { bmi: 31 });
-      const suggestions = generateSuggestions(inputs, results);
-      expect(suggestions.find(s => s.id === 'measure-waist')).toBeUndefined();
+    it('asks to check a reading the plan left out as swapped, with the approved text (Brad 2026-11-02)', () => {
+      const card = bpCard({ pressureOrder: true });
+      expect(card?.title).toBe('Check your blood pressure reading');
+      expect(card?.description).toBe('Your last reading looks swapped: the top number (systolic) should be higher than the bottom (diastolic). Check it and add it again.');
+      expect(card?.priority).toBe('attention');
+      expect(card?.reason).toContain('no symptoms');
+    });
+
+    it('is absent with a reading on record, normal or raised', () => {
+      expect(bpCard({ systolicBp: 115, diastolicBp: 75 })).toBeUndefined();
+      expect(bpCard({ systolicBp: 135, diastolicBp: 85 })).toBeUndefined();
+    });
+
+    it('comes first in engine order when the waist is on record', () => {
+      const { inputs, results } = createTestData({}, { bmi: 27, waistToHeightRatio: 0.45 });
+      expect(generateSuggestions(inputs, results)[0].id).toBe('measure-bp');
     });
   });
 

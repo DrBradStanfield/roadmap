@@ -11,6 +11,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, configure, fireEvent, render, waitFor, within } from '@testing-library/react';
+import { toOldShape } from '@roadmap/health-core';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveLabValues, correctValue, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
@@ -83,10 +84,10 @@ async function seed(profile: Record<string, unknown> = { sex: 'male', heightCm: 
   await flushRoadmapStore();
 }
 
-/** The record's own rows, as stored. */
+/** The record's own rows, as stored: a blood test is a core lab row (US-66), read as the measurement it was. */
 function fileRows(metric: string) {
   const file = JSON.parse(localStorage.getItem('health_roadmap_file_v2')!);
-  return (file.measurements as Array<{ id: string; metricType: string; value: number; recordedAt: string; status: string; correctsId: string | null }>)
+  return (toOldShape(file).measurements as Array<{ id: string; metricType: string; value: number; recordedAt: string; status: string; correctsId: string | null }>)
     .filter(r => r.metricType === metric);
 }
 

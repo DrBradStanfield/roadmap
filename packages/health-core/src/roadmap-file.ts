@@ -24,17 +24,38 @@
  */
 import type { AlcoholAnswer, Suggestion, ScreeningInputs } from './types';
 import type { MeasurementSource, MeasurementStatus, DocumentType } from './validation';
-import type { LpaUnit } from './units';
+import { UNIT_DEFS, type LpaUnit } from './units';
+import type { Comparator } from './lab-limits';
 
 /** A file no erase has listed rows in. New files start here, and stay here
  *  until an erase lists what it removed (US-09 AC23). */
 export const BASE_SCHEMA_VERSION = 1;
 
-/** The highest version this app reads. A file carrying `erasedRows` is
- *  stamped with it, so a reader from before the list refuses the file and can
- *  neither shrink the list nor erase without listing (US-09 AC23). Bump only
- *  when the on-disk shape changes in a way `migrate.ts` must handle. */
-export const CURRENT_SCHEMA_VERSION = 2;
+/** A file carrying `erasedRows`, so a reader from before the list refuses the
+ *  file and can neither shrink the list nor erase without listing (US-09 AC23). */
+export const ERASED_ROWS_SCHEMA_VERSION = 2;
+
+/** A file holding a core blood row (`core: true` in `labValues`, any status).
+ *  A reader from before US-66 slots a core creatinine and a "Creatinine" lab
+ *  row together and flips one for good, so it must refuse the file (US-66 AC15). */
+export const CORE_ROWS_SCHEMA_VERSION = 3;
+
+/** The highest version this app reads. Bump only when the on-disk shape
+ *  changes in a way an older reader would damage. */
+export const CURRENT_SCHEMA_VERSION = 3;
+
+/**
+ * The version a file is stamped with (US-66 AC15): its stated version as an
+ * integer in [1, CURRENT], raised to 2 when it carries `erasedRows` and to 3
+ * when it holds a core row. Never lowers a version. Every migrate, merge,
+ * erase and edit stamps through it, so no writer saves a core row below 3.
+ */
+export function recordSchemaVersion(file: { schemaVersion?: unknown; erasedRows?: unknown; labValues?: readonly unknown[] }): number {
+  const stated = file.schemaVersion;
+  const base = typeof stated === 'number' && stated >= BASE_SCHEMA_VERSION ? Math.min(CURRENT_SCHEMA_VERSION, Math.floor(stated)) : BASE_SCHEMA_VERSION;
+  const core = (file.labValues ?? []).some((row) => typeof row === 'object' && row !== null && (row as { core?: unknown }).core === true);
+  return Math.max(base, file.erasedRows ? ERASED_ROWS_SCHEMA_VERSION : BASE_SCHEMA_VERSION, core ? CORE_ROWS_SCHEMA_VERSION : BASE_SCHEMA_VERSION);
+}
 
 /** Sync bookkeeping carried on every mutable record so merge can pick a winner. */
 export interface SyncStamp {
@@ -123,9 +144,26 @@ export interface FileMeasurement {
   status: MeasurementStatus; // 'active' | 'entered-in-error'
   correctsId: string | null; // id of the row this one corrects
   externalId: string | null; // e.g. HealthKit sample UUID (dedup)
+  /** A result printed as a limit (US-12 AC20, FHIR Quantity.comparator):
+   *  `value` is the printed bound. Absent: an exact value. Only a lab upload sets it. */
+  comparator?: Comparator;
 }
 
-/** A non-core lab value (beyond the 14 canonical metrics), append-only. */
+/**
+ * The nine blood tests the plan reads, each in the one unit a core row holds
+ * (US-66 AC1). Pinned by a test: a changed string would make two builds move
+ * the same row differently, so it needs a schema bump.
+ */
+export const CORE_BLOOD_UNITS: Readonly<Record<string, string>> = Object.fromEntries(
+  (['hba1c', 'creatinine', 'psa', 'apob', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'lpa'] as const)
+    .map((metric) => [metric, UNIT_DEFS[metric].canonical]),
+);
+
+/**
+ * One blood test, append-only (US-66). A catalogued or unknown test keeps its
+ * own name; a core value carries `core: true`, its core key as `metricName`
+ * and the `CORE_BLOOD_UNITS` unit.
+ */
 export interface FileLabValue {
   id: string;
   metricName: string;       // free-form, e.g. 'ferritin'
@@ -138,6 +176,10 @@ export interface FileLabValue {
   source: MeasurementSource;
   status: MeasurementStatus;
   correctsId: string | null;
+  /** Set only by a core write path, after conversion and the range check: never inferred from the name (US-66 AC1). */
+  core?: true;
+  /** As on `FileMeasurement`: `value` is the printed bound. */
+  comparator?: Comparator;
 }
 
 /**
@@ -242,13 +284,13 @@ export interface RoadmapFile {
   schemaVersion: number;
   meta: RoadmapFileMeta;
   profile: RoadmapProfile;
-  measurements: FileMeasurement[];          // append-only
+  measurements: FileMeasurement[];          // append-only; vitals only (US-66): weight, waist, both blood pressures
   medications: FileMedication[];            // current state, keyed by medicationKey
   medicationHistory: FileMedication[];      // append-only log
   supplements: FileSupplement[];            // current state, keyed by supplementKey
   supplementHistory: FileSupplement[];      // append-only log
   screenings: FileScreenings;               // current state (singleton)
-  labValues: FileLabValue[];                // append-only
+  labValues: FileLabValue[];                // append-only; every blood test, core ones flagged (US-66)
   documents: FileDocument[];                // metadata; bytes in documents/
   reminderPreferences: FileReminderPreference[]; // current state, keyed by category
   recommendationSnapshots: RecommendationSnapshot[];
@@ -290,7 +332,7 @@ export function createEmptyFile(opts: { deviceId: string; now: string }): Roadma
  */
 export function createMeasurement(
   fields: Pick<FileMeasurement, 'id' | 'metricType' | 'value' | 'recordedAt' | 'createdAt'> &
-    Partial<Pick<FileMeasurement, 'source' | 'status' | 'correctsId' | 'externalId'>>,
+    Partial<Pick<FileMeasurement, 'source' | 'status' | 'correctsId' | 'externalId' | 'comparator'>>,
 ): FileMeasurement {
   return {
     source: 'manual',
@@ -304,7 +346,7 @@ export function createMeasurement(
 /** The lab-value twin of `createMeasurement`: one row shape for every writer. */
 export function createLabValue(
   fields: Pick<FileLabValue, 'id' | 'metricName' | 'value' | 'unit' | 'recordedAt' | 'createdAt'> &
-    Partial<Pick<FileLabValue, 'referenceLow' | 'referenceHigh' | 'source' | 'status' | 'correctsId'>>,
+    Partial<Pick<FileLabValue, 'referenceLow' | 'referenceHigh' | 'source' | 'status' | 'correctsId' | 'comparator'>>,
 ): FileLabValue {
   return {
     referenceLow: null,

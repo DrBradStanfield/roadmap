@@ -9,6 +9,7 @@ import { applyEdit, newRecord } from './my-data';
 import { erasePhoneJson } from './erase';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { chatContextOf } from '../../packages/health-core/src/chat-context';
+import { currentValueRows } from '../../packages/health-core/src/blood-tests';
 
 const NOW = '2026-10-21T08:00:00.000Z';
 const DEVICE = 'ios-test';
@@ -44,7 +45,7 @@ describe('US-52 AC5: the chat context', () => {
     // Byte for byte what health-core builds for the same inputs.
     expect(context).toEqual(JSON.parse(JSON.stringify(chatContextOf(
       { ...context, unitSystem: undefined, medications: undefined, screenings: undefined, measurementHistory: undefined }, 'si', [], [],
-      file.measurements.filter((m) => m.status === 'active'),
+      currentValueRows(file),
     ))));
   });
 });
@@ -106,30 +107,29 @@ describe('US-52 AC8: the lab review and the write', () => {
     expect(JSON.parse(reviewOf({ ...extraction, reportDate: '2026-10' })).reportDay).toBeNull();
   });
 
-  // US-12 AC19 (break-it pass 2026-11-01): HDL printed "> 60" and Lp(a) "<5"
-  // said only "2 values could not be read"; now each is named, with why.
+  // US-12 AC19 (break-it pass 2026-11-01): unread rows said only "2 values could not be
+  // read"; now each is named, with why. A limit is saved since AC20 (lab-limits.test.ts).
   it('US-12 AC19: names each value the server could not read under "Not saved", one line per reason, and counts only the unnamed', () => {
     const unread = { ...extraction, droppedValueCount: 5, unreadValues: [
-      { name: 'hdl', reason: 'limit' }, { name: 'lpa', reason: 'limit' }, { name: 'vitamin_d', reason: 'unreadable' }, { name: 'hdl', reason: 'limit' },
+      { name: 'hdl', reason: 'unreadable' }, { name: 'lpa', reason: 'unreadable' }, { name: 'vitamin_d', reason: 'unreadable' }, { name: 'hdl', reason: 'unreadable' },
     ] };
     const review = JSON.parse(reviewOf(unread));
     expect(review.notSaved).toEqual([
       { label: 'Creatinine', reason: 'unit unknown' },
-      { label: 'HDL Cholesterol, Lp(a)', reason: 'printed as a limit' },
-      { label: 'Vitamin D (25-OH)', reason: 'could not be read' },
+      { label: 'HDL Cholesterol, Lp(a), Vitamin D (25-OH)', reason: 'could not be read' },
     ]);
     expect(review.unreadCount).toBe(1);
   });
 
   // Review R1: two lines with one label had one SwiftUI id (LabReviewView keys rows).
-  it('US-12 AC19: lists each label once: one test under two reasons, and a refused and an unread creatinine', () => {
+  it('US-12 AC19: lists each label once: one test read twice, and a refused and an unread creatinine', () => {
     const both = { ...extraction, droppedValueCount: 3, unreadValues: [
-      { name: 'hdl', reason: 'limit' }, { name: 'hdl', reason: 'unreadable' }, { name: 'creatinine', reason: 'limit' },
+      { name: 'hdl', reason: 'unreadable' }, { name: 'hdl', reason: 'unreadable' }, { name: 'creatinine', reason: 'unreadable' },
     ] };
     const { notSaved, unreadCount } = JSON.parse(reviewOf(both));
     expect(notSaved).toEqual([
-      { label: 'Creatinine', reason: 'unit unknown; printed as a limit' },
-      { label: 'HDL Cholesterol', reason: 'printed as a limit; could not be read' },
+      { label: 'Creatinine', reason: 'unit unknown; could not be read' },
+      { label: 'HDL Cholesterol', reason: 'could not be read' },
     ]);
     expect(unreadCount).toBe(0);
   });
@@ -146,11 +146,14 @@ describe('US-52 AC8: the lab review and the write', () => {
     const out = applyEdit(file, { kind: 'labImport', extractionJson: JSON.stringify(extraction), refs, reportDay: '2026-10-01' }, NOW);
     if (!out.ok) throw new Error(out.message);
     file = out.file;
-    const hba1c = file.measurements.find((m) => m.metricType === 'hba1c');
-    expect(hba1c).toMatchObject({ value: 40, recordedAt: '2025-04-02', source: 'lab_import', status: 'active' });
-    expect(file.labValues).toHaveLength(1);
-    expect(file.labValues[0]).toMatchObject({ source: 'lab_import', recordedAt: '2026-10-01' });
-    expect(file.measurements.filter((m) => m.metricType === 'ldl')).toHaveLength(1); // the typed value stays
+    // A core value is a core lab row (US-66 AC1, AC6); the extra one stays a plain lab row (AC8).
+    const core = (metric: string) => file.labValues.filter((l) => l.core === true && l.metricName === metric);
+    expect(core('hba1c')).toEqual([expect.objectContaining({ value: 40, unit: 'mmol/mol', recordedAt: '2025-04-02', source: 'lab_import', status: 'active' })]);
+    const extras = file.labValues.filter((l) => l.core !== true);
+    expect(extras).toHaveLength(1);
+    expect(extras[0]).toMatchObject({ source: 'lab_import', recordedAt: '2026-10-01' });
+    expect(core('ldl')).toHaveLength(1); // the typed value stays
+    expect(file.measurements).toEqual([]);
   });
 
   it('refuses a future or missing report day, and a ref not in the report', () => {

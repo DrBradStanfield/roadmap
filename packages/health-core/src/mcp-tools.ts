@@ -12,6 +12,7 @@
  * Nothing here reads the clock, the filesystem or the network.
  */
 import { deadlineSignal } from './adapter';
+import { bloodTestKeyOf, isCoreRow, labRowSlot } from './blood-tests';
 import { dayOf, daysBetween } from './merge';
 import { stampProfile } from './state-edits';
 import { displayLabUnit, foldLpa, LAB_CATALOG, labSlotKey, metricNameWords } from './lab-catalog';
@@ -50,8 +51,10 @@ import {
   validDay,
 } from './record-edits';
 import type { FileDocument, FileLabValue, FileMeasurement, RoadmapFile, RoadmapProfile } from './roadmap-file';
+import { CORE_BLOOD_UNITS } from './roadmap-file';
 import type { SyncManager } from './sync-manager';
-import { CANONICAL_UNITS, formatDisplayValue, formatRange, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, unitSystemOf, type MetricType, type UnitSystem } from './units';
+import { CANONICAL_UNITS, formatRange, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, unitSystemOf, type MetricType, type UnitSystem } from './units';
+import { COMPARATORS, comparatorOf, formatValue, withComparator, type Comparator } from './lab-limits';
 import { DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS, IMPORT_REFUSALS, importHint } from './import-hints';
 import { type McpImportRoute, type McpRefusalReason } from './product-events';
 import { LAB_ARCHIVE_TITLE } from './document-path';
@@ -118,13 +121,14 @@ export const SI_NOTE =
   'spelling it does not know for that test is refused rather than guessed. A refusal can also be for the number under a ' +
   'spelling the test takes: a cells/µL count that is not whole, or not on the scale of its own printed range. ' +
   'A test the catalogue does not know ' +
-  'keeps the unit it was reported in.';
+  'keeps the unit it was reported in. A lab result printed as a limit carries `comparator` (<, <=, >, >=): its ' +
+  'value is the bound, not the result.';
 
 /** The version the server announces, and the one a report is stamped with. */
 export const SERVER_VERSION = '1.0.2';
 
-/** Bumped when a tool's meaning changes, so an old report reads correctly. v2: a ChatGPT drop is read by the assistant (`file_results`), not downloaded by `import_documents`. */
-export const TOOL_LAYER_VERSION = 2;
+/** Bumped when a tool's meaning changes, so an old report reads correctly. v2: a ChatGPT drop is read by the assistant (`file_results`), not downloaded by `import_documents`. v3: every blood test is a labValues row, a core one flagged `core` (US-66). */
+export const TOOL_LAYER_VERSION = 3;
 
 /** ISO calendar day — the only date shape a tool takes. */
 const DAY = z.string().regex(ISO_DATE, 'Use a calendar day, YYYY-MM-DD');
@@ -270,6 +274,8 @@ export const fileResultRow = z.object({
   referenceLow: z.number().nullable().optional(),
   referenceHigh: z.number().nullable().optional(),
   recordedAt: DAY.optional(),
+  /** A result printed as a limit ("> 60" is value 60, comparator ">"); the four codes only (US-12 AC20). */
+  comparator: z.enum(COMPARATORS).optional(),
 }).strict();
 
 /**
@@ -451,6 +457,8 @@ const importCandidateOutput = z.object({
   printedName: z.string().optional(),
   /** Another candidate in this call for the same (metric, day): the user picks one, the commit takes one. */
   sameDayAs: z.string().optional(),
+  /** Printed as a limit: `value` is its bound, and `displayValue` shows the symbol (US-12 AC20). */
+  comparator: z.enum(COMPARATORS).optional(),
   slot: z.object({
     state: z.enum(SLOT_STATES),
     existingRowId: z.string().optional(),
@@ -547,7 +555,9 @@ export function redactRecord(file: RoadmapFile) {
   const { reportEmailCaptured: _emailFlag, ...shownProfile } = plain(profile);
   // By position, never by id: a reused id must not make a second row current.
   const currentMeasurements = new Set(latestActivePerMetric(measurements.map((m, at) => ({ ...m, at }))).map((r) => r.at));
-  const currentLabs = new Set(latestActivePerMetric(labValues.map((l, at) => ({ ...l, metricType: labSlotKey(l.metricName), at }))).map((r) => r.at));
+  // A core row counts only in its core unit, as the plan reads it (US-66 AC7).
+  const counted = labValues.flatMap((l, at) => (isCoreRow(l) && l.unit !== CORE_BLOOD_UNITS[l.metricName] ? [] : [{ ...l, metricType: labRowSlot(l), at }]));
+  const currentLabs = new Set(latestActivePerMetric(counted).map((r) => r.at));
   return {
     ...rest,
     profile: shownProfile,
@@ -662,7 +672,7 @@ export function addMeasurement(
     status: 'ok',
     file: result.file,
     text: describe('Added', [row]),
-    data: { id: row.id, metricType: row.metricType, ...rowValue(row) },
+    data: { id: row.id, metricType: 'metricType' in row ? row.metricType : row.metricName, ...rowValue(row) },
   };
 }
 
@@ -834,7 +844,8 @@ function describe(verb: string, rows: Array<FileMeasurement | FileLabValue>): st
   return rows
     .map((row) => {
       const name = 'metricType' in row ? row.metricType : row.metricName;
-      const unit = 'unit' in row ? ` ${oneLine(row.unit)}` : '';
+      // A core value reads as it did from `measurements`: the number in its metric's SI unit (US-66).
+      const unit = 'unit' in row && !isCoreRow(row) ? ` ${oneLine(row.unit)}` : '';
       return `${verb} ${oneLine(name)} ${row.value}${unit} on ${dayOf(row.recordedAt ?? '')} — row ${oneLine(row.id)}`;
     })
     .join('\n');
@@ -1359,11 +1370,12 @@ function slotFor(
   if (!existing) return { state: 'free' };
   // A row no reader can read holds the day, with nothing to show or compare (US-65 AC3).
   if (!readableSlotRow(existing)) return { state: 'held_different', existingRowId: existing.id, replaceable: false };
-  const state: SlotState = 'metricType' in existing
-    ? slotState(formatDisplayValue(existing.metricType as MetricType, existing.value, system), candidate.displayValue)
+  // A core value, in either array, compares by its displayed string, a limit with its symbol (US-66 AC6, US-12 AC20).
+  const state: SlotState = 'metricType' in existing || isCoreRow(existing)
+    ? slotState(formatValue(('metricType' in existing ? existing.metricType : existing.metricName) as MetricType, existing.value, system, existing.comparator), candidate.displayValue)
     : sameLabQuantity(
-      { name: existing.metricName, value: existing.value, unit: existing.unit },
-      { name: candidate.printedName ?? candidate.metric, value: candidate.value, unit: candidate.unit },
+      { name: existing.metricName, value: existing.value, unit: existing.unit, comparator: existing.comparator },
+      { name: candidate.printedName ?? candidate.metric, value: candidate.value, unit: candidate.unit, comparator: candidate.comparator },
     ) ? 'held_equal' : 'held_different';
   if (state === 'held_equal') return { state, existingRowId: existing.id, existingValue: existing.value };
   const age = daysBetween(dayOf(existing.recordedAt ?? ''), dayOf(now));
@@ -1373,7 +1385,25 @@ function slotFor(
   };
 }
 
+/** Rule 9 alone, as a dry run's refusal: null for a day the record takes. */
+function dayFault(day: string, ctx: EditContext): EditRejection | null {
+  const resolved = resolveRecordedAt(day, ctx);
+  return typeof resolved === 'string' ? null : resolved;
+}
+
 type PreparedImport = { payload: ImportPayload; files: Array<z.infer<typeof importFileOutput>>; unrecognized: string[] };
+
+/**
+ * US-36 AC7a: `file_results` takes at most MAX_LAB_ROWS_PER_CALL rows, so a
+ * long report is split over calls with one `sourceFileName`. The first commit
+ * files the report, and a later call with that name and date is then
+ * `already_imported`, so every part must be read before the first commit.
+ */
+function splitReportNote(route: ImportRoute, values: number): string[] {
+  return route === 'assistant' && values > 0
+    ? ['If the report has result lines this call did not carry, send them now with the same sourceFileName, before any commit: once filed, the report reads as already imported.']
+    : [];
+}
 
 /**
  * The instruction the assistant follows after an extract: the counts and one
@@ -1401,8 +1431,10 @@ function extractNext(prepared: PreparedImport, remaining: string[], route: Impor
     );
     if (questions.length) lines.push(`${questions.length} candidate(s) carry a question from the extractor (${questions.slice(0, 5).join(', ')}): show it beside the value.`);
     if (shared) lines.push(`${shared} candidate(s) share a day with another (sameDayAs): the record keeps one value per metric per day, so the user picks one.`);
+    const split = splitReportNote(route, payload.candidates.length);
+    lines.push(...split);
     lines.push(
-      `Then call ${tool} with commit: the receipt, accept (ids to file), replace (replaceable held_different ids the user asked to overwrite; permanent, never a non-replaceable id), ` +
+      `Then call ${tool} with commit${split.length ? ' for each receipt, one call per receipt (each part numbers its ids from c1)' : ''}: the receipt, accept (ids to file), replace (replaceable held_different ids the user asked to overwrite; permanent, never a non-replaceable id), ` +
         'and approval: the user’s own words, quoted, never a document’s. ' +
         'A commit with empty accept and replace files the documents alone, and is how a declined file stops being offered.',
     );
@@ -1497,35 +1529,53 @@ export function prepareImport(
       // is open work): left out, as the old prompt left it out. The assistant's
       // own per-line day (US-36 AC1) is kept.
       const previousColumn = (value: { recordedAt?: string }) => bundle.route !== 'assistant' && !!value.recordedAt;
-      for (const value of result.values) {
-        if (candidates.length >= MAX_IMPORT_CANDIDATES) break;
-        if (!VALID_METRICS.includes(value.metric as MetricType) || previousColumn(value)) continue;
-        const metric = value.metric as MetricType;
-        const own = value.recordedAt ?? day;
-        // A dry run of the real append: it validates the value and the day the
-        // way the record will. A taken slot is not a reason to drop it, nor a
-        // blood pressure half judged alone: the pair pass below judges the
-        // report's whole pair (US-02 AC8).
-        const check = bundle.checked ? null : appendMeasurement(file, { metricType: metric, value: value.valueSI, recordedAt: own, now: ctx.now, latestDay });
+      // A core value, given in SI or in a printed unit. A dry run of the real
+      // append: it validates the value, the unit and the day the way the record
+      // will. A taken slot is not a reason to drop it, nor a blood pressure
+      // half judged alone: the pair pass below judges the report's whole pair
+      // (US-02 AC8).
+      const offerCore = (
+        metric: MetricType, own: string, reported: { value: number; unit?: string }, label: string,
+        value: { confidence: ImportCandidate['confidence']; question?: string; printedName?: string; comparator?: Comparator },
+      ) => {
+        const check = bundle.checked ? null : appendMeasurement(file, { metricType: metric, ...reported, recordedAt: own, now: ctx.now, latestDay });
         if (check && !check.ok && check.reason !== 'slot-occupied' && check.message !== PRESSURE_ORDER_HALF) {
-          unrecognized.push(`${metric}: ${oneLine(check.message)}`);
-          continue;
+          unrecognized.push(`${label}: ${oneLine(check.message)}`);
+          return;
         }
-        const display = formatDisplayValue(metric, value.valueSI, system);
+        const valueSI = reported.unit === undefined ? reported.value : reportedToCanonical(metric, reported.value, reported.unit)?.valueSI;
+        if (valueSI === undefined) return;
+        // A limit offers its bound with its code, shown with its symbol (US-12 AC20).
         offer(slotKey('measurement', metric, own), {
-          kind: 'measurement', metric, value: value.valueSI, unit: CANONICAL_UNITS[metric],
-          displayValue: display, displayUnit: getDisplayLabel(metric, system),
+          kind: 'measurement', metric, value: valueSI, unit: CANONICAL_UNITS[metric], ...comparatorOf(value),
+          displayValue: formatValue(metric, valueSI, system, value.comparator), displayUnit: getDisplayLabel(metric, system),
           recordedAt: own, confidence: value.confidence,
           ...(value.question ? { question: fromDocument(value.question) } : null),
           sourceFileName: name, ...printed(value),
         });
+      };
+      for (const value of result.values) {
+        if (candidates.length >= MAX_IMPORT_CANDIDATES) break;
+        if (!VALID_METRICS.includes(value.metric as MetricType) || previousColumn(value)) continue;
+        const metric = value.metric as MetricType;
+        offerCore(metric, value.recordedAt ?? day, { value: value.valueSI }, metric, value);
       }
       for (const value of result.additionalValues) {
         if (candidates.length >= MAX_IMPORT_CANDIDATES) break;
         if (previousColumn(value)) continue;
         const own = value.recordedAt ?? day;
+        // Brad D5 (US-66 AC6): an extra value named like a core test is offered
+        // as that core value; a unit that will not convert is said, not filed.
+        // An extra creatinine stays a lab row under its printed name (US-12 AC11).
+        const named = bloodTestKeyOf(value.name);
+        if (named && named !== 'creatinine') {
+          offerCore(named, own, { value: value.value, unit: value.unit }, oneLine(value.name).slice(0, MAX_NAME_LENGTH),
+            { confidence: 'high', printedName: value.printedName ?? value.name, ...comparatorOf(value) });
+          continue;
+        }
         // With its range: the write checks the whole row (US-21 AC15), so the preview does too.
-        const check = bundle.checked ? null : appendLabValue(file, {
+        // An extra creatinine has no catalogue entry to check, only its day.
+        const check = bundle.checked ? null : named ? dayFault(own, { ...ctx, latestDay }) : appendLabValue(file, {
           metricName: value.name, value: value.value, unit: value.unit, referenceLow: value.referenceLow, referenceHigh: value.referenceHigh,
           recordedAt: own, now: ctx.now, latestDay,
         });
@@ -1535,13 +1585,13 @@ export function prepareImport(
         }
         const metric = labSlotKey(value.name);
         const unit = oneLine(value.unit).slice(0, MAX_NAME_LENGTH);
-        const display = String(value.value);
+        const display = withComparator(String(value.value), value.comparator);
         // The name the dry run above just accepted rides on the candidate, and
         // the commit writes under it: "BUN" carries the mg/dL factor that the
         // slot key "urea" refuses, so a receipt built under one name and
         // committed under the other would throw away the value it offered.
         offer(slotKey('lab', metric, own), {
-          kind: 'lab', metric, value: value.value, unit, displayValue: display, displayUnit: unit,
+          kind: 'lab', metric, value: value.value, unit, displayValue: display, displayUnit: unit, ...comparatorOf(value),
           recordedAt: own, confidence: 'high',
           referenceLow: value.referenceLow ?? null, referenceHigh: value.referenceHigh ?? null,
           sourceFileName: name, ...printed({ printedName: value.printedName ?? value.name }),
@@ -1715,7 +1765,7 @@ export function fileResultsBundle(request: FileResultsSource, file: RoadmapFile,
         metric, valueSI: canonical, displayValue: row.value, displayUnit: unit, displaySystem: system,
         confidence: swapped ? 'low' : 'high',
         ...(swapped ? { question: `${row.value} ${unit} is ${canonical.toFixed(2)} ${def.label.si}, below any usual result; was the printed unit ${other}?` } : null),
-        printedName, recordedAt: day,
+        printedName, recordedAt: day, ...comparatorOf(row),
       });
     } else {
       const entry = printed?.kind === 'lab' ? printed.entry : undefined;
@@ -1733,7 +1783,7 @@ export function fileResultsBundle(request: FileResultsSource, file: RoadmapFile,
       }
       additionalValues.push({
         name: printedName, value: row.value, unit: displayLabUnit(unit, entry),
-        referenceLow: row.referenceLow ?? null, referenceHigh: row.referenceHigh ?? null, printedName, recordedAt: day,
+        referenceLow: row.referenceLow ?? null, referenceHigh: row.referenceHigh ?? null, printedName, recordedAt: day, ...comparatorOf(row),
       });
     }
   }
@@ -1805,13 +1855,13 @@ export function importDocumentsCommit(
     }
     const correctsId = replace.has(id) ? c.slot.existingRowId : undefined;
     rows.push(c.kind === 'measurement'
-      ? { kind: 'measurement', metricType: c.metric, value: c.value, recordedAt: c.recordedAt, source: 'lab_import', ...(correctsId ? { correctsId } : null) }
+      ? { kind: 'measurement', metricType: c.metric, value: c.value, recordedAt: c.recordedAt, source: 'lab_import', ...(correctsId ? { correctsId } : null), ...comparatorOf(c) }
       : {
           // The name the receipt was built from, not the slot key it folds to:
           // the conversion at the write must be the one the dry run offered.
           kind: 'lab', metricName: c.printedName ?? c.metric, value: c.value, unit: c.unit,
           referenceLow: c.referenceLow ?? null, referenceHigh: c.referenceHigh ?? null,
-          recordedAt: c.recordedAt, source: 'lab_import', ...(correctsId ? { correctsId } : null),
+          recordedAt: c.recordedAt, source: 'lab_import', ...(correctsId ? { correctsId } : null), ...comparatorOf(c),
         });
   }
 
@@ -2128,7 +2178,7 @@ const LAB_UNIT_NOTE = ' A catalogued labValues[] row is stored in its SI unit, c
 /** Every section `readRecord` returns (US-32 AC41), all of them always. */
 const RECORD_SECTIONS = {
   schemaVersion: { type: 'number' },
-  units: { type: 'object', description: `Every measurements[].value is stored in this SI unit, keyed by metricType.${OFF_CATALOGUE_NOTE}${LAB_UNIT_NOTE}` },
+  units: { type: 'object', description: `Every measurements[].value, and every labValues[] row flagged \`core\`, is stored in this SI unit, keyed by metric.${OFF_CATALOGUE_NOTE}${LAB_UNIT_NOTE}` },
   profile: OBJECT,
   measurements: VALUE_ROW_ARRAY,
   medications: OBJECT_ARRAY,
@@ -2240,6 +2290,7 @@ const IMPORT_OUTPUT_SCHEMA: McpToolDefinition['outputSchema'] = {
           sourceFileName: { type: 'string' },
           printedName: { type: 'string', description: 'The name as the report printed it. Show it beside metric.' },
           sameDayAs: { type: 'string', description: 'Another candidate id for the same metric and day: the user picks one; a commit takes one.' },
+          comparator: { type: 'string', enum: [...COMPARATORS], description: 'A result printed as a limit: value is the bound, not the result; displayValue shows the symbol.' },
           slot: {
             type: 'object',
             description: 'free: nothing on that day. held_equal: already recorded. held_different: the record holds another value; replace only if the user says so.',
@@ -2309,10 +2360,11 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     description:
       'Return the user’s health-roadmap.json: profile, measurements, lab values, medications, supplements, ' +
       'screenings and documents. Use it for raw values, history and row ids, and before add_measurement, ' +
-      'add_lab_values or correct_value; get_plan computes the plan. Rows are never deleted: a superseded value stays with status ' +
-      '"entered-in-error", so read `status: "active"` rows as the current truth. Use each row\'s `current` flag for ' +
-      'the value the plan counts. Sync bookkeeping is left out. Measurements ' +
-      'are SI (`units`). A catalogued lab is converted to SI; an unknown test keeps the unit it was reported in.',
+      'add_lab_values or correct_value; get_plan computes the plan. Rows are never deleted: read `status: "active"` rows ' +
+      'as current; a superseded one stays "entered-in-error". Each row\'s `current` flag marks the value the plan counts. ' +
+      'Sync bookkeeping is left out. Blood tests are in labValues, the plan\'s flagged `core`. Values ' +
+      'are SI (`units`). A catalogued lab is converted to SI; an unknown test keeps the unit it was reported in. ' +
+      'A `comparator` marks a limit, not the number.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -2339,8 +2391,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'Compute the user’s plan from their record: current values, what screening or test is due, and ' +
       'suggestions with the reason and citations behind each one. Use it for next steps; read_record gives ' +
       'raw values, history and row ids. Fill `missingInputs` from the user via add_measurement ' +
-      'or update_profile. This is the app’s own protocol, computed ' +
-      'offline from the file; it is educational, not medical advice.',
+      'or update_profile. "> 60" is a limit, not the number. ' +
+      'This is the app’s own protocol, computed offline from the file; it is educational, not medical advice.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     outputSchema: {
       type: 'object',
@@ -2356,7 +2408,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     _meta: invocation('Adding your measurement…', 'Added your measurement'),
     title: 'Add a core measurement',
     description:
-      `Append one core-metric measurement (${METRIC_TYPES.join(', ')}). Give the value in SI units, or pass ` +
+      `Append one core-metric value (${METRIC_TYPES.join(', ')}). Give the value in SI units, or pass ` +
       '`unit` with the unit it was reported in and it is converted. One value per metric per day: if that day ' +
       'already holds a value the call is refused and you should use correct_value instead. Only when the user ' +
       'asked to add a value; a failed correction is never turned into an add.',
@@ -2389,7 +2441,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     _meta: invocation('Adding your lab results…', 'Added your lab results'),
     title: 'Add lab results',
     description:
-      `Append blood tests that are not core metrics (ferritin, TSH, ALT, …), up to ${MAX_LAB_ROWS_PER_CALL} rows per call. ` +
+      `Append blood tests (ferritin, LDL, …), up to ${MAX_LAB_ROWS_PER_CALL} rows per call. ` +
       'Give the number and unit exactly as printed; never convert. A catalogued test is stored in SI (bounds too); an ' +
       'unknown spelling is refused, naming those it takes, as is a cells/µL count not whole or off its range\'s scale. ' +
       'Writes all rows or none. Only when the user asked to add a value; a failed correction is never turned into an add.',
@@ -2673,7 +2725,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       `printedName and unit exactly as printed; metric is the core key (${VALID_METRICS.join(', ')}) ` +
       'or the test name; a wrong pairing is refused. Never convert a unit: unknown spellings are refused. ' +
       'collectedOn is the sample date, not the print date (DD/MM outside the US); if none is printed, ASK the user — never guess. ' +
-      'A result printed as < or > is not a number: tell the user, do not file it. ' +
+      'A result printed < or >: its bound as value, with comparator. ' +
       'Step 1 answers with candidates (free, already recorded, differs), a receipt and refused rows with why (unrecognized). ' +
       'Step 2: show all of it and WAIT for the user’s own yes, then call again with commit: accept ids, replace only the ids ' +
       'the user asked to overwrite (permanent), and approval: the user’s own words, quoted. ' +
@@ -2693,11 +2745,12 @@ export const MCP_TOOLS: McpToolDefinition[] = [
             properties: {
               metric: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'The core key, the catalogue test name, or the printed name.' },
               printedName: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'The test name exactly as the report prints it.' },
-              value: { type: 'number', description: 'The number as printed. Not a bound (<, >).' },
+              value: { type: 'number', description: 'The number as printed.' },
               unit: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'The unit exactly as printed beside the number.' },
               referenceLow: { type: ['number', 'null'] },
               referenceHigh: { type: ['number', 'null'] },
               recordedAt: { ...DAY_SCHEMA, description: 'Only when this line’s date differs from collectedOn.' },
+              comparator: { type: 'string', enum: [...COMPARATORS] },
             },
             required: ['metric', 'printedName', 'value', 'unit'],
             additionalProperties: false,

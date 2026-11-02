@@ -17,7 +17,8 @@ import crypto from 'node:crypto';
 import { serveClientMetadata } from '../lib/mcp-cimd.test-helpers';
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
-import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { createCoreRow } from '../../packages/health-core/src/blood-tests';
+import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory } from '../lib/mcp-grants.server';
 import { MAX_LAB_ROWS_PER_CALL } from '../../packages/health-core/src/mcp-tools';
 import { REPO_PUBLIC } from '../../packages/health-core/src/plan';
@@ -142,8 +143,9 @@ function seedWithLdl(day = '2026-08-30'): void {
   const recordedAt = `${day}T00:00:00.000Z`;
   const file: RoadmapFile = {
     ...createEmptyFile({ deviceId: 'phone', now: '2026-01-01T00:00:00.000Z' }),
-    measurements: [createMeasurement({
-      id: LDL_ID, metricType: 'ldl', value: STORED_LDL, recordedAt, createdAt: recordedAt,
+    // Every blood test is a core row in labValues (US-66 AC1).
+    labValues: [createCoreRow({
+      id: LDL_ID, metric: 'ldl', value: STORED_LDL, recordedAt, createdAt: recordedAt,
     })],
   };
   cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(file), version: 1 });
@@ -182,7 +184,7 @@ describe('a mismatched expectedValue is refused, in words that say why (US-32 AC
     expect(answer.text).not.toContain('allowance');
     expect(answer.text).not.toContain('did not answer');
     expect(answer.text).not.toContain('90 days');
-    expect(storedRecord().measurements.find((m) => m.id === LDL_ID)!.status).toBe('active');
+    expect(storedRecord().labValues.find((m) => m.id === LDL_ID)!.status).toBe('active');
   });
 
   it('never echoes the STORED value, so guessing teaches the agent nothing (US-32 AC5)', async () => {
@@ -287,7 +289,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
       expect(answer.result!.isError, confirm).toBe(true);
       expect(answer.result!.content[0].text, confirm).toContain('Nothing was written');
     }
-    expect(storedRecord().measurements).toHaveLength(1);
+    expect(storedRecord().labValues).toHaveLength(1);
   });
 
   it('a scripted assistant obeying a planted line: every shortcut is refused in words, and the honest path writes once, uncharged', async () => {
@@ -313,8 +315,8 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     expect(receipt).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     expect(proposed.text).toContain(`confirm: ${receipt}`);
     expect(proposed.text).toContain('approval set to the user’s own words approving it, quoted exactly');
-    expect(storedRecord().measurements).toHaveLength(1);
-    expect(storedRecord().measurements[0].status).toBe('active');
+    expect(storedRecord().labValues).toHaveLength(1);
+    expect(storedRecord().labValues[0].status).toBe('active');
 
     // 2. Chained straight after: not yet, and told not to spin.
     const early = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(2));
@@ -336,7 +338,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     const wrongTool = await callToolAt(access, 'update_profile', { heightCm: 170, expected: { heightCm: null }, confirm: receipt, approval: APPROVED }, at(11));
     expect(wrongTool.isError).toBe(true);
     expect(wrongTool.text).toContain(NOT_OURS);
-    expect(storedRecord().measurements).toHaveLength(1);
+    expect(storedRecord().labValues).toHaveLength(1);
 
     // 5b. The receipt without the user's words (ChatGPT blocked exactly this call, 2026-10-07): refused before the
     //     receipt is checked, so it is not spent, and not charged — step 8's count of eleven proves it.
@@ -345,25 +347,25 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
       expect(unquoted.isError, JSON.stringify(approval)).toBe(true);
       expect(unquoted.text, JSON.stringify(approval)).toBe(QUOTE_APPROVAL('correct_value'));
     }
-    expect(storedRecord().measurements).toHaveLength(1);
+    expect(storedRecord().labValues).toHaveLength(1);
 
     // 6. The honest path: same arguments, same connection, after the pause, quoting the user. Written once.
     const written = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(11));
     expect(written.isError).toBe(false);
     expect(written.text).toContain('Saved to the user’s Dropbox');
     expect(OUTPUTS.correct_value.parse(written.structured).proposal).toBeUndefined();
-    expect(storedRecord().measurements).toHaveLength(2);
-    expect(storedRecord().measurements.find((m) => m.id === LDL_ID)!.status).toBe('entered-in-error');
+    expect(storedRecord().labValues).toHaveLength(2);
+    expect(storedRecord().labValues.find((m) => m.id === LDL_ID)!.status).toBe('entered-in-error');
 
     // 7. Replayed: refused, and nothing else changes.
     const replay = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(12));
     expect(replay.isError).toBe(true);
     expect(replay.text).toContain('already been used');
-    expect(storedRecord().measurements).toHaveLength(2);
+    expect(storedRecord().labValues).toHaveLength(2);
 
     // 8. The proposal was charged (a correction's five); the confirm was not. Eleven
     //    more charged proposals fit in the hour; the twelfth meets the allowance.
-    const newRow = storedRecord().measurements.find((m) => m.correctsId === LDL_ID)!;
+    const newRow = storedRecord().labValues.find((m) => m.correctsId === LDL_ID)!;
     for (let i = 0; i < WRITES_PER_HOUR / WRITE_COST.correct - 1; i++) {
       const wrong = await callToolAt(access, 'correct_value', { id: newRow.id, newValue: 2.7, expectedValue: 9.9 }, at(13));
       expect(wrong.isError, `guess ${i}`).toBe(true);
@@ -388,13 +390,13 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     // "Not valid yet", not "not ours": the MAC matched with these words, so they are outside the identity.
     const early = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: 'OK do it' }, at(2));
     expect(early.text).toContain(`can be used from ${at(PROPOSAL_NBF_SECONDS)}`);
-    expect(storedRecord().measurements).toHaveLength(1);
+    expect(storedRecord().labValues).toHaveLength(1);
     // Different words again, and the same receipt writes: none of the refusals above spent it.
     const words = 'Yes, correct it zq7-approval-marker';
     const written = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: words }, at(11));
     expect(written.isError).toBe(false);
     expect(written.text).not.toContain('zq7-approval-marker');
-    expect(storedRecord().measurements).toHaveLength(2);
+    expect(storedRecord().labValues).toHaveLength(2);
     // Held for the one request only: nothing in the user's folder carries the words.
     for (const [name, stored] of cloud.files) expect(stored.json, name).not.toContain('zq7-approval-marker');
   });
@@ -407,10 +409,10 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     const chained = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt }, at(2));
     expect(chained.isError).toBe(true);
     expect(chained.text).toBe(`That confirm receipt is not valid yet: it can be used from ${at(PROPOSAL_NBF_SECONDS)}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
-    expect(storedRecord().measurements).toHaveLength(1);
+    expect(storedRecord().labValues).toHaveLength(1);
     const written = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(11));
     expect(written.isError).toBe(false);
-    expect(storedRecord().measurements).toHaveLength(2);
+    expect(storedRecord().labValues).toHaveLength(2);
   });
 
   it('a receipt expires at fifteen minutes, and an expectedValue mismatch is refused before any receipt exists, without the stored value', async () => {
@@ -420,7 +422,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     const late = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(PROPOSAL_LIFETIME_SECONDS + 1));
     expect(late.isError).toBe(true);
     expect(late.text).toContain('has expired');
-    expect(storedRecord().measurements).toHaveLength(1);
+    expect(storedRecord().labValues).toHaveLength(1);
 
     const guessed = await callToolAt(access, 'correct_value', { ...FIX, expectedValue: 9.9 }, NOW);
     expect(guessed.isError).toBe(true);

@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type ReactElement } from 'react';
 import {
   type ApiMeasurement,
+  type Comparator,
   type UnitSystem,
   type LpaUnit,
   type MetricType,
@@ -16,7 +17,13 @@ import {
   METRIC_LABELS,
   reportedToCanonical,
   UNIT_DEFS,
+  formatLabValue,
   rowTarget,
+  type GradeStatus,
+  LIMIT_NOT_GRADED,
+  limitUngraded,
+  savedLabText,
+  savedStatus,
 } from '@roadmap/health-core';
 import { formatShortDate, MONTHS_SHORT } from '../lib/constants';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
@@ -29,18 +36,17 @@ import type { CorrectStatus } from '../storage/roadmap-store';
 import {
   type CellUnit,
   type Grading,
-  type Status,
   blockBadNumericKeys,
   cellFromSI,
   cellLabel,
   cellText,
   cellToSI,
-  formatLabValue,
   readTypedValue,
   readNumericCell,
   sameAsSaved,
+  savedCellText,
+  trendGeometry,
   validateTypedValue,
-  statusOf,
 } from '../lib/blood-test-cell';
 import { keepLpaAsIs, lpaRowsToCheck, useLpaUnit, type LpaCheck } from '../lib/lpa-unit';
 import { trackProductEvent } from '../lib/server-api';
@@ -77,6 +83,8 @@ interface Batch {
   // Last-write-wins if two rows ever share a (date, metric) — the Map upsert
   // below keeps the most recent.
   ids: Partial<Record<MetricType, string>>;
+  /** The values printed as a limit (US-12 AC20). */
+  comparators: Partial<Record<MetricType, Comparator>>;
 }
 
 function groupByBatch(measurements: ApiMeasurement[]): Batch[] {
@@ -85,16 +93,21 @@ function groupByBatch(measurements: ApiMeasurement[]): Batch[] {
     const date = m.recordedAt.slice(0, 10);
     let b = byDate.get(date);
     if (!b) {
-      b = { date, values: {}, ids: {} };
+      b = { date, values: {}, ids: {}, comparators: {} };
       byDate.set(date, b);
     }
     (b.values as Record<string, number>)[m.metricType] = m.value;
     (b.ids as Record<string, string>)[m.metricType] = m.id;
+    const comparators = b.comparators as Record<string, Comparator>;
+    if (m.comparator) comparators[m.metricType] = m.comparator;
+    else delete comparators[m.metricType];
   }
   return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
 
-export function Sparkline({ points, width = 44, height = 18 }: { points: number[]; width?: number; height?: number }) {
+/** A small trend line. A point printed as a limit (`limits[i]`) is a hollow
+ *  dot at its bound, left out of the line (US-12 AC20). */
+export function Sparkline({ points, limits, width = 44, height = 18 }: { points: number[]; limits?: boolean[]; width?: number; height?: number }) {
   if (points.length < 2) {
     return (
       <svg width={width} height={height} style={{ display: 'block' }}>
@@ -103,23 +116,16 @@ export function Sparkline({ points, width = 44, height = 18 }: { points: number[
       </svg>
     );
   }
-  const min = Math.min(...points), max = Math.max(...points);
-  const range = max - min || 1;
-  const pad = 2;
-  const w = width - pad * 2, h = height - pad * 2;
-  const coords = points.map((v, i) => {
-    const x = pad + (i / (points.length - 1)) * w;
-    const y = pad + h - ((v - min) / range) * h;
-    return [x, y] as const;
-  });
-  const d = coords.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
-  // Area path: line + drop down to baseline + back to start, closed.
-  const last = coords[coords.length - 1];
-  const areaD = `${d} L${last[0].toFixed(1)},${height - pad} L${pad},${height - pad} Z`;
+  // Area path: line + drop down to baseline + back to its start, closed.
+  const { coords, exact, line: d, area: areaD } = trendGeometry(points, limits, width, height, height - 2);
   return (
     <svg width={width} height={height} style={{ display: 'block' }}>
-      <path d={areaD} fill="var(--bt-ink-100)" opacity="0.7"/>
-      <path d={d} fill="none" stroke="var(--bt-ink-700)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      {areaD && <path d={areaD} fill="var(--bt-ink-100)" opacity="0.7"/>}
+      {areaD && <path d={d} fill="none" stroke="var(--bt-ink-700)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>}
+      {exact.length === 1 && <circle cx={exact[0][0]} cy={exact[0][1]} r="1.75" fill="var(--bt-ink-700)"/>}
+      {coords.map(([x, y], i) => limits?.[i] && (
+        <circle key={i} className="bt-spark-limit" cx={x} cy={y} r="1.75" fill="none" stroke="var(--bt-ink-700)" strokeWidth="1"/>
+      ))}
     </svg>
   );
 }
@@ -264,33 +270,35 @@ export function BloodTestTimeline({
   // Hide trend column when no metric has at least two datapoints.
   const trendData = useMemo(() => {
     const series: Partial<Record<MetricType, number[]>> = {};
-    const lastSi: Partial<Record<MetricType, number>> = {};
+    const limits: Partial<Record<MetricType, boolean[]>> = {};
+    const last: Partial<Record<MetricType, { si: number; comparator?: Comparator }>> = {};
     for (const r of ROWS) {
       const points: number[] = [];
-      let last: number | undefined;
+      const limited: boolean[] = [];
       for (const b of batches) {
         const v = b.values[r.metric];
         if (v != null) {
           points.push(v);
-          last = v;
+          limited.push(!!b.comparators[r.metric]);
+          last[r.metric] = { si: v, comparator: b.comparators[r.metric] };
         }
       }
       series[r.metric] = points;
-      lastSi[r.metric] = last;
+      limits[r.metric] = limited;
     }
     const showTrend = ROWS.some(r => (series[r.metric]?.length ?? 0) >= 2);
-    return { series, lastSi, showTrend };
+    return { series, limits, last, showTrend };
   }, [batches]);
-  const { series, lastSi, showTrend } = trendData;
+  const { series, limits, last: lastOf, showTrend } = trendData;
 
   // Columns: existing batches in chronological order, then the always-on draft column.
   // Discriminated on `kind` so `c.ids` only narrows when c.kind === 'batch'.
   const columns = useMemo<Array<
-    | { kind: 'batch'; date: string; values: Partial<Record<MetricType, number>>; ids: Partial<Record<MetricType, string>> }
+    | { kind: 'batch'; date: string; values: Partial<Record<MetricType, number>>; ids: Partial<Record<MetricType, string>>; comparators: Partial<Record<MetricType, Comparator>> }
     | { kind: 'draft'; date: string; values: Partial<Record<MetricType, string>> }
   >>(
     () => [
-      ...batches.map(b => ({ kind: 'batch' as const, date: b.date, values: b.values, ids: b.ids })),
+      ...batches.map(b => ({ kind: 'batch' as const, date: b.date, values: b.values, ids: b.ids, comparators: b.comparators })),
       { kind: 'draft' as const, date: draft.date, values: draft.values },
     ],
     [batches, draft],
@@ -466,8 +474,8 @@ export function BloodTestTimeline({
             // the user toggles SI ↔ conventional.
             const sparkPoints = (series[row.metric] ?? [])
               .map(siVal => cellFromSI(row.metric, siVal, display));
-            const last = lastSi[row.metric];
-            const lastStatus = last != null ? statusOf(row.metric, last, grading) : null;
+            const last = lastOf[row.metric];
+            const lastStatus = last ? savedStatus(row.metric, last.si, last.comparator, grading) : null;
 
             return (
               <div key={row.field} className={`bt-row${rowIdx === ROWS.length - 1 ? ' bt-row-last' : ''}`} data-metric={row.metric}>
@@ -518,10 +526,11 @@ export function BloodTestTimeline({
                       />
                     );
                   }
-                  const status = statusOf(row.metric, v, grading);
+                  // c.kind === 'batch' here — the 'draft' branch returned above
+                  const comparator = c.kind === 'batch' ? c.comparators[row.metric] : undefined;
+                  const status = savedStatus(row.metric, v, comparator, grading);
                   const isPinned = colIdx === columns.length - 2;
                   const cellId = `${c.date}.${row.metric}`;
-                  // c.kind === 'batch' here — the 'draft' branch returned above
                   const rowId = c.kind === 'batch' ? c.ids[row.metric] : undefined;
                   return (
                     <ValueCell
@@ -530,6 +539,7 @@ export function BloodTestTimeline({
                       display={display}
                       grading={grading}
                       value={v}
+                      comparator={comparator}
                       rowId={rowId}
                       status={status}
                       pinned={isPinned}
@@ -551,7 +561,7 @@ export function BloodTestTimeline({
                 <div className="bt-row-filler"/>
                 {showTrend && (
                   <div className="bt-cell-trend">
-                    <Sparkline points={sparkPoints}/>
+                    <Sparkline points={sparkPoints} limits={limits[row.metric]}/>
                     <span className={`bt-status-tick bt-status-${lastStatus ?? 'none'}`}/>
                   </div>
                 )}
@@ -733,11 +743,17 @@ interface ValueCellProps {
   grading?: Grading;
   /** As stored: SI for a core metric, the stored unit for a lab value. */
   value: number;
+  /** The value was printed as a limit, `value` its bound: shown with its
+   *  symbol; the editor opens on the bound and saves an exact value (US-12 AC20). */
+  comparator?: Comparator;
   /** A lab value's unit, shown in the cell (a series whose reports used more
    *  than one unit). */
   unit?: string;
   rowId?: string;
-  status: Status;
+  status: GradeStatus;
+  /** The value is a limit the rule leaves ungraded, from a caller that knows the plan (weight, waist,
+   *  US-12 AC21); omitted, a blood test's (`limitUngraded` with the grading alone). */
+  ungraded?: boolean;
   pinned: boolean;
   onActivate?: () => void;
   onDeactivate?: () => void;
@@ -786,7 +802,7 @@ export const SAVE_ERRORS: Record<Exclude<CorrectStatus, 'ok'>, string> = {
 // (StartingInfoVitals) and the additional lab rows. Click a value to correct
 // it in place: a FHIR correction, never an edit of the saved row.
 export function ValueCell({
-  metric, display, grading, value, unit, rowId, status, pinned, onActivate, onDeactivate, onCorrect, say,
+  metric, display, grading, value, comparator, unit, rowId, status, ungraded: callerUngraded, pinned, onActivate, onDeactivate, onCorrect, say,
 }: ValueCellProps) {
   // `typed === null` ⇒ read-only; otherwise the in-place edit form is open.
   // One field replaces the old (editing, typed) pair — impossible state gone.
@@ -875,6 +891,10 @@ export function ValueCell({
 
   const core = metric && display ? { metric, display } : null;
   const initialDisplay = core ? cellText(core.metric, value, core.display) : formatLabValue(value);
+  // What the cell shows: a limit with its symbol; a core limit its bound
+  // decides nothing about is not graded, and says so (US-12 AC20).
+  const shownValue = core ? savedCellText(core.metric, value, core.display, comparator) : savedLabText(value, comparator);
+  const ungraded = callerUngraded ?? (!!core && limitUngraded(core.metric, status, { grading: grading ?? null, plan: null }, { value, comparator }));
   const canCorrect = !!(rowId && onCorrect);
 
   const beginEdit = () => {
@@ -1007,9 +1027,10 @@ export function ValueCell({
   const shown = (
     <>
       <span className="bt-value-num num">
-        {initialDisplay}
+        {shownValue}
         {unit && <span className="alr-cell-unit">{unit}</span>}
       </span>
+      {ungraded && <span className="hr-sr-only">{LIMIT_NOT_GRADED}</span>}
       {saveError
         ? <span className="bt-input-error-text">{saveError}</span>
         : <span className={`bt-status-tick bt-status-${status ?? 'none'}`}/>}
@@ -1017,7 +1038,7 @@ export function ValueCell({
   );
 
   if (!canCorrect) {
-    return <div className={`bt-cell-value${pinned ? ' bt-cell-pinned' : ''}`}>{shown}</div>;
+    return <div className={`bt-cell-value${pinned ? ' bt-cell-pinned' : ''}`} title={ungraded ? LIMIT_NOT_GRADED : undefined}>{shown}</div>;
   }
 
   return (
@@ -1028,7 +1049,7 @@ export function ValueCell({
       }}
       className={`bt-cell-value bt-cell-clickable${pinned ? ' bt-cell-pinned' : ''}`}
       onClick={beginEdit}
-      title="Click to correct this value"
+      title={ungraded ? `${LIMIT_NOT_GRADED} Click to correct this value` : 'Click to correct this value'}
     >
       {shown}
     </button>

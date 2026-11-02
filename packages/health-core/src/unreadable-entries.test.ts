@@ -23,8 +23,8 @@ const CTX = { deviceId: 'dev_us65', now: LATER };
 const WEIGHT = createMeasurement({ id: 'w1', metricType: 'weight', value: 82, recordedAt: DAY, createdAt: DAY });
 /** A newer app's metric: this build has no such metricType. */
 const FUTURE = { ...createMeasurement({ id: 'f1', metricType: 'weight', value: 5, recordedAt: DAY, createdAt: DAY }), metricType: 'synthetic_future_metric', extra: { kept: true } };
-/** A row whose value is a word. */
-const WORDY = { ...createMeasurement({ id: 'v1', metricType: 'hdl', value: 1, recordedAt: DAY, createdAt: DAY }), value: 'synthetic' };
+/** A row whose value is a word. A vital: a blood test moves to labValues on read (US-66 AC2, covered in blood-tests.test.ts). */
+const WORDY = { ...createMeasurement({ id: 'v1', metricType: 'waist', value: 1, recordedAt: DAY, createdAt: DAY }), value: 'synthetic' };
 
 function rawRecord(overrides: Record<string, unknown>): Record<string, unknown> {
   const file = createEmptyFile({ deviceId: 'dev_writer', now: DAY }) as unknown as Record<string, unknown>;
@@ -169,16 +169,16 @@ describe('US-65 AC1: every build merges, erases and corrects them as before', ()
   it('a correction chain whose corrected row is unreadable stays consistent', () => {
     // A wrote 'synthetic' and was corrected by B; the view shows B, and correcting B appends C.
     const a = { ...WORDY, id: 'a', status: 'entered-in-error' };
-    const b = createMeasurement({ id: 'b', metricType: 'hdl', value: 1.2, recordedAt: DAY, createdAt: LATER, correctsId: 'a', source: 'manual_correction' });
+    const b = createMeasurement({ id: 'b', metricType: 'waist', value: 90, recordedAt: DAY, createdAt: LATER, correctsId: 'a', source: 'manual_correction' });
     const file = read(rawRecord({ measurements: [a, b] }));
     expect(ids(readableView(file).file.measurements)).toEqual(['b']);
-    const result = correctValue(file, { id: 'b', newValue: 1.3, now: LATER });
+    const result = correctValue(file, { id: 'b', newValue: 91, now: LATER });
     if (!result.ok) throw new Error(result.message);
     const rows = Object.fromEntries(result.file.measurements.map((m) => [m.id, m]));
     expect(rows.a).toEqual(a);
     expect(rows.b.status).toBe('entered-in-error');
     expect(result.row.correctsId).toBe('b');
-    expect(readableView(result.file).file.measurements.filter((m) => m.status === 'active').map((m) => m.value)).toEqual([1.3]);
+    expect(readableView(result.file).file.measurements.filter((m) => m.status === 'active').map((m) => m.value)).toEqual([91]);
   });
 });
 

@@ -250,13 +250,15 @@ describe('the whole connection, end to end (US-32)', () => {
     expect(added.structured).toEqual(OUTPUTS.add_measurement.parse(added.structured));
     expect((added.structured as { value: number }).value).toBe(3.2);
     expect(added.text).toContain('Saved to the user’s Dropbox');
-    const row = storedRecord().measurements.find((m) => m.status === 'active')!;
-    expect(row.value).toBe(3.2);
+    // US-66 AC6: a blood test lands as a core row in labValues.
+    const row = storedRecord().labValues.find((l) => l.status === 'active')!;
+    expect(row).toMatchObject({ metricName: 'ldl', unit: 'mmol/L', core: true, value: 3.2 });
+    expect(storedRecord().measurements).toEqual([]);
 
     // A correction appends and flips; it never mutates and never deletes.
     const corrected = await twoStep(access, 'correct_value', { id: row.id, newValue: 2.8, expectedValue: 3.2 });
     expect(corrected.isError).toBe(false);
-    const after = storedRecord().measurements;
+    const after = storedRecord().labValues;
     expect(after).toHaveLength(2);
     expect(after.find((m) => m.id === row.id)!.status).toBe('entered-in-error');
     expect(after.find((m) => m.correctsId === row.id)!.value).toBe(2.8);
@@ -514,6 +516,35 @@ describe('the doors that must stay shut (US-32, design §6)', () => {
   it('serves a client that skips initialize (the next revision expects it)', async () => {
     seedRecord();
     const { access } = await connect();
+    const listed = await rpc(access, 'tools/list');
+    expect(listed.result!.tools).toHaveLength(MCP_TOOLS.length);
+  });
+});
+
+/** A JSON-RPC message with no `id` is a notification: the server must not reply (US-32 AC55). */
+describe('US-32 AC55: a message without an id gets an empty 202 over HTTP', () => {
+  async function notify(access: string, method: string, params: unknown = {}) {
+    const res = await mcpEndpoint(
+      new Request(`${ISSUER}/mcp`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', method, params }),
+      }),
+      NOW,
+    );
+    return { status: res.status, body: await res.text() };
+  }
+
+  it('answers each notification with an empty 202, runs no tool, and still answers requests', async () => {
+    seedRecord();
+    const { access } = await connect();
+    await rpc(access, 'initialize', { protocolVersion: '2025-11-25' });
+    expect(await notify(access, 'notifications/initialized')).toEqual({ status: 202, body: '' });
+    expect(await notify(access, 'ping')).toEqual({ status: 202, body: '' });
+    const before = JSON.stringify(storedRecord());
+    expect(await notify(access, 'tools/call', { name: 'add_measurement', arguments: { metricType: 'ldl', value: 3.2, recordedAt: TODAY } }))
+      .toEqual({ status: 202, body: '' });
+    expect(JSON.stringify(storedRecord())).toBe(before);
     const listed = await rpc(access, 'tools/list');
     expect(listed.result!.tools).toHaveLength(MCP_TOOLS.length);
   });
@@ -1177,6 +1208,65 @@ describe('Dropbox failing to answer is an error, not a crash (US-32, N-2)', () =
   });
 });
 
+describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"', () => {
+  /** Dropbox stores the upload, then refuses the token on every later read: the save's own verify read. */
+  function refuseReadsAfterUpload(status: 401 | 403): void {
+    setAdapterFactory(() => {
+      const adapter = new MemoryAdapter(cloud);
+      const read = adapter.read.bind(adapter);
+      const write = adapter.write.bind(adapter);
+      let uploaded = false;
+      adapter.write = async (...args: Parameters<MemoryAdapter['write']>) => {
+        const result = await write(...args);
+        uploaded = true;
+        return result;
+      };
+      adapter.read = async (...args: Parameters<MemoryAdapter['read']>) => {
+        if (uploaded) throw new StorageError(`Dropbox read failed (${status})`, undefined, undefined, status);
+        return read(...args);
+      };
+      return adapter;
+    });
+  }
+
+  for (const status of [401, 403] as const) {
+    it(`a ${status} on the verify read says reconnect AND that the change may have landed`, async () => {
+      seedRecord();
+      const { access } = await connect();
+      refuseReadsAfterUpload(status);
+      const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
+      // The value is in the user's Dropbox: the upload landed before the refusal.
+      // LDL is a core lab row (US-66 AC1).
+      expect(storedRecord().labValues.filter((l) => l.core).map((l) => [l.metricName, l.value])).toEqual([['ldl', 3.2]]);
+      expect(answer.isError).toBe(true);
+      expect(answer.text).not.toMatch(/nothing was written/i);
+      expect(answer.text).toBe(
+        'The record in Dropbox refused this connection’s access after a change was sent. ' +
+          'Reconnect the provider, which grants access again. The change may have landed: read the record again before retrying.',
+      );
+    });
+  }
+
+  for (const status of [401, 403] as const) {
+    it(`control: a ${status} before anything was sent still says nothing was read and nothing was written`, async () => {
+      seedRecord();
+      const { access } = await connect();
+      setAdapterFactory(() => {
+        const adapter = new MemoryAdapter(cloud);
+        adapter.read = async () => { throw new StorageError(`Dropbox read failed (${status})`, undefined, undefined, status); };
+        return adapter;
+      });
+      const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
+      expect(storedRecord().measurements).toEqual([]);
+      expect(answer.isError).toBe(true);
+      expect(answer.text).toBe(
+        'Dropbox refused this connection’s access to the record. Nothing was read and nothing was written. ' +
+          'Ask the user to reconnect the connector, which grants it again.',
+      );
+    });
+  }
+});
+
 describe('bodies and floods are bounded (US-32)', () => {
   const OVERSIZE = 'x'.repeat(64 * 1024 + 1);
 
@@ -1416,8 +1506,9 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     expect(commit.isError).toBe(false);
     expect(commit.text).toContain('Saved to the user’s Dropbox');
     const stored = storedRecord();
-    expect(stored.measurements.find((m) => m.status === 'active' && m.source === 'lab_import')).toMatchObject({ metricType: 'ldl', value: 2.8, recordedAt: '2026-08-21' });
-    expect(stored.labValues[0]).toMatchObject({ metricName: 'ferritin', value: 210, source: 'lab_import' });
+    // US-66 AC6: the core value is a core row in labValues, beside the extra test.
+    expect(stored.labValues.find((l) => l.core && l.status === 'active' && l.source === 'lab_import')).toMatchObject({ metricName: 'ldl', value: 2.8, recordedAt: '2026-08-21' });
+    expect(stored.labValues.filter((l) => !l.core)).toEqual([expect.objectContaining({ metricName: 'ferritin', value: 210, source: 'lab_import' })]);
     expect(stored.documents.map((d) => d.sourceFileName).sort()).toEqual(['labs-2.pdf', 'labs.pdf']);
     expect(pendingFiles()).toHaveLength(0);
 
@@ -1449,7 +1540,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     const spent = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } });
     expect(spent.isError).toBe(true);
     expect(spent.text).toContain('names no pending import'); // US-35 AC7: the spent receipt's file is gone
-    expect(storedRecord().measurements.filter((m) => m.status === 'active')).toHaveLength(1);
+    expect(storedRecord().labValues.filter((l) => l.core && l.status === 'active')).toHaveLength(1);
 
     const missing = await callTool(access, 'import_documents', { fileNames: ['nope.pdf'] });
     expect(missing.isError).toBe(true);
@@ -1480,10 +1571,11 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
 
     const corrected = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [recent.id], approval: APPROVED } });
     expect(corrected.isError).toBe(false);
-    const rows = storedRecord().measurements;
-    expect(rows.find((m) => m.id === 'recent')!.status).toBe('entered-in-error');
-    expect(rows.find((m) => m.correctsId === 'recent')).toMatchObject({ value: 3.1, source: 'lab_import' });
-    expect(rows.find((m) => m.id === 'old')!.status).toBe('active');
+    // The seeded rows moved to labValues as core rows (US-66 AC2); the replace corrects there.
+    const rows = storedRecord().labValues;
+    expect(rows.find((l) => l.id === 'recent')!.status).toBe('entered-in-error');
+    expect(rows.find((l) => l.correctsId === 'recent')).toMatchObject({ metricName: 'ldl', core: true, value: 3.1, source: 'lab_import' });
+    expect(rows.find((l) => l.id === 'old')!.status).toBe('active');
   });
 
   it('charges one plus one per file, and refuses once the hour is spent (AC10)', async () => {
@@ -1565,7 +1657,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     expect(data.candidates[0]).toMatchObject({ metric: 'ldl', value: 2.8, unit: 'mmol/L', displayValue: '108', displayUnit: 'mg/dL' });
     const commit = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } });
     expect(commit.isError).toBe(false);
-    expect(storedRecord().measurements.find((m) => m.source === 'lab_import')).toMatchObject({ metricType: 'ldl', value: 2.8 });
+    expect(storedRecord().labValues.find((l) => l.core && l.source === 'lab_import')).toMatchObject({ metricName: 'ldl', unit: 'mmol/L', value: 2.8 });
   });
 
   it('AC13 — a lab file with no printed date is failed with the ask-the-user hint, and the user’s date on the next call files it', async () => {
@@ -1843,9 +1935,9 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
     const commit = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c1', 'c2'], replace: [], approval: APPROVED } });
     expect(commit.isError).toBe(false);
     const stored = storedRecord();
-    expect(stored.measurements.find((m) => m.metricType === 'ldl')).toMatchObject({ source: 'lab_import', recordedAt: LAB_DAY });
+    expect(stored.labValues.find((l) => l.core && l.metricName === 'ldl')).toMatchObject({ source: 'lab_import', recordedAt: LAB_DAY });
     // Written under the name the report PRINTED (US-21 phase 3: the printed name is what chooses a conversion); the slot is the catalogue key either way.
-    expect(stored.labValues[0]).toMatchObject({ metricName: 'Ferritin', value: 210, unit: 'µg/L', source: 'lab_import' });
+    expect(stored.labValues.filter((l) => !l.core)).toEqual([expect.objectContaining({ metricName: 'Ferritin', value: 210, unit: 'µg/L', source: 'lab_import' })]);
     // A DCR-registered test client is not a pinned one, so its label is `other` — which is also what tells the harness apart from a real ChatGPT (AC12).
     expect(stored.documents[0]).toMatchObject({ sourceFileName: 'Results.pdf', contentHash: '', metadata: { importedVia: 'assistant', client: 'other' } });
     expect(pendingFiles()).toHaveLength(0);
@@ -1876,7 +1968,7 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
     expect(data.candidates[0].slot).toMatchObject({ state: 'held_different', existingRowId: 'old', replaceable: true });
     const commit = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c2'], replace: ['c1'], approval: APPROVED } });
     expect(commit.isError).toBe(false);
-    expect(storedRecord().measurements.find((m) => m.id === 'old')!.status).toBe('entered-in-error');
+    expect(storedRecord().labValues.find((l) => l.id === 'old')!.status).toBe('entered-in-error');
     // 1 (propose) + 1 + 5 (commit with one replace) = 7 spent; 53 adds remain of the hour.
     let adds = 0;
     for (let i = 0; i < HOURLY; i++) {
@@ -2011,11 +2103,13 @@ describe('US-32 AC29 — the counter records why a call was refused', () => {
     }));
     const { access } = await connect();
     const whole = OUTPUTS.read_record.parse((await callTool(access, 'read_record', {})).structured);
-    expect(whole.measurements).toHaveLength(1);
-    const old = whole.measurements[0];
+    expect(whole.measurements).toEqual([]);
+    expect(whole.labValues).toHaveLength(1); // the seeded ldl, read back as a core row (US-66 AC11)
+    const old = whole.labValues[0];
     expect(old.recordedAt).toContain('2026-01-01');
     (recordServerEvent as unknown as { mockClear(): void }).mockClear();
-    const refused = await callTool(access, 'correct_value', { id: old.id, expectedValue: old.value, newValue: old.value + 1 });
+    const value = old.value as number; // the read_record schema types a lab row's value loosely
+    const refused = await callTool(access, 'correct_value', { id: old.id, expectedValue: value, newValue: value + 1 });
     expect(refused.isError).toBe(true);
     expect(toolCallEvents().at(-1)).toMatchObject({ outcome: 'refused', reason: 'too-old' });
   });
@@ -2176,6 +2270,25 @@ describe('the OAuth funnel counts refusals, not only successes (US-32 AC34)', ()
     const res = await get('/mcp/callback?code=dropbox-code&state=forged', { cookie });
     expect(res.status).toBe(400);
     expect(funnel().at(-1)).toEqual(['mcp_connect_failed', { client: 'claude', provider: 'dropbox', reason: 'nonce-mismatch' }]);
+  });
+
+  // The nonce compare is pinned: an equal length goes through timingSafeEqual,
+  // any other length is a mismatch without it and never throws.
+  it('compares a returned state of the nonce\'s length in constant time and refuses another length', async () => {
+    const { nonce, cookie } = await pressConnect(await consentScreen(CLAUDE_CIMD));
+    const forged = (nonce[0] === 'A' ? 'B' : 'A') + nonce.slice(1);
+    const tse = vi.spyOn(crypto, 'timingSafeEqual');
+    const nonceCalls = () => tse.mock.calls.filter(([, b]) => Buffer.from(nonce).equals(b as Buffer));
+    try {
+      for (const state of [forged, nonce.slice(1), `${nonce}A`]) {
+        const res = await get(`/mcp/callback?code=dropbox-code&state=${encodeURIComponent(state)}`, { cookie });
+        expect(res.status).toBe(400);
+        expect(funnel().at(-1)).toEqual(['mcp_connect_failed', { client: 'claude', provider: 'dropbox', reason: 'nonce-mismatch' }]);
+      }
+      expect(nonceCalls()).toEqual([[Buffer.from(forged), Buffer.from(nonce)]]);
+    } finally {
+      tse.mockRestore();
+    }
   });
 
   it('counts the user saying no at the provider', async () => {

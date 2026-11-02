@@ -11,6 +11,8 @@ import * as Sentry from '@sentry/react-router';
 import { getAuthenticatedUser, getCustomerId, checkSubscriptionFromTags, getCustomerOrders, isValidUuid } from '../lib/route-helpers.server';
 import { getClientIp } from '../lib/local-first-route.server';
 import { cappedBody } from '../lib/capped-body.server';
+import { takeWebChatTurn } from '../lib/rate-limiter';
+import { ipBucket } from '../lib/app-gate.server';
 import { authenticate } from '../shopify.server';
 import { logAudit, getProfile, updateSubscriptionPlan, createUserClient, getOrCreateGuestSession, GuestRateLimitError, type DbProfile } from '../lib/supabase.server';
 import {
@@ -337,11 +339,28 @@ const APP_ATTESTED = Symbol.for('roadmap.us52.app-attested');
  *  (api.app.v1.chat.ts). It has no Shopify session and no guest session. */
 const APP_AUTH: AuthResult = { client: null, userId: 'app', customerId: null, admin: null, isGuest: true };
 
+/** The message checks, then US-15 AC45's turn cap, in that order; null when the turn may run. */
+function refuseTurn(message: unknown, request: Request, app: boolean): Response | null {
+  if (!message || typeof message !== 'string') {
+    return Response.json({ success: false, error: 'message required' }, { status: 400 });
+  }
+  if (message.length > MAX_MESSAGE_LENGTH) {
+    return Response.json({ success: false, error: `Message too long (max ${MAX_MESSAGE_LENGTH} chars)` }, { status: 400 });
+  }
+  // US-15 AC45: a web turn counts against its IP's day and the machine's,
+  // whatever session it carries. The app's turn was counted by its gate.
+  if (!app && !takeWebChatTurn(ipBucket(getClientIp(request, 'shopify')))) {
+    return Response.json({ success: false, error: 'rate_limited' }, { status: 429 });
+  }
+  return null;
+}
+
 /**
  * The send-a-message action. `app`: the iPhone app's turn (US-52 AC5), which
  * runs the widget's path (history and context in the body, no transcript stored)
- * with no guest session, no form edits, no match-event or audit row (D9), so
- * the app's turn stores nothing; the widget's own turn keeps a masked question row.
+ * with no guest session, no match-event, audit or usage row (D9), so the app's
+ * turn stores nothing; the widget's own turn keeps a masked question row. The
+ * app gets the form tools only when it says it applies them (US-67 AC1).
  */
 async function chatAction(request: Request, app: boolean) {
   const t0 = Date.now();
@@ -407,12 +426,8 @@ async function chatAction(request: Request, app: boolean) {
     // ----- POST — send message -----
     const { message, conversationId } = body;
 
-    if (!message || typeof message !== 'string') {
-      return Response.json({ success: false, error: 'message required' }, { status: 400 });
-    }
-    if (message.length > MAX_MESSAGE_LENGTH) {
-      return Response.json({ success: false, error: `Message too long (max ${MAX_MESSAGE_LENGTH} chars)` }, { status: 400 });
-    }
+    const refused = refuseTurn(message, request, app);
+    if (refused) return refused;
 
     // Sanitize message for router (strips control chars, caps at 2000 chars)
     const sanitizedCurrent = sanitizeForRouter(message);
@@ -477,11 +492,14 @@ async function chatAction(request: Request, app: boolean) {
       }
     }
 
-    // Only the widget's own chat applies form edits, so only it gets the tools (US-15 AC19):
-    // the server holds the other surfaces to that, whatever their body says.
-    const canApplyEdits = !app && widget && body.canApplyEdits === true;
+    // Only the widget's own chat and an iPhone app that says `edits: 1` apply form edits, so
+    // only they get the tools (US-15 AC19, US-67 AC1): the server holds the other surfaces
+    // to that, whatever their body says. An older app sends no `edits` and gets none.
+    const appEdits = app && body.edits === 1;
+    const canApplyEdits = appEdits || (!app && widget && body.canApplyEdits === true);
     // US-16 AC2: only a widget that applies a profile edit says so; an older one would write it as a medication.
-    const canApplyProfileEdits = canApplyEdits && body.canApplyProfileEdits === true;
+    // The app's `edits: 1` covers all three form tools.
+    const canApplyProfileEdits = appEdits || (canApplyEdits && body.canApplyProfileEdits === true);
     // The streamed turn opens its stream here, before stage 1, so the user
     // sees progress while the classifier, router and content load (US-15
     // AC20). From here on a failure is a `done` line there and an HTTP 500
@@ -624,11 +642,12 @@ async function chatAction(request: Request, app: boolean) {
       // replacing a health answer. run_roadmap reads the widget's own record (US-15 AC33).
       const subscriptionTool = subscriptionsOn && !widget;
       const completion = await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits, onEvent,
-        subscriptionTool || canApplyEdits ? { subscriptionTool, guestInputs: body.guestInputs, ...(canApplyProfileEdits ? { profileEdits: true } : {}) } : undefined);
+        subscriptionTool || canApplyEdits ? { subscriptionTool, guestInputs: body.guestInputs, ...(canApplyProfileEdits ? { profileEdits: true } : {}), ...(appEdits ? { app: true } : {}) } : undefined);
       const tAfterLlm = Date.now();
       // US-15 AC33 usage signal: one counter per run_roadmap round, the numbers of
-      // stated values used and rejected and nothing else. Fire-and-forget.
-      if (completion.roadmapRun) {
+      // stated values used and rejected and nothing else. Fire-and-forget. It is a
+      // product_events row, so never on the app's turn, which stores nothing (D9, US-67 AC1).
+      if (completion.roadmapRun && !app) {
         void recordServerEvent('chat_run_roadmap', { count: completion.roadmapRun.applied, rejected: completion.roadmapRun.rejected });
       }
 
@@ -782,8 +801,9 @@ async function chatAction(request: Request, app: boolean) {
         messageChars: message.length,
         // Ms from the LLM call to the first answer text; null when not streamed or no text came.
         firstTokenMs,
-        // US-15 AC33: the turn ran run_roadmap, so llmMs and the tokens cover two calls. A flag only.
-        roadmapRun: !!completion.roadmapRun,
+        // US-15 AC33, US-67 AC2: the turn made a second call (run_roadmap, or a value asked about
+        // for its unit), so llmMs and the tokens cover two calls. A flag only.
+        roadmapRun: !!completion.roadmapRun || completion.toolRound === true,
       }));
 
       // The streamed path sends this as its `done` line.

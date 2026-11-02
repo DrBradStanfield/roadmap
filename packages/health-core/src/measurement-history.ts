@@ -17,12 +17,15 @@
  */
 import { METRIC_TO_FIELD } from './mappings';
 import type { HealthInputs } from './types';
+import { comparatorOf, type Comparator } from './lab-limits';
 
 export interface DatedMeasurement {
   /** YYYY-MM-DD */
   date: string;
   /** SI value, same units as the corresponding HealthInputs field */
   value: number;
+  /** A lab result printed as a limit: `value` is its bound, not the result (US-12 AC20). */
+  comparator?: Comparator;
 }
 
 /** Per-metric chronological series — the LAST entry is the most recent. */
@@ -50,14 +53,14 @@ export function isClinicalDay(recordedAt: unknown): recordedAt is string {
  * metric. Records without a valid YYYY-MM-DD recordedAt are dropped.
  */
 export function buildMeasurementHistory(
-  records: Array<{ metricType: string; value: number; recordedAt?: string | null }>,
+  records: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator }>,
   cap = HISTORY_CAP_PER_METRIC,
 ): MeasurementHistoryMap {
   const out: MeasurementHistoryMap = {};
   for (const r of records) {
     const date = (r.recordedAt || '').slice(0, 10);
     if (!ISO_DATE.test(date)) continue;
-    (out[r.metricType] ??= []).push({ date, value: r.value });
+    (out[r.metricType] ??= []).push({ date, value: r.value, ...comparatorOf(r) });
   }
   for (const k of Object.keys(out)) {
     out[k].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
@@ -110,7 +113,8 @@ export function latestFromHistory(
   const out: Partial<Record<keyof HealthInputs, number>> = {};
   for (const [metric, series] of Object.entries(history)) {
     const field = METRIC_TO_FIELD[metric];
-    if (field && series.length > 0) out[field] = series[series.length - 1].value;
+    // A newest point printed as a limit is no exact value to report (US-12 AC20).
+    if (field && series.length > 0 && !series[series.length - 1].comparator) out[field] = series[series.length - 1].value;
   }
   return out;
 }

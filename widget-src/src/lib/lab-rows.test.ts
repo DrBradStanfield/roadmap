@@ -3,7 +3,8 @@
  * rows surfaced beneath the core blood-test matrix.
  */
 import { describe, it, expect } from 'vitest';
-import { groupLabValues, countLabValuePoints, labGroupMatrix, groupLabHistory } from './lab-rows';
+import { groupLabValues } from '@roadmap/health-core';
+import { countLabValuePoints, labGroupMatrix, groupLabHistory } from './lab-rows';
 import type { ApiLabValue } from './api-types';
 
 function row(overrides: Partial<ApiLabValue> & { status?: string }): ApiLabValue & { status?: string } {
@@ -234,5 +235,15 @@ describe('US-10: groupLabHistory (history charts)', () => {
     expect(keys).toEqual(['some novel assay', 'zinc']);
     expect(series['some novel assay'].rows).toHaveLength(2);
     expect(series['some novel assay'].label).toBe('Some Novel Assay');
+  });
+
+  it('takes a row with no unit, as readers accept one, with no unit rather than throwing (US-65)', () => {
+    const { keys, series } = groupLabHistory([
+      row({ id: 'a', metricName: 'zinc', value: 12, unit: null as unknown as string }),
+      row({ id: 'b', metricName: 'zinc', value: 13, unit: 'µmol/L' }),
+    ]);
+    expect(keys).toEqual(['zinc']);
+    expect(series.zinc.units).toEqual(['', 'µmol/L']);
+    expect(series.zinc.rows.map((r) => r.id)).toEqual(['a', 'b']);
   });
 });

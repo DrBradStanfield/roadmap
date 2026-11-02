@@ -8,6 +8,8 @@ import {
   weightMedicationTrigger,
   lipidMarkerFor,
   validateHealthInputs,
+  planInputsFrom,
+  type SuggestionInputs,
   getValidationErrors,
   convertValidationErrorsToUnits,
   detectUnitSystem,
@@ -32,8 +34,8 @@ import {
   labEgfrOf,
   toCanonicalValue,
   VITALS_INPUT_FIELDS,
-  ESCALATION_KEY_OF,
-  UNANSWERED_OF,
+  chatMedicationChange,
+  unsavedProfile,
   type AlcoholAnswer,
   type HealthInputs,
   type UnitSystem,
@@ -42,6 +44,7 @@ import {
   type ApiMedication,
   type ApiScreening,
   type ChatContextPayload,
+  type ChatMedicationRow,
   type ProposedEdit,
   type ProposedFieldEdit,
   type ProposedMedicationEdit,
@@ -59,7 +62,6 @@ import type { DateValue } from './DatePicker';
 import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';
 import type { ApiSupplement, ApiLabValue, LatestMeasurementsResult } from '../lib/api-types';
 import { InputPanel, type PlanBasis } from './InputPanel';
-import { profileTitle } from '../lib/profile-title';
 import { ResultsPanel } from './ResultsPanel';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
 import { ChatEmbed } from './ChatEmbed';
@@ -202,15 +204,6 @@ const profileFields = (p: ProposedProfileEdit) =>
   [...(p.sex ? ['sex' as const] : []), ...(p.heightCm !== null ? ['heightCm' as const] : [])];
 
 const sexLabel = (sex: 'male' | 'female') => (sex === 'male' ? 'Male' : 'Female');
-
-/** The fields of a proposal the profile does not already hold, as the user
- *  sees them; null when none, so no banner (US-16 AC2). */
-function unsavedProfile(p: ProposedProfileEdit, saved: Partial<HealthInputs>, units: UnitSystem): ProposedProfileEdit | null {
-  const sex = p.sex !== saved.sex ? p.sex : null;
-  const heightCm = p.heightCm !== null && (saved.heightCm == null
-    || formatHeightDisplay(saved.heightCm, units) !== formatHeightDisplay(p.heightCm, units)) ? p.heightCm : null;
-  return sex || heightCm !== null ? { kind: 'profile', sex, heightCm } : null;
-}
 
 /** After a medication or screening save, failed or not, the chat copy takes
  *  the lists the store holds (US-15 AC10). Never the form's: a failed save
@@ -458,8 +451,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     setProfileProposal(null);
   }, []);
   // The store holds an erase the screen does not show yet: this tab's erase
-  // still writing or failed to write, or a remote change the relay holds. The
-  // screen's values are pre-erase then, so no banner is made or answered.
+  // still writing or failed to write, or another device's erase whose re-read
+  // has not landed (the relay never holds an erase, US-11 AC6). The screen's
+  // values are pre-erase then, so no banner is made or answered.
   const eraseUnshown = useCallback(() => getEraseIdentity() !== getShownErase(), []);
   // True while this tab's erase runs.
   const erasingRef = useRef(false);
@@ -913,8 +907,11 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     // inputs, and a remote change landing on a half-entered height would take
     // those keystrokes with it. The relay HOLDS it — the next profile save
     // carries the edit up and then replays the change.
-    const onRemoteChange = () =>
-      remoteRelay.arrived(hasUnsavedProfileEdits(inputsRef.current, previousInputsRef.current));
+    // An erase from another device (a new erase identity) is never held: it
+    // applies at once and drops this device's drafts, refused ones included
+    // (US-11 AC6); a refused draft would otherwise hold it for good.
+    const onRemoteChange = () => remoteRelay.arrived(getEraseIdentity() === getShownErase()
+      && hasUnsavedProfileEdits(inputsRef.current, previousInputsRef.current));
     window.addEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
     return () => window.removeEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
   }, [remoteRelay, handleUploadComplete]);
@@ -936,27 +933,14 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     }
 
     const validation = validateHealthInputs(planInputs, pressureDays);
-
-    let inputsForCalc = planInputs;
-    let errors: Record<string, string> | null = null;
-
-    if (!validation.success && validation.errors) {
-      const rawErrors = getValidationErrors(validation.errors);
-      // Convert error messages to user's unit system (e.g., "20 kg" → "44 lbs")
-      errors = convertValidationErrorsToUnits(rawErrors, unitSystem);
-      // Strip invalid fields (all optional) so remaining suggestions still show
-      const invalidFields = new Set(validation.errors.issues.map((i) => i.path[0] as string));
-      if (invalidFields.has('heightCm')) {
-        return { results: null, isValid: false, validationErrors: errors, planBasis: null };
-      }
-      const sanitized = { ...planInputs };
-      for (const field of invalidFields) {
-        (sanitized as Record<string, unknown>)[field] = undefined;
-      }
-      inputsForCalc = sanitized;
+    // Convert error messages to user's unit system (e.g., "20 kg" → "44 lbs")
+    const errors = validation.errors ? convertValidationErrorsToUnits(getValidationErrors(validation.errors), unitSystem) : null;
+    // health-core's one strip (US-07 AC11): refused fields left out so the rest still plans, a swapped pair marked.
+    const calcInputs: SuggestionInputs | null = planInputsFrom(planInputs, validation);
+    if (!calcInputs) {
+      return { results: null, isValid: false, validationErrors: errors, planBasis: null };
     }
 
-    const calcInputs = inputsForCalc as HealthInputs;
     const healthResults = calculateHealthResults(
       calcInputs,
       unitSystem,
@@ -1248,10 +1232,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // A one-shot undo for a medication change the chat just applied (meds
   // auto-save, so the chat states the change + offers Undo): every row the
   // change wrote, as it was before.
-  const [medUndo, setMedUndo] = useState<
-    | Array<{ key: string; drugName: string; doseValue: number | null; doseUnit: string | null }>
-    | null
-  >(null);
+  const [medUndo, setMedUndo] = useState<ChatMedicationRow[] | null>(null);
   // The form's medications, unsaved changes included: a chat change is
   // judged against these as well as the saved ones (US-06 AC12).
   const medicationsRef = useRef(medications);
@@ -1286,31 +1267,15 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const applyMedicationEdit = useCallback((edit: ProposedMedicationEdit, stated: ReadonlySet<string>) => {
     // Snapshot the prior values FIRST so Undo can restore them: the saved
     // ones, from the copy the banner's erase check reads (US-16 AC2a).
+    // The rule is health-core's, shared with the iPhone (US-06 AC12, US-67 AC4):
+    // a new drug or dose resets the drug's escalation answer, escalation first,
+    // unless the same reply states it. Flat mode too: the chat changes the drug
+    // on purpose. An answer the form holds but has not saved yet was about the
+    // old drug too: it is reset as well, and only the saved one is Undo's to restore.
     const saved = loadLatestMeasurementsSync()?.medications ?? [];
-    const prior = saved.find(m => m.medicationKey === edit.medicationKey);
-    // A key that had no row goes back to its unanswered value: 'none' would
-    // read as an answer for a step such as ezetimibe or an escalation.
-    const undo: NonNullable<typeof medUndo> = [{
-      key: edit.medicationKey,
-      drugName: prior?.drugName ?? UNANSWERED_OF[edit.medicationKey],
-      doseValue: prior?.doseValue ?? null,
-      doseUnit: prior?.doseUnit ?? null,
-    }];
-    // A new drug or dose resets the drug's escalation answer, as the form does,
-    // escalation first. Flat mode too: the chat changes the drug on purpose,
-    // and the answer was about the old one (US-06 AC12). An answer the same
-    // reply states wins, whatever its order in the reply.
-    // An answer the form holds but has not saved yet was about the old drug
-    // too: it is reset as well, and only the saved one is Undo's to restore.
-    const escalationKey = (ESCALATION_KEY_OF as Partial<Record<string, string>>)[edit.medicationKey];
     const onForm = medicationsRef.current.find(m => m.medicationKey === edit.medicationKey);
-    const changes = (row: { drugName: string; doseValue: number | null } | undefined) =>
-      !!row && (edit.drugName !== row.drugName || edit.doseValue !== row.doseValue);
-    if (escalationKey && !stated.has(escalationKey) && (changes(undo[0]) || changes(onForm))) {
-      const answer = saved.find(m => m.medicationKey === escalationKey && m.drugName !== 'not_yet');
-      if (answer) undo.unshift({ key: answer.medicationKey, drugName: answer.drugName, doseValue: answer.doseValue, doseUnit: answer.doseUnit });
-      if (answer || medSaveTimers.current.has(escalationKey)) handleMedicationChange(escalationKey, 'not_yet', null, null);
-    }
+    const { undo, reset } = chatMedicationChange(edit, saved, stated, onForm);
+    if (reset && (undo.some(m => m.medicationKey === reset) || medSaveTimers.current.has(reset))) handleMedicationChange(reset, 'not_yet', null, null);
     handleMedicationChange(edit.medicationKey, edit.drugName, edit.doseValue, edit.doseUnit);
     return undo;
   }, [handleMedicationChange]);
@@ -1336,7 +1301,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     const stated = new Set(edits.flatMap(e => (e.kind === 'medication' ? [e.medicationKey] : [])));
     // Undo restores every medication row the reply changed, the last edit
     // first. Field edits are drafts the person saves or discards.
-    const undo: NonNullable<typeof medUndo> = [];
+    const undo: ChatMedicationRow[] = [];
     for (const edit of edits) {
       switch (edit.kind) {
         case 'field': if (applyFieldEdit(edit)) inGrid = true; editedField ??= edit.field; break;
@@ -1369,7 +1334,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const undoMedEdit = useCallback(() => {
     if (!medUndo) return;
     // The store holds an erase the screen does not show: write nothing (US-16 AC2a).
-    if (!eraseUnshown()) for (const m of medUndo) handleMedicationChange(m.key, m.drugName, m.doseValue, m.doseUnit);
+    if (!eraseUnshown()) for (const m of medUndo) handleMedicationChange(m.medicationKey, m.drugName, m.doseValue, m.doseUnit);
     setMedUndo(null);
   }, [medUndo, handleMedicationChange, eraseUnshown]);
 
@@ -1476,7 +1441,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     // The "I still drink" line names About you, as InputPanel's heading does, once
     // About you sits low (aboutYouLow), the only time its rows hold the Alcohol row;
     // before that no row shows, so the line names none (US-60 AC4).
-    alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer, section: aboutYouLow ? profileTitle(true) : undefined },
+    alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer, aboutYouRow: aboutYouLow },
   };
 
   // The chat reads its context as each message is sent (useChatState), through

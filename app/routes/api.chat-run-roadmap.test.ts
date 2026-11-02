@@ -141,4 +141,20 @@ describe('US-15 AC33: a run_roadmap turn keeps the tool\'s data out of every log
     expect(mocks.productEvents).toEqual([]);
     expect(consoleCalls()).toContain('\\"roadmapRun\\":false');
   });
+
+  // US-67 AC2: a value asked about for its unit makes a second call too, so chat_timing says two calls,
+  // and the run_roadmap usage counter stays for run_roadmap alone.
+  it('US-67 AC2: a suspect-unit round logs roadmapRun: true and records no chat_run_roadmap event', async () => {
+    let calls = 0;
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(++calls === 1
+      ? { content: [{ type: 'tool_use', id: 'v', name: 'propose_field_edit', input: { field: 'ldlC', value: 3.4, unit: 'mg/dL' } }], stop_reason: 'tool_use', usage: { input_tokens: 1, output_tokens: 1 } }
+      : { content: [{ type: 'text', text: 'Is that mmol/L?' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 } }),
+    { status: 200, headers: { 'content-type': 'application/json' } })));
+    const reply = await (await post({ message: 'my LDL is 3.4 mg/dL', localFirst: true, canApplyEdits: true, guestInputs: PROFILE })).json();
+    expect(calls).toBe(2);
+    expect(reply.content).toBe('Is that mmol/L?');
+    expect(reply).not.toHaveProperty('proposedEdits');
+    expect(consoleCalls()).toContain('\\"roadmapRun\\":true');
+    expect(mocks.productEvents).toEqual([]);
+  });
 });

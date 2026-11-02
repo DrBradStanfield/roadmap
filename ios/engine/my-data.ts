@@ -4,26 +4,30 @@
 // Values come in and go out in the user's units; the record stores SI. Web
 // twins: the widget's InputPanel.tsx and BloodTestTimeline.tsx, writing through
 // RoadmapStore.
-import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { createEmptyFile, type FileLabValue, type FileMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import type { Plan } from '../../packages/health-core/src/plan';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
-import { localDay } from '../../packages/health-core/src/merge';
 import { parseLocalisedNumber } from '../../packages/health-core/src/parseNumber';
-import { appendMeasurement, bulkAppendValues, correctValue, validDay } from '../../packages/health-core/src/record-edits';
+import { addLabValue, appendMeasurement, bulkAppendValues, correctValue, validDay } from '../../packages/health-core/src/record-edits';
 import { labRows, type Extraction } from './lab-review';
 import { updateProfile } from '../../packages/health-core/src/mcp-tools';
 import { stampProfile, upsertMedication, upsertSupplement } from '../../packages/health-core/src/state-edits';
 import { medicationSchema, supplementSchema, zod3Message } from '../../packages/health-core/src/validation';
 import { customSupplementAdd, customSupplementMatch } from '../../packages/health-core/src/input-form';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
+import { bloodTableReport, bloodTestKeyOf, currentValueRows, isCoreRow } from '../../packages/health-core/src/blood-tests';
 import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
-import { applyFormEdit, formsOf, planOf, type FormEdit, type FormsView } from './my-data-forms';
+import { applyFormEdit, formsOf, gradeContextOf, planOf, rowText, ungradedLimit, type FormEdit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import { METRIC_GUIDES, type MetricGuide } from '../../packages/health-core/src/metric-guides';
 import { APPLE_LOW_FROM_60, FRIEND_2022_TREADMILL, type Vo2MaxCutPoints } from '../../packages/health-core/src/vo2max-bands';
-import { calculateAge, knownMinorOf } from '../../packages/health-core/src/calculations';
-import { rowTarget, type Grading, type RowTargetPlan } from '../../packages/health-core/src/row-target';
+import { calculateAge } from '../../packages/health-core/src/calculations';
+import { rowTarget } from '../../packages/health-core/src/row-target';
+import { gradeWords, limitUngraded, pressureStatus, valueStatus, type GradeContext, type GradeStatus, type PressureReading } from '../../packages/health-core/src/row-grade';
+import { labSeriesRows } from '../../packages/health-core/src/lab-series';
+import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from '../../packages/health-core/src/lab-catalog';
+import { trendWindow } from '../../packages/health-core/src/recent-trend';
 import { isAlcoholAnswer, type AlcoholAnswer } from '../../packages/health-core/src/types';
 import { readableView, unreadableNote } from '../../packages/health-core/src/readable-rows';
 import {
@@ -31,16 +35,19 @@ import {
   type LpaUnit, type MetricType, type UnitSystem,
 } from '../../packages/health-core/src/units';
 import { applyPressure, BLOOD_PRESSURE, pressureHistory, type PressureEdit } from './blood-pressure';
+import { applyChatEdit, type ChatEdit } from './chat-edits';
 import { cellUnitFor, lpaUnitOf, SWITCHABLE, unitsOf, type UnitChoices } from './unit-choices';
-import { cellFromSI, cellLabel, cellRange, cellText, isLpaUnit, type CellUnit } from '../../packages/health-core/src/cell-unit';
+import { cellFromSI, cellLabel, cellRange, isLpaUnit, type CellUnit } from '../../packages/health-core/src/cell-unit';
+import { LIMIT_NOT_GRADED, comparatorOf, isComparator } from '../../packages/health-core/src/lab-limits';
 
 /** One row of Vitals or Blood tests: the plan's current value, if any, in the user's units. */
 export interface MyDataRow {
   metric: string;
   label: string;
   unit: string;
+  /** `value` reads a lab limit with its symbol, "> 60" (US-12 AC20). */
   latest: { id: string; value: string; day: string } | null;
-  /** The recent days' values (`trends`), oldest first, in the user's units. Unlike the web's
+  /** The recent days' exact values (`trends`), oldest first, in the user's units; a limit is no point on it (US-12 AC20). Unlike the web's
    *  Trend sparkline (BloodTestTimeline.tsx), which draws the full series, iOS shows only
    *  recent data, as Apple Health does (US-25 AC17f). Blood pressure's is its systolic half. */
   trend: number[];
@@ -52,6 +59,18 @@ export interface MyDataRow {
   /** The value before the latest, in the same units: the newest earlier day's active value, the
    *  web's "(74)" (US-62 AC8); null with fewer than two days. */
   previous: string | null;
+  /** The value's grade, as the web's row colours it (health-core `valueStatus`, US-62 AC8): "warn"
+   *  amber, "bad" red, "ok" plain; null when ungraded (no value, no line, a known minor, PSA, a lab test). */
+  status: GradeStatus;
+  /** The grade as a screen reader hears it after the value, off target only: "above optimal"
+   *  (health-core `gradeWords`); null on target or ungraded. */
+  gradeWords: string | null;
+  /** "Printed as a limit, so the plan cannot grade it against its cutoff.": a latest value printed as a
+   *  limit the shared rule leaves ungraded, though there is a plan to grade it by (US-12 AC21); else null. */
+  note: string | null;
+  /** "lab" on a lab test's row (US-25 AC25): the page, its history and its adds are the lab test's,
+   *  whatever its name. Absent on a core metric's row. */
+  series?: 'lab';
 }
 
 export interface MyData {
@@ -78,6 +97,10 @@ export interface MyData {
   bloodTests: MyDataRow[];
   /** PSA, asked for under prostate screening (US-25 AC8). */
   psa: MyDataRow;
+  /** The lab tests beyond the core ones, one row per series as the web's Blood tests rows list them
+   *  (MyDataRows.tsx labRows, US-62 AC8): catalogue label, the printed "Ref …" range, the newest value
+   *  as reported and the one before it, unless the series mixes units. `metric` is the series key. */
+  labTests: MyDataRow[];
   /** The "about this measure" guides (US-58), by metric or medication key: served here so a
    *  correction ships over the air (D3). */
   guides: Record<string, MetricGuide>;
@@ -111,7 +134,12 @@ export type Edit =
   /** Medication and screening answers and a typed supplement (my-data-forms.ts, US-25 AC8). */
   | FormEdit
   /** The ticked values of an uploaded lab report (US-52 AC8), written by the web's bulk rule. */
-  | { kind: 'labImport'; extractionJson: string; refs: string[]; reportDay: string };
+  | { kind: 'labImport'; extractionJson: string; refs: string[]; reportDay: string }
+  /** A new value for a lab test the record holds, on a day, in the unit the sheet showed (US-25 AC25):
+   *  health-core's `addLabValue`, the web's lab add too, named by its series key (`labSlotKey`). */
+  | { kind: 'labAdd'; series: string; value: number; day?: string; unit?: string }
+  /** What the chat proposed, and its medications' Undo (US-67, chat-edits.ts). */
+  | ChatEdit;
 
 /** A refusal leaves the record as it was. `existingId` names the row holding the day. */
 export type EditOutcome =
@@ -151,8 +179,30 @@ export function readRecord(text: string, now: string, deviceId: string): Roadmap
     if (error instanceof SchemaTooNewError) throw new Refusal('A newer version of Health Roadmap wrote this record. Update the app to open it.');
     throw error;
   }
-  kept = { text, deviceId, file: FREEZE_KEPT ? deepFreeze(file) : file };
+  kept = { text, deviceId, file: FREEZE_KEPT ? deepFreeze(file) : file, moved: movedBloodTests(raw, file) };
   return file;
+}
+
+/**
+ * US-66 AC14: reading `stored`, the record as saved, moved blood tests out of
+ * `measurements` or folded old lab rows named like a core test, so `file` is
+ * written once. A moved record has nothing left to move. The web's twin:
+ * RoadmapStore.writeMovedRecord.
+ */
+export function movedBloodTests(stored: unknown, file: RoadmapFile): boolean {
+  if (typeof stored !== 'object' || stored === null) return false;
+  const rows = <T>(key: string): T[] => {
+    const list = (stored as Record<string, unknown>)[key];
+    return Array.isArray(list) ? list.filter((row): row is T => typeof row === 'object' && row !== null) : [];
+  };
+  const report = bloodTableReport({ measurements: rows<FileMeasurement>('measurements'), labValues: rows<FileLabValue>('labValues') }, file);
+  return report.moved + report.folded > 0;
+}
+
+/** The record to write once, as text, when reading `text` moved it (US-66 AC14); else null. */
+export function movedRecord(text: string, now: string, deviceId: string): string | null {
+  const file = readRecord(text, now, deviceId); // sets `kept` to this text's read
+  return kept!.moved ? JSON.stringify(file) : null;
 }
 
 /**
@@ -166,7 +216,7 @@ export function readRecord(text: string, now: string, deviceId: string): Roadmap
  * `meta.lastDeviceId`. Metadata clock recovery is deterministic even when both
  * stamps are missing or malformed, so migration never depends on `now`.
  */
-let kept: { text: string; deviceId: string; file: RoadmapFile } | null = null;
+let kept: { text: string; deviceId: string; file: RoadmapFile; moved: boolean } | null = null;
 
 /** Under the tests the kept record is frozen, so every engine test checks the
  *  read-only rule on every branch it runs (adversary R1). Never in the app. */
@@ -203,13 +253,13 @@ export function newRecord(now: string, deviceId: string, locale: string, timeZon
  *  that has it passes it, so the forms are not planned twice (entry.ts screenJson). */
 export function myData(file: RoadmapFile, now = new Date().toISOString(), choices: UnitChoices = {}, plan: Plan | null = planOf(file, now, choices)): MyData & FormsView {
   const system = unitsOf(file);
-  const current = new Map(latestActivePerMetric(file.measurements).map((row) => [row.metricType, row]));
+  const current = new Map(latestActivePerMetric(currentValueRows(file)).map((row) => [row.metricType, row]));
   const days = activeDays(file);
   const trend = trends(days, now, (metric, valueSI) => cellFromSI(metric as MetricType, valueSI, cellUnitFor(file, metric, choices)));
   // What the web's rows grade against (InputPanel.tsx rowCtx): none for a known minor (US-07 AC6),
   // and the plan's age, weight target and height once there is a plan.
-  const grading: Grading = knownMinorOf(file.profile, new Date(now)) ? null : { sex: file.profile.sex ?? undefined };
-  const basis: RowTargetPlan | null = plan && { age: plan.results.age, idealBodyWeight: plan.results.idealBodyWeight, heightCm: plan.results.heightCm };
+  const graded = gradeContextOf(file, now, plan);
+  const { grading, plan: basis } = graded;
   const row = (metric: string): MyDataRow => {
     const latest = current.get(metric);
     const shown = cellUnitFor(file, metric, choices);
@@ -220,12 +270,14 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
       label: METRIC_LABELS[metric] ?? metric,
       unit: cellLabel(metric as MetricType, shown),
       latest: latest
-        ? { id: latest.id, value: cellText(metric as MetricType, latest.value, shown), day: latest.recordedAt.slice(0, 10) }
+        ? { id: latest.id, value: rowText(metric as MetricType, latest, shown), day: latest.recordedAt.slice(0, 10) }
         : null,
       trend: trend.get(metric) ?? [],
       switchable: SWITCHABLE.has(metric),
       target: rowTarget(metric as MetricType, shown, grading, basis)?.bare ?? null,
-      previous: before ? cellText(metric as MetricType, days.get(metric)!.get(before)!, shown) : null,
+      previous: before ? rowText(metric as MetricType, days.get(metric)!.get(before)!, shown) : null,
+      ...gradeOf(latest ? valueStatus(metric as MetricType, latest.value, graded, comparatorOf(latest).comparator) : null, metric),
+      note: latest && ungradedLimit(metric as MetricType, latest, graded) ? LIMIT_NOT_GRADED : null,
     };
   };
   const { sex, birthYear, birthMonth, heightCm } = file.profile;
@@ -245,10 +297,12 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
       alcohol: isAlcoholAnswer(file.profile.alcohol) ? file.profile.alcohol : null,
     },
     // Blood pressure is one row, as the web's matrix shows it: the newest day's pair.
-    vitals: [...VITAL_METRICS.filter((metric) => metric !== 'systolic_bp' && metric !== 'diastolic_bp').map(row), pressureRow(file, trend, rowTarget('blood_pressure', 'si', grading, basis)?.bare ?? null)],
+    vitals: [...VITAL_METRICS.filter((metric) => metric !== 'systolic_bp' && metric !== 'diastolic_bp').map(row), pressureRow(file, trend, rowTarget('blood_pressure', 'si', grading, basis)?.bare ?? null, graded)],
     // PSA is asked for under prostate screening on the web, not with the blood tests.
     bloodTests: BLOOD_TEST_METRICS.filter((metric) => metric !== 'psa').map(row),
-    psa: row('psa'),
+    // The web asks for PSA under screening and never colours it.
+    psa: { ...row('psa'), ...gradeOf(null, 'psa'), note: null },
+    labTests: labTestRows(file, now),
     guides: METRIC_GUIDES,
     vo2Bands: vo2BandsOf(sex, birthYear, birthMonth, now),
     inputRanges: Object.fromEntries((Object.keys(UNIT_DEFS) as MetricType[]).map((metric) => [metric, Object.fromEntries(
@@ -323,11 +377,13 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       return { ok: false, reason: result.reason, message: typedRangeMessage(edit.metric, edit.value, unit, result), ...(result.existing ? { existingId: result.existing.id } : null) };
     }
     case 'correct': {
-      const target = file.measurements.find((row) => row.id === edit.id);
-      const shown = target && cellUnitFor(file, target.metricType, choices);
-      const result = correctValue(file, { id: edit.id, newValue: edit.value, unit: shown && cellLabel(target!.metricType as MetricType, shown), now });
+      // A blood test is a core lab row (US-66 AC6); a vital is a measurement.
+      const core = file.labValues.find((row) => row.id === edit.id && isCoreRow(row));
+      const metric = core?.metricName ?? file.measurements.find((row) => row.id === edit.id)?.metricType;
+      const shown = metric && cellUnitFor(file, metric, choices);
+      const result = correctValue(file, { id: edit.id, newValue: edit.value, unit: shown && cellLabel(metric as MetricType, shown), now });
       if (result.ok) return { ok: true, file: result.file };
-      return { ok: false, reason: result.reason, message: shown ? typedRangeMessage(target!.metricType, edit.value, shown, result) : result.message };
+      return { ok: false, reason: result.reason, message: shown ? typedRangeMessage(metric!, edit.value, shown, result) : result.message };
     }
     // The web's own writes (state-edits.ts), behind the API's own schemas:
     // the app's input is checked the way a request to the server was.
@@ -377,7 +433,29 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       // A held day is skipped and a refused unit left out: labSaveSummary says which, beforehand.
       return { ok: true, file: bulkAppendValues(file, rows.rows, now).file };
     }
+    case 'labAdd':
+      return addSeriesValue(file, edit, now);
+    case 'chatEdits':
+    case 'chatUndo':
+      return applyChatEdit(file, edit, now, choices);
   }
+}
+
+/**
+ * A lab add (US-25 AC25): health-core's one lab add (`addLabValue`), the web's too. The series' newest
+ * row names the test as it was printed; the unit is the one the sheet showed (`unit`), else the
+ * series' own, so a row synced in while the sheet was open never changes what the number means.
+ */
+function addSeriesValue(file: RoadmapFile, edit: Extract<Edit, { kind: 'labAdd' }>, now: string): EditOutcome {
+  const rows = file.labValues.filter((row) => !isCoreRow(row) && labSlotKey(row.metricName) === edit.series);
+  const named = rows.filter((row) => row.status === 'active').sort((a, b) => a.recordedAt.localeCompare(b.recordedAt)).at(-1);
+  if (!named) return { ok: false, reason: 'not-found', message: 'There is no such lab test in your record.' };
+  // A kept-apart row named like a core test (an old "creatinine" may be urine, US-12 AC11): the add would
+  // write the core value, which this page never shows. It goes on the core test's own row (US-66 AC5).
+  if (bloodTestKeyOf(named.metricName)) return { ok: false, reason: 'core-name', message: 'Add this test from its row in Blood tests.' };
+  const unit = edit.unit ?? displayLabUnit(named.unit ?? '', resolveLabCatalogEntry(named.metricName));
+  const added = addLabValue(file, { metricName: named.metricName, unit, value: edit.value, day: edit.day }, now);
+  return added.ok ? { ok: true, file: added.file } : added;
 }
 
 /** An Lp(a) value out of range, said in the unit it was typed in with the web's range
@@ -390,14 +468,19 @@ function typedRangeMessage(metric: string, typed: number, unit: CellUnit, refusa
 }
 
 /** The Vitals row for blood pressure: the newest day's pair, from the history's own pairing. */
-function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: string | null): MyDataRow {
-  const { label, unit, rows } = pressureHistory(file, []);
+function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: string | null, graded: GradeContext): MyDataRow {
+  const shown = new Map<string, PressureReading>();
+  const { label, unit, rows } = pressureHistory(file, [], shown);
   const active = rows.filter((row) => row.status === 'active');
   const [newest] = active;
   // The day before's pair, both halves present: a half-pair is no reading (the web's pressureReadings).
   // A half-pair latest ("135/–", US-25 AC17) gets none, so no bracket sits beside a dash.
   const whole = (row?: (typeof rows)[number]) => !!row?.systolic && !!row?.diastolic;
   const previous = whole(newest) ? active.slice(1).find(whole) : undefined;
+  // Graded on the stored halves of the pair it shows, as the web grades stored values: a half-pair has
+  // no grade, and a half printed as a limit is graded only when certain (US-12 AC21).
+  const reading = whole(newest) ? shown.get(newest.id) : undefined;
+  const status = reading ? pressureStatus(reading, graded) : null;
   return {
     metric: BLOOD_PRESSURE, label, unit,
     latest: newest ? { id: newest.id, value: newest.value, day: newest.day } : null,
@@ -405,18 +488,38 @@ function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: st
     switchable: false,
     target,
     previous: previous?.value ?? null,
+    ...gradeOf(status, BLOOD_PRESSURE),
+    note: reading && limitUngraded(BLOOD_PRESSURE, status, graded, reading) ? LIMIT_NOT_GRADED : null,
   };
 }
 
-/** Each metric's active value per day (the slot's first, as findActiveInSlot reads it), in SI, in one pass. */
-function activeDays(file: RoadmapFile): Map<string, Map<string, number>> {
-  const byMetric = new Map<string, Map<string, number>>();
-  for (const row of file.measurements) {
-    if (row.status !== 'active') continue;
-    const days = byMetric.get(row.metricType) ?? new Map<string, number>();
+/** A row's grade and its spoken words. */
+function gradeOf(status: GradeStatus, metric: string): Pick<MyDataRow, 'status' | 'gradeWords'> {
+  return { status, gradeWords: gradeWords(status, metric) };
+}
+
+/** The lab tests beyond the core ones: health-core's rows (`labSeriesRows`), as the web's phone rows
+ *  build them (MyDataRows.tsx labRows), in this row's shape; never graded. A limit reads with its
+ *  symbol and, as on the core rows, is no point on the trend (US-12 AC20). */
+function labTestRows(file: RoadmapFile, now: string): MyDataRow[] {
+  // A core row is a blood test's own row above, never a lab test here (US-66 AC7).
+  return labSeriesRows(file.labValues.filter((row) => !isCoreRow(row)), new Date(now), true).map(({ seriesKey, label, unit, latest, previous, target, trend }) => ({
+    metric: seriesKey, series: 'lab', label, unit, latest, trend, switchable: false, target, previous, ...gradeOf(null, seriesKey), note: null,
+  }));
+}
+
+/** A current value: a vital, or a core blood-test row shaped as one (US-66 AC7). */
+type ValueRow = ReturnType<typeof currentValueRows>[number];
+
+/** Each metric's active row per day (the slot's first, as findActiveInSlot reads it), in one pass:
+ *  the vitals and the core blood-test rows (US-66 AC7). */
+function activeDays(file: RoadmapFile): Map<string, Map<string, ValueRow>> {
+  const byMetric = new Map<string, Map<string, ValueRow>>();
+  for (const row of currentValueRows(file)) {
+    const days = byMetric.get(row.metricType) ?? new Map<string, ValueRow>();
     byMetric.set(row.metricType, days);
     const day = row.recordedAt.slice(0, 10);
-    if (!days.has(day)) days.set(day, row.value);
+    if (!days.has(day)) days.set(day, row);
   }
   return byMetric;
 }
@@ -425,14 +528,13 @@ function activeDays(file: RoadmapFile): Map<string, Map<string, number>> {
  *  phone's local day, and the 29 before), or the last seven days however old when those 30
  *  hold fewer than two (US-25 AC17f). A day after today (an import that kept another zone's
  *  offset) is left out of both, as the phone leaves out a night dated after today. */
-function trends(byMetric: Map<string, Map<string, number>>, now: string, shown: (metric: string, valueSI: number) => number): Map<string, number[]> {
-  const today = localDay(new Date(now));
-  const from = new Date(Date.parse(today) - 29 * 86_400_000).toISOString().slice(0, 10);
+function trends(byMetric: Map<string, Map<string, ValueRow>>, now: string, shown: (metric: string, valueSI: number) => number): Map<string, number[]> {
+  const recent = trendWindow(new Date(now));
   const out = new Map<string, number[]>();
   for (const [metric, days] of byMetric) {
-    const sorted = [...days.keys()].filter((day) => day <= today).sort();
-    const recent = sorted.filter((day) => day >= from);
-    out.set(metric, (recent.length >= 2 ? recent : sorted.slice(-7)).map((day) => shown(metric, days.get(day)!)));
+    // A day whose row is a lab limit has no exact value to draw (US-12 AC20).
+    const exact = [...days.keys()].filter((day) => !isComparator(days.get(day)!.comparator)).sort();
+    out.set(metric, recent(exact, (day) => day).map((day) => shown(metric, days.get(day)!.value)));
   }
   return out;
 }
