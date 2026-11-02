@@ -348,14 +348,16 @@ export function StartingInfoVitals({
   // Trend series (SI, oldest → newest) + last value/status per row.
   const trend = useMemo(() => {
     const weight: number[] = [], waist: number[] = [], sysSeries: number[] = [];
+    // Which trend points were printed as a limit: drawn hollow, off the line, as the phone rows draw them (US-12 AC20).
+    const limits = { weight: [] as boolean[], waist: [] as boolean[], bp: [] as boolean[] };
     let lastW: DateColumn | undefined, lastWa: DateColumn | undefined, lastBp: PressureReading | undefined;
     for (const c of dateColumns) {
-      if (c.weight != null) { weight.push(c.weight); lastW = c; }
-      if (c.waist != null) { waist.push(c.waist); lastWa = c; }
+      if (c.weight != null) { weight.push(c.weight); limits.weight.push(!!c.limits?.weight); lastW = c; }
+      if (c.waist != null) { waist.push(c.waist); limits.waist.push(!!c.limits?.waist); lastWa = c; }
       const bp = pressureOf(c);
-      if (bp) { sysSeries.push(bp.value); lastBp = bp; }
+      if (bp) { sysSeries.push(bp.value); limits.bp.push(!!bp.comparator || !!bp.dia?.comparator); lastBp = bp; }
     }
-    return { weight, waist, sysSeries, lastW, lastWa, lastBp };
+    return { weight, waist, sysSeries, limits, lastW, lastWa, lastBp };
   }, [dateColumns]);
 
   // Columns = existing dates + always-on draft column.
@@ -614,7 +616,7 @@ export function StartingInfoVitals({
                     })}
                     <div className="bt-row-filler"/>
                     <div className="bt-cell-trend">
-                      {sparkPoints.length >= 2 && <Sparkline points={sparkPoints}/>}
+                      {sparkPoints.length >= 2 && <Sparkline points={sparkPoints} limits={trend.limits[row.metric]}/>}
                       <span className={`bt-status-tick bt-status-${lastStatus ?? 'none'}`}/>
                     </div>
                   </div>
@@ -686,7 +688,7 @@ export function StartingInfoVitals({
                   })}
                   <div className="bt-row-filler"/>
                   <div className="bt-cell-trend">
-                    {bpSpark.length >= 2 && <Sparkline points={bpSpark}/>}
+                    {bpSpark.length >= 2 && <Sparkline points={bpSpark} limits={trend.limits.bp}/>}
                     <span className={`bt-status-tick bt-status-${lastBpStatus ?? 'none'}`}/>
                   </div>
                 </div>

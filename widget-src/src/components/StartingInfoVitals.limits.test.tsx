@@ -51,4 +51,17 @@ describe('US-12 AC21: the vitals table grades a limit only when certain', () => 
   it('no plan: no colour and no note, as an exact value', () => {
     expect(cell([row('s', 'systolic_bp', 125, '<'), row('d', 'diastolic_bp', 78)], 'Blood Pressure', null)).toEqual({ text: '< 125/78', grade: 'none', note: false });
   });
+
+  it('draws a limit hollow on the trend, off the line, as the phone rows do', () => {
+    const view = render(
+      <StartingInfoVitals vitalsHistory={[
+        { ...row('w1', 'weight', 80), recordedAt: '2026-07-01T00:00:00.000Z' },
+        { ...row('w2', 'weight', 85, '>'), recordedAt: '2026-08-01T00:00:00.000Z' },
+        { ...row('w3', 'weight', 82), recordedAt: '2026-09-01T00:00:00.000Z' },
+      ]} unitSystem="si" onSave={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={() => {}} formStage={4}
+        plan={{ age: 50, idealBodyWeight: 73, heightCm: 178 }} unitOverrides={{}} onToggleFieldUnit={() => {}}/>,
+    );
+    const weight = Array.from(view.container.querySelectorAll('.bt-row')).find((r) => r.querySelector('.bt-name-label')?.textContent === 'Weight')!;
+    expect(weight.querySelectorAll('.bt-cell-trend circle.bt-spark-limit')).toHaveLength(1);
+  });
 });
