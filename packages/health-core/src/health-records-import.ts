@@ -413,9 +413,10 @@ export function importHealthRecords(
     // AC9: the day's active row does not correct the result's newest landed version, through
     // any chain of corrections: the result lost a merge, not the person's call (adversary R2).
     // A correction of an older version that a merge put over the lab's amendment lost one too (R1).
+    // Two devices can each land that version under its own row id (AC5): any copy counts (Codex).
     const landed = newest(mine.filter((at) => !isMarkerId(String(rows[at].externalId))));
-    const lostMerge = established !== undefined && active === undefined && old !== undefined
-      && (landed === undefined || !correctsRow(rows, old, rows[landed].id));
+    const copies = new Set(mine.filter((at) => landed !== undefined && rows[at].externalId === rows[landed].externalId).map((at) => rows[at].id));
+    const lostMerge = established !== undefined && active === undefined && old !== undefined && !correctsRow(rows, old, copies);
     // AC5, AC8: the same value, unit and comparator as the result holds now: a
     // marker only; the person's rejection or hand edit stands.
     if (established && !labWithdrew && !lostMerge && sameContent(established, reading)) { mark(reading); counts.alreadyInRecord++; continue; }
@@ -447,11 +448,11 @@ export function importHealthRecords(
   return { file: changed ? stampUpdatedAt({ ...file, labValues: rows }, now) : file, counts };
 }
 
-/** Whether `row`, or a row it corrects through `correctsId`, corrects the row `id` (AC8, AC9). */
-function correctsRow(rows: readonly Row[], row: Row, id: string): boolean {
+/** Whether `row`, or a row it corrects through `correctsId`, corrects one of the rows `ids` (AC8, AC9). */
+function correctsRow(rows: readonly Row[], row: Row, ids: ReadonlySet<string>): boolean {
   const seen = new Set<string>();
   for (let at: Row | undefined = row; at?.correctsId && !seen.has(at.id);) {
-    if (at.correctsId === id) return true;
+    if (ids.has(at.correctsId)) return true;
     seen.add(at.id);
     const next: string = at.correctsId;
     at = rows.find((r) => r.id === next);
