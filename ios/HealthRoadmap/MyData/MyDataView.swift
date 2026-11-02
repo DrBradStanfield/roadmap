@@ -171,10 +171,7 @@ struct MyDataView: View {
         Section {
             let column = ValueRow.Column((rows + labs).map { ($0.latest?.value, $0.previous, $0.unit, nil) })
             ForEach(rows) { metric($0, column: column) }
-            ForEach(labs) { lab in
-                ValueRow(label: lab.label, value: lab.latest?.value, unit: lab.unit, day: lab.latest?.day,
-                         target: lab.target, previous: lab.previous, trend: lab.trend ?? [], tint: MetricChart.labTint, column: column)
-            }
+            ForEach(labs) { Self.valueRow($0, tint: MetricChart.labTint, column: column) }
         } header: {
             header()
         }
@@ -208,12 +205,17 @@ struct MyDataView: View {
     private func metric(_ row: MyData.Row, card: Bool = false, column: ValueRow.Column? = nil) -> some View {
         // A unit switch still landing would open a sheet on the old choices (AC17e).
         Button { open(row) } label: {
-            ValueRow(label: row.label, value: row.latest?.value, unit: row.unit, day: row.latest?.day,
-                     target: row.target, previous: row.previous, status: row.status, gradeWords: row.gradeWords, trend: row.trend ?? [], tint: MetricChart.colors(for: row.metric)[0], card: card,
-                     column: column)
+            Self.valueRow(row, tint: MetricChart.colors(for: row.metric)[0], card: card, column: column)
         }
         .tint(.primary)
         .disabled(store.unitSwitches > 0)
+    }
+
+    /// The engine's row as a `ValueRow`: its value, target, previous value, trend and grade.
+    static func valueRow(_ row: MyData.Row, tint: Color, card: Bool = false, column: ValueRow.Column? = nil) -> ValueRow {
+        ValueRow(label: row.label, value: row.latest?.value, unit: row.unit, day: row.latest?.day,
+                 target: row.target, previous: row.previous, grade: row.grade, gradeWords: row.gradeWords,
+                 trend: row.trend ?? [], tint: tint, card: card, column: column)
     }
 
     /// Every value opens its page (US-25 AC9, US-58 AC4b): every metric has a guide, and a page

@@ -32,6 +32,11 @@ struct MyData: Decodable {
         var text: String { "\(feet) ft \(inches) in" }
     }
 
+    /// A value's grade, as the engine words it (health-core's GradeStatus).
+    enum Grade: String, Decodable, Sendable {
+        case ok, warn, bad
+    }
+
     /// "female" or "male" as the screens write it.
     static func sexLabel(_ sex: String) -> String { sex == "female" ? "Female" : "Male" }
 
@@ -65,6 +70,8 @@ struct MyData: Decodable {
         /// The value's grade, as the web's row colours it (health-core's valueStatus, US-62 AC8):
         /// "warn" amber, "bad" red, "ok" plain; nil when ungraded, or from an older engine.
         var status: String? = nil
+        /// `status` as a grade; nil for an unknown word from a newer engine, so it never blanks My data.
+        var grade: Grade? { status.flatMap(Grade.init(rawValue:)) }
         /// The grade as VoiceOver says it after an off-target value ("above optimal", health-core's
         /// gradeWords); nil on target, ungraded, or from an older engine.
         var gradeWords: String? = nil

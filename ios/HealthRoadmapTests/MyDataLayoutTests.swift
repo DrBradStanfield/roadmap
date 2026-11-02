@@ -312,6 +312,9 @@ final class MyDataLayoutTests: XCTestCase {
         XCTAssertEqual(row("hba1c")?.status, "bad")
         XCTAssertEqual(row("hba1c")?.gradeWords, "high")
         XCTAssertEqual(row("hdl")?.status, "ok")
+        XCTAssertEqual(row("ldl")?.grade, .warn)
+        // A word a newer engine might add reads as no grade, never a decoding failure.
+        XCTAssertNil(MyData.Row(metric: "x", label: "X", unit: "", latest: nil, trend: nil, switchable: nil, status: "borderline").grade)
         XCTAssertNil(row("hdl")?.gradeWords, "on target, no words")
 
         // An engine before the grades sends neither field nor labTests: values draw plain, speak no grade.
@@ -336,14 +339,64 @@ final class MyDataLayoutTests: XCTestCase {
                 return [r, g, b].reduce(0) { $0 << 8 | Int(($1 * 255).rounded()) }
             }
         }
-        XCTAssertEqual(hex(ValueRow.gradeColor("warn")), hex(Color.status("info")))
-        XCTAssertEqual(hex(ValueRow.gradeColor("bad")), hex(Color.status("urgent")))
-        XCTAssertEqual(hex(ValueRow.gradeColor("bad")).first, 0xB91C1C, "the web's red")
-        XCTAssertNil(ValueRow.gradeColor("ok"))
+        XCTAssertEqual(hex(ValueRow.gradeColor(.warn)), hex(Color.status("info")))
+        XCTAssertEqual(hex(ValueRow.gradeColor(.bad)), hex(Color.status("urgent")))
+        XCTAssertEqual(hex(ValueRow.gradeColor(.bad)).first, 0xB91C1C, "the web's red")
+        XCTAssertNil(ValueRow.gradeColor(.ok))
         XCTAssertNil(ValueRow.gradeColor(nil))
         XCTAssertEqual(ValueRow.spoken("3.4", grade: "above optimal", previous: "2.9"), "3.4, above optimal, previous 2.9")
         XCTAssertEqual(ValueRow.spoken("81", grade: nil, previous: "74"), "81, previous 74")
         XCTAssertEqual(ValueRow.spoken("5.2", grade: nil), "5.2")
+    }
+
+    /// US-62 AC8 (adversary R2): My data hands a row's grade to the row it draws, and the row draws
+    /// its value, as a compact row and as a vital's card, in the grade's colour and says the grade.
+    /// SwiftUI builds no accessibility tree for a unit test's window, so the words are checked on
+    /// the row's own label function, the one its value's `accessibilityLabel` calls.
+    @MainActor
+    func testMyDataDrawsAGradedRowInItsColourAndSaysItsGrade_US62() async throws {
+        let graded = MyData.Row(metric: "ldl", label: "LDL Cholesterol", unit: "mmol/L", latest: .init(id: "a", value: "4.2", day: "2026-10-01"),
+                                trend: nil, switchable: true, previous: "2.9", status: "bad", gradeWords: "high")
+        var plain = graded
+        plain.status = nil
+        plain.gradeWords = nil
+        let row = MyDataView.valueRow(graded, tint: .blue)
+        XCTAssertEqual(row.grade, .bad)
+        XCTAssertEqual(row.spokenLabel("4.2", previous: "2.9"), "4.2, high, previous 2.9")
+        XCTAssertEqual(MyDataView.valueRow(plain, tint: .blue).spokenLabel("4.2", previous: "2.9"), "4.2, previous 2.9")
+        for card in [false, true] {
+            let red = try await drawsRed(MyDataView.valueRow(graded, tint: .blue, card: card))
+            XCTAssertTrue(red, "the graded value is drawn red (card: \(card))")
+            let none = try await drawsRed(MyDataView.valueRow(plain, tint: .blue, card: card))
+            XCTAssertFalse(none, "an ungraded value is drawn plain (card: \(card))")
+        }
+    }
+
+    /// Whether `view`, drawn in light mode, has a red pixel: the red channel well above the
+    /// other two. (The drawn bytes are colour-managed, so an exact hex never matches.)
+    @MainActor
+    private func drawsRed(_ view: some View) async throws -> Bool {
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(x: 0, y: 0, width: 402, height: 200)
+        window.overrideUserInterfaceStyle = .light
+        window.rootViewController = UIHostingController(rootView: view.padding())
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true }
+        try await Task.sleep(for: .seconds(1))
+        let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in
+            window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        }
+        guard let cg = image.cgImage, let data = cg.dataProvider?.data, let bytes = CFDataGetBytePtr(data) else { return false }
+        let (row, step) = (cg.bytesPerRow, cg.bitsPerPixel / 8)
+        let red = cg.bitmapInfo.contains(.byteOrder32Little) ? 2 : 0 // BGRA or RGBA
+        for y in 0..<cg.height {
+            for x in 0..<cg.width {
+                let pixel = (0..<3).map { Int(bytes[y * row + x * step + $0]) }
+                if pixel[red] - max(pixel[1], pixel[2 - red]) > 80 { return true }
+            }
+        }
+        return false
     }
 
     /// US-62 AC8, US-25 AC17: the lab tests beyond the core ones come from the engine as rows, with
