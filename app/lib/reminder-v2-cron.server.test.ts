@@ -332,4 +332,22 @@ describe('reminder v2 cron tick — US-28 AC3: a failed pass leaves the day open
     expect(sendMock).toHaveBeenCalledTimes(100);
     expect(sendMock.mock.calls[50][0]).toBe('p1-0@example.com');
   });
+
+  // Review of 5fb9f7e5: a pass from an earlier day that is still running must
+  // not reset a newer day's record, or that day's retry emails people twice.
+  it("an earlier day's pass never resets a newer day's record", async () => {
+    const { cron, optinsMock, sendMock } = await loadTick();
+    const { recordSent } = await import('./reminder-v2.server');
+    vi.mocked(recordSent).mockReset().mockRejectedValue(new Error('reminder_optin_v2 update failed'));
+    optinsMock
+      .mockResolvedValueOnce([dueRow]).mockResolvedValueOnce([]) // 08-29 pass
+      .mockResolvedValueOnce([dueRow]).mockResolvedValueOnce([]) // a stalled 08-28 pass resumes
+      .mockResolvedValueOnce([dueRow]).mockResolvedValue([]); // 08-29 retry, last_sent never stamped
+
+    await cron.processV2Reminders('2026-08-29');
+    await cron.processV2Reminders('2026-08-28');
+    const before = sendMock.mock.calls.length;
+    await cron.processV2Reminders('2026-08-29');
+    expect(sendMock).toHaveBeenCalledTimes(before);
+  });
 });

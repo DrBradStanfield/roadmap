@@ -128,7 +128,7 @@ async function processOneOptin(optin: ReminderV2Optin, todayStr: string): Promis
   const { due, anyDue } = dueItemsFor(optin, todayStr);
   if (due.length === 0) return anyDue ? 'all-on-cooldown' : 'none-due';
 
-  // At most one attempt per optin per day on this machine, whatever the send's outcome.
+  // At most one attempt per optin per day in this process, whatever the send's outcome.
   // A pass from an earlier day that is still running never resets a newer day's record.
   if (todayStr > attemptedToday.day) attemptedToday = { day: todayStr, ids: new Set() };
   if (attemptedToday.day === todayStr) {
