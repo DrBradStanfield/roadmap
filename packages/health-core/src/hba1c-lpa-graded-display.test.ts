@@ -1,5 +1,5 @@
 /**
- * US-07 AC12: HbA1c and Lp(a) print on the side of their lines that the plan
+ * US-07 AC15: HbA1c and Lp(a) print on the side of their lines that the plan
  * grades them, by the AC5 rule (`formatGradedValue`).
  *
  * The grade compares the unrounded stored value; the tile, the cards and
@@ -53,7 +53,7 @@ function currentValue(metricType: string, value: number, unitSystem: UnitSystem)
   return planPayload(computePlan(file, NOW)).currentValues.find((v) => v.metric === metricType)?.value;
 }
 
-describe('US-07 AC12: HbA1c prints on the side of 5.7 % and 6.5 % its grade is on', () => {
+describe('US-07 AC15: HbA1c prints on the side of 5.7 % and 6.5 % its grade is on', () => {
   it('47 mmol/mol in % reads 6.45 %, prediabetic (it read 6.5 %, the diabetes line)', () => {
     const v = hba1cView(47, 'conventional');
     expect(v.id).toBe('hba1c-prediabetic');
@@ -96,6 +96,13 @@ describe('US-07 AC12: HbA1c prints on the side of 5.7 % and 6.5 % its grade is o
     expect(line).toBe('\u2705 HbA1c: 5.69 % \u2014 target <5.7 %');
   });
 
+  it('the strings Brad approved on 2026-11-03 print exactly', () => {
+    expect(hba1cView(38.7, 'conventional').text).toContain('Your HbA1c of 5.69 % is in the normal range.');
+    const r = calculateHealthResults({ ...base, lpa: 150, hba1c: 47 }, 'conventional', undefined, undefined, undefined, NOW);
+    const line = r.suggestions.find((s) => s.id === 'lpa-elevated')!.description.split('\n').find((l) => l.includes('HbA1c'));
+    expect(line).toContain('HbA1c: 6.45 % \u2014 target <5.7 %');
+  });
+
   it("get_plan's currentValues prints the same number as the card", () => {
     expect(currentValue('hba1c', 47, 'conventional')).toBe('6.45');
     expect(currentValue('hba1c', 38.7, 'conventional')).toBe('5.69');
@@ -104,7 +111,7 @@ describe('US-07 AC12: HbA1c prints on the side of 5.7 % and 6.5 % its grade is o
   });
 });
 
-describe('US-07 AC12: Lp(a) prints on the side of 75 and 125 nmol/L its grade is on', () => {
+describe('US-07 AC15: Lp(a) prints on the side of 75 and 125 nmol/L its grade is on', () => {
   it('74.5 nmol/L (29.8 mg/dL typed) reads 74.5 beside "<75", normal (it read 75)', () => {
     const v = lpaView(toCanonicalValue('lpa', 29.8, 'conventional'));
     expect(v.id).toBe('lpa-normal');
@@ -140,7 +147,7 @@ describe('US-07 AC12: Lp(a) prints on the side of 75 and 125 nmol/L its grade is
   });
 });
 
-describe('US-07 AC12: across the lines, grades are unchanged and the number agrees with them', () => {
+describe('US-07 AC15: across the lines, grades are unchanged and the number agrees with them', () => {
   const steps = (from: number, to: number, by: number) =>
     Array.from({ length: Math.round((to - from) / by) + 1 }, (_, i) => Number((from + i * by).toFixed(4)));
   const HBA1C_VALUES = [...steps(36, 50, 0.05), HBA1C_PRE, HBA1C_DIA, 38.79, 38.8, 47.52, 47.53, 47.54];
@@ -189,7 +196,7 @@ describe('US-07 AC12: across the lines, grades are unchanged and the number agre
 
 // The merge with main's US-12 AC20 rewrote the tile, card and currentValues
 // lines this file pins: a result saved as a limit still prints as that limit.
-describe('US-07 AC12 with US-12 AC20: a result saved as a limit prints as the limit, not by the grade lines', () => {
+describe('US-07 AC15 with US-12 AC20: a result saved as a limit prints as the limit, not by the grade lines', () => {
   function limitPlan(rows: Array<{ metricType: string; value: number }>) {
     const file = createEmptyFile({ deviceId: 'graded_display', now: NOW.toISOString() });
     Object.assign(file.profile, { sex: 'male', heightCm: 175, birthYear: 1975, birthMonth: 1, unitSystem: 'si' });

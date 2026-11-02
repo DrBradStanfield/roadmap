@@ -246,7 +246,7 @@ export function generateSuggestions(
   // value the plan graded it with (US-12 AC20).
   const shown = (field: LimitField, metric: MetricType, value: number): string => {
     const limit = limitOf(inputs, field);
-    // HbA1c reads on the side of its grade lines (US-07 AC12); any other metric prints as formatValue does.
+    // HbA1c reads on the side of its grade lines (US-07 AC15); any other metric prints as formatValue does.
     return limit ? fmtMetric(metric, limit.bound, us(metric), limit.comparator)
       : `${formatGradedReading(metric, value, us(metric))} ${getDisplayLabel(metric, us(metric))}`;
   };
@@ -257,7 +257,7 @@ export function generateSuggestions(
   };
   const bare = (field: LimitField, value: number): string => {
     const limit = limitOf(inputs, field);
-    // Lp(a) reads on the side of its grade lines (US-07 AC12).
+    // Lp(a) reads on the side of its grade lines (US-07 AC15).
     return limit ? limitSIText(field, limit) : field === 'lpa' ? formatGradedReading('lpa', value, 'si') : String(Math.round(value));
   };
 

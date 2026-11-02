@@ -332,7 +332,7 @@ export function currentValues(plan: Plan) {
     .filter((row) => row.metricType in UNIT_DEFS)
     .map((row) => {
       const metric = row.metricType as MetricType;
-      // A lipid with a "<X" line prints on the side the cards grade it (US-07 AC5), HbA1c and Lp(a) on the side of their grade lines (AC12).
+      // A lipid with a "<X" line prints on the side the cards grade it (US-07 AC5), HbA1c and Lp(a) on the side of their grade lines (AC15).
       const line = refLineFor(metric);
       const limit = limitOf(plan.inputs, METRIC_TO_FIELD[row.metricType]);
       return {
