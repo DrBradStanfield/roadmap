@@ -192,7 +192,8 @@
         "fitbit",
         "lab_import",
         "lab_import_edited",
-        "manual_correction"
+        "manual_correction",
+        "health_records"
       ],
       "description": "Where the value came from. From MEASUREMENT_SOURCES in packages/health-core/src/validation.ts."
     },
@@ -271,6 +272,10 @@
         "source": { "$ref": "#/$defs/MeasurementSource" },
         "status": { "$ref": "#/$defs/MeasurementStatus" },
         "correctsId": { "type": ["string", "null"] },
+        "externalId": {
+          "type": ["string", "null"],
+          "description": "Optional. Id and version in the originating system, used for dedup: for a Health Records result, its HealthKit source, resource type and FHIR id, then '#' and its version; a version marker (a row born entered-in-error that only records a version) adds '|m'. Absent on most rows; keep it when you copy a row, never write one yourself."
+        },
         "core": { "const": true, "description": "Present only on a core blood value (US-66): `metricName` is its core key and `unit` its canonical unit. A file holding one is schemaVersion 3." },
         "comparator": { "enum": ["<", "<=", ">", ">="], "description": "Present only on a lab result printed as a limit ('> 60', '<5'; FHIR Quantity.comparator): `value` is then the printed bound, not the result. '<=' and '>=' are the codes for a printed ≤ and ≥. Absent means an exact value. Only a lab upload writes it; a correction is an exact value and carries none. Any other value makes the row unreadable to the app, which keeps it unchanged." }
       }

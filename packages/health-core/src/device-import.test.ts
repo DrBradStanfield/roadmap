@@ -154,6 +154,15 @@ describe('importDeviceSamples: a reading\'s own day and time', () => {
   });
 });
 
+describe('importDeviceSamples: vitals only (US-66, one blood-test table)', () => {
+  it('refuses a blood test sample: measurements hold vitals, and a blood test lives in labValues', () => {
+    const result = run(empty(), [sample({ externalId: 'hk-ldl', metricType: 'ldl', value: 2.5 })]);
+    expect(result.file.measurements).toEqual([]);
+    expect(result.file.labValues).toEqual([]);
+    expect(result.skipped.invalid).toBe(1);
+  });
+});
+
 describe('importDeviceSamples: blood pressure is one reading', () => {
   const pair = (id: string, systolic: number, diastolic: number, measuredAt: string) => [
     sample({ externalId: `${id}-s`, pairId: id, metricType: 'systolic_bp', value: systolic, measuredAt }),

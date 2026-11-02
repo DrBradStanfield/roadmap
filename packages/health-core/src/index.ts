@@ -56,6 +56,7 @@ export {
   POST_FOLLOWUP_INTERVALS,
   SCREENING_FOLLOWUP_INFO,
   SCREENING_MIN_AGE,
+  LUNG_PACK_YEARS,
   isScreeningEligible,
   // Supplement options
   SUPPLEMENT_OPTIONS,
@@ -505,3 +506,6 @@ export {
   LIMIT_NOT_GRADED, comparatorOf, comparatorSymbol, formatValue, isComparator, isLimitField, limitLabelValue, limitRepresentative,
   limitText, withComparator, type Comparator, type InputLimit, type InputLimits, type LimitField,
 } from './lab-limits';
+
+// US-72: lab results from Apple Health Records, read from their FHIR JSON.
+export { HEALTH_RECORDS_LOINC, importHealthRecords, type ClinicalRecordInput, type HealthRecordsCounts } from './health-records-import';

@@ -176,6 +176,8 @@ export interface FileLabValue {
   source: MeasurementSource;
   status: MeasurementStatus;
   correctsId: string | null;
+  /** The originating system's identity and version, `identity#version` (US-72 AC5); absent on rows before it. */
+  externalId?: string | null;
   /** Set only by a core write path, after conversion and the range check: never inferred from the name (US-66 AC1). */
   core?: true;
   /** As on `FileMeasurement`: `value` is the printed bound. */
@@ -346,7 +348,7 @@ export function createMeasurement(
 /** The lab-value twin of `createMeasurement`: one row shape for every writer. */
 export function createLabValue(
   fields: Pick<FileLabValue, 'id' | 'metricName' | 'value' | 'unit' | 'recordedAt' | 'createdAt'> &
-    Partial<Pick<FileLabValue, 'referenceLow' | 'referenceHigh' | 'source' | 'status' | 'correctsId' | 'comparator'>>,
+    Partial<Pick<FileLabValue, 'referenceLow' | 'referenceHigh' | 'source' | 'status' | 'correctsId' | 'externalId' | 'comparator'>>,
 ): FileLabValue {
   return {
     referenceLow: null,
