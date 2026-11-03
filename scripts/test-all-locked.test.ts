@@ -1,4 +1,4 @@
-/** US-68: one local `test:all` at a time, shared across worktrees. */
+/** US-71: one local `test:all` at a time, shared across worktrees. */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -17,7 +17,7 @@ const deadPid = () => {
   return r.pid as number; // exited, so no longer alive
 };
 
-describe('test:all lock (US-68 AC1)', () => {
+describe('test:all lock (US-71 AC1)', () => {
   it('acquires, then refuses a second taker while the holder lives', () => {
     expect(tryAcquire(dir)).toBe(true);
     expect(readHolder(dir).pid).toBe(process.pid);
@@ -58,7 +58,7 @@ describe('test:all lock (US-68 AC1)', () => {
   });
 });
 
-describe('worker cap and CI (US-68 AC2, AC3)', () => {
+describe('worker cap and CI (US-71 AC2, AC3)', () => {
   it('defaults to max(2, cpus/4) and honours the env override', () => {
     expect(workerCap({}, 16)).toBe('4');
     expect(workerCap({}, 4)).toBe('2');
@@ -91,7 +91,7 @@ describe('worker cap and CI (US-68 AC2, AC3)', () => {
   });
 });
 
-describe('lock holder liveness and takeover races (US-68 AC1)', () => {
+describe('lock holder liveness and takeover races (US-71 AC1)', () => {
   it('stays held while the vitest group lives though the wrapper is dead', () => {
     const grp = spawn(process.execPath, ['-e', 'setInterval(()=>{},1000)'], { detached: true, stdio: 'ignore' });
     try {
@@ -147,7 +147,7 @@ describe('lock holder liveness and takeover races (US-68 AC1)', () => {
   });
 });
 
-describe('the real script (US-68 AC1-AC3)', () => {
+describe('the real script (US-71 AC1-AC3)', () => {
   const script = path.resolve(__dirname, 'test-all-locked.mjs');
   let proj: string;
   let log: string;

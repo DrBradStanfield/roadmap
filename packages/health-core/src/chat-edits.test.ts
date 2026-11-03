@@ -245,24 +245,32 @@ describe('tools/test-tool-edits.json fixture is self-consistent', () => {
 });
 
 // US-16 / chat audit F5: a tool-only turn gets a line that matches what happened.
-// Medication edits save at once (undo banner); measurements wait for Save.
+// Medication edits save at once; measurements wait for Save.
 describe('toolOnlyAck', () => {
   const field = parseProposedEdit(FIELD, { field: 'ldlC', value: 2.1, unit: 'mmol/L' })!;
   const med = parseProposedEdit(MED, { medicationKey: 'statin', drugName: 'rosuvastatin', doseValue: 10, doseUnit: 'mg' })!;
+  const profile = parseProposedEdit(PROFILE, { sex: 'female' })!;
   it('measurements only: review the highlighted value and press Save', () => {
     expect(toolOnlyAck([field])).toBe("I've pre-filled that in your form — review the highlighted value and press Save.");
   });
-  it('medication only: says it is done and points at the undo banner, never "press Save"', () => {
-    expect(toolOnlyAck([med])).toBe("Done — I've updated your medications. You can undo this from the banner.");
+  it('medication only: says it is done, never "press Save"', () => {
+    expect(toolOnlyAck([med])).toBe("Done — I've updated your medications.");
   });
-  it('mixed: covers both the Save and the undo', () => {
-    const line = toolOnlyAck([field, med]);
-    expect(line).toContain('press Save');
-    expect(line).toContain('undo');
+  it('mixed: covers the Save and the medications', () => {
+    expect(toolOnlyAck([field, med])).toBe("I've updated your medications and pre-filled your form — review the highlighted value and press Save.");
+  });
+  // US-67 N3 (Brad 2026-11-03, "Option 1"): only the banner knows whether it can offer an
+  // Undo (none after replacing an entry this build cannot read), so no line promises one.
+  it('US-67 N3: no ack line, web or app, promises an Undo', () => {
+    for (const app of [false, true]) {
+      for (const edits of [[med], [field, med], [med, profile], [field, med, profile]]) {
+        expect(toolOnlyAck(edits, app, 1)).not.toMatch(/undo/i);
+      }
+    }
   });
   // US-16 AC3, review R6: a refused medication answer is named, never a bare "Done".
   it('US-16 AC3: a refused medication answer beside a saved one says it was not saved and asks', () => {
-    expect(toolOnlyAck([med], false, 1)).toBe("Done — I've updated your medications. You can undo this from the banner. " +
+    expect(toolOnlyAck([med], false, 1)).toBe("Done — I've updated your medications. " +
       "One medication change was not saved, as its answer is not one of the listed answers. Tell me which one applies, or choose it yourself.");
   });
   it('US-16 AC3: refused answers alone get the not-saved line only', () => {
@@ -344,12 +352,12 @@ describe('US-67 AC3: toolOnlyAck in the app', () => {
   it('US-67 AC3: a value is ready to save, never pre-filled in a form', () => {
     expect(toolOnlyAck([field], true)).toBe("I've put that ready to save — check it and press Save.");
   });
-  it('US-67 AC3: a medication is done with undo from the banner, as on the web', () => {
+  it('US-67 AC3: a medication is done, as on the web', () => {
     expect(toolOnlyAck([med], true)).toBe(toolOnlyAck([med]));
   });
-  it('US-67 AC3: both name the undo and the Save, and never the form', () => {
+  it('US-67 AC3: both name the medications and the Save, and never the form', () => {
     const line = toolOnlyAck([field, med], true);
-    expect(line).toMatch(/undo from the banner/);
+    expect(line).toBe("I've updated your medications and put the rest ready to save — check it and press Save.");
     expect(line).toMatch(/press Save/);
     expect(line).not.toMatch(/form/);
   });

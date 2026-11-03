@@ -143,6 +143,9 @@ someone's medical history, or lose their data at the next device sync.
    Updating a current-state row you legitimately own (a medication, supplement, or
    reminder preference) means setting that row's `updatedAt` to now and leaving its
    `lamport` exactly as you found it, or absent.
+   An `externalId` (on a measurement, or on a lab value from Apple Health Records,
+   `source: "health_records"`, US-72) is the app's dedup key: leave it as you found it,
+   and never write one on a row you add.
 8. **Units.** `measurements[].value` is the SI canonical unit, kg, cm, mmHg. A core blood
    test's lab row carries its SI canonical `value` and `unit` string: `mmol/mol` for HbA1c,
    `mmol/L` for lipids, `g/L` for ApoB, `µmol/L` for creatinine, `ng/mL` for PSA, `nmol/L` for
@@ -177,7 +180,7 @@ someone's medical history, or lose their data at the next device sync.
    the side of their line the plan grades them (US-07 AC5). A value within one display
    step of the line can differ from a plain conversion: one step up to the line when the
    plan grades it at or above, or one more decimal place when it grades it below.
-   `get_plan`'s tool description in `mcp-tools.ts` should say this too. It was held for
+   `get_plan`'s tool description in `mcp-tool-catalogue.ts` should say this too. It was held for
    OpenAI's review, which ended 2026-10-29; adding it is open work (an agent-contract change).
    **Blood pressure (US-02 AC8):** on any day, the active `systolic_bp` must be above the
    active `diastolic_bp`. A write that would leave it at or below is refused

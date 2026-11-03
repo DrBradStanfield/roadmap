@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { applyEdit, myData, newRecord, readNumber, readRecord, readView, Refusal } from './my-data';
 import { metricHistory } from './my-data-forms';
 import { readUnitChoices } from './unit-choices';
-import { healthWritesJson, planJson, schemaVersion as engineSchemaVersion, screenJson } from './entry';
+import { applyEditJson, healthWritesJson, planJson, schemaVersion as engineSchemaVersion, screenJson } from './entry';
 import { createLabValue, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { supplementSchema } from '../../packages/health-core/src/validation';
 import { stampProfile, upsertSupplement } from '../../packages/health-core/src/state-edits';
@@ -662,6 +662,58 @@ describe('Apple Health (AC13, AC14)', () => {
   });
 });
 
+// US-72: lab results from Health Records, through health-core's health-records-import
+// (its rules are tested there). The app reads the counts from the edit's answer.
+describe('Health Records (US-72)', () => {
+  const ldl = {
+    resourceType: 'Observation', id: 'ldl-1', status: 'final', effectiveDateTime: '2026-10-20', meta: { versionId: '1' },
+    code: { coding: [{ system: 'http://loinc.org', code: '13457-7' }] },
+    valueQuantity: { value: 2.6, unit: 'mmol/L', system: 'http://unitsofmeasure.org', code: 'mmol/L' },
+  };
+  const record = { sourceId: 'hk-source:Acme', resourceType: 'Observation', fhirVersion: '4.0.1', json: JSON.stringify(ldl) };
+
+  it('AC2: lands a result as a health_records row, shown in My data, and answers the counts', () => {
+    const outcome = applyEdit(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'healthRecords', records: [record] }, NOW);
+    if (!outcome.ok) throw new Error(outcome.message);
+    expect(outcome.healthRecords).toEqual({ added: 1, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
+    expect(outcome.file.labValues[0]).toMatchObject({ metricName: 'ldl', core: true, value: 2.6, source: 'health_records' });
+    expect(myData(outcome.file).bloodTests.find((row) => row.metric === 'ldl')?.latest).toMatchObject({ day: '2026-10-20' });
+  });
+
+  it('AC5: hands back the record it was given when nothing is new, so the app writes nothing', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'healthRecords', records: [record] });
+    const again = applyEdit(file, { kind: 'healthRecords', records: [record] }, LATER);
+    expect(again).toEqual({ ok: true, file, healthRecords: { added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 1, notRead: 0 } });
+    if (again.ok) expect(again.file).toBe(file);
+  });
+
+  it('AC5, AC7: the iPhone history leaves version markers out, and shows a withdrawn result struck through', () => {
+    const version = (fields: object) => ({ ...record, json: JSON.stringify({ ...ldl, ...fields }) });
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'healthRecords', records: [record] });
+    const restamped = edited(file, { kind: 'healthRecords', records: [version({ meta: { versionId: '2' } })] });
+    expect(restamped.labValues).toHaveLength(2);
+    expect(metricHistory(restamped, 'ldl', LATER).rows.map((row) => [row.value, row.status])).toEqual([['2.6', 'active']]);
+    const withdrawn = edited(restamped, { kind: 'healthRecords', records: [version({ meta: { versionId: '3' }, status: 'entered-in-error' })] });
+    expect(withdrawn.labValues).toHaveLength(3);
+    expect(metricHistory(withdrawn, 'ldl', LATER).rows.map((row) => [row.value, row.status])).toEqual([['2.6', 'entered-in-error']]);
+  });
+
+  it('refuses a batch that is not a list', () => {
+    const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    expect(applyEdit(file, { kind: 'healthRecords', records: 'nope' } as never, NOW)).toMatchObject({ ok: false, reason: 'invalid-value' });
+  });
+
+  it('applyEditJson passes the counts to the app; other edits answer as before', () => {
+    const recordJson = JSON.stringify(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'));
+    const answer = JSON.parse(applyEditJson(recordJson, JSON.stringify({ kind: 'healthRecords', records: [record] }), NOW, 'phone'));
+    expect(Object.keys(answer)).toEqual(['ok', 'record', 'healthRecords']);
+    expect(answer.healthRecords).toEqual({ added: 1, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
+    expect(JSON.parse(answer.record).labValues[0].source).toBe('health_records');
+    const units = JSON.parse(applyEditJson(recordJson, JSON.stringify({ kind: 'units', unitSystem: 'conventional' }), NOW, 'phone'));
+    expect(Object.keys(units)).toEqual(['ok', 'record']);
+  });
+});
+
 // US-25 AC8: the medication, screening and supplement questions, health-core's
 // input-form, answered through the web's own writes.
 describe('forms (AC8)', () => {
@@ -736,6 +788,17 @@ describe('forms (AC8)', () => {
     const data = myData(file, NOW);
     expect(data.screenings[0].groups.find((g) => g.id === 'prostate')!.fields[1]).toMatchObject({ kind: 'measurement', metric: 'psa' });
     expect(data.psa.latest).toMatchObject({ value: '1.2', day: '2026-10-02' });
+  });
+
+  it('US-06 AC18 (Brad 2026-11-03): a raised PSA of 4.04 reads 4.04, as the web, not 4.0', () => {
+    const psa = (value: number) => myData(man60({ kind: 'screening', key: 'prostate_discussion', value: 'will_screen' },
+      { kind: 'add', metric: 'psa', value, day: '2026-10-02' }), NOW).psa.latest?.value;
+    expect(psa(4.04)).toBe('4.04');
+    expect([psa(6.53), psa(4.0)]).toEqual(['6.5', '4.0']);
+    // The PSA page's history rows (and its headline) print the same (adversary R1).
+    const file = man60({ kind: 'screening', key: 'prostate_discussion', value: 'will_screen' },
+      { kind: 'add', metric: 'psa', value: 4.04, day: '2026-10-02' }, { kind: 'add', metric: 'psa', value: 6.53, day: '2026-09-02' });
+    expect(metricHistory(file, 'psa', NOW).rows.map((r) => r.value)).toEqual(['4.04', '6.5']);
   });
 
   // US-06 AC1a: accepted names must produce keys accepted by the real native writer.

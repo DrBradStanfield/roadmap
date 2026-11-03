@@ -18,12 +18,13 @@ import { setScreening } from '../../packages/health-core/src/state-edits';
 import { localDay } from '../../packages/health-core/src/merge';
 import { METRIC_LABELS, METRIC_TO_FIELD } from '../../packages/health-core/src/mappings';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
+import { isVersionMarker } from '../../packages/health-core/src/health-records-import';
 import type { MetricType } from '../../packages/health-core/src/units';
 import { BLOOD_PRESSURE, pressureHistory } from './blood-pressure';
 import { cellUnitFor, systemFor, type UnitChoices } from './unit-choices';
 import type { EditOutcome } from './my-data';
 import { cellFromSI, cellLabel, limitCellText, type CellUnit } from '../../packages/health-core/src/cell-unit';
-import { LIMIT_NOT_GRADED, comparatorOf, isComparator, type Comparator } from '../../packages/health-core/src/lab-limits';
+import { LIMIT_NOT_GRADED, comparatorOf, formatGradedOrLimit, isComparator, type Comparator } from '../../packages/health-core/src/lab-limits';
 import { groupLabValues, labValueLabel, mixedUnitsNote, savedLabText } from '../../packages/health-core/src/lab-series';
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from '../../packages/health-core/src/lab-catalog';
 import { limitUngraded, pressureStatus, valueStatus, type GradeContext, type PressureReading } from '../../packages/health-core/src/row-grade';
@@ -290,12 +291,15 @@ export function applyFormEdit(file: RoadmapFile, edit: Exclude<FormEdit, { kind:
 
 /**
  * Every value recorded for a metric, newest day first, entered-in-error rows
- * included (the app strikes them through). The record is append-only: this
+ * included (the app strikes them through), Health Records version markers left
+ * out (US-72 AC5). The record is append-only: this
  * view offers corrections, never removal.
  */
-/** A stored value as its cell shows it: a limit with its symbol, at places that keep it true (US-12 AC20). */
+/** A stored value as its cell shows it: a limit with its symbol, at places that keep it true (US-12 AC20).
+ *  A raised PSA prints on its side of 4.0, as the web's PSA line does (US-06 AC18). */
 export function rowText(metric: MetricType, row: { value: number; comparator?: Comparator }, unit: CellUnit): string {
-  return limitCellText(metric, row.value, unit, comparatorOf(row).comparator);
+  const { comparator } = comparatorOf(row);
+  return metric === 'psa' ? formatGradedOrLimit('psa', row.value, 'si', comparator) : limitCellText(metric, row.value, unit, comparator);
 }
 
 /** Whom and against what plan My data's values are graded, as the web's rows grade them (InputPanel.tsx
@@ -378,11 +382,12 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
   }
   const shown = cellUnitFor(file, metric, choices);
   // A blood test's rows are its core lab rows in the core unit (US-66 AC7); a vital's, its measurements.
+  // A version marker only carries a version the record has seen (US-72 AC5): not a value.
   const rows = [
     ...file.measurements.filter((row) => row.metricType === metric && !(metric in CORE_BLOOD_UNITS)),
     ...file.labValues.filter((row) => isCoreRow(row) && row.metricName === metric && row.unit === CORE_BLOOD_UNITS[metric])
       .map((row) => ({ ...row, metricType: metric })),
-  ];
+  ].filter((row) => !isVersionMarker(row));
   // The plan's own pick of the current value.
   const current = latestActivePerMetric(rows.filter((row) => row.status === 'active'))[0];
   return {

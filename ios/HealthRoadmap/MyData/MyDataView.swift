@@ -46,11 +46,7 @@ struct MyDataView: View {
             }
         }
             .toolbar(.hidden, for: .navigationBar)
-            // With no bar, iOS 26's edge effect leaves rows legible under the clock.
-            // A zero-height inset whose background reaches into the status bar hides them.
-            .safeAreaInset(edge: .top, spacing: 0) {
-                Color.clear.frame(height: 0).background(Color(uiColor: .systemGroupedBackground), ignoresSafeAreaEdges: .top)
-            }
+            .solidStatusBar()
             .navigationDestination(item: $detail) { row in
                 MetricDetailView(store: store, row: row, saved: saved)
             }
@@ -262,7 +258,7 @@ struct MyDataView: View {
 
     @discardableResult
     private func saved(_ result: RecordStore.ApplyResult) -> RecordStore.ApplyResult {
-        if result == .saved { saves += 1 }
+        if result == .saved() { saves += 1 }
         return result
     }
 }
@@ -293,5 +289,15 @@ struct ControlsHeader<Trailing: View>: View {
             .labelStyle(.iconOnly)
             .font(.title3)
             .textCase(nil)
+    }
+}
+
+extension View {
+    /// For a tab with no title bar, My data's and My plan's: iOS 26's edge effect leaves rows
+    /// legible under the clock. A zero-height inset whose background reaches into the status bar hides them.
+    func solidStatusBar() -> some View {
+        safeAreaInset(edge: .top, spacing: 0) {
+            Color.clear.frame(height: 0).background(Color(uiColor: .systemGroupedBackground), ignoresSafeAreaEdges: .top)
+        }
     }
 }

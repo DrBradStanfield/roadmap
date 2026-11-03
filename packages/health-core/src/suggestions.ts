@@ -1,6 +1,6 @@
 import type { HealthInputs, HealthResults, SuggestionInputs, Suggestion, MedicationInputs, ScreeningInputs, UsProductCardId } from './types';
 import { SUGGESTION_EVIDENCE } from './evidence';
-import { POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
+import { LUNG_PACK_YEARS, POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
 import { LIMIT_NOT_GRADED, formatLimit, formatValue, limitOf, limitSIText, type Comparator, type InputLimit, type LimitField } from './lab-limits';
 import {
@@ -8,6 +8,7 @@ import {
   type MetricType,
   formatDisplayValue,
   formatTargetLine,
+  formatGradedReading,
   formatGradedValue,
   getDisplayLabel,
   HBA1C_THRESHOLDS,
@@ -132,11 +133,11 @@ export function joinWithAnd(items: string[]): string {
   return items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 }
 
-/** Raised blood pressure: systolic ≥130 or diastolic >80. Either half counts
+/** Raised blood pressure: systolic ≥130 or diastolic ≥80. Either half counts
  *  on its own; the BP card checks separately that it has both to display. */
 function isBpRaised(systolic: number | undefined, diastolic: number | undefined): boolean {
   return (systolic !== undefined && systolic >= BP_THRESHOLDS.stage1Sys)
-    || (diastolic !== undefined && diastolic > BP_THRESHOLDS.stage1Dia);
+    || (diastolic !== undefined && diastolic >= BP_THRESHOLDS.stage1Dia);
 }
 
 /** A lipid marker at its 2018 AHA/ACC risk-enhancing line (Table 6): ApoB
@@ -245,7 +246,9 @@ export function generateSuggestions(
   // value the plan graded it with (US-12 AC20).
   const shown = (field: LimitField, metric: MetricType, value: number): string => {
     const limit = limitOf(inputs, field);
-    return fmtMetric(metric, limit?.bound ?? value, us(metric), limit?.comparator);
+    // HbA1c reads on the side of its grade lines (US-07 AC15); any other metric prints as formatValue does.
+    return limit ? fmtMetric(metric, limit.bound, us(metric), limit.comparator)
+      : `${formatGradedReading(metric, value, us(metric))} ${getDisplayLabel(metric, us(metric))}`;
   };
   /** A checklist line for a test saved as a limit with no graded value: held, not missing (US-12 AC20). */
   const limitLine = (label: string, field: LimitField, metric: MetricType): string[] => {
@@ -254,7 +257,8 @@ export function generateSuggestions(
   };
   const bare = (field: LimitField, value: number): string => {
     const limit = limitOf(inputs, field);
-    return limit ? limitSIText(field, limit) : String(Math.round(value));
+    // Lp(a) reads on the side of its grade lines (US-07 AC15).
+    return limit ? limitSIText(field, limit) : field === 'lpa' ? formatGradedReading('lpa', value, 'si') : String(Math.round(value));
   };
 
   // === Missing measurements first (US-07 AC11, Brad 2026-11-02): waist, then blood pressure ===
@@ -958,10 +962,10 @@ export function generateSuggestions(
       }
     }
 
-    // Lung (age 50-80, smokers with 15+ pack-years — USPSTF 2021)
+    // Lung (age 50-80, smokers with 20+ pack-years — USPSTF 2021)
     if (age >= 50 && age <= 80 &&
         (screenings.lungSmokingHistory === 'former_smoker' || screenings.lungSmokingHistory === 'current_smoker') &&
-        screenings.lungPackYears !== undefined && screenings.lungPackYears >= 15) {
+        screenings.lungPackYears !== undefined && screenings.lungPackYears >= LUNG_PACK_YEARS) {
       if (!screenings.lungScreening || screenings.lungScreening === 'not_yet_started') {
         suggestions.push({
           id: 'screening-lung',
@@ -986,6 +990,7 @@ export function generateSuggestions(
 
     // Prostate (male, age 45+) — shared decision
     if (sex === 'male' && age >= 45) {
+      const psaRaised = screenings.prostatePsaValue !== undefined && screenings.prostatePsaValue > 4.0;
       if (!screenings.prostateDiscussion || screenings.prostateDiscussion === 'not_yet') {
         suggestions.push({
           id: 'screening-prostate',
@@ -997,19 +1002,21 @@ export function generateSuggestions(
       } else if (screenings.prostateDiscussion === 'will_screen' && screenings.prostateLastDate) {
         const status = screeningStatus(screenings.prostateLastDate, 'will_screen');
         const due = nextDueStr(screenings.prostateLastDate, 'will_screen');
-        pushScreeningStatus('prostate', status,
+        // US-06 AC17 (Brad 2026-11-03): beside "Elevated PSA", "up to date" reads as all clear. Overdue still shows.
+        if (!(psaRaised && status === 'upcoming')) pushScreeningStatus('prostate', status,
           'PSA test overdue', `Your next PSA test was due ${due}. Please schedule your test.`,
           'PSA test up to date', `Next PSA test due ${due}.`);
       }
 
       // Elevated PSA warning
-      if (screenings.prostatePsaValue !== undefined && screenings.prostatePsaValue > 4.0) {
+      if (psaRaised) {
         suggestions.push({
           id: 'screening-prostate-elevated',
           category: 'screening',
           priority: 'attention',
           title: 'Elevated PSA',
-          description: `Your PSA of ${screenings.prostatePsaValue.toFixed(1)} ng/mL is above the typical reference range (\u22644.0). Discuss with your doctor \u2014 elevated PSA can have multiple causes.`,
+          // A limit prints as printed (US-12 AC20): "> 100.0 ng/mL". A value never as 4.0 (US-06 AC18): "4.04 ng/mL".
+          description: `Your PSA of ${screenings.prostatePsaLimit ? fmtMetric('psa', screenings.prostatePsaLimit.bound, 'si', screenings.prostatePsaLimit.comparator) : `${formatGradedReading('psa', screenings.prostatePsaValue!, 'si')} ng/mL`} is above the typical reference range (\u22644.0). Discuss with your doctor \u2014 elevated PSA can have multiple causes.`,
         });
       }
     }

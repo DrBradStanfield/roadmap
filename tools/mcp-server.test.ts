@@ -390,6 +390,8 @@ describe('US-32 — nothing that could reach the network is imported', () => {
     join(here, 'mcp-server.ts'),
     join(here, '..', 'packages', 'health-core', 'src', 'file-adapter.ts'),
     join(here, '..', 'packages', 'health-core', 'src', 'mcp-tools.ts'),
+    // Split out of mcp-tools.ts (issue #429): the same guarantee covers the moved code.
+    ...['mcp-tool-contract.ts', 'mcp-feedback.ts', 'mcp-import.ts', 'mcp-tool-catalogue.ts'].map((name) => join(here, '..', 'packages', 'health-core', 'src', name)),
     join(here, '..', 'packages', 'health-core', 'src', 'plan.ts'),
   ];
 
