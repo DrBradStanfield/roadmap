@@ -2033,7 +2033,7 @@ export function InputPanel({
               </div>
             )}
 
-            {/* Lung (age 50-80, all genders; past 80 only for an abnormal CT, US-07 AC1g) */}
+            {/* Lung (age 50-80, all genders; past 80 for an abnormal CT or any stored LDCT answer, US-07 AC1g) */}
             {lungGroupShown(age, scr) && (
               <div className="screening-group">
                 <h4>Lung</h4>

@@ -1494,7 +1494,7 @@ describe('generateSuggestions', () => {
       expect(lung).toContain('Have a smoking history of 20 pack-years or more, whether they still smoke or have quit.');
       const ev = SUGGESTION_EVIDENCE['screening-lung'];
       expect(ev.reason).toContain('however long ago they quit');
-      expect(ev.reason).toContain('the plan keeps that follow-up until it is done, at any age or smoking history');
+      expect(ev.reason).toContain('the plan keeps that follow-up until it is done, even past age 80 or below 20 pack-years');
       expect(lung).toContain('If an earlier scan found something that needs follow-up, finish that follow-up with your doctor.');
       expect(ev.guidelines).toEqual(['ACS 2023', 'USPSTF 2021']);
       expect(ev.references.map(r => r.url)).toContain('https://doi.org/10.3322/caac.21811');
