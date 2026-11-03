@@ -170,16 +170,13 @@ export function scrubBreadcrumbData(data) {
 // the arrays to paste back in.
 export const SCRUB_UNITS = [
   '%', 'IU/L', 'IU/mL', 'L/L', 'U/L', 'U/mL', 'cm', 'fL', 'g/L', 'in', 'kU/L', 'kg', 'lbs', 'mIU/L',
-  'mL/min/1.73m²', 'mL/min/1.73m^2', 'mOsm/kg', 'mg/L', 'mg/L FEU', 'mg/dL', 'mg/mmol', 'mm/hr', 'mmHg',
-  'mmol/L', 'mmol/mol', 'ng/L', 'ng/mL', 'nmol/L', 'pg', 'pmol/L', 'µg/L', 'ug/L', 'µmol/L', 'umol/L',
-  '×10¹²/L', '×10^12/L', 'x10^12/L', '×10⁹/L', '×10^9/L', 'x10^9/L', 'meq/l', 'mg/g', 'mg/g creat',
-  'mg/g creatinine', 'mg/mg', 'ml/min/1.73 m²', 'ml/min/1.73 m^2', 'ml/min/1.73', 'mmol/kg', 'mosmol/kg',
-  'g/dl', '×10⁶/µl', '×10^6/ul', 'x10^6/ul', 'm/µl', 'm/ul', 'million/µl', 'million/ul', 't/l', '×10³/µl',
-  '×10^3/ul', 'x10^3/ul', 'k/µl', 'k/ul', 'thou/µl', 'thou/ul', 'thousand/µl', 'thousand/ul', 'cells/µl',
-  'cells/ul', 'mg/l (feu)', 'µg/ml feu', 'ug/ml feu', 'µg/ml (feu)', 'ug/ml (feu)', 'ng/ml feu', 'ng/ml (feu)',
-  'µg/l feu', 'ug/l feu', 'µg/l (feu)', 'ug/l (feu)', 'µiu/ml', 'uiu/ml', 'mu/l', 'microiu/ml', 'mciu/ml',
-  'ng/dl', 'pg/ml', 'kiu/l', 'µg/dl', 'ug/dl', 'miu/ml', 'mm/h', 'µu/ml', 'uu/ml', 'mm Hg', 'micromol/L', 'lb',
-  'mcg', 'µg', 'mg', 'g', 'IU', 'mL', 'units', '"',
+  'mL/min/1.73m²', 'mOsm/kg', 'mg/L', 'mg/L FEU', 'mg/dL', 'mg/mmol', 'mm/hr', 'mmHg', 'mmol/L', 'mmol/mol',
+  'ng/L', 'ng/mL', 'nmol/L', 'pg', 'pmol/L', 'µg/L', 'µmol/L', '×10¹²/L', '×10⁹/L', 'meq/l', 'mg/g',
+  'mg/g creat', 'mg/g creatinine', 'mg/mg', 'ml/min/1.73 m²', 'ml/min/1.73', 'mmol/kg', 'mosmol/kg', 'g/dl',
+  '×10⁶/µl', 'm/µl', 'million/µl', 't/l', '×10³/µl', 'k/µl', 'thou/µl', 'thousand/µl', 'cells/µl', 'mg/l (feu)',
+  'µg/ml feu', 'µg/ml (feu)', 'ng/ml feu', 'ng/ml (feu)', 'µg/l feu', 'µg/l (feu)', 'µiu/ml', 'mu/l',
+  'microiu/ml', 'mciu/ml', 'ng/dl', 'pg/ml', 'kiu/l', 'µg/dl', 'miu/ml', 'mm/h', 'µu/ml', 'mm Hg', 'micromol/L',
+  'lb', 'mcg', 'µg', 'mg', 'g', 'IU', 'mL', 'units', '"',
 ];
 
 export const SCRUB_METRIC_WORDS = [
@@ -298,15 +295,29 @@ export const SCRUB_METRIC_WORDS = [
 
 const NUMBER = '\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?';
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const alternation = (words) =>
-  [...words].sort((a, b) => b.length - a.length).map(escapeRe).join('|');
+const alternation = (words, pattern = escapeRe) =>
+  words.map(pattern).sort((a, b) => b.length - a.length).join('|');
+
+// The spellings normalizeLabUnit folds into part of a listed unit, as regex
+// (mirror of sentry-scrub.ts, US-09 AC7e).
+const NORMALISER_SPELLINGS = {
+  '×10': '(?:[x×]\\s*)?10\\s*(?:(?:e|\\^|\\*{1,2})\\s*\\d+|(?:\\^|\\*{1,2})?\\(\\s*\\d+\\s*\\)|[⁰¹²³⁴⁵⁶⁷⁸⁹]+)',
+  '/µl': '/(?:(?:[µμu]|mc)l|mm[3³]|cmm|cumm|cu[ .]mm|c\\.mm)',
+  'µ': '(?:[µμu]|mc)',
+  'm²': 'm(?:²|\\^?2)',
+  u: '(?:u|units?)',
+  g: 'gm?',
+};
+const unitPattern = (unit) => escapeRe(unit.toLowerCase())
+  .replace(/×10[⁰¹²³⁴⁵⁶⁷⁸⁹]+|\/µl|µ|m²|^u(?=\/)|^g(?=\/dl)/g,
+    (part) => NORMALISER_SPELLINGS[part.startsWith('×') ? '×10' : part]);
 
 const INCH_UNIT = '(?:in(?=\\s*(?:[^A-Za-z0-9\\s]|$))|")';
 const PLAIN_UNITS = SCRUB_UNITS.filter(u => u !== 'in' && u !== '"');
 
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const UNIT_VALUE_RE = new RegExp(
-  `\\b${NUMBER}\\s*(?:(?:${alternation(PLAIN_UNITS)})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
+  `\\b${NUMBER}\\s*(?:(?:${alternation(PLAIN_UNITS, unitPattern)})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
 // A name starts where no letter or digit runs into it and ends where no letter
 // does: digits straight after a name are its value. A number inside a word
 // (the 1 of "A1c") is never the value (mirror of sentry-scrub.ts).
