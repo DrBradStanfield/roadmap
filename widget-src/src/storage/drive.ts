@@ -43,6 +43,7 @@ import {
   DRIVE_FOLDER_NAME,
   ROADMAP_FILE_NAME,
   sleepUntilAborted,
+  catchUpAfterFailure,
   StorageError,
   jsonBody,
   type ReadResult,
@@ -513,6 +514,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     while (!signal.aborted) {
       try {
         let token = await this.startPageToken(signal);
+        catchUpAfterFailure(retryMs, signal, onChange);
         while (!signal.aborted) {
           const url = `${DRIVE_API}/changes?pageToken=${encodeURIComponent(token)}&pageSize=100`
             + '&fields=newStartPageToken,nextPageToken,changes(fileId)';
