@@ -1,8 +1,11 @@
 # Git workflow: one worktree, one branch, one PR per session
 
 Brad, 2026-10-31: worktrees are fine "so long as everything is properly committed, PRs, pushed". Roadmap PR #389
-set the rule; PR 415 added the enforcement. Both repos run one design (claude_business PRs 31 and 32, Brad's
-2026-11-01 rulings). Binding rule: CLAUDE.md § Development Rules. Story: US-64.
+set the rule; PR 415 added the enforcement. Binding rule: CLAUDE.md § Development Rules. Story: US-64.
+
+**This rule is the roadmap repo's only.** claude_business ran the same design from 2026-10-31 to 2026-11-04, then
+went back to everything on `main` with every commit sweeping all changes (Brad 2026-11-04; its docs/git-workflow.md).
+The two repos' git rules now differ on purpose: never copy a git rule or hook change from one repo to the other.
 
 ## Why the old rule went
 
@@ -20,7 +23,7 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    `sh tools/worktree-new.sh <short-topic-name>` prints the path, then call **EnterWorktree** with `path` set
    to it. The branch is `claude/<name>`, cut from the latest `origin/main`, and tracks nothing, so a bare push
    can never land on `main`. The worktree is locked, so bulk cleanup never removes a live session's.
-   (Don't use EnterWorktree with `name`: that makes `worktree-<name>` branches, and both repos use `claude/`.)
+   (Don't use EnterWorktree with `name`: that makes `worktree-<name>` branches, and this repo uses `claude/`.)
    Resuming a thread: EnterWorktree `path` into its existing worktree.
 2. **Work**: edit only inside the worktree. The guard hook gives the worktree its own copy-on-write clone of the
    main checkout's `node_modules`, `widget-src/node_modules` and `packages/health-core/node_modules` (kept in
@@ -78,7 +81,7 @@ it in the final message as still open and why.
 | Deploy | `deploy.yml` (CI, `ref: main`); `tools/release-checkout.sh` (manual, docs/deploy-runbook.md step 0) | Only merged code ships |
 
 Tests: `tests/worktree-guard.test.ts`, `tests/git-push-guard.test.ts` (runs `.claude/hooks/git-push-guard.test.sh`),
-`tests/write-gate.test.ts`, `tests/release-checkout.test.ts` and `tests/stale-prs.test.ts`, all in `test:all`. The same hooks live in claude_business: edit both.
+`tests/write-gate.test.ts`, `tests/release-checkout.test.ts` and `tests/stale-prs.test.ts`, all in `test:all`. claude_business has no worktree guard since 2026-11-04; its push guard is a separate copy with its own rules.
 
 ## Exceptions
 
