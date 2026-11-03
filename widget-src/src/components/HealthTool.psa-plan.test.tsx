@@ -85,6 +85,8 @@ describe('the web plan reads the saved PSA measurement (US-06 AC14)', () => {
     await waitFor(() => expect(titles(view.container)).toContain('Elevated PSA'));
     const context = JSON.parse(buildChatContextJson(loadGuestInputs())!);
     expect(context.currentSuggestions.map((s: { id: string }) => s.id)).toContain('screening-prostate-elevated');
+    // The snapshot the model reads names the same PSA as the card (Codex re-check R1).
+    expect(context.latestValues.psa).toBe('6.5');
     view.unmount();
   });
 });

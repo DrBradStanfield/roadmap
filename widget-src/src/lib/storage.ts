@@ -140,10 +140,12 @@ export function loadFromLocalStorage(): LoadedData | null {
       labEgfr: lab.labEgfrDate === undefined ? null
         : limit ? labEgfrFrom(limit.bound, lab.labEgfrDate, limit.comparator)
         : lab.labEgfr !== undefined ? labEgfrFrom(lab.labEgfr, lab.labEgfrDate) : null,
-      // An untrusted copy: a PSA row only with a number, a real day and a readable comparator.
-      psa: data.psa && Number.isFinite(Number(data.psa.value)) && isClinicalDay(data.psa.recordedAt)
+      // An untrusted copy: a PSA row only with a number (this field was only ever
+      // written as one, so null, "" or text is no PSA, never a 0), a real day and
+      // a readable comparator.
+      psa: data.psa && typeof data.psa.value === 'number' && Number.isFinite(data.psa.value) && isClinicalDay(data.psa.recordedAt)
         && (data.psa.comparator === undefined || isComparator(data.psa.comparator))
-        ? { ...data.psa, metricType: 'psa', value: Number(data.psa.value) } : null,
+        ? { ...data.psa, metricType: 'psa' } : null,
     };
   } catch (error) {
     console.warn('Failed to load from localStorage:', error);
@@ -283,14 +285,14 @@ export function setJson(key: string, value: unknown): void {
 export function loadGuestInputs(): ChatContextPayload | null {
   const cached = loadFromLocalStorage();
   if (!cached) return null;
-  const merged = mergeLongitudinalInputs(cached.inputs, cached.previousMeasurements);
+  // The newest usable PSA stands in for the newest PSA row, in the snapshot
+  // and the history alike, so the chat reads what the widget's cards read (US-06 AC14).
+  const rows = cached.psa ? [...cached.previousMeasurements.filter(m => m.metricType !== 'psa'), cached.psa] : cached.previousMeasurements;
+  const merged = mergeLongitudinalInputs(cached.inputs, rows);
   if (Object.keys(merged).length === 0) return null;
-  const creatinine = cached.previousMeasurements.find(m => m.metricType === 'creatinine')?.recordedAt;
+  const creatinine = rows.find(m => m.metricType === 'creatinine')?.recordedAt;
   const inputs = withLabEgfr(merged, typeof creatinine === 'string' ? dayOf(creatinine) : null, cached.labEgfr, localDay(new Date()));
-  // The newest usable PSA beside the newest rows, so the chat's plan reads what the widget's does (US-06 AC14).
-  const latestPsa = cached.previousMeasurements.find(m => m.metricType === 'psa');
-  const psa = cached.psa && cached.psa.id !== latestPsa?.id ? [cached.psa] : [];
-  return chatContextOf(inputs, chatUnitSystem(cached.inputs.unitSystem), cached.medications, cached.screenings, [...cached.previousMeasurements, ...psa]);
+  return chatContextOf(inputs, chatUnitSystem(cached.inputs.unitSystem), cached.medications, cached.screenings, rows);
 }
 
 /** The unit system a chat sends, as HealthTool picks it: the saved
