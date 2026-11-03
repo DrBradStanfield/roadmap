@@ -1627,7 +1627,7 @@ export function prepareImport(
         const named = bloodTestKeyOf(value.name);
         if (named && named !== 'creatinine') {
           offerCore(named, own, { value: value.value, unit: value.unit }, oneLine(value.name).slice(0, MAX_NAME_LENGTH),
-            { confidence: 'high', printedName: value.printedName ?? value.name, ...comparatorOf(value) });
+            { confidence: value.confidence ?? 'high', question: value.question, printedName: value.printedName ?? value.name, ...comparatorOf(value) });
           continue;
         }
         // With its range: the write checks the whole row (US-21 AC15), so the preview does too.
