@@ -22,6 +22,21 @@ protocol LiveHealthStore: Sendable {
     func sleep(from start: Date, to end: Date) async throws -> [SleepSegment]
     /// When the metric's oldest sample began, however old: a page reads back to it (AC7a).
     func earliest(_ metric: LiveMetric) async throws -> Date?
+    /// What changed in the metric since `anchor`, HealthKit's anchored query (AC7a): when each
+    /// added sample began, sleep's added samples, the ids of deleted ones, and the new anchor.
+    /// With no anchor, the samples starting at `start` or later, and the anchor they leave.
+    func changes(_ metric: LiveMetric, after anchor: Data?, from start: Date?) async throws -> LiveChanges
+}
+
+/// One anchored read (AC7a). `more` says HealthKit had more than `limit` changes to give, so
+/// the caller reads everything again instead of applying a part.
+struct LiveChanges: Sendable {
+    static let limit = 5000
+    var added: [Date] = []
+    var segments: [SleepSegment] = []
+    var deleted: [String] = []
+    var anchor: Data?
+    var more = false
 }
 
 /// The real `LiveHealthStore`, on the app's one `HKHealthStore.app`, read off the main thread. Its calendar
@@ -105,14 +120,39 @@ final class LiveHealthKitStore: LiveHealthStore {
     }
 
     @concurrent
+    func changes(_ metric: LiveMetric, after anchor: Data?, from start: Date?) async throws -> LiveChanges {
+        guard let type = Self.type(of: metric) as? HKSampleType else { return LiveChanges() }
+        let previous = anchor.flatMap { try? NSKeyedUnarchiver.unarchivedObject(ofClass: HKQueryAnchor.self, from: $0) }
+        // Sleep's first read takes every sample; every other read stops at the limit.
+        let limit = metric == .sleep && anchor == nil ? nil : LiveChanges.limit
+        let descriptor = HKAnchoredObjectQueryDescriptor(predicates: [.sample(type: type, predicate: start.map { HKQuery.predicateForSamples(withStart: $0, end: nil) })],
+                                                         anchor: previous, limit: limit)
+        let result = try await Self.locking { try await descriptor.result(for: store) }
+        var changes = LiveChanges()
+        changes.added = result.addedSamples.map(\.startDate)
+        if metric == .sleep {
+            changes.segments = result.addedSamples.compactMap { sample in
+                (sample as? HKCategorySample).flatMap { Self.segment($0) }
+            }
+        }
+        changes.deleted = result.deletedObjects.map(\.uuid.uuidString)
+        changes.anchor = try? NSKeyedArchiver.archivedData(withRootObject: result.newAnchor, requiringSecureCoding: true)
+        changes.more = limit.map { result.addedSamples.count + result.deletedObjects.count >= $0 } ?? false
+        return changes
+    }
+
+    @concurrent
     func sleep(from start: Date, to end: Date) async throws -> [SleepSegment] {
         let descriptor = HKSampleQueryDescriptor(
             predicates: [.categorySample(type: HKCategoryType(.sleepAnalysis), predicate: HKQuery.predicateForSamples(withStart: start, end: end))],
             sortDescriptors: [SortDescriptor(\.startDate)])
         let samples = try await Self.locking { try await descriptor.result(for: store) }
-        return samples.compactMap { sample in
-            Self.stage(sample.value).map { SleepSegment(stage: $0, start: sample.startDate, end: sample.endDate, source: sample.sourceRevision.source.bundleIdentifier) }
-        }
+        return samples.compactMap(Self.segment)
+    }
+
+    /// A sleep sample as a segment, with its id so a deletion in Health removes it (AC7a).
+    private static func segment(_ sample: HKCategorySample) -> SleepSegment? {
+        stage(sample.value).map { SleepSegment(stage: $0, start: sample.startDate, end: sample.endDate, source: sample.sourceRevision.source.bundleIdentifier, uuid: sample.uuid.uuidString) }
     }
 
     // MARK: Pure parts

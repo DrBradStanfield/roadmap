@@ -54,6 +54,7 @@ struct NoLiveHealth: LiveHealthStore {
     func latest(_ metric: LiveMetric) async throws -> (value: Double?, date: Date)? { nil }
     func sleep(from start: Date, to end: Date) async throws -> [SleepSegment] { [] }
     func earliest(_ metric: LiveMetric) async throws -> Date? { nil }
+    func changes(_ metric: LiveMetric, after anchor: Data?, from start: Date?) async throws -> LiveChanges { LiveChanges() }
 }
 
 /// Notifications, absent: the phone's pending reminders are never listed, removed or added.

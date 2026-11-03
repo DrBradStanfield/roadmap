@@ -39,6 +39,8 @@ struct LiveMetricPage: View {
     let guide: MetricGuide?
     @State private var range: LiveRange
     @State private var days: [LivePoint] = []
+    /// The days grouped as each range draws them, made on `LiveHistory` off the main thread (adversary R5).
+    @State private var grouped: [Calendar.Component: [LivePoint]] = [:]
     @State private var daysRead = false
     /// D's hours, for each day read so far (`hoursRead`), read as the person moves to a day.
     @State private var hours: [LivePoint] = []
@@ -65,17 +67,27 @@ struct LiveMetricPage: View {
         _today = State(initialValue: live.calendar.startOfDay(for: live.now()))
     }
 
-    /// What the reads depend on: a wake, the range, and on D the days in view.
-    private struct Wanted: Equatable {
+    /// What the reads depend on: a wake, D or not, and on D the days in view. W, M, 6M and Y
+    /// read the same days, so moving between them keeps a read under way (adversary R2).
+    struct Wanted: Equatable {
         let wakes: Int
-        let range: LiveRange
+        /// The metric's history removals (Codex R2): a removal reads again, dropping a read under way.
+        let removals: Int
+        let day: Bool
         let days: [Date]
+
+        init(wakes: Int, removals: Int = 0, range: LiveRange, days: [Date]) {
+            self.wakes = wakes
+            self.removals = removals
+            day = range == .day
+            self.days = days
+        }
     }
 
     var body: some View {
         let geometry = geometry
         let inView = geometry.inView(range.isShort ? points : days, by: \.start, from: scrolledTo)
-        let wanted = Wanted(wakes: live.wakes, range: range, days: range == .day ? geometry.daysInView(from: scrolledTo) : [])
+        let wanted = Wanted(wakes: live.wakes, removals: live.removals[metric] ?? 0, range: range, days: range == .day ? geometry.daysInView(from: scrolledTo) : [])
         LivePageFrame(metric: metric, ranges: LiveRange.allCases, range: $range, empty: isEmpty, key: wanted, guide: guide) { shows in
             await load(wanted, shows: shows)
         } reset: {
@@ -117,8 +129,16 @@ struct LiveMetricPage: View {
     /// once the page leaves D (E4). A wake reads again; a locked phone keeps what was drawn.
     private func load(_ wanted: Wanted, shows: Int) async {
         let (store, now, calendar) = (live.store, live.now(), live.calendar)
-        let fresh = ReadFor(wakes: wanted.wakes, shows: shows)
+        let fresh = ReadFor(wakes: wanted.wakes, shows: shows, removals: wanted.removals)
         if fresh != readFor {
+            // The history was removed (access off, Health emptied): nothing old stays drawn (Codex R2).
+            if let readFor, readFor.removals != fresh.removals {
+                days = []
+                grouped = [:]
+                hours = []
+                selected = nil
+                rebuild()
+            }
             readFor = fresh
             hoursRead = []
             daysRead = false
@@ -126,23 +146,43 @@ struct LiveMetricPage: View {
             today = calendar.startOfDay(for: now)
         }
         // A cancelled read (the page left, or the key moved) marks nothing read (N1).
-        if wanted.range == .day {
+        if wanted.day {
+            // The kept week of hours draws at once, then each day in view is read (and kept while
+            // within the last week, AC7a).
+            if hours.isEmpty, let kept = await live.history.keptHours(metric, calendar: calendar), !Task.isCancelled {
+                hours = kept
+                rebuild()
+            }
             for day in wanted.days where !hoursRead.contains(day) {
-                guard let read = try? await LiveHealth.readHours(store, metric, day: day, now: now, calendar: calendar), !Task.isCancelled else { return }
+                guard let read = try? await live.history.refreshHours(store, metric, day: day, now: now, calendar: calendar), !Task.isCancelled else { return }
                 let merged = (hours.filter { calendar.startOfDay(for: $0.start) != day } + read).sorted { $0.start < $1.start }
                 if merged != hours { hours = merged }
                 hoursRead.insert(day)
             }
         } else if !daysRead {
-            guard let read = try? await LiveHealth.readDays(store, metric, reaching: reading, now: now, calendar: calendar), !Task.isCancelled else { return }
-            if read != days { days = read }
+            // The kept history draws at once (a first visit: 400 days), then what changed in Health
+            // is read and kept (AC7a). Reading, merging and grouping run off the main thread.
+            if days.isEmpty, let first = await live.firstDays(metric, reaching: reading), !Task.isCancelled {
+                await show(first, calendar: calendar)
+            }
+            guard let read = try? await live.history.refreshDays(store, metric, now: now, calendar: calendar), !Task.isCancelled else { return }
+            if read != days { await show(read, calendar: calendar) }
             daysRead = true
         }
         rebuild()
     }
 
+    /// New days, with their weeks and months grouped on `LiveHistory`, then drawn.
+    private func show(_ read: [LivePoint], calendar: Calendar) async {
+        let groups = await live.history.grouped(read, calendar: calendar)
+        guard !Task.isCancelled else { return }
+        days = read
+        grouped = groups
+        rebuild()
+    }
+
     private func rebuild() {
-        let built = range == .day ? hours : LiveMaths.bucket(days, by: range.bucket, calendar: live.calendar)
+        let built = range == .day ? hours : grouped[range.bucket] ?? LiveMaths.bucket(days, by: range.bucket, calendar: live.calendar)
         if built != points { points = built }
     }
 
@@ -158,7 +198,8 @@ struct LiveMetricPage: View {
 
     private func chart(geometry: LiveChartGeometry) -> some View {
         let unit = range.bucket
-        let yDomain = bands?.yDomain(values: points.compactMap(\.value))
+        let shown = Self.scaled(points, geometry: geometry, from: scrolledTo)
+        let yDomain = bands?.yDomain(values: shown.compactMap(\.value))
         return Chart {
             // AC8: the bands behind the values, each from its lower bound to the next one's.
             if let bands, let yDomain {
@@ -197,9 +238,16 @@ struct LiveMetricPage: View {
             }
             if let selected { SelectionRule(date: selected.start, unit: unit) }
         }
-        .modifier(LiveYScale(metric: metric, points: points, domain: yDomain))
+        .modifier(LiveYScale(metric: metric, points: shown, domain: yDomain))
         .modifier(ScrollingChart(geometry: geometry, items: points, date: \.start, scrolledTo: $scrolledTo, selected: $selected))
         .accessibilityChartDescriptor(LiveChartDescriptor(metric: metric, points: points, geometry: geometry, from: scrolledTo, bands: bands))
+    }
+
+    /// The points the y-axis spans: those in view, so years of history do not flatten a
+    /// range (adversary R3); all of them when none is in view.
+    static func scaled(_ points: [LivePoint], geometry: LiveChartGeometry, from start: Date) -> [LivePoint] {
+        let inView = geometry.inView(points, by: \.start, from: start)
+        return inView.isEmpty ? points : inView
     }
 
     /// A band's shading: deeper for fitter, calm in both modes; its name is always in text.
@@ -225,6 +273,8 @@ struct LiveMetricPage: View {
 struct ReadFor: Equatable {
     let wakes: Int
     let shows: Int
+    /// The metric's history removals (Codex R2).
+    var removals = 0
 }
 
 /// What both pages share (AC7, AC9): the range picker, the chart or its empty line, the
@@ -332,7 +382,8 @@ struct SelectionRule: ChartContent {
     }
 }
 
-/// Heart rate's axis spans its readings, as Apple Health's does, not from zero; sums start at zero.
+/// The axis spans the readings in view, as Apple Health's does: heart rate and the means not
+/// from zero; sums from zero.
 private struct LiveYScale: ViewModifier {
     let metric: LiveMetric
     let points: [LivePoint]
@@ -344,6 +395,8 @@ private struct LiveYScale: ViewModifier {
             content.chartYScale(domain: domain)
         } else if metric.aggregation == .range, let low = points.compactMap(\.low).min(), let high = points.compactMap(\.high).max() {
             content.chartYScale(domain: (low - 10).rounded(.down)...(high + 10).rounded(.up))
+        } else if let high = points.compactMap(\.value).max(), let low = points.compactMap(\.value).min() {
+            content.chartYScale(domain: metric.aggregation == .sum ? 0...max(high * 1.1, 1) : (low - 5).rounded(.down)...(high + 5).rounded(.up))
         } else {
             content.chartYScale(domain: .automatic(includesZero: metric.aggregation == .sum))
         }

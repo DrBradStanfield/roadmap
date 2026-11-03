@@ -28,8 +28,8 @@ struct SleepPage: View {
     @Environment(\.dynamicTypeSize) private var textSize
 
     var body: some View {
-        LivePageFrame(metric: .sleep, ranges: LiveRange.sleep, range: $range, empty: read && !nights.contains(where: \.hasSleep), key: live.wakes, guide: guide) { shows in
-            await load(ReadFor(wakes: live.wakes, shows: shows))
+        LivePageFrame(metric: .sleep, ranges: LiveRange.sleep, range: $range, empty: read && !nights.contains(where: \.hasSleep), key: [live.wakes, live.removals[.sleep] ?? 0], guide: guide) { shows in
+            await load(ReadFor(wakes: live.wakes, shows: shows, removals: live.removals[.sleep] ?? 0))
         } reset: {
             selected = nil
             scrolledTo = geometry.opening(showing: reading)
@@ -57,13 +57,29 @@ struct SleepPage: View {
         picked.flatMap { day in nights.first { $0.day == day } } ?? LiveMaths.newestNight(nights, today: live.calendar.startOfDay(for: live.now()))
     }
 
+    /// The kept nights draw at once (a first visit: 200 nights, while every night is read and
+    /// kept), then the samples added or deleted in Health since are applied (AC7a). A cancelled
+    /// read marks nothing read (N1).
     private func load(_ fresh: ReadFor) async {
         guard fresh != readFor else { return }
-        // A cancelled read marks nothing read (N1).
-        guard let read = try? await LiveHealth.readNights(live.store, reaching: reading, now: live.now(), calendar: live.calendar), !Task.isCancelled else { return }
+        // Sleep's history was removed: nothing old stays drawn (Codex R2).
+        if let readFor, readFor.removals != fresh.removals {
+            nights = []
+            read = false
+            picked = nil
+            selected = nil
+        }
+        let (store, now, calendar) = (live.store, live.now(), live.calendar)
+        if nights.isEmpty, let kept = await live.history.keptNights(calendar: calendar), !Task.isCancelled { land(kept) }
+        if nights.isEmpty, let first = try? await LiveHealth.readNights(store, reaching: reading, now: now, calendar: calendar), !Task.isCancelled { land(first) }
+        guard let read = try? await live.history.refreshNights(store, now: now, calendar: calendar), !Task.isCancelled else { return }
+        land(read)
+        readFor = fresh
+    }
+
+    private func land(_ read: [SleepNight]) {
         if read != nights { nights = read }
         self.read = true
-        readFor = fresh
         scrolledTo = Self.landed(opening: opening, scrolledTo: scrolledTo, geometry: geometry, reading: reading)
         opening = false
     }

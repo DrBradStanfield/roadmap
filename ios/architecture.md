@@ -947,7 +947,7 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   again deletes it, and `DataEraser` calls `forget()` (file gone, cards empty, nothing shown until
   the next read). `forget()` bumps a generation: a refresh begun before it, and one queued during
   it, keeps nothing (Codex R1, adversary R4). The file holds each card's trend values too (up to
-  30 daily values, or the last seven readings), so the trend line draws in the first frame. Pages' days, hours and nights are never kept. "Today",
+  30 daily values, or the last seven readings), so the trend line draws in the first frame. Since 2026-11-03 each page's days, its last week of hours (D) and sleep's samples are kept too (`LiveHistory`, below). "Today",
   times and the VO2 max band are worked out at draw time from the card's date and `now`. The app
   has no Apple Health disconnect of its own (access is changed in Settings), so the erase and an
   empty read are the only other reset paths. Rejected: UserDefaults (it is backed up and is the
@@ -973,11 +973,26 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   own view, E3). Both pages share `LivePageFrame` (picker, empty line, footnote, read, range
   reset), `ScrollingChart` (axes, scroll, scrub, haptic, calendar) with `SelectionRule`, and
   `PageHeadline`, which `MetricDetailView` uses too. Every metric page, MetricDetailView's included, takes `metricPageList` (inset grouped, inline title, an 8 pt top margin so the picker sits under the title; Brad 2026-10-25). While the sheet is still due for the five and Apple Health is connected (so only for someone connected before 2026-10-26) Vitals shows `LiveReconnectRow` with **Turn On** (US-56 AC5; the "Show from Apple Health" card is gone; not connected, My data's Apple Health row is the one way in), and after "Don't Allow" (or an empty Health) the same row with **Open Settings** (AC5b; "Reconnect" until 2026-11-01, AC5c). Turn On runs `connect()` on the known answer; Open Settings checks the status afresh and runs it while the sheet is due, else opens Settings (`LiveReconnectRow.action`); Settings opens at its top and iOS 27's app page there has no Health row, so the row names the path, chosen by OS (`LiveFooter.healthPath`: Settings › Apps › Health › Data Access & Devices › Health Roadmap from iOS 18, Settings › Health › … on iOS 17). **A page always shows its card's reading
-  (Codex R2, adversary R7):** it reads the metric's whole history, from its oldest sample
-  (`LiveHealthStore.earliest`, US-56 AC7a, 2026-11-03: Brad found VO2 max stopped a year back
-  while Weight scrolled to its first reading), by day as HealthKit sums or averages it, so a
-  decade is about 3,650 points; sleep reads every night's samples. When the oldest cannot be read,
-  400 days (sleep 200) or back to the reading. It opens with the reading in
+  (Codex R2, adversary R7):** it holds the metric's whole history, from its oldest sample
+  (`LiveHealthStore.earliest`, never before 2014), by day as HealthKit sums or averages it, so a
+  decade is about 3,650 points; sleep keeps every night's samples. **Decision, 2026-11-03 (US-56
+  AC7a): the histories are kept on the phone.** Why: Brad found VO2 max stopped a year back while
+  Weight scrolled to its first reading, and reading a decade of heart rate or sleep each time a
+  page opens is slow ("store it so that we can quickly load it and we don't have to keep fetching
+  it. And that load needs to not be in the user interface main thread"). This reverses AC2's
+  2026-10-27 line that pages are read fresh. How: the `LiveHistory` actor keeps one file per
+  metric (`history-<metric>.json`, sleep's holding its samples) and its last week of hours
+  (`hours-<metric>.json`, for D) beside the cards' file, under the
+  same rules (out of backups, complete-until-first-unlock, apart from the record, deleted by Delete
+  all my data, access reset or an empty Health). A page draws the kept history first; with none
+  (a first visit) it draws 400 days (sleep 200 nights) while the whole history is read and kept;
+  later reads ask HealthKit only what changed since the kept anchor (an anchored query): added
+  samples re-read just their days; sleep's samples are added or removed by id; a deleted day
+  sample (HealthKit gives only its id), a change list past 5,000 or a new time zone reads the
+  days in full again. Each file records its zone. Decoding, merging,
+  grouping nights and writing run on the actor, never the main thread. Rejected: two reads per
+  visit (fast first draw, then the full read) still re-read years each time; SwiftData or a
+  database was more machinery than five small JSON files. It opens with the reading in
   view (`LiveChartGeometry.opening`, the window's own length so a 31-day month still holds it),
   reads D's hours a day at a time as the scroll reaches a day (D scrolls a week back, or to the reading's day: a 400-day hourly domain took Swift Charts several seconds to lay out on the simulator), and reads the days only once the
   range leaves D (E4). Its bars live in `@State`, rebuilt after a read or a range change (E2). The
@@ -993,8 +1008,8 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   record metric's page. `LivePageFrame` draws it last; `MyDataView` hands it in from My data's `guides` by
   `LiveMetric.guideKey` (the snake-case key, as `paletteKey`). No engine change: the engine already serves every guide.
 - Simulator seeding: `App/LiveHealthSeed.swift`, DEBUG only (`#if DEBUG`, never in a release build):
-  `--seed-live-health` asks to write the five types and saves 60 days of synthetic samples and
-  three years of VO2 max (a page scrolls back past a year, AC7a). A sheet asked for during launch is dismissed by iOS, so it waits 4 s. Apple's
+  `--seed-live-health` asks to write the five types and saves three years of every metric in
+  batches of 5,000 (a page keeps and scrolls a long history, AC7a). A sheet asked for during launch is dismissed by iOS, so it waits 4 s. Apple's
   sheet in iOS 27 answers by "Select All", "Continue", "All Recorded Data", "Allow"; a UI test can
   tap them only by screen point (the sheet reports its frames at a third of screen points).
 - Purpose string: the six "go only into your record"; the five are kept only on this iPhone, never in the record (AC10, AC2 since 2026-10-27).

@@ -243,7 +243,7 @@ final class LiveHealthTests: XCTestCase {
         await live.refresh()
         let file = try Data(contentsOf: kept)
         _ = try? await LiveHealth.readDays(store, .steps, reaching: nil, now: now, calendar: utc)
-        _ = try? await LiveHealth.readHours(store, .steps, day: now, now: now, calendar: utc)
+        _ = try? await LiveHistory(folder: nil).refreshHours(store, .steps, day: now, now: now, calendar: utc)
         _ = try? await LiveHealth.readNights(store, reaching: nil, now: now, calendar: utc)
         XCTAssertEqual(Set(UserDefaults.standard.dictionaryRepresentation().keys), before, "no UserDefaults value")
         XCTAssertEqual(try Data(contentsOf: kept), file, "pages keep nothing")
@@ -255,6 +255,14 @@ final class LiveHealthTests: XCTestCase {
     // MARK: The kept readings (AC2, AC15; Brad 2026-10-27, option A)
 
     /// A kept-readings file in its own test folder, as AppParts makes it.
+    /// A fresh folder for kept histories, removed after the test.
+    private func folder() throws -> URL {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Live history \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
+        return folder
+    }
+
     private func keptFile() throws -> URL {
         let base = FileManager.default.temporaryDirectory.appending(path: "Live kept \(UUID().uuidString)")
         addTeardownBlock { try? FileManager.default.removeItem(at: base) }
@@ -404,7 +412,7 @@ final class LiveHealthTests: XCTestCase {
         let refresh = Task { await live.refresh() }
         try await Task.sleep(for: .milliseconds(50))
         await live.refresh(force: true) // queued as `again`
-        live.forget()
+        await live.forget()
         await refresh.value
         XCTAssertTrue(live.cards.isEmpty, "no cards")
         XCTAssertFalse(live.hasRead)
@@ -434,7 +442,7 @@ final class LiveHealthTests: XCTestCase {
         store.fill(now: now)
         let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
         await live.refresh()
-        live.forget()
+        await live.forget()
         XCTAssertTrue(live.cards.isEmpty)
         XCTAssertEqual(LiveCardsSection.shown(LiveMetric.vitals, connected: true, needsAccess: live.needsAccess, hasRead: live.hasRead, cards: live.cards), .nothing,
                        "no Reconnect row until the next read")
@@ -476,11 +484,11 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertEqual(store.queries.last?.end, now)
         XCTAssertEqual(store.queries.last?.component, .day)
         let yesterday = today.addingTimeInterval(-86_400 + 3600)
-        _ = try await LiveHealth.readHours(store, .heartRate, day: yesterday, now: now, calendar: utc)
+        _ = try await LiveHistory(folder: nil).refreshHours(store, .heartRate, day: yesterday, now: now, calendar: utc)
         XCTAssertEqual(store.queries.last?.start, today.addingTimeInterval(-86_400), "the day D shows")
         XCTAssertEqual(store.queries.last?.end, today)
         XCTAssertEqual(store.queries.last?.component, .hour)
-        _ = try await LiveHealth.readHours(store, .heartRate, day: now, now: now, calendar: utc)
+        _ = try await LiveHistory(folder: nil).refreshHours(store, .heartRate, day: now, now: now, calendar: utc)
         XCTAssertEqual(store.queries.last?.end, now, "today, as it stands")
         _ = try await LiveHealth.readNights(store, reaching: nil, now: now, calendar: utc)
     }
@@ -512,41 +520,354 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertEqual(LiveMaths.newestNight(nights, today: today)?.day, night, "and D opens on it")
     }
 
-    /// AC7a (Brad 2026-11-03: "We should be importing everything from Apple Health"): a page
-    /// reads the metric's whole history, from its oldest sample, not 400 days; Weight's page
-    /// already scrolls back to its first reading. VO2 max from three years ago, and a night
-    /// from three years ago on the sleep page, both draw.
-    func testAPageReadsTheWholeHistoryFromTheOldestSample_AC7a() async throws {
+    /// AC7a (Brad 2026-11-03: "We should be importing everything from Apple Health"): the
+    /// history reads every day from the oldest sample, as Weight's page scrolls back to its first
+    /// reading; a first visit draws 400 days (sleep 200 nights) meanwhile. VO2 max and a night
+    /// from three years ago both come back.
+    func testTheHistoryReadsEverythingFromTheOldestSample_AC7a() async throws {
         let store = FakeLiveStore(due: false)
         store.fill(now: now)
         let today = utc.startOfDay(for: now)
         let old = today.addingTimeInterval(-3 * 365 * 86_400)
         let recent = today.addingTimeInterval(-10 * 86_400)
         store.set(.vo2Max, days: [LivePoint(start: old, value: 38.0), LivePoint(start: recent, value: 41.2)])
-        let days = try await LiveHealth.readDays(store, .vo2Max, reaching: recent, now: now, calendar: utc)
-        XCTAssertEqual(days.map(\.start), [old, recent], "every reading, back to the oldest")
+        let first = try await LiveHealth.readDays(store, .vo2Max, reaching: recent, now: now, calendar: utc)
+        XCTAssertEqual(first.map(\.start), [recent], "a first visit draws the last 400 days")
+        let history = LiveHistory(folder: try folder())
+        let all = try await history.refreshDays(store, .vo2Max, now: now, calendar: utc)
+        XCTAssertEqual(all.map(\.start), [old, recent], "then every reading, back to the oldest")
         XCTAssertEqual(store.queries.last?.start, old, "one read by day from the oldest sample's day")
         XCTAssertEqual(store.queries.last?.component, .day)
-        let oldNight = today.addingTimeInterval(-3 * 365 * 86_400)
         store.set(.sleep, segments: [
-            SleepSegment(stage: .core, start: oldNight.addingTimeInterval(-3600), end: oldNight.addingTimeInterval(6 * 3600), source: "watch"),
+            SleepSegment(stage: .core, start: old.addingTimeInterval(-3600), end: old.addingTimeInterval(6 * 3600), source: "watch"),
             SleepSegment(stage: .core, start: today.addingTimeInterval(-3600), end: today.addingTimeInterval(6 * 3600), source: "watch"),
         ])
-        let nights = try await LiveHealth.readNights(store, reaching: today, now: now, calendar: utc)
-        XCTAssertEqual(nights.map(\.day), [oldNight, today], "the sleep page reaches the oldest night too")
-        for range in LiveRange.allCases where range != .day {
-            let geometry = LiveChartGeometry(range: range, now: now, calendar: utc, first: days.first?.start)
-            XCTAssertLessThanOrEqual(geometry.domain.lowerBound, old, "\(range.rawValue) scrolls back to the oldest")
-        }
+        let lastNight = try await LiveHealth.readNights(store, reaching: today, now: now, calendar: utc)
+        XCTAssertEqual(lastNight.map(\.day), [today], "sleep's first visit draws last night without the whole history")
+        XCTAssertEqual(store.earliestCalls, 1, "only the history read asks for the oldest sample; neither first-visit read waits on it")
+        let nights = try await history.refreshNights(store, now: now, calendar: utc)
+        XCTAssertEqual(nights.map(\.day), [old, today], "then every night")
     }
 
-    /// AC7a: when the oldest sample cannot be read, the page still reads its 400 days.
-    func testAFailedOldestReadKeeps400Days_AC7a() async throws {
+    /// AC7a, adversary R7: the page draws its kept days before HealthKit is asked anything, after
+    /// a relaunch too; with none kept it draws 400 days read now.
+    func testAPageDrawsFromTheKeptHistoryBeforeAnyRead_AC7a() async throws {
         let store = FakeLiveStore(due: false)
         store.fill(now: now)
-        store.earliestFails = true
-        _ = try await LiveHealth.readDays(store, .steps, reaching: nil, now: now, calendar: utc)
-        XCTAssertEqual(store.queries.last?.start, utc.startOfDay(for: now).addingTimeInterval(-400 * 86_400))
+        let kept = try keptFile()
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
+        let days = try await live.history.refreshDays(store, .heartRate, now: now, calendar: utc)
+        let nights = try await live.history.refreshNights(store, now: now, calendar: utc)
+        let reads = (store.reads, store.calls[.sleep] ?? 0)
+        let drawn = await live.firstDays(.heartRate, reaching: nil)
+        XCTAssertEqual(drawn, days)
+        let relaunched = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
+        let drawnAgain = await relaunched.firstDays(.heartRate, reaching: nil)
+        let keptNights = await relaunched.history.keptNights(calendar: utc)
+        XCTAssertEqual(drawnAgain, days, "after a relaunch, from the file")
+        XCTAssertEqual(keptNights, nights)
+        XCTAssertFalse(days.isEmpty)
+        XCTAssertEqual(store.reads, reads.0, "no HealthKit read")
+        XCTAssertEqual(store.calls[.sleep] ?? 0, reads.1)
+        let fresh = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: try keptFile())
+        _ = await fresh.firstDays(.heartRate, reaching: nil)
+        XCTAssertEqual(store.queries.last?.start, utc.startOfDay(for: now).addingTimeInterval(-400 * 86_400), "nothing kept: 400 days read now")
+    }
+
+    /// AC7a, adversary R2: a later read asks HealthKit only what changed. A late sync re-reads
+    /// just its day; a sample deleted in Health is gone from the kept days (read in full again,
+    /// since HealthKit does not say which day it was on) and from the kept sleep (by id).
+    func testALaterReadAsksOnlyForWhatChanged_AC7a() async throws {
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let history = LiveHistory(folder: try folder())
+        let full = try await history.refreshDays(store, .steps, now: now, calendar: utc)
+        let unchanged = try await history.refreshDays(store, .steps, now: now, calendar: utc)
+        XCTAssertEqual(unchanged, full)
+        let synced = full[full.count - 3]
+        var steps = full
+        steps[full.count - 3] = LivePoint(start: synced.start, value: 12_000)
+        store.set(.steps, days: steps)
+        let reads = store.reads
+        let late = try await history.refreshDays(store, .steps, now: now, calendar: utc)
+        XCTAssertEqual(store.reads, reads + 1)
+        XCTAssertEqual(store.queries.last?.start, synced.start, "only the late-synced day")
+        XCTAssertEqual(late, steps, "merged, nothing lost or doubled")
+        store.set(.steps, days: Array(steps.dropFirst()))
+        let afterDelete = try await history.refreshDays(store, .steps, now: now, calendar: utc)
+        XCTAssertEqual(afterDelete, Array(steps.dropFirst()), "deleted in Health, gone from the app")
+        let today = utc.startOfDay(for: now)
+        let nights = (0..<10).map { today.addingTimeInterval(Double(-$0) * 86_400) }.reversed()
+        let segments = nights.map { SleepSegment(stage: .core, start: $0.addingTimeInterval(-3600), end: $0.addingTimeInterval(6 * 3600), source: "watch") }
+        store.set(.sleep, segments: segments)
+        let first = try await history.refreshNights(store, now: now, calendar: utc)
+        XCTAssertEqual(first.count, 10)
+        store.set(.sleep, segments: Array(segments.dropFirst()))
+        let second = try await history.refreshNights(store, now: now, calendar: utc)
+        XCTAssertEqual(second.map(\.day), Array(first.dropFirst()).map(\.day), "a night deleted in Health is gone")
+        store.set(.sleep, segments: segments)
+        let third = try await history.refreshNights(store, now: now, calendar: utc)
+        XCTAssertEqual(third.map(\.day), first.map(\.day), "added back once, never twice")
+    }
+
+    /// AC7a, adversary R7: a sample added later with an old date (an import) is read in, and the
+    /// kept span reaches back to it.
+    func testAnOlderSampleAddedLaterIsReadIn_AC7a() async throws {
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let history = LiveHistory(folder: try folder())
+        let full = try await history.refreshDays(store, .steps, now: now, calendar: utc)
+        let old = LivePoint(start: utc.startOfDay(for: now).addingTimeInterval(-100 * 86_400), value: 5000)
+        store.set(.steps, days: [old] + full)
+        let again = try await history.refreshDays(store, .steps, now: now, calendar: utc)
+        XCTAssertEqual(again, [old] + full)
+        XCTAssertEqual(store.queries.last?.start, old.start)
+    }
+
+    /// AC7a: HealthKit's change list past its limit reads everything again.
+    func testALongChangeListReadsEverythingAgain_AC7a() async throws {
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let history = LiveHistory(folder: try folder())
+        let full = try await history.refreshDays(store, .steps, now: now, calendar: utc)
+        store.changeLimit = 0
+        store.set(.steps, days: full.map { LivePoint(start: $0.start, value: 1) })
+        let again = try await history.refreshDays(store, .steps, now: now, calendar: utc)
+        XCTAssertEqual(store.queries.last?.start, full.first?.start, "a full read")
+        XCTAssertEqual(again.map(\.value), full.map { _ in 1 })
+    }
+
+    /// AC7a, adversary R4: days kept in one time zone are read in full again in another, so a
+    /// westward move shifts no day and counts none twice.
+    func testANewTimeZoneReadsTheDaysAgain_R4() async throws {
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let history = LiveHistory(folder: try folder())
+        _ = try await history.refreshDays(store, .steps, now: now, calendar: utc)
+        _ = try await history.refreshHours(store, .steps, day: now, now: now, calendar: utc)
+        var west = Calendar(identifier: .gregorian)
+        west.timeZone = try XCTUnwrap(TimeZone(identifier: "America/Los_Angeles"))
+        let reads = store.reads
+        let days = try await history.refreshDays(store, .steps, now: now, calendar: west)
+        XCTAssertEqual(store.reads, reads + 1)
+        let earliest = try XCTUnwrap(days.first?.start)
+        XCTAssertEqual(store.queries.last?.start, west.startOfDay(for: earliest), "read in full from the oldest day, in the new zone")
+        XCTAssertEqual(Set(days.map(\.start)).count, days.count, "no day counted twice")
+        let hours = await history.keptHours(.steps, calendar: west)
+        XCTAssertNil(hours, "hours kept in another zone are not drawn")
+    }
+
+    /// AC7a: a locked phone keeps the history; Health holding none of a metric removes its file.
+    func testALockedReadKeepsTheHistoryAndAnEmptyHealthRemovesIt_AC7a() async throws {
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let folder = try folder()
+        let history = LiveHistory(folder: folder)
+        let days = try await history.refreshDays(store, .steps, now: now, calendar: utc)
+        _ = try await history.refreshNights(store, now: now, calendar: utc)
+        store.locked = true
+        do {
+            _ = try await history.refreshDays(store, .steps, now: now, calendar: utc)
+            XCTFail("a locked read throws")
+        } catch {}
+        store.locked = false
+        let keptAfterFailure = await LiveHistory(folder: folder).keptDays(.steps)
+        XCTAssertEqual(keptAfterFailure, days, "kept through a locked read")
+        store.set(.steps, days: [])
+        store.set(.sleep, segments: [])
+        let empty = try await history.refreshDays(store, .steps, now: now, calendar: utc)
+        let noNights = try await history.refreshNights(store, now: now, calendar: utc)
+        XCTAssertTrue(empty.isEmpty && noNights.isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appending(path: "history-steps.json").path(percentEncoded: false)))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appending(path: "history-sleep.json").path(percentEncoded: false)))
+    }
+
+    /// AC2, adversary R7: a read under way when the histories are removed keeps nothing.
+    func testAReadUnderWayDuringRemovalKeepsNothing_AC2() async throws {
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let folder = try folder()
+        let history = LiveHistory(folder: folder)
+        store.delay = .milliseconds(300)
+        let read = Task { try await history.refreshDays(store, .steps, now: now, calendar: utc) }
+        try await Task.sleep(for: .milliseconds(100))
+        await history.removeAll()
+        _ = try? await read.value
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appending(path: "history-steps.json").path(percentEncoded: false)))
+        let kept = await history.keptDays(.steps)
+        XCTAssertNil(kept)
+    }
+
+    /// AC7a: D's hours draw from the kept last week, after a relaunch too; each day read replaces
+    /// that day's kept hours, and a day further back than a week is read but never kept.
+    func testDsHoursAreKeptForAWeek_AC7a() async throws {
+        let store = FakeLiveStore(due: false)
+        let today = utc.startOfDay(for: now)
+        let hourly = (0..<10 * 24).map { LivePoint(start: today.addingTimeInterval(Double(-$0) * 3600), value: 70) }
+        store.set(.heartRate, days: hourly)
+        let folder = try folder()
+        let history = LiveHistory(folder: folder)
+        let old = today.addingTimeInterval(-9 * 86_400)
+        let oldHours = try await history.refreshHours(store, .heartRate, day: old, now: now, calendar: utc)
+        XCTAssertFalse(oldHours.isEmpty, "a day scrolled back to is read and shown")
+        let todays = try await history.refreshHours(store, .heartRate, day: now, now: now, calendar: utc)
+        XCTAssertEqual(store.queries.last?.component, .hour)
+        let kept = await LiveHistory(folder: folder).keptHours(.heartRate, calendar: utc)
+        XCTAssertEqual(kept, todays, "today's hours kept, the day nine days back not")
+        let again = try await history.refreshHours(store, .heartRate, day: now, now: now, calendar: utc)
+        let keptAgain = await history.keptHours(.heartRate, calendar: utc)
+        XCTAssertEqual(keptAgain, again, "a day read again replaces its hours, never doubles them")
+    }
+
+    /// AC7a, adversary R3: a date before HealthKit existed (an importer's artifact) is read from
+    /// 1 January 2014, not from 1970.
+    func testTheOldestDateIsClampedTo2014_AC7a() async throws {
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        store.set(.vo2Max, days: [LivePoint(start: Date(timeIntervalSince1970: 0), value: 30), LivePoint(start: utc.startOfDay(for: now), value: 41)])
+        _ = try await LiveHistory(folder: nil).refreshDays(store, .vo2Max, now: now, calendar: utc)
+        let floor = try XCTUnwrap(utc.date(from: DateComponents(year: 2014, month: 1, day: 1)))
+        XCTAssertEqual(store.queries.last?.start, floor)
+    }
+
+    /// AC2, AC7a: "Delete all my data", an access reset and an empty Health each remove every
+    /// kept history; every write ran off the main thread.
+    func testDeleteAllAccessResetAndAnEmptyHealthRemoveTheHistories_AC2_AC7a() async throws {
+        let kept = try keptFile()
+        let folder = kept.deletingLastPathComponent()
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
+        func histories() throws -> [String] {
+            try FileManager.default.contentsOfDirectory(atPath: folder.path(percentEncoded: false)).filter { $0.hasPrefix("history-") || $0.hasPrefix("hours-") }.sorted()
+        }
+        func fill() async throws {
+            for metric in LiveMetric.allCases where metric != .sleep {
+                _ = try await live.history.refreshDays(store, metric, now: now, calendar: utc)
+                _ = try await live.history.refreshHours(store, metric, day: now, now: now, calendar: utc)
+            }
+            _ = try await live.history.refreshNights(store, now: now, calendar: utc)
+        }
+        try await fill()
+        XCTAssertEqual(try histories(), ["history-heartRate.json", "history-restingHeartRate.json", "history-sleep.json", "history-steps.json", "history-vo2Max.json",
+                                         "hours-heartRate.json", "hours-restingHeartRate.json", "hours-steps.json", "hours-vo2Max.json"])
+        let (writes, onMain) = (await live.history.writes, await live.history.writesOnMain)
+        XCTAssertGreaterThan(writes, 0)
+        XCTAssertEqual(onMain, 0, "every write ran off the main thread")
+        await live.forget()
+        XCTAssertEqual(try histories(), [], "Delete all my data")
+        try await fill()
+        store.due = true
+        await live.refresh()
+        XCTAssertEqual(try histories(), [], "access reset")
+        store.due = false
+        try await fill()
+        store.empty = Set(LiveMetric.allCases)
+        await live.refresh()
+        XCTAssertEqual(try histories(), [], "Health gave nothing back")
+    }
+
+    /// Adversary R3: Health holding none of one metric (its access off in Settings) removes that
+    /// metric's history and hours, and only that one's.
+    func testOneMetricGoneFromHealthRemovesOnlyItsHistory_R3() async throws {
+        let kept = try keptFile()
+        let folder = kept.deletingLastPathComponent()
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
+        _ = try await live.history.refreshNights(store, now: now, calendar: utc)
+        _ = try await live.history.refreshDays(store, .steps, now: now, calendar: utc)
+        _ = try await live.history.refreshHours(store, .steps, day: now, now: now, calendar: utc)
+        store.empty = [.sleep]
+        await live.refresh()
+        let exists = { (name: String) in FileManager.default.fileExists(atPath: folder.appending(path: name).path(percentEncoded: false)) }
+        XCTAssertFalse(exists("history-sleep.json"), "sleep's access off: its history goes")
+        XCTAssertTrue(exists("history-steps.json"))
+        XCTAssertTrue(exists("hours-steps.json"))
+        store.empty = [.steps]
+        await live.refresh()
+        XCTAssertFalse(exists("history-steps.json"))
+        XCTAssertFalse(exists("hours-steps.json"), "and its hours")
+    }
+
+    /// Codex R1: a failed hourly read throws, so the kept hours (and the page's drawn ones) stay.
+    func testAFailedHourlyReadKeepsTheKeptHours_CodexR1() async throws {
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let folder = try folder()
+        let history = LiveHistory(folder: folder)
+        let todays = try await history.refreshHours(store, .heartRate, day: now, now: now, calendar: utc)
+        XCTAssertFalse(todays.isEmpty)
+        store.failFrom = [.heartRate: (store.calls[.heartRate] ?? 0) + 1]
+        do {
+            _ = try await history.refreshHours(store, .heartRate, day: now, now: now, calendar: utc)
+            XCTFail("a failed hourly read throws, never an empty day")
+        } catch {}
+        let kept = await LiveHistory(folder: folder).keptHours(.heartRate, calendar: utc)
+        XCTAssertEqual(kept, todays, "the kept hours stay")
+    }
+
+    /// Codex R2: a metric revoked while its page is open bumps that metric's removal count, which
+    /// is in the page's read key, so the page clears what it drew and drops a read begun before;
+    /// that read keeps nothing on disk either.
+    func testARevokedMetricClearsItsOpenPage_CodexR2() async throws {
+        let kept = try keptFile()
+        let folder = kept.deletingLastPathComponent()
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
+        _ = try await live.history.refreshNights(store, now: now, calendar: utc)
+        let before = LiveMetricPage.Wanted(wakes: live.wakes, removals: live.removals[.sleep] ?? 0, range: .week, days: [])
+        store.set(.sleep, segments: [])
+        store.empty = [.sleep]
+        store.delay = .milliseconds(200)
+        let open = Task { try await live.history.refreshNights(store, now: now, calendar: utc) }
+        try await Task.sleep(for: .milliseconds(50))
+        store.delay = nil
+        await live.refresh()
+        _ = try? await open.value
+        XCTAssertEqual(live.removals[.sleep], 1)
+        XCTAssertNil(live.removals[.steps], "only the revoked metric")
+        XCTAssertNotEqual(LiveMetricPage.Wanted(wakes: live.wakes, removals: live.removals[.sleep] ?? 0, range: .week, days: []), before, "the open page reads again")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appending(path: "history-sleep.json").path(percentEncoded: false)))
+        let reread = try await live.history.refreshNights(store, now: now, calendar: utc)
+        XCTAssertTrue(reread.isEmpty, "and its read again draws nothing")
+    }
+
+    /// Adversary R10: card reads that all fail remove no history; only Health's answer of no data does.
+    func testFailedCardReadsKeepTheHistories_R10() async throws {
+        let kept = try keptFile()
+        let folder = kept.deletingLastPathComponent()
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
+        _ = try await live.history.refreshDays(store, .steps, now: now, calendar: utc)
+        _ = try await live.history.refreshNights(store, now: now, calendar: utc)
+        store.latestFails = true
+        await live.refresh()
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appending(path: "history-steps.json").path(percentEncoded: false)))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appending(path: "history-sleep.json").path(percentEncoded: false)))
+    }
+
+    /// Adversary R2: W, M, 6M and Y share one read; only D reads otherwise, so moving between
+    /// them never cancels and restarts the history read.
+    func testARangeSwitchKeepsTheReadUnderWay_R2() {
+        let ranges: [LiveRange] = [.week, .month, .sixMonths, .year]
+        for range in ranges {
+            XCTAssertEqual(LiveMetricPage.Wanted(wakes: 1, range: range, days: []), LiveMetricPage.Wanted(wakes: 1, range: .week, days: []))
+        }
+        XCTAssertNotEqual(LiveMetricPage.Wanted(wakes: 1, range: .day, days: []), LiveMetricPage.Wanted(wakes: 1, range: .week, days: []))
+    }
+
+    /// Adversary R3: the y-axis spans the points in view, so years of history do not flatten
+    /// this year's range; all of them when none is in view.
+    func testTheYAxisSpansThePointsInView_R3() {
+        let today = utc.startOfDay(for: now)
+        let old = LivePoint(start: today.addingTimeInterval(-3 * 365 * 86_400), value: 20_000)
+        let recent = LivePoint(start: today.addingTimeInterval(-86_400), value: 8_000)
+        let geometry = LiveChartGeometry(range: .week, now: now, calendar: utc, first: old.start)
+        XCTAssertEqual(LiveMetricPage.scaled([old, recent], geometry: geometry, from: geometry.windowStart), [recent])
+        XCTAssertEqual(LiveMetricPage.scaled([old], geometry: geometry, from: geometry.windowStart), [old], "none in view: all")
     }
 
     /// Adversary R4: a status check that throws keeps what was known; the Turn On row does not flash.
@@ -752,7 +1073,7 @@ final class LiveHealthTests: XCTestCase {
         let store = FakeLiveStore(due: false)
         store.fill(now: now)
         let first = ReadFor(wakes: 0, shows: 1)
-        let before = try await LiveHealth.readHours(store, .steps, day: now, now: now, calendar: utc)
+        let before = try await LiveHistory(folder: nil).refreshHours(store, .steps, day: now, now: now, calendar: utc)
         let today = utc.startOfDay(for: now)
         store.set(.steps, days: [LivePoint(start: today, value: 12_345)])
         let again = ReadFor(wakes: 0, shows: 2)
@@ -779,7 +1100,8 @@ final class LiveHealthTests: XCTestCase {
 
     /// AC1, AC2, AC11: the new code holds no defaults, record, engine, log or telemetry call.
     /// Only LiveHealth.swift touches a file, its kept readings' (Brad 2026-10-27), in a folder
-    /// made the record's way. Nothing outside it but My data's wiring names it.
+    /// made the record's way, and LiveHistory.swift the pages' histories beside it (AC7a, Brad
+    /// 2026-11-03). Nothing outside them but My data's wiring names them.
     func testTheLiveCodeKeepsAndSendsNothing_AC1_AC11() throws {
         let app = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appending(path: "HealthRoadmap")
         guard FileManager.default.fileExists(atPath: app.path(percentEncoded: false)) else {
@@ -787,21 +1109,22 @@ final class LiveHealthTests: XCTestCase {
         }
         let live = try FileManager.default.contentsOfDirectory(at: app.appending(path: "AppleHealthMetrics"), includingPropertiesForKeys: nil)
             .filter { $0.pathExtension == "swift" }
-        XCTAssertEqual(live.count, 7, "Vo2MaxBands.swift is the seventh (US-56 AC8)")
+        XCTAssertEqual(live.count, 8, "LiveHistory.swift is the eighth (US-56 AC7a)")
         for file in live {
             // Code only: comments may name what is not done.
             let text = try String(contentsOf: file, encoding: .utf8).split(separator: "\n")
                 .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }.joined(separator: "\n")
-            let keeps = file.lastPathComponent == "LiveHealth.swift"
-            // LiveHealth.swift's file calls, pinned exactly (adversary R9): one protected atomic
-            // write, one removal, both of the kept file, and the record's folder helper.
-            let allowed = ["try? data.write(to: kept, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])",
-                           "try? FileManager.default.removeItem(at: kept)",
-                           "RecordStore.appFolder(in: base, named: \"Apple Health\")"]
-            if keeps {
-                for call in allowed { XCTAssertEqual(text.components(separatedBy: call).count - 1, 1, call) }
-            }
-            let code = keeps ? allowed.reduce(text) { $0.replacingOccurrences(of: $1, with: "") } : text
+            // The file calls, pinned exactly (adversary R9): each one protected atomic write and
+            // one removal; LiveHealth.swift's of the kept file, with the record's folder helper.
+            let allowed = [
+                "LiveHealth.swift": ["try? data.write(to: kept, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])",
+                                     "try? FileManager.default.removeItem(at: kept)",
+                                     "RecordStore.appFolder(in: base, named: \"Apple Health\")"],
+                "LiveHistory.swift": ["try? data.write(to: folder.appending(path: name), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])",
+                                      "try? FileManager.default.removeItem(at: folder.appending(path: name))"],
+            ][file.lastPathComponent] ?? []
+            for call in allowed { XCTAssertEqual(text.components(separatedBy: call).count - 1, 1, call) }
+            let code = allowed.reduce(text) { $0.replacingOccurrences(of: $1, with: "") }
             for banned in ["UserDefaults", "FileManager", "write(to", "RecordStore", "HealthEngine", "print(", "Logger", "os_log", "NSLog", "SentrySDK", "ClaritySDK", "save("] {
                 XCTAssertFalse(code.contains(banned), "\(file.lastPathComponent) uses \(banned)")
             }
@@ -842,6 +1165,12 @@ final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
         var calls: [LiveMetric: Int] = [:]
         var failFrom: [LiveMetric: Int] = [:]
         var earliestFails = false
+        var earliestCalls = 0
+        var latestFails = false
+        /// Each version of the data, so `changes` can say what changed since an anchor.
+        var version = 0
+        var versions: [Int: (days: [LiveMetric: [LivePoint]], segments: [SleepSegment])] = [0: ([:], [])]
+        var changeLimit = Int.max
         init(due: Bool = true) { self.due = due }
     }
 
@@ -874,6 +1203,16 @@ final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
     var queries: [(start: Date, end: Date, component: Calendar.Component)] { with { $0.queries } }
     /// `earliest` throws, as HealthKit's other errors do.
     var earliestFails: Bool { get { with { $0.earliestFails } } set { with { $0.earliestFails = newValue } } }
+    var earliestCalls: Int { with { $0.earliestCalls } }
+    /// Every `latest` read fails, as HealthKit's other errors do (not a locked phone).
+    var latestFails: Bool { get { with { $0.latestFails } } set { with { $0.latestFails = newValue } } }
+    /// More changes than this since an anchor reports `more`, as HealthKit's limit does.
+    var changeLimit: Int { get { with { $0.changeLimit } } set { with { $0.changeLimit = newValue } } }
+
+    private static func record(_ state: inout State) {
+        state.version += 1
+        state.versions[state.version] = (state.days, state.segments)
+    }
 
     func fill(now: Date) {
         let today = Date(timeIntervalSince1970: (now.timeIntervalSince1970 / 86_400).rounded(.down) * 86_400)
@@ -885,6 +1224,7 @@ final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
             state.days[.vo2Max] = [LivePoint(start: days[10], value: 41.2)]
             state.latest = (64, now.addingTimeInterval(-600))
             state.segments = [SleepSegment(stage: .core, start: today.addingTimeInterval(-3600), end: today.addingTimeInterval(6 * 3600), source: "watch")]
+            Self.record(&state)
         }
     }
 
@@ -914,6 +1254,7 @@ final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
         try await wait()
         return try with { state in
             if state.locked { throw HealthStoreError.locked }
+            if state.latestFails { throw HKError(.errorHealthDataUnavailable) }
             if state.empty.contains(metric) { return nil }
             switch metric {
             case .heartRate: return state.latest.map { (value: $0.0, date: $0.1) }
@@ -926,6 +1267,7 @@ final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
     func earliest(_ metric: LiveMetric) async throws -> Date? {
         try await wait()
         return try with { state in
+            state.earliestCalls += 1
             if state.locked { throw HealthStoreError.locked }
             if state.earliestFails { throw HKError(.errorHealthDataUnavailable) }
             if state.empty.contains(metric) { return nil }
@@ -937,6 +1279,39 @@ final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
     func set(_ metric: LiveMetric, days: [LivePoint] = [], segments: [SleepSegment] = []) {
         with { state in
             if metric == .sleep { state.segments = segments } else { state.days[metric] = days }
+            Self.record(&state)
+        }
+    }
+
+    func changes(_ metric: LiveMetric, after anchor: Data?, from start: Date?) async throws -> LiveChanges {
+        try await wait()
+        return try with { state in
+            if state.locked { throw HealthStoreError.locked }
+            func id(_ segment: SleepSegment) -> String { segment.uuid ?? "sleep-\(segment.start.timeIntervalSince1970)-\(segment.stage.rawValue)" }
+            func tagged(_ segment: SleepSegment) -> SleepSegment { var segment = segment; segment.uuid = id(segment); return segment }
+            let days = state.empty.contains(metric) ? [] : state.days[metric] ?? []
+            let segments = state.empty.contains(.sleep) ? [] : state.segments
+            var changes = LiveChanges()
+            changes.anchor = Data(String(state.version).utf8)
+            if let anchor, let version = Int(String(decoding: anchor, as: UTF8.self)), let old = state.versions[version] {
+                if metric == .sleep {
+                    let (before, after) = (Set(old.segments.map(id)), Set(segments.map(id)))
+                    changes.deleted = before.subtracting(after).sorted()
+                    changes.segments = segments.filter { !before.contains(id($0)) }.map(tagged)
+                    changes.added = changes.segments.map(\.start)
+                } else {
+                    let before = old.days[metric] ?? []
+                    changes.deleted = before.filter { point in !days.contains { $0.start == point.start } }.map { "\(metric.rawValue)-\($0.start.timeIntervalSince1970)" }
+                    changes.added = days.filter { !before.contains($0) }.map(\.start)
+                }
+            } else if metric == .sleep {
+                changes.segments = segments.filter { start == nil || $0.start >= start! }.map(tagged)
+                changes.added = changes.segments.map(\.start)
+            } else {
+                changes.added = days.filter { start == nil || $0.start >= start! }.map(\.start)
+            }
+            changes.more = changes.added.count + changes.deleted.count > state.changeLimit
+            return changes
         }
     }
 
