@@ -85,7 +85,9 @@ this loop on reasoning alone: if you cannot measure it, you propose it.
     YouTube only began persisting 2026-08-07 — if its count is 0 after that
     date, something is broken; say so.
   - **YouTube reply length** (since 2026-08-10): for `platform = youtube`
-    assistant rows, median words and the count breaching ≤5 sentences / ≤90
+    assistant rows that were replies (`is_fallback = false AND failure_mode IS NULL
+    AND trim(content) <> 'SKIP_NO_REPLY'`; from 2026-11-03 a failed turn stores its
+    unposted line, US-15 AC52), median words and the count breaching ≤5 sentences / ≤90
     words / ≤25 words-per-sentence (baseline: median 84, one 132-word
     outlier). A rising breach rate means the prompt cap is decaying: propose
     a prompt fix, never a code truncation.

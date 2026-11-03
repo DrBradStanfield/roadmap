@@ -14,10 +14,10 @@ Hosted-server design: **rev 4, DECIDED: FINAL**. 2026-09-01. Brad has ruled on e
 | Local stdio MCP (US-32 phase 0) | The same tools over a local file path | `tools/mcp-server.ts` + [guides/connect-claude-desktop.md](guides/connect-claude-desktop.md) | shipped; verified with MCP Inspector and Claude Code 2026-09-02 |
 | Hosted MCP (US-32 phase 1) | The same tools behind a connector, sealed-token stateless | this doc + `app/lib/mcp*.server.ts` + [deploy-runbook-mcp.md](deploy-runbook-mcp.md) | LIVE 2026-09-02 at `https://mcp.drstanfield.com/mcp`; verified from Claude and ChatGPT on the web |
 | Hosted MCP over Drive (US-32 phase 2) | The same server, against Google Drive | this doc §7 + `packages/health-core/src/drive-rest.ts` | VERIFIED LIVE 2026-09-02: the `GOOGLE_DRIVE_*` secrets are on `health-tool-edu`, the consent screen offers Drive with brand verification approved (no unverified-app interstitial), and runbook step 8 passed over Drive |
-| `report_feedback` tool | Hosted: files the GitHub issue itself. Tokenless surfaces: prepares a link the user submits | `packages/health-core/src/mcp-tools.ts` + `app/lib/github-issues.server.ts` | shipped |
-| `import_documents` (US-35) | Hosted only: extract lab files from the Dropbox folder, then commit what the user accepted | `packages/health-core/src/mcp-tools.ts` + `app/lib/mcp-import.server.ts` + [mcp-build-notes.md](mcp-build-notes.md) | shipped 2026-09-04; verified live 2026-09-05 on the scratch Dropbox |
-| `file_results` (US-36) | Both servers: the assistant reads the file, the server checks every row and commits what the user accepted | `packages/health-core/src/mcp-tools.ts` (`fileResultsBundle`) over the same receipt surface | built 2026-09-07; live verification pending |
-| Folder nudge (US-37) | Hosted, Dropbox: a read lists folder files not in the record | `app/lib/mcp.server.ts` (`withFolderNudge`) + `folderNudge` in `mcp-tools.ts` | built 2026-09-07; live verification pending |
+| `report_feedback` tool | Hosted: files the GitHub issue itself. Tokenless surfaces: prepares a link the user submits | `packages/health-core/src/mcp-feedback.ts` + `app/lib/github-issues.server.ts` | shipped |
+| `import_documents` (US-35) | Hosted only: extract lab files from the Dropbox folder, then commit what the user accepted | `packages/health-core/src/mcp-import.ts` + `app/lib/mcp-import.server.ts` + [mcp-build-notes.md](mcp-build-notes.md) | shipped 2026-09-04; verified live 2026-09-05 on the scratch Dropbox |
+| `file_results` (US-36) | Both servers: the assistant reads the file, the server checks every row and commits what the user accepted | `packages/health-core/src/mcp-import.ts` (`fileResultsBundle`) over the same receipt surface | built 2026-09-07; live verification pending |
+| Folder nudge (US-37) | Hosted, Dropbox: a read lists folder files not in the record | `app/lib/mcp.server.ts` (`withFolderNudge`) + `folderNudge` in `mcp-import.ts` | built 2026-09-07; live verification pending |
 
 **One write path.** Every surface in this table that writes reads and saves the record through `SyncManager` over a `StorageAdapter`, read, migrate, merge, conditional write on `expectedVersion`, verify. The CLI and the stdio server hand it `FileAdapter` (one local file); the hosted server hands it `DropboxAdapter` or `DriveAdapter`, chosen by the provider sealed into the bearer token. The database of record is a constructor argument, not a second code path.
 
@@ -76,7 +76,7 @@ It ships in `docs/user-stories.md` **in the same commit as Phase-1 code: never b
 | --- | --- |
 | `app/routes/mcp.$.tsx` | MCP endpoint plus `/authorize`, `/token`, `/register`, `/callback`. One splat, one file. No `/disconnect`: with no state to delete there is nothing for it to do, and the real revocation is the provider's own settings page (§1). |
 | `app/routes/[.]well-known.$.tsx` | RFC 9728 and RFC 8414 documents must sit at host root, so they cannot live under `/mcp`. One splat serves both. |
-| `app/lib/mcp.server.ts` | Dispatch, corrections guards, write budget, -32603 gate. Tool definitions and Zod schemas live in `packages/health-core/src/mcp-tools.ts`. |
+| `app/lib/mcp.server.ts` | Dispatch, corrections guards, write budget, -32603 gate. Tool definitions live in `packages/health-core/src/mcp-tool-catalogue.ts` and Zod schemas in `mcp-tool-contract.ts`, both re-exported by `mcp-tools.ts`. |
 | `app/lib/mcp-config.server.ts` | The two secrets, the on switch, the public URLs. |
 | `app/lib/mcp-seal.server.ts` | Seal/unseal: per-type keys, AAD, padding, `kid`. |
 | `app/lib/mcp-step.server.ts` | The two-call step receipts (US-35 AC7, US-36 AC9): HMACs under per-kind HKDF keys, `STEP_WINDOWS`, `signStep`/`openStep`, `issueProposal`/`openProposal`. |

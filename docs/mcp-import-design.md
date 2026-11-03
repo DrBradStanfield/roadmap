@@ -4,7 +4,7 @@ Design lead output, 2026-09-04. An adversarial review (22 findings) reshaped
 the original brief before the build, and a simplify pass after it; only the
 resolved decisions are kept here. `docs/user-stories.md` US-35 is the source
 of truth for acceptance criteria and the schemas live in
-`packages/health-core/src/mcp-tools.ts` (`importDocumentsInput` /
+`packages/health-core/src/mcp-tool-contract.ts` (`importDocumentsInput` /
 `importDocumentsOutput`).
 
 ## Resolved decisions (what was built)

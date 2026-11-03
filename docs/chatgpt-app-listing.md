@@ -58,7 +58,7 @@ at **Submit for review**.
 
 ## Tool annotations
 
-All nine tools in `packages/health-core/src/mcp-tools.ts` declare all four hints, pinned by
+All nine tools in `packages/health-core/src/mcp-tool-catalogue.ts` declare all four hints, pinned by
 `mcp-tools.test.ts`. `_meta.ui.csp` and `_meta["openai/widgetCSP"]` are unused: no widget, no UI
 resource, no iframe. Leave the CSP fields blank.
 
