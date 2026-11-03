@@ -47,6 +47,17 @@
     }
   },
   {
+    "name": "medication-ezetimibe-not-taking",
+    "query": "I'm not taking ezetimibe.",
+    "category": "medication-edit",
+    "notes": "US-16 AC3: 'not taking' ezetimibe saves as its question's own 'no' (the parser maps 'none'), never a string the plan reads as an answer.",
+    "expect": {
+      "edits": [
+        { "kind": "medication", "medicationKey": "ezetimibe", "drugName": "no" }
+      ]
+    }
+  },
+  {
     "name": "ambiguous-unit-negative",
     "query": "My LDL is 3.8.",
     "category": "negative-ambiguous",

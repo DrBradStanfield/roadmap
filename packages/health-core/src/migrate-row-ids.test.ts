@@ -6,7 +6,7 @@ import { createEmptyFile, createMeasurement, createLabValue } from './roadmap-fi
 const opts = { deviceId: 'synthetic', now: '2026-06-15T12:00:00Z' };
 const stamp = '2025-01-15T03:00:00+02:00';
 const valid = {
-  measurements: createMeasurement({ id: 'measurement', metricType: 'ldl', value: 3, recordedAt: stamp, createdAt: stamp }),
+  measurements: createMeasurement({ id: 'measurement', metricType: 'weight', value: 80, recordedAt: stamp, createdAt: stamp }),
   labValues: createLabValue({ id: 'lab', metricName: 'synthetic-test', value: 7, unit: 'synthetic', recordedAt: stamp, createdAt: stamp }),
   medications: { id: 'med', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: null, doseUnit: null, updatedAt: stamp },
   medicationHistory: { id: 'med-history', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: null, doseUnit: null, updatedAt: stamp, changeType: 'started' },

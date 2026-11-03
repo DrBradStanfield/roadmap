@@ -1,4 +1,3 @@
-import { profileTitle } from '../lib/profile-title';
 import { SectionIcon } from './icons';
 import { Fragment, useState, useEffect, useLayoutEffect, useRef, type MutableRefObject, type ReactNode } from 'react';
 import { ColumnHeader } from './ColumnHeader';
@@ -32,6 +31,7 @@ import {
   screeningsToInputs,
   type ApiMeasurement,
   formatValue,
+  formatGradedOrLimit,
   type ApiMedication,
   type ApiScreening,
   STATIN_NAMES,
@@ -60,6 +60,7 @@ import {
   isBirthYearClearlyInvalid,
   parseLocalisedNumber,
   dayOf,
+  newestUsablePsa,
   localDay,
   MEDICATION_TEXT,
   SCREENING_TEXT,
@@ -79,11 +80,11 @@ import {
   dexaEligible,
   customSupplementAdd,
   customSupplementMatch,
+  LUNG_PACK_YEARS,
   type FormOption,
   type MedicationInputs,
 } from '@roadmap/health-core';
 import { formatShortDate, MONTHS_FULL } from '../lib/constants';
-import { InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
 import { BloodTestTimeline, useLiveRegion, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
 import { useMoveTest, type MoveTestApi } from './MoveTestPanel';
@@ -170,6 +171,11 @@ interface InputPanelProps {
   onMedicationChange: (medicationKey: string, drugName: string, doseValue: number | null, doseUnit: string | null) => void;
   screenings: ApiScreening[];
   onScreeningChange: (screeningKey: string, value: string) => void;
+  /** The PSA's day, YYYY-MM-DD (US-06 AC15): null until picked, today shows meanwhile. */
+  psaDate: string | null;
+  onPsaDateChange: (day: string) => void;
+  /** The PSA row is committed (US-06 AC15): saved soon when left, at once on its tick or Enter. */
+  onPsaCommit: (now: boolean) => void;
   supplements: ApiSupplement[];
   onSupplementChange: (key: string, name: string, doseValue: number | null, doseUnit: string | null, status?: string, startedAt?: string) => void;
   onSupplementDelete: (key: string) => void;
@@ -248,7 +254,7 @@ export function InputPanel({
   previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
   onCorrectValue, moveTest, onDraftValue,
   medications, onMedicationChange,
-  screenings, onScreeningChange,
+  screenings, onScreeningChange, psaDate, onPsaDateChange, onPsaCommit,
   supplements, onSupplementChange, onSupplementDelete,
   scheduleLongitudinalSave, flushLongitudinalSave,
   isSavingLongitudinal, fieldsSaved, hasApiResponse,
@@ -458,9 +464,9 @@ export function InputPanel({
   const vitalsRef = useRef<HTMLDivElement>(null);
   const [vitalsLeft, setVitalsLeft] = useState(aboutYouLow);
   useEffect(() => {
-    // An erase takes About you back to the top: the next record starts again (Codex R2).
+    // An erase takes About you back to the top: the next record starts again (Codex R2, adversary R4).
     setVitalsLeft(aboutYouLow && !vitalsRef.current?.contains(document.activeElement));
-    if (!aboutYouLow) yearJumped.current = false;
+    if (!aboutYouLow) { yearJumped.current = false; setAboutOpen(new Set()); }
   }, [aboutYouLow]);
   const vitalPending = (['weightKg', 'waistCm', 'systolicBp', 'diastolicBp'] as const).some(f => inputs[f] !== undefined);
   const vitalsAsRows = aboutYouLow && vitalsLeft && !vitalPending;
@@ -527,7 +533,6 @@ export function InputPanel({
   // boxes never turn into rows under someone typing. A missing or refused
   // answer opens its field, which stays open while it is typed in, until Done.
   const [aboutOpen, setAboutOpen] = useState<ReadonlySet<AboutKey>>(new Set());
-  const aboutAutoOpen = useRef(new Set<AboutKey>());
   // The birth year's field, once shown, stays while the birth question does:
   // a year cleared to retype keeps its field, whatever the stage. The
   // question going (an erase) starts it again.
@@ -576,9 +581,6 @@ export function InputPanel({
       setHeightInches('');
     }
   }, [inputs.heightCm, unitSystem]);
-
-  // PSA date picker state (for prostate section)
-  const [psaDate, setPsaDate] = useState<DateValue>(getCurrentDateValue);
 
   const parseAndConvert = (field: string, value: string): number | undefined => {
     const num = parseLocalisedNumber(value);
@@ -1193,17 +1195,21 @@ export function InputPanel({
       });
     };
     const done = (key: AboutKey) => {
-      aboutAutoOpen.current.delete(key);
       setAboutOpen(prev => { const next = new Set(prev); next.delete(key); return next; });
       focusById(`about-${key}`);
     };
+    // A missing or refused answer's row opens and stays open while it is
+    // typed in, until Done (one set, updated as it renders).
+    // The render-phase setAboutOpen is safe only because renderAboutRows is a
+    // plain function in InputPanel's own render, not a child component.
+    const opened = rows.filter(row => row.missing && !aboutOpen.has(row.key)).map(row => row.key);
+    if (opened.length > 0) setAboutOpen(prev => new Set([...prev, ...opened]));
     return (
       <ul className="md-rows about-rows">
         {rows.map(row => {
-          if (row.missing) aboutAutoOpen.current.add(row.key);
           return (
             <li key={row.key}>
-              {aboutOpen.has(row.key) || aboutAutoOpen.current.has(row.key) ? (
+              {aboutOpen.has(row.key) || row.missing ? (
                 <div className="about-editor" data-about={row.key}>
                   {row.editor()}
                   <button type="button" className="md-back about-done" onClick={() => done(row.key)}>Done</button>
@@ -1229,7 +1235,7 @@ export function InputPanel({
             className={`health-section-title${canCollapse ? ' health-section-title--collapsible' : ''}`}
             onClick={canCollapse ? () => setPrefillExpanded(!prefillExpanded) : undefined}
           >
-            <SectionIcon section="aboutYou"/>{profileTitle(aboutYouLow)}
+            <SectionIcon section="aboutYou"/>{aboutYouLow ? 'About you' : 'Starting Info'}
             {canCollapse && (
               <span className={`collapse-chevron${prefillExpanded ? ' expanded' : ''}`}>{'\u25B8'}</span>
             )}
@@ -2065,7 +2071,7 @@ export function InputPanel({
                       <span className="field-hint">{SCREENING_TEXT.packYearsHint}</span>
                     </div>
 
-                    {scr.lungPackYears !== undefined && scr.lungPackYears >= 20 && (
+                    {scr.lungPackYears !== undefined && scr.lungPackYears >= LUNG_PACK_YEARS && (
                       <>
                         <div className="health-field">
                           <label htmlFor="lung-screening">{SCREENING_LABELS.lungScreening}</label>
@@ -2114,15 +2120,27 @@ export function InputPanel({
                   <>
                     {/* PSA input with inline date picker */}
                     {(() => {
-                      const psaMeasurement = previousMeasurements.find(m => m.metricType === 'psa');
-                      const psaPreviousLabel = psaMeasurement
-                        ? `${formatValue('psa', psaMeasurement.value, 'si', psaMeasurement.comparator)} ng/mL · ${formatShortDate(psaMeasurement.recordedAt)}`
+                      const today = localDay(new Date());
+                      const psaDay = psaDate ?? today;
+                      const psaDayError = !psaDay || psaDay > today ? 'Choose a day up to today.' : null;
+                      // One PSA per day: a value typed for a day that holds one corrects it, so say so,
+                      // while a value is typed (US-06 AC15).
+                      const psaHeld = inputs.psa === undefined ? undefined
+                        : bloodTestHistory.find(m => m.metricType === 'psa' && dayOf(m.recordedAt) === psaDay);
+                      const psaMeasurement = newestUsablePsa(bloodTestHistory, new Date()); // the PSA the plan reads (US-06 AC14)
+                      const psaPreviousLabel = psaHeld
+                        ? `Replaces ${formatGradedOrLimit('psa', psaHeld.value, 'si', psaHeld.comparator)} ng/mL`
+                        : psaMeasurement
+                        ? `${formatGradedOrLimit('psa', psaMeasurement.value, 'si', psaMeasurement.comparator)} ng/mL · ${formatShortDate(psaMeasurement.recordedAt)}`
                         : null;
 
                       return (
                         <div className="health-field">
                           <label htmlFor="psa-input">{SCREENING_TEXT.psaLabel}</label>
-                          <div className="psa-inline-row">
+                          {/* Saves once focus leaves the row, so a date picked after the value counts (US-06 AC15). */}
+                          <div className="psa-inline-row" onBlur={(e) => {
+                            if (autoSaveGate && !unreadable.psa && !e.currentTarget.contains(e.relatedTarget as Node | null)) onPsaCommit(false);
+                          }}>
                             <input
                               type="number"
                               id="psa-input"
@@ -2144,21 +2162,26 @@ export function InputPanel({
                                 if (unreadable.psa) return;
                                 rangeWait.settle();
                                 setRawInputs(prev => { const next = { ...prev }; delete next.psa; return next; });
-                                autoSaveOnBlur();
                               }}
-                              onKeyDown={onNumericEnter}
+                              onKeyDown={(e) => {
+                                blockBadNumericKeys(e); settleOnEnter(e);
+                                if (e.key !== 'Enter') return;
+                                e.preventDefault();
+                                if (autoSaveGate && !unreadable.psa) onPsaCommit(true);
+                              }}
                               placeholder=""
                               step="0.1"
                               min={range('psa').min}
                               max={range('psa').max}
                               className={errors.psa ? 'error' : ''}
                             />
-                            <InlineDatePicker value={psaDate} onChange={setPsaDate} />
+                            <input type="date" aria-label="PSA test date" value={psaDay} max={today}
+                                   onChange={(e) => onPsaDateChange(e.target.value)} />
                             {autoSaveGate && inputs.psa !== undefined && (
-                              <CommitTickButton ariaLabel="Save PSA" onClick={flushLongitudinalSave}/>
+                              <CommitTickButton ariaLabel="Save PSA" onClick={() => onPsaCommit(true)}/>
                             )}
                           </div>
-                          {(unreadable.psa || errors.psa) && <span className="field-error">{unreadable.psa ? 'Enter a number' : errors.psa}</span>}
+                          {(unreadable.psa || errors.psa || psaDayError) && <span className="field-error">{unreadable.psa ? 'Enter a number' : errors.psa ?? psaDayError}</span>}
                           <div className="field-meta">
                             <span className="field-hint">{SCREENING_TEXT.psaHint}</span>
                             {psaPreviousLabel && (
@@ -2513,7 +2536,7 @@ export function InputPanel({
               <button type="button" className="md-back md-table-back" onClick={() => showTable(false)}>‹ Show as rows</button>
               {renderBloodTests()}
               {move.panel}
-              <AdditionalLabRows labValues={labValues} onAdded={onLabValueAdded} onCorrect={onCorrectValue} move={move.headers}/>
+              <AdditionalLabRows labValues={labValues} coreValues={bloodTestHistory} onAdded={onLabValueAdded} onCorrect={onCorrectValue} move={move.headers}/>
             </div>
           </div>
         ),

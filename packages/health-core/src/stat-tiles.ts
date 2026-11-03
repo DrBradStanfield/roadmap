@@ -8,7 +8,7 @@ import { getEgfrStatus, getHba1cStatus, getLipidStatus, getLpaStatus, getProtein
 import { lipidMarkerFor, type LipidMarker } from './suggestions';
 import { LIMIT_NOT_GRADED, formatLimit, formatValue, limitLabelValue, limitSIText, type LimitField } from './lab-limits';
 import {
-  APOB_THRESHOLDS, LDL_THRESHOLDS, NON_HDL_THRESHOLDS, formatDisplayValue, formatGradedValue, formatHeightDisplay,
+  APOB_THRESHOLDS, LDL_THRESHOLDS, NON_HDL_THRESHOLDS, formatDisplayValue, formatGradedReading, formatGradedValue, formatHeightDisplay,
   getDisplayLabel, isWaistToHeightElevated, type MetricType, type UnitSystem,
 } from './units';
 
@@ -184,7 +184,7 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
   const lpaLimit = results.limits?.lpa;
   if (results.lpa !== undefined || lpaLimit) {
     tiles.push({
-      key: 'lpa', label: 'Lp(a)', value: lpaLimit ? limitSIText('lpa', lpaLimit) : String(Math.round(results.lpa!)), unit: 'nmol/L',
+      key: 'lpa', label: 'Lp(a)', value: lpaLimit ? limitSIText('lpa', lpaLimit) : formatGradedReading('lpa', results.lpa!, 'si'), unit: 'nmol/L',
       status: tileStatus('lpa', results.lpa, (v) => reading(graded(getLpaStatus(v)))), evidence: reading(STAT_CARD_EVIDENCE['lpa']),
     });
   }
@@ -192,7 +192,9 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
   if (results.hba1c !== undefined || hba1cLimit) {
     tiles.push({
       key: 'hba1c', label: 'HbA1c',
-      value: formatValue('hba1c', hba1cLimit?.bound ?? results.hba1c!, usFor('hba1c'), hba1cLimit?.comparator),
+      value: hba1cLimit
+        ? formatValue('hba1c', hba1cLimit.bound, usFor('hba1c'), hba1cLimit.comparator)
+        : formatGradedReading('hba1c', results.hba1c!, usFor('hba1c')),
       unit: getDisplayLabel('hba1c', usFor('hba1c')),
       status: tileStatus('hba1c', results.hba1c, (v) => reading(graded(getHba1cStatus(v)))), evidence: reading(STAT_CARD_EVIDENCE['hba1c']),
     });

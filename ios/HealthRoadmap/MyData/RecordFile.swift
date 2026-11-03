@@ -70,7 +70,8 @@ enum PhoneApply: Sendable {
     case refused(EditOutcome)
     /// The edit changed nothing, so nothing was written.
     case unchanged
-    case saved(record: String, drawn: HealthEngine.Drawn)
+    /// `healthRecords`: what a Health Records batch did (US-72).
+    case saved(record: String, drawn: HealthEngine.Drawn, healthRecords: HealthRecordCounts?)
 }
 
 /// RecordStore's engine work and disk writes, on the engine's queue.
@@ -90,7 +91,14 @@ extension HealthEngine {
             try RecordStore.create(record, at: file)
         }
         do {
-            return PhoneLoad(record: record, drawn: try screen(recordJSON: record, now: .now, deviceId: deviceId, units: units), problem: nil)
+            let drawn = try screen(recordJSON: record, now: .now, deviceId: deviceId, units: units)
+            // US-66 AC14: a record in the old shape is written once, moved, as it opens. No pending
+            // marker: the move changes no value, and an open cloud moves its own copy. A refused
+            // write leaves the file as it was, and the next open tries again.
+            if let moved = drawn.movedRecord, (try? RecordStore.write(moved, to: file)) != nil {
+                return PhoneLoad(record: moved, drawn: drawn, problem: nil)
+            }
+            return PhoneLoad(record: record, drawn: drawn, problem: nil)
         } catch {
             // A damaged file, or one a newer app wrote: keep it as it is for a later fix.
             return PhoneLoad(record: record, drawn: nil, problem: "Your saved record could not be read, so nothing will be saved over it. \(error.localizedDescription)")
@@ -121,6 +129,6 @@ extension HealthEngine {
         let outcome = try apply(edit, to: record, now: .now, deviceId: deviceId, units: units)
         guard outcome.ok, let next = outcome.record else { return .refused(outcome) }
         if next == record { return .unchanged }
-        return .saved(record: next, drawn: try drawAndWrite(next, units: shownIn, to: file, marking: marking, deviceId: deviceId))
+        return .saved(record: next, drawn: try drawAndWrite(next, units: shownIn, to: file, marking: marking, deviceId: deviceId), healthRecords: outcome.healthRecords)
     }
 }

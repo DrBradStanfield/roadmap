@@ -10,6 +10,7 @@ import { statTiles, NOT_GRADED } from './stat-tiles';
 import { LIMIT_NOT_GRADED, type Comparator } from './lab-limits';
 import { isReadableRow, readableView } from './readable-rows';
 import { HBA1C_THRESHOLDS } from './units';
+import { moveBloodMeasurements } from './blood-tests';
 
 const NOW = new Date('2026-09-01T12:00:00.000Z');
 const DAY = '2026-08-01T00:00:00.000Z';
@@ -120,18 +121,26 @@ describe('US-12 AC20: the common cases', () => {
 });
 
 describe('US-12 AC20: a comparator a reader cannot interpret makes the row unreadable', () => {
+  // US-66 AC1: a blood test is a core lab row, a vital a measurement; both read a comparator alike.
+  const CORE_LDL = { id: 'a', metricName: 'ldl', value: 1, unit: 'mmol/L', referenceLow: null, referenceHigh: null, core: true };
+
   it.each(['=', '≥', 'gt', null, 1])('%s', (comparator) => {
-    expect(isReadableRow('measurements', { id: 'a', metricType: 'ldl', value: 1, comparator })).toBe(false);
+    expect(isReadableRow('measurements', { id: 'a', metricType: 'systolic_bp', value: 120, comparator })).toBe(false);
+    expect(isReadableRow('labValues', { ...CORE_LDL, comparator })).toBe(false);
     expect(isReadableRow('labValues', { id: 'a', metricName: 'egfr', value: 60, unit: 'mL/min/1.73m²', comparator })).toBe(false);
   });
 
   it('the four codes, and none, are readable; an unreadable one is kept in the file and hidden from the plan', () => {
     for (const comparator of ['<', '<=', '>', '>=', undefined]) {
-      expect(isReadableRow('measurements', { id: 'a', metricType: 'ldl', value: 1, comparator })).toBe(true);
+      expect(isReadableRow('measurements', { id: 'a', metricType: 'systolic_bp', value: 120, comparator })).toBe(true);
+      expect(isReadableRow('labValues', { ...CORE_LDL, comparator })).toBe(true);
     }
-    const file = record([{ metricType: 'ldl', value: 1.5, comparator: '≤' as Comparator }]);
+    // The move carries the bad code over as it is (US-66 AC2), so the core row is the one hidden.
+    const old = record([{ metricType: 'ldl', value: 1.5, comparator: '≤' as Comparator }]);
+    const file = { ...old, ...moveBloodMeasurements(old.measurements, old.labValues) };
     expect(readableView(file).count).toBe(1);
-    expect(file.measurements).toHaveLength(1);
+    expect(file.labValues).toHaveLength(1);
+    expect(file.labValues[0]).toMatchObject({ id: 'm0', core: true, comparator: '≤' });
     expect(computePlan(readableView(file).file, NOW).currentRows).toEqual([]);
   });
 });

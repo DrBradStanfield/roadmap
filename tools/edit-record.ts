@@ -21,7 +21,9 @@
  * touched. why: docs/mcp-architecture.md §7.
  */
 import { pathToFileURL } from 'node:url';
+import { isCoreRow } from '../packages/health-core/src/core-rows';
 import { BACKUPS_KEPT, FileAdapter } from '../packages/health-core/src/file-adapter';
+import { comparatorOf, formatGradedOrLimit } from '../packages/health-core/src/lab-limits';
 import { oneLine, PlanError } from '../packages/health-core/src/plan';
 import {
   appendLabValue,
@@ -43,8 +45,12 @@ export const HELP = `edit_record — add and correct values in your own record f
 
 add        --metric  one of the app's core metrics (ldl, hba1c, weight, …), stored
                      in SI units; --unit converts from the other unit system.
-           --test    any other blood test, by catalogue name (ferritin, tsh, …);
-                     --unit is required and is the unit the LAB printed: a
+                     A blood test is stored in labValues as a core row
+                     (core: true); weight, waist and blood pressure in
+                     measurements.
+           --test    any blood test, by name (ferritin, tsh, "LDL Cholesterol", …);
+                     --unit is required and is the unit the LAB printed. A core
+                     blood test's name writes its core row, as --metric does; a
                      catalogued test is stored in the catalogue's SI unit, and a
                      spelling it does not know for that test is refused, naming
                      the ones it takes. A test the catalogue does not know is
@@ -133,13 +139,20 @@ function rowName(row: Row): string {
   return 'metricType' in row ? row.metricType : row.metricName;
 }
 
+/** The core metric a row holds: a vital, or a core blood-test row (US-66 AC1). */
+function coreMetricOf(row: Row): MetricType | undefined {
+  return 'metricType' in row || isCoreRow(row) ? (rowName(row) as MetricType) : undefined;
+}
+
 /**
- * What to echo back. A measurement is STORED unrounded — converting 81 mg/dL
+ * What to echo back. A core value is STORED unrounded — converting 81 mg/dL
  * gives 2.094647… and the app stores the same — but a confirmation line reads
  * as a value, so it is rounded the way the app displays it.
  */
 function shownValue(row: Row): string {
-  const metric = 'metricType' in row ? (row.metricType as MetricType) : undefined;
+  const metric = coreMetricOf(row);
+  // A raised PSA prints on its side of 4.0, as the app shows it (US-06 AC18).
+  if (metric === 'psa') return formatGradedOrLimit('psa', row.value, 'si', comparatorOf(row).comparator);
   return metric && UNIT_DEFS[metric] ? formatDisplayValue(metric, row.value, 'si') : String(row.value);
 }
 
@@ -168,7 +181,7 @@ interface Change {
 function runAdd(args: Args, record: RoadmapFile, now: string): Change {
   const { '--metric': metric, '--test': test, '--unit': unit, '--date': date } = args.flags;
   if (!!metric === !!test) {
-    throw new PlanError('Give either --metric (a core metric) or --test (any other blood test)', 'Run with --help for the list.');
+    throw new PlanError('Give either --metric (a core metric) or --test (a blood test by name)', 'Run with --help for the list.');
   }
   const value = numberFlag(args, '--value');
 

@@ -15,7 +15,7 @@
 import * as z from '../../packages/health-core/src/zod';
 import { CLASSIFIER_MODEL, modelParams } from '../../packages/health-core/src/models';
 import { callAnthropicWithUsage } from './anthropic.server';
-import { SCRUB_UNITS } from '../../packages/health-core/src/sentry-scrub';
+import { SCRUB_UNIT_PATTERN } from '../../packages/health-core/src/sentry-scrub';
 
 /** Per call. The purge's own 5-minute budget bounds the run. */
 export const SCRUB_TIMEOUT_MS = 15_000;
@@ -90,35 +90,76 @@ function leavesName(question: string, kept: string): boolean {
 const leavesIdentity = (question: string, kept: string) => HANDLE.test(kept) || leavesName(question, kept);
 
 const collapse = (text: string) => text.replace(/\s+/g, ' ').trim();
-const MONTH = /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/i;
+/** A whole word that is a month name or its short form, so "March-2024" and "March/cancer" are not one. */
+const MONTH = /^(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)$/i;
+/** A day of the month, 1 to 31, or a masked widget day ("#", "##"). */
+const DAY = /^(?:0?[1-9]|[12]\d|3[01]|#{1,2})(?:st|nd|rd|th)?$/i;
+/** A month word; "may" counts only as "May", since lower case it is the verb ("15 may mean"). */
+const isMonth = (w: string) => MONTH.test(w) && (w.toLowerCase() !== 'may' || w === 'May');
 /** Words that change what a question means; a placeholder never covers one. */
 const MEANING = /\b(?:not|no|never|cannot|without|unless|except|but|if|than|less|more|only|avoid|stop|instead|before|after)\b|n['’]t\b/i;
 const STREET = /\b(?:st|street|rd|road|ave|avenue|lane|ln|drive|dr|pl|place|cres|crescent|way|tce|terrace|blvd|boulevard|ct|court|close|hwy|highway)\b/i;
 /** A masked widget digit (`#`) counts as a digit. */
 const DIGIT = /[\d#]/;
-/** A digit then a dose or lab unit (the Sentry scrub's list, longest first; inches left out, as there). */
-const UNIT_VALUE = new RegExp(`[\\d#]\\s*(?:${SCRUB_UNITS.filter((u) => u !== 'in' && u !== '"')
-  .sort((a, b) => b.length - a.length).map((u) => u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(?![a-z])`, 'gi');
+/** A digit then a dose or lab unit, matched as the Sentry scrub matches it (inches left out, as there). */
+const UNIT_VALUE = new RegExp(`[\\d#]\\s*(?:${SCRUB_UNIT_PATTERN})(?![a-z])`, 'gi');
 /** Is a digit of `span` a dose or lab value, its unit in the span or just after it (US-15 AC44a)? */
 const holdsUnitValue = (span: string, after: string) =>
   [...`${span} ${after}`.matchAll(UNIT_VALUE)].some((m) => m.index < span.length);
 /** May placeholder `kind` stand for `span`, given the question's text `after` it (US-15 AC44a)? */
 const mayStandFor = (kind: string, span: string, after: string) => covers(kind, span) && !holdsUnitValue(span, after);
 
+/** Lower-case words a proper noun may hold ("University of Otago", "van Dijk"). */
+const JOINERS = new Set(['of', 'the', 'de', 'da', 'di', 'du', 'del', 'la', 'le', 'van', 'von', 'der', 'den']);
+/**
+ * Is `span` a proper noun: no digit, and every word starting with a capital
+ * letter or a joining word, the first a capital (US-15 AC44c)? So "Alice has
+ * cancer" is not a name. A single capitalised drug name still passes (AC44).
+ */
+function isProperNoun(span: string): boolean {
+  const words = span.split(' ');
+  return !DIGIT.test(span) && /^\p{Lu}/u.test(span) && words.every((w) => /^\p{Lu}/u.test(w) || JOINERS.has(w));
+}
+
+/**
+ * May age placeholder `kind` stand for `span`? Only a number of 1 to 3 digits, and
+ * only as its own decade, 90 and over as `[age 90+]` (US-15 AC44b). A masked
+ * widget age (`#`) has no decade to check.
+ */
+function coversAge(kind: string, span: string): boolean {
+  if (!/^[\d#]{1,3}$/.test(span)) return false;
+  if (span.includes('#')) return true;
+  const n = Number(span);
+  return kind === (n >= 90 ? '[age 90+]' : `[age ${Math.floor(n / 10)}0s]`);
+}
+
+/**
+ * Is `span` a day and a month: a month word, at most one day ("3", "3rd",
+ * "##") and nothing else but "of", each word tested whole (US-15 AC44d)? A
+ * year is kept, as the prompt says, so "March 2024", "March-2024" and "March
+ * and cancer" are not a date, and "80 March 3rd" is not one day.
+ */
+function isDayMonth(span: string): boolean {
+  const words = span.split(/\s+/);
+  return words.some(isMonth) && words.filter((w) => DAY.test(w)).length <= 1 &&
+    words.every((w) => isMonth(w) || DAY.test(w) || w === 'of');
+}
+
 /**
  * May this placeholder stand for this span of the question? Each kind covers
  * only what it names, so a swap cannot swallow a "not", a clause or a dose:
  * never a word that changes meaning (MEANING), never a sentence break (titles
  * like "Dr." aside), a word limit per kind, and a shape per kind. An age is
- * only its number; an id one token with 4 or more digits or letters and
- * digits mixed; a contact detail an email, a web address, a phone (a run of 7
+ * only its number, as its own decade; an id one token with 4 or more digits
+ * or letters and digits mixed; a contact detail an email, a web address, a phone (a run of 7
  * or more digits) or a numbered street address; a date a month or a d/m
- * shape; a name, a place or a job (an employer or school) a capitalised word with no digit.
+ * shape; a name, a place or a job (an employer or school) capitalised words
+ * with no digit (isProperNoun).
  * Doubt is a skip: a question lost is safer than a question changed.
  */
 function covers(kind: string, span: string): boolean {
   const k = kind.toLowerCase();
-  if (k.startsWith('[age')) return /^[\d#]{1,3}$/.test(span);
+  if (k.startsWith('[age')) return coversAge(k, span);
   const words = span.split(' ').length;
   const limit = ({ '[id]': 1, '[date]': 3, '[name]': 4, '[job]': 4, '[place]': 6 } as Record<string, number>)[k] ?? 8;
   // A title's full stop ("Dr. Lee") is no sentence break.
@@ -129,8 +170,8 @@ function covers(kind: string, span: string): boolean {
     case '[contact]':
       return /@/.test(span) || /:\/\/|\bwww\./i.test(span) || /[\d#]{7,}/.test(span.replace(/[\s()+-]/g, '')) ||
         (/^[\d#]/.test(span) && STREET.test(span));
-    case '[date]': return MONTH.test(span) || /^[\d#]{1,2}[/-][\d#]{1,2}$/.test(span);
-    default: return /\p{Lu}/u.test(span) && !DIGIT.test(span); // [name], [place], [job]: proper nouns
+    case '[date]': return isDayMonth(span) || /^[\d#]{1,2}[/-][\d#]{1,2}$/.test(span);
+    default: return isProperNoun(span); // [name], [place], [job]
   }
 }
 

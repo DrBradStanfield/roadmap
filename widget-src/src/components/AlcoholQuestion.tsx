@@ -16,13 +16,13 @@ export const ALCOHOL_OPTIONS: ReadonlyArray<{ value: AlcoholAnswer; label: strin
 ];
 
 /** US-60 AC3: the card's question, with the answer the profile holds now and
- *  the title of the section whose rows hold the Alcohol row (`profileTitle`,
- *  lib/profile-title.ts), or none while onboarding, when no row shows. */
-export type AlcoholQuestion = { answer?: AlcoholAnswer; onAnswer: (answer: AlcoholAnswer) => void; section?: string };
+ *  whether About you's rows hold the Alcohol row (once About you sits low,
+ *  US-62 AC12); none while onboarding, when no row shows. */
+export type AlcoholQuestion = { answer?: AlcoholAnswer; onAnswer: (answer: AlcoholAnswer) => void; aboutYouRow?: boolean };
 
 /** Shown in the dialog's place after "I still drink", which saves nothing. It
  *  points to the Alcohol row only where one shows (US-60 AC4). */
-export const stillDrinkLine = (section?: string) => `This stays on your plan because the advice applies to anyone who drinks.${section ? ` You can change your answer in ${section}.` : ''}`;
+export const stillDrinkLine = (aboutYouRow?: boolean) => `This stays on your plan because the advice applies to anyone who drinks.${aboutYouRow ? ' You can change your answer in About you.' : ''}`;
 
 /**
  * The Dismiss for `reduce-alcohol` (US-60 AC3), or null. Unanswered, it asks
@@ -32,11 +32,11 @@ export const stillDrinkLine = (section?: string) => `This stays on your plan bec
  * "I don't drink" and "I've stopped" take the card off the plan at once.
  */
 export function alcoholDismiss(suggestion: Suggestion, question?: AlcoholQuestion) {
-  return suggestion.id === REDUCE_ALCOHOL_ID && question ? <AlcoholDismiss drinks={question.answer === 'drinks'} onChoose={question.onAnswer} section={question.section} /> : null;
+  return suggestion.id === REDUCE_ALCOHOL_ID && question ? <AlcoholDismiss drinks={question.answer === 'drinks'} onChoose={question.onAnswer} aboutYouRow={question.aboutYouRow} /> : null;
 }
 
 /** The Dismiss button and its question. */
-function AlcoholDismiss({ drinks, onChoose, section }: { drinks: boolean; onChoose: (answer: AlcoholAnswer) => void; section?: string }) {
+function AlcoholDismiss({ drinks, onChoose, aboutYouRow }: { drinks: boolean; onChoose: (answer: AlcoholAnswer) => void; aboutYouRow?: boolean }) {
   // 'stays': "I still drink" was chosen, and the dialog says why the card stays.
   const [open, setOpen] = useState<false | 'ask' | 'stays'>(false);
   const firstRef = useRef<HTMLButtonElement>(null);
@@ -70,7 +70,7 @@ function AlcoholDismiss({ drinks, onChoose, section }: { drinks: boolean; onChoo
           <div className="upload-modal alcohol-dialog" role="dialog" aria-modal="true" aria-labelledby="alcohol-dialog-title">
             {open === 'stays' ? (
               <>
-                <p id="alcohol-dialog-title" className="alcohol-dialog-note">{stillDrinkLine(section)}</p>
+                <p id="alcohol-dialog-title" className="alcohol-dialog-note">{stillDrinkLine(aboutYouRow)}</p>
                 <button ref={firstRef} type="button" className="upload-btn-primary" onClick={() => setOpen(false)}>OK</button>
               </>
             ) : (

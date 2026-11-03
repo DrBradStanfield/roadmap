@@ -5,7 +5,7 @@ Companion to [lab-upload.md](lab-upload.md) (the website upload) and
 record: [mcp-import-design.md](mcp-import-design.md). Acceptance criteria:
 US-35 in [user-stories.md](user-stories.md). Code:
 `app/lib/mcp-import.server.ts` (the hosted surface),
-`packages/health-core/src/mcp-tools.ts` (`prepareImport`, `commitImport`, schemas),
+`packages/health-core/src/mcp-import.ts` (`prepareImport`, `importDocumentsCommit`) and `mcp-tool-contract.ts` (schemas),
 `packages/health-core/src/import-hints.ts` (limits and the hint table).
 
 ## What it is

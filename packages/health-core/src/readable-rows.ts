@@ -11,6 +11,7 @@
  * active), a `source: null` or a `metadata: null` stays readable, as it was.
  * Hand-written checks, not Zod: this runs over every row on every read.
  */
+import { BLOOD_TEST_METRICS } from './mappings';
 import { MEDICATION_KEYS, METRIC_TYPES } from './validation';
 import { LPA_UNITS, UNIT_SYSTEMS } from './units';
 import { ALCOHOL_ANSWERS, isSex } from './types';
@@ -19,7 +20,8 @@ import type { RoadmapFile } from './roadmap-file';
 
 type Row = Record<string, unknown>;
 
-const METRICS: ReadonlySet<unknown> = new Set(METRIC_TYPES);
+/** A blood test left in `measurements` is one the move could not rename (US-66 AC2): unreadable. */
+const METRICS: ReadonlySet<unknown> = new Set(METRIC_TYPES.filter((metric) => !BLOOD_TEST_METRICS.includes(metric)));
 const MEDICATIONS: ReadonlySet<unknown> = new Set(MEDICATION_KEYS);
 const isNumber = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
 const isObject = (v: unknown) => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -44,7 +46,7 @@ const ROWS = {
   measurements: (r: Row) => METRICS.has(r.metricType) && isNumber(r.value) && comparator(r)
     && strings(r, ['status', 'createdAt', 'source', 'correctsId', 'externalId']),
   labValues: (r: Row) => typeof r.metricName === 'string' && isNumber(r.value) && comparator(r) && optNumber(r.referenceLow) && optNumber(r.referenceHigh)
-    && strings(r, ['unit', 'status', 'createdAt', 'source', 'correctsId']),
+    && strings(r, ['unit', 'status', 'createdAt', 'source', 'correctsId', 'externalId']),
   medications: medication,
   medicationHistory: medication,
   supplements: supplement,

@@ -1,7 +1,8 @@
 // US-25 AC2: the plan's layout is one function, shared by the web's results
 // panel and the iOS app, so both show the same cards in the same order.
 import { describe, expect, it } from 'vitest';
-import { planSections } from './plan-sections';
+import { LEADING_IDS, planSections } from './plan-sections';
+import { generateSuggestions } from './suggestions';
 import type { Suggestion } from './types';
 
 const s = (id: string, priority: Suggestion['priority'], category: Suggestion['category']): Suggestion =>
@@ -26,9 +27,24 @@ describe('planSections (US-25 AC2)', () => {
     ];
 
     expect(layout(suggestions)).toEqual([
-      ['Next Steps', [['screening-colorectal', 'screening-cervical'], ['weight-med-glp1', 'med-ezetimibe'], ['bp-stage1'], ['measure-waist']]],
+      ['Next Steps', [['measure-waist'], ['screening-colorectal', 'screening-cervical'], ['weight-med-glp1', 'med-ezetimibe'], ['bp-stage1']]],
       ['Foundation', [['screening-breast'], ['hba1c-normal']]],
     ]);
+  });
+
+  it('leads Next Steps with the waist prompt, then the blood pressure prompt (US-07 AC11)', () => {
+    const suggestions = [
+      s('screening-colorectal', 'attention', 'screening'),
+      s('screening-cervical', 'attention', 'screening'),
+      s('measure-bp', 'attention', 'blood_pressure'),
+      s('weight-med-glp1', 'attention', 'medication'),
+      s('measure-waist', 'attention', 'general'),
+    ];
+    expect(layout(suggestions)).toEqual([
+      ['Next Steps', [['measure-waist'], ['measure-bp'], ['screening-colorectal', 'screening-cervical'], ['weight-med-glp1']]],
+    ]);
+    // With a waist on record, the blood pressure prompt leads.
+    expect(layout(suggestions.filter((x) => x.id !== 'measure-waist'))[0][1][0]).toEqual(['measure-bp']);
   });
 
   it('orders the five sections and leaves empty ones out', () => {
@@ -82,5 +98,17 @@ describe('planSections (US-25 AC2)', () => {
       ['Skin Health', [['retinoid'], ['sunscreen']]],
       ['Supplements', [['omega'], ['creatine']]],
     ]);
+  });
+});
+
+describe('US-07 AC11: one source for the leading prompts', () => {
+  it('the engine emits the leading ids first, in their order, each on its own card', () => {
+    const emitted = generateSuggestions({ heightCm: 178 }, { heightCm: 178, age: 40, suggestions: [] });
+    expect(emitted.slice(0, LEADING_IDS.length).map((x) => x.id)).toEqual([...LEADING_IDS]);
+    // Adversary B: an id names its card's content, so a reorder of the list cannot swap them.
+    expect(emitted.find((x) => x.id === 'measure-waist')).toMatchObject({ title: 'Measure your waist circumference', category: 'general' });
+    expect(emitted.find((x) => x.id === 'measure-waist')?.reason).toContain('Waist-to-height');
+    expect(emitted.find((x) => x.id === 'measure-bp')).toMatchObject({ title: 'Measure your blood pressure', category: 'blood_pressure' });
+    expect(emitted.find((x) => x.id === 'measure-bp')?.reason).toContain('blood pressure');
   });
 });

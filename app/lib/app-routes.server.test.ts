@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   audit: vi.fn(),
   getChatCompletion: vi.fn(),
   extract: vi.fn(),
+  event: vi.fn(),
   rootPem: '',
 }));
 vi.mock('../shopify.server', () => ({ authenticate: { public: { appProxy: vi.fn() } } }));
@@ -36,6 +37,10 @@ vi.mock('./chat-router.server', async (original) => ({
   ...await original<typeof import('./chat-router.server')>(),
   routeQuery: vi.fn(async () => ({ handles: ['apob'], latencyMs: 0, cacheHit: false, usage: { inputTokens: 0, cacheReadTokens: 0 } })),
   reportRouterFailure: vi.fn(),
+}));
+vi.mock('./product-events.server', async (original) => ({
+  ...await original<typeof import('./product-events.server')>(),
+  recordServerEvent: mocks.event,
 }));
 vi.mock('./chat-classifier.server', () => ({ classifyMessage: async () => ({ routerSkipped: false, classification: 'ROUTE', latencyMs: 0 }), shouldFireRouter: () => true }));
 vi.mock('./anthropic.server', async (original) => ({
@@ -139,6 +144,7 @@ beforeEach(async () => {
   mocks.from.mockReset();
   mocks.guest.mockReset();
   mocks.audit.mockReset();
+  mocks.event.mockReset();
   vi.spyOn(console, 'log').mockImplementation(() => {});
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
@@ -563,6 +569,42 @@ describe('US-52 AC5: the chat turn', () => {
     expect(mocks.guest).not.toHaveBeenCalled();
     expect(mocks.from).not.toHaveBeenCalled();
     expect(mocks.audit).not.toHaveBeenCalled();
+  });
+});
+
+describe('US-67 AC1: the app asks for the form tools with edits: 1', () => {
+  const proposal = { kind: 'field', field: 'ldlC', displayValue: 3.4, unitSystem: 'si', date: null };
+
+  it('US-67 AC1: edits 1 gets the form tools, the profile tool, the app words and its own inputs, storing nothing', async () => {
+    await registered();
+    mocks.getChatCompletion.mockImplementation(async () => ({
+      content: '', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0 }, isFallback: false,
+      stopReason: 'end_turn', proposedEdits: [proposal], roadmapRun: { applied: 1, rejected: 0 },
+    }));
+    const out = await lines(await appChat(signed('/api/app/v1/chat', { ...chatBody, edits: 1 }), store));
+    expect(out.at(-1)).toMatchObject({ type: 'done', success: true, proposedEdits: [proposal] });
+    const [, , canApplyEdits, , opts] = mocks.getChatCompletion.mock.calls[0];
+    expect(canApplyEdits).toBe(true);
+    expect(opts).toEqual({ subscriptionTool: false, guestInputs: chatBody.guestInputs, profileEdits: true, app: true });
+    // D9: no guest session, no row, no audit, and no run_roadmap usage row (product_events).
+    expect(mocks.guest).not.toHaveBeenCalled();
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.audit).not.toHaveBeenCalled();
+    expect(mocks.event).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['no edits', {}],
+    ['edits true', { edits: true }],
+    ['edits "1"', { edits: '1' }],
+    ['edits 2', { edits: 2 }],
+    ['the widget\'s flags', { canApplyEdits: true, canApplyProfileEdits: true }],
+  ])('US-67 AC1: an app with %s gets no form tools', async (_name, flags) => {
+    await registered();
+    await lines(await appChat(signed('/api/app/v1/chat', { ...chatBody, ...flags }), store));
+    const [, , canApplyEdits, , opts] = mocks.getChatCompletion.mock.calls[0];
+    expect(canApplyEdits).toBe(false);
+    expect(opts).toBeUndefined();
   });
 });
 

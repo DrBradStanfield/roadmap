@@ -137,12 +137,18 @@ enum OnboardingSteps {
         }
     }
 
-    /// The unit choice to write for the phone's region (AC6): the US system for a US
-    /// phone, metric for the rest. Only for a new record: never one with values, and
-    /// never a record that came from the cloud (review R5). Nil: write nothing.
-    static func regionUnits(hasValues: Bool, onlyMissing: Bool, current: String, system: Locale.MeasurementSystem) -> String? {
+    /// The unit choice to write for the phone's region (AC6): the US system for a phone
+    /// whose measurement system is the US one, or where the web's first-visit rule gives
+    /// US units (`engine`: health-core's `detectUnitSystem` for this region and time zone;
+    /// the US territories and Myanmar, US-05 AC5); metric for the rest. A measurement
+    /// system chosen in Settings wins over the region. Only for a new record: never one
+    /// with values, and never a record that came from the cloud (review R5). Nil: write nothing.
+    static func regionUnits(hasValues: Bool, onlyMissing: Bool, current: String, locale: Locale, engine: String?) -> String? {
         guard !hasValues, !onlyMissing else { return nil }
-        let units = TypedAnswer.system(system == .us)
+        var region = Locale.Components(locale: locale)
+        region.measurementSystem = nil
+        let chosen = locale.measurementSystem != Locale(components: region).measurementSystem
+        let units = TypedAnswer.system(locale.measurementSystem == .us || (!chosen && engine == "conventional"))
         return units == current ? nil : units
     }
 }

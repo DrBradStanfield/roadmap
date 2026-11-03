@@ -114,6 +114,10 @@ export interface AdditionalLabValue {
   recordedAt?: string;
   printedMonth?: string;
   comparator?: Comparator;
+  /** As on health-core's `AdditionalLabValue` (US-12 AC11a): the model's flag on a core-list row. */
+  printedName?: string;
+  confidence?: ExtractedValue['confidence'];
+  question?: string;
 }
 
 export interface LabImportResult {
@@ -196,4 +200,6 @@ export interface BulkLabValuesResult {
   errorCount: number;
   /** Rows refused for their unit — never silently dropped. */
   refused: LabUnitRefusal[];
+  /** Core values (a core test's name, US-66 AC6) refused for their number — shown, never dropped. */
+  measurementRefusals?: MeasurementRefusal[];
 }

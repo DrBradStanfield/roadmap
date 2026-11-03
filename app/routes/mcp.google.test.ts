@@ -263,7 +263,8 @@ describe('a Google connection, end to end (US-32 phase 2)', () => {
     const added = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
     expect(added.isError).toBe(false);
     expect(added.text).toContain('Saved to the user’s Google Drive');
-    expect(storedRecord().measurements.find((m) => m.status === 'active')!.value).toBe(3.2);
+    // US-66 AC6: a blood test lands as a core row in labValues.
+    expect(storedRecord().labValues.find((l) => l.core && l.status === 'active')!.value).toBe(3.2);
     expect(builtFor).toEqual(['google', 'google']);
 
     // The refresh grant carries the provider through, so a renewed token still

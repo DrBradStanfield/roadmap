@@ -1,3 +1,4 @@
+import HealthKit
 import XCTest
 @testable import HealthRoadmap
 
@@ -379,6 +380,17 @@ final class HealthSampleTests: XCTestCase {
         XCTAssertFalse(HealthKitClient.isOwn(bundleIdentifier: "com.withings.wiScaleNG", syncIdentifier: nil, ownBundle: "com.drstanfield.healthroadmap"))
     }
 
+    /// US-25 AC13: Apple refuses `HKCorrelationType` for background delivery, so blood
+    /// pressure is observed as its two halves; lab results come last, only where offered.
+    func testObservedTypesHaveNoCorrelation_US25_AC13() {
+        XCTAssertEqual(HealthKitClient.observedTypes([.bloodPressure], labResults: false),
+                       [HKQuantityType(.bloodPressureSystolic), HKQuantityType(.bloodPressureDiastolic)])
+        let all = HealthKitClient.observedTypes(HealthKind.allCases, labResults: true)
+        XCTAssertFalse(all.contains { $0 is HKCorrelationType })
+        XCTAssertEqual(all.last, HealthKitClient.labResults)
+        XCTAssertEqual(all.count, HealthKind.allCases.count + 2, "every kind, blood pressure twice, lab results once")
+    }
+
     func testAWriteLandsAtNoonOnItsDay() throws {
         let write = HealthWrite(syncId: "a", version: 1, day: "2026-10-20", values: ["weight": 80])
         let zone = TimeZone(identifier: "America/New_York")!
@@ -407,7 +419,43 @@ final class FakeHealthStore: HealthStoreClient {
     /// Runs before an import's read returns: a test holds the import here (US-56 AC4).
     var hold: (@MainActor () async -> Void)?
 
-    func requestAuthorization() async throws { authorized = true }
+    /// Health Records (US-72): off unless a test turns it on, as outside the US, UK and Canada.
+    var supportsHealthRecords = false
+    /// Whether HealthKit still has lab results to ask about: the request then shows their sheet.
+    var recordsNotYetAsked = true
+    var pendingRecords: [HealthRecord] = []
+    private(set) var recordReads = 0
+    /// The anchor each lab results read started from.
+    private(set) var recordAnchors: [Data?] = []
+    private(set) var requests = 0
+    /// Lab results asked for on their own, on coming forward (US-72 AC1).
+    private(set) var labRequests = 0
+
+    func requestAuthorization() async throws -> Bool {
+        authorized = true
+        requests += 1
+        let asked = supportsHealthRecords && recordsNotYetAsked
+        if supportsHealthRecords { recordsNotYetAsked = false }
+        return asked
+    }
+
+    func requestLabResults() async throws -> Bool {
+        guard recordsNotYetAsked else { return false }
+        labRequests += 1
+        recordsNotYetAsked = false
+        return true
+    }
+
+    func recordsAnchorData() -> Data { Data("labResults-\(recordReads)".utf8) }
+
+    func labResults(after anchor: Data?) async throws -> HealthRecordBatch {
+        if locked { throw HealthStoreError.locked }
+        await Task.yield()
+        recordReads += 1
+        recordAnchors.append(anchor)
+        defer { pendingRecords = [] }
+        return HealthRecordBatch(records: pendingRecords, anchor: recordsAnchorData())
+    }
 
     func anchorData(_ kind: HealthKind) -> Data { Data("\(kind.rawValue)-\(served[kind] ?? 0)".utf8) }
 

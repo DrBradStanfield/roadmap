@@ -96,8 +96,9 @@ describe('US-12 AC20 — the cutoff set holds every threshold', () => {
   };
   /** The plan's own files: what they compare an input against must be a grading line (adversary R7). */
   const PLAN_FILES = ['suggestions.ts', 'medication-cascades.ts', 'calculations.ts', 'evidence.ts', 'plan.ts', 'reminders.ts', 'reminder-schedule.ts'];
-  /** The tiles and grids: their comparisons must be label lines. */
-  const LABEL_FILES = ['stat-tiles.ts', '../../../widget-src/src/lib/blood-test-cell.ts'];
+  /** The tiles and grids: their comparisons must be label lines. The grids' grades moved from the
+   *  widget's blood-test-cell.ts into row-grade.ts (US-62 AC8), which both apps read. */
+  const LABEL_FILES = ['stat-tiles.ts', 'row-grade.ts'];
   const STATUS_FUNCTIONS = /export function get\w+Status\([^)]*\)[^{]*\{[\s\S]*?\n\}/g;
   const source = (file: string) => readFileSync(join(here, file), 'utf8').replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '');
   /** calculations.ts's `get…Status` functions are the tiles' status words: label code, not the plan's. */
