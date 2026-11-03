@@ -277,10 +277,13 @@ const unitPattern = (unit: string) => escapeRe(unit.toLowerCase())
 /** Inches only at the end of a phrase — never "in" leading a word. */
 const INCH_UNIT = '(?:in(?=\\s*(?:[^A-Za-z0-9\\s]|$))|")';
 const PLAIN_UNITS = SCRUB_UNITS.filter(u => u !== 'in' && u !== '"');
+/** Every listed unit in every spelling the normaliser folds into it, as one
+ *  regex alternation (the chat-question archive check uses it too, US-15 AC44a). */
+export const SCRUB_UNIT_PATTERN = alternation(PLAIN_UNITS, unitPattern);
 
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const UNIT_VALUE_RE = new RegExp(
-  `\\b${NUMBER}\\s*(?:(?:${alternation(PLAIN_UNITS, unitPattern)})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
+  `\\b${NUMBER}\\s*(?:(?:${SCRUB_UNIT_PATTERN})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
 // A name starts where no letter or digit runs into it ("γ-GT" starts with no
 // word character, so not a word boundary) and ends where no letter does: digits straight
 // after a name are its value ("ldl140"), never part of it. A number inside a

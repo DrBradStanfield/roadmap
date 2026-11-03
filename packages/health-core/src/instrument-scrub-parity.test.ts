@@ -211,6 +211,10 @@ describe('free-text scrub parity', () => {
     expect(copy.SCRUB_UNITS, paste('SCRUB_UNITS', source.SCRUB_UNITS)).toEqual(source.SCRUB_UNITS);
   });
 
+  it('US-09 AC7e — instrument-scrub.mjs builds the same unit regex', () => {
+    expect(copy.SCRUB_UNIT_PATTERN).toBe(source.SCRUB_UNIT_PATTERN);
+  });
+
   it('instrument-scrub.mjs carries the derived SCRUB_METRIC_WORDS verbatim', () => {
     expect(copy.SCRUB_METRIC_WORDS, paste('SCRUB_METRIC_WORDS', source.SCRUB_METRIC_WORDS))
       .toEqual(source.SCRUB_METRIC_WORDS);
