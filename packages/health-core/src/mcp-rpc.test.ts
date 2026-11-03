@@ -7,7 +7,7 @@
  * storage, its wording — is pinned in its own suite.
  */
 import { describe, expect, it } from 'vitest';
-import { dispatchRpc, INTERNAL_ERROR, INVALID_PARAMS, METHOD_NOT_FOUND, type RpcSurface } from './mcp-rpc';
+import { dispatchRpc, INTERNAL_ERROR, INVALID_PARAMS, INVALID_REQUEST, METHOD_NOT_FOUND, type RpcSurface } from './mcp-rpc';
 import { MCP_PROMPTS, MCP_TOOLS } from './mcp-tools';
 
 const surface: RpcSurface = {
@@ -102,5 +102,30 @@ describe('US-32 — the shared dispatch', () => {
   it('answers a request it does not know, and stays silent on a notification', async () => {
     expect((await send('server/discover'))!.error!.code).toBe(METHOD_NOT_FOUND);
     expect(await dispatchRpc({ jsonrpc: '2.0', method: 'notifications/initialized' }, surface)).toBeNull();
+  });
+
+  // US-32 AC55: a message without an id gets no reply, whatever its method, and
+  // a tool is never run for it: its result would have nowhere to go.
+  it.each(['initialize', 'ping', 'tools/list', 'prompts/list', 'prompts/get', 'tools/call', 'server/discover', ''])(
+    'US-32 AC55: a notification naming %j gets no reply', async (method) => {
+      expect(await dispatchRpc({ jsonrpc: '2.0', method, params: { name: 'read_record' } }, surface)).toBeNull();
+    });
+
+  it('US-32 AC55: a tools/call notification runs no tool; the same call with an id (0 included) does', async () => {
+    const ran: string[] = [];
+    const counting: RpcSurface = { ...surface, callTool: async (name) => { ran.push(name); return { answer: { text: 'done', isError: false } }; } };
+    await dispatchRpc({ jsonrpc: '2.0', method: 'tools/call', params: { name: 'add_measurement' } }, counting);
+    expect(ran).toEqual([]);
+    const answered = (await dispatchRpc({ jsonrpc: '2.0', id: 0, method: 'tools/call', params: { name: 'add_measurement' } }, counting)) as { id: number };
+    expect(ran).toEqual(['add_measurement']);
+    expect(answered.id).toBe(0);
+  });
+
+  it('US-32 AC55: a request with an id and no method is still refused, not ignored', async () => {
+    expect(await dispatchRpc({ jsonrpc: '2.0', id: 5 }, surface)).toMatchObject({ id: 5, error: { code: INVALID_REQUEST } });
+  });
+
+  it('US-32 AC55: an explicit null id is a request, answered with id null', async () => {
+    expect(await dispatchRpc({ jsonrpc: '2.0', id: null, method: 'ping' }, surface)).toEqual({ jsonrpc: '2.0', id: null, result: {} });
   });
 });

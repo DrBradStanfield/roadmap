@@ -103,6 +103,26 @@ final class TextSizeLayoutTests: XCTestCase {
         return probe.log
     }
 
+    /// US-67 AC3: the chat's edit banners cut no words short at the largest accessibility size
+    /// on an SE, the Undo banner and the Save banner alike; the chat scrolls instead.
+    func testTheChatEditBannersNeverCutTheirWords_US67_AC3() async throws {
+        guard #available(iOS 18, *) else { throw XCTSkip("Text.Layout.isTruncated needs iOS 18") }
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Banner Text \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let store = try RecordStore(folder: folder, engine: HealthEngine(), deviceId: "test")
+        let edits = ChatEdits(store: store)
+        let proposals = #"[{"kind":"medication","medicationKey":"statin","drugName":"atorvastatin","doseValue":20,"doseUnit":"mg"},{"kind":"field","field":"weightKg","displayValue":84,"unitSystem":"si","date":null},{"kind":"profile","sex":null,"heightCm":181}]"#
+        await edits.take(try JSONDecoder().decode(OpaqueJSON.self, from: Data(proposals.utf8)), asked: store.chatMark, today: "2026-11-02")
+        XCTAssertNotNil(edits.saved)
+        XCTAssertNotNil(edits.review)
+        let chat = ScrollView { ChatEditBanners(edits: edits).padding() }
+        let se = screens[0]
+        let texts = try drawnTexts(in: chat, at: largest, screen: se.size)
+        XCTAssertGreaterThan(texts.drawn, 5, "the banners drew their words")
+        XCTAssertEqual(texts.cut, 0, "no words end in …")
+    }
+
     /// US-54 AC8b: the real Apple Health page cuts no words short, its tiles included,
     /// on an SE and a 17e, from the default size to accessibility XL; the page scrolls instead.
     func testTheAppleHealthPageNeverCutsItsWords_US54_AC8b() throws {
@@ -112,6 +132,20 @@ final class TextSizeLayoutTests: XCTestCase {
             for category in sizes {
                 let texts = try drawnTexts(in: page, at: category, screen: screen.size)
                 XCTAssertGreaterThan(texts.drawn, 5, "\(screen.name) \(category.rawValue): the page drew its words")
+                XCTAssertEqual(texts.cut, 0, "\(screen.name) \(category.rawValue): no words end in …")
+            }
+        }
+    }
+
+    /// US-25 AC26: the plan's headings, "Your health snapshots" the longest, wrap rather than
+    /// end in "…", on an SE and a 17e at every size.
+    func testThePlanHeadingsNeverCutTheirWords_US25_AC26() throws {
+        guard #available(iOS 18, *) else { throw XCTSkip("Text.Layout.isTruncated needs iOS 18") }
+        let headings = ScrollView { VStack(alignment: .leading) { PlanHeading(title: PlanList.snapshots); PlanHeading(title: "Next Steps") } }
+        for screen in screens {
+            for category in sizes {
+                let texts = try drawnTexts(in: headings, at: category, screen: screen.size)
+                XCTAssertGreaterThanOrEqual(texts.drawn, 2, "\(screen.name) \(category.rawValue): both headings drew")
                 XCTAssertEqual(texts.cut, 0, "\(screen.name) \(category.rawValue): no words end in …")
             }
         }

@@ -234,6 +234,207 @@ final class MyDataLayoutTests: XCTestCase {
         XCTAssertEqual(MetricChart.colors(for: "unknown"), [.accentColor], "an unmapped metric takes the accent colour")
         XCTAssertEqual(MetricChart.colors(for: MyData.bloodPressure).count, 2, "systolic and diastolic")
     }
+
+    /// US-62 AC8/AC9: a row reads its target and previous value from the engine (health-core's
+    /// rowTarget, never worked out here), and a row from an engine before them reads none.
+    func testARowReadsItsTargetAndPreviousValueFromTheEngine_US62() throws {
+        let engine = try HealthEngine()
+        let now = self.now
+        let apply = { (edit: RecordEdit, record: String) throws -> String in
+            let outcome = try engine.blocking { [now] in try $0.apply(edit, to: record, now: now, deviceId: "test") }
+            XCTAssertTrue(outcome.ok, outcome.message ?? "")
+            return try XCTUnwrap(outcome.record)
+        }
+        var shown = try record(engine)
+        shown = try apply(.profile(sex: "male", birthYear: 1970, height: 180), shown)
+        shown = try apply(.add(metric: "ldl", value: 2.9, day: "2026-09-01"), shown)
+        shown = try apply(.add(metric: "ldl", value: 3.4, day: "2026-10-01"), shown)
+        shown = try apply(.add(metric: "hba1c", value: 38, day: "2026-10-01"), shown)
+        let saved = shown
+        let raw = try engine.blocking { [now] in try $0.call("screenJson", [saved, now.formatted(HealthEngine.iso), "test", "{}"]) }
+        var myData = try XCTUnwrap((JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any])?["myData"] as? [String: Any])
+        let decoded = try JSONDecoder().decode(MyData.self, from: JSONSerialization.data(withJSONObject: myData))
+        let ldl = try XCTUnwrap(decoded.bloodTests.first { $0.metric == "ldl" })
+        XCTAssertEqual(ldl.latest?.value, "3.4")
+        XCTAssertEqual(ldl.previous, "2.9")
+        XCTAssertEqual(ldl.target, "Optimal <1.4")
+        XCTAssertNil(decoded.bloodTests.first { $0.metric == "hba1c" }?.previous, "one reading has no previous")
+
+        // An engine before US-62's rows sends neither field: the row draws its date alone.
+        let strip = { (rows: Any?) in (rows as? [[String: Any]] ?? []).map { $0.filter { $0.key != "target" && $0.key != "previous" } } }
+        myData["bloodTests"] = strip(myData["bloodTests"])
+        myData["vitals"] = strip(myData["vitals"])
+        let older = try JSONDecoder().decode(MyData.self, from: JSONSerialization.data(withJSONObject: myData))
+        let olderLdl = try XCTUnwrap(older.bloodTests.first { $0.metric == "ldl" })
+        XCTAssertEqual(olderLdl.latest?.value, "3.4")
+        XCTAssertNil(olderLdl.previous)
+        XCTAssertNil(olderLdl.target)
+    }
+
+    /// US-62 AC8: the section's value column makes room for the widest previous value too, so
+    /// a row's bracketed "(74)" never pushes its value out of line.
+    func testTheValueColumnHoldsTheWidestPreviousValue_US62() {
+        let column = ValueRow.Column([("3.4", "2.9", "mmol/L", nil), ("38", nil, "mmol/mol", nil), (nil, nil, "mmol/L", nil), ("120", "1000", "nmol/L", nil)])
+        XCTAssertEqual(column.value, "000")
+        XCTAssertEqual(column.previous, "0000")
+        XCTAssertEqual(column.unit, "mmol/mol")
+        XCTAssertTrue(column.add)
+        XCTAssertNil(ValueRow.Column([("3.4", nil, "mmol/L", nil)]).previous)
+    }
+
+    /// My data as the engine's one door draws it.
+    private func screenMyData(_ engine: HealthEngine, _ record: String) throws -> [String: Any] {
+        let now = self.now
+        let raw = try engine.blocking { [now] in try $0.call("screenJson", [record, now.formatted(HealthEngine.iso), "test", "{}"]) }
+        return try XCTUnwrap((JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any])?["myData"] as? [String: Any])
+    }
+
+    /// US-62 AC8, US-25 AC17: a row reads its grade and spoken grade from the engine (health-core's
+    /// valueStatus and gradeWords, never worked out here); a row from an engine before them reads none.
+    func testARowReadsItsGradeFromTheEngine_US62() throws {
+        let engine = try HealthEngine()
+        let now = self.now
+        let apply = { (edit: RecordEdit, record: String) throws -> String in
+            let outcome = try engine.blocking { [now] in try $0.apply(edit, to: record, now: now, deviceId: "test") }
+            XCTAssertTrue(outcome.ok, outcome.message ?? "")
+            return try XCTUnwrap(outcome.record)
+        }
+        var shown = try record(engine)
+        shown = try apply(.profile(sex: "male", birthYear: 1970, height: 180), shown)
+        shown = try apply(.add(metric: "ldl", value: 3.4, day: "2026-10-01"), shown)
+        shown = try apply(.add(metric: "hba1c", value: 50, day: "2026-10-01"), shown)
+        shown = try apply(.add(metric: "hdl", value: 1.3, day: "2026-10-01"), shown)
+        var myData = try screenMyData(engine, shown)
+        let decoded = try JSONDecoder().decode(MyData.self, from: JSONSerialization.data(withJSONObject: myData))
+        let row = { (metric: String) in decoded.bloodTests.first { $0.metric == metric } }
+        XCTAssertEqual(row("ldl")?.status, "warn")
+        XCTAssertEqual(row("ldl")?.gradeWords, "above optimal")
+        XCTAssertEqual(row("hba1c")?.status, "bad")
+        XCTAssertEqual(row("hba1c")?.gradeWords, "high")
+        XCTAssertEqual(row("hdl")?.status, "ok")
+        XCTAssertEqual(row("ldl")?.grade, .warn)
+        // A word a newer engine might add reads as no grade, never a decoding failure.
+        XCTAssertNil(MyData.Row(metric: "x", label: "X", unit: "", latest: nil, trend: nil, switchable: nil, status: "borderline").grade)
+        XCTAssertNil(row("hdl")?.gradeWords, "on target, no words")
+
+        // An engine before the grades sends neither field nor labTests: values draw plain, speak no grade.
+        let strip = { (rows: Any?) in (rows as? [[String: Any]] ?? []).map { $0.filter { $0.key != "status" && $0.key != "gradeWords" } } }
+        myData["bloodTests"] = strip(myData["bloodTests"])
+        myData.removeValue(forKey: "labTests")
+        let older = try JSONDecoder().decode(MyData.self, from: JSONSerialization.data(withJSONObject: myData))
+        XCTAssertNil(older.bloodTests.first { $0.metric == "ldl" }?.status)
+        XCTAssertNil(older.bloodTests.first { $0.metric == "ldl" }?.gradeWords)
+        XCTAssertNil(older.labTests, "no lab test rows from an older engine")
+    }
+
+    /// US-62 AC8: the web's colours in the app's tones (amber `info`, red `urgent`, the web's
+    /// #b91c1c), and VoiceOver's words in the web's order.
+    func testAGradeColoursAndSpeaksTheValueAsTheWebDoes_US62() {
+        // Each tone resolved to 0xRRGGBB in light and dark: dynamic colours do not compare by value.
+        let hex = { (color: Color?) -> [Int] in
+            guard let color else { return [] }
+            return [UIUserInterfaceStyle.light, .dark].map { style in
+                var (r, g, b, a): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
+                UIColor(color).resolvedColor(with: UITraitCollection(userInterfaceStyle: style)).getRed(&r, green: &g, blue: &b, alpha: &a)
+                return [r, g, b].reduce(0) { $0 << 8 | Int(($1 * 255).rounded()) }
+            }
+        }
+        XCTAssertEqual(hex(ValueRow.gradeColor(.warn)), hex(Color.status("info")))
+        XCTAssertEqual(hex(ValueRow.gradeColor(.bad)), hex(Color.status("urgent")))
+        XCTAssertEqual(hex(ValueRow.gradeColor(.bad)).first, 0xB91C1C, "the web's red")
+        XCTAssertNil(ValueRow.gradeColor(.ok))
+        XCTAssertNil(ValueRow.gradeColor(nil))
+        XCTAssertEqual(ValueRow.spoken("3.4", grade: "above optimal", previous: "2.9"), "3.4, above optimal, previous 2.9")
+        XCTAssertEqual(ValueRow.spoken("81", grade: nil, previous: "74"), "81, previous 74")
+        XCTAssertEqual(ValueRow.spoken("5.2", grade: nil), "5.2")
+    }
+
+    /// US-62 AC8 (adversary R2): My data hands a row's grade to the row it draws, and the row draws
+    /// its value, as a compact row and as a vital's card, in the grade's colour and says the grade.
+    /// SwiftUI builds no accessibility tree for a unit test's window, so the words are checked on
+    /// the row's own label function, the one its value's `accessibilityLabel` calls.
+    @MainActor
+    func testMyDataDrawsAGradedRowInItsColourAndSaysItsGrade_US62() async throws {
+        let graded = MyData.Row(metric: "ldl", label: "LDL Cholesterol", unit: "mmol/L", latest: .init(id: "a", value: "4.2", day: "2026-10-01"),
+                                trend: nil, switchable: true, previous: "2.9", status: "bad", gradeWords: "high")
+        var plain = graded
+        plain.status = nil
+        plain.gradeWords = nil
+        let row = MyDataView.valueRow(graded, tint: .blue)
+        XCTAssertEqual(row.grade, .bad)
+        XCTAssertEqual(row.spokenLabel("4.2", previous: "2.9"), "4.2, high, previous 2.9")
+        XCTAssertEqual(MyDataView.valueRow(plain, tint: .blue).spokenLabel("4.2", previous: "2.9"), "4.2, previous 2.9")
+        for card in [false, true] {
+            let red = try await drawsRed(MyDataView.valueRow(graded, tint: .blue, card: card))
+            XCTAssertTrue(red, "the graded value is drawn red (card: \(card))")
+            let none = try await drawsRed(MyDataView.valueRow(plain, tint: .blue, card: card))
+            XCTAssertFalse(none, "an ungraded value is drawn plain (card: \(card))")
+        }
+    }
+
+    /// US-12 AC21: a value printed as a limit the rule leaves ungraded says the web's note where its
+    /// grade would be; an older engine sends none.
+    @MainActor
+    func testAnUngradedLimitSaysTheNoteInTheGradesPlace_US12() throws {
+        let note = "Printed as a limit, so the plan cannot grade it against its cutoff."
+        let row = MyData.Row(metric: "weight", label: "Weight", unit: "kg", latest: .init(id: "a", value: "> 78.0", day: "2026-10-15"),
+                             trend: nil, switchable: true, previous: "80.0", note: note)
+        XCTAssertEqual(MyDataView.valueRow(row, tint: .blue).spokenLabel("> 78.0", previous: "80.0"), "> 78.0, \(note), previous 80.0")
+        let older = try JSONDecoder().decode(MyData.Row.self, from: Data(#"{"metric":"weight","label":"Weight","unit":"kg","latest":null,"trend":null,"switchable":true}"#.utf8))
+        XCTAssertNil(older.note)
+    }
+
+    /// Whether `view`, drawn in light mode, has a red pixel: the red channel well above the
+    /// other two. (The drawn bytes are colour-managed, so an exact hex never matches.)
+    @MainActor
+    private func drawsRed(_ view: some View) async throws -> Bool {
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(x: 0, y: 0, width: 402, height: 200)
+        window.overrideUserInterfaceStyle = .light
+        window.rootViewController = UIHostingController(rootView: view.padding())
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true }
+        try await Task.sleep(for: .seconds(1))
+        let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in
+            window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        }
+        guard let cg = image.cgImage, let data = cg.dataProvider?.data, let bytes = CFDataGetBytePtr(data) else { return false }
+        let (row, step) = (cg.bytesPerRow, cg.bitsPerPixel / 8)
+        let red = cg.bitmapInfo.contains(.byteOrder32Little) ? 2 : 0 // BGRA or RGBA
+        for y in 0..<cg.height {
+            for x in 0..<cg.width {
+                let pixel = (0..<3).map { Int(bytes[y * row + x * step + $0]) }
+                if pixel[red] - max(pixel[1], pixel[2 - red]) > 80 { return true }
+            }
+        }
+        return false
+    }
+
+    /// US-62 AC8, US-25 AC17: the lab tests beyond the core ones come from the engine as rows, with
+    /// the web's label, "Ref" target, newest and previous value and unit.
+    func testLabTestRowsComeFromTheEngine_US62() throws {
+        let engine = try HealthEngine()
+        var file = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(try record(engine).utf8)) as? [String: Any])
+        let lab = { (id: String, name: String, value: Double, unit: String, day: String, low: Double?, high: Double?) -> [String: Any] in
+            ["id": id, "metricName": name, "value": value, "unit": unit,
+             "referenceLow": low.map { $0 as Any } ?? NSNull(), "referenceHigh": high.map { $0 as Any } ?? NSNull(),
+             "recordedAt": "\(day)T00:00:00.000Z", "createdAt": "\(day)T00:00:00.000Z", "source": "manual", "status": "active", "correctsId": NSNull()]
+        }
+        file["labValues"] = [lab("f1", "ferritin", 80, "µg/L", "2026-09-01", 30, 400), lab("f2", "ferritin", 112, "µg/L", "2026-10-01", 30, 500),
+                             lab("s1", "sodium", 140, "mmol/L", "2026-10-01", nil, 145)]
+        let text = String(decoding: try JSONSerialization.data(withJSONObject: file), as: UTF8.self)
+        let decoded = try JSONDecoder().decode(MyData.self, from: JSONSerialization.data(withJSONObject: try screenMyData(engine, text)))
+        let labs = try XCTUnwrap(decoded.labTests)
+        XCTAssertEqual(labs.map(\.label), ["Sodium", "Ferritin"])
+        XCTAssertEqual(labs[1].target, "Ref 30–500")
+        XCTAssertEqual(labs[1].latest?.value, "112")
+        XCTAssertEqual(labs[1].previous, "80")
+        XCTAssertEqual(labs[1].unit, "µg/L")
+        XCTAssertEqual(labs[0].target, "Ref <145")
+        XCTAssertNil(labs[0].previous)
+        XCTAssertNil(labs[0].status, "a lab test is never graded")
+    }
 }
 
 extension UIColor {

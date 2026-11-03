@@ -47,7 +47,7 @@ vi.mock('../lib/chat-router.server', async (original) => ({
 vi.mock('../lib/chat-classifier.server', () => ({ classifyMessage: async () => { await mocks.classifierGate; return { routerSkipped: true, classification: 'SKIP', latencyMs: 0 }; }, shouldFireRouter: () => mocks.fireRouter }));
 
 import { action } from './api.chat';
-import { routeQuery } from '../lib/chat-router.server';
+import { routeQuery, ROUTER_VERSION } from '../lib/chat-router.server';
 
 const id = '12345678-1234-4234-8234-123456789abc';
 let inserts: Array<{ table: string; row: Record<string, unknown> }>;
@@ -379,5 +379,58 @@ describe('US-15 AC37 — router output tokens on the row and in chat_timing', ()
 
   it('US-15 AC37: the widget row keeps the count', async () => {
     expect((await matchRow(await post({ message: 'hello', localFirst: true, stream: true }))).router_output_tokens).toBe(37);
+  });
+});
+
+// US-15 AC37a: every chat row a web turn writes, pinned column for column,
+// so moving the router columns into one shared mapping changes nothing else.
+describe('US-15 AC37a — the web turn rows, column for column', () => {
+  const ran = {
+    matched_handles: ['apob'], router_version: ROUTER_VERSION, router_latency_ms: 15, router_cache_hit: true,
+    router_input_tokens: 900, router_cache_read_tokens: 120, router_output_tokens: 37, router_raw: null, router_error: null,
+  };
+  const notRun = {
+    matched_handles: [], router_version: null, router_latency_ms: null, router_cache_hit: null,
+    router_input_tokens: null, router_cache_read_tokens: null, router_output_tokens: null, router_raw: null, router_error: null,
+  };
+  const turn = async (body: Record<string, unknown>, routerRan: boolean) => {
+    mocks.fireRouter = routerRan;
+    if (routerRan) vi.mocked(routeQuery).mockResolvedValueOnce({
+      handles: ['apob'], rawJson: '{"handles":["apob"]}', latencyMs: 15, cacheHit: true, error: null,
+      usage: { inputTokens: 900, outputTokens: 37, cacheCreationTokens: 0, cacheReadTokens: 120 },
+    });
+    await lines(await post({ message: 'hello', stream: true, ...body }));
+    await new Promise((resolve) => setImmediate(resolve));
+  };
+  const stored = (router: Record<string, unknown>) => {
+    const asstId = inserts[2].row.id;
+    return [
+      { table: 'chat_conversations', row: { user_id: id, title: 'Synthetic title' } },
+      { table: 'chat_messages', row: { conversation_id: id, user_id: id, role: 'user', content: 'hello' } },
+      { table: 'chat_messages', row: { id: asstId, conversation_id: id, user_id: id, role: 'assistant', content: 'Synthetic answer',
+        input_tokens: 1, output_tokens: 1, model: 'test', is_fallback: false, failure_mode: null, error_detail: null } },
+      { table: 'chat_match_events', row: { message_id: asstId, conversation_id: id, user_id: id, message: 'hello',
+        router_context: { platform: 'shopify', first: null, recent: [] }, ...router,
+        classification: 'SKIP', router_skipped: true, is_fallback: false, failure_mode: null } },
+    ];
+  };
+
+  it('a stored-surface turn the router ran for', async () => {
+    await turn({}, true);
+    expect(inserts).toEqual(stored(ran));
+  });
+
+  it('a stored-surface turn the router did not run for: every router column is null', async () => {
+    await turn({}, false);
+    expect(inserts).toEqual(stored(notRun));
+  });
+
+  it('a widget turn: one redacted row, router columns as on the stored surface', async () => {
+    await turn({ localFirst: true }, true);
+    expect(inserts).toEqual([{ table: 'chat_match_events', row: {
+      // localFirst forces the guest path, so the row carries the guest session id.
+      message_id: null, conversation_id: expect.any(String), user_id: '87654321-4321-4321-8321-cba987654321', message: 'hello',
+      router_context: { platform: 'widget' }, ...ran, classification: 'SKIP', router_skipped: true, is_fallback: false, failure_mode: null,
+    } }]);
   });
 });

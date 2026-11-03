@@ -13,8 +13,8 @@
 // add a new reading for any vital at one date.
 //
 // Status thresholds (IBW for weight, WHtR < 0.5 for waist, BP < 120/80) depend
-// on user demographics that the shared `statusOf` in `lib/blood-test-cell.ts`
-// doesn't carry, so they live here. Everything else reuses the `.bt-*` CSS,
+// on the plan; they live in health-core (row-grade.ts) beside `statusOf`, so
+// the iPhone grades by the same lines. Everything else reuses the `.bt-*` CSS,
 // the matrix's `Sparkline`, `NumericInputCell`, `DraftDateCell`, and `UnitChip`.
 
 import { useEffect, useId, useMemo, useRef, useState, type MutableRefObject } from 'react';
@@ -29,8 +29,17 @@ import {
   formatDisplayValue,
   getDisplayLabel,
   parseLocalisedNumber,
-  waistToHeightRatio,
-  isWaistToHeightElevated,
+  bpStatus,
+  comparatorOf,
+  limitText,
+  limitUngraded,
+  pressureStatus,
+  valueStatus,
+  LIMIT_NOT_GRADED,
+  type Comparator,
+  type GradeContext,
+  type PressureReading,
+  type GradeStatus,
   bpTargetFor,
   rowTarget,
   PRESSURE_ORDER,
@@ -39,10 +48,10 @@ import {
 import type { PlanBasis } from './InputPanel';
 import { slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import {
-  type Status,
   blockBadNumericKeys,
   blockNonIntegerKeys,
   bpSysAdvance,
+  mayStillFit,
   readTypedValue,
   validateTypedValue,
 } from '../lib/blood-test-cell';
@@ -50,6 +59,7 @@ import { VITALS_DRAFT_KEY } from '../lib/storage';
 import { describedBy } from '../lib/aria';
 import { useDraftMirror, useMatrixDraft, type CellRef } from '../lib/useMatrixDraft';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
+import { useRangeWait } from '../lib/useRangeWait';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { usePrefillRef } from '../lib/usePrefillRef';
 import { Sparkline, ValueCell, BatchDateCell, BackfillCell, SAVE_ERRORS, SAVE_FAILED, SAME_SLOT, useLiveRegion } from './BloodTestTimeline';
@@ -145,33 +155,6 @@ const ROWS: RowConfig[] = [
   { kind: 'bp', label: 'Blood Pressure' },
 ];
 
-// ── Status thresholds (demographic-dependent — live here) ────────────────
-
-function weightStatus(siKg: number | null | undefined, ibw?: number): Status {
-  if (siKg == null || Number.isNaN(siKg) || ibw == null) return null;
-  if (siKg >= ibw - 5 && siKg <= ibw + 2) return 'ok';
-  if (siKg <= ibw + 5) return 'warn';
-  return 'bad';
-}
-/** 'ok' exactly when the plan counts the waist as healthy (US-06 AC5). */
-function waistStatus(siCm: number | null | undefined, heightCm?: number): Status {
-  if (siCm == null || Number.isNaN(siCm) || heightCm == null) return null;
-  if (!isWaistToHeightElevated(waistToHeightRatio(siCm, heightCm))) return 'ok';
-  if (siCm <= heightCm * 0.5 + 8) return 'warn';
-  return 'bad';
-}
-/** Neutral with no systolic target: there is no plan (US-06 AC5). */
-export function bpStatus(sys: number | null | undefined, dia: number | null | undefined, sysTarget: number | undefined): Status {
-  if (sys == null || dia == null || Number.isNaN(sys) || Number.isNaN(dia) || sysTarget === undefined) return null;
-  const diaTarget = 80;
-  if (sys < sysTarget && dia < diaTarget) return 'ok';
-  if (sys < sysTarget + 10 && dia < diaTarget + 5) return 'warn';
-  return 'bad';
-}
-export function simpleStatus(metric: 'weight' | 'waist', si: number | null | undefined, ibwKg?: number, planHeightCm?: number): Status {
-  return metric === 'weight' ? weightStatus(si, ibwKg) : waistStatus(si, planHeightCm);
-}
-
 // ── Date helpers ─────────────────────────────────────────────────────────
 
 function isoOnly(s: string): string { return s.slice(0, 10); }
@@ -206,6 +189,8 @@ export interface DateColumn {
   waist?: number; waistId?: string;
   sys?: number; sysId?: string;
   dia?: number; diaId?: string;
+  /** Each value printed as a limit: its symbol's code, the value its bound (US-12 AC20, AC21). */
+  limits?: Partial<Record<'weight' | 'waist' | 'sys' | 'dia', Comparator>>;
 }
 
 // Exported for unit testing — folds the flat vitals history into one column
@@ -218,6 +203,7 @@ export function buildColumns(rows: ApiMeasurement[]): DateColumn[] {
     if (!c) { c = { date }; byDate.set(date, c); }
     return c;
   };
+  const keyOf: Record<string, 'weight' | 'waist' | 'sys' | 'dia'> = { weight: 'weight', waist: 'waist', systolic_bp: 'sys', diastolic_bp: 'dia' };
   for (const r of rows) {
     const date = isoOnly(r.recordedAt);
     const c = ensure(date);
@@ -225,6 +211,12 @@ export function buildColumns(rows: ApiMeasurement[]): DateColumn[] {
     else if (r.metricType === 'waist') { c.waist = r.value; c.waistId = r.id; }
     else if (r.metricType === 'systolic_bp') { c.sys = r.value; c.sysId = r.id; }
     else if (r.metricType === 'diastolic_bp') { c.dia = r.value; c.diaId = r.id; }
+    const key = keyOf[r.metricType];
+    if (!key) continue;
+    // The value now in the slot carries its own limit, or none (a later exact row replaces a limit).
+    const { comparator } = comparatorOf(r);
+    const { [key]: _old, ...others } = c.limits ?? {};
+    c.limits = comparator ? { ...others, [key]: comparator } : others;
   }
   return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
@@ -273,8 +265,11 @@ export function StartingInfoVitals({
   // line, half the height, is also used in children, so it stays.
   const adult = !knownMinor;
   const bpSysTarget = plan && adult ? bpTargetFor(plan.age) : undefined;
-  const ibwKg = adult ? plan?.idealBodyWeight : undefined;
-  const planHeightCm = plan?.heightCm;
+  // What a saved value is graded against, as the phone rows grade it (row-grade.ts): a limit only when certain (US-12 AC21).
+  const ctx: GradeContext = { grading: adult ? {} : null, plan };
+  /** A column's blood pressure as graded, both halves with their limits; none for a half-pair. */
+  const pressureOf = (c: DateColumn): PressureReading | null => c.sys == null || c.dia == null ? null
+    : { value: c.sys, comparator: c.limits?.sys, dia: { value: c.dia, comparator: c.limits?.dia } };
 
   const fieldUnit = (field: 'weightKg' | 'waistCm'): UnitSystem => unitOverrides[field] ?? unitSystem;
 
@@ -353,14 +348,16 @@ export function StartingInfoVitals({
   // Trend series (SI, oldest → newest) + last value/status per row.
   const trend = useMemo(() => {
     const weight: number[] = [], waist: number[] = [], sysSeries: number[] = [];
-    let lastW: number | undefined, lastWa: number | undefined;
-    let lastSys: number | undefined, lastDia: number | undefined;
+    // Which trend points were printed as a limit: drawn hollow, off the line, as the phone rows draw them (US-12 AC20).
+    const limits = { weight: [] as boolean[], waist: [] as boolean[], bp: [] as boolean[] };
+    let lastW: DateColumn | undefined, lastWa: DateColumn | undefined, lastBp: PressureReading | undefined;
     for (const c of dateColumns) {
-      if (c.weight != null) { weight.push(c.weight); lastW = c.weight; }
-      if (c.waist != null) { waist.push(c.waist); lastWa = c.waist; }
-      if (c.sys != null && c.dia != null) { sysSeries.push(c.sys); lastSys = c.sys; lastDia = c.dia; }
+      if (c.weight != null) { weight.push(c.weight); limits.weight.push(!!c.limits?.weight); lastW = c; }
+      if (c.waist != null) { waist.push(c.waist); limits.waist.push(!!c.limits?.waist); lastWa = c; }
+      const bp = pressureOf(c);
+      if (bp) { sysSeries.push(bp.value); limits.bp.push(!!bp.comparator || !!bp.dia?.comparator); lastBp = bp; }
     }
-    return { weight, waist, sysSeries, lastW, lastWa, lastSys, lastDia };
+    return { weight, waist, sysSeries, limits, lastW, lastWa, lastBp };
   }, [dateColumns]);
 
   // Columns = existing dates + always-on draft column.
@@ -546,8 +543,8 @@ export function StartingInfoVitals({
                 const display = fieldUnit(row.field as 'weightKg' | 'waistCm');
                 const sparkPoints = (row.metric === 'weight' ? trend.weight : trend.waist)
                   .map(si => fromCanonicalValue(row.metric, si, display));
-                const lastSi = row.metric === 'weight' ? trend.lastW : trend.lastWa;
-                const lastStatus = lastSi != null ? simpleStatus(row.metric, lastSi, ibwKg, planHeightCm) : null;
+                const lastCol = row.metric === 'weight' ? trend.lastW : trend.lastWa;
+                const lastStatus = lastCol ? valueStatus(row.metric, lastCol[row.metric]!, ctx, lastCol.limits?.[row.metric]) : null;
                 return (
                   <div key={row.metric} className={`bt-row${last}`} data-metric={row.metric}>
                     {nameCell}
@@ -597,14 +594,18 @@ export function StartingInfoVitals({
                           />
                         );
                       }
+                      const comparator = c.col.limits?.[row.metric];
+                      const status = valueStatus(row.metric, v, ctx, comparator);
                       return (
                         <ValueCell
                           key={cellId}
                           metric={row.metric}
                           display={display}
                           value={v}
+                          comparator={comparator}
                           rowId={id}
-                          status={simpleStatus(row.metric, v, ibwKg, planHeightCm)}
+                          status={status}
+                          ungraded={limitUngraded(row.metric, status, ctx, { value: v, comparator })}
                           pinned={isPinned}
                           onActivate={() => setActiveCell(cellId)}
                           onDeactivate={unmark(cellId)}
@@ -615,7 +616,7 @@ export function StartingInfoVitals({
                     })}
                     <div className="bt-row-filler"/>
                     <div className="bt-cell-trend">
-                      {sparkPoints.length >= 2 && <Sparkline points={sparkPoints}/>}
+                      {sparkPoints.length >= 2 && <Sparkline points={sparkPoints} limits={trend.limits[row.metric]}/>}
                       <span className={`bt-status-tick bt-status-${lastStatus ?? 'none'}`}/>
                     </div>
                   </div>
@@ -624,7 +625,7 @@ export function StartingInfoVitals({
 
               // BP row.
               const bpSpark = trend.sysSeries;
-              const lastBpStatus = trend.lastSys != null ? bpStatus(trend.lastSys, trend.lastDia, bpSysTarget) : null;
+              const lastBpStatus = trend.lastBp ? pressureStatus(trend.lastBp, ctx) : null;
               return (
                 <div key="bp" className={`bt-row${last}`}>
                   {nameCell}
@@ -672,17 +673,22 @@ export function StartingInfoVitals({
                     // A saved reading, or the half of one a column holds, shown
                     // as it is ("130/—"): a pair is never typed over a value
                     // the user cannot see (US-03 AC2).
-                    const status = bpStatus(c.col.sys, c.col.dia, bpSysTarget);
+                    // A limit half reads with its symbol, and the pair is graded only when certain (US-12 AC21).
+                    const reading = pressureOf(c.col);
+                    const status = reading ? pressureStatus(reading, ctx) : null;
+                    const ungraded = !!reading && limitUngraded('blood_pressure', status, ctx, reading);
+                    const half = (v: number | undefined, comparator?: Comparator) => v == null ? '—' : comparator ? limitText(v, 0, comparator) : v;
                     return (
-                      <div key={`${c.col.date}.bp`} className={`bt-cell-value${isPinned ? ' bt-cell-pinned' : ''}`}>
-                        <span className="bt-value-num bt-value-num--bp num">{c.col.sys ?? '—'}/{c.col.dia ?? '—'}</span>
+                      <div key={`${c.col.date}.bp`} className={`bt-cell-value${isPinned ? ' bt-cell-pinned' : ''}`} title={ungraded ? LIMIT_NOT_GRADED : undefined}>
+                        <span className="bt-value-num bt-value-num--bp num">{half(c.col.sys, c.col.limits?.sys)}/{half(c.col.dia, c.col.limits?.dia)}</span>
                         <span className={`bt-status-tick bt-status-${status ?? 'none'}`}/>
+                        {ungraded && <span className="hr-sr-only">{LIMIT_NOT_GRADED}</span>}
                       </div>
                     );
                   })}
                   <div className="bt-row-filler"/>
                   <div className="bt-cell-trend">
-                    {bpSpark.length >= 2 && <Sparkline points={bpSpark}/>}
+                    {bpSpark.length >= 2 && <Sparkline points={bpSpark} limits={trend.limits.bp}/>}
                     <span className={`bt-status-tick bt-status-${lastBpStatus ?? 'none'}`}/>
                   </div>
                 </div>
@@ -714,7 +720,7 @@ function BpInputCell({
   dia: string;
   /** Why the pair cannot be saved as it stands (`SAME_SLOT`). */
   clash?: string;
-  previewStatus: Status;
+  previewStatus: GradeStatus;
   onSysChange: (v: string) => void;
   onDiaChange: (v: string) => void;
   onEnter: () => void;
@@ -735,13 +741,26 @@ function BpInputCell({
   // sanitised in the change handlers below.
   const onKey: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
     blockNonIntegerKeys(e);
-    if (e.key === 'Enter') { e.preventDefault(); onEnter(); }
+    if (e.key === 'Enter') { e.preventDefault(); rangeWait.settle(); onEnter(); }
+  };
+  // US-02 AC9: the half being typed keeps back a range error more digits
+  // could still fix ("6" on the way to 65); leaving it or Enter shows it.
+  const rangeWait = useRangeWait();
+  const check = (half: 'sys' | 'dia', text: string) => validateTypedValue(half === 'sys' ? 'systolic_bp' : 'diastolic_bp', text, 'si');
+  const typedHalf = (half: 'sys' | 'dia', text: string) => {
+    const { range } = check(half, text);
+    rangeWait.typed(half, text, mayStillFit(text, range.min, range.max));
+  };
+  const rangeError = (half: 'sys' | 'dia', text: string) => {
+    const { error } = check(half, text);
+    return error && !rangeWait.waits(half, text) ? error : undefined;
   };
   // Auto-advance systolic → diastolic (US-02 AC6): immediately for an
   // unambiguous 3-digit value, after 800ms for a plausible 2-digit one.
   // Never steal focus if the user already left systolic or dia has content.
   const handleSysChange = (raw: string) => {
     const v = raw.replace(/[^0-9]/g, '');
+    typedHalf('sys', v);
     onSysChange(v);
     if (advanceTimer.current) { window.clearTimeout(advanceTimer.current); advanceTimer.current = null; }
     if (dia !== '') return;
@@ -753,13 +772,13 @@ function BpInputCell({
       }, 800);
     }
   };
-  const handleDiaChange = (raw: string) => onDiaChange(raw.replace(/[^0-9]/g, ''));
+  const handleDiaChange = (raw: string) => { const v = raw.replace(/[^0-9]/g, ''); typedHalf('dia', v); onDiaChange(v); };
   // Visible range validation (US-02 AC5) — same inline-error pattern as
   // NumericInputCell (this is the one cell that can't reuse it directly).
   // A pair the wrong way up is the pair's error, as a clash is (US-02 AC8).
   const pairError = clash ?? (pressureInverted(parseLocalisedNumber(sys), parseLocalisedNumber(dia)) ? PRESSURE_ORDER : undefined);
-  const sysError = validateTypedValue('systolic_bp', sys, 'si').error ?? pairError;
-  const diaError = validateTypedValue('diastolic_bp', dia, 'si').error ?? pairError;
+  const sysError = rangeError('sys', sys) ?? pairError;
+  const diaError = rangeError('dia', dia) ?? pairError;
   const error = sysError ?? diaError;
   // Each half's visible error describes it; a title would be captured with
   // the page (US-13 AC10). One error for the pair (a clash) shows once, and
@@ -789,12 +808,12 @@ function BpInputCell({
         <input ref={sysRef} className={`bt-input${active ? ' bt-input-active' : ''}${sysError ? ' bt-input-error' : ''}`}
                inputMode="numeric" pattern="[0-9]*" placeholder="sys" size={1} aria-label="Systolic blood pressure"
                aria-invalid={!!sysError} aria-describedby={describedBy(sysError && sysErrorId, diaOwnError && diaError === pairError && diaErrorId)}
-               value={sys} onChange={e => handleSysChange(e.target.value)} onKeyDown={onKey}/>
+               value={sys} onChange={e => handleSysChange(e.target.value)} onKeyDown={onKey} onBlur={rangeWait.settle}/>
         <span className="bt-vitals-bp-sep">/</span>
         <input ref={diaRef} className={`bt-input${active ? ' bt-input-active' : ''}${diaError ? ' bt-input-error' : ''}`}
                inputMode="numeric" pattern="[0-9]*" placeholder="dia" size={1} aria-label="Diastolic blood pressure"
                aria-invalid={!!diaError} aria-describedby={describedBy(diaError && (diaOwnError ? diaErrorId : sysErrorId))}
-               value={dia} onChange={e => handleDiaChange(e.target.value)} onKeyDown={onKey}/>
+               value={dia} onChange={e => handleDiaChange(e.target.value)} onKeyDown={onKey} onBlur={rangeWait.settle}/>
       </div>
       <div className="bt-cell-foot">
         {sysError && <span id={sysErrorId} className="bt-input-error-text">{sysError}</span>}

@@ -12,7 +12,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { buildChatContextJson, chatContextOf, NO_SEX_CHAT_RULE } from './chat-context';
 import { NEEDS_SEX, withLabEgfr } from './plan';
 import { calculateHealthResults } from './calculations';
-import { medicationsToInputs } from './mappings';
+import { medicationsToInputs, METRIC_TO_FIELD } from './mappings';
+import { HISTORY_CAP_PER_METRIC } from './measurement-history';
 import type { HealthInputs } from './types';
 import type { ApiMedication, ApiScreening } from './mappings';
 
@@ -703,5 +704,88 @@ describe('US-07 AC8: NO_SEX_CHAT_RULE names every NEEDS_SEX item', () => {
       expect(item, `item ${i}`).toMatch(NAMED[i][0]);
       expect(NO_SEX_CHAT_RULE, `item ${i}`).toMatch(NAMED[i][1]);
     });
+  });
+});
+
+describe('US-07 AC11: the chat plan asks for the waist first, then the blood pressure', () => {
+  it('leads with both prompts, and a swapped reading reads as one to check', () => {
+    const { context } = contextFor([]);
+    expect(ids(context).slice(0, 2)).toEqual(['measure-waist', 'measure-bp']);
+    const swapped = contextFor([], [], { systolicBp: 80, diastolicBp: 120 }).context;
+    expect(swapped.currentSuggestions.find((s: { id: string }) => s.id === 'measure-bp')?.title).toBe('Check your blood pressure reading');
+  });
+});
+
+describe('US-06 AC14: the chat plan reads the saved PSA, as the plan does', () => {
+  // PROFILE: a man born 1970, so 45 or over and shown the prostate cards; he will screen.
+  // His PSA is a dated measurement, not a screening answer.
+  type PsaRow = { metricType: string; value: number; recordedAt: string; id?: string; createdAt?: string; comparator?: '<' | '>' };
+  const psa = (value: number, recordedAt: string, more: Partial<PsaRow> = {}): PsaRow => ({ metricType: 'psa', value, recordedAt, ...more });
+  const contextWithPsa = (rows: PsaRow[], answers: ApiScreening[] = [scr('prostate_discussion', 'will_screen')]) => {
+    const json = buildChatContextJson(chatContextOf(PROFILE, 'si', [], answers, rows));
+    if (json === null) throw new Error('no context');
+    return JSON.parse(json);
+  };
+
+  it('a saved PSA of 6.5 puts "Elevated PSA" and the PSA-due card in the chat plan', () => {
+    const context = contextWithPsa([psa(2.1, '2024-03-01T08:00:00Z'), psa(6.5, '2025-09-03T08:00:00Z')]);
+    const elevated = context.currentSuggestions.find((s: { id: string }) => s.id === 'screening-prostate-elevated');
+    expect(elevated?.description).toBe('Your PSA of 6.5 ng/mL is above the typical reference range (≤4.0). Discuss with your doctor — elevated PSA can have multiple causes.');
+    // Due Sep 2026, so overdue from then on, whatever today is.
+    expect(ids(context)).toContain('screening-prostate-overdue');
+    // `screenings` stays the record's own answers, as the plan's does.
+    expect(context.screenings).toEqual({ prostateDiscussion: 'will_screen' });
+  });
+
+  it('chose not to screen (Brad 2026-11-03): the chat plan still shows "Elevated PSA"', () => {
+    const context = contextWithPsa([psa(6.5, '2025-09-03T08:00:00Z')], [scr('prostate_discussion', 'elected_not_to')]);
+    expect(ids(context).filter((id: string) => id.startsWith('screening-prostate'))).toEqual(['screening-prostate-elevated']);
+  });
+
+  it('a PSA printed "> 100" shows the limit as printed in the chat plan, as in the plan', () => {
+    const context = contextWithPsa([psa(100, '2025-09-03T00:00:00Z', { comparator: '>' })]);
+    const elevated = context.currentSuggestions.find((s: { id: string }) => s.id === 'screening-prostate-elevated');
+    expect(elevated?.description).toBe('Your PSA of > 100.0 ng/mL is above the typical reference range (\u22644.0). Discuss with your doctor \u2014 elevated PSA can have multiple causes.');
+  });
+
+  it('a newer "< 5" means no "Elevated PSA" from an older 6.5', () => {
+    const context = contextWithPsa([psa(6.5, '2025-03-01T00:00:00Z'), psa(5, '2025-09-03T00:00:00Z', { comparator: '<' })]);
+    expect(ids(context)).not.toContain('screening-prostate-elevated');
+  });
+
+  it('a newer row dated after today never hides an older 6.5', () => {
+    const context = contextWithPsa([psa(6.5, '2025-09-03T00:00:00Z'), psa(2.0, '2099-01-01T00:00:00Z')]);
+    expect(ids(context)).toContain('screening-prostate-elevated');
+  });
+
+  it('two rows on one day: the chat picks the one the plan picks (later createdAt, then id), whatever order they arrive in', () => {
+    const later = psa(6.5, '2025-09-03T00:00:00Z', { id: 'b', createdAt: '2025-09-03T10:00:00Z' });
+    const earlier = psa(2.0, '2025-09-03T00:00:00Z', { id: 'a', createdAt: '2025-09-03T09:00:00Z' });
+    expect(ids(contextWithPsa([later, earlier]))).toContain('screening-prostate-elevated');
+    expect(ids(contextWithPsa([earlier, later]))).toContain('screening-prostate-elevated');
+  });
+
+  it('24 or more newer unusable PSA rows do not push the usable one out of the history cap (Codex re-check R2)', () => {
+    const junk = [
+      ...Array.from({ length: 12 }, (_, i) => psa(3.0, `2099-01-${String(i + 1).padStart(2, '0')}T00:00:00Z`)), // after today
+      ...Array.from({ length: 12 }, (_, i) => psa(20000, `2025-10-${String(i + 1).padStart(2, '0')}T00:00:00Z`)), // above the range
+      psa(3.0, '2025-02-30T00:00:00Z'), // no such day
+    ];
+    const context = contextWithPsa([psa(6.5, '2025-09-03T00:00:00Z'), ...junk]);
+    expect(ids(context)).toContain('screening-prostate-elevated');
+  });
+
+  it('the history cap cannot drop PSA: every metric at its own cap still fits the total', () => {
+    const rows = Object.keys(METRIC_TO_FIELD).flatMap(metric => Array.from({ length: HISTORY_CAP_PER_METRIC }, (_, i) =>
+      ({ metricType: metric, value: metric === 'psa' ? 6.5 : 80, recordedAt: `2024-${String(1 + (i % 12)).padStart(2, '0')}-${String(1 + Math.floor(i / 12)).padStart(2, '0')}T00:00:00Z` })));
+    rows.push(psa(6.5, '2025-09-03T00:00:00Z'));
+    const context = contextWithPsa(rows);
+    expect(context.measurementHistory.psa.at(-1)).toEqual({ date: '2025-09-03', value: 6.5 });
+    expect(ids(context)).toContain('screening-prostate-elevated');
+  });
+
+  it('control: the newest PSA is 2.1, so no "Elevated PSA"', () => {
+    const context = contextWithPsa([psa(6.5, '2024-03-01T08:00:00Z'), psa(2.1, '2025-09-03T08:00:00Z')]);
+    expect(ids(context)).not.toContain('screening-prostate-elevated');
   });
 });

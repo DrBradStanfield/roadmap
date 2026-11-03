@@ -39,7 +39,7 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    Codex where required, clinical citation numbering). The project settings allow exactly
    `gh pr merge <n> --merge --match-head-commit <sha>` and deny `--admin`, `--squash`, `--rebase` and `--auto`;
    the push guard refuses any other form (Brad 2026-11-01): the sha must be 7-40 hex, each option once, no
-   `-d`/`--delete-branch` (branch deletes are Brad's), and no merge or write to main through `gh api`. It is a
+   `-d`/`--delete-branch` (it deletes with no merged check, so that stays Brad's), and no merge or write to main through `gh api`. It is a
    policy guard, not a complete one: a gh alias, another tool or the web UI is invisible to it. Nothing on
    GitHub enforces the reviews, so you do.
    First `git fetch origin main`, then (its own command) `git merge --no-edit origin/main`, re-run `test:all`,
@@ -70,7 +70,7 @@ it in the final message as still open and why.
 | Package clones | same script (PreToolUse Bash, SessionStart) | In a worktree under `.claude/worktrees/`, links each `node_modules` folder to the worktree's own clone outside the repo; replaces an old link into the main checkout (the link only); SessionStart deletes clones whose worktree is gone. `node .claude/hooks/worktree-guard.cjs --pkg-cache-dir <worktree>` prints a worktree's clone folder |
 | Turn-end landing check | same script (Stop) | Blocks once while the worktree has uncommitted, unpushed, or un-PR'd work; fails open if `gh` is missing |
 | Session-start audit | same script (SessionStart) | Lists local worktrees with unlanded work and uncommitted files in the main checkout |
-| Push guard | `.claude/hooks/git-push-guard.cjs` | No force pushes or deletes; a `claude/` branch never pushes to `main` (that is the PR's job); a push to `main` is refused while `origin/main` is ahead; `gh pr merge` only as `--merge --match-head-commit <sha>` |
+| Push guard | `.claude/hooks/git-push-guard.cjs` | No force pushes or deletes, except `git push origin --delete claude/<name>` once that branch's tip on origin is already in `origin/main` (checked live, fails closed; Brad 2026-11-02), and any other delete is Brad's; a `claude/` branch never pushes to `main` (that is the PR's job); a push to `main` is refused while `origin/main` is ahead; `gh pr merge` only as `--merge --match-head-commit <sha>` |
 | Merge permissions | `.claude/settings.json` `permissions` | Allows the one merge form, denies `--admin`/`--squash`/`--rebase`/`--auto` (without the allow rule, auto mode blocks every merge) |
 | Stranded-branch watch | `.github/workflows/stranded-branch-watch.yml` | Issue for a branch with unmerged commits, no PR, idle 20h+ |
 | Stale-PR watch | `.github/workflows/stale-pr-watch.yml` | One refreshed issue listing open PRs idle 48h+ (drafts 7 days+), daily. These two watches are the only exception to Brad's Claude-app-only notification rule (Brad 2026-11-01) |
@@ -139,3 +139,8 @@ Tests: `tests/worktree-guard.test.ts`, `tests/git-push-guard.test.ts` (runs `.cl
 - The push guard refuses a Bash command naming `git` and `push` that it cannot tokenize (an unbalanced quote,
   as in a heredoc with an apostrophe). Put such text in a file instead.
 - Hooks load from the session's settings at start; a hook change applies to new sessions.
+- `npm run test:all` takes a machine-wide lock so one full local run happens at a time (US-71). It lives at
+  `<main checkout>/.git/test-all.lock` (`owner.json` holds the wrapper and vitest pids, start, cwd).
+  A lock whose pid is dead is taken over by the next run; to clear a stuck one, `rm -rf` that directory.
+  Waiters give up after 60 min (`TEST_ALL_LOCK_TIMEOUT_MIN`); workers cap at max(2, cpus/4)
+  (`TEST_ALL_MAX_WORKERS`). CI skips both; a run with a file argument skips the lock only.

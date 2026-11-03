@@ -28,4 +28,3 @@ export { GitHubAdapter, type GitHubConfig } from './github';
 export { WebDavAdapter, type WebDavConfig } from './webdav';
 export { GoogleDriveAdapter, DriveGrantRefusedError, DRIVE_FILE_SCOPE, gisReady, preloadGis, type GoogleDriveConfig } from './drive';
 export { getDeviceId } from './device-id';
-export { runStorageSelfTest, type SelfTestResult } from '@roadmap/health-core';

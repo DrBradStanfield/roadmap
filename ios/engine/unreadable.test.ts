@@ -61,7 +61,8 @@ describe('US-65: the engine opens a record with unreadable entries', () => {
     const record = JSON.stringify({ ...base, profile, measurements: [weight, { ...weight, id: 'l1', metricType: 'ldl', value: 'synthetic' }] });
     const receipt = JSON.parse(labSaveSummaryJson(record, JSON.stringify(extraction), JSON.stringify(['v0']), '2026-10-01', NOW, 'phone'));
     const saved = JSON.parse(applyEditJson(record, JSON.stringify({ kind: 'labImport', extractionJson: JSON.stringify(extraction), refs: ['v0'], reportDay: '2026-10-01' }), NOW, 'phone'));
-    const ldlRows = saved.ok ? JSON.parse(saved.record).measurements.filter((m: { metricType: string }) => m.metricType === 'ldl').length : 1;
+    // The hidden row moves to a core lab row on read (US-66 AC2), still hidden, still holding its day.
+    const ldlRows = saved.ok ? JSON.parse(saved.record).labValues.filter((l: { core?: boolean; metricName: string }) => l.core === true && l.metricName === 'ldl').length : 1;
     expect(receipt.summary.saved).toBe(ldlRows - 1);
   });
 

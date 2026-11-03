@@ -28,7 +28,7 @@ chat product or model is recorded; every frame is drawn from data and animated i
    Dropbox permission placeholder, back to the chat.
 2. Drag your health data in (18 to 26): file chip, bubble, the permission card
    "Allow ChatGPT to use Health by Dr Brad?" with the tool's own first line as its
-   second sentence (`packages/health-core/src/mcp-tools.ts`); "Always allow" chosen.
+   second sentence (`packages/health-core/src/mcp-tool-catalogue.ts`); "Always allow" chosen.
 3. Read and check (26 to 40): tool row, answer, four-row File / Result table, then
    the assistant's question.
 4. Saved (40 to 48): "Yes", commit row, result.

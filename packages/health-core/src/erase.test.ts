@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildErasedFile } from './erase';
 import { mergeFiles } from './merge';
-import { CURRENT_SCHEMA_VERSION, createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
+import { CURRENT_SCHEMA_VERSION, ERASED_ROWS_SCHEMA_VERSION, createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
 
 const NOW = '2026-10-21T12:00:00.000Z';
 const ctx = { deviceId: 'eraser', now: NOW };
@@ -40,7 +40,8 @@ describe('buildErasedFile', () => {
       ctx,
     });
     expect(file.erasedRows?.ids).toEqual(['d1', 'o1', 'old', 's1']);
-    expect(file.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    // The list's version: an erased file holds no core row, so never 3 (US-66 AC15).
+    expect(file.schemaVersion).toBe(ERASED_ROWS_SCHEMA_VERSION);
     expect(file.measurements).toEqual([]);
   });
 

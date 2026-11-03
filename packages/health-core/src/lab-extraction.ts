@@ -15,11 +15,13 @@
  */
 import * as z from './zod';
 import { getDisplayRange, rangeFault, reportedToCanonical, toCanonicalValue, type MetricType, type UnitSystem } from './units';
-import { foldName, LAB_CATALOG, LAB_GROUPS, labTestLabel, normalizeLabUnit, PROMPT_DEFERRED_KEYS } from './lab-catalog';
+import { foldName, isLooseCatalogueName, LAB_CATALOG, LAB_GROUPS, labTestLabel, looseFold, normalizeLabUnit, resolveLabCatalogEntry, type LabCatalogEntry } from './lab-catalog';
 import { cutText } from './chat-history';
 import { parseLocalisedNumber } from './parseNumber';
-import { DOCUMENT_TYPES } from './validation';
+import { DOCUMENT_TYPES, METRIC_TYPES } from './validation';
 import { isCalendarDay } from './measurement-history';
+import { COMPARATORS, comparatorOf, readPrintedLimit, uploadLimitUngraded, type Comparator } from './lab-limits';
+import { METRIC_TO_FIELD } from './mappings';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -46,6 +48,8 @@ export interface ExtractedValue {
   printedMonth?: string;
   /** The printed unit was blank or unknown, so `resolveUnit` guessed it from the number (US-12 AC16). */
   unitGuessed?: true;
+  /** The result was printed as a limit ("> 60"): the values are its bound (US-12 AC20). */
+  comparator?: Comparator;
 }
 
 /** A lab row the extractor would not convert or save: a creatinine whose unit
@@ -60,9 +64,9 @@ export interface RefusedLabValue {
   printedMonth?: string;
 }
 
-/** Why a lab row was left out unread (US-12 AC19): its result was printed as
- *  a limit ("> 60", "<5"), or it could not be read as a number at all. */
-export type UnreadReason = 'limit' | 'unreadable';
+/** Why a lab row was left out unread (US-12 AC19): it could not be read as a
+ *  number. A result printed as a limit is saved since AC20, so it is never here. */
+export type UnreadReason = 'unreadable';
 
 /** A lab row the parse left out, by its test's name and why: never its value
  *  (US-12 AC19), so the person knows which result to look for. */
@@ -77,7 +81,6 @@ export interface UnreadLabValue {
 
 /** The words both review screens show for each reason (US-12 AC19). */
 const UNREAD_REASON_TEXT: Record<UnreadReason, string> = {
-  limit: 'printed as a limit',
   unreadable: 'could not be read',
 };
 
@@ -97,7 +100,8 @@ export function unreadLines({ droppedValueCount = 0, unreadValues = [], refusedV
   };
   for (const v of refusedValues) add(labTestLabel(v.metric), v.reason);
   const named = unreadValues.filter(v => v.name);
-  for (const v of named) add(labTestLabel(v.name), UNREAD_REASON_TEXT[v.reason]);
+  // A server from before US-12 AC20 may still send `limit`: read any word this build does not know as unreadable.
+  for (const v of named) add(labTestLabel(v.name), UNREAD_REASON_TEXT[v.reason] ?? UNREAD_REASON_TEXT.unreadable);
   const labelsByReason = new Map<string, string[]>();
   for (const [label, why] of reasons) {
     const reason = why.length > 1 ? why.map(r => r.replace(/\.$/, '')).join('; ') : why[0];
@@ -159,6 +163,12 @@ export interface AdditionalLabValue {
   recordedAt?: string;
   /** As on `ExtractedValue`. */
   printedMonth?: string;
+  /** As on `ExtractedValue`: `value` is the printed bound. */
+  comparator?: Comparator;
+  /** The model's own flag, on a row it listed among the core tests (US-12 AC11a):
+   *  kept when the row is offered as a core value. */
+  confidence?: ExtractedValue['confidence'];
+  question?: string;
 }
 
 export interface UnifiedExtractionResult {
@@ -233,9 +243,50 @@ for (const metric of Object.keys(CORE_METRIC_ALIASES) as MetricType[]) {
   for (const alias of [...CORE_METRIC_ALIASES[metric], ...(RESOLVER_ONLY_ALIASES[metric] ?? [])]) CORE_NAME_INDEX.set(foldName(alias), metric);
 }
 
-/** The core metric a printed name is, or null — exact after folding, never a substring. */
+/**
+ * Every core name's loose fold → its metric (US-66 AC4). A loose form two
+ * metrics share, or any catalogue name has, resolves to nothing, so no name
+ * resolves to both a core test and a catalogue entry.
+ */
+const CORE_LOOSE_INDEX: ReadonlyMap<string, MetricType | null> = (() => {
+  const byLoose = new Map<string, MetricType | null>();
+  for (const [folded, metric] of CORE_NAME_INDEX) {
+    const loose = looseFold(folded);
+    const seen = byLoose.get(loose);
+    byLoose.set(loose, isLooseCatalogueName(loose) || (seen !== undefined && seen !== metric) ? null : metric);
+  }
+  return byLoose;
+})();
+
+/**
+ * A name the loose pass never reads: a ratio ("Chol/HDL", "Cholesterol: HDL";
+ * a colon only ends a label like "HbA1c:"), or "Cr" however punctuated, which
+ * may be chromium and keeps its own guard (US-12 AC15).
+ */
+function notLoose(name: string): boolean {
+  return name.includes('/') || /:\s*\S/.test(name.trim()) || looseFold(name) === 'cr';
+}
+
+/**
+ * The core metric a printed name is, or null: exact after folding, never a
+ * substring. A name the exact fold and the catalogue both miss is tried once
+ * more without its punctuation ("LDL - Cholesterol"), unless `notLoose`
+ * keeps it apart (US-66 AC4).
+ */
 export function resolveCoreMetricName(name: string): MetricType | null {
-  return CORE_NAME_INDEX.get(foldName(name)) ?? null;
+  const exact = CORE_NAME_INDEX.get(foldName(name));
+  if (exact || notLoose(name) || resolveLabCatalogEntry(name)) return exact ?? null;
+  return CORE_LOOSE_INDEX.get(looseFold(name)) ?? null;
+}
+
+/** What a printed name resolves to: a core metric, a catalogued test, or nothing. */
+export type ResolvedName = { kind: 'core'; metric: MetricType } | { kind: 'lab'; key: string; entry: LabCatalogEntry } | null;
+
+export function resolveName(name: string): ResolvedName {
+  const core = resolveCoreMetricName(name);
+  if (core) return { kind: 'core', metric: core };
+  const entry = resolveLabCatalogEntry(name);
+  return entry ? { kind: 'lab', key: entry.key, entry } : null;
 }
 
 /** A flag printed beside a value or its unit (H, L, HH, LL, *, ↑, ↓, any case):
@@ -277,6 +328,12 @@ const PER_CREATININE = /\/\s*[mµu]?(?:g|mol)\s*(?:creat(?:inine)?|cr)(?![a-z])/
  *  Never "U/L", "IU", "mU/L", "(uric)" or "(uncorrected)". No lookbehind:
  *  this runs in the BYOK browser bundle too. */
 const URINE_MARKER = /(?:^|[^a-z])(?:urin(?:e|a|ary)?|orina|harn|moczu)(?![a-z])|(?:^|[^a-z])u-(?:creat|cr)|[\s,]u$|[(\[]\s*u\s*[)\]]/i;
+/** A name that says saliva, a specimen as urine is (US-07 AC10), in the urine
+ *  marker's languages (Brad 2026-11-02): English saliva/salivary, Spanish and
+ *  Portuguese salival, Italian salivare, French salive/salivaire, German
+ *  Speichel (also as a compound's start, "Speichelcortisol"), Polish ślina
+ *  (and its forms). */
+const SALIVA_MARKER = /(?:^|[^a-zà-ž])(?:(?:saliva(?:ry|l|re)?|salive|salivaire|ślin(?:a|y|ie|owy|owa|owe|owego))(?![a-zà-ž])|speichel)/i;
 const isUrineOrRatioUnit = (unit: string) => URINE_MARKER.test(unit.trim()) || PER_CREATININE.test(unit) || URINE_OR_RATIO_UNITS.has(cleanedCreatinineUnit(unit).toLowerCase().replace(/\s+/g, ''));
 
 /** Why a creatinine was refused, in the user's words (US-12 AC15). */
@@ -321,7 +378,7 @@ export function resolveUnit(metric: MetricType, unitStr: string, value: number):
 }
 
 /** Resolve units for an array of LLM-extracted lab values. Shared by all extraction paths. */
-export function resolveLabValues(rawValues: Array<{ metric: string; value: number; unit: string; confidence: 'high' | 'medium' | 'low'; question?: string; recordedAt?: string; printedMonth?: string }>): ExtractedValue[] {
+export function resolveLabValues(rawValues: Array<{ metric: string; value: number; unit: string; confidence: 'high' | 'medium' | 'low'; question?: string; recordedAt?: string; printedMonth?: string; printedName?: string; comparator?: Comparator }>): ExtractedValue[] {
   const values: ExtractedValue[] = [];
   for (const v of rawValues) {
     if (!VALID_METRICS.includes(v.metric as MetricType)) continue;
@@ -346,7 +403,9 @@ export function resolveLabValues(rawValues: Array<{ metric: string; value: numbe
       question,
       ...(v.recordedAt ? { recordedAt: v.recordedAt } : null),
       ...(v.printedMonth ? { printedMonth: v.printedMonth } : null),
+      ...(v.printedName ? { printedName: v.printedName } : null),
       ...(!confident ? { unitGuessed: true as const } : null),
+      ...comparatorOf(v),
     });
   }
   return values;
@@ -359,8 +418,9 @@ export function resolveLabValues(rawValues: Array<{ metric: string; value: numbe
 export const DOCUMENT_CLASSIFICATIONS = ['lab_report', ...DOCUMENT_TYPES] as const;
 
 /** Rule 2. The website and BYOK read the most recent previous column, dated
- *  (US-12 AC12) or not (AC14); the connector keeps the base rule until the
- *  MCP 1.0.2 review ends (US-35 AC5). */
+ *  (US-12 AC12) or not (AC14); the connector keeps the base rule, held for
+ *  OpenAI's MCP 1.0.2 review (US-35 AC5). That review ended 2026-10-29, so
+ *  bringing the connector level is open work, not a wait. */
 const PREVIOUS_RESULTS_RULE: Record<DocumentPromptMode, string> = {
   full: `PREVIOUS RESULTS: the current report's primary column (the most recent collection) gives entries with no "recordedAt". One column of earlier results (a "Previous", "Prev. Result" or "Last visit" column, or one column per visit) is extracted too: the ONE most recent previous column, dated or not (with no dates printed, the one beside the current results); ignore every older previous column. Each of its rows is its own entry, even when that row's current result is blank, with "recordedAt" set to that column's collection date as YYYY-MM-DD (rules 3 and 4 apply), or to the exact string "${UNDATED_PREVIOUS}" when that column's date is not printed as a full day anywhere in the document (no date at all, or a month and year only: never invent a day, such as the 1st). For a month and year only, also set "printedMonth" to that month as YYYY-MM. A trend graph, or a value you cannot tie to one column: IGNORE it completely. Return at most ONE entry per metric per date — never duplicate a metric on one date.`,
   metadata: 'If the report shows previous/historical results (in a "Previous" column, "Last visit" column, trend graph, or any side-by-side layout), IGNORE them completely. Extract ONLY values from the current report\'s primary column, even if those historical columns are dated. Return at most ONE entry per metric — never duplicate a metric in the output.',
@@ -397,10 +457,10 @@ ${VALID_METRICS.map((metric) => `  - "${metric}" — ${CORE_METRIC_ALIASES[metri
   8. A measured blood pressure printed as one reading ("120/80 mmHg") is two TARGET METRICS: systolic_bp 120 and diastolic_bp 80, both in "values".
   9. UNITS, in "values" and "additionalValues" alike: copy each row's unit exactly as the report prints it for that row: the unit beside the result; else the unit printed in that row's own reference range ("200-900 pg/mL" gives "pg/mL"); else the unit in that column's header. NEVER convert a value and NEVER relabel its unit to the one you expect for that test: a result printed in pg/mL is returned in pg/mL, even where pmol/L is more common. If no unit is printed anywhere for the row, return "unit": "" (an empty string). Never guess one.
   10. REFERENCE RANGES: for each "additionalValues" row, return the row's printed reference range as "referenceLow" and "referenceHigh": the numbers as printed, in the row's printed unit, never converted. A one-sided range sets one side ("<5" is referenceHigh 5, ">40" is referenceLow 40) and the other is null; both are null when no range is printed.
-  11. An eGFR printed with < or > (">60", ">90") is returned exactly as printed, as a string: never as its number.
-
+  11. A result printed with <, >, ≤ or ≥ (">60", "<5", "≤ 0.1") is returned exactly as printed, as a string with its symbol, in "values" and "additionalValues" alike: never as its number alone.
+${mode === 'full' ? '  12. Every row in "values" and "additionalValues" also has "printedName": the test name exactly as the report prints it.\n' : ''}
   ADDITIONAL VALUES — use these standardized snake_case names when applicable:
-${LAB_GROUPS.map((group) => [group.label, LAB_CATALOG.filter((entry) => entry.group === group.id && !PROMPT_DEFERRED_KEYS.has(entry.key)).map((entry) => entry.key)] as const)
+${LAB_GROUPS.map((group) => [group.label, LAB_CATALOG.filter((entry) => entry.group === group.id).map((entry) => entry.key)] as const)
   .filter(([, keys]) => keys.length > 0)
   .map(([label, keys]) => `  ${label}: ${keys.join(', ')}`).join('\n')}
   Any other test: use the best descriptive snake_case name.
@@ -439,16 +499,18 @@ const METADATA_DOCUMENT_RULES = `  Do NOT transcribe or convert the document. Re
   - metadata: {} (empty object)
 `;
 
-const RESPONSE_FORMAT = `
+const responseFormat = (mode: DocumentPromptMode) => {
+  const printed = (name: string) => (mode === 'full' ? `, "printedName": "${name}"` : '');
+  return `
 RESPONSE FORMAT (strict JSON, no markdown wrapping):
 {
   "classification": "lab_report" | "scan_result" | etc.,
   "reportDate": "YYYY-MM-DD" or null,
   "values": [
-    { "metric": "ldl", "value": 2.8, "unit": "mmol/L", "confidence": "high" }
+    { "metric": "ldl", "value": 2.8, "unit": "mmol/L", "confidence": "high"${printed('LDL Cholesterol')} }
   ],
   "additionalValues": [
-    { "name": "sodium", "value": 139, "unit": "mmol/L", "referenceLow": 135, "referenceHigh": 145 }
+    { "name": "sodium", "value": 139, "unit": "mmol/L", "referenceLow": 135, "referenceHigh": 145${printed('Sodium')} }
   ],
   "document": {
     "title": "Colonoscopy Report — Dr. Smith",
@@ -458,10 +520,11 @@ RESPONSE FORMAT (strict JSON, no markdown wrapping):
     "metadata": { "scanType": "colonoscopy", "provider": "Dr. Smith", "screeningType": "colorectal" }
   } or null
 }`;
+};
 
 /** The one prompt, with the document section the caller needs (US-35 AC5). */
 export function unifiedSystemPrompt(mode: DocumentPromptMode): string {
-  return promptHead(mode) + (mode === 'metadata' ? METADATA_DOCUMENT_RULES : FULL_DOCUMENT_RULES) + RESPONSE_FORMAT;
+  return promptHead(mode) + (mode === 'metadata' ? METADATA_DOCUMENT_RULES : FULL_DOCUMENT_RULES) + responseFormat(mode);
 }
 
 /** The website's prompt: classification plus the whole document as markdown. */
@@ -561,26 +624,46 @@ function toDay(text: string): string {
   return /^\d{4}-\d{2}-\d{2}[T ]/.test(trimmed) ? trimmed.slice(0, 10) : trimmed;
 }
 const labBound = z.preprocess(readModelNumber, z.number().nullable()).optional();
+/**
+ * Longest test name or unit a tool will take, and longest row id. Neither is a
+ * clinical limit — a real test name is a few words and an id is a UUID (~45
+ * chars with a duplicate suffix). They exist because nothing else bounds the
+ * bytes one call can put in the user's file: without them a single call can
+ * write megabytes of a string into a record that has to be read back whole.
+ */
+export const MAX_NAME_LENGTH = 120;
+/** The test's name as the report printed it (US-07 AC10): one line, control codes gone, bounded. */
+const printedNameField = z.unknown().transform(n => {
+  const line = typeof n === 'string' ? fileNameLine(n.replace(/\s+/g, ' ')).trim() : '';
+  return line ? cutText(line, MAX_NAME_LENGTH) : undefined;
+}).optional();
+
+/** Set only by `readableRows` from the printed value, never taken from the model (US-12 AC20). */
+const labComparator = z.enum(COMPARATORS).optional();
 
 const coreValueRow = z.object({
   metric: z.string(),
   value: labValue,
+  comparator: labComparator,
   // Null, missing or blank is "no unit printed", as on an additional row.
   unit: z.string().nullish().transform(u => u?.trim() ?? ''),
   confidence: z.enum(['high', 'medium', 'low']),
   question: z.string().nullish().transform(q => q ?? undefined).optional(),
   recordedAt: labDay,
   printedMonth: z.unknown().transform(m => (typeof m === 'string' ? m.trim() : undefined)).optional(),
+  printedName: printedNameField,
 });
 
 const additionalValueRow = z.object({
   name: z.string().trim().min(1),
   value: labValue,
+  comparator: labComparator,
   unit: z.string().nullish().transform(u => u?.trim() ?? ''),
   referenceLow: labBound,
   referenceHigh: labBound,
   recordedAt: labDay,
   printedMonth: z.unknown().transform(m => (typeof m === 'string' ? m.trim() : undefined)).optional(),
+  printedName: printedNameField,
 });
 
 const unifiedResultSchema = z.object({
@@ -598,29 +681,39 @@ const unifiedResultSchema = z.object({
   }).nullable().default(null),
 });
 
-/** A result printed as a limit: "> 60", "<5", "≤ 0.1". Never read as its number (US-12 AC19). */
-const PRINTED_LIMIT = /^\s*[<>≤≥]/;
-
 /** A dropped row by its test's name ("" for none), why and day (US-12 AC19):
  *  an unnamed one keeps its day too, so it leaves the count with its column. */
 function unreadValue(row: unknown): UnreadLabValue {
-  const { metric, name, value, recordedAt } = (row ?? {}) as Record<string, unknown>;
+  const { metric, name, recordedAt } = (row ?? {}) as Record<string, unknown>;
   const test = typeof metric === 'string' ? metric.trim() : typeof name === 'string' ? name.trim() : '';
   const day = labDay.safeParse(recordedAt);
   return {
     name: cutText(test, 80),
-    reason: typeof value === 'string' && PRINTED_LIMIT.test(value) ? 'limit' : 'unreadable',
+    reason: 'unreadable',
     ...(day.success && day.data ? { recordedAt: day.data } : null),
   };
+}
+
+/**
+ * A row as the schema reads it: a value printed as a limit ("> 60", "<5")
+ * becomes its number and its code (US-12 AC20); any `comparator` the model
+ * sent itself is dropped, so only the printed symbol sets one.
+ */
+function withPrintedLimit(row: unknown): unknown {
+  if (row === null || typeof row !== 'object' || Array.isArray(row)) return row;
+  const { comparator: _sent, ...rest } = row as Record<string, unknown>;
+  const limit = typeof rest.value === 'string' ? readPrintedLimit(rest.value) : null;
+  return limit ? { ...rest, value: limit.rest, comparator: limit.comparator } : rest;
 }
 
 /** The rows of `rows` that `schema` reads; the rest are dropped, each to
  *  `unread`. */
 function readableRows<T extends z.ZodTypeAny>(schema: T, rows: unknown[], unread: UnreadLabValue[]): Array<z.output<T>> {
-  return rows.flatMap(row => {
+  return rows.flatMap(raw => {
+    const row = withPrintedLimit(raw);
     const r = schema.safeParse(row);
     if (r.success && !refusedCountRow(row)) return [r.data];
-    unread.push(unreadValue(row));
+    unread.push(unreadValue(raw));
     return [];
   });
 }
@@ -654,8 +747,9 @@ export function parseExtractionJson(text: string): unknown {
 }
 
 /** The core metrics an additional value can be promoted into (US-12 AC11).
- *  Never creatinine: a urine creatinine prints in mg/dL too, and serum
- *  creatinine drives eGFR. */
+ *  Not creatinine by its name alone: a urine creatinine prints in mg/dL too,
+ *  and serum creatinine drives eGFR. One the report printed as serum
+ *  creatinine is promoted in `toUnifiedResult` (US-07 AC10). */
 const PROMOTABLE = new Set<string>(VALID_METRICS.filter(m => m !== 'creatinine'));
 
 /** Build a UnifiedExtractionResult from a parsed-and-filtered unified response.
@@ -695,8 +789,10 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
   // The connector (`metadata`, its prompt alone) refuses only a urine or ratio
   // unit; a blank or unknown one is inferred and stored in SI, as before (D7a,
   // Brad 2026-10-20: "save it as SI unit"; US-12 AC15).
+  const creatinineUnitRefused = (v: { value: number; unit: string }) =>
+    !readPrintedUnit('creatinine', v.value, v.unit) && !(mode === 'metadata' && !isUrineOrRatioUnit(v.unit));
   const refusesCreatinine = (v: { value: number; unit: string; recordedAt?: string; printedMonth?: string }) => {
-    if (readPrintedUnit('creatinine', v.value, v.unit) || (mode === 'metadata' && !isUrineOrRatioUnit(v.unit))) return false;
+    if (!creatinineUnitRefused(v)) return false;
     refusedValues.push({
       metric: 'creatinine', value: v.value, unit: v.unit, reason: creatinineRefusal(v.unit),
       ...(v.recordedAt ? { recordedAt: v.recordedAt } : null), ...(v.printedMonth ? { printedMonth: v.printedMonth } : null),
@@ -709,19 +805,100 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
   const exactMmol = <T extends { metric: string; value: number; unit: string }>(v: T): T =>
     mode === 'metadata' && v.metric === 'creatinine' && /^mmol\/l$/i.test(cleanedCreatinineUnit(v.unit).replace(/\s+/g, ''))
       ? { ...v, value: Math.round(v.value * 1e6) / 1e3, unit: 'µmol/L' } : v;
+  // The name the report printed files the row whenever it resolves exactly to a
+  // core metric or a catalogued test; the model's pick stands only when it does
+  // not (US-07 AC10, Brad 2026-11-02). So "Cortisol" is a morning cortisol
+  // whatever key the model chose, and a printed urine creatinine is filed as a
+  // lab row, never as serum creatinine. Website and BYOK only (the `full`
+  // prompt asks for the name); a row without one is filed as before.
+  // Specimen (Brad 2026-11-02): when one name says urine or saliva and the
+  // other does not, the one that says it wins, for every test (a plain
+  // "Sodium" under a URINE heading stays urine sodium); the unit check below
+  // still refuses urine-only units on a creatinine. A printed "Cr" never
+  // overrides: it is chromium as often as creatinine, so the model's pick and
+  // its checks stand (US-12 AC15).
+  const printedOf = (v: { printedName?: string }) => (mode === 'full' ? v.printedName : undefined);
+  const saysSpecimen = (name: string) => URINE_MARKER.test(foldName(name)) || SALIVA_MARKER.test(foldName(name));
+  const intoCreatinine = (name: string) => resolveCoreMetricName(name) === 'creatinine';
+  // A printed serum creatinine name: never "Cr" (chromium as often), no urine or saliva word.
+  const printedSerum = (printed?: string) => !!printed && foldName(printed) !== 'cr' && intoCreatinine(printed) && !saysSpecimen(printed);
+  const filingName = (model: string, printed: string): string =>
+    foldName(printed) === 'cr' ? model
+      : saysSpecimen(model) && !saysSpecimen(printed) ? model
+        : saysSpecimen(printed) && !saysSpecimen(model) ? printed
+          : resolveName(printed) ? printed : model;
+  // A core slot the model already filled on that day is never taken by another
+  // row's printed name: that row keeps the model's pick.
+  // Each row's destination first; then a row re-filed into another core metric
+  // takes that slot only if no row that kept its own metric holds it that day,
+  // and only the first such row does.
+  // A model metric that is no core key ("LDL-Cholesterol", "tsh") is filed by
+  // its name the same way, never dropped (US-12 AC11a, Brad 2026-11-03): a core
+  // value keeps the model's confidence and question, and creatinine is reached
+  // only through a printed name, never the model's alone (AC11). A row with no
+  // name at all is dropped and counted.
+  const reportDayOf = (d?: string) => (!d || d === reportDay ? '' : d);
+  const blank: typeof parsed.values = [];
+  const planned = parsed.values.flatMap(v => {
+    const printedName = printedOf(v);
+    const coreKey = VALID_METRICS.includes(v.metric as MetricType);
+    if (!printedName && coreKey) return [{ v, printedName, name: v.metric, to: v.metric, lab: false }];
+    const model = v.metric.trim();
+    const name = (printedName ? filingName(model, printedName) : model) || printedName;
+    if (!name) { blank.push(v); return []; }
+    const filed = resolveName(name);
+    // Only the 11 the review takes: a weight, waist or height is a lab row.
+    const core = filed?.kind === 'core' && VALID_METRICS.includes(filed.metric) ? filed.metric : null;
+    return core && (core !== 'creatinine' || (name === printedName && printedSerum(printedName))) ? [{ v, printedName, name, to: core, lab: false }]
+      : [{ v, printedName, name, to: name, lab: name !== v.metric || !coreKey }];
+  });
   // A dropped row is named only from a column whose values are offered (AC19):
   // one left out with its column is left out of the count too, as its read
   // neighbours are never counted.
-  const unreadValues = isLab ? parsed.unreadValues.flatMap(ownDay).map(({ name, reason, recordedAt }) => ({ name, reason, ...(recordedAt ? { recordedAt } : null) })) : [];
-  const coreRows = isLab ? parsed.values.flatMap(ownDay).filter(v => v.metric !== 'creatinine' || !refusesCreatinine(v)).map(exactMmol) : [];
+  const unread = [...parsed.unreadValues, ...blank.map(unreadValue)];
+  const unreadValues = isLab ? unread.flatMap(ownDay).map(({ name, reason, recordedAt }) => ({ name, reason, ...(recordedAt ? { recordedAt } : null) })) : [];
+  // A model creatinine its unit check will refuse holds no slot.
+  const held = new Set(planned.filter(p => !p.lab && p.to === p.v.metric && !(p.to === 'creatinine' && creatinineUnitRefused(p.v))).map(p => `${p.to}@${reportDayOf(p.v.recordedAt)}`));
+  const coreIn: typeof parsed.values = [];
+  type LabIn = (typeof parsed.additionalValues)[number] & Pick<AdditionalLabValue, 'confidence' | 'question'>;
+  const labIn: LabIn[] = [];
+  for (const { v, printedName, name, to, lab } of planned) {
+    const isHeld = held.has(`${to}@${reportDayOf(v.recordedAt)}`);
+    // A held slot leaves a row the model named by no core key a lab row.
+    if (lab || (isHeld && !VALID_METRICS.includes(v.metric as MetricType))) {
+      labIn.push({ name, value: v.value, unit: v.unit, referenceLow: null, referenceHigh: null, recordedAt: v.recordedAt, printedMonth: v.printedMonth, printedName, ...comparatorOf(v), confidence: v.confidence, ...(v.question ? { question: v.question } : null) });
+    } else if (to === v.metric || isHeld) {
+      coreIn.push({ ...v, printedName });
+    } else {
+      // A creatinine its unit check will refuse takes no slot here either.
+      if (!(to === 'creatinine' && creatinineUnitRefused(v))) held.add(`${to}@${reportDayOf(v.recordedAt)}`);
+      coreIn.push({ ...v, metric: to, printedName });
+    }
+  }
+  for (const v of parsed.additionalValues) {
+    const printedName = printedOf(v);
+    labIn.push(printedName ? { ...v, name: filingName(v.name, printedName), printedName } : { ...v, printedName });
+  }
+  const coreRows = isLab ? coreIn.flatMap(ownDay).filter(v => v.metric !== 'creatinine' || !refusesCreatinine(v)).map(exactMmol) : [];
   const slot = (metric: string, day?: string) => `${metric}@${day ?? ''}`;
   const taken = new Set(coreRows.map(v => slot(v.metric, v.recordedAt)));
-  const additionalValues: typeof parsed.additionalValues = [];
-  for (const v of isLab ? parsed.additionalValues.flatMap(ownDay) : []) {
+  const additionalValues: LabIn[] = [];
+  for (const v of isLab ? labIn.flatMap(ownDay) : []) {
     const metric = resolveCoreMetricName(v.name);
-    if (metric && PROMOTABLE.has(metric) && !taken.has(slot(metric, v.recordedAt)) && reportedToCanonical(metric, v.value, v.unit)) {
-      taken.add(slot(metric, v.recordedAt));
-      coreRows.push({ metric, value: v.value, unit: v.unit, confidence: 'high', recordedAt: v.recordedAt, printedMonth: v.printedMonth });
+    const free = !!metric && !taken.has(slot(metric, v.recordedAt));
+    const promote = () => {
+      taken.add(slot(metric!, v.recordedAt));
+      coreRows.push({ metric: metric!, value: v.value, unit: v.unit, confidence: v.confidence ?? 'high', question: v.question, recordedAt: v.recordedAt, printedMonth: v.printedMonth, printedName: v.printedName, ...comparatorOf(v) });
+    };
+    // A creatinine the report itself printed as serum creatinine, with no urine
+    // word, is promoted like any core value, its unit checked as a core
+    // creatinine's (US-07 AC10, Brad 2026-11-02: "sounds fine").
+    const printed = printedOf(v);
+    const serumByPrint = metric === 'creatinine' && printedSerum(printed);
+    if (free && serumByPrint) {
+      if (!refusesCreatinine(v)) promote();
+    } else if (free && PROMOTABLE.has(metric!) && reportedToCanonical(metric!, v.value, v.unit)) {
+      promote();
     } else if (metric !== 'creatinine' || foldName(v.name) === 'cr' || !refusesCreatinine(v)) {
       additionalValues.push(v);
     }
@@ -740,7 +917,7 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
       ...(parsed.document.summary !== undefined ? { summary: parsed.document.summary } : null),
       metadata: parsed.document.metadata as Record<string, unknown>,
     } : null,
-    droppedValueCount: isLab ? parsed.droppedValueCount - (parsed.unreadValues.length - unreadValues.length) : 0,
+    droppedValueCount: isLab ? parsed.droppedValueCount + blank.length - (unread.length - unreadValues.length) : 0,
     ...(unreadValues.length ? { unreadValues } : null),
     ...(refusedValues.length ? { refusedValues } : null),
   };
@@ -904,4 +1081,47 @@ export function isImportableEntryName(name: string, extensions: readonly string[
   if (JUNK_PATTERNS.some((pattern) => lower.includes(pattern))) return false;
   if (lower.split('/').some((part) => part.startsWith('.'))) return false;
   return extensions.some((ext) => lower.endsWith(ext));
+}
+
+/**
+ * The words `upload_outcome` `limitUngradedTests` may carry (US-12 AC20, Brad
+ * 2026-11-02): a core metric's key, a lab-catalogue key (the lab eGFR is
+ * `egfr`), else "other". A closed list, so no free text, value, unit or date
+ * can ride on it; the server's schema takes these and nothing else.
+ */
+export const LIMIT_TEST_WORDS: readonly string[] = [...new Set([...METRIC_TYPES, ...LAB_CATALOG.map(e => e.key), 'other'])];
+
+/** A test's word in that list: its core key, its catalogue key, or "other". */
+function limitTestWord(metricOrName: string): string {
+  if ((METRIC_TYPES as readonly string[]).includes(metricOrName)) return metricOrName;
+  return resolveLabCatalogEntry(metricOrName)?.key ?? 'other';
+}
+
+/**
+ * US-12 AC20's usage signal for one run's read files: how many values were
+ * printed as a limit (`valuesLimit`, now saved), how many of those the
+ * grading rule leaves undecided (`valuesLimitUngraded`, judged at upload by
+ * the same cutoffs), and which tests those were, each once, sorted. Never a
+ * value, a comparator or a printed name.
+ */
+export function uploadLimitSignal(results: ReadonlyArray<{
+  values: ReadonlyArray<Pick<ExtractedValue, 'metric' | 'valueSI' | 'comparator'>>;
+  additionalValues: ReadonlyArray<Pick<AdditionalLabValue, 'name' | 'value' | 'comparator' | 'referenceLow' | 'referenceHigh'>>;
+}>): { valuesLimit: number; valuesLimitUngraded: number; limitUngradedTests: string[] } {
+  let valuesLimit = 0;
+  const ungraded: string[] = [];
+  for (const r of results) {
+    for (const v of r.values) {
+      if (!v.comparator) continue;
+      valuesLimit++;
+      if (uploadLimitUngraded({ comparator: v.comparator, field: METRIC_TO_FIELD[v.metric], valueSI: v.valueSI })) ungraded.push(limitTestWord(v.metric));
+    }
+    for (const v of r.additionalValues) {
+      if (!v.comparator) continue;
+      valuesLimit++;
+      const word = limitTestWord(v.name);
+      if (uploadLimitUngraded({ comparator: v.comparator, field: word === 'egfr' ? 'labEgfr' : undefined, value: v.value, referenceLow: v.referenceLow, referenceHigh: v.referenceHigh })) ungraded.push(word);
+    }
+  }
+  return { valuesLimit, valuesLimitUngraded: ungraded.length, limitUngradedTests: [...new Set(ungraded)].sort() };
 }

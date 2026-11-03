@@ -11,8 +11,8 @@ export function createRemoteChangeRelay(apply: () => void) {
   return {
     /** A remote change arrived. `formDirty`: the user is mid-edit. */
     arrived(formDirty: boolean): void {
-      if (formDirty) held = true;
-      else apply();
+      held = formDirty;
+      if (!formDirty) apply(); // this re-read is the one a held change waited for
     },
     /** A profile save landed. Applies a change held back by a dirty form. */
     saved(): void {

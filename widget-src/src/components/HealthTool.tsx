@@ -8,6 +8,8 @@ import {
   weightMedicationTrigger,
   lipidMarkerFor,
   validateHealthInputs,
+  planInputsFrom,
+  type SuggestionInputs,
   getValidationErrors,
   convertValidationErrorsToUnits,
   detectUnitSystem,
@@ -29,11 +31,13 @@ import {
   localDay,
   dayOf,
   withLabEgfr,
+  withPsaMeasurement,
+  newestUsablePsa,
   labEgfrOf,
   toCanonicalValue,
   VITALS_INPUT_FIELDS,
-  ESCALATION_KEY_OF,
-  UNANSWERED_OF,
+  chatMedicationChange,
+  unsavedProfile,
   type AlcoholAnswer,
   type HealthInputs,
   type UnitSystem,
@@ -42,6 +46,7 @@ import {
   type ApiMedication,
   type ApiScreening,
   type ChatContextPayload,
+  type ChatMedicationRow,
   type ProposedEdit,
   type ProposedFieldEdit,
   type ProposedMedicationEdit,
@@ -51,13 +56,13 @@ import {
   isSex,
   formatHeightDisplay,
   birthRefusedMessage,
+  inputRangeFault,
 } from '@roadmap/health-core';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { MoveTestApi } from './MoveTestPanel';
 import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';
 import type { ApiSupplement, ApiLabValue, LatestMeasurementsResult } from '../lib/api-types';
 import { InputPanel, type PlanBasis } from './InputPanel';
-import { profileTitle } from '../lib/profile-title';
 import { ResultsPanel } from './ResultsPanel';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
 import { ChatEmbed } from './ChatEmbed';
@@ -77,6 +82,7 @@ import {
   loadUnitPreference,
   safeSetItem,
   safeRemoveItem,
+  localHealthWritesStopped,
 } from '../lib/storage';
 import {
   loadLatestMeasurements,
@@ -86,7 +92,9 @@ import {
   getShownErase,
   markEraseShown,
   clearOffFileAfterErase,
+  flushRoadmapStoreSync,
   loadLatestMeasurementsSync,
+  holdsUnreadableMedication,
   loadAllHistory,
   loadAllHistorySync,
   loadLabValues,
@@ -201,15 +209,6 @@ const profileFields = (p: ProposedProfileEdit) =>
 
 const sexLabel = (sex: 'male' | 'female') => (sex === 'male' ? 'Male' : 'Female');
 
-/** The fields of a proposal the profile does not already hold, as the user
- *  sees them; null when none, so no banner (US-16 AC2). */
-function unsavedProfile(p: ProposedProfileEdit, saved: Partial<HealthInputs>, units: UnitSystem): ProposedProfileEdit | null {
-  const sex = p.sex !== saved.sex ? p.sex : null;
-  const heightCm = p.heightCm !== null && (saved.heightCm == null
-    || formatHeightDisplay(saved.heightCm, units) !== formatHeightDisplay(p.heightCm, units)) ? p.heightCm : null;
-  return sex || heightCm !== null ? { kind: 'profile', sex, heightCm } : null;
-}
-
 /** After a medication or screening save, failed or not, the chat copy takes
  *  the lists the store holds (US-15 AC10). Never the form's: a failed save
  *  would leave a row the record lacks, and a re-read inside the debounce
@@ -293,6 +292,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const [labValueHistory, setLabValueHistory] = useState<ApiLabValue[]>(() => loadLabValuesSync() ?? []);
   const [medications, setMedications] = useState<ApiMedication[]>([]);
   const [screenings, setScreenings] = useState<ApiScreening[]>([]);
+  // The prostate section's PSA day (YYYY-MM-DD); null until one is picked, so today (US-06 AC15).
+  const [psaDate, setPsaDate] = useState<string | null>(null);
+  // The PSA row was committed since its last save (US-06 AC15).
+  const psaCommittedRef = useRef(false);
   const [supplements, setSupplements] = useState<ApiSupplement[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   // US-54 AC5b: the birth month a save refused, in words, until the next birth edit.
@@ -424,7 +427,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     if (result) {
       setPreviousMeasurements(result.previousMeasurements);
       // The storefront chat embed reads this mirror; keep it in step too.
-      saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined, labEgfrOf(await loadLabValues() ?? []));
+      saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined, labEgfrOf(await loadLabValues() ?? []),
+        newestUsablePsa(loadAllHistorySync(), new Date()));
     }
     await Promise.all([refreshLabValues(), loadHistory()]);
     return result;
@@ -454,8 +458,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     setProfileProposal(null);
   }, []);
   // The store holds an erase the screen does not show yet: this tab's erase
-  // still writing or failed to write, or a remote change the relay holds. The
-  // screen's values are pre-erase then, so no banner is made or answered.
+  // still writing or failed to write, or another device's erase whose re-read
+  // has not landed (the relay never holds an erase, US-11 AC6). The screen's
+  // values are pre-erase then, so no banner is made or answered.
   const eraseUnshown = useCallback(() => getEraseIdentity() !== getShownErase(), []);
   // True while this tab's erase runs.
   const erasingRef = useRef(false);
@@ -506,7 +511,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
         // doesn't block the first render).
         loadHistory();
         // Keep the legacy mirror available to the separate storefront chat embed.
-        saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined, labEgfrOf(await loadLabValues() ?? []));
+        saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined, labEgfrOf(await loadLabValues() ?? []),
+          newestUsablePsa(loadAllHistorySync(), new Date()));
       } else {
         // Nothing on record: a new visitor, or another device erased it. The
         // bubble and the embed must not keep sending the old copy (US-11).
@@ -591,6 +597,14 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     trackProductEvent('onboarding_step', { step: ONBOARDING_STEPS[from - 1] });
     if (reached === 4) trackProductEvent('onboarding_done');
   });
+  // US-62 AC12: About you goes low for a record complete when first shown, and
+  // once the four answers hold and the focus leaves its card (this record:
+  // an erase starts it again).
+  const [movedLow, setMovedLow] = useState<number | null>(null);
+  const aboutYouLow = opened === 4 || movedLow === epoch;
+  const handleProfileLeft = useCallback(() => {
+    if (stageRef.current === 4) setMovedLow(epoch);
+  }, [epoch]);
   // An erase closes the floating chat: its conversation belongs to the old record.
   useEffect(() => { setFloatingChatOpen(false); }, [epoch]);
   // The latest stage, for a call made after the render that changed it.
@@ -614,6 +628,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // Save any unsaved profile/demographic fields (height, sex, birthYear, birthMonth, unitSystem).
   // Returns true if saved or nothing to save; false on failure.
   async function flushPendingProfileSave(erase?: string): Promise<boolean> {
+    if (getBackendKind() === 'local' && localHealthWritesStopped()) return true;
     const autoSaveFields = [...PREFILL_FIELDS, 'unitSystem' as keyof HealthInputs];
     const currentPrefill: Partial<HealthInputs> = {};
     const previousPrefill: Partial<HealthInputs> = {};
@@ -623,15 +638,19 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     }
 
     const hasChanges = autoSaveFields.some(f => inputs[f] !== previousInputsRef.current[f]);
-    if (!hasChanges) return true;
+    // Clean (a refused value cleared or put back): a held remote change applies now (N1).
+    if (!hasChanges) { remoteRelay.saved(); return true; }
 
     const result = await saveChangedMeasurements(currentPrefill, previousPrefill, erase);
     if (!result.ok) {
       writeRefused();
       return false;
     }
+    if (getBackendKind() === 'local' && localHealthWritesStopped()) return true;
     const refused = result.birthRefused;
-    const kept = new Set<keyof HealthInputs>(refused ? ['birthYear', 'birthMonth'] : []);
+    // A value out of range was refused (US-02 AC5): it stays in the form, unsaved, its error shown.
+    const kept = new Set(Object.keys(result.refused ?? {}) as Array<keyof HealthInputs>);
+    if (refused) { kept.add('birthYear'); kept.add('birthMonth'); }
     for (const field of autoSaveFields) {
       if (!kept.has(field)) (previousInputsRef.current as any)[field] = inputs[field];
     }
@@ -648,27 +667,24 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     // already has (US-15 AC10).
     patchMirror({ profile: { ...previousInputsRef.current } });
     // The form is clean again — apply any remote change held back while it
-    // was dirty (US-34 AC4).
-    remoteRelay.saved();
+    // was dirty (US-34 AC4). Not while a refused value is still in the form:
+    // the re-read would replace it and its error (US-02 AC5); the relay
+    // waits for the save that takes it. Nor while an edit made during the
+    // await is unsaved: read the latest form, not this save's snapshot.
+    if (!result.refused && !autoSaveFields.some(f => inputsRef.current[f] !== inputs[f])) remoteRelay.saved();
     return true;
   }
 
   // Auto-save demographics + height only (debounced)
+  const profileDebounce = useDebouncedSave(500);
   useEffect(() => {
     if (!hasApiResponse) return;
 
     const erase = getShownErase(); // as the edit was made, not as the timer fires
-    const timeout = setTimeout(async () => {
-      // Check if there are unsaved profile changes before showing status
-      const autoSaveFields = [...PREFILL_FIELDS, 'unitSystem' as keyof HealthInputs];
-      const hasChanges = autoSaveFields.some(f => inputs[f] !== previousInputsRef.current[f]);
-      if (!hasChanges) return;
+    profileDebounce.schedule(() => { void flushPendingProfileSave(erase); });
 
-      await flushPendingProfileSave(erase);
-    }, 500);
-
-    return () => clearTimeout(timeout);
-  }, [inputs, hasApiResponse]);
+    return () => profileDebounce.cancel();
+  }, [inputs, hasApiResponse, profileDebounce]);
 
   // The saved-value editor's correction, core or lab (US-04, US-21 AC5),
   // then the page re-reads the record.
@@ -699,24 +715,39 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // leaves a matrix, and saves the fields) both land. Resolves with what was
   // refused, slot by slot, so the caller keeps only that.
   // `erase`: as asked for, not as the queued save runs (US-16 AC2a).
-  const handleSaveLongitudinal = useCallback((tasks?: SaveTask[], erase = getShownErase()): Promise<Refused> => {
+  // `now`: the page is leaving or hiding, so the writes are staged before this
+  // returns, ahead of the caller's synchronous flush; the re-read follows if
+  // the page stays (US-06 AC15).
+  const handleSaveLongitudinal = useCallback((tasks?: SaveTask[], erase = getShownErase(), now = false): Promise<Refused> => {
     // The first-time vitals fields: a weight, a waist, a blood pressure, each
     // naming the row the page shows for today ("Replaces 82 kg"), in the unit
     // it was typed in (mmHg either way). What a matrix's draft lends the plan
     // is kept apart (`lent`), and only that matrix saves it, on the day the
     // draft is dated (review of 2026-09-24). So what `inputs` holds here was
-    // typed into these fields, by the user or the chat.
+    // typed into these fields, by the user or the chat. The prostate section's
+    // PSA takes the day picked beside it, or today until one is picked; a day
+    // after today (or none) saves no PSA, and the field says so (US-06 AC15).
     const fromForm = (): SaveTask[] => {
-      const date = localDay(new Date());
+      const today = localDay(new Date());
       const shown = activeRowIndex(history);
-      return [['weight'], ['waist'], ['systolic_bp', 'diastolic_bp']].flatMap((metrics): SaveTask[] => {
+      // A PSA saves only once its row is committed (left, ticked, Enter, or
+      // departure), so another field's save never takes it under a day not
+      // yet chosen (US-06 AC15).
+      const psaCommitted = psaCommittedRef.current;
+      psaCommittedRef.current = false;
+      return [['weight'], ['waist'], ['systolic_bp', 'diastolic_bp'], ['psa']].flatMap((metrics): SaveTask[] => {
+        if (metrics[0] === 'psa' && !psaCommitted) return [];
+        const date = metrics[0] === 'psa' ? psaDate ?? today : today;
+        if (!date || date > today) return [];
         const field = METRIC_TO_FIELD[metrics[0]];
         const typed = typedIn.current[field];
         const unit = typed && typed.value === inputs[field] ? typed.unit : unitOverrides[field] ?? unitSystem;
         const task: SaveTask = { date, values: {}, expected: {}, unit };
         for (const metric of metrics) {
           const value = inputs[METRIC_TO_FIELD[metric]] as number | undefined;
-          if (value === undefined) continue;
+          // US-02 AC5: a value out of range stays in its field, its error shown,
+          // and is never sent (the record's slot rule has no range check, D4b).
+          if (value === undefined || inputRangeFault(METRIC_TO_FIELD[metric], value)) continue;
           task.values[metric] = value;
           task.expected[metric] = shown.get(slotOf(date, metric))?.id ?? null;
         }
@@ -724,23 +755,22 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       });
     };
 
-    const save = async (): Promise<Refused> => {
-      // Keep the profile and saved measurements consistent across the debounce.
-      await flushPendingProfileSave(erase);
-      const toSave = tasks ?? fromForm();
-      if (toSave.length === 0) return new Map();
+    // The store is synchronous, so every write is staged before this returns;
+    // only the answers wait.
+    const write = (toSave: SaveTask[]) => routeTasksToSaves(
+      toSave,
+      loadAllHistorySync(), // the store's rows, as it writes: never the page's copy
+      async (date, metric, value) => {
+        const { status } = await addMeasurement(metric, value, ensureIsoDatetime(date), erase);
+        return status === 'inserted' ? 'ok' : status === 'duplicate' ? 'changed' : status;
+      },
+      (id, newValue) => countedCorrection(id, newValue, erase),
+    );
 
+    const finish = async (toSave: SaveTask[], staged: Promise<Refused>): Promise<Refused> => {
       setIsSavingLongitudinal(true);
       try {
-        const refused = await routeTasksToSaves(
-          toSave,
-          await loadAllHistory(), // the store's rows, as it writes: never the page's copy
-          async (date, metric, value) => {
-            const { status } = await addMeasurement(metric, value, ensureIsoDatetime(date), erase);
-            return status === 'inserted' ? 'ok' : status === 'duplicate' ? 'changed' : status;
-          },
-          (id, newValue) => countedCorrection(id, newValue, erase),
-        );
+        const refused = await staged;
         await reloadValues();
 
         // What the fields saved leaves the form, in one update. A copy left in
@@ -761,6 +791,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
             }
             return next;
           });
+          // A saved PSA puts its date box back to today, so it never reads "Replaces" the value just saved.
+          if (toSave.some(t => t.values.psa !== undefined && !refused.has(slotOf(t.date, 'psa')))) setPsaDate(null);
           setFieldsSaved(n => n + 1);
         }
 
@@ -774,10 +806,21 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
         setIsSavingLongitudinal(false);
       }
     };
+    if (now) {
+      if (getBackendKind() === 'local' && localHealthWritesStopped()) return Promise.resolve(new Map());
+      const toSave = tasks ?? fromForm();
+      return toSave.length ? finish(toSave, write(toSave)) : Promise.resolve(new Map());
+    }
+    const save = async (): Promise<Refused> => {
+      // Keep the profile and saved measurements consistent across the debounce.
+      await flushPendingProfileSave(erase);
+      const toSave = tasks ?? fromForm();
+      return toSave.length ? finish(toSave, write(toSave)) : new Map();
+    };
     const run = savesRef.current.then(save);
     savesRef.current = run.catch(() => {});
     return run;
-  }, [inputs, history, unitOverrides, unitSystem, reloadValues]);
+  }, [inputs, history, unitOverrides, unitSystem, psaDate, reloadValues]);
 
   // Auto-save on blur / Enter for InputPanel longitudinal fields. The
   // 500ms debounce batches systolic→diastolic tab transitions into one
@@ -791,26 +834,59 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const handleSaveLongitudinalRef = useRef(handleSaveLongitudinal);
   handleSaveLongitudinalRef.current = handleSaveLongitudinal;
   const longitudinalDebounce = useDebouncedSave(500);
+  // The fields' save waiting on the timer, and the erase it was asked under:
+  // departure stages it at once (US-06 AC15).
+  const pendingSaveRef = useRef<{ erase: string | undefined } | null>(null);
   const scheduleLongitudinalSave = useCallback(() => {
     const erase = getShownErase(); // as the field was left, not as the timer fires
-    longitudinalDebounce.schedule(() => { void handleSaveLongitudinalRef.current(undefined, erase); });
+    pendingSaveRef.current = { erase };
+    longitudinalDebounce.schedule(() => { pendingSaveRef.current = null; void handleSaveLongitudinalRef.current(undefined, erase); });
   }, [longitudinalDebounce]);
   const flushLongitudinalSave = useCallback(() => {
+    pendingSaveRef.current = null;
     longitudinalDebounce.commit(() => { void handleSaveLongitudinalRef.current(); });
   }, [longitudinalDebounce]);
-
-  // Tab-close safety net for the first-time vitals fields: a field the user
-  // left has its save waiting (500 ms); it runs before the page unloads. A
-  // matrix's draft stays on the device instead (US-03 AC5).
+  // The PSA row is committed (US-06 AC15): left, or at once on its tick or Enter.
+  const commitPsa = useCallback((now: boolean) => {
+    psaCommittedRef.current = true;
+    if (now) flushLongitudinalSave(); else scheduleLongitudinalSave();
+  }, [flushLongitudinalSave, scheduleLongitudinalSave]);
+  // Stage only queued edits, with the erase they were made against, then flush
+  // synchronously: the entrypoint's earlier listener may have flushed first.
+  // A matrix's draft stays on the device instead (US-03 AC5). A closing tab
+  // fires no blur, so focus still in the PSA row is moved out first: the
+  // row's blur commits it, with its own checks. The fields' waiting save and
+  // a committed PSA are then written at once, not on the timer or a promise,
+  // which would run after the flush (US-06 AC15; Brad 2026-11-03: weight,
+  // waist or BP save on tab close). iOS kills a hidden tab, so hiding stages
+  // the same, but leaves an unfinished PSA row alone: it waits for its date
+  // (Brad 2026-11-03, "Wait for the date").
   useEffect(() => {
-    const onUnload = () => longitudinalDebounce.flush();
+    const stage = (closing: boolean) => {
+      const focused = document.activeElement;
+      if (closing && focused instanceof HTMLElement && focused.closest('.psa-inline-row')) focused.blur();
+      profileDebounce.flush();
+      const pending = pendingSaveRef.current;
+      if (pending) {
+        pendingSaveRef.current = null;
+        longitudinalDebounce.cancel();
+        void handleSaveLongitudinalRef.current(undefined, pending.erase, true);
+      }
+      flushRoadmapStoreSync();
+    };
+    const onUnload = () => stage(true);
+    const onHidden = () => {
+      if (document.visibilityState === 'hidden') stage(false);
+    };
     window.addEventListener('beforeunload', onUnload);
     window.addEventListener('pagehide', onUnload);
+    document.addEventListener('visibilitychange', onHidden);
     return () => {
       window.removeEventListener('beforeunload', onUnload);
       window.removeEventListener('pagehide', onUnload);
+      document.removeEventListener('visibilitychange', onHidden);
     };
-  }, [longitudinalDebounce]);
+  }, [longitudinalDebounce, profileDebounce]);
 
   // A lab upload starts: both matrices commit their drafts, then the fields
   // save (US-03 AC5), before any file is read.
@@ -840,10 +916,22 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       // fields onto the draft model. What the matrices' drafts lend is kept
       // apart (`lent`): it rides through, and each draft is judged again
       // against the record read (US-03 AC6).
+      // A value out of range is never in the record (its save refused or
+      // skipped it, US-02 AC5), so it rides through too, with its error.
+      // Only within one record: an erase from another device clears this
+      // device's drafts (US-11 AC6, Codex R4).
       const typing = document.activeElement?.id as keyof HealthInputs | undefined;
-      setInputs(prev => (typing && LONGITUDINAL_FIELDS.includes(typing) && prev[typing] !== undefined
-        ? { ...result.inputs, [typing]: prev[typing] }
-        : result.inputs));
+      const sameRecord = erase === getShownErase();
+      setInputs(prev => {
+        if (!sameRecord) return result.inputs;
+        const next: Partial<HealthInputs> = typing && LONGITUDINAL_FIELDS.includes(typing) && prev[typing] !== undefined
+          ? { ...result.inputs, [typing]: prev[typing] }
+          : { ...result.inputs };
+        for (const [field, value] of Object.entries(prev)) {
+          if (inputRangeFault(field, value)) (next as Record<string, unknown>)[field] = value;
+        }
+        return next;
+      });
       previousInputsRef.current = { ...result.inputs };
       setMedications(result.medications);
       setScreenings(result.screenings);
@@ -868,8 +956,11 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     // inputs, and a remote change landing on a half-entered height would take
     // those keystrokes with it. The relay HOLDS it — the next profile save
     // carries the edit up and then replays the change.
-    const onRemoteChange = () =>
-      remoteRelay.arrived(hasUnsavedProfileEdits(inputsRef.current, previousInputsRef.current));
+    // An erase from another device (a new erase identity) is never held: it
+    // applies at once and drops this device's drafts, refused ones included
+    // (US-11 AC6); a refused draft would otherwise hold it for good.
+    const onRemoteChange = () => remoteRelay.arrived(getEraseIdentity() === getShownErase()
+      && hasUnsavedProfileEdits(inputsRef.current, previousInputsRef.current));
     window.addEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
     return () => window.removeEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
   }, [remoteRelay, handleUploadComplete]);
@@ -891,32 +982,20 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     }
 
     const validation = validateHealthInputs(planInputs, pressureDays);
-
-    let inputsForCalc = planInputs;
-    let errors: Record<string, string> | null = null;
-
-    if (!validation.success && validation.errors) {
-      const rawErrors = getValidationErrors(validation.errors);
-      // Convert error messages to user's unit system (e.g., "20 kg" → "44 lbs")
-      errors = convertValidationErrorsToUnits(rawErrors, unitSystem);
-      // Strip invalid fields (all optional) so remaining suggestions still show
-      const invalidFields = new Set(validation.errors.issues.map((i) => i.path[0] as string));
-      if (invalidFields.has('heightCm')) {
-        return { results: null, isValid: false, validationErrors: errors, planBasis: null };
-      }
-      const sanitized = { ...planInputs };
-      for (const field of invalidFields) {
-        (sanitized as Record<string, unknown>)[field] = undefined;
-      }
-      inputsForCalc = sanitized;
+    // Convert error messages to user's unit system (e.g., "20 kg" → "44 lbs")
+    const errors = validation.errors ? convertValidationErrorsToUnits(getValidationErrors(validation.errors), unitSystem) : null;
+    // health-core's one strip (US-07 AC11): refused fields left out so the rest still plans, a swapped pair marked.
+    const calcInputs: SuggestionInputs | null = planInputsFrom(planInputs, validation);
+    if (!calcInputs) {
+      return { results: null, isValid: false, validationErrors: errors, planBasis: null };
     }
 
-    const calcInputs = inputsForCalc as HealthInputs;
     const healthResults = calculateHealthResults(
       calcInputs,
       unitSystem,
       medicationsToInputs(medications),
-      screeningsToInputs(screenings),
+      // US-06 AC14: the prostate cards read the newest usable saved PSA, as computePlan does.
+      withPsaMeasurement(screeningsToInputs(screenings), newestUsablePsa(history, new Date())),
       metricUnitOverrides,
     );
     // The form follows the plan: its recommendations, targets and cascade
@@ -931,7 +1010,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       lipidMarker: medicines ? lipidMarkerFor(calcInputs, healthResults) : null,
     };
     return { results: healthResults, isValid: true, validationErrors: errors, planBasis };
-  }, [planInputs, pressureDays, unitSystem, medications, screenings, metricUnitOverrides]);
+  }, [planInputs, pressureDays, unitSystem, medications, screenings, history, metricUnitOverrides]);
 
   useEffect(() => {
     setErrors(validationErrors ?? {});
@@ -947,6 +1026,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // Mobile tab state
   const isMobile = useIsMobile();
   const isWideDesktop = useIsWideDesktop(1200);
+  const floatingChat = !isMobile && !isWideDesktop && reached === 4;
   const [activeTab, setActiveTab] = useState<TabId>('input');
   const tabIds = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -1017,10 +1097,11 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // US-16 AC2 on a phone: after a chat edit switches to My data, the filled
   // cell (a matrix's highlighted cell, or the plain field) is scrolled to the
   // middle, clear of the tab bar, and focused. After the commit, so after the
-  // tab's own scroll restore.
-  const [revealCell, setRevealCell] = useState<{ field: string } | null>(null);
+  // tab's own scroll restore. On desktop the chat stays where it is: the
+  // table opens (US-62 AC11) and the focus stays in the chat.
+  const [revealCell, setRevealCell] = useState<{ field: string; grid: boolean } | null>(null);
   useEffect(() => {
-    if (!revealCell) return;
+    if (!revealCell || !isMobileRef.current) return;
     const panel = rootRef.current?.querySelector('.health-input-panel');
     const cell = panel?.querySelector<HTMLElement>('.bt-input-active') ?? document.getElementById(revealCell.field);
     cell?.scrollIntoView({ block: 'center' });
@@ -1065,6 +1146,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       // A refusal of this erase's own leftovers is not news (adversary R3).
       refusedFor.current = getEraseIdentity();
       longitudinalDebounce.cancel();
+      profileDebounce.cancel();
       // A save the form scheduled before the erase is pre-erase (US-16 AC2a).
       for (const timers of [medSaveTimers, screeningSaveTimers, supSaveTimers]) {
         for (const timer of timers.current.values()) clearTimeout(timer);
@@ -1079,7 +1161,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       window.alert(result.error || 'Failed to delete data. Please try again.');
     }
     return result.success;
-  }, [longitudinalDebounce]);
+  }, [longitudinalDebounce, profileDebounce]);
 
   // One field's new value, from the form or the chat. A weight or waist
   // keeps the unit its caller converted it from (typedIn). One update per
@@ -1092,7 +1174,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     if (field === 'birthYear' || field === 'birthMonth') setBirthRefused(null);
     setInputs(prev => ({ ...prev, [field]: value }));
   }, []);
-  // US-60: the plan card's answer saves as a profile field, as Starting Info's
+  // US-60: the plan card's answer saves as a profile field, as About you's
   // Alcohol row does. Its usage signal is the name alone, never the answer
   // (whether someone drinks is health information), and only from the card.
   const handleAlcoholAnswer = useCallback((answer: AlcoholAnswer) => {
@@ -1199,12 +1281,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // Chatbot-driven form edits (the chat proposes; this routes to the real form)
   // ---------------------------------------------------------------------------
   // A one-shot undo for a medication change the chat just applied (meds
-  // auto-save, so the chat states the change + offers Undo): every row the
-  // change wrote, as it was before.
-  const [medUndo, setMedUndo] = useState<
-    | Array<{ key: string; drugName: string; doseValue: number | null; doseUnit: string | null }>
-    | null
-  >(null);
+  // auto-save, so the chat states the change; only this banner offers Undo): every row the
+  // change wrote, as it was before. 'unavailable': the change replaced a row
+  // this build cannot read, so the banner offers no Undo (US-67 N3).
+  const [medUndo, setMedUndo] = useState<ChatMedicationRow[] | 'unavailable' | null>(null);
   // The form's medications, unsaved changes included: a chat change is
   // judged against these as well as the saved ones (US-06 AC12).
   const medicationsRef = useRef(medications);
@@ -1212,9 +1292,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const isMobileRef = useRef(isMobile);
   isMobileRef.current = isMobile;
 
-  const applyFieldEdit = useCallback((edit: ProposedFieldEdit) => {
+  /** Returns whether the edit filled a grid cell (the table then opens, US-62 AC11). */
+  const applyFieldEdit = useCallback((edit: ProposedFieldEdit): boolean => {
     const metric = FIELD_TO_METRIC[edit.field] as MetricType | undefined;
-    if (!metric) return;
+    if (!metric) return false;
     // Vitals (weight/waist/BP). When the vitals MATRIX is mounted (returning
     // users), route into its draft/backfill cell so it pre-fills AND flashes —
     // exactly like the blood-test matrix. The matrix only registers its prefill
@@ -1227,44 +1308,33 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       const filled = routeVitalsEdit(!!vitalsPrefillRef.current) === 'matrix'
         && vitalsPrefillRef.current!(metric, edit.displayValue, edit.unitSystem, edit.date) !== null;
       if (!filled) handleInputChange(edit.field, toCanonicalValue(metric, edit.displayValue, edit.unitSystem), edit.unitSystem);
-      return;
+      return filled;
     }
     // Blood-test metrics → the timeline matrix's draft/backfill cell.
-    bloodTestPrefillRef.current?.(metric, edit.displayValue, edit.unitSystem, edit.date);
+    return (bloodTestPrefillRef.current?.(metric, edit.displayValue, edit.unitSystem, edit.date) ?? null) !== null;
   }, [handleInputChange]);
 
   /** Apply one chat medication edit; returns the rows it wrote, as they were
-   *  before, for Undo. `stated` holds every key the same reply names. */
+   *  before, for Undo, or null when it replaces a row this build cannot read
+   *  (US-65): Undo could not put that row back (US-67 N3). `stated` holds
+   *  every key the same reply names. */
   const applyMedicationEdit = useCallback((edit: ProposedMedicationEdit, stated: ReadonlySet<string>) => {
     // Snapshot the prior values FIRST so Undo can restore them: the saved
     // ones, from the copy the banner's erase check reads (US-16 AC2a).
+    // The rule is health-core's, shared with the iPhone (US-06 AC12, US-67 AC4):
+    // a new drug or dose resets the drug's escalation answer, escalation first,
+    // unless the same reply states it. Flat mode too: the chat changes the drug
+    // on purpose. An answer the form holds but has not saved yet, or one this
+    // build cannot read, was about the old drug too: it is reset as well, as on
+    // the iPhone, and only the readable saved one is Undo's to restore.
     const saved = loadLatestMeasurementsSync()?.medications ?? [];
-    const prior = saved.find(m => m.medicationKey === edit.medicationKey);
-    // A key that had no row goes back to its unanswered value: 'none' would
-    // read as an answer for a step such as ezetimibe or an escalation.
-    const undo: NonNullable<typeof medUndo> = [{
-      key: edit.medicationKey,
-      drugName: prior?.drugName ?? UNANSWERED_OF[edit.medicationKey],
-      doseValue: prior?.doseValue ?? null,
-      doseUnit: prior?.doseUnit ?? null,
-    }];
-    // A new drug or dose resets the drug's escalation answer, as the form does,
-    // escalation first. Flat mode too: the chat changes the drug on purpose,
-    // and the answer was about the old one (US-06 AC12). An answer the same
-    // reply states wins, whatever its order in the reply.
-    // An answer the form holds but has not saved yet was about the old drug
-    // too: it is reset as well, and only the saved one is Undo's to restore.
-    const escalationKey = (ESCALATION_KEY_OF as Partial<Record<string, string>>)[edit.medicationKey];
     const onForm = medicationsRef.current.find(m => m.medicationKey === edit.medicationKey);
-    const changes = (row: { drugName: string; doseValue: number | null } | undefined) =>
-      !!row && (edit.drugName !== row.drugName || edit.doseValue !== row.doseValue);
-    if (escalationKey && !stated.has(escalationKey) && (changes(undo[0]) || changes(onForm))) {
-      const answer = saved.find(m => m.medicationKey === escalationKey && m.drugName !== 'not_yet');
-      if (answer) undo.unshift({ key: answer.medicationKey, drugName: answer.drugName, doseValue: answer.doseValue, doseUnit: answer.doseUnit });
-      if (answer || medSaveTimers.current.has(escalationKey)) handleMedicationChange(escalationKey, 'not_yet', null, null);
-    }
+    const { undo, reset } = chatMedicationChange(edit, saved, stated, onForm);
+    const resets = !!reset && (undo.some(m => m.medicationKey === reset) || medSaveTimers.current.has(reset) || holdsUnreadableMedication(reset, true));
+    const undoable = ![edit.medicationKey, resets && reset].some(key => key && holdsUnreadableMedication(key));
+    if (resets) handleMedicationChange(reset, 'not_yet', null, null);
     handleMedicationChange(edit.medicationKey, edit.drugName, edit.doseValue, edit.doseUnit);
-    return undo;
+    return undoable ? undo : null;
   }, [handleMedicationChange]);
 
   // Only what the profile does not already hold shows, however it changed since.
@@ -1284,20 +1354,28 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     // from the conversation the erase tombstones: none of it applies (US-16 AC2a).
     if (eraseUnshown()) return;
     let editedField: string | null = null;
+    let inGrid = false;
     const stated = new Set(edits.flatMap(e => (e.kind === 'medication' ? [e.medicationKey] : [])));
     // Undo restores every medication row the reply changed, the last edit
-    // first. Field edits are drafts the person saves or discards.
-    const undo: NonNullable<typeof medUndo> = [];
+    // first; one Undo covers the whole reply, so a row it cannot restore
+    // means none (US-67 N3). Field edits are drafts the person saves or discards.
+    const undo: ChatMedicationRow[] = [];
+    let undoable = true;
     for (const edit of edits) {
       switch (edit.kind) {
-        case 'field': applyFieldEdit(edit); editedField ??= edit.field; break;
-        case 'medication': undo.unshift(...applyMedicationEdit(edit, stated)); break;
+        case 'field': if (applyFieldEdit(edit)) inGrid = true; editedField ??= edit.field; break;
+        case 'medication': {
+          const rows = applyMedicationEdit(edit, stated);
+          if (rows) undo.unshift(...rows); else undoable = false;
+          break;
+        }
         case 'profile': break; // merged below
         // A kind this build does not know writes nothing (an older server's reply, or a newer one's).
         default: break;
       }
     }
-    if (undo.length > 0) setMedUndo(undo);
+    if (!undoable) setMedUndo('unavailable');
+    else if (undo.length > 0) setMedUndo(undo);
     // A reply's profile proposal replaces any pending one; within the reply, a
     // later stated field wins. A field already saved with the same value (as
     // the user sees it) needs no Save.
@@ -1308,18 +1386,19 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       setProfileProposal(pending);
       for (const field of pending ? profileFields(pending) : []) trackProductEvent('chat_profile_edit', { field, choice: 'shown' });
     }
-    // Mobile hand-off: bring the user to the form so they SEE the pre-filled
-    // cell + Save button (they were on the chat tab). Mirror handleAutoFocusEmail.
-    if (editedField && isMobileRef.current) {
-      selectTab('input');
-      setRevealCell({ field: editedField });
+    // Hand-off: the grid holding the pre-filled cell shows (US-62 AC11), and
+    // on a phone the form's tab opens, so they SEE it and its Save button
+    // (they were on the chat tab). Mirror handleAutoFocusEmail.
+    if (editedField) {
+      if (isMobileRef.current) selectTab('input');
+      setRevealCell({ field: editedField, grid: inGrid });
     }
   }, [applyFieldEdit, applyMedicationEdit, unitSystem, eraseUnshown, selectTab]);
 
   const undoMedEdit = useCallback(() => {
-    if (!medUndo) return;
+    if (!Array.isArray(medUndo)) return;
     // The store holds an erase the screen does not show: write nothing (US-16 AC2a).
-    if (!eraseUnshown()) for (const m of medUndo) handleMedicationChange(m.key, m.drugName, m.doseValue, m.doseUnit);
+    if (!eraseUnshown()) for (const m of medUndo) handleMedicationChange(m.medicationKey, m.drugName, m.doseValue, m.doseUnit);
     setMedUndo(null);
   }, [medUndo, handleMedicationChange, eraseUnshown]);
 
@@ -1327,16 +1406,23 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const emailCaptureActive = SHOPIFY_SURFACE;
 
   // Says whether it acted, so a caller spends its once-only jump only then.
-  const handleAutoFocusEmail = useCallback((): boolean => {
-    // Only when the weight was the last answer: a first weight is step 1 (US-62 AC13).
-    if (!emailCaptureActive || stageRef.current !== 4) return false;
-    if (isMobile) {
+  // The jump to the email box once the last onboarding answer is in (US-62
+  // AC13). A weight jumps on a phone to My plan (US-22). A birth year
+  // (`stayOnTab`, Brad 2026-11-02) never changes tab: where the box is not on
+  // screen (a phone, an email already given) it only leaves the field, so
+  // About you moves low (US-62 AC12).
+  const handleAutoFocusEmail = useCallback((stayOnTab = false): boolean => {
+    // Only when the answer was the last one: a first weight is step 1.
+    if (stageRef.current !== 4) return false;
+    if (emailCaptureActive && isMobile && !stayOnTab) {
       selectTab('plan');
       setTimeout(() => document.getElementById('guestEmail')?.focus(), 400);
-    } else {
-      document.getElementById('guestEmail')?.focus();
+      return true;
     }
-    return true;
+    const email = emailCaptureActive && !isMobile ? document.getElementById('guestEmail') : null;
+    if (email) { email.focus(); return true; }
+    if (stayOnTab) (document.activeElement as HTMLElement | null)?.blur();
+    return stayOnTab;
   }, [emailCaptureActive, isMobile, selectTab]);
 
   // Memoised so the UploadModal's matrix doesn't rebuild on unrelated
@@ -1371,6 +1457,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     onMedicationChange: handleMedicationChange,
     screenings,
     onScreeningChange: handleScreeningChange,
+    psaDate,
+    onPsaDateChange: setPsaDate,
+    onPsaCommit: commitPsa,
     supplements,
     onSupplementChange: handleSupplementChange,
     onSupplementDelete: handleSupplementDelete,
@@ -1387,6 +1476,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     reached,
     fullForm,
     wasDone: opened === 4,
+    aboutYouLow,
+    onProfileLeft: handleProfileLeft,
     setShowUploadModal,
     planBasis,
     grading,
@@ -1412,8 +1503,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     showEmailCapture: emailCaptureActive,
     formStage: reached,
     // US-60 AC3: the Dismiss asks the unanswered and drinkers; a non-drinker has no card.
-    // The section's name follows InputPanel's: About you sits low on a phone once the onboarding is done.
-    alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer, section: profileTitle(isMobile && opened === 4) },
+    // The "I still drink" line names About you, as InputPanel's heading does, once
+    // About you sits low (aboutYouLow), the only time its rows hold the Alcohol row;
+    // before that no row shows, so the line names none (US-60 AC4).
+    alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer, aboutYouRow: aboutYouLow },
   };
 
   // The chat reads its context as each message is sent (useChatState), through
@@ -1503,15 +1596,18 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       />
 
       {/* Undo banner for a medication the chat just changed (meds auto-save, so
-          the chat applies + states the change and offers an explicit Undo). */}
+          the chat applies + states the change; this banner offers the Undo). */}
       {/* Both portal outside the masked widget root, so their column carries
           the Clarity mask (US-09 AC8), and stacks them (styles.css .chat-banners). */}
       {(medUndo || pendingProfile) && createPortal(
         <div className="chat-banners no-print" data-clarity-mask="true">
           {medUndo && (
             <div className="chat-med-undo" role="status">
-              <span className="chat-med-undo-text">Medication updated from chat.</span>
-              <button type="button" className="chat-med-undo-btn" onClick={undoMedEdit}>Undo</button>
+              <span className="chat-med-undo-text">
+                Medication updated from chat.
+                {medUndo === 'unavailable' && " Undo isn't available: an earlier entry couldn't be read."}
+              </span>
+              {medUndo !== 'unavailable' && <button type="button" className="chat-med-undo-btn" onClick={undoMedEdit}>Undo</button>}
               <button
                 type="button"
                 className="chat-med-undo-dismiss"
@@ -1544,8 +1640,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       {/* Floating chat FAB + expanded panel — portaled to body so their
           position: fixed doesn't resolve against the transform'd .health-tool. */}
       {/* The chat waits for the onboarding's four answers (US-62 AC13); an
-          open panel stays through an answer retyped, its wording muted. */}
-      {!isMobile && reached === 4 && !floatingChatOpen && createPortal(
+          open panel stays through an answer retyped, its wording muted. Only
+          where no chat is on screen already: the phone has its Chat tab, and
+          from 1200px the chat column shows (US-62 AC14). */}
+      {floatingChat && !floatingChatOpen && createPortal(
         <button
           className="chat-fab no-print"
           onClick={() => setFloatingChatOpen(true)}
@@ -1556,7 +1654,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
         </button>,
         document.body,
       )}
-      {!isMobile && floatingChatOpen && reached === 4 && createPortal(
+      {floatingChat && floatingChatOpen && createPortal(
         <ChatSection
           startExpanded
           muted={formStage < 4}

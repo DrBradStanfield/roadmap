@@ -1,11 +1,13 @@
 /**
- * US-32 AC38 · OpenAI's reviewer signs in on our own consent page.
+ * US-32 AC38, AC49 · Anthropic's connector reviewer signs in on our own consent page.
  *
- * Twice the reviewer stopped at a third party's login (docs/reviews/
- * 2026-10-01-chatgpt-reviewer-signin-plan.md §1). This is the one password
- * login on the auth server, for one invented account, ChatGPT and Codex clients only, and
- * only while the three reviewer secrets are set. Each test pins one clause of
- * AC38: who sees the form, what a right and a wrong login do, that no blob
+ * Built for OpenAI's review, whose reviewer twice stopped at a third party's
+ * login (docs/reviews/2026-10-01-chatgpt-reviewer-signin-plan.md §1). OpenAI's
+ * review ended 2026-10-29 and will not be resubmitted (Brad 2026-11-02). This is
+ * the one password login on the auth server, for one invented account, the
+ * exact pinned Claude and Claude Code clients only, only while
+ * MCP_REVIEWER_VENDORS=anthropic, and only while the three reviewer secrets are
+ * set. Each test pins one clause of AC38: who sees the form, what a right and a wrong login do, that no blob
  * carries the reviewer's Dropbox token, and that unsetting or rotating either
  * secret ends every reviewer session on its next request of any kind.
  *
@@ -22,7 +24,8 @@ vi.mock('../lib/product-events.server', async (importOriginal) => {
 });
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
-import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { createCoreRow } from '../../packages/health-core/src/blood-tests';
+import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { connectionKey, resetMcpMemory, type AccessPayload, type CodePayload, type RefreshPayload } from '../lib/mcp-grants.server';
 import { hash, unpackSealed } from '../lib/mcp-seal.server';
 import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
@@ -32,15 +35,11 @@ import { action, loader } from './mcp.$';
 
 const ISSUER = 'https://mcp.example.test';
 const CHATGPT = 'https://chatgpt.com/oauth/client.json';
-const CHATGPT_REDIRECTS = [
-  'https://chatgpt.com/connector_platform_oauth_redirect',
-  'https://chatgpt.com/backend-api/aip/connectors/links/oauth/callback',
-];
-const CHATGPT_REDIRECT = CHATGPT_REDIRECTS[0];
-/** OpenAI tests "ChatGPT and Codex surfaces", so the pinned Codex client sees the box too (US-32 AC38). */
+const CHATGPT_REDIRECT = 'https://chatgpt.com/connector_platform_oauth_redirect';
+/** ChatGPT and Codex stay supported connectors, but OpenAI's review is over: neither ever sees the box. */
 const CODEX = 'https://chatgpt.com/oauth/codex/client.json';
 const CODEX_REDIRECT = 'http://127.0.0.1:4567/callback';
-/** Anthropic reviews the Claude connector directory, so the pinned Claude and Claude Code clients see the box too (US-32 AC49). */
+/** Anthropic reviews the Claude connector directory, so only the pinned Claude and Claude Code clients see the box (US-32 AC49). */
 const CLAUDE = 'https://claude.ai/oauth/mcp-oauth-client-metadata';
 const CLAUDE_REDIRECT = 'https://claude.ai/api/mcp/auth_callback';
 const CLAUDE_CODE = 'https://claude.ai/oauth/claude-code-client-metadata';
@@ -99,6 +98,7 @@ beforeEach(() => {
   process.env.DROPBOX_APP_KEY = 'app-key';
   process.env.DROPBOX_APP_SECRET = 'app-secret';
   setReviewerSecrets();
+  process.env.MCP_REVIEWER_VENDORS = 'anthropic';
   resetMcpMemory();
   refreshed = [];
   adapterTokens = [];
@@ -154,25 +154,25 @@ function post(path: string, init: RequestInit): Promise<Response> {
   return Promise.resolve(action({ request: new Request(url, { method: 'POST', ...init }), params: { '*': splat }, context: {} } as never)) as Promise<Response>;
 }
 
-function authorizeQuery(clientId = CHATGPT, redirectUri = CHATGPT_REDIRECT): string {
+function authorizeQuery(clientId = CLAUDE, redirectUri = CLAUDE_REDIRECT): string {
   return new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
     response_type: 'code',
     code_challenge: CHALLENGE,
     code_challenge_method: 'S256',
-    state: 'chatgpt-state',
+    state: 'client-state',
     resource: `${ISSUER}/mcp`,
   }).toString();
 }
 
-async function consentHtml(clientId = CHATGPT, redirectUri = CHATGPT_REDIRECT): Promise<string> {
+async function consentHtml(clientId = CLAUDE, redirectUri = CLAUDE_REDIRECT): Promise<string> {
   const res = await get(`/mcp/authorize?${authorizeQuery(clientId, redirectUri)}`);
   expect(res.status).toBe(200);
   return res.text();
 }
 
-const REVIEWER_HEADING = 'OpenAI app reviewers: sign in here';
+const REVIEWER_HEADING = 'Anthropic reviewers: sign in here';
 const REVIEWER_FORM = /<form method="post" class="reviewer">\s*<input type="hidden" name="state" value="([^"]+)">/;
 
 function hasReviewerForm(html: string): boolean {
@@ -201,12 +201,12 @@ function signIn(state: string, username: string, password: string, headers: Reco
 /** The right login, typed the way a reviewer in a no-paste browser would. */
 const TYPED_PASSWORD = 'ABCD EFGH-IJKM npqr STUV-wxyz 23';
 
-async function reviewerCode(redirectUri = CHATGPT_REDIRECT): Promise<string> {
-  const res = await signIn(reviewerState(await consentHtml(CHATGPT, redirectUri)), ` ${USERNAME.toUpperCase()} `, TYPED_PASSWORD);
+async function reviewerCode(): Promise<string> {
+  const res = await signIn(reviewerState(await consentHtml()), ` ${USERNAME.toUpperCase()} `, TYPED_PASSWORD);
   expect(res.status).toBe(302);
   const to = new URL(res.headers.get('location')!);
-  expect(to.origin + to.pathname).toBe(redirectUri);
-  expect(to.searchParams.get('state')).toBe('chatgpt-state');
+  expect(to.origin + to.pathname).toBe(CLAUDE_REDIRECT);
+  expect(to.searchParams.get('state')).toBe('client-state');
   expect(to.searchParams.get('iss')).toBe(ISSUER);
   return to.searchParams.get('code')!;
 }
@@ -215,9 +215,9 @@ async function token(form: Record<string, string>): Promise<Response> {
   return post('/mcp/token', { headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(form) });
 }
 
-/** Redeem an authorization code at `/token` with the right PKCE verifier, as ChatGPT would. */
-function redeem(code: string, redirectUri = CHATGPT_REDIRECT): Promise<Response> {
-  return token({ grant_type: 'authorization_code', code, redirect_uri: redirectUri, code_verifier: VERIFIER, client_id: CHATGPT });
+/** Redeem an authorization code at `/token` with the right PKCE verifier, as Claude would. */
+function redeem(code: string): Promise<Response> {
+  return token({ grant_type: 'authorization_code', code, redirect_uri: CLAUDE_REDIRECT, code_verifier: VERIFIER, client_id: CLAUDE });
 }
 
 /** Press a provider button: POST its sealed state with no reviewer fields. */
@@ -239,13 +239,17 @@ function expectGenerationOnly(type: 'code' | 'access' | 'refresh', blob: string)
   return opened!.rv!;
 }
 
-/** chatgpt.com echoes any query string into a CIMD document: this id resolves as a client named "ChatGPT". */
-const LOOKALIKE = `${CHATGPT}?x=1`;
-const serveLookalike = () => stubFetch({ [LOOKALIKE]: { client_id: LOOKALIKE, client_name: 'ChatGPT', redirect_uris: [CHATGPT_REDIRECT] } });
+/** A host that echoes a query string into a CIMD document makes this id resolve as a client named "Claude": the box matches the exact id only. */
+const LOOKALIKE = `${CLAUDE}?x=1`;
+const CLAUDE_CODE_LOOKALIKE = `${CLAUDE_CODE}?x=1`;
+const serveLookalikes = () => stubFetch({
+  [LOOKALIKE]: { client_id: LOOKALIKE, client_name: 'Claude', redirect_uris: [CLAUDE_REDIRECT] },
+  [CLAUDE_CODE_LOOKALIKE]: { client_id: CLAUDE_CODE_LOOKALIKE, client_name: 'Claude Code', redirect_uris: [CLAUDE_CODE_REDIRECT] },
+});
 
-async function reviewerLogin(redirectUri = CHATGPT_REDIRECT): Promise<{ code: string; access: string; refresh: string }> {
-  const code = await reviewerCode(redirectUri);
-  const res = await redeem(code, redirectUri);
+async function reviewerLogin(): Promise<{ code: string; access: string; refresh: string }> {
+  const code = await reviewerCode();
+  const res = await redeem(code);
   expect(res.status).toBe(200);
   const tokens = (await res.json()) as { access_token: string; refresh_token: string };
   return { code, access: tokens.access_token, refresh: tokens.refresh_token };
@@ -270,13 +274,13 @@ const SEED_DAY = '2026-08-30';
 /** The user's own words, quoted in every confirming call and commit (US-36 AC9, US-35 AC7, 2026-10-07). */
 const APPROVED = 'Yes, go ahead';
 
-/** The synthetic reviewer record: a profile and one recent measurement. */
+/** The synthetic reviewer record: a profile and one recent LDL, a core row in labValues (US-66 AC1). */
 function seedReviewerRecord(): void {
   const base = createEmptyFile({ deviceId: 'reviewer', now: '2026-01-01T00:00:00.000Z' });
   const file: RoadmapFile = {
     ...base,
     profile: { ...base.profile, sex: 'male', birthYear: 1979, heightCm: 178 },
-    measurements: [createMeasurement({ id: 'ldl-row', metricType: 'ldl', value: 3.2, recordedAt: `${SEED_DAY}T00:00:00.000Z`, createdAt: `${SEED_DAY}T00:00:00.000Z` })],
+    labValues: [createCoreRow({ id: 'ldl-row', metric: 'ldl', value: 3.2, recordedAt: `${SEED_DAY}T00:00:00.000Z`, createdAt: `${SEED_DAY}T00:00:00.000Z` })],
   };
   cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(file), version: 1 });
 }
@@ -295,11 +299,11 @@ function events(name: string): Array<Record<string, unknown>> {
 // Who sees the form
 // ---------------------------------------------------------------------------
 
-describe('US-32 AC38 — the form is for the exact pinned ChatGPT and Codex clients, and only while the secrets are set', () => {
-  it('shows an open reviewer form ABOVE the provider choice for the pinned ChatGPT client', async () => {
+describe('US-32 AC38, AC49 — the form is for the exact pinned Claude and Claude Code clients, and only while the secrets are set', () => {
+  it('shows an open reviewer form ABOVE the provider choice for the pinned Claude client', async () => {
     const html = await consentHtml();
     expect(html).toContain(REVIEWER_HEADING);
-    expect(html).toContain('For OpenAI’s app review only. This is not your Dropbox or Google password.');
+    expect(html).toContain('For Anthropic’s connector review only. This is not your Dropbox or Google password.');
     expect(html).toContain('Everyone else: choose where your record is kept');
     // Open, not behind a <details>, and first: above every provider button.
     expect(html).not.toContain('<details');
@@ -311,39 +315,34 @@ describe('US-32 AC38 — the form is for the exact pinned ChatGPT and Codex clie
     expect(html).toContain('name="reviewer" value="1"');
     // The form posts the Dropbox state already on the page, never a URL parameter.
     const sealed = unpackSealed<{ provider: string; clientId: string }>('state', reviewerState(html));
-    expect(sealed).toMatchObject({ provider: 'dropbox', clientId: CHATGPT });
+    expect(sealed).toMatchObject({ provider: 'dropbox', clientId: CLAUDE });
   });
 
-  it('shows it on both pinned ChatGPT callbacks', async () => {
-    for (const redirect of CHATGPT_REDIRECTS) expect(hasReviewerForm(await consentHtml(CHATGPT, redirect))).toBe(true);
+  it('shows it to the pinned Claude Code client on its loopback callback', async () => {
+    const html = await consentHtml(CLAUDE_CODE, CLAUDE_CODE_REDIRECT);
+    expect(html).toContain(REVIEWER_HEADING);
+    expect(unpackSealed<{ clientId: string }>('state', reviewerState(html))).toMatchObject({ clientId: CLAUDE_CODE });
   });
 
-  it('shows no form for a ChatGPT id with a query string, which chatgpt.com would echo as a CIMD document', async () => {
-    serveLookalike();
-    const html = await consentHtml(LOOKALIKE);
-    expect(html).toContain('Continue to Dropbox');
-    expect(hasReviewerForm(html)).toBe(false);
-  });
-
-  it('shows it to the exact pinned Codex client, and not to a Codex id with a query string', async () => {
-    expect(hasReviewerForm(await consentHtml(CODEX, CODEX_REDIRECT))).toBe(true);
-    const lookalike = `${CODEX}?x=1`;
-    stubFetch({ [lookalike]: { client_id: lookalike, client_name: 'Codex', redirect_uris: [CODEX_REDIRECT] } });
-    const html = await consentHtml(lookalike, CODEX_REDIRECT);
-    expect(html).toContain('Continue to Dropbox');
-    expect(hasReviewerForm(html)).toBe(false);
+  it('shows no form for a Claude or Claude Code id with a query string', async () => {
+    serveLookalikes();
+    for (const [clientId, redirect] of [[LOOKALIKE, CLAUDE_REDIRECT], [CLAUDE_CODE_LOOKALIKE, CLAUDE_CODE_REDIRECT]]) {
+      const html = await consentHtml(clientId, redirect);
+      expect(html, clientId).toContain('Continue to Dropbox');
+      expect(hasReviewerForm(html), clientId).toBe(false);
+    }
   });
 
   it('shows no form to another CIMD client or a DCR client, whatever name or callback they claim', async () => {
     const other = 'https://assistant.example/client.json';
-    stubFetch({ [other]: { client_id: other, client_name: 'ChatGPT', redirect_uris: [CHATGPT_REDIRECT] } });
-    const dcr = await registerDcr('ChatGPT', CHATGPT_REDIRECT);
-    // US-32 AC49: a DCR client calling itself Claude, on Claude's own callback, is still not the pinned Claude.
+    stubFetch({ [other]: { client_id: other, client_name: 'Claude', redirect_uris: [CLAUDE_REDIRECT] } });
+    // A DCR client calling itself Claude, on Claude's own callback, is still not the pinned Claude.
     const dcrClaude = await registerDcr('Claude', CLAUDE_REDIRECT);
+    const dcrClaudeCode = await registerDcr('Claude Code', CLAUDE_CODE_REDIRECT);
     const cases: Array<[string, string]> = [
-      [other, CHATGPT_REDIRECT],
-      [dcr, CHATGPT_REDIRECT],
+      [other, CLAUDE_REDIRECT],
       [dcrClaude, CLAUDE_REDIRECT],
+      [dcrClaudeCode, CLAUDE_CODE_REDIRECT],
     ];
     for (const [clientId, redirect] of cases) {
       const html = await consentHtml(clientId, redirect);
@@ -445,18 +444,10 @@ describe('US-32 AC38 — the right login connects with no third-party sign-in, a
     expect(adapterTokens).toEqual([REVIEWER_ACCESS]);
   });
 
-  it('works on both pinned ChatGPT callbacks', async () => {
-    seedReviewerRecord();
-    for (const redirect of CHATGPT_REDIRECTS) {
-      const { access } = await reviewerLogin(redirect);
-      expect((await callTool(access, 'read_record', {})).isError).toBe(false);
-    }
-  });
-
   it('renews on the refresh grant with the generation, never the token', async () => {
     seedReviewerRecord();
     const { refresh } = await reviewerLogin();
-    const res = await token({ grant_type: 'refresh_token', refresh_token: refresh, client_id: CHATGPT });
+    const res = await token({ grant_type: 'refresh_token', refresh_token: refresh, client_id: CLAUDE });
     expect(res.status).toBe(200);
     const renewed = (await res.json()) as { access_token: string; refresh_token: string };
     expectGenerationOnly('access', renewed.access_token);
@@ -464,24 +455,9 @@ describe('US-32 AC38 — the right login connects with no third-party sign-in, a
     expect((await callTool(renewed.access_token, 'read_record', {})).isError).toBe(false);
   });
 
-  it('signs the pinned Codex client in the same way, back to its own loopback callback', async () => {
-    seedReviewerRecord();
-    const res = await signIn(reviewerState(await consentHtml(CODEX, CODEX_REDIRECT)), USERNAME, PASSWORD);
-    expect(res.status).toBe(302);
-    const to = new URL(res.headers.get('location')!);
-    expect(to.origin + to.pathname).toBe(CODEX_REDIRECT);
-    const code = to.searchParams.get('code')!;
-    expectGenerationOnly('code', code);
-    const redeemed = await token({ grant_type: 'authorization_code', code, redirect_uri: CODEX_REDIRECT, code_verifier: VERIFIER, client_id: CODEX });
-    expect(redeemed.status).toBe(200);
-    const { access_token: access } = (await redeemed.json()) as { access_token: string };
-    expect((await callTool(access, 'read_record', {})).isError).toBe(false);
-    expect(events('mcp_connect')).toEqual([{ client: 'codex', provider: 'dropbox', via: 'reviewer' }]);
-  });
-
   it('counts one mcp_connect with via reviewer, and no consent press', async () => {
     await reviewerCode();
-    expect(events('mcp_connect')).toEqual([{ client: 'chatgpt', provider: 'dropbox', via: 'reviewer' }]);
+    expect(events('mcp_connect')).toEqual([{ client: 'claude', provider: 'dropbox', via: 'reviewer' }]);
     expect(events('mcp_consent_posted')).toEqual([]);
     expect(events('mcp_connect_failed')).toEqual([]);
   });
@@ -490,7 +466,7 @@ describe('US-32 AC38 — the right login connects with no third-party sign-in, a
     const res = await pressProvider(allStates(await consentHtml()).at(-1)!);
     expect(res.status).toBe(302);
     expect(new URL(res.headers.get('location')!).origin).toBe('https://www.dropbox.com');
-    expect(events('mcp_consent_posted')).toEqual([{ client: 'chatgpt', provider: 'dropbox' }]);
+    expect(events('mcp_consent_posted')).toEqual([{ client: 'claude', provider: 'dropbox' }]);
   });
 });
 
@@ -519,18 +495,18 @@ describe('US-32 AC38 — a wrong login re-renders the page, counts, and echoes n
       expect(html).toContain(REVIEWER_HEADING);
       expect(html).toContain('Continue to Dropbox');
       const retry = unpackSealed<{ clientId: string; redirectUri: string }>('state', reviewerState(html));
-      expect(retry).toMatchObject({ clientId: CHATGPT, redirectUri: CHATGPT_REDIRECT });
+      expect(retry).toMatchObject({ clientId: CLAUDE, redirectUri: CLAUDE_REDIRECT });
       if (username) expect(html).not.toContain(username);
       if (password) expect(html).not.toContain(password);
       expect(html).not.toContain('value="openaireview');
-      expect(events('mcp_connect_failed')).toEqual([{ client: 'chatgpt', provider: 'dropbox', reason: 'reviewer-credentials' }]);
+      expect(events('mcp_connect_failed')).toEqual([{ client: 'claude', provider: 'dropbox', reason: 'reviewer-credentials' }]);
       expect(events('mcp_connect')).toEqual([]);
       // Both comparisons ran, whichever half was wrong.
       expect(compare).toHaveBeenCalledTimes(2);
     });
   }
 
-  it('lets the reviewer retry on the re-rendered page without restarting from ChatGPT', async () => {
+  it('lets the reviewer retry on the re-rendered page without restarting from the assistant', async () => {
     const wrongTry = await signIn(reviewerState(await consentHtml()), USERNAME, 'nope');
     const res = await signIn(reviewerState(await wrongTry.text()), USERNAME, PASSWORD);
     expect(res.status).toBe(302);
@@ -581,7 +557,7 @@ describe('US-32 AC38 — 20 failures per IP per 15 minutes, and a success never 
     expect(await res.text()).not.toContain(PASSWORD);
     await signIn(reviewerState(html), USERNAME, PASSWORD, FROM_A);
     expect(events('mcp_connect_failed').filter((row) => row.reason === 'reviewer-rate-limited')).toEqual([
-      { client: 'chatgpt', provider: 'dropbox', reason: 'reviewer-rate-limited' },
+      { client: 'claude', provider: 'dropbox', reason: 'reviewer-rate-limited' },
     ]);
     // The credentials rows are braked too: one per IP per window, not twenty.
     expect(events('mcp_connect_failed').filter((row) => row.reason === 'reviewer-credentials')).toHaveLength(1);
@@ -617,13 +593,13 @@ describe('US-32 AC38 — the two-phase tools work on a reviewer bearer (one shar
   it('correct_value proposes, then confirms', async () => {
     seedReviewerRecord();
     const { access } = await reviewerLogin();
-    const row = storedRecord().measurements[0];
+    const row = storedRecord().labValues[0];
     const args = { id: row.id, newValue: 2.8, expectedValue: 3.2 };
     const proposed = await callTool(access, 'correct_value', args);
     expect(proposed.isError).toBe(false);
     const confirmed = await callTool(access, 'correct_value', { ...args, confirm: proposed.structured.confirm, approval: APPROVED }, LATER);
     expect(confirmed.isError, confirmed.text).toBe(false);
-    expect(storedRecord().measurements.find((m) => m.correctsId === row.id)?.value).toBe(2.8);
+    expect(storedRecord().labValues.find((l) => l.correctsId === row.id)?.value).toBe(2.8);
   });
 
   it('file_results proposes, then commits', async () => {
@@ -644,7 +620,7 @@ describe('US-32 AC38 — the two-phase tools work on a reviewer bearer (one shar
     seedReviewerRecord();
     const first = await reviewerLogin();
     const second = await reviewerLogin();
-    const row = storedRecord().measurements[0];
+    const row = storedRecord().labValues[0];
     const args = { id: row.id, newValue: 2.9, expectedValue: 3.2 };
     const proposed = await callTool(first.access, 'correct_value', args);
     const confirmed = await callTool(second.access, 'correct_value', { ...args, confirm: proposed.structured.confirm, approval: APPROVED }, LATER);
@@ -669,100 +645,75 @@ describe('US-32 AC38 — the connection key', () => {
 // Anthropic's reviewer (US-32 AC49)
 // ---------------------------------------------------------------------------
 
-const ANTHROPIC_HEADING = 'Anthropic reviewers: sign in here';
+const PINNED: Array<[string, string]> = [[CLAUDE, CLAUDE_REDIRECT], [CLAUDE_CODE, CLAUDE_CODE_REDIRECT], [CHATGPT, CHATGPT_REDIRECT], [CODEX, CODEX_REDIRECT]];
 
-describe('US-32 AC49 — MCP_REVIEWER_VENDORS decides whose review is pending; unset is OpenAI alone', () => {
+describe('US-32 AC49 — MCP_REVIEWER_VENDORS: anthropic is the only word, and anything else is no box', () => {
   const box = async (clientId: string, redirect: string) => hasReviewerForm(await consentHtml(clientId, redirect));
 
-  it('unset: ChatGPT and Codex get the box, Claude and Claude Code none, and a forged Claude sign-in is refused', async () => {
-    expect(await box(CHATGPT, CHATGPT_REDIRECT)).toBe(true);
-    expect(await box(CODEX, CODEX_REDIRECT)).toBe(true);
-    expect(await box(CLAUDE, CLAUDE_REDIRECT)).toBe(false);
-    expect(await box(CLAUDE_CODE, CLAUDE_CODE_REDIRECT)).toBe(false);
+  /** No pinned client sees a box, and a sign-in posted on Claude's or Claude Code's Dropbox state is refused. */
+  async function expectNoBoxAnywhere(label: string): Promise<void> {
+    resetMcpMemory(); // six authorize GETs per value: start each under the per-IP authorize brake
+    for (const [clientId, redirect] of PINNED) expect(await box(clientId, redirect), `${label} ${clientId}`).toBe(false);
     // The Dropbox button's own sealed state, posted with reviewer=1 as if the box had been there.
-    for (const [clientId, redirect] of [[CLAUDE, CLAUDE_REDIRECT], [CLAUDE_CODE, CLAUDE_CODE_REDIRECT]]) {
+    for (const [clientId, redirect] of PINNED.slice(0, 2)) {
       const res = await signIn(allStates(await consentHtml(clientId, redirect))[0], USERNAME, PASSWORD);
+      expect(res.status, `${label} ${clientId}`).toBe(400);
+      expect(res.headers.get('location'), `${label} ${clientId}`).toBeNull();
+    }
+  }
+
+  it('unset: no box for anyone, and a forged sign-in is refused', async () => {
+    delete process.env.MCP_REVIEWER_VENDORS;
+    await expectNoBoxAnywhere('unset');
+    expect(events('mcp_connect')).toEqual([]);
+  });
+
+  it('anthropic (spaces forgiven, repeats fine): Claude and Claude Code get the box, ChatGPT and Codex none', async () => {
+    for (const value of ['anthropic', ' anthropic ', 'anthropic,anthropic', 'anthropic, anthropic']) {
+      process.env.MCP_REVIEWER_VENDORS = value;
+      expect(await box(CLAUDE, CLAUDE_REDIRECT), value).toBe(true);
+      expect(await box(CLAUDE_CODE, CLAUDE_CODE_REDIRECT), value).toBe(true);
+      expect(await box(CHATGPT, CHATGPT_REDIRECT), value).toBe(false);
+      expect(await box(CODEX, CODEX_REDIRECT), value).toBe(false);
+    }
+  });
+
+  it('ChatGPT and Codex never see the box, and their reviewer=1 POST is refused, even with anthropic set', async () => {
+    for (const [clientId, redirect] of [[CHATGPT, CHATGPT_REDIRECT], [CODEX, CODEX_REDIRECT]]) {
+      const html = await consentHtml(clientId, redirect);
+      expect(html, clientId).toContain('Continue to Dropbox');
+      expect(hasReviewerForm(html), clientId).toBe(false);
+      expect(html, clientId).not.toContain('Everyone else');
+      const res = await signIn(allStates(html)[0], USERNAME, PASSWORD);
       expect(res.status, clientId).toBe(400);
       expect(res.headers.get('location'), clientId).toBeNull();
     }
     expect(events('mcp_connect')).toEqual([]);
   });
 
-  it('anthropic alone: Claude and Claude Code get the box, ChatGPT and Codex none, and a forged ChatGPT sign-in is refused', async () => {
-    process.env.MCP_REVIEWER_VENDORS = 'anthropic';
-    expect(await box(CLAUDE, CLAUDE_REDIRECT)).toBe(true);
-    expect(await box(CLAUDE_CODE, CLAUDE_CODE_REDIRECT)).toBe(true);
-    expect(await box(CHATGPT, CHATGPT_REDIRECT)).toBe(false);
-    expect(await box(CODEX, CODEX_REDIRECT)).toBe(false);
-    const res = await signIn(allStates(await consentHtml())[0], USERNAME, PASSWORD);
-    expect(res.status).toBe(400);
+  it('openai, alone or beside anthropic, fails closed: no box for anyone, and no sign-in', async () => {
+    for (const value of ['openai', 'openai,anthropic', 'openai, anthropic', 'anthropic,openai']) {
+      process.env.MCP_REVIEWER_VENDORS = value;
+      await expectNoBoxAnywhere(value);
+    }
     expect(events('mcp_connect')).toEqual([]);
   });
 
-  it('openai,anthropic (spaces forgiven): all four pinned clients get the box', async () => {
-    process.env.MCP_REVIEWER_VENDORS = 'openai, anthropic';
-    for (const [clientId, redirect] of [[CHATGPT, CHATGPT_REDIRECT], [CODEX, CODEX_REDIRECT], [CLAUDE, CLAUDE_REDIRECT], [CLAUDE_CODE, CLAUDE_CODE_REDIRECT]]) {
-      expect(await box(clientId, redirect), clientId).toBe(true);
-    }
-  });
-
   it('a junk value fails closed: no box for anyone, and no sign-in', async () => {
-    for (const junk of ['', 'OpenAI', 'claude', 'openai,anthropc', 'openai;anthropic', 'all']) {
+    for (const junk of ['', 'Anthropic', 'claude', 'anthropc', 'anthropic;openai', 'all', 'anthropic,', ',anthropic']) {
       process.env.MCP_REVIEWER_VENDORS = junk;
-      for (const [clientId, redirect] of [[CHATGPT, CHATGPT_REDIRECT], [CLAUDE, CLAUDE_REDIRECT]]) {
-        expect(await box(clientId, redirect), `${junk} ${clientId}`).toBe(false);
-      }
-      const res = await signIn(allStates(await consentHtml())[0], USERNAME, PASSWORD);
-      expect(res.status, junk).toBe(400);
+      await expectNoBoxAnywhere(JSON.stringify(junk));
     }
     expect(events('mcp_connect')).toEqual([]);
   });
 });
 
-describe('US-32 AC49 — the exact pinned Claude and Claude Code clients get the same box, for Anthropic', () => {
-  beforeEach(() => {
-    process.env.MCP_REVIEWER_VENDORS = 'openai,anthropic';
-  });
-
-  it('shows the open box above the choice to the pinned Claude client, worded for Anthropic', async () => {
-    const html = await consentHtml(CLAUDE, CLAUDE_REDIRECT);
-    expect(html).toContain(ANTHROPIC_HEADING);
-    expect(html).toContain('For Anthropic’s connector review only. This is not your Dropbox or Google password.');
-    expect(html).not.toContain(REVIEWER_HEADING);
-    expect(html.indexOf(ANTHROPIC_HEADING)).toBeLessThan(html.indexOf('Continue to Dropbox'));
-    expect(unpackSealed<{ provider: string; clientId: string }>('state', reviewerState(html))).toMatchObject({ provider: 'dropbox', clientId: CLAUDE });
-  });
-
-  it('shows it to the pinned Claude Code client on its loopback callback', async () => {
-    const html = await consentHtml(CLAUDE_CODE, CLAUDE_CODE_REDIRECT);
-    expect(html).toContain(ANTHROPIC_HEADING);
-    expect(hasReviewerForm(html)).toBe(true);
-  });
-
-  it('leaves the ChatGPT and Codex box worded for OpenAI', async () => {
-    for (const [clientId, redirect] of [[CHATGPT, CHATGPT_REDIRECT], [CODEX, CODEX_REDIRECT]]) {
-      const html = await consentHtml(clientId, redirect);
-      expect(html, clientId).toContain(REVIEWER_HEADING);
-      expect(html, clientId).not.toContain(ANTHROPIC_HEADING);
-    }
-  });
-
-  it('shows no box to a Claude id with a query string, nor to a DCR client named Claude', async () => {
-    const lookalike = `${CLAUDE}?x=1`;
-    stubFetch({ [lookalike]: { client_id: lookalike, client_name: 'Claude', redirect_uris: [CLAUDE_REDIRECT] } });
-    const dcr = await registerDcr('Claude', CLAUDE_REDIRECT);
-    for (const clientId of [lookalike, dcr]) {
-      const html = await consentHtml(clientId, CLAUDE_REDIRECT);
-      expect(html, clientId).toContain('Continue to Dropbox');
-      expect(hasReviewerForm(html), clientId).toBe(false);
-    }
-  });
-
+describe('US-32 AC49 — each pinned Anthropic client signs in to the reviewer record alone', () => {
   for (const [label, clientId, redirect] of [
     ['claude', CLAUDE, CLAUDE_REDIRECT],
     ['claude_code', CLAUDE_CODE, CLAUDE_CODE_REDIRECT],
   ] as const) {
-    it(`signs ${label} in to the reviewer record alone, back to its own callback, counted via reviewer`, async () => {
+    it(`signs ${label} in, back to its own callback, counted via reviewer`, async () => {
       seedReviewerRecord();
       const res = await signIn(reviewerState(await consentHtml(clientId, redirect)), USERNAME, PASSWORD);
       expect(res.status).toBe(302);
@@ -778,43 +729,17 @@ describe('US-32 AC49 — the exact pinned Claude and Claude Code clients get the
       const read = await callTool(access, 'read_record', {});
       expect(read.isError).toBe(false);
       expect(JSON.parse(read.text).profile).toMatchObject({ birthYear: 1979, heightCm: 178, sex: 'male' });
-      // The reviewer's own token, and no other: the same record OpenAI's reviewer reaches.
+      // The reviewer's own token, and no other.
       expect(refreshed).toEqual([REVIEWER_RT]);
       expect(adapterTokens).toEqual([REVIEWER_ACCESS]);
       expect(events('mcp_connect')).toEqual([{ client: label, provider: 'dropbox', via: 'reviewer' }]);
     });
   }
 
-  it('refuses a wrong login for Claude the same way: re-rendered, counted, no code', async () => {
-    const res = await signIn(reviewerState(await consentHtml(CLAUDE, CLAUDE_REDIRECT)), USERNAME, 'wrong-password');
-    expect(res.status).toBe(200);
-    expect(res.headers.get('location')).toBeNull();
-    const html = await res.text();
-    expect(html).toContain('That username or password is not right.');
-    expect(html).toContain(ANTHROPIC_HEADING);
-    expect(html).not.toContain('wrong-password');
-    expect(events('mcp_connect')).toEqual([]);
-  });
-
-  it('refuses reviewer=1 on a state sealed for a Claude lookalike or a DCR client named Claude', async () => {
-    const lookalike = `${CLAUDE}?x=1`;
-    stubFetch({ [lookalike]: { client_id: lookalike, client_name: 'Claude', redirect_uris: [CLAUDE_REDIRECT] } });
-    const dcr = await registerDcr('Claude', CLAUDE_REDIRECT);
-    for (const clientId of [lookalike, dcr]) {
-      const res = await signIn(allStates(await consentHtml(clientId, CLAUDE_REDIRECT))[0], USERNAME, PASSWORD);
-      expect(res.status, clientId).toBe(400);
-      expect(res.headers.get('location'), clientId).toBeNull();
-    }
-    expect(events('mcp_connect')).toEqual([]);
-  });
-
-  it('shows no box to Claude between reviews', async () => {
-    clearReviewerSecrets();
-    expect(hasReviewerForm(await consentHtml(CLAUDE, CLAUDE_REDIRECT))).toBe(false);
-  });
-
-  it('names both reviews in the custody sentence while the token is held', async () => {
-    expect(unescapeHtml(await consentHtml(CLAUDE, CLAUDE_REDIRECT))).toContain('While an OpenAI or Anthropic app review is pending, we also hold the Dropbox credential of one invented reviewer account.');
+  it("names only Anthropic's review in the custody sentence while the token is held", async () => {
+    const text = unescapeHtml(await consentHtml());
+    expect(text).toContain('While Anthropic’s connector review is pending, we also hold the Dropbox credential of one invented reviewer account.');
+    expect(text).not.toContain('OpenAI');
   });
 });
 
@@ -834,17 +759,15 @@ describe('US-32 AC38 — reviewer=1 is refused where it does not belong', () => 
     expect(events('mcp_connect')).toEqual([]);
   });
 
-  it('refuses a state sealed for any other client, the ChatGPT and Codex lookalikes included', async () => {
-    const codexLookalike = `${CODEX}?x=1`;
-    stubFetch({
-      [LOOKALIKE]: { client_id: LOOKALIKE, client_name: 'ChatGPT', redirect_uris: [CHATGPT_REDIRECT] },
-      [codexLookalike]: { client_id: codexLookalike, client_name: 'Codex', redirect_uris: [CODEX_REDIRECT] },
-    });
-    const other = await registerDcr('Codex', CODEX_REDIRECT);
+  it('refuses a state sealed for any other client: the Claude and Claude Code lookalikes, and DCR clients named for them', async () => {
+    serveLookalikes();
+    const dcrClaude = await registerDcr('Claude', CLAUDE_REDIRECT);
+    const dcrClaudeCode = await registerDcr('Claude Code', CLAUDE_CODE_REDIRECT);
     for (const [clientId, redirect] of [
-      [other, CODEX_REDIRECT],
-      [LOOKALIKE, CHATGPT_REDIRECT],
-      [codexLookalike, CODEX_REDIRECT],
+      [LOOKALIKE, CLAUDE_REDIRECT],
+      [CLAUDE_CODE_LOOKALIKE, CLAUDE_CODE_REDIRECT],
+      [dcrClaude, CLAUDE_REDIRECT],
+      [dcrClaudeCode, CLAUDE_CODE_REDIRECT],
     ]) {
       const res = await signIn(allStates(await consentHtml(clientId, redirect))[0], USERNAME, PASSWORD);
       expect(res.status, clientId).toBe(400);
@@ -890,10 +813,10 @@ describe('US-32 AC38 — unsetting or rotating a secret ends every reviewer sess
       change();
       vi.mocked(recordServerEvent).mockClear();
 
-      const renewed = await token({ grant_type: 'refresh_token', refresh_token: refresh, client_id: CHATGPT });
+      const renewed = await token({ grant_type: 'refresh_token', refresh_token: refresh, client_id: CLAUDE });
       expect(renewed.status).toBe(400);
       expect((await renewed.json()).error).toBe('invalid_grant');
-      expect(events('mcp_connect_failed')).toEqual([{ client: 'chatgpt', provider: 'dropbox', reason: 'reviewer-generation' }]);
+      expect(events('mcp_connect_failed')).toEqual([{ client: 'claude', provider: 'dropbox', reason: 'reviewer-generation' }]);
 
       refreshed.length = 0;
       expect((await rpcStatus(access, 'initialize', { protocolVersion: '2025-11-25' })).status).toBe(401);
@@ -912,7 +835,7 @@ describe('US-32 AC38 — unsetting or rotating a secret ends every reviewer sess
     const res = await redeem(code);
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe('invalid_grant');
-    expect(events('mcp_connect_failed')).toEqual([{ client: 'chatgpt', provider: 'dropbox', reason: 'reviewer-generation' }]);
+    expect(events('mcp_connect_failed')).toEqual([{ client: 'claude', provider: 'dropbox', reason: 'reviewer-generation' }]);
   });
 
   it('leaves real connections alone when the reviewer secrets go', async () => {
@@ -936,12 +859,12 @@ describe('US-32 AC38 — unsetting or rotating a secret ends every reviewer sess
 // A bare visit
 // ---------------------------------------------------------------------------
 
-describe('US-32 AC38 — a bare /mcp/authorize is a plain start-from-ChatGPT page', () => {
+describe('US-32 AC38 — a bare /mcp/authorize is a plain start-from-your-assistant page', () => {
   it('answers 200 with the plain page and writes no refusal row', async () => {
     const res = await get('/mcp/authorize');
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain('This page opens when you connect Health by Dr Brad from ChatGPT. Go back to ChatGPT and press Connect.');
+    expect(html).toContain('This page opens when you connect Health by Dr Brad from your assistant. Go back to your assistant and press Connect.');
     expect(html).not.toContain('Continue to Dropbox');
     expect(hasReviewerForm(html)).toBe(false);
     expect(vi.mocked(recordServerEvent).mock.calls).toEqual([]);

@@ -49,6 +49,7 @@ describe('US-61 AC1: the two new supplement cards, in every market', () => {
       'https://doi.org/10.1093/advances/nmab071',
       'https://doi.org/10.1001/archopht.119.10.1417',
       'https://doi.org/10.1001/jama.2013.4997',
+      'https://doi.org/10.1001/jamaophthalmol.2022.1640',
     ]);
     const tmg = suggestions.find((s) => s.id === 'supplement-tmg')!;
     expect(tmg).toMatchObject({ category: 'supplements', priority: 'info', title: 'TMG (trimethylglycine)' });
@@ -64,6 +65,8 @@ describe('US-61 AC1: the two new supplement cards, in every market', () => {
     // Brad 2026-11-01: no cholesterol line and no dose caveat for TMG.
     expect(SUGGESTION_EVIDENCE['supplement-tmg'].reason).not.toMatch(/cholesterol/i);
     expect(US_PRODUCT_LINES['supplement-tmg'].line).toBe('MicroVitamin+ contains 500 mg of TMG.');
+    // The v9 powder's dose (Brad 2026-11-02: the US block moves to v9).
+    expect(US_PRODUCT_LINES['supplement-collagen'].line).toBe('MicroVitamin+ contains 10 g of collagen peptides.');
     expect(SUGGESTION_EVIDENCE['supplement-lutein-zeaxanthin'].reason).toContain('slowed progression in people with intermediate macular degeneration, or advanced disease in one eye');
   });
 

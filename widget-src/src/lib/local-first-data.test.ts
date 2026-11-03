@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME } from '@roadmap/health-core';
+import { createEmptyFile, createMeasurement, MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME } from '@roadmap/health-core';
 import { ERASE_UNREACHABLE, RoadmapStore } from '../storage/roadmap-store';
 import { initRoadmapStore, flushRoadmapStore } from './roadmap-data';
 import * as data from './roadmap-data';
@@ -74,8 +74,8 @@ describe('explicit local-first data path', () => {
     expect(await data.correctValue(added.row.id, 3.1)).toBe('ok');
     await flushRoadmapStore();
     const persisted = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
-    expect(persisted.measurements).toHaveLength(2);
-    expect(persisted.measurements.find((row: { id: string }) => row.id === added.row.id).status).toBe('entered-in-error');
+    expect(persisted.labValues).toHaveLength(2); // a blood test is a core lab row (US-66)
+    expect(persisted.labValues.find((row: { id: string }) => row.id === added.row.id).status).toBe('entered-in-error');
     expect((await data.loadLatestMeasurements())?.previousMeasurements).toMatchObject([{ value: 3.1 }]);
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -166,6 +166,15 @@ describe('explicit local-first data path', () => {
     expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'ferritin', unit: 'mg/dL' });
   });
 
+  // Review N2 on PR 641: the one lab add counts a refused spelling as the bulk save does.
+  it('counts a refused lab unit from the one lab add too, key and spelling only', async () => {
+    vi.mocked(trackProductEvent).mockClear();
+    const result = await data.addLabValue({ metricName: 'ferritin', unit: 'mg/dL', value: 80, day: '2024-06-01' });
+    expect(result).toMatchObject({ ok: false, reason: 'unknown-unit' });
+    expect(trackProductEvent).toHaveBeenCalledTimes(1);
+    expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'ferritin', unit: 'mg/dL' });
+  });
+
   // US-21 AC15 · the signal is a spelling to teach the catalogue: a count
   // refused for its NUMBER under a spelling the test takes is not one.
   it('US-21 AC15 — does not count a refusal under a spelling the test takes', async () => {
@@ -216,5 +225,91 @@ describe('explicit local-first data path', () => {
 
     expect(trackProductEvent).toHaveBeenCalledTimes(1);
     expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'ferritin' });
+  });
+
+  // US-07 AC11 · the usage signal: a waist or a whole blood pressure was ADDED,
+  // named by its measure alone (Brad 2026-11-02). Never the value, never
+  // another metric; not a correction, a refused number or a lone half.
+  describe('US-07 AC11 — measurement_added counts what was added', () => {
+    const added = () => vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'measurement_added');
+    beforeEach(() => vi.mocked(trackProductEvent).mockClear());
+
+    it('one row at a time: a waist; a blood pressure once its second half lands', async () => {
+      await data.addMeasurement('weight', 80, '2026-08-01');
+      expect(added()).toEqual([]);
+      await data.addMeasurement('waist', 90, '2026-08-01');
+      expect(added()).toEqual([['measurement_added', { measure: 'waist' }]]);
+      vi.mocked(trackProductEvent).mockClear();
+      await data.addMeasurement('systolic_bp', 120, '2026-08-01');
+      expect(added()).toEqual([]);
+      await data.addMeasurement('diastolic_bp', 80, '2026-08-01');
+      expect(added()).toEqual([['measurement_added', { measure: 'blood_pressure' }]]);
+      vi.mocked(trackProductEvent).mockClear();
+      await data.addMeasurement('waist', 91, '2026-08-01'); // the slot is taken: nothing added
+      expect(added()).toEqual([]);
+    });
+
+    it('an upload: a pair counts, a lone systolic and a correction do not', async () => {
+      const [waist] = (await data.bulkSaveMeasurements([{ metricType: 'waist', value: 90, recordedAt: '2026-08-01', source: 'lab_import' }])).saved;
+      vi.mocked(trackProductEvent).mockClear();
+      await data.bulkSaveMeasurements([
+        { metricType: 'systolic_bp', value: 125, recordedAt: '2026-08-02', source: 'lab_import' },
+        { metricType: 'waist', value: 92, recordedAt: '2026-08-01', source: 'lab_import', correctsId: waist.id },
+      ]);
+      expect(added()).toEqual([]);
+      await data.bulkSaveMeasurements([
+        { metricType: 'systolic_bp', value: 120, recordedAt: '2026-08-03', source: 'lab_import' },
+        { metricType: 'diastolic_bp', value: 80, recordedAt: '2026-08-03', source: 'lab_import' },
+        { metricType: 'ldl', value: 3, recordedAt: '2026-08-03', source: 'lab_import' },
+      ]);
+      expect(added()).toEqual([['measurement_added', { measure: 'blood_pressure' }]]);
+    });
+
+    it('the first-time fields: a refused half or a taken waist counts nothing; a new pair counts once', async () => {
+      await data.saveChangedMeasurements({ heightCm: 178, systolicBp: 80, diastolicBp: 120 }, { heightCm: 178 }); // the bottom half is refused
+      expect(added()).toEqual([]);
+      await data.addMeasurement('waist', 90); // today
+      vi.mocked(trackProductEvent).mockClear();
+      // The waist slot is taken, so no waist; the diastolic completes the day's pair with the saved 80.
+      await data.saveChangedMeasurements({ heightCm: 178, waistCm: 91, diastolicBp: 70 }, { heightCm: 178 });
+      expect(added()).toEqual([['measurement_added', { measure: 'blood_pressure' }]]);
+    });
+  });
+});
+
+// US-66 AC13: the page that moves a record into one blood-test table counts it, once, by counts only.
+describe('blood_tests_unified', () => {
+  beforeEach(() => {
+    vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockReturnValue(() => {});
+  });
+  afterEach(() => {
+    vi.resetAllMocks();
+    vi.restoreAllMocks();
+  });
+
+  async function oldShapeCloud(): Promise<MemoryCloud> {
+    const cloud = new MemoryCloud();
+    const file = createEmptyFile({ deviceId: 'old_app', now: '2026-11-01T00:00:00.000Z' });
+    file.measurements.push(createMeasurement({ id: 'ldl1', metricType: 'ldl', value: 4.2, recordedAt: '2026-08-01T00:00:00.000Z', createdAt: '2026-08-01T00:00:00.000Z' }));
+    await new MemoryAdapter(cloud).write(ROADMAP_FILE_NAME, file, null);
+    return cloud;
+  }
+  const unified = () => vi.mocked(trackProductEvent).mock.calls.filter(call => call[0] === 'blood_tests_unified');
+
+  it('is sent once the moved record is written, with counts and nothing else', async () => {
+    const cloud = await oldShapeCloud();
+    await initRoadmapStore(new MemoryAdapter(cloud));
+    await vi.waitFor(() => expect(unified()).toEqual([['blood_tests_unified', { moved: 1, folded: 0, keptApart: 0 }]]));
+    expect(JSON.stringify(unified())).not.toMatch(/4\.2|ldl/);
+  });
+
+  it('is not sent by the next open, which has nothing to move', async () => {
+    const cloud = await oldShapeCloud();
+    await initRoadmapStore(new MemoryAdapter(cloud));
+    await vi.waitFor(() => expect(unified()).toHaveLength(1));
+    vi.mocked(trackProductEvent).mockClear();
+    await initRoadmapStore(new MemoryAdapter(cloud));
+    await flushRoadmapStore();
+    expect(unified()).toEqual([]);
   });
 });

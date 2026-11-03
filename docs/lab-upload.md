@@ -302,7 +302,6 @@ Thin wrapper around the Anthropic API using direct `fetch` (no SDK). `extractOrC
 ### Review Table (`ReviewTable.tsx`)
 
 - **`FullDate`**: `{ day: string | null, month: string, year: string }` — preserves the day the LLM extracted
-- **`InlineDatePicker`**: avoids the `.health-field` wrapper that cut off the year dropdown
 - **`buildMatrixModel()`**: resolves each upload value against the slot it lands on (free / equal / conflict) using health-core's `slotState` — the one place that decision lives
 - **`archiveCount`**: originals the connector imported metadata-only (`connectorOriginals`) — Save is offered even when nothing else is selected
 

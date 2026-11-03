@@ -6,8 +6,9 @@ import type { SuggestionEvidence } from './evidence';
 import { STAT_CARD_EVIDENCE, getBmiEvidence, getIbwEvidence, getProteinEvidence } from './evidence';
 import { getEgfrStatus, getHba1cStatus, getLipidStatus, getLpaStatus, getProteinRate } from './calculations';
 import { lipidMarkerFor, type LipidMarker } from './suggestions';
+import { LIMIT_NOT_GRADED, formatLimit, formatValue, limitLabelValue, limitSIText, type LimitField } from './lab-limits';
 import {
-  APOB_THRESHOLDS, LDL_THRESHOLDS, NON_HDL_THRESHOLDS, formatDisplayValue, formatGradedValue, formatHeightDisplay,
+  APOB_THRESHOLDS, LDL_THRESHOLDS, NON_HDL_THRESHOLDS, formatDisplayValue, formatGradedReading, formatGradedValue, formatHeightDisplay,
   getDisplayLabel, isWaistToHeightElevated, type MetricType, type UnitSystem,
 } from './units';
 
@@ -70,14 +71,17 @@ export interface StatTileOptions {
 const TONES: Record<string, StatTone> = {
   'Normal': 'normal', 'Optimal': 'normal', 'Healthy': 'normal',
   'Low Normal': 'info', 'Borderline': 'info', 'Above optimal': 'info', 'Overweight': 'info',
-  'Mildly Decreased': 'attention', 'High': 'attention', 'Elevated': 'attention',
-  'Moderately Decreased': 'attention', 'Underweight': 'attention',
+  'Mildly to Moderately Decreased': 'attention', 'High': 'attention', 'Elevated': 'attention',
+  'Moderately to Severely Decreased': 'attention', 'Underweight': 'attention',
   'Prediabetic': 'attention',
   'Very High': 'urgent', 'Severely Decreased': 'urgent', 'Kidney Failure': 'urgent',
   'Diabetic': 'urgent',
 };
 
 const graded = (label: string): StatTileStatus => ({ label, tone: TONES[label] });
+
+/** A limit's tile status when the bound does not decide: no tone, as no grade (US-12 AC20). */
+export const NOT_GRADED: StatTileStatus = { label: 'Printed as a limit: not graded' };
 
 const BMI_TONES: Record<string, StatTone> = { Underweight: 'attention', Normal: 'normal', Overweight: 'info' };
 
@@ -137,6 +141,15 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
       evidence: getProteinEvidence(results.idealBodyWeight, rate, results.eGFR),
     });
   }
+  // A limit the plan graded shows its tile word only when it also decides
+  // against the tile's own lines; else the tile shows the limit with no word (US-12 AC20).
+  const worded = (field: LimitField) => {
+    const limit = results.limits?.[field];
+    return !limit || limitLabelValue(field, limit.comparator, limit.bound) !== null;
+  };
+  /** A tile's status: NOT_GRADED with no value (a limit the plan could not grade), none where its word is undecided, else the grade. */
+  const tileStatus = (field: LimitField | null, value: number | undefined, grade: (v: number) => StatTileStatus | undefined) =>
+    value === undefined ? NOT_GRADED : field && !worded(field) ? undefined : grade(value);
   // Results carry ApoB and LDL through from the inputs.
   const marker = lipidMarkerFor(results, results);
   if (marker) {
@@ -144,35 +157,52 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
     const u = usFor(tile.metric);
     tiles.push({
       key: marker.kind, label: tile.label,
-      // The value reads on the side of the marker's target that its status grades it (US-07 AC5).
-      value: formatGradedValue(tile.metric, marker.value, u, marker.target), unit: getDisplayLabel(tile.metric, u),
-      status: reading(graded(getLipidStatus(marker.value, tile.thresholds))),
+      // The value reads on the side of the marker's target that its status grades it (US-07 AC5);
+      // a limit reads as printed (US-12 AC20).
+      value: marker.limit ? formatLimit(tile.metric, marker.limit, u) : formatGradedValue(tile.metric, marker.value, u, marker.target),
+      unit: getDisplayLabel(tile.metric, u),
+      status: tileStatus(marker.kind === 'nonHdl' ? null : marker.kind === 'apoB' ? 'apoB' : 'ldlC', marker.value,
+        (v) => reading(graded(getLipidStatus(v, tile.thresholds)))),
       evidence: reading(STAT_CARD_EVIDENCE[tile.evidence]),
     });
   }
-  if (adult && results.eGFR !== undefined) {
+  // A limit that does not decide is shown as printed, with no grade (US-12 AC20).
+  const ungraded = (field: LimitField) => (results.limits?.[field]?.graded === false ? results.limits[field] : undefined);
+  for (const [field, key, label, metric] of [['apoB', 'apoB', 'ApoB', 'apob'], ['ldlC', 'ldl', 'LDL Cholesterol', 'ldl']] as const) {
+    const limit = ungraded(field);
+    if (limit && marker?.kind !== key) {
+      tiles.push({ key, label, value: formatLimit(metric, limit, usFor(metric)), unit: getDisplayLabel(metric, usFor(metric)), status: NOT_GRADED });
+    }
+  }
+  const egfrLimit = results.limits?.labEgfr;
+  if (adult && (results.eGFR !== undefined || egfrLimit)) {
     tiles.push({
-      key: 'egfr', label: 'eGFR', value: String(results.eGFR), unit: 'mL/min',
-      status: graded(getEgfrStatus(results.eGFR)), evidence: STAT_CARD_EVIDENCE['egfr'],
+      key: 'egfr', label: 'eGFR', value: egfrLimit ? limitSIText('labEgfr', egfrLimit) : String(results.eGFR), unit: 'mL/min',
+      status: tileStatus('labEgfr', results.eGFR, (v) => graded(getEgfrStatus(v))), evidence: STAT_CARD_EVIDENCE['egfr'],
     });
   }
-  if (results.lpa !== undefined) {
+  const lpaLimit = results.limits?.lpa;
+  if (results.lpa !== undefined || lpaLimit) {
     tiles.push({
-      key: 'lpa', label: 'Lp(a)', value: String(Math.round(results.lpa)), unit: 'nmol/L',
-      status: reading(graded(getLpaStatus(results.lpa))), evidence: reading(STAT_CARD_EVIDENCE['lpa']),
+      key: 'lpa', label: 'Lp(a)', value: lpaLimit ? limitSIText('lpa', lpaLimit) : formatGradedReading('lpa', results.lpa!, 'si'), unit: 'nmol/L',
+      status: tileStatus('lpa', results.lpa, (v) => reading(graded(getLpaStatus(v)))), evidence: reading(STAT_CARD_EVIDENCE['lpa']),
     });
   }
-  if (results.hba1c !== undefined) {
+  const hba1cLimit = results.limits?.hba1c;
+  if (results.hba1c !== undefined || hba1cLimit) {
     tiles.push({
       key: 'hba1c', label: 'HbA1c',
-      value: formatDisplayValue('hba1c', results.hba1c, usFor('hba1c')), unit: getDisplayLabel('hba1c', usFor('hba1c')),
-      status: reading(graded(getHba1cStatus(results.hba1c))), evidence: reading(STAT_CARD_EVIDENCE['hba1c']),
+      value: hba1cLimit
+        ? formatValue('hba1c', hba1cLimit.bound, usFor('hba1c'), hba1cLimit.comparator)
+        : formatGradedReading('hba1c', results.hba1c!, usFor('hba1c')),
+      unit: getDisplayLabel('hba1c', usFor('hba1c')),
+      status: tileStatus('hba1c', results.hba1c, (v) => reading(graded(getHba1cStatus(v)))), evidence: reading(STAT_CARD_EVIDENCE['hba1c']),
     });
   }
   return tiles.map((t) => ({
     ...t,
-    about: !adult && t.key === 'bmi' ? STAT_TILE_ABOUT_MINOR_BMI
-      : t.key === 'egfr' && results.eGFRFromLab ? STAT_TILE_ABOUT_LAB_EGFR : STAT_TILE_ABOUT[t.key],
+    about: `${!adult && t.key === 'bmi' ? STAT_TILE_ABOUT_MINOR_BMI
+      : t.key === 'egfr' && (results.eGFRFromLab || results.limits?.labEgfr) ? STAT_TILE_ABOUT_LAB_EGFR : STAT_TILE_ABOUT[t.key]}${t.status === NOT_GRADED ? ` ${LIMIT_NOT_GRADED}` : ''}`,
   }));
 }
 
