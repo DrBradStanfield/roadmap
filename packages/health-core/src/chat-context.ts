@@ -215,7 +215,7 @@ export function buildChatContextJson(payload: unknown): string | null {
   // the answers. A day's points arrive in the plan's order (buildMeasurementHistory), so the later point wins a tie.
   const psaPoints = (measurementHistory.psa ?? []).map((p, i) =>
     ({ id: String(i).padStart(4, '0'), metricType: 'psa', value: p.value, recordedAt: p.date, ...comparatorOf(p) }));
-  const planScreenings = withPsaMeasurement(screenings, newestUsablePsa(psaPoints, localDay(new Date())));
+  const planScreenings = withPsaMeasurement(screenings, newestUsablePsa(psaPoints, new Date()));
   // US-07 AC11: a left-out pair turns the blood pressure prompt into "check your reading".
   const planInputs = parsed.success ? { ...inputs, ...(pressure ? { pressureOrder: true as const } : {}) } as SuggestionInputs : null;
   const results = planInputs

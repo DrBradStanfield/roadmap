@@ -56,8 +56,12 @@ export function isClinicalDay(recordedAt: unknown): recordedAt is string {
 export function buildMeasurementHistory(
   records: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator; id?: string; createdAt?: string }>,
   cap = HISTORY_CAP_PER_METRIC,
+  now = new Date(),
 ): MeasurementHistoryMap {
   const out: MeasurementHistoryMap = {};
+  // A PSA the plan cannot use never takes a place under the cap, so newer
+  // unusable rows cannot push out the one the chat's plan reads (US-06 AC14).
+  const latestDay = latestDayOnEarth(now);
   // Within one day, the order `latestActivePerMetric` ranks by (time, then
   // createdAt, then id), so a day's last point is the row the plan reads (US-06 AC14).
   const key = (r: (typeof records)[number]) => [r.recordedAt ?? '', r.createdAt ?? '', r.id ?? ''];
@@ -68,7 +72,7 @@ export function buildMeasurementHistory(
   });
   for (const r of ranked) {
     const date = (r.recordedAt || '').slice(0, 10);
-    if (!ISO_DATE.test(date)) continue;
+    if (!ISO_DATE.test(date) || (r.metricType === 'psa' && !usablePsa(r, latestDay))) continue;
     (out[r.metricType] ??= []).push({ date, value: r.value, ...comparatorOf(r) });
   }
   for (const k of Object.keys(out)) {
@@ -79,18 +83,29 @@ export function buildMeasurementHistory(
 }
 
 /**
+ * The latest calendar day anywhere on Earth at `now` (UTC+14). A server runs
+ * in UTC, so a day the person has already reached can be its tomorrow; the
+ * old screening answers allowed the same (US-06 AC14).
+ */
+const latestDayOnEarth = (now: Date) => new Date(now.getTime() + 14 * 3600_000).toISOString().slice(0, 10);
+
+/** A PSA point the plan can use: in the PSA range, on a real day not after `latestDay`. */
+const usablePsa = (r: { value: number; recordedAt?: string | null }, latestDay: string) => {
+  const { min, max } = UNIT_DEFS.psa.validationRange.si;
+  return r.value >= min && r.value <= max && isClinicalDay(r.recordedAt) && r.recordedAt.slice(0, 10) <= latestDay;
+};
+
+/**
  * US-06 AC14: the saved PSA the plan, the reminders, the web form and the
- * chat all read. Among the active `psa` rows, those with a value in the PSA
- * range and a real day no later than `today` (the caller's clock), the newest
- * by `latestActivePerMetric`'s rule. An unusable newer row never hides an
- * older usable one.
+ * chat all read. Among the active `psa` rows, those `usablePsa` keeps at
+ * `now` (the caller's clock), the newest by `latestActivePerMetric`'s rule.
+ * An unusable newer row never hides an older usable one.
  */
 export function newestUsablePsa<
   T extends { id: string; metricType: string; value: number; recordedAt: string; createdAt?: string; status?: string },
->(rows: readonly T[], today: string): T | undefined {
-  const { min, max } = UNIT_DEFS.psa.validationRange.si;
-  return latestActivePerMetric(rows.filter((r) => r.metricType === 'psa' && r.value >= min && r.value <= max
-    && isClinicalDay(r.recordedAt) && r.recordedAt.slice(0, 10) <= today))[0];
+>(rows: readonly T[], now: Date): T | undefined {
+  const latestDay = latestDayOnEarth(now);
+  return latestActivePerMetric(rows.filter((r) => r.metricType === 'psa' && usablePsa(r, latestDay)))[0];
 }
 
 /**

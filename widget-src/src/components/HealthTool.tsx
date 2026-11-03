@@ -427,7 +427,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     if (result) {
       setPreviousMeasurements(result.previousMeasurements);
       // The storefront chat embed reads this mirror; keep it in step too.
-      saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined, labEgfrOf(await loadLabValues() ?? []));
+      saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined, labEgfrOf(await loadLabValues() ?? []),
+        newestUsablePsa(loadAllHistorySync(), new Date()));
     }
     await Promise.all([refreshLabValues(), loadHistory()]);
     return result;
@@ -510,7 +511,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
         // doesn't block the first render).
         loadHistory();
         // Keep the legacy mirror available to the separate storefront chat embed.
-        saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined, labEgfrOf(await loadLabValues() ?? []));
+        saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined, labEgfrOf(await loadLabValues() ?? []),
+          newestUsablePsa(loadAllHistorySync(), new Date()));
       } else {
         // Nothing on record: a new visitor, or another device erased it. The
         // bubble and the embed must not keep sending the old copy (US-11).
@@ -992,7 +994,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       unitSystem,
       medicationsToInputs(medications),
       // US-06 AC14: the prostate cards read the newest usable saved PSA, as computePlan does.
-      withPsaMeasurement(screeningsToInputs(screenings), newestUsablePsa(history, localDay(new Date()))),
+      withPsaMeasurement(screeningsToInputs(screenings), newestUsablePsa(history, new Date())),
       metricUnitOverrides,
     );
     // The form follows the plan: its recommendations, targets and cascade

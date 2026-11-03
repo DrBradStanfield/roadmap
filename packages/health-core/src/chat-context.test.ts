@@ -765,6 +765,16 @@ describe('US-06 AC14: the chat plan reads the saved PSA, as the plan does', () =
     expect(ids(contextWithPsa([earlier, later]))).toContain('screening-prostate-elevated');
   });
 
+  it('24 or more newer unusable PSA rows do not push the usable one out of the history cap (Codex re-check R2)', () => {
+    const junk = [
+      ...Array.from({ length: 12 }, (_, i) => psa(3.0, `2099-01-${String(i + 1).padStart(2, '0')}T00:00:00Z`)), // after today
+      ...Array.from({ length: 12 }, (_, i) => psa(20000, `2025-10-${String(i + 1).padStart(2, '0')}T00:00:00Z`)), // above the range
+      psa(3.0, '2025-02-30T00:00:00Z'), // no such day
+    ];
+    const context = contextWithPsa([psa(6.5, '2025-09-03T00:00:00Z'), ...junk]);
+    expect(ids(context)).toContain('screening-prostate-elevated');
+  });
+
   it('the history cap cannot drop PSA: every metric at its own cap still fits the total', () => {
     const rows = Object.keys(METRIC_TO_FIELD).flatMap(metric => Array.from({ length: HISTORY_CAP_PER_METRIC }, (_, i) =>
       ({ metricType: metric, value: metric === 'psa' ? 6.5 : 80, recordedAt: `2024-${String(1 + (i % 12)).padStart(2, '0')}-${String(1 + Math.floor(i / 12)).padStart(2, '0')}T00:00:00Z` })));

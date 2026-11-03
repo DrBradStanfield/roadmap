@@ -361,3 +361,12 @@ describe('"Replaces" shows only while a value is typed (US-06 AC15, Codex R6)', 
   });
 });
 
+describe('the line under the PSA field names the newest usable PSA (US-06 AC14, adversary re-check R4)', () => {
+  it('a newer PSA dated after today: the line shows the 6.5 the plan reads', async () => {
+    const { view, note } = await page([[6.5, '2025-09-03'], [3.0, '2099-01-01']]);
+    await waitFor(() => expect(note()).toContain('6.5 ng/mL'));
+    expect(note()).not.toContain('3.0 ng/mL');
+    view.unmount();
+  });
+});
+

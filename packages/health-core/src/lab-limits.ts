@@ -103,7 +103,10 @@ const values = (o: object): number[] => Object.values(o).flatMap((v) => (typeof 
  * literal is in neither this list nor `LIMIT_LABEL_CUTOFFS`. Non-HDL's lines
  * are absent on purpose: non-HDL is derived, and never derived from a limit.
  * Creatinine has none: the plan grades it only through eGFR. PSA's is the
- * "Elevated PSA" card's 4.0 (US-06 AC14).
+ * "Elevated PSA" card's 4.0 (US-06 AC14). A line is reached at or above it,
+ * though that card fires only above 4.0, so "<= 4.0" stays undecided and
+ * reads as ungraded: conservative, and kept so HbA1c's "<=" at a line stays
+ * undecided too (US-12 AC20).
  */
 export const LIMIT_CUTOFFS: Readonly<Record<LimitField, readonly number[]>> = {
   hba1c: values(HBA1C_THRESHOLDS),

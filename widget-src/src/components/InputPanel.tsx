@@ -59,6 +59,7 @@ import {
   isBirthYearClearlyInvalid,
   parseLocalisedNumber,
   dayOf,
+  newestUsablePsa,
   localDay,
   MEDICATION_TEXT,
   SCREENING_TEXT,
@@ -2125,7 +2126,7 @@ export function InputPanel({
                       // while a value is typed (US-06 AC15).
                       const psaHeld = inputs.psa === undefined ? undefined
                         : bloodTestHistory.find(m => m.metricType === 'psa' && dayOf(m.recordedAt) === psaDay);
-                      const psaMeasurement = previousMeasurements.find(m => m.metricType === 'psa');
+                      const psaMeasurement = newestUsablePsa(bloodTestHistory, new Date()); // the PSA the plan reads (US-06 AC14)
                       const psaPreviousLabel = psaHeld
                         ? `Replaces ${formatValue('psa', psaHeld.value, 'si', psaHeld.comparator)} ng/mL`
                         : psaMeasurement

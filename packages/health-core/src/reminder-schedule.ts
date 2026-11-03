@@ -304,7 +304,7 @@ function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleIte
   // real calendar date, or a "last done" date after this month, is dropped.
   // The PSA reminder dates from the newest saved PSA, as the plan's card does (US-06 AC14).
   const screenings = withPsaMeasurement(screeningsToInputs(fileScreeningRows(file.screenings)),
-    newestUsablePsa(currentValueRows(file), localDay(now)));
+    newestUsablePsa(currentValueRows(file), now));
   return computeNextDueDates({ sex, age }, screenings, measurementDates, medications);
 }
 

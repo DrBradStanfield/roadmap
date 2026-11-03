@@ -11,7 +11,8 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
-import { localDay } from '@roadmap/health-core';
+import { buildChatContextJson, localDay } from '@roadmap/health-core';
+import { loadGuestInputs } from '../lib/storage';
 import { addMeasurement, flushRoadmapStore, saveScreening } from '../lib/roadmap-data';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
 
@@ -78,4 +79,13 @@ describe('the web plan reads the saved PSA measurement (US-06 AC14)', () => {
     expect(view.container.textContent).toContain('Your PSA of 6.5 ng/mL');
     view.unmount();
   });
+
+  it('the blog and embed chats (the mirror) read the same usable PSA: a newer one dated after today never hides the 6.5 (Codex re-check R1)', async () => {
+    const view = await plan([], [6.5, TODAY], [3.0, '2099-01-01']);
+    await waitFor(() => expect(titles(view.container)).toContain('Elevated PSA'));
+    const context = JSON.parse(buildChatContextJson(loadGuestInputs())!);
+    expect(context.currentSuggestions.map((s: { id: string }) => s.id)).toContain('screening-prostate-elevated');
+    view.unmount();
+  });
 });
+

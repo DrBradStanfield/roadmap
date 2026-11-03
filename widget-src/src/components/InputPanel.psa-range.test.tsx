@@ -23,7 +23,8 @@ describe('US-35 AC17 — the PSA input takes the unit table range', () => {
     const onChange = vi.fn();
     const props = {
       inputs, effectiveInputs: inputs, onChange, errors: {}, unitSystem, onUnitSystemChange: vi.fn(),
-      unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements, bloodTestHistory: [], vitalsHistory: [],
+      // The page's blood-test history holds every saved row, the newest among them.
+      unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements, bloodTestHistory: previousMeasurements, vitalsHistory: [],
       labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
       onMedicationChange: vi.fn(), screenings: [{ id: 's1', screeningKey: 'prostate_discussion', value: 'will_screen', updatedAt: '' }],
       onScreeningChange: vi.fn(), supplements: [], onSupplementChange: vi.fn(), onSupplementDelete: vi.fn(),
