@@ -32,6 +32,16 @@ function heldFetch(reply: () => Response) {
 }
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
+/** A reply whose headers arrive at once and whose body waits until `release`. */
+function heldBody(body: unknown, status = 200) {
+  let ctrl!: ReadableStreamDefaultController<Uint8Array>;
+  const stream = new ReadableStream<Uint8Array>({ start(c) { ctrl = c; } });
+  return {
+    res: new Response(stream, { status, headers: { 'Content-Type': 'application/json' } }),
+    release: () => { ctrl.enqueue(new TextEncoder().encode(JSON.stringify(body))); ctrl.close(); },
+  };
+}
+
 beforeEach(() => {
   local = new Map();
   vi.stubGlobal('localStorage', storage(local));
@@ -57,16 +67,31 @@ describe('US-09 AC2f: Dropbox', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1); // nothing used the late token
   });
 
-  it('a refresh that resolves after a new sign-in leaves the new tokens alone', async () => {
+  it('a refresh that resolves after a new sign-in adopts the new tokens and carries on', async () => {
     local.set(TOKEN_KEY, JSON.stringify(expired));
-    const { release } = heldFetch(() => json({ access_token: 'at-late', expires_in: 14400 }));
+    const { fetchMock, release } = heldFetch(() => json({ access_token: 'at-late', expires_in: 14400 }));
     const pending = new DropboxAdapter(CONFIG).accountEmail();
     await flush();
     const fresh = { accessToken: 'at-other', refreshToken: 'rt-other', expiresAt: Date.now() + 3_600_000 };
     local.set(TOKEN_KEY, JSON.stringify(fresh));
+    fetchMock.mockImplementation(async () => json({ email: 'b@example.com', email_verified: true }));
     release();
-    await expect(pending).rejects.toThrow();
+    await expect(pending).resolves.toBe('b@example.com');
     expect(JSON.parse(local.get(TOKEN_KEY)!)).toEqual(fresh);
+    const accountCall = fetchMock.mock.calls[1] as unknown as [string, RequestInit];
+    expect((accountCall[1].headers as Record<string, string>).Authorization).toBe('Bearer at-other');
+  });
+
+  it('a Disconnect while the refresh body is still arriving writes no token back', async () => {
+    local.set(TOKEN_KEY, JSON.stringify(expired));
+    const reply = heldBody({ access_token: 'at-late', expires_in: 14400 });
+    vi.stubGlobal('fetch', vi.fn(async () => reply.res));
+    const pending = new DropboxAdapter(CONFIG).accountEmail();
+    await flush();
+    await new DropboxAdapter(CONFIG).disconnect();
+    reply.release();
+    await expect(pending).rejects.toThrow(/disconnected/);
+    expect(local.has(TOKEN_KEY)).toBe(false);
   });
 
   it('control: a refresh with no Disconnect is kept', async () => {
@@ -106,15 +131,43 @@ describe('US-09 AC2f: Google Drive', () => {
     expect(local.has(CONFIG_KEY)).toBe(false);
   });
 
-  it('a refresh that resolves after a new sign-in leaves the new tokens alone', async () => {
+  it('a refresh that resolves after a new sign-in adopts the new tokens and carries on', async () => {
     local.set(TOKENS_KEY, JSON.stringify(expired));
     const { release } = heldFetch(() => json({ accessToken: 'at-late', expiresIn: 3600 }));
+    const live = new GoogleDriveAdapter(CONFIG);
+    const pending = live.tryServerRefresh();
+    await flush();
+    const fresh = { accessToken: 'at-other', refreshToken: 'rt-other', expiresAt: Date.now() + 3_600_000 };
+    local.set(TOKENS_KEY, JSON.stringify(fresh));
+    release();
+    expect(await pending).toBe(true);
+    expect(live.hasValidToken()).toBe(true);
+    expect(JSON.parse(local.get(TOKENS_KEY)!)).toEqual(fresh);
+  });
+
+  it('a Disconnect while the refresh body is still arriving writes no token or account back', async () => {
+    local.set(TOKENS_KEY, JSON.stringify(expired));
+    local.set(CONFIG_KEY, JSON.stringify({ accountEmail: 'a@example.com' }));
+    const reply = heldBody({ accessToken: 'at-late', expiresIn: 3600, idToken });
+    vi.stubGlobal('fetch', vi.fn(async () => reply.res));
+    const pending = new GoogleDriveAdapter(CONFIG).tryServerRefresh();
+    await flush();
+    await new GoogleDriveAdapter(CONFIG).disconnect();
+    reply.release();
+    expect(await pending).toBe(false);
+    expect(local.has(TOKENS_KEY)).toBe(false);
+    expect(local.has(CONFIG_KEY)).toBe(false);
+  });
+
+  it('a revoked refresh that ends after a new sign-in keeps the new tokens', async () => {
+    local.set(TOKENS_KEY, JSON.stringify(expired));
+    const { release } = heldFetch(() => new Response('{}', { status: 401 }));
     const pending = new GoogleDriveAdapter(CONFIG).tryServerRefresh();
     await flush();
     const fresh = { accessToken: 'at-other', refreshToken: 'rt-other', expiresAt: Date.now() + 3_600_000 };
     local.set(TOKENS_KEY, JSON.stringify(fresh));
     release();
-    expect(await pending).toBe(false);
+    expect(await pending).toBe(true);
     expect(JSON.parse(local.get(TOKENS_KEY)!)).toEqual(fresh);
   });
 

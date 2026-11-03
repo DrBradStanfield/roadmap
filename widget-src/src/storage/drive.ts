@@ -381,18 +381,16 @@ export class GoogleDriveAdapter implements StorageAdapter {
     } catch {
       return 'transient'; // network/server down/timeout → caller falls back to the popup path
     }
-    // Disconnect runs on another adapter, so the stored grant is the only
-    // shared truth: gone or replaced meanwhile → keep nothing (US-09 AC2f).
-    if (getJson<DriveTokens>(TOKENS_KEY)?.refreshToken !== startedFrom) {
-      this.tokens = null;
-      return 'none';
-    }
     if (res.status === 400 || res.status === 401) {
+      const moved = this.adoptStored(startedFrom);
+      if (moved) return moved;
       this.clearTokens(); // refresh token revoked/expired — stop retrying
       return 'none';
     }
     if (!res.ok) return 'transient';
     const json = (await res.json()) as { accessToken: string; expiresIn: number; idToken?: string };
+    const moved = this.adoptStored(startedFrom);
+    if (moved) return moved;
     this.lastIdToken = json.idToken ?? null;
     const accountEmail = this.lastIdToken ? decodeIdTokenEmail(this.lastIdToken) : null;
     if (accountEmail && this.stored && this.stored.accountEmail !== accountEmail) {
@@ -405,6 +403,19 @@ export class GoogleDriveAdapter implements StorageAdapter {
       expiresAt: expiry(json.expiresIn),
     });
     return 'ok';
+  }
+
+  /**
+   * Disconnect and a sign-in elsewhere run on other adapters, so the stored
+   * grant is the only shared truth. Called after a refresh's last await: null
+   * when the grant is still the one it started from; otherwise gone means keep
+   * nothing ('none') and replaced means use the new one (US-09 AC2f).
+   */
+  private adoptStored(startedFrom: string): Promise<'ok' | 'none' | 'transient'> | null {
+    const stored = getJson<DriveTokens>(TOKENS_KEY);
+    if (stored?.refreshToken === startedFrom) return null;
+    this.tokens = stored;
+    return this.hasValidToken() ? Promise.resolve('ok') : this.refresh();
   }
 
   async disconnect(): Promise<void> {

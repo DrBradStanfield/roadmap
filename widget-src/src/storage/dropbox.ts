@@ -312,16 +312,20 @@ export class DropboxAdapter implements StorageAdapter {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
     });
-    // Disconnect runs on another adapter, so the stored grant is the only
-    // shared truth: gone or replaced meanwhile → keep nothing (US-09 AC2f).
-    if (loadTokens()?.refreshToken !== startedFrom) {
-      this.tokens = null;
-      throw new StorageError('Dropbox was disconnected — please reconnect.');
-    }
     if (!res.ok) {
       throw new StorageError(`Dropbox token refresh failed (${res.status}) — please reconnect.`, undefined, undefined, res.status);
     }
     const json = tokenReply(await res.json(), false);
+    // Disconnect and a sign-in elsewhere run on other adapters, so the stored
+    // grant is the only shared truth. Read it after the last await: gone means
+    // keep nothing, replaced means use the new one (US-09 AC2f).
+    const stored = loadTokens();
+    if (stored?.refreshToken !== startedFrom) {
+      this.tokens = stored;
+      if (!stored) throw new StorageError('Dropbox was disconnected — please reconnect.');
+      if (Date.now() >= stored.expiresAt - 60_000) await this.refresh();
+      return;
+    }
     this.tokens = {
       ...this.tokens,
       accessToken: json.access_token,
