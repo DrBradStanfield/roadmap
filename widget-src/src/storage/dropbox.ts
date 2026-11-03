@@ -301,9 +301,10 @@ export class DropboxAdapter implements StorageAdapter {
 
   private async refresh(): Promise<void> {
     if (!this.tokens?.refreshToken) throw new StorageError('Dropbox session expired — please reconnect.');
+    const startedFrom = this.tokens.refreshToken;
     const body = new URLSearchParams({
       grant_type: 'refresh_token',
-      refresh_token: this.tokens.refreshToken,
+      refresh_token: startedFrom,
       client_id: this.config.clientId,
     });
     const res = await fetch(TOKEN_URL, {
@@ -311,6 +312,12 @@ export class DropboxAdapter implements StorageAdapter {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
     });
+    // Disconnect runs on another adapter, so the stored grant is the only
+    // shared truth: gone or replaced meanwhile → keep nothing (US-09 AC2f).
+    if (loadTokens()?.refreshToken !== startedFrom) {
+      this.tokens = null;
+      throw new StorageError('Dropbox was disconnected — please reconnect.');
+    }
     if (!res.ok) {
       throw new StorageError(`Dropbox token refresh failed (${res.status}) — please reconnect.`, undefined, undefined, res.status);
     }

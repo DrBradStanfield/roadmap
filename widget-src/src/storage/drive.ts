@@ -366,19 +366,26 @@ export class GoogleDriveAdapter implements StorageAdapter {
    * transient failure must not block auto-enrolment forever (review 2026-09-10).
    */
   private async refresh(): Promise<'ok' | 'none' | 'transient'> {
-    if (!this.tokens?.refreshToken) return 'none';
+    const startedFrom = this.tokens?.refreshToken;
+    if (!startedFrom) return 'none';
     let res: Response;
     try {
       res = await fetch(this.config.exchangeUrl, {
         method: 'POST',
         // No Content-Type: keep it a CORS simple request (no preflight).
-        body: JSON.stringify({ grantType: 'refresh', refreshToken: this.tokens.refreshToken }),
+        body: JSON.stringify({ grantType: 'refresh', refreshToken: startedFrom }),
         // This runs at page load before first render — a black-holing server
         // must fail fast into the on-device + Reconnect fallback, not hang.
         signal: AbortSignal.timeout(5000),
       });
     } catch {
       return 'transient'; // network/server down/timeout → caller falls back to the popup path
+    }
+    // Disconnect runs on another adapter, so the stored grant is the only
+    // shared truth: gone or replaced meanwhile → keep nothing (US-09 AC2f).
+    if (getJson<DriveTokens>(TOKENS_KEY)?.refreshToken !== startedFrom) {
+      this.tokens = null;
+      return 'none';
     }
     if (res.status === 400 || res.status === 401) {
       this.clearTokens(); // refresh token revoked/expired — stop retrying
@@ -394,7 +401,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     }
     this.saveTokens({
       accessToken: json.accessToken,
-      refreshToken: this.tokens.refreshToken, // refresh grants don't re-issue it
+      refreshToken: startedFrom, // refresh grants don't re-issue it
       expiresAt: expiry(json.expiresIn),
     });
     return 'ok';
