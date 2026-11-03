@@ -70,6 +70,9 @@ describe('US-06 AC18: a raised PSA prints on its side of 4.0 (Brad 2026-11-03)',
     expect(formatGradedReading('psa', 4.01, 'si')).toBe('4.01');
     expect(formatGradedReading('psa', 4.001, 'si')).toBe('4.01');
     expect(formatGradedReading('psa', 4.049, 'si')).toBe('4.05');
+    // A hair above the line still reads above it (adversary R2): never "4.00".
+    expect(formatGradedReading('psa', 4.000000000001, 'si')).toBe('4.01');
+    expect(formatGradedReading('psa', 4.0000000000001, 'si')).toBe('4.01');
     // 4.05 is 4.0499… in binary, so one decimal read 4.0.
     expect(formatGradedReading('psa', 4.05, 'si')).toBe('4.05');
     // Away from the line, and at or under it, one decimal as before.

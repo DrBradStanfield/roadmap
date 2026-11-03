@@ -23,6 +23,7 @@
 import { pathToFileURL } from 'node:url';
 import { isCoreRow } from '../packages/health-core/src/core-rows';
 import { BACKUPS_KEPT, FileAdapter } from '../packages/health-core/src/file-adapter';
+import { comparatorOf, formatGradedOrLimit } from '../packages/health-core/src/lab-limits';
 import { oneLine, PlanError } from '../packages/health-core/src/plan';
 import {
   appendLabValue,
@@ -150,6 +151,8 @@ function coreMetricOf(row: Row): MetricType | undefined {
  */
 function shownValue(row: Row): string {
   const metric = coreMetricOf(row);
+  // A raised PSA prints on its side of 4.0, as the app shows it (US-06 AC18).
+  if (metric === 'psa') return formatGradedOrLimit('psa', row.value, 'si', comparatorOf(row).comparator);
   return metric && UNIT_DEFS[metric] ? formatDisplayValue(metric, row.value, 'si') : String(row.value);
 }
 

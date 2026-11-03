@@ -750,7 +750,8 @@ export function formatGradedReading(metric: MetricType, canonical: number, syste
   const shown = formatDisplayValue(metric, canonical, system);
   // PSA's grade is strict (> 4.0), so the line itself reads normal: `formatGradedValue` would print it.
   if (metric === 'psa' && canonical > PSA_THRESHOLDS.normal && Number(shown) <= PSA_THRESHOLDS.normal) {
-    return (Math.ceil(Number((canonical * 100).toPrecision(12))) / 100).toFixed(2);
+    // At least 4.01: toPrecision strips float noise, which also rounds 4.000000000001 down to the line.
+    return (Math.max(Math.ceil(Number((canonical * 100).toPrecision(12))), PSA_THRESHOLDS.normal * 100 + 1) / 100).toFixed(2);
   }
   for (const line of lines) {
     const graded = formatGradedValue(metric, canonical, system, line);

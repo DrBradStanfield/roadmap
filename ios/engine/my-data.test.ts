@@ -795,6 +795,10 @@ describe('forms (AC8)', () => {
       { kind: 'add', metric: 'psa', value, day: '2026-10-02' }), NOW).psa.latest?.value;
     expect(psa(4.04)).toBe('4.04');
     expect([psa(6.53), psa(4.0)]).toEqual(['6.5', '4.0']);
+    // The PSA page's history rows (and its headline) print the same (adversary R1).
+    const file = man60({ kind: 'screening', key: 'prostate_discussion', value: 'will_screen' },
+      { kind: 'add', metric: 'psa', value: 4.04, day: '2026-10-02' }, { kind: 'add', metric: 'psa', value: 6.53, day: '2026-09-02' });
+    expect(metricHistory(file, 'psa', NOW).rows.map((r) => r.value)).toEqual(['4.04', '6.5']);
   });
 
   // US-06 AC1a: accepted names must produce keys accepted by the real native writer.
