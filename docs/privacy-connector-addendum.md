@@ -420,7 +420,7 @@ no part of your health record. The tool refuses any report that reads as a healt
 a number with a unit, a bare number written near a metric name it knows, an email
 address, a phone-shaped run of digits, a file name (lab portals name your download
 after you), or a link carrying a query string that could hold a token
-(`unsafeFeedback` in `packages/health-core/src/mcp-tools.ts`). It cannot recognise a
+(`unsafeFeedback` in `packages/health-core/src/mcp-feedback.ts`). It cannot recognise a
 diagnosis written in prose. That is why the tool shows you the report before it files
 it: read the receipt before you say yes. The issue is public, so your assistant should
 tell you before it files one. Software you run yourself holds no key, so it cannot file
