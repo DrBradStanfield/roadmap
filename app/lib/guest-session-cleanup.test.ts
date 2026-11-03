@@ -82,6 +82,8 @@ const asSent = (call: unknown[]) => JSON.stringify(call, (_key, value) => (value
 /** Each report is the one fixed Error, with only the closed tags. */
 function expectFixedReports(expected: { step: string; code: string }[], ...raw: string[]) {
   const reports = cleanupReports();
+  // Nothing else on this path calls Sentry, so no other capture can carry the raw error.
+  expect(sentry.captureException).toHaveBeenCalledTimes(expected.length);
   expect(reports.map(([, hint]) => hint)).toEqual(expected.map(({ step, code }) => ({
     tags: { feature: 'guest_chat', subsystem: 'guest_session_cleanup', step, code },
   })));
