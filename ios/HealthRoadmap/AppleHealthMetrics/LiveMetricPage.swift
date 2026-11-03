@@ -39,6 +39,8 @@ struct LiveMetricPage: View {
     let guide: MetricGuide?
     @State private var range: LiveRange
     @State private var days: [LivePoint] = []
+    /// The days grouped as each range draws them, made on `LiveHistory` off the main thread (adversary R5).
+    @State private var grouped: [Calendar.Component: [LivePoint]] = [:]
     @State private var daysRead = false
     /// D's hours, for each day read so far (`hoursRead`), read as the person moves to a day.
     @State private var hours: [LivePoint] = []
@@ -134,8 +136,9 @@ struct LiveMetricPage: View {
         }
         // A cancelled read (the page left, or the key moved) marks nothing read (N1).
         if wanted.day {
-            // The kept week of hours draws at once, then each day in view is read and kept (AC7a).
-            if hours.isEmpty, let kept = await live.history.keptHours(metric), !Task.isCancelled {
+            // The kept week of hours draws at once, then each day in view is read (and kept while
+            // within the last week, AC7a).
+            if hours.isEmpty, let kept = await live.history.keptHours(metric, calendar: calendar), !Task.isCancelled {
                 hours = kept
                 rebuild()
             }
@@ -146,25 +149,29 @@ struct LiveMetricPage: View {
                 hoursRead.insert(day)
             }
         } else if !daysRead {
-            // The kept history draws at once; the first visit draws 400 days while the whole
-            // history is read and kept; then only what is new (AC7a). All off the main thread.
-            if days.isEmpty, let kept = await live.history.keptDays(metric), !Task.isCancelled {
-                days = kept
-                rebuild()
-            }
-            if days.isEmpty, let first = try? await LiveHealth.readDays(store, metric, reaching: reading, now: now, calendar: calendar), !Task.isCancelled {
-                days = first
-                rebuild()
+            // The kept history draws at once (a first visit: 400 days), then what changed in Health
+            // is read and kept (AC7a). Reading, merging and grouping run off the main thread.
+            if days.isEmpty, let first = await live.firstDays(metric, reaching: reading), !Task.isCancelled {
+                await show(first, calendar: calendar)
             }
             guard let read = try? await live.history.refreshDays(store, metric, now: now, calendar: calendar), !Task.isCancelled else { return }
-            if read != days { days = read }
+            if read != days { await show(read, calendar: calendar) }
             daysRead = true
         }
         rebuild()
     }
 
+    /// New days, with their weeks and months grouped on `LiveHistory`, then drawn.
+    private func show(_ read: [LivePoint], calendar: Calendar) async {
+        let groups = await live.history.grouped(read, calendar: calendar)
+        guard !Task.isCancelled else { return }
+        days = read
+        grouped = groups
+        rebuild()
+    }
+
     private func rebuild() {
-        let built = range == .day ? hours : LiveMaths.bucket(days, by: range.bucket, calendar: live.calendar)
+        let built = range == .day ? hours : grouped[range.bucket] ?? LiveMaths.bucket(days, by: range.bucket, calendar: live.calendar)
         if built != points { points = built }
     }
 

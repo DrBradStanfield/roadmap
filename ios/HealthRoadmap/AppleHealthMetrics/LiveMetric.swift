@@ -201,6 +201,8 @@ struct SleepSegment: Equatable, Codable {
     let start: Date
     let end: Date
     let source: String
+    /// HealthKit's id for the sample, so a deletion in Health removes it from the kept copy (AC7a).
+    var uuid: String? = nil
 }
 
 /// One night, dated the morning it ends (AC2): what it drew and its totals.

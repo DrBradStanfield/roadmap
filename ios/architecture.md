@@ -986,7 +986,10 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   same rules (out of backups, complete-until-first-unlock, apart from the record, deleted by Delete
   all my data, access reset or an empty Health). A page draws the kept history first; with none
   (a first visit) it draws 400 days (sleep 200 nights) while the whole history is read and kept;
-  later reads ask only from three days before the newest kept day and merge. Decoding, merging,
+  later reads ask HealthKit only what changed since the kept anchor (an anchored query): added
+  samples re-read just their days; sleep's samples are added or removed by id; a deleted day
+  sample (HealthKit gives only its id), a change list past 5,000 or a new time zone reads the
+  days in full again. Each file records its zone. Decoding, merging,
   grouping nights and writing run on the actor, never the main thread. Rejected: two reads per
   visit (fast first draw, then the full read) still re-read years each time; SwiftData or a
   database was more machinery than five small JSON files. It opens with the reading in

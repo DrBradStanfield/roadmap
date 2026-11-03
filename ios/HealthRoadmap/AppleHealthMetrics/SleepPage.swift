@@ -56,8 +56,9 @@ struct SleepPage: View {
         picked.flatMap { day in nights.first { $0.day == day } } ?? LiveMaths.newestNight(nights, today: live.calendar.startOfDay(for: live.now()))
     }
 
-    /// The kept nights draw at once; the first visit draws 200 nights while every night is read
-    /// and kept; then only what is new (AC7a). A cancelled read marks nothing read (N1).
+    /// The kept nights draw at once (a first visit: 200 nights, while every night is read and
+    /// kept), then the samples added or deleted in Health since are applied (AC7a). A cancelled
+    /// read marks nothing read (N1).
     private func load(_ fresh: ReadFor) async {
         guard fresh != readFor else { return }
         let (store, now, calendar) = (live.store, live.now(), live.calendar)
