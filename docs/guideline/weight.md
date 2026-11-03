@@ -76,7 +76,7 @@ Raised markers:
 
 - HbA1c of 38.8 mmol/mol (5.7%) or more.
 - Triglycerides of 150 mg/dL (about 1.7 mmol/L) or more.
-- Blood pressure: systolic 130 or more, or diastolic above 80.
+- Blood pressure: systolic 130 or more, or diastolic 80 or more.
 - The plan's cholesterol marker at or above its risk-enhancing line: ApoB 130 mg/dL (1.3 g/L), non-HDL cholesterol 190 mg/dL (about 4.9 mmol/L), or LDL cholesterol 160 mg/dL (about 4.1 mmol/L).
 - Waist-to-height ratio of 0.5 or more.
 
