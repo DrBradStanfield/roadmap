@@ -790,6 +790,13 @@ describe('forms (AC8)', () => {
     expect(data.psa.latest).toMatchObject({ value: '1.2', day: '2026-10-02' });
   });
 
+  it('US-06 AC18 (Brad 2026-11-03): a raised PSA of 4.04 reads 4.04, as the web, not 4.0', () => {
+    const psa = (value: number) => myData(man60({ kind: 'screening', key: 'prostate_discussion', value: 'will_screen' },
+      { kind: 'add', metric: 'psa', value, day: '2026-10-02' }), NOW).psa.latest?.value;
+    expect(psa(4.04)).toBe('4.04');
+    expect([psa(6.53), psa(4.0)]).toEqual(['6.5', '4.0']);
+  });
+
   // US-06 AC1a: accepted names must produce keys accepted by the real native writer.
   it.each([93, 100])('saves long native names and collisions without losing identity (%i characters)', length => {
     const name = 'a'.repeat(length);

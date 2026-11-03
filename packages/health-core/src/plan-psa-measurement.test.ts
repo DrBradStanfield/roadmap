@@ -48,12 +48,10 @@ const ELEVATED = (v: string) =>
   `Elevated PSA: Your PSA of ${v} ng/mL is above the typical reference range (\u22644.0). Discuss with your doctor \u2014 elevated PSA can have multiple causes.`;
 
 describe('the plan reads the saved PSA measurement (US-06 AC14)', () => {
-  it('a saved PSA of 6.5 from September 2025 shows "Elevated PSA", the PSA-due card and a reminder 12 months on', () => {
+  // Since US-06 AC17 (Brad 2026-11-03) no "PSA test up to date" shows beside "Elevated PSA"; the due list and the reminder still carry the day.
+  it('a saved PSA of 6.5 from September 2025 shows "Elevated PSA" and a reminder 12 months on', () => {
     const p = prostate(record([[6.5, '2025-09-03']]));
-    expect(p.cards).toEqual([
-      'PSA test up to date: Next PSA test due Sep 2026.',
-      ELEVATED('6.5'),
-    ]);
+    expect(p.cards).toEqual([ELEVATED('6.5')]);
     expect(p.due).toEqual(['2026-09-01']);
     expect(p.pushed).toEqual(['2026-09-01']);
   });
@@ -144,7 +142,7 @@ describe('a saved PSA as main stores it: a core lab row (US-06 AC14, US-66 AC7)'
     const moved = { ...old, ...moveBloodMeasurements(old.measurements, old.labValues) };
     expect(moved.measurements).toEqual([]);
     expect(prostate(moved)).toEqual({
-      cards: ['PSA test up to date: Next PSA test due Sep 2026.', ELEVATED('6.5')],
+      cards: [ELEVATED('6.5')],
       due: ['2026-09-01'],
       pushed: ['2026-09-01'],
     });
@@ -170,7 +168,7 @@ describe('a PSA printed as a limit is graded only when the limit decides against
   const DUE = 'PSA test up to date: Next PSA test due Sep 2026.';
   it('"> 100" shows "Elevated PSA" with the limit as printed, never a number the lab did not print', () => {
     const p = prostate(record([[100, '2025-09-03', 'active', '>']]));
-    expect(p.cards).toEqual([DUE,
+    expect(p.cards).toEqual([
       'Elevated PSA: Your PSA of > 100.0 ng/mL is above the typical reference range (\u22644.0). Discuss with your doctor \u2014 elevated PSA can have multiple causes.']);
     expect(p.pushed).toEqual(['2026-09-01']);
   });
@@ -201,13 +199,14 @@ describe('the newest USABLE PSA row is read: an unusable newer row never hides a
     ['on a day that does not exist', 3.0, '2026-02-30'],
   ])('a newer row %s: the older 6.5 still shows "Elevated PSA" and dates the reminder', (_what, value, day) => {
     const p = prostate(record([[6.5, '2025-09-03'], [value, day]]));
-    expect(p.cards).toEqual(['PSA test up to date: Next PSA test due Sep 2026.', ELEVATED('6.5')]);
+    expect(p.cards).toEqual([ELEVATED('6.5')]);
     expect(p.due).toEqual(['2026-09-01']);
     expect(p.pushed).toEqual(['2026-09-01']);
   });
 
   it('a row dated today counts (the plan\'s own clock)', () => {
     const p = prostate(record([[6.5, '2026-06-15']]));
-    expect(p.cards).toEqual(['PSA test up to date: Next PSA test due Jun 2027.', ELEVATED('6.5')]);
+    expect(p.cards).toEqual([ELEVATED('6.5')]);
+    expect(p.due).toEqual(['2027-06-01']);
   });
 });

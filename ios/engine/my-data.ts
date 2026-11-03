@@ -39,7 +39,7 @@ import { applyPressure, BLOOD_PRESSURE, pressureHistory, type PressureEdit } fro
 import { applyChatEdit, type ChatEdit } from './chat-edits';
 import { cellUnitFor, lpaUnitOf, SWITCHABLE, unitsOf, type UnitChoices } from './unit-choices';
 import { cellFromSI, cellLabel, cellRange, isLpaUnit, type CellUnit } from '../../packages/health-core/src/cell-unit';
-import { LIMIT_NOT_GRADED, comparatorOf, isComparator } from '../../packages/health-core/src/lab-limits';
+import { LIMIT_NOT_GRADED, comparatorOf, formatGradedOrLimit, isComparator } from '../../packages/health-core/src/lab-limits';
 
 /** One row of Vitals or Blood tests: the plan's current value, if any, in the user's units. */
 export interface MyDataRow {
@@ -284,6 +284,9 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
       note: latest && ungradedLimit(metric as MetricType, latest, graded) ? LIMIT_NOT_GRADED : null,
     };
   };
+  // A raised PSA prints on its side of 4.0, as the web's line under the PSA field does (US-06 AC18).
+  const psa = row('psa'), psaRow = current.get('psa');
+  const psaLatest = psa.latest && psaRow ? { ...psa.latest, value: formatGradedOrLimit('psa', psaRow.value, 'si', comparatorOf(psaRow).comparator) } : null;
   const { sex, birthYear, birthMonth, heightCm } = file.profile;
   return {
     unitSystem: system,
@@ -305,7 +308,7 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
     // PSA is asked for under prostate screening on the web, not with the blood tests.
     bloodTests: BLOOD_TEST_METRICS.filter((metric) => metric !== 'psa').map(row),
     // The web asks for PSA under screening and never colours it.
-    psa: { ...row('psa'), ...gradeOf(null, 'psa'), note: null },
+    psa: { ...psa, latest: psaLatest, ...gradeOf(null, 'psa'), note: null },
     labTests: labTestRows(file, now),
     guides: METRIC_GUIDES,
     vo2Bands: vo2BandsOf(sex, birthYear, birthMonth, now),

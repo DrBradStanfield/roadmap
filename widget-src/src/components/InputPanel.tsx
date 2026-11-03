@@ -31,6 +31,7 @@ import {
   screeningsToInputs,
   type ApiMeasurement,
   formatValue,
+  formatGradedOrLimit,
   type ApiMedication,
   type ApiScreening,
   STATIN_NAMES,
@@ -2128,9 +2129,9 @@ export function InputPanel({
                         : bloodTestHistory.find(m => m.metricType === 'psa' && dayOf(m.recordedAt) === psaDay);
                       const psaMeasurement = newestUsablePsa(bloodTestHistory, new Date()); // the PSA the plan reads (US-06 AC14)
                       const psaPreviousLabel = psaHeld
-                        ? `Replaces ${formatValue('psa', psaHeld.value, 'si', psaHeld.comparator)} ng/mL`
+                        ? `Replaces ${formatGradedOrLimit('psa', psaHeld.value, 'si', psaHeld.comparator)} ng/mL`
                         : psaMeasurement
-                        ? `${formatValue('psa', psaMeasurement.value, 'si', psaMeasurement.comparator)} ng/mL · ${formatShortDate(psaMeasurement.recordedAt)}`
+                        ? `${formatGradedOrLimit('psa', psaMeasurement.value, 'si', psaMeasurement.comparator)} ng/mL · ${formatShortDate(psaMeasurement.recordedAt)}`
                         : null;
 
                       return (

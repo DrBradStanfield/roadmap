@@ -44,7 +44,8 @@ describe('a PSA dated the user\'s today, read on a UTC server (US-06 AC14)', () 
   });
 
   it('get_plan (computePlan): an Auckland PSA dated 4 Nov shows "Elevated PSA" and dates the reminder', () => {
-    expect(prostate(record('2026-11-04'))).toEqual(['screening-prostate-upcoming', 'screening-prostate-elevated']);
+    // No "up to date" beside "Elevated PSA" (US-06 AC17); the reminder below carries the day.
+    expect(prostate(record('2026-11-04'))).toEqual(['screening-prostate-elevated']);
     expect(computeReminderSchedule(record('2026-11-04'), NOW).filter((i) => i.category === 'screening_prostate').map((i) => i.dueAt)).toEqual(['2027-11-01']);
   });
 

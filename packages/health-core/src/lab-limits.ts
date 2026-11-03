@@ -14,7 +14,7 @@
  */
 import type { HealthInputs } from './types';
 import {
-  UNIT_DEFS, formatDisplayValue, fromCanonicalValue, type MetricType, type UnitSystem,
+  UNIT_DEFS, formatDisplayValue, formatGradedReading, fromCanonicalValue, type MetricType, type UnitSystem,
   APOB_RISK_ENHANCING, APOB_THRESHOLDS, BP_THRESHOLDS, CREATININE_GRID_BANDS, EGFR_THRESHOLDS, HBA1C_THRESHOLDS,
   HDL_GRID_BANDS, HDL_THRESHOLDS, LDL_THRESHOLDS, LIPID_TREATMENT_TARGETS, LPA_THRESHOLDS, PSA_THRESHOLDS,
   TOTAL_CHOLESTEROL_THRESHOLDS, TRIGLYCERIDES_THRESHOLDS, bpTargetFor,
@@ -72,6 +72,11 @@ export function formatLimit(metric: MetricType, limit: Pick<InputLimit, 'compara
 /** A core value as every surface shows it: a limit with its symbol, rounded away from its band; else `formatDisplayValue`. */
 export function formatValue(metric: MetricType, value: number, system: UnitSystem, comparator?: Comparator | null): string {
   return comparator ? formatLimit(metric, { comparator, bound: value }, system) : formatDisplayValue(metric, value, system);
+}
+
+/** As `formatValue`, for a read-only line beside a grade: a value prints on its grade's side (`formatGradedReading`). */
+export function formatGradedOrLimit(metric: MetricType, value: number, system: UnitSystem, comparator?: Comparator | null): string {
+  return comparator ? formatLimit(metric, { comparator, bound: value }, system) : formatGradedReading(metric, value, system);
 }
 
 /** What a report's symbol is in the file's code. */

@@ -740,12 +740,18 @@ export const LPA_THRESHOLDS = {
  * `formatGradedValue` at each of their grade lines (5.7 and 6.5 %, 75 and
  * 125 nmol/L), so 47 mmol/mol reads 6.45 % in the prediabetic range, not
  * 6.5 %. The lines are many display steps apart, so at most one moves the
- * number. Any other metric prints as `formatDisplayValue` (US-07 AC15).
+ * number. A PSA graded above 4.0 that would print 4.0 prints two decimals,
+ * rounded up, so 4.04 ng/mL reads 4.04 (US-06 AC18). Any other metric prints
+ * as `formatDisplayValue` (US-07 AC15).
  */
 export function formatGradedReading(metric: MetricType, canonical: number, system: UnitSystem): string {
   const lines = metric === 'hba1c' ? Object.values(HBA1C_THRESHOLDS)
     : metric === 'lpa' ? Object.values(LPA_THRESHOLDS) : [];
   const shown = formatDisplayValue(metric, canonical, system);
+  // PSA's grade is strict (> 4.0), so the line itself reads normal: `formatGradedValue` would print it.
+  if (metric === 'psa' && canonical > PSA_THRESHOLDS.normal && Number(shown) <= PSA_THRESHOLDS.normal) {
+    return (Math.ceil(Number((canonical * 100).toPrecision(12))) / 100).toFixed(2);
+  }
   for (const line of lines) {
     const graded = formatGradedValue(metric, canonical, system, line);
     if (graded !== shown) return graded;
