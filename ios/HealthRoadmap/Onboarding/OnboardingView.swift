@@ -333,7 +333,8 @@ struct OnboardingView: View {
         // A new record takes the phone's region's units (AC6); a record with values keeps its own.
         let hasValues = data.profile.sex != nil || data.profile.birthYear != nil || data.profile.height != nil
             || (data.vitals + data.bloodTests + [data.psa]).contains { $0.latest != nil }
-        if let units = OnboardingSteps.regionUnits(hasValues: hasValues, onlyMissing: ownUnits, current: data.unitSystem, system: Locale.current.measurementSystem) {
+        let engineUnits = hasValues || ownUnits ? nil : await store.regionUnits()
+        if let units = OnboardingSteps.regionUnits(hasValues: hasValues, onlyMissing: ownUnits, current: data.unitSystem, locale: .current, engine: engineUnits) {
             _ = await store.apply(.units(units))
             // Gone before the units landed: nothing to pin (onDisappear unpins only a begun run).
             guard !Task.isCancelled, step == nil else { return }
@@ -368,7 +369,7 @@ struct OnboardingView: View {
         // Health's sex and birth are taken as given (AC3b), saved by the same edits a tap or
         // Continue makes; one the engine refuses is asked. Height and weight came in with the connect.
         // One edit for both; refused, both are asked (review E3).
-        if let profile, let edit = OnboardingSteps.healthEdit(given, profile: profile), await store.apply(edit) != .saved {
+        if let profile, let edit = OnboardingSteps.healthEdit(given, profile: profile), await store.apply(edit) != .saved() {
             fromHealth.subtract([.sex, .birth])
         }
         connecting = false
@@ -424,7 +425,7 @@ struct OnboardingView: View {
             case .stay:
                 return
             case .unchanged:
-                return settle(.saved, step)
+                return settle(.saved(), step)
             case .edit(let made):
                 edit = made
             }

@@ -26,6 +26,7 @@ import {
   MemoryCloud,
   ROADMAP_FILE_NAME,
   toCanonicalValue,
+  toOldShape,
   type FileLabValue,
   type FileMeasurement,
   type ProposedEdit,
@@ -96,7 +97,8 @@ async function recordOnDisk(): Promise<RoadmapFile> {
   await act(async () => { await flushRoadmapStore(); });
   return (await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)).body as RoadmapFile;
 }
-const rowsOf = async (metric: string) => (await recordOnDisk()).measurements.filter((m) => m.metricType === metric);
+// A blood test is a core lab row (US-66), read here as the measurement it was.
+const rowsOf = async (metric: string) => toOldShape(await recordOnDisk()).measurements.filter((m) => m.metricType === metric);
 const active = <T extends { status: string }>(rows: T[]) => rows.filter((r) => r.status === 'active');
 const day = (r: FileMeasurement | FileLabValue) => r.recordedAt.slice(0, 10);
 const activeOn = async (metric: string) => active(await rowsOf(metric)).map((m) => [m.value, day(m)]).sort();
@@ -924,7 +926,7 @@ describe('US-03 AC5: a matrix commits what is typed when you leave it; the page 
     expect((await loadAllHistory()).filter((m) => m.metricType === 'ldl')).toEqual([]);
     expect(adapter.writes).toBe(0);
     const inCloud = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
-    expect(inCloud.measurements.filter((m) => m.metricType === 'ldl')).toEqual([]);
+    expect(toOldShape(inCloud).measurements.filter((m) => m.metricType === 'ldl')).toEqual([]);
     adapter.hang = false;
 
     view.unmount(); // the page comes back from the device
@@ -1804,7 +1806,7 @@ describe('US-11: an erase made on another device', () => {
     const inCloud = async (metric: string) => {
       await act(async () => { await flushRoadmapStore(); });
       const file = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
-      return active(file.measurements.filter((m) => m.metricType === metric)).map((m) => m.value);
+      return active(toOldShape(file).measurements.filter((m) => m.metricType === metric)).map((m) => m.value);
     };
     tapOutside(view.container); // leaving
     await wait(1000);

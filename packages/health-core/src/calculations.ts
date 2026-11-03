@@ -1,4 +1,4 @@
-import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
+import type { HealthInputs, HealthResults, MedicationInputs, SuggestionInputs, ScreeningInputs } from './types';
 import type { UnitSystem, MetricType } from './units';
 import { EGFR_THRESHOLDS, LPA_THRESHOLDS, HBA1C_THRESHOLDS, waistToHeightRatio, isWaistToHeightElevated } from './units';
 import { generateSuggestions } from './suggestions';
@@ -193,7 +193,7 @@ export function missingPlanInputs(inputs: Partial<HealthInputs>): Array<(typeof 
 /**
  * Main calculation function - takes all inputs and returns all results
  */
-export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSystem, medications?: MedicationInputs, screenings?: ScreeningInputs, unitOverrides?: Partial<Record<MetricType, UnitSystem>>, now = new Date()): HealthResults {
+export function calculateHealthResults(inputs: SuggestionInputs, unitSystem?: UnitSystem, medications?: MedicationInputs, screenings?: ScreeningInputs, unitOverrides?: Partial<Record<MetricType, UnitSystem>>, now = new Date()): HealthResults {
   // Ideal body weight and protein target need sex: no female or male default (US-07 AC8)
   const ibw = inputs.sex ? calculateIBW(inputs.heightCm, inputs.sex) : undefined;
 

@@ -59,7 +59,7 @@ function noteLogOffSignal(event: Event): void {
  *  log-off signal is set and removed at once, so note one heard now; the page
  *  latches on it only if a cloud load succeeds (latchOnOtherTabsLogOff, via
  *  mirror.opened()). A load that fails falls back to the device, whose copy is
- *  then its only store, so a note alone never stops a write (US-09 AC2f). The
+ *  then its only store, so a note alone never stops a write (US-09 AC2h). The
  *  note is never reset: the OAuth return builds two cloud hosts in a row (the
  *  lift, then the store), and every way back to a cloud from a fallback page
  *  reloads the page. */

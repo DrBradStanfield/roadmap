@@ -1,5 +1,5 @@
 /**
- * US-09 AC2f: a cloud-mode tab whose first cloud read is still in flight
+ * US-09 AC2h: a cloud-mode tab whose first cloud read is still in flight
  * when another tab logs off must latch the log-off barrier too.
  *
  * The listener (latchOnOtherTabsLogOff, via mirror.opened()) was added only
@@ -102,7 +102,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('US-09 AC2f: a tab still loading when another tab logs off', () => {
+describe('US-09 AC2h: a tab still loading when another tab logs off', () => {
   it('latches, so its later failed cloud save does not recreate the device copy', async () => {
     // The other tab: its own module graph, the same window and localStorage.
     vi.resetModules();
@@ -231,7 +231,7 @@ async function runMainUntilLoaded(other: OtherTab, resolveBackend: () => Promise
   return { backend, store };
 }
 
-describe('US-09 AC2f: a log-off before any cloud host exists (standalone main())', () => {
+describe('US-09 AC2h: a log-off before any cloud host exists (standalone main())', () => {
   // Brad's agent (2026-11-02): the note started only when webRecordHost built
   // a cloud host, after main()'s first await, so a log-off during the OAuth
   // code exchange or the Drive token refresh was still missed.

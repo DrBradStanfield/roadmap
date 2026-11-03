@@ -14,7 +14,7 @@
  */
 import type { HealthInputs } from './types';
 import {
-  UNIT_DEFS, formatDisplayValue, fromCanonicalValue, type MetricType, type UnitSystem,
+  UNIT_DEFS, formatDisplayValue, formatGradedReading, fromCanonicalValue, type MetricType, type UnitSystem,
   APOB_RISK_ENHANCING, APOB_THRESHOLDS, BP_THRESHOLDS, CREATININE_GRID_BANDS, EGFR_THRESHOLDS, HBA1C_THRESHOLDS,
   HDL_GRID_BANDS, HDL_THRESHOLDS, LDL_THRESHOLDS, LIPID_TREATMENT_TARGETS, LPA_THRESHOLDS, PSA_THRESHOLDS,
   TOTAL_CHOLESTEROL_THRESHOLDS, TRIGLYCERIDES_THRESHOLDS, bpTargetFor,
@@ -74,6 +74,11 @@ export function formatValue(metric: MetricType, value: number, system: UnitSyste
   return comparator ? formatLimit(metric, { comparator, bound: value }, system) : formatDisplayValue(metric, value, system);
 }
 
+/** As `formatValue`, for a read-only line beside a grade: a value prints on its grade's side (`formatGradedReading`). */
+export function formatGradedOrLimit(metric: MetricType, value: number, system: UnitSystem, comparator?: Comparator | null): string {
+  return comparator ? formatLimit(metric, { comparator, bound: value }, system) : formatGradedReading(metric, value, system);
+}
+
 /** What a report's symbol is in the file's code. */
 const PRINTED: Record<string, Comparator> = { '<': '<', '>': '>', '≤': '<=', '≥': '>=' };
 
@@ -102,7 +107,11 @@ const values = (o: object): number[] => Object.values(o).flatMap((v) => (typeof 
  * constants, never copied; lab-limits.test.ts fails when a constant or a
  * literal is in neither this list nor `LIMIT_LABEL_CUTOFFS`. Non-HDL's lines
  * are absent on purpose: non-HDL is derived, and never derived from a limit.
- * Creatinine and PSA have none: the plan grades neither directly.
+ * Creatinine has none: the plan grades it only through eGFR. PSA's is the
+ * "Elevated PSA" card's 4.0 (US-06 AC14). A line is reached at or above it,
+ * though that card fires only above 4.0, so "<= 4.0" stays undecided and
+ * reads as ungraded: conservative, and kept so HbA1c's "<=" at a line stays
+ * undecided too (US-12 AC20).
  */
 export const LIMIT_CUTOFFS: Readonly<Record<LimitField, readonly number[]>> = {
   hba1c: values(HBA1C_THRESHOLDS),
@@ -112,7 +121,7 @@ export const LIMIT_CUTOFFS: Readonly<Record<LimitField, readonly number[]>> = {
   triglycerides: [TRIGLYCERIDES_THRESHOLDS.borderline, TRIGLYCERIDES_THRESHOLDS.veryHigh],
   apoB: [...values(APOB_THRESHOLDS), LIPID_TREATMENT_TARGETS.apobGl, APOB_RISK_ENHANCING],
   creatinine: [],
-  psa: [],
+  psa: [PSA_THRESHOLDS.normal],
   lpa: values(LPA_THRESHOLDS),
   systolicBp: [BP_THRESHOLDS.stage1Sys, BP_THRESHOLDS.stage2Sys, BP_THRESHOLDS.crisisSys, bpTargetFor(undefined), bpTargetFor(65)],
   diastolicBp: [BP_THRESHOLDS.stage1Dia, BP_THRESHOLDS.stage2Dia, BP_THRESHOLDS.crisisDia],
@@ -192,6 +201,45 @@ export function bandDecides(cutoffs: readonly number[], comparator: Comparator, 
   }
 }
 
+/** How far inside a strict bound a limit's grade is read: never across a line. */
+const insideStep = (bound: number) => Math.max(1e-6, Math.abs(bound) * 1e-6);
+
+/**
+ * The one rule for grading a value printed as a limit against a grade's own
+ * lines (Brad 2026-11-02, "grade only when certain", US-12 AC21): when no
+ * line lies inside the band the limit leaves open (`bandDecides`), every
+ * value the limit allows grades the same, so the grade may read the number a
+ * hair inside the band, returned here; null when a line lies inside it, so
+ * the value gets no grade. An exact value (no comparator) is itself. Never
+ * shown, stored or sent.
+ */
+export function certainValue(lines: readonly number[], comparator: Comparator | undefined, bound: number): number | null {
+  if (!comparator) return bound;
+  if (!Number.isFinite(bound) || !bandDecides(lines, comparator, bound)) return null;
+  return comparator === '<' || comparator === '<=' ? bound - insideStep(bound) : bound + insideStep(bound);
+}
+
+/**
+ * How many of a grade's lines the values a reading allows have reached
+ * (a line is reached at or above it): [fewest, most], worked out exactly from
+ * which side of each line the bound lies and whether it is strict, never by
+ * nudging a number. An exact value reaches the lines at or below it; "< b"
+ * reaches at most those strictly below b, "<= b" those at or below b; "> b"
+ * and ">= b" reach at least those at or below b, and every line at most. For
+ * a grade that is the count of lines reached (a blood pressure half's), the
+ * grade is certain when the two agree (US-12 AC21).
+ */
+export function linesReached(lines: readonly number[], comparator: Comparator | undefined, bound: number): [number, number] {
+  const below = lines.filter((line) => line < bound).length;
+  const atOrBelow = lines.filter((line) => line <= bound).length;
+  switch (comparator) {
+    case '<': return [0, below];
+    case '<=': return [0, atOrBelow];
+    case '>': case '>=': return [atOrBelow, lines.length];
+    default: return [atOrBelow, atOrBelow];
+  }
+}
+
 /**
  * A non-core lab graded by its printed reference range: the number it is
  * graded with, a hair inside the band, when no bound of the range lies in
@@ -201,9 +249,7 @@ export function referenceGradeValue(limit: Pick<InputLimit, 'comparator' | 'boun
   // A bound of exactly 0 is no cutoff: CRP's printed "0-5" must not leave every "< x" undecided.
   // A negative bound is one (base excess "-2 to 2").
   const cutoffs = [referenceLow, referenceHigh].filter((c): c is number => typeof c === 'number' && Number.isFinite(c) && c !== 0);
-  if (!bandDecides(cutoffs, limit.comparator, limit.bound)) return null;
-  const step = Math.max(1e-6, Math.abs(limit.bound) * 1e-6);
-  return limit.comparator === '<' || limit.comparator === '<=' ? limit.bound - step : limit.bound + step;
+  return certainValue(cutoffs, limit.comparator, limit.bound);
 }
 
 /**

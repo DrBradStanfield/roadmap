@@ -71,22 +71,22 @@ has not asked you yet) and also brings in any new weight, height, waist and bloo
 readings, as connecting does. If you said no, or Apple Health has none of these readings, My
 data shows an "Open Settings" button. Once you have answered, iOS does not ask again, so the
 button opens Settings (on recent iOS versions, at its top page). From there, the path under
-the button leads to the app's Apple Health page, where you can turn the readings on. It
-reads them from Apple Health each time it shows a card or a chart of them. So the cards
-show at once when you open the app, it keeps what the cards draw in one small file on this
-iPhone only: the latest reading of each card, with its date, and the values behind its trend
-line (the past month's daily values, or the last seven readings when there are fewer). That
-file sits in the app's private storage, apart from your record, and is not backed up to
-iCloud or to a computer. When the phone has a passcode, it is encrypted until you first
-enter that passcode after a restart. A chart page's longer history and its hourly and nightly
-detail are read fresh each time and never kept. The readings never go into your record, the app's settings, your Dropbox or
-Google Drive, the chat's summary of your record, the Health Roadmap website or our server.
-The app sends them nowhere. If Apple Health gives nothing back, or iOS asks for permission
-again, the app deletes the file. Clarity learns only that one of these pages was opened,
-never which one or any value. "Delete all my data" deletes the file; while the app can
-still read Apple Health, it keeps a new one the next time it shows the cards. The app writes
-none of these five to Apple Health, so the readings themselves stay where they are: in Apple
-Health, under your Apple settings.
+the button leads to the app's Apple Health page, where you can turn the readings on. So the
+cards and charts show at once, the app keeps a copy of these readings on this iPhone only:
+each card's latest reading, with its date and the values behind its trend line; each chart's
+history, as one value a day (steps as the day's total, heart rate as the day's lowest,
+highest and average, the others as the day's average); the last week of hourly values for
+the day view; and sleep's recorded stages, with their times, which app recorded them and Apple Health's id for each; each file also notes the phone's time zone.
+Each time a card or chart shows, it checks Apple Health for changes and updates the copy. These files sit in the app's private storage, apart from your record, and are not
+backed up to iCloud or to a computer. When the phone has a passcode, they are encrypted
+until you first enter that passcode after a restart. The readings never go into your record,
+the app's settings, your Dropbox or Google Drive, the chat's summary of your record, the
+Health Roadmap website or our server. The app sends them nowhere. If Apple Health gives
+nothing back, or iOS asks for permission again, the app deletes these files. Clarity learns
+only that one of these pages was opened, never which one or any value. "Delete all my data"
+deletes them; while the app can still read Apple Health, it keeps new ones the next time it
+shows the cards and charts. The app writes none of these five to Apple Health, so the
+readings themselves stay where they are: in Apple Health, under your Apple settings.
 
 ## Chat
 

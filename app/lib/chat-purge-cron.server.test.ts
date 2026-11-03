@@ -54,6 +54,8 @@ const store = vi.hoisted(() => ({
   updateError: null as { message: string } | null,
   /** Table whose updates commit nothing, to prove the no-progress guard. */
   swallowUpdates: null as string | null,
+  /** How many ids each `.update(...).in('id', …)` carried, in the order sent. */
+  updateIdCounts: [] as number[],
 }));
 
 // A fake PostgREST that really filters, so "only rows older than 30 days" and
@@ -147,6 +149,7 @@ const fakeAdmin = vi.hoisted(() => ({
             return { error: store.updateError };
           },
           in: async (_col: string, ids: string[]) => {
+            store.updateIdCounts.push(ids.length);
             apply(ids);
             return { error: store.updateError };
           },
@@ -223,6 +226,7 @@ beforeEach(() => {
   store.selectError = null;
   store.updateError = null;
   store.swallowUpdates = null;
+  store.updateIdCounts = [];
   store.chat_match_events = [
     row('old-widget', 40, { platform: 'widget' }),
     row('old-shopify', 31, { platform: 'shopify', first: 'HbA1c 41', recent: ['HbA1c 41', 'BP 140/90'] }),
@@ -366,6 +370,20 @@ describe('purgeOldChatText — US-15 AC8 bubble and embed transcripts', () => {
   it('throws rather than spinning when the updates never land', async () => {
     store.swallowUpdates = 'chat_messages';
     await expect(purgeOldChatText(NOW)).rejects.toThrow(/no progress/i);
+  });
+
+  it('US-15 AC51: a 250-row backlog clears in batches of at most 100 ids', async () => {
+    for (let i = 0; i < 250; i++) {
+      store.chat_conversations.push(conversation(`bulk-${i}`, 'shopify', 40));
+      store.chat_messages.push(message(`bulk-msg-${i}`, `bulk-${i}`, 40));
+    }
+    store.updateIdCounts = [];
+    const counts = await purgeOldChatText(NOW);
+    expect(counts.messages).toBe(253);
+    expect(counts.conversations).toBe(252);
+    expect(Math.max(...store.updateIdCounts)).toBeLessThanOrEqual(100);
+    expect(store.chat_messages.filter((m) => m.id.startsWith('bulk-msg') && m.content !== null)).toHaveLength(0);
+    expect(store.chat_conversations.filter((c) => c.id.startsWith('bulk-') && c.title !== null)).toHaveLength(0);
   });
 
   it('offers the placeholder the reader sees in place of purged text', () => {

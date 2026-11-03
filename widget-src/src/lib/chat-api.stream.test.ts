@@ -202,10 +202,10 @@ describe('chat-api streaming (US-15 AC16/AC17)', () => {
     expect(onDelta).not.toHaveBeenCalled();
   });
 
-  it('a JSON 429 is still rate_limited', async () => {
+  it('a JSON 429 is still the chat limit (US-15 AC45: shown as a sentence)', async () => {
     fetchMock.mockResolvedValue(new Response(JSON.stringify({ success: false, error: 'rate_limited' }), {
       status: 429, headers: { 'Content-Type': 'application/json' },
     }));
-    expect((await sendMessage('q', null, null, [], () => {})).error).toEqual({ error: 'rate_limited' });
+    expect((await sendMessage('q', null, null, [], () => {})).error).toEqual({ error: 'Chat limit reached. Please try again later.' });
   });
 });

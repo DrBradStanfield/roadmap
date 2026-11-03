@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { RoadmapFile } from '@roadmap/health-core';
 import { RoadmapStore } from './roadmap-store';
-import { MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME } from '@roadmap/health-core';
+import { MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME, toOldShape } from '@roadmap/health-core';
 
 function readCloudFile(cloud: MemoryCloud): RoadmapFile {
   return JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
@@ -27,14 +27,14 @@ describe('RoadmapStore.bulkSaveMeasurements with correctsId (US-32)', () => {
     await store.flush();
 
     const file = readCloudFile(cloud);
-    expect(file.measurements.find((m) => m.id === oldId)!.status).toBe('entered-in-error');
-    const newRow = file.measurements.find((m) => m.id !== oldId && m.metricType === 'ldl')!;
+    expect(toOldShape(file).measurements.find((m) => m.id === oldId)!.status).toBe('entered-in-error');
+    const newRow = toOldShape(file).measurements.find((m) => m.id !== oldId && m.metricType === 'ldl')!;
     expect(newRow.correctsId).toBe(oldId);
     expect(newRow.source).toBe('lab_import');
     expect(newRow.value).toBe(3.2);
     expect(newRow.recordedAt).toBe('2024-06-01T00:00:00.000Z');
     // One active row per (metric, day) survives the correction.
-    expect(file.measurements.filter((m) => m.metricType === 'ldl' && m.status === 'active')).toHaveLength(1);
+    expect(toOldShape(file).measurements.filter((m) => m.metricType === 'ldl' && m.status === 'active')).toHaveLength(1);
   });
 
   it('without correctsId an occupied slot is still skipped (US-32)', async () => {
@@ -111,5 +111,18 @@ describe('RoadmapStore.bulkSaveLabValues with correctsId (US-32)', () => {
     expect(result.saved).toHaveLength(1);
     expect(result.skippedDuplicates).toBe(1);
     expect(store.loadLabValues()).toHaveLength(1); // loadLabValues() is already active-only
+  });
+});
+
+// US-66 AC6: a core test's name writes its core row, range-checked on the
+// converted value. A refused number reaches the caller to show, not dropped.
+describe('RoadmapStore.bulkSaveLabValues with a core name (US-66 AC6)', () => {
+  it('hands back an out-of-range core value as a measurement refusal', async () => {
+    const store = await RoadmapStore.create(new MemoryAdapter(new MemoryCloud()));
+    const result = store.bulkSaveLabValues([
+      { metricName: 'LDL-C', value: 99999, unit: 'mg/dL', recordedAt: '2024-06-01T00:00:00.000Z', source: 'manual' },
+    ]);
+    expect(result.saved).toHaveLength(0);
+    expect(result.measurementRefusals).toEqual([expect.objectContaining({ metricType: 'ldl', reason: 'out-of-range', bound: 'above' })]);
   });
 });

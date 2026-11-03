@@ -15,7 +15,7 @@
 import * as z from '../../packages/health-core/src/zod';
 import { CLASSIFIER_MODEL, modelParams } from '../../packages/health-core/src/models';
 import { callAnthropicWithUsage } from './anthropic.server';
-import { SCRUB_UNITS } from '../../packages/health-core/src/sentry-scrub';
+import { SCRUB_UNIT_PATTERN } from '../../packages/health-core/src/sentry-scrub';
 
 /** Per call. The purge's own 5-minute budget bounds the run. */
 export const SCRUB_TIMEOUT_MS = 15_000;
@@ -90,15 +90,19 @@ function leavesName(question: string, kept: string): boolean {
 const leavesIdentity = (question: string, kept: string) => HANDLE.test(kept) || leavesName(question, kept);
 
 const collapse = (text: string) => text.replace(/\s+/g, ' ').trim();
-const MONTH = /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/i;
+/** A whole word that is a month name or its short form, so "March-2024" and "March/cancer" are not one. */
+const MONTH = /^(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)$/i;
+/** A day of the month, 1 to 31, or a masked widget day ("#", "##"). */
+const DAY = /^(?:0?[1-9]|[12]\d|3[01]|#{1,2})(?:st|nd|rd|th)?$/i;
+/** A month word; "may" counts only as "May", since lower case it is the verb ("15 may mean"). */
+const isMonth = (w: string) => MONTH.test(w) && (w.toLowerCase() !== 'may' || w === 'May');
 /** Words that change what a question means; a placeholder never covers one. */
 const MEANING = /\b(?:not|no|never|cannot|without|unless|except|but|if|than|less|more|only|avoid|stop|instead|before|after)\b|n['’]t\b/i;
 const STREET = /\b(?:st|street|rd|road|ave|avenue|lane|ln|drive|dr|pl|place|cres|crescent|way|tce|terrace|blvd|boulevard|ct|court|close|hwy|highway)\b/i;
 /** A masked widget digit (`#`) counts as a digit. */
 const DIGIT = /[\d#]/;
-/** A digit then a dose or lab unit (the Sentry scrub's list, longest first; inches left out, as there). */
-const UNIT_VALUE = new RegExp(`[\\d#]\\s*(?:${SCRUB_UNITS.filter((u) => u !== 'in' && u !== '"')
-  .sort((a, b) => b.length - a.length).map((u) => u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(?![a-z])`, 'gi');
+/** A digit then a dose or lab unit, matched as the Sentry scrub matches it (inches left out, as there). */
+const UNIT_VALUE = new RegExp(`[\\d#]\\s*(?:${SCRUB_UNIT_PATTERN})(?![a-z])`, 'gi');
 /** Is a digit of `span` a dose or lab value, its unit in the span or just after it (US-15 AC44a)? */
 const holdsUnitValue = (span: string, after: string) =>
   [...`${span} ${after}`.matchAll(UNIT_VALUE)].some((m) => m.index < span.length);
@@ -130,6 +134,18 @@ function coversAge(kind: string, span: string): boolean {
 }
 
 /**
+ * Is `span` a day and a month: a month word, at most one day ("3", "3rd",
+ * "##") and nothing else but "of", each word tested whole (US-15 AC44d)? A
+ * year is kept, as the prompt says, so "March 2024", "March-2024" and "March
+ * and cancer" are not a date, and "80 March 3rd" is not one day.
+ */
+function isDayMonth(span: string): boolean {
+  const words = span.split(/\s+/);
+  return words.some(isMonth) && words.filter((w) => DAY.test(w)).length <= 1 &&
+    words.every((w) => isMonth(w) || DAY.test(w) || w === 'of');
+}
+
+/**
  * May this placeholder stand for this span of the question? Each kind covers
  * only what it names, so a swap cannot swallow a "not", a clause or a dose:
  * never a word that changes meaning (MEANING), never a sentence break (titles
@@ -154,7 +170,7 @@ function covers(kind: string, span: string): boolean {
     case '[contact]':
       return /@/.test(span) || /:\/\/|\bwww\./i.test(span) || /[\d#]{7,}/.test(span.replace(/[\s()+-]/g, '')) ||
         (/^[\d#]/.test(span) && STREET.test(span));
-    case '[date]': return MONTH.test(span) || /^[\d#]{1,2}[/-][\d#]{1,2}$/.test(span);
+    case '[date]': return isDayMonth(span) || /^[\d#]{1,2}[/-][\d#]{1,2}$/.test(span);
     default: return isProperNoun(span); // [name], [place], [job]
   }
 }

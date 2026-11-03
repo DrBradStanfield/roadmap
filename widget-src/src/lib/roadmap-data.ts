@@ -1,6 +1,10 @@
 /** Local-first health records and client-side reports, on every widget surface. */
 import {
+  type AddLabValueRequest,
+  type AddLabValueResult,
   type ApiMeasurement,
+  type LabUnitRefusal,
+  dayOf,
   type MoveKeep,
   type MoveRejection,
   type FileReminderOptIn,
@@ -14,7 +18,7 @@ import {
   knownMinorOf,
   resolveLabCatalogEntry,
 } from '@roadmap/health-core';
-import { MEASUREMENT_REFUSALS_WITH_METRIC } from '@roadmap/health-core/product-events';
+import { MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
 import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
@@ -42,6 +46,8 @@ export async function initRoadmapStore(adapter: StorageAdapter, cloudUnreachable
   // The page about to render shows this erase; it moves the mark as it shows
   // another, and the store refuses a write made against an older one (US-16 AC2a).
   store.showErase(store.eraseIdentity);
+  // US-66 AC13: the open moved blood tests into one table and wrote it: counts only, never a name or value.
+  void store.bloodTablesUnified.then((report) => { if (report) trackProductEvent('blood_tests_unified', report); });
   // Both surfaces init here, so this is the one place the live re-read starts
   // (US-34). It runs for the life of the page; nothing unmounts the data layer.
   store.startLiveRefresh();
@@ -106,6 +112,11 @@ export function getInitialInputsSync(): Partial<HealthInputs> {
 /** US-65: how many record entries this build could not read (kept unchanged, not shown). */
 export function getUnreadableCount(): number {
   return store?.unreadableCount ?? 0;
+}
+
+/** US-67 N3: whether the record holds a `key` medication row this build cannot read. */
+export function holdsUnreadableMedication(key: string, answered = false): boolean {
+  return store?.holdsUnreadableMedication(key, answered) ?? false;
 }
 
 // --- lead capture (Shopify surface) ---
@@ -174,8 +185,24 @@ export function loadLabValuesSync(): ApiLabValue[] | null {
 // --- writes ---
 // `erase`: the erase the page showed when the write was asked for (US-16
 // AC2a); without it, the one it shows now.
+/** US-07 AC11's usage signal: each prompted measure the rows just ADDED, once, by name
+ *  alone. A blood pressure counts only once both halves of its day are on record. */
+const MEASURE_OF: Partial<Record<MetricType, (typeof MEASURES)[number]>> = { waist: 'waist', systolic_bp: 'blood_pressure', diastolic_bp: 'blood_pressure' };
+const OTHER_HALF: Partial<Record<MetricType, MetricType>> = { systolic_bp: 'diastolic_bp', diastolic_bp: 'systolic_bp' };
+function countMeasuresAdded(added: ApiMeasurement[]): void {
+  if (!store || added.length === 0) return;
+  const active = store.loadAllHistory();
+  const complete = (row: ApiMeasurement) => {
+    const other = OTHER_HALF[row.metricType as MetricType];
+    return !other || active.some((m) => m.metricType === other && dayOf(m.recordedAt) === dayOf(row.recordedAt));
+  };
+  const measures = new Set(added.filter(complete).map((row) => MEASURE_OF[row.metricType as MetricType]).filter((m) => m !== undefined));
+  for (const measure of measures) trackProductEvent('measurement_added', { measure });
+}
 export async function addMeasurement(metricType: string, value: number, recordedAt?: string, erase?: string): Promise<AddMeasurementResult> {
-  return store ? store.addMeasurement(metricType, value, recordedAt, erase) : { status: 'error' };
+  const result: AddMeasurementResult = store ? await store.addMeasurement(metricType, value, recordedAt, erase) : { status: 'error' };
+  if (result.status === 'inserted') countMeasuresAdded([result.row]);
+  return result;
 }
 /** Correct a saved core or lab value; `newValue` is in the unit it is stored in. */
 export async function correctValue(id: string, newValue: number, erase?: string): Promise<CorrectStatus> {
@@ -190,7 +217,9 @@ export async function moveBloodTest(from: string, to: string, expectedIds: strin
   return store ? store.moveBloodTest(from, to, expectedIds, keep, erase) : { status: 'error' };
 }
 export async function saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): Promise<ProfileSave> {
-  return store ? store.saveChangedMeasurements(current, previous, erase) : { ok: false };
+  const result: ProfileSave = store ? await store.saveChangedMeasurements(current, previous, erase) : { ok: false };
+  if (result.ok) countMeasuresAdded(result.added);
+  return result;
 }
 export async function saveMedication(medicationKey: string, drugName: string, doseValue: number | null = null, doseUnit: string | null = null, erase?: string): Promise<boolean> {
   return store ? store.saveMedication(medicationKey, drugName, doseValue, doseUnit, erase) : false;
@@ -217,21 +246,31 @@ export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[])
     else if (row.reason === 'out-of-range') trackProductEvent('measurement_refused', { refusal: row.reason }, row.metricType);
     else trackProductEvent('measurement_refused', { refusal: row.reason });
   }
+  countMeasuresAdded(result.saved.filter((row) => !row.correctsId));
   return result;
 }
 export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<BulkLabValuesResult> {
   if (!store) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };
   const result = store.bulkSaveLabValues(values);
-  // The one place every lab writer passes, so each refused row is counted once:
-  // only a spelling the test does not take, the signal for the next one to teach it (US-21 AC15).
-  // A unit that is not a unit word is counted without it (US-21 AC11); a blank one as `(blank)` (AC22).
-  for (const row of result.refused) {
+  countRefusedSpellings(result.refused);
+  return result;
+}
+/** A lab value a person adds (US-21 AC2, US-25 AC25), by health-core's one lab add; null when nothing could be written. */
+export async function addLabValue(input: AddLabValueRequest): Promise<AddLabValueResult | null> {
+  const result = store ? store.addLabValue(input) : null;
+  if (result && !result.ok && result.refused) countRefusedSpellings([result.refused]);
+  return result;
+}
+/** Every lab writer passes here, so each refused row is counted once: only a spelling the test
+ *  does not take, the signal for the next one to teach it (US-21 AC15). A unit that is not a unit
+ *  word is counted without it (US-21 AC11); a blank one as `(blank)` (AC22). */
+function countRefusedSpellings(refused: LabUnitRefusal[]): void {
+  for (const row of refused) {
     if (!labUnitTaken(resolveLabCatalogEntry(row.key), row.unit)) {
       const unit = labUnitForEvent(row.unit);
       trackProductEvent('lab_unit_refused', unit ? { key: row.key, unit } : { key: row.key });
     }
   }
-  return result;
 }
 export async function bulkSaveDocuments(
   documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob }>,

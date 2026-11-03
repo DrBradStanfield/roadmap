@@ -467,6 +467,8 @@ export interface ChatCompletionResult {
   proposedEdits?: ProposedEdit[];
   /** Set when the turn ran run_roadmap (US-15 AC33): how many stated values it used and rejected. Counts only, never a value. */
   roadmapRun?: RoadmapRoundCounts;
+  /** Set when the turn made a second call (a run_roadmap round, or a value asked about for its unit, US-67 AC2). */
+  toolRound?: true;
   /** A subscription change the model proposed (US-59); the route turns it into a confirm card or drops it. */
   subscriptionProposal?: SubscriptionProposal;
 }
@@ -526,16 +528,21 @@ const subscriptionToolResult: ToolResultFor = (b, blocks) => {
  * `opts.profileEdits` (US-16 AC2): propose_profile_edit goes only to a client
  * that says it applies it. A widget built before it applies any edit that is
  * not a field as a medication, so it gets neither the tool nor a profile edit.
+ *
+ * `opts.app` (US-67 AC3): the iPhone app's turn. The form tools, their stub
+ * results and the tool-only line say a value waits in a Save banner, since the
+ * app has no form to pre-fill.
  */
 export async function getChatCompletion(
   systemBlocks: SystemBlock[],
   messages: ChatTurnMessage[],
   canApplyEdits: boolean,
   onEvent?: (event: ChatStreamEvent) => void,
-  opts?: { subscriptionTool?: boolean; guestInputs?: unknown; profileEdits?: boolean },
+  opts?: { subscriptionTool?: boolean; guestInputs?: unknown; profileEdits?: boolean; app?: boolean },
 ): Promise<ChatCompletionResult> {
   const profileEdits = opts?.profileEdits === true;
-  const tools = [...(canApplyEdits ? chatToolsFor(messages, profileEdits) : []), ...(opts?.subscriptionTool ? [PROPOSE_SUBSCRIPTION_CHANGE_TOOL] : [])];
+  const app = opts?.app === true;
+  const tools = [...(canApplyEdits ? chatToolsFor(messages, profileEdits, app) : []), ...(opts?.subscriptionTool ? [PROPOSE_SUBSCRIPTION_CHANGE_TOOL] : [])];
   const body = {
     ...modelParams(CHAT_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system: systemBlocks,
@@ -543,8 +550,10 @@ export async function getChatCompletion(
   };
   // Every call's usage, and the round's counts, survive a failed second call (S4).
   let usage: AnthropicUsage = { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 };
-  let roadmapRun: { roadmapRun?: RoadmapRoundCounts } = {};
+  let roadmapRun: { roadmapRun?: RoadmapRoundCounts; toolRound?: true } = {};
+  let calls = 0;
   const send = async (fields: { messages: ChatTurnMessage[]; tool_choice?: { type: 'none' } }) => {
+    if (++calls > 1) roadmapRun = { ...roadmapRun, toolRound: true };
     const reply = onEvent ? await streamAnthropicWithUsage({ ...body, ...fields }, onEvent) : await callAnthropicWithUsage({ ...body, ...fields });
     usage = addUsage(usage, reply.usage);
     return reply;
@@ -555,7 +564,7 @@ export async function getChatCompletion(
       ? await withRoadmapRound(messages, send, opts?.guestInputs, (counts) => {
         roadmapRun = { roadmapRun: counts };
         onEvent?.({ type: 'status', text: ROADMAP_STATUS });
-      }, subscriptionToolResult)
+      }, subscriptionToolResult, app)
       : null;
     const result = turn ? turn.final : await send({ messages });
     const { stopReason } = result;
@@ -582,13 +591,14 @@ export async function getChatCompletion(
     // response (model proposed an edit with no prose) is NOT empty — give the
     // thread a short line; the confirmation card carries the detail.
     if (!result.content || result.content.trim().length === 0) {
-      if (proposedEdits.length > 0) {
+      const refused = turn?.refused ?? 0;
+      if (proposedEdits.length > 0 || refused > 0) {
         return {
-          content: toolOnlyAck(proposedEdits),
+          content: toolOnlyAck(proposedEdits, app, refused),
           usage,
           isFallback: false,
           stopReason,
-          proposedEdits,
+          ...(proposedEdits.length > 0 ? { proposedEdits } : {}),
           ...(subscriptionProposal ? { subscriptionProposal } : {}),
           ...roadmapRun,
         };

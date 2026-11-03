@@ -14,6 +14,7 @@ import { describe, expect, it } from 'vitest';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { recordSync } from './roadmap-doc';
 import { ROADMAP_FILE_NAME } from './adapter';
+import { createCoreRow } from './blood-tests';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
 import { LAB_ARCHIVE_TITLE } from './document-path';
 import { zipMemberName, type UnifiedExtractionResult } from './lab-extraction';
@@ -35,8 +36,9 @@ const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g;
 function base(): RoadmapFile {
   const file = createEmptyFile({ deviceId: 'pins', now: '2026-09-01T09:00:00Z' });
   Object.assign(file.profile, { sex: 'male', birthYear: 1971, heightCm: 178, unitSystem: 'si' });
-  file.measurements.push(createMeasurement({ id: 'm1', metricType: 'ldl', value: 3.4, recordedAt: '2026-07-14', createdAt: '2026-07-14T08:00:00Z', source: 'lab_import' }));
-  file.measurements.push(createMeasurement({ id: 'm2', metricType: 'ldl', value: 3.0, recordedAt: '2025-01-01', createdAt: '2025-01-01T08:00:00Z', source: 'lab_import' }));
+  // Blood tests as US-66 stores them: core rows in labValues.
+  file.labValues.push(createCoreRow({ id: 'm1', metric: 'ldl', value: 3.4, recordedAt: '2026-07-14', createdAt: '2026-07-14T08:00:00Z', source: 'lab_import' }));
+  file.labValues.push(createCoreRow({ id: 'm2', metric: 'ldl', value: 3.0, recordedAt: '2025-01-01', createdAt: '2025-01-01T08:00:00Z', source: 'lab_import' }));
   file.labValues.push({
     id: 'l1', metricName: 'ferritin', value: 210, unit: 'ug/L', referenceLow: null, referenceHigh: null,
     recordedAt: '2026-07-14', createdAt: '2026-07-14T08:00:00Z', source: 'lab_import', status: 'active', correctsId: null,

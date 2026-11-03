@@ -630,7 +630,7 @@ input[type="number"] {
   flex: 0 0 80px;
 }
 
-.psa-inline-row select {
+.psa-inline-row input[type="date"] {
   flex: 1;
 }
 
