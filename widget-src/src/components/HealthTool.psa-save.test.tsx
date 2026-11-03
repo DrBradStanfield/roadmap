@@ -361,6 +361,23 @@ describe('"Replaces" shows only while a value is typed (US-06 AC15, Codex R6)', 
   });
 });
 
+describe('a raised PSA prints on its side of 4.0 (US-06 AC18, Brad 2026-11-03)', () => {
+  it('a saved 4.04 reads 4.04 under the field and in "Replaces", not 4.0', async () => {
+    const { view, psa, day, note } = await page([[4.04, '2025-01-14']]);
+    await waitFor(() => expect(note()).toContain('4.04 ng/mL ·'));
+    pick(day, '2025-01-14');
+    type(psa(), '3.2');
+    await waitFor(() => expect(note()).toContain('Replaces 4.04 ng/mL'));
+    view.unmount();
+  });
+
+  it('control: 6.53 keeps one decimal', async () => {
+    const { view, note } = await page([[6.53, '2025-01-14']]);
+    await waitFor(() => expect(note()).toContain('6.5 ng/mL ·'));
+    view.unmount();
+  });
+});
+
 describe('the line under the PSA field names the newest usable PSA (US-06 AC14, adversary re-check R4)', () => {
   it('a newer PSA dated after today: the line shows the 6.5 the plan reads', async () => {
     const { view, note } = await page([[6.5, '2025-09-03'], [3.0, '2099-01-01']]);

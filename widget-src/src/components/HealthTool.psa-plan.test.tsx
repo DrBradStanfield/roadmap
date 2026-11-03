@@ -50,12 +50,19 @@ const NEXT_DUE = `Next PSA test due ${MONTHS[Number(TODAY.slice(5, 7)) - 1]} ${N
 const titles = (root: HTMLElement) => [...root.querySelectorAll('.suggestion-title')].map(t => t.textContent);
 
 describe('the web plan reads the saved PSA measurement (US-06 AC14)', () => {
-  it('a saved PSA of 6.5 shows "Elevated PSA" and the PSA-due card', async () => {
+  it('a saved PSA of 6.5 shows "Elevated PSA", and no "up to date" beside it (US-06 AC17, Brad 2026-11-03)', async () => {
     const view = await plan([], [6.5, TODAY]);
     await waitFor(() => expect(titles(view.container)).toContain('Elevated PSA'));
-    expect(titles(view.container)).toContain('PSA test up to date');
+    expect(titles(view.container)).not.toContain('PSA test up to date');
     expect(view.container.textContent).toContain('Your PSA of 6.5 ng/mL');
-    expect(view.container.textContent).toContain(NEXT_DUE);
+    expect(view.container.textContent).not.toContain(NEXT_DUE);
+    view.unmount();
+  });
+
+  it('a saved PSA of 4.04 prints 4.04 on the card (US-06 AC18, Brad 2026-11-03)', async () => {
+    const view = await plan([], [4.04, TODAY]);
+    await waitFor(() => expect(titles(view.container)).toContain('Elevated PSA'));
+    expect(view.container.textContent).toContain('Your PSA of 4.04 ng/mL');
     view.unmount();
   });
 
@@ -63,6 +70,7 @@ describe('the web plan reads the saved PSA measurement (US-06 AC14)', () => {
     const view = await plan([], [2.1, TODAY]);
     await waitFor(() => expect(titles(view.container)).toContain('PSA test up to date'));
     expect(titles(view.container)).not.toContain('Elevated PSA');
+    expect(view.container.textContent).toContain(NEXT_DUE);
     view.unmount();
   });
 

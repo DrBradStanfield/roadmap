@@ -990,6 +990,7 @@ export function generateSuggestions(
 
     // Prostate (male, age 45+) — shared decision
     if (sex === 'male' && age >= 45) {
+      const psaRaised = screenings.prostatePsaValue !== undefined && screenings.prostatePsaValue > 4.0;
       if (!screenings.prostateDiscussion || screenings.prostateDiscussion === 'not_yet') {
         suggestions.push({
           id: 'screening-prostate',
@@ -1001,20 +1002,21 @@ export function generateSuggestions(
       } else if (screenings.prostateDiscussion === 'will_screen' && screenings.prostateLastDate) {
         const status = screeningStatus(screenings.prostateLastDate, 'will_screen');
         const due = nextDueStr(screenings.prostateLastDate, 'will_screen');
-        pushScreeningStatus('prostate', status,
+        // US-06 AC17 (Brad 2026-11-03): beside "Elevated PSA", "up to date" reads as all clear. Overdue still shows.
+        if (!(psaRaised && status === 'upcoming')) pushScreeningStatus('prostate', status,
           'PSA test overdue', `Your next PSA test was due ${due}. Please schedule your test.`,
           'PSA test up to date', `Next PSA test due ${due}.`);
       }
 
       // Elevated PSA warning
-      if (screenings.prostatePsaValue !== undefined && screenings.prostatePsaValue > 4.0) {
+      if (psaRaised) {
         suggestions.push({
           id: 'screening-prostate-elevated',
           category: 'screening',
           priority: 'attention',
           title: 'Elevated PSA',
-          // A limit prints as printed (US-12 AC20): "> 100.0 ng/mL".
-          description: `Your PSA of ${screenings.prostatePsaLimit ? fmtMetric('psa', screenings.prostatePsaLimit.bound, 'si', screenings.prostatePsaLimit.comparator) : `${screenings.prostatePsaValue.toFixed(1)} ng/mL`} is above the typical reference range (\u22644.0). Discuss with your doctor \u2014 elevated PSA can have multiple causes.`,
+          // A limit prints as printed (US-12 AC20): "> 100.0 ng/mL". A value never as 4.0 (US-06 AC18): "4.04 ng/mL".
+          description: `Your PSA of ${screenings.prostatePsaLimit ? fmtMetric('psa', screenings.prostatePsaLimit.bound, 'si', screenings.prostatePsaLimit.comparator) : `${formatGradedReading('psa', screenings.prostatePsaValue!, 'si')} ng/mL`} is above the typical reference range (\u22644.0). Discuss with your doctor \u2014 elevated PSA can have multiple causes.`,
         });
       }
     }
