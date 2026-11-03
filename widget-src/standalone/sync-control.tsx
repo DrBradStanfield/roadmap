@@ -17,7 +17,7 @@ import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, PROVIDER_LABE
 import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
 import { remindersSupported } from './reminders';
-import { openBackendPicker, OPEN_PICKER_EVENT, PLAN_STORAGE_CTA, StorageSentence } from '../src/lib/storage-notice';
+import { openBackendPicker, openSignin, OPEN_PICKER_EVENT, PLAN_STORAGE_CTA, StorageSentence } from '../src/lib/storage-notice';
 import { safeGetItem, safeSetItem } from '../src/lib/storage';
 
 /** US-09 AC19: the picker was opened once in this browser (a side key, never the record). */
@@ -101,7 +101,7 @@ export function StorageBar({ backend, reconnect }: { backend: Backend; reconnect
         className="action-btn-small"
         aria-haspopup={reconnect ? undefined : 'dialog'}
         disabled={busy}
-        onClick={reconnect ? reconnectNow : openBackendPicker}
+        onClick={reconnect ? reconnectNow : backend === 'local' ? () => openSignin('top_bar') : openBackendPicker}
       >
         {busy ? 'Reconnecting…' : storageBarLabel(backend, reconnect, pendingSync)}
       </button>
@@ -214,7 +214,7 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
       <div className="hr-sync hr-sync-local">
         <button
           className={`hr-sync-btn hr-sync-btn-full${attention && !ctaSeen ? ' hr-sync-btn-attention' : ''}`}
-          onClick={openBackendPicker}
+          onClick={() => openSignin('plan_panel')}
         >
           {PLAN_STORAGE_CTA}
         </button>

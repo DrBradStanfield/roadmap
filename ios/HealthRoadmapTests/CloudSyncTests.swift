@@ -252,7 +252,7 @@ final class CloudSyncTests: XCTestCase {
         let summary = try result.get()
         let file = dropbox.record
         let imported = ((file["measurements"] as? [[String: Any]]) ?? []).filter { $0["source"] as? String == "lab_import" }.count
-            + ((file["labValues"] as? [Any]) ?? []).count
+            + ((file["labValues"] as? [[String: Any]]) ?? []).filter { $0["source"] as? String == "lab_import" }.count
         XCTAssertEqual(summary.saved, imported, "the summary counts what was saved, no more")
         XCTAssertEqual(summary.saved + summary.skipped, 3)
     }
@@ -514,7 +514,7 @@ final class CloudSyncTests: XCTestCase {
         XCTAssertEqual(lpaSaved, .saved())
         store.unpinScreen()
         await sync.background()
-        let lpa = (dropbox.record["measurements"] as? [[String: Any]])?.first { $0["metricType"] as? String == "lpa" }
+        let lpa = (dropbox.record["labValues"] as? [[String: Any]])?.first { $0["core"] as? Bool == true && $0["metricName"] as? String == "lpa" }
         XCTAssertEqual(try XCTUnwrap(lpa?["value"] as? Double), 125, accuracy: 1e-9)
     }
 

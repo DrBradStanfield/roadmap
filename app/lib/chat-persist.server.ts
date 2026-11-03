@@ -1,5 +1,5 @@
 // The chat-row mappings shared by the web chat, the Discord bot and the YouTube
-// bot, so their rows cannot drift apart again (US-15 AC37a, AC51).
+// bot, so their rows cannot drift apart again (US-15 AC37a, AC52).
 // Kept out of chat-router.server.ts because several tests mock that module with
 // ROUTER_VERSION alone.
 import { ROUTER_VERSION, sanitizeForRouter, type RouterResult } from './chat-router.server';
@@ -25,13 +25,13 @@ export function routerColumns(r: RouterResult | null | undefined) {
 // Question text on a chat_match_events row (`message`, `router_context.first`
 // and `.recent`): the text the router saw, at most its first 500 characters.
 // The row holds question text, which may carry health details, and CLAUDE.md
-// keeps health values out of telemetry, so it never grows (US-15 AC26, AC51).
+// keeps health values out of telemetry, so it never grows (US-15 AC26, AC52).
 export function matchEventText(s: string): string {
   return cutText(sanitizeForRouter(s), 500);
 }
 
 // The answer columns of an assistant chat_messages row, on success and on a
-// failed turn alike (US-15 AC51). failure_mode and error_detail carry the cause
+// failed turn alike (US-15 AC52). failure_mode and error_detail carry the cause
 // of a fallback or refusal so the daily audit is self-diagnosing; both null on
 // success. error_detail is the API's error message, first 500 characters.
 export function answerColumns(a: {

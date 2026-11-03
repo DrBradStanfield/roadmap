@@ -600,7 +600,7 @@ export async function persistYouTubeTurn(p: {
     }
 
     // The assistant half, whenever the main LLM was called, as the web chat
-    // stores it (US-15 AC51): the answer, SKIP_NO_REPLY, or on a failed turn the
+    // stores it (US-15 AC52): the answer, SKIP_NO_REPLY, or on a failed turn the
     // fixed fallback or refusal line with its failure_mode and error_detail. That
     // line is never posted on YouTube. A classifier silent skip (GREETING, SPAM or
     // an unreadable answer) never reached the model, so it gets no assistant row.

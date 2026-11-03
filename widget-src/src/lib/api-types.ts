@@ -114,6 +114,10 @@ export interface AdditionalLabValue {
   recordedAt?: string;
   printedMonth?: string;
   comparator?: Comparator;
+  /** As on health-core's `AdditionalLabValue` (US-12 AC11a): the model's flag on a core-list row. */
+  printedName?: string;
+  confidence?: ExtractedValue['confidence'];
+  question?: string;
 }
 
 export interface LabImportResult {

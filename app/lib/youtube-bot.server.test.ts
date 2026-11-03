@@ -329,7 +329,7 @@ describe('US-15 AC27: stored text cuts keep surrogate pairs whole (Sentry 6Y)', 
     });
 
     const conv = supa.inserts.find((i) => i.table === 'chat_conversations');
-    // US-15 AC51: the web's generateTitle, so a long title ends in an ellipsis.
+    // US-15 AC52: the web's generateTitle, so a long title ends in an ellipsis.
     expect(conv?.row.title).toBe('a'.repeat(79) + '…');
     const evt = supa.inserts.find((i) => i.table === 'chat_match_events');
     expect(evt?.row.router_raw).toBe('r'.repeat(499));
@@ -450,9 +450,9 @@ describe('US-15 AC37a: the YouTube turn rows, column for column', () => {
   });
 });
 
-// US-15 AC51 (Brad 2026-11-03, "do it"): a YouTube turn writes the rows the web
+// US-15 AC52 (Brad 2026-11-03, "do it"): a YouTube turn writes the rows the web
 // chat writes, a failed turn included, from the same mappings.
-describe('US-15 AC51: a YouTube turn writes the web chat\'s rows', () => {
+describe('US-15 AC52: a YouTube turn writes the web chat\'s rows', () => {
   const thread = {
     topLevelCommentId: 'c1', videoId: 'v1', authorDisplayName: 'Viewer', authorChannelId: 'UC_viewer',
     text: 'What is a good ApoB?', publishedAt: '2026-11-03T00:00:00Z',

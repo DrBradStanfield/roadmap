@@ -170,9 +170,9 @@ describe('US-15 AC37a: the Discord turn rows, column for column', () => {
   });
 });
 
-// US-15 AC51 (Brad 2026-11-03, "do it"): the Discord match event holds the
+// US-15 AC52 (Brad 2026-11-03, "do it"): the Discord match event holds the
 // question text as the web chat's does, from the same mapping.
-describe('US-15 AC51: the Discord match event stores question text as the web does', () => {
+describe('US-15 AC52: the Discord match event stores question text as the web does', () => {
   it('the question and earlier turns: control characters spaced, first 500 characters each', async () => {
     supa.inserts.length = 0;
     await persistConversation({

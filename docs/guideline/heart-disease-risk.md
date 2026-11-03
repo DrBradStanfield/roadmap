@@ -52,7 +52,7 @@ The plan grades each marker against its own line. It does not combine them into 
 | LDL cholesterol (if no ApoB) | Target below 1.4 mmol/L (55 mg/dL) | High Cholesterol |
 | Non-HDL cholesterol (if no ApoB) | Target below 1.6 mmol/L (62 mg/dL) | High Cholesterol |
 | Lp(a) | Normal below 75 nmol/L; borderline 75 to 125; elevated from 125 nmol/L | This guide |
-| Blood pressure | Target below 120/80 under 65, below 130/80 from 65; stage 1 from 130 systolic or above 80 diastolic; stage 2 from 140/90; crisis from 180/120 | High Blood Pressure |
+| Blood pressure | Target below 120/80 under 65, below 130/80 from 65; stage 1 from 130 systolic or a diastolic of 80 or more; stage 2 from 140/90; crisis from 180/120 | High Blood Pressure |
 | HbA1c | Prediabetes from 38.8 mmol/mol (5.7%); diabetes from 47.5 mmol/mol (6.5%) | Your doctor |
 | Waist-to-height ratio | Below 0.5 | Weight |
 
