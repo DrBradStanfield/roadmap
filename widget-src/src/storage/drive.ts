@@ -207,6 +207,9 @@ function loadGis(): Promise<void> {
       const s = document.createElement('script');
       s.src = 'https://accounts.google.com/gsi/client';
       s.async = true;
+      // A script that failed (the network was down) is taken out, so the next
+      // load asks again instead of waiting on it forever (US-09 AC30a).
+      s.onerror = () => s.remove();
       document.head.appendChild(s);
     }
     const startedAt = Date.now();
