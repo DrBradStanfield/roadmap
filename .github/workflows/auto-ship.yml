@@ -8,7 +8,8 @@
 # label) → opens the veto issue (native email to Brad) → waits 30 min →
 # re-verifies (sha unchanged, still open, no 'hold') → if the branch is behind
 # main, merges main into it via the API and re-runs 'test' on the new head
-# (US-46 AC5; up to 3 rounds) → merges at that exact sha → dispatches deploy.yml, which runs its own gate job (the
+# (US-46 AC5; up to 3 rounds) → merges at that exact sha → dispatches pages.yml
+# (AC14) and deploy.yml, which runs its own gate job (the
 # 'production' environment itself has had no wait timer or reviewer since
 # 2026-09-02). Total path to production ≈ 35 min, up to ~80 min when the
 # branch is behind main, two veto emails.
@@ -240,7 +241,12 @@ jobs:
           step="merged; dispatching deploy.yml (merge already happened)"
           # GITHUB_TOKEN-caused events don't trigger workflows, so dispatch
           # the deploy explicitly (its gate still applies; it has no wait timer).
+          # Pages too (US-46 AC14): without a Pages run for this commit, deploy's
+          # pages-smoke checks the previous Pages build. Its failure never holds the deploy.
+          pages=""
+          gh workflow run pages.yml -R "${GITHUB_REPOSITORY}" --ref main \
+            || pages=" Dispatching pages.yml failed, so the Pages smoke checked the previous Pages build."
           gh workflow run deploy.yml -R "${GITHUB_REPOSITORY}" --ref main -f surfaces=all
           finished=1
           gh issue close "${issue}" -R "${GITHUB_REPOSITORY}" \
-            --comment "Merged ${HEAD_SHA} and dispatched deploy.yml (its notification email follows; it has no wait timer)."
+            --comment "Merged ${HEAD_SHA} and dispatched deploy.yml (its notification email follows; it has no wait timer).${pages}"
