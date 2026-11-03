@@ -67,19 +67,42 @@ describe('US-09 AC2f: Dropbox', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1); // nothing used the late token
   });
 
-  it('a refresh that resolves after a new sign-in adopts the new tokens and carries on', async () => {
+  it('a refresh that resolves after a sign-in to another account keeps nothing and leaves the new grant alone', async () => {
     local.set(TOKEN_KEY, JSON.stringify(expired));
-    const { fetchMock, release } = heldFetch(() => json({ access_token: 'at-late', expires_in: 14400 }));
+    const { release } = heldFetch(() => json({ access_token: 'at-late', expires_in: 14400 }));
     const pending = new DropboxAdapter(CONFIG).accountEmail();
     await flush();
     const fresh = { accessToken: 'at-other', refreshToken: 'rt-other', expiresAt: Date.now() + 3_600_000 };
     local.set(TOKEN_KEY, JSON.stringify(fresh));
-    fetchMock.mockImplementation(async () => json({ email: 'b@example.com', email_verified: true }));
     release();
-    await expect(pending).resolves.toBe('b@example.com');
+    await expect(pending).rejects.toThrow(/disconnected/);
     expect(JSON.parse(local.get(TOKEN_KEY)!)).toEqual(fresh);
-    const accountCall = fetchMock.mock.calls[1] as unknown as [string, RequestInit];
-    expect((accountCall[1].headers as Record<string, string>).Authorization).toBe('Bearer at-other');
+  });
+
+  it('a pending document upload whose refresh ends after another account signs in uploads nothing', async () => {
+    local.set(TOKEN_KEY, JSON.stringify(expired));
+    const { fetchMock, release } = heldFetch(() => json({ access_token: 'at-late', expires_in: 14400 }));
+    const pending = new DropboxAdapter(CONFIG).writeDocument('doc-1.pdf', new Blob(['x']));
+    await flush();
+    const fresh = { accessToken: 'at-other', refreshToken: 'rt-other', expiresAt: Date.now() + 3_600_000 };
+    local.set(TOKEN_KEY, JSON.stringify(fresh));
+    release();
+    await expect(pending).rejects.toThrow(/disconnected/);
+    expect(fetchMock).toHaveBeenCalledTimes(1); // the refresh only: no upload
+    expect(JSON.parse(local.get(TOKEN_KEY)!)).toEqual(fresh);
+  });
+
+  it('a refused refresh that ends after another account signs in leaves the new grant alone', async () => {
+    local.set(TOKEN_KEY, JSON.stringify(expired));
+    const { release } = heldFetch(() => new Response('{}', { status: 400 }));
+    const live = new DropboxAdapter(CONFIG);
+    const pending = live.accountEmail();
+    await flush();
+    const fresh = { accessToken: 'at-other', refreshToken: 'rt-other', expiresAt: Date.now() + 3_600_000 };
+    local.set(TOKEN_KEY, JSON.stringify(fresh));
+    release();
+    await expect(pending).rejects.toThrow(/disconnected/);
+    expect(JSON.parse(local.get(TOKEN_KEY)!)).toEqual(fresh);
   });
 
   it('a Disconnect while the refresh body is still arriving writes no token back', async () => {
@@ -131,7 +154,7 @@ describe('US-09 AC2f: Google Drive', () => {
     expect(local.has(CONFIG_KEY)).toBe(false);
   });
 
-  it('a refresh that resolves after a new sign-in adopts the new tokens and carries on', async () => {
+  it('a refresh that resolves after a sign-in to another account keeps nothing and leaves the new grant alone', async () => {
     local.set(TOKENS_KEY, JSON.stringify(expired));
     const { release } = heldFetch(() => json({ accessToken: 'at-late', expiresIn: 3600 }));
     const live = new GoogleDriveAdapter(CONFIG);
@@ -140,8 +163,8 @@ describe('US-09 AC2f: Google Drive', () => {
     const fresh = { accessToken: 'at-other', refreshToken: 'rt-other', expiresAt: Date.now() + 3_600_000 };
     local.set(TOKENS_KEY, JSON.stringify(fresh));
     release();
-    expect(await pending).toBe(true);
-    expect(live.hasValidToken()).toBe(true);
+    expect(await pending).toBe(false);
+    expect(live.hasValidToken()).toBe(false);
     expect(JSON.parse(local.get(TOKENS_KEY)!)).toEqual(fresh);
   });
 
@@ -159,7 +182,7 @@ describe('US-09 AC2f: Google Drive', () => {
     expect(local.has(CONFIG_KEY)).toBe(false);
   });
 
-  it('a revoked refresh that ends after a new sign-in keeps the new tokens', async () => {
+  it('a revoked refresh that ends after another account signs in leaves the new grant alone', async () => {
     local.set(TOKENS_KEY, JSON.stringify(expired));
     const { release } = heldFetch(() => new Response('{}', { status: 401 }));
     const pending = new GoogleDriveAdapter(CONFIG).tryServerRefresh();
@@ -167,7 +190,7 @@ describe('US-09 AC2f: Google Drive', () => {
     const fresh = { accessToken: 'at-other', refreshToken: 'rt-other', expiresAt: Date.now() + 3_600_000 };
     local.set(TOKENS_KEY, JSON.stringify(fresh));
     release();
-    expect(await pending).toBe(true);
+    expect(await pending).toBe(false);
     expect(JSON.parse(local.get(TOKENS_KEY)!)).toEqual(fresh);
   });
 

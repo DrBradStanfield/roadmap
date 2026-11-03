@@ -313,24 +313,29 @@ export class DropboxAdapter implements StorageAdapter {
       body,
     });
     if (!res.ok) {
+      this.dropIfGrantMoved(startedFrom);
       throw new StorageError(`Dropbox token refresh failed (${res.status}) — please reconnect.`, undefined, undefined, res.status);
     }
     const json = tokenReply(await res.json(), false);
-    // Disconnect and a sign-in elsewhere run on other adapters, so the stored
-    // grant is the only shared truth. Read it after the last await: gone means
-    // keep nothing, replaced means use the new one (US-09 AC2f).
-    const stored = loadTokens();
-    if (stored?.refreshToken !== startedFrom) {
-      this.tokens = stored;
-      if (!stored) throw new StorageError('Dropbox was disconnected — please reconnect.');
-      if (Date.now() >= stored.expiresAt - 60_000) await this.refresh();
-      return;
-    }
+    this.dropIfGrantMoved(startedFrom);
     this.tokens = {
       ...this.tokens,
       accessToken: json.access_token,
       expiresAt: Date.now() + json.expires_in * 1000,
     };
     saveTokens(this.tokens);
+  }
+
+  /**
+   * Disconnect and a sign-in elsewhere run on other adapters, so the stored
+   * grant is the only shared truth. Read after a refresh's last await: if it is
+   * no longer the grant the refresh started from, this adapter keeps nothing
+   * and leaves storage alone. A replaced grant may be another account, so it
+   * is never adopted (US-09 AC2f).
+   */
+  private dropIfGrantMoved(startedFrom: string): void {
+    if (loadTokens()?.refreshToken === startedFrom) return;
+    this.tokens = null;
+    throw new StorageError('Dropbox was disconnected — please reconnect.');
   }
 }

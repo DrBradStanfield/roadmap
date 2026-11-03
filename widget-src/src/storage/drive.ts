@@ -382,15 +382,13 @@ export class GoogleDriveAdapter implements StorageAdapter {
       return 'transient'; // network/server down/timeout → caller falls back to the popup path
     }
     if (res.status === 400 || res.status === 401) {
-      const moved = this.adoptStored(startedFrom);
-      if (moved) return moved;
+      if (this.grantMoved(startedFrom)) return 'none';
       this.clearTokens(); // refresh token revoked/expired — stop retrying
       return 'none';
     }
     if (!res.ok) return 'transient';
     const json = (await res.json()) as { accessToken: string; expiresIn: number; idToken?: string };
-    const moved = this.adoptStored(startedFrom);
-    if (moved) return moved;
+    if (this.grantMoved(startedFrom)) return 'none';
     this.lastIdToken = json.idToken ?? null;
     const accountEmail = this.lastIdToken ? decodeIdTokenEmail(this.lastIdToken) : null;
     if (accountEmail && this.stored && this.stored.accountEmail !== accountEmail) {
@@ -407,15 +405,15 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   /**
    * Disconnect and a sign-in elsewhere run on other adapters, so the stored
-   * grant is the only shared truth. Called after a refresh's last await: null
-   * when the grant is still the one it started from; otherwise gone means keep
-   * nothing ('none') and replaced means use the new one (US-09 AC2f).
+   * grant is the only shared truth. Read after a refresh's last await: if it is
+   * no longer the grant the refresh started from, this adapter keeps nothing
+   * and leaves storage alone. A replaced grant may be another account, so it
+   * is never adopted (US-09 AC2f).
    */
-  private adoptStored(startedFrom: string): Promise<'ok' | 'none' | 'transient'> | null {
-    const stored = getJson<DriveTokens>(TOKENS_KEY);
-    if (stored?.refreshToken === startedFrom) return null;
-    this.tokens = stored;
-    return this.hasValidToken() ? Promise.resolve('ok') : this.refresh();
+  private grantMoved(startedFrom: string): boolean {
+    if (getJson<DriveTokens>(TOKENS_KEY)?.refreshToken === startedFrom) return false;
+    this.tokens = null;
+    return true;
   }
 
   async disconnect(): Promise<void> {
