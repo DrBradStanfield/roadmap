@@ -28,8 +28,8 @@
 import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin } from './supabase.server';
 import { classifyMessage, isUnreadableAnswer, shouldFireRouter } from './chat-classifier.server';
-import { routeQuery, sanitizeForRouter, ROUTER_VERSION, type RouterResult } from './chat-router.server';
-import { cutText } from '../../packages/health-core/src/chat-history';
+import { routeQuery, sanitizeForRouter, type RouterResult } from './chat-router.server';
+import { routerColumns, matchEventText, answerColumns } from './chat-persist.server';
 import { SILENT_ON_YOUTUBE } from '../../packages/health-core/src/models';
 import { findBlogByVideoId, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { preferMasters } from './router-view';
@@ -43,10 +43,9 @@ import {
   reportChatFallback,
   loadMatchedArticlesFromHandles,
   DOCTOR_POSTURE,
-  CHAT_MODEL,
+  generateTitle,
   type ChatCompletionResult,
 } from './chat.server';
-import type { AnthropicUsage } from './anthropic.server';
 
 // ---------------------------------------------------------------------------
 // Config
@@ -569,7 +568,7 @@ export async function persistYouTubeTurn(p: {
         .from('chat_conversations')
         .insert({
           user_id: BOT_PROFILE_ID,
-          title: cutText(thread.text, 80),
+          title: generateTitle(thread.text),
           platform: PLATFORM_YOUTUBE,
           external_id: thread.topLevelCommentId,
         })
@@ -600,22 +599,21 @@ export async function persistYouTubeTurn(p: {
       // Continue — the assistant row + match event are still worth having.
     }
 
-    // The assistant half. Only when the LLM actually produced output: a
-    // classifier silent skip (GREETING, SPAM or an unreadable answer) never reached the model, and a fallback
-    // produced no genuine answer, so neither gets a fabricated assistant row.
+    // The assistant half, whenever the main LLM was called, as the web chat
+    // stores it (US-15 AC52): the answer, SKIP_NO_REPLY, or on a failed turn the
+    // fixed fallback or refusal line with its failure_mode and error_detail. That
+    // line is never posted on YouTube. A classifier silent skip (GREETING, SPAM or
+    // an unreadable answer) never reached the model, so it gets no assistant row.
     let assistantMessageId: string | null = null;
-    if (outcome.llmOutput) {
+    if (outcome.completion) {
       assistantMessageId = crypto.randomUUID();
       const { error: asstErr } = await supabaseAdmin.from('chat_messages').insert({
         id: assistantMessageId,
         conversation_id: conversationId,
         user_id: BOT_PROFILE_ID,
         role: 'assistant',
-        content: outcome.llmOutput,
-        input_tokens: outcome.usage?.inputTokens ?? null,
-        output_tokens: outcome.usage?.outputTokens ?? null,
-        model: CHAT_MODEL,
-        is_fallback: outcome.isFallback ?? false,
+        content: outcome.completion.content.trim(), // as posted (completionOutcome trims)
+        ...answerColumns(outcome.completion),
       });
       if (asstErr) {
         Sentry.captureException(new Error('YouTube: failed to save assistant message'), {
@@ -631,7 +629,7 @@ export async function persistYouTubeTurn(p: {
       message_id: assistantMessageId,
       conversation_id: conversationId,
       user_id: BOT_PROFILE_ID,
-      message: thread.text,
+      message: matchEventText(thread.text),
       router_context: {
         platform: PLATFORM_YOUTUBE,
         videoId: thread.videoId,
@@ -644,14 +642,7 @@ export async function persistYouTubeTurn(p: {
         ...(outcome.reduced?.length ? { reduced: outcome.reduced } : {}),
       },
       matched_handles: outcome.routerHandles ?? [],
-      router_version: ROUTER_VERSION,
-      router_latency_ms: r?.latencyMs ?? null,
-      router_cache_hit: r?.cacheHit ?? null,
-      router_input_tokens: r?.usage.inputTokens ?? null,
-      router_cache_read_tokens: r?.usage.cacheReadTokens ?? null,
-      router_output_tokens: r?.usage.outputTokens ?? null,
-      router_raw: r?.error && r.rawJson != null ? cutText(r.rawJson, 500) : null,
-      router_error: r?.error ?? null,
+      ...routerColumns(r),
       classification: outcome.classification ?? 'ERROR',
       router_skipped: outcome.routerSkipped ?? false,
       is_fallback: outcome.isFallback ?? false,
@@ -856,9 +847,9 @@ interface PipelineOutcome {
    */
   routerResult?: RouterResult | null;
   routerSkipped?: boolean;
-  /** The model's raw output, INCLUDING 'SKIP_NO_REPLY'. Absent if no LLM call happened. */
-  llmOutput?: string;
-  usage?: AnthropicUsage;
+  /** The main LLM's result, its raw output INCLUDING 'SKIP_NO_REPLY' or a failed
+   *  turn's fixed line. Absent if no LLM call happened. */
+  completion?: ChatCompletionResult;
   isFallback?: boolean;
   failureMode?: string;
 }
@@ -869,7 +860,7 @@ interface PipelineOutcome {
  * re-run the same comment every tick for up to 7 days, three model calls each
  * time. A refusal sends the web chat's bounded Sentry warning.
  */
-export function completionOutcome(completion: ChatCompletionResult, latencyMs: number): Pick<PipelineOutcome, 'posted' | 'skipReason' | 'isFallback' | 'failureMode' | 'replyText' | 'llmOutput'> {
+export function completionOutcome(completion: ChatCompletionResult, latencyMs: number): Pick<PipelineOutcome, 'posted' | 'skipReason' | 'isFallback' | 'failureMode' | 'replyText'> {
   if (completion.isRefusal) {
     reportChatFallback({ completion, platform: 'youtube', latencyMs });
     return { posted: false, skipReason: `main-LLM refusal (${completion.refusalCategory ?? 'other'})`, failureMode: 'refusal' };
@@ -880,8 +871,8 @@ export function completionOutcome(completion: ChatCompletionResult, latencyMs: n
   }
   const replyText = completion.content.trim();
   // SKIP_NO_REPLY is still a real, deliberate model decision — worth keeping as training signal.
-  if (replyText === 'SKIP_NO_REPLY') return { posted: false, skipReason: 'main-LLM returned SKIP_NO_REPLY', llmOutput: replyText };
-  return { posted: true, replyText, llmOutput: replyText };
+  if (replyText === 'SKIP_NO_REPLY') return { posted: false, skipReason: 'main-LLM returned SKIP_NO_REPLY' };
+  return { posted: true, replyText };
 }
 
 /** Only a main-LLM failure is retried next tick; skips, silent classifier skips and refusals keep the claim. */
@@ -944,7 +935,7 @@ export async function runPipeline(
     reduced: matched?.reduced,
     routerResult,
     routerSkipped,
-    usage: completion.usage,
+    completion,
     ...completionOutcome(completion, Date.now() - tBeforeLlm),
   };
 }
