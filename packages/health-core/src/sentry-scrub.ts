@@ -206,21 +206,39 @@ export function scrubBreadcrumbData(
 // the same lists as literals, and `instrument-scrub-parity.test.ts` compares
 // the two arrays and prints the literal to paste when the catalogue moves.
 
+/** A unit as a keyboard writes it: µ as u, ×10⁹ as ×10^9 and x10^9. */
+const asciiSpellings = (unit: string): string[] => {
+  const ascii = unit.replace(/µ/g, 'u')
+    .replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]+/g, (sup) => `^${[...sup].map((c) => '⁰¹²³⁴⁵⁶⁷⁸⁹'.indexOf(c)).join('')}`);
+  return ascii === unit ? [unit] : [unit, ascii, ascii.replace(/^×/, 'x')];
+};
+
+/** The first spelling of each unit, whatever its case (the scrub ignores case). */
+const caselessUnique = (units: string[]): string[] =>
+  units.filter((unit, i) => units.findIndex((u) => u.toLowerCase() === unit.toLowerCase()) === i);
+
 /**
  * Unit spellings that make a bare number a health value: every unit the record
- * prints, plus the ASCII and dose spellings a sentence uses ("metformin 500mg").
+ * prints or the catalogue accepts, plus the ASCII and dose spellings a sentence
+ * uses ("metformin 500mg").
  */
-export const SCRUB_UNITS: readonly string[] = [
-  // Every unit the record can print, read off UNIT_DEFS and the lab catalogue.
-  ...CATALOG_UNITS,
-  // ASCII spellings a report or a log writes instead of the µ/space forms.
-  'mm Hg', 'umol/L', 'micromol/L', 'ug/L', 'lb',
+export const SCRUB_UNITS: readonly string[] = caselessUnique([
+  // Every unit the record can print, read off UNIT_DEFS and the lab catalogue,
+  // then every spelling the catalogue reads as one (US-09 AC7e). An alias that
+  // is only letters ("ratio", "fraction") is English first, so it is left out.
+  ...[
+    ...CATALOG_UNITS,
+    ...LAB_CATALOG.flatMap((entry) => [...(entry.unitAliases ?? []), ...Object.keys(entry.conversions ?? {})])
+      .filter((spelling) => !/^[a-z]+$/i.test(spelling)),
+  ].flatMap(asciiSpellings),
+  // Spellings no catalogue list holds.
+  'mm Hg', 'micromol/L', 'lb',
   // Dose units — "metformin 500mg" is a health value with no metric name in it.
   'mcg', 'µg', 'mg', 'g', 'IU', 'mL', 'ml', 'units',
   // Inches: matched by a stricter rule (see INCH_UNIT) — "5 in the morning"
   // is English, not a height.
   '"',
-];
+]);
 
 /** Metric and lab names that make an adjacent number a health value. */
 export const SCRUB_METRIC_WORDS: readonly string[] = [...new Set([

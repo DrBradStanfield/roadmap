@@ -170,9 +170,16 @@ export function scrubBreadcrumbData(data) {
 // the arrays to paste back in.
 export const SCRUB_UNITS = [
   '%', 'IU/L', 'IU/mL', 'L/L', 'U/L', 'U/mL', 'cm', 'fL', 'g/L', 'in', 'kU/L', 'kg', 'lbs', 'mIU/L',
-  'mL/min/1.73m²', 'mOsm/kg', 'mg/L', 'mg/L FEU', 'mg/dL', 'mg/mmol', 'mm/hr', 'mmHg', 'mmol/L', 'mmol/mol',
-  'ng/L', 'ng/mL', 'nmol/L', 'pg', 'pmol/L', 'µg/L', 'µmol/L', '×10¹²/L', '×10⁹/L', 'mm Hg', 'umol/L',
-  'micromol/L', 'ug/L', 'lb', 'mcg', 'µg', 'mg', 'g', 'IU', 'mL', 'ml', 'units', '"',
+  'mL/min/1.73m²', 'mL/min/1.73m^2', 'mOsm/kg', 'mg/L', 'mg/L FEU', 'mg/dL', 'mg/mmol', 'mm/hr', 'mmHg',
+  'mmol/L', 'mmol/mol', 'ng/L', 'ng/mL', 'nmol/L', 'pg', 'pmol/L', 'µg/L', 'ug/L', 'µmol/L', 'umol/L',
+  '×10¹²/L', '×10^12/L', 'x10^12/L', '×10⁹/L', '×10^9/L', 'x10^9/L', 'meq/l', 'mg/g', 'mg/g creat',
+  'mg/g creatinine', 'mg/mg', 'ml/min/1.73 m²', 'ml/min/1.73 m^2', 'ml/min/1.73', 'mmol/kg', 'mosmol/kg',
+  'g/dl', '×10⁶/µl', '×10^6/ul', 'x10^6/ul', 'm/µl', 'm/ul', 'million/µl', 'million/ul', 't/l', '×10³/µl',
+  '×10^3/ul', 'x10^3/ul', 'k/µl', 'k/ul', 'thou/µl', 'thou/ul', 'thousand/µl', 'thousand/ul', 'cells/µl',
+  'cells/ul', 'mg/l (feu)', 'µg/ml feu', 'ug/ml feu', 'µg/ml (feu)', 'ug/ml (feu)', 'ng/ml feu', 'ng/ml (feu)',
+  'µg/l feu', 'ug/l feu', 'µg/l (feu)', 'ug/l (feu)', 'µiu/ml', 'uiu/ml', 'mu/l', 'microiu/ml', 'mciu/ml',
+  'ng/dl', 'pg/ml', 'kiu/l', 'µg/dl', 'ug/dl', 'miu/ml', 'mm/h', 'µu/ml', 'uu/ml', 'mm Hg', 'micromol/L', 'lb',
+  'mcg', 'µg', 'mg', 'g', 'IU', 'mL', 'units', '"',
 ];
 
 export const SCRUB_METRIC_WORDS = [

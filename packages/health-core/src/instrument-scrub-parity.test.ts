@@ -235,6 +235,32 @@ describe('free-text scrub parity', () => {
     }
   });
 
+  it('US-09 AC7e — a number beside a unit spelling the catalogue accepts is scrubbed, on both copies', () => {
+    for (const impl of [source, copy]) {
+      expect(impl.scrubText('potassium 4.1 mEq/L')).toBe('potassium [value]');
+      expect(impl.scrubText('result 4.1 mEq/L')).toBe('result [value]');
+      expect(impl.scrubText('read 2.5 µIU/mL today')).toBe('read [value] today');
+      expect(impl.scrubText('read 2.5 uIU/mL today')).toBe('read [value] today');
+      expect(impl.scrubText('count 250 thou/µL')).toBe('count [value]');
+      expect(impl.scrubText('count 250 thou/uL')).toBe('count [value]');
+      expect(impl.scrubText('count 6.1 x10^9/L')).toBe('count [value]');
+      expect(impl.scrubText('count 6.1 ×10^9/L')).toBe('count [value]');
+      expect(impl.scrubText('count 4.5 ×10³/µL')).toBe('count [value]');
+      expect(impl.scrubText('result 14 g/dL')).toBe('result [value]');
+      expect(impl.scrubText('result 12 mm/h')).toBe('result [value]');
+      // A unit alias that is an English word is never a unit here.
+      expect(impl.scrubText('retry 3 ratio')).toBe('retry 3 ratio');
+      expect(impl.scrubText('shard 2 fraction')).toBe('shard 2 fraction');
+      const units = new Set(impl.SCRUB_UNITS.map((u: string) => u.toLowerCase()));
+      for (const entry of LAB_CATALOG) {
+        for (const spelling of [...(entry.unitAliases ?? []), ...Object.keys(entry.conversions ?? {})]) {
+          if (/^[a-z]+$/i.test(spelling)) continue;
+          expect(units, `unit alias "${spelling}" (${entry.key}) missing`).toContain(spelling);
+        }
+      }
+    }
+  });
+
   it('scrubs a catalogued lab sentence and leaves engineering text alone', () => {
     for (const impl of [source, copy]) {
       expect(impl.scrubText('cortisol 550')).toBe('cortisol [value]');
