@@ -448,7 +448,7 @@ Three-file sync: `evidence.ts` and `roadmap_text.html` are untouched because no 
 
 **Cortisol by timing (US-07 AC9, Brad 2026-11-02, issue 476).** Cortisol is read against the time it was drawn, so each timing has its own entry, in nmol/L at the same 27.59 µg/dL factor. A name that prints no timing ("Cortisol") is a morning cortisol, `cortisol_am` "Cortisol (morning)", since most cortisol tests are drawn in the morning. AM or morning spellings go there too. A random cortisol goes to `cortisol_random` "Cortisol (random)". A PM, evening or (blood) midnight cortisol goes to `cortisol_pm` "Cortisol (PM)". Salivary and urine cortisol are not catalogued: they keep their printed names. A row stored earlier under a random or PM name was uncatalogued; slots are computed on read, so it now reads under its new entry, and one printed in µg/dL is converted at load by an appended correction row (`migrate.ts`, as for every newly catalogued test). A bare "Cortisol" row stays in `cortisol_am`. The upload prompt offers all three cortisol names (US-07 AC10, Brad 2026-11-02: "just switch over"). Punctuated spellings ("Cortisol, A.M.", "cortisol-pm", "P.M. cortisol") reach the same entries through the second, punctuation-free try above.
 
-**Printed name decides (US-07 AC10, Brad 2026-11-02).** On a website or BYOK upload the model also returns each row's name as the report prints it. When that printed name resolves (the exact lookup or the punctuation-free one, never part of a name) to a core metric or a catalogued test, it decides where the row is filed, over the model's pick: a bare "Cortisol" is a morning cortisol whatever key the model chose, and a printed urine creatinine is a lab row, never serum creatinine. When it resolves to nothing, the model's pick stands. Specimen: when one name says urine or saliva and the other does not, the one that says it wins, for every test (a plain "Sodium" under a URINE heading stays urine sodium); for creatinine, a row the model listed among other tests is promoted when its printed name is a serum creatinine name; the unit check still refuses urine-only units. No review flag is added. A row with no printed name is filed as before. No row is edited; the connector, chat and agent paths are unchanged.
+**Printed name decides (US-07 AC10, Brad 2026-11-02).** On a website or BYOK upload the model also returns each row's name as the report prints it. When that printed name resolves (the exact lookup or the punctuation-free one, never part of a name) to a core metric or a catalogued test, it decides where the row is filed, over the model's pick: a bare "Cortisol" is a morning cortisol whatever key the model chose, and a printed urine creatinine is a lab row, never serum creatinine. When it resolves to nothing, the model's pick stands. Specimen: when one name says urine or saliva and the other does not, the one that says it wins, for every test (a plain "Sodium" under a URINE heading stays urine sodium); for creatinine, a row the model listed among other tests is promoted when its printed name is a serum creatinine name; the unit check still refuses urine-only units. No review flag is added. A row the model lists among the core tests under a name that is no core key (US-12 AC11a), with or without a printed name, is filed by its printed name when it has one, or else by that name, and is never dropped, on every path that reads the model's answer, the connector's folder import included. As one of the 11 core values it keeps the model's confidence and question, also when a held slot leaves it a lab row that is offered as that core value; creatinine needs a printed serum creatinine name; weight, waist, height and any other name are lab rows; a row with no name at all is counted as not saved. Any other row with no printed name keeps the model's pick. No row is edited; chat, agent writes and the assistant's own read are unchanged.
 
 ---
 
@@ -532,7 +532,7 @@ With no sex on record the plan grades no HDL, so `hdl-low` does not show (US-07 
 | Stage 2 | 140 | 90 |
 | Crisis | 180 | 120 |
 
-**Raised blood pressure** means one thing everywhere (the `bp-stage1` card and the weight-medication trigger): systolic >= 130 OR diastolic > 80. Either half counts on its own; the stage cards still need both halves to show.
+**Raised blood pressure** means one thing everywhere (the `bp-stage1` card and the weight-medication trigger): systolic >= 130 OR diastolic >= 80 (ACC/AHA 2017: stage 1 is 130–139 or 80–89; Brad 2026-11-03). Either half counts on its own; the stage cards still need both halves to show.
 
 **Inverted blood pressure (US-02 AC8):** a pair from one day with systolic at or below diastolic is not a blood pressure. When the newest systolic and diastolic are from the same day and inverted, the plan leaves both out (`validateHealthInputs` names the rule on both), so it shows no blood pressure tier card and raises no marker, the weight-medication trigger included, until a half is corrected. The plan shows the `measure-bp` card in its "Check your blood pressure reading" form instead (section 4, Missing Measurements First; US-07 AC11). It does not fall back to an earlier day. Halves from different days are not judged as a pair and are used as before. Writes refuse such a pair (section 12); a merge of two devices' one-half corrections can still make one. `evidence.ts` and `roadmap_text.html` do not change: this is an input-integrity rule, with no new threshold, card text or citation.
 
@@ -787,7 +787,7 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 |----|-----------|----------|
 | `bp-crisis` | sys >= 180 OR dia >= 120 | urgent |
 | `bp-stage2` | sys >= 140 OR dia >= 90 | urgent |
-| `bp-stage1` | sys >= 130 OR dia > 80 | attention |
+| `bp-stage1` | sys >= 130 OR dia >= 80 | attention |
 
 Stage 1 shows age-dependent target: < 120/80 for age < 65, < 130/80 for age >= 65.
 
@@ -932,7 +932,7 @@ So: BMI >= 30 is always on; 28 < BMI < 30 is on unless the waist is healthy and 
 Raised markers, each named in the card in the plan's words:
 - HbA1c >= 38.8 mmol/mol (prediabetic) → "prediabetic HbA1c"
 - Triglycerides 150 mg/dL (about 1.7 mmol/L) or more → "elevated triglycerides"
-- Raised blood pressure: systolic >= 130 OR diastolic > 80, either half on its own (section 3) → "elevated blood pressure"
+- Raised blood pressure: systolic >= 130 OR diastolic >= 80, either half on its own (section 3) → "elevated blood pressure"
 - The plan's lipid marker (ApoB, else non-HDL, else LDL: `lipidMarkerFor`) at or above its risk-enhancing line → "elevated ApoB", "elevated non-HDL cholesterol" or "elevated LDL cholesterol":
   - ApoB >= 1.3 g/L (130 mg/dL)
   - Non-HDL >= 190 mg/dL (4.913 mmol/L), compared unrounded (section 1)

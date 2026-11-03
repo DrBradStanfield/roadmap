@@ -144,10 +144,10 @@ describe('US-07 AC1: HbA1c tiers at 5.7% and 6.5% (doc §4 HbA1c Tiers, >=)', ()
 describe('US-07 AC1: blood-pressure stages (doc §3 and §4 BP Tiers)', () => {
   const bp = (sys: number, dia: number, age = 40) => family(plan({ systolicBp: sys, diastolicBp: dia }, { age }), 'bp-');
 
-  it('stage 1: systolic 130 or diastolic over 80; 129/80 is neither', () => {
-    expect(bp(129, 80)).toEqual([]);
+  it('stage 1: systolic 130 or diastolic 80 (US-07 AC1c); 129/79 is neither', () => {
+    expect(bp(129, 79)).toEqual([]);
     expect(bp(130, 70)).toEqual(['bp-stage1']);
-    expect(bp(120, 81)).toEqual(['bp-stage1']);
+    expect(bp(120, 80)).toEqual(['bp-stage1']);
   });
 
   it('stage 2: systolic 140 or diastolic 90, either alone', () => {
