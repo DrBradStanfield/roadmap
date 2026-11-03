@@ -35,6 +35,9 @@ import path from 'path';
 
 /** The user saw a substituted line: a fallback, or a refusal (US-15 AC14: `is_fallback` false, `failure_mode` 'refusal'). */
 const servedFallback = (m: { is_fallback: boolean | null; failure_mode: string | null }) => m.is_fallback === true || m.failure_mode === 'refusal';
+/** The badge for a substituted line. On YouTube nobody saw it: the bot posts nothing on a failed turn (US-15 AC52). */
+const fallbackLabel = (m: { platform: string; failure_mode: string | null }) =>
+  `${m.failure_mode === 'refusal' ? 'REFUSAL' : 'FALLBACK'}${m.platform === 'youtube' ? ' · not posted' : ''}`;
 
 const args = process.argv.slice(2);
 function getArg(flag: string, defaultValue: string): string {
@@ -289,7 +292,7 @@ function renderConversations(messages: Message[], routingById: Map<string, Routi
       const isFallback = msg.role === 'assistant' && servedFallback(msg);
       const role = msg.role === 'user'
         ? '**User**'
-        : isFallback ? `**Assistant** · ⚠️ ${msg.failure_mode === 'refusal' ? 'REFUSAL' : 'FALLBACK'}` : '**Assistant**';
+        : isFallback ? `**Assistant** · ⚠️ ${fallbackLabel(msg)}` : '**Assistant**';
 
       // Truncate very long responses for readability
       const content = msg.content.length > 2000
@@ -505,7 +508,7 @@ function renderHtml(messages: Message[], routingById: Map<string, RoutingEvent>)
       const r = routingById.get(m.message_id);
       return r && r.router_error;
     });
-    // Routing rows too: a YouTube refusal writes no assistant row, only its match event.
+    // Routing rows too: before US-15 AC52 (2026-11-03) a YouTube fallback or refusal wrote no assistant row, only its match event.
     const hasFallback = msgs.some(servedFallback) || routing.some(r => r.conversation_id === convId && servedFallback(r));
     const hasRouterSkipped = msgs.some(m => {
       const r = routingById.get(m.message_id);
@@ -547,7 +550,7 @@ function renderHtml(messages: Message[], routingById: Map<string, RoutingEvent>)
       }
 
       const fallbackBadge = isFallback
-        ? `<span class="fallback-badge" title="Main LLM failed, returned empty or declined — this is the substituted line">${msg.failure_mode === 'refusal' ? 'REFUSAL' : 'FALLBACK'}</span>`
+        ? `<span class="fallback-badge" title="Main LLM failed, returned empty or declined — this is the substituted line${msg.platform === 'youtube' ? ', never posted on YouTube' : ''}">${fallbackLabel(msg)}</span>`
         : '';
 
       // Surface the captured cause so the reason is visible in the audit email

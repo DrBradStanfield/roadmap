@@ -612,7 +612,7 @@ export async function persistYouTubeTurn(p: {
         conversation_id: conversationId,
         user_id: BOT_PROFILE_ID,
         role: 'assistant',
-        content: outcome.completion.content,
+        content: outcome.completion.content.trim(), // as posted (completionOutcome trims)
         ...answerColumns(outcome.completion),
       });
       if (asstErr) {

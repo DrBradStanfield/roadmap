@@ -493,6 +493,15 @@ describe('US-15 AC52: a YouTube turn writes the web chat\'s rows', () => {
     expect(rowOf('chat_match_events')).toMatchObject({ is_fallback: false, failure_mode: 'refusal' });
   });
 
+  it('stores the answer trimmed, as posted, so a padded SKIP_NO_REPLY still reads SKIP_NO_REPLY', async () => {
+    for (const [raw, stored] of [[' An answer.\n', 'An answer.'], [' SKIP_NO_REPLY\n', 'SKIP_NO_REPLY']]) {
+      supa.inserts.length = 0;
+      const completion = { content: raw, usage, isFallback: false };
+      await persistYouTubeTurn({ thread, postedYoutubeId: null, outcome: { completion, ...completionOutcome(completion, 1) } });
+      expect(rowOf('chat_messages', 'assistant')?.content).toBe(stored);
+    }
+  });
+
   it('a classifier skip (no model call) still stores no assistant row', async () => {
     supa.inserts.length = 0;
     await persistYouTubeTurn({ thread, postedYoutubeId: null, outcome: { posted: false, skipReason: 'classifier=GREETING', classification: 'GREETING' } });
