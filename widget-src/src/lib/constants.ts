@@ -35,30 +35,6 @@ export const MONTHS_SHORT = [
 ] as const;
 
 /**
- * Get available months for a date picker, filtering out future months if in the current year
- */
-export function getAvailableMonths(
-  selectedYear: string,
-  currentYear: number,
-  currentMonth: number,
-  short = false
-): ReadonlyArray<{ value: string; label: string }> {
-  const months = short ? MONTHS_SHORT : MONTHS_FULL;
-  if (selectedYear === String(currentYear)) {
-    return months.filter(m => parseInt(m.value, 10) <= currentMonth);
-  }
-  return months;
-}
-
-/**
- * Generate an array of year options for date pickers
- */
-export function getYearOptions(count = 11): number[] {
-  const currentYear = new Date().getFullYear();
-  return Array.from({ length: count }, (_, i) => currentYear - i);
-}
-
-/**
  * Format a date string, Date or epoch ms to a short locale string (e.g., "Jan 15, 2024").
  *
  * A stored `recordedAt` for a dated row is a calendar SLOT widened to UTC
