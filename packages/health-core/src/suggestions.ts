@@ -1013,7 +1013,8 @@ export function generateSuggestions(
           category: 'screening',
           priority: 'attention',
           title: 'Elevated PSA',
-          description: `Your PSA of ${screenings.prostatePsaValue.toFixed(1)} ng/mL is above the typical reference range (\u22644.0). Discuss with your doctor \u2014 elevated PSA can have multiple causes.`,
+          // A limit prints as printed (US-12 AC20): "> 100.0 ng/mL".
+          description: `Your PSA of ${screenings.prostatePsaLimit ? fmtMetric('psa', screenings.prostatePsaLimit.bound, 'si', screenings.prostatePsaLimit.comparator) : `${screenings.prostatePsaValue.toFixed(1)} ng/mL`} is above the typical reference range (\u22644.0). Discuss with your doctor \u2014 elevated PSA can have multiple causes.`,
         });
       }
     }

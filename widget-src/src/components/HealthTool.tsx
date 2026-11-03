@@ -31,6 +31,8 @@ import {
   localDay,
   dayOf,
   withLabEgfr,
+  withPsaMeasurement,
+  newestUsablePsa,
   labEgfrOf,
   toCanonicalValue,
   VITALS_INPUT_FIELDS,
@@ -290,6 +292,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const [labValueHistory, setLabValueHistory] = useState<ApiLabValue[]>(() => loadLabValuesSync() ?? []);
   const [medications, setMedications] = useState<ApiMedication[]>([]);
   const [screenings, setScreenings] = useState<ApiScreening[]>([]);
+  // The prostate section's PSA day (YYYY-MM-DD); null until one is picked, so today (US-06 AC15).
+  const [psaDate, setPsaDate] = useState<string | null>(null);
+  // The PSA row was committed since its last save (US-06 AC15).
+  const psaCommittedRef = useRef(false);
   const [supplements, setSupplements] = useState<ApiSupplement[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   // US-54 AC5b: the birth month a save refused, in words, until the next birth edit.
@@ -421,7 +427,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     if (result) {
       setPreviousMeasurements(result.previousMeasurements);
       // The storefront chat embed reads this mirror; keep it in step too.
-      saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined, labEgfrOf(await loadLabValues() ?? []));
+      saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined, labEgfrOf(await loadLabValues() ?? []),
+        newestUsablePsa(loadAllHistorySync(), new Date()));
     }
     await Promise.all([refreshLabValues(), loadHistory()]);
     return result;
@@ -504,7 +511,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
         // doesn't block the first render).
         loadHistory();
         // Keep the legacy mirror available to the separate storefront chat embed.
-        saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined, labEgfrOf(await loadLabValues() ?? []));
+        saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined, labEgfrOf(await loadLabValues() ?? []),
+          newestUsablePsa(loadAllHistorySync(), new Date()));
       } else {
         // Nothing on record: a new visitor, or another device erased it. The
         // bubble and the embed must not keep sending the old copy (US-11).
@@ -707,17 +715,30 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // leaves a matrix, and saves the fields) both land. Resolves with what was
   // refused, slot by slot, so the caller keeps only that.
   // `erase`: as asked for, not as the queued save runs (US-16 AC2a).
-  const handleSaveLongitudinal = useCallback((tasks?: SaveTask[], erase = getShownErase()): Promise<Refused> => {
+  // `now`: the page is leaving or hiding, so the writes are staged before this
+  // returns, ahead of the caller's synchronous flush; the re-read follows if
+  // the page stays (US-06 AC15).
+  const handleSaveLongitudinal = useCallback((tasks?: SaveTask[], erase = getShownErase(), now = false): Promise<Refused> => {
     // The first-time vitals fields: a weight, a waist, a blood pressure, each
     // naming the row the page shows for today ("Replaces 82 kg"), in the unit
     // it was typed in (mmHg either way). What a matrix's draft lends the plan
     // is kept apart (`lent`), and only that matrix saves it, on the day the
     // draft is dated (review of 2026-09-24). So what `inputs` holds here was
-    // typed into these fields, by the user or the chat.
+    // typed into these fields, by the user or the chat. The prostate section's
+    // PSA takes the day picked beside it, or today until one is picked; a day
+    // after today (or none) saves no PSA, and the field says so (US-06 AC15).
     const fromForm = (): SaveTask[] => {
-      const date = localDay(new Date());
+      const today = localDay(new Date());
       const shown = activeRowIndex(history);
-      return [['weight'], ['waist'], ['systolic_bp', 'diastolic_bp']].flatMap((metrics): SaveTask[] => {
+      // A PSA saves only once its row is committed (left, ticked, Enter, or
+      // departure), so another field's save never takes it under a day not
+      // yet chosen (US-06 AC15).
+      const psaCommitted = psaCommittedRef.current;
+      psaCommittedRef.current = false;
+      return [['weight'], ['waist'], ['systolic_bp', 'diastolic_bp'], ['psa']].flatMap((metrics): SaveTask[] => {
+        if (metrics[0] === 'psa' && !psaCommitted) return [];
+        const date = metrics[0] === 'psa' ? psaDate ?? today : today;
+        if (!date || date > today) return [];
         const field = METRIC_TO_FIELD[metrics[0]];
         const typed = typedIn.current[field];
         const unit = typed && typed.value === inputs[field] ? typed.unit : unitOverrides[field] ?? unitSystem;
@@ -734,23 +755,22 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       });
     };
 
-    const save = async (): Promise<Refused> => {
-      // Keep the profile and saved measurements consistent across the debounce.
-      await flushPendingProfileSave(erase);
-      const toSave = tasks ?? fromForm();
-      if (toSave.length === 0) return new Map();
+    // The store is synchronous, so every write is staged before this returns;
+    // only the answers wait.
+    const write = (toSave: SaveTask[]) => routeTasksToSaves(
+      toSave,
+      loadAllHistorySync(), // the store's rows, as it writes: never the page's copy
+      async (date, metric, value) => {
+        const { status } = await addMeasurement(metric, value, ensureIsoDatetime(date), erase);
+        return status === 'inserted' ? 'ok' : status === 'duplicate' ? 'changed' : status;
+      },
+      (id, newValue) => countedCorrection(id, newValue, erase),
+    );
 
+    const finish = async (toSave: SaveTask[], staged: Promise<Refused>): Promise<Refused> => {
       setIsSavingLongitudinal(true);
       try {
-        const refused = await routeTasksToSaves(
-          toSave,
-          await loadAllHistory(), // the store's rows, as it writes: never the page's copy
-          async (date, metric, value) => {
-            const { status } = await addMeasurement(metric, value, ensureIsoDatetime(date), erase);
-            return status === 'inserted' ? 'ok' : status === 'duplicate' ? 'changed' : status;
-          },
-          (id, newValue) => countedCorrection(id, newValue, erase),
-        );
+        const refused = await staged;
         await reloadValues();
 
         // What the fields saved leaves the form, in one update. A copy left in
@@ -771,6 +791,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
             }
             return next;
           });
+          // A saved PSA puts its date box back to today, so it never reads "Replaces" the value just saved.
+          if (toSave.some(t => t.values.psa !== undefined && !refused.has(slotOf(t.date, 'psa')))) setPsaDate(null);
           setFieldsSaved(n => n + 1);
         }
 
@@ -784,10 +806,21 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
         setIsSavingLongitudinal(false);
       }
     };
+    if (now) {
+      if (getBackendKind() === 'local' && localHealthWritesStopped()) return Promise.resolve(new Map());
+      const toSave = tasks ?? fromForm();
+      return toSave.length ? finish(toSave, write(toSave)) : Promise.resolve(new Map());
+    }
+    const save = async (): Promise<Refused> => {
+      // Keep the profile and saved measurements consistent across the debounce.
+      await flushPendingProfileSave(erase);
+      const toSave = tasks ?? fromForm();
+      return toSave.length ? finish(toSave, write(toSave)) : new Map();
+    };
     const run = savesRef.current.then(save);
     savesRef.current = run.catch(() => {});
     return run;
-  }, [inputs, history, unitOverrides, unitSystem, reloadValues]);
+  }, [inputs, history, unitOverrides, unitSystem, psaDate, reloadValues]);
 
   // Auto-save on blur / Enter for InputPanel longitudinal fields. The
   // 500ms debounce batches systolic→diastolic tab transitions into one
@@ -801,27 +834,49 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const handleSaveLongitudinalRef = useRef(handleSaveLongitudinal);
   handleSaveLongitudinalRef.current = handleSaveLongitudinal;
   const longitudinalDebounce = useDebouncedSave(500);
+  // The fields' save waiting on the timer, and the erase it was asked under:
+  // departure stages it at once (US-06 AC15).
+  const pendingSaveRef = useRef<{ erase: string | undefined } | null>(null);
   const scheduleLongitudinalSave = useCallback(() => {
     const erase = getShownErase(); // as the field was left, not as the timer fires
-    longitudinalDebounce.schedule(() => { void handleSaveLongitudinalRef.current(undefined, erase); });
+    pendingSaveRef.current = { erase };
+    longitudinalDebounce.schedule(() => { pendingSaveRef.current = null; void handleSaveLongitudinalRef.current(undefined, erase); });
   }, [longitudinalDebounce]);
   const flushLongitudinalSave = useCallback(() => {
+    pendingSaveRef.current = null;
     longitudinalDebounce.commit(() => { void handleSaveLongitudinalRef.current(); });
   }, [longitudinalDebounce]);
-
+  // The PSA row is committed (US-06 AC15): left, or at once on its tick or Enter.
+  const commitPsa = useCallback((now: boolean) => {
+    psaCommittedRef.current = true;
+    if (now) flushLongitudinalSave(); else scheduleLongitudinalSave();
+  }, [flushLongitudinalSave, scheduleLongitudinalSave]);
   // Stage only queued edits, with the erase they were made against, then flush
   // synchronously: the entrypoint's earlier listener may have flushed first.
-  // A matrix's draft stays on the device instead (US-03 AC5).
+  // A matrix's draft stays on the device instead (US-03 AC5). A closing tab
+  // fires no blur, so focus still in the PSA row is moved out first: the
+  // row's blur commits it, with its own checks. The fields' waiting save and
+  // a committed PSA are then written at once, not on the timer or a promise,
+  // which would run after the flush (US-06 AC15; Brad 2026-11-03: weight,
+  // waist or BP save on tab close). iOS kills a hidden tab, so hiding stages
+  // the same, but leaves an unfinished PSA row alone: it waits for its date
+  // (Brad 2026-11-03, "Wait for the date").
   useEffect(() => {
-    const onUnload = () => {
+    const stage = (closing: boolean) => {
+      const focused = document.activeElement;
+      if (closing && focused instanceof HTMLElement && focused.closest('.psa-inline-row')) focused.blur();
       profileDebounce.flush();
-      longitudinalDebounce.flush();
+      const pending = pendingSaveRef.current;
+      if (pending) {
+        pendingSaveRef.current = null;
+        longitudinalDebounce.cancel();
+        void handleSaveLongitudinalRef.current(undefined, pending.erase, true);
+      }
       flushRoadmapStoreSync();
     };
+    const onUnload = () => stage(true);
     const onHidden = () => {
-      if (document.visibilityState !== 'hidden') return;
-      profileDebounce.flush();
-      flushRoadmapStoreSync();
+      if (document.visibilityState === 'hidden') stage(false);
     };
     window.addEventListener('beforeunload', onUnload);
     window.addEventListener('pagehide', onUnload);
@@ -939,7 +994,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       calcInputs,
       unitSystem,
       medicationsToInputs(medications),
-      screeningsToInputs(screenings),
+      // US-06 AC14: the prostate cards read the newest usable saved PSA, as computePlan does.
+      withPsaMeasurement(screeningsToInputs(screenings), newestUsablePsa(history, new Date())),
       metricUnitOverrides,
     );
     // The form follows the plan: its recommendations, targets and cascade
@@ -954,7 +1010,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       lipidMarker: medicines ? lipidMarkerFor(calcInputs, healthResults) : null,
     };
     return { results: healthResults, isValid: true, validationErrors: errors, planBasis };
-  }, [planInputs, pressureDays, unitSystem, medications, screenings, metricUnitOverrides]);
+  }, [planInputs, pressureDays, unitSystem, medications, screenings, history, metricUnitOverrides]);
 
   useEffect(() => {
     setErrors(validationErrors ?? {});
@@ -1401,6 +1457,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     onMedicationChange: handleMedicationChange,
     screenings,
     onScreeningChange: handleScreeningChange,
+    psaDate,
+    onPsaDateChange: setPsaDate,
+    onPsaCommit: commitPsa,
     supplements,
     onSupplementChange: handleSupplementChange,
     onSupplementDelete: handleSupplementDelete,
