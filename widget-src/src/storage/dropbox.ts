@@ -26,6 +26,7 @@ import {
   DROPBOX_TOKEN_URL,
   ROADMAP_FILE_NAME,
   sleepUntilAborted,
+  catchUpAfterFailure,
   StorageError,
   type ReadResult,
   type StorageAdapter,
@@ -220,7 +221,10 @@ export class DropboxAdapter implements StorageAdapter {
       try {
         // A cursor is dropped on every failure, so this re-establishes it: the
         // one Dropbox refused may be expired, and re-listing is cheap.
-        if (!cursor) cursor = await this.folderCursor(signal);
+        if (!cursor) {
+          cursor = await this.folderCursor(signal);
+          catchUpAfterFailure(retryMs, signal, onChange);
+        }
         const poll = await this.rpc(LONGPOLL_URL, { cursor, timeout: LONGPOLL_TIMEOUT_S }, signal);
         const result = (await poll.json()) as { changes?: boolean; backoff?: number };
         // Dropbox asking for room comes before anything else we do with it.
