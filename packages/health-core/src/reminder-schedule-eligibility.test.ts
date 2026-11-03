@@ -77,17 +77,22 @@ describe('screening reminder eligibility (US-06, algorithm doc table)', () => {
   });
 
   it('US-07 AC1f: an abnormal lung CT keeps its reminder whatever the pack-years (Brad 2026-11-03)', () => {
-    const abnormal: ScreeningInputs = { ...ALL_STARTED, lungPackYears: 15, lungResult: 'abnormal', lungFollowupStatus: 'completed', lungFollowupDate: '2025-03' };
+    const abnormal: ScreeningInputs = { ...ALL_STARTED, lungPackYears: 15, lungResult: 'abnormal', lungFollowupStatus: 'not_organized' };
     expect(scheduled('male', 60, abnormal).has('screening_lung')).toBe(true);
-    expect(scheduled('male', 60, { ...abnormal, lungFollowupStatus: 'not_organized', lungFollowupDate: undefined }).has('screening_lung')).toBe(true);
+    expect(scheduled('male', 60, { ...abnormal, lungFollowupStatus: 'scheduled', lungFollowupDate: '2026-12' }).has('screening_lung')).toBe(true);
     // A normal result below 20 pack-years still gets no reminder; past 80 an abnormal one keeps it (AC1g).
     expect(scheduled('male', 60, { ...abnormal, lungResult: 'normal' }).has('screening_lung')).toBe(false);
     expect(scheduled('male', 81, abnormal).has('screening_lung')).toBe(true);
     expect(scheduled('male', 49, abnormal).has('screening_lung')).toBe(false);
-    // Review R2: a completed follow-up with no date gives no card below 20, so no reminder either.
-    expect(scheduled('male', 60, { ...abnormal, lungFollowupDate: undefined }).has('screening_lung')).toBe(false);
-    // The card needs a last LDCT date, so with a dated completed follow-up but no last date, no reminder either.
+    // The card needs a last LDCT date, so with no last date, no reminder either.
     expect(scheduled('male', 60, { ...abnormal, lungLastDate: undefined }).has('screening_lung')).toBe(false);
+    // Review of commit 5, R1: outside routine eligibility a completed follow-up ends it, dated or not.
+    const done: ScreeningInputs = { ...abnormal, lungFollowupStatus: 'completed', lungFollowupDate: '2025-04' };
+    expect(scheduled('male', 60, done).has('screening_lung')).toBe(false);
+    expect(scheduled('male', 60, { ...done, lungFollowupDate: undefined }).has('screening_lung')).toBe(false);
+    expect(scheduled('male', 82, { ...done, lungPackYears: 25 }).has('screening_lung')).toBe(false);
+    // At 50-80 with 20+ pack-years nothing changes: the post-follow-up reminder runs.
+    expect(scheduled('male', 60, { ...done, lungPackYears: 25 }).has('screening_lung')).toBe(true);
   });
 
   it('a screening not yet started schedules nothing', () => {

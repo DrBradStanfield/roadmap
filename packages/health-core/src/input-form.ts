@@ -382,9 +382,12 @@ export function lungScreeningAsked(scr: ScreeningInputs): boolean {
     || !!scr.lungScreening || !!scr.lungLastDate || !!scr.lungResult;
 }
 
-/** The lung questions show from 50 to 80, and past 80 only for an abnormal CT, so its follow-up can be closed (US-07 AC1g). */
+/**
+ * The lung questions show from 50 to 80, and past 80 for an abnormal CT or any stored LDCT answer, so the
+ * follow-up can be closed and a changed answer put back (US-07 AC1g).
+ */
 export function lungGroupShown(age: number, scr: ScreeningInputs): boolean {
-  return age >= 50 && (age <= 80 || scr.lungResult === 'abnormal');
+  return age >= 50 && (age <= 80 || !!scr.lungScreening || scr.lungResult === 'abnormal');
 }
 
 /** DEXA applies to women from 50 and men from 70. */

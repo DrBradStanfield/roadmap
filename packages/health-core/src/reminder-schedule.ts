@@ -142,9 +142,8 @@ function screeningSchedule(
 
   // Lung (age 50-80, smoker with 20+ pack-years — ACS 2023). Below 20 or past 80, an abnormal CT
   // keeps its reminder exactly while the plan shows its follow-up card (US-07 AC1f, AC1g): a last
-  // date, and a completed follow-up only with its date.
-  const lungFollowupCard = s.lungResult === 'abnormal' && !!s.lungLastDate && (s.lungFollowupStatus !== 'completed'
-    || getPostFollowupDueDate('lung', s.lungScreening, s.lungResult, s.lungFollowupStatus, s.lungFollowupDate) !== null);
+  // date, until the follow-up is completed.
+  const lungFollowupCard = s.lungResult === 'abnormal' && !!s.lungLastDate && s.lungFollowupStatus !== 'completed';
   if (
     age >= 50 &&
     (s.lungSmokingHistory === 'former_smoker' || s.lungSmokingHistory === 'current_smoker') &&

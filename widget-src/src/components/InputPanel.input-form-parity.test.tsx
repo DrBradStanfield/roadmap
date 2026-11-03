@@ -113,11 +113,14 @@ describe('US-25 AC8, US-06 — the web screening cards are screeningForm', () =>
     expectParity(container, sections);
   });
 
-  it('US-07 AC1g: at 81 the web shows an abnormal LDCT\'s follow-up, and no lung group for a normal one', () => {
+  it('US-07 AC1g: at 81 the web shows an abnormal LDCT\'s follow-up, keeps the group for any LDCT answer, and none without one', () => {
     const lung = { lung_smoking_history: 'former_smoker', lung_pack_years: '25', lung_screening: 'annual_ldct', lung_last_date: '2025-01' };
     expect(renderPanel({ sex: 'male', basis: { age: 81 }, screenings: { ...lung, lung_result: 'abnormal' } }).querySelector('#lung-followup-status')).not.toBeNull();
     cleanup();
-    expect(renderPanel({ sex: 'male', basis: { age: 81 }, screenings: { ...lung, lung_result: 'normal' } }).querySelector('#lung-smoking-history')).toBeNull();
+    // Review of commit 5, R2: a stored LDCT answer keeps the group past 80, so the result can be put back.
+    expect(renderPanel({ sex: 'male', basis: { age: 81 }, screenings: { ...lung, lung_result: 'normal' } }).querySelector('#lung-result')).not.toBeNull();
+    cleanup();
+    expect(renderPanel({ sex: 'male', basis: { age: 81 }, screenings: { lung_smoking_history: 'former_smoker', lung_pack_years: '25' } }).querySelector('#lung-smoking-history')).toBeNull();
   });
 
   it('US-07 AC1f: below 20 pack-years the web still shows a recorded abnormal LDCT\'s follow-up', () => {

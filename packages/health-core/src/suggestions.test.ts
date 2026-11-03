@@ -1461,9 +1461,13 @@ describe('generateSuggestions', () => {
       // Below 20 with a normal result: no start, overdue or up-to-date card.
       expect(lung({ ...abnormal, lungResult: 'normal' })).toEqual([]);
       expect(lung({ ...abnormal, lungScreening: 'not_yet_started' })).toEqual([]);
-      // Review R2: a completed follow-up with no date has no card below 20 (no routine fallback).
+      // A completed follow-up with no date has no card below 20 (no routine fallback).
       expect(lung({ ...abnormal, lungFollowupStatus: 'completed' })).toEqual([]);
-      // A dated completed follow-up with no last LDCT date: no card (and no reminder, reminder-schedule-eligibility.test.ts).
+      // Review of commit 5, R1: a dated completed follow-up ends it below 20 too (no "resume annual LDCT" card);
+      // at 25 pack-years the post-follow-up card still shows.
+      const done: ScreeningInputs = { ...abnormal, lungFollowupStatus: 'completed', lungFollowupDate: '2025-04' };
+      expect(lung(done)).toEqual([]);
+      expect(lung({ ...done, lungPackYears: 25 }).map(s => s.id)).toEqual(['screening-lung-followup']);
       expect(lung({ ...abnormal, lungLastDate: undefined, lungFollowupStatus: 'completed', lungFollowupDate: '2025-03' })).toEqual([]);
     });
 
@@ -1474,6 +1478,10 @@ describe('generateSuggestions', () => {
       expect(lung(abnormal).map(s => [s.id, s.priority])).toEqual([['screening-lung-followup', 'urgent']]);
       expect(lung({ ...abnormal, lungResult: 'normal', lungFollowupStatus: undefined })).toEqual([]);
       expect(lung({ ...abnormal, lungScreening: undefined, lungLastDate: undefined, lungResult: undefined, lungFollowupStatus: undefined })).toEqual([]);
+      // Review of commit 5, R1: at 82 a completed follow-up ends it, no "resume annual LDCT" card.
+      const { inputs: i82, results: r82 } = createTestData({ birthYear: 1944, birthMonth: 1 }, { age: 82 });
+      expect(generateSuggestions(i82, r82, 'si', undefined, { ...abnormal, lungFollowupStatus: 'completed', lungFollowupDate: '2025-04' })
+        .filter(s => s.id.startsWith('screening-lung'))).toEqual([]);
     });
 
     it('US-07 AC1e: no quit window, as ACS 2023 (Brad 2026-11-03): the plan and the roadmap text screen former smokers however long ago they quit', () => {
@@ -1486,6 +1494,8 @@ describe('generateSuggestions', () => {
       expect(lung).toContain('Have a smoking history of 20 pack-years or more, whether they still smoke or have quit.');
       const ev = SUGGESTION_EVIDENCE['screening-lung'];
       expect(ev.reason).toContain('however long ago they quit');
+      expect(ev.reason).toContain('the plan keeps that follow-up until it is done, at any age or smoking history');
+      expect(lung).toContain('If an earlier scan found something that needs follow-up, finish that follow-up with your doctor.');
       expect(ev.guidelines).toEqual(['ACS 2023', 'USPSTF 2021']);
       expect(ev.references.map(r => r.url)).toContain('https://doi.org/10.3322/caac.21811');
       expect(lung).not.toMatch(/15 years/);
