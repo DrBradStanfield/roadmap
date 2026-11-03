@@ -28,8 +28,8 @@ struct SleepPage: View {
     @Environment(\.dynamicTypeSize) private var textSize
 
     var body: some View {
-        LivePageFrame(metric: .sleep, ranges: LiveRange.sleep, range: $range, empty: read && !nights.contains(where: \.hasSleep), key: live.wakes, guide: guide) { shows in
-            await load(ReadFor(wakes: live.wakes, shows: shows))
+        LivePageFrame(metric: .sleep, ranges: LiveRange.sleep, range: $range, empty: read && !nights.contains(where: \.hasSleep), key: [live.wakes, live.removals[.sleep] ?? 0], guide: guide) { shows in
+            await load(ReadFor(wakes: live.wakes, shows: shows, removals: live.removals[.sleep] ?? 0))
         } reset: {
             selected = nil
             scrolledTo = geometry.opening(showing: reading)
@@ -62,6 +62,13 @@ struct SleepPage: View {
     /// read marks nothing read (N1).
     private func load(_ fresh: ReadFor) async {
         guard fresh != readFor else { return }
+        // Sleep's history was removed: nothing old stays drawn (Codex R2).
+        if let readFor, readFor.removals != fresh.removals {
+            nights = []
+            read = false
+            picked = nil
+            selected = nil
+        }
         let (store, now, calendar) = (live.store, live.now(), live.calendar)
         if nights.isEmpty, let kept = await live.history.keptNights(calendar: calendar), !Task.isCancelled { land(kept) }
         if nights.isEmpty, let first = try? await LiveHealth.readNights(store, reaching: reading, now: now, calendar: calendar), !Task.isCancelled { land(first) }

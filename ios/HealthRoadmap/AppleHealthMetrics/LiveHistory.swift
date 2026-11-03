@@ -107,12 +107,14 @@ actor LiveHistory {
     }
 
     /// Reads the hours of the day holding `day` (D) and returns them. Kept only while that day
-    /// is within the last week; a day scrolled back further is read and shown, never kept.
+    /// is within the last week; a day scrolled back further is read and shown, never kept. A
+    /// failed read throws, so the kept and shown hours stay as they were (Codex R1).
     func refreshHours(_ store: any LiveHealthStore, _ metric: LiveMetric, day: Date, now: Date, calendar: Calendar) async throws -> [LivePoint] {
         let begun = epoch
         let start = calendar.startOfDay(for: day)
         let end = calendar.date(byAdding: .day, value: 1, to: start) ?? now
-        let read = try await LiveHealth.readHours(store, metric, day: day, now: now, calendar: calendar).filter { $0.start >= start && $0.start < end }
+        let stop = min(end, now)
+        let read = stop > start ? try await store.points(metric, from: start, to: stop, every: .hour).filter { $0.start >= start && $0.start < end } : []
         try Task.checkCancellation()
         guard begun == epoch else { return read }
         let week = calendar.date(byAdding: .day, value: -Self.week, to: calendar.startOfDay(for: now)) ?? start

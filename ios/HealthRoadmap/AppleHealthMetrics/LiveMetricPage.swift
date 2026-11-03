@@ -71,11 +71,14 @@ struct LiveMetricPage: View {
     /// read the same days, so moving between them keeps a read under way (adversary R2).
     struct Wanted: Equatable {
         let wakes: Int
+        /// The metric's history removals (Codex R2): a removal reads again, dropping a read under way.
+        let removals: Int
         let day: Bool
         let days: [Date]
 
-        init(wakes: Int, range: LiveRange, days: [Date]) {
+        init(wakes: Int, removals: Int = 0, range: LiveRange, days: [Date]) {
             self.wakes = wakes
+            self.removals = removals
             day = range == .day
             self.days = days
         }
@@ -84,7 +87,7 @@ struct LiveMetricPage: View {
     var body: some View {
         let geometry = geometry
         let inView = geometry.inView(range.isShort ? points : days, by: \.start, from: scrolledTo)
-        let wanted = Wanted(wakes: live.wakes, range: range, days: range == .day ? geometry.daysInView(from: scrolledTo) : [])
+        let wanted = Wanted(wakes: live.wakes, removals: live.removals[metric] ?? 0, range: range, days: range == .day ? geometry.daysInView(from: scrolledTo) : [])
         LivePageFrame(metric: metric, ranges: LiveRange.allCases, range: $range, empty: isEmpty, key: wanted, guide: guide) { shows in
             await load(wanted, shows: shows)
         } reset: {
@@ -126,8 +129,16 @@ struct LiveMetricPage: View {
     /// once the page leaves D (E4). A wake reads again; a locked phone keeps what was drawn.
     private func load(_ wanted: Wanted, shows: Int) async {
         let (store, now, calendar) = (live.store, live.now(), live.calendar)
-        let fresh = ReadFor(wakes: wanted.wakes, shows: shows)
+        let fresh = ReadFor(wakes: wanted.wakes, shows: shows, removals: wanted.removals)
         if fresh != readFor {
+            // The history was removed (access off, Health emptied): nothing old stays drawn (Codex R2).
+            if let readFor, readFor.removals != fresh.removals {
+                days = []
+                grouped = [:]
+                hours = []
+                selected = nil
+                rebuild()
+            }
             readFor = fresh
             hoursRead = []
             daysRead = false
@@ -262,6 +273,8 @@ struct LiveMetricPage: View {
 struct ReadFor: Equatable {
     let wakes: Int
     let shows: Int
+    /// The metric's history removals (Codex R2).
+    var removals = 0
 }
 
 /// What both pages share (AC7, AC9): the range picker, the chart or its empty line, the

@@ -243,7 +243,7 @@ final class LiveHealthTests: XCTestCase {
         await live.refresh()
         let file = try Data(contentsOf: kept)
         _ = try? await LiveHealth.readDays(store, .steps, reaching: nil, now: now, calendar: utc)
-        _ = try? await LiveHealth.readHours(store, .steps, day: now, now: now, calendar: utc)
+        _ = try? await LiveHistory(folder: nil).refreshHours(store, .steps, day: now, now: now, calendar: utc)
         _ = try? await LiveHealth.readNights(store, reaching: nil, now: now, calendar: utc)
         XCTAssertEqual(Set(UserDefaults.standard.dictionaryRepresentation().keys), before, "no UserDefaults value")
         XCTAssertEqual(try Data(contentsOf: kept), file, "pages keep nothing")
@@ -484,11 +484,11 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertEqual(store.queries.last?.end, now)
         XCTAssertEqual(store.queries.last?.component, .day)
         let yesterday = today.addingTimeInterval(-86_400 + 3600)
-        _ = try await LiveHealth.readHours(store, .heartRate, day: yesterday, now: now, calendar: utc)
+        _ = try await LiveHistory(folder: nil).refreshHours(store, .heartRate, day: yesterday, now: now, calendar: utc)
         XCTAssertEqual(store.queries.last?.start, today.addingTimeInterval(-86_400), "the day D shows")
         XCTAssertEqual(store.queries.last?.end, today)
         XCTAssertEqual(store.queries.last?.component, .hour)
-        _ = try await LiveHealth.readHours(store, .heartRate, day: now, now: now, calendar: utc)
+        _ = try await LiveHistory(folder: nil).refreshHours(store, .heartRate, day: now, now: now, calendar: utc)
         XCTAssertEqual(store.queries.last?.end, now, "today, as it stands")
         _ = try await LiveHealth.readNights(store, reaching: nil, now: now, calendar: utc)
     }
@@ -790,6 +790,50 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertFalse(exists("hours-steps.json"), "and its hours")
     }
 
+    /// Codex R1: a failed hourly read throws, so the kept hours (and the page's drawn ones) stay.
+    func testAFailedHourlyReadKeepsTheKeptHours_CodexR1() async throws {
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let folder = try folder()
+        let history = LiveHistory(folder: folder)
+        let todays = try await history.refreshHours(store, .heartRate, day: now, now: now, calendar: utc)
+        XCTAssertFalse(todays.isEmpty)
+        store.failFrom = [.heartRate: (store.calls[.heartRate] ?? 0) + 1]
+        do {
+            _ = try await history.refreshHours(store, .heartRate, day: now, now: now, calendar: utc)
+            XCTFail("a failed hourly read throws, never an empty day")
+        } catch {}
+        let kept = await LiveHistory(folder: folder).keptHours(.heartRate, calendar: utc)
+        XCTAssertEqual(kept, todays, "the kept hours stay")
+    }
+
+    /// Codex R2: a metric revoked while its page is open bumps that metric's removal count, which
+    /// is in the page's read key, so the page clears what it drew and drops a read begun before;
+    /// that read keeps nothing on disk either.
+    func testARevokedMetricClearsItsOpenPage_CodexR2() async throws {
+        let kept = try keptFile()
+        let folder = kept.deletingLastPathComponent()
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
+        _ = try await live.history.refreshNights(store, now: now, calendar: utc)
+        let before = LiveMetricPage.Wanted(wakes: live.wakes, removals: live.removals[.sleep] ?? 0, range: .week, days: [])
+        store.set(.sleep, segments: [])
+        store.empty = [.sleep]
+        store.delay = .milliseconds(200)
+        let open = Task { try await live.history.refreshNights(store, now: now, calendar: utc) }
+        try await Task.sleep(for: .milliseconds(50))
+        store.delay = nil
+        await live.refresh()
+        _ = try? await open.value
+        XCTAssertEqual(live.removals[.sleep], 1)
+        XCTAssertNil(live.removals[.steps], "only the revoked metric")
+        XCTAssertNotEqual(LiveMetricPage.Wanted(wakes: live.wakes, removals: live.removals[.sleep] ?? 0, range: .week, days: []), before, "the open page reads again")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appending(path: "history-sleep.json").path(percentEncoded: false)))
+        let reread = try await live.history.refreshNights(store, now: now, calendar: utc)
+        XCTAssertTrue(reread.isEmpty, "and its read again draws nothing")
+    }
+
     /// Adversary R10: card reads that all fail remove no history; only Health's answer of no data does.
     func testFailedCardReadsKeepTheHistories_R10() async throws {
         let kept = try keptFile()
@@ -1029,7 +1073,7 @@ final class LiveHealthTests: XCTestCase {
         let store = FakeLiveStore(due: false)
         store.fill(now: now)
         let first = ReadFor(wakes: 0, shows: 1)
-        let before = try await LiveHealth.readHours(store, .steps, day: now, now: now, calendar: utc)
+        let before = try await LiveHistory(folder: nil).refreshHours(store, .steps, day: now, now: now, calendar: utc)
         let today = utc.startOfDay(for: now)
         store.set(.steps, days: [LivePoint(start: today, value: 12_345)])
         let again = ReadFor(wakes: 0, shows: 2)

@@ -40,6 +40,9 @@ final class LiveHealth {
     /// Each page's history, kept beside the cards (AC7a, Brad 2026-11-03); read and written off
     /// the main thread.
     @ObservationIgnored let history: LiveHistory
+    /// Counts each metric's history removals: an open page clears what it shows and reads again,
+    /// and a read it began before is dropped (Codex R2).
+    private(set) var removals: [LiveMetric: Int] = [:]
 
     init(store: any LiveHealthStore, now: @escaping @Sendable () -> Date = { .now }, calendar: Calendar = .autoupdatingCurrent, kept: URL? = nil) {
         self.store = store
@@ -102,6 +105,7 @@ final class LiveHealth {
             if due == true {
                 keep([:])
                 await history.removeAll()
+                removed(LiveMetric.allCases)
             }
             guard due == false else { continue }
             do {
@@ -112,7 +116,10 @@ final class LiveHealth {
                 if cards != read || read.isEmpty { keep(read) }
                 // Health answered that it holds none of a metric (its access off in Settings, or
                 // emptied): that metric's history goes. A read that failed removes nothing (adversary R3, R10).
-                for metric in absent { await history.remove(metric) }
+                for metric in absent {
+                    await history.remove(metric)
+                    removed([metric])
+                }
                 if !hasRead { hasRead = true }
             } catch HealthStoreError.locked {
                 // Locked: keep what the last read drew (AC13), and let the unlock's wake through (N2).
@@ -131,6 +138,11 @@ final class LiveHealth {
         keep([:])
         if hasRead { hasRead = false }
         await history.removeAll()
+        removed(LiveMetric.allCases)
+    }
+
+    private func removed(_ metrics: [LiveMetric]) {
+        for metric in metrics { removals[metric, default: 0] += 1 }
     }
 
     /// Draws the cards and keeps them for the next launch; none removes the file (AC2).
@@ -254,15 +266,6 @@ final class LiveHealth {
     @concurrent
     nonisolated static func readDays(_ store: any LiveHealthStore, _ metric: LiveMetric, reaching reading: Date?, now: Date, calendar: Calendar) async throws -> [LivePoint] {
         try await days(store, metric, from: pageStart(reaching: reading, back: 400, now: now, calendar: calendar), to: now)
-    }
-
-    /// D's hours (AC7): the day holding `day`, up to now, read as the person moves to it.
-    @concurrent
-    nonisolated static func readHours(_ store: any LiveHealthStore, _ metric: LiveMetric, day: Date, now: Date, calendar: Calendar) async throws -> [LivePoint] {
-        let start = calendar.startOfDay(for: day)
-        let end = min(calendar.date(byAdding: .day, value: 1, to: start) ?? now, now)
-        guard end > start else { return [] }
-        return try await optional { try await store.points(metric, from: start, to: end, every: .hour) } ?? []
     }
 
     /// Sleep's page on its first visit (AC9, AC7a): the nights of the last 200 days, back further
