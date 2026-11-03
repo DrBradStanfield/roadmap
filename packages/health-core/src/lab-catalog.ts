@@ -694,7 +694,7 @@ export function labSlotKey(name: string): string {
 // Vocabularies read off the catalogue
 // ---------------------------------------------------------------------------
 // Two guards need to know what a health value looks like written down: the
-// feedback guard in `mcp-tools.ts` (a bug report must not carry a result) and
+// feedback guard in `mcp-feedback.ts` (a bug report must not carry a result) and
 // the Sentry free-text scrub. Both read the words and units off METRIC_LABELS,
 // UNIT_DEFS and the catalogue below rather than keeping a hand list, so a test
 // added tomorrow guards both for free.
