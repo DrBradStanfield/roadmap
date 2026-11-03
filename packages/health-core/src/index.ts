@@ -440,6 +440,7 @@ export {
   fetchOrFail,
   jsonBody,
   sleepUntilAborted,
+  timeoutSignal,
   type StorageAdapter,
   type StorageBackendId,
   type DocumentAccess,

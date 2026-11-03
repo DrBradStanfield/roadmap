@@ -278,3 +278,13 @@ export function deadlineSignal(deadline: number): AbortSignal {
   else (setTimeout(() => controller.abort(reason), left) as { unref?(): void }).unref?.();
   return controller.signal;
 }
+
+/**
+ * `AbortSignal.timeout(ms)` where the browser has it, else the same bound on
+ * the global timer. Safari 14/15 has no `AbortSignal.timeout`, and the widget
+ * ships untranspiled to it: called bare, it throws before the request is made
+ * (US-09 AC13g).
+ */
+export function timeoutSignal(ms: number): AbortSignal {
+  return typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(ms) : deadlineSignal(Date.now() + ms);
+}
