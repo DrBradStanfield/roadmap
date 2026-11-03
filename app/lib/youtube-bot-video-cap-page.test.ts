@@ -1,9 +1,9 @@
 /**
- * US-27 AC4: the 10-replies-per-video lifetime cap counts every reply the bot
- * has posted, however long the log grows.
+ * US-27 AC4: the per-video lifetime cap (PER_VIDEO_REPLY_CAP, 30 replies)
+ * counts every reply the bot has posted, however long the log grows.
  *
  * PostgREST answers a select with at most 1000 rows (Supabase's default max
- * rows; supabase.server.ts and the reminder sweep work around the same cap).
+ * rows; supabase-ab.server.ts and the reminder sweep work around the same cap).
  * The per-video totals were one select of every posted row, so once the log
  * passed 1000 posted replies, the rows past the first page never counted and
  * a video whose replies sat behind them read as having fewer than it had.
@@ -86,7 +86,7 @@ vi.mock('./supabase.server', async () => {
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 
 import * as Sentry from '@sentry/react-router';
-import { readPostingCaps } from './youtube-bot.server';
+import { readPostingCaps, PER_VIDEO_REPLY_CAP } from './youtube-bot.server';
 
 const POSTED_AT = '2026-08-01T00:00:00.000Z';
 let nextId = 1;
@@ -110,12 +110,12 @@ beforeEach(() => {
 });
 
 describe('US-27 AC4: the per-video cap counts every posted reply', () => {
-  it('counts a video whose 10 replies sit behind 1000 older posted replies', async () => {
+  it('counts a video at the cap whose replies sit behind 1000 older posted replies', async () => {
     // A skipped claim first, so the last id on a page (1001) is not the number of rows read (1000).
-    db.table = [skipped(), ...older(1000), ...Array.from({ length: 10 }, () => posted('new-video'))];
+    db.table = [skipped(), ...older(1000), ...Array.from({ length: PER_VIDEO_REPLY_CAP }, () => posted('new-video'))];
 
     const { videoPostCounts } = await readPostingCaps();
-    expect(videoPostCounts.get('new-video')).toBe(10);
+    expect(videoPostCounts.get('new-video')).toBe(PER_VIDEO_REPLY_CAP);
     expect(videoPostCounts.get('old-0')).toBe(5);
     expect(videoPostCounts.get('old-199')).toBe(5);
     // Each page asks in id order after the last id read: paging by id needs both.
