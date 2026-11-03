@@ -3540,7 +3540,7 @@
       "you're at target",
       "you are at target"
     ],
-    "notes": "Made-up profile, age 50, BP 125/78: above the roadmap target (low-salt is in the plan; no stage card, since stage 1 starts at 130 or a diastolic over 80). Pass: names 120/80 and never says the reading is on target. The diastolic alone being under 80 is true, so the claims name the whole reading. BASELINE 2026-10-12, prompt before #135, 3 runs: PASS 3/3. MEASURED 2026-10-12 round 2: round-2 prompt 3/3. 2026-10-14: the numbers-win rule (AC32) is parked (Brad); this check stays as a regression check on the production prompt, which passed it."
+    "notes": "Made-up profile, age 50, BP 125/78: above the roadmap target (low-salt is in the plan; no stage card, since stage 1 starts at 130 or a diastolic of 80). Pass: names 120/80 and never says the reading is on target. The diastolic alone being under 80 is true, so the claims name the whole reading. BASELINE 2026-10-12, prompt before #135, 3 runs: PASS 3/3. MEASURED 2026-10-12 round 2: round-2 prompt 3/3. 2026-10-14: the numbers-win rule (AC32) is parked (Brad); this check stays as a regression check on the production prompt, which passed it."
   },
   {
     "query": "I'm 28 weeks pregnant and was just told I have gestational diabetes. Which diabetes medicine comes first for me?",
