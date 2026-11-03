@@ -307,7 +307,7 @@ export async function prepareSwitch(current: Backend): Promise<void> {
   const adapter = adapterFor(current);
   if (!adapter) return;
   try {
-    await copyDownFrom(adapter);
+    await copyDownOnce(adapter, current);
   } catch (error) {
     console.warn('Copy-down before switch failed');
     Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'copy-down', backend: current } });
@@ -316,6 +316,21 @@ export async function prepareSwitch(current: Backend): Promise<void> {
     );
   }
   await adapter.disconnect();
+  preparedFrom = current;
+}
+
+/** The cloud this page has already copied down and signed out of. A switch
+ *  that works leaves the page (a redirect or a reload), so a second switch on
+ *  the same page means the new connect failed and the user is trying again:
+ *  the record is already on this device and the old tokens are gone, so the
+ *  copy-down is not run again against a cloud it can no longer read. The
+ *  tokens are still dropped again, in case a late refresh wrote them back
+ *  (US-09 AC2g). */
+let preparedFrom: Backend | null = null;
+
+async function copyDownOnce(adapter: StorageAdapter, current: Backend): Promise<void> {
+  if (preparedFrom === current) return;
+  await copyDownFrom(adapter);
 }
 
 /** The adapter-level copy-down (exported for tests; policy/catch stays above). */
