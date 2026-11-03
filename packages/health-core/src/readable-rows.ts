@@ -46,7 +46,7 @@ const ROWS = {
   measurements: (r: Row) => METRICS.has(r.metricType) && isNumber(r.value) && comparator(r)
     && strings(r, ['status', 'createdAt', 'source', 'correctsId', 'externalId']),
   labValues: (r: Row) => typeof r.metricName === 'string' && isNumber(r.value) && comparator(r) && optNumber(r.referenceLow) && optNumber(r.referenceHigh)
-    && strings(r, ['unit', 'status', 'createdAt', 'source', 'correctsId']),
+    && strings(r, ['unit', 'status', 'createdAt', 'source', 'correctsId', 'externalId']),
   medications: medication,
   medicationHistory: medication,
   supplements: supplement,

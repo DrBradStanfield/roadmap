@@ -155,9 +155,11 @@ describe('US-07 AC10 adversary fixes', () => {
     expect(row.name).toBe('chromium');
   });
 
-  it.each(['full', 'metadata'] as const)('%s: a core row with no printed name is filed exactly as before; a non-key metric is still dropped (R3)', (mode) => {
-    const { values } = extract({ values: [core('LDL'), core('Serum Creatinine', undefined, 80, '')] }, mode);
-    expect(values).toEqual([]);
+  it.each(['full', 'metadata'] as const)('%s: a core row with no printed name that names no core key is filed by that name, never dropped (R3, US-12 AC11a)', (mode) => {
+    const result = extract({ values: [core('LDL'), core('Serum Creatinine', undefined, 80, 'µmol/L')] }, mode);
+    expect(result.values.map((v) => v.metric)).toEqual(['ldl']);
+    // Creatinine by the model's name alone stays a lab row (US-12 AC11).
+    expect(result.additionalValues.map((v) => v.name)).toEqual(['Serum Creatinine']);
   });
 
   it('a printed name never moves a row into a core slot the model filled that day (R4)', () => {

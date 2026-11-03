@@ -384,6 +384,8 @@ export interface ScreeningInputs {
   // Prostate
   prostateDiscussion?: 'not_yet' | 'elected_not_to' | 'will_screen';
   prostatePsaValue?: number;
+  /** The saved PSA was printed as this limit (US-12 AC20): the card shows it, never `prostatePsaValue`. Derived, never stored. */
+  prostatePsaLimit?: { comparator: import('./lab-limits').Comparator; bound: number };
   prostateLastDate?: string;
 
   // Endometrial
@@ -434,6 +436,10 @@ export const SCREENING_MIN_AGE: Record<string, { age: number; sex?: 'male' | 'fe
   prostate:   { age: 45, sex: 'male' },
   dexa:       { age: 50 },
 };
+
+/** Lung screening's smoking history, USPSTF 2021: 20 pack-years or more. The plan, the
+ *  reminders and both forms read it, so they cannot disagree again (#285). */
+export const LUNG_PACK_YEARS = 20;
 
 export function isScreeningEligible(
   screeningType: string,

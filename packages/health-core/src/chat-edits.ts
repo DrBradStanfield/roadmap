@@ -16,8 +16,8 @@
  *  - propose_field_edit       — longitudinal measurements (weight, LDL, BP, …).
  *                               Pre-fills the real form cell; the user Saves.
  *  - propose_medication_edit  — medications (statin, ezetimibe, …). These
- *                               auto-save today, so the chat states the change
- *                               + offers Undo.
+ *                               auto-save today, so the chat states the change;
+ *                               the banner, not the chat, offers any Undo.
  *  - propose_profile_edit     — sex and height (US-16 AC2). The form saves
  *                               these on change, so the widget asks the user
  *                               to confirm before it writes anything.
@@ -180,7 +180,8 @@ export const PROPOSE_FIELD_EDIT_TOOL = {
 
 /**
  * Tool: propose a medication change. Medications auto-save on change today, so
- * the chat applies it immediately and tells the user what changed + offers Undo.
+ * the chat applies it immediately and tells the user what changed. Its words never
+ * promise an Undo: only the client knows whether it can offer one (US-67 N3).
  * `drugName` is one of the key's own answers, listed per key (US-16 AC3).
  */
 export const PROPOSE_MEDICATION_EDIT_TOOL = {
@@ -188,8 +189,8 @@ export const PROPOSE_MEDICATION_EDIT_TOOL = {
   description:
     "Update one of the user's medications in their form. Use ONLY when the user clearly states " +
     'a medication change (e.g. "I started atorvastatin 20mg", "set my statin to rosuvastatin 10mg"). ' +
-    'Medications save immediately, so after calling this, tell the user exactly what changed and ' +
-    'that they can undo it. Do not call this for measurements (use propose_field_edit) or for ' +
+    'Medications save immediately, so after calling this, tell the user exactly what changed. Do ' +
+    'not offer an Undo yourself; if asked, say the banner shows Undo when one is available. Do not call this for measurements (use propose_field_edit) or for ' +
     'supplements.',
   input_schema: {
     type: 'object' as const,
@@ -255,7 +256,7 @@ export const CHAT_EDIT_TOOLS = [PROPOSE_FIELD_EDIT_TOOL, PROPOSE_MEDICATION_EDIT
 /**
  * The iPhone app's form tools (US-67 AC3): the app has no form cell to
  * pre-fill, so a value and a profile edit show in a banner with Save and Not
- * now. Only the words differ; a medication saves at once with Undo, as on the
+ * now. Only the words differ; a medication saves at once, as on the
  * web. Its own tool list, so its own cache prefix; the web's text is unchanged.
  */
 export const APP_CHAT_EDIT_TOOLS = [
@@ -287,7 +288,7 @@ export const APP_CHAT_EDIT_TOOLS = [
 /**
  * Shown in the chat thread when the model proposed a form edit but returned no
  * prose. Shared by both transports so the two surfaces can't drift. A
- * measurement waits for Save; a medication saves at once with an undo banner;
+ * measurement waits for Save; a medication saves at once, and no line promises an Undo (US-67 N3);
  * a profile change waits for its own banner's Save, so a mixed turn says so
  * too (US-16 AC2b). `app`: the iPhone app's words (US-67 AC3), which has a Save
  * banner, not a form. `refused`: medication answers not saved, as their question
@@ -314,13 +315,13 @@ function editsAck(edits: ProposedEdit[], app: boolean): string {
 function formAck(edits: ProposedEdit[], app: boolean): string {
   const fields = edits.some((e) => e.kind === 'field');
   const meds = edits.some((e) => e.kind === 'medication');
-  if (meds && !fields) return "Done — I've updated your medications. You can undo this from the banner.";
+  if (meds && !fields) return "Done — I've updated your medications.";
   if (app) {
     return meds
-      ? "I've updated your medications (undo from the banner) and put the rest ready to save — check it and press Save."
+      ? "I've updated your medications and put the rest ready to save — check it and press Save."
       : "I've put that ready to save — check it and press Save.";
   }
-  if (meds) return "I've updated your medications (undo from the banner) and pre-filled your form — review the highlighted value and press Save.";
+  if (meds) return "I've updated your medications and pre-filled your form — review the highlighted value and press Save.";
   return "I've pre-filled that in your form — review the highlighted value and press Save.";
 }
 
@@ -502,8 +503,9 @@ export interface ChatMedicationRow {
  * else null. The answer is about the old drug, so it is reset unless the same
  * reply states it (`stated`: every key the reply names). The web also passes
  * `onForm`, the form's unsaved row for the key; the caller writes the reset
- * ('not_yet') when `undo` holds the saved answer, or the web form holds one
- * not yet saved.
+ * ('not_yet') when `undo` holds the saved answer, the web form holds one
+ * not yet saved, or the record holds one this build cannot read (US-67 N3:
+ * both clients then save the same record, with no Undo).
  */
 export function chatMedicationChange(
   edit: ProposedMedicationEdit,

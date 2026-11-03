@@ -15,7 +15,7 @@
  * and specific is the point — but never carry results, values, or reasoning.
  */
 import type { ScreeningInputs } from './types';
-import { getPostFollowupDueDate, getScreeningNextDueDate, isSex } from './types';
+import { getPostFollowupDueDate, getScreeningNextDueDate, isSex, LUNG_PACK_YEARS } from './types';
 import type {
   MeasurementDates,
   MedicationRecord,
@@ -32,10 +32,10 @@ import {
 } from './reminders';
 import { knownMinorOf } from './calculations';
 import { dayOf, localDay } from './merge';
-import { ISO_DATE, isCalendarDay } from './measurement-history';
+import { ISO_DATE, isCalendarDay, newestUsablePsa } from './measurement-history';
 import type { RoadmapFile } from './roadmap-file';
 import { currentValueRows } from './blood-tests';
-import { screeningsToInputs } from './mappings';
+import { screeningsToInputs, withPsaMeasurement } from './mappings';
 import { fileScreeningRows } from './file-inputs';
 
 // ===== Types =====
@@ -140,11 +140,11 @@ function screeningSchedule(
     ));
   }
 
-  // Lung (age 50-80, smoker with 15+ pack-years — USPSTF 2021)
+  // Lung (age 50-80, smoker with 20+ pack-years — USPSTF 2021)
   if (
     age >= 50 && age <= 80 &&
     (s.lungSmokingHistory === 'former_smoker' || s.lungSmokingHistory === 'current_smoker') &&
-    s.lungPackYears !== undefined && s.lungPackYears >= 15 &&
+    s.lungPackYears !== undefined && s.lungPackYears >= LUNG_PACK_YEARS &&
     s.lungScreening && s.lungScreening !== 'not_yet_started'
   ) {
     push('screening_lung', 'Lung screening (low-dose CT)', earliest(
@@ -302,7 +302,9 @@ function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleIte
 
   // The screenings the plan reads (US-06/US-15 AC11): a date that is not a
   // real calendar date, or a "last done" date after this month, is dropped.
-  const screenings = screeningsToInputs(fileScreeningRows(file.screenings));
+  // The PSA reminder dates from the newest saved PSA, as the plan's card does (US-06 AC14).
+  const screenings = withPsaMeasurement(screeningsToInputs(fileScreeningRows(file.screenings)),
+    newestUsablePsa(currentValueRows(file), now));
   return computeNextDueDates({ sex, age }, screenings, measurementDates, medications);
 }
 

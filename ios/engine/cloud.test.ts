@@ -209,12 +209,30 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     dropbox.beforeNextUpload = () => dropbox.put(web);
     const outcome = JSON.parse(engine.cloudEdit(add('2026-10-04'), erase, 'si', NOW)) as { ok: boolean };
     expect(outcome.ok).toBe(true);
+    // The answer's shape, which the app decodes: no other field rides along.
+    expect(Object.keys(outcome)).toEqual(['ok', 'record', 'erase']);
     expect(await engine.cloudFlush()).toBe('saved');
     expect(days(dropbox.record)).toEqual(['2026-10-03', '2026-10-04']);
     // The web's row came back to the screen with the save that folded it in.
     const changed = state.events.filter(([event]) => event === 'changed').at(-1)!;
     expect(days(JSON.parse((JSON.parse(changed[1]) as { record: string }).record) as RoadmapFile)).toEqual(['2026-10-03', '2026-10-04']);
     expect(state.pending).toBe(false);
+  });
+
+  it('US-72: a Health Records batch answers its counts beside the record', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const ldl = {
+      resourceType: 'Observation', id: 'ldl-1', status: 'final', effectiveDateTime: '2026-10-01', meta: { versionId: '1' },
+      code: { coding: [{ system: 'http://loinc.org', code: '13457-7' }] },
+      valueQuantity: { value: 2.6, unit: 'mmol/L', system: 'http://unitsofmeasure.org', code: 'mmol/L' },
+    };
+    const edit = JSON.stringify({ kind: 'healthRecords', records: [{ sourceId: 'src', resourceType: 'Observation', fhirVersion: '4.0.1', json: JSON.stringify(ldl) }] });
+    const outcome = JSON.parse(engine.cloudEdit(edit, erase, 'si', NOW)) as Record<string, unknown>;
+    expect(Object.keys(outcome)).toEqual(['ok', 'record', 'erase', 'healthRecords']);
+    expect(outcome.healthRecords).toEqual({ added: 1, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
   });
 
   it('AC17e: a value typed in a test\'s own units is stored right in the cloud record', async () => {

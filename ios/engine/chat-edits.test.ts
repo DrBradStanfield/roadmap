@@ -400,6 +400,19 @@ describe('US-67 AC4: unreadable rows in the pair and the escalation, and a medic
     expect(med$(after, 'statin')).toMatchObject({ drugName: 'atorvastatin', doseValue: 20 });
   });
 
+  // US-06 AC12, US-67 N3 (Brad 2026-11-03): one reply saves the same record on both clients.
+  // The web's twin is HealthTool.med-changes.test.tsx, "an unreadable escalation answer, reset
+  // by a chat statin dose change": the same input (drugName 42) gives not yet there too.
+  it('US-67 N3: the same record as the web for an unreadable escalation answer (drugName 42)', () => {
+    const file = statinRows({ drugName: 42, doseValue: null });
+    expect(preview(file, [med('statin', 'atorvastatin', 40)]).medications).toEqual(
+      { lines: [{ text: 'Statin: Atorvastatin 40 mg' }], undo: null, refusal: null });
+    const after = saved(file, 'medications', [med('statin', 'atorvastatin', 40)]);
+    expect(after.medications.filter((m) => m.medicationKey === 'statin_escalation'))
+      .toEqual([expect.objectContaining({ drugName: 'not_yet', doseValue: null, doseUnit: null })]);
+    expect(med$(after, 'statin')).toMatchObject({ drugName: 'atorvastatin', doseValue: 40 });
+  });
+
   it('US-67 N3: a readable escalation answer is reset and restored by Undo, as before', () => {
     const file = statinRows({ drugName: 'not_tolerated', doseValue: null });
     const shown = preview(file, [med('statin', 'atorvastatin', 20)]);

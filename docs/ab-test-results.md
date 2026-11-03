@@ -57,7 +57,7 @@ Bot-fix history is documented in commit `bf54559` ("Filter bot traffic from A/B 
 
 The admin dashboard at [app/routes/app.ab-testing.tsx](../app/routes/app.ab-testing.tsx) shows cumulative counts only and has no date filter. For any test that crosses a code-fix that materially affects traffic quality (like `bf54559`), cumulative numbers will mislead. Two options if this becomes a recurring problem:
 
-1. Pass a `since` cutoff through `getABTestResults` in [app/lib/supabase.server.ts](../app/lib/supabase.server.ts) and add a date picker to the dashboard.
+1. Pass a `since` cutoff through `getABTestResults` in [app/lib/supabase-ab.server.ts](../app/lib/supabase-ab.server.ts) and add a date picker to the dashboard.
 2. Always reset tests after any change to bot filtering / assignment logic.
 
 Option 2 is operational; option 1 is the durable fix.
