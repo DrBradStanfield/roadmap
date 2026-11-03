@@ -316,7 +316,7 @@ describe('a PSA saves only once its row is committed (US-06 AC15, Codex R2)', ()
 });
 
 describe('departure puts the save on disk before the page goes (US-06 AC15, Brad 2026-11-03: weight, waist or BP save on tab close)', () => {
-  it.each(['beforeunload', 'pagehide', 'visibilitychange'] as const)('%s with focus still in the PSA row: the PSA is on disk at once', async event => {
+  it.each(['beforeunload', 'pagehide'] as const)('%s with focus still in the PSA row: the PSA is on disk at once', async event => {
     const { view, psa, day } = await page();
     type(psa(), '6.5');
     pick(day, '2025-02-11');
@@ -366,6 +366,30 @@ describe('the line under the PSA field names the newest usable PSA (US-06 AC14, 
     const { view, note } = await page([[6.5, '2025-09-03'], [3.0, '2099-01-01']]);
     await waitFor(() => expect(note()).toContain('6.5 ng/mL'));
     expect(note()).not.toContain('3.0 ng/mL');
+    view.unmount();
+  });
+});
+
+describe('hiding the tab waits for the date (US-06 AC15, Brad 2026-11-03: "Wait for the date")', () => {
+  it('hidden with focus still in the PSA row, no date picked: nothing saved; then the page closes: saved', async () => {
+    const { view, psa } = await page();
+    type(psa(), '6.5');
+    depart('visibilitychange');
+    expect(rawActive('psa')).toEqual([]);
+    expect(document.activeElement).toBe(psa()); // the row is left as it was
+    depart('pagehide');
+    expect(rawActive('psa')).toEqual([[6.5, localDay(new Date())]]);
+    view.unmount();
+  });
+
+  it('hidden after the PSA row was left (committed, its save waiting): on disk at once', async () => {
+    const { view, psa, day } = await page();
+    type(psa(), '6.5');
+    act(() => day.focus());
+    pick(day, '2025-02-11');
+    act(() => day.blur());
+    depart('visibilitychange');
+    expect(rawActive('psa')).toEqual([[6.5, '2025-02-11']]);
     view.unmount();
   });
 });

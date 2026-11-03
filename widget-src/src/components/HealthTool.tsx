@@ -853,17 +853,18 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   }, [flushLongitudinalSave, scheduleLongitudinalSave]);
   // Stage only queued edits, with the erase they were made against, then flush
   // synchronously: the entrypoint's earlier listener may have flushed first.
-  // A matrix's draft stays on the device instead (US-03 AC5). A closing or
-  // hidden tab fires no blur, so focus still in the PSA row is moved out
-  // first: the row's blur commits it, with its own checks. The fields' waiting
-  // save and a committed PSA are then written at once, not on the timer or a
-  // promise, which would run after the flush (US-06 AC15; Brad 2026-11-03:
-  // weight, waist or BP save on tab close). iOS kills a hidden tab, so hiding
-  // stages the same.
+  // A matrix's draft stays on the device instead (US-03 AC5). A closing tab
+  // fires no blur, so focus still in the PSA row is moved out first: the
+  // row's blur commits it, with its own checks. The fields' waiting save and
+  // a committed PSA are then written at once, not on the timer or a promise,
+  // which would run after the flush (US-06 AC15; Brad 2026-11-03: weight,
+  // waist or BP save on tab close). iOS kills a hidden tab, so hiding stages
+  // the same, but leaves an unfinished PSA row alone: it waits for its date
+  // (Brad 2026-11-03, "Wait for the date").
   useEffect(() => {
-    const stage = () => {
+    const stage = (closing: boolean) => {
       const focused = document.activeElement;
-      if (focused instanceof HTMLElement && focused.closest('.psa-inline-row')) focused.blur();
+      if (closing && focused instanceof HTMLElement && focused.closest('.psa-inline-row')) focused.blur();
       profileDebounce.flush();
       const pending = pendingSaveRef.current;
       if (pending) {
@@ -873,9 +874,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       }
       flushRoadmapStoreSync();
     };
-    const onUnload = stage;
+    const onUnload = () => stage(true);
     const onHidden = () => {
-      if (document.visibilityState === 'hidden') stage();
+      if (document.visibilityState === 'hidden') stage(false);
     };
     window.addEventListener('beforeunload', onUnload);
     window.addEventListener('pagehide', onUnload);
