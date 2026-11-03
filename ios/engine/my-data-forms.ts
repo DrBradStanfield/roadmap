@@ -24,7 +24,7 @@ import { BLOOD_PRESSURE, pressureHistory } from './blood-pressure';
 import { cellUnitFor, systemFor, type UnitChoices } from './unit-choices';
 import type { EditOutcome } from './my-data';
 import { cellFromSI, cellLabel, limitCellText, type CellUnit } from '../../packages/health-core/src/cell-unit';
-import { LIMIT_NOT_GRADED, comparatorOf, isComparator, type Comparator } from '../../packages/health-core/src/lab-limits';
+import { LIMIT_NOT_GRADED, comparatorOf, formatGradedOrLimit, isComparator, type Comparator } from '../../packages/health-core/src/lab-limits';
 import { groupLabValues, labValueLabel, mixedUnitsNote, savedLabText } from '../../packages/health-core/src/lab-series';
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from '../../packages/health-core/src/lab-catalog';
 import { limitUngraded, pressureStatus, valueStatus, type GradeContext, type PressureReading } from '../../packages/health-core/src/row-grade';
@@ -295,9 +295,11 @@ export function applyFormEdit(file: RoadmapFile, edit: Exclude<FormEdit, { kind:
  * out (US-72 AC5). The record is append-only: this
  * view offers corrections, never removal.
  */
-/** A stored value as its cell shows it: a limit with its symbol, at places that keep it true (US-12 AC20). */
+/** A stored value as its cell shows it: a limit with its symbol, at places that keep it true (US-12 AC20).
+ *  A raised PSA prints on its side of 4.0, as the web's PSA line does (US-06 AC18). */
 export function rowText(metric: MetricType, row: { value: number; comparator?: Comparator }, unit: CellUnit): string {
-  return limitCellText(metric, row.value, unit, comparatorOf(row).comparator);
+  const { comparator } = comparatorOf(row);
+  return metric === 'psa' ? formatGradedOrLimit('psa', row.value, 'si', comparator) : limitCellText(metric, row.value, unit, comparator);
 }
 
 /** Whom and against what plan My data's values are graded, as the web's rows grade them (InputPanel.tsx
