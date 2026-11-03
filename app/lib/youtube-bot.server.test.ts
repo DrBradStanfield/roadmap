@@ -5,6 +5,7 @@ import {
   buildThreadHistory,
   addressReply,
   readPostingCaps,
+  PER_VIDEO_REPLY_CAP,
   completionOutcome,
   shouldUnclaim,
   persistYouTubeTurn,
@@ -12,6 +13,8 @@ import {
   isNotReplyableError,
   type YouTubeReply,
 } from './youtube-bot.server';
+import { ROUTER_VERSION } from './chat-router.server';
+import { CHAT_MODEL, FALLBACK_RESPONSE } from './chat.server';
 
 // Chainable PostgREST-builder stub: every filter returns the chain, awaiting it
 // resolves to whatever response the test staged.
@@ -233,6 +236,11 @@ describe('US-27: posting-cap reads fail closed', () => {
     await expect(readPostingCaps()).rejects.toMatchObject({ code: 'PGRST303' });
   });
 
+  // Brad 2026-11-03: raised from 10 to 30 now the replies are better.
+  it('caps each video at 30 bot replies in its lifetime (US-27)', () => {
+    expect(PER_VIDEO_REPLY_CAP).toBe(30);
+  });
+
   it('resolves both caps on success, aggregating per-video totals', async () => {
     supa.countRes = { count: 7, error: null };
     supa.listRes = {
@@ -269,7 +277,6 @@ describe('US-15 AC15: a refusal skips the comment and keeps the claim', () => {
     });
     expect(JSON.stringify(vi.mocked(Sentry.captureMessage).mock.calls)).not.toContain(line);
     expect(outcome.skipReason).toBe('main-LLM refusal (general_harms)');
-    expect(outcome.llmOutput).toBeUndefined();
     expect(outcome.replyText).toBeUndefined();
     expect(shouldUnclaim(outcome)).toBe(false);
   });
@@ -283,10 +290,10 @@ describe('US-15 AC15: a refusal skips the comment and keeps the claim', () => {
 
   it('SKIP_NO_REPLY keeps the claim; an answer is posted', () => {
     const skip = completionOutcome({ content: ' SKIP_NO_REPLY ', usage, isFallback: false }, 1);
-    expect(skip).toMatchObject({ posted: false, llmOutput: 'SKIP_NO_REPLY' });
+    expect(skip).toMatchObject({ posted: false, skipReason: 'main-LLM returned SKIP_NO_REPLY' });
     expect(shouldUnclaim(skip)).toBe(false);
     expect(completionOutcome({ content: 'An answer. ', usage, isFallback: false }, 1))
-      .toMatchObject({ posted: true, replyText: 'An answer.', llmOutput: 'An answer.' });
+      .toMatchObject({ posted: true, replyText: 'An answer.' });
   });
 });
 
@@ -322,7 +329,8 @@ describe('US-15 AC27: stored text cuts keep surrogate pairs whole (Sentry 6Y)', 
     });
 
     const conv = supa.inserts.find((i) => i.table === 'chat_conversations');
-    expect(conv?.row.title).toBe('a'.repeat(79));
+    // US-15 AC52: the web's generateTitle, so a long title ends in an ellipsis.
+    expect(conv?.row.title).toBe('a'.repeat(79) + '…');
     const evt = supa.inserts.find((i) => i.table === 'chat_match_events');
     expect(evt?.row.router_raw).toBe('r'.repeat(499));
     for (const { row } of supa.inserts) expect(JSON.stringify(row)).not.toMatch(LONE_SURROGATE);
@@ -380,5 +388,138 @@ describe('US-53: a comment YouTube will not let us reply to is skipped, not an e
     expect(isNotReplyableError(new Error(`YouTube post failed: 400 ${body}`))).toBe(true);
     expect(isNotReplyableError(new Error('YouTube post failed: 403 quota'))).toBe(false);
     expect(isNotReplyableError(new Error('YouTube post failed: 400 other'))).toBe(false);
+  });
+});
+
+// US-15 AC37a: every chat row a YouTube turn writes, pinned column for column,
+// so moving the router columns into one shared mapping changes nothing else.
+describe('US-15 AC37a: the YouTube turn rows, column for column', () => {
+  const thread = {
+    topLevelCommentId: 'c1', videoId: 'v1', authorDisplayName: 'Viewer', authorChannelId: 'UC_viewer',
+    text: 'What is a good ApoB?', publishedAt: '2026-10-14T00:00:00Z',
+  };
+  const usage = { inputTokens: 11, outputTokens: 22, cacheCreationTokens: 0, cacheReadTokens: 0 };
+  const routerResult = {
+    handles: ['apob'], rawJson: '{"handles":["apob"]}', latencyMs: 15, cacheHit: true, error: null,
+    usage: { inputTokens: 900, outputTokens: 37, cacheCreationTokens: 0, cacheReadTokens: 120 },
+  };
+  const conv = { user_id: 'bot-profile', title: 'What is a good ApoB?', platform: 'youtube', external_id: 'c1' };
+  const userRow = { conversation_id: 'conv-1', user_id: 'bot-profile', role: 'user', content: 'What is a good ApoB?' };
+  const context = { platform: 'youtube', videoId: 'v1', commentId: 'c1', followUpCommentId: null };
+
+  it('a posted answer the router ran for', async () => {
+    supa.inserts.length = 0;
+    await persistYouTubeTurn({
+      thread, postedYoutubeId: 'yt-9',
+      outcome: { posted: true, classification: 'ROUTE', routerHandles: ['apob'], routerResult, routerSkipped: false,
+        replaced: ['old-post'], replyText: 'An answer.', completion: { content: 'An answer.', usage, isFallback: false }, isFallback: false },
+    });
+    const asst = supa.inserts[2].row;
+    expect(supa.inserts).toEqual([
+      { table: 'chat_conversations', row: conv },
+      { table: 'chat_messages', row: userRow },
+      { table: 'chat_messages', row: { id: expect.any(String), conversation_id: 'conv-1', user_id: 'bot-profile', role: 'assistant',
+        content: 'An answer.', input_tokens: 11, output_tokens: 22, model: CHAT_MODEL, is_fallback: false, failure_mode: null, error_detail: null } },
+      { table: 'chat_match_events', row: {
+        message_id: asst.id, conversation_id: 'conv-1', user_id: 'bot-profile', message: 'What is a good ApoB?',
+        router_context: { ...context, postedYoutubeId: 'yt-9', posted: true, skipReason: null, replaced: ['old-post'] },
+        matched_handles: ['apob'], router_version: ROUTER_VERSION, router_latency_ms: 15, router_cache_hit: true,
+        router_input_tokens: 900, router_cache_read_tokens: 120, router_output_tokens: 37, router_raw: null, router_error: null,
+        classification: 'ROUTE', router_skipped: false, is_fallback: false, failure_mode: null,
+      } },
+    ]);
+  });
+
+  it('a classifier skip: the router did not run, so every router column is null, router_version included', async () => {
+    supa.inserts.length = 0;
+    await persistYouTubeTurn({
+      thread, postedYoutubeId: null,
+      outcome: { posted: false, skipReason: 'classifier=GREETING', classification: 'GREETING', routerHandles: [], routerResult: null, routerSkipped: true },
+    });
+    expect(supa.inserts).toEqual([
+      { table: 'chat_conversations', row: conv },
+      { table: 'chat_messages', row: userRow },
+      { table: 'chat_match_events', row: {
+        message_id: null, conversation_id: 'conv-1', user_id: 'bot-profile', message: 'What is a good ApoB?',
+        router_context: { ...context, postedYoutubeId: null, posted: false, skipReason: 'classifier=GREETING' },
+        matched_handles: [], router_version: null, router_latency_ms: null, router_cache_hit: null,
+        router_input_tokens: null, router_cache_read_tokens: null, router_output_tokens: null, router_raw: null, router_error: null,
+        classification: 'GREETING', router_skipped: true, is_fallback: false, failure_mode: null,
+      } },
+    ]);
+  });
+});
+
+// US-15 AC52 (Brad 2026-11-03, "do it"): a YouTube turn writes the rows the web
+// chat writes, a failed turn included, from the same mappings.
+describe('US-15 AC52: a YouTube turn writes the web chat\'s rows', () => {
+  const thread = {
+    topLevelCommentId: 'c1', videoId: 'v1', authorDisplayName: 'Viewer', authorChannelId: 'UC_viewer',
+    text: 'What is a good ApoB?', publishedAt: '2026-11-03T00:00:00Z',
+  };
+  const usage = { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 };
+  const rowOf = (table: string, role?: string) =>
+    supa.inserts.find((i) => i.table === table && (!role || i.row.role === role))?.row;
+
+  it('a failed answer (api-error) stores the assistant row with failure_mode and error_detail, as the web does', async () => {
+    supa.inserts.length = 0;
+    const completion = { content: FALLBACK_RESPONSE, usage, isFallback: true, failureMode: 'api-error' as const, errorDetail: 'e'.repeat(600) };
+    await persistYouTubeTurn({
+      thread, postedYoutubeId: null,
+      outcome: { classification: 'ROUTE', routerHandles: [], routerResult: null, routerSkipped: true, completion, ...completionOutcome(completion, 1) },
+    });
+    const asst = rowOf('chat_messages', 'assistant');
+    expect(asst).toEqual({
+      id: expect.any(String), conversation_id: 'conv-1', user_id: 'bot-profile', role: 'assistant',
+      content: FALLBACK_RESPONSE, input_tokens: 0, output_tokens: 0, model: CHAT_MODEL,
+      is_fallback: true, failure_mode: 'api-error', error_detail: 'e'.repeat(500),
+    });
+    expect(rowOf('chat_match_events')).toMatchObject({ message_id: asst?.id, is_fallback: true, failure_mode: 'api-error' });
+  });
+
+  it('an empty answer stores failure_mode empty-response and no error_detail', async () => {
+    supa.inserts.length = 0;
+    const completion = { content: FALLBACK_RESPONSE, usage, isFallback: true, failureMode: 'empty-response' as const };
+    await persistYouTubeTurn({ thread, postedYoutubeId: null, outcome: { completion, ...completionOutcome(completion, 1) } });
+    expect(rowOf('chat_messages', 'assistant')).toMatchObject({ content: FALLBACK_RESPONSE, is_fallback: true, failure_mode: 'empty-response', error_detail: null });
+  });
+
+  it('a refusal stores the refusal line with failure_mode refusal, not a fallback', async () => {
+    supa.inserts.length = 0;
+    const line = "I can't help with that here. Please raise it with your doctor or pharmacist.";
+    const completion = { content: line, usage, isFallback: false, isRefusal: true, refusalCategory: 'general_harms' as const, failureMode: 'refusal' as const, stopReason: 'refusal' };
+    await persistYouTubeTurn({ thread, postedYoutubeId: null, outcome: { completion, ...completionOutcome(completion, 1) } });
+    expect(rowOf('chat_messages', 'assistant')).toMatchObject({ content: line, is_fallback: false, failure_mode: 'refusal', error_detail: null });
+    expect(rowOf('chat_match_events')).toMatchObject({ is_fallback: false, failure_mode: 'refusal' });
+  });
+
+  it('stores the answer trimmed, as posted, so a padded SKIP_NO_REPLY still reads SKIP_NO_REPLY', async () => {
+    for (const [raw, stored] of [[' An answer.\n', 'An answer.'], [' SKIP_NO_REPLY\n', 'SKIP_NO_REPLY']]) {
+      supa.inserts.length = 0;
+      const completion = { content: raw, usage, isFallback: false };
+      await persistYouTubeTurn({ thread, postedYoutubeId: null, outcome: { completion, ...completionOutcome(completion, 1) } });
+      expect(rowOf('chat_messages', 'assistant')?.content).toBe(stored);
+    }
+  });
+
+  it('a classifier skip (no model call) still stores no assistant row', async () => {
+    supa.inserts.length = 0;
+    await persistYouTubeTurn({ thread, postedYoutubeId: null, outcome: { posted: false, skipReason: 'classifier=GREETING', classification: 'GREETING' } });
+    expect(rowOf('chat_messages', 'assistant')).toBeUndefined();
+    expect(rowOf('chat_match_events')?.message_id).toBeNull();
+  });
+
+  it('the match event holds the question as the web stores it: control characters spaced, first 500 characters', async () => {
+    supa.inserts.length = 0;
+    await persistYouTubeTurn({ thread: { ...thread, text: 'a\u0007b' + 'c'.repeat(700) }, postedYoutubeId: null, outcome: { posted: false, skipReason: 'no-match' } });
+    expect(rowOf('chat_match_events')?.message).toBe('a b' + 'c'.repeat(497));
+    // The comment itself stays whole in its chat_messages row.
+    expect(rowOf('chat_messages', 'user')?.content).toBe('a\u0007b' + 'c'.repeat(700));
+  });
+
+  it('the conversation title is made as the web makes it', async () => {
+    supa.inserts.length = 0;
+    await persistYouTubeTurn({ thread: { ...thread, text: 'Is ApoB better than LDL? I am asking for my dad.' }, postedYoutubeId: null, outcome: { posted: false, skipReason: 'no-match' } });
+    expect(rowOf('chat_conversations')?.title).toBe('Is ApoB better than LDL?');
   });
 });

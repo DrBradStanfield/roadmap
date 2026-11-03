@@ -1264,6 +1264,9 @@
     "expected": [
       "creatine-benefits-best-forms-dosing-and-side-effects"
     ],
+    "must_not_route": [
+      "kidney-health"
+    ],
     "category": "supplement",
     "source": "production",
     "notes": "Safety-angle creatine query — differs from existing 'Creatine for muscle growth' (use-case angle)"
@@ -3537,7 +3540,7 @@
       "you're at target",
       "you are at target"
     ],
-    "notes": "Made-up profile, age 50, BP 125/78: above the roadmap target (low-salt is in the plan; no stage card, since stage 1 starts at 130 or a diastolic over 80). Pass: names 120/80 and never says the reading is on target. The diastolic alone being under 80 is true, so the claims name the whole reading. BASELINE 2026-10-12, prompt before #135, 3 runs: PASS 3/3. MEASURED 2026-10-12 round 2: round-2 prompt 3/3. 2026-10-14: the numbers-win rule (AC32) is parked (Brad); this check stays as a regression check on the production prompt, which passed it."
+    "notes": "Made-up profile, age 50, BP 125/78: above the roadmap target (low-salt is in the plan; no stage card, since stage 1 starts at 130 or a diastolic of 80). Pass: names 120/80 and never says the reading is on target. The diastolic alone being under 80 is true, so the claims name the whole reading. BASELINE 2026-10-12, prompt before #135, 3 runs: PASS 3/3. MEASURED 2026-10-12 round 2: round-2 prompt 3/3. 2026-10-14: the numbers-win rule (AC32) is parked (Brad); this check stays as a regression check on the production prompt, which passed it."
   },
   {
     "query": "I'm 28 weeks pregnant and was just told I have gestational diabetes. Which diabetes medicine comes first for me?",
@@ -8041,5 +8044,285 @@
     "source": "chat-health-2026-W44",
     "expected_classification": "GREETING",
     "notes": "2026-W44 chat-health: widget turn, paraphrased. A meta complaint about the tool's layout after two table-scrolling asks labelled ACCOUNT. Production ROUTE (router empty); replay context-free GREETING 3/3, in thread ROUTE 3/3. KNOWN-FLAKY in thread; this fixture is context-free."
+  },
+  {
+    "query": "What is a healthy ApoB level?",
+    "expected": [
+      "high-cholesterol"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide high-cholesterol."
+  },
+  {
+    "query": "Which statin should I start with, and should I add ezetimibe?",
+    "expected": [
+      "high-cholesterol"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide high-cholesterol; the ezetimibe article may follow it."
+  },
+  {
+    "query": "What does low non-HDL cholesterol mean?",
+    "expected": [
+      "high-cholesterol"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide high-cholesterol."
+  },
+  {
+    "query": "What is my LDL?",
+    "expected": [],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Negative: read-back of the user's own data, no guide."
+  },
+  {
+    "query": "What does a coronary calcium score above the age percentile mean?",
+    "expected": [
+      "heart-disease-risk"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide heart-disease-risk."
+  },
+  {
+    "query": "Should I get a calcium score?",
+    "expected": [
+      "heart-disease-risk"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide heart-disease-risk."
+  },
+  {
+    "query": "What is my 10-year heart attack risk?",
+    "expected": [
+      "heart-disease-risk"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide heart-disease-risk."
+  },
+  {
+    "query": "Did you see my calcium score report I uploaded?",
+    "expected": [],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Negative: data access question, no guide."
+  },
+  {
+    "query": "I lift weights and my BMI says overweight, is that right?",
+    "expected": [
+      "weight"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide weight."
+  },
+  {
+    "query": "Is a GLP-1 drug safe with reflux?",
+    "expected": [
+      "weight"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide weight; the tirzepatide articles may follow it."
+  },
+  {
+    "query": "How do I lose fat without losing muscle?",
+    "expected": [
+      "weight"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide weight (the diet guide may also fit)."
+  },
+  {
+    "query": "Can you see all my recorded weights?",
+    "expected": [],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Negative: data access question, no guide."
+  },
+  {
+    "query": "What blood pressure should I aim for?",
+    "expected": [
+      "high-blood-pressure"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide high-blood-pressure."
+  },
+  {
+    "query": "Will potassium lower my blood pressure?",
+    "expected": [
+      "potassium-benefits-forms-dosing-and-side-effects",
+      "high-blood-pressure"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Potassium entry first, guide high-blood-pressure second."
+  },
+  {
+    "query": "What does HTN mean?",
+    "expected": [
+      "high-blood-pressure"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide high-blood-pressure."
+  },
+  {
+    "query": "I entered a wrong BP reading, how do I edit it?",
+    "expected": [],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Negative: app how-to, no guide."
+  },
+  {
+    "query": "I have crushing chest pain right now and I have high cholesterol",
+    "expected": [],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Red-flag negative: an emergency must not route to the high-cholesterol guide (like the other cardiovascular red-flag fixtures, expected is empty)."
+  },
+  {
+    "query": "My calcium score is zero but my LDL is 5.2 mmol/L, do I still need a statin?",
+    "expected": [
+      "heart-disease-risk",
+      "high-cholesterol"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Codex R1: the LDL 190 mg/dL (4.9 mmol/L) exception to calcium-zero advice. Guides heart-disease-risk and high-cholesterol."
+  },
+  {
+    "query": "What A1c counts as prediabetes?",
+    "expected": [
+      "type-2-diabetes-and-prediabetes"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide type-2-diabetes-and-prediabetes."
+  },
+  {
+    "query": "Metformin or an SGLT2 drug?",
+    "expected": [
+      "type-2-diabetes-and-prediabetes"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide type-2-diabetes-and-prediabetes."
+  },
+  {
+    "query": "What does HOMA-IR mean?",
+    "expected": [
+      "type-2-diabetes-and-prediabetes"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide type-2-diabetes-and-prediabetes."
+  },
+  {
+    "query": "How do I log my glucose reading in the tool?",
+    "expected": [],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Negative: app how-to, no guide."
+  },
+  {
+    "query": "My eGFR is low, are supplements safe?",
+    "expected": [
+      "kidney-health"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide kidney-health. The proposal puts a supplement entry second; no handle named, so left out."
+  },
+  {
+    "query": "What is a normal eGFR?",
+    "expected": [
+      "kidney-health"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide kidney-health."
+  },
+  {
+    "query": "Cystatin C or creatinine?",
+    "expected": [
+      "kidney-health"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide kidney-health."
+  },
+  {
+    "query": "Does creatine help muscle?",
+    "expected": [
+      "creatine-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "must_not_route": [
+      "kidney-health"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Negative for kidney-health: the creatine entry, not the guide (likeliest false positive)."
+  },
+  {
+    "query": "Fix the wrong eGFR in my record",
+    "expected": [],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Negative: app how-to, no guide."
+  },
+  {
+    "query": "Can I take K2 on warfarin?",
+    "expected": [
+      "vitamin-k-benefits-forms-dosing-and-side-effects",
+      "blood-thinners"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Vitamin K entry first, guide blood-thinners second."
+  },
+  {
+    "query": "Does fish oil interact with Eliquis?",
+    "expected": [
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+      "blood-thinners"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Omega-3 entry first, guide blood-thinners second."
+  },
+  {
+    "query": "Warfarin or a newer drug for atrial fibrillation?",
+    "expected": [
+      "blood-thinners"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide blood-thinners."
+  },
+  {
+    "query": "Is MicroVitamin safe with a blood thinner?",
+    "expected": [
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Negative for blood-thinners: vitamin K reference alone (router rule 7), not the guide."
+  },
+  {
+    "query": "Does glucosamine work for knee arthritis?",
+    "expected": [
+      "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+      "osteoarthritis"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Glucosamine entry first, guide osteoarthritis second."
+  },
+  {
+    "query": "When should I get a knee replacement?",
+    "expected": [
+      "osteoarthritis"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide osteoarthritis."
+  },
+  {
+    "query": "Is running bad for my knees?",
+    "expected": [
+      "osteoarthritis"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Guide osteoarthritis."
+  },
+  {
+    "query": "How can psoriatic arthritis pain be eased?",
+    "expected": [],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Negative: inflammatory, not OA; the guide must not claim it."
+  },
+  {
+    "query": "Does the collagen in MicroVitamin+ help my joints?",
+    "expected": [
+      "collagen-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Negative for osteoarthritis: the collagen entry, not the guide."
   }
 ]

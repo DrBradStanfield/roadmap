@@ -26,7 +26,7 @@ const HOUR = 3_600_000;
 const MIN_SECRET = 8;
 const SNOWFLAKE = /^\d{17,20}$/;
 const BRAD_KEY = 'DISCORD_DrBradStanfield_USER_ID';
-// Also in packages/health-core/src/mcp-tools.ts and sentry-scrub.ts; copied because plain node cannot import TypeScript.
+// Also in packages/health-core/src/mcp-feedback.ts and sentry-scrub.ts; copied because plain node cannot import TypeScript.
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/;
 // `name [at] domain [dot] com`: only the bracketed form; a bare "at ... dot" is ordinary prose ("looked at the dot com era").
 // The last part is a letters-only top-level domain, so "meet me (at) 5.30" is not an address.

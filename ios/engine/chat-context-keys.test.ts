@@ -26,7 +26,7 @@ function producible(): Set<string> {
 
 describe('chat context allow-list (Codex R3)', () => {
   it('is exactly the keys chatContextOf can produce', () => {
-    expect(allowed.size).toBe(25);
+    expect(allowed.size).toBe(26);
     expect([...allowed].sort()).toEqual([...producible()].sort());
   });
 
@@ -42,15 +42,15 @@ describe('chat context allow-list (Codex R3)', () => {
 // Codex R1 on PR 402 (US-07 AC8): a binary forwards only its own allow-list, so an engine
 // that produces a key an older binary lacks must not reach it. The bridge id is what keeps
 // an engine from an app (D3): it moves with the contract, and an app reads only its own
-// bridge's releases. These are the last binary's bridge and allow-list, before labEgfrOutdated:
-// builds 3 and 4 carry 2d467ff50c66c42d (main's id before the 2026-11-01 move).
+// bridge's releases. These are the last binary's bridge and allow-list, before limits
+// (US-12 AC20): build 5 carries 8dee92d80c028ed3 (main's id before the 2026-11-02 move).
 describe('an older binary never takes an engine whose chat context it would strip', () => {
   const PREVIOUS = {
-    bridge: '2d467ff50c66c42d',
+    bridge: '8dee92d80c028ed3',
     keys: [
       'heightCm', 'weightKg', 'waistCm', 'sex', 'birthYear', 'birthMonth',
       'hba1c', 'ldlC', 'totalCholesterol', 'hdlC', 'triglycerides', 'apoB', 'creatinine', 'psa', 'lpa',
-      'systolicBp', 'diastolicBp', 'labEgfr', 'labEgfrDate', 'unitSystem', 'alcohol',
+      'systolicBp', 'diastolicBp', 'labEgfr', 'labEgfrDate', 'labEgfrOutdated', 'unitSystem', 'alcohol',
       'medications', 'screenings', 'measurementHistory',
     ],
   };
@@ -58,13 +58,14 @@ describe('an older binary never takes an engine whose chat context it would stri
 
   it('the engine produces a key the previous binary strips, so the bridge id has moved', () => {
     const stripped = [...producible()].filter((key) => !PREVIOUS.keys.includes(key));
-    expect(stripped).toEqual(['labEgfrOutdated']);
+    expect(stripped).toEqual(['limits']);
     expect(bridge).not.toBe(PREVIOUS.bridge);
   });
 
   it('the contract names the key and the rule, and Swift serves the new bridge', () => {
     const contract = JSON.parse(readFileSync(join(__dirname, 'bridge-contract.json'), 'utf8'));
     expect(contract.doors.chatContextJson.returns).toContain('labEgfrOutdated');
+    expect(contract.doors.chatContextJson.returns).toContain('limits');
     expect(contract.doors.chatContextJson.returns).toContain('must not run this engine');
     const release = readFileSync(join(__dirname, '../HealthRoadmap/EngineUpdates/EngineRelease.swift'), 'utf8');
     expect(release).toContain(`static let bridge = "${bridge}"`);

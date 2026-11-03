@@ -1,3 +1,5 @@
+import type { InputLimits } from './lab-limits';
+
 /**
  * Health input data from user.
  *
@@ -39,7 +41,15 @@ export interface HealthInputs {
   unitSystem?: 'si' | 'conventional';
   /** US-60: "Do you drink alcohol?", from `profile.alcohol`. Absent: not answered. */
   alcohol?: AlcoholAnswer;
+  /** US-12 AC20: the fields read from a result printed as a limit. Such a field
+   *  holds the plan's representative when the limit decides, else nothing. */
+  limits?: InputLimits;
 }
+
+/** What the plan computes from: the inputs, plus `pressureOrder` (US-07 AC11) when the
+ *  newest pair was the wrong way up and the caller left both halves out (US-02 AC8). The
+ *  blood pressure prompt then asks to check the reading. Never stored or sent. */
+export type SuggestionInputs = HealthInputs & { pressureOrder?: true };
 
 /** US-60: the two answers to "Do you drink alcohol?". */
 export const ALCOHOL_ANSWERS = ['none', 'drinks'] as const;
@@ -61,6 +71,8 @@ export interface HealthResults {
   apoB?: number;              // g/L (passthrough from inputs)
   ldlC?: number;              // mmol/L (passthrough from inputs)
   eGFR?: number;              // mL/min/1.73m² (CKD-EPI 2021, or the lab's own: US-07 AC7)
+  /** US-12 AC20: the inputs' limits, so every surface shows a limit's bound, never the representative. */
+  limits?: InputLimits;
   /** The eGFR is the lab's printed one, not calculated from creatinine. */
   eGFRFromLab?: true;
   lpa?: number;               // nmol/L (passthrough from inputs)
@@ -372,6 +384,8 @@ export interface ScreeningInputs {
   // Prostate
   prostateDiscussion?: 'not_yet' | 'elected_not_to' | 'will_screen';
   prostatePsaValue?: number;
+  /** The saved PSA was printed as this limit (US-12 AC20): the card shows it, never `prostatePsaValue`. Derived, never stored. */
+  prostatePsaLimit?: { comparator: import('./lab-limits').Comparator; bound: number };
   prostateLastDate?: string;
 
   // Endometrial
@@ -422,6 +436,10 @@ export const SCREENING_MIN_AGE: Record<string, { age: number; sex?: 'male' | 'fe
   prostate:   { age: 45, sex: 'male' },
   dexa:       { age: 50 },
 };
+
+/** Lung screening's smoking history, USPSTF 2021: 20 pack-years or more. The plan, the
+ *  reminders and both forms read it, so they cannot disagree again (#285). */
+export const LUNG_PACK_YEARS = 20;
 
 export function isScreeningEligible(
   screeningType: string,

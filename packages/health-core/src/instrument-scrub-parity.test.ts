@@ -12,7 +12,7 @@ import * as source from './sentry-scrub';
 import { UNIT_DEFS } from './units';
 import { METRIC_TYPES } from './validation';
 import { METRIC_LABELS } from './mappings';
-import { foldName, LAB_CATALOG } from './lab-catalog';
+import { foldName, LAB_CATALOG, normalizeLabUnit } from './lab-catalog';
 // @ts-expect-error -- plain .mjs script with no declarations; this parity test
 // only needs its runtime exports.
 import * as copy from '../../../instrument-scrub.mjs';
@@ -211,6 +211,10 @@ describe('free-text scrub parity', () => {
     expect(copy.SCRUB_UNITS, paste('SCRUB_UNITS', source.SCRUB_UNITS)).toEqual(source.SCRUB_UNITS);
   });
 
+  it('US-09 AC7e — instrument-scrub.mjs builds the same unit regex', () => {
+    expect(copy.SCRUB_UNIT_PATTERN).toBe(source.SCRUB_UNIT_PATTERN);
+  });
+
   it('instrument-scrub.mjs carries the derived SCRUB_METRIC_WORDS verbatim', () => {
     expect(copy.SCRUB_METRIC_WORDS, paste('SCRUB_METRIC_WORDS', source.SCRUB_METRIC_WORDS))
       .toEqual(source.SCRUB_METRIC_WORDS);
@@ -231,6 +235,61 @@ describe('free-text scrub parity', () => {
       const units = new Set(impl.SCRUB_UNITS.map((u: string) => u.toLowerCase()));
       for (const entry of LAB_CATALOG) {
         expect(units, `unit "${entry.unit}" (${entry.key}) missing`).toContain(entry.unit.toLowerCase());
+      }
+    }
+  });
+
+  it('US-09 AC7e — a number beside a unit spelling the catalogue accepts is scrubbed, on both copies', () => {
+    for (const impl of [source, copy]) {
+      expect(impl.scrubText('potassium 4.1 mEq/L')).toBe('potassium [value]');
+      expect(impl.scrubText('result 4.1 mEq/L')).toBe('result [value]');
+      expect(impl.scrubText('read 2.5 µIU/mL today')).toBe('read [value] today');
+      expect(impl.scrubText('read 2.5 uIU/mL today')).toBe('read [value] today');
+      expect(impl.scrubText('count 250 thou/µL')).toBe('count [value]');
+      expect(impl.scrubText('count 250 thou/uL')).toBe('count [value]');
+      expect(impl.scrubText('count 6.1 x10^9/L')).toBe('count [value]');
+      expect(impl.scrubText('count 6.1 ×10^9/L')).toBe('count [value]');
+      expect(impl.scrubText('count 4.5 ×10³/µL')).toBe('count [value]');
+      expect(impl.scrubText('result 14 g/dL')).toBe('result [value]');
+      expect(impl.scrubText('result 12 mm/h')).toBe('result [value]');
+      // A unit alias that is an English word is never a unit here.
+      expect(impl.scrubText('retry 3 ratio')).toBe('retry 3 ratio');
+      expect(impl.scrubText('shard 2 fraction')).toBe('shard 2 fraction');
+      const units = new Set(impl.SCRUB_UNITS.map((u: string) => u.toLowerCase()));
+      for (const entry of LAB_CATALOG) {
+        for (const spelling of [...(entry.unitAliases ?? []), ...Object.keys(entry.conversions ?? {})]) {
+          if (/^[a-z]+$/i.test(spelling)) continue;
+          expect(units, `unit alias "${spelling}" (${entry.key}) missing`).toContain(spelling);
+        }
+      }
+    }
+  });
+
+  it('US-09 AC7e — every spelling normalizeLabUnit folds into a catalogue unit is scrubbed, on both copies', () => {
+    // One or more raw spellings per normaliser branch (lab-catalog.ts normalizeLabUnit).
+    const branches: Record<string, string[]> = {
+      'Greek mu': ['μmol/L', 'μIU/mL', 'μg/L'],
+      'cell-count exponent': ['10^9/L', '10e9/L', 'x 10e9/L', 'X10E9/L', '10*3/uL', '10**9/L', 'x10(3)/uL',
+        '10^(9)/L', '10³/µL', 'x10³/uL', '×10^12/L', 'x10^6/uL'],
+      'ASCII micro': ['umol/L', 'ug/L', 'uIU/mL', 'uU/mL'],
+      'mcg and mcL': ['mcg/L', 'cells/mcL', 'thou/mcL'],
+      'uL and ul': ['cells/uL', 'k/ul'],
+      'lowercase litre': ['mmol/l', 'nmol/l'],
+      'squared metre': ['mL/min/1.73m2', 'mL/min/1.73m^2', 'mL/min/1.73 m2'],
+      'gm/dL': ['gm/dL'],
+      'Unit and Units': ['Units/L', 'Unit/L'],
+      'cubic millimetre token': ['cells/cmm', 'cells/cumm', 'cells/cu mm', 'cells/cu.mm', 'cells/c.mm'],
+      'mm3 denominator': ['cells/mm3', 'cells/mm³', 'x10^3/mm3'],
+    };
+    const accepted = new Set(LAB_CATALOG.flatMap((entry) => [
+      entry.unit, ...(entry.unitAliases ?? []), ...Object.keys(entry.conversions ?? {})]).map((u) => u.toLowerCase()));
+    for (const [branch, spellings] of Object.entries(branches)) {
+      for (const raw of spellings) {
+        // The spelling really is one the catalogue reads, once normalised.
+        expect(accepted, `${branch}: "${raw}" → "${normalizeLabUnit(raw)}"`).toContain(normalizeLabUnit(raw).toLowerCase());
+        for (const impl of [source, copy]) {
+          expect(impl.scrubText(`result 4.2 ${raw} today`), `${branch}: "${raw}"`).toBe('result [value] today');
+        }
       }
     }
   });

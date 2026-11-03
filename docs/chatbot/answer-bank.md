@@ -1,4 +1,4 @@
-<!-- generated — never edit; source hash sha256:90c8b6d69c963d51f92e8c401a844b390cc644907cd95dd5f7b662612287be0f -->
+<!-- generated — never edit; source hash sha256:523ee7a3a193caed4cb30e871ee637a4c508a2ad59ac1e161ccf3ac3a2df53f9 -->
 <!-- Built by claude_business tools/sync-shared-docs.mjs from docs/customer-service/answer-bank.md. Edit the master there and rerun the sync. -->
 
 Approved answers to questions customers have asked by email (81 entries), written in the first person. Each entry gives the question, then the answer.
@@ -368,11 +368,11 @@ Good resources are consumerlab and labdoor for third-party testing
 
 Please let me know if you have any other questions
 
-### Which brand of NAC do you recommend?
+### Is resveratrol worth taking, or is there an alternative to it?
 
-Regarding NAC, I'd suggest looking at consumerlab.com and labdoor.com for a
-good brand
-Both of those websites are great
+I don't take or recommend Resveratrol
+This older video of mine on the subject might be of interest to you:
+https://youtu.be/Xn0EJQPyxkA
 
 ### Should I take coenzyme Q10?
 

@@ -15,17 +15,18 @@ import type { RecordHost } from '../../packages/health-core/src/record-host';
 import { ERASE_UNREACHABLE, RecordSession, saveRecordInto } from '../../packages/health-core/src/record-session';
 import { copyCloudDown, liftDeviceCopy } from '../../packages/health-core/src/record-transfer';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { isCoreRow } from '../../packages/health-core/src/blood-tests';
 import { labArchivePayload, saveDocuments, type DocumentPayload, type DocumentSaveIO, type DocumentSavePlan } from '../../packages/health-core/src/document-save';
 import { validDay } from '../../packages/health-core/src/record-edits';
 import { failed, PhoneCloudAdapter, PhoneFileAdapter, type CloudNatives, type Provider } from './cloud-adapters';
 import { eraseChatText } from './app-doors';
 import { labRows, labSaveSummary, type Extraction } from './lab-review';
-import { applyEdit, readRecord, type Edit, type EditOutcome } from './my-data';
+import { applyEdit, movedBloodTests, readRecord, type Edit, type EditOutcome } from './my-data';
 import { lpaUnitOf, readUnitChoices, unitsOf } from './unit-choices';
 
 declare const __native: CloudNatives;
 
-type CloudHost = Extract<RecordHost, { tier: 'cloud' }>;
+type CloudHost = Extract<RecordHost, { tier: 'cloud' }> & { store: PhoneCloudAdapter };
 
 function hostFor(provider: Provider, deviceId: string, phone: PhoneFileAdapter, id: number): CloudHost {
   // The marker generation this session's working copy holds: the one it saw as it
@@ -167,20 +168,30 @@ export async function cloudOpen(provider: Provider, deviceId: string, firstConne
   }
   open = at;
   at.live.start();
+  // US-66 AC14: the open moved blood tests into one table, against the bytes the
+  // cloud holds: written once, as an edit is. A save the cloud refuses waits on
+  // the phone, and the next open, reading the old bytes again, writes it again.
+  if (movedBloodTests(host.store.lastRecord, session.file)) commit(at, session.file, session.eraseIdentity, new Date().toISOString());
   keepPhoneCopy(at);
   return view(at);
 }
 
 /** Only edits whose number is read in the user's units can be misread after a
  *  unit change: a value, a correction, a height. */
-function dependsOnUnits(edit: Edit): boolean {
-  return edit.kind === 'add' || edit.kind === 'correct' || (edit.kind === 'profile' && edit.height !== undefined);
+export function dependsOnUnits(edit: Edit, file: RoadmapFile): boolean {
+  // A lab value's correction is in the unit its row is stored in, whatever the record's units (review R7);
+  // a core blood test's is read in the record's units, like a vital's, though it is a lab row (US-66 AC6).
+  if (edit.kind === 'correct') {
+    return file.measurements.some((row) => row.id === edit.id) || file.labValues.some((row) => row.id === edit.id && isCoreRow(row));
+  }
+  return edit.kind === 'add' || (edit.kind === 'profile' && edit.height !== undefined);
 }
 
 /** A value or correction of Lp(a), read in Lp(a)'s own unit, which the record holds (US-05 AC2). */
 function dependsOnLpaUnit(edit: Edit, file: RoadmapFile): boolean {
   if (edit.kind === 'add') return edit.metric === 'lpa';
-  return edit.kind === 'correct' && file.measurements.some((row) => row.id === edit.id && row.metricType === 'lpa');
+  // Lp(a) is a core lab row (US-66 AC9).
+  return edit.kind === 'correct' && file.labValues.some((row) => row.id === edit.id && isCoreRow(row) && row.metricName === 'lpa');
 }
 
 type Refusal = Extract<EditOutcome, { ok: false }>;
@@ -227,7 +238,7 @@ function editSession(edit: Edit, erase: string, shownUnits: string, nowIso: stri
   const { session } = at;
   // A number is read in the units the screen showed. If another device has
   // changed the units since, the same number would be stored in the wrong ones.
-  if (dependsOnUnits(edit) && shownUnits !== unitsOf(session.file)) {
+  if (dependsOnUnits(edit, session.file) && shownUnits !== unitsOf(session.file)) {
     return refuse('units-changed', 'Your units changed on another device, so this was not saved. Close this and enter the value again.');
   }
   // Lp(a)'s unit is the record's too (US-05 AC2): a number typed in the old one is never
@@ -247,7 +258,8 @@ function editSession(edit: Edit, erase: string, shownUnits: string, nowIso: stri
     const refusal = commit(at, outcome.file, erase, nowIso);
     if (refusal) return refusal;
   }
-  return { ok: true as const, record: JSON.stringify(session.file), erase: session.eraseIdentity };
+  const { file: _edited, ok, ...extra } = outcome;
+  return { ok, record: JSON.stringify(session.file), erase: session.eraseIdentity, ...extra };
 }
 
 /**

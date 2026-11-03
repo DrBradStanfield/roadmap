@@ -42,6 +42,8 @@ const REFS_SODIUM: SuggestionReference[] = [
   { label: 'Huang 2020 – Dietary sodium reduction & BP (BMJ)', url: 'https://doi.org/10.1136/bmj.m315' },
 ];
 
+const REF_BP_2017: SuggestionReference = { label: 'Whelton 2017 – ACC/AHA Blood Pressure Guideline (Hypertension)', url: 'https://doi.org/10.1161/HYP.0000000000000065' };
+
 const REFS_BP_LIFESTYLE: SuggestionReference[] = [
   { label: 'Charchar 2023 – ISH lifestyle management of hypertension', url: 'https://doi.org/10.1097/HJH.0000000000003563' },
 ];
@@ -179,7 +181,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
     references: [
       ...REFS_SODIUM,
       ...REFS_BP_LIFESTYLE,
-      { label: 'Whelton 2017 – ACC/AHA Blood Pressure Guideline (Hypertension)', url: 'https://doi.org/10.1161/HYP.0000000000000065' },
+      REF_BP_2017,
     ],
   },
 
@@ -289,7 +291,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── General ────────────────────────────────────────────────
 
   'measure-waist': {
-    reason: 'With a BMI in the 25–30 range, waist circumference is critical for determining whether your weight poses health risks. The AACE 2025 guidelines and NICE guidelines use waist-to-height ratio (WHtR) to reclassify individuals — a WHtR below 0.5 indicates healthy body composition even with a BMI of 25–29.9.',
+    reason: 'Fat around the middle is linked to heart and metabolic risk. Waist-to-height ratio can flag risk that a healthy BMI misses; the AACE 2025 and NICE guidelines suggest keeping it under 0.5.',
     guidelines: ['AACE 2025', 'NICE'],
     references: [
       { label: 'Ashwell 2012 – WHtR better than BMI for cardiometabolic risk (Obes Rev)', url: 'https://doi.org/10.1111/j.1467-789X.2011.00952.x' },
@@ -426,6 +428,12 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
 
   // ── Blood Pressure ─────────────────────────────────────────
 
+  'measure-bp': {
+    reason: 'High blood pressure usually causes no symptoms, so a reading is the only way to know. Home readings with an automated upper-arm cuff, taken seated after a few minutes of rest, are a practical way to track it; every 2–4 weeks is enough to see a trend.\n\nThis plan aims for <120/80 mmHg, as some doctors do, based on the SPRINT and ESPRIT trials, or <130/80 mmHg if you\'re frail.',
+    guidelines: ['ACC/AHA 2017', 'SPRINT 2015', 'ESPRIT 2024'],
+    references: [REF_BP_2017, ...REFS_BP_TRIALS],
+  },
+
   'bp-crisis': {
     reason: 'A blood pressure reading this high (≥180/120 mmHg) is classified as a hypertensive crisis. If accompanied by symptoms such as chest pain, shortness of breath, severe headache, or vision changes, this is a medical emergency requiring immediate attention.',
     guidelines: [...GUIDELINES_BP],
@@ -439,7 +447,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'bp-stage1': {
-    reason: 'Stage 1 hypertension (130–139 systolic or 80–89 diastolic mmHg; this plan flags a diastolic above 80) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.',
+    reason: 'Stage 1 hypertension (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.',
     guidelines: [...GUIDELINES_BP, 'SPRINT 2015', 'ESPRIT 2024'],
     references: [...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS],
   },
@@ -517,7 +525,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'screening-lung': {
-    reason: 'The USPSTF recommends annual low-dose CT screening for adults aged 50–80 with a smoking history of ≥15 pack-years (current or former smokers). Low-dose CT can detect lung cancer at an early, treatable stage, significantly reducing lung cancer mortality.',
+    reason: 'The USPSTF recommends annual low-dose CT screening for adults aged 50–80 with a smoking history of ≥20 pack-years (current or former smokers). Low-dose CT can detect lung cancer at an early, treatable stage, significantly reducing lung cancer mortality.',
     guidelines: ['USPSTF 2021'],
     references: [
       ...REFS_SCREENING_ACS,

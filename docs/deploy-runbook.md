@@ -114,6 +114,8 @@ fly status -c fly.edu.toml  # health-tool-edu
 
 **Record schemaVersion 2 ships everywhere at once (US-09 AC23, 2026-10-20).** An erase now writes `schemaVersion` 2, and older bundles and CLIs refuse that file. Ship the storefront extension, both Fly apps (the hosted MCP runs on health-tool-edu) and the GitHub Pages build in the same deploy window, or a user who erases on a new surface locks themselves out of an old one until it updates.
 
+**Record schemaVersion 3 ships everywhere at once too (US-66 AC15, 2026-11-02).** A record that holds a core blood-test row is saved as `schemaVersion` 3, and the first save after the update moves every record with a blood test there. Older bundles, Pages builds and CLI or stdio MCP clones refuse it. Ship the same surfaces in one window, as for version 2.
+
 **Shopify account-link proof ships in a fixed order (US-09 AC27, 2026-10-21).** The new code accepts a link only when `app_metadata.shopify_customer_id` proves it, and no existing link has that yet. Deploy before step (c) and every linked customer chats as a guest until it runs. In order:
 (a) Turn off public sign-up: Supabase Dashboard → Authentication → "Allow new users to sign up" off, or Management API `PATCH /v1/projects/{ref}/config/auth` with `{"disable_signup": true}`. The server creates customers and guests with service-role `admin.createUser`, which this does not block.
 (b) Apply, as postgres in one transaction, the `handle_new_user` change and the profiles section of `supabase/rls-policies.sql` (trigger reads `raw_app_meta_data`; drop the "Users can update own profile" policy; `REVOKE ALL ON profiles FROM anon, authenticated`; `GRANT SELECT ON profiles TO authenticated`). Check that the trigger reads only `raw_app_meta_data` and that only `authenticated | SELECT` remains.
@@ -282,7 +284,8 @@ to both — deploy twice, see "Shopify app configs".**)
 
 Moved out of CLAUDE.md 2026-09-24 (entropy pass). `.env` has all of them.
 
-- **Shared keys**: SUPABASE_*, SESSION_DATABASE_URL, SENTRY_*, RESEND_*,
+- **Shared keys**: SUPABASE_*, SESSION_DATABASE_URL + PGSSLMODE (the session store ignores `sslmode` in the
+  URL; production refuses to start without a TLS mode, US-09 AC31), SENTRY_*, RESEND_*,
   ANTHROPIC_API_KEY, SHOPIFY_*, KLAVIYO_API_KEY/KLAVIYO_LIST_ID (the same
   MicroVitamin pair on both apps, by decision 2026-09-28).
 - **Fly-only**: MCP_ISSUER, MCP_SEAL_KEYS, MCP_CLIENT_HMAC_KEY,
@@ -299,6 +302,9 @@ Moved out of CLAUDE.md 2026-09-24 (entropy pass). `.env` has all of them.
 - **Chat switches** (optional, both default on): `CHAT_ENABLED=false` answers
   every chat POST 503; `CHAT_STREAMING=false` makes `/api/chat` ignore
   `stream: true` and answer JSON, which the widget reads unchanged (US-15 AC16).
+- **Web chat cap** (optional): `WEB_CHAT_DAILY_CAP` (default 10000 turns/machine/day,
+  0 turns web chat off; a value that is not a number of 0 or more uses the default). Each
+  shopper IP also gets 200 turns a day (US-15 AC45).
 - **Subscription changes in the chat (US-59), commerce app ONLY**:
   `CHAT_SUBSCRIPTION_ACTIONS=on` (default off), `CS_GATEWAY_CHAT_URL` (the
   gateway's private address: see the private customer-service spec) and

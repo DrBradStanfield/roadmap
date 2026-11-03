@@ -66,7 +66,7 @@ Mirrors the reminder cron skeleton:
 5. On lock acquisition: query Shopify Admin, compute, write metafield.
 6. Sentry instrumentation: `tags: { feature: 'trending_cron' }`.
 
-The lock is row-keyed by `lock_name`. Reminder uses `'reminder_cron'`, trending uses `'trending_cron'`. Lock names are typed as `CronLockName` (union) — see [app/lib/supabase.server.ts:1747](../app/lib/supabase.server.ts#L1747). New crons must add their lock name to the union AND seed a row alongside the existing entries in [supabase/rls-policies.sql](../supabase/rls-policies.sql) (around line 511); a typo silently disables the cron.
+The lock is row-keyed by `lock_name`. Reminder uses `'reminder_cron'`, trending uses `'trending_cron'`. Lock names are typed as `CronLockName` (union) — see [app/lib/supabase-cron-lock.server.ts](../app/lib/supabase-cron-lock.server.ts). New crons must add their lock name to the union AND seed a row alongside the existing entries in [supabase/rls-policies.sql](../supabase/rls-policies.sql) (its Cron lock table section); a typo silently disables the cron.
 
 ## ShopifyQL query
 
@@ -147,7 +147,7 @@ Storing only `handle` + `score` in the metafield (no titles or images) — Liqui
 | [app/lib/trending-cron.server.ts](../app/lib/trending-cron.server.ts) | Cron module. Auto-starts via `startTrendingCron()` on module import (skipped in dev/test). Exports `computeTrending` (pure) for unit testing |
 | [app/lib/blog-index.server.ts](../app/lib/blog-index.server.ts) | Shared `loadBlogIndex()` helper. Reads `docs/blog/index.json` once, cached for process lifetime. Used by trending-cron + chat.server.ts + chat-router.server.ts |
 | [app/entry.server.tsx](../app/entry.server.tsx) | Imports `stopTrendingCron` for SIGTERM graceful shutdown |
-| [app/lib/supabase.server.ts](../app/lib/supabase.server.ts) | Exports `CronLockName` union type. `tryAcquireCronLock(machineId, today, lockName)` requires `lockName: CronLockName` |
+| [app/lib/supabase-cron-lock.server.ts](../app/lib/supabase-cron-lock.server.ts) (re-exported by `supabase.server.ts`) | Exports `CronLockName` union type. `tryAcquireCronLock(machineId, today, lockName)` requires `lockName: CronLockName` |
 | [supabase/rls-policies.sql](../supabase/rls-policies.sql) | Seeds `cron_lock` row for `'trending_cron'` (idempotent INSERT) |
 
 ## Deploy / operations

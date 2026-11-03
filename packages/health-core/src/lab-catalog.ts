@@ -636,7 +636,7 @@ const ENTRY_BY_NAME: ReadonlyMap<string, LabCatalogEntry> = (() => {
  * moves; a stored row in a punctuated spelling now reads under its entry, as
  * `labSlotKey` resolves it (a non-SI unit is corrected on load by `migrate.ts`).
  */
-function looseFold(name: string): string {
+export function looseFold(name: string): string {
   return foldName(name).replace(/\b([ap])\.\s?m\.?(?![a-z])/g, '$1m').replace(/[-‐‑–—−(),:/]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
@@ -654,6 +654,11 @@ const ENTRY_BY_LOOSE_NAME: ReadonlyMap<string, LabCatalogEntry | null> = (() => 
   }
   return byLoose;
 })();
+
+/** Whether any catalogue name, ambiguous or not, has this loose fold: such a form never resolves to a core test (US-66 AC4). */
+export function isLooseCatalogueName(loose: string): boolean {
+  return ENTRY_BY_LOOSE_NAME.has(loose);
+}
 
 /** Resolve a report's test name (any casing/spelling) to a catalogue entry.
  *  BOTH sides are folded before comparing, so the underscore/space variance
@@ -689,7 +694,7 @@ export function labSlotKey(name: string): string {
 // Vocabularies read off the catalogue
 // ---------------------------------------------------------------------------
 // Two guards need to know what a health value looks like written down: the
-// feedback guard in `mcp-tools.ts` (a bug report must not carry a result) and
+// feedback guard in `mcp-feedback.ts` (a bug report must not carry a result) and
 // the Sentry free-text scrub. Both read the words and units off METRIC_LABELS,
 // UNIT_DEFS and the catalogue below rather than keeping a hand list, so a test
 // added tomorrow guards both for free.
