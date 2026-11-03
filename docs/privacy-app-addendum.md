@@ -76,9 +76,8 @@ cards and charts show at once, the app keeps a copy of these readings on this iP
 each card's latest reading, with its date and the values behind its trend line; each chart's
 history, as one value a day (steps as the day's total, heart rate as the day's lowest,
 highest and average, the others as the day's average); the last week of hourly values for
-the day view; and sleep's recorded stages, with their times and which app recorded them.
-Each time a card or chart shows, it asks Apple Health only for what is new and updates the
-copy. These files sit in the app's private storage, apart from your record, and are not
+the day view; and sleep's recorded stages, with their times, which app recorded them and Apple Health's id for each; each file also notes the phone's time zone.
+Each time a card or chart shows, it checks Apple Health for changes and updates the copy. These files sit in the app's private storage, apart from your record, and are not
 backed up to iCloud or to a computer. When the phone has a passcode, they are encrypted
 until you first enter that passcode after a restart. The readings never go into your record,
 the app's settings, your Dropbox or Google Drive, the chat's summary of your record, the
