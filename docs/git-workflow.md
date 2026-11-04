@@ -55,7 +55,9 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    its own command), re-review that part (PR 150), push, and let CI run again; otherwise merge as is. What
    that skips (main changed a file the PR only calls) is first tested by CI on main, and nothing ships before
    it passes: Pages waits for that run on the exact commit, and Deploy runs the full suite itself. A red main
-   is then the next session's first fix. Or let auto-ship merge it. Use merge commits, not squash: the cleanup
+   is then the next session's first fix. Once a re-run or a fix turns it green, a Pages run that already
+   refused it does not come back on its own: `gh workflow run pages.yml`, or the next Deploy's Pages smoke
+   fails on the refused run. Or let auto-ship merge it. Use merge commits, not squash: the cleanup
    script proves the work reached `main` by ancestry. Only Brad's account merges to `main` by hand, his
    sessions included; contributors get no write access (Brad 2026-11-04). Brad's account merges
    workflow-file PRs.
@@ -84,8 +86,9 @@ and Brad merges them. One at a time, each merge made the rest conflict and re-ru
 1. **Triage by class.** High risk: clinical, merge/FHIR, security, agent contracts (MCP tools, hooks, guards),
    workflows, live write paths (sync, storage, erase, reminders). Low risk: everything else (UI, focus,
    keyboard, copy, tests only). Read each PR's files, not only its title.
-2. **Review first, pinned to a SHA.** Record each PR's head (`gh pr view <n> --json headRefOid`). One fresh
-   `adversary` reads each low-risk PR's diff at that SHA against its story and gives a verdict per PR; no
+2. **Review first, pinned to a SHA.** Record each PR's head (`gh pr view <n> --json headRefOid`) before the
+   review and check it is unchanged after (`gh pr diff` shows the current head). One fresh
+   `adversary` reads each low-risk PR's diff against its story and gives a verdict per PR; no
    Codex. A high-risk PR gets its own adversary plus Codex, as CLAUDE.md requires; `.github/workflows/**`
    changes need Brad's explicit yes. A rejected PR stays out of the batch, with a comment on it saying why.
    Never merge a PR into a batch and then revert it: its head would still reach main, and GitHub would mark

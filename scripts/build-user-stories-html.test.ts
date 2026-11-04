@@ -109,10 +109,12 @@ describe('build-user-stories-html.ts — the build', () => {
 
   it('never publishes a script: unsafe link schemes become plain text, quotes cannot leave the href, and a CSP blocks scripts', () => {
     // The Pages copy shares its origin with the self-hosted app's stored record and keys (Codex R1, 2026-11-04).
-    const md = `${spec(1)}\n[a](javascript:alert%281%29) [b](JavaScript:x) [c](data:text/html,x) [d](vbscript:x) [e](foo"onmouseover=alert(1)) [f](mailto:a@b.test)\n`;
+    const md = `${spec(1)}\n[a](javascript:alert%281%29) [b](JavaScript:x) [c](data:text/html,x) [d](vbscript:x) [e](foo"onmouseover=alert(1)) [f](mailto:a@b.test) [g](\x01javascript:alert(1)) [h](java\x09script:x)\n`;
     for (const html of [build(md).html!, run(md, ['--link-base', 'https://github.com/o/r/blob/main/docs/']).html!]) {
       expect(html).not.toMatch(/href="(javascript|data|vbscript):/i);
+      expect(html).not.toMatch(/href="[^"]*[\x00-\x1f]/); // a browser strips these and then reads the scheme (re-check N1)
       expect(html).toMatch(/<p>a b c d /);
+      expect(html).toMatch(/ g\) \[h\]/); // g is plain text; h never parses as a link (\s ends an href)
       expect(html).not.toContain('"onmouseover');
       expect(html).toContain('foo&quot;onmouseover=alert(1">e</a>');
       expect(html).toContain('<a href="mailto:a@b.test">f</a>');

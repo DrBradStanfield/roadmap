@@ -116,7 +116,7 @@ units, mappings, evidence, merge, roadmap-file, + tests) · `widget-src/src/`
 npm run build:shopify-prod   # live v2 widget bundle + upload bundle
 npm run build:widget         # side bundles only (upload, site-chat, chatbot)
 npm test                     # health-core only
-npm run test:all             # EVERYTHING (CI runs it; never a local merge gate)
+npm run test:all             # EVERYTHING (CI runs it in 4 shards; never a local merge gate)
 npx vitest related <files> --run   # just the tests your change touches
 node scripts/build-guide-html.mjs docs/guides/<g>.md   # publishable guide HTML
 ```

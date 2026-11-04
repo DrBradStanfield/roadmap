@@ -39,6 +39,8 @@ function inline(s: string): string {
     .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, text: string, href: string) => {
       // The Pages copy shares its origin with the self-hosted app and its stored record and keys,
       // so a link may only go somewhere safe: http(s), mailto, an anchor, or a relative path.
+      // Browsers drop leading control characters before reading a scheme, so a link holding any is refused.
+      if (/[\x00-\x1f\x7f]/.test(href)) return text;
       const scheme = href.match(/^([a-z][a-z0-9+.-]*):/i)?.[1].toLowerCase();
       if (scheme && !['http', 'https', 'mailto'].includes(scheme)) return text;
       const url = linkBase && !scheme && !/^[#/]/.test(href) ? linkBase + href : href;
