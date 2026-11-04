@@ -117,7 +117,9 @@ jobs:
   pages-smoke:
     needs: gate
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # pages.yml now waits for CI on main before building (US-64 AC9), so the
+    # wait below allows 25 min: CI (~3-4) plus the Pages build, with queue room.
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v5
         with:
@@ -134,7 +136,7 @@ jobs:
             echo "No pages.yml run for ${SHA} (server-only change) — smoking the existing Pages site."
             exit 0
           fi
-          for i in $(seq 1 60); do
+          for i in $(seq 1 150); do
             status=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" --jq '.status')
             conclusion=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" --jq '.conclusion // ""')
             if [ "${status}" = "completed" ]; then

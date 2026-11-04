@@ -116,8 +116,8 @@ units, mappings, evidence, merge, roadmap-file, + tests) · `widget-src/src/`
 npm run build:shopify-prod   # live v2 widget bundle + upload bundle
 npm run build:widget         # side bundles only (upload, site-chat, chatbot)
 npm test                     # health-core only
-npm run test:all             # EVERYTHING (root vitest; what CI runs)
-npx vitest run <path>        # single suite
+npm run test:all             # EVERYTHING (CI runs it in 4 shards; never a local merge gate)
+npx vitest related <files> --run   # just the tests your change touches
 node scripts/build-guide-html.mjs docs/guides/<g>.md   # publishable guide HTML
 ```
 
@@ -130,8 +130,8 @@ since 2026-09-02 has NO wait timer and NO required reviewer: the gate is the
 only check, and the notification issue is a heads-up, not a veto. Trigger:
 Actions → Deploy → Run workflow, or the Tier 3 pipeline (claude-review →
 auto-ship → dispatch). **Standing deploy permission (Brad 2026-10-22):** the main session may run the CI
-Deploy (`gh workflow run deploy.yml`) once test:all passes and the required reviews are done, then
-reports each deploy (sha, result, live checks) to Brad.
+Deploy (`gh workflow run deploy.yml`) once CI is green and the required reviews are done (once per
+batch of merges), then reports each deploy (sha, result, live checks) to Brad.
 **Commit before any deploy** — `fly deploy` ships the working tree. `.env`
 has every variable; the list and per-Fly-app secrets: docs/deploy-runbook.md
 § Environment variables. ANTHROPIC_API_KEY (spend-capped) is the only repo secret.
@@ -159,12 +159,11 @@ test. Miss a step = the value silently fails to round-trip.
 ## Development Pathway (story-driven)
 
 **Every behavior change flows through a user story** —
-[docs/user-stories.md](docs/user-stories.md) (source of truth; regenerate
-`user-stories.html` via `npx tsx scripts/build-user-stories-html.ts` in the
-same commit).
+[docs/user-stories.md](docs/user-stories.md) (source of truth; never commit its
+`.html`: Pages builds it, US-64 AC11).
 
 - **Lane A (bug fix):** find the violated US-xx AC (add it if missing) →
-  failing test citing the US-id → fix → pass → /simplify → `test:all` →
+  failing test citing the US-id → fix → pass → /simplify → CI green →
   deploy → verify live (desktop + REAL WebKit) → update story test-status.
 - **Lane B (new feature):** story + ACs FIRST → **declare the usage signal**
   (`product_events` event; unmeasurable features can't be evaluated) → gate
@@ -180,9 +179,10 @@ same commit).
 
 - **Every change: its own worktree, `claude/` branch and PR (HARD, Brad 2026-10-31)**: `sh tools/worktree-new.sh <name>`,
   EnterWorktree `path`; hooks deny main-checkout edits and an un-PR'd turn end, and clone node_modules in.
-  Before merging: merge `origin/main` in, `test:all`, re-review if main touched your files (PR 150); adversary + Codex;
-  citation numbering. Merge only `gh pr merge <n> --merge --match-head-commit <sha>` (or auto-ship), then CI Deploy;
-  live writes and deploys run merged code only; then `tools/worktree-done.sh`. Steps, exceptions: docs/git-workflow.md.
+  Merge gate = CI green on the PR (no full local `test:all`); merge main in only if it changed a file you changed
+  (PR 150); reviews by class; citation numbering. Merge only `gh pr merge <n> --merge --match-head-commit <sha>`
+  (or auto-ship), then CI Deploy. Contributor PRs: Brad's sessions merge them by hand in batches, `hold` on.
+  Live writes and deploys run merged code only; then `tools/worktree-done.sh`. Steps: docs/git-workflow.md.
 - **One owner per PR (HARD):** whoever opens it merges or closes it before ending, or the final report names
   it. `stale-pr-watch.yml` (PRs idle >48h) and `stranded-branch-watch.yml` email Brad. Work found uncommitted
   in the main checkout goes in its own PR, "Swept, unreviewed: <what>" (name failing tests), never in yours.
