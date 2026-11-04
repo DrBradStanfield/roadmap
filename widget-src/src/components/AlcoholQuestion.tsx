@@ -2,34 +2,70 @@
  * US-60: "Do you drink alcohol?" The plan's "Reduce alcohol intake" card
  * carries a Dismiss button that asks it in a small dialog. The answer goes to
  * the profile through the form's own write path (HealthTool's input change,
- * then the profile autosave), so About you shows it and can change it.
+ * then the profile autosave). About you's rows show it and can change it once
+ * onboarding is done (US-60 AC4, Brad 2026-11-02).
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { REDUCE_ALCOHOL_ID, type AlcoholAnswer, type Suggestion } from '@roadmap/health-core';
 
-/** About you's choices; '' is "Not answered", which clears the answer. */
-export const ALCOHOL_OPTIONS: ReadonlyArray<{ value: AlcoholAnswer | ''; label: string }> = [
-  { value: '', label: 'Not answered' },
+/** The two answers, for About you's row and the card's first question. */
+export const ALCOHOL_OPTIONS: ReadonlyArray<{ value: AlcoholAnswer; label: string }> = [
   { value: 'none', label: "I don't drink" },
   { value: 'drinks', label: 'I drink' },
 ];
 
+/** US-60 AC3: the card's question, with the answer the profile holds now and
+ *  whether About you's rows hold the Alcohol row (once About you sits low,
+ *  US-62 AC12); none while onboarding, when no row shows. */
+export type AlcoholQuestion = { answer?: AlcoholAnswer; onAnswer: (answer: AlcoholAnswer) => void; aboutYouRow?: boolean };
+
+/** Shown in the dialog's place after "I still drink", which saves nothing. It
+ *  points to the Alcohol row only where one shows (US-60 AC4). */
+export const stillDrinkLine = (aboutYouRow?: boolean) => `This stays on your plan because the advice applies to anyone who drinks.${aboutYouRow ? ' You can change your answer in About you.' : ''}`;
+
 /**
- * The Dismiss for `reduce-alcohol` (US-60 AC3), or null: `onAnswer` is absent
- * once the question is answered, so "I drink" leaves the card with no Dismiss.
- * The answer goes into the form on the click and saves through the profile's
+ * The Dismiss for `reduce-alcohol` (US-60 AC3), or null. Unanswered, it asks
+ * "Do you drink alcohol?"; a drinker is asked "Do you still drink alcohol?".
+ * An answer goes into the form on the click and saves through the profile's
  * debounced autosave, which keeps the erase the screen showed then (US-16 AC2a);
- * "I don't drink" takes the card off the plan at once.
+ * "I don't drink" and "I've stopped" take the card off the plan at once.
  */
-export function alcoholDismiss(suggestion: Suggestion, onAnswer?: (answer: AlcoholAnswer) => void) {
-  return suggestion.id === REDUCE_ALCOHOL_ID && onAnswer ? <AlcoholDismiss onChoose={onAnswer} /> : null;
+export function alcoholDismiss(suggestion: Suggestion, question?: AlcoholQuestion) {
+  return suggestion.id === REDUCE_ALCOHOL_ID && question ? <AlcoholDismiss drinks={question.answer === 'drinks'} onChoose={question.onAnswer} aboutYouRow={question.aboutYouRow} /> : null;
+}
+
+/** Tab and Shift+Tab go round the open dialog's buttons, never to the page behind it (US-60 AC3a). */
+function keepTabIn(dialog: HTMLElement, e: KeyboardEvent) {
+  const buttons = [...dialog.querySelectorAll<HTMLButtonElement>('button')];
+  const at = buttons.indexOf(document.activeElement as HTMLButtonElement);
+  e.preventDefault();
+  buttons[at < 0 ? 0 : (at + (e.shiftKey ? buttons.length - 1 : 1)) % buttons.length].focus();
+}
+
+/** US-60 AC3a: while the dialog shows, Tab stays in it; once it closes, the focus goes back
+ *  to Dismiss. An answer that takes the card off the plan unmounts Dismiss too, and React
+ *  has cleared its ref by the time this cleanup runs. */
+function useModalFocus(shown: boolean, dialogRef: RefObject<HTMLElement>, dismissRef: RefObject<HTMLElement>) {
+  useEffect(() => {
+    if (!shown) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Tab' && dialogRef.current) keepTabIn(dialogRef.current, e); };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      dismissRef.current?.focus();
+    };
+  }, [shown]);
 }
 
 /** The Dismiss button and its question. */
-function AlcoholDismiss({ onChoose }: { onChoose: (answer: AlcoholAnswer) => void }) {
-  const [open, setOpen] = useState(false);
+function AlcoholDismiss({ drinks, onChoose, aboutYouRow }: { drinks: boolean; onChoose: (answer: AlcoholAnswer) => void; aboutYouRow?: boolean }) {
+  // 'stays': "I still drink" was chosen, and the dialog says why the card stays.
+  const [open, setOpen] = useState<false | 'ask' | 'stays'>(false);
   const firstRef = useRef<HTMLButtonElement>(null);
+  const dismissRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus(open !== false, dialogRef, dismissRef);
 
   useEffect(() => {
     if (!open) return;
@@ -40,10 +76,15 @@ function AlcoholDismiss({ onChoose }: { onChoose: (answer: AlcoholAnswer) => voi
   }, [open]);
 
   const choose = (choice: AlcoholAnswer) => { setOpen(false); onChoose(choice); };
+  // The dialog's buttons; a null answer is "I still drink", which saves nothing.
+  // iOS twin: AlcoholQuestion.choices (PlanCardView.swift).
+  const choices: Array<{ label: string; answer: AlcoholAnswer | null }> = drinks
+    ? [{ label: "I've stopped", answer: 'none' }, { label: 'I still drink', answer: null }]
+    : ALCOHOL_OPTIONS.map(({ value, label }) => ({ label, answer: value }));
 
   return (
     <>
-      <button type="button" className="suggestion-dismiss no-print" onClick={(e) => { e.stopPropagation(); setOpen(true); }}>
+      <button ref={dismissRef} type="button" className="suggestion-dismiss no-print" onClick={(e) => { e.stopPropagation(); setOpen('ask'); }}>
         Dismiss
       </button>
       {/* Portaled: the plan card is transformed on hover and as it enters, and
@@ -52,13 +93,24 @@ function AlcoholDismiss({ onChoose }: { onChoose: (answer: AlcoholAnswer) => voi
       {open && createPortal(
         <div className="upload-modal-backdrop no-print" data-clarity-mask="true"
           onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
-          <div className="upload-modal alcohol-dialog" role="dialog" aria-modal="true" aria-labelledby="alcohol-dialog-title">
-            <h3 id="alcohol-dialog-title" className="alcohol-dialog-title">Do you drink alcohol?</h3>
-            <div className="alcohol-dialog-actions">
-              <button ref={firstRef} type="button" className="upload-btn-primary" onClick={() => choose('none')}>I don't drink</button>
-              <button type="button" className="upload-btn-primary" onClick={() => choose('drinks')}>I drink</button>
-            </div>
-            <button type="button" className="upload-connect-skip" onClick={() => setOpen(false)}>Cancel</button>
+          <div ref={dialogRef} className="upload-modal alcohol-dialog" role="dialog" aria-modal="true" aria-labelledby="alcohol-dialog-title">
+            {open === 'stays' ? (
+              <>
+                <p id="alcohol-dialog-title" className="alcohol-dialog-note">{stillDrinkLine(aboutYouRow)}</p>
+                <button ref={firstRef} type="button" className="upload-btn-primary" onClick={() => setOpen(false)}>OK</button>
+              </>
+            ) : (
+              <>
+                <h3 id="alcohol-dialog-title" className="alcohol-dialog-title">{drinks ? 'Do you still drink alcohol?' : 'Do you drink alcohol?'}</h3>
+                <div className="alcohol-dialog-actions">
+                  {choices.map(({ label, answer }, i) => (
+                    <button key={label} ref={i === 0 ? firstRef : undefined} type="button" className="upload-btn-primary"
+                      onClick={() => (answer ? choose(answer) : setOpen('stays'))}>{label}</button>
+                  ))}
+                </div>
+                <button type="button" className="upload-connect-skip" onClick={() => setOpen(false)}>Cancel</button>
+              </>
+            )}
           </div>
         </div>,
         document.body,

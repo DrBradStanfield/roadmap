@@ -147,6 +147,31 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertFalse(again.buttons["onboarding.continue"].exists)
     }
 
+    /// US-25 AC26 (Brad 2026-11-03): My plan has no title bar; "Your health snapshots" heads
+    /// the tiles and scrolls away with them, as the Next Steps heading does. The tab keeps its name.
+    @MainActor
+    func testThePlanHeadsItsSnapshotsAndHasNoTitleBar_US25_AC26() throws {
+        let app = launch()
+        try answerUpToWeight(app)
+        answerWeight(app)
+
+        XCTAssertTrue(app.tabBars.buttons["My plan"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.tabBars.buttons["My plan"].isSelected, "the tab still says My plan")
+        let heading = app.staticTexts["Your health snapshots"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 10), "the snapshots heading")
+        XCTAssertFalse(app.navigationBars.firstMatch.exists, "no title bar over the plan")
+        let tile = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Ideal Body Weight'")).firstMatch
+        XCTAssertTrue(tile.exists, "a tile")
+        XCTAssertLessThanOrEqual(heading.frame.maxY, tile.frame.minY, "the heading sits above the tiles")
+        snap(app, "plan heading top")
+
+        // It scrolls with the plan, as the section headings do.
+        let top = heading.frame.minY
+        app.swipeUp()
+        XCTAssertTrue(!heading.isHittable || heading.frame.minY < top - 40, "the heading scrolled away")
+        snap(app, "plan heading scrolled")
+    }
+
     /// US-57's three tips, word for word (Brad 2026-10-25).
     static let tourLines = [
         "A snapshot of your health. Tap any tile to learn more.",
@@ -208,7 +233,8 @@ final class OnboardingUITests: XCTestCase {
         // Every tile explains itself, for good (AC5).
         app.tabBars.buttons["My plan"].tap()
         let tile = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Ideal Body Weight'")).firstMatch
-        for _ in 0..<4 where !tile.isHittable { app.swipeDown() }
+        // Clear of the clock: with no title bar a tile half under it still reads as hittable (US-25 AC26).
+        for _ in 0..<4 where !tile.isHittable || tile.frame.minY < 100 { app.swipeDown() }
         tile.tap()
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'A healthy weight for your height and sex'")).firstMatch.waitForExistence(timeout: 5),
                       "the tile's what-it-is")
@@ -454,9 +480,9 @@ final class OnboardingUITests: XCTestCase {
 
     /// "Connect Apple Health" shows Apple's Health sheet once, asking for everything the app
     /// reads: onboarding's record types and US-56's five (AC3, US-56 AC4). The sheet runs in
-    /// Apple's own process and reports its buttons' positions only inside their rows, so a
-    /// test cannot answer it; answering it is checked by hand. On iOS 27 the sheet goes on
-    /// with its own Continue and a choice of how much history to share.
+    /// Apple's own process; Allow is checked by hand. On iOS 27 the sheet goes on with its own
+    /// Continue and a choice of how much history to share. Don't Allow is tapped at its screen
+    /// point in `testAfterDontAllowTheRowSaysOpenSettings_US56_AC5c`.
     @MainActor
     func testAllowShowsOneSheetAskingForEverything_AC3_US56_AC4() throws {
         let app = launch()
@@ -497,6 +523,62 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertTrue(sheet.cells["UIA.Health.AuthSheet.AllCategoryButton"].waitForExistence(timeout: 20), "Apple's Health sheet appears")
         snap(app, "us56 health sheet")
         XCTAssertEqual(readSwitches(sheet), everything, "the same single request")
+    }
+
+    /// US-56 AC5c (Brad 2026-11-01): after "Don't Allow", Vitals' row says "Open Settings"
+    /// and where Apple Health's settings are, and the button opens Settings. Apple's sheet runs
+    /// in its own process; its buttons are tapped at the screen points they report. Run it on a
+    /// fresh install: once answered, iOS never shows the sheet again.
+    @MainActor
+    func testAfterDontAllowTheRowSaysOpenSettings_US56_AC5c() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "-welcomed", "YES", "-onboarded", "YES"]
+        app.launch()
+        XCTAssertTrue(app.tabBars.buttons["My data"].waitForExistence(timeout: 60))
+        let connect = app.buttons["Connect Apple Health"]
+        XCTAssertTrue(scrollTo(connect, in: app), "My data's Apple Health row")
+        let sheet = XCUIApplication(bundleIdentifier: "com.apple.HealthPrivacyService")
+        let all = sheet.cells["UIA.Health.AuthSheet.AllCategoryButton"]
+        // Under load a tap during the scroll's last frames is lost: tap again until the sheet shows.
+        for _ in 0..<3 where !all.exists {
+            connect.tap()
+            _ = all.waitForExistence(timeout: 40)
+        }
+        XCTAssertTrue(all.exists, "Apple's Health sheet appears")
+        let dontAllow = sheet.buttons["Don’t Allow"].firstMatch
+        for _ in 0..<8 where !dontAllow.isHittable { sheet.swipeUp() }
+        tap(dontAllow, in: sheet)
+        // Apple then says access can be turned on later; its OK closes the sheet.
+        let ok = sheet.buttons["OK"].firstMatch
+        XCTAssertTrue(ok.waitForExistence(timeout: 30), "Apple's note after Don't Allow")
+        tap(ok, in: sheet)
+        app.activate()
+
+        // The row is in Vitals, at the top; the list draws only the rows near the screen.
+        let open = app.buttons["Open Settings"]
+        for _ in 0..<12 where !open.waitForExistence(timeout: 5) { app.swipeDown() }
+        XCTAssertTrue(open.waitForExistence(timeout: 30), "the row says Open Settings")
+        XCTAssertFalse(app.buttons["Reconnect"].exists, "never Reconnect")
+        // iOS 18 moved Health under Settings › Apps; the app runs from iOS 17.
+        let apps = (Int(UIDevice.current.systemVersion.split(separator: ".").first ?? "") ?? 0) >= 18 ? "Apps › " : ""
+        let line = "Heart rate, sleep, VO2 max and steps can show here from Apple Health. The Apple Health settings for this app are in Settings › \(apps)Health › Data Access & Devices › Health Roadmap."
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label == %@", line)).firstMatch.exists,
+                      "the row's words and where Apple Health's settings are, read as one")
+        snap(app, "us56 open settings row")
+        // Under load Settings can take over a minute to launch, and a tap can be lost: tap again.
+        let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
+        for _ in 0..<3 where settings.state != .runningForeground {
+            if open.exists, open.isHittable { open.tap() }
+            _ = settings.wait(for: .runningForeground, timeout: 90)
+        }
+        XCTAssertEqual(settings.state, .runningForeground, "Settings opens")
+    }
+
+    /// Taps a button of Apple's sheet at the screen point it reports: its own `tap` fails there.
+    @MainActor
+    private func tap(_ button: XCUIElement, in sheet: XCUIApplication) {
+        let frame = button.frame
+        sheet.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: frame.midX, dy: frame.midY)).tap()
     }
 
     /// "Delete all my data" brings the questions back, not the welcome screen (AC7).

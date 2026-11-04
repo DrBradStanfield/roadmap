@@ -38,8 +38,8 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   it, not the helper (round-1 REJECT: sound dedup helper, gated by `if (conversationId)`).
 - `[gotcha][sentry-api]` 2026-08-12 — Issues-list `count` is LIFETIME and
   `statsPeriod` shapes only `stats` (''/24h/14d): rank by summing buckets,
-  test newness by `lastSeen` vs the ledger. Only the latest event per issue
-  is retained — event-history pulls return 1 row.
+  test newness by `lastSeen` vs the ledger. Corrected 11-03: `/issues/<id>/events/`
+  returns every event (up to 100 a page): read them all, not just `latest`.
 - `[noise][server]` 2026-08-12 — youtube-bot `logTickError` (handled=yes,
   tag `feature=youtube-bot`) relays upstream Google failures as the exception
   value: OAuth 500s, Cloudflare HTML pages, and (confirmed again 2026-09-08) a
@@ -67,13 +67,13 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   36→0 and gated in ci.yml, which surfaced a second latent crash (Object.hasOwn
   on iOS WebKit <15.4 → hasOwnProperty.call, floors kept at ES2020). app/ is
   still ungated — a standing task.
-- `[noise][server]` 2026-08-23, sharpened 10-14 — Handled probe errors: OAuth
-  `exitIframe=javascript:…`/`data:…` → "Invalid URL. Refusing to redirect"
-  (`sanitizeRedirectUrl` firing); internal route misses → "No route matches URL".
-  Wontfix ONLY if unsigned and a tool UA on *.fly.dev (6X: curl/8.6.0 after a
-  release; 7723659158) or a secret-file path (`/.env`; never `/.well-known/*`,
-  mcp's OAuth discovery). Proxy path + browser UA = stale caller, ours. 6X pools
-  every miss: read each new event. 10-15: one scan = 132 GET probes, browser UAs.
+- `[noise][server]` 2026-08-23, sharpened 11-01 — Probe errors: OAuth `exitIframe=javascript:`
+  → "Refusing to redirect"; misses → "No route matches URL" (72 pools all: read each new event),
+  POST / → 76, OPTIONS → 7F. Sentry keeps only host/UA/content-type/length/accept
+  (instrument-scrub KEPT_HEADERS): no Origin, no ACRM, no body. Wontfix ONLY if unsigned AND
+  a named tool UA (curl, Go-http-client, fasthttp, l9scan) or a secret/config/GraphQL guess
+  path; never `/.well-known/*` on mcp. Ours: proxy path + browser UA (73: a real Chrome admin
+  action read as a probe), or POST / or OPTIONS from one non-scanner UA repeating over days.
 - `[gap][sentry]` 2026-09-07 — Widget no-op days before 09-08 are lower bounds
   (PR #73). A `release` tag means a side bundle; none means health-plan-v2.
   Storage adapters put document titles into thrown messages: READ before quoting.

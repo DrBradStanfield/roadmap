@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { runInNewContext } from 'node:vm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryAdapter } from '@roadmap/health-core';
 
@@ -94,18 +92,10 @@ function expectDeviceEmpty() {
   expect(localStorage.getItem(UNRELATED_KEY)).toBe('keep');
 }
 
-function installLifecycle(event: 'beforeunload' | 'visibilitychange') {
-  // Actual entrypoint registration block, not a hand-copied handler. Events and
-  // reload are SIMULATED EventTargets, not a real browser navigation/unload.
-  const source = readFileSync(new URL('./app.tsx', import.meta.url), 'utf8');
-  const start = source.indexOf("  document.addEventListener('visibilitychange'");
-  const end = source.indexOf('  // Keep the server', start);
-  expect(start).toBeGreaterThan(0);
-  expect(end).toBeGreaterThan(start);
-  runInNewContext(source.slice(start, end), {
-    document, window, flushRoadmapStoreSync: data.flushRoadmapStoreSync,
-    pushReminderSchedule: vi.fn(), backend: 'github',
-  });
+async function installLifecycle(event: 'beforeunload' | 'visibilitychange') {
+  // Real entrypoint handler; events/reload are simulated, not browser unload.
+  const { registerPageDeparture } = await import('./page-departure');
+  registerPageDeparture(vi.fn());
   reload.mockImplementation(() => {
     // Check the real wipe happened before simulating the navigation callback.
     expect(localStorage.getItem(FILE_KEY)).toBeNull();
@@ -242,7 +232,7 @@ describe('US-09 AC2c: logout is a barrier to late on-device roadmap persistence'
       await data.initRoadmapStore(cloud);
       await data.addMeasurement('weight', 76, '2026-01-01');
       cloud.fail = true;
-      installLifecycle(event);
+      await installLifecycle(event);
       await connect.logOff('github');
       await settleLifecycle();
       expect(reload).toHaveBeenCalledOnce();
@@ -253,7 +243,7 @@ describe('US-09 AC2c: logout is a barrier to late on-device roadmap persistence'
       const cloud = new ControlledCloud();
       await data.initRoadmapStore(cloud);
       await data.addMeasurement('weight', 77, '2026-01-01');
-      installLifecycle(event);
+      await installLifecycle(event);
       await connect.logOff('github');
       await settleLifecycle();
       expect((await storage.RoadmapStore.create(cloud)).loadAllHistory()).toEqual([
@@ -265,7 +255,7 @@ describe('US-09 AC2c: logout is a barrier to late on-device roadmap persistence'
     it(`${event}: dirty local lifecycle cannot rewrite the file (API-only local logout)`, async () => {
       await data.initRoadmapStore(new local.LocalStorageAdapter());
       await data.addMeasurement('weight', 78, '2026-01-01');
-      installLifecycle(event);
+      await installLifecycle(event);
       await connect.logOff('local');
       await settleLifecycle();
       expectDeviceEmpty();
@@ -302,7 +292,7 @@ describe('US-09 AC2c: logout is a barrier to late on-device roadmap persistence'
     await data.addMeasurement('weight', 79, '2026-01-01');
     await data.flushRoadmapStore();
     expect(localStorage.getItem(FILE_KEY)).not.toBeNull();
-    installLifecycle('beforeunload');
+    await installLifecycle('beforeunload');
     await connect.logOff('local');
     await settleLifecycle();
     expectDeviceEmpty();

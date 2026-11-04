@@ -74,6 +74,9 @@ const pollTokens = new Map<string, string>();
 
 export async function labImportBatch(
   files: Array<{ pages: PageContent[] }>,
+  // Used by the Pages build's queue (byok-upload.ts, US-12 AC5a). Here the
+  // batch is one request, unchanged.
+  _signal?: AbortSignal,
 ): Promise<{ batchId: string | null; error?: string; errorCode?: UploadErrorCode }> {
   try {
     const response = await fetch(LAB_IMPORT_V2_URL, {

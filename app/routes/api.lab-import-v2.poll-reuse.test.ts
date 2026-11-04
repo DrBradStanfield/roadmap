@@ -16,7 +16,7 @@ const lines = [JSON.stringify({ custom_id: 'file-0', result: { type: 'succeeded'
   content: [], stop_reason: 'refusal', stop_details: { category: 'bio' },
 } } })];
 
-function request(body: object, timestamp = Date.now() / 1000, valid = true) {
+function request(body: object, timestamp = Math.floor(Date.now() / 1000), valid = true) {
   const query = new URLSearchParams({ shop: 'synthetic.myshopify.com', timestamp: String(timestamp) });
   const message = [...query].sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}=${v}`).join('');
   query.set('signature', valid ? crypto.createHmac('sha256', SECRET).update(message).digest('hex') : '0'.repeat(64));
@@ -192,6 +192,27 @@ describe('US-12 AC18: capability-safe in-flight reuse and value-free pacing', ()
     expect(reads()).toBe(4);
     expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(2);
   });
+  // The poll-token compare is pinned: an equal length goes through
+  // timingSafeEqual, any other length is refused without it and never throws.
+  it('compares an equal-length poll token in constant time and refuses another length without throwing', async () => {
+    const batch = await upload();
+    const expected = Buffer.from(batch.pollToken);
+    const tse = vi.spyOn(crypto, 'timingSafeEqual');
+    const tokenCalls = () => tse.mock.calls.filter(([a]) => expected.equals(a as Buffer));
+    try {
+      const wrong = (batch.pollToken[0] === 'A' ? 'B' : 'A') + batch.pollToken.slice(1);
+      expect((await call({ batchId: batch.batchId, pollToken: wrong })).status).toBe(404);
+      expect(tokenCalls()).toEqual([[expected, Buffer.from(wrong)]]);
+      tse.mockClear();
+      for (const pollToken of [batch.pollToken.slice(1), `${batch.pollToken}A`]) {
+        expect((await call({ batchId: batch.batchId, pollToken })).status).toBe(404);
+      }
+      expect(tokenCalls()).toEqual([]);
+    } finally {
+      tse.mockRestore();
+    }
+  });
+
   it('coalesces concurrent status and JSONL reads, but validates every capability and proxy signature first', async () => {
     const batch = await upload();
     const other = await upload();

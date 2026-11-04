@@ -55,15 +55,34 @@ final class OnboardingStepsTests: XCTestCase {
     }
 
     func testANewRecordTakesThePhonesRegionUnits_AC6() async {
-        XCTAssertEqual(OnboardingSteps.regionUnits(hasValues: false, onlyMissing: false, current: "si", system: .us), "conventional")
-        XCTAssertEqual(OnboardingSteps.regionUnits(hasValues: false, onlyMissing: false, current: "conventional", system: .metric), "si")
-        XCTAssertEqual(OnboardingSteps.regionUnits(hasValues: false, onlyMissing: false, current: "conventional", system: .uk), "si")
-        XCTAssertNil(OnboardingSteps.regionUnits(hasValues: false, onlyMissing: false, current: "si", system: .metric), "already right: nothing written")
+        XCTAssertEqual(OnboardingSteps.regionUnits(hasValues: false, onlyMissing: false, current: "si", locale: Locale(identifier: "en_US"), engine: "conventional"), "conventional")
+        XCTAssertEqual(OnboardingSteps.regionUnits(hasValues: false, onlyMissing: false, current: "conventional", locale: Locale(identifier: "fr_FR"), engine: "si"), "si")
+        XCTAssertEqual(OnboardingSteps.regionUnits(hasValues: false, onlyMissing: false, current: "conventional", locale: Locale(identifier: "en_GB"), engine: "si"), "si")
+        XCTAssertNil(OnboardingSteps.regionUnits(hasValues: false, onlyMissing: false, current: "si", locale: Locale(identifier: "fr_FR"), engine: "si"), "already right: nothing written")
+    }
+
+    /// US-05 AC5 with AC6: a phone in Puerto Rico (English or Spanish) or Myanmar starts a
+    /// new record in US units, as the web does, by the real engine's `detectUnitSystem`;
+    /// New Zealand stays metric, a US phone abroad keeps the US system, and a measurement
+    /// system chosen in Settings still wins.
+    func testATerritoryOrMyanmarPhoneStartsInUSUnitsAsOnTheWeb_AC6() throws {
+        func units(_ id: String, _ zone: String) throws -> String {
+            let locale = Locale(identifier: id)
+            let engineUnits = try engine.blocking { try $0.regionUnits(locale: locale, timeZone: TimeZone(identifier: zone)!) }
+            return OnboardingSteps.regionUnits(hasValues: false, onlyMissing: false, current: "si", locale: locale, engine: engineUnits) ?? "si"
+        }
+        XCTAssertEqual(try units("en_PR", "America/Puerto_Rico"), "conventional")
+        XCTAssertEqual(try units("es_PR", "America/Puerto_Rico"), "conventional")
+        XCTAssertEqual(try units("en_GU", "Pacific/Guam"), "conventional")
+        XCTAssertEqual(try units("my_MM", "Asia/Yangon"), "conventional", "Myanmar, as on the web")
+        XCTAssertEqual(try units("en_NZ", "Pacific/Auckland"), "si", "another region is unchanged")
+        XCTAssertEqual(try units("en_US", "Pacific/Auckland"), "conventional", "a US phone abroad keeps the US system, as before")
+        XCTAssertEqual(try units("en-US-u-ms-metric", "America/New_York"), "si", "metric chosen in Settings wins")
     }
 
     func testARecordWithValuesOrFromTheCloudKeepsItsUnits_AC6() async {
-        XCTAssertNil(OnboardingSteps.regionUnits(hasValues: true, onlyMissing: false, current: "conventional", system: .metric))
-        XCTAssertNil(OnboardingSteps.regionUnits(hasValues: false, onlyMissing: true, current: "conventional", system: .metric), "a web user's choice is never overwritten")
+        XCTAssertNil(OnboardingSteps.regionUnits(hasValues: true, onlyMissing: false, current: "conventional", locale: Locale(identifier: "fr_FR"), engine: "si"))
+        XCTAssertNil(OnboardingSteps.regionUnits(hasValues: false, onlyMissing: true, current: "conventional", locale: Locale(identifier: "fr_FR"), engine: "si"), "a web user's choice is never overwritten")
     }
 
     func testHealthSexOtherOrNotSetPreselectsNothing_AC3() {

@@ -1,3 +1,4 @@
+import SwiftUI
 import XCTest
 @testable import HealthRoadmap
 
@@ -417,6 +418,33 @@ final class LiveMathsTests: XCTestCase {
         let t = { (h: Double) in Date(timeIntervalSince1970: h * 3600) }
         XCTAssertEqual(LiveMaths.covered([(t(0), t(2)), (t(1), t(3)), (t(5), t(6)), (t(4), t(4))]), 4 * 3600)
         XCTAssertEqual(LiveMaths.covered([]), 0)
+    }
+
+    /// Austin's report, 2026-11-03: on D each stage's name sat on a gridline, struck through.
+    /// As Apple Health: every name inside its own band, no line through it, its bar clear of
+    /// it, lines only between bands; at every text size, the largest included.
+    func testEachStageNameSitsInItsBandClearOfTheLinesAndBars_AC9a() {
+        for size in DynamicTypeSize.allCases {
+            let label = SleepBands.labelHeight(size)
+            for rows in [SleepStage.drawn.count, 3, 1] {
+                let bands = SleepBands(rows: rows, label: label)
+                XCTAssertEqual(bands.lines.count, rows - 1, "lines only between bands, \(size)")
+                XCTAssertTrue(bands.lines.allSatisfy { $0 > 0 && $0 < bands.height }, "no line on the chart's edges, \(size)")
+                for row in 0..<rows {
+                    let band = bands.band * CGFloat(row)...bands.band * CGFloat(row + 1)
+                    let name = bands.label(row), bar = bands.bar(row)
+                    XCTAssertGreaterThanOrEqual(name.upperBound - name.lowerBound, label, "the name's full height, \(size)")
+                    XCTAssertTrue(band.contains(name.lowerBound) && band.contains(name.upperBound), "row \(row)'s name inside its band, \(size)")
+                    XCTAssertTrue(band.contains(bar.lowerBound) && band.contains(bar.upperBound), "row \(row)'s bar inside its band, \(size)")
+                    XCTAssertFalse(bands.lines.contains { name.contains($0) }, "no line through row \(row)'s name, \(size)")
+                    XCTAssertGreaterThan(bar.lowerBound, name.upperBound, "row \(row)'s bar under its name, \(size)")
+                }
+            }
+        }
+        let standard = SleepBands(rows: 4, label: SleepBands.labelHeight(.large))
+        let bar = standard.bar(1)
+        XCTAssertEqual((bar.lowerBound + bar.upperBound) / 2, standard.band * 1.5, accuracy: 1, "at the standard size the bar sits centred in its band")
+        XCTAssertGreaterThan(SleepBands.labelHeight(.accessibility5), SleepBands.labelHeight(.large), "the name grows with the text")
     }
 
     // MARK: Colours and the screen name

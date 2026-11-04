@@ -50,8 +50,9 @@ const MACHINE_ID = process.env.FLY_MACHINE_ID || `local-${process.pid}`;
 
 /** How long the question and the router's answer stay readable for the audit. */
 export const PURGE_AFTER_DAYS = 30;
-/** Rows cleared per round trip. The loop re-selects until nothing is left. */
-const BATCH_SIZE = 500;
+/** Rows cleared per round trip. The loop re-selects until nothing is left. 100 ids keep the
+ *  update's URL near 3.7 KB, under common gateway limits (US-15 AC51). */
+const BATCH_SIZE = 100;
 
 /** Platforms whose transcripts are private text on a 30-day clock. YouTube is
  *  absent on purpose: those turns are public comments. */

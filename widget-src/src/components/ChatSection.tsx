@@ -13,12 +13,13 @@ import { trackProductEvent } from '../lib/server-api';
 import { getChatGate } from '../lib/chat-api';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { ChatKeyGate } from './ChatKeyGate';
-import { useChatState, MAX_CHARS, type ChatContextSource } from '../hooks/useChatState';
+import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource } from '../hooks/useChatState';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { SubscriptionChangeCard } from './SubscriptionChangeCard';
 import { ChatPendingReply } from './ChatPendingReply';
 import { ChatThreadList } from './ChatThreadList';
 import { ChatHeaderTitle } from './ChatHeaderTitle';
+import { MUTED_CHAT } from './chat-muted';
 import { getAssistantName, getChatSurface } from '../lib/assistant-config';
 
 export type { ChatPrefetchData } from '../hooks/useChatState';
@@ -53,9 +54,11 @@ interface ChatSectionProps {
   guestInputs?: ChatContextSource;
   prefetchedData?: ChatPrefetchData | null;
   onProposeEdit?: (edits: ProposedEdit[]) => void;
+  /** Before the onboarding is done: the general wording, as ChatEmbed's. */
+  muted?: boolean;
 }
 
-export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpand, guestInputs, prefetchedData, onProposeEdit }: ChatSectionProps) {
+export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpand, guestInputs, prefetchedData, onProposeEdit, muted }: ChatSectionProps) {
   const [isExpanded, setIsExpanded] = useState(startExpanded ?? false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showThreads, setShowThreads] = useState(false);
@@ -107,7 +110,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
   }, [onExpand, actions.loadConversationsIfNeeded]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (sendsOnEnter(e)) {
       e.preventDefault();
       actions.handleSend();
     }
@@ -117,6 +120,12 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
     actions.selectConversation(id);
     setShowThreads(false);
   }, [actions.selectConversation]);
+
+  // A new chat shows the empty chat and its input, as opening a thread does (US-15 AC46a).
+  const handleStartNewChat = useCallback(() => {
+    actions.startNewChat();
+    setShowThreads(false);
+  }, [actions.startNewChat]);
 
   // ----- COLLAPSED STATE -----
   if (!isExpanded) {
@@ -152,7 +161,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
         <button className="chat-threads-btn" onClick={() => setShowThreads(!showThreads)}>
           {showThreads ? 'Back' : 'History'}
         </button>
-        <ChatHeaderTitle title={copy.title} subtitle={copy.subtitle} />
+        <ChatHeaderTitle title={copy.title} subtitle={muted ? MUTED_CHAT.subtitle : copy.subtitle} />
         {!inline && (
           <button className="chat-close-btn" aria-label="Close chat" onClick={() => { setIsExpanded(false); onClose?.(); }}>✕</button>
         )}
@@ -165,7 +174,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
             activeConversationId={state.activeConversationId}
             className="chat-thread-list"
             onSelect={handleSelectConversation}
-            onNew={actions.startNewChat}
+            onNew={handleStartNewChat}
             onDelete={actions.handleDelete}
           />
         )}
@@ -177,7 +186,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
           <div className="chat-messages" ref={messagesContainerRef} onScroll={handleMessagesScroll}>
             {state.messages.length === 0 && !state.isLoading && (
               <div className="chat-empty">
-                <p>{copy.empty}</p>
+                <p>{muted ? MUTED_CHAT.empty : copy.empty}</p>
               </div>
             )}
             {state.messages.map(msg => (

@@ -12,11 +12,15 @@ const state = vi.hoisted(() => ({
   /** Every request body, and replies to hand back in order (then the default). */
   bodies: [] as Array<Record<string, any>>,
   replies: [] as Array<{ text: string; blocks: unknown[] } | Error>,
+  /** The chat-history store getChatHistory hands back: null, as when it could not be opened. */
+  store: null as null | { getMessages: (id: string) => Array<{ role: string; content: string }>; recordExchange: () => Promise<void> },
 }));
 
-vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(null) }));
+vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(state.store) }));
 vi.mock('./byok-anthropic', () => ({
-  ByokAnthropicError: class ByokAnthropicError extends Error {},
+  ByokAnthropicError: class ByokAnthropicError extends Error {
+    constructor(readonly code: string, message: string) { super(message); }
+  },
   callAnthropicDirectRaw: async (_key: string, body: { system: string }) => {
     state.sent = body;
     state.bodies.push(body);
@@ -89,10 +93,21 @@ describe('BYOK chat context — per-field sanitizing', () => {
     expect(context.excludedFields).toEqual(['heightCm']);
     expect(context.missingInputs).toContain('heightCm');
     expect(context).not.toHaveProperty('currentSuggestions');
-    expect(state.sent!.system).toMatch(/no `currentSuggestions`.*ask them for the missing sex or height/i);
+    expect(state.sent!.system).toMatch(/no `currentSuggestions`.*ask them for the missing height/i);
     // US-16 AC2: once stated, the chat proposes saving them; the tool stays an option.
     expect(state.sent!.system).toMatch(/propose saving them with `propose_profile_edit`.*enter them in the roadmap tool/);
-    expect(state.sent!.system).toMatch(/needs height and sex to work out the plan/);
+    expect(state.sent!.system).toMatch(/needs height to work out the plan/);
+    // US-07 AC8: a plan without sex lacks its sex parts; the model asks rather than works them out.
+    expect(state.sent!.system).toMatch(/`missingInputs` naming `sex`.*never work them out yourself/);
+  });
+
+  // US-67 N3 (Brad 2026-11-03, "Option 1"): only the banner knows whether it can offer
+  // an Undo, so neither the prompt nor the tools tell the model to promise one.
+  it('US-67 N3: the prompt and tools never tell the model the user can undo', async () => {
+    await contextSent(SNAPSHOT);
+    expect(state.sent!.system).toMatch(/Do not offer an Undo yourself; if asked, say the banner shows Undo when one is available/);
+    expect(state.sent!.system).not.toMatch(/tell them they can undo/i);
+    expect(JSON.stringify(state.bodies.at(-1)!.tools)).not.toMatch(/that they can undo/i);
   });
 
   it('US-15 AC36: an empty form still sends no context', async () => {
@@ -221,6 +236,42 @@ describe('US-15 AC33: run_roadmap in the Pages chat', () => {
     expect(result.roadmap.profile.knownMinor).toBe(true);
   });
 
+  it('US-67 AC2: a value that looks like the wrong unit is asked about in a second call, and not proposed', async () => {
+    const suspect = { ...FIELD, input: { field: 'ldlC', value: 3.4, unit: 'mg/dL' } };
+    state.replies = [{ text: '', blocks: [suspect] }, { text: 'Is that mmol/L?', blocks: [{ type: 'text', text: 'Is that mmol/L?' }] }];
+    const { result } = await sendMessage('my LDL is 3.4 mg/dL', null, SNAPSHOT);
+    expect(state.bodies).toHaveLength(2);
+    expect(state.bodies[1].messages.at(-1).content[0].content).toMatch(/^Not saved: this value looks like it may be in a different unit/);
+    expect(result!.content).toBe('Is that mmol/L?');
+    expect(result).not.toHaveProperty('proposedEdits');
+  });
+
+  it('US-16 AC3: a refused medication answer with an empty second reply says it was not saved, never an error', async () => {
+    const misfit = { type: 'tool_use', id: 'toolu_med', name: 'propose_medication_edit', input: { medicationKey: 'ezetimibe', drugName: 'atorvastatin' } };
+    state.replies = [{ text: '', blocks: [misfit] }, { text: '', blocks: [] }];
+    const { result, error } = await sendMessage("I'm on atorvastatin", null, SNAPSHOT);
+    expect(error).toBeNull();
+    expect(result!.content).toBe("One medication change was not saved, as its answer is not one of the listed answers. Tell me which one applies, or choose it yourself.");
+    expect(result).not.toHaveProperty('proposedEdits');
+  });
+
+  it('US-16 AC3 (Codex R1): a refused medication answer with an empty finished second reply shows the not-saved line', async () => {
+    const { ByokAnthropicError } = await import('./byok-anthropic');
+    const misfit = { type: 'tool_use', id: 'toolu_med', name: 'propose_medication_edit', input: { medicationKey: 'ezetimibe', drugName: 'atorvastatin' } };
+    state.replies = [{ text: '', blocks: [misfit] }, new ByokAnthropicError('empty', 'Empty response from Anthropic. Try again.')];
+    const { result, error } = await sendMessage("I'm on atorvastatin", null, SNAPSHOT);
+    expect(error).toBeNull();
+    expect(result!.content).toBe("One medication change was not saved, as its answer is not one of the listed answers. Tell me which one applies, or choose it yourself.");
+  });
+
+  it('an empty first reply is still the chat\'s error', async () => {
+    const { ByokAnthropicError } = await import('./byok-anthropic');
+    state.replies = [new ByokAnthropicError('empty', 'Empty response from Anthropic. Try again.')];
+    const { result, error } = await sendMessage('hello', null, SNAPSHOT);
+    expect(result).toBeNull();
+    expect(error).toEqual({ error: 'Empty response from Anthropic. Try again.' });
+  });
+
   it('a failed second call is the chat\'s error, not a partial answer', async () => {
     state.replies = [{ text: '', blocks: [RUN] }, new TypeError('network down')];
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -270,5 +321,62 @@ describe('US-15 AC34: a Pages chat reply cut off before any text is an error, no
     const out = await sendMessage('hi', null, SNAPSHOT);
     expect(out.result).toBeNull();
     expect(out.error).toEqual({ error: 'Empty response from Anthropic. Try again.' });
+  });
+});
+
+// US-15 AC47a: getChatHistory() resolves null when the history file could not
+// be opened, and keeps that null for later chat sends unless an erase opens the
+// file again. The Pages chat read a follow-up's earlier turns only from the
+// store, so every follow-up then went to the model alone, while the thread on
+// screen carried on.
+describe('US-15 AC47a: a Pages chat follow-up keeps its conversation when the history file is not open', () => {
+  const SHOWN = [
+    { id: 'u1', role: 'user' as const, content: 'What is my LDL target?', createdAt: '2026-01-01T00:00:00Z' },
+    { id: 'a1', role: 'assistant' as const, content: 'Synthetic answer about LDL.', createdAt: '2026-01-01T00:00:05Z' },
+  ];
+  beforeEach(() => {
+    const keys = new Map([['hr_anthropic_key', 'sk-ant-test']]);
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => keys.get(k) ?? null,
+      setItem: (k: string, v: string) => void keys.set(k, v),
+      removeItem: (k: string) => void keys.delete(k),
+    });
+    state.bodies = [];
+    state.store = null;
+  });
+
+  it('sends the turns the chat shows when no store is open', async () => {
+    const { error } = await sendMessage('And my HDL?', 'conv-1', null, SHOWN);
+    expect(error).toBeNull();
+    expect(state.bodies[0].messages.map((m: { role: string; content: string }) => [m.role, m.content])).toEqual([
+      ['user', 'What is my LDL target?'],
+      ['assistant', 'Synthetic answer about LDL.'],
+      ['user', 'And my HDL?'],
+    ]);
+  });
+
+  it('keeps the 20-turn cap on the copy on screen', async () => {
+    const shown = Array.from({ length: 22 }, (_, i) => ({
+      id: `m${i + 1}`,
+      role: (i % 2 === 0 ? 'user' : 'assistant') as 'user' | 'assistant',
+      content: `Shown turn ${i + 1}`,
+      createdAt: '2026-01-01T00:00:00Z',
+    }));
+    await sendMessage('And my HDL?', 'conv-1', null, shown);
+    const sent = state.bodies[0].messages.map((m: { content: string }) => m.content);
+    expect(sent).toHaveLength(21);
+    expect(sent[0]).toBe('Shown turn 3');
+    expect(sent[20]).toBe('And my HDL?');
+  });
+
+  it('control: an open store is still the history, not the copy on screen', async () => {
+    state.store = { getMessages: () => [{ role: 'user', content: 'Stored question' }, { role: 'assistant', content: 'Stored answer' }], recordExchange: async () => {} };
+    await sendMessage('And my HDL?', 'conv-1', null, SHOWN);
+    expect(state.bodies[0].messages.map((m: { content: string }) => m.content)).toEqual(['Stored question', 'Stored answer', 'And my HDL?']);
+  });
+
+  it('control: a new conversation sends no earlier turns', async () => {
+    await sendMessage('What is my LDL target?', null, null, SHOWN);
+    expect(state.bodies[0].messages.map((m: { role: string }) => m.role)).toEqual(['user']);
   });
 });

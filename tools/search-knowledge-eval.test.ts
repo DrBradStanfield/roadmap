@@ -94,7 +94,8 @@ describe('US-41 AC5 — recall floor over the router fixtures', () => {
   it(`keeps the best variant at or above top-3 ${FLOOR_TOP3} and top-8 ${FLOOR_TOP8}, with no forbidden handle in any top 8`, () => {
     const fixtures = loadSnapshot();
     expect(recallFixtures(fixtures)).toHaveLength(72);
-    const result = evaluate(fixtures, loadBlogIndex(), BEST);
+    // US-70: condition guides are never served by the connector (US-41 AC11), so the ranker floor runs without them.
+    const result = evaluate(fixtures, loadBlogIndex().filter((e) => e.kind !== 'condition'), BEST);
     expect(result.top3 / result.n).toBeGreaterThanOrEqual(FLOOR_TOP3);
     expect(result.top8 / result.n).toBeGreaterThanOrEqual(FLOOR_TOP8);
     expect(result.violations).toBe(0);
@@ -103,7 +104,7 @@ describe('US-41 AC5 — recall floor over the router fixtures', () => {
   it('the best variant is one of the named variants and beats summary alone at top-3', () => {
     expect(Object.values(VARIANTS)).toContain(BEST);
     const fixtures = loadSnapshot();
-    const entries = loadBlogIndex();
+    const entries = loadBlogIndex().filter((e) => e.kind !== 'condition');
     expect(evaluate(fixtures, entries, BEST).top3).toBeGreaterThan(evaluate(fixtures, entries, VARIANTS.summary).top3);
   });
 });

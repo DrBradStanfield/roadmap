@@ -2,16 +2,22 @@
 // health-core's own write functions. The app runs this same code in
 // JavaScriptCore; these tests run it in Node.
 import { describe, expect, it } from 'vitest';
-import { applyEdit, myData, newRecord, readNumber, readRecord, Refusal } from './my-data';
+import { applyEdit, myData, newRecord, readNumber, readRecord, readView, Refusal } from './my-data';
 import { metricHistory } from './my-data-forms';
 import { readUnitChoices } from './unit-choices';
-import { healthWritesJson, planJson } from './entry';
-import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { applyEditJson, healthWritesJson, planJson, schemaVersion as engineSchemaVersion, screenJson } from './entry';
+import { createLabValue, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { supplementSchema } from '../../packages/health-core/src/validation';
 import { stampProfile, upsertSupplement } from '../../packages/health-core/src/state-edits';
 import { mergeFiles } from '../../packages/health-core/src/merge';
+import { gradeWords, savedStatus } from '../../packages/health-core/src/row-grade';
 
 const NOW = '2026-10-21T08:00:00.000Z';
+/** Every value row, any status, read by metric: the vitals, and the blood tests as core lab rows (US-66 AC1). */
+const valueRows = (file: RoadmapFile) => [
+  ...file.measurements,
+  ...file.labValues.filter((row) => row.core === true).map((row) => ({ ...row, metricType: row.metricName })),
+];
 const LATER = '2026-10-21T09:00:00.000Z';
 
 function edited(file: RoadmapFile, ...edits: Parameters<typeof applyEdit>[1][]): RoadmapFile {
@@ -59,7 +65,7 @@ describe('myData (AC5)', () => {
       { kind: 'add', metric: 'ldl', value: 100, day: '2026-09-01' },
       { kind: 'bloodPressure', systolic: 128, diastolic: 82, day: '2026-09-02', replace: false },
       { kind: 'bloodPressure', systolic: 121, diastolic: 78, day: '2026-10-02', replace: false });
-    const wrong = file.measurements.find((row) => row.metricType === 'ldl' && row.recordedAt.startsWith('2026-10-01'))!;
+    const wrong = valueRows(file).find((row) => row.metricType === 'ldl' && row.recordedAt.startsWith('2026-10-01'))!;
     file = edited(file, { kind: 'correct', id: wrong.id, value: 120 });
     const data = myData(file);
     // The corrected 130 is gone, its correction in its place.
@@ -101,7 +107,7 @@ describe('myData (AC5)', () => {
     const typed = applyEdit(file, { kind: 'add', metric: 'ldl', value: 116, day: '2026-09-01' }, NOW, ldlInUs);
     if (!typed.ok) throw new Error(typed.message);
     file = typed.file;
-    expect(file.measurements.find((row) => row.metricType === 'ldl')!.value).toBeCloseTo(3.0, 1);
+    expect(valueRows(file).find((row) => row.metricType === 'ldl')!.value).toBeCloseTo(3.0, 1);
     const data = myData(file, NOW, ldlInUs);
     expect(data.bloodTests.find((row) => row.metric === 'ldl')).toMatchObject({ unit: 'mg/dL', latest: { value: '116' }, switchable: true });
     expect(data.vitals.find((row) => row.metric === 'weight')).toMatchObject({ unit: 'kg', switchable: true });
@@ -110,10 +116,10 @@ describe('myData (AC5)', () => {
     expect(data.psa).toMatchObject({ switchable: false });
     expect(metricHistory(file, 'ldl', NOW, ldlInUs).unit).toBe('mg/dL');
     // A correction is read in the row's units too.
-    const ldlRow = file.measurements.find((row) => row.metricType === 'ldl')!;
+    const ldlRow = valueRows(file).find((row) => row.metricType === 'ldl')!;
     const corrected = applyEdit(file, { kind: 'correct', id: ldlRow.id, value: 120 }, NOW, ldlInUs);
     if (!corrected.ok) throw new Error(corrected.message);
-    expect(corrected.file.measurements.find((row) => row.correctsId === ldlRow.id)!.value).toBeCloseTo(3.1, 1);
+    expect(corrected.file.labValues.find((row) => row.correctsId === ldlRow.id)!.value).toBeCloseTo(3.1, 1);
   });
 
   it('keeps only real choices for switchable tests (US-25 AC17e)', () => {
@@ -138,6 +144,287 @@ describe('myData (AC5)', () => {
   it('shows the profile, height in the user\'s units', () => {
     const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'profile', sex: 'female', birthYear: 1970, birthMonth: 4, height: 165 });
     expect(myData(file).profile).toEqual({ sex: 'female', birthYear: 1970, birthMonth: 4, height: '165', heightUnit: 'cm', feetInches: null, alcohol: null });
+  });
+});
+
+// US-62 AC8/AC9, US-25 AC17: each row as the web's phone rows draw it (MyDataRows.tsx):
+// "target · date" under the name, and the latest value with the previous one in brackets.
+describe('myData rows: target and previous value (US-62 AC8, AC9)', () => {
+  const rows = (data: ReturnType<typeof myData>) => new Map([...data.vitals, ...data.bloodTests].map((row) => [row.metric, row]));
+  const adult = () => edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+    { kind: 'profile', sex: 'male', birthYear: 1970, height: 180 },
+    { kind: 'add', metric: 'ldl', value: 2.9, day: '2026-09-01' },
+    { kind: 'add', metric: 'ldl', value: 3.4, day: '2026-10-01' },
+    { kind: 'add', metric: 'hba1c', value: 38, day: '2026-10-01' },
+    { kind: 'bloodPressure', systolic: 128, diastolic: 82, day: '2026-09-02', replace: false },
+    { kind: 'bloodPressure', systolic: 121, diastolic: 79, day: '2026-10-02', replace: false });
+
+  it('gives the previous day\'s value beside the latest, in the row\'s units, and none with one reading', () => {
+    const shown = rows(myData(adult(), NOW));
+    expect(shown.get('ldl')).toMatchObject({ latest: { value: '3.4' }, previous: '2.9' });
+    expect(shown.get('hba1c')).toMatchObject({ latest: { value: '38' }, previous: null });
+    expect(shown.get('blood_pressure')).toMatchObject({ latest: { value: '121/79' }, previous: '128/82' });
+    expect(shown.get('weight')).toMatchObject({ latest: null, previous: null });
+    const us = rows(myData(adult(), NOW, { ldl: 'conventional' }));
+    expect(us.get('ldl')).toMatchObject({ unit: 'mg/dL', latest: { value: '131' }, previous: '112' });
+  });
+
+  it('prints health-core\'s rowTarget under each name, in the row\'s unit', () => {
+    const shown = rows(myData(adult(), NOW));
+    expect(shown.get('ldl')?.target).toBe('Optimal <1.4');
+    expect(shown.get('hba1c')?.target).toBe('Normal <39');
+    expect(shown.get('blood_pressure')?.target).toBe('Target <120/80');
+    expect(shown.get('weight')?.target).toBe('Target 78.0');
+    expect(shown.get('waist')?.target).toBe('Target <90');
+    expect(rows(myData(adult(), NOW, { ldl: 'conventional' })).get('ldl')?.target).toBe('Optimal <55');
+  });
+
+  it('prints no adult target for a known minor, and no plan target without a height (US-07 AC6, US-62 AC13)', () => {
+    const minor = rows(myData(edited(adult(), { kind: 'profile', birthYear: 2015 }), NOW));
+    expect(minor.get('ldl')?.target).toBeNull();
+    expect(minor.get('blood_pressure')?.target).toBeNull();
+    expect(minor.get('waist')?.target).toBe('Target <90');
+    const noHeight = rows(myData(edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'profile', sex: 'male', birthYear: 1970 }), NOW));
+    expect(noHeight.get('weight')?.target).toBeNull();
+    expect(noHeight.get('ldl')?.target).toBe('Optimal <1.4');
+  });
+
+  const idOf = (file: RoadmapFile, metric: string, day: string) =>
+    valueRows(file).find((row) => row.metricType === metric && row.status === 'active' && row.recordedAt.startsWith(day))!.id;
+
+  it('takes a corrected earlier day\'s new value as the previous one, never the struck row (US-04)', () => {
+    const file = adult();
+    const fixed = edited(file, { kind: 'correct', id: idOf(file, 'ldl', '2026-09-01'), value: 3.0 });
+    expect(rows(myData(fixed, NOW)).get('ldl')).toMatchObject({ latest: { value: '3.4' }, previous: '3.0' });
+  });
+
+  it('reads a corrected latest day as its new value, with the day before as the previous one', () => {
+    const file = adult();
+    const fixed = edited(file, { kind: 'correct', id: idOf(file, 'ldl', '2026-10-01'), value: 3.5 });
+    expect(rows(myData(fixed, NOW)).get('ldl')).toMatchObject({ latest: { value: '3.5', day: '2026-10-01' }, previous: '2.9' });
+  });
+
+  it('counts a day after today as the latest, as the web\'s rows do, while the trend leaves it out (US-25 AC17f)', () => {
+    const file = adult();
+    const held = file.labValues.find((row) => row.id === idOf(file, 'ldl', '2026-10-01'))!;
+    const ahead = { ...file, labValues: [...file.labValues, { ...held, id: 'ahead-ldl', value: 3.8, recordedAt: '2026-10-23', createdAt: NOW }] };
+    const ldl = rows(myData(ahead, NOW)).get('ldl');
+    expect(ldl).toMatchObject({ latest: { value: '3.8', day: '2026-10-23' }, previous: '3.4' });
+    expect(ldl?.trend).toEqual([2.9, 3.4]);
+  });
+
+  it('gives Lp(a)\'s previous value in the unit Lp(a) is shown in (US-05 AC2)', () => {
+    const file = edited(adult(), { kind: 'add', metric: 'lpa', value: 100, day: '2026-09-01' }, { kind: 'add', metric: 'lpa', value: 150, day: '2026-10-01' });
+    expect(rows(myData(file, NOW)).get('lpa')).toMatchObject({ unit: 'nmol/L', latest: { value: '150' }, previous: '100' });
+    const mg = rows(myData(edited(file, { kind: 'lpaUnit', unit: 'mg/dL' }), NOW)).get('lpa');
+    expect(mg).toMatchObject({ unit: 'mg/dL', latest: { value: '60.0' }, previous: '40.0', target: 'Normal <30' });
+  });
+
+  it('still gives a known minor\'s blood pressure its previous pair, with no adult target (US-07 AC6)', () => {
+    const minor = rows(myData(edited(adult(), { kind: 'profile', birthYear: 2015 }), NOW)).get('blood_pressure');
+    expect(minor).toMatchObject({ latest: { value: '121/79' }, previous: '128/82', target: null });
+  });
+
+  it('gives a lone-half latest pressure no previous, so no bracket sits beside the dash (US-25 AC17)', () => {
+    const file = adult();
+    const sys = file.measurements.find((row) => row.id === idOf(file, 'systolic_bp', '2026-10-02'))!;
+    const lone = { ...file, measurements: [...file.measurements, { ...sys, id: 'lone-sys', value: 135, recordedAt: '2026-10-20', createdAt: NOW }] };
+    expect(rows(myData(lone, NOW)).get('blood_pressure')).toMatchObject({ latest: { value: '135/–', day: '2026-10-20' }, previous: null });
+    // A full pair after it takes the last complete pair before it, skipping the half-pair day.
+    const fixed = edited(lone, { kind: 'bloodPressure', systolic: 118, diastolic: 76, day: '2026-10-21', replace: false });
+    expect(rows(myData(fixed, NOW)).get('blood_pressure')).toMatchObject({ latest: { value: '118/76' }, previous: '121/79' });
+  });
+});
+
+// US-62 AC8, US-25 AC17: the web's grade on each row, from health-core (row-grade.ts), the
+// functions the web's MyDataRows.tsx calls: the colour (status) and the words a screen reader
+// says after the value, off target only.
+describe('myData rows: grade and spoken grade (US-62 AC8, US-25 AC17)', () => {
+  const rows = (data: ReturnType<typeof myData>) => new Map([...data.vitals, ...data.bloodTests, data.psa].map((row) => [row.metric, row]));
+  const adult = () => edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+    { kind: 'profile', sex: 'male', birthYear: 1970, height: 180 },
+    { kind: 'add', metric: 'ldl', value: 3.4, day: '2026-10-01' },
+    { kind: 'add', metric: 'hba1c', value: 50, day: '2026-10-01' },
+    { kind: 'add', metric: 'hdl', value: 1.3, day: '2026-10-01' },
+    { kind: 'add', metric: 'weight', value: 90, day: '2026-10-01' },
+    { kind: 'add', metric: 'waist', value: 92, day: '2026-10-01' },
+    { kind: 'add', metric: 'psa', value: 5, day: '2026-10-01' },
+    { kind: 'bloodPressure', systolic: 125, diastolic: 82, day: '2026-10-02', replace: false });
+
+  it('grades each row as the web does: amber, red or plain, with the words only off target', () => {
+    const shown = rows(myData(adult(), NOW));
+    expect(shown.get('ldl')).toMatchObject({ status: 'warn', gradeWords: 'above optimal' });
+    expect(shown.get('hba1c')).toMatchObject({ status: 'bad', gradeWords: 'high' });
+    expect(shown.get('hdl')).toMatchObject({ status: 'ok', gradeWords: null });
+    expect(shown.get('weight')).toMatchObject({ status: 'bad', gradeWords: 'above target' });
+    expect(shown.get('waist')).toMatchObject({ status: 'warn', gradeWords: 'above target' });
+    expect(shown.get('blood_pressure')).toMatchObject({ status: 'warn', gradeWords: 'above target' });
+    expect(shown.get('apob')).toMatchObject({ latest: null, status: null, gradeWords: null });
+  });
+
+  it('grades a value printed as a limit by the web\'s rule: only when its bound decides (US-12 AC20)', () => {
+    for (const [value, comparator] of [[5, '>'], [1, '<'], [3, '<']] as const) {
+      const file = adult();
+      // LDL is a core lab row (US-66 AC1); the limit is one too.
+      const ldl = file.labValues.find((row) => row.core && row.metricName === 'ldl')!;
+      file.labValues.push({ ...ldl, id: `limit-${value}${comparator}`, value, comparator, recordedAt: '2026-10-15' });
+      const row = rows(myData(file, NOW)).get('ldl')!;
+      const web = savedStatus('ldl', value, comparator, { sex: 'male' });
+      expect(row).toMatchObject({ status: web, gradeWords: gradeWords(web, 'ldl') });
+    }
+  });
+
+  it('grades a weight printed as a limit only when certain, with the web\'s note on the row and the history page (US-12 AC21)', () => {
+    // A 180 cm man's ideal weight is 78.0 kg (its row target).
+    const withWeight = (value: number, comparator: '<' | '>', file = adult()) => {
+      const row = file.measurements.find((r) => r.metricType === 'weight')!;
+      file.measurements.push({ ...row, id: `w-${comparator}${value}`, value, comparator, recordedAt: '2026-10-15' });
+      return file;
+    };
+    const weightRow = (file: RoadmapFile) => rows(myData(file, NOW)).get('weight')!;
+    expect(weightRow(withWeight(100, '>'))).toMatchObject({ latest: { value: '> 100.0' }, status: 'bad', gradeWords: 'above target', note: null });
+    expect(weightRow(withWeight(78, '>'))).toMatchObject({ status: null, gradeWords: null, note: 'Printed as a limit, so the plan cannot grade it against its cutoff.' });
+    const history = metricHistory(withWeight(78, '>'), 'weight', NOW).rows;
+    expect(history.find((r) => r.id === 'w->78')?.note).toBe('Printed as a limit, so the plan cannot grade it against its cutoff.');
+    expect(history.find((r) => r.id !== 'w->78')?.note).toBeUndefined();
+    // A known minor's weight has no adult line: no grade, and no note, as an exact weight there.
+    expect(weightRow(withWeight(78, '>', edited(adult(), { kind: 'profile', birthYear: 2015 })))).toMatchObject({ status: null, note: null });
+  });
+
+  it('the blood pressure row and history page say the note for a pair the rule leaves open (US-12 AC21)', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+      { kind: 'profile', sex: 'male', birthYear: 1970, height: 180 },
+      { kind: 'bloodPressure', systolic: 125, diastolic: 78, day: '2026-10-02', replace: false });
+    file.measurements.find((row) => row.metricType === 'systolic_bp')!.comparator = '<';
+    const pressure = myData(file, NOW).vitals.find((row) => row.metric === 'blood_pressure')!;
+    expect(pressure).toMatchObject({ latest: { value: '< 125/78' }, status: null, note: 'Printed as a limit, so the plan cannot grade it against its cutoff.' });
+    const [current] = metricHistory(file, 'blood_pressure', NOW).rows;
+    expect(current).toMatchObject({ value: '< 125/78', systolic: '125', note: 'Printed as a limit, so the plan cannot grade it against its cutoff.' });
+  });
+
+  it('grades no PSA, which the web asks for under screening and never colours', () => {
+    expect(rows(myData(adult(), NOW)).get('psa')).toMatchObject({ latest: { value: '5.0' }, status: null, gradeWords: null });
+  });
+
+  it('grades on the stored value, in any display unit', () => {
+    expect(rows(myData(adult(), NOW, { ldl: 'conventional' })).get('ldl')).toMatchObject({ unit: 'mg/dL', status: 'warn', gradeWords: 'above optimal' });
+  });
+
+  it('grades no adult line for a known minor, but still the waist (US-07 AC6)', () => {
+    const minor = rows(myData(edited(adult(), { kind: 'profile', birthYear: 2015 }), NOW));
+    expect(['ldl', 'hba1c', 'weight', 'blood_pressure'].map((metric) => minor.get(metric)?.status)).toEqual([null, null, null, null]);
+    expect(minor.get('waist')?.status).not.toBeNull();
+  });
+
+  it('grades the blood pressure it shows when a merge left two active rows per half on one day (adversary R1)', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+      { kind: 'profile', sex: 'male', birthYear: 1970, height: 180 },
+      { kind: 'bloodPressure', systolic: 118, diastolic: 76, day: '2026-10-02', replace: false });
+    // Another device's pair for the same day, written later, merged in: both stay active.
+    for (const [metricType, value] of [['systolic_bp', 150], ['diastolic_bp', 95]] as const) {
+      file.measurements.push({ ...file.measurements.find((row) => row.metricType === metricType)!, id: `other-${metricType}`, value, createdAt: '2026-10-21T09:00:00.000Z' });
+    }
+    const pressure = myData(file, NOW).vitals.find((row) => row.metric === 'blood_pressure')!;
+    expect(pressure).toMatchObject({ latest: { value: '150/95' }, status: 'bad', gradeWords: 'high' });
+  });
+
+  it('grades a blood pressure with a half saved as a limit only when certain, and an exact pair as before (US-25 AC17, US-12 AC21)', () => {
+    const exact = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+      { kind: 'profile', sex: 'male', birthYear: 1970, height: 180 },
+      { kind: 'bloodPressure', systolic: 125, diastolic: 78, day: '2026-10-02', replace: false });
+    const pressure = (file: RoadmapFile) => myData(file, NOW).vitals.find((row) => row.metric === 'blood_pressure')!;
+    expect(pressure(exact)).toMatchObject({ latest: { value: '125/78' }, status: 'warn', gradeWords: 'above target' });
+    // "<125/78": the systolic half printed as a limit, so the iPhone says no grade for it.
+    const limit = structuredClone(exact);
+    const sys = limit.measurements.find((row) => row.metricType === 'systolic_bp')!;
+    sys.comparator = '<';
+    expect(pressure(limit)).toMatchObject({ status: null, gradeWords: null });
+    expect(pressure(limit).latest?.value).toContain('125');
+    // "<110/<70": every pair both bounds allow is under 120/80, so certainly on target.
+    const low = structuredClone(exact);
+    for (const [metricType, value] of [['systolic_bp', 110], ['diastolic_bp', 70]] as const) {
+      Object.assign(low.measurements.find((row) => row.metricType === metricType)!, { value, comparator: '<' });
+    }
+    expect(pressure(low)).toMatchObject({ status: 'ok', gradeWords: null });
+  });
+
+  it('grades no HDL without sex, and no half-entered blood pressure (US-62 AC13, US-25 AC17)', () => {
+    const noSex = rows(myData(edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'add', metric: 'hdl', value: 0.8, day: '2026-10-01' }), NOW));
+    expect(noSex.get('hdl')).toMatchObject({ status: null, gradeWords: null });
+    const half = adult();
+    half.measurements.push({ ...half.measurements.find((row) => row.metricType === 'systolic_bp')!, id: 'half', recordedAt: '2026-10-10', value: 150 });
+    expect(rows(myData(half, NOW)).get('blood_pressure')).toMatchObject({ latest: { value: '150/–' }, status: null, gradeWords: null });
+  });
+});
+
+// US-62 AC8, US-25 AC17: the lab tests beyond the core ones, as the web's Blood tests rows list
+// them (MyDataRows.tsx labRows): one row per series, catalogue label, "Ref …" target, newest value
+// and the one before it in the unit the lab printed.
+describe('myData lab test rows (US-62 AC8, US-25 AC17)', () => {
+  const lab = (id: string, metricName: string, value: number, unit: string, recordedAt: string, extra: Partial<RoadmapFile['labValues'][number]> = {}): RoadmapFile['labValues'][number] => ({
+    id, metricName, value, unit, referenceLow: null, referenceHigh: null, recordedAt, createdAt: recordedAt, source: 'manual', status: 'active', correctsId: null, ...extra,
+  });
+  const withLabs = () => {
+    const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    return { ...file, labValues: [
+      lab('f1', 'ferritin', 80, 'µg/L', '2026-09-01T00:00:00.000Z', { referenceLow: 30, referenceHigh: 400 }),
+      lab('f2', 'Ferritin', 112.456, 'ng/mL', '2026-10-01T00:00:00.000Z', { referenceLow: 30, referenceHigh: 500 }),
+      lab('f0', 'ferritin', 999, 'µg/L', '2026-10-05T00:00:00.000Z', { status: 'entered-in-error' }),
+      lab('s1', 'sodium', 140, 'mmol/L', '2026-10-01T00:00:00.000Z', { referenceHigh: 145 }),
+      lab('z1', 'zinc_custom', 12, 'µmol/L', '2026-09-01T00:00:00.000Z'),
+      lab('z2', 'zinc_custom', 80, 'µg/dL', '2026-10-01T00:00:00.000Z'),
+    ] };
+  };
+
+  it('lists each series in the web\'s order, with its label, target, newest and previous value and unit', () => {
+    const tests = myData(withLabs(), NOW).labTests;
+    expect(tests.map((row) => row.label)).toEqual(['Sodium', 'Ferritin', 'Zinc Custom']);
+    expect(tests[0]).toMatchObject({ metric: 'sodium', unit: 'mmol/L', target: 'Ref <145', latest: { id: 's1', value: '140', day: '2026-10-01' }, previous: null, switchable: false });
+    // The entered-in-error row is left out; ng/mL reads as the catalogue's µg/L, so one unit.
+    expect(tests[1]).toMatchObject({ metric: 'ferritin', unit: 'µg/L', target: 'Ref 30–500', latest: { id: 'f2', value: '112.46' }, previous: '80', trend: [80, 112.456] });
+  });
+
+  it('gives a series in more than one unit no previous value and no trend (US-21 AC3a), and grades none', () => {
+    const tests = myData(withLabs(), NOW).labTests;
+    expect(tests[2]).toMatchObject({ metric: 'zinc custom', unit: 'µg/dL', latest: { value: '80' }, previous: null, trend: [], target: null });
+    expect(tests.every((row) => row.status === null && row.gradeWords === null)).toBe(true);
+  });
+
+  it('reads a lab limit with its symbol and draws it on no trend, as the core rows (US-12 AC20)', () => {
+    const file = withLabs();
+    file.labValues.push(lab('s2', 'sodium', 150, 'mmol/L', '2026-10-10T00:00:00.000Z', { comparator: '>' }));
+    const sodium = myData(file, NOW).labTests.find((row) => row.metric === 'sodium')!;
+    expect(sodium).toMatchObject({ latest: { id: 's2', value: '> 150' }, previous: '140', trend: [140] });
+  });
+
+  it('a lab row with no unit, no range or an empty name never blanks My data (US-65)', () => {
+    // Rows readers accept (readable-rows.ts: unit, references optional), as another build might write them.
+    const file = withLabs();
+    const odd = [
+      { ...lab('n1', 'ferritin', 90, 'µg/L', '2026-10-15T00:00:00.000Z'), unit: null },
+      { ...lab('n2', 'vitamin_b12', 300, 'pmol/L', '2026-10-15T00:00:00.000Z'), unit: undefined },
+      lab('n3', '', 4, 'mmol/L', '2026-10-15T00:00:00.000Z', { referenceLow: null, referenceHigh: null }),
+    ];
+    const text = JSON.stringify({ ...file, labValues: [...file.labValues, ...odd] });
+    const tests = myData(readView(text, NOW, 'phone'), NOW).labTests;
+    expect(tests.find((row) => row.latest?.id === 'n1')).toMatchObject({ label: 'Ferritin', unit: '', latest: { value: '90' } });
+    expect(tests.find((row) => row.latest?.id === 'n2')).toMatchObject({ unit: '', latest: { value: '300' } });
+    expect(tests.find((row) => row.latest?.id === 'n3')).toMatchObject({ unit: 'mmol/L', target: null, latest: { value: '4' } });
+    expect(tests.find((row) => row.metric === 'sodium')).toMatchObject({ latest: { value: '140' } });
+  });
+
+  it('never lists a core blood test as a lab test: it is a Blood tests row (US-66 AC8)', () => {
+    const file = withLabs();
+    file.labValues.push(lab('c1', 'ldl', 2.4, 'mmol/L', '2026-10-01T00:00:00.000Z', { core: true }));
+    file.labValues.push(lab('c2', 'hdl', 1.5, 'mmol/L', '2026-10-01T00:00:00.000Z', { core: true, comparator: '>' }));
+    const shown = myData(file, NOW);
+    expect(shown.labTests.map((row) => row.metric)).toEqual(['sodium', 'ferritin', 'zinc custom']);
+    expect(shown.bloodTests.find((row) => row.metric === 'ldl')!.latest).toMatchObject({ id: 'c1' });
+    expect(shown.bloodTests.find((row) => row.metric === 'hdl')!.latest).toMatchObject({ id: 'c2', value: '> 1.5' });
+  });
+
+  it('is empty for a record with no lab tests', () => {
+    expect(myData(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), NOW).labTests).toEqual([]);
   });
 });
 
@@ -375,6 +662,58 @@ describe('Apple Health (AC13, AC14)', () => {
   });
 });
 
+// US-72: lab results from Health Records, through health-core's health-records-import
+// (its rules are tested there). The app reads the counts from the edit's answer.
+describe('Health Records (US-72)', () => {
+  const ldl = {
+    resourceType: 'Observation', id: 'ldl-1', status: 'final', effectiveDateTime: '2026-10-20', meta: { versionId: '1' },
+    code: { coding: [{ system: 'http://loinc.org', code: '13457-7' }] },
+    valueQuantity: { value: 2.6, unit: 'mmol/L', system: 'http://unitsofmeasure.org', code: 'mmol/L' },
+  };
+  const record = { sourceId: 'hk-source:Acme', resourceType: 'Observation', fhirVersion: '4.0.1', json: JSON.stringify(ldl) };
+
+  it('AC2: lands a result as a health_records row, shown in My data, and answers the counts', () => {
+    const outcome = applyEdit(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'healthRecords', records: [record] }, NOW);
+    if (!outcome.ok) throw new Error(outcome.message);
+    expect(outcome.healthRecords).toEqual({ added: 1, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
+    expect(outcome.file.labValues[0]).toMatchObject({ metricName: 'ldl', core: true, value: 2.6, source: 'health_records' });
+    expect(myData(outcome.file).bloodTests.find((row) => row.metric === 'ldl')?.latest).toMatchObject({ day: '2026-10-20' });
+  });
+
+  it('AC5: hands back the record it was given when nothing is new, so the app writes nothing', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'healthRecords', records: [record] });
+    const again = applyEdit(file, { kind: 'healthRecords', records: [record] }, LATER);
+    expect(again).toEqual({ ok: true, file, healthRecords: { added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 1, notRead: 0 } });
+    if (again.ok) expect(again.file).toBe(file);
+  });
+
+  it('AC5, AC7: the iPhone history leaves version markers out, and shows a withdrawn result struck through', () => {
+    const version = (fields: object) => ({ ...record, json: JSON.stringify({ ...ldl, ...fields }) });
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'healthRecords', records: [record] });
+    const restamped = edited(file, { kind: 'healthRecords', records: [version({ meta: { versionId: '2' } })] });
+    expect(restamped.labValues).toHaveLength(2);
+    expect(metricHistory(restamped, 'ldl', LATER).rows.map((row) => [row.value, row.status])).toEqual([['2.6', 'active']]);
+    const withdrawn = edited(restamped, { kind: 'healthRecords', records: [version({ meta: { versionId: '3' }, status: 'entered-in-error' })] });
+    expect(withdrawn.labValues).toHaveLength(3);
+    expect(metricHistory(withdrawn, 'ldl', LATER).rows.map((row) => [row.value, row.status])).toEqual([['2.6', 'entered-in-error']]);
+  });
+
+  it('refuses a batch that is not a list', () => {
+    const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    expect(applyEdit(file, { kind: 'healthRecords', records: 'nope' } as never, NOW)).toMatchObject({ ok: false, reason: 'invalid-value' });
+  });
+
+  it('applyEditJson passes the counts to the app; other edits answer as before', () => {
+    const recordJson = JSON.stringify(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'));
+    const answer = JSON.parse(applyEditJson(recordJson, JSON.stringify({ kind: 'healthRecords', records: [record] }), NOW, 'phone'));
+    expect(Object.keys(answer)).toEqual(['ok', 'record', 'healthRecords']);
+    expect(answer.healthRecords).toEqual({ added: 1, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
+    expect(JSON.parse(answer.record).labValues[0].source).toBe('health_records');
+    const units = JSON.parse(applyEditJson(recordJson, JSON.stringify({ kind: 'units', unitSystem: 'conventional' }), NOW, 'phone'));
+    expect(Object.keys(units)).toEqual(['ok', 'record']);
+  });
+});
+
 // US-25 AC8: the medication, screening and supplement questions, health-core's
 // input-form, answered through the web's own writes.
 describe('forms (AC8)', () => {
@@ -390,6 +729,15 @@ describe('forms (AC8)', () => {
     expect(data.screenings).toEqual([]);
     expect(data.screeningNote).toMatch(/sex, birth year and height/);
     expect(data.medications).toEqual([]);
+  });
+
+  // US-07 AC8: an age and no sex is a plan; the note must not say "at your age and sex".
+  it('with an age and no sex and no question that applies, says the sexed questions wait for sex', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+      { kind: 'profile', birthYear: 2004, birthMonth: 1, height: 170 });
+    const data = myData(file, NOW);
+    expect(data.screenings).toEqual([]);
+    expect(data.screeningNote).toBe('Some screening questions depend on your sex. Add it in About you.');
   });
 
   it('asks the web\'s questions for the plan\'s age and sex, and the cascade\'s first step', () => {
@@ -440,6 +788,17 @@ describe('forms (AC8)', () => {
     const data = myData(file, NOW);
     expect(data.screenings[0].groups.find((g) => g.id === 'prostate')!.fields[1]).toMatchObject({ kind: 'measurement', metric: 'psa' });
     expect(data.psa.latest).toMatchObject({ value: '1.2', day: '2026-10-02' });
+  });
+
+  it('US-06 AC18 (Brad 2026-11-03): a raised PSA of 4.04 reads 4.04, as the web, not 4.0', () => {
+    const psa = (value: number) => myData(man60({ kind: 'screening', key: 'prostate_discussion', value: 'will_screen' },
+      { kind: 'add', metric: 'psa', value, day: '2026-10-02' }), NOW).psa.latest?.value;
+    expect(psa(4.04)).toBe('4.04');
+    expect([psa(6.53), psa(4.0)]).toEqual(['6.5', '4.0']);
+    // The PSA page's history rows (and its headline) print the same (adversary R1).
+    const file = man60({ kind: 'screening', key: 'prostate_discussion', value: 'will_screen' },
+      { kind: 'add', metric: 'psa', value: 4.04, day: '2026-10-02' }, { kind: 'add', metric: 'psa', value: 6.53, day: '2026-09-02' });
+    expect(metricHistory(file, 'psa', NOW).rows.map((r) => r.value)).toEqual(['4.04', '6.5']);
   });
 
   // US-06 AC1a: accepted names must produce keys accepted by the real native writer.
@@ -650,16 +1009,16 @@ describe('Lp(a) unit (US-05 AC2, US-25 AC20)', () => {
 
   it('reads a typed value in the chosen unit, and a correction too', () => {
     const base = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
-    const stored = (file: RoadmapFile) => file.measurements.find((row) => row.metricType === 'lpa' && row.status === 'active')!.value;
+    const stored = (file: RoadmapFile) => valueRows(file).find((row) => row.metricType === 'lpa' && row.status === 'active')!.value;
     // US-05 AC1's pairs: 156 mg/dL is 390 nmol/L; 93 mg/L is 23.25.
     expect(stored(edited(inUnit(base, 'mg/dL'), { kind: 'add', metric: 'lpa', value: 156, day: '2026-09-01' }))).toBeCloseTo(390, 9);
     expect(stored(edited(inUnit(base, 'mg/L'), { kind: 'add', metric: 'lpa', value: 93, day: '2026-09-01' }))).toBeCloseTo(23.25, 9);
     expect(stored(edited(base, { kind: 'add', metric: 'lpa', value: 75, day: '2026-09-01' }))).toBe(75);
     const file = inUnit(withLpa('en-NZ', 'Pacific/Auckland'), 'mg/dL');
-    const row = file.measurements.find((r) => r.metricType === 'lpa')!;
+    const row = valueRows(file).find((r) => r.metricType === 'lpa')!;
     // 50 mg/dL over a shown 49.6 corrects it to 125 (US-05 AC2).
     const corrected = edited(file, { kind: 'correct', id: row.id, value: 50 });
-    expect(corrected.measurements.find((r) => r.correctsId === row.id)!.value).toBeCloseTo(125, 9);
+    expect(corrected.labValues.find((r) => r.correctsId === row.id)!.value).toBeCloseTo(125, 9);
     // Over the range, said in the unit typed in, as the web's cellRange says it (review R2).
     expect(applyEdit(file, { kind: 'add', metric: 'lpa', value: 301, day: '2026-09-02' }, NOW))
       .toMatchObject({ ok: false, reason: 'out-of-range', message: 'Lp(a) must be at most 300 mg/dL (got 301)' });
@@ -755,5 +1114,84 @@ describe('alcohol (US-60)', () => {
     expect(ids(answer(heavy, 'drinks'))).toContain('reduce-alcohol');
     expect(ids(answer(heavy, 'none'))).not.toContain('reduce-alcohol');
     expect(ids(answer(answer(heavy, 'none'), null, '2026-10-21T10:00:00.000Z'))).toContain('reduce-alcohol');
+  });
+});
+
+// US-66: every blood test is a core lab row; the phone's view models and metric ids stay (AC12).
+describe('one blood-test table (US-66)', () => {
+  const base = () => newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+
+  it('AC6: the phone\'s add and correction write core lab rows in the core unit, nothing in measurements', () => {
+    let file = edited(base(), { kind: 'add', metric: 'hba1c', value: 41, day: '2026-09-01' });
+    expect(file.measurements).toEqual([]);
+    expect(file.labValues).toEqual([expect.objectContaining({ metricName: 'hba1c', unit: 'mmol/mol', value: 41, core: true, status: 'active' })]);
+    file = edited(file, { kind: 'correct', id: file.labValues[0].id, value: 43 });
+    expect(file.labValues.map((row) => [row.value, row.status, row.core])).toEqual([[41, 'entered-in-error', true], [43, 'active', true]]);
+    expect(myData(file, NOW).bloodTests.find((row) => row.metric === 'hba1c')!.latest).toMatchObject({ value: '43', day: '2026-09-01' });
+  });
+
+  it('AC2, AC7: an old-shape record\'s blood tests show in My data, its trend and its history once read', () => {
+    const old = { ...base(), measurements: [
+      { id: 'ldl-a', metricType: 'ldl', value: 3.4, recordedAt: '2026-10-01', createdAt: NOW, source: 'manual', status: 'active', correctsId: null, externalId: null },
+      { id: 'ldl-b', metricType: 'ldl', value: 3.0, recordedAt: '2026-10-10', createdAt: NOW, source: 'manual', status: 'active', correctsId: null, externalId: null },
+    ] };
+    const file = readRecord(JSON.stringify(old), NOW, 'phone');
+    expect(file.measurements).toEqual([]);
+    expect(myData(file, NOW).bloodTests.find((row) => row.metric === 'ldl')).toMatchObject({ latest: { id: 'ldl-b', value: '3.0' }, previous: '3.4', trend: [3.4, 3.0] });
+    expect(metricHistory(file, 'ldl', NOW).rows.map((row) => [row.id, row.current])).toEqual([['ldl-b', true], ['ldl-a', false]]);
+  });
+
+  it('AC7, AC8: only a core row in its core unit is a blood test; a plain lab row named like one is not shown as one', () => {
+    const file = edited(base(), { kind: 'add', metric: 'ldl', value: 3.1, day: '2026-09-01' });
+    const core = file.labValues[0];
+    const odd = { ...file, labValues: [
+      ...file.labValues,
+      // A hand edit: a core row in another unit counts nowhere.
+      { ...core, id: 'wrong-unit', value: 120, unit: 'mg/dL', recordedAt: '2026-10-01' },
+      // Not flagged core: an extra lab row, never the LDL row's value.
+      { ...core, id: 'plain', value: 2.2, recordedAt: '2026-10-02', core: undefined },
+    ] } as RoadmapFile;
+    expect(myData(odd, NOW).bloodTests.find((row) => row.metric === 'ldl')).toMatchObject({ latest: { id: core.id, value: '3.1' }, previous: null });
+    expect(metricHistory(odd, 'ldl', NOW).rows.map((row) => row.id)).toEqual([core.id]);
+  });
+
+  // AC14 on the phone's own file: Swift's loadPhone writes `movedRecord` once, as it opens.
+  describe('AC14: the phone\'s file is written once in the new shape, as it opens', () => {
+    const moved = (text: string) => (JSON.parse(screenJson(text, NOW, 'phone', '{}')) as { movedRecord?: string }).movedRecord;
+    const oldShape = () => JSON.stringify({ ...base(), measurements: [
+      { id: 'ldl-a', metricType: 'ldl', value: 3.4, recordedAt: '2026-10-01', createdAt: NOW, source: 'manual', status: 'active', correctsId: null, externalId: null },
+      { id: 'w', metricType: 'weight', value: 80, recordedAt: '2026-10-01', createdAt: NOW, source: 'manual', status: 'active', correctsId: null, externalId: null },
+    ] });
+
+    it('an old-shape record gives the moved record to write, every value kept', () => {
+      const written = JSON.parse(moved(oldShape())!) as RoadmapFile;
+      expect(written.measurements.map((row) => row.id)).toEqual(['w']);
+      expect(written.labValues).toEqual([expect.objectContaining({ id: 'ldl-a', metricName: 'ldl', value: 3.4, core: true, status: 'active' })]);
+    });
+
+    it('an old lab row named like a core test, folded on read, gives one too', () => {
+      const printed = createLabValue({ id: 'p', metricName: 'LDL', value: 3.2, unit: 'mmol/L', recordedAt: '2026-05-02', createdAt: NOW });
+      const written = JSON.parse(moved(JSON.stringify({ ...base(), labValues: [printed] }))!) as RoadmapFile;
+      expect(written.labValues.some((row) => row.core === true && row.metricName === 'ldl' && row.value === 3.2)).toBe(true);
+    });
+
+    it('a new-shape record gives none, and the written record gives none on the next open', () => {
+      expect(moved(JSON.stringify(edited(base(), { kind: 'add', metric: 'ldl', value: 3.1, day: '2026-09-01' })))).toBeUndefined();
+      expect(moved(moved(oldShape())!)).toBeUndefined();
+    });
+
+    it('US-66 AC15: the moved record is schemaVersion 3, so iPhone build 3 refuses it; an edit adding the first blood test is 3 too', () => {
+      expect((JSON.parse(moved(oldShape())!) as RoadmapFile).schemaVersion).toBe(3);
+      expect(base().schemaVersion).toBe(1);
+      expect(edited(base(), { kind: 'add', metric: 'ldl', value: 3.1, day: '2026-09-01' }).schemaVersion).toBe(3);
+      expect(edited(base(), { kind: 'add', metric: 'weight', value: 80, day: '2026-09-01' }).schemaVersion).toBe(1);
+      expect(engineSchemaVersion).toBe(3);
+    });
+
+    it('a write the phone refused is asked for again: the same old text gives it on the next open', () => {
+      const text = oldShape();
+      expect(moved(text)).toBeDefined();
+      expect(moved(text)).toBe(moved(text)); // read from the kept record, never a one-shot flag
+    });
   });
 });

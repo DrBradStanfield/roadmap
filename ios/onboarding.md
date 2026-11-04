@@ -15,8 +15,9 @@ Today a new user sees one welcome screen, taps "Get started", and lands on the f
 data form. It has about thirty rows. Nothing says which ones the plan needs. A person who
 fills in nothing gets "Your plan needs a few details" on My plan.
 
-The plan runs on two things, sex and height (health-core's one `PlanError` asks for
-them). Birth year adds age, which the screenings wait for. Weight makes the plan much
+The plan runs on height alone (health-core's one `PlanError` asks for it; US-07 AC8,
+2026-10-31). Sex adds the healthy weight, protein target, a calculated eGFR, the HDL
+verdict and the sexed screenings. Birth year adds age, which the screenings wait for. Weight makes the plan much
 better. Everything else can come later.
 
 ## What Apple does
@@ -130,7 +131,8 @@ Health, and see my plan, without facing the full form.
   month, height; `appendMeasurement` for weight, dated today, `source: apple_health`
   when it came from Health). A refused value shows the engine's words and stays on the
   screen.
-- AC6: units default to the phone's region (US region: feet, inches, pounds) and are
+- AC6: units default to the phone's region (US region: feet, inches, pounds; also the
+  US territories and Myanmar, by the web's `detectUnitSystem`, US-05 AC5) and are
   saved as the record's unit choice, which only My data's Units row changes. The height
   and weight switches are for entry only.
 - AC7: after the last step the app opens My plan. Quitting part way keeps what was

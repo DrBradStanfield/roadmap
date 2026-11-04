@@ -102,9 +102,9 @@ on our server during a normal call: it unseals the credential to open your folde
 that request, then discards both. A compromised server could capture them at that
 moment. Encryption at rest does not protect against that, and we do not claim it does.
 
-One exception, for one invented account. While an OpenAI or Anthropic app review is
+One exception, for one invented account. While Anthropic's connector directory review is
 pending, our server holds the Dropbox credential of a synthetic reviewer account we
-made. Their reviewer can then sign in on our consent page with a username and password
+made. Anthropic's reviewer can then sign in on our consent page with a username and password
 we issued instead of a Dropbox login. The account belongs to no one and its record is
 invented. The reviewer's assistant holds no credential at all, only a marker that names
 the current reviewer secrets, so removing or changing those secrets ends every reviewer
@@ -420,7 +420,7 @@ no part of your health record. The tool refuses any report that reads as a healt
 a number with a unit, a bare number written near a metric name it knows, an email
 address, a phone-shaped run of digits, a file name (lab portals name your download
 after you), or a link carrying a query string that could hold a token
-(`unsafeFeedback` in `packages/health-core/src/mcp-tools.ts`). It cannot recognise a
+(`unsafeFeedback` in `packages/health-core/src/mcp-feedback.ts`). It cannot recognise a
 diagnosis written in prose. That is why the tool shows you the report before it files
 it: read the receipt before you say yes. The issue is public, so your assistant should
 tell you before it files one. Software you run yourself holds no key, so it cannot file

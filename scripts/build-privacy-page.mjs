@@ -8,6 +8,7 @@
 // dashes, [VERIFY] markers and relative links, so nothing internal reaches the page.
 //   node scripts/build-privacy-page.mjs [connector|app] [--out file] [--publish]
 import { readFileSync, writeFileSync } from 'node:fs';
+import { requireMergedCode } from '../tools/write-gate.mjs';
 
 // `start`: the first line of the public body. `id`: a page that exists; `handle`: found or created.
 const PAGES = {
@@ -64,6 +65,7 @@ if (outIdx !== -1) writeFileSync(process.argv[outIdx + 1], html);
 console.log('rendered', html.length, 'chars,', out.length, 'blocks');
 
 if (process.argv.includes('--publish')) {
+  requireMergedCode('build-privacy-page --publish'); // merged code only (docs/git-workflow.md)
   const shop = process.env.SHOPIFY_EDU_SHOP, tok = process.env.SHOPIFY_EDU_ACCESS_TOKEN;
   if (!shop || !tok) throw new Error('SHOPIFY_EDU_SHOP and SHOPIFY_EDU_ACCESS_TOKEN are needed to publish');
   const api = `https://${shop}/admin/api/2025-07/pages`;

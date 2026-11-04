@@ -9,12 +9,13 @@ import React, { useState, useEffect, useRef, useCallback, useReducer } from 'rea
 import type { ProposedEdit } from '@roadmap/health-core';
 import { getChatGate } from '../lib/chat-api';
 import { observeVisibility } from '../lib/observe-visibility';
-import { useChatState, MAX_CHARS, type ChatContextSource } from '../hooks/useChatState';
+import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource } from '../hooks/useChatState';
 import { ChatKeyGate } from './ChatKeyGate';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { SubscriptionChangeCard } from './SubscriptionChangeCard';
 import { ChatPendingReply } from './ChatPendingReply';
 import { ChatThreadList } from './ChatThreadList';
+import { MUTED_CHAT } from './chat-muted';
 import { ColumnHeader } from './ColumnHeader';
 import { ChatHeaderTitle } from './ChatHeaderTitle';
 
@@ -69,7 +70,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
   }, [messagesContainerRef]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (sendsOnEnter(e)) {
       e.preventDefault();
       actions.handleSend();
     }
@@ -122,7 +123,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
           >
             ☰ History
           </button>
-          <ChatHeaderTitle subtitle={muted ? "Ask anything about preventative care" : "Answers cite your plan & the guidelines above"} />
+          <ChatHeaderTitle subtitle={muted ? MUTED_CHAT.subtitle : "Answers cite your plan & the guidelines above"} />
         </div>
 
         {gate?.needsKey ? (
@@ -136,7 +137,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
         >
           {state.messages.length === 0 && !state.isLoading && (
             <div className="chat-empty">
-              <p>{muted ? "Plus when you fill in your details, the answers will be tailored to your numbers." : "Ask about your personalized suggestions based on your health data, clinical research, and the preventative care algorithm."}</p>
+              <p>{muted ? MUTED_CHAT.empty : "Ask about your personalized suggestions based on your health data, clinical research, and the preventative care algorithm."}</p>
             </div>
           )}
           {state.messages.map(msg => (

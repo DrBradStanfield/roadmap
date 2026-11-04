@@ -8,9 +8,11 @@
  * profiles table, not as measurements. Use diffProfileFields() for those.
  */
 import type { AlcoholAnswer, HealthInputs } from './types';
-import { encodeSex, decodeSex, encodeUnitSystem, decodeUnitSystem, isAlcoholAnswer } from './types';
+import { encodeSex, decodeSex, encodeUnitSystem, decodeUnitSystem, isAlcoholAnswer, isSex } from './types';
 import { CANONICAL_UNITS, rangeFault, UNIT_DEFS, type MetricType, type ValidationRange } from './units';
 import { parseLocalisedNumber } from './parseNumber';
+import { birthKept } from './validation';
+import { comparatorOf, limitOf, limitRepresentative, withRowValue } from './lab-limits';
 
 /**
  * Maps HealthInputs field names to metric_type values for storage in the
@@ -141,13 +143,14 @@ export const LONGITUDINAL_FIELDS: ReadonlyArray<keyof HealthInputs> = [
  */
 export function mergeLongitudinalInputs(
   inputs: Partial<HealthInputs>,
-  previous: ReadonlyArray<Pick<ApiMeasurement, 'metricType' | 'value'>>,
+  previous: ReadonlyArray<Pick<ApiMeasurement, 'metricType' | 'value' | 'comparator'>>,
 ): Partial<HealthInputs> {
-  const base = { ...inputs };
+  let base = { ...inputs };
   for (const m of previous) {
     const field = METRIC_TO_FIELD[m.metricType];
-    if (field && (LONGITUDINAL_FIELDS as readonly string[]).includes(field) && base[field] === undefined) {
-      (base as Record<string, unknown>)[field] = m.value;
+    // A saved limit is read by the plan's one rule (US-12 AC20); a value typed over it wins, as any typed value does.
+    if (field && (LONGITUDINAL_FIELDS as readonly string[]).includes(field) && base[field] === undefined && !limitOf(base, field)) {
+      base = withRowValue(base, field, m.value, m.comparator);
     }
   }
   return base;
@@ -176,6 +179,8 @@ export interface ApiMeasurement {
   externalId?: string | null;
   status?: import('./validation').MeasurementStatus;
   correctsId?: string | null;
+  /** A lab result printed as a limit: `value` is its bound (US-12 AC20). */
+  comparator?: import('./lab-limits').Comparator;
 }
 
 /** API medication record shape (camelCase, as returned by API endpoints). FHIR-compatible. */
@@ -415,6 +420,28 @@ export function screeningsToInputs(
   return inputs;
 }
 
+/**
+ * US-06 AC14: the PSA the plan's prostate cards and PSA reminder read. PSA is
+ * a measurement now (no client writes `prostate_psa_value` or
+ * `prostate_last_date` any more), so the saved PSA (`newestUsablePsa`, which
+ * has checked its range and day) stands in for both, value and day together.
+ * The newer by date wins over the old answers; in the same month the row
+ * wins, since the answer gives no day. A PSA printed as a limit is graded
+ * only when the limit decides against 4.0 (US-12 AC20): otherwise it has no
+ * value, and its day still counts.
+ */
+export function withPsaMeasurement(
+  screenings: import('./types').ScreeningInputs,
+  psa: { value: number; recordedAt: string; comparator?: unknown } | undefined,
+): import('./types').ScreeningInputs {
+  const day = psa?.recordedAt.slice(0, 10);
+  if (!psa || !day || (screenings.prostateLastDate ?? '') > day) return screenings;
+  const { comparator } = comparatorOf(psa);
+  if (!comparator) return { ...screenings, prostatePsaValue: psa.value, prostatePsaLimit: undefined, prostateLastDate: day };
+  const graded = limitRepresentative('psa', comparator, psa.value);
+  return { ...screenings, prostatePsaValue: graded ?? undefined, prostatePsaLimit: { comparator, bound: psa.value }, prostateLastDate: day };
+}
+
 /** API profile shape (camelCase, as returned by API endpoints). */
 export interface ApiProfile {
   sex: number | null;
@@ -436,13 +463,14 @@ export function measurementsToInputs(
   measurements: ApiMeasurement[],
   profile?: ApiProfile | null,
 ): Partial<HealthInputs> {
-  const inputs: Partial<HealthInputs> = {};
-
+  let inputs: Partial<HealthInputs> = {};
   for (const m of measurements) {
     const field = METRIC_TO_FIELD[m.metricType];
-    if (field) {
-      (inputs as any)[field] = m.value;
-    }
+    if (!field) continue;
+    // A limit, or a value over one, goes through the plan's rule (US-12 AC20);
+    // every other row is assigned in place, so the mount path stays O(rows).
+    if (m.comparator || limitOf(inputs, field)) inputs = withRowValue(inputs, field, m.value, m.comparator);
+    else (inputs as Record<string, unknown>)[field] = m.value;
   }
 
   if (profile) {
@@ -552,32 +580,56 @@ export function diffProfileFields(
   return Object.keys(changes).length > 0 ? changes : null;
 }
 
+/** The onboarding step the form is on: 1–3, or 4 once it is done. */
+export type FormStage = 1 | 2 | 3 | 4;
+
 /**
- * The progressive disclosure stage (1–3). The widget shows it, and the
- * chatbot embed unmutes at 3, so both read this one rule (US-15 AC10).
+ * The form is the onboarding (US-01 AC1, US-62 AC13): the stage is the first
+ * answer the record lacks. The widget shows it, and the chatbot embed unmutes
+ * at 4, so both read this one rule (US-15 AC10).
  *
- * Stage 1: Always (units, sex, height shown)
- * Stage 2: sex AND a plausible heightCm (weight, waist, BP, birth month/year shown)
- * Stage 3: a plausible weightKg (blood tests, medications, screening shown),
- *          or any saved blood test (a lab import with no weight still opens
- *          the whole form)
+ * Stage 1: a plausible height and weight (the BMI tile)
+ * Stage 2: sex (the healthy weight and the protein target)
+ * Stage 3: the birth year, with its month when given (the age-based plan)
+ * Stage 4: all four known: the rest of the form, the chat and the embed
  *
  * `saved` holds the newest saved row per metric; they fill the fields the
  * inputs leave empty (mergeLongitudinalInputs), so a typed value wins.
  * "Plausible" = inside the canonical SI validation range (UNIT_DEFS in
  * units.ts) — a half-typed "1" of "180" must NOT open the next stage; the
- * gate opens only once the value could be a real measurement.
- *
- * Checks from stage 3 downward so returning users with data skip to full form.
+ * gate opens only once the value could be a real measurement. The birth date
+ * counts once the plan would keep it: a year from 1900, alone (the plan reads
+ * January, as the iPhone does) or with a month not in the future. The form
+ * asks both.
  */
 export function computeFormStage(
   inputs: Partial<HealthInputs>,
   saved: ReadonlyArray<Pick<ApiMeasurement, 'metricType' | 'value'>> = [],
-): 1 | 2 | 3 {
+): FormStage {
   const merged = mergeLongitudinalInputs(inputs, saved);
   const plausible = (v: number | undefined, r: ValidationRange) => v !== undefined && !rangeFault(r, v);
-  if (plausible(merged.weightKg, UNIT_DEFS.weight.validationRange.si)) return 3;
-  if (saved.some(m => BLOOD_TEST_METRICS.includes(m.metricType))) return 3;
-  if (merged.sex !== undefined && plausible(merged.heightCm, UNIT_DEFS.height.validationRange.si)) return 2;
-  return 1;
+  if (!plausible(merged.heightCm, UNIT_DEFS.height.validationRange.si)) return 1;
+  if (!plausible(merged.weightKg, UNIT_DEFS.weight.validationRange.si)) return 1;
+  if (!isSex(merged.sex)) return 2;
+  return birthKept(merged) ? 4 : 3;
+}
+
+/** What a record holds beyond its profile, as `opensFullForm` reads it. */
+export interface RecordHoldings {
+  saved: ReadonlyArray<Pick<ApiMeasurement, 'metricType'>>;
+  medications?: ReadonlyArray<unknown>;
+  screenings?: ReadonlyArray<unknown>;
+  supplements?: ReadonlyArray<unknown>;
+  documents?: ReadonlyArray<unknown>;
+  labValues?: ReadonlyArray<unknown>;
+}
+
+/** The whole form shows once the onboarding is done, or at once for a record
+ *  holding more than the onboarding's answers: any saved value but the
+ *  weight (a blood test, a waist, a blood pressure), a medication,
+ *  screening, supplement, lab test or document. The missing questions are
+ *  pinned at the top (US-01 AC3). */
+export function opensFullForm(stage: FormStage, record: RecordHoldings): boolean {
+  const { saved, ...lists } = record;
+  return stage === 4 || saved.some(m => m.metricType !== 'weight') || Object.values(lists).some(list => (list?.length ?? 0) > 0);
 }

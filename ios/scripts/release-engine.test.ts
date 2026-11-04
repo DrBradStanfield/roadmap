@@ -126,7 +126,7 @@ export async function resolve(specifier, context, next) {
     expect(m).toMatchObject({
       appId: 'com.drstanfield.healthroadmap', bridge: bridgeId(), channel: 'production', format: 1,
       issuedAt: '2026-10-22T03:15:00Z', notAfter: '2026-11-21T03:15:00Z', keyId: 'daily',
-      minAppBuild: 3, minVersion: 0, schemaVersion: 2, version: 202610220315,
+      minAppBuild: 3, minVersion: 0, schemaVersion: 3, version: 202610220315,
     });
     const bundle = readFileSync(join(dir, `${m.sha256}.js`));
     expect(createHash('sha256').update(bundle).digest('hex')).toBe(m.sha256);

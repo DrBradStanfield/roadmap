@@ -32,6 +32,11 @@ struct MyData: Decodable {
         var text: String { "\(feet) ft \(inches) in" }
     }
 
+    /// A value's grade, as the engine words it (health-core's GradeStatus).
+    enum Grade: String, Decodable, Sendable {
+        case ok, warn, bad
+    }
+
     /// "female" or "male" as the screens write it.
     static func sexLabel(_ sex: String) -> String { sex == "female" ? "Female" : "Male" }
 
@@ -56,8 +61,31 @@ struct MyData: Decodable {
         let trend: [Double]?
         /// Whether this test has its own Metric/US choice (AC17e); nil from an older engine.
         let switchable: Bool?
+        /// The target the value is read against, as the web's row prints it under the name
+        /// ("Optimal <1.4"; health-core's rowTarget, US-62 AC9); nil when none, or from an older engine.
+        var target: String? = nil
+        /// The value before the latest, in the same units, shown in brackets (US-62 AC8); nil
+        /// with one reading, or from an older engine.
+        var previous: String? = nil
+        /// The value's grade, as the web's row colours it (health-core's valueStatus, US-62 AC8):
+        /// "warn" amber, "bad" red, "ok" plain; nil when ungraded, or from an older engine.
+        var status: String? = nil
+        /// `status` as a grade; nil for an unknown word from a newer engine, so it never blanks My data.
+        var grade: Grade? { status.flatMap(Grade.init(rawValue:)) }
+        /// The grade as VoiceOver says it after an off-target value ("above optimal", health-core's
+        /// gradeWords); nil on target, ungraded, or from an older engine.
+        var gradeWords: String? = nil
+        /// "Printed as a limit, so the plan cannot grade it against its cutoff.": a latest value printed
+        /// as a limit the rule leaves ungraded (US-12 AC21), said where the grade would be; nil otherwise,
+        /// or from an older engine.
+        var note: String? = nil
 
-        var id: String { metric }
+        /// "lab" on a lab test's row (US-25 AC25): its page, history and adds are the lab test's,
+        /// whatever its name ("Weight" filed as a lab test is no core weight). Nil on a core row.
+        var series: String? = nil
+
+        /// Distinct for a lab test named like a core metric: "lab:weight" beside "weight".
+        var id: String { series.map { "\($0):\(metric)" } ?? metric }
     }
 
     /// "si" (metric) or "conventional" (US)
@@ -67,11 +95,17 @@ struct MyData: Decodable {
     let lpaUnit: String?
     /// The record's erase count; nil from an engine older than US-54 AC7.
     let eraseEpoch: Int?
+    /// US-65: how many entries the engine could not read and kept unchanged, as one line;
+    /// nil when there are none, or from an older engine.
+    var unreadableNote: String? = nil
     let profile: Profile
     let vitals: [Row]
     let bloodTests: [Row]
     // US-25 AC8: health-core's form questions (FormModels.swift).
     let psa: Row
+    /// The lab tests beyond the core ones, one row per series, as the web's Blood tests rows list
+    /// them (US-62 AC8): `metric` is the series key; nil from an older engine.
+    var labTests: [Row]? = nil
     let medications: [FormSection]
     let screenings: [FormSection]
     /// Why there are no screening questions; nil when there are.
@@ -163,15 +197,38 @@ enum RecordEdit: Encodable, Equatable {
     case lpaUnit(String)
     /// A new value for a day, YYYY-MM-DD.
     case add(metric: String, value: Double, day: String)
-    /// Replaces the value in row `id`: a FHIR correction, never a removal.
+    /// Replaces the value in row `id`: a FHIR correction, never a removal. A lab value's too,
+    /// in the unit its row is stored in (US-25 AC25).
     case correct(id: String, value: Double)
+    /// A lab value's correction (US-25 AC25): the engine's `correct`, in the unit its row is stored
+    /// in, so the record's units never refuse it (review R7).
+    case labCorrect(id: String, value: Double)
+    /// A new value for a lab test the record holds, by its series key, in the unit the sheet showed,
+    /// on a day, YYYY-MM-DD: health-core's lab add, the web's too (US-25 AC25).
+    case labAdd(series: String, value: Double, day: String, unit: String)
     /// Readings from Apple Health; the engine decides what lands (US-25 AC13).
     case appleHealth([HealthSample])
+    /// Lab results from Health Records, as they came; the engine decides what lands (US-72).
+    case healthRecords([HealthRecord])
     /// A medication, screening or supplement answer (FormModels.swift).
     case form(FormEdit)
     /// The ticked values of an uploaded lab report (US-52 AC8): the server's extraction
     /// as JSON text, the refs ticked, and the report's day.
     case labImport(extractionJSON: String, refs: [String], reportDay: String)
+    /// A chat reply's edits (US-67): the server's proposals as received, never read here, and
+    /// the phone's local day. The engine parses, converts and writes `part` of them. `seen`:
+    /// the review preview's own token, passed back on Save as it came (nil: none).
+    case chatEdits(part: ChatEditPart, edits: OpaqueJSON, today: String, seen: OpaqueJSON? = nil)
+    /// An edit the engine made itself (a chat medication change's Undo), passed back as it came.
+    case engineEdit(OpaqueJSON)
+
+    /// Which part of a chat reply's edits an edit writes (US-67 AC3).
+    enum ChatEditPart: String, Encodable {
+        /// Saved at once, with Undo, as on the web.
+        case medications
+        /// Values, height and sex: saved only on Save.
+        case review
+    }
 
     /// A new birth year. A stored month that would then be in the future moves back to the
     /// latest one in the same edit, as onboarding's wheel does (US-54 AC5b, review R4).
@@ -182,10 +239,12 @@ enum RecordEdit: Encodable, Equatable {
     }
 
     private enum Key: String, CodingKey {
-        case kind, alcohol, sex, birthYear, birthMonth, height, heightFeet, heightInches, systolic, diastolic, replace, seenIds, unitSystem, unit, metric, value, day, id, extractionJson, refs, reportDay, samples
+        case kind, alcohol, sex, birthYear, birthMonth, height, heightFeet, heightInches, systolic, diastolic, replace, seenIds, unitSystem, unit, metric, value, day, id, extractionJson, refs, reportDay, samples, part, edits, today, seen, series, records
     }
 
     func encode(to encoder: Encoder) throws {
+        // The engine's own edit is its JSON exactly, so it is written before any key is.
+        if case .engineEdit(let edit) = self { return try edit.encode(to: encoder) }
         var json = encoder.container(keyedBy: Key.self)
         switch self {
         case .profile(let sex, let birthYear, let birthMonth, let height):
@@ -219,13 +278,22 @@ enum RecordEdit: Encodable, Equatable {
             try json.encode(metric, forKey: .metric)
             try json.encode(value, forKey: .value)
             try json.encode(day, forKey: .day)
-        case .correct(let id, let value):
+        case .correct(let id, let value), .labCorrect(let id, let value):
             try json.encode("correct", forKey: .kind)
             try json.encode(id, forKey: .id)
             try json.encode(value, forKey: .value)
+        case .labAdd(let series, let value, let day, let unit):
+            try json.encode("labAdd", forKey: .kind)
+            try json.encode(series, forKey: .series)
+            try json.encode(value, forKey: .value)
+            try json.encode(day, forKey: .day)
+            try json.encode(unit, forKey: .unit)
         case .appleHealth(let samples):
             try json.encode("appleHealth", forKey: .kind)
             try json.encode(samples, forKey: .samples)
+        case .healthRecords(let records):
+            try json.encode("healthRecords", forKey: .kind)
+            try json.encode(records, forKey: .records)
         case .form(let edit):
             try edit.encode(to: encoder)
         case .labImport(let extractionJSON, let refs, let reportDay):
@@ -233,6 +301,14 @@ enum RecordEdit: Encodable, Equatable {
             try json.encode(extractionJSON, forKey: .extractionJson)
             try json.encode(refs, forKey: .refs)
             try json.encode(reportDay, forKey: .reportDay)
+        case .chatEdits(let part, let edits, let today, let seen):
+            try json.encode("chatEdits", forKey: .kind)
+            try json.encode(part, forKey: .part)
+            try json.encode(edits, forKey: .edits)
+            try json.encode(today, forKey: .today)
+            try json.encodeIfPresent(seen, forKey: .seen)
+        case .engineEdit:
+            break // written above
         }
     }
 }
@@ -252,4 +328,6 @@ struct EditOutcome: Decodable {
     var erase: String? = nil
     /// In the cloud: the engine's stamp, set in Swift (`HealthEngine.stamp`).
     var order: Int? = nil
+    /// After a `healthRecords` edit (US-72): what the batch did.
+    var healthRecords: HealthRecordCounts? = nil
 }

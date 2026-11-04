@@ -15,7 +15,7 @@
  * and specific is the point — but never carry results, values, or reasoning.
  */
 import type { ScreeningInputs } from './types';
-import { getPostFollowupDueDate, getScreeningNextDueDate } from './types';
+import { getPostFollowupDueDate, getScreeningNextDueDate, isSex, LUNG_PACK_YEARS } from './types';
 import type {
   MeasurementDates,
   MedicationRecord,
@@ -32,9 +32,10 @@ import {
 } from './reminders';
 import { knownMinorOf } from './calculations';
 import { dayOf, localDay } from './merge';
-import { ISO_DATE, isCalendarDay } from './measurement-history';
+import { ISO_DATE, isCalendarDay, newestUsablePsa } from './measurement-history';
 import type { RoadmapFile } from './roadmap-file';
-import { screeningsToInputs } from './mappings';
+import { currentValueRows } from './blood-tests';
+import { screeningsToInputs, withPsaMeasurement } from './mappings';
 import { fileScreeningRows } from './file-inputs';
 
 // ===== Types =====
@@ -139,11 +140,11 @@ function screeningSchedule(
     ));
   }
 
-  // Lung (age 50-80, smoker with 15+ pack-years — USPSTF 2021)
+  // Lung (age 50-80, smoker with 20+ pack-years — USPSTF 2021)
   if (
     age >= 50 && age <= 80 &&
     (s.lungSmokingHistory === 'former_smoker' || s.lungSmokingHistory === 'current_smoker') &&
-    s.lungPackYears !== undefined && s.lungPackYears >= 15 &&
+    s.lungPackYears !== undefined && s.lungPackYears >= LUNG_PACK_YEARS &&
     s.lungScreening && s.lungScreening !== 'not_yet_started'
   ) {
     push('screening_lung', 'Lung screening (low-dose CT)', earliest(
@@ -240,7 +241,7 @@ export function computeNextDueDates(
  * per-category reminder preferences.
  *
  * Never returns an empty schedule (US-23 AC6, Brad 2026-08-14): when nothing
- * is due within the next 12 months — including the missing-demographics case,
+ * is due within the next 12 months — including the no-birth-year case,
  * where no eligibility rule can run at all — the schedule is floored with one
  * "Annual health check-in" item 12 months out. A colonoscopy-every-10-years
  * user must not get a decade of silence; every enrolled person gets at least
@@ -272,14 +273,16 @@ export function computeReminderSchedule(file: RoadmapFile, now: Date): ReminderS
 }
 
 function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleItem[] {
-  const { sex, birthYear, birthMonth } = file.profile;
-  if (!sex || !birthYear) return []; // no demographics → no eligibility rules can run
+  const { birthYear, birthMonth } = file.profile;
+  if (!birthYear) return []; // no age → no eligibility rules can run
+  // No sex (or one that is not male or female) drops only the sexed screenings (US-07 AC8).
+  const sex = isSex(file.profile.sex) ? file.profile.sex : undefined;
   let age = now.getUTCFullYear() - birthYear;
   if (birthMonth && now.getUTCMonth() + 1 < birthMonth) age -= 1;
 
   const measurementDates: MeasurementDates = {};
-  for (const m of file.measurements) {
-    if (m.status !== 'active') continue;
+  // Vitals from `measurements`, blood tests from their core rows (US-66 AC7).
+  for (const m of currentValueRows(file)) {
     // No usable clinical date → drop the row, as buildMeasurementHistory does.
     // Coercing is worse than dropping: '2026-13-45' has the ISO shape, wins
     // `day > prev`, and produces dueAt 'NaN-NaN-NaN' — which the server's
@@ -299,7 +302,9 @@ function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleIte
 
   // The screenings the plan reads (US-06/US-15 AC11): a date that is not a
   // real calendar date, or a "last done" date after this month, is dropped.
-  const screenings = screeningsToInputs(fileScreeningRows(file.screenings));
+  // The PSA reminder dates from the newest saved PSA, as the plan's card does (US-06 AC14).
+  const screenings = withPsaMeasurement(screeningsToInputs(fileScreeningRows(file.screenings)),
+    newestUsablePsa(currentValueRows(file), now));
   return computeNextDueDates({ sex, age }, screenings, measurementDates, medications);
 }
 

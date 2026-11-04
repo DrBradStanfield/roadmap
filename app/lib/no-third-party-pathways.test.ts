@@ -7,6 +7,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { parseFrontmatter } from './frontmatter';
 import { loadBlogIndex } from './blog-index.server';
 import { loadBlogArticle, loadMatchedContent } from './matched-content';
 import { routerIndexBlock, routerView } from './router-view';
@@ -51,8 +52,8 @@ describe('US-15 AC39 — no third-party pathway content', () => {
     expect(read.mock.calls.filter(([p]) => String(p).includes('docs/pathway'))).toEqual([]);
   });
 
-  it('the router can neither see nor return a pathway (ROUTER_VERSION 4)', () => {
-    expect(ROUTER_VERSION).toBe(4);
+  it('the router can neither see nor return a pathway (since ROUTER_VERSION 4; 5 added condition guides, US-70)', () => {
+    expect(ROUTER_VERSION).toBe(5);
     for (const h of FORMER_PATHWAYS) expect(VALID_HANDLES.has(h), h).toBe(false);
     expect(routerIndexBlock(routerView(loadBlogIndex()))).not.toMatch(/^\[pathway\]/m);
     const prompt = fs.readFileSync(path.join(ROOT, 'app/lib/chat-router-prompt.md'), 'utf-8');
@@ -217,6 +218,24 @@ describe('US-15 AC39 — no third-party pathway content', () => {
     for (const s of ['priapism', 'prolonged erection', 'emergency number', 'emergency department']) expect(trazodone, s).toContain(s);
     expect(sleep).toMatch(/risk of falls, particularly in older people/);
     expect(sleep).toContain('rebound insomnia');
+  });
+
+  // US-70 AC2: a condition guide is public, so neither it nor its index summary names a licensed source.
+  it('no condition guide or its index summary names the pathway publisher, UpToDate or ConsumerLab', () => {
+    const LICENSED = new RegExp([THIRD_PARTY.source, 'uptodate', 'consumer\\s*lab'].join('|'), 'i');
+    const sample = ['Health', 'Pathways'].join('');
+    for (const bad of [`Adapted from ${sample}.`, 'See UpToDate.', 'ConsumerLab tested it.', 'Consumer Lab']) expect(LICENSED.test(bad), bad).toBe(true);
+    expect(LICENSED.test('Keep your vaccines up to date.')).toBe(false); // the product name, not the phrase
+    const dir = path.join(ROOT, 'docs/guideline');
+    const isGuide = (raw: string) => parseFrontmatter(raw)?.kind === 'condition';
+    // Review A3: one definition of a guide; single quotes count (the frontmatter parser strips them).
+    for (const k of ["'condition'", '"condition"', 'condition']) expect(isGuide(`---\ntype: guideline\nkind: ${k}\n---\n\nBody.\n`), k).toBe(true);
+    const guides = fs.readdirSync(dir).filter(f => f.endsWith('.md') && isGuide(fs.readFileSync(path.join(dir, f), 'utf-8')));
+    for (const f of guides) {
+      expect(LICENSED.test(fs.readFileSync(path.join(dir, f), 'utf-8')), f).toBe(false);
+      const entry = loadBlogIndex().find(e => e.handle === f.replace(/\.md$/, ''));
+      expect(LICENSED.test(`${entry?.summary ?? ''} ${(entry?.keywords ?? []).join(' ')}`), `${f} index entry`).toBe(false);
+    }
   });
 
   it('the router routes a named condition only when an entry covers it', () => {

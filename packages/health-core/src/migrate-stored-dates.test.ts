@@ -11,7 +11,7 @@ import { createEmptyFile, createMeasurement, type FileDocument, type FileLabValu
 const CTX = { deviceId: 'synthetic', now: '2026-10-19T12:00:00.000Z' };
 const LATER = { ...CTX, now: '2026-10-22T12:00:00.000Z' };
 function measurement(id: string, recordedAt = '2026-10-18') {
-  return createMeasurement({ id, metricType: 'ldl', value: 2, recordedAt, createdAt: CTX.now });
+  return createMeasurement({ id, metricType: 'weight', value: 80, recordedAt, createdAt: CTX.now });
 }
 function lab(id: string, recordedAt = '2026-10-18'): FileLabValue {
   return { id, metricName: 'synthetic_unknown_test', value: 1, unit: 'u', recordedAt,
@@ -87,7 +87,7 @@ describe('US-29 AC4 — stored clinical dates at migration', () => {
 // readback miss the row, so every save after it reads as a lost update.
 describe('US-29 AC4a — the app\'s writers refuse a recordedAt the reader drops', () => {
   const rows = (recordedAt: string): BulkRow[] => [
-    { kind: 'measurement', metricType: 'ldl', value: 2, recordedAt, source: 'manual' },
+    { kind: 'measurement', metricType: 'weight', value: 80, recordedAt, source: 'manual' },
     { kind: 'lab', metricName: 'synthetic_unknown_test', value: 1, unit: 'u', recordedAt, source: 'manual' },
   ];
 

@@ -8,13 +8,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { render, cleanup, fireEvent, act, within } from '@testing-library/react';
 import {
-  createEmptyFile, createMeasurement, planBloodTestMove, BLOOD_TEST_METRICS,
+  bloodTestRows, createCoreRow, createEmptyFile, planBloodTestMove,
   type ApiMeasurement, type RoadmapFile,
 } from '@roadmap/health-core';
 import { BatchDateCell, BloodTestTimeline } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
 import { MOVE_CHANGED, MOVE_LPA, MOVE_TYPED, useMoveTest } from './MoveTestPanel';
 import type { ApiLabValue } from '../lib/api-types';
+import { pickDraftDate } from '../testing/matrix-gestures';
 
 const FROM = '2024-03-12';
 const TO = '2024-02-21';
@@ -27,10 +28,10 @@ beforeEach(() => {
   vi.useFakeTimers();
   localStorage.clear();
   file = createEmptyFile({ deviceId: 'move_ui', now: NOW });
-  file.measurements.push(
-    createMeasurement({ id: 'ldl1', metricType: 'ldl', value: 3.2, recordedAt: day(FROM), createdAt: day(FROM) }),
-    createMeasurement({ id: 'psa1', metricType: 'psa', value: 1.1, recordedAt: day(FROM), createdAt: day(FROM) }),
-    createMeasurement({ id: 'ldl0', metricType: 'ldl', value: 3.6, recordedAt: day('2023-01-05'), createdAt: day('2023-01-05') }),
+  file.labValues.push(
+    createCoreRow({ id: 'ldl1', metric: 'ldl', value: 3.2, recordedAt: day(FROM), createdAt: day(FROM) }),
+    createCoreRow({ id: 'psa1', metric: 'psa', value: 1.1, recordedAt: day(FROM), createdAt: day(FROM) }),
+    createCoreRow({ id: 'ldl0', metric: 'ldl', value: 3.6, recordedAt: day('2023-01-05'), createdAt: day('2023-01-05') }),
   );
   file.labValues.push({
     id: 'fer1', metricName: 'ferritin', value: 210, unit: 'µg/L', referenceLow: null, referenceHigh: null,
@@ -43,8 +44,8 @@ afterEach(() => {
 });
 
 const wait = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
-const history = (): ApiMeasurement[] => file.measurements
-  .filter(m => m.status === 'active' && BLOOD_TEST_METRICS.includes(m.metricType)) as ApiMeasurement[];
+// Every blood test is a core lab row (US-66); the matrix reads the core ones as measurements.
+const history = (): ApiMeasurement[] => bloodTestRows(file) as ApiMeasurement[];
 
 /** Both matrices and the page's one move, as InputPanel lays them out. */
 function Page({ onMove, unitSystem, bloodTestHistory, labValues }: {
@@ -142,7 +143,7 @@ describe('US-04 AC5: the panel', () => {
   });
 
   it('asks about each clash with no default, and Move waits for the answer', async () => {
-    file.measurements.push(createMeasurement({ id: 'ldlT', metricType: 'ldl', value: 2.9, recordedAt: day(TO), createdAt: day(TO) }));
+    file.labValues.push(createCoreRow({ id: 'ldlT', metric: 'ldl', value: 2.9, recordedAt: day(TO), createdAt: day(TO) }));
     const { pick, moveButton, panel, onMove } = matrix();
     pick(FROM, TO);
     const radios = within(panel()!).getAllByRole('radio') as HTMLInputElement[];
@@ -158,7 +159,7 @@ describe('US-04 AC5: the panel', () => {
   });
 
   it('marks a value already on the new day as the same, and asks nothing about it', () => {
-    file.measurements.push(createMeasurement({ id: 'ldlT', metricType: 'ldl', value: 3.2, recordedAt: day(TO), createdAt: day(TO) }));
+    file.labValues.push(createCoreRow({ id: 'ldlT', metric: 'ldl', value: 3.2, recordedAt: day(TO), createdAt: day(TO) }));
     const { pick, panel, moveButton } = matrix();
     pick(FROM, TO);
     expect(within(panel()!).queryAllByRole('radio')).toEqual([]);
@@ -192,7 +193,7 @@ describe('US-04 AC5: the panel', () => {
   });
 
   it('a day holding two values for one test is refused before Move is offered', () => {
-    file.measurements.push(createMeasurement({ id: 'ldl1b', metricType: 'ldl', value: 3.3, recordedAt: FROM, createdAt: day(FROM) }));
+    file.labValues.push(createCoreRow({ id: 'ldl1b', metric: 'ldl', value: 3.3, recordedAt: FROM, createdAt: day(FROM) }));
     const { pick, panel } = matrix();
     pick(FROM, TO);
     expect(panel()!.textContent).toContain("This test has two values for LDL Cholesterol on 12 Mar '24. Correct one first.");
@@ -224,9 +225,63 @@ describe('US-04 AC5: the panel', () => {
     expect(status()).toBe(MOVE_TYPED);
   });
 
+  // US-04 AC5b: the new day's column too. The moved row would fill the slot a
+  // typed value waits in, and that value would leave the page unsaved.
+  it('typed text in the new day\'s column writes nothing at the press, and says which day (AC5b)', async () => {
+    file.labValues.push(createCoreRow({ id: 'hdlT', metric: 'hdl', value: 1.4, recordedAt: day(TO), createdAt: day(TO) }));
+    const { view, pick, moveButton, panel, status, onMove } = matrix();
+    const toLdl = view.container.querySelectorAll<HTMLInputElement>('[data-metric="ldl"] .bt-cell-backfill input');
+    expect(toLdl).toHaveLength(1); // TO's empty LDL cell: the slot the moving LDL takes
+    fireEvent.change(toLdl[0], { target: { value: '3.0' } });
+    pick(FROM, TO);
+    fireEvent.click(moveButton());
+    await wait(0);
+    expect(onMove).not.toHaveBeenCalled();
+    expect(panel()).toBeNull();
+    expect(status()).toBe("Save or clear the values you typed on 21 Feb '24 first.");
+    expect((view.container.querySelector('[data-metric="ldl"] .bt-cell-backfill input') as HTMLInputElement).value).toBe('3.0');
+  });
+
+  it('an open editor in the new day\'s column at the press writes nothing (AC5b)', async () => {
+    file.labValues.push(createCoreRow({ id: 'hdlT', metric: 'hdl', value: 1.4, recordedAt: day(TO), createdAt: day(TO) }));
+    const { view, pick, moveButton, panel, status, onMove } = matrix();
+    pick(FROM, TO);
+    fireEvent.click(view.container.querySelector<HTMLElement>('[data-metric="hdl"] .bt-cell-clickable')!); // TO's HDL, the only one
+    expect(view.container.querySelector('[data-metric="hdl"] input')).not.toBeNull();
+    fireEvent.click(moveButton());
+    await wait(0);
+    expect(onMove).not.toHaveBeenCalled();
+    expect(panel()).toBeNull();
+    expect(status()).toBe("Save or clear the values you typed on 21 Feb '24 first.");
+  });
+
+  it('a New column dated the new day, with a value typed, writes nothing at the press (AC5b)', async () => {
+    const { view, pick, moveButton, panel, status, onMove } = matrix();
+    const table = view.container.querySelector('.bt-timeline') as HTMLElement;
+    pickDraftDate(table, TO);
+    fireEvent.change(table.querySelector<HTMLInputElement>('[data-metric="ldl"] .bt-cell-draft input')!, { target: { value: '3.0' } });
+    pick(FROM, TO);
+    fireEvent.click(moveButton());
+    await wait(0);
+    expect(onMove).not.toHaveBeenCalled();
+    expect(panel()).toBeNull();
+    expect(status()).toBe("Save or clear the values you typed on 21 Feb '24 first.");
+  });
+
+  it('typed text on a third day does not hold the move (AC5b)', async () => {
+    file.labValues.push(createCoreRow({ id: 'hdlT', metric: 'hdl', value: 1.4, recordedAt: day(TO), createdAt: day(TO) }));
+    const { view, pick, moveButton, onMove } = matrix();
+    const oldest = view.container.querySelectorAll<HTMLInputElement>('[data-metric="apob"] .bt-cell-backfill input')[0]; // 5 Jan '23
+    fireEvent.change(oldest, { target: { value: '0.9' } });
+    pick(FROM, TO);
+    fireEvent.click(moveButton());
+    await wait(0);
+    expect(onMove).toHaveBeenCalledWith(FROM, TO, ['ldl1', 'psa1', 'fer1'], {});
+  });
+
   it('waits while an Lp(a) value on the day has an unanswered check (adversary R1)', () => {
-    file.measurements.push(createMeasurement({
-      id: 'lpa1', metricType: 'lpa', value: 37.44, recordedAt: day(FROM), createdAt: '2026-09-20T04:00:00.000Z', source: 'manual',
+    file.labValues.push(createCoreRow({
+      id: 'lpa1', metric: 'lpa', value: 37.44, recordedAt: day(FROM), createdAt: '2026-09-20T04:00:00.000Z', source: 'manual',
     }));
     const { pick, panel, moveButton } = matrix(undefined, 'conventional');
     pick(FROM, TO);
@@ -235,8 +290,8 @@ describe('US-04 AC5: the panel', () => {
   });
 
   it('enables Move once the Lp(a) check is answered "keep as saved", and moves (Codex R1)', async () => {
-    file.measurements.push(createMeasurement({
-      id: 'lpa1', metricType: 'lpa', value: 37.44, recordedAt: day(FROM), createdAt: '2026-09-20T04:00:00.000Z', source: 'manual',
+    file.labValues.push(createCoreRow({
+      id: 'lpa1', metric: 'lpa', value: 37.44, recordedAt: day(FROM), createdAt: '2026-09-20T04:00:00.000Z', source: 'manual',
     }));
     const { view, pick, panel, moveButton, onMove } = matrix(undefined, 'conventional');
     pick(FROM, TO);
@@ -247,7 +302,7 @@ describe('US-04 AC5: the panel', () => {
     expect(moveButton().disabled).toBe(false);
     fireEvent.click(moveButton());
     await wait(0);
-    expect(onMove).toHaveBeenCalledWith(FROM, TO, ['ldl1', 'psa1', 'lpa1', 'fer1'], {});
+    expect(onMove).toHaveBeenCalledWith(FROM, TO, ['ldl1', 'psa1', 'fer1', 'lpa1'], {});
   });
 });
 

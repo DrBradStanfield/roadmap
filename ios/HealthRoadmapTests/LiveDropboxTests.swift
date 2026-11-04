@@ -74,7 +74,7 @@ final class LiveDropboxTests: XCTestCase {
         if case .refused(_, let existing?) = saved {
             await XCTAssertSaved(await store.apply(.correct(id: existing, value: 1.4)))
         } else {
-            XCTAssertEqual(saved, .saved)
+            XCTAssertEqual(saved, .saved())
         }
         await sync.background()
         let afterPhone = try await download()

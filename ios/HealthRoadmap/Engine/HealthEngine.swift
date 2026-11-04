@@ -118,17 +118,21 @@ actor HealthEngine {
     func screen(recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> Drawn {
         let json = try call("screenJson", [recordJSON, now.formatted(Self.iso), deviceId, units, storefrontIsUS])
         let answer = try JSONDecoder().decode(Drawn.Answer.self, from: Data(json.utf8))
-        return Drawn(myData: answer.myData, plan: answer.plan.state)
+        return Drawn(myData: answer.myData, plan: answer.plan.state, movedRecord: answer.movedRecord)
     }
 
     /// One record as the screens show it: My data and the plan, from the same engine call.
     struct Drawn: Sendable {
         let myData: MyData
         let plan: PlanState
+        /// The record as text when reading it moved its blood tests into one table (US-66 AC14):
+        /// opening the phone's file writes it once. nil when nothing moved, and from an engine before it.
+        let movedRecord: String?
 
         fileprivate struct Answer: Decodable {
             let myData: MyData
             let plan: Plan
+            let movedRecord: String?
         }
 
         /// `{sections, tiles, ms}`, or `{error, planError}` when the record cannot be planned.
@@ -139,8 +143,8 @@ actor HealthEngine {
             let ms: Double
             let error: String?
             let planError: Bool
-            /// US-61's blocks; one Swift cannot read shows none, never a broken plan.
-            let usProducts: USProducts?
+            /// US-61's sections ready to draw, with the blocks; ones Swift cannot read show none, never a broken plan.
+            let usProducts: [PlanSection]?
             enum CodingKeys: CodingKey { case sections, tiles, ms, error, planError, usProducts }
             /// Sections decode strictly: sections Swift cannot read fail the plan, never My data.
             /// A tile Swift cannot read leaves no tiles, never a blank plan.
@@ -149,7 +153,7 @@ actor HealthEngine {
                 tiles = (try? c.decode([StatTile].self, forKey: .tiles)) ?? []
                 ms = (try? c.decodeIfPresent(Double.self, forKey: .ms)) ?? 0
                 planError = (try? c.decodeIfPresent(Bool.self, forKey: .planError)) == true
-                usProducts = (try? c.decodeIfPresent(USProducts.self, forKey: .usProducts)) ?? nil
+                usProducts = (try? c.decodeIfPresent([PlanSection].self, forKey: .usProducts)) ?? nil
                 do {
                     (sections, error) = (try c.decodeIfPresent([PlanSection].self, forKey: .sections), try c.decodeIfPresent(String.self, forKey: .error))
                 } catch {
@@ -158,7 +162,7 @@ actor HealthEngine {
             }
 
             var state: PlanState {
-                if let sections { return .planned(tiles: tiles, sections: usProducts?.applied(to: sections) ?? sections, ms: ms) }
+                if let sections { return .planned(tiles: tiles, sections: usProducts ?? sections, ms: ms) }
                 if planError { return .needsDetails }
                 return .failed(EngineError.callFailed(error ?? "no plan").localizedDescription)
             }
@@ -181,6 +185,14 @@ actor HealthEngine {
         try call("newRecordJson", [now.formatted(Self.iso), deviceId, Self.languageAndRegion(locale), timeZone.identifier])
     }
 
+    /// The units health-core's `detectUnitSystem` gives a region and time zone ("si" or
+    /// "conventional"), the web's first-visit rule (US-05 AC5): the units of a first-launch record.
+    func regionUnits(locale: Locale = .current, timeZone: TimeZone = .current) throws -> String? {
+        let record = try newRecord(now: .now, deviceId: "region", locale: locale, timeZone: timeZone)
+        let file = try JSONSerialization.jsonObject(with: Data(record.utf8)) as? [String: Any]
+        return (file?["profile"] as? [String: Any])?["unitSystem"] as? String
+    }
+
     /// Applies one edit with health-core's own write rules. The record passed in is not changed.
     func apply(_ edit: RecordEdit, to recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> EditOutcome {
         let editJSON = String(decoding: try JSONEncoder().encode(edit), as: UTF8.self)
@@ -195,8 +207,9 @@ actor HealthEngine {
     }
 
     /// Every value recorded for one metric, newest first, corrections included (US-25 AC9).
-    func history(recordJSON: String, metric: String, now: Date, deviceId: String, units: String = "{}") throws -> MetricHistory {
-        let json = try call("historyJson", [recordJSON, metric, now.formatted(Self.iso), deviceId, units])
+    /// `series` "lab": `metric` is a lab test's series key, its page's history (US-25 AC25).
+    func history(recordJSON: String, metric: String, now: Date, deviceId: String, units: String = "{}", series: String? = nil) throws -> MetricHistory {
+        let json = try call("historyJson", [recordJSON, metric, now.formatted(Self.iso), deviceId, units] + (series.map { [$0] } ?? []))
         return try JSONDecoder().decode(MetricHistory.self, from: Data(json.utf8))
     }
 

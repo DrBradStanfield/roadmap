@@ -17,16 +17,16 @@
  */
 import * as z from './zod';
 import type { HealthInputs } from './types';
-import { reportedToCanonical, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
+import { reportedToCanonical, toCanonicalValue, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
 import { FIELD_TO_METRIC } from './mappings';
-import { healthInputSchema, PRESSURE_ORDER, pressureInverted, sanitizeInputs } from './validation';
+import { fieldBounds, inRange, PRESSURE_ORDER, pressureInverted, sanitizeInputs } from './validation';
 import { ISO_DATE } from './measurement-history';
 import { latestDayOnEarth } from './merge';
 import { resolveRecordedAt } from './record-edits';
 import { knownMinorOf } from './calculations';
 import { buildChatContextJson } from './chat-context';
 import {
-  CHAT_EDIT_TOOLS, EDITABLE_FIELDS, PROPOSE_PROFILE_EDIT_TOOL, parseProposedEdit, parseProposedEdits,
+  APP_CHAT_EDIT_TOOLS, CHAT_EDIT_TOOLS, EDITABLE_FIELDS, PROPOSE_FIELD_EDIT_TOOL, PROPOSE_PROFILE_EDIT_TOOL, medicationAnswerMisfit, parseProposedEdit, parseProposedEdits,
   type EditableField, type ProposedEdit,
 } from './chat-edits';
 
@@ -81,6 +81,8 @@ export const RUN_ROADMAP_TOOL = {
 
 /** The website widget's and the Pages chat's tools: the form tools plus run_roadmap. */
 export const CHAT_TOOLS = [...CHAT_EDIT_TOOLS, RUN_ROADMAP_TOOL];
+/** The iPhone app's (US-67 AC1): its own words for the form tools, the same run_roadmap. */
+const APP_CHAT_TOOLS = [...APP_CHAT_EDIT_TOOLS, RUN_ROADMAP_TOOL];
 
 /**
  * The website widget's and the Pages chat's tools for one turn: run_roadmap
@@ -89,12 +91,13 @@ export const CHAT_TOOLS = [...CHAT_EDIT_TOOLS, RUN_ROADMAP_TOOL];
  * form tools always. Tools render before the system prompt, so the two shapes
  * cache separately. `profileEdits` false leaves out propose_profile_edit, for
  * a widget built before it (US-16 AC2), which would apply its edit as a
- * medication.
+ * medication. `app`: the iPhone app's words (US-67 AC3).
  */
-export function chatToolsFor(messages: readonly ChatTurnMessage[], profileEdits = true) {
+export function chatToolsFor(messages: readonly ChatTurnMessage[], profileEdits = true, app = false) {
   const said = messages.filter(m => m.role === 'user' && typeof m.content === 'string').slice(-2);
-  const tools = said.some(m => /\d/.test(m.content as string)) ? CHAT_TOOLS : CHAT_EDIT_TOOLS;
-  return profileEdits ? tools : tools.filter(t => t !== PROPOSE_PROFILE_EDIT_TOOL);
+  const run = said.some(m => /\d/.test(m.content as string));
+  const tools = app ? (run ? APP_CHAT_TOOLS : APP_CHAT_EDIT_TOOLS) : run ? CHAT_TOOLS : CHAT_EDIT_TOOLS;
+  return profileEdits ? tools : tools.filter(t => t.name !== PROPOSE_PROFILE_EDIT_TOOL.name);
 }
 
 export interface RoadmapRun {
@@ -126,13 +129,15 @@ const REASONS = {
   minor: 'the saved profile is under 18: a stated age or birth year is not used',
   protein: 'the protein target depends on kidney function, which this run could not work out, so it is left out until the refused value is confirmed',
   proteinAge: 'the protein target depends on kidney function, which needs the user\'s age: ask for their age',
+  egfrSex: 'kidney function (eGFR) from creatinine needs the user\'s sex: ask for their sex',
 } as const;
 
 const BP_FIELDS: readonly string[] = ['systolicBp', 'diastolicBp'];
 const BODY_FIELDS: readonly string[] = ['weightKg', 'waistCm', 'heightCm'];
 /** HbA1c and creatinine under 20 in their SI unit (mmol/mol, µmol/L): likely a % or mg/dL number under the SI label. */
 const SI_ASK_UNIT_BELOW: Partial<Record<MetricType, number>> = { hba1c: 20, creatinine: 20 };
-/** A converted value that is a unit to ask about, not a result: under US-36 AC4's floors, or in the SI band above. */
+/** A converted value that is a unit to ask about, not a result: under US-36 AC4's floors, or in the SI band above.
+ *  run_roadmap refuses such a value; a proposed form edit holding one is not proposed (US-67 AC2, `unitSuspect`). */
 const askUnit = (metric: MetricType, r: { valueSI: number; system: UnitSystem }) =>
   r.valueSI < (UNIT_SWAP_FLOORS[metric] ?? -Infinity) || (r.system === 'si' && r.valueSI < (SI_ASK_UNIT_BELOW[metric] ?? -Infinity));
 /** The day of a value whose date could not be read: later than any real day, so it outdates every stated value. */
@@ -144,15 +149,11 @@ const numeric = (v: unknown) =>
 const obj = (v: unknown) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {}) as Record<string, unknown>;
 /** A field the schema knows: the result never names the model's own string. */
 const isEditable = (f: unknown): f is EditableField => typeof f === 'string' && (EDITABLE_FIELDS as readonly string[]).includes(f);
-/** A value the input schema accepts for `field`: sanitizeInputs drops anything out of range. */
-const inRange = (field: string, value: unknown) => field in sanitizeInputs({ [field]: value } as Partial<HealthInputs>);
 /** Why an SI value is out of its field's range, by kind of field and direction; null when it is in range. */
 function outOfRange(field: string, si: number): string | null {
   if (inRange(field, si)) return null;
   if (BODY_FIELDS.includes(field)) return REASONS.body;
-  const schema = (healthInputSchema.shape as Record<string, z.ZodTypeAny>)[field];
-  const max = (schema instanceof z.ZodOptional ? schema.unwrap() : schema) as z.ZodNumber;
-  const above = si > (max.maxValue ?? Infinity);
+  const above = si > (fieldBounds(field)?.max ?? Infinity);
   if (BP_FIELDS.includes(field)) return above ? REASONS.bpAbove : REASONS.bpBelow;
   return above ? REASONS.labAbove : REASONS.labBelow;
 }
@@ -302,16 +303,17 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   if (payload.birthMonth === undefined) delete payload.birthMonth;
   for (const f of unusable) delete payload[f];
   // US-07 AC7: a stated creatinine, used or not, from after the lab eGFR's day outdates it (with no
-  // age to read it by, lostEgfr below withholds the protein card and asks). So does the saved one,
+  // age or sex to read it by, lostEgfr below withholds the protein card and asks). So does the saved one,
   // newer than the lab eGFR, once the plan can calculate from it: the client kept the lab eGFR
-  // only because it had no age, and a stated one supplies it.
-  const saved = sanitizeInputs({ creatinine: payload.creatinine, birthYear: payload.birthYear } as Partial<HealthInputs>);
+  // only because it had no age (or no sex, AC8), and a stated one supplies it.
+  const saved = sanitizeInputs({ creatinine: payload.creatinine, birthYear: payload.birthYear, sex: payload.sex } as Partial<HealthInputs>);
   const creatinineDay = stated.get('creatinine')?.date ?? blocked.get('creatinine')
-    ?? (saved.creatinine !== undefined && saved.birthYear !== undefined
+    ?? (saved.creatinine !== undefined && saved.birthYear !== undefined && saved.sex !== undefined
       ? savedLatestDay(history, 'creatinine', today) || undefined : undefined);
   if (creatinineDay !== undefined && !(creatinineDay <= String(base.labEgfrDate ?? ''))) {
     delete payload.labEgfr;
     delete payload.labEgfrDate;
+    delete payload.labEgfrOutdated;
   }
   if (unusable.size > 0 && base.measurementHistory !== undefined) {
     const gone = new Set([...unusable].map(f => FIELD_TO_METRIC[f]));
@@ -323,7 +325,7 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   }
   const contextJson = buildChatContextJson(payload);
   const plan = contextJson ? JSON.parse(contextJson) : null;
-  // No usable sex or height: the context carries the values but no cards (US-15 AC36);
+  // No usable height: the context carries the values but no cards (US-15 AC36);
   // this tool still answers "no plan". A known minor's context has no cards either, and is sent.
   if (!plan?.currentSuggestions && !plan?.profile?.knownMinor) return { contextJson: null, applied, rejected };
   // Without an eGFR the protein card falls back to the standard target. When this run
@@ -336,12 +338,14 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   plan.currentSuggestions = plan.currentSuggestions?.filter((s: { id?: string }) => s.id !== 'protein-target');
   // A creatinine the run used with no age to read it by: the gap is the age, not a refused value.
   if (plan.latestValues?.creatinine !== undefined && plan.profile?.age === undefined) reject('age', REASONS.proteinAge);
+  // US-07 AC8: so is one with no sex to read it by.
+  else if (plan.latestValues?.creatinine !== undefined && plan.profile?.sex === undefined) reject('sex', REASONS.egfrSex);
   else reject('creatinine', REASONS.protein);
   return { contextJson: JSON.stringify(plan), applied, rejected };
 }
 
 const NOT_SAVED = 'The stated values are used for this answer only; nothing was saved.';
-const NO_PLAN = 'No plan: the roadmap needs at least the user\'s sex and height. Ask for them; do not assess the values yourself.';
+const NO_PLAN = 'No plan: the roadmap needs at least the user\'s height. Ask for it; do not assess the values yourself.';
 
 /** The tool_result text: buildChatContextJson's output, verbatim, beside the applied and rejected fields. */
 export function roadmapResultText(run: RoadmapRun): string {
@@ -363,17 +367,48 @@ export interface RoadmapRoundCounts { applied: number; rejected: number }
 /** A transport's own tool_result for a tool health-core does not know (US-59's subscription tool); undefined for the rest. */
 export type ToolResultFor = (b: ChatContentBlock, blocks: readonly ChatContentBlock[]) => string | undefined;
 
-/** Stub results for a form tool called beside run_roadmap: the client applies a valid one after the answer. */
-const FORM_TOOL_STUB = 'Pre-filled for the user to review and Save.';
-const MEDICATION_STUB = 'Sent to the user\'s form; medications save at once and the user can undo.';
+/** Stub results for a form tool called beside run_roadmap: the client applies a valid one after the answer.
+ *  The iPhone app's (US-67 AC3) show a value in a Save banner rather than pre-fill a form. */
+const STUBS = {
+  web: {
+    field: 'Pre-filled for the user to review and Save.',
+    medication: 'Sent to the user\'s form; medications save at once.',
+    notApplied: 'Not applied: the edit did not pass the form\'s checks, so nothing was pre-filled or saved.',
+  },
+  app: {
+    field: 'Shown to the user to review and Save; nothing is saved until they press Save.',
+    medication: 'Saved to the user\'s medications at once.',
+    notApplied: 'Not applied: the edit did not pass the checks, so nothing was shown or saved.',
+  },
+};
 const PROFILE_STUB = 'Shown to the user to confirm; nothing is saved until they press Save.';
-const NOT_APPLIED = 'Not applied: the edit did not pass the form\'s checks, so nothing was pre-filled or saved.';
 const NOT_RUN = 'Not run: one run_roadmap per turn; use the first result.';
+/** The tool_result for a proposed value that looks like the wrong unit (US-67 AC2, US-16). The check is the same
+ *  on every turn, so a value the user confirms (a real LDL of 0.25 mmol/L) goes to the user to enter, never a loop. */
+export const UNIT_SUSPECT = 'Not saved: this value looks like it may be in a different unit. Ask the user to confirm the value and its unit. If they confirm it as stated, tell them to enter it in their record themselves, and do not propose it again.';
+
+/** A propose_field_edit whose value reads as a unit swap (`askUnit`, run_roadmap's own test), e.g. LDL 3.4 mg/dL:
+ *  it is answered with UNIT_SUSPECT and never reaches the client. */
+function unitSuspect(b: ChatContentBlock): boolean {
+  if (b.type !== 'tool_use' || b.name !== PROPOSE_FIELD_EDIT_TOOL.name) return false;
+  const edit = parseProposedEdit(b.name, b.input);
+  if (edit?.kind !== 'field') return false;
+  const metric = FIELD_TO_METRIC[edit.field] as MetricType;
+  return askUnit(metric, { valueSI: toCanonicalValue(metric, edit.displayValue, edit.unitSystem), system: edit.unitSystem });
+}
+
+/** The tool_result telling the model to ask before it proposes: a suspect value (UNIT_SUSPECT) or a medication
+ *  answer its question does not offer (US-16 AC3); null for the rest. */
+function askFirst(b: ChatContentBlock): string | null {
+  if (unitSuspect(b)) return UNIT_SUSPECT;
+  return b.type === 'tool_use' && b.name ? medicationAnswerMisfit(b.name, b.input) : null;
+}
 
 /** The tool_result for a form tool: pre-filled or saved only when the client will apply it (parseProposedEdit accepts it). */
-function formToolStub(b: ChatContentBlock): string {
+function formToolStub(b: ChatContentBlock, app: boolean): string {
   const edit = b.name ? parseProposedEdit(b.name, b.input) : null;
-  return !edit ? NOT_APPLIED : edit.kind === 'medication' ? MEDICATION_STUB : edit.kind === 'profile' ? PROFILE_STUB : FORM_TOOL_STUB;
+  const stub = app ? STUBS.app : STUBS.web;
+  return !edit ? stub.notApplied : edit.kind === 'medication' ? stub.medication : edit.kind === 'profile' ? PROFILE_STUB : stub.field;
 }
 
 /** Every run_roadmap call of one reply as one input: the values in order, each profile field from the first call that gives it. */
@@ -388,37 +423,45 @@ function mergedRunInput(inputs: unknown[]): Record<string, unknown> {
 }
 
 /**
- * The tool_result blocks for a reply that called run_roadmap, one per tool_use
- * in order, or null when it did not call it. However many run_roadmap calls
+ * The tool_result blocks for a reply that called run_roadmap, proposed a value
+ * that looks like the wrong unit (`unitSuspect`) or a medication answer its
+ * question does not offer (`askFirst`), one per tool_use in order, or null when
+ * it did none of these. `counts` is null without a run_roadmap call. However many run_roadmap calls
  * the reply holds, the plan runs once, on all their values under one cap, and
- * answers the first; the others get a fixed stub. Any other tool gets
- * `otherResult`'s text when it gives one, else the form tools' stub.
+ * answers the first; the others get a fixed stub. A suspect value gets
+ * UNIT_SUSPECT, a misfit medication answer the ask. Any other tool gets `otherResult`'s text when it gives one,
+ * else the form tools' stub.
  */
 export function roadmapToolResults(
   blocks: ChatContentBlock[],
   guestInputs: unknown,
   otherResult?: ToolResultFor,
-): { results: ToolResultBlock[]; counts: RoadmapRoundCounts } | null {
+  app = false,
+): { results: ToolResultBlock[]; counts: RoadmapRoundCounts | null } | null {
   const uses = blocks.filter(b => b.type === 'tool_use');
   const runs = uses.filter(b => b.name === RUN_ROADMAP_TOOL.name);
-  if (runs.length === 0) return null;
-  const run = runRoadmap(guestInputs, mergedRunInput(runs.map(b => b.input)));
+  if (runs.length === 0 && !uses.some(b => askFirst(b) !== null)) return null;
+  const run = runs.length > 0 ? runRoadmap(guestInputs, mergedRunInput(runs.map(b => b.input))) : null;
   const results = uses.map((b): ToolResultBlock => ({
     type: 'tool_result',
     tool_use_id: b.id,
-    content: b === runs[0] ? roadmapResultText(run) : b.name === RUN_ROADMAP_TOOL.name ? NOT_RUN : otherResult?.(b, blocks) ?? formToolStub(b),
+    content: run && b === runs[0] ? roadmapResultText(run) : b.name === RUN_ROADMAP_TOOL.name ? NOT_RUN
+      : askFirst(b) ?? otherResult?.(b, blocks) ?? formToolStub(b, app),
   }));
-  return { results, counts: { applied: run.applied.length, rejected: run.rejected.length } };
+  return { results, counts: run ? { applied: run.applied.length, rejected: run.rejected.length } : null };
 }
 
 /**
- * One chat turn with at most one run_roadmap round. `send` makes one Messages
+ * One chat turn with at most one tool round. `send` makes one Messages
  * call with these fields laid over the transport's own body. When the first
- * reply calls run_roadmap, the second call carries it back unmodified with the
+ * reply calls run_roadmap, or proposes a value that looks like the wrong unit
+ * (US-67 AC2: the model is told to ask, and the value is not proposed), the second call carries it back unmodified with the
  * tool results and `tool_choice: none`, so no second round can start; its
  * reply is the answer. A failed second call throws, as a failed first one does;
- * `onRound` has the round's counts before that call, so a caller keeps them.
+ * `onRound` has a run_roadmap round's counts before that call, so a caller keeps them.
  * `otherResult` answers a tool only the transport knows (roadmapToolResults).
+ * `app`: the iPhone app's stub words (US-67 AC3). `refused`: the medication
+ * answers the round asked about rather than saved (US-16 AC3), for toolOnlyAck.
  */
 export async function withRoadmapRound<R extends { contentBlocks: ChatContentBlock[] }>(
   messages: ChatTurnMessage[],
@@ -426,14 +469,17 @@ export async function withRoadmapRound<R extends { contentBlocks: ChatContentBlo
   guestInputs: unknown,
   onRound?: (counts: RoadmapRoundCounts) => void,
   otherResult?: ToolResultFor,
-): Promise<{ first: R; final: R; counts: RoadmapRoundCounts | null; proposedEdits: ProposedEdit[] }> {
+  app = false,
+): Promise<{ first: R; final: R; counts: RoadmapRoundCounts | null; proposedEdits: ProposedEdit[]; refused: number }> {
   const first = await send({ messages });
-  const round = roadmapToolResults(first.contentBlocks, guestInputs, otherResult);
-  if (!round) return { first, final: first, counts: null, proposedEdits: parseProposedEdits(first.contentBlocks) };
-  onRound?.(round.counts);
+  const round = roadmapToolResults(first.contentBlocks, guestInputs, otherResult, app);
+  if (!round) return { first, final: first, counts: null, proposedEdits: parseProposedEdits(first.contentBlocks), refused: 0 };
+  if (round.counts) onRound?.(round.counts);
   const final = await send({
     messages: [...messages, { role: 'assistant', content: first.contentBlocks }, { role: 'user', content: round.results }],
     tool_choice: { type: 'none' },
   });
-  return { first, final, counts: round.counts, proposedEdits: parseProposedEdits([...first.contentBlocks, ...final.contentBlocks]) };
+  const proposed = [...first.contentBlocks, ...final.contentBlocks].filter(b => !unitSuspect(b));
+  const refused = first.contentBlocks.filter(b => b.type === 'tool_use' && !!b.name && medicationAnswerMisfit(b.name, b.input) !== null).length;
+  return { first, final, counts: round.counts, proposedEdits: parseProposedEdits(proposed), refused };
 }

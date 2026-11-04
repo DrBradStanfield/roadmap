@@ -1,3 +1,5 @@
+import type { InputLimits } from './lab-limits';
+
 /**
  * Health input data from user.
  *
@@ -11,7 +13,8 @@ export interface HealthInputs {
   heightCm: number;
   weightKg?: number;
   waistCm?: number;
-  sex: 'male' | 'female';
+  /** Absent until the person answers: every sex-dependent output is then left out (US-07 AC8). */
+  sex?: 'male' | 'female';
   birthYear?: number;
   birthMonth?: number;
   // Blood test values (SI canonical units)
@@ -31,11 +34,22 @@ export interface HealthInputs {
    *  creatinine, or from the same day). */
   labEgfr?: number;
   labEgfrDate?: string; // YYYY-MM-DD
+  /** US-07 AC8: a newer creatinine the plan cannot read yet (no sex or no age) outdates the lab eGFR.
+   *  It still shows and sets the protein target, but opens no potassium advice. */
+  labEgfrOutdated?: true;
   // User preference (stored as 1=si, 2=conventional in DB)
   unitSystem?: 'si' | 'conventional';
   /** US-60: "Do you drink alcohol?", from `profile.alcohol`. Absent: not answered. */
   alcohol?: AlcoholAnswer;
+  /** US-12 AC20: the fields read from a result printed as a limit. Such a field
+   *  holds the plan's representative when the limit decides, else nothing. */
+  limits?: InputLimits;
 }
+
+/** What the plan computes from: the inputs, plus `pressureOrder` (US-07 AC11) when the
+ *  newest pair was the wrong way up and the caller left both halves out (US-02 AC8). The
+ *  blood pressure prompt then asks to check the reading. Never stored or sent. */
+export type SuggestionInputs = HealthInputs & { pressureOrder?: true };
 
 /** US-60: the two answers to "Do you drink alcohol?". */
 export const ALCOHOL_ANSWERS = ['none', 'drinks'] as const;
@@ -47,8 +61,9 @@ export const isAlcoholAnswer = (v: unknown): v is AlcoholAnswer => (ALCOHOL_ANSW
  */
 export interface HealthResults {
   heightCm: number;
-  idealBodyWeight: number;
-  proteinTarget: number;
+  /** Both need sex (US-07 AC8). */
+  idealBodyWeight?: number;
+  proteinTarget?: number;
   bmi?: number;
   bmiCategory?: string;         // e.g. 'Normal', 'Overweight', 'Obese (Class I)' — computed by getBMICategory
   waistToHeightRatio?: number;
@@ -56,6 +71,8 @@ export interface HealthResults {
   apoB?: number;              // g/L (passthrough from inputs)
   ldlC?: number;              // mmol/L (passthrough from inputs)
   eGFR?: number;              // mL/min/1.73m² (CKD-EPI 2021, or the lab's own: US-07 AC7)
+  /** US-12 AC20: the inputs' limits, so every surface shows a limit's bound, never the representative. */
+  limits?: InputLimits;
   /** The eGFR is the lab's printed one, not calculated from creatinine. */
   eGFRFromLab?: true;
   lpa?: number;               // nmol/L (passthrough from inputs)
@@ -66,6 +83,11 @@ export interface HealthResults {
   knownMinor?: true;
   suggestions: Suggestion[];
 }
+
+/** The supplement cards that carry a US product block (US-61): us-products.ts's US_PRODUCT_LINES,
+ *  and the keys of the US text (suggestions.ts) and references (evidence.ts). No product name here. */
+export type UsProductCardId = 'supplement-micronutrient-base' | 'supplement-creatine' | 'supplement-collagen'
+  | 'supplement-lutein-zeaxanthin' | 'supplement-tmg' | 'supplement-sleep';
 
 /**
  * A health suggestion
@@ -362,6 +384,8 @@ export interface ScreeningInputs {
   // Prostate
   prostateDiscussion?: 'not_yet' | 'elected_not_to' | 'will_screen';
   prostatePsaValue?: number;
+  /** The saved PSA was printed as this limit (US-12 AC20): the card shows it, never `prostatePsaValue`. Derived, never stored. */
+  prostatePsaLimit?: { comparator: import('./lab-limits').Comparator; bound: number };
   prostateLastDate?: string;
 
   // Endometrial
@@ -412,6 +436,10 @@ export const SCREENING_MIN_AGE: Record<string, { age: number; sex?: 'male' | 'fe
   prostate:   { age: 45, sex: 'male' },
   dexa:       { age: 50 },
 };
+
+/** Lung screening's smoking history, USPSTF 2021: 20 pack-years or more. The plan, the
+ *  reminders and both forms read it, so they cannot disagree again (#285). */
+export const LUNG_PACK_YEARS = 20;
 
 export function isScreeningEligible(
   screeningType: string,
@@ -604,6 +632,12 @@ export const SEX_DB = { MALE: 1, FEMALE: 2 } as const;
  * 1 = SI, 2 = conventional (US)
  */
 export const UNIT_SYSTEM_DB = { SI: 1, CONVENTIONAL: 2 } as const;
+
+/** The two sexes the plan reads (US-07 AC8): anything else is no sex. */
+export const SEXES = ['male', 'female'] as const;
+export function isSex(value: unknown): value is (typeof SEXES)[number] {
+  return (SEXES as readonly unknown[]).includes(value);
+}
 
 /** Encode sex string to database integer */
 export function encodeSex(sex: 'male' | 'female'): number {

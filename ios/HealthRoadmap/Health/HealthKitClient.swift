@@ -13,9 +13,26 @@ final class HealthKitClient: HealthStoreClient {
 
     var isAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
 
-    func requestAuthorization() async throws {
+    /// Apple's own check: the phone's region, or records already downloaded (US-72 AC1).
+    var supportsHealthRecords: Bool { store.supportsHealthRecords() }
+
+    func requestAuthorization() async throws -> Bool {
         let (share, read) = Self.requested
-        try await store.requestAuthorization(toShare: share, read: read)
+        // Lab results only where Health Records works (US-72 AC1): elsewhere the sheet offers nothing.
+        guard supportsHealthRecords else {
+            try await store.requestAuthorization(toShare: share, read: read)
+            return false
+        }
+        // Asked first: once the request is answered, Health no longer says it was needed (AC13).
+        let asking = try await store.statusForAuthorizationRequest(toShare: [], read: [Self.labResults]) == .shouldRequest
+        try await store.requestAuthorization(toShare: share, read: read.union([Self.labResults]))
+        return asking
+    }
+
+    func requestLabResults() async throws -> Bool {
+        guard try await store.statusForAuthorizationRequest(toShare: [], read: [Self.labResults]) == .shouldRequest else { return false }
+        try await store.requestAuthorization(toShare: [], read: [Self.labResults])
+        return true
     }
 
     /// Everything the app asks Apple Health for, in one request (Brad 2026-10-26: "just do it
@@ -30,21 +47,41 @@ final class HealthKitClient: HealthStoreClient {
     }()
 
     func samples(of kind: HealthKind, after anchor: Data?) async throws -> HealthBatch {
+        let (added, data) = try await addedSamples(Self.predicate(kind), after: anchor)
+        // Deletions are ignored on purpose: a reading deleted in Health stays in the record (D6).
+        let ownBundle = Bundle.main.bundleIdentifier ?? ""
+        let samples = added
+            .filter { !Self.isOwn(bundleIdentifier: $0.sourceRevision.source.bundleIdentifier, syncIdentifier: $0.metadata?[HKMetadataKeySyncIdentifier] as? String, ownBundle: ownBundle) }
+            .flatMap { Self.readings(from: $0, kind: kind) }
+        return HealthBatch(samples: samples, anchor: data)
+    }
+
+    func labResults(after anchor: Data?) async throws -> HealthRecordBatch {
+        let (added, data) = try await addedSamples(.clinicalRecord(type: Self.labResults), after: anchor)
+        // Deletions ignored, as for vitals (D6): the engine decides what an amendment does.
+        let records = added.compactMap { sample -> HealthRecord? in
+            guard let resource = sample.fhirResource, let json = String(data: resource.data, encoding: .utf8) else { return nil }
+            // AC5: the source is the bundle id alone (`com.apple.public.health.clinical.<UUID>`),
+            // one per institution account (Apple: a FHIR id is unique only within a resource type
+            // and its source). The institution's name stays out of the record, and a renamed
+            // institution is not a new source.
+            return HealthRecord(sourceId: sample.sourceRevision.source.bundleIdentifier,
+                                resourceType: resource.resourceType.rawValue, fhirVersion: resource.fhirVersion.stringRepresentation, json: json)
+        }
+        return HealthRecordBatch(records: records, anchor: data)
+    }
+
+    /// One anchored query: what was added since `anchor`, and the anchor to keep. A locked phone throws `.locked`.
+    private func addedSamples<Sample: HKSample>(_ predicate: HKSamplePredicate<Sample>, after anchor: Data?) async throws -> (added: [Sample], anchor: Data) {
         let previous = anchor.flatMap { try? NSKeyedUnarchiver.unarchivedObject(ofClass: HKQueryAnchor.self, from: $0) }
-        let descriptor = HKAnchoredObjectQueryDescriptor(predicates: [Self.predicate(kind)], anchor: previous)
-        let result: HKAnchoredObjectQueryDescriptor<HKSample>.Result
+        let descriptor = HKAnchoredObjectQueryDescriptor(predicates: [predicate], anchor: previous)
+        let result: HKAnchoredObjectQueryDescriptor<Sample>.Result
         do {
             result = try await descriptor.result(for: store)
         } catch let error as HKError where error.code == .errorDatabaseInaccessible {
             throw HealthStoreError.locked
         }
-        // `result.deletedObjects` is ignored on purpose: a reading deleted in Health stays in the record (D6).
-        let ownBundle = Bundle.main.bundleIdentifier ?? ""
-        let samples = result.addedSamples
-            .filter { !Self.isOwn(bundleIdentifier: $0.sourceRevision.source.bundleIdentifier, syncIdentifier: $0.metadata?[HKMetadataKeySyncIdentifier] as? String, ownBundle: ownBundle) }
-            .flatMap { Self.readings(from: $0, kind: kind) }
-        let data = try NSKeyedArchiver.archivedData(withRootObject: result.newAnchor, requiringSecureCoding: true)
-        return HealthBatch(samples: samples, anchor: data)
+        return (result.addedSamples, try NSKeyedArchiver.archivedData(withRootObject: result.newAnchor, requiringSecureCoding: true))
     }
 
     func deleteOwnSamples() async throws {
@@ -109,8 +146,10 @@ final class HealthKitClient: HealthStoreClient {
     /// sync's own `start` then keeps those queries rather than adding a second set.
     func observe(_ kinds: [HealthKind], onChange: @escaping @MainActor () async -> Void) {
         guard observers.isEmpty else { return }
-        for kind in kinds {
-            let type = Self.sampleType(kind)
+        // Lab results too, where Health Records works (US-72). If background delivery is refused
+        // for them, the observer still runs while the app is open, and unlock and coming to the
+        // foreground refresh as for vitals.
+        for type in Self.observedTypes(kinds, labResults: supportsHealthRecords) {
             // Background delivery wakes the app when Health gets data; it needs the
             // background-delivery entitlement, and fails quietly without it.
             store.enableBackgroundDelivery(for: type, frequency: .immediate) { _, _ in }
@@ -139,6 +178,9 @@ final class HealthKitClient: HealthStoreClient {
 
     // MARK: HealthKit types
 
+    /// Lab results, the one Health Records type the app reads (US-72): read-only by Apple's rule.
+    nonisolated static let labResults = HKClinicalType(.labResultRecord)
+
     private nonisolated static func identifier(_ kind: HealthKind) -> HKQuantityTypeIdentifier {
         switch kind {
         case .weight: .bodyMass
@@ -164,9 +206,12 @@ final class HealthKitClient: HealthStoreClient {
             : [HKQuantityType(identifier(kind))]
     }
 
-    /// What is queried: blood pressure as the correlation, so both halves come together.
-    private static func sampleType(_ kind: HealthKind) -> HKSampleType {
-        kind == .bloodPressure ? HKCorrelationType(.bloodPressure) : HKQuantityType(identifier(kind))
+    /// What is observed: blood pressure as its two halves, because Apple refuses
+    /// `HKCorrelationType` for background delivery. One reading fires both observers;
+    /// `AppleHealthSync.refresh` folds the second into the run already going.
+    nonisolated static func observedTypes(_ kinds: [HealthKind], labResults: Bool) -> [HKSampleType] {
+        let vitals: [HKSampleType] = kinds.flatMap(quantityTypes)
+        return labResults ? vitals + [Self.labResults] : vitals
     }
 
     private static func predicate(_ kind: HealthKind) -> HKSamplePredicate<HKSample> {

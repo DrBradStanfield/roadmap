@@ -6,6 +6,13 @@
  * Gated by `DISCORD_BOT_TOKEN` AND (`FLY_APP_NAME` OR `DISCORD_FORCE_START=true`).
  * The `FLY_APP_NAME` gate prevents Remix dev hot-reloads from spawning duplicate
  * WebSocket connections during `npm run dev`.
+ *
+ * Split by concern (issue #429): discord-bot-config.server.ts (env, limits),
+ * discord-bot-messages.server.ts (channel exclusion, replies, splitting),
+ * discord-bot-history.server.ts (stored and thread history) and
+ * discord-bot-persist.server.ts (chat-table writes). This file keeps the
+ * start/stop and the message handler, and re-exports every name it exported
+ * before the split.
  */
 import {
   Client,
@@ -13,60 +20,49 @@ import {
   GatewayIntentBits,
   Partials,
   type Message,
-  type OmitPartialGroupDMChannel,
 } from 'discord.js';
 import * as Sentry from '@sentry/react-router';
 import { platformChatCompletion } from './platform-chat.server';
 import { findDuplicateReply } from './chat-dedup.server';
 import { sleep } from './cron-helpers.server';
 import { reportChatFallback } from './chat.server';
-import { generateTitle, CHAT_MODEL } from './chat.server';
-import { ROUTER_VERSION, type RouterResult } from './chat-router.server';
 import { cutText } from '../../packages/health-core/src/chat-history';
 import { supabaseAdmin } from './supabase.server';
 import { createRateLimiter } from './rate-limiter';
+import {
+  DISCORD_BOT_TOKEN,
+  DISCORD_GUILD_ID,
+  DISCORD_BRAD_USER_ID,
+  DISCORD_BOT_PROFILE_ID,
+  DISCORD_DEDICATED_AI_CHANNEL_ID,
+  DISCORD_MAX_MESSAGE_CHARS,
+  DISCORD_SPLIT_CHARS,
+  USER_RATE_LIMIT_MAX,
+  USER_RATE_LIMIT_WINDOW_MS,
+  USER_RATE_LIMIT_CLEANUP_MS,
+  USER_COOLDOWN_MS,
+  CONCURRENCY_LIMIT,
+  QUEUE_MAX_DEPTH,
+  PLATFORM_DISCORD,
+} from './discord-bot-config.server';
+import {
+  type GuildMessage,
+  isExcludedChannel,
+  errorKind,
+  safeReply,
+  getRepliedToUsers,
+  stripBotMention,
+  splitForDiscord,
+} from './discord-bot-messages.server';
+import {
+  loadConversationForReply,
+  loadRecentConversation,
+  loadThreadHistory,
+} from './discord-bot-history.server';
+import { persistConversation } from './discord-bot-persist.server';
 
-// ---------------------------------------------------------------------------
-// Config from env
-// ---------------------------------------------------------------------------
-
-const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
-// "Server ID" in Discord UI = "Guild ID" in Discord API. Same thing.
-const DISCORD_GUILD_ID = process.env.DISCORD_SERVER_ID;
-const DISCORD_BRAD_USER_ID = process.env.DISCORD_DrBradStanfield_USER_ID;
-const DISCORD_BOT_PROFILE_ID = process.env.DISCORD_BOT_PROFILE_ID;
-// Bot auto-responds in this channel to any user message. Elsewhere it only
-// responds to explicit @mentions. Threads under the dedicated channel inherit
-// the opt-in behaviour.
-const DISCORD_DEDICATED_AI_CHANNEL_ID = process.env.DISCORD_DEDICATED_AI_CHANNEL_ID;
-// Comma-separated channel IDs where the bot never responds, even if @mentioned.
-const DISCORD_EXCLUDED_CHANNEL_IDS = new Set(
-  (process.env.DISCORD_EXCLUDED_CHANNEL_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)
-);
-
-// ---------------------------------------------------------------------------
-// Message length + rate limits
-// ---------------------------------------------------------------------------
-
-const DISCORD_MAX_MESSAGE_CHARS = 2000;     // Discord's own per-message cap
-// Used when splitting our outgoing reply. Discord's hard cap is 2000, but the
-// first chunk is sent via message.reply() with `<@userId> ${chunk}` prepended,
-// which adds ~22 chars for the mention. Using 1950 leaves a safe 50-char buffer
-// so the mention prefix can never push the final payload over 2000 (DiscordAPIError[50035]).
-const DISCORD_SPLIT_CHARS = 1950;
-const USER_RATE_LIMIT_MAX = 10;              // 10 msgs per user per hour
-const USER_RATE_LIMIT_WINDOW_MS = 60 * 60_000;
-const USER_RATE_LIMIT_CLEANUP_MS = 15 * 60_000;
-const USER_COOLDOWN_MS = 3_000;              // 3s minimum between responses to one user
-const CONCURRENCY_LIMIT = 3;                 // max concurrent LLM calls
-const QUEUE_MAX_DEPTH = 10;                  // beyond this, reject with friendly message
-const HISTORY_MSG_LIMIT = 20;                // cap per-conversation history sent to LLM
-// How recently a user's last conversation must have been touched for a new
-// non-reply message to continue it instead of starting fresh. See
-// loadRecentConversation() for why this is user-scoped and deliberately short.
-const RECENT_CONVERSATION_WINDOW_MS = 30 * 60_000; // 30 minutes
-const PLATFORM_SHOPIFY = 'shopify';
-const PLATFORM_DISCORD = 'discord';
+export { splitForDiscord } from './discord-bot-messages.server';
+export { persistConversation } from './discord-bot-persist.server';
 
 // ---------------------------------------------------------------------------
 // Module state
@@ -173,15 +169,13 @@ export function stopDiscordBot(): void {
 // Message handler
 // ---------------------------------------------------------------------------
 
-type GuildMessage = OmitPartialGroupDMChannel<Message<boolean>>;
-
 async function handleMessage(message: GuildMessage): Promise<void> {
   // ----- Early exits (cheap, fall through as quickly as possible) -----
   if (message.author.bot) return;
   if (message.guild?.id !== DISCORD_GUILD_ID) return;   // DMs (null guild) and other servers
   if (message.system) return;                            // system / join messages
   if (message.mentions.everyone) return;                 // @everyone / @here — server-wide broadcasts, never meant for the bot
-  if (DISCORD_EXCLUDED_CHANNEL_IDS.has(message.channelId)) return; // explicitly blocked channels
+  if (isExcludedChannel(message)) return;                // explicitly blocked channels and their threads
 
   const content = message.content?.trim() ?? '';
   if (!content) return;                                  // attachment-only, stickers, etc.
@@ -402,419 +396,6 @@ async function handleMessage(message: GuildMessage): Promise<void> {
   } finally {
     activeLlmCalls--;
   }
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** The error's name, Discord code and HTTP status, never the error itself
- *  (US-09 AC6d): discord.js keeps the body it sent on `requestBody`, so
- *  console.error(err) would put the reply, with any values and the asker's
- *  mention, in the host log. */
-function errorKind(err: unknown): string {
-  const { name, code, status } = (err ?? {}) as { name?: unknown; code?: unknown; status?: unknown };
-  return [name, code, status].filter((v) => typeof v === 'string' || typeof v === 'number').join(' ') || 'unknown';
-}
-
-async function safeReply(message: GuildMessage, text: string): Promise<void> {
-  try {
-    await message.reply({ content: text, allowedMentions: { repliedUser: false } });
-  } catch { /* swallow — we don't want reply errors to re-enter Sentry loop */ }
-}
-
-/**
- * If `message` is a reply, fetch the referenced message once and return which of
- * `userIds` authored it. Single Discord API call regardless of how many IDs are
- * checked. Returns an empty Set if the message isn't a reply or the parent is
- * unreachable.
- */
-async function getRepliedToUsers(
-  message: GuildMessage,
-  userIds: readonly (string | undefined)[],
-): Promise<Set<string>> {
-  const result = new Set<string>();
-  const refId = message.reference?.messageId;
-  if (!refId) return result;
-  try {
-    const referenced = await message.channel.messages.fetch(refId);
-    const authorId = referenced.author.id;
-    for (const id of userIds) {
-      if (id && id === authorId) result.add(id);
-    }
-  } catch {
-    // Reference deleted or unreachable — return empty set
-  }
-  return result;
-}
-
-/**
- * Remove all occurrences of `<@userId>` / `<@!userId>` from a message body so
- * the LLM doesn't have to deal with raw mention tokens.
- */
-function stripBotMention(content: string, botUserId: string): string {
-  return content
-    .replace(new RegExp(`<@!?${botUserId}>`, 'g'), '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-/** A stored chat turn, as the Discord handler needs it. */
-type ChatHistoryEntry = {
-  role: 'user' | 'assistant';
-  content: string;
-  created_at: string;
-  is_fallback: boolean | null;
-  failure_mode: string | null;
-};
-
-/** Which stored conversation (if any) an incoming message continues. */
-type ConversationLookup = { conversationId: string | null; history: ChatHistoryEntry[] };
-
-/**
- * Load the last HISTORY_MSG_LIMIT turns of a stored conversation.
- *
- * `created_at`, `is_fallback` and `failure_mode` feed the shared content-based dedup check
- * (chat-dedup.server.ts findDuplicateReply); the LLM itself uses only role and
- * content. Turns whose text the 30-day purge has already removed are skipped.
- * A read failure degrades to empty history rather than dropping the reply —
- * answering without context beats not answering at all.
- */
-async function loadConversationHistory(conversationId: string): Promise<ChatHistoryEntry[]> {
-  if (!supabaseAdmin) return [];
-
-  const { data, error } = await supabaseAdmin
-    .from('chat_messages')
-    .select('role, content, created_at, is_fallback, failure_mode')
-    .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: false })
-    .limit(HISTORY_MSG_LIMIT);
-
-  if (error || !data) {
-    console.warn('Discord: failed to load conversation history:', error?.message);
-    return [];
-  }
-
-  // Select the newest turns first, then restore chronological order for model + dedup.
-  return data
-    .reverse()
-    .filter(r => r.role === 'user' || r.role === 'assistant')
-    // Purged turns are gone, not empty: past 30 days the cron nulls `content`
-    // (US-15 AC8). Drop those rows so the model never sees a blank turn and the
-    // dedup check never matches one.
-    .filter(r => r.content !== null)
-    .map(r => ({
-      role: r.role as 'user' | 'assistant',
-      content: r.content as string,
-      created_at: r.created_at as string,
-      is_fallback: r.is_fallback as boolean | null,
-      failure_mode: r.failure_mode as string | null,
-    }));
-}
-
-/**
- * If the message is a reply to one of the bot's previous messages, look up the
- * referenced bot message in Supabase by `discord_message_id`, then load the
- * conversation history. Falls back to a new conversation in any edge case
- * (reply to non-bot, missing row, different Discord author than conversation).
- */
-async function loadConversationForReply(
-  message: GuildMessage,
-  authorDiscordId: string,
-): Promise<ConversationLookup> {
-  if (!supabaseAdmin) return { conversationId: null, history: [] };
-
-  const refId = message.reference?.messageId;
-  if (!refId) return { conversationId: null, history: [] };
-
-  const { data: refMsg, error: refErr } = await supabaseAdmin
-    .from('chat_messages')
-    .select('id, conversation_id')
-    .eq('discord_message_id', refId)
-    .maybeSingle();
-
-  if (refErr) {
-    console.warn('Discord: failed to look up reply-parent message:', refErr.message);
-    return { conversationId: null, history: [] };
-  }
-  if (!refMsg?.conversation_id) return { conversationId: null, history: [] };
-
-  // Fetch conversation metadata and message history in parallel — neither
-  // depends on the other, both only need refMsg.conversation_id from above.
-  const conversationId = refMsg.conversation_id;
-  const [convResult, history] = await Promise.all([
-    supabaseAdmin
-      .from('chat_conversations')
-      .select('platform, external_id')
-      .eq('id', conversationId)
-      .maybeSingle(),
-    loadConversationHistory(conversationId),
-  ]);
-
-  // Verify conversation belongs to the same Discord user. If not, start fresh —
-  // inheriting someone else's history would send the wrong context to the LLM.
-  const conv = convResult.data;
-  if (convResult.error || !conv) return { conversationId: null, history: [] };
-  if (conv.platform !== PLATFORM_DISCORD) return { conversationId: null, history: [] };
-  if (conv.external_id !== authorDiscordId) return { conversationId: null, history: [] };
-
-  return { conversationId, history };
-}
-
-/**
- * Continuity fallback for users who don't use Discord's reply function.
- *
- * Without this, every message that isn't an explicit reply (and isn't inside a
- * thread) starts a BRAND-NEW conversation with no history — so a user asking
- * follow-ups in the channel gets each turn answered from scratch. The 2026-08-06
- * audit caught the failure mode: one user sent the same clarifying question 7
- * times in 31 minutes, got 7 context-free answers that drifted against each
- * other, and replied "I'm confused because you keep telling me different things".
- *
- * So: if the same Discord user has a conversation touched within the recency
- * window, continue it. Scoped by user, not channel — `chat_conversations` has no
- * channel column, so a user active in two channels inside the window can have
- * those turns merged. That's a far smaller problem than answering every
- * follow-up with no history, but it's why the window is deliberately short.
- */
-async function loadRecentConversation(authorDiscordId: string): Promise<ConversationLookup> {
-  if (!supabaseAdmin) return { conversationId: null, history: [] };
-
-  const since = new Date(Date.now() - RECENT_CONVERSATION_WINDOW_MS).toISOString();
-  const { data: conv, error: convErr } = await supabaseAdmin
-    .from('chat_conversations')
-    .select('id')
-    .eq('platform', PLATFORM_DISCORD)
-    .eq('external_id', authorDiscordId)
-    .gte('updated_at', since)
-    .order('updated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (convErr) {
-    console.warn('Discord: recent-conversation lookup failed:', convErr.message);
-    return { conversationId: null, history: [] };
-  }
-  if (!conv) return { conversationId: null, history: [] };
-
-  return { conversationId: conv.id, history: await loadConversationHistory(conv.id) };
-}
-
-/**
- * When a message arrives inside a thread (but is not an explicit reply to the
- * bot), load the last HISTORY_MSG_LIMIT messages from that thread via the
- * Discord API. The thread channel IS the conversation, so this gives full
- * back-and-forth context without needing a Supabase lookup.
- */
-async function loadThreadHistory(
-  message: GuildMessage,
-  botUserId: string,
-): Promise<Array<{ role: 'user' | 'assistant'; content: string }>> {
-  const fetched = await message.channel.messages.fetch({
-    limit: HISTORY_MSG_LIMIT,
-    before: message.id,
-  });
-
-  return [...fetched.values()]
-    .sort((a, b) => a.createdTimestamp - b.createdTimestamp)
-    .filter(m => !m.author.bot || m.author.id === botUserId)
-    .filter(m => m.content.length > 0)
-    .map(m => ({
-      role: (m.author.id === botUserId ? 'assistant' : 'user') as 'user' | 'assistant',
-      content: m.content,
-    }));
-}
-
-/**
- * Split an LLM response across multiple Discord messages so each is ≤ `max` chars.
- * Prefers paragraph boundaries, then sentences, then words, and only falls back
- * to hard character cuts when all else fails.
- */
-export function splitForDiscord(content: string, max: number): string[] {
-  if (content.length <= max) return [content];
-
-  const chunks: string[] = [];
-  let remaining = content;
-
-  while (remaining.length > max) {
-    const slice = remaining.slice(0, max);
-
-    // Prefer paragraph > sentence > word boundary, in that order
-    let cut = slice.lastIndexOf('\n\n');
-    if (cut < max * 0.4) {
-      const sentenceCut = Math.max(slice.lastIndexOf('. '), slice.lastIndexOf('! '), slice.lastIndexOf('? '));
-      if (sentenceCut > max * 0.4) cut = sentenceCut + 1;
-    }
-    if (cut < max * 0.4) {
-      const spaceCut = slice.lastIndexOf(' ');
-      if (spaceCut > max * 0.4) cut = spaceCut;
-    }
-    if (cut < max * 0.4) cut = max;   // hard cut; response was pathologically long
-
-    chunks.push(remaining.slice(0, cut).trimEnd());
-    remaining = remaining.slice(cut).trimStart();
-  }
-  if (remaining.length > 0) chunks.push(remaining);
-  return chunks;
-}
-
-// ---------------------------------------------------------------------------
-// Persistence — writes the user message, assistant response, and router event
-// to the same tables the Shopify chat uses, tagged with platform='discord' and
-// external_id=<Discord user ID>. Uses the shared Discord bot profile for user_id.
-// ---------------------------------------------------------------------------
-
-interface PersistParams {
-  conversationId: string | null;
-  authorId: string;
-  userMessage: string;
-  userDiscordMessageId: string;
-  assistantContent: string;
-  /** US-15 AC48: a SPAM turn. Only its match event is stored, so it never enters history or continuity. */
-  silent: boolean;
-  assistantDiscordMessageIds: string[];
-  usage: { inputTokens: number; outputTokens: number; cacheCreationTokens: number; cacheReadTokens: number };
-  isFallback: boolean;
-  /** Fallback cause + raw error, mirrored to chat_messages for the audit email. */
-  failureMode?: string;
-  errorDetail?: string;
-  /** Router-call result. null when classifier said SKIP — router never ran. */
-  routerResult: RouterResult | null;
-  /** US-50 AC14: router picks replaced by their masters, and masters loaded reduced. */
-  replaced?: string[];
-  reduced?: string[];
-  classifier: {
-    classification: string;
-    routerSkipped: boolean;
-  };
-  contextFirst?: string;
-  contextRecent: string[];
-}
-
-// Model tag comes from chat.server.ts — the single source of truth for which
-// model actually answers. This was a hard-coded 'claude-haiku-4-5-20251001'
-// until 2026-08-07 and did not follow the Sonnet 5 cutover, so every Discord
-// row persisted since then is labelled with the wrong model. Rows created
-// before this fix cannot be trusted on the `model` column. Exported for tests.
-export async function persistConversation(p: PersistParams): Promise<void> {
-  if (!supabaseAdmin || !DISCORD_BOT_PROFILE_ID) return;
-
-  let conversationId = p.conversationId;
-
-  if (!conversationId && !p.silent) {
-    const title = generateTitle(p.userMessage);
-    const { data: conv, error: convErr } = await supabaseAdmin
-      .from('chat_conversations')
-      .insert({
-        user_id: DISCORD_BOT_PROFILE_ID,
-        title,
-        platform: PLATFORM_DISCORD,
-        external_id: p.authorId,
-      })
-      .select('id')
-      .single();
-    if (convErr || !conv) {
-      Sentry.captureException(new Error('Discord: failed to create conversation'), {
-        tags: { platform: PLATFORM_DISCORD },
-        extra: { dbError: convErr?.message },
-      });
-      return;
-    }
-    conversationId = conv.id;
-  }
-
-  // User message first (keeps chronological order when reading the thread back)
-  const { error: userErr } = p.silent ? { error: null } : await supabaseAdmin
-    .from('chat_messages')
-    .insert({
-      conversation_id: conversationId,
-      user_id: DISCORD_BOT_PROFILE_ID,
-      role: 'user',
-      content: p.userMessage,
-      discord_message_id: p.userDiscordMessageId,
-    });
-  if (userErr) {
-    Sentry.captureException(new Error('Discord: failed to save user message'), {
-      tags: { platform: PLATFORM_DISCORD },
-      extra: { dbError: userErr.message, conversationId },
-    });
-    // Continue — assistant message + match event are still useful for analytics
-  }
-
-  // Save the assistant message. We reuse the first Discord-sent message ID so
-  // replies to that message can find this conversation via discord_message_id.
-  // A silent turn (SPAM, US-15 AC48) stores no message rows: its match event
-  // carries a null message_id, as YouTube's skips do.
-  const firstSentId = p.assistantDiscordMessageIds[0] ?? null;
-  const assistantMessageId = p.silent ? null : crypto.randomUUID();
-  const { error: asstErr } = !assistantMessageId ? { error: null } : await supabaseAdmin
-    .from('chat_messages')
-    .insert({
-      id: assistantMessageId,
-      conversation_id: conversationId,
-      user_id: DISCORD_BOT_PROFILE_ID,
-      role: 'assistant',
-      content: p.assistantContent,
-      input_tokens: p.usage.inputTokens,
-      output_tokens: p.usage.outputTokens,
-      model: CHAT_MODEL,
-      discord_message_id: firstSentId,
-      is_fallback: p.isFallback,
-      failure_mode: p.failureMode ?? null,
-      error_detail: p.errorDetail != null ? cutText(p.errorDetail, 500) : null,
-    });
-  if (asstErr) {
-    Sentry.captureException(new Error('Discord: failed to save assistant message'), {
-      tags: { platform: PLATFORM_DISCORD },
-      extra: { dbError: asstErr.message, conversationId },
-    });
-    return;
-  }
-
-  // Router event (analytics / QA). Written only after the assistant row it points to.
-  // All router_* metric columns are null on SKIP turns (router never ran).
-  const r = p.routerResult;
-  const { error: evtErr } = await supabaseAdmin
-    .from('chat_match_events')
-    .insert({
-      message_id: assistantMessageId,
-      conversation_id: conversationId,
-      user_id: DISCORD_BOT_PROFILE_ID,
-      message: p.userMessage,
-      router_context: {
-        platform: PLATFORM_DISCORD,
-        first: p.contextFirst ?? null,
-        recent: p.contextRecent,
-        ...(p.replaced?.length ? { replaced: p.replaced } : {}),
-        ...(p.reduced?.length ? { reduced: p.reduced } : {}),
-      },
-      matched_handles: r?.handles ?? [],
-      router_version: r ? ROUTER_VERSION : null,
-      router_latency_ms: r?.latencyMs ?? null,
-      router_cache_hit: r?.cacheHit ?? null,
-      router_input_tokens: r?.usage.inputTokens ?? null,
-      router_cache_read_tokens: r?.usage.cacheReadTokens ?? null,
-      router_output_tokens: r?.usage.outputTokens ?? null,
-      router_raw: r?.error && r.rawJson != null ? cutText(r.rawJson, 500) : null,
-      router_error: r?.error ?? null,
-      classification: p.classifier.classification,
-      router_skipped: p.classifier.routerSkipped,
-      is_fallback: p.isFallback,
-      failure_mode: p.failureMode ?? null,
-    });
-  if (evtErr) {
-    Sentry.captureException(new Error('Discord: match-event insert failed'), {
-      tags: { platform: PLATFORM_DISCORD },
-      extra: { dbError: evtErr.message, messageId: assistantMessageId },
-    });
-  }
-
-  // Touch the conversation timestamp so the list is ordered by recency. Not for
-  // a silent turn, which must not extend the 30-min continuity window.
-  if (!p.silent) await supabaseAdmin
-    .from('chat_conversations')
-    .update({ updated_at: new Date().toISOString() })
-    .eq('id', conversationId);
 }
 
 // Auto-start on module import (same pattern as reminder-v2-cron.server.ts)

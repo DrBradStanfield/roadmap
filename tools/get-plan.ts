@@ -31,17 +31,20 @@ import { FIELD_METRIC_MAP } from '../packages/health-core/src/mappings';
 import { updateProfile } from '../packages/health-core/src/mcp-tools';
 import { appendLabValue, appendMeasurement } from '../packages/health-core/src/record-edits';
 import { recordSync } from '../packages/health-core/src/roadmap-doc';
+import { readableView } from '../packages/health-core/src/readable-rows';
 import { describeStorageFailure, isStorageFailure } from '../packages/health-core/src/sync-manager';
 import {
   computePlan,
   currentValues,
   dueSplit,
+  NEEDS_SEX,
   PlanError,
   oneLine,
   planPayload,
   printable,
   renderJson,
   SCHEMA_URL,
+  shownValue,
   type DisplayRow,
   type Plan,
 } from '../packages/health-core/src/plan';
@@ -61,7 +64,8 @@ import { zod3Message } from '../packages/health-core/src/validation';
  */
 export async function loadRecord(path: string, now = new Date()): Promise<RoadmapFile> {
   try {
-    return await recordSync(new FileAdapter(path), 'get-plan-cli', now.toISOString()).load();
+    // Read-only, so the plan reads what this build can read (US-65).
+    return readableView(await recordSync(new FileAdapter(path), 'get-plan-cli', now.toISOString()).load()).file;
   } catch (error) {
     if (!isStorageFailure(error)) throw error;
     const failed = describeStorageFailure(error, path);
@@ -76,7 +80,7 @@ export async function loadRecord(path: string, now = new Date()): Promise<Roadma
  * are theirs, not a second copy. Nothing is saved.
  */
 const valuesSpec = z.object({
-  sex: z.enum(['male', 'female']),
+  sex: z.enum(['male', 'female']).optional(),
   heightCm: z.number(),
   age: z.number().int().optional(),
   birthYear: z.number().int().optional(),
@@ -123,7 +127,7 @@ export function recordFromValues(raw: string, now = new Date()): RoadmapFile {
 
   for (const [i, row] of spec.values.entries()) {
     const where = `values[${i}]`;
-    if (!row.metric === !row.test) throw new PlanError(`${where}: give either metric (a core metric) or test (any other blood test)`, VALUES_SHAPE);
+    if (!row.metric === !row.test) throw new PlanError(`${where}: give either metric (a core metric) or test (a blood test by name)`, VALUES_SHAPE);
     // A metric with two unit labels (LDL mmol/L or mg/dL) never guesses; a lab
     // value with no unit is refused by appendLabValue itself.
     const metric = row.metric as MetricType;
@@ -162,7 +166,8 @@ const PRIORITY_GROUPS = [
 function profileLine(plan: Plan): string {
   const bits: string[] = [];
   if (plan.results.age !== undefined) bits.push(`${plan.results.age}y`);
-  bits.push(plan.inputs.sex === 'female' ? 'female' : 'male');
+  // US-07 AC8: never a default sex; say what its absence costs.
+  bits.push(plan.inputs.sex ?? `sex not given; without it the plan leaves out: ${NEEDS_SEX.join('; ')}`);
   const height = FIELD_METRIC_MAP.heightCm;
   bits.push(`${formatDisplayValue(height, plan.results.heightCm, plan.unitSystem)}${getDisplayLabel(height, plan.unitSystem)}`);
   // The adult readings as the payload gives them: null for a known minor (US-07 AC6).
@@ -190,7 +195,8 @@ export function renderText(plan: Plan, from = 'your record file', schemaVersion 
   out.push(profileLine(plan));
   out.push(`Computed ${plan.today} from ${from}. Not medical advice — take it to your doctor.`);
 
-  const row = (r: DisplayRow) => `  ${r.label.padEnd(20)} ${String(r.value).padStart(6)} ${r.unit.padEnd(9)} ${r.date}${r.excluded ? `  (excluded — ${r.excludedReason ?? 'out of range'})` : ''}`;
+  // A lab name and unit come out of the record: one line each (US-30 AC8).
+  const row = (r: DisplayRow) => `  ${oneLine(r.label).padEnd(20)} ${shownValue(r).padStart(6)} ${oneLine(r.unit).padEnd(9)} ${r.date}${r.excluded ? `  (excluded — ${r.excludedReason ?? 'out of range'})` : ''}${r.notGraded ? `  (${r.notGraded})` : ''}`;
   const values = currentValues(plan);
   out.push('', 'CURRENT VALUES');
   if (values.length === 0) out.push('  (none recorded yet)');
@@ -248,7 +254,7 @@ export function renderHtml(plan: Plan, from = 'your own record file', schemaVers
   const { overdue, upcoming } = dueSplit(plan);
   const values = currentValues(plan);
   const rows = (items: DisplayRow[]) =>
-    items.map((i) => `<tr><th>${esc(i.label)}</th><td>${esc(i.value)} ${esc(i.unit)}${i.excluded ? ` <span class="ex">(excluded — ${esc(i.excludedReason ?? 'out of range')})</span>` : ''}</td><td>${esc(i.date)}</td></tr>`).join('\n');
+    items.map((i) => `<tr><th>${esc(i.label)}</th><td>${esc(shownValue(i))} ${esc(i.unit)}${i.excluded ? ` <span class="ex">(excluded — ${esc(i.excludedReason ?? 'out of range')})</span>` : ''}${i.notGraded ? ` <span class="ex">(${esc(i.notGraded)})</span>` : ''}</td><td>${esc(i.date)}</td></tr>`).join('\n');
 
   const suggestions = byPriority(plan.results.suggestions)
     .map(
@@ -348,11 +354,14 @@ memory by edit-record's own rules, and writes nothing. Works with --json/--html:
   {"sex":"male","age":52,"heightCm":178,
    "values":[{"metric":"ldl","value":3.2,"unit":"mmol/L"},
              {"test":"ferritin","value":210,"unit":"µg/L"}]}
-  sex, heightCm       required
+  heightCm            required
+  sex                 optional, but without it the parts that need sex drop
+                      out (see profile.needsSex below)
   age | birthYear     optional, but without one the age-based steps drop out;
                       birthYear (+ birthMonth) is exact, age may be a year off
   unitSystem          optional: si (default, mmol/L) or conventional (mg/dL)
-  metric / test       a core metric, or any other blood test
+  metric / test       a core metric, or a blood test by name; a core blood
+                      test under either is the same core value
   unit                required wherever the metric has two (ldl, hba1c, weight, …)
   date                YYYY-MM-DD, default today
 
@@ -360,15 +369,20 @@ memory by edit-record's own rules, and writes nothing. Works with --json/--html:
   instruction    how to present this plan: keep the hedging, keep the citations
   schemaVersion, generatedAt, today, unitSystem
   profile        age, sex, heightCm, bmi, bmiCategory, waistToHeightRatio,
-                 eGFR, idealBodyWeightKg, proteinTargetG
+                 eGFR, idealBodyWeightKg, proteinTargetG, needsSex (with no
+                 sex on record, the parts left out because they need it;
+                 [] when sex is set)
   units          the SI unit each inputs field is stored in, keyed by field
   inputs         the HealthInputs the plan was computed from (SI canonical)
+  missingInputs  the inputs the record lacks that would change the plan
   currentValues  one row per metric — id, label, display value, unit, clinical
                  date; excluded: true marks a value out of range — shown, but
                  unused; excludedReason says why when it is something else
                  (a blood pressure whose top number is not above the bottom)
   labValues      latest per additional test, with its id (informational; not
-                 used to compute suggestions)
+                 used to compute suggestions). The core blood tests (ldl,
+                 hba1c, …) are stored in the record's labValues too, with
+                 core: true, but are reported in currentValues and inputs
   medications    screenings
   due            { overdue, upcoming } — label + dueAt (YYYY-MM-DD)
   suggestions    id, category, priority, title, description, ingredients,

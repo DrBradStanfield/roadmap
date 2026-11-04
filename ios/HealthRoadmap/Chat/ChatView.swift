@@ -21,6 +21,16 @@ struct ChatView: View {
     /// The question box. Sending, dragging or tapping the conversation lowers the keyboard,
     /// so the tab bar under it is back (US-52 AC6c).
     @FocusState private var asking: Bool
+    /// The banners a reply's edits make (US-67).
+    @State private var edits: ChatEdits
+    @Environment(\.analytics) private var analytics
+
+    init(engine: HealthEngine, store: RecordStore, history: ChatHistoryStore) {
+        self.engine = engine
+        self.store = store
+        self.history = history
+        _edits = State(initialValue: ChatEdits(store: store))
+    }
 
     var body: some View {
         NavigationStack {
@@ -45,6 +55,9 @@ struct ChatView: View {
             transcript = ChatTranscript()
             conversationId = UUID().uuidString.lowercased()
         }
+        // An erase here or by sync drops an unanswered banner and the Undo (US-67 AC5).
+        .onChange(of: store.chatMark) { edits.follow(store.chatMark) }
+        .onAppear { edits.send = { [analytics] in analytics?.event($0) } }
     }
 
     // MARK: The conversation
@@ -90,6 +103,7 @@ struct ChatView: View {
                             starters
                         }
                         ForEach(transcript.shown) { ChatBubble(line: $0) }
+                        ChatEditBanners(edits: edits)
                         if let status { Label(status, systemImage: "ellipsis").foregroundStyle(.secondary).font(.footnote) }
                         if let error = transcript.error {
                             Text(error).foregroundStyle(.red).font(.footnote)
@@ -112,14 +126,12 @@ struct ChatView: View {
                 // Alongside, never instead of, the starters' and bubbles' own taps.
                 .simultaneousGesture(TapGesture().onEnded { asking = false })
                 .onChange(of: transcript.lines) { proxy.scrollTo("end", anchor: .bottom) }
+                .onChange(of: edits.review) { proxy.scrollTo("end", anchor: .bottom) }
+                .onChange(of: edits.saved) { proxy.scrollTo("end", anchor: .bottom) }
             }
             Divider()
             HStack(alignment: .bottom) {
-                TextField("Ask a question", text: $draft, axis: .vertical)
-                    .analyticsMasked()
-                    .lineLimit(1...5)
-                    .textFieldStyle(.roundedBorder)
-                    .focused($asking)
+                QuestionField(draft: $draft, asking: $asking)
                 if sending && !transcript.finished {
                     // Stop cancels the turn at once; the question comes back to the box (US-52 AC6d).
                     Button(action: stop) {
@@ -168,6 +180,8 @@ struct ChatView: View {
         history.leave()
         conversationId = UUID().uuidString.lowercased()
         transcript = ChatTranscript()
+        // A banner belongs to the conversation that made it (US-67 AC3).
+        edits.drop()
     }
 
     /// Shows a saved conversation once the engine has read it. An erase, a question sent,
@@ -179,6 +193,7 @@ struct ChatView: View {
         Task {
             guard let messages = await loading.value, store.erasures == erasures, !sending else { return }
             conversationId = id
+            edits.drop()
             transcript = ChatTranscript(lines: messages.map { ChatLine(role: $0.role == "user" ? .user : .assistant, text: $0.content) })
         }
     }
@@ -196,7 +211,9 @@ struct ChatView: View {
         // An erase while the answer streams empties `lines` and the history: from then on
         // this turn is dropped, never indexed into the new lines or saved (review R1).
         let erasures = store.erasures
-        turn = Task { await send(question, earlier: earlier, answerIndex: answerIndex, erasures: erasures) }
+        // The record it is asked on: a reply's edits apply only to it (US-67 AC5).
+        let asked = store.chatMark
+        turn = Task { await send(question, earlier: earlier, answerIndex: answerIndex, erasures: erasures, asked: asked) }
     }
 
     /// Cancels the turn in flight. The screen moves on now, not when the request unwinds:
@@ -210,7 +227,7 @@ struct ChatView: View {
         if let question = transcript.stop(), draft.isEmpty { draft = question }
     }
 
-    private func send(_ question: String, earlier: [ChatClient.Turn], answerIndex: Int, erasures: Int) async {
+    private func send(_ question: String, earlier: [ChatClient.Turn], answerIndex: Int, erasures: Int, asked: RecordStore.ChatMark) async {
         let isNew = earlier.isEmpty
         let conversation = conversationId
         let askedAt = ChatHistoryStore.erasures
@@ -232,13 +249,14 @@ struct ChatView: View {
                 case .status(let text): status = text
                 case .text(let text): transcript.lines[answerIndex].text += text
                 case .sources(let titles): transcript.lines[answerIndex].sources = titles
-                case .done(let content, let isFallback, let failure):
+                case .done(let content, let isFallback, let failure, let proposed):
                     if let failure { throw AppAttestClient.Failure.server(status: 500, message: failure) }
                     // The answer is in: Stop goes, and it is saved (review R3).
                     let answer = transcript.finish(answerIndex, content: content)
                     finished = true
                     status = nil
                     await history.record(ChatExchange(conversationId: conversation, isNew: isNew, userText: question, assistantText: answer, isFallback: isFallback), askedAt: askedAt)
+                    if let proposed, live() { await edits.take(proposed, asked: asked) }
                 case .other: break
                 }
             }
@@ -252,3 +270,19 @@ struct ChatView: View {
     }
 }
 
+/// The question box (US-52 AC6e). It grows to five lines as a question gets long. At
+/// accessibility text sizes it holds two (break-it pass 2026-10-30): five filled about 60% of
+/// the screen above the keyboard, and on one line the placeholder read "Ask a que...".
+struct QuestionField: View {
+    @Binding var draft: String
+    var asking: FocusState<Bool>.Binding
+    @Environment(\.dynamicTypeSize) private var textSize
+
+    var body: some View {
+        TextField("Ask a question", text: $draft, axis: .vertical)
+            .analyticsMasked()
+            .lineLimit(textSize.isAccessibilitySize ? 2...2 : 1...5)
+            .textFieldStyle(.roundedBorder)
+            .focused(asking)
+    }
+}

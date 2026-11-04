@@ -10,10 +10,10 @@ import { statTiles, type StatTile } from '../../packages/health-core/src/stat-ti
 import { cmToFeetInches, formatDisplayValue, fromCanonicalValue, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from '../../packages/health-core/src/units';
 import { fileNameLine, MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
 import { deviceWrites } from '../../packages/health-core/src/device-export';
-import { medicinesShown } from '../../packages/health-core/src/suggestions';
-import { usProductBlocks, type UsProductOverlay } from '../../packages/health-core/src/us-products';
-import { applyEdit, myData, newRecord, readNumber, readRecord, type Edit } from './my-data';
-import { metricHistory } from './my-data-forms';
+import { usProductSections, type UsPlanSection } from '../../packages/health-core/src/us-products';
+import { applyEdit, movedRecord, myData, newRecord, readNumber, readRecord, readView, type Edit } from './my-data';
+import { labHistory, metricHistory } from './my-data-forms';
+import { chatEditsPreview } from './chat-edits';
 import { readUnitChoices } from './unit-choices';
 import { phoneReminders } from './reminders';
 import { installShim, type Natives } from './shim';
@@ -58,7 +58,7 @@ export function fileNamesJson(filesJson: string): string {
  *  here and on the doors below: the phone's per-test units (unit-choices.ts); an app older
  *  than them sends nothing, and every metric shows in the record's units. */
 export function planJson(recordJson: string, nowIso: string, deviceId: string, unitsJson?: string): string {
-  return JSON.stringify(computePlan(readRecord(recordJson, nowIso, deviceId), new Date(nowIso), readUnitChoices(unitsJson)));
+  return JSON.stringify(computePlan(readView(recordJson, nowIso, deviceId), new Date(nowIso), readUnitChoices(unitsJson)));
 }
 
 /** A plan's on-screen layout, as JSON: the web's results panel uses the same function. */
@@ -82,16 +82,20 @@ export function newRecordJson(nowIso: string, deviceId: string, locale: string, 
  *  phone's per-test units, and the milliseconds from computePlan through the tiles and the
  *  layout (D2's plan budget; whole ms, the engine's only clock). A tile that cannot be drawn never
  *  blanks the plan (adversary R7): no tiles instead. A record that cannot be planned gives
- *  `{error, planError}`, `planError` true for health-core's PlanError (no usable height or
- *  sex), and never blanks My data. My data that cannot be drawn throws the whole call.
- *  `isUS`: the App Store storefront is the US (US-61). `plan.usProducts` is then Dr Brad's
- *  products for the supplement cards of a known adult (us-products.ts, the web's own
- *  overlay); anything but `true`, an app older than it included, gives no blocks. */
+ *  `{error, planError}`, `planError` true for health-core's PlanError (no usable height; a
+ *  record with no sex is planned without the parts that need it, US-07 AC8), and never blanks My data. My data that cannot be drawn throws the whole call.
+ *  `isUS`: the App Store storefront is the US (US-61). `plan.usProducts` is then the sections
+ *  ready to draw with Dr Brad's products on the supplement cards of a known adult
+ *  (us-products.ts, the web's own overlay); left out when none shows. Anything but `true`,
+ *  an app older than it included, gives none.
+ *  `movedRecord`: the record as text, when reading `recordJson` moved its blood tests into
+ *  one table (US-66 AC14); the app writes it to the phone's file once, as it opens it. Left
+ *  out when nothing moved, so the written record never gives it again. */
 export function screenJson(recordJson: string, nowIso: string, deviceId: string, unitsJson?: string, isUS?: boolean): string {
-  const file = readRecord(recordJson, nowIso, deviceId);
+  const file = readView(recordJson, nowIso, deviceId);
   const choices = readUnitChoices(unitsJson);
   let plan: Plan | null = null;
-  let view: { sections: PlanSection[]; tiles: StatTile[]; usProducts: UsProductOverlay; ms: number } | { error: string; planError: boolean };
+  let view: { sections: PlanSection[]; tiles: StatTile[]; usProducts?: UsPlanSection[]; ms: number } | { error: string; planError: boolean };
   try {
     const start = Date.now();
     plan = computePlan(file, new Date(nowIso), choices);
@@ -102,18 +106,30 @@ export function screenJson(recordJson: string, nowIso: string, deviceId: string,
       // tiles stay empty
     }
     const sections = planSections(plan.results.suggestions);
-    const usProducts = usProductBlocks(plan.results.suggestions, medicinesShown(plan.results), isUS === true, 'ios');
+    const usProducts = usProductSections(sections, plan.results, isUS === true, 'ios') ?? undefined;
     view = { sections, tiles, usProducts, ms: Date.now() - start };
   } catch (error) {
     view = { error: String(error), planError: error instanceof PlanError };
   }
-  return JSON.stringify({ myData: myData(file, nowIso, choices, plan), plan: view });
+  const moved = movedRecord(recordJson, nowIso, deviceId);
+  return JSON.stringify({ myData: myData(file, nowIso, choices, plan), plan: view, ...(moved ? { movedRecord: moved } : null) });
 }
 
-/** One edit, as JSON: `{ ok: true, record }` with the new record as text, or the refusal. */
+/** One edit, as JSON: `{ ok: true, record }` with the new record as text (and the
+ *  outcome's other fields, such as a Health Records batch's counts), or the refusal. */
 export function applyEditJson(recordJson: string, editJson: string, nowIso: string, deviceId: string, unitsJson?: string): string {
   const outcome = applyEdit(readRecord(recordJson, nowIso, deviceId), JSON.parse(editJson) as Edit, nowIso, readUnitChoices(unitsJson));
-  return JSON.stringify(outcome.ok ? { ok: true, record: JSON.stringify(outcome.file) } : outcome);
+  if (!outcome.ok) return JSON.stringify(outcome);
+  const { file, ok, ...extra } = outcome;
+  return JSON.stringify({ ok, record: JSON.stringify(file), ...extra });
+}
+
+/** What the chat's proposed edits would do (US-67 AC3), as JSON: `{ medications: { lines, undo } | null,
+ *  review: { lines, refusal, seen } | null }`, in the phone's units; `seen` goes back on the review's
+ *  chatEdits edit, so a Save refuses when the record changed since. `editsJson`: the reply's `proposedEdits` as
+ *  received; `today`: the phone's day. The record is read raw, as the chatEdits edit writes it. */
+export function chatEditsJson(recordJson: string, editsJson: string, nowIso: string, deviceId: string, today: string, unitsJson?: string): string {
+  return JSON.stringify(chatEditsPreview(readRecord(recordJson, nowIso, deviceId), JSON.parse(editsJson), nowIso, today, readUnitChoices(unitsJson)));
 }
 
 /** A typed number as JSON: the number, or null when it is not a plain decimal. */
@@ -140,16 +156,20 @@ export function convertJson(metric: string, value: number, from: string, to: str
 /** The values to write to Apple Health, as JSON (US-25 AC14, device-export.ts): the values
  *  a person entered, never the app's own imports. */
 export function healthWritesJson(recordJson: string, nowIso: string, deviceId: string): string {
+  // The raw record: a correction's chain and source run through hidden rows too, and
+  // deviceWrites takes only active rows of known metrics with a valid number (US-65).
   return JSON.stringify(deviceWrites(readRecord(recordJson, nowIso, deviceId), 'apple_health'));
 }
 
-/** Every value recorded for one metric, newest first, as JSON (US-25 AC9). */
-export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string, unitsJson?: string): string {
-  return JSON.stringify(metricHistory(readRecord(recordJson, nowIso, deviceId), metric, nowIso, readUnitChoices(unitsJson)));
+/** Every value recorded for one metric, newest first, as JSON (US-25 AC9). `series` "lab": `metric`
+ *  is a lab test's series key (US-25 AC25); an app before it sends none, and is answered as before. */
+export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string, unitsJson?: string, series?: string): string {
+  const file = readView(recordJson, nowIso, deviceId);
+  return JSON.stringify(series === 'lab' ? labHistory(file, metric) : metricHistory(file, metric, nowIso, readUnitChoices(unitsJson)));
 }
 // Chat and lab upload (US-52): app-doors.ts.
 export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson, chatDeleteJson, settledJson, labReviewJson, labSaveSummaryJson } from './app-doors';
 /** The phone's reminders (reminders.ts): health-core's schedule plus the notification days, as JSON. */
 export function remindersJson(recordJson: string, nowIso: string, deviceId: string): string {
-  return JSON.stringify(phoneReminders(readRecord(recordJson, nowIso, deviceId), new Date(nowIso)));
+  return JSON.stringify(phoneReminders(readView(recordJson, nowIso, deviceId), new Date(nowIso)));
 }

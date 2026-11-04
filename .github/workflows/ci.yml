@@ -10,8 +10,12 @@ on:
 permissions:
   contents: read
 
+# Three jobs (US-64 AC12, Brad 2026-11-04): the suite took 7.6 of CI's 9
+# minutes on one runner, and every PR waited on it. `checks` runs everything
+# but the suite; `unit` splits the suite by file over 6 runners; `test` passes
+# only when both did. Its name is the check auto-ship.yml waits for, so keep it.
 jobs:
-  test:
+  checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -20,6 +24,21 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+
+      # The story-loss gate (US-64 AC11): user-stories.md must still define
+      # every story its base did. A truncated read written back whole dropped
+      # 17 stories on 2026-09-01. The base is the PR's base, or on main the
+      # commit before the push; a ref that cannot be fetched fails the step.
+      - name: User stories keep every story their base defines
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          case "${BASE}" in
+            *[!0]*) ;; # a real commit
+            *) echo "No base commit to compare with (manual run or new branch); skipped."; exit 0;;
+          esac
+          git fetch --no-tags --depth=1 origin "${BASE}"
+          npx tsx scripts/build-user-stories-html.ts --check-against "${BASE}"
 
       # Blog index drift check — ensures docs/blog/index.json is derivable from
       # .md frontmatter via scripts/rebuild-blog-index.ts. Catches:
@@ -75,9 +94,37 @@ jobs:
       # type check and which ships over the air. Clean when this gate landed.
       - run: npm run typecheck:engine
 
-      # test:all runs the root vitest config — a strict superset of `npm test`
-      # (health-core + app/lib) that also picks up widget-src and app/routes
-      # suites, which were previously never executed in CI.
-      - run: npm run test:all
       - run: npm run build
       - run: npm run build:widget
+
+  unit:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # test:all runs the root vitest config — a strict superset of `npm test`
+      # (health-core + app/lib) that also picks up widget-src and app/routes
+      # suites, which were previously never executed in CI. Each runner takes
+      # a sixth of the test files.
+      - run: npm run test:all -- --shard=${{ matrix.shard }}/6
+
+  test:
+    if: always()
+    needs: [checks, unit]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every check and every test shard passed
+        env:
+          CHECKS: ${{ needs.checks.result }}
+          UNIT: ${{ needs.unit.result }}
+        run: |
+          echo "checks: ${CHECKS}, unit shards: ${UNIT}"
+          [ "${CHECKS}" = success ] && [ "${UNIT}" = success ]

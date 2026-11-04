@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createEmptyFile, localDay, measurementsToInputs, type RoadmapFile } from '@roadmap/health-core';
 import { RoadmapStore } from './roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core';
-import { ROADMAP_FILE_NAME } from '@roadmap/health-core';
+import { ROADMAP_FILE_NAME, toOldShape } from '@roadmap/health-core';
 
 /** The file as it landed in the (simulated) cloud after a flush. */
 function readCloudFile(cloud: MemoryCloud): RoadmapFile {
@@ -481,7 +481,7 @@ describe('RoadmapStore — latest value per metric drives the plan (US-07 AC4)',
 
     // Both rows are now in the cloud, ordered by the merge's uuid sort.
     const merged = await RoadmapStore.create(new MemoryAdapter(cloud));
-    expect(readCloudFile(cloud).measurements.filter((m) => m.metricType === 'ldl')).toHaveLength(2);
+    expect(readCloudFile(cloud).labValues.filter((row) => row.metricName === 'ldl' && row.core)).toHaveLength(2);
     const rows = ldlRows(merged);
     expect(rows).toHaveLength(1);
     expect(rows[0].value).toBe(1.8);
@@ -502,18 +502,18 @@ describe('RoadmapStore — moving a blood test (US-04 AC5)', () => {
     store.addMeasurement('ldl', 3.2, '2024-03-12T00:00:00.000Z');
     store.addMeasurement('weight', 82, '2024-03-12T00:00:00.000Z');
     await store.flush();
-    const before = JSON.stringify(readCloudFile(cloud).measurements);
+    const before = JSON.stringify(readCloudFile(cloud));
 
     const plan = store.previewMove('2024-03-12', '2024-02-21');
     if (!('rows' in plan)) throw new Error(plan.message);
-    expect(plan.rows.map((r) => 'metricType' in r && r.metricType)).toEqual(['ldl']);
+    expect(plan.rows.map((r) => 'metricName' in r && r.core && r.metricName)).toEqual(['ldl']);
     await store.flush();
-    expect(JSON.stringify(readCloudFile(cloud).measurements)).toBe(before);
+    expect(JSON.stringify(readCloudFile(cloud))).toBe(before);
 
     expect(store.moveBloodTest('2024-03-12', '2024-02-21', ['not-the-row'], {})).toEqual({ status: 'changed' });
     expect(store.moveBloodTest('2024-03-12', '2024-02-21', plan.rows.map((r) => r.id), {})).toEqual({ status: 'ok' });
     await store.flush();
-    const active = readCloudFile(cloud).measurements.filter((m) => m.status === 'active');
+    const active = toOldShape(readCloudFile(cloud)).measurements.filter((m) => m.status === 'active');
     expect(active.map((m) => `${m.metricType}@${m.recordedAt.slice(0, 10)}`).sort()).toEqual(['ldl@2024-02-21', 'weight@2024-03-12']);
   });
 

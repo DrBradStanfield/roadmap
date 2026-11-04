@@ -1,0 +1,68 @@
+// US-25 AC25, US-21: the one lab add both apps use (record-edits.ts addLabValue): the web's
+// "+ Add a value" (AddLabTest.tsx) and the iPhone's lab page. Synthetic values.
+import { describe, expect, it } from 'vitest';
+import { addLabValue } from './record-edits';
+import { createEmptyFile, type FileLabValue, type RoadmapFile } from './roadmap-file';
+import { createCoreRow } from './blood-tests';
+import { reportedToCanonical } from './units';
+
+const NOW = '2026-10-21T08:00:00.000Z';
+const held = (id: string, metricName: string, value: number, unit: string, day: string): FileLabValue => ({
+  id, metricName, value, unit, referenceLow: null, referenceHigh: null, recordedAt: `${day}T00:00:00.000Z`, createdAt: NOW,
+  source: 'lab_import', status: 'active', correctsId: null,
+});
+const record = (labValues: FileLabValue[]): RoadmapFile => ({ ...createEmptyFile({ deviceId: 'd', now: NOW }), labValues });
+
+describe('addLabValue (US-25 AC25)', () => {
+  it('files a catalogued test in its catalogue unit under the catalogue key; any other under the name and unit given', () => {
+    const exact = addLabValue(record([]), { metricName: 'Ferritin', unit: 'ng/mL', value: 90, day: '2026-10-01' }, NOW);
+    if (!exact.ok) throw new Error(exact.message);
+    expect(exact.row).toMatchObject({ metricName: 'ferritin', unit: 'µg/L', value: 90, source: 'manual', status: 'active', correctsId: null });
+    const converted = addLabValue(record([]), { metricName: 'Vitamin D', unit: 'ng/mL', value: 32, day: '2026-10-01' }, NOW);
+    if (!converted.ok) throw new Error(converted.message);
+    expect(converted.row).toMatchObject({ metricName: 'Vitamin D', unit: 'nmol/L' });
+    const custom = addLabValue(record([]), { metricName: 'Zinc custom', unit: 'µg/dL', value: 80, day: '2026-10-01' }, NOW);
+    if (!custom.ok) throw new Error(custom.message);
+    expect(custom.row).toMatchObject({ metricName: 'Zinc custom', unit: 'µg/dL' });
+  });
+
+  it('refuses a taken day, offering the held row only when it is another number in the same unit (sameLabQuantity)', () => {
+    const file = record([held('f1', 'ferritin', 80, 'µg/L', '2026-10-01')]);
+    expect(addLabValue(file, { metricName: 'ferritin', unit: 'µg/L', value: 85, day: '2026-10-01' }, NOW))
+      .toEqual({ ok: false, reason: 'slot-occupied', message: 'That test already has 80 µg/L for that date.', existingId: 'f1' });
+    expect(addLabValue(file, { metricName: 'ferritin', unit: 'µg/L', value: 80, day: '2026-10-01' }, NOW))
+      .toEqual({ ok: false, reason: 'slot-occupied', message: 'That test already has 80 µg/L for that date.' });
+  });
+
+  it('refuses a negative number, a future day, no name and a unit the catalogue does not take', () => {
+    expect(addLabValue(record([]), { metricName: 'ferritin', unit: 'µg/L', value: -1, day: '2026-10-01' }, NOW)).toMatchObject({ ok: false, reason: 'invalid-value' });
+    expect(addLabValue(record([]), { metricName: 'ferritin', unit: 'µg/L', value: 1, day: '2026-10-30' }, NOW)).toMatchObject({ ok: false, reason: 'invalid-date' });
+    expect(addLabValue(record([]), { metricName: ' ', unit: 'µg/L', value: 1, day: '2026-10-01' }, NOW)).toMatchObject({ ok: false, reason: 'invalid-value' });
+    expect(addLabValue(record([]), { metricName: 'ferritin', unit: 'mg/dL', value: 1, day: '2026-10-01' }, NOW))
+      .toMatchObject({ ok: false, reason: 'unknown-unit', message: expect.stringMatching(/^Ferritin: unit not recognised \(mg\/dL\)/) });
+  });
+});
+
+// US-66 AC6 (with US-21 AC13): a core test's name writes its core row, so a held day names the core
+// value in the unit typed and offers it for replacing, and a number out of range says so: never
+// "already has a value" for a day that holds nothing.
+describe('addLabValue — a core test by name (US-66 AC6)', () => {
+  const si = reportedToCanonical('ldl', 116, 'mg/dL')!.valueSI;
+  const core = createCoreRow({ id: 'c1', metric: 'ldl', value: si, recordedAt: '2026-10-01T00:00:00.000Z', createdAt: NOW, source: 'manual' });
+  const ldl = (value: number, file = record([core])) => addLabValue(file, { metricName: 'LDL-C', unit: 'mg/dL', value, day: '2026-10-01' }, NOW);
+
+  it('names the held core value in the unit typed, and offers it when the number differs', () => {
+    expect(ldl(131)).toEqual({ ok: false, reason: 'slot-occupied', message: 'That test already has 116 mg/dL for that date.', existingId: 'c1' });
+    expect(ldl(116)).toEqual({ ok: false, reason: 'slot-occupied', message: 'That test already has 116 mg/dL for that date.' });
+  });
+
+  it('a number out of range is refused as one, naming the end it missed', () => {
+    expect(ldl(99999, record([]))).toMatchObject({ ok: false, reason: 'invalid-value', bound: 'above' });
+  });
+
+  it('a free day writes the core row in its canonical unit', () => {
+    const added = ldl(131, record([]));
+    if (!added.ok) throw new Error(added.message);
+    expect(added.row).toMatchObject({ metricName: 'ldl', unit: 'mmol/L', core: true, source: 'manual' });
+  });
+});

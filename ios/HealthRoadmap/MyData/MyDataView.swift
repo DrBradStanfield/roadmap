@@ -46,11 +46,7 @@ struct MyDataView: View {
             }
         }
             .toolbar(.hidden, for: .navigationBar)
-            // With no bar, iOS 26's edge effect leaves rows legible under the clock.
-            // A zero-height inset whose background reaches into the status bar hides them.
-            .safeAreaInset(edge: .top, spacing: 0) {
-                Color.clear.frame(height: 0).background(Color(uiColor: .systemGroupedBackground), ignoresSafeAreaEdges: .top)
-            }
+            .solidStatusBar()
             .navigationDestination(item: $detail) { row in
                 MetricDetailView(store: store, row: row, saved: saved)
             }
@@ -72,10 +68,10 @@ struct MyDataView: View {
             if let data = store.myData {
                 List {
                     vitals(data)
-                    // Under blood pressure: heart rate, resting heart rate and sleep, or the Turn On or Reconnect row (US-56 AC5, AC6).
+                    // Under blood pressure: heart rate, resting heart rate and sleep, or the Turn On or Open Settings row (US-56 AC5, AC6).
                     LiveCardsSection(metrics: LiveMetric.vitals) { liveDetail = $0 }
                     LiveCardsSection(metrics: LiveMetric.fitness, bands: data.vo2Bands?.value.map { [.vo2Max: $0] } ?? [:]) { liveDetail = $0 }
-                    metrics(data.bloodTests) {
+                    metrics(data.bloodTests, labs: data.labTests ?? []) {
                         // Tour tip 3 (US-57 AC7); its action is the lab upload.
                         SectionTitle.bloodTests().tourTip(BloodTestsTip(), action: { addingLabs = true })
                     }
@@ -85,6 +81,13 @@ struct MyDataView: View {
                     RemindersSection()
                     aboutYou(data)
                     AppleHealthSection()
+                    // US-65: entries the engine could not read are kept unchanged; one calm line says how many.
+                    if let note = data.unreadableNote {
+                        Section {
+                        } footer: {
+                            Text(note)
+                        }
+                    }
                     RecordSection(store: store, sync: sync)
                     Section {
                     } footer: {
@@ -147,18 +150,6 @@ struct MyDataView: View {
         }
     }
 
-    /// A section title with controls at its trailing end, large enough to hit easily.
-    private func header(_ title: SectionTitle, @ViewBuilder trailing: () -> some View) -> some View {
-        HStack(spacing: 14) {
-            title
-            Spacer()
-            trailing()
-                .labelStyle(.iconOnly)
-                .font(.title3)
-                .textCase(nil)
-        }
-    }
-
     /// Metric or US, compact, a row in About you (AC17).
     private func units(_ data: MyData) -> some View {
         Picker("Units", selection: binding(data.unitSystem) { .units($0) }) {
@@ -170,10 +161,19 @@ struct MyDataView: View {
         .fixedSize()
     }
 
-    private func metrics(_ rows: [MyData.Row], @ViewBuilder header: () -> some View) -> some View {
+    /// `labs`: the lab tests beyond the core ones, after them as on the web (US-62 AC8). Each opens
+    /// its own page, as the web's does (US-25 AC25).
+    private func metrics(_ rows: [MyData.Row], labs: [MyData.Row] = [], @ViewBuilder header: () -> some View) -> some View {
         Section {
-            let column = ValueRow.Column(rows.map { ($0.latest?.value, $0.unit, nil) })
+            let column = ValueRow.Column((rows + labs).map { ($0.latest?.value, $0.previous, $0.unit, nil) })
             ForEach(rows) { metric($0, column: column) }
+            ForEach(labs) { lab in
+                Button { open(lab) } label: {
+                    Self.valueRow(lab, tint: MetricChart.labTint, column: column)
+                }
+                .tint(.primary)
+                .disabled(store.unitSwitches > 0)
+            }
         } header: {
             header()
         }
@@ -188,7 +188,7 @@ struct MyDataView: View {
                 metric(row, card: row.latest != nil)
             } header: {
                 if index == 0 {
-                    header(.vitals()) {
+                    ControlsHeader(title: .vitals()) {
                         Button { addingLabs = true } label: {
                             Label("Add medical records", systemImage: "plus")
                         }
@@ -207,12 +207,17 @@ struct MyDataView: View {
     private func metric(_ row: MyData.Row, card: Bool = false, column: ValueRow.Column? = nil) -> some View {
         // A unit switch still landing would open a sheet on the old choices (AC17e).
         Button { open(row) } label: {
-            ValueRow(label: row.label, value: row.latest?.value, unit: row.unit, day: row.latest?.day,
-                     trend: row.trend ?? [], tint: MetricChart.colors(for: row.metric)[0], card: card,
-                     column: column)
+            Self.valueRow(row, tint: MetricChart.colors(for: row.metric)[0], card: card, column: column)
         }
         .tint(.primary)
         .disabled(store.unitSwitches > 0)
+    }
+
+    /// The engine's row as a `ValueRow`: its value, target, previous value, trend and grade.
+    static func valueRow(_ row: MyData.Row, tint: Color, card: Bool = false, column: ValueRow.Column? = nil) -> ValueRow {
+        ValueRow(label: row.label, value: row.latest?.value, unit: row.unit, day: row.latest?.day,
+                 target: row.target, previous: row.previous, grade: row.grade, gradeWords: row.gradeWords, note: row.note,
+                 trend: row.trend ?? [], tint: tint, card: card, column: column)
     }
 
     /// Every value opens its page (US-25 AC9, US-58 AC4b): every metric has a guide, and a page
@@ -253,7 +258,46 @@ struct MyDataView: View {
 
     @discardableResult
     private func saved(_ result: RecordStore.ApplyResult) -> RecordStore.ApplyResult {
-        if result == .saved { saves += 1 }
+        if result == .saved() { saves += 1 }
         return result
+    }
+}
+
+/// A section title with controls at its trailing end, large enough to hit easily.
+struct ControlsHeader<Trailing: View>: View {
+    let title: SectionTitle
+    @ViewBuilder let trailing: Trailing
+
+    var body: some View {
+        // The buttons go under the title when both do not fit on one line: beside them at the
+        // largest text sizes, "Vitals" broke mid-word as "Vi-tals" (US-25 AC17g, break-it 2026-10-30).
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 14) {
+                title.fixedSize()
+                Spacer()
+                buttons
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                title
+                HStack(spacing: 14) { buttons }
+            }
+        }
+    }
+
+    private var buttons: some View {
+        trailing
+            .labelStyle(.iconOnly)
+            .font(.title3)
+            .textCase(nil)
+    }
+}
+
+extension View {
+    /// For a tab with no title bar, My data's and My plan's: iOS 26's edge effect leaves rows
+    /// legible under the clock. A zero-height inset whose background reaches into the status bar hides them.
+    func solidStatusBar() -> some View {
+        safeAreaInset(edge: .top, spacing: 0) {
+            Color.clear.frame(height: 0).background(Color(uiColor: .systemGroupedBackground), ignoresSafeAreaEdges: .top)
+        }
     }
 }

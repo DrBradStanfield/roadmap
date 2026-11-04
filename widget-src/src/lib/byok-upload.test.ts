@@ -204,3 +204,35 @@ describe('US-12 AC15: the BYOK path refuses a creatinine it cannot read', () => 
     expect(result!.droppedValueCount).toBe(0);
   });
 });
+
+// US-12 AC5a: on the Pages build the batch is a queue of direct calls on the
+// user's own key, so Cancel has to stop it: a file not yet sent is never sent.
+describe('US-12 AC5a: a cancelled BYOK batch sends no more files', () => {
+  const VALID = '{"classification":"other","reportDate":null,"values":[],"additionalValues":[],"document":null}';
+  const sixFiles = () => Array.from({ length: 6 }, () => ({ pages: PAGES }));
+
+  it('sends only the files already being read, then drops the batch', async () => {
+    const held: Array<() => void> = [];
+    const fetchMock = vi.fn(() => new Promise<Response>((resolve) => { held.push(() => resolve(message(VALID)())); }));
+    vi.stubGlobal('fetch', fetchMock);
+    const cancel = new AbortController();
+    const { batchId } = await labImportBatch(sixFiles(), cancel.signal);
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    cancel.abort();
+    held.splice(0).forEach((release) => release());
+    // Time for a worker to take the next file, if it still would.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    // Nothing polls a cancelled batch, so its results are not kept.
+    expect(await pollBatchStatus(batchId!)).toMatchObject({ status: 'ended', error: 'Batch not found.' });
+  });
+
+  it('control: a batch nobody cancels sends every file and keeps its results for the poll', async () => {
+    const fetchMock = stubAnthropic(message(VALID));
+    const { batchId } = await labImportBatch(sixFiles(), new AbortController().signal);
+    await vi.waitFor(async () => {
+      expect((await pollBatchStatus(batchId!)).results).toHaveLength(6);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(6);
+  });
+});

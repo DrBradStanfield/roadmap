@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { isMaster, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
+import { isConditionGuide, isMaster, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { parseFrontmatter, stripFrontmatter } from './frontmatter';
 // A cycle (youtube-context imports this file); both use the other only inside functions.
 import { reducedDrops, reducedMaster } from './youtube-context';
@@ -98,7 +98,11 @@ export function contentForms(handle: string, raw: string): string[] {
  * master loads at least reduced. An entry that does not fit is skipped (listed
  * in `skipped`), never the rest of the list (US-15 AC23). A reduced master that
  * loads logs, once, what its reduced form dropped as malformed. Repeated
- * handles load once. `titles` names the
+ * handles load once. A condition guide (US-70 AC7) loads first, whole, and
+ * keeps the same rule: it leaves every later master its smallest form, so the
+ * posts after it yield and, only if those masters' smallest forms leave it no
+ * room (none can today: a guide is capped at 35,000 characters), the guide is
+ * skipped. `titles` names the
  * entries loaded, from the blog index, never model output (US-15 AC20).
  * `reduced` lists the masters that loaded in a reduced form (US-50 AC14's log).
  */
@@ -107,8 +111,9 @@ export function loadMatchedContent(handles: string[]): { content: string | null;
     const raw = loadBlogArticle(handle);
     if (!raw) return [];
     const forms = contentForms(handle, raw);
-    return [{ handle, raw, entry: loadBlogIndex().find(a => a.handle === handle), forms, master: forms.length > 1 }];
-  });
+    const entry = loadBlogIndex().find(a => a.handle === handle);
+    return [{ handle, raw, entry, forms, master: forms.length > 1, guide: isConditionGuide(entry) }];
+  }).sort((a, b) => Number(b.guide) - Number(a.guide));
   const shortest = (forms: string[]) => forms.reduce((a, b) => (b.length < a.length ? b : a));
   const smallest = (forms: string[]) => shortest(forms).length + SEPARATOR.length;
   const parts: string[] = [];

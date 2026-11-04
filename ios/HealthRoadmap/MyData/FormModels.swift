@@ -119,6 +119,15 @@ struct MetricHistory: Decodable, Equatable {
         var diastolic: String? = nil
         /// A blood pressure's active row ids, sent back with a replace (AC17).
         var pairIds: [String]? = nil
+        /// A lab result printed as a limit (US-12 AC20): its bound in the page's unit, where the
+        /// chart plots it hollow, out of the line; `value` reads "< 2.0". Nil otherwise, or from an older engine.
+        var bound: Double? = nil
+        /// The plan's word on a current limit it cannot grade, shown instead of "Used in your plan".
+        var note: String? = nil
+        /// A lab test's row: the unit it was reported in, as displayed (US-25 AC25); nil otherwise.
+        var unit: String? = nil
+        /// A lab test's exact value, unrounded, for the chart (`value` is for reading); nil otherwise.
+        var number: Double? = nil
 
         var isActive: Bool { status == "active" }
     }
@@ -127,6 +136,9 @@ struct MetricHistory: Decodable, Equatable {
     let label: String
     let unit: String
     let rows: [Row]
+    /// A lab test reported in more than one unit: why the page draws no chart, in the web's words
+    /// (US-21 AC3a); nil otherwise, or from an older engine.
+    var unitsNote: String? = nil
     /// The plan set the current value aside (outside the range it accepts), so it does not use it.
     let excluded: Bool
     /// The recorded medication changes this metric's chart marks, health-core's

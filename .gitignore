@@ -1,4 +1,4 @@
-node_modules/
+node_modules
 .env
 .env.local
 .env.*.local
@@ -82,3 +82,6 @@ docs/pathway/
 # Weekly clinical mutation run (stryker.clinical.config.json); only the baseline is committed
 reports/mutation/
 .stryker-tmp*/
+
+# Browser copy of docs/user-stories.md: built by pages.yml, never tracked (US-64 AC11)
+docs/user-stories.html
