@@ -29,14 +29,17 @@ case "$1" in
   pr) exit 0;;
   workflow) [ "$2" = run ] && [ "$3" = deploy.yml ] && [ "$(q .failDeploy)" = true ] && exit 1; exit 0;;
 esac
-shift; p=\${1#repos/o/r/}; shift; jqe=""
+shift; [ "$1" = --paginate ] && shift; p=\${1#repos/o/r/}; shift; jqe=""
 while [ $# -gt 0 ]; do case "$1" in --jq) jqe=$2; shift 2;; -f) shift 2;; *) shift;; esac; done
 upd=0; [ -f "$LOG.updated" ] && upd=1
 out() { if [ -n "$jqe" ]; then jq -r "$jqe"; else cat; fi; }
 case "$p" in
   pulls/7/update-branch) touch "$LOG.updated"; echo '{}';;
+  pulls/7/commits*) [ "$(q .commitsError)" = true ] && { echo "HTTP 502" >&2; exit 1; }
+    jq -c '.commits // [{sha:.head,author:{login:"DrBradStanfield"}}]' "$SCEN" | out;;
   pulls/7/files) jq -c '.prFiles // []' "$SCEN" | out;;
   pulls/7) jq -c --argjson u $upd '{state:"open",title:"t",body:(.prBody // "b"),user:{login:"u"},labels:[],
+    commits:(.prCommitCount // ((.commits // [1]) | length)),
     head:{ref:"claude/x",repo:{full_name:"o/r"},sha:(if $u==1 then .newSha else .head end)}}' "$SCEN" | out;;
   issues/7/comments*) jq -c '.comments // [{user:{type:"Bot",login:"github-actions[bot]"},body:("VERDICT: APPROVE "+.head)}]' "$SCEN" | out;;
   commits/main) jq -c '{sha:.main}' "$SCEN" | out;;
@@ -45,6 +48,8 @@ case "$p" in
       elif .testNew=="none" then {check_runs:[]}
       else {check_runs:[{app:{slug:"github-actions"},conclusion:.testNew,check_suite:{id:2}}]} end' "$SCEN" | out;;
   commits/*) jq -c '{parents:(.newCommit.parents|map({sha:.})),commit:{verification:{verified:.newCommit.verified}},committer:{login:.newCommit.login}}' "$SCEN" | out;;
+  compare/*...main) left=\${p#compare/}; left=\${left%%...*}
+    jq -c --arg b "$left" '{status:(if ((.mainAncestors // []) | index($b)) != null then "ahead" else "diverged" end)}' "$SCEN" | out;;
   compare/*) left=\${p#compare/}; left=\${left%%...*}
     if [ "$left" = "$(q .main)" ]; then jq -c --argjson u $upd '{behind_by:(if $u==1 then 0 else .behind end)}' "$SCEN" | out
     else jq -c '{files:[{filename:(if .workflowTouched then ".github/workflows/ci.yml" else "a.ts" end)}]}' "$SCEN" | out; fi;;
@@ -209,6 +214,72 @@ describe("auto-ship claim 7 (US-46 AC5)", { timeout: 60_000 }, () => {
     it("who may approve and the sha pin are unchanged", () => {
       refused([bot("VERDICT: APPROVE aaaa", "someone")]);
       refused([bot("VERDICT: APPROVE bbbb")]);
+    });
+  });
+
+  // US-46 AC14: every commit on the PR must be authored by DrBradStanfield,
+  // checked before the veto issue opens. Anything else, a commit with no
+  // linked login, or an API failure refuses without opening an issue.
+  describe("commit author gate (US-46 AC14)", () => {
+    const brad = (sha: string) => ({ sha, author: { login: "DrBradStanfield" } });
+    const issueOpened = (c: string) => c.split("\n").some((l) => l.startsWith("issue create"));
+    const refusedBy = (over: Record<string, unknown>, line: string) => {
+      const r = run(over);
+      expect(r.code).toBe(0);
+      expect(issueOpened(r.calls)).toBe(false);
+      expect(merged(r.calls)).toEqual([]);
+      expect(r.out).toContain(line);
+    };
+
+    it("all-Brad commits, his local merge commit included, open the issue and ship", () => {
+      const r = run({ commits: [brad("1111"), brad("2222"), brad("aaaa")] });
+      expect(r.code).toBe(0);
+      expect(r.calls).toContain("api --paginate repos/o/r/pulls/7/commits?per_page=100");
+      expect(issueOpened(r.calls)).toBe(true);
+      expect(merged(r.calls)).toEqual(["pr merge 7 -R o/r --merge --match-head-commit aaaa"]);
+    });
+    it("one commit by another account refuses, naming the commit and author", () => {
+      refusedBy({ commits: [brad("1111"), { sha: "2222", author: { login: "austin" } }, brad("aaaa")] },
+        "Commit 2222 authored by austin, not DrBradStanfield — not shipping.");
+    });
+    it("a commit with no linked GitHub login refuses", () => {
+      refusedBy({ commits: [{ sha: "2222", author: null }, brad("aaaa")] },
+        "Commit 2222 authored by (none), not DrBradStanfield — not shipping.");
+    });
+    it("an API error listing commits refuses (fail closed)", () => {
+      refusedBy({ commitsError: true }, "Could not list the PR's commits — not shipping");
+    });
+    it("a list without the head sha refuses", () => {
+      refusedBy({ commits: [brad("1111")] }, "Commit list does not include head aaaa — not shipping.");
+    });
+    it("a list shorter than the PR's commit count refuses (the 250 cap)", () => {
+      refusedBy({ commits: [brad("1111"), brad("aaaa")], prCommitCount: 251 }, "Commit list does not hold all 251 commits — not shipping.");
+    });
+
+    // Auto-ship's own update-branch merge (claim 7) is authored by
+    // github-actions[bot] and committed and signed by GitHub (web-flow); without
+    // this exception every later run would refuse that PR forever (#739 aabf6bd3).
+    const updateMerge = (over: Record<string, unknown> = {}) => ({
+      sha: "eeee", author: { login: "github-actions[bot]" }, committer: { login: "web-flow" },
+      commit: { verification: { verified: true } }, parents: [{ sha: "1111" }, { sha: "mmmm" }], ...over,
+    });
+    it("auto-ship's own GitHub-signed merge of main ships", () => {
+      const r = run({ commits: [brad("1111"), updateMerge(), brad("aaaa")], mainAncestors: ["mmmm"] });
+      expect(r.code).toBe(0);
+      expect(r.calls).toContain("api repos/o/r/compare/mmmm...main --jq .status");
+      expect(issueOpened(r.calls)).toBe(true);
+      expect(merged(r.calls)).toEqual(["pr merge 7 -R o/r --merge --match-head-commit aaaa"]);
+    });
+    it("a github-actions[bot] commit that is not that merge refuses", () => {
+      const line = "Commit eeee authored by github-actions[bot], not DrBradStanfield — not shipping.";
+      for (const bad of [
+        updateMerge({ parents: [{ sha: "1111" }] }),
+        updateMerge({ commit: { verification: { verified: false } } }),
+        updateMerge({ committer: { login: "DrBradStanfield" } }),
+        updateMerge({ parents: [{ sha: "1111" }, { sha: "zzzz" }] }), // second parent not on main
+      ]) {
+        refusedBy({ commits: [brad("1111"), bad, brad("aaaa")], mainAncestors: ["mmmm"] }, line);
+      }
     });
   });
 

@@ -3,6 +3,7 @@
  * Split out of supabase.server.ts (issue #429).
  */
 import crypto from 'node:crypto';
+import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin } from './supabase-client.server';
 import { logAudit } from './supabase-identity.server';
 
@@ -47,6 +48,25 @@ setInterval(() => {
 export interface GuestSessionResult {
   sessionId: string;
   sessionToken: string;
+}
+
+/** Runs one guest-cleanup step. A failed step leaves an orphan, so it is
+ *  reported (US-15 AC7c), and never thrown, so the next step still runs. The
+ *  report is a fixed Error with closed tags, never the raw error: a Postgres
+ *  error's details can echo the guest id (US-15 AC6). */
+async function cleanupStep(step: 'profile' | 'auth_user', run: () => PromiseLike<{ error: unknown }>): Promise<void> {
+  let code: string;
+  try {
+    const { error } = await run();
+    if (!error) return;
+    const raw = (error as { code?: unknown }).code;
+    code = typeof raw === 'string' && /^\w{1,32}$/.test(raw) ? raw : 'unknown';
+  } catch {
+    code = 'thrown';
+  }
+  Sentry.captureException(new Error('Guest session cleanup failed'), {
+    tags: { feature: 'guest_chat', subsystem: 'guest_session_cleanup', step, code },
+  });
 }
 
 /**
@@ -121,9 +141,12 @@ export async function getOrCreateGuestSession(
     .single();
 
   if (sessionError || !newSession) {
-    // Clean up both the ghost profile and auth user
-    await supabaseAdmin.from('profiles').delete().eq('id', sessionId);
-    await supabaseAdmin.auth.admin.deleteUser(sessionId).catch(() => {});
+    // Clean up both the ghost profile and auth user, each attempted whatever
+    // the other did. A failed step leaves an orphan, so it is reported (US-15 AC7c).
+    // A local const: the null check above does not narrow the import inside closures.
+    const admin = supabaseAdmin;
+    await cleanupStep('profile', () => admin.from('profiles').delete().eq('id', sessionId));
+    await cleanupStep('auth_user', () => admin.auth.admin.deleteUser(sessionId));
     console.error('Failed to create guest session:', sessionError);
     throw new Error('Failed to create guest session');
   }

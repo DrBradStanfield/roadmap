@@ -13,7 +13,7 @@ import { trackProductEvent } from '../lib/server-api';
 import { getChatGate } from '../lib/chat-api';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { ChatKeyGate } from './ChatKeyGate';
-import { useChatState, MAX_CHARS, type ChatContextSource } from '../hooks/useChatState';
+import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource } from '../hooks/useChatState';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { SubscriptionChangeCard } from './SubscriptionChangeCard';
 import { ChatPendingReply } from './ChatPendingReply';
@@ -110,7 +110,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
   }, [onExpand, actions.loadConversationsIfNeeded]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (sendsOnEnter(e)) {
       e.preventDefault();
       actions.handleSend();
     }
@@ -120,6 +120,12 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
     actions.selectConversation(id);
     setShowThreads(false);
   }, [actions.selectConversation]);
+
+  // A new chat shows the empty chat and its input, as opening a thread does (US-15 AC46a).
+  const handleStartNewChat = useCallback(() => {
+    actions.startNewChat();
+    setShowThreads(false);
+  }, [actions.startNewChat]);
 
   // ----- COLLAPSED STATE -----
   if (!isExpanded) {
@@ -168,7 +174,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
             activeConversationId={state.activeConversationId}
             className="chat-thread-list"
             onSelect={handleSelectConversation}
-            onNew={actions.startNewChat}
+            onNew={handleStartNewChat}
             onDelete={actions.handleDelete}
           />
         )}

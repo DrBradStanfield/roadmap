@@ -174,11 +174,13 @@ Source: `units.ts`
 | psa | 1 | 1 |
 | lpa | 0 | 1 (mg/dL; mg/L, a tenth of it, at 0) |
 
+An additional lab test (one this table does not list) shows its stored value to up to two decimal places with no trailing zeros. Below 0.1 it keeps two significant figures instead, so a suppressed TSH of 0.004 mIU/L shows as 0.004, not 0, and 0.0456 as 0.046 (`formatLabValue`, US-21 AC25, Brad 2026-11-04). A value printed as a limit shows as printed ("< 0.005"). Display only: the stored number is unchanged.
+
 ### Lab catalogue conversions
 
 Source: `packages/health-core/src/lab-catalog.ts` (`LAB_CONVERSIONS`, `canonicalLabValue`). Since US-21 phase 3, a lab test the catalogue knows is **stored** in its canonical SI unit, not in the unit the lab printed. A writer sends the number and the unit as printed; the record converts it once, on the write, and converts `referenceLow`/`referenceHigh` by the same factor.
 
-Factor = the number a reported value is multiplied by to reach the canonical unit. Spellings are matched lower case, after `normalizeLabUnit` folds report and LLM spelling (`umol/L` → `µmol/L`, `mcg` → `µg`, `uL` → `µL`, `x 10e9/L` → `×10⁹/L`, `1.73m2` → `1.73m²`, `gm/dL` → `g/dL`, `Units/L` → `U/L`, `10^3/cmm`, `10^3/cumm`, `10^3/mm3` or `10^3/mm³` → `×10³/µL`, `10^6/mm3` or `10^6/mm³` → `×10⁶/µL`, `cells/uL`, `cells/cmm`, `cells/cumm`, `cells/mm3` or `cells/mm³` → `cells/µL`; a bracketed or superscript power of ten, `x10(3)/uL`, `10^(9)/L`, `x10³/µL` or `10³/µL` → `×10³/µL` or `×10⁹/L`, and `mcL` → `µL`, so `K/mcL` → `K/µL`). A cubic millimetre is a microlitre, so these folds rescale nothing. `mm3` and `mm³` fold only after a slash: a bare `mm³` is a volume and is never folded. A factor of 1 is a different notation for the same scale, not a conversion.
+Factor = the number a reported value is multiplied by to reach the canonical unit. Spellings are matched lower case, after `normalizeLabUnit` folds report and LLM spelling (`umol/L` → `µmol/L`, `mcg` → `µg`, `uL` → `µL`, `x 10e9/L` → `×10⁹/L`, `1.73m2` → `1.73m²`, `gm/dL` → `g/dL`, `Units/L` → `U/L`, `10^3/cmm`, `10^3/cumm`, `10^3/mm3` or `10^3/mm³` → `×10³/µL`, `10^6/mm3` or `10^6/mm³` → `×10⁶/µL`, `cells/uL`, `cells/cmm`, `cells/cumm`, `cells/mm3` or `cells/mm³` → `cells/µL`; a bracketed or superscript power of ten, `x10(3)/uL`, `10^(9)/L`, `x10³/µL` or `10³/µL` → `×10³/µL` or `×10⁹/L`, and `mcL` → `µL`, so `K/mcL` → `K/µL`; `dL`, `mL` and `µL` in any case, as a whole token, so `mg/dl` → `mg/dL`, while `G/L`, giga per litre, stays apart from `g/L`). A cubic millimetre is a microlitre, so these folds rescale nothing. `mm3` and `mm³` fold only after a slash: a bare `mm³` is a volume and is never folded. A factor of 1 is a different notation for the same scale, not a conversion.
 
 A spelling this table does not carry for that test is **refused** — never rescaled by guess. The refusal names the canonical unit and every spelling the test accepts, and the website counts it as `lab_unit_refused`. Six things follow from that:
 
@@ -186,7 +188,7 @@ A spelling this table does not carry for that test is **refused** — never resc
 - **A value no human sample reaches is refused** (US-21 AC21, Brad 2026-10-20). A real sheet printed free testosterone as "nmol/L" when its number and range (163–473) were pmol/L, so the ×1000 conversion produced an impossible result that would have saved. The count check cannot catch this, because the value and its range are mislabelled together. Five tests reachable through a ×1000 upward conversion carry a ceiling in their canonical unit: `free_testosterone` 10,000 pmol/L, `free_testosterone_calculated` 10,000 pmol/L, `reverse_t3` 10,000 pmol/L, `c_peptide` 50,000 pmol/L, `reticulocytes` 2,000 ×10⁹/L. The check applies only to a row converted by a ×1000 prefix step (nmol/L to pmol/L, ×10¹²/L to ×10⁹/L): when its converted value, or its converted printed high bound, passes the ceiling, it is refused, never rescaled. A row printed in any other spelling (the canonical unit, pg/mL, ng/dL, ng/mL) is never refused by the ceiling, because a real result can pass it (free testosterone on heavy androgen use can exceed 10,000 pmol/L, printed as pmol/L or as pg/mL). Without a printed range, a prefix error that lands under the ceiling is not caught (a female free testosterone of 8 printed as nmol/L stores 8,000 pmol/L). The refusal's note names the test, the ceiling and the two units, never the number: "Free testosterone above 10,000 pmol/L is not a measured value, so the printed unit is probably wrong (nmol/L vs pmol/L). Check the report, then add it in pmol/L with + Add a blood test." Troponin has no ceiling: a real high troponin overlaps a mislabelled one. Load never deletes or rewrites a row, so a stored row above a ceiling is left as it is: a legacy printed row gets no `#si` child, and one an older build already converted stays.
 - **A differential in % is refused.** It is a share of the white count, not a count, and is never multiplied out from the WBC. Its refusal says the record keeps the absolute count (×10⁹/L or cells/µL), so the person looks for that line on the same report.
 - **Prolactin in ng/mL is refused on purpose.** The mIU/L factor is assay-dependent (about 21.2 for the WHO 3rd IS), so converting would invent precision the report does not have.
-- **A test the catalogue does not know is stored exactly as reported**, with its printed unit. There is no SI definition to convert it to, and refusing it would throw the value away.
+- **A test the catalogue does not know is stored exactly as reported**, with its printed unit. There is no SI definition to convert it to, and refusing it would throw the value away. Its units are compared after the folds above, so `mg/dL` and `mg/dl` are one unit and chart as one line (US-21 AC14, Brad 2026-11-04).
 - **Rows written before phase 3 are corrected at load**, not edited: `migrate.ts` appends a converted row with the id `<id>#si` and `correctsId` set, and flips the printed row to `entered-in-error`. Same id on every device, so cross-device copies merge into one row. A legacy `gm/dL` row (haemoglobin, albumin, total protein, globulin, MCHC) now converts at ×10 on load through the same path. So does a legacy whole count in cells/µL, at ×0.001; a decimal one is left as it is.
 
 | key | canonical | reported spelling | × factor | note |
@@ -308,6 +310,7 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `fibrinogen` | g/L | mg/dl | 0.01 | a milligram per decilitre is a hundredth of a gram per litre |
 | `tsh` | mIU/L | µiu/ml | 1 | µIU/mL and mIU/L are the same number |
 | `tsh` | mIU/L | mu/l | 1 | mU/L is mIU/L, printed short |
+| `tsh` | mIU/L | µu/ml | 1 | µU/mL is µIU/mL, printed short |
 | `tsh` | mIU/L | microiu/ml | 1 | µIU/mL with the prefix spelled out |
 | `tsh` | mIU/L | mciu/ml | 1 | µIU/mL with the mc prefix (as mcg) |
 | `ft4` | pmol/L | ng/dl | 12.87 | thyroxine 776.87 g/mol |
@@ -334,6 +337,8 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `estradiol` | pmol/L | pg/ml | 3.671 | estradiol 272.38 g/mol |
 | `estradiol` | pmol/L | ng/l | 3.671 | estradiol 272.38 g/mol |
 | `prolactin` | mIU/L | µiu/ml | 1 | µIU/mL and mIU/L are the same number (ng/mL stays refused: assay-dependent) |
+| `prolactin` | mIU/L | mu/l | 1 | mU/L is mIU/L, printed short |
+| `prolactin` | mIU/L | µu/ml | 1 | µU/mL is µIU/mL, printed short |
 | `prolactin` | mIU/L | microiu/ml | 1 | µIU/mL with the prefix spelled out |
 | `prolactin` | mIU/L | mciu/ml | 1 | µIU/mL with the mc prefix (as mcg) |
 | `cortisol_am` | nmol/L | µg/dl | 27.59 | cortisol 362.46 g/mol |
@@ -341,8 +346,10 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `cortisol_pm` | nmol/L | µg/dl | 27.59 | cortisol 362.46 g/mol |
 | `psa_free` | µg/L | ng/ml | 1 | ng/mL and µg/L are the same number |
 | `lh` | IU/L | miu/ml | 1 | mIU/mL and IU/L are the same number |
+| `lh` | IU/L | mu/ml | 1 | mU/mL is mIU/mL, printed short |
 | `lh` | IU/L | u/l | 1 | U/L is IU/L, printed short |
 | `fsh` | IU/L | miu/ml | 1 | mIU/mL and IU/L are the same number |
+| `fsh` | IU/L | mu/ml | 1 | mU/mL is mIU/mL, printed short |
 | `fsh` | IU/L | u/l | 1 | U/L is IU/L, printed short |
 | `progesterone` | nmol/L | ng/ml | 3.180 | progesterone 314.46 g/mol |
 | `dhea_s` | µmol/L | µg/dl | 0.02714 | DHEA sulfate 368.49 g/mol |
@@ -363,6 +370,7 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `acth` | pmol/L | ng/l | 0.2202 | ACTH 1-39 4541 g/mol |
 | `gh` | µg/L | ng/ml | 1 | ng/mL and µg/L are the same number |
 | `hcg` | IU/L | miu/ml | 1 | mIU/mL and IU/L are the same number |
+| `hcg` | IU/L | mu/ml | 1 | mU/mL is mIU/mL, printed short |
 | `vitamin_d` | nmol/L | ng/ml | 2.496 | 25-OH-D 400.64 g/mol |
 | `vitamin_d` | nmol/L | µg/l | 2.496 | 25-OH-D 400.64 g/mol |
 | `vitamin_b12` | pmol/L | pg/ml | 0.738 | cyanocobalamin 1355.4 g/mol |

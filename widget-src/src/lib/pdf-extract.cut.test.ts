@@ -12,7 +12,7 @@ vi.mock('pdfjs-dist', () => ({
   getDocument: () => ({ promise: Promise.resolve({
     numPages: 1,
     getPage: async () => ({ getTextContent: async () => pageText, cleanup: () => {} }),
-  }) }),
+  }), destroy: async () => {} }),
 }));
 const { extractFromPdf } = await import('./pdf-extract');
 

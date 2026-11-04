@@ -175,8 +175,8 @@ export const SCRUB_UNITS = [
   'mg/g creat', 'mg/g creatinine', 'mg/mg', 'ml/min/1.73 m²', 'ml/min/1.73', 'mmol/kg', 'mosmol/kg', 'g/dl',
   '×10⁶/µl', 'm/µl', 'million/µl', 't/l', '×10³/µl', 'k/µl', 'thou/µl', 'thousand/µl', 'cells/µl', 'mg/l (feu)',
   'µg/ml feu', 'µg/ml (feu)', 'ng/ml feu', 'ng/ml (feu)', 'µg/l feu', 'µg/l (feu)', 'µiu/ml', 'mu/l',
-  'microiu/ml', 'mciu/ml', 'ng/dl', 'pg/ml', 'kiu/l', 'µg/dl', 'miu/ml', 'mm/h', 'µu/ml', 'mm Hg', 'micromol/L',
-  'lb', 'mcg', 'µg', 'mg', 'g', 'IU', 'mL', 'units', '"',
+  'µu/ml', 'microiu/ml', 'mciu/ml', 'ng/dl', 'pg/ml', 'kiu/l', 'µg/dl', 'miu/ml', 'mu/ml', 'mm/h', 'mm Hg',
+  'micromol/L', 'lb', 'mcg', 'µg', 'mg', 'g', 'IU', 'mL', 'units', '"',
 ];
 
 export const SCRUB_METRIC_WORDS = [
@@ -318,7 +318,9 @@ const PLAIN_UNITS = SCRUB_UNITS.filter(u => u !== 'in' && u !== '"');
  *  regex alternation (the chat-question archive check uses it too, US-15 AC44a). */
 export const SCRUB_UNIT_PATTERN = alternation(PLAIN_UNITS, unitPattern);
 
-const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+// Bounded parts keep it linear on a long run; a lookbehind would refuse the
+// second of two adjacent addresses (US-09 AC7f).
+const EMAIL_RE = /[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}/g;
 const UNIT_VALUE_RE = new RegExp(
   `\\b${NUMBER}\\s*(?:(?:${SCRUB_UNIT_PATTERN})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
 // A name starts where no letter or digit runs into it and ends where no letter
@@ -326,8 +328,14 @@ const UNIT_VALUE_RE = new RegExp(
 // (the 1 of "A1c") is never the value (mirror of sentry-scrub.ts).
 const METRIC_THEN_VALUE_RE = new RegExp(
   `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])([^\\d\\n]{0,20}?)(?!(?<=[a-z])\\d+(?:[.,]\\d+)?[a-z])(${NUMBER})`, 'gi');
+// Name edges, not \b: "Lp(a)" ends and "γ-GT" starts with no word character,
+// so \b never matched there. A name starts where no letter or digit runs into
+// it, or at its own first character when that is a symbol ("xγ-GT"), and ends
+// the same way ("lp(a)s"), so nothing \b scrubbed is lost. A value starts at
+// the head of its digit run, never inside it: same matches, linear on a long
+// run (US-09 AC7f).
 const VALUE_THEN_METRIC_RE = new RegExp(
-  `(${NUMBER})([^\\d\\n]{0,20}?)\\b(${alternation(SCRUB_METRIC_WORDS)})\\b`, 'gi');
+  `(?<!\\d)(${NUMBER})([^\\d\\n]{0,20}?)(?:(?<![a-z0-9])|(?![a-z0-9]))(${alternation(SCRUB_METRIC_WORDS)})(?:(?<![a-z0-9])|(?![a-z0-9]))`, 'gi');
 
 export function scrubText(text) {
   return text

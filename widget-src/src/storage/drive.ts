@@ -43,6 +43,7 @@ import {
   DRIVE_FOLDER_NAME,
   ROADMAP_FILE_NAME,
   sleepUntilAborted,
+  catchUpAfterFailure,
   StorageError,
   jsonBody,
   type ReadResult,
@@ -207,6 +208,9 @@ function loadGis(): Promise<void> {
       const s = document.createElement('script');
       s.src = 'https://accounts.google.com/gsi/client';
       s.async = true;
+      // A script that failed (the network was down) is taken out, so the next
+      // load asks again instead of waiting on it forever (US-09 AC30a).
+      s.onerror = () => s.remove();
       document.head.appendChild(s);
     }
     const startedAt = Date.now();
@@ -529,6 +533,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     while (!signal.aborted) {
       try {
         let token = await this.startPageToken(signal);
+        catchUpAfterFailure(retryMs, signal, onChange);
         while (!signal.aborted) {
           const url = `${DRIVE_API}/changes?pageToken=${encodeURIComponent(token)}&pageSize=100`
             + '&fields=newStartPageToken,nextPageToken,changes(fileId)';
