@@ -141,6 +141,8 @@ struct MyDataView: View {
             }
         }
         .listStyle(.insetGrouped)
+        // The title where a large title sits, not under the list's top margin (Brad, round 7).
+        .contentMargins(.top, 0, for: .scrollContent)
     }
 
     /// The title with the person button, lab upload and Sync, as a row so nothing holds space
@@ -157,13 +159,7 @@ struct MyDataView: View {
                     Button { showSettings = true } label: {
                         Label("Settings", systemImage: "person.crop.circle")
                     }
-                    Button { addingLabs = true } label: {
-                        Label("Add medical records", systemImage: "plus")
-                    }
-                    .accessibilityHint("Upload a lab report or clinic letter")
-                    Button { showSync = true } label: {
-                        Label("Sync", systemImage: SyncStatusText.symbol(sync.status, provider: sync.provider))
-                    }
+                    recordButtons
                 }
                 .buttonStyle(.borderless)
                 .labelStyle(.iconOnly)
@@ -172,11 +168,13 @@ struct MyDataView: View {
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 8, leading: 4, bottom: 0, trailing: 4))
             .listRowSeparator(.hidden)
-            // The jump pills (Brad, round 6): they scroll with the page.
+            // The jump pills (Brad, round 6): they scroll with the page; equal widths across the cards' width (round 7).
             HStack(spacing: 8) {
                 ForEach(HealthTopic.pills) { topic in
-                    Button(topic.title.title) {
+                    Button {
                         withAnimation { proxy.scrollTo(topic.anchor, anchor: .top) }
+                    } label: {
+                        Text(topic.title.title).lineLimit(1).frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
                     .buttonBorderShape(.capsule)
@@ -185,7 +183,7 @@ struct MyDataView: View {
                 }
             }
             .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4))
+            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
             .listRowSeparator(.hidden)
             if let urgent = plan.urgent {
                 Button {
@@ -207,16 +205,36 @@ struct MyDataView: View {
         .listSectionSpacing(.compact)
     }
 
-    /// A topic's heading, a row in the list's own flow, so the pills can scroll to it.
-    private func heading(_ topic: HealthTopic) -> some View {
+    /// Lab upload and Sync: on the title line and on the Blood tests heading.
+    @ViewBuilder
+    private var recordButtons: some View {
+        Button { addingLabs = true } label: {
+            Label("Add medical records", systemImage: "plus")
+        }
+        .accessibilityHint("Upload a lab report or clinic letter")
+        Button { showSync = true } label: {
+            Label("Sync", systemImage: SyncStatusText.symbol(sync.status, provider: sync.provider))
+        }
+    }
+
+    /// A topic's heading, a row in the list's own flow, so the pills can scroll to it; any
+    /// controls at its trailing end (Blood tests: lab upload and Sync, round 7).
+    private func heading(_ topic: HealthTopic, @ViewBuilder controls: () -> some View = { EmptyView() }) -> some View {
         Section {
-            topic.title
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(Color(.label))
-                .accessibilityAddTraits(.isHeader)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 20, leading: 4, bottom: 0, trailing: 4))
-                .id(topic.anchor)
+            HStack(spacing: 14) {
+                topic.title
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(Color(.label))
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                controls()
+                    .buttonStyle(.borderless)
+                    .labelStyle(.iconOnly)
+                    .font(.title3)
+            }
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 20, leading: 4, bottom: 0, trailing: 4))
+            .id(topic.anchor)
         }
         .listSectionSpacing(.compact)
     }
@@ -257,7 +275,7 @@ struct MyDataView: View {
             if let ratio, let waist {
                 Button { open(waist) } label: {
                     ValueRow(label: ratio.tile.label, value: ratio.tile.value, unit: "", day: waist.latest?.day,
-                             target: ratio.tile.status?.label, previous: ratio.previous, grade: PlanTiles.grade(ratio.tile),
+                             target: WaistToHeight.target, previous: ratio.previous, grade: PlanTiles.grade(ratio.tile),
                              trend: ratio.trend, tint: MetricChart.colors(for: "waist")[0], column: column)
                 }
                 .tint(.primary)
@@ -317,7 +335,7 @@ struct MyDataView: View {
     /// Every blood test, as today, eGFR under creatinine.
     @ViewBuilder
     private func bloodTests(_ data: MyData, plan: TopicPlan, tiles: PlanTiles) -> some View {
-        heading(.bloodTests)
+        heading(.bloodTests) { recordButtons }
         let rows = data.bloodTests
         let labs = data.labTests ?? []
         Section {
@@ -330,6 +348,8 @@ struct MyDataView: View {
                 .tint(.primary)
                 .disabled(store.unitSwitches > 0)
             }
+            // Round 7: the lab upload, as a row like "Add another supplement".
+            Button { addingLabs = true } label: { Label("Add blood test", systemImage: "plus.circle.fill") }
         }
         .listSectionSpacing(.compact)
         cards(plan[.bloodTests])

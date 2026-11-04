@@ -19,7 +19,7 @@ struct MedicationsSection: View {
 
     var body: some View {
         if let only {
-            FormSectionsList(sections: data.medications.filter { $0.id == only }, months: data.months, title: SectionTitle.medications, answer: { field, value in
+            FormSectionsList(sections: data.medications.filter { $0.id == only }.map(Self.withoutFoods), months: data.months, title: SectionTitle.medications, answer: { field, value in
                 saved(await store.apply(.form(.medicationField(field: field, value: value))))
             }, guides: data.guides, suggestions: suggestions)
         } else if data.medications.isEmpty {
@@ -36,5 +36,16 @@ struct MedicationsSection: View {
                 saved(await store.apply(.form(.medicationField(field: field, value: value))))
             }, guides: data.guides)
         }
+    }
+
+    /// PROTOTYPE (Brad, round 7): the cholesterol medicines' lead keeps its target sentence but not
+    /// the foods, which the "Foods that lower cholesterol" card says. Swift only for now: the engine
+    /// writes it (health-core input-form.ts lipidSection, `LIPID_DIET_ADVICE`).
+    private static func withoutFoods(_ section: FormSection) -> FormSection {
+        guard section.id == "lipid-medications", section.intro.hasSuffix(" Medications can also be added in steps."),
+              let target = section.intro.range(of: ". ") else { return section }
+        return FormSection(id: section.id, title: section.title,
+                           intro: section.intro[..<target.lowerBound] + ". In addition to a great diet, cholesterol-lowering medications can also be added in steps.",
+                           groups: section.groups)
     }
 }

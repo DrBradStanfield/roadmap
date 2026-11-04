@@ -198,6 +198,9 @@ struct WaistToHeight {
     let tile: StatTile
     let previous: String?
     let trend: [Double]
+    /// The row's target, as the blood tests print theirs (Brad, round 7): health-core grades a
+    /// ratio of 0.5 or more as elevated (units.ts `isWaistToHeightElevated`; no named constant there).
+    static let target = "Normal <0.5"
 
     init(tile: StatTile, waist: MyData.Row, height: String?) {
         self.tile = tile
