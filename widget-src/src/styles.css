@@ -4137,12 +4137,6 @@ input[type="number"] {
   max-height: none;
 }
 
-/* Hide the widget's chat FAB on mobile (roadmap page) —
-   widget CSS only loads on the roadmap page, so this is naturally scoped. */
-@media (max-width: 767px) {
-  .chat-fab { display: none; }
-}
-
 /* Mobile: the chat tab is a screen tall, less the top and tab bars, so its
    tab bar sits at the foot of the screen as on the iPhone. */
 @media (max-width: 768px) {
