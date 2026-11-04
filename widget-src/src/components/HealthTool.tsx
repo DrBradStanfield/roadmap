@@ -233,6 +233,12 @@ function debounceSave(timers: ListSaves, key: string, save: (erase: string) => v
   timers.set(key, { timer: setTimeout(fire, 300), fire });
 }
 
+/** Drop one key's waiting save without running it. */
+function cancelListSave(timers: ListSaves, key: string): void {
+  clearTimeout(timers.get(key)?.timer);
+  timers.delete(key);
+}
+
 /** Run every waiting list save now, as the page goes away (US-06 AC13). */
 function flushListSaves(all: ListSaves[]): void {
   for (const timers of all) {
@@ -1286,8 +1292,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
 
   const handleSupplementDelete = useCallback((supplementKey: string) => {
     // A dose save still waiting would land after the stop and restart the row.
-    clearTimeout(supSaveTimers.current.get(supplementKey)?.timer);
-    supSaveTimers.current.delete(supplementKey);
+    cancelListSave(supSaveTimers.current, supplementKey);
     // Keep stopped keys reserved for later additions, as they are after reload.
     setSupplements(prev => prev.map(s => s.supplementKey === supplementKey ? { ...s, status: 'stopped', updatedAt: new Date().toISOString() } : s));
     void deleteSupplementApi(supplementKey).then(saved => { if (!saved) writeRefused(); });
