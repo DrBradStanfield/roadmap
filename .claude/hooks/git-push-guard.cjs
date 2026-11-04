@@ -146,22 +146,30 @@ const badConfig = (kv) => /^remote\..*\.(push=\s*[+:?]|mirror(=|$))/i.test(kv) &
 // positionals (the endpoint). Short flags may be bundled or joined (`-iXPATCH`, `-X=PATCH`, `-fk=v`).
 const API_LONG = /^--(method|field|raw-field|input|header|jq|template|preview|hostname|cache)$/;
 const API_SHORT = 'XfFHpqt';
+// One argument as [flag, value, whether the value is the next token]: flag '' for an option that takes no value
+// the guard needs; null for a positional.
+function apiOption(t, next) {
+  const long = t.match(/^--([a-z-]+)(?:=([\s\S]*))?$/);
+  if (long) {
+    if (!API_LONG.test(`--${long[1]}`)) return ['', '', false];
+    return long[2] === undefined ? [long[1], next, true] : [long[1], long[2], false];
+  }
+  if (!/^-[^-]/.test(t)) return null;
+  const at = [...t.slice(1)].findIndex((c) => API_SHORT.includes(c)) + 1;
+  if (at === 0) return ['', '', false];
+  const joined = t.slice(at + 1).replace(/^=/, '');
+  return joined ? [t[at], joined, false] : [t[at], next, true];
+}
 function apiArgs(a) {
   const api = { method: null, fields: [], input: false, positional: [] };
-  const take = (flag, val) => {
+  for (let k = 0; k < a.length; k++) {
+    const opt = apiOption(a[k], a[k + 1] ?? '');
+    if (opt === null) { api.positional.push(a[k]); continue; }
+    const [flag, val, usedNext] = opt;
+    if (usedNext) k++;
     if (flag === 'X' || flag === 'method') api.method = val;
     else if (/^(f|F|field|raw-field)$/.test(flag)) api.fields.push(val);
     else if (flag === 'input') api.input = true;
-  };
-  for (let k = 0; k < a.length; k++) {
-    const t = a[k];
-    const long = t.match(/^--([a-z-]+)(?:=([\s\S]*))?$/);
-    if (long) {
-      if (API_LONG.test(`--${long[1]}`)) take(long[1], long[2] ?? a[++k] ?? '');
-    } else if (/^-[^-]/.test(t)) {
-      const at = [...t.slice(1)].findIndex((c) => API_SHORT.includes(c)) + 1;
-      if (at > 0) take(t[at], t.slice(at + 1).replace(/^=/, '') || (a[++k] ?? ''));
-    } else api.positional.push(t);
   }
   return api;
 }
@@ -182,22 +190,24 @@ function contentsToMain(api) {
 }
 // A GraphQL query the guard cannot read: from --input, a file or stdin (`query=@...`), a variable or a substitution.
 const hiddenQuery = (api) => api.input || api.fields.some((f) => /^query=(@|\$)|^query=.*(\$\(|`)/.test(f));
-// Why a `gh api` call is refused, or null. A write is any explicit method but GET/HEAD; with no method, a field or
-// --input makes it a POST (gh's own rule).
-function apiRefusal(a) {
-  const api = apiArgs(a);
-  const write = api.method !== null ? !/^(GET|HEAD)$/i.test(api.method) : api.fields.length > 0 || api.input;
-  const ends = api.positional.map(decode);
-  if (a.map(decode).some((t) => API_MERGE.test(t))) return 'it merges or writes a branch';
-  if (ends.some((p) => p === 'graphql' || p.endsWith('/graphql')) && hiddenQuery(api)) {
-    return 'the GraphQL query is not inline, so it cannot be checked; write it as -f query=\'...\'';
-  }
-  if (!write) return null;
+// A write is any explicit method but GET/HEAD; with no method, a field or --input makes it a POST (gh's own rule).
+const isWrite = (api) => (api.method !== null ? !/^(GET|HEAD)$/i.test(api.method) : api.fields.length > 0 || api.input);
+const isGraphql = (p) => p === 'graphql' || p.endsWith('/graphql');
+// Why a write to these (decoded) endpoints is refused, or null.
+function writeRefusal(api, ends) {
   if (!ends.length) return 'the endpoint is not on the command line (xargs, stdin), so it cannot be checked';
   if (ends.some((p) => /git\/refs\/heads\/main\b/.test(p))) return "it writes main's ref";
   if (ends.some(hiddenEndpoint)) return 'the endpoint holds a variable or substitution, so it cannot be checked; write the path out';
   if (ends.some((p) => /\/contents(\/|$)/.test(p)) && contentsToMain(api)) return 'it writes a file on main (no literal branch other than main)';
   return null;
+}
+// Why a `gh api` call is refused, or null.
+function apiRefusal(a) {
+  const api = apiArgs(a);
+  const ends = api.positional.map(decode);
+  if (a.map(decode).some((t) => API_MERGE.test(t))) return 'it merges or writes a branch';
+  if (ends.some(isGraphql) && hiddenQuery(api)) return 'the GraphQL query is not inline, so it cannot be checked; write it as -f query=\'...\'';
+  return isWrite(api) ? writeRefusal(api, ends) : null;
 }
 
 const segs = allSegments(cmd);
