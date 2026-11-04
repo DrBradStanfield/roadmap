@@ -288,11 +288,22 @@ describe('#788 review, finding 1: a Drive refresh whose 200 body cannot be read 
   it.each([
     ['is not JSON', () => new Response('<html>gateway</html>', { status: 200 })],
     ['dies mid-download', () => new Response(new ReadableStream({ start(c) { c.error(new TypeError('terminated')); } }), { status: 200 })],
+    ['is JSON null', () => new Response('null', { status: 200 })],
   ])('a 200 whose body %s: false, refresh token kept', async (_label, answer) => {
     seedDrive();
     vi.stubGlobal('fetch', vi.fn(async () => answer()));
 
     await expect(new GoogleDriveAdapter(DRIVE_CONFIG).tryServerRefresh()).resolves.toBe(false);
     expect(JSON.parse(localStorage.getItem('health_roadmap_gdrive_tokens')!).refreshToken).toBe('refresh');
+  });
+
+  it('a 503 from the endpoint is transient and its body is not read', async () => {
+    seedDrive();
+    const answer = new Response('{"accessToken":"never-used","expiresIn":3600}', { status: 503 });
+    vi.stubGlobal('fetch', vi.fn(async () => answer));
+
+    await expect(new GoogleDriveAdapter(DRIVE_CONFIG).tryServerRefresh()).resolves.toBe(false);
+    expect(answer.bodyUsed).toBe(false);
+    expect(JSON.parse(localStorage.getItem('health_roadmap_gdrive_tokens')!)).toMatchObject({ accessToken: 'old', refreshToken: 'refresh' });
   });
 });
