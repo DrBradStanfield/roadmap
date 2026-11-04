@@ -324,8 +324,21 @@ function useGuestEmailCapture(printReport: () => Promise<void>): GuestEmailHook 
     () => (getReportEmailCaptured() ? 'captured' : gateSkipped ? 'skipped' : 'idle'),
   );
   const helperText = LOCAL_FIRST_EMAIL_HELPER;
+  // US-18 AC7: one send at a time. The button is disabled while sending, but
+  // Enter in the box (either copy of it) reaches here too.
+  const sending = useRef(false);
 
   const handleSubmit = async () => {
+    if (sending.current) return;
+    sending.current = true;
+    try {
+      await submit();
+    } finally {
+      sending.current = false;
+    }
+  };
+
+  const submit = async () => {
     const trimmed = email.trim();
     if (!trimmed || !EMAIL_REGEX.test(trimmed)) {
       setEmailError('Please enter a valid email address');
