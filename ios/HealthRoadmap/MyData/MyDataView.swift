@@ -34,8 +34,6 @@ struct MyDataView: View {
     @State private var saves = 0
     /// A picker's edit is landing: the pickers wait, so a quick change back is never lost.
     @State private var picking = false
-    /// The tile whose explainer is open (waist-to-height, weight, protein).
-    @State private var openedTile: StatTile?
     /// US-56: Apple Health's heart, sleep and fitness metrics, read live; the one whose page is pushed.
     @Environment(LiveHealth.self) private var live: LiveHealth?
     @State private var liveDetail: LiveMetric?
@@ -74,9 +72,6 @@ struct MyDataView: View {
             .sheet(isPresented: $showSettings) {
                 NavigationStack { MyDataView(engine: engine, store: store, sync: sync, layout: .settings) }
             }
-            .sheet(item: $openedTile) { tile in
-                TileExplainerSheet(title: tile.label, about: tile.about, evidence: tile.evidence)
-            }
             .animation(.spring(duration: 0.35, bounce: 0.2), value: store.myData?.profile.alcohol?.value)
     }
 
@@ -112,7 +107,7 @@ struct MyDataView: View {
     // MARK: My health
 
     private func healthList(_ data: MyData, proxy: ScrollViewProxy) -> some View {
-        let plan = TopicPlan(store.plan)
+        let plan = TopicPlan(store.plan, screeningGroups: ScreeningsSection.groups(data))
         let tiles = PlanTiles(store.plan)
         return List {
             top(plan, proxy: proxy)
@@ -127,17 +122,19 @@ struct MyDataView: View {
             cards(plan[.fitness])
             bloodPressure(data, plan: plan, tiles: tiles)
             cholesterol(data, plan: plan)
-            // No heading of its own: the engine's sections carry their titles ("Cancer Screening"…).
-            ScreeningsSection(store: store, data: data, saved: saved, open: open)
-            cards(plan[.screening])
+            if data.screeningNote != nil || !data.screenings.isEmpty || !plan[.screening].isEmpty {
+                heading(.screening)
+                ScreeningsSection(store: store, data: data, saved: saved, open: open, suggestions: plan.screenings)
+                cards(plan[.screening])
+            }
             if !plan[.skin].isEmpty {
                 heading(.skin)
                 cards(plan[.skin])
             }
             bloodTests(data, plan: plan, tiles: tiles)
-            // No heading of its own: the section's header says Supplements.
-            SupplementsSection(store: store, supplements: data.supplements, saved: saved)
+            heading(.supplements)
             cards(plan[.supplements], footer: plan.ownershipLine)
+            SupplementsSection(store: store, supplements: data.supplements, saved: saved)
             Section {
             } footer: {
                 Text(PlanList.disclaimer)
@@ -174,11 +171,27 @@ struct MyDataView: View {
             }
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 8, leading: 4, bottom: 0, trailing: 4))
-            if let urgent = plan.urgent, let first = urgent.suggestions.first {
+            .listRowSeparator(.hidden)
+            // The jump pills (Brad, round 6): they scroll with the page.
+            HStack(spacing: 8) {
+                ForEach(HealthTopic.pills) { topic in
+                    Button(topic.title.title) {
+                        withAnimation { proxy.scrollTo(topic.anchor, anchor: .top) }
+                    }
+                    .buttonStyle(.bordered)
+                    .buttonBorderShape(.capsule)
+                    .controlSize(.small)
+                    .tint(.primary)
+                }
+            }
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4))
+            .listRowSeparator(.hidden)
+            if let urgent = plan.urgent {
                 Button {
-                    withAnimation { proxy.scrollTo(TopicPlan.anchor(urgent), anchor: .center) }
+                    withAnimation { proxy.scrollTo(urgent.anchor, anchor: .center) }
                 } label: {
-                    Label("Needs attention: \(first.title)", systemImage: "exclamationmark.triangle.fill")
+                    Label("Needs attention: \(urgent.title)", systemImage: "exclamationmark.triangle.fill")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -194,7 +207,7 @@ struct MyDataView: View {
         .listSectionSpacing(.compact)
     }
 
-    /// A topic's heading, a row in the list's own flow.
+    /// A topic's heading, a row in the list's own flow, so the pills can scroll to it.
     private func heading(_ topic: HealthTopic) -> some View {
         Section {
             topic.title
@@ -203,6 +216,7 @@ struct MyDataView: View {
                 .accessibilityAddTraits(.isHeader)
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 20, leading: 4, bottom: 0, trailing: 4))
+                .id(topic.anchor)
         }
         .listSectionSpacing(.compact)
     }
@@ -268,8 +282,8 @@ struct MyDataView: View {
         MedicationsSection(store: store, data: data, saved: saved, only: "weight-medications", suggestions: plan.medicines)
     }
 
-    /// Today's large blood pressure card, the kidney rows (creatinine, eGFR as its small line),
-    /// then the blood pressure cards.
+    /// Today's large blood pressure card, the kidney rows (creatinine, then eGFR), then the
+    /// blood pressure cards.
     @ViewBuilder
     private func bloodPressure(_ data: MyData, plan: TopicPlan, tiles: PlanTiles) -> some View {
         heading(.bloodPressure)
@@ -278,7 +292,8 @@ struct MyDataView: View {
                 .listSectionSpacing(.compact)
         }
         if let creatinine = data.bloodTests.first(where: { $0.metric == "creatinine" }) {
-            Section { bloodTest(creatinine, column: nil, tiles: tiles) }
+            let column = ValueRow.Column([(creatinine.latest?.value, creatinine.previous, creatinine.unit, nil)] + Self.egfr(tiles))
+            Section { bloodTest(creatinine, column: column, tiles: tiles) }
                 .listSectionSpacing(.compact)
         }
         cards(plan[.bloodPressure])
@@ -306,7 +321,7 @@ struct MyDataView: View {
         let rows = data.bloodTests
         let labs = data.labTests ?? []
         Section {
-            let column = ValueRow.Column((rows + labs).map { ($0.latest?.value, $0.previous, $0.unit, nil) })
+            let column = ValueRow.Column((rows + labs).map { ($0.latest?.value, $0.previous, $0.unit, nil) } + Self.egfr(tiles))
             ForEach(rows) { bloodTest($0, column: column, tiles: tiles) }
             ForEach(labs) { lab in
                 Button { open(lab) } label: {
@@ -320,20 +335,24 @@ struct MyDataView: View {
         cards(plan[.bloodTests])
     }
 
-    /// A blood test's row; creatinine's carries eGFR as a small line under it.
+    /// A blood test's row; creatinine's has eGFR's own row under it (Brad, round 6): the plan
+    /// tile's value and grade label, creatinine's date, no trend. It opens creatinine's page.
     @ViewBuilder
     private func bloodTest(_ row: MyData.Row, column: ValueRow.Column?, tiles: PlanTiles) -> some View {
+        metric(row, column: column)
         if row.metric == "creatinine", let egfr = tiles["egfr"] {
-            VStack(alignment: .leading, spacing: 2) {
-                metric(row, column: column)
-                Button { openedTile = egfr } label: {
-                    Text("\(egfr.label) \(egfr.value) \(egfr.unit)").font(.caption).foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
+            Button { open(row) } label: {
+                ValueRow(label: egfr.label, value: egfr.value, unit: egfr.unit, day: row.latest?.day, target: egfr.status?.label,
+                         grade: PlanTiles.grade(egfr), tint: MetricChart.colors(for: row.metric)[0], column: column)
             }
-        } else {
-            metric(row, column: column)
+            .tint(.primary)
+            .disabled(store.unitSwitches > 0)
         }
+    }
+
+    /// eGFR's reading, for a section's value column.
+    private static func egfr(_ tiles: PlanTiles) -> [(value: String?, previous: String?, unit: String, feetInches: MyData.FeetInches?)] {
+        tiles["egfr"].map { [($0.value, nil, $0.unit, nil)] } ?? []
     }
 
     /// The reduce-alcohol card's question (US-60), as My plan asked it.

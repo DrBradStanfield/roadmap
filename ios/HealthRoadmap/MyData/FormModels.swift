@@ -77,7 +77,7 @@ struct SupplementsView: Decodable, Equatable {
         var id: String { key }
     }
 
-    /// One the user could add: featured ones are the web's quick-add chips.
+    /// One the user could add: featured ones are the web's quick-add chips, starred in the add sheet.
     struct Choice: Decodable, Identifiable, Equatable {
         let key: String
         let name: String
@@ -87,7 +87,6 @@ struct SupplementsView: Decodable, Equatable {
         var id: String { key }
     }
 
-    let intro: String
     let active: [Row]
     let stopped: [Row]
     let choices: [Choice]

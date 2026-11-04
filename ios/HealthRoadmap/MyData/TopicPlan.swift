@@ -8,6 +8,12 @@ enum HealthTopic: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// The scroll id of the topic's heading, for the jump pills.
+    var anchor: String { "topic.\(rawValue)" }
+
+    /// The jump pills (Brad, round 6): only these three.
+    static let pills: [HealthTopic] = [.bloodTests, .cholesterol, .supplements]
+
     var title: SectionTitle {
         switch self {
         case .weight: SectionTitle(title: "Weight & diabetes", symbol: "scalemass.fill", tint: .purple)
@@ -28,7 +34,8 @@ enum HealthTopic: String, CaseIterable, Identifiable {
 /// priorities are unchanged. A card whose suggestions fall in two topics becomes one card in
 /// each, badged with its own suggestions' highest priority. Within a topic the cards go by
 /// priority (urgent, attention, info), results before lifestyle advice within each (Brad, rounds 4-5).
-/// Medicine suggestions are no cards: they sit behind their question's info button.
+/// Medicine suggestions are no cards: they sit behind their question's info button. Nor are
+/// screening suggestions with a group to sit in: they show in it (Brad, round 6).
 struct TopicPlan {
     private(set) var cards: [HealthTopic: [PlanCard]] = [:]
     /// Who owns the products (US-61 AC7), under the supplement cards.
@@ -36,12 +43,18 @@ struct TopicPlan {
     /// Every medicine suggestion (`weight-glp1`, `weight-med-*`, `med-*`), shown inside its
     /// medicine question instead of as a card (Brad, round 4).
     private(set) var medicines: [Suggestion] = []
+    /// Every screening suggestion whose group the form asks, shown in that group instead of as
+    /// a card (Brad, round 6).
+    private(set) var screenings: [Suggestion] = []
 
-    init(_ state: PlanState?) {
+    /// `screeningGroups`: the ids of the screening form's groups that ask a question.
+    init(_ state: PlanState?, screeningGroups: Set<String> = []) {
         guard case .planned(_, let sections, _) = state else { return }
+        let inGroup = { (suggestion: Suggestion) in Self.screeningGroup(suggestion).map(screeningGroups.contains) ?? false }
         for card in sections.flatMap(\.cards) {
             medicines += card.suggestions.filter(Self.isMedicine)
-            let byTopic = Dictionary(grouping: card.suggestions.filter { !Self.isMedicine($0) }, by: Self.topic)
+            screenings += card.suggestions.filter(inGroup)
+            let byTopic = Dictionary(grouping: card.suggestions.filter { !Self.isMedicine($0) && !inGroup($0) }, by: Self.topic)
             for topic in HealthTopic.allCases {
                 guard let suggestions = byTopic[topic] else { continue }
                 cards[topic, default: []].append(PlanCard(category: card.category, priority: Self.highest(suggestions), suggestions: suggestions))
@@ -54,15 +67,31 @@ struct TopicPlan {
 
     subscript(topic: HealthTopic) -> [PlanCard] { cards[topic] ?? [] }
 
-    /// The first urgent card, in topic order, with its topic: the banner's.
-    var urgent: PlanCard? {
-        HealthTopic.allCases.lazy.compactMap { self[$0].first { $0.priority == "urgent" } }.first
+    /// The first urgent suggestion, in topic order, and the scroll id of where it shows: the banner's.
+    var urgent: (title: String, anchor: String)? {
+        for topic in HealthTopic.allCases {
+            if topic == .screening, let screening = screenings.first(where: { $0.priority == "urgent" }),
+               let group = Self.screeningGroup(screening) {
+                return (screening.title, Self.groupAnchor(group))
+            }
+            if let card = self[topic].first(where: { $0.priority == "urgent" }), let first = card.suggestions.first {
+                return (first.title, card.anchor)
+            }
+        }
+        return nil
     }
 
     static func isMedicine(_ suggestion: Suggestion) -> Bool { suggestion.category == "medication" }
 
-    /// The scroll id of a card on the tab.
-    static func anchor(_ card: PlanCard) -> String { card.anchor }
+    /// The screening group a suggestion is about, by its id (suggestions.ts): `screening-colorectal`,
+    /// `screening-lung-overdue` and `screening-prostate-elevated` to colorectal, lung and prostate.
+    static func screeningGroup(_ suggestion: Suggestion) -> String? {
+        guard suggestion.category == "screening", suggestion.id.hasPrefix("screening-") else { return nil }
+        return suggestion.id.dropFirst("screening-".count).split(separator: "-").first.map(String.init)
+    }
+
+    /// The scroll id of a screening group's first row.
+    static func groupAnchor(_ group: String) -> String { "screening.\(group)" }
 
     /// By category first; nutrition and bloodwork by suggestion (orchestrator, rounds 1 to 4).
     static func topic(_ suggestion: Suggestion) -> HealthTopic {
