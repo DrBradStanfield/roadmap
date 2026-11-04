@@ -329,8 +329,8 @@ export async function prepareSwitch(current: Backend): Promise<void> {
  *  the same page means the new connect failed and the user is trying again:
  *  the old tokens are gone, so the copy-down is not run again against a cloud
  *  it can no longer read. What the page saved since comes down from its own
- *  record instead (copyRecordToDevice), and the tokens are dropped again, in
- *  case a late refresh wrote them back (US-09 AC2g). */
+ *  record instead (copyRecordToDevice), and the tokens are dropped again, a
+ *  backstop to AC2f in case they were written back (US-09 AC2g). */
 let preparedFrom: Backend | null = null;
 
 async function copyDownOnce(adapter: StorageAdapter, current: Backend): Promise<void> {
