@@ -174,6 +174,8 @@ final class CloudSyncTests: XCTestCase {
         dropbox.put(erased)
 
         await sync.syncNow()
+        // The re-read's news is drawn on the store's own chain, after syncNow returns.
+        await drawn(store) { self.activeDays(store.recordJSON) == [] }
         XCTAssertEqual(activeDays(store.recordJSON), [], "the erase reached the phone")
         let shown = try JSONSerialization.jsonObject(with: Data(store.recordJSON.utf8)) as! [String: Any]
         XCTAssertEqual((shown["meta"] as? [String: Any])?["eraseEpoch"] as? Int, 1)
@@ -252,7 +254,7 @@ final class CloudSyncTests: XCTestCase {
         let summary = try result.get()
         let file = dropbox.record
         let imported = ((file["measurements"] as? [[String: Any]]) ?? []).filter { $0["source"] as? String == "lab_import" }.count
-            + ((file["labValues"] as? [Any]) ?? []).count
+            + ((file["labValues"] as? [[String: Any]]) ?? []).filter { $0["source"] as? String == "lab_import" }.count
         XCTAssertEqual(summary.saved, imported, "the summary counts what was saved, no more")
         XCTAssertEqual(summary.saved + summary.skipped, 3)
     }
@@ -444,6 +446,7 @@ final class CloudSyncTests: XCTestCase {
         store.pinScreen() // a sheet opens on the pre-erase record
         dropbox.put(erased(before))
         await sync.syncNow()
+        await drawn(store) { self.activeDays(store.recordJSON) == [] }
         XCTAssertEqual(activeDays(store.recordJSON), [], "the erase reached the phone")
         guard case .refused = await store.apply(.add(metric: "weight", value: 80, day: "2026-10-02")) else {
             return XCTFail("the old sheet's value must not land in the erased record")
@@ -514,7 +517,7 @@ final class CloudSyncTests: XCTestCase {
         XCTAssertEqual(lpaSaved, .saved())
         store.unpinScreen()
         await sync.background()
-        let lpa = (dropbox.record["measurements"] as? [[String: Any]])?.first { $0["metricType"] as? String == "lpa" }
+        let lpa = (dropbox.record["labValues"] as? [[String: Any]])?.first { $0["core"] as? Bool == true && $0["metricName"] as? String == "lpa" }
         XCTAssertEqual(try XCTUnwrap(lpa?["value"] as? Double), 125, accuracy: 1e-9)
     }
 

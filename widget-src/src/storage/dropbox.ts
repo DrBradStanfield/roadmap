@@ -26,6 +26,7 @@ import {
   DROPBOX_TOKEN_URL,
   ROADMAP_FILE_NAME,
   sleepUntilAborted,
+  catchUpAfterFailure,
   StorageError,
   timeoutSignal,
   type ReadResult,
@@ -221,7 +222,10 @@ export class DropboxAdapter implements StorageAdapter {
       try {
         // A cursor is dropped on every failure, so this re-establishes it: the
         // one Dropbox refused may be expired, and re-listing is cheap.
-        if (!cursor) cursor = await this.folderCursor(signal);
+        if (!cursor) {
+          cursor = await this.folderCursor(signal);
+          catchUpAfterFailure(retryMs, signal, onChange);
+        }
         const poll = await this.rpc(LONGPOLL_URL, { cursor, timeout: LONGPOLL_TIMEOUT_S }, signal);
         const result = (await poll.json()) as { changes?: boolean; backoff?: number };
         // Dropbox asking for room comes before anything else we do with it.
@@ -302,9 +306,10 @@ export class DropboxAdapter implements StorageAdapter {
 
   private async refresh(): Promise<void> {
     if (!this.tokens?.refreshToken) throw new StorageError('Dropbox session expired — please reconnect.');
+    const startedFrom = this.tokens.refreshToken;
     const body = new URLSearchParams({
       grant_type: 'refresh_token',
-      refresh_token: this.tokens.refreshToken,
+      refresh_token: startedFrom,
       client_id: this.config.clientId,
     });
     const res = await fetch(TOKEN_URL, {
@@ -313,14 +318,29 @@ export class DropboxAdapter implements StorageAdapter {
       body,
     });
     if (!res.ok) {
+      this.dropIfGrantMoved(startedFrom);
       throw new StorageError(`Dropbox token refresh failed (${res.status}) — please reconnect.`, undefined, undefined, res.status);
     }
     const json = tokenReply(await res.json(), false);
+    this.dropIfGrantMoved(startedFrom);
     this.tokens = {
       ...this.tokens,
       accessToken: json.access_token,
       expiresAt: Date.now() + json.expires_in * 1000,
     };
     saveTokens(this.tokens);
+  }
+
+  /**
+   * Disconnect and a sign-in elsewhere run on other adapters, so the stored
+   * grant is the only shared truth. Read after a refresh's last await: if it is
+   * no longer the grant the refresh started from, this adapter keeps nothing
+   * and leaves storage alone. A replaced grant may be another account, so it
+   * is never adopted (US-09 AC2f).
+   */
+  private dropIfGrantMoved(startedFrom: string): void {
+    if (loadTokens()?.refreshToken === startedFrom) return;
+    this.tokens = null;
+    throw new StorageError('Dropbox was disconnected — please reconnect.');
   }
 }

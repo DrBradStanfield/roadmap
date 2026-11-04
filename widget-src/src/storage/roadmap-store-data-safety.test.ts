@@ -1226,7 +1226,12 @@ describe('RoadmapStore.deleteUserData lists the rows it removes (US-09 AC23)', (
     expect(file.meta.eraseEpoch).toBe(1);
     expect(file.meta.erasedAt).toBeTypeOf('string'); // still stamped, for the legacy rule
     // Ids only: no value, metric, date or name rides in the list.
-    expect(JSON.stringify(file.erasedRows)).not.toMatch(/weight|ldl|hdl|waist|statin|atorvastatin|2026/);
+    // Checked by shape, not by searching the JSON for "2026" or "ldl": a random
+    // UUID can contain "2026", which made this test fail about one run in 300.
+    expect(Object.keys(file.erasedRows ?? {}).sort()).toEqual(['fromEpoch', 'ids']);
+    for (const id of file.erasedRows?.ids ?? []) {
+      expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    }
   });
 
   it('a failed cloud read refuses before the caller\'s irreversible step, and changes nothing', async () => {

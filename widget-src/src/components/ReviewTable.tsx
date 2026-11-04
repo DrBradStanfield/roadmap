@@ -226,6 +226,20 @@ function isDocDuplicate(sourceFileName: string | null, idx: Set<string>): boolea
   return idx.has(sourceFileName);
 }
 
+/** The names under which `after` holds a document `before` did not: filed
+ *  since (US-12 AC6). A reload that filed nothing names none (US-12 AC6b). */
+function newlyFiledNames(before: ApiDocument[], after: ApiDocument[]): Set<string> {
+  const held = new Set(before.map(d => d.id));
+  return new Set(after.flatMap(d => (d.sourceFileName && !held.has(d.id) ? [d.sourceFileName] : [])));
+}
+
+/** `checked` with every document filed under one of `filed` unticked. */
+function uncheckFiled(checked: Record<number, boolean>, results: FileResult[], filed: Set<string>): Record<number, boolean> {
+  const next = { ...checked };
+  results.forEach((r, fi) => { if (r.document && filed.has(r.fileName)) next[fi] = false; });
+  return next;
+}
+
 /** Two stored values are the same value when only float noise from a unit
  *  conversion separates them. */
 function sameValue(a: number, b: number): boolean {
@@ -674,14 +688,14 @@ export function ReviewTable({
     return map;
   });
   // A document the record now holds (a partial save reloaded history) unchecks
-  // itself, so a retry cannot file it twice. The user can still re-tick it.
+  // itself, so a retry cannot file it twice. The user can still re-tick it,
+  // and a reload that filed nothing under its name keeps that tick (US-12 AC6b).
+  const shownDocuments = useRef(history.documents);
   useEffect(() => {
-    setDocChecked(prev => {
-      const next = { ...prev };
-      results.forEach((r, fi) => { if (r.document && isDocDuplicate(r.fileName, docHistoryIndex)) next[fi] = false; });
-      return next;
-    });
-  }, [docHistoryIndex, results]);
+    const filed = newlyFiledNames(shownDocuments.current, history.documents);
+    shownDocuments.current = history.documents;
+    setDocChecked(prev => uncheckFiled(prev, results, filed));
+  }, [history.documents, results]);
 
   // A document whose bytes metadata-only shown-document rows hold (a failed
   // upload, or the connector's) replaces them, so its card starts from the

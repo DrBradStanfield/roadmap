@@ -31,6 +31,7 @@ import {
   screeningsToInputs,
   type ApiMeasurement,
   formatValue,
+  formatGradedOrLimit,
   type ApiMedication,
   type ApiScreening,
   STATIN_NAMES,
@@ -59,6 +60,7 @@ import {
   isBirthYearClearlyInvalid,
   parseLocalisedNumber,
   dayOf,
+  newestUsablePsa,
   localDay,
   MEDICATION_TEXT,
   SCREENING_TEXT,
@@ -83,7 +85,6 @@ import {
   type MedicationInputs,
 } from '@roadmap/health-core';
 import { formatShortDate, MONTHS_FULL } from '../lib/constants';
-import { InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
 import { BloodTestTimeline, useLiveRegion, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
 import { useMoveTest, type MoveTestApi } from './MoveTestPanel';
@@ -120,6 +121,17 @@ const BASIC_LONGITUDINAL_FIELDS: FieldConfig[] = [
 /** Option data (health-core's input-form) as <option> elements. */
 const optionElements = (options: FormOption[]) =>
   options.map(opt => <option key={opt.value} value={opt.value} disabled={opt.disabled}>{opt.label}</option>);
+
+/** What a screening's month and year pickers show: a date still being picked
+ *  (year or month blank, but not both, so nothing is saved yet) as picked,
+ *  else the saved date. A finished pick has just written it, and clearing
+ *  both has just cleared it. A cleared or changed answer then shows as the
+ *  record holds it, not as last picked (US-06 AC16). */
+function shownDate(
+  picking: { year: string; month: string } | undefined, savedYear: string | undefined, savedMonth: string | undefined,
+): { year: string; month: string } {
+  return picking && !picking.year !== !picking.month ? picking : { year: savedYear ?? '', month: savedMonth ?? '' };
+}
 
 /** What the form reads from the plan, so it never recommends, targets or
  *  steps through what the plan does not (US-06 AC5). HealthTool computes it
@@ -170,6 +182,11 @@ interface InputPanelProps {
   onMedicationChange: (medicationKey: string, drugName: string, doseValue: number | null, doseUnit: string | null) => void;
   screenings: ApiScreening[];
   onScreeningChange: (screeningKey: string, value: string) => void;
+  /** The PSA's day, YYYY-MM-DD (US-06 AC15): null until picked, today shows meanwhile. */
+  psaDate: string | null;
+  onPsaDateChange: (day: string) => void;
+  /** The PSA row is committed (US-06 AC15): saved soon when left, at once on its tick or Enter. */
+  onPsaCommit: (now: boolean) => void;
   supplements: ApiSupplement[];
   onSupplementChange: (key: string, name: string, doseValue: number | null, doseUnit: string | null, status?: string, startedAt?: string) => void;
   onSupplementDelete: (key: string) => void;
@@ -224,6 +241,12 @@ interface InputPanelProps {
   revealCell?: { field: string; grid: boolean } | null;
 }
 
+/** A height for the feet and inches boxes to show: one there is, and not the
+ *  one they just wrote themselves (US-02 AC11). */
+function showsOtherHeight(heightCm: number | undefined, typed: number | undefined): heightCm is number {
+  return heightCm !== undefined && heightCm !== typed;
+}
+
 /**
  * Auto-advance focus once a typed value is complete: fires immediately, or
  * after a short wait when the current digits could still extend to another
@@ -248,7 +271,7 @@ export function InputPanel({
   previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
   onCorrectValue, moveTest, onDraftValue,
   medications, onMedicationChange,
-  screenings, onScreeningChange,
+  screenings, onScreeningChange, psaDate, onPsaDateChange, onPsaCommit,
   supplements, onSupplementChange, onSupplementDelete,
   scheduleLongitudinalSave, flushLongitudinalSave,
   isSavingLongitudinal, fieldsSaved, hasApiResponse,
@@ -562,22 +585,23 @@ export function InputPanel({
   // Feet/inches state for US height input
   const [heightFeet, setHeightFeet] = useState<string>('');
   const [heightInches, setHeightInches] = useState<string>('');
+  // The height the feet and inches boxes last wrote (US-02 AC11).
+  const typedHeightCm = useRef<number | undefined>(undefined);
 
-  // Sync heightCm → feet/inches display when loading data or switching units
+  // Sync heightCm → feet/inches display when loading data or switching units,
+  // never from the boxes' own edit, which keeps what was typed (US-02 AC11).
   useEffect(() => {
-    if (unitSystem === 'conventional' && inputs.heightCm !== undefined) {
+    if (unitSystem === 'conventional' && showsOtherHeight(inputs.heightCm, typedHeightCm.current)) {
       const { feet, inches } = cmToFeetInches(inputs.heightCm);
       setHeightFeet(String(feet));
       setHeightInches(String(inches));
     } else if (unitSystem === 'si') {
       // Clear feet/inches when switching to SI
+      typedHeightCm.current = undefined;
       setHeightFeet('');
       setHeightInches('');
     }
   }, [inputs.heightCm, unitSystem]);
-
-  // PSA date picker state (for prostate section)
-  const [psaDate, setPsaDate] = useState<DateValue>(getCurrentDateValue);
 
   const parseAndConvert = (field: string, value: string): number | undefined => {
     const num = parseLocalisedNumber(value);
@@ -685,9 +709,7 @@ export function InputPanel({
     const savedValue = readScreening(scr, key);
     const [savedYear, savedMonth] = savedValue.split('-');
 
-    const localState = dateInputs[key];
-    const displayYear = localState?.year ?? savedYear ?? '';
-    const displayMonth = localState?.month ?? savedMonth ?? '';
+    const { year: displayYear, month: displayMonth } = shownDate(dateInputs[key], savedYear, savedMonth);
 
     const availableYears = futureOnly
       ? Array.from({ length: 6 }, (_, i) => currentYear + i)
@@ -1086,7 +1108,8 @@ export function InputPanel({
               const feet = parseInt(val, 10) || 0;
               const inches = parseInt(heightInches, 10) || 0;
               if (val !== '' || heightInches !== '') {
-                updateField('heightCm', feetInchesToCm(feet, inches));
+                typedHeightCm.current = feetInchesToCm(feet, inches);
+                updateField('heightCm', typedHeightCm.current);
               } else {
                 updateField('heightCm', undefined);
               }
@@ -1114,7 +1137,8 @@ export function InputPanel({
               const feet = parseInt(heightFeet, 10) || 0;
               const inches = parseInt(val, 10) || 0;
               if (heightFeet !== '' || val !== '') {
-                updateField('heightCm', feetInchesToCm(feet, inches));
+                typedHeightCm.current = feetInchesToCm(feet, inches);
+                updateField('heightCm', typedHeightCm.current);
               } else {
                 updateField('heightCm', undefined);
               }
@@ -2117,15 +2141,27 @@ export function InputPanel({
                   <>
                     {/* PSA input with inline date picker */}
                     {(() => {
-                      const psaMeasurement = previousMeasurements.find(m => m.metricType === 'psa');
-                      const psaPreviousLabel = psaMeasurement
-                        ? `${formatValue('psa', psaMeasurement.value, 'si', psaMeasurement.comparator)} ng/mL · ${formatShortDate(psaMeasurement.recordedAt)}`
+                      const today = localDay(new Date());
+                      const psaDay = psaDate ?? today;
+                      const psaDayError = !psaDay || psaDay > today ? 'Choose a day up to today.' : null;
+                      // One PSA per day: a value typed for a day that holds one corrects it, so say so,
+                      // while a value is typed (US-06 AC15).
+                      const psaHeld = inputs.psa === undefined ? undefined
+                        : bloodTestHistory.find(m => m.metricType === 'psa' && dayOf(m.recordedAt) === psaDay);
+                      const psaMeasurement = newestUsablePsa(bloodTestHistory, new Date()); // the PSA the plan reads (US-06 AC14)
+                      const psaPreviousLabel = psaHeld
+                        ? `Replaces ${formatGradedOrLimit('psa', psaHeld.value, 'si', psaHeld.comparator)} ng/mL`
+                        : psaMeasurement
+                        ? `${formatGradedOrLimit('psa', psaMeasurement.value, 'si', psaMeasurement.comparator)} ng/mL · ${formatShortDate(psaMeasurement.recordedAt)}`
                         : null;
 
                       return (
                         <div className="health-field">
                           <label htmlFor="psa-input">{SCREENING_TEXT.psaLabel}</label>
-                          <div className="psa-inline-row">
+                          {/* Saves once focus leaves the row, so a date picked after the value counts (US-06 AC15). */}
+                          <div className="psa-inline-row" onBlur={(e) => {
+                            if (autoSaveGate && !unreadable.psa && !e.currentTarget.contains(e.relatedTarget as Node | null)) onPsaCommit(false);
+                          }}>
                             <input
                               type="number"
                               id="psa-input"
@@ -2147,21 +2183,26 @@ export function InputPanel({
                                 if (unreadable.psa) return;
                                 rangeWait.settle();
                                 setRawInputs(prev => { const next = { ...prev }; delete next.psa; return next; });
-                                autoSaveOnBlur();
                               }}
-                              onKeyDown={onNumericEnter}
+                              onKeyDown={(e) => {
+                                blockBadNumericKeys(e); settleOnEnter(e);
+                                if (e.key !== 'Enter') return;
+                                e.preventDefault();
+                                if (autoSaveGate && !unreadable.psa) onPsaCommit(true);
+                              }}
                               placeholder=""
                               step="0.1"
                               min={range('psa').min}
                               max={range('psa').max}
                               className={errors.psa ? 'error' : ''}
                             />
-                            <InlineDatePicker value={psaDate} onChange={setPsaDate} />
+                            <input type="date" aria-label="PSA test date" value={psaDay} max={today}
+                                   onChange={(e) => onPsaDateChange(e.target.value)} />
                             {autoSaveGate && inputs.psa !== undefined && (
-                              <CommitTickButton ariaLabel="Save PSA" onClick={flushLongitudinalSave}/>
+                              <CommitTickButton ariaLabel="Save PSA" onClick={() => onPsaCommit(true)}/>
                             )}
                           </div>
-                          {(unreadable.psa || errors.psa) && <span className="field-error">{unreadable.psa ? 'Enter a number' : errors.psa}</span>}
+                          {(unreadable.psa || errors.psa || psaDayError) && <span className="field-error">{unreadable.psa ? 'Enter a number' : errors.psa ?? psaDayError}</span>}
                           <div className="field-meta">
                             <span className="field-hint">{SCREENING_TEXT.psaHint}</span>
                             {psaPreviousLabel && (

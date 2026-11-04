@@ -876,6 +876,87 @@ describe('US-02 AC9 in feet and inches (simplify A1)', () => {
   });
 });
 
+// US-02 AC11: the feet and inches boxes keep what is typed in them. Typing the
+// feet wrote the height, and the height wrote "0" back into the inches box, so
+// the "1" of 5 ft 10 in made "01", the form moved on to the weight at once,
+// and 5 ft 1 in was saved.
+describe('US-02 AC11: feet and inches keep what is typed', () => {
+  const toFeetInches = async (view: RenderResult) => {
+    fireEvent.click(within(q(view, 'label[for="heightCm"]') as HTMLElement).getByRole('button')); // cm to ft/in
+    return waitFor(() => { const f = q(view, '#heightFeet'); expect(f).toBeTruthy(); return f as HTMLInputElement; });
+  };
+  const inchesBox = (view: RenderResult) => q(view, '#heightInches') as HTMLInputElement;
+  /** A key typed at the end of what the box shows, as the caret sits after the hand-off. */
+  const key = (input: HTMLInputElement, digit: string) => fireEvent.change(input, { target: { value: input.value + digit } });
+
+  it('5 ft then 1 0 in: the inches box stays empty after the feet, waits on the 1, and 5 ft 10 in is saved', async () => {
+    const view = await open();
+    const feet = await toFeetInches(view);
+    type(feet, '5');
+    await waitFor(() => expect(document.activeElement?.id).toBe('heightInches')); // the hand-off
+    expect(inchesBox(view).value).toBe('');
+    key(inchesBox(view), '1');
+    await nextFrame();
+    expect(document.activeElement?.id).toBe('heightInches'); // "1" may be 10 or 11: no move to the weight yet
+    key(inchesBox(view), '0');
+    await waitFor(() => expect(document.activeElement?.id).toBe('weightKg'));
+    expect([feet.value, inchesBox(view).value]).toEqual(['5', '10']);
+    await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // the profile's 500 ms save
+    expect((await recordOnDisk()).profile.heightCm).toBeCloseTo(177.8, 1);
+  });
+
+  it('clearing the feet leaves the inches as typed and the feet box empty, not "0"; clearing both empties both', async () => {
+    const view = await open();
+    const feet = await toFeetInches(view);
+    type(feet, '5');
+    key(inchesBox(view), '8');
+    type(feet, '');
+    expect([feet.value, inchesBox(view).value]).toEqual(['', '8']);
+    type(inchesBox(view), '');
+    expect([feet.value, inchesBox(view).value]).toEqual(['', '']);
+  });
+
+  it('inches typed before the feet leave the feet box empty', async () => {
+    const view = await open();
+    const feet = await toFeetInches(view);
+    type(inchesBox(view), '8');
+    expect([feet.value, inchesBox(view).value]).toEqual(['', '8']);
+  });
+
+  it('a height typed in feet and inches shows again after cm and back', async () => {
+    const view = await open();
+    const feet = await toFeetInches(view);
+    type(feet, '5');
+    key(inchesBox(view), '1');
+    key(inchesBox(view), '0');
+    fireEvent.click(within(q(view, 'label[for="heightCm"]') as HTMLElement).getByRole('button')); // to cm
+    await waitFor(() => expect(q(view, '#heightCm')).toBeTruthy());
+    const back = await toFeetInches(view);
+    expect([back.value, inchesBox(view).value]).toEqual(['5', '10']);
+  });
+
+  it('a saved height still shows in feet and inches', async () => {
+    await saveChangedMeasurements({ heightCm: 178 }, {});
+    const view = await open();
+    const feet = await toFeetInches(view);
+    expect([feet.value, inchesBox(view).value]).toEqual(['5', '10']);
+  });
+
+  it('a height another device saves after typing still shows in the boxes', async () => {
+    const view = await open();
+    const feet = await toFeetInches(view);
+    type(feet, '5');
+    key(inchesBox(view), '1');
+    key(inchesBox(view), '0');
+    await act(async () => { await new Promise((r) => setTimeout(r, 900)); }); // the profile's 500 ms save
+    const typed = (await recordOnDisk()).profile.heightCm;
+    await saveChangedMeasurements({ heightCm: 160 }, { heightCm: typed }); // another device
+    await flushRoadmapStore();
+    await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    await waitFor(() => expect([feet.value, inchesBox(view).value]).toEqual(['5', '3']), { timeout: 3000 });
+  });
+});
+
 describe('US-02 AC5: an out-of-range first-time value stays in its field, its error shown, and is never written', () => {
   const shown = (view: RenderResult) => Array.from(view.container.querySelectorAll('.error-message')).map((e) => e.textContent);
 

@@ -37,12 +37,19 @@ final class LiveHealth {
     @ObservationIgnored private let kept: URL?
     /// Bumped by `forget()`: a read begun before it lands nowhere (Codex R1, adversary R4).
     @ObservationIgnored private var generation = 0
+    /// Each page's history, kept beside the cards (AC7a, Brad 2026-11-03); read and written off
+    /// the main thread.
+    @ObservationIgnored let history: LiveHistory
+    /// Counts each metric's history removals: an open page clears what it shows and reads again,
+    /// and a read it began before is dropped (Codex R2).
+    private(set) var removals: [LiveMetric: Int] = [:]
 
     init(store: any LiveHealthStore, now: @escaping @Sendable () -> Date = { .now }, calendar: Calendar = .autoupdatingCurrent, kept: URL? = nil) {
         self.store = store
         self.now = now
         self.calendar = calendar
         self.kept = kept
+        history = LiveHistory(folder: kept?.deletingLastPathComponent())
         available = store.isAvailable
         guard available else { return }
         // Read here, so the first frame has the cards; the first read updates them (AC15).
@@ -94,15 +101,25 @@ final class LiveHealth {
             // Erased meanwhile: this refresh, and any asked for during it, keep nothing (Codex R1).
             guard !Task.isCancelled, begun == generation else { return }
             if needsAccess != due { needsAccess = due }
-            // Access reset: the sheet is due again, so the kept readings go (AC2).
-            if due == true { keep([:]) }
+            // Access reset: the sheet is due again, so the kept readings and histories go (AC2).
+            if due == true {
+                keep([:])
+                await history.removeAll()
+                removed(LiveMetric.allCases)
+            }
             guard due == false else { continue }
             do {
-                let read = try await Self.readCards(store, now: now(), calendar: calendar)
+                let (read, absent) = try await Self.readCardsNoting(store, now: now(), calendar: calendar)
                 guard !Task.isCancelled, begun == generation else { return }
                 // Unchanged readings are not written, so nothing redraws (E5). An empty read always
                 // removes the file, even one the launch could not read (adversary R3).
                 if cards != read || read.isEmpty { keep(read) }
+                // Health answered that it holds none of a metric (its access off in Settings, or
+                // emptied): that metric's history goes. A read that failed removes nothing (adversary R3, R10).
+                for metric in absent {
+                    await history.remove(metric)
+                    removed([metric])
+                }
                 if !hasRead { hasRead = true }
             } catch HealthStoreError.locked {
                 // Locked: keep what the last read drew (AC13), and let the unlock's wake through (N2).
@@ -114,11 +131,18 @@ final class LiveHealth {
         } while again
     }
 
-    /// "Delete all my data" (AC2): the kept readings go, and nothing shows until the next read.
-    func forget() {
+    /// "Delete all my data" (AC2): the kept readings and histories go, and nothing shows until
+    /// the next read.
+    func forget() async {
         generation += 1
         keep([:])
         if hasRead { hasRead = false }
+        await history.removeAll()
+        removed(LiveMetric.allCases)
+    }
+
+    private func removed(_ metrics: [LiveMetric]) {
+        for metric in metrics { removals[metric, default: 0] += 1 }
     }
 
     /// Draws the cards and keeps them for the next launch; none removes the file (AC2).
@@ -153,19 +177,39 @@ final class LiveHealth {
     /// fewer than seven reads further back, for the last seven readings however old (AC14).
     @concurrent
     nonisolated static func readCards(_ store: any LiveHealthStore, now: Date, calendar: Calendar) async throws -> [LiveMetric: LiveCard] {
-        try await withThrowingTaskGroup(of: (LiveMetric, LiveCard?).self) { group in
+        try await readCardsNoting(store, now: now, calendar: calendar).cards
+    }
+
+    /// `readCards`, and the metrics Health answered that it holds none of (not a failed read).
+    @concurrent
+    nonisolated static func readCardsNoting(_ store: any LiveHealthStore, now: Date, calendar: Calendar) async throws -> (cards: [LiveMetric: LiveCard], absent: Set<LiveMetric>) {
+        try await withThrowingTaskGroup(of: (LiveMetric, LiveCard?, Bool).self) { group in
             for metric in LiveMetric.allCases {
-                group.addTask { (metric, try await card(store, metric, now: now, calendar: calendar)) }
+                group.addTask {
+                    let (card, absent) = try await card(store, metric, now: now, calendar: calendar)
+                    return (metric, card, absent)
+                }
             }
             var cards: [LiveMetric: LiveCard] = [:]
-            for try await (metric, card) in group { cards[metric] = card }
-            return cards
+            var absent: Set<LiveMetric> = []
+            for try await (metric, card, none) in group {
+                cards[metric] = card
+                if none { absent.insert(metric) }
+            }
+            return (cards, absent)
         }
     }
 
-    /// One metric's card, or nil when Health holds none of it.
-    private nonisolated static func card(_ store: any LiveHealthStore, _ metric: LiveMetric, now: Date, calendar: Calendar) async throws -> LiveCard? {
-        guard let latest = try await optional({ try await store.latest(metric) }) ?? nil else { return nil }
+    /// One metric's card, or nil; `absent` when Health answered that it holds none of it, not
+    /// when the read failed.
+    private nonisolated static func card(_ store: any LiveHealthStore, _ metric: LiveMetric, now: Date, calendar: Calendar) async throws -> (card: LiveCard?, absent: Bool) {
+        guard let answer = try await optional({ try await store.latest(metric) }) else { return (nil, false) }
+        guard let latest = answer else { return (nil, true) }
+        return (try await card(store, metric, latest: latest, now: now, calendar: calendar), false)
+    }
+
+    /// The card from the metric's newest sample.
+    private nonisolated static func card(_ store: any LiveHealthStore, _ metric: LiveMetric, latest: (value: Double?, date: Date), now: Date, calendar: Calendar) async throws -> LiveCard? {
         let newest = min(latest.date, now)
         if metric == .sleep {
             let today = calendar.startOfDay(for: now)
@@ -209,39 +253,30 @@ final class LiveHealth {
         return reading.map { min(start, calendar.startOfDay(for: $0)) } ?? start
     }
 
-    /// A metric page's days (AC7a): the whole history, from the oldest sample's day to now, as
-    /// Weight's page scrolls back to its first reading. HealthKit sums or averages each day, so a
-    /// decade is about 3,650 points. If the oldest cannot be read, 400 days and the card's reading.
-    /// Read only once the page leaves D (E4).
+    /// What a page draws before its history is brought up to date (AC7a): the kept days, else
+    /// (a first visit) 400 days read now.
+    func firstDays(_ metric: LiveMetric, reaching reading: Date?) async -> [LivePoint]? {
+        if let kept = await history.keptDays(metric) { return kept }
+        return try? await Self.readDays(store, metric, reaching: reading, now: now(), calendar: calendar)
+    }
+
+    /// A metric page's first visit (AC7, AC7a): 400 days to now, back further to the card's
+    /// reading, drawn while `LiveHistory` reads the whole history. Read only once the page
+    /// leaves D (E4).
     @concurrent
     nonisolated static func readDays(_ store: any LiveHealthStore, _ metric: LiveMetric, reaching reading: Date?, now: Date, calendar: Calendar) async throws -> [LivePoint] {
-        let oldest = try await oldest(store, metric, or: reading)
-        return try await days(store, metric, from: pageStart(reaching: oldest, back: 400, now: now, calendar: calendar), to: now)
+        try await days(store, metric, from: pageStart(reaching: reading, back: 400, now: now, calendar: calendar), to: now)
     }
 
-    /// D's hours (AC7): the day holding `day`, up to now, read as the person moves to it.
-    @concurrent
-    nonisolated static func readHours(_ store: any LiveHealthStore, _ metric: LiveMetric, day: Date, now: Date, calendar: Calendar) async throws -> [LivePoint] {
-        let start = calendar.startOfDay(for: day)
-        let end = min(calendar.date(byAdding: .day, value: 1, to: start) ?? now, now)
-        guard end > start else { return [] }
-        return try await optional { try await store.points(metric, from: start, to: end, every: .hour) } ?? []
-    }
-
-    /// Sleep's page (AC9, AC7a): every night, from the oldest sleep sample. If the oldest cannot
-    /// be read, the last 200 days and the card's night (its sleep began the evening before the
-    /// day it is dated).
+    /// Sleep's page on its first visit (AC9, AC7a): the nights of the last 200 days, back further
+    /// to the card's night (its sleep began the evening before the day it is dated), drawn while
+    /// `LiveHistory` reads every night.
     @concurrent
     nonisolated static func readNights(_ store: any LiveHealthStore, reaching night: Date?, now: Date, calendar: Calendar) async throws -> [SleepNight] {
         let evening = night.flatMap { calendar.date(byAdding: .day, value: -1, to: $0) }
-        let from = pageStart(reaching: try await oldest(store, .sleep, or: evening), back: 200, now: now, calendar: calendar)
+        let from = pageStart(reaching: evening, back: 200, now: now, calendar: calendar)
         let segments = try await optional { try await store.sleep(from: from, to: now) } ?? []
         return LiveMaths.nights(segments, calendar: calendar)
-    }
-
-    /// The older of the metric's oldest sample and `other`; a failed read gives `other` (AC7a).
-    private nonisolated static func oldest(_ store: any LiveHealthStore, _ metric: LiveMetric, or other: Date?) async throws -> Date? {
-        [try await optional { try await store.earliest(metric) } ?? nil, other].compactMap { $0 }.min()
     }
 
     private nonisolated static func days(_ store: any LiveHealthStore, _ metric: LiveMetric, from: Date, to: Date) async throws -> [LivePoint] {

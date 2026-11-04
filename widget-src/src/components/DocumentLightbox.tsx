@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { deleteDocument, readDocumentFile } from '../lib/roadmap-data';
 import { DOCUMENT_TYPE_LABELS, formatDocumentDate } from '../lib/document-format';
 import { viewableType } from '../lib/file-kinds';
@@ -78,8 +79,10 @@ export function DocumentLightbox({ doc, onClose, onDeleted }: DocumentLightboxPr
     setConfirmDelete(false);
   };
 
-  return (
-    <div className="upload-modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+  // On <body>: `.health-tool` is transformed, so a fixed backdrop inside it would cover
+  // the widget, not the screen (US-14 AC7). Outside the widget root it masks itself (US-09 AC8).
+  return createPortal((
+    <div className="upload-modal-backdrop" data-clarity-mask="true" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className={`upload-modal doc-lightbox${isMobile ? ' upload-modal--mobile' : ''}`}>
         <div className="upload-modal-header">
           <div className="doc-lightbox-title-row">
@@ -120,5 +123,5 @@ export function DocumentLightbox({ doc, onClose, onDeleted }: DocumentLightboxPr
         </div>
       </div>
     </div>
-  );
+  ), document.body);
 }

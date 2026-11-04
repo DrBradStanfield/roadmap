@@ -272,6 +272,41 @@ describe('US-21 phase 2 — AddLabTest', () => {
     expect(save.disabled).toBe(false);
   });
 
+  it('US-21 AC2: "Choose a test…" after an Other test saves nothing; the name and unit it hides are not used', async () => {
+    const { getByLabelText, getByRole, queryByLabelText, onAdded } = openForm();
+    fireEvent.change(getByLabelText('Test'), { target: { value: 'custom' } });
+    fireEvent.change(getByLabelText('Test name'), { target: { value: 'Amylase ' } });
+    fireEvent.change(getByLabelText('Unit'), { target: { value: 'U/L' } });
+    fireEvent.change(getByLabelText('Value'), { target: { value: '55' } });
+    fireEvent.change(getByLabelText('Test'), { target: { value: '' } });
+    expect(queryByLabelText('Test name')).toBeNull();
+    const save = getByRole('button', { name: /^save$/i }) as HTMLButtonElement;
+    expect(save.disabled).toBe(true);
+    fireEvent.click(save);
+    await Promise.resolve();
+    expect(addLabValue).not.toHaveBeenCalled();
+    expect(onAdded).not.toHaveBeenCalled();
+    // Other again: what was typed is still there, and saves as before.
+    fireEvent.change(getByLabelText('Test'), { target: { value: 'custom' } });
+    expect((getByLabelText('Test name') as HTMLInputElement).value).toBe('Amylase ');
+    expect(save.disabled).toBe(false);
+    fireEvent.click(save);
+    await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'Amylase', unit: 'U/L', value: 55, day: todayIso });
+  });
+
+  it('US-21 AC2: a catalogue test picked after an Other test saves the catalogue test, not the typed name', async () => {
+    const { getByLabelText, getByRole, onAdded } = openForm();
+    fireEvent.change(getByLabelText('Test'), { target: { value: 'custom' } });
+    fireEvent.change(getByLabelText('Test name'), { target: { value: 'Amylase' } });
+    fireEvent.change(getByLabelText('Unit'), { target: { value: 'U/L' } });
+    fireEvent.change(getByLabelText('Test'), { target: { value: 'ggt' } });
+    fireEvent.change(getByLabelText('Value'), { target: { value: '30' } });
+    fireEvent.click(getByRole('button', { name: /^save$/i }));
+    await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'ggt', unit: 'U/L', value: 30, day: todayIso });
+  });
+
   // US-02 AC7: a catalogued test has no input range, so "1,050" (1050 or
   // 1.05) is asked about and never saved; "1,05" is a decimal comma.
   it('asks about "1,050" and saves nothing until it is retyped', async () => {

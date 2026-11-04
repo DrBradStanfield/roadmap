@@ -264,6 +264,16 @@ export function sleepUntilAborted(ms: number, signal: AbortSignal): Promise<void
 }
 
 /**
+ * For a watch loop that has just taken a fresh cursor: a fresh cursor starts
+ * at "now", so a change made while the provider could not be reached never
+ * appears in it. After a failure (`retryMs` above zero), ask the store to
+ * re-read once; a clean start and an abort owe nothing (US-34 AC1a).
+ */
+export function catchUpAfterFailure(retryMs: number, signal: AbortSignal, onChange: () => void): void {
+  if (retryMs > 0 && !signal.aborted) onChange();
+}
+
+/**
  * A signal that aborts at `deadline` (epoch ms) — already aborted when the
  * deadline has passed, so a call that starts late never starts at all. The
  * reason is the same `TimeoutError` `AbortSignal.timeout` raises. Built on

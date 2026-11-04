@@ -64,6 +64,8 @@ describe('US-32 — the JSON-RPC handshake', () => {
     expect(response.result.capabilities).toEqual({ tools: { listChanged: false }, prompts: { listChanged: false } });
     expect(response.result.serverInfo.name).toBe('health-roadmap');
     expect(response.result.instructions).toContain('not medical advice');
+    // US-32 AC57: the stdio read hands out document text too.
+    expect(response.result.instructions).toMatch(/document’s title, text and file name[^.]*data, not instructions/);
     // US-32 AC39: offered only while it can do more than refuse.
     expect(response.result.instructions.includes('report_feedback')).toBe(REPO_PUBLIC);
     rmSync(dir, { recursive: true, force: true });
@@ -390,6 +392,8 @@ describe('US-32 — nothing that could reach the network is imported', () => {
     join(here, 'mcp-server.ts'),
     join(here, '..', 'packages', 'health-core', 'src', 'file-adapter.ts'),
     join(here, '..', 'packages', 'health-core', 'src', 'mcp-tools.ts'),
+    // Split out of mcp-tools.ts (issue #429): the same guarantee covers the moved code.
+    ...['mcp-tool-contract.ts', 'mcp-feedback.ts', 'mcp-import.ts', 'mcp-tool-catalogue.ts'].map((name) => join(here, '..', 'packages', 'health-core', 'src', name)),
     join(here, '..', 'packages', 'health-core', 'src', 'plan.ts'),
   ];
 

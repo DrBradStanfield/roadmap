@@ -236,3 +236,10 @@ describe('US-20 AC7: the top bar', () => {
     expect(view.container.querySelector('.hr-top-bar')).toBeNull();
   });
 });
+
+describe('US-15 AC53 and US-62 AC14: one chat on a phone', () => {
+  it('a phone shows no floating chat button: the Chat tab is the chat', async () => {
+    await renderPhone();
+    expect(document.querySelector('.chat-fab')).toBeNull();
+  });
+});

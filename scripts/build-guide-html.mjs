@@ -129,6 +129,17 @@ const inline = (s) =>
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 
+// A block that starts with "- " or "1. " is a list: each such line starts an
+// item and an indented line continues the one above. A numbered list that
+// starts after 1 (steps split by a code box) keeps its number.
+const LIST_ITEM = /^(?:-|\d+\.)\s+/;
+const list = (b) => {
+  const items = b.split(/\n(?=(?:-|\d+\.)\s)/).map((it) => `<li>${inline(it.replace(LIST_ITEM, '').replace(/\n\s*/g, ' '))}</li>`);
+  const n = /^\d+/.exec(b)?.[0];
+  if (!n) return `<ul>${items.join('')}</ul>`;
+  return `<ol${Number(n) === 1 ? '' : ` start="${Number(n)}"`}>${items.join('')}</ol>`;
+};
+
 const rendered = restore(
   body
     .split(/\n\n+/)
@@ -139,6 +150,7 @@ const rendered = restore(
       if (b.startsWith('> ')) return `<blockquote><p>${inline(b.split('\n').map((l) => l.replace(/^>\s?/, '')).join(' '))}</p></blockquote>`;
       if (b.startsWith('### ')) return `<h3>${inline(b.slice(4))}</h3>`;
       if (b.startsWith('## ')) { const x = b.slice(3); return `<h2 id="${x.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}">${inline(x)}</h2>`; }
+      if (LIST_ITEM.test(b)) return list(b);
       return `<p>${inline(b)}</p>`;
     })
     .join('\n'),

@@ -20,9 +20,11 @@
  * no model, no telemetry; the record and its .bak siblings are the only files
  * touched. why: docs/mcp-architecture.md §7.
  */
-import { pathToFileURL } from 'node:url';
+import { existsSync, realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { isCoreRow } from '../packages/health-core/src/core-rows';
 import { BACKUPS_KEPT, FileAdapter } from '../packages/health-core/src/file-adapter';
+import { comparatorOf, formatGradedOrLimit } from '../packages/health-core/src/lab-limits';
 import { oneLine, PlanError } from '../packages/health-core/src/plan';
 import {
   appendLabValue,
@@ -150,6 +152,8 @@ function coreMetricOf(row: Row): MetricType | undefined {
  */
 function shownValue(row: Row): string {
   const metric = coreMetricOf(row);
+  // A raised PSA prints on its side of 4.0, as the app shows it (US-06 AC18).
+  if (metric === 'psa') return formatGradedOrLimit('psa', row.value, 'si', comparatorOf(row).comparator);
   return metric && UNIT_DEFS[metric] ? formatDisplayValue(metric, row.value, 'si') : String(row.value);
 }
 
@@ -265,6 +269,10 @@ export async function run(argv: string[]): Promise<number> {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// The CLI runs only when this is the script Node was asked to run. Node gives
+// import.meta.url as the real path and argv[1] as typed, so both are resolved:
+// through a symlinked folder a plain compare never matched (US-32 AC56).
+const entry = process.argv[1] && existsSync(process.argv[1]) ? realpathSync(process.argv[1]) : '';
+if (entry === realpathSync(fileURLToPath(import.meta.url))) {
   run(process.argv.slice(2)).then((code) => process.exit(code));
 }

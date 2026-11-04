@@ -174,11 +174,13 @@ Source: `units.ts`
 | psa | 1 | 1 |
 | lpa | 0 | 1 (mg/dL; mg/L, a tenth of it, at 0) |
 
+An additional lab test (one this table does not list) shows its stored value to up to two decimal places with no trailing zeros. Below 0.1 it keeps two significant figures instead, so a suppressed TSH of 0.004 mIU/L shows as 0.004, not 0, and 0.0456 as 0.046 (`formatLabValue`, US-21 AC25, Brad 2026-11-04). A value printed as a limit shows as printed ("< 0.005"). Display only: the stored number is unchanged.
+
 ### Lab catalogue conversions
 
 Source: `packages/health-core/src/lab-catalog.ts` (`LAB_CONVERSIONS`, `canonicalLabValue`). Since US-21 phase 3, a lab test the catalogue knows is **stored** in its canonical SI unit, not in the unit the lab printed. A writer sends the number and the unit as printed; the record converts it once, on the write, and converts `referenceLow`/`referenceHigh` by the same factor.
 
-Factor = the number a reported value is multiplied by to reach the canonical unit. Spellings are matched lower case, after `normalizeLabUnit` folds report and LLM spelling (`umol/L` → `µmol/L`, `mcg` → `µg`, `uL` → `µL`, `x 10e9/L` → `×10⁹/L`, `1.73m2` → `1.73m²`, `gm/dL` → `g/dL`, `Units/L` → `U/L`, `10^3/cmm`, `10^3/cumm`, `10^3/mm3` or `10^3/mm³` → `×10³/µL`, `10^6/mm3` or `10^6/mm³` → `×10⁶/µL`, `cells/uL`, `cells/cmm`, `cells/cumm`, `cells/mm3` or `cells/mm³` → `cells/µL`; a bracketed or superscript power of ten, `x10(3)/uL`, `10^(9)/L`, `x10³/µL` or `10³/µL` → `×10³/µL` or `×10⁹/L`, and `mcL` → `µL`, so `K/mcL` → `K/µL`). A cubic millimetre is a microlitre, so these folds rescale nothing. `mm3` and `mm³` fold only after a slash: a bare `mm³` is a volume and is never folded. A factor of 1 is a different notation for the same scale, not a conversion.
+Factor = the number a reported value is multiplied by to reach the canonical unit. Spellings are matched lower case, after `normalizeLabUnit` folds report and LLM spelling (`umol/L` → `µmol/L`, `mcg` → `µg`, `uL` → `µL`, `x 10e9/L` → `×10⁹/L`, `1.73m2` → `1.73m²`, `gm/dL` → `g/dL`, `Units/L` → `U/L`, `10^3/cmm`, `10^3/cumm`, `10^3/mm3` or `10^3/mm³` → `×10³/µL`, `10^6/mm3` or `10^6/mm³` → `×10⁶/µL`, `cells/uL`, `cells/cmm`, `cells/cumm`, `cells/mm3` or `cells/mm³` → `cells/µL`; a bracketed or superscript power of ten, `x10(3)/uL`, `10^(9)/L`, `x10³/µL` or `10³/µL` → `×10³/µL` or `×10⁹/L`, and `mcL` → `µL`, so `K/mcL` → `K/µL`; `dL`, `mL` and `µL` in any case, as a whole token, so `mg/dl` → `mg/dL`, while `G/L`, giga per litre, stays apart from `g/L`). A cubic millimetre is a microlitre, so these folds rescale nothing. `mm3` and `mm³` fold only after a slash: a bare `mm³` is a volume and is never folded. A factor of 1 is a different notation for the same scale, not a conversion.
 
 A spelling this table does not carry for that test is **refused** — never rescaled by guess. The refusal names the canonical unit and every spelling the test accepts, and the website counts it as `lab_unit_refused`. Six things follow from that:
 
@@ -186,7 +188,7 @@ A spelling this table does not carry for that test is **refused** — never resc
 - **A value no human sample reaches is refused** (US-21 AC21, Brad 2026-10-20). A real sheet printed free testosterone as "nmol/L" when its number and range (163–473) were pmol/L, so the ×1000 conversion produced an impossible result that would have saved. The count check cannot catch this, because the value and its range are mislabelled together. Five tests reachable through a ×1000 upward conversion carry a ceiling in their canonical unit: `free_testosterone` 10,000 pmol/L, `free_testosterone_calculated` 10,000 pmol/L, `reverse_t3` 10,000 pmol/L, `c_peptide` 50,000 pmol/L, `reticulocytes` 2,000 ×10⁹/L. The check applies only to a row converted by a ×1000 prefix step (nmol/L to pmol/L, ×10¹²/L to ×10⁹/L): when its converted value, or its converted printed high bound, passes the ceiling, it is refused, never rescaled. A row printed in any other spelling (the canonical unit, pg/mL, ng/dL, ng/mL) is never refused by the ceiling, because a real result can pass it (free testosterone on heavy androgen use can exceed 10,000 pmol/L, printed as pmol/L or as pg/mL). Without a printed range, a prefix error that lands under the ceiling is not caught (a female free testosterone of 8 printed as nmol/L stores 8,000 pmol/L). The refusal's note names the test, the ceiling and the two units, never the number: "Free testosterone above 10,000 pmol/L is not a measured value, so the printed unit is probably wrong (nmol/L vs pmol/L). Check the report, then add it in pmol/L with + Add a blood test." Troponin has no ceiling: a real high troponin overlaps a mislabelled one. Load never deletes or rewrites a row, so a stored row above a ceiling is left as it is: a legacy printed row gets no `#si` child, and one an older build already converted stays.
 - **A differential in % is refused.** It is a share of the white count, not a count, and is never multiplied out from the WBC. Its refusal says the record keeps the absolute count (×10⁹/L or cells/µL), so the person looks for that line on the same report.
 - **Prolactin in ng/mL is refused on purpose.** The mIU/L factor is assay-dependent (about 21.2 for the WHO 3rd IS), so converting would invent precision the report does not have.
-- **A test the catalogue does not know is stored exactly as reported**, with its printed unit. There is no SI definition to convert it to, and refusing it would throw the value away.
+- **A test the catalogue does not know is stored exactly as reported**, with its printed unit. There is no SI definition to convert it to, and refusing it would throw the value away. Its units are compared after the folds above, so `mg/dL` and `mg/dl` are one unit and chart as one line (US-21 AC14, Brad 2026-11-04).
 - **Rows written before phase 3 are corrected at load**, not edited: `migrate.ts` appends a converted row with the id `<id>#si` and `correctsId` set, and flips the printed row to `entered-in-error`. Same id on every device, so cross-device copies merge into one row. A legacy `gm/dL` row (haemoglobin, albumin, total protein, globulin, MCHC) now converts at ×10 on load through the same path. So does a legacy whole count in cells/µL, at ×0.001; a decimal one is left as it is.
 
 | key | canonical | reported spelling | × factor | note |
@@ -308,6 +310,7 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `fibrinogen` | g/L | mg/dl | 0.01 | a milligram per decilitre is a hundredth of a gram per litre |
 | `tsh` | mIU/L | µiu/ml | 1 | µIU/mL and mIU/L are the same number |
 | `tsh` | mIU/L | mu/l | 1 | mU/L is mIU/L, printed short |
+| `tsh` | mIU/L | µu/ml | 1 | µU/mL is µIU/mL, printed short |
 | `tsh` | mIU/L | microiu/ml | 1 | µIU/mL with the prefix spelled out |
 | `tsh` | mIU/L | mciu/ml | 1 | µIU/mL with the mc prefix (as mcg) |
 | `ft4` | pmol/L | ng/dl | 12.87 | thyroxine 776.87 g/mol |
@@ -334,6 +337,8 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `estradiol` | pmol/L | pg/ml | 3.671 | estradiol 272.38 g/mol |
 | `estradiol` | pmol/L | ng/l | 3.671 | estradiol 272.38 g/mol |
 | `prolactin` | mIU/L | µiu/ml | 1 | µIU/mL and mIU/L are the same number (ng/mL stays refused: assay-dependent) |
+| `prolactin` | mIU/L | mu/l | 1 | mU/L is mIU/L, printed short |
+| `prolactin` | mIU/L | µu/ml | 1 | µU/mL is µIU/mL, printed short |
 | `prolactin` | mIU/L | microiu/ml | 1 | µIU/mL with the prefix spelled out |
 | `prolactin` | mIU/L | mciu/ml | 1 | µIU/mL with the mc prefix (as mcg) |
 | `cortisol_am` | nmol/L | µg/dl | 27.59 | cortisol 362.46 g/mol |
@@ -341,8 +346,10 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `cortisol_pm` | nmol/L | µg/dl | 27.59 | cortisol 362.46 g/mol |
 | `psa_free` | µg/L | ng/ml | 1 | ng/mL and µg/L are the same number |
 | `lh` | IU/L | miu/ml | 1 | mIU/mL and IU/L are the same number |
+| `lh` | IU/L | mu/ml | 1 | mU/mL is mIU/mL, printed short |
 | `lh` | IU/L | u/l | 1 | U/L is IU/L, printed short |
 | `fsh` | IU/L | miu/ml | 1 | mIU/mL and IU/L are the same number |
+| `fsh` | IU/L | mu/ml | 1 | mU/mL is mIU/mL, printed short |
 | `fsh` | IU/L | u/l | 1 | U/L is IU/L, printed short |
 | `progesterone` | nmol/L | ng/ml | 3.180 | progesterone 314.46 g/mol |
 | `dhea_s` | µmol/L | µg/dl | 0.02714 | DHEA sulfate 368.49 g/mol |
@@ -363,6 +370,7 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `acth` | pmol/L | ng/l | 0.2202 | ACTH 1-39 4541 g/mol |
 | `gh` | µg/L | ng/ml | 1 | ng/mL and µg/L are the same number |
 | `hcg` | IU/L | miu/ml | 1 | mIU/mL and IU/L are the same number |
+| `hcg` | IU/L | mu/ml | 1 | mU/mL is mIU/mL, printed short |
 | `vitamin_d` | nmol/L | ng/ml | 2.496 | 25-OH-D 400.64 g/mol |
 | `vitamin_d` | nmol/L | µg/l | 2.496 | 25-OH-D 400.64 g/mol |
 | `vitamin_b12` | pmol/L | pg/ml | 0.738 | cyanocobalamin 1355.4 g/mol |
@@ -448,7 +456,7 @@ Three-file sync: `evidence.ts` and `roadmap_text.html` are untouched because no 
 
 **Cortisol by timing (US-07 AC9, Brad 2026-11-02, issue 476).** Cortisol is read against the time it was drawn, so each timing has its own entry, in nmol/L at the same 27.59 µg/dL factor. A name that prints no timing ("Cortisol") is a morning cortisol, `cortisol_am` "Cortisol (morning)", since most cortisol tests are drawn in the morning. AM or morning spellings go there too. A random cortisol goes to `cortisol_random` "Cortisol (random)". A PM, evening or (blood) midnight cortisol goes to `cortisol_pm` "Cortisol (PM)". Salivary and urine cortisol are not catalogued: they keep their printed names. A row stored earlier under a random or PM name was uncatalogued; slots are computed on read, so it now reads under its new entry, and one printed in µg/dL is converted at load by an appended correction row (`migrate.ts`, as for every newly catalogued test). A bare "Cortisol" row stays in `cortisol_am`. The upload prompt offers all three cortisol names (US-07 AC10, Brad 2026-11-02: "just switch over"). Punctuated spellings ("Cortisol, A.M.", "cortisol-pm", "P.M. cortisol") reach the same entries through the second, punctuation-free try above.
 
-**Printed name decides (US-07 AC10, Brad 2026-11-02).** On a website or BYOK upload the model also returns each row's name as the report prints it. When that printed name resolves (the exact lookup or the punctuation-free one, never part of a name) to a core metric or a catalogued test, it decides where the row is filed, over the model's pick: a bare "Cortisol" is a morning cortisol whatever key the model chose, and a printed urine creatinine is a lab row, never serum creatinine. When it resolves to nothing, the model's pick stands. Specimen: when one name says urine or saliva and the other does not, the one that says it wins, for every test (a plain "Sodium" under a URINE heading stays urine sodium); for creatinine, a row the model listed among other tests is promoted when its printed name is a serum creatinine name; the unit check still refuses urine-only units. No review flag is added. A row with no printed name is filed as before. No row is edited; the connector, chat and agent paths are unchanged.
+**Printed name decides (US-07 AC10, Brad 2026-11-02).** On a website or BYOK upload the model also returns each row's name as the report prints it. When that printed name resolves (the exact lookup or the punctuation-free one, never part of a name) to a core metric or a catalogued test, it decides where the row is filed, over the model's pick: a bare "Cortisol" is a morning cortisol whatever key the model chose, and a printed urine creatinine is a lab row, never serum creatinine. When it resolves to nothing, the model's pick stands. Specimen: when one name says urine or saliva and the other does not, the one that says it wins, for every test (a plain "Sodium" under a URINE heading stays urine sodium); for creatinine, a row the model listed among other tests is promoted when its printed name is a serum creatinine name; the unit check still refuses urine-only units. No review flag is added. A row the model lists among the core tests under a name that is no core key (US-12 AC11a), with or without a printed name, is filed by its printed name when it has one, or else by that name, and is never dropped, on every path that reads the model's answer, the connector's folder import included. As one of the 11 core values it keeps the model's confidence and question, also when a held slot leaves it a lab row that is offered as that core value; creatinine needs a printed serum creatinine name; weight, waist, height and any other name are lab rows; a row with no name at all is counted as not saved. Any other row with no printed name keeps the model's pick. No row is edited; chat, agent writes and the assistant's own read are unchanged.
 
 ---
 
@@ -1101,8 +1109,12 @@ overdue = now > nextDue
 
 ### Prostate-Specific
 
-- PSA > 4.0 ng/mL -> `screening-prostate-elevated` (attention)
-- `elected_not_to` -> no suggestion shown
+- PSA > 4.0 ng/mL -> `screening-prostate-elevated` (attention), whatever the screening answer
+- `elected_not_to` -> no screening card and no PSA reminder; a saved PSA above 4.0 still shows `screening-prostate-elevated` (Brad 2026-11-03)
+- Where the PSA comes from (US-06 AC14): the newest usable active `psa` row, its value and its day, a core lab row since US-66. Usable: a value in the PSA range (0 to 10,000 ng/mL) and a real day no later than the latest day anywhere on Earth (UTC+14), so a server in UTC still counts the person's today; a newer unusable row never hides an older usable one. Ties on a day go to the later `createdAt`, then the id. A PSA printed as a limit (US-12 AC20) is graded only when the limit decides against 4.0: "> 100" is elevated, and the card shows it as printed ("Your PSA of > 100.0 ng/mL ..."); "< 0.1" is not; "< 5", "<= 4.0" and ">= 4.0" leave it uncertain, so no elevated card. Its day still dates the next test. The old answers `prostate_psa_value` and `prostate_last_date` count only when there is no usable row or when they are newer by date, value and day together; an answer that gives only a month loses to a row from that month. The web plan, `computePlan`, the reminder schedule and the chat's plan all read it this way.
+- While `screening-prostate-elevated` shows, `screening-prostate-upcoming` ("PSA test up to date") does not: beside a raised PSA it reads as all clear. `screening-prostate-overdue` and the `screening_prostate` reminder are unchanged (US-06 AC17, Brad 2026-11-03).
+- A raised PSA never prints as 4.0 (US-06 AC18, Brad 2026-11-03): where one decimal would print 4.0 or less, a PSA above 4.0 prints two, rounded up (4.04 reads 4.04, not 4.0), on the card, `get_plan` and the PSA field's line on the web and the iPhone (`formatGradedReading`). Any other PSA prints to one decimal. A limit prints as printed.
+- A PSA typed in the prostate section (US-06 AC15) is saved as a `psa` row on the day picked beside it (a full date, today until changed; never after today), as every blood test is dated. That day is also the last PSA test for the due card and the reminder: no client asks for or writes `prostate_last_date` any more.
 
 ### DEXA-Specific
 
