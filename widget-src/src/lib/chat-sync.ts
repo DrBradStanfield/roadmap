@@ -23,7 +23,9 @@ let channel: BroadcastChannel | null = null;
 function getChannel(): BroadcastChannel | null {
   if (typeof BroadcastChannel === 'undefined') return null;
   if (!channel) {
-    channel = new BroadcastChannel(CHANNEL_NAME);
+    // Firefox throws a SecurityError here when the site's storage is blocked:
+    // the chat then runs without cross-tab sync (US-09 AC16a).
+    try { channel = new BroadcastChannel(CHANNEL_NAME); } catch { return null; }
     window.addEventListener('beforeunload', () => {
       channel?.close();
       channel = null;
