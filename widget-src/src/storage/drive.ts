@@ -139,6 +139,34 @@ function expiry(expiresIn?: number): number {
 /** The one scope Drive access needs; `google-config.ts` builds the request from it. */
 export const DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
+type RefreshGrant = { accessToken: string; expiresIn: number; idToken?: string };
+
+/**
+ * POST a refresh grant to the stateless endpoint and read a 2xx body, both in
+ * one 5 s deadline and one catch. This runs at page load before first render:
+ * a black-holing server must fail fast into the on-device + Reconnect
+ * fallback, not hang. Null when the call or the body read failed (no answer, a
+ * body that stalls past the deadline, dies or is not JSON), which the caller
+ * treats as transient, never a rejection (review of #788). A non-2xx body is
+ * not read; a 2xx whose body is JSON `null` comes back with `json: null`.
+ */
+async function postRefreshGrant(url: string, refreshToken: string): Promise<{ status: number; json?: RefreshGrant | null } | null> {
+  const deadline = timeoutDeadline(5000);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      // No Content-Type: keep it a CORS simple request (no preflight).
+      body: JSON.stringify({ grantType: 'refresh', refreshToken }),
+      signal: deadline.signal,
+    });
+    return { status: res.status, json: res.ok ? ((await res.json()) as RefreshGrant | null) : undefined };
+  } catch {
+    return null;
+  } finally {
+    deadline.clear();
+  }
+}
+
 /**
  * Google names the approved scopes on both connect paths (the redirect URL,
  * the popup's token response), so a grant with the Drive box left unticked is
@@ -373,27 +401,10 @@ export class GoogleDriveAdapter implements StorageAdapter {
   private async refresh(): Promise<'ok' | 'none' | 'transient'> {
     const startedFrom = this.tokens?.refreshToken;
     if (!startedFrom) return 'none';
-    let res: Response;
-    let json: { accessToken: string; expiresIn: number; idToken?: string } | undefined;
-    // This runs at page load before first render — a black-holing server must
-    // fail fast into the on-device + Reconnect fallback, not hang. The body read
-    // is inside the same 5 s and the same catch: a 200 whose body stalls, dies or
-    // is not JSON is transient too, never a rejection (review of #788).
-    const deadline = timeoutDeadline(5000);
-    try {
-      res = await fetch(this.config.exchangeUrl, {
-        method: 'POST',
-        // No Content-Type: keep it a CORS simple request (no preflight).
-        body: JSON.stringify({ grantType: 'refresh', refreshToken: startedFrom }),
-        signal: deadline.signal,
-      });
-      if (res.ok) json = await res.json();
-    } catch {
-      return 'transient'; // network/server down/timeout → caller falls back to the popup path
-    } finally {
-      deadline.clear();
-    }
-    if (res.status === 400 || res.status === 401) {
+    const answer = await postRefreshGrant(this.config.exchangeUrl, startedFrom);
+    if (!answer) return 'transient'; // network/server down/timeout → caller falls back to the popup path
+    const { status, json } = answer;
+    if (status === 400 || status === 401) {
       if (this.grantMoved(startedFrom)) return 'none';
       this.clearTokens(); // refresh token revoked/expired — stop retrying
       return 'none';
