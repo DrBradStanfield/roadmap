@@ -121,6 +121,12 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
     setShowThreads(false);
   }, [actions.selectConversation]);
 
+  // A new chat shows the empty chat and its input, as opening a thread does (US-15 AC46a).
+  const handleStartNewChat = useCallback(() => {
+    actions.startNewChat();
+    setShowThreads(false);
+  }, [actions.startNewChat]);
+
   // ----- COLLAPSED STATE -----
   if (!isExpanded) {
     return (
@@ -168,7 +174,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
             activeConversationId={state.activeConversationId}
             className="chat-thread-list"
             onSelect={handleSelectConversation}
-            onNew={actions.startNewChat}
+            onNew={handleStartNewChat}
             onDelete={actions.handleDelete}
           />
         )}
