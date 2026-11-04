@@ -69,7 +69,7 @@ beforeEach(async () => {
   vi.stubGlobal('fetch', vi.fn(fakeFetch));
   reload = vi.fn();
   Object.defineProperty(window, 'location', { value: { ...window.location, reload }, writable: true, configurable: true });
-});
+}, 30_000); // a fresh module graph per test: slow to import on a loaded machine
 
 afterEach(() => {
   cleanup();
@@ -248,6 +248,12 @@ describe('US-09 AC2g: what the page saved between the two tries reaches the new 
     expect((await data.addMeasurement('weight', 80, '2026-01-01')).status).toBe('inserted');
     await data.flushRoadmapStore();
     expect(weightsIn(dropboxBody())).toEqual({ '2026-01-01': 80 });
+  }, 30_000);
+
+  afterEach(async () => {
+    // The page this test left behind still holds an edit on the save's
+    // debounce; land it now, or it would arrive in the next test's Dropbox.
+    await data.flushRoadmapStore().catch(() => undefined);
   });
 
   it('a value logged after the refused token is in GitHub after the corrected try', async () => {
