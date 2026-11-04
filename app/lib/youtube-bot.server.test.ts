@@ -33,18 +33,27 @@ vi.mock('./supabase.server', () => ({
   supabaseAdmin: {
     from: (table: string) => ({
       select: (_cols: string, opts?: { head?: boolean }) => {
-        const res = opts?.head ? supa.countRes : supa.listRes;
+        // The per-video read pages by id (US-27 AC4): the staged rows are its
+        // first page, and the page after them is empty.
+        let afterId: unknown = 0;
+        const res = () => (opts?.head ? supa.countRes : afterId === 0 ? supa.listRes : { data: [], error: null });
         type Chain = {
           eq: () => Chain;
           gte: () => Chain;
+          gt: (_col: string, v: unknown) => Chain;
+          order: () => Chain;
+          limit: () => Chain;
           maybeSingle: () => Promise<unknown>;
           then: (onOk: (v: unknown) => unknown) => Promise<unknown>;
         };
         const chain: Chain = {
           eq: () => chain,
           gte: () => chain,
+          gt: (_col, v) => { afterId = v; return chain; },
+          order: () => chain,
+          limit: () => chain,
           maybeSingle: () => Promise.resolve({ data: null, error: null }),
-          then: (onOk) => Promise.resolve(res).then(onOk),
+          then: (onOk) => Promise.resolve(res()).then(onOk),
         };
         return chain;
       },
