@@ -46,6 +46,7 @@ import {
   catchUpAfterFailure,
   StorageError,
   jsonBody,
+  timeoutSignal,
   type ReadResult,
   type StorageAdapter,
   type WriteResult,
@@ -380,7 +381,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
         body: JSON.stringify({ grantType: 'refresh', refreshToken: startedFrom }),
         // This runs at page load before first render — a black-holing server
         // must fail fast into the on-device + Reconnect fallback, not hang.
-        signal: AbortSignal.timeout(5000),
+        signal: timeoutSignal(5000),
       });
     } catch {
       return 'transient'; // network/server down/timeout → caller falls back to the popup path

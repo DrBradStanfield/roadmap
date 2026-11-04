@@ -443,6 +443,7 @@ export {
   jsonBody,
   sleepUntilAborted,
   catchUpAfterFailure,
+  timeoutSignal,
   type StorageAdapter,
   type StorageBackendId,
   type DocumentAccess,
