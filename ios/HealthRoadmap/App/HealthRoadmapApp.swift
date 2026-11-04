@@ -176,8 +176,8 @@ struct AppParts {
         #endif
         sync = CloudSync(engine: engine, store: store, oauth: oauth)
         let (engine, store) = (engine, store)
-        reminders = ReminderScheduler(center: center, folder: folder) {
-            try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
+        reminders = ReminderScheduler(center: center, folder: folder) { firstSeen in
+            try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId, firstSeen: firstSeen)
         }
         let sync = self.sync
         health = AppleHealthSync(store: store, engine: engine, client: client, live: live) { await sync.syncNow() }

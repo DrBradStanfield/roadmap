@@ -52,8 +52,8 @@ final class DataEraserTests: XCTestCase {
         let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
         let sync = CloudSync(engine: engine, store: store, oauth: OAuthClient(tokens: tokens, session: StubHTTP.session()))
         let chat = ChatHistoryStore(engine: engine, folder: folder, deviceId: "ios-test")
-        let reminders = ReminderScheduler(center: center, folder: folder) {
-            try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
+        let reminders = ReminderScheduler(center: center, folder: folder) { firstSeen in
+            try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId, firstSeen: firstSeen)
         }
         let appleHealth = AppleHealthSync(store: store, engine: engine, client: health, memory: HealthSyncMemory(defaults: healthDefaults))
         let eraser = DataEraser(store: store, sync: sync, chat: chat, reminders: reminders, health: appleHealth, live: nil)

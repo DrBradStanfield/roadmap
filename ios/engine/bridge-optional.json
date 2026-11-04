@@ -15,6 +15,12 @@
     },
     "chatEditsJson": {
       "optionalReturns": "review.seen: opaque JSON, what the record held for each review line (US-67 AC3). The app passes it back as `seen` on the review part's chatEdits edit, and the engine refuses that Save when the record has changed since. An engine before it sends none, and the app sends no seen; an edit without seen saves as before. Also medications.refusal (string or null; with a refusal, lines is [] and undo is null): the reply's medication change could not be read, so nothing is saved and the app says so. An engine before it sends medications null instead, and an app before it ignores the field."
+    },
+    "remindersJson": {
+      "optionalArgs": [
+        "firstSeenJson"
+      ],
+      "optionalReturns": "firstSeen (US-17 AC15): the day each follow-up reminder was first seen on this phone, keyed <category>:<organize|checkin>, returned only when the app sent firstSeenJson; the app keeps it on the phone and sends it back, so a follow-up fires the first morning it is seen and then every 90 days from that day. An app before it sends none and gets none, and its follow-ups repeat from the due day as before; an engine before it ignores the argument and sends no firstSeen, and the app leaves what it keeps unchanged."
     }
   }
 }
