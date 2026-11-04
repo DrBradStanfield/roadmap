@@ -201,6 +201,9 @@ const TEXTS = [
   '120 Lp(a)', 'came back 120 lp(a)', '33 γ-GT',
   '41 GGT', 'Lp(a) 120', 'γ-GT 33', '120 nmol/L Lp(a)', '4.2 k+', '7.1 a1c',
   '12 bananas', '2 cholesterols',
+  // US-09 AC7f: a value never starts inside a digit run; the winner is unchanged.
+  '1.2.3 ldl', '12.34.5 ldl', '1,2,3 ldl', '120/80/60 bp', '1.2/3.4/5 bp', '12345 ldl',
+  '2026.11.04 ldl', 'v1.2.3 ldl', '1/2/3 hba1c', '3.2.1 Lp(a)', '5 17-ohp', '12 25(oh)d',
 ];
 
 describe('free-text scrub parity', () => {
@@ -374,6 +377,21 @@ describe('free-text scrub parity', () => {
         ['120 nmol/L Lp(a)', '[value] Lp(a)'], ['4.2 k+', '[value] k+'], ['7.1 a1c', '[value] a1c'],
         // A name inside a longer word is not the name.
         ['12 bananas', '12 bananas'], ['2 cholesterols', '2 cholesterols'],
+      ]) {
+        expect(impl.scrubText(text), text).toBe(scrubbed);
+      }
+    }
+  });
+
+  it('US-09 AC7f — a value starts at the head of its digit run, so the match that wins is unchanged, on both copies', () => {
+    for (const impl of [source, copy]) {
+      for (const [text, scrubbed] of [
+        ['1.2.3 ldl', '1.[value] ldl'], ['12.34.5 ldl', '12.[value] ldl'], ['1,2,3 ldl', '1,[value] ldl'],
+        ['120/80/60 bp', '120/[value] bp'], ['1.2/3.4/5 bp', '1.2/[value] bp'], ['12345 ldl', '[value] ldl'],
+        ['2026.11.04 ldl', '2026.[value] ldl'], ['v1.2.3 ldl', 'v1.[value] ldl'], ['1/2/3 hba1c', '1/[value] hba1c'],
+        ['3.2.1 Lp(a)', '3.[value] Lp(a)'],
+        // A name that starts with digits is the name, not part of the value.
+        ['5 17-ohp', '[value] 17-ohp'], ['12 25(oh)d', '[value] 25(oh)d'],
       ]) {
         expect(impl.scrubText(text), text).toBe(scrubbed);
       }
