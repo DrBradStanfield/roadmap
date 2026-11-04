@@ -62,12 +62,16 @@ export function getChatHistory(): Promise<ChatHistoryStore | null> {
  * open that failed earlier this page is tried again rather than taken from the
  * cache. Null only when no chat layer is registered, where no history exists.
  * A successful open becomes the shared instance, so a chat panel opened
- * afterwards sees the tombstones.
+ * afterwards sees the tombstones. When the page's open session failed its
+ * re-read, that session reads again (rejecting if it fails): a second session
+ * would not wait for the first one's saves (US-11 AC2g).
  */
 export async function openChatHistory(): Promise<ChatHistoryStore | null> {
   if (!factory) return null;
   const open = await cached();
   if (open) return open;
+  const held = await opened;
+  if (held) return held.reload().then(() => held);
   const opening = factory();
   opened = store = opening.catch(() => null);
   return opening;
