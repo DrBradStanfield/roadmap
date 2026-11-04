@@ -102,6 +102,9 @@ describe('US-09 AC13g: on a browser without AbortSignal.timeout (Safari 14/15)',
 
     expect(await adapter.tryServerRefresh()).toBe(true);
     expect(fetch).toHaveBeenCalledTimes(1);
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(DRIVE_CONFIG.exchangeUrl);
+    expect(JSON.parse(init.body as string)).toEqual({ grantType: 'refresh', refreshToken: 'refresh' });
     expect(adapter.hasValidToken()).toBe(true);
     // Persisted, so the next page load resumes on Drive (connect.ts resolveRemembered).
     expect(new GoogleDriveAdapter(DRIVE_CONFIG).hasValidToken()).toBe(true);
