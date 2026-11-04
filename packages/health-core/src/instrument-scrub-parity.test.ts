@@ -210,6 +210,8 @@ const TEXTS = [
   'a@b.co.uk-x@y.com', 'first@example.com+second@example.org', 'a@b.com%20c@d.com', `${'x'.repeat(100)}@example.com`,
   // US-09 AC7f: a name ending in a symbol ends there, whatever follows.
   '120 lp(a)s', '120 lp(a)x',
+  // US-09 AC7f: a name starting with a symbol starts there, whatever precedes it.
+  '33 xγ-GT', '1xγ-gt', ')25(oh)dγ-gt',
 ];
 
 describe('free-text scrub parity', () => {
@@ -380,6 +382,8 @@ describe('free-text scrub parity', () => {
         ['120 Lp(a)', '[value] Lp(a)'], ['came back 120 lp(a)', 'came back [value] lp(a)'], ['33 γ-GT', '[value] γ-GT'],
         // A name ending in a symbol ends there, whatever follows, as with \b.
         ['120 lp(a)s', '[value] lp(a)s'], ['120 lp(a)x', '[value] lp(a)x'],
+        // A name starting with a symbol starts there, whatever precedes it, as with \b.
+        ['33 xγ-GT', '[value] xγ-GT'], ['1xγ-gt', '[value]xγ-gt'], [')25(oh)dγ-gt', ')[value](oh)dγ-gt'],
         // Controls that already behaved: either order, a unit between, a symbol name.
         ['41 GGT', '[value] GGT'], ['Lp(a) 120', 'Lp(a) [value]'], ['γ-GT 33', 'γ-GT [value]'],
         ['120 nmol/L Lp(a)', '[value] Lp(a)'], ['4.2 k+', '[value] k+'], ['7.1 a1c', '[value] a1c'],

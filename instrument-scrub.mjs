@@ -328,12 +328,14 @@ const UNIT_VALUE_RE = new RegExp(
 // (the 1 of "A1c") is never the value (mirror of sentry-scrub.ts).
 const METRIC_THEN_VALUE_RE = new RegExp(
   `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])([^\\d\\n]{0,20}?)(?!(?<=[a-z])\\d+(?:[.,]\\d+)?[a-z])(${NUMBER})`, 'gi');
-// The same name edges, not \b: "Lp(a)" ends and "γ-GT" starts with no word
-// character, so \b never matched there; a name ending in a symbol ("lp(a)s")
-// still ends there, as with \b. A value starts at the head of its digit run,
-// never inside it: same matches, linear on a long run (US-09 AC7f).
+// Name edges, not \b: "Lp(a)" ends and "γ-GT" starts with no word character,
+// so \b never matched there. A name starts where no letter or digit runs into
+// it, or at its own first character when that is a symbol ("xγ-GT"), and ends
+// the same way ("lp(a)s"), so nothing \b scrubbed is lost. A value starts at
+// the head of its digit run, never inside it: same matches, linear on a long
+// run (US-09 AC7f).
 const VALUE_THEN_METRIC_RE = new RegExp(
-  `(?<!\\d)(${NUMBER})([^\\d\\n]{0,20}?)(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?:(?<![a-z0-9])|(?![a-z0-9]))`, 'gi');
+  `(?<!\\d)(${NUMBER})([^\\d\\n]{0,20}?)(?:(?<![a-z0-9])|(?![a-z0-9]))(${alternation(SCRUB_METRIC_WORDS)})(?:(?<![a-z0-9])|(?![a-z0-9]))`, 'gi');
 
 export function scrubText(text) {
   return text
