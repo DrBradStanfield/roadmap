@@ -367,8 +367,9 @@ export function normalizeLabUnit(raw: string): string {
   u = u.replace(/\/l\b/g, '/L');
   // A decilitre, millilitre or microlitre in any case, as a whole token, so an
   // uncatalogued test in mg/dL and mg/dl is one unit (US-21 AC14, 2026-11-04).
-  // Only these three: G/L is giga per litre, never g/L.
-  u = u.replace(/(^|[\s/])([dmµ])l(?=$|[\s/])/gi, (_, pre: string, p: string) => `${pre}${p.toLowerCase()}L`);
+  // Only these three: G/L is giga per litre, never g/L. No i flag: under it µ
+  // also matches Greek capital Mu, which is not a micro sign.
+  u = u.replace(/(^|[\s/])([dDmM]|µ)[lL](?=$|[\s/])/g, (_, pre: string, p: string) => `${pre}${p.toLowerCase()}L`);
   u = u.replace(/m\^?2\b/g, 'm²');
   // Three spellings of one unit (US-21 AC14), any case, only as a whole token
   // between the ends, a slash or a space: "gm/dL" is g/dL, "Unit" or "Units"

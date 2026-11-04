@@ -55,6 +55,14 @@ describe('formatLabValue keeps two significant figures below 0.1 (US-21 AC25)', 
     expect(formatLabValue(0.0000004)).toBe('0.0000004');
   });
 
+  it('never throws on a value too small for toFixed, so one row never blanks the table (US-65)', () => {
+    const tiny = (id: string, value: number, recordedAt: string) => ({ id, metricName: 'tsh', value, unit: 'mIU/L', recordedAt });
+    const [row] = labSeriesRows([tiny('a', 1e-120, '2026-10-01T00:00:00.000Z'), tiny('b', 5e-324, '2026-10-10T00:00:00.000Z')], NOW);
+    expect(row).toMatchObject({ latest: { value: '5e-324' }, previous: '1e-120' });
+    const [small] = labSeriesRows([tiny('c', 4e-7, '2026-10-01T00:00:00.000Z')], NOW);
+    expect(small.latest.value).toBe('0.0000004');
+  });
+
   it('keeps two decimals from 0.1 up, and 0 as 0', () => {
     expect(formatLabValue(0)).toBe('0');
     expect(formatLabValue(0.123)).toBe('0.12');

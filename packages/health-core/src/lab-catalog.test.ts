@@ -1285,5 +1285,8 @@ describe('US-21 AC14 — normalizeLabUnit folds the case of dL, mL and µL', () 
     expect(normalizeLabUnit('g/L')).toBe('g/L');
     expect(normalizeLabUnit('mmol/mol')).toBe('mmol/mol');
     expect(normalizeLabUnit('dlx')).toBe('dlx');
+    // Greek capital Mu (U+039C) is not a micro sign: case-insensitive matching must not fold it.
+    expect(normalizeLabUnit('\u039CL')).toBe('\u039CL');
+    expect(normalizeLabUnit('mg/\u039Cl')).toBe('mg/\u039Cl');
   });
 });

@@ -50,6 +50,9 @@ export function mixedUnitsNote(units: string[]): string {
 export function formatLabValue(v: number): string {
   const size = Math.abs(v);
   if (size >= 0.1 || size === 0 || !Number.isFinite(size)) return String(Math.round(v * 100) / 100);
+  // toFixed throws past 100 digits, and a reader takes any finite number, so
+  // an absurdly small one prints in exponent form rather than blank the table (US-65).
+  if (size < 1e-20) return String(Number(v.toPrecision(2)));
   // toFixed, not String: String(4e-7) prints exponent notation.
   return v.toFixed(1 - Math.floor(Math.log10(size))).replace(/0+$/, '');
 }
