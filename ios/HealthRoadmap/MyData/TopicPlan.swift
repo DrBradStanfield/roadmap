@@ -11,7 +11,7 @@ enum HealthTopic: String, CaseIterable, Identifiable {
 
     var title: SectionTitle {
         switch self {
-        case .weight: SectionTitle(title: "Weight", symbol: "scalemass.fill", tint: .purple)
+        case .weight: SectionTitle(title: "Weight & diabetes", symbol: "scalemass.fill", tint: .purple)
         case .sleep: SectionTitle(title: "Sleep", symbol: "bed.double.fill", tint: .cyan)
         case .fitness: .fitness()
         case .bloodPressure: SectionTitle(title: "Blood pressure", symbol: "heart.fill", tint: .red)
@@ -119,13 +119,23 @@ struct PlanTiles {
         default: nil
         }
     }
+}
 
-    /// PROTOTYPE: the fibre tile, only while the plan has the fibre card. Its value is the
-    /// range the card's own text gives ("Aim for 25-35g"), read from it, never typed here;
-    /// no range in the text, no tile.
-    static func fibre(_ plan: TopicPlan) -> StatTile? {
-        guard let fibre = plan[.weight].flatMap(\.suggestions).first(where: { $0.id == "fiber" }),
-              let match = fibre.description.firstMatch(of: /(\d+)\s*-\s*(\d+)\s*g/) else { return nil }
-        return StatTile(key: "fibre", label: "Fibre", value: "\(match.1)–\(match.2)", unit: "g/day", status: nil, evidence: nil, about: fibre.description)
+/// PROTOTYPE: the waist-to-height row's history, from the waist row and the height, as the
+/// tile works it out (health-core `waistToHeightRatio`: waist over height, to 2 places). Both are
+/// in the record's units, so the ratio is the same in metric and US. The latest value is the tile's own.
+struct WaistToHeight {
+    let tile: StatTile
+    let previous: String?
+    let trend: [Double]
+
+    init(tile: StatTile, waist: MyData.Row, height: String?) {
+        self.tile = tile
+        let height = height.flatMap { Double($0.replacingOccurrences(of: ",", with: "")) } ?? 0
+        func ratio(_ waist: Double) -> Double { (waist / height * 100).rounded() / 100 }
+        guard height > 0 else { previous = nil; trend = []; return }
+        previous = waist.previous.flatMap { Double($0.replacingOccurrences(of: ",", with: "")) }
+            .map { ratio($0).formatted(.number.precision(.fractionLength(2))) }
+        trend = (waist.trend ?? []).map(ratio)
     }
 }

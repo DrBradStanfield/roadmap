@@ -70,6 +70,23 @@ struct MetricDetailView: View {
                     .disabled(store.unitSwitches > 0)
                 }
             }
+            // PROTOTYPE (My health, round 2): ideal body weight moved here from the weight row, with
+            // the plan tile's own explainer (statTiles' `about` and evidence, as TileExplainerSheet shows them).
+            if row.metric == "weight", row.series == nil, let ideal = PlanTiles(store.plan)["ibw"] {
+                Section {
+                    LabeledContent {
+                        Text("\(ideal.value) \(ideal.unit)").font(.body.weight(.semibold)).monospacedDigit()
+                    } label: {
+                        Text(ideal.label)
+                        if let status = ideal.status { Text(status.label) }
+                    }
+                    Text(ideal.about)
+                    if let evidence = ideal.evidence {
+                        EvidenceDetails(reason: evidence.reason, guidelines: evidence.guidelines, references: evidence.references,
+                                        heading: "The evidence")
+                    }
+                }
+            }
             // Apple Health's About section, then its sources (US-58 AC4).
             if let guide = Self.guide(for: row, in: store.myData?.guides) {
                 GuideSections(guide: guide)

@@ -239,60 +239,47 @@ struct MyDataView: View {
         }
     }
 
-    /// Waist-to-height, weight with its ideal and BMI, waist, protein and fibre, the weight
-    /// medicines, then the weight cards.
+    /// Weight & diabetes (Brad, round 2): waist-to-height, weight with its BMI, HbA1c; then the
+    /// weight cards; then the weight and diabetes medicines.
     @ViewBuilder
     private func weight(_ data: MyData, plan: TopicPlan, tiles: PlanTiles) -> some View {
         heading(.weight)
         let weight = data.vitals.first { $0.metric == "weight" }
         let waist = data.vitals.first { $0.metric == "waist" }
+        let hba1c = data.bloodTests.first { $0.metric == "hba1c" }
+        let whtr = tiles["whtr"]
+        let ratio = whtr.flatMap { tile in waist.map { WaistToHeight(tile: tile, waist: $0, height: data.profile.height) } }
+        let column = ValueRow.Column([(ratio?.tile.value, ratio?.previous, "", nil)]
+            + [weight, hba1c].compactMap { $0 }.map { ($0.latest?.value, $0.previous, $0.unit, nil) })
         Section {
-            if let whtr = tiles["whtr"] {
-                Button { openedTile = whtr } label: {
-                    ValueRow(label: whtr.label, value: whtr.value, unit: whtr.unit, day: waist?.latest?.day,
-                             target: whtr.status?.label, grade: PlanTiles.grade(whtr), tint: MetricChart.colors(for: "waist")[0])
+            // The ratio's row opens the waist page, where waist is added or corrected. With no
+            // ratio (no waist yet), the waist row itself, so a first waist can be added.
+            if let ratio, let waist {
+                Button { open(waist) } label: {
+                    ValueRow(label: ratio.tile.label, value: ratio.tile.value, unit: "", day: waist.latest?.day,
+                             target: ratio.tile.status?.label, previous: ratio.previous, grade: PlanTiles.grade(ratio.tile),
+                             trend: ratio.trend, tint: MetricChart.colors(for: "waist")[0], column: column)
                 }
                 .tint(.primary)
+                .disabled(store.unitSwitches > 0)
+            } else if let waist {
+                metric(waist, column: column)
             }
             if let weight {
-                let ideal = tiles["ibw"].map { "Ideal \($0.value) \($0.unit)" }
-                VStack(alignment: .leading, spacing: 2) {
-                    Button { open(weight) } label: {
-                        ValueRow(label: weight.label, value: weight.latest?.value, unit: weight.unit, day: weight.latest?.day,
-                                 target: ideal ?? weight.target, previous: weight.previous, grade: weight.grade, gradeWords: weight.gradeWords,
-                                 note: weight.note, trend: weight.trend ?? [], tint: MetricChart.colors(for: weight.metric)[0])
-                    }
-                    .tint(.primary)
-                    .disabled(store.unitSwitches > 0)
-                    if let bmi = tiles["bmi"] {
-                        Button { openedTile = bmi } label: {
-                            Text("\(bmi.label) \(bmi.value)").font(.caption).foregroundStyle(.secondary)
-                        }
-                        .buttonStyle(.plain)
-                    }
+                Button { open(weight) } label: {
+                    ValueRow(label: weight.label, value: weight.latest?.value, unit: weight.unit, day: weight.latest?.day,
+                             target: tiles["bmi"].map { "\($0.label) \($0.value)" } ?? weight.target, previous: weight.previous,
+                             grade: weight.grade, gradeWords: weight.gradeWords, note: weight.note, trend: weight.trend ?? [],
+                             tint: MetricChart.colors(for: weight.metric)[0], column: column)
                 }
+                .tint(.primary)
+                .disabled(store.unitSwitches > 0)
             }
-            if let waist { metric(waist) }
+            if let hba1c { metric(hba1c, column: column) }
         }
         .listSectionSpacing(.compact)
-        let protein = tiles["protein"]
-        let fibre = PlanTiles.fibre(plan)
-        if protein != nil || fibre != nil {
-            Section {
-                // Two across, as the plan's tiles: protein alone keeps half the width.
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-                    ForEach([protein, fibre].compactMap { $0 }) { tile in
-                        Button { openedTile = tile } label: { TileCard(tile: tile) }
-                            .buttonStyle(PressableStyle())
-                    }
-                }
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
-            }
-            .listSectionSpacing(.compact)
-        }
-        MedicationsSection(store: store, data: data, saved: saved, only: "weight-medications")
         cards(plan[.weight])
+        MedicationsSection(store: store, data: data, saved: saved, only: "weight-medications")
     }
 
     /// Today's large blood pressure card, then the blood pressure cards.
@@ -310,7 +297,8 @@ struct MyDataView: View {
     @ViewBuilder
     private func bloodTests(_ data: MyData, plan: TopicPlan, tiles: PlanTiles) -> some View {
         heading(.bloodTests)
-        let rows = data.bloodTests
+        // HbA1c shows once, under Weight & diabetes (Brad, round 2).
+        let rows = data.bloodTests.filter { $0.metric != "hba1c" }
         let labs = data.labTests ?? []
         Section {
             let column = ValueRow.Column((rows + labs).map { ($0.latest?.value, $0.previous, $0.unit, nil) })
