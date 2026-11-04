@@ -3,7 +3,7 @@
 // It compares VISIBLE TEXT block by block: each p, li and h1-h6, and any other run of text (table cells, quotes,
 // loose div text) as its own block; each img src and alt and each a href as a block of its own. Tags stripped,
 // entities decoded, whitespace and NBSP folded. Raw HTML would differ on every Shopify editor reformat.
-//   node tools/roadmap-page-drift.mjs [--file <path>]  (default: `git fetch origin main`, then roadmap_text.html there)
+//   node tools/roadmap-page-drift.mjs [--file <path>]  (default: `git fetch --no-tags --no-write-fetch-head origin main`, then roadmap_text.html there)
 // Needs SHOPIFY_EDU_SHOP and SHOPIFY_EDU_ACCESS_TOKEN (read_content) in the environment or the main checkout's .env.
 // Exit 0 IN SYNC, 1 differing blocks printed, 2 fetch/auth/git/usage error.
 import { execFileSync } from 'node:child_process';
@@ -37,9 +37,13 @@ export function decodeEntities(s) {
 // JS \s covers NBSP and the Unicode spaces, so they fold with the rest.
 const tidy = (s) => decodeEntities(s).replace(/\s+/g, ' ').trim();
 
-function attr(tok, name) {
-  const m = new RegExp(`\\s${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, 'i').exec(tok);
-  return m ? tidy(m[1] ?? m[2] ?? m[3]) : '';
+/** A start tag's attributes as HTML reads them: a name, then optionally = and a double-quoted, single-quoted or
+ * unquoted value. The first of a repeated name wins. */
+function attrs(tok) {
+  const found = {};
+  const rest = tok.replace(/^<[a-zA-Z][^\s/>]*/, '');
+  for (const m of rest.matchAll(/([^\s"'>\/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]*)))?/g)) found[m[1].toLowerCase()] ??= tidy(m[2] ?? m[3] ?? m[4] ?? '');
+  return found;
 }
 
 /** Visible text blocks in document order: p, li, h1-h6, loose text runs, and img/a attribute pseudo-blocks. */
@@ -52,17 +56,20 @@ export function extractBlocks(html) {
     if (t) out.push(t);
     stack[stack.length - 1] = '';
   };
-  for (const tok of src.split(/(<\/?[a-zA-Z][^>]*>)/)) {
+  // A tag ends at the first > outside a quoted value.
+  for (const tok of src.split(/(<\/?[a-zA-Z](?:"[^"]*"|'[^']*'|[^'">])*>)/)) {
     const tag = /^<(\/?)([a-zA-Z][a-zA-Z0-9]*)/.exec(tok);
     if (!tag) { stack[stack.length - 1] += tok; continue; }
     const name = tag[2].toLowerCase();
-    if (!tag[1]) for (const a of ATTRS[name] ?? []) { const v = attr(tok, a); if (v) out.push(`[${name === 'img' ? 'img ' : ''}${a}] ${v}`); }
+    if (!tag[1] && ATTRS[name]) { const at = attrs(tok); for (const a of ATTRS[name]) { const v = at[a]; if (v) out.push(`[${name === 'img' ? 'img ' : ''}${a}] ${v}`); } }
     if (name === 'br') { stack[stack.length - 1] += ' '; continue; }
     if (BLOCK.test(name)) {
       flush();
       if (!tag[1]) stack.push('');
       else if (stack.length > 1) stack.pop();
-    } else if (stack.length === 1 && !INLINE.test(name)) flush();
+    } else if (!INLINE.test(name)) {
+      if (stack.length === 1) flush(); else stack[stack.length - 1] += ' ';  // <div>20</div><div>mg</div> is two words
+    }
   }
   while (stack.length > 1) { flush(); stack.pop(); }
   flush();
@@ -171,12 +178,11 @@ async function fetchLive({ shop, token }, get) {
 }
 
 function repoArticle(argv, git) {
-  const i = argv.indexOf('--file');
-  if (i >= 0) {
-    const file = argv[i + 1];
-    try { return { html: readFileSync(file ?? '', 'utf8'), label: file }; } catch { throw new DriftError(`cannot read --file ${file ?? '(missing)'}`); }
+  if (!(argv.length === 0 || (argv.length === 2 && argv[0] === '--file' && argv[1]))) throw new DriftError('usage: node tools/roadmap-page-drift.mjs [--file <path>]');
+  if (argv.length) {
+    try { return { html: readFileSync(argv[1], 'utf8'), label: argv[1] }; } catch { throw new DriftError(`cannot read --file ${argv[1]}`); }
   }
-  try { git(['fetch', 'origin', 'main']); } catch { throw new DriftError('git fetch origin main failed'); }
+  try { git(['fetch', '--no-tags', '--no-write-fetch-head', 'origin', 'main']); } catch { throw new DriftError('git fetch origin main failed'); }
   try {
     const sha = git(['rev-parse', '--short', 'origin/main']).trim();
     return { html: git(['show', `${sha}:roadmap_text.html`]), label: `origin/main ${sha}` };

@@ -88,6 +88,17 @@ describe('US-64 AC16: roadmap page drift', () => {
     expect(compareArticles(html.replace('ldl.png', 'hdl.png'), html).inSync).toBe(false);
     expect(compareArticles(html.replace('/blogs/a', '/blogs/b'), html).inSync).toBe(false);
   });
+  it('attributes are parsed as HTML does: a quoted value hides what looks like another attribute, and a quoted > does not end the tag', () => {
+    expect(extractBlocks(`<img title='x src="/a.png"' src="/b.png">`)).toEqual(['[img src] /b.png']);
+    expect(extractBlocks('<a title="a>b" href=/c>go</a>')).toEqual(['[href] /c', 'go']);
+    expect(extractBlocks('<p title="a>b">text</p>')).toEqual(['text']);
+    expect(compareArticles('<p title="a>b">text</p>', '<p title="a&gt;b">text</p>').inSync).toBe(true);
+  });
+  it('a non-inline tag inside a block separates words', () => {
+    expect(extractBlocks('<li><div>Take 20</div><div>mg</div></li>')).toEqual(['Take 20 mg']);
+    expect(compareArticles('<li><div>Take 20</div><div>mg</div></li>', '<li>Take 20mg</li>').inSync).toBe(false);
+    expect(compareArticles('<li>Take <strong>20</strong>mg</li>', '<li>Take 20mg</li>').inSync).toBe(true);
+  });
   it('a changed pair shows a window around the first differing character, not the first 300 characters', () => {
     const head = 'x'.repeat(1000);
     const text = formatDiffs([{ live: `${head} 15 pack-years`, repo: null }, { live: null, repo: `${head} 20 pack-years` }]);
@@ -105,7 +116,7 @@ describe('US-64 AC16: roadmap page drift', () => {
     expect(r.code).toBe(0);
     expect(r.out).toContain('IN SYNC');
     expect(r.out).toContain(SHA);
-    expect(r.gitCalls[0]).toEqual(['fetch', 'origin', 'main']);
+    expect(r.gitCalls[0]).toEqual(['fetch', '--no-tags', '--no-write-fetch-head', 'origin', 'main']);
     expect(r.gitCalls.find((a) => a[0] === 'show')).toEqual(['show', `${SHA}:roadmap_text.html`]);
     expect(r.fetchCalls[0].url).toBe(`https://${SHOP}/admin/api/2025-07/pages/129920467143.json?fields=id,handle,updated_at,body_html`);
     expect(r.fetchCalls[0].init.redirect).toBe('error');
@@ -127,6 +138,15 @@ describe('US-64 AC16: roadmap page drift', () => {
     const r = await run({ argv: ['--file', 'tools/roadmap-page-drift.test.ts'], page: { handle: 'roadmap', updated_at: 'u', body_html: '' } });
     expect(r.gitCalls).toHaveLength(0);
     expect(r.code).toBe(1);
+  });
+  it('an unknown argument or --file without a path exits 2 with the usage line, touching neither git nor Shopify', async () => {
+    for (const argv of [['--flie', 'x'], ['--file'], ['--file', 'a', 'extra']]) {
+      const r = await run({ argv });
+      expect(r.code).toBe(2);
+      expect(r.err).toContain('usage: node tools/roadmap-page-drift.mjs [--file <path>]');
+      expect(r.gitCalls).toHaveLength(0);
+      expect(r.fetchCalls).toHaveLength(0);
+    }
   });
   it('a page whose handle is not roadmap exits 2', async () => {
     const r = await run({ page: { handle: 'about', body_html: repo } });
