@@ -31,6 +31,12 @@ on:
         type: choice
         options: [all, fly-only, shopify-only]
         default: all
+      pages_sha:
+        # auto-ship passes the commit it merged (US-46 AC15): main may have
+        # moved on by the time pages-smoke runs. Empty = main's tip.
+        description: "Commit whose Pages run the Pages smoke waits for (empty = main's tip)"
+        type: string
+        default: ""
 # No pull_request trigger (GHSA-v69g-jc5m-3993, 2026-11-02): auto-ship and
 # people deploy by dispatching on main. The labelled-merge path it replaced was
 # unused. This file alone cannot keep the secrets on main (a branch runs its own
@@ -127,11 +133,26 @@ jobs:
       - name: Wait for the Pages deploy of this commit (if one was triggered)
         env:
           GH_TOKEN: ${{ github.token }}
+          PAGES_SHA: ${{ inputs.pages_sha }}
         run: |
           set -euo pipefail
-          SHA=$(git rev-parse HEAD)
-          run_id=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/pages.yml/runs?head_sha=${SHA}" \
-            --jq '.workflow_runs[0].id // empty')
+          # US-46 AC15: auto-ship names the commit it merged and has just
+          # dispatched its Pages run, which takes a few seconds to list, so look
+          # for up to 2 minutes. A push's own Pages run lists at once: one look.
+          SHA="${PAGES_SHA:-$(git rev-parse HEAD)}"
+          [[ "${SHA}" =~ ^[0-9a-f]{40}$ ]] \
+            || { echo "::error::pages_sha must be a full 40-character commit sha."; exit 1; }
+          tries=1; [ -z "${PAGES_SHA:-}" ] || tries=12
+          for i in $(seq 1 "${tries}"); do
+            run_id=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/pages.yml/runs?head_sha=${SHA}" \
+              --jq '.workflow_runs[0].id // empty')
+            [ -n "${run_id}" ] || [ "${i}" -eq "${tries}" ] || { sleep 10; continue; }
+            break
+          done
+          if [ -z "${run_id}" ] && [ -n "${PAGES_SHA:-}" ]; then
+            echo "::warning::No pages.yml run for ${SHA} after 12 looks (about 2 minutes) — smoking the existing Pages site."
+            exit 0
+          fi
           if [ -z "${run_id}" ]; then
             echo "No pages.yml run for ${SHA} (server-only change) — smoking the existing Pages site."
             exit 0

@@ -26,7 +26,7 @@ echo "$*" >> "$LOG"
 q() { jq -r "$1" "$SCEN"; }
 case "$1" in
   issue) if [ "$2" = create ]; then while [ $# -gt 0 ]; do [ "$1" = --body ] && printf '%s' "$2" > "$LOG.body"; shift; done; echo "https://x/issues/99"; fi; exit 0;;
-  pr) exit 0;;
+  pr) [ "$2" = merge ] && touch "$LOG.merged"; exit 0;;
   workflow) [ "$2" = run ] && [ "$3" = deploy.yml ] && [ "$(q .failDeploy)" = true ] && exit 1
     [ "$2" = run ] && [ "$3" = pages.yml ] && [ "$(q .failPages)" = true ] && exit 1; exit 0;;
 esac
@@ -39,8 +39,10 @@ case "$p" in
   pulls/7/commits*) [ "$(q .commitsError)" = true ] && { echo "HTTP 502" >&2; exit 1; }
     jq -c '.commits // [{sha:.head,author:{login:"DrBradStanfield"}}]' "$SCEN" | out;;
   pulls/7/files) jq -c '.prFiles // []' "$SCEN" | out;;
-  pulls/7) jq -c --argjson u $upd '{state:"open",title:"t",body:(.prBody // "b"),user:{login:"u"},labels:[],
-    commits:(.prCommitCount // ((.commits // [1]) | length)),
+  pulls/7) [ -f "$LOG.merged" ] && [ "$(q .failMergeRead)" = true ] && { echo "HTTP 502" >&2; exit 1; }
+    m=0; [ -f "$LOG.merged" ] && [ "$(q .staleMergeRead)" != true ] && m=1
+    jq -c --argjson u $upd --argjson m $m '{state:"open",merged:($m==1),title:"t",body:(.prBody // "b"),user:{login:"u"},labels:[],
+    commits:(.prCommitCount // ((.commits // [1]) | length)), merge_commit_sha:.mergeSha,
     head:{ref:"claude/x",repo:{full_name:"o/r"},sha:(if $u==1 then .newSha else .head end)}}' "$SCEN" | out;;
   issues/7/comments*) jq -c '.comments // [{user:{type:"Bot",login:"github-actions[bot]"},body:("VERDICT: APPROVE "+.head)}]' "$SCEN" | out;;
   commits/main) jq -c '{sha:.main}' "$SCEN" | out;;
@@ -61,7 +63,7 @@ esac
 
 const base = {
   head: "aaaa", main: "bbbb", newSha: "cccc", behind: 0, workflowTouched: false,
-  testNew: "success", failDeploy: false, failPages: false,
+  testNew: "success", failDeploy: false, failPages: false, mergeSha: "9".repeat(40),
   // The real reviewer's comment: claude-code-action posts as claude[bot] (US-46 AC8).
   comments: [{ user: { type: "Bot", login: "claude[bot]" }, body: "All ACs hold.\n\nVERDICT: APPROVE aaaa" }],
   newCommit: { parents: ["aaaa", "bbbb"], verified: true, login: "web-flow" },
@@ -372,14 +374,16 @@ describe("auto-ship claim 7 (US-46 AC5)", { timeout: 60_000 }, () => {
     });
   });
 
-  // US-46 AC14: auto-ship merges with GITHUB_TOKEN, which starts no push
+  // US-46 AC15: auto-ship merges with GITHUB_TOKEN, which starts no push
   // workflow, so pages.yml never ran for an auto-shipped commit and deploy.yml's
-  // pages-smoke checked the previous Pages build. Pages is dispatched first.
-  describe("Pages run for the merged commit (US-46 AC14)", () => {
+  // pages-smoke checked the previous Pages build. Pages is dispatched first, and
+  // the deploy is told which commit's Pages run to wait for (main may move on).
+  describe("Pages run for the merged commit (US-46 AC15)", () => {
     const lines = (c: string) => c.split("\n");
     const at = (c: string, prefix: string) => lines(c).findIndex((l) => l.startsWith(prefix));
     const PAGES = "workflow run pages.yml -R o/r --ref main";
     const DEPLOY = "workflow run deploy.yml -R o/r --ref main";
+    const deploys = (c: string) => lines(c).filter((l) => l.startsWith("workflow run deploy.yml"));
 
     it("dispatches pages.yml on main after the merge and before deploy.yml", () => {
       for (const over of [{}, { behind: 1 }]) {
@@ -416,6 +420,25 @@ describe("auto-ship claim 7 (US-46 AC5)", { timeout: 60_000 }, () => {
       const r = run({});
       expect(closed(r.calls).join("\n")).toContain("Merged aaaa and dispatched deploy.yml");
       expect(closed(r.calls).join("\n")).not.toContain("pages.yml failed");
+    });
+
+    it("the deploy is dispatched with the merge commit as pages_sha, read after the merge", () => {
+      for (const over of [{}, { behind: 1 }, { failPages: true }]) {
+        const r = run(over);
+        expect(r.code).toBe(0);
+        expect(deploys(r.calls)).toEqual([`${DEPLOY} -f surfaces=all -f pages_sha=${"9".repeat(40)}`]);
+        const reads = lines(r.calls).map((l, i) => (l === "api repos/o/r/pulls/7" ? i : -1)).filter((i) => i >= 0);
+        expect(reads.filter((i) => i > at(r.calls, "pr merge") && i < at(r.calls, DEPLOY))).toHaveLength(1);
+      }
+    });
+
+    it("an unknown or unreadable merge commit still dispatches the deploy, with an empty pages_sha", () => {
+      for (const over of [{ mergeSha: null }, { failMergeRead: true }, { staleMergeRead: true }]) {
+        const r = run(over);
+        expect(r.code).toBe(0);
+        expect(deploys(r.calls)).toEqual([`${DEPLOY} -f surfaces=all -f pages_sha=`]);
+        expect(closed(r.calls).join("\n")).toContain("Merged aaaa and dispatched deploy.yml");
+      }
     });
   });
 });
