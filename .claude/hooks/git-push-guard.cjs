@@ -169,10 +169,11 @@ const decode = (t) => { try { return decodeURIComponent(t); } catch { return t; 
 // A merge, or a mutation that writes a branch (main by default), named anywhere in the call.
 const API_MERGE = /pulls\/[^/\s]+\/merge\b|\/merges\b|mergePullRequest|mergeBranch|updateRef|createCommitOnBranch|enablePullRequestAutoMerge|enqueuePullRequest/i;
 // Text the guard cannot resolve: a variable, a substitution, or a brace other than gh's {owner}/{repo} ({branch} is
-// the current branch, which may be main; {} is an xargs or find slot). Before it, the endpoint must already name a
-// resource other than git refs or contents.
+// the current branch, which may be main; {} is an xargs or find slot). The literal text before it must already name
+// a repo resource other than git/ (owner and repo literal: a variable there may hold a slash). A contents/ path is
+// left to contentsToMain, which reads the branch.
 const UNRESOLVED = /[$`]|\{(?!owner\}|repo\})/;
-const SAFE_PREFIX = /^\/?(https?:\/\/[^/]+\/)?repos\/[^/]+\/[^/]+\/(?!git\/|contents\/)[A-Za-z_-]+\//;
+const SAFE_PREFIX = /^\/?(https?:\/\/[^/]+\/)?repos\/[^/]+\/[^/]+\/(?!git\/)[A-Za-z_-]+\//;
 const hiddenEndpoint = (p) => UNRESOLVED.test(p) && !SAFE_PREFIX.test(p.slice(0, p.search(UNRESOLVED)));
 // A contents write lands on the default branch (main) unless a literal `branch` field names another one.
 function contentsToMain(api) {

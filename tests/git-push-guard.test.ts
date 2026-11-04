@@ -132,6 +132,25 @@ describe('git push guard, as .claude/settings.json runs it', () => {
       // An inner string that does not parse is refused when the command holds `gh api`.
       `bash -c "echo it's; gh api repos/o/r/pulls/1"`,
       "gh api graphql -f query='mutation { enqueuePullRequest(input: {}) { clientMutationId } }'",
+      // Spellings of the same writes: long field flags, --input with no method, -X=, encoded or upper-case merge paths,
+      // the /graphql URL, a backtick query, and every way a branch field can name main or hide it.
+      'gh api repos/o/r/git/refs/heads/main --field sha=abc1234',
+      'gh api repos/o/r/git/refs/heads/main --raw-field=sha=abc1234',
+      'gh api repos/o/r/git/refs/heads/main --input body.json',
+      'gh api -X=PATCH repos/o/r/git/refs/heads/main',
+      'gh api -X PUT repos/o/r/pulls/32/%6Derge',
+      'gh api -X PUT repos/o/r/pulls/32/MERGE',
+      'gh api -X PUT "repos/o/r/pulls/32/merge?a=%"',
+      'gh api https://api.github.com/graphql --input q.json',
+      'gh api graphql -f query="`cat q.graphql`"',
+      'gh api -X PATCH "repos/o/r/git/refs/heads/`cat b`" -f sha=abc1234',
+      'gh api -X PATCH "repos/$R/git/refs/heads/$B" -f sha=abc1234',
+      'gh api -X POST "repos/o/r/merge$S" -f base=main -f head=claude/x',
+      'gh api -X PUT repos/o/r/contents/X -f branch=refs/heads/main -f message=m -f content=eA==',
+      'gh api -X PUT repos/o/r/contents/X -F branch=@b.txt -f message=m -f content=eA==',
+      'gh api -X PUT repos/o/r/contents/X -f branch="`cat b`" -f message=m -f content=eA==',
+      'gh api -X PUT repos/o/r/contents/X -f branch=claude/x -f branch=main -f message=m -f content=eA==',
+      `bash -c $'g''h a''pi -X PATCH repos/o/r/git/refs/heads/main'`,
     ]) {
       const r = runHook(scratch, cmd);
       expect(r.stderr, cmd).toBe('');
@@ -152,6 +171,16 @@ describe('git push guard, as .claude/settings.json runs it', () => {
       'gh api -X POST "repos/{owner}/{repo}/issues/{}/comments" -f body=hi',
       'gh api -X HEAD repos/o/r/git/refs/heads/main -f per_page=1',
       'gh api -X POST repos/o/r/git/refs -f ref=refs/heads/claude/x -f sha=abc1234',
+      'gh api -X=GET repos/o/r/git/refs/heads/main -f per_page=1',
+      'gh api -X PATCH repos/o/r/git/refs/heads/mainline -f sha=abc1234',
+      'gh api -i repos/o/r/issues/5/comments -X POST -f body=hi',
+      'gh api -X POST "https://api.github.com/repos/o/r/issues/$N/comments" -f body=hi',
+      'gh api -X POST "/repos/o/r/issues/$N/comments" -f body=hi',
+      'gh api -X PUT "repos/o/r/contents/$F" -f branch=claude/x -f message=m -f content=eA==',
+      // Option values are not the endpoint, even when they hold a `$`.
+      "gh api -X POST repos/o/r/issues/5/comments -f body=hi --jq '.[$k]' --template '{{$x}}' --header 'X-A: $v'",
+      "gh api -X POST repos/o/r/issues/5/comments -f body=hi --preview '$p' --hostname '$h' --cache '$c'",
+      "gh api -X POST repos/o/r/issues/5/comments -f body=hi -q '.[$k]' -t '{{$x}}' -H 'X-A: $v' -p '$p'",
     ]) {
       expect(runHook(scratch, cmd).stdout, cmd).toBe('');
     }
