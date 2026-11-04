@@ -122,6 +122,17 @@ const BASIC_LONGITUDINAL_FIELDS: FieldConfig[] = [
 const optionElements = (options: FormOption[]) =>
   options.map(opt => <option key={opt.value} value={opt.value} disabled={opt.disabled}>{opt.label}</option>);
 
+/** What a screening's month and year pickers show: a date still being picked
+ *  (year or month blank, but not both, so nothing is saved yet) as picked,
+ *  else the saved date. A finished pick has just written it, and clearing
+ *  both has just cleared it. A cleared or changed answer then shows as the
+ *  record holds it, not as last picked (US-06 AC16). */
+function shownDate(
+  picking: { year: string; month: string } | undefined, savedYear: string | undefined, savedMonth: string | undefined,
+): { year: string; month: string } {
+  return picking && !picking.year !== !picking.month ? picking : { year: savedYear ?? '', month: savedMonth ?? '' };
+}
+
 /** What the form reads from the plan, so it never recommends, targets or
  *  steps through what the plan does not (US-06 AC5). HealthTool computes it
  *  beside the plan, from the same validated inputs and results: the plan's
@@ -228,6 +239,12 @@ interface InputPanelProps {
   /** A chat edit that filled a grid cell (US-16 AC2): the table opens so the
    *  filled cell shows, phone and desktop. Each new edit is a new object. */
   revealCell?: { field: string; grid: boolean } | null;
+}
+
+/** A height for the feet and inches boxes to show: one there is, and not the
+ *  one they just wrote themselves (US-02 AC11). */
+function showsOtherHeight(heightCm: number | undefined, typed: number | undefined): heightCm is number {
+  return heightCm !== undefined && heightCm !== typed;
 }
 
 /**
@@ -568,15 +585,19 @@ export function InputPanel({
   // Feet/inches state for US height input
   const [heightFeet, setHeightFeet] = useState<string>('');
   const [heightInches, setHeightInches] = useState<string>('');
+  // The height the feet and inches boxes last wrote (US-02 AC11).
+  const typedHeightCm = useRef<number | undefined>(undefined);
 
-  // Sync heightCm → feet/inches display when loading data or switching units
+  // Sync heightCm → feet/inches display when loading data or switching units,
+  // never from the boxes' own edit, which keeps what was typed (US-02 AC11).
   useEffect(() => {
-    if (unitSystem === 'conventional' && inputs.heightCm !== undefined) {
+    if (unitSystem === 'conventional' && showsOtherHeight(inputs.heightCm, typedHeightCm.current)) {
       const { feet, inches } = cmToFeetInches(inputs.heightCm);
       setHeightFeet(String(feet));
       setHeightInches(String(inches));
     } else if (unitSystem === 'si') {
       // Clear feet/inches when switching to SI
+      typedHeightCm.current = undefined;
       setHeightFeet('');
       setHeightInches('');
     }
@@ -688,9 +709,7 @@ export function InputPanel({
     const savedValue = readScreening(scr, key);
     const [savedYear, savedMonth] = savedValue.split('-');
 
-    const localState = dateInputs[key];
-    const displayYear = localState?.year ?? savedYear ?? '';
-    const displayMonth = localState?.month ?? savedMonth ?? '';
+    const { year: displayYear, month: displayMonth } = shownDate(dateInputs[key], savedYear, savedMonth);
 
     const availableYears = futureOnly
       ? Array.from({ length: 6 }, (_, i) => currentYear + i)
@@ -1089,7 +1108,8 @@ export function InputPanel({
               const feet = parseInt(val, 10) || 0;
               const inches = parseInt(heightInches, 10) || 0;
               if (val !== '' || heightInches !== '') {
-                updateField('heightCm', feetInchesToCm(feet, inches));
+                typedHeightCm.current = feetInchesToCm(feet, inches);
+                updateField('heightCm', typedHeightCm.current);
               } else {
                 updateField('heightCm', undefined);
               }
@@ -1117,7 +1137,8 @@ export function InputPanel({
               const feet = parseInt(heightFeet, 10) || 0;
               const inches = parseInt(val, 10) || 0;
               if (heightFeet !== '' || val !== '') {
-                updateField('heightCm', feetInchesToCm(feet, inches));
+                typedHeightCm.current = feetInchesToCm(feet, inches);
+                updateField('heightCm', typedHeightCm.current);
               } else {
                 updateField('heightCm', undefined);
               }

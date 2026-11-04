@@ -24,6 +24,9 @@ interface Held { id: string; slot: string; value: number; unit: string; stored: 
 /** The iPhone's words for the same refusal (ios/engine/my-data.ts addSeriesValue). */
 const CORE_ON_LAB_PAGE = 'Add this test from its row in Blood tests.';
 
+/** The name typed under "Other" counts only while Other is chosen: "Choose a test…" names no test, so nothing saves (US-21 AC2). */
+const otherName = (testKey: string, customName: string) => (testKey === 'custom' ? customName.trim() : '');
+
 export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect, preset, dirtyRef }: {
   onAdded: () => void;
   /** The saved values, to name the one a duplicate collides with. */
@@ -64,7 +67,7 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
   // A catalogued test has no input range, so "1,050" is always asked about (US-02 AC7).
   const value = parseLocalisedNumber(valueStr);
   const question = commaQuestion(valueStr);
-  const metricName = entry ? entry.key : customName.trim();
+  const metricName = entry ? entry.key : otherName(testKey, customName);
   const unit = entry ? entry.unit : customUnit.trim();
   // As health-core's writer reads the name: a core test's is its core slot, the value converted (US-66 AC6).
   const core = bloodTestKeyOf(metricName);
