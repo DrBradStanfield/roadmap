@@ -33,9 +33,10 @@ jobs:
         env:
           BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
-          if [ -z "${BASE}" ] || [ "${BASE}" = 0000000000000000000000000000000000000000 ]; then
-            echo "No base commit to compare with (manual run); skipped."; exit 0
-          fi
+          case "${BASE}" in
+            *[!0]*) ;; # a real commit
+            *) echo "No base commit to compare with (manual run or new branch); skipped."; exit 0;;
+          esac
           git fetch --no-tags --depth=1 origin "${BASE}"
           npx tsx scripts/build-user-stories-html.ts --check-against "${BASE}"
 

@@ -153,7 +153,7 @@ describe('build-user-stories-html.ts --check-against — the CI gate (US-64 AC11
   });
 
   it('fails closed on a ref it cannot read, rather than checking nothing and passing', () => {
-    for (const ref of ['0000000000000000000000000000000000000000', 'no-such-branch', '']) {
+    for (const ref of ['f'.repeat(40), 'no-such-branch', '']) {
       const { ok, stderr } = check(spec(1, 2), spec(1, 2), ref);
       expect(ok, ref).toBe(false);
       expect(stderr).toContain('cannot read git ref');
