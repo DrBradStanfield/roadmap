@@ -16,8 +16,15 @@ struct MyDataView: View {
     /// against that, whatever lands before it appears (Codex R2).
     private enum Entry: Identifiable {
         case height(RecordStore.Screen)
+        /// A value for a test picked in "Add blood test" (round 7).
+        case test(MyData.Row, RecordStore.Screen)
 
-        var id: String { "height" }
+        var id: String {
+            switch self {
+            case .height: "height"
+            case .test(let row, _): "test.\(row.id)"
+            }
+        }
     }
 
     let engine: HealthEngine
@@ -30,6 +37,9 @@ struct MyDataView: View {
     @State private var showSync = false
     @State private var showSettings = false
     @State private var addingLabs = false
+    /// "Add blood test", and the test picked in it (round 7).
+    @State private var addingTest = false
+    @State private var pickedTest: MyData.Row?
     @State private var refusal: String?
     @State private var saves = 0
     /// A picker's edit is landing: the pickers wait, so a quick change back is never lost.
@@ -69,6 +79,12 @@ struct MyDataView: View {
             // Here, not on the header's "+": a sheet declared in a section header took
             // its grey text, large font and icon-only labels (seen 2026-10-22).
             .sheet(isPresented: $addingLabs) { LabUploadSheet(engine: engine, store: store) }
+            .sheet(isPresented: $addingTest, onDismiss: {
+                if let test = pickedTest { entry = .test(test, store.screen) }
+                pickedTest = nil
+            }) {
+                AddBloodTestSheet(tests: (store.myData?.bloodTests ?? []) + (store.myData?.labTests ?? [])) { pickedTest = $0 }
+            }
             .sheet(isPresented: $showSettings) {
                 NavigationStack { MyDataView(engine: engine, store: store, sync: sync, layout: .settings) }
             }
@@ -348,8 +364,8 @@ struct MyDataView: View {
                 .tint(.primary)
                 .disabled(store.unitSwitches > 0)
             }
-            // Round 7: the lab upload, as a row like "Add another supplement".
-            Button { addingLabs = true } label: { Label("Add blood test", systemImage: "plus.circle.fill") }
+            // Round 7: a row like "Add another supplement"; a test picked by name opens its entry.
+            Button { addingTest = true } label: { Label("Add blood test", systemImage: "plus.circle.fill") }
         }
         .listSectionSpacing(.compact)
         cards(plan[.bloodTests])
@@ -495,6 +511,8 @@ struct MyDataView: View {
     @ViewBuilder
     private func sheet(for entry: Entry) -> some View {
         switch entry {
+        case .test(let row, let seen):
+            MetricEntrySheet(store: store, row: row, seen: seen, saved: saved)
         case .height(let seen) where seen.units == "conventional":
             FeetInchesSheet(current: store.myData?.profile.feetInches) { height in
                 saved(await store.apply(.feetInches(feet: height.feet, inches: height.inches), as: seen))
