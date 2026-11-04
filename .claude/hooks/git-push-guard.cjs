@@ -149,14 +149,14 @@ const badConfig = (kv) => /^remote\..*\.(push=\s*[+:?]|mirror(=|$))/i.test(kv) &
 const API_LONG = /^--(method|field|raw-field|input|header|jq|template|preview|hostname|cache)$/;
 const API_SHORT = 'XfFHpqt';
 // One argument as [flag, value, whether the value is the next token]: flag '' for an option that takes no value
-// the guard needs; null for a positional.
+// the guard needs (and for `--`, which ends the options and is no endpoint); null for a positional.
 function apiOption(t, next) {
   const long = t.match(/^--([a-z-]+)(?:=([\s\S]*))?$/);
   if (long) {
     if (!API_LONG.test(`--${long[1]}`)) return ['', '', false];
     return long[2] === undefined ? [long[1], next, true] : [long[1], long[2], false];
   }
-  if (!/^-[^-]/.test(t)) return null;
+  if (!t.startsWith('-')) return null;
   const at = [...t.slice(1)].findIndex((c) => API_SHORT.includes(c)) + 1;
   if (at === 0) return ['', '', false];
   const joined = t.slice(at + 1).replace(/^=/, '');

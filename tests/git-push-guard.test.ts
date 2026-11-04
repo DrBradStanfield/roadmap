@@ -158,6 +158,8 @@ describe('git push guard, as .claude/settings.json runs it', () => {
       // A command saved in a variable for a later eval is read where it is assigned.
       'CMD="gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234"; eval "$CMD"',
       "CMD=$'gh api -X PATCH repos/o/r/git/refs/heads/main'; eval \"$CMD\"",
+      // `--` ends the options; it is not an endpoint, so xargs still supplies the only one.
+      'echo repos/o/r/git/refs/heads/main | xargs gh api -X PATCH -f sha=abc1234 --',
     ]) {
       const r = runHook(scratch, cmd);
       expect(r.stderr, cmd).toBe('');
@@ -188,6 +190,8 @@ describe('git push guard, as .claude/settings.json runs it', () => {
       "gh api -X POST repos/o/r/issues/5/comments -f body=hi --jq '.[$k]' --template '{{$x}}' --header 'X-A: $v'",
       "gh api -X POST repos/o/r/issues/5/comments -f body=hi --preview '$p' --hostname '$h' --cache '$c'",
       "gh api -X POST repos/o/r/issues/5/comments -f body=hi -q '.[$k]' -t '{{$x}}' -H 'X-A: $v' -p '$p'",
+      // A flag that takes no value does not swallow the endpoint after it.
+      'gh api --paginate repos/o/r/issues/5/comments -X POST -f body=hi',
     ]) {
       expect(runHook(scratch, cmd).stdout, cmd).toBe('');
     }
