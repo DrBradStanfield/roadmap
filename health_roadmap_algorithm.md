@@ -820,8 +820,6 @@ Any atherogenic marker at or above its optimal line (each marker checked on its 
 
 **NOT suppressed by medication cascade** — diet is always complementary to medications.
 
-When active, the generic `fiber` suggestion is suppressed (lipid-diet covers fibre advice more specifically).
-
 ### Universal Foods (IBS/IBD-safe, low-FODMAP at recommended amounts)
 
 | Food | Mechanism | Expected LDL Reduction |

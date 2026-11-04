@@ -311,21 +311,19 @@ export function generateSuggestions(
   }
 
   // Whether any atherogenic marker is at or above its on-treatment target, the
-  // marker's own test (used for lipid-diet and fiber suppression, US-07 AC5)
+  // marker's own test (used for lipid-diet, US-07 AC5)
   const hasElevatedLipids = atOrAboveTarget(inputs.apoB, LIPID_TREATMENT_TARGETS.apobGl)
     || atOrAboveTarget(results.nonHdlCholesterol, LIPID_TREATMENT_TARGETS.nonHdlMmol)
     || atOrAboveTarget(inputs.ldlC, LIPID_TREATMENT_TARGETS.ldlMmol);
 
-  // Fiber — show when lipid-diet is not active (lipid-diet covers fiber advice more specifically)
-  if (!hasElevatedLipids) {
-    suggestions.push({
-      id: 'fiber',
-      category: 'nutrition',
-      priority: 'info',
-      title: 'Maximize fiber intake',
-      description: 'Aim for 25-35g of fiber daily from whole grains, fruits, and vegetables. Increase gradually to avoid discomfort. If you have IBS or IBD, discuss appropriate fiber levels with your doctor.',
-    });
-  }
+  // Fiber — shown to everyone, lipid-diet or not (Brad 2026-11-05)
+  suggestions.push({
+    id: 'fiber',
+    category: 'nutrition',
+    priority: 'info',
+    title: 'Maximize fiber intake',
+    description: 'Aim for 25-35g of fiber daily from whole grains, fruits, and vegetables. Increase gradually to avoid discomfort. If you have IBS or IBD, discuss appropriate fiber levels with your doctor.',
+  });
 
   // High-potassium diet — only when eGFR ≥ 45 (safe kidney function), from an eGFR no newer
   // creatinine has outdated (US-07 AC8): potassium advice errs on the cautious side.

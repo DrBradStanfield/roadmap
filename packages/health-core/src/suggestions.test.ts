@@ -778,10 +778,10 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'fiber')?.category).toBe('nutrition');
     });
 
-    it('suppresses fiber suggestion when lipid-diet is active', () => {
+    it('keeps the fiber suggestion when lipid-diet is active (Brad 2026-11-05)', () => {
       const { inputs, results } = createTestData({ ldlC: 4.0 }); // above borderline (3.36)
       const suggestions = generateSuggestions(inputs, results);
-      expect(suggestions.find(s => s.id === 'fiber')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'fiber')).toBeDefined();
       expect(suggestions.find(s => s.id === 'lipid-diet')).toBeDefined();
     });
 
@@ -857,11 +857,11 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'fiber')).toBeDefined();
     });
 
-    it('shows lipid-diet and hides fiber at LDL 2.0, above the 1.4 optimal line (US-07 AC5)', () => {
+    it('shows lipid-diet, and fiber still, at LDL 2.0, above the 1.4 optimal line (US-07 AC5)', () => {
       const { inputs, results } = createTestData({ ldlC: 2.0 });
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'lipid-diet')).toBeDefined();
-      expect(suggestions.find(s => s.id === 'fiber')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'fiber')).toBeDefined();
     });
 
     it.each([
@@ -3285,7 +3285,7 @@ describe('non-HDL is compared unrounded and rounded only for display (US-07 AC5,
     const results = planOf(total, hdlC);
     expect(ids(results).includes('med-statin')).toBe(above);
     expect(ids(results).includes('lipid-diet')).toBe(above);
-    expect(ids(results).includes('fiber')).toBe(!above);
+    expect(ids(results).includes('fiber')).toBe(true);
   });
 
   it.each([
