@@ -3,16 +3,18 @@
  *
  * The device copy a cloud page writes as it goes away (US-06 AC13), with two
  * tabs' sessions on one localStorage, through the web host itself: another
- * tab's save never clears the marker for a change it did not carry, and a
- * save that carries all of it removes the copy (US-09 AC4).
+ * tab's save never clears the marker for a change it did not carry, a save
+ * that carries all of it clears the marker and leaves the copy (US-09 AC4,
+ * AC13), and a cloud tab left open after another tab moved this browser to
+ * "This device" never removes the record that tab now runs on (US-09 AC2).
  */
 import { afterEach, describe, expect, it } from 'vitest';
 import {
-  ConflictError, MemoryAdapter, MemoryCloud, RecordSession, ROADMAP_FILE_NAME, createMeasurement,
-  type RoadmapFile, type WriteResult,
+  ConflictError, MemoryAdapter, MemoryCloud, RecordSession, ROADMAP_FILE_NAME, copyCloudDown, createMeasurement,
+  type RecordHost, type RoadmapFile, type WriteResult,
 } from '@roadmap/health-core';
 import { LocalStorageAdapter } from './local-storage-adapter';
-import { isSyncPending, webRecordHost } from './web-record-host';
+import { BACKEND_KEY, isSyncPending, webRecordHost } from './web-record-host';
 
 afterEach(() => localStorage.clear());
 
@@ -31,7 +33,7 @@ const ids = (file: RoadmapFile | null | undefined) => (file?.measurements ?? [])
 const deviceCopy = () => new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME).body as RoadmapFile | null;
 
 describe('two cloud tabs on one localStorage (US-06 AC13)', () => {
-  it("tab B's save without tab A's departure keeps the copy and its marker; the next load lifts it up and removes both", async () => {
+  it("tab B's save without tab A's departure keeps the copy and its marker; the next load lifts it up and clears the marker", async () => {
     const cloud = new MemoryCloud();
     const tabA = await RecordSession.open(webRecordHost(new StalledCloud(cloud)));
     const tabB = await RecordSession.open(webRecordHost(new MemoryAdapter(cloud)));
@@ -49,7 +51,99 @@ describe('two cloud tabs on one localStorage (US-06 AC13)', () => {
     expect(ids(next.file)).toEqual(['dose', 'other']);
     await next.flush();
     expect(isSyncPending()).toBe(false);
+    // The copy stays for a load that cannot reach the cloud (US-09 AC13).
+    expect(ids(deviceCopy())).toEqual(['dose']);
+  });
+});
+
+describe('a save that holds the device copy (US-09 AC13)', () => {
+  it('keeps the copy, so a load that cannot reach the cloud starts from it', async () => {
+    const cloud = new MemoryCloud();
+    const tab = await RecordSession.open(webRecordHost(new MemoryAdapter(cloud)));
+    add(tab, 'late', 81);
+    tab.flushSync(); // hidden
+    await tab.flush(); // its cloud save lands
+    expect(isSyncPending()).toBe(false);
+    const offline = await RecordSession.open(webRecordHost(new LocalStorageAdapter()), { cloudUnreachable: true });
+    expect(ids(offline.file)).toEqual(['late']);
+  });
+});
+
+/** Another device's cloud page: its erase touches nothing in this browser. */
+function phoneHost(cloud: MemoryCloud): RecordHost {
+  const host = webRecordHost(new MemoryAdapter(cloud));
+  if (host.tier !== 'cloud') throw new Error('cloud host expected');
+  return {
+    ...host,
+    clearOffFileData: () => {},
+    deviceRecord: undefined,
+    mirror: {
+      ...host.mirror, adapter: new MemoryAdapter(new MemoryCloud()), sync: undefined,
+      pending: { get: () => false, set: () => {}, clear: () => {} }, wipe: async () => {},
+    },
+  };
+}
+
+/** Tab B on the cloud saves 'base'; tab A then picks "This device": the cloud
+ *  is copied down, forgotten, and tab A reloads on the device. */
+async function switchedAway(): Promise<{ cloud: MemoryCloud; tabB: RecordSession }> {
+  const cloud = new MemoryCloud();
+  localStorage.setItem(BACKEND_KEY, 'memory');
+  const tabB = await RecordSession.open(webRecordHost(new MemoryAdapter(cloud)));
+  add(tabB, 'base', 80);
+  await tabB.flush();
+  const leaving = webRecordHost(new MemoryAdapter(cloud));
+  if (leaving.tier !== 'cloud') throw new Error('cloud host expected');
+  await copyCloudDown(leaving);
+  localStorage.removeItem(BACKEND_KEY);
+  const tabA = await RecordSession.open(webRecordHost(new LocalStorageAdapter()));
+  expect(ids(tabA.file)).toEqual(['base']);
+  return { cloud, tabB };
+}
+
+describe('a cloud tab left open after another tab moved this browser to "This device" (US-09 AC2)', () => {
+  it('its hide and save leave the record that tab now runs on', async () => {
+    const { tabB } = await switchedAway();
+    add(tabB, 'late', 81);
+    tabB.flushSync(); // hidden
+    await tabB.flush(); // its cloud save lands
+    const tabA = await RecordSession.open(webRecordHost(new LocalStorageAdapter()));
+    expect(ids(tabA.file)).toContain('base');
+  });
+
+  it('so does an erase it takes in from another device', async () => {
+    const { cloud, tabB } = await switchedAway();
+    expect((await (await RecordSession.open(phoneHost(cloud))).erase()).success).toBe(true);
+    expect(await tabB.refreshFromRemote()).toBe(true);
+    const tabA = await RecordSession.open(webRecordHost(new LocalStorageAdapter()));
+    expect(ids(tabA.file)).toEqual(['base']);
+  });
+
+  it('and an erase it takes in after it last wrote that record itself', async () => {
+    const { cloud, tabB } = await switchedAway();
+    add(tabB, 'late', 81);
+    tabB.flushSync(); // hidden: it last wrote the device copy itself
+    await tabB.flush();
+    expect((await (await RecordSession.open(phoneHost(cloud))).erase()).success).toBe(true);
+    expect(await tabB.refreshFromRemote()).toBe(true);
+    const tabA = await RecordSession.open(webRecordHost(new LocalStorageAdapter()));
+    expect(ids(tabA.file)).toContain('base');
+  });
+});
+
+describe('an erase taken in from another device, on the cloud this browser still uses (US-06 AC13)', () => {
+  it('removes the copy this tab wrote as it was hidden, and its marker', async () => {
+    const cloud = new MemoryCloud();
+    localStorage.setItem(BACKEND_KEY, 'memory');
+    const tab = await RecordSession.open(webRecordHost(new MemoryAdapter(cloud)));
+    add(tab, 'dose', 1.7);
+    tab.flushSync(); // hidden
+    await tab.flush();
+    expect(ids(deviceCopy())).toEqual(['dose']);
+    expect((await (await RecordSession.open(phoneHost(cloud))).erase()).success).toBe(true);
+    expect(await tab.refreshFromRemote()).toBe(true);
     expect(deviceCopy()).toBeNull();
+    expect(isSyncPending()).toBe(false);
   });
 });
 
