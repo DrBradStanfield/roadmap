@@ -62,8 +62,9 @@ function runBatch(lines: string[], keep = false, extra: string[] = []) {
   }
   const list = join(root, 'list.txt');
   writeFileSync(list, lines.join('\n') + '\n');
-  const r = spawnSync('node', [SCRIPT, list, ...extra], { cwd: batch, env: ENV, encoding: 'utf8' });
-  return { code: r.status, out: r.stdout, err: r.stderr };
+  const t0 = Date.now();
+  const r = spawnSync('node', [SCRIPT, list, ...extra], { cwd: batch, env: ENV, encoding: 'utf8', maxBuffer: 64 << 20 });
+  return { code: r.status, out: r.stdout, err: r.stderr, ms: Date.now() - t0 };
 }
 
 let baseSha: string;
@@ -328,6 +329,18 @@ describe('merge-batch.mjs --skip and pre-flight (US-64 AC15)', () => {
     expect(git(batch, 'rev-parse', 'HEAD')).toBe(git(batch, 'rev-parse', 'origin/main'));
   });
 
+  it('--skip refuses a kept PR built on a skipped PR\'s middle commit (exit 1), naming both, before anything merges', () => {
+    const free = pr(93, baseSha, (d) => write(d, 'src/free.txt', 'free\n')); // unrelated, listed first
+    const a1 = pr(87, baseSha, (d) => write(d, 'src/b.txt', 'b by 87, first\n'));
+    const a2 = pr(87, a1, (d) => write(d, 'src/b.txt', 'b by 87, second\n')); // 87's head is A2
+    const c = pr(88, a1, (d) => write(d, 'src/new.txt', 'new by 88\n')); // built on A1, not on 87's head
+    const r = runBatch([`93 ${free}`, `87 ${a2}`, `88 ${c}`], false, ['--skip', '87']);
+    expect(r.code).toBe(1);
+    expect(r.err).toContain('#88');
+    expect(r.err).toContain('#87');
+    expect(git(batch, 'rev-parse', 'HEAD')).toBe(git(batch, 'rev-parse', 'origin/main'));
+  });
+
   it('--skip that leaves nothing to build exits 1', () => {
     const a = pr(89, baseSha, (d) => write(d, 'src/b.txt', 'b by 89\n'));
     const r = runBatch([`89 ${a}`], false, ['--skip', '89']);
@@ -343,6 +356,30 @@ describe('merge-batch.mjs --skip and pre-flight (US-64 AC15)', () => {
     expect(r.err).toContain('src/key.txt:2 private_key');
     expect(r.err).not.toContain('abcd');
   });
+
+  it('pre-flight reports each credential at its own line, a private key starting mid-hunk included', () => {
+    const pem = ['-----BEGIN ', 'PRIVATE KEY-----', '\n', 'MIIE', 'abcd'.repeat(10)].join('');
+    // src/a.txt has three lines, so the added hunk starts at line 4.
+    const body = ['plain', `const one = '${pat}';`, 'plain', pem, 'plain', `const two = '${pat}';`].join('\n');
+    const sha = pr(94, baseSha, (d) => write(d, 'src/a.txt', `a1\na2\na3\n${body}\n`));
+    const r = runBatch([`94 ${sha}`]);
+    expect(r.code).toBe(5);
+    const hits = r.err.split('\n').filter((l) => l.startsWith('src/a.txt:')).sort();
+    expect(hits).toEqual(['src/a.txt:10 github_pat', 'src/a.txt:5 github_pat', 'src/a.txt:7 private_key']);
+    expect(r.err).not.toContain(pat);
+    expect(r.err).not.toContain('abcd');
+  });
+
+  it('pre-flight scans a 50,000-line hunk of credential shapes in linear time', () => {
+    const lines = Array.from({ length: 50000 }, (_, i) => `v${i} ${pat}`).join('\n');
+    const sha = pr(95, baseSha, (d) => write(d, 'src/big.txt', `${lines}\n`));
+    const r = runBatch([`95 ${sha}`]);
+    expect(r.code).toBe(5);
+    expect(r.err).toContain('src/big.txt:1 github_pat');
+    expect(r.err).toContain('src/big.txt:50000 github_pat');
+    expect(r.err).not.toContain(pat);
+    expect(r.ms).toBeLessThan(4000);
+  }, 60000);
 
   /** The batch as a linked worktree of a main clone whose own hook is `hook`; main has two package folders. */
   function inWorktree(hook: string): { main: string; got: string } {

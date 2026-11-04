@@ -10,14 +10,15 @@
  * commits stay; fix the fixture).
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, writeFileSync, writeSync } from 'node:fs';
 import { join } from 'node:path';
 import { mainOf, PATTERNS } from './secret-rules.mjs';
 
 const HTML = 'docs/user-stories.html';
 const MD = 'docs/user-stories.md';
 
-const git = (...args) => execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+// A batch's diff can pass the default 1 MB output cap (ENOBUFS, exit 4).
+const git = (...args) => execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 1 << 30 });
 const gitOk = (...args) => {
   try {
     git(...args);
@@ -27,7 +28,7 @@ const gitOk = (...args) => {
   }
 };
 const stop = (code, msg) => {
-  console.error(msg);
+  writeSync(2, `${msg}\n`); // console.error to a pipe is async on macOS: exit would cut a long report short
   process.exit(code);
 };
 
@@ -127,7 +128,11 @@ function secretShapes(diff) {
     }
     const text = block.join('\n');
     for (const [rule, re] of SHAPES) {
-      for (const m of text.matchAll(re)) hits.add(`${file}:${first + starts.findLastIndex((s) => s <= m.index)} ${rule}`);
+      let k = 0; // matches come in offset order, so one forward pass maps them all to lines
+      for (const m of text.matchAll(re)) {
+        while (k + 1 < starts.length && starts[k + 1] <= m.index) k++;
+        hits.add(`${file}:${first + k} ${rule}`);
+      }
     }
     block.forEach((t, k) => {
       if ([...t.matchAll(GENERIC)].some((m) => generic(m[1]))) hits.add(`${file}:${first + k} generic-api-key`);
@@ -208,21 +213,25 @@ function main() {
   if (gitOk('rev-parse', '-q', '--verify', 'MERGE_HEAD')) stop(1, 'a merge is in progress; finish or abort it first');
   if (git('status', '--porcelain').trim()) stop(1, 'the worktree is not clean; commit or stash first');
 
-  // A skipped PR must stay out: its reviewed head and its current one, unless main already has them.
+  // A skipped PR must stay out: no kept head may share a commit main lacks with its reviewed or current head, so
+  // a kept PR built on any of its commits, the middle ones included, is refused. All checked before anything merges.
   const out = [];
   for (const e of all.filter((x) => skipped.includes(x.pr))) {
     git('fetch', 'origin', `pull/${e.pr}/head`);
-    for (const s of new Set([e.sha, git('rev-parse', 'FETCH_HEAD').trim()])) {
-      if (!gitOk('merge-base', '--is-ancestor', s, 'origin/main')) out.push({ pr: e.pr, sha: s });
-    }
+    for (const s of new Set([e.sha, git('rev-parse', 'FETCH_HEAD').trim()])) out.push({ pr: e.pr, sha: s });
   }
-
+  const bases = (a, b) => (gitOk('merge-base', a, b) ? git('merge-base', '--all', a, b).split('\n').filter(Boolean) : []);
   for (const { pr, sha } of entries) {
     git('fetch', 'origin', `pull/${pr}/head`);
     const head = git('rev-parse', 'FETCH_HEAD').trim();
     if (head !== sha) stop(1, `PR #${pr}: head moved (now ${head.slice(0, 8)}, reviewed ${sha.slice(0, 8)}): needs a new review`);
-    const holds = out.find((s) => gitOk('merge-base', '--is-ancestor', s.sha, sha));
-    if (holds) stop(1, `PR #${pr} contains skipped PR #${holds.pr} (${holds.sha.slice(0, 8)}); skip both or neither`);
+    for (const s of out) {
+      const shared = bases(s.sha, sha).find((b) => !gitOk('merge-base', '--is-ancestor', b, 'origin/main'));
+      if (shared) stop(1, `PR #${pr} shares commit ${shared.slice(0, 8)} with skipped PR #${s.pr}, not on main; skip both or neither`);
+    }
+  }
+
+  for (const { pr, sha } of entries) {
     const msg = `Merge PR #${pr} (${sha.slice(0, 8)}) into the batch`;
     const note = [];
 
