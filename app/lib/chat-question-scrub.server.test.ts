@@ -110,6 +110,8 @@ describe('scrubQuestion — US-15 AC44 the model pass', () => {
     ['a dose range as a date', 'Is 5-10 mg of melatonin safe?', 'Is [date] mg of melatonin safe?'],
     ['a dose written with its unit as an id', 'Is 1000mcg of B12 too much?', 'Is [id] of B12 too much?'],
     ['a lab value as an age', 'my ferritin is 45 ug/L, is that low?', 'my ferritin is [age 40s] ug/L, is that low?'],
+    ['a lab value with a catalogue alias unit as an age', 'my potassium is 45 mEq/L?', 'my potassium is [age 40s] mEq/L?'],
+    ['a count with a normaliser spelling as an age', 'my platelets are 45 x10^9/L', 'my platelets are [age 40s] x10^9/L'],
     ['a lab value as a date', 'my LDL is 3/4 mmol/L', 'my LDL is [date] mmol/L'],
     ['a masked widget dose as an age', 'I take ## mg of metformin', 'I take [age 20s] mg of metformin'],
   ])('US-15 AC44a: skips a placeholder that stands for %s', async (_, q, a) => {

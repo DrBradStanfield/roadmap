@@ -155,9 +155,11 @@ describe('US-07 AC10 adversary fixes', () => {
     expect(row.name).toBe('chromium');
   });
 
-  it.each(['full', 'metadata'] as const)('%s: a core row with no printed name is filed exactly as before; a non-key metric is still dropped (R3)', (mode) => {
-    const { values } = extract({ values: [core('LDL'), core('Serum Creatinine', undefined, 80, '')] }, mode);
-    expect(values).toEqual([]);
+  it.each(['full', 'metadata'] as const)('%s: a core row with no printed name that names no core key is filed by that name, never dropped (R3, US-12 AC11a)', (mode) => {
+    const result = extract({ values: [core('LDL'), core('Serum Creatinine', undefined, 80, 'µmol/L')] }, mode);
+    expect(result.values.map((v) => v.metric)).toEqual(['ldl']);
+    // Creatinine by the model's name alone stays a lab row (US-12 AC11).
+    expect(result.additionalValues.map((v) => v.name)).toEqual(['Serum Creatinine']);
   });
 
   it('a printed name never moves a row into a core slot the model filled that day (R4)', () => {
@@ -264,3 +266,36 @@ describe('US-07 AC10: saliva words in the urine marker\'s languages (Brad 2026-1
   });
 });
 
+
+describe('US-66 AC4: the core loose pass leaves "Cr" and ratios alone (adversary R1, R3)', () => {
+  const extract = (printedName: string, name: string, value: number, unit: string) => toUnifiedResult(parseUnifiedResult({
+    classification: 'lab_report', reportDate: '2026-10-30', document: null, values: [],
+    additionalValues: [{ name, value, unit, referenceLow: null, referenceHigh: null, printedName }],
+  }), 'full');
+  const shape = (r: ReturnType<typeof extract>) => ({ values: r.values.map((v) => v.metric), extras: r.additionalValues.map((v) => v.name), refused: r.refusedValues?.length ?? 0 });
+
+  it.each(['Cr:', 'Cr -', '(Cr)', 'Cr,'])('a printed %s files as a bare "Cr" does', (printed) => {
+    expect(shape(extract(printed, 'chromium', 0.3, 'µg/L'))).toEqual(shape(extract('Cr', 'chromium', 0.3, 'µg/L')));
+    expect(shape(extract(printed, 'creatinine', 85, 'µmol/L'))).toEqual(shape(extract('Cr', 'creatinine', 85, 'µmol/L')));
+  });
+
+  it('a ratio printed with a colon never becomes HDL', () => {
+    const r = extract('Cholesterol:HDL', 'chol_hdl_ratio', 4.2, 'ratio');
+    expect(r.values.map((v) => v.metric)).not.toContain('hdl');
+  });
+});
+
+// US-12 AC20 beside US-07 AC10 (merge of origin/main, 2026-11-02): a limit keeps
+// its comparator through every filing the printed name decides.
+describe('US-12 AC20 with US-07 AC10: the printed name files a limit, which keeps its comparator', () => {
+  it('a core row re-filed as a lab row by its printed name', () => {
+    const { additionalValues } = extract({ values: [core('creatinine', 'Urine Creatinine', '< 2' as unknown as number, 'mmol/L')] });
+    expect(additionalValues.map((r) => [labSlotKey(r.name), r.value, r.comparator])).toEqual([['urine_creatinine', 2, '<']]);
+  });
+  it('a core row re-filed as another core metric, and a lab row promoted to core', () => {
+    const refiled = extract({ values: [core('total_cholesterol', 'LDL Cholesterol', '< 1.5' as unknown as number)] }).values;
+    expect(refiled.map((v) => [v.metric, v.comparator])).toEqual([['ldl', '<']]);
+    const promoted = extract({ additionalValues: [lab('apolipoprotein_b_level', 'Apolipoprotein B', '< 0.3' as unknown as number, 'g/L')] }).values;
+    expect(promoted.map((v) => [v.metric, v.valueSI, v.comparator])).toEqual([['apob', 0.3, '<']]);
+  });
+});

@@ -26,6 +26,7 @@ import {
   MemoryCloud,
   ROADMAP_FILE_NAME,
   toCanonicalValue,
+  toOldShape,
   type FileLabValue,
   type FileMeasurement,
   type ProposedEdit,
@@ -96,7 +97,8 @@ async function recordOnDisk(): Promise<RoadmapFile> {
   await act(async () => { await flushRoadmapStore(); });
   return (await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)).body as RoadmapFile;
 }
-const rowsOf = async (metric: string) => (await recordOnDisk()).measurements.filter((m) => m.metricType === metric);
+// A blood test is a core lab row (US-66), read here as the measurement it was.
+const rowsOf = async (metric: string) => toOldShape(await recordOnDisk()).measurements.filter((m) => m.metricType === metric);
 const active = <T extends { status: string }>(rows: T[]) => rows.filter((r) => r.status === 'active');
 const day = (r: FileMeasurement | FileLabValue) => r.recordedAt.slice(0, 10);
 const activeOn = async (metric: string) => active(await rowsOf(metric)).map((m) => [m.value, day(m)]).sort();
@@ -439,6 +441,27 @@ describe('the 2026-09-22 feedback: blood tests on the wrong day', () => {
     await waitFor(async () => expect(await activeOn('ldl')).toEqual([[2.1, TODAY]]));
     await waitFor(() => expect(ldlTile(view.container)).toBe('2.1 mmol/L'));
     expect(ldlInChat()).toEqual([2.1, 2.1]);
+  });
+
+  it('US-04 AC5b: a value typed on the day a test moves to is kept, and nothing moves', async () => {
+    await guest({ weight: 82 });
+    await addMeasurement('hdl', 1.4, '2026-01-10'); // that day's LDL cell is empty
+    await addMeasurement('ldl', 2.1, RIGHT_DAY);
+    const view = render(<HealthTool />);
+    await shown(view.container, '.bt-timeline-title');
+    showTables(view.container);
+    typeInto(backfillInput(bloodMatrix(view.container), 'LDL Cholesterol'), '3.0');
+
+    const header = Array.from(bloodMatrix(view.container).querySelectorAll<HTMLElement>('.bt-cell-movable'))
+      .find((b) => b.querySelector('input')!.value === RIGHT_DAY)!;
+    fireEvent.change(header.querySelector('input[type="date"]')!, { target: { value: '2026-01-10' } });
+    fireEvent.click(within(view.container.querySelector('.bt-move-panel') as HTMLElement).getByRole('button', { name: 'Move' }));
+
+    await waitFor(() => expect(view.container.querySelector('.bt-move-status')?.textContent)
+      .toBe("Save or clear the values you typed on 10 Jan '26 first."));
+    expect(await activeOn('ldl')).toEqual([[2.1, RIGHT_DAY]]);
+    expect(backfillInput(bloodMatrix(view.container), 'LDL Cholesterol').value).toBe('3.0');
+    expect(trackProductEvent).not.toHaveBeenCalledWith('blood_test_moved');
   });
 
   it('US-34: a correction made through a connector reaches the plan and the chat', async () => {
@@ -924,7 +947,7 @@ describe('US-03 AC5: a matrix commits what is typed when you leave it; the page 
     expect((await loadAllHistory()).filter((m) => m.metricType === 'ldl')).toEqual([]);
     expect(adapter.writes).toBe(0);
     const inCloud = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
-    expect(inCloud.measurements.filter((m) => m.metricType === 'ldl')).toEqual([]);
+    expect(toOldShape(inCloud).measurements.filter((m) => m.metricType === 'ldl')).toEqual([]);
     adapter.hang = false;
 
     view.unmount(); // the page comes back from the device
@@ -1804,7 +1827,7 @@ describe('US-11: an erase made on another device', () => {
     const inCloud = async (metric: string) => {
       await act(async () => { await flushRoadmapStore(); });
       const file = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
-      return active(file.measurements.filter((m) => m.metricType === metric)).map((m) => m.value);
+      return active(toOldShape(file).measurements.filter((m) => m.metricType === metric)).map((m) => m.value);
     };
     tapOutside(view.container); // leaving
     await wait(1000);

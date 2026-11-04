@@ -5,6 +5,9 @@ import {
   shopifyApp,
 } from "@shopify/shopify-app-react-router/server";
 import { PostgreSQLSessionStorage } from "@shopify/shopify-app-session-storage-postgresql";
+import { assertSessionDbTls } from "./lib/session-db-tls.server";
+
+assertSessionDbTls();
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,

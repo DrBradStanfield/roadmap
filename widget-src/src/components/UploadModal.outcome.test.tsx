@@ -199,7 +199,7 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual({
       picked: 6, withValues: 1, documentOnly: 1, noValues: 1, openFailed: 1,
-      tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0, docx: 0, picturesOnly: 0, undatedPrevious: 0, unitsGuessed: 0, unitsRefused: 0, valuesLimit: 0,
+      tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0, docx: 0, picturesOnly: 0, undatedPrevious: 0, unitsGuessed: 0, unitsRefused: 0, valuesLimit: 0, valuesLimitUngraded: 0,
     });
     expect(Object.values(outcomes()[0]!).every(Number.isInteger)).toBe(true);
     // A zero is never sent, so a server a deploy behind never meets a new key it would refuse.
@@ -278,23 +278,41 @@ describe('US-12 AC9: values a file printed but the parse refused are not silent'
 // A lab photo with HDL printed "> 60" and Lp(a) "<5" said only "2 values could
 // not be read" (break-it pass, 2026-11-01): the person could not tell which.
 describe('US-12 AC19: each value not saved is named, with why', () => {
-  it('names the tests printed as a limit and the ones not read, counts the rest, and sends only counts', async () => {
-    vi.mocked(labImport).mockResolvedValue({ result: { ...withValues.result!, droppedValueCount: 5, unreadValues: [
-      { name: 'hdl', reason: 'limit' }, { name: 'lpa', reason: 'limit' }, { name: 'vitamin_d', reason: 'unreadable' }, { name: 'hdl', reason: 'limit' },
+  it('names the tests not read, counts the rest, and sends only counts', async () => {
+    vi.mocked(labImport).mockResolvedValue({ result: { ...withValues.result!, droppedValueCount: 3, unreadValues: [
+      { name: 'vitamin_d', reason: 'unreadable' }, { name: 'hdl', reason: 'unreadable' },
     ] } } as Import);
     render_(); pick(pdf('photo.pdf'));
     await screen.findByDisplayValue('3.9');
-    expect(reasonFor('photo.pdf')).toBe('HDL Cholesterol, Lp(a): printed as a limit, not saved. Vitamin D (25-OH): could not be read, not saved. 1 other value could not be read.');
+    expect(reasonFor('photo.pdf')).toBe('Vitamin D (25-OH), HDL Cholesterol: could not be read, not saved. 1 other value could not be read.');
     await waitFor(() => expect(sent()).toHaveLength(1));
     // A count and its reason word only: never a test's name or a value.
-    expect(sent()[0]).toEqual({ picked: 1, withValues: 1, valuesDropped: 5, valuesLimit: 3 });
+    expect(sent()[0]).toEqual({ picked: 1, withValues: 1, valuesDropped: 3 });
   });
+});
 
-  it('one test not saved for two reasons is named once, with both', async () => {
-    vi.mocked(labImport).mockResolvedValue({ result: { ...withValues.result!, droppedValueCount: 2, unreadValues: [{ name: 'hdl', reason: 'limit' }, { name: 'hdl', reason: 'unreadable' }] } } as Import);
-    render_(); pick(pdf('photo.pdf'));
+// US-12 AC20 (Brad 2026-11-01, 2026-11-02): a limit is saved, so it is no longer
+// a dropped value; the run counts how many there were, how many the rule could
+// not grade, and which tests those were, from a closed list of keys.
+describe('US-12 AC20: the upload counts limits, and names the ungraded tests by key only', () => {
+  it('counts each limit, the undecided ones, and their keys, never a value, unit or printed name', async () => {
+    vi.mocked(labImport).mockResolvedValue({ result: { ...withValues.result!,
+      values: [
+        ...withValues.result!.values,
+        { metric: 'lpa', valueSI: 10, displayValue: 10, displayUnit: 'nmol/L', confidence: 'high', comparator: '<' },
+        { metric: 'ldl', valueSI: 1.5, displayValue: 1.5, displayUnit: 'mmol/L', confidence: 'high', comparator: '<' },
+      ],
+      additionalValues: [
+        { name: 'eGFR', value: 30, unit: 'mL/min/1.73m²', comparator: '>' },
+        { name: 'Folate (serum)', value: 45, unit: 'nmol/L', referenceLow: 7, referenceHigh: 45, comparator: '>' },
+        { name: 'Made-up marker 7', value: 3, unit: 'U/L', referenceLow: 1, referenceHigh: 5, comparator: '<' },
+      ],
+    } } as Import);
+    render_(); pick(pdf('limits.pdf'));
     await screen.findByDisplayValue('3.9');
-    expect(reasonFor('photo.pdf')).toBe('HDL Cholesterol: printed as a limit; could not be read, not saved.');
+    await waitFor(() => expect(sent()).toHaveLength(1));
+    expect(sent()[0]).toEqual({ picked: 1, withValues: 1, valuesLimit: 5, valuesLimitUngraded: 3, limitUngradedTests: ['egfr', 'ldl', 'other'] });
+    expect(JSON.stringify(sent()[0])).not.toMatch(/Made-up|Folate|nmol|1\.5|"30"|[<>]/);
   });
 });
 
@@ -747,5 +765,20 @@ describe('US-16 AC2a: a screening date from an upload the erase overtook', () =>
     await screen.findByText(/Failed to save/);
     expect(onScreeningUpdate).not.toHaveBeenCalled();
     vi.mocked(getEraseIdentity).mockReturnValue('');
+  });
+});
+
+// US-12 AC5a: Cancel reaches the batch transport. The Pages build's queue
+// (byok-upload.ts) stops on this signal; before, only the modal's poll stopped.
+describe('US-12 AC5a: Cancel during a batch upload (20+ files) aborts the batch', () => {
+  it('hands the batch a signal that Cancel aborts', async () => {
+    vi.mocked(labImportBatch).mockResolvedValue({ batchId: 'batch_abc' });
+    vi.mocked(pollBatchStatus).mockResolvedValue({ status: 'processing', completed: 0, total: 20 });
+    render_(); pick(...Array.from({ length: 20 }, (_, i) => pdf(`r${i}.pdf`)));
+    await waitFor(() => expect(labImportBatch).toHaveBeenCalled());
+    const signal = (vi.mocked(labImportBatch).mock.calls[0] as unknown[])[1] as AbortSignal | undefined;
+    expect(signal?.aborted).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(signal?.aborted).toBe(true);
   });
 });

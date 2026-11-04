@@ -20,15 +20,17 @@ import {
   validDay,
   isCalendarDay,
   UNDATED_PREVIOUS,
+  withComparator,
+  comparatorOf,
+  type Comparator,
   type LabQuantity,
 } from '@roadmap/health-core';
 import { getCurrentDateValue } from './DatePicker';
 import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, DocumentResult, UploadHistory } from '../lib/api-types';
-import { pendingRowsFor, rowTarget, type RefusedLabValue } from '@roadmap/health-core';
-import { labUnitRefusalLine, labValueLabel } from '../lib/lab-value-labels';
+import { labUnitRefusalLine, labValueLabel, pendingRowsFor, rowTarget, type RefusedLabValue } from '@roadmap/health-core';
 import { unarchivedOriginals } from '../lib/archive-payloads';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
-import { type CellUnit, type Grading, cellLabel, cellText, cellToSI, hasNumericSyntax, NUMERIC_SYNTAX_GUIDANCE, readNumericCell, readTypedValue, validateTypedValue } from '../lib/blood-test-cell';
+import { type CellUnit, type Grading, cellLabel, cellNumber, cellText, cellToSI, hasNumericSyntax, NUMERIC_SYNTAX_GUIDANCE, readNumericCell, readTypedValue, validateTypedValue } from '../lib/blood-test-cell';
 import { useLpaUnit } from '../lib/lpa-unit';
 import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
@@ -72,11 +74,14 @@ export interface DocumentToSave {
  *  turns it into a FHIR correction. */
 export interface ReviewedValue {
   metric: string; valueSI: number; recordedAt: string; source?: MeasurementSource; correctsId?: string;
+  /** Printed as a limit and saved as printed (US-12 AC20); an edited cell is an exact value. */
+  comparator?: Comparator;
 }
 export interface ReviewedLabValue {
   name: string; value: number; unit: string;
   referenceLow?: number | null; referenceHigh?: number | null;
   recordedAt: string; correctsId?: string;
+  comparator?: Comparator;
 }
 
 interface ReviewTableProps {
@@ -221,6 +226,20 @@ function isDocDuplicate(sourceFileName: string | null, idx: Set<string>): boolea
   return idx.has(sourceFileName);
 }
 
+/** The names under which `after` holds a document `before` did not: filed
+ *  since (US-12 AC6). A reload that filed nothing names none (US-12 AC6b). */
+function newlyFiledNames(before: ApiDocument[], after: ApiDocument[]): Set<string> {
+  const held = new Set(before.map(d => d.id));
+  return new Set(after.flatMap(d => (d.sourceFileName && !held.has(d.id) ? [d.sourceFileName] : [])));
+}
+
+/** `checked` with every document filed under one of `filed` unticked. */
+function uncheckFiled(checked: Record<number, boolean>, results: FileResult[], filed: Set<string>): Record<number, boolean> {
+  const next = { ...checked };
+  results.forEach((r, fi) => { if (r.document && filed.has(r.fileName)) next[fi] = false; });
+  return next;
+}
+
 /** Two stored values are the same value when only float noise from a unit
  *  conversion separates them. */
 function sameValue(a: number, b: number): boolean {
@@ -289,11 +308,11 @@ type MatrixRow = CoreRow | AdditionalRow;
  *  (typically written by a connector). The cell edits like any other; it only
  *  saves when the user ticks "Replace". `id` is what the save sends as
  *  `correctsId`. */
-interface ExistingCell { id: string; display: string; valueSI?: number; lab?: LabQuantity; displayUnit?: string }
+interface ExistingCell { id: string; display: string; valueSI?: number; lab?: LabQuantity; displayUnit?: string; comparator?: Comparator }
 
 type EditableMatrixCell =
-  | { state: 'editable'; kind: 'core'; fi: number; vi: number; initialDisplay: string; confidence: 'high' | 'medium' | 'low'; question?: string; printed?: string; valueSI: number; displayUnit: string; existing?: ExistingCell }
-  | { state: 'editable'; kind: 'additional'; fi: number; ai: number; initialDisplay: string; valueSI: number; displayUnit: string; lab: LabQuantity; referenceLow?: number | null; referenceHigh?: number | null; existing?: ExistingCell };
+  | { state: 'editable'; kind: 'core'; fi: number; vi: number; initialDisplay: string; confidence: 'high' | 'medium' | 'low'; question?: string; printed?: string; valueSI: number; displayUnit: string; existing?: ExistingCell; comparator?: Comparator }
+  | { state: 'editable'; kind: 'additional'; fi: number; ai: number; initialDisplay: string; valueSI: number; displayUnit: string; lab: LabQuantity; referenceLow?: number | null; referenceHigh?: number | null; existing?: ExistingCell; comparator?: Comparator };
 
 /** What a cell's review state (typed text, touched, Replace) is keyed by: its
  *  value's place in the extraction, never its column. A picked date re-keys
@@ -313,16 +332,18 @@ function replaceKey(cell: EditableMatrixCell, existing: ExistingCell): string {
 
 /** A reading a review hides because another holds its (test, day): named, never its value. */
 interface HiddenReading { label: string; day: DateKey }
-type Quantity = { valueSI?: number; lab?: LabQuantity };
+/** `comparator`: a core reading printed as a limit; a lab's rides on its `lab` (US-12 AC20). */
+type Quantity = { valueSI?: number; lab?: LabQuantity; comparator?: Comparator };
 
 /** A core cell as rendered: its text in the row's unit and the value it saves. */
-interface CoreCellView { text: string; valueSI?: number; error: string | null }
+/** `comparator`: an untouched limit's, shown before its bound; an edited cell is exact (US-12 AC20). */
+interface CoreCellView { text: string; valueSI?: number; error: string | null; comparator?: Comparator }
 
 type MatrixCell =
   | { state: 'empty' }
   /** What a collision compares: `valueSI` for a core metric (the stored value), `lab` for an additional lab,
    *  shown in `displayUnit`. */
-  | { state: 'context'; id: string; displayValue: string; valueSI?: number; lab?: LabQuantity; displayUnit?: string }
+  | { state: 'context'; id: string; displayValue: string; valueSI?: number; lab?: LabQuantity; displayUnit?: string; comparator?: Comparator }
   | EditableMatrixCell;
 
 /** Build the matrix view. A saved row owns its cell: an upload value that
@@ -354,7 +375,7 @@ export function buildMatrixModel(
    *  SI, the report prints its own unit, so health-core's `sameLabQuantity`
    *  converts both, as the connector does (US-35 AC6). */
   const sameQuantity = (a: Quantity, b: Quantity, display?: string, shown?: string) =>
-    a.valueSI !== undefined && b.valueSI !== undefined ? sameValue(a.valueSI, b.valueSI)
+    a.valueSI !== undefined && b.valueSI !== undefined ? sameValue(a.valueSI, b.valueSI) && a.comparator === b.comparator
       : a.lab && b.lab ? sameLabQuantity(a.lab, b.lab)
         : display !== undefined && shown !== undefined && slotState(shown, display) === 'held_equal';
 
@@ -410,9 +431,9 @@ export function buildMatrixModel(
       coreMetricsSeen.add(metric);
     }
     const display = UNIT_DEFS[metric]
-      ? cellText(metric, m.value, displayFor(metric))
+      ? cellNumber(metric, m.value, displayFor(metric), m.comparator)
       : String(m.value);
-    cells.set(`${metric}|${dateKey}`, { state: 'context', id: m.id, displayValue: display, valueSI: m.value });
+    cells.set(`${metric}|${dateKey}`, { state: 'context', id: m.id, displayValue: withComparator(display, m.comparator), valueSI: m.value, ...comparatorOf(m) });
   }
   for (const lv of labValueHistory) {
     const dateKey = lv.recordedAt.slice(0, 10);
@@ -432,8 +453,8 @@ export function buildMatrixModel(
       });
     }
     cells.set(`${nameKey}|${dateKey}`, {
-      state: 'context', id: lv.id, displayValue: String(lv.value),
-      lab: { name: lv.metricName, value: lv.value, unit: lv.unit },
+      state: 'context', id: lv.id, displayValue: withComparator(String(lv.value), lv.comparator),
+      lab: { name: lv.metricName, value: lv.value, unit: lv.unit, ...comparatorOf(lv) },
       displayUnit: labUnitText({ name: lv.metricName, unit: lv.unit }),
     });
   }
@@ -478,7 +499,7 @@ export function buildMatrixModel(
       if (edited || winner!.edited || !sameQuantity(quantity, winner!.quantity)) hiddenReadings.push({ label, day: slot.slice(slot.lastIndexOf('|') + 1) });
       return null;
     }
-    return prev && { id: prev.id, display: prev.displayValue, valueSI: prev.valueSI, lab: prev.lab, displayUnit: prev.displayUnit };
+    return prev && { id: prev.id, display: prev.displayValue, valueSI: prev.valueSI, lab: prev.lab, displayUnit: prev.displayUnit, ...comparatorOf(prev) };
   };
   for (const rank of [0, 1, 2]) results.forEach((r, fi) => {
     /** The column a value lands in: its own date's (US-12 AC12) or its file's. */
@@ -501,9 +522,9 @@ export function buildMatrixModel(
       const cellKey = `${metric}|${dateKey}`;
       const slot = slotFor(metric, v, dateKey);
       const initialDisplay = UNIT_DEFS[metric]
-        ? cellText(metric, v.valueSI, displayFor(metric))
+        ? cellNumber(metric, v.valueSI, displayFor(metric), v.comparator)
         : String(v.displayValue);
-      const existing = place(slot, cellKey, rank, initialDisplay, { valueSI: v.valueSI }, !!touched?.has(valueId(fi, 'core', vi)), METRIC_LABELS[metric] || metric);
+      const existing = place(slot, cellKey, rank, withComparator(initialDisplay, v.comparator), { valueSI: v.valueSI, ...comparatorOf(v) }, !!touched?.has(valueId(fi, 'core', vi)), METRIC_LABELS[metric] || metric);
       if (existing === null) return;
       cells.set(cellKey, {
         state: 'editable', kind: 'core', fi, vi,
@@ -517,6 +538,7 @@ export function buildMatrixModel(
         valueSI: v.valueSI,
         displayUnit: v.displayUnit,
         existing,
+        ...comparatorOf(v),
       });
     });
 
@@ -540,8 +562,8 @@ export function buildMatrixModel(
       }
       const cellKey = `${nameKey}|${dateKey}`;
       const slot = slotFor(nameKey, av, dateKey);
-      const lab = { name: av.name, value: av.value, unit: av.unit };
-      const existing = place(slot, cellKey, rank, String(av.value), { lab }, !!touched?.has(valueId(fi, 'additional', ai)), labValueLabel(av.name));
+      const lab = { name: av.name, value: av.value, unit: av.unit, ...comparatorOf(av) };
+      const existing = place(slot, cellKey, rank, withComparator(String(av.value), av.comparator), { lab }, !!touched?.has(valueId(fi, 'additional', ai)), labValueLabel(av.name));
       if (existing === null) return;
       cells.set(cellKey, {
         state: 'editable',
@@ -554,6 +576,7 @@ export function buildMatrixModel(
         referenceLow: av.referenceLow,
         referenceHigh: av.referenceHigh,
         existing,
+        ...comparatorOf(av),
       });
     });
   });
@@ -665,14 +688,14 @@ export function ReviewTable({
     return map;
   });
   // A document the record now holds (a partial save reloaded history) unchecks
-  // itself, so a retry cannot file it twice. The user can still re-tick it.
+  // itself, so a retry cannot file it twice. The user can still re-tick it,
+  // and a reload that filed nothing under its name keeps that tick (US-12 AC6b).
+  const shownDocuments = useRef(history.documents);
   useEffect(() => {
-    setDocChecked(prev => {
-      const next = { ...prev };
-      results.forEach((r, fi) => { if (r.document && isDocDuplicate(r.fileName, docHistoryIndex)) next[fi] = false; });
-      return next;
-    });
-  }, [docHistoryIndex, results]);
+    const filed = newlyFiledNames(shownDocuments.current, history.documents);
+    shownDocuments.current = history.documents;
+    setDocChecked(prev => uncheckFiled(prev, results, filed));
+  }, [history.documents, results]);
 
   // A document whose bytes metadata-only shown-document rows hold (a failed
   // upload, or the connector's) replaces them, so its card starts from the
@@ -800,7 +823,7 @@ export function ReviewTable({
     const typedIn = touchedRef.current.get(editId(cell))?.display;
     const metric = metricOf(cell);
     return (touchedRef.current.has(editId(cell)) && extractedError(cell) !== null)
-      || editedStr !== (typedIn && metric && UNIT_DEFS[metric] ? cellText(metric, cell.valueSI, typedIn) : cell.initialDisplay);
+      || editedStr !== (typedIn && metric && UNIT_DEFS[metric] ? cellNumber(metric, cell.valueSI, typedIn, cell.comparator) : cell.initialDisplay);
   };
 
   /** The value a cell saves (SI for a core metric): the extracted one while
@@ -830,11 +853,14 @@ export function ReviewTable({
     return extractedError(cell);
   };
 
-  /** Is a ticked replacement the value already saved? A lab compares quantity, in its printed unit (US-35 AC6). */
-  const replacesNothing = (cell: EditableMatrixCell, existing: ExistingCell, value: number, editedStr: string): boolean =>
-    existing.valueSI !== undefined ? sameValue(value, existing.valueSI)
-      : existing.lab && cell.kind === 'additional' ? sameLabQuantity(existing.lab, { ...cell.lab, value })
+  /** Is a ticked replacement the value already saved? A lab compares quantity, in its printed unit (US-35 AC6).
+   *  A limit and an exact value of one number differ; an edited cell is exact (US-12 AC20). */
+  const replacesNothing = (cell: EditableMatrixCell, existing: ExistingCell, value: number, editedStr: string): boolean => {
+    const offered = isEditedText(cell, editedStr) ? undefined : cell.comparator;
+    return existing.valueSI !== undefined ? sameValue(value, existing.valueSI) && existing.comparator === offered
+      : existing.lab && cell.kind === 'additional' ? sameLabQuantity(existing.lab, { ...cell.lab, value, comparator: offered })
         : editedStr === existing.display;
+  };
 
   /** Walks the matrix cells, returns the editable ones with a non-empty
    *  edited display value — the cells that will save. Shared by both the
@@ -901,14 +927,16 @@ export function ReviewTable({
       if (cell.state !== 'editable') continue;
       const metric = metricOf(cell);
       const text = (editedDisplayValues[editId(cell)] ?? cell.initialDisplay).trim();
+      const limit = cell.comparator && !isEditedText(cell, text) ? { comparator: cell.comparator } : {};
       if (!metric) {
-        views.set(editId(cell), { valueSI: savedValue(cell, text), error: cellError(cell, text), text });
+        views.set(editId(cell), { valueSI: savedValue(cell, text), error: cellError(cell, text), text, ...limit });
         continue;
       }
       const valueSI = savedValue(cell, text);
       const shownIn = units[metric] ?? unitSystem;
       const typedIn = touchedRef.current.get(editId(cell))?.display ?? shownIn;
       views.set(editId(cell), {
+        ...limit,
         valueSI,
         error: cellError(cell, text),
         text: !isEditedText(cell, text) ? cell.initialDisplay
@@ -1022,6 +1050,8 @@ export function ReviewTable({
           recordedAt,
           source: c.isEdited ? 'lab_import_edited' : undefined,
           correctsId: cell.existing?.id,
+          // A limit saves as printed; a number typed over it is exact (US-12 AC20).
+          ...(cell.comparator && !c.isEdited ? { comparator: cell.comparator } : {}),
         });
       } else {
         const av = results[cell.fi]?.additionalValues[cell.ai];
@@ -1034,6 +1064,7 @@ export function ReviewTable({
           referenceHigh: av.referenceHigh,
           recordedAt,
           correctsId: cell.existing?.id,
+          ...(cell.comparator && !c.isEdited ? { comparator: cell.comparator } : {}),
         });
       }
     }
@@ -1426,6 +1457,7 @@ function MatrixRowView({
                 editedValue={coreCellViews.get(id)?.text ?? editedDisplayValues[id] ?? ''}
                 valueSI={coreCellViews.get(id)?.valueSI}
                 validationError={coreCellViews.get(id)?.error}
+                comparator={coreCellViews.get(id)?.comparator}
                 onCellChange={onCellChange}
                 replace={cell.state === 'editable' && !!cell.existing && !!replaceChecked[replaceKey(cell, cell.existing)]}
                 alreadySaved={heldEqual.has(id)}
@@ -1476,10 +1508,12 @@ interface MatrixCellViewProps {
   alreadySaved: boolean;
   /** Keyed by `replaceKey`. */
   onReplaceToggle: (key: string, on: boolean) => void;
+  /** An untouched limit's symbol, shown before its bound (US-12 AC20). */
+  comparator?: Comparator;
 }
 
 const MatrixCellView = memo(function MatrixCellView({
-  cell, row, columnWords, unitSystem, grading, editedValue, valueSI, validationError, onCellChange, replace, alreadySaved, onReplaceToggle,
+  cell, row, columnWords, unitSystem, grading, editedValue, valueSI, validationError, onCellChange, replace, alreadySaved, onReplaceToggle, comparator,
 }: MatrixCellViewProps) {
   // Ids of the text that describes the inputs: labels name the test and
   // column, never a value (US-13 AC10).
@@ -1539,6 +1573,7 @@ const MatrixCellView = memo(function MatrixCellView({
       valueSI={valueSI}
       validationResult={validationError}
       onChange={handleChange}
+      comparator={comparator}
       ariaLabel={label}
       ariaDescribedBy={describedBy(cell.printed && printedId)}
       wrapperClass={`bt-cell-input bt-cell-review${lowConfClass}`}
@@ -1549,6 +1584,7 @@ const MatrixCellView = memo(function MatrixCellView({
       value={editedValue}
       validationResult={validationError}
       onChange={handleChange}
+      comparator={comparator}
       wrapperClass="bt-cell-input bt-cell-review"
       ariaLabel={label}
       ariaDescribedBy={describedBy(newUnitShown && unitId, storedText && siId, refusedText && refusedId)}
@@ -1566,7 +1602,7 @@ const MatrixCellView = memo(function MatrixCellView({
       <span id={oldId} className="bt-value-num num bt-cell-conflict-old">{showUnit(displayUnit) ? `${display} ${displayUnit}` : display}</span>
       {input}
       {/* The new value as text for the Replace box: a description names text, never an input (US-13 AC10). */}
-      {!alreadySaved && <span id={newId} className="bt-cell-heard">{editedValue ? `new value ${editedValue}` : 'no new value'}</span>}
+      {!alreadySaved && <span id={newId} className="bt-cell-heard">{editedValue ? `new value ${withComparator(editedValue, comparator)}` : 'no new value'}</span>}
       {!alreadySaved && <label className="bt-cell-conflict-replace">
         <input
           type="checkbox"

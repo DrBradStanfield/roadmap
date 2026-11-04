@@ -5,6 +5,7 @@
  * NOTHING HERE MAY LOG A URL.
  */
 import crypto from 'node:crypto';
+import { sameBytes } from './crypto-compare.server';
 import dns from 'node:dns';
 import https from 'node:https';
 import { isIP, type LookupFunction } from 'node:net';
@@ -231,7 +232,7 @@ function verifySelfContainedClient(clientId: string): McpClient | null {
     return null;
   }
   const expected = crypto.createHmac('sha256', clientHmacKey()).update(body).digest();
-  if (tag.length !== expected.length || !crypto.timingSafeEqual(tag, expected)) return null;
+  if (!sameBytes(tag, expected)) return null;
   const metadata = canonicalMetadata(JSON.parse(body.toString('utf8')) as unknown);
   if (!metadata) return null;
   return { clientId, name: metadata.client_name, redirectUris: metadata.redirect_uris };

@@ -24,7 +24,8 @@ vi.mock('../lib/product-events.server', async (importOriginal) => {
 });
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
-import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { createCoreRow } from '../../packages/health-core/src/blood-tests';
+import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { connectionKey, resetMcpMemory, type AccessPayload, type CodePayload, type RefreshPayload } from '../lib/mcp-grants.server';
 import { hash, unpackSealed } from '../lib/mcp-seal.server';
 import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
@@ -273,13 +274,13 @@ const SEED_DAY = '2026-08-30';
 /** The user's own words, quoted in every confirming call and commit (US-36 AC9, US-35 AC7, 2026-10-07). */
 const APPROVED = 'Yes, go ahead';
 
-/** The synthetic reviewer record: a profile and one recent measurement. */
+/** The synthetic reviewer record: a profile and one recent LDL, a core row in labValues (US-66 AC1). */
 function seedReviewerRecord(): void {
   const base = createEmptyFile({ deviceId: 'reviewer', now: '2026-01-01T00:00:00.000Z' });
   const file: RoadmapFile = {
     ...base,
     profile: { ...base.profile, sex: 'male', birthYear: 1979, heightCm: 178 },
-    measurements: [createMeasurement({ id: 'ldl-row', metricType: 'ldl', value: 3.2, recordedAt: `${SEED_DAY}T00:00:00.000Z`, createdAt: `${SEED_DAY}T00:00:00.000Z` })],
+    labValues: [createCoreRow({ id: 'ldl-row', metric: 'ldl', value: 3.2, recordedAt: `${SEED_DAY}T00:00:00.000Z`, createdAt: `${SEED_DAY}T00:00:00.000Z` })],
   };
   cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(file), version: 1 });
 }
@@ -592,13 +593,13 @@ describe('US-32 AC38 — the two-phase tools work on a reviewer bearer (one shar
   it('correct_value proposes, then confirms', async () => {
     seedReviewerRecord();
     const { access } = await reviewerLogin();
-    const row = storedRecord().measurements[0];
+    const row = storedRecord().labValues[0];
     const args = { id: row.id, newValue: 2.8, expectedValue: 3.2 };
     const proposed = await callTool(access, 'correct_value', args);
     expect(proposed.isError).toBe(false);
     const confirmed = await callTool(access, 'correct_value', { ...args, confirm: proposed.structured.confirm, approval: APPROVED }, LATER);
     expect(confirmed.isError, confirmed.text).toBe(false);
-    expect(storedRecord().measurements.find((m) => m.correctsId === row.id)?.value).toBe(2.8);
+    expect(storedRecord().labValues.find((l) => l.correctsId === row.id)?.value).toBe(2.8);
   });
 
   it('file_results proposes, then commits', async () => {
@@ -619,7 +620,7 @@ describe('US-32 AC38 — the two-phase tools work on a reviewer bearer (one shar
     seedReviewerRecord();
     const first = await reviewerLogin();
     const second = await reviewerLogin();
-    const row = storedRecord().measurements[0];
+    const row = storedRecord().labValues[0];
     const args = { id: row.id, newValue: 2.9, expectedValue: 3.2 };
     const proposed = await callTool(first.access, 'correct_value', args);
     const confirmed = await callTool(second.access, 'correct_value', { ...args, confirm: proposed.structured.confirm, approval: APPROVED }, LATER);

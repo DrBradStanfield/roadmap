@@ -235,6 +235,19 @@ describe('dynamic registration without a registry (US-32, design §4)', () => {
     expect(await resolveClient(client.clientId)).toBeNull();
   });
 
+  it('compares a same-length tag in constant time and refuses a short one without throwing', async () => {
+    const client = registerClient({ client_name: 'Claude', redirect_uris: ['https://claude.ai/api/mcp/auth_callback'] })!;
+    const [prefix, body, tag] = client.clientId.split('.');
+    const wrongTag = Buffer.alloc(32, 7);
+    const tse = vi.spyOn(crypto, 'timingSafeEqual');
+    expect(await resolveClient(`${prefix}.${body}.${wrongTag.toString('base64url')}`)).toBeNull();
+    expect(tse).toHaveBeenCalledWith(wrongTag, Buffer.from(tag, 'base64url'));
+    tse.mockClear();
+    expect(await resolveClient(`${prefix}.${body}.${Buffer.from(tag, 'base64url').subarray(0, 31).toString('base64url')}`)).toBeNull();
+    expect(tse).not.toHaveBeenCalled();
+    expect((await resolveClient(client.clientId))?.name).toBe('Claude');
+  });
+
   it('registers only known assistant redirect URIs', () => {
     expect(registerClient({ redirect_uris: ['https://evil.test/steal'] })).toBeNull();
     expect(registerClient({ redirect_uris: [] })).toBeNull();
@@ -914,6 +927,22 @@ describe('PKCE (US-32)', () => {
     expect(verifyPkce(verifier, challenge)).toBe(true);
     expect(verifyPkce('b'.repeat(64), challenge)).toBe(false);
     expect(verifyPkce('short', challenge)).toBe(false);
+  });
+
+  // The compare is pinned per caller: an equal length goes through
+  // timingSafeEqual, any other length is false without it and never throws.
+  it('compares an equal-length challenge in constant time and refuses another length without throwing', () => {
+    const verifier = 'a'.repeat(64);
+    const challenge = crypto.createHash('sha256').update(verifier, 'ascii').digest('base64url');
+    const wrong = (challenge[0] === 'A' ? 'B' : 'A') + challenge.slice(1);
+    const tse = vi.spyOn(crypto, 'timingSafeEqual');
+    expect(verifyPkce(verifier, wrong)).toBe(false);
+    expect(tse).toHaveBeenCalledWith(Buffer.from(challenge), Buffer.from(wrong));
+    tse.mockClear();
+    expect(verifyPkce(verifier, challenge.slice(1))).toBe(false);
+    expect(verifyPkce(verifier, `${challenge}A`)).toBe(false);
+    expect(tse).not.toHaveBeenCalled();
+    expect(verifyPkce(verifier, challenge)).toBe(true);
   });
 });
 

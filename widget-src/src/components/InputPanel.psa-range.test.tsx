@@ -18,12 +18,13 @@ vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('max-width') ?
 afterEach(() => { phone = false; });
 
 describe('US-35 AC17 — the PSA input takes the unit table range', () => {
-  const renderPanel = (unitSystem: 'si' | 'conventional', psa?: number) => {
+  const renderPanel = (unitSystem: 'si' | 'conventional', psa?: number, previousMeasurements: unknown[] = []) => {
     const inputs = { sex: 'male' as const, heightCm: 180, birthYear: 1960, birthMonth: 1, psa };
     const onChange = vi.fn();
     const props = {
       inputs, effectiveInputs: inputs, onChange, errors: {}, unitSystem, onUnitSystemChange: vi.fn(),
-      unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
+      // The page's blood-test history holds every saved row, the newest among them.
+      unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements, bloodTestHistory: previousMeasurements, vitalsHistory: [],
       labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
       onMedicationChange: vi.fn(), screenings: [{ id: 's1', screeningKey: 'prostate_discussion', value: 'will_screen', updatedAt: '' }],
       onScreeningChange: vi.fn(), supplements: [], onSupplementChange: vi.fn(), onSupplementDelete: vi.fn(),
@@ -31,7 +32,7 @@ describe('US-35 AC17 — the PSA input takes the unit table range', () => {
       hasApiResponse: false, formStage: 4 as const, reached: 4 as const, fullForm: true, wasDone: true, aboutYouLow: true, planBasis: { age: 66 }, grading: {},
     };
     const { container } = render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />);
-    return { psa: container.querySelector<HTMLInputElement>('#psa-input'), onChange };
+    return { psa: container.querySelector<HTMLInputElement>('#psa-input'), onChange, container };
   };
 
   it.each(['si', 'conventional'] as const)('pins min and max to UNIT_DEFS.psa in %s units', unitSystem => {
@@ -40,6 +41,15 @@ describe('US-35 AC17 — the PSA input takes the unit table range', () => {
     const range = UNIT_DEFS.psa.validationRange[unitSystem];
     expect([psa!.min, psa!.max]).toEqual([String(range.min), String(range.max)]);
     expect(range.max).toBe(10000);
+  });
+
+  // US-12 AC20: a PSA printed as a limit reads with its symbol, its bound
+  // as printed: "< 0.01", never a rounded "0.0".
+  it('US-12 AC20: the previous PSA reads as its printed limit', () => {
+    const saved = { id: 'p1', metricType: 'psa', value: 0.01, recordedAt: '2026-07-01T00:00:00.000Z', createdAt: '2026-07-01', source: 'lab_import', comparator: '<' };
+    const { container } = renderPanel('si', undefined, [saved]);
+    const previous = [...container.querySelectorAll('a')].find(a => a.textContent?.includes('ng/mL ·'));
+    expect(previous?.textContent).toMatch(/^< 0\.01 ng\/mL · /);
   });
 
   // Brad 2026-10-20: 9,999 ng/mL is in range, 10,001 out. Since US-02 AC5's

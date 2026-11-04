@@ -6,7 +6,7 @@ import { IMPORT_LIMITS } from './import-hints';
 import { latestDayOnEarth } from './merge';
 
 /**
- * Valid metric types for the health_measurements table.
+ * Valid metric types for a measurement row in the roadmap file.
  */
 export const METRIC_TYPES = [
   'weight', 'waist',
@@ -147,6 +147,22 @@ export type ValidatedHealthInputs = z.infer<typeof healthInputSchema>;
 function isInputFieldValid(key: string, value: unknown): boolean {
   const shape = healthInputSchema.shape as Record<string, { safeParse: (v: unknown) => { success: boolean } }>;
   return !Object.prototype.hasOwnProperty.call(shape, key) || shape[key].safeParse(value).success;
+}
+
+/** A value the input schema accepts for `field` (an unknown field passes), as `sanitizeInputs` keeps it. */
+export const inRange = (field: string, value: unknown): boolean => isInputFieldValid(field, value);
+
+/** Each numeric input's schema bounds (`minValue`, `maxValue`), read once from the schema. */
+const FIELD_BOUNDS: Readonly<Record<string, { min: number; max: number }>> = Object.fromEntries(
+  Object.entries(healthInputSchema.shape).flatMap(([field, schema]) => {
+    const inner = (schema instanceof z.ZodOptional ? schema.unwrap() : schema) as unknown;
+    return inner instanceof z.ZodNumber ? [[field, { min: inner.minValue ?? -Infinity, max: inner.maxValue ?? Infinity }]] : [];
+  }),
+);
+
+/** A numeric input's schema bounds, or undefined for a field that is not a number. */
+export function fieldBounds(field: string): { min: number; max: number } | undefined {
+  return Object.prototype.hasOwnProperty.call(FIELD_BOUNDS, field) ? FIELD_BOUNDS[field] : undefined;
 }
 
 /**
@@ -359,7 +375,7 @@ export function zod3Message(issue: z.core.$ZodRawIssue): string | undefined {
 }
 
 /**
- * Valid measurement sources for the health_measurements table.
+ * Valid measurement sources for a measurement row in the roadmap file.
  * Tracks where the measurement came from (for Apple HealthKit deduplication, etc.)
  */
 export const MEASUREMENT_SOURCES = [
@@ -368,11 +384,12 @@ export const MEASUREMENT_SOURCES = [
   'fitbit',
   'lab_import',
   'lab_import_edited',  // LLM-extracted then user-corrected at review time
-  'manual_correction',  // Inserted by the correct_measurement RPC
+  'manual_correction',  // A correction row (correctsId set) written by record-edits.ts
+  'health_records',     // A lab result a clinic sent to Apple Health Records (US-72)
 ] as const;
 export type MeasurementSource = typeof MEASUREMENT_SOURCES[number];
 
-/** FHIR-style status for the row's audit state. Mirrors the SQL CHECK constraint on health_measurements.status. */
+/** FHIR-style status for the row's audit state: entered-in-error is sticky (docs/reference.md, FHIR rows). */
 export const MEASUREMENT_STATUS = ['active', 'entered-in-error'] as const;
 export type MeasurementStatus = typeof MEASUREMENT_STATUS[number];
 

@@ -386,6 +386,14 @@ describe('scrubText', () => {
     expect(scrubText('42 is my hba1c')).toBe('[value] is my hba1c');
   });
 
+  it('US-09 AC7f — redacts a value before a name that starts or ends without a word character', () => {
+    expect(scrubText('120 Lp(a)')).toBe('[value] Lp(a)');
+    expect(scrubText('came back 120 lp(a)')).toBe('came back [value] lp(a)');
+    expect(scrubText('33 γ-GT')).toBe('[value] γ-GT');
+    expect(scrubText('12 bananas')).toBe('12 bananas');
+    expect(scrubText('2 cholesterols')).toBe('2 cholesterols');
+  });
+
   it('redacts a blood-pressure pair', () => {
     expect(scrubText('BP 140/90')).toBe('BP [value]');
     expect(scrubText('blood pressure 138/88 mmHg')).toBe('blood pressure [value]');
@@ -472,5 +480,17 @@ describe('dropLongStrings', () => {
     const out = dropLongStrings({ ctx: { blob: 'y'.repeat(201), ok: 'k' } }) as { ctx: Record<string, unknown> };
     expect('blob' in out.ctx).toBe(false);
     expect(out.ctx.ok).toBe('k');
+  });
+});
+
+// Adversary review of 0a2b89b0 (R3): a lab limit's bound, code and the plan's limits never reach Sentry.
+describe('US-12 AC20: lab limit keys are scrubbed', () => {
+  it('filters bound, comparator, limit, limits, labEgfr and labEgfrLimit', () => {
+    const out = scrubSensitiveData({
+      bound: 60, comparator: '>', limit: { bound: 60 }, limits: { labEgfr: { comparator: '>', bound: 60, graded: true } },
+      labEgfr: 130, labegfr: 130, labEgfrLimit: { comparator: '>', bound: 60 }, page: 'plan',
+    }) as Record<string, unknown>;
+    for (const key of ['bound', 'comparator', 'limit', 'limits', 'labEgfr', 'labegfr', 'labEgfrLimit']) expect(out[key], key).toBe('[Filtered]');
+    expect(out.page).toBe('plan');
   });
 });

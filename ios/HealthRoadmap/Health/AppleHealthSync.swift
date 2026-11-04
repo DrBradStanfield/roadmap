@@ -7,6 +7,8 @@ import UIKit
 /// In: new readings since each kind's anchor go to the engine as one edit
 /// (`appleHealth`), whose rules decide what lands; the anchor moves only after
 /// the record is on disk, so a refused or failed save reads them again later.
+/// Lab results from Health Records (US-72), where Apple offers them, come the same way
+/// (`healthRecords`), through the same line, with their own anchor.
 /// Out: the engine lists the values a person entered (`healthWritesJson`); each
 /// is written once per version.
 ///
@@ -42,6 +44,10 @@ final class AppleHealthSync {
     private var again = false
     private var waiting: [CheckedContinuation<Void, Never>] = []
     private var started = false
+    /// A lab results request is showing: a second return to the foreground does not ask again.
+    private var asking = false
+    /// Where the two Health Records events go (US-72 AC13); RootView sets it.
+    @ObservationIgnored var analytics: Analytics?
 
     /// Reads the record again (cloud sync's re-read) after an import was refused: in
     /// the cloud a refusal means the record moved on (an erase or units taken in).
@@ -97,7 +103,8 @@ final class AppleHealthSync {
     func connect() async {
         guard client.isAvailable else { return }
         do {
-            try await client.requestAuthorization()
+            // Health showed its lab results sheet because HealthKit said one was needed (AC13).
+            if try await client.requestAuthorization() { analytics?.event(.healthRecordsAsked) }
         } catch {
             status = .failed(error.localizedDescription)
             return
@@ -107,6 +114,19 @@ final class AppleHealthSync {
         async let imported: Void = refresh()
         await live?.refresh(force: true)
         await imported
+    }
+
+    /// Coming on screen (the app's `follow`), never from a background wake, where no sheet
+    /// can show: a person who connected before lab results were asked for, or who chose
+    /// "Ask Before Sharing", gets Health's lab results sheet when HealthKit says one is
+    /// needed (US-72 AC1, AC13). Then the refresh, which imports what they allowed.
+    func foreground() async {
+        if memory.connected, client.isAvailable, client.supportsHealthRecords, !asking {
+            asking = true
+            if (try? await client.requestLabResults()) == true { analytics?.event(.healthRecordsAsked) }
+            asking = false
+        }
+        await refresh()
     }
 
     /// At launch and on connect: refresh when Health has new data (in the background
@@ -174,7 +194,7 @@ final class AppleHealthSync {
     /// No kind may be written and none has given a reading (US-25 AC15b). iOS hides a refused
     /// read, so an empty Health whose writes were refused looks the same, and says the same.
     private var noAccess: Bool {
-        !HealthKind.allCases.contains { client.canWrite($0) || memory.anchor(for: $0) != nil }
+        !HealthKind.allCases.contains { client.canWrite($0) || memory.anchor(for: $0) != nil } && memory.labResultsAnchor == nil
     }
 
     private func importNew() async throws {
@@ -185,20 +205,42 @@ final class AppleHealthSync {
             // with one half refused shows only the other. Until a kind has given a whole
             // reading, keep no anchor, so allowing it later still brings in its past.
             if anchor == nil, !Self.hasWholeReading(batch.samples, kind) { continue }
-            if !batch.samples.isEmpty { try await save(batch.samples) }
+            if !batch.samples.isEmpty { try await save(.appleHealth(batch.samples)) }
             memory.setAnchor(batch.anchor, for: kind)
         }
+        try await importLabResults()
+    }
+
+    /// Lab results (US-72), as a kind: no anchor until a batch brought some (a refused read
+    /// looks like an empty one), and the anchor moves only once the record holding them is saved.
+    private func importLabResults() async throws {
+        guard client.supportsHealthRecords else { return }
+        // A build that reads results the last one refused reads them all again; AC5's dedup keeps that safe.
+        if memory.labResultsRules != HealthSyncMemory.labResultsRulesVersion {
+            memory.labResultsAnchor = nil
+            memory.labResultsRules = HealthSyncMemory.labResultsRulesVersion
+        }
+        let anchor = memory.labResultsAnchor
+        let batch = try await client.labResults(after: anchor)
+        if anchor == nil, batch.records.isEmpty { return }
+        if !batch.records.isEmpty, try await save(.healthRecords(batch.records))?.landed == true {
+            analytics?.event(.healthRecordsImported)
+        }
+        memory.labResultsAnchor = batch.anchor
     }
 
     /// Through the same door as a typed value (in the cloud: the session, the merge and
     /// the erase guard), checked against the record as it is now: an import is not a
     /// sheet, so a sheet's pin never refuses it. A refusal reads the record again and
     /// tries once more; a second refusal keeps the anchor, so the batch comes again.
-    private func save(_ samples: [HealthSample]) async throws {
-        if case .saved = await store.applyNow(.appleHealth(samples)) { return }
+    /// Returns what a Health Records batch did (nil for any other edit).
+    @discardableResult
+    private func save(_ edit: RecordEdit) async throws -> HealthRecordCounts? {
+        if case .saved(let counts) = await store.applyNow(edit) { return counts }
         await reread()
-        if case .refused(let message, _) = await store.applyNow(.appleHealth(samples)) {
-            throw ImportRefused(message: message)
+        switch await store.applyNow(edit) {
+        case .saved(let counts): return counts
+        case .refused(let message, _): throw ImportRefused(message: message)
         }
     }
 

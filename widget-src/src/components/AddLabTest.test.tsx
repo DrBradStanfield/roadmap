@@ -7,23 +7,33 @@
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { addLabValue as addRecordLabValue, createEmptyFile, labUnitRefusalLine, type FileLabValue } from '@roadmap/health-core';
 
 afterEach(cleanup);
 
-const bulkSaveLabValues = vi.fn();
+// The form saves through health-core's one lab add (US-25 AC25). The mock runs the REAL rule on a
+// record holding `held`, so a test sees the words and the replace offer a person would.
+const held: FileLabValue[] = [];
+const addLabValue = vi.fn();
 const trackProductEvent = vi.fn();
 vi.mock('../lib/roadmap-data', () => ({
-  bulkSaveLabValues: (...args: unknown[]) => bulkSaveLabValues(...args),
+  addLabValue: (...args: unknown[]) => addLabValue(...args),
 }));
+const realAdd = (input: Parameters<typeof addRecordLabValue>[1]) =>
+  addRecordLabValue({ ...createEmptyFile({ deviceId: 'test', now: new Date().toISOString() }), labValues: held }, input, new Date().toISOString());
+const holding = (...rows: Array<Record<string, unknown>>) => held.splice(0, held.length, ...rows.map((r) => ({ status: 'active', correctsId: null, ...r }) as FileLabValue));
 vi.mock('../lib/server-api', () => ({
   trackProductEvent: (...args: unknown[]) => trackProductEvent(...args),
 }));
 
 import { AddLabTest } from './AddLabTest';
 import { AdditionalLabRows } from './AdditionalLabRows';
+import { reportedToCanonical, type ApiMeasurement } from '@roadmap/health-core';
+import { validateTypedValue } from '../lib/blood-test-cell';
 
 beforeEach(() => {
-  bulkSaveLabValues.mockReset().mockResolvedValue({ saved: [{ id: 'x' }], skippedDuplicates: 0, errorCount: 0, refused: [] });
+  held.splice(0);
+  addLabValue.mockReset().mockImplementation(async (input) => realAdd(input));
   trackProductEvent.mockReset();
 });
 
@@ -52,13 +62,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
     fireEvent.change(getByLabelText('Value'), { target: { value: '30' } });
     fireEvent.click(getByRole('button', { name: /^save$/i }));
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
-    expect(bulkSaveLabValues).toHaveBeenCalledWith([{
-      metricName: 'ggt',
-      value: 30,
-      unit: 'U/L',
-      recordedAt: `${todayIso}T00:00:00.000Z`,
-      source: 'manual',
-    }]);
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'ggt', unit: 'U/L', value: 30, day: todayIso });
     expect(trackProductEvent).toHaveBeenCalledWith('lab_row_added');
   });
 
@@ -70,18 +74,16 @@ describe('US-21 phase 2 — AddLabTest', () => {
     fireEvent.change(getByLabelText('Value'), { target: { value: '55' } });
     fireEvent.click(getByRole('button', { name: /^save$/i }));
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
-    expect(bulkSaveLabValues).toHaveBeenCalledWith([
-      expect.objectContaining({ metricName: 'Amylase', value: 55, unit: 'U/L', source: 'manual' }),
-    ]);
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'Amylase', unit: 'U/L', value: 55, day: todayIso });
   });
 
   it('a duplicate (same test, same day) shows a notice instead of silently doing nothing', async () => {
-    bulkSaveLabValues.mockResolvedValue({ saved: [], skippedDuplicates: 1, errorCount: 0, refused: [] });
+    holding({ id: 's1', metricName: 'sodium', value: 138, unit: 'mmol/L', referenceLow: null, referenceHigh: null, recordedAt: `${todayIso}T00:00:00.000Z`, createdAt: `${todayIso}T08:00:00.000Z`, source: 'manual' });
     const { getByLabelText, getByRole, onAdded, findByText } = openForm();
     fireEvent.change(getByLabelText('Test'), { target: { value: 'sodium' } });
     fireEvent.change(getByLabelText('Value'), { target: { value: '140' } });
     fireEvent.click(getByRole('button', { name: /^save$/i }));
-    expect(await findByText(/already has a value for that date/i)).toBeTruthy();
+    expect(await findByText('That test already has 138 mmol/L for that date.')).toBeTruthy();
     expect(onAdded).not.toHaveBeenCalled();
     expect(trackProductEvent).not.toHaveBeenCalled();
   });
@@ -95,7 +97,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
       recordedAt: `${todayIso}T00:00:00.000Z`, source: 'manual', createdAt: `${todayIso}T08:00:00.000Z`,
     };
     function duplicate(value: string) {
-      bulkSaveLabValues.mockResolvedValue({ saved: [], skippedDuplicates: 1, errorCount: 0, refused: [] });
+      holding(held);
       const onCorrect = vi.fn().mockResolvedValue('ok');
       const onAdded = vi.fn();
       const utils = render(<AddLabTest onAdded={onAdded} labValues={[held]} onCorrect={onCorrect} />);
@@ -112,7 +114,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
       expect(getByText('That test already has 45 µg/L for that date.')).toBeTruthy();
       await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('held1', 54));
       await waitFor(() => expect(queryByLabelText('Test')).toBeNull()); // the form closes
-      expect(bulkSaveLabValues).toHaveBeenCalledTimes(1); // no second row was tried
+      expect(addLabValue).toHaveBeenCalledTimes(1); // no second row was tried
     });
 
     // US-03 AC3 rule: the number typed is never rounded to decide it changed
@@ -147,7 +149,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
       recordedAt: `${todayIso}T00:00:00.000Z`, source: 'manual', createdAt: `${todayIso}T08:00:00.000Z`,
     };
     async function replaceOffered() {
-      bulkSaveLabValues.mockResolvedValue({ saved: [], skippedDuplicates: 1, errorCount: 0, refused: [] });
+      holding(held);
       const onCorrect = vi.fn().mockResolvedValue('ok');
       const utils = render(<AddLabTest onAdded={vi.fn()} labValues={[held]} onCorrect={onCorrect} />);
       fireEvent.click(utils.getByRole('button', { name: /add a blood test/i }));
@@ -157,7 +159,6 @@ describe('US-21 phase 2 — AddLabTest', () => {
       fireEvent.change(utils.getByLabelText('Value'), { target: { value: '54' } });
       fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
       await utils.findByRole('button', { name: 'Replace 45 µg/L with 54' });
-      bulkSaveLabValues.mockResolvedValue({ saved: [{ id: 'new' }], skippedDuplicates: 0, errorCount: 0, refused: [] });
       return { ...utils, onCorrect };
     }
 
@@ -166,7 +167,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
       fireEvent.change(getByLabelText('Test name'), { target: { value: 'Folate' } });
       expect(queryByRole('button', { name: /^Replace/ })).toBeNull();
       fireEvent.click(getByRole('button', { name: /^save$/i }));
-      await waitFor(() => expect(bulkSaveLabValues).toHaveBeenLastCalledWith([expect.objectContaining({ metricName: 'Folate', value: 54 })]));
+      await waitFor(() => expect(addLabValue).toHaveBeenLastCalledWith(expect.objectContaining({ metricName: 'Folate', value: 54 })));
       expect(onCorrect).not.toHaveBeenCalled();
     });
 
@@ -175,16 +176,37 @@ describe('US-21 phase 2 — AddLabTest', () => {
       fireEvent.change(getByLabelText('Unit'), { target: { value: 'ng/mL' } });
       expect(queryByRole('button', { name: /^Replace/ })).toBeNull();
       fireEvent.click(getByRole('button', { name: /^save$/i }));
-      await waitFor(() => expect(bulkSaveLabValues).toHaveBeenLastCalledWith([expect.objectContaining({ metricName: 'Feritin', unit: 'ng/mL' })]));
+      await waitFor(() => expect(addLabValue).toHaveBeenLastCalledWith(expect.objectContaining({ metricName: 'Feritin', unit: 'ng/mL' })));
       expect(onCorrect).not.toHaveBeenCalled();
     });
+  });
+
+  // Review R3 on PR 641: under "Other test", Ferritin typed in ng/mL is the catalogue's µg/L by
+  // another name. The record offers to replace a held 45 µg/L, so Replace must really replace it.
+  it('an "Other" test the catalogue knows, in a unit it treats as its own, replaces the held value', async () => {
+    const there = {
+      id: 'held3', metricName: 'ferritin', value: 45, unit: 'µg/L', referenceLow: null, referenceHigh: null,
+      recordedAt: `${todayIso}T00:00:00.000Z`, source: 'manual', createdAt: `${todayIso}T08:00:00.000Z`,
+    };
+    holding(there);
+    const onCorrect = vi.fn().mockResolvedValue('ok');
+    const utils = render(<AddLabTest onAdded={vi.fn()} labValues={[there]} onCorrect={onCorrect} />);
+    fireEvent.click(utils.getByRole('button', { name: /add a blood test/i }));
+    fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });
+    fireEvent.change(utils.getByLabelText('Test name'), { target: { value: 'Ferritin' } });
+    fireEvent.change(utils.getByLabelText('Unit'), { target: { value: 'ng/mL' } });
+    fireEvent.change(utils.getByLabelText('Value'), { target: { value: '54' } });
+    fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+    fireEvent.click(await utils.findByRole('button', { name: 'Replace 45 µg/L with 54' }));
+    await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('held3', 54));
   });
 
   // US-21 AC15 · a refusal reads as the upload summary does: a person never
   // sees the assistant's copy of it.
   describe('US-21 AC15 — a refused unit under "Other" shows the person’s wording', () => {
     async function saveOther(name: string, unit: string, value: string, refused: { key: string; unit: string; message: string; fault?: 'decimal' | 'scale' }) {
-      bulkSaveLabValues.mockResolvedValue({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [refused] });
+      // The refusal the record would give, in health-core's words (labUnitRefusalLine, tested in lab-value-labels.test.ts).
+      addLabValue.mockResolvedValue({ ok: false, reason: 'unknown-unit', message: labUnitRefusalLine(refused.key, refused.unit, refused.fault), refused });
       const utils = openForm();
       fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });
       fireEvent.change(utils.getByLabelText('Test name'), { target: { value: name } });
@@ -250,6 +272,41 @@ describe('US-21 phase 2 — AddLabTest', () => {
     expect(save.disabled).toBe(false);
   });
 
+  it('US-21 AC2: "Choose a test…" after an Other test saves nothing; the name and unit it hides are not used', async () => {
+    const { getByLabelText, getByRole, queryByLabelText, onAdded } = openForm();
+    fireEvent.change(getByLabelText('Test'), { target: { value: 'custom' } });
+    fireEvent.change(getByLabelText('Test name'), { target: { value: 'Amylase ' } });
+    fireEvent.change(getByLabelText('Unit'), { target: { value: 'U/L' } });
+    fireEvent.change(getByLabelText('Value'), { target: { value: '55' } });
+    fireEvent.change(getByLabelText('Test'), { target: { value: '' } });
+    expect(queryByLabelText('Test name')).toBeNull();
+    const save = getByRole('button', { name: /^save$/i }) as HTMLButtonElement;
+    expect(save.disabled).toBe(true);
+    fireEvent.click(save);
+    await Promise.resolve();
+    expect(addLabValue).not.toHaveBeenCalled();
+    expect(onAdded).not.toHaveBeenCalled();
+    // Other again: what was typed is still there, and saves as before.
+    fireEvent.change(getByLabelText('Test'), { target: { value: 'custom' } });
+    expect((getByLabelText('Test name') as HTMLInputElement).value).toBe('Amylase ');
+    expect(save.disabled).toBe(false);
+    fireEvent.click(save);
+    await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'Amylase', unit: 'U/L', value: 55, day: todayIso });
+  });
+
+  it('US-21 AC2: a catalogue test picked after an Other test saves the catalogue test, not the typed name', async () => {
+    const { getByLabelText, getByRole, onAdded } = openForm();
+    fireEvent.change(getByLabelText('Test'), { target: { value: 'custom' } });
+    fireEvent.change(getByLabelText('Test name'), { target: { value: 'Amylase' } });
+    fireEvent.change(getByLabelText('Unit'), { target: { value: 'U/L' } });
+    fireEvent.change(getByLabelText('Test'), { target: { value: 'ggt' } });
+    fireEvent.change(getByLabelText('Value'), { target: { value: '30' } });
+    fireEvent.click(getByRole('button', { name: /^save$/i }));
+    await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'ggt', unit: 'U/L', value: 30, day: todayIso });
+  });
+
   // US-02 AC7: a catalogued test has no input range, so "1,050" (1050 or
   // 1.05) is asked about and never saved; "1,05" is a decimal comma.
   it('asks about "1,050" and saves nothing until it is retyped', async () => {
@@ -260,11 +317,11 @@ describe('US-21 phase 2 — AddLabTest', () => {
     expect(getByText('Did you mean 1050 or 1.05?')).toBeTruthy();
     expect(save.disabled).toBe(true);
     fireEvent.click(save);
-    expect(bulkSaveLabValues).not.toHaveBeenCalled();
+    expect(addLabValue).not.toHaveBeenCalled();
     fireEvent.change(getByLabelText('Value'), { target: { value: '1,05' } });
     fireEvent.click(save);
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
-    expect(bulkSaveLabValues).toHaveBeenCalledWith([expect.objectContaining({ metricName: 'ferritin', value: 1.05 })]);
+    expect(addLabValue).toHaveBeenCalledWith(expect.objectContaining({ metricName: 'ferritin', value: 1.05 }));
   });
 
   // Codex R2: no range checks grouped thousands here, so they are refused.
@@ -287,5 +344,69 @@ describe('US-21 phase 2 — section shows the add button', () => {
   it('still renders nothing when read-only (no onAdded) and no lab values', () => {
     const { container } = render(<AdditionalLabRows labValues={[]} />);
     expect(container.firstChild).toBeNull();
+  });
+});
+
+// US-66 AC6: a core test's name typed under "Other" writes the core row, so the
+// form must find that row on a held day and offer Replace as it does for a lab
+// row (US-21 AC13), and say a refused number in the matrix's words. AC8: the
+// core rows it reads are never listed as extra rows.
+describe('US-66 AC6 — a core test typed under "Other"', () => {
+  const si = reportedToCanonical('ldl', 116, 'mg/dL')!.valueSI;
+  const core = { id: 'core1', metricType: 'ldl', value: si, recordedAt: `${todayIso}T00:00:00.000Z`, status: 'active', source: 'manual', createdAt: `${todayIso}T08:00:00.000Z` } as ApiMeasurement;
+  // The record's core row (US-66 AC1), which the real lab add finds on a held day.
+  const coreRow = { id: 'core1', metricName: 'ldl', core: true, value: si, unit: 'mmol/L', referenceLow: null, referenceHigh: null, recordedAt: core.recordedAt, source: 'manual', createdAt: core.createdAt };
+
+  function typeLdl(value: string, coreValues: ApiMeasurement[] = [core]) {
+    if (coreValues.length) holding(coreRow);
+    const onCorrect = vi.fn().mockResolvedValue('ok');
+    const utils = render(<AddLabTest onAdded={vi.fn()} labValues={[]} coreValues={coreValues} onCorrect={onCorrect} />);
+    fireEvent.click(utils.getByRole('button', { name: /add a blood test/i }));
+    fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });
+    fireEvent.change(utils.getByLabelText('Test name'), { target: { value: 'LDL-C' } });
+    fireEvent.change(utils.getByLabelText('Unit'), { target: { value: 'mg/dL' } });
+    fireEvent.change(utils.getByLabelText('Value'), { target: { value } });
+    fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+    return { ...utils, onCorrect };
+  }
+
+  it('US-21 AC13 — a held core day names the core value in the unit typed and Replace corrects it in its stored unit', async () => {
+    const { findByRole, getByText, onCorrect } = typeLdl('131');
+    fireEvent.click(await findByRole('button', { name: 'Replace 116 mg/dL with 131' }));
+    expect(getByText('That test already has 116 mg/dL for that date.')).toBeTruthy();
+    await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('core1', reportedToCanonical('ldl', 131, 'mg/dL')!.valueSI));
+  });
+
+  it('US-21 AC13 — the core value typed again offers no Replace', async () => {
+    const { findByText, queryByRole } = typeLdl('116');
+    expect(await findByText('That test already has 116 mg/dL for that date.')).toBeTruthy();
+    expect(queryByRole('button', { name: /^Replace/ })).toBeNull();
+  });
+
+  it('an out-of-range core value shows the matrix range message, never "Could not save"', async () => {
+    const { findByText, queryByText } = typeLdl('99999', []);
+    const words = validateTypedValue('ldl', '99999', 'conventional').error!;
+    expect(words).toMatch(/^Max .* mg\/dL$/);
+    expect(await findByText(words)).toBeTruthy();
+    expect(queryByText(/Could not save/)).toBeNull();
+    expect(queryByText(/already has/)).toBeNull(); // an empty day is never called held
+    expect(trackProductEvent).not.toHaveBeenCalled(); // the value never enters telemetry
+  });
+
+  it('US-66 AC8 — the core rows the form reads are never listed as extra rows', () => {
+    const { queryByText, getByRole } = render(<AdditionalLabRows labValues={[]} coreValues={[core]} onAdded={vi.fn()} />);
+    expect(getByRole('button', { name: /add a blood test/i })).toBeTruthy();
+    expect(queryByText(/ldl/i)).toBeNull();
+  });
+});
+
+describe('US-66 AC5: a value page for a kept-apart core-named row', () => {
+  it('never adds a core value from the page of an old "Creatinine" lab row', async () => {
+    const { getByText, getByLabelText, findByText } = render(<AddLabTest onAdded={() => {}} labValues={[]} coreValues={[]} preset={{ metricName: 'Creatinine', unit: 'µmol/L' }} />);
+    fireEvent.click(getByText('+ Add a value'));
+    fireEvent.change(getByLabelText(/value/i), { target: { value: '90' } });
+    fireEvent.click(getByText(/^save$/i));
+    expect(await findByText('Add this test from its row in Blood tests.')).toBeTruthy();
+    expect(addLabValue).not.toHaveBeenCalled();
   });
 });

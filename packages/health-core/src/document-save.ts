@@ -149,12 +149,12 @@ export interface DocumentSavePlan {
  *    same-hash metadata-only row of the same kind (lab archive or shown
  *    document, US-14 AC4) is replaced behind and tombstoned (US-13 AC1).
  *    Only the save holds the bytes and the cloud write.
- * 4. Connector, `isAlreadyImported` (mcp-tools.ts): the hash of whatever row
+ * 4. Connector, `isAlreadyImported` (mcp-import.ts): the hash of whatever row
  *    holds it; else, for a hashless candidate, name and date with a " (n)"
  *    stripped; else the name alone against a hashless live row whose date is
  *    compatible (either unknown, or equal). The assistant route often has no
  *    bytes to hash (US-36 AC5).
- * 5. Connector, `folderNudge` (mcp-tools.ts): a live row with the listed name,
+ * 5. Connector, `folderNudge` (mcp-import.ts): a live row with the listed name,
  *    hashed or not, compared by `dedupFileName` on both sides (" (n)"
  *    stripped); a folder listing has names only, and rule 4 would nag every
  *    folder-imported file forever (US-37 AC1).

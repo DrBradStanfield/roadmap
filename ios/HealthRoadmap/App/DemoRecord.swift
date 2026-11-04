@@ -34,8 +34,11 @@ enum DemoRecord {
 @MainActor
 final class NoHealth: HealthStoreClient {
     let isAvailable = false
-    func requestAuthorization() async throws {}
+    let supportsHealthRecords = false
+    func requestAuthorization() async throws -> Bool { false }
+    func requestLabResults() async throws -> Bool { false }
     func samples(of kind: HealthKind, after anchor: Data?) async throws -> HealthBatch { HealthBatch(samples: [], anchor: nil) }
+    func labResults(after anchor: Data?) async throws -> HealthRecordBatch { HealthRecordBatch(records: [], anchor: nil) }
     func canWrite(_ kind: HealthKind) -> Bool { false }
     func save(_ write: HealthWrite) async throws {}
     func observe(_ kinds: [HealthKind], onChange: @escaping @MainActor () async -> Void) {}
@@ -50,6 +53,8 @@ struct NoLiveHealth: LiveHealthStore {
     func points(_ metric: LiveMetric, from start: Date, to end: Date, every component: Calendar.Component) async throws -> [LivePoint] { [] }
     func latest(_ metric: LiveMetric) async throws -> (value: Double?, date: Date)? { nil }
     func sleep(from start: Date, to end: Date) async throws -> [SleepSegment] { [] }
+    func earliest(_ metric: LiveMetric) async throws -> Date? { nil }
+    func changes(_ metric: LiveMetric, after anchor: Data?, from start: Date?) async throws -> LiveChanges { LiveChanges() }
 }
 
 /// Notifications, absent: the phone's pending reminders are never listed, removed or added.

@@ -630,7 +630,7 @@ input[type="number"] {
   flex: 0 0 80px;
 }
 
-.psa-inline-row select {
+.psa-inline-row input[type="date"] {
   flex: 1;
 }
 
@@ -704,7 +704,6 @@ input[type="number"] {
 .plan-empty-intro {
   margin: 0;
   padding: 17px;
-  opacity: 0.6;
   border: 1px solid #d4ebe4;
   border-radius: 10px;
   background: #f1faf6;
@@ -4138,12 +4137,6 @@ input[type="number"] {
   max-height: none;
 }
 
-/* Hide the widget's chat FAB on mobile (roadmap page) —
-   widget CSS only loads on the roadmap page, so this is naturally scoped. */
-@media (max-width: 767px) {
-  .chat-fab { display: none; }
-}
-
 /* Mobile: the chat tab is a screen tall, less the top and tab bars, so its
    tab bar sits at the foot of the screen as on the iPhone. */
 @media (max-width: 768px) {
@@ -5261,6 +5254,12 @@ input[type="number"] {
   content: ''; order: -1; flex: 0 0 var(--bt-foot-h); width: 0;
 }
 .bt-vitals-bp-inputs .bt-input { width: 42%; font-size: 13px; }
+/* US-20 AC8: the phone's 16px guard for `.bt-input`, for the pair too. After
+   the rule above, which has two classes and would otherwise win, so iOS
+   zoomed the page when either half was tapped. */
+@media (max-width: 768px) {
+  .bt-vitals-bp-inputs .bt-input { font-size: 16px; }
+}
 .bt-vitals-bp-sep { color: var(--bt-ink-400); font-size: 13px; font-weight: 600; }
 /* Saved BP cell renders the "128/80" value at slightly smaller size to fit. */
 .bt-value-num--bp { font-size: 13px; }
@@ -5680,4 +5679,26 @@ input[type="number"] {
 .md-history-value {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+/* A printed limit's symbol before its bound in an editable cell (US-12 AC20).
+   Without one, the wrapper is not there for layout. */
+.bt-cell-input-row {
+  display: contents;
+}
+.bt-cell-limit-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 90%;
+  min-width: 0;
+}
+.bt-cell-limit-row .bt-input {
+  flex: 1 1 0;
+  width: auto;
+}
+.bt-cell-limit {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--bt-ink-900);
 }

@@ -11,7 +11,7 @@ import { chmodSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSyn
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createEmptyFile, createMeasurement, mergeLongitudinalInputs, type RoadmapFile } from '@roadmap/health-core';
+import { bloodTestRows, createEmptyFile, createMeasurement, mergeLongitudinalInputs, type RoadmapFile } from '@roadmap/health-core';
 import { RoadmapStore } from '../widget-src/src/storage/roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../packages/health-core/src/adapter';
@@ -55,17 +55,29 @@ function writeFixture(file: RoadmapFile = fixture()): { dir: string; path: strin
 }
 
 const read = (path: string): RoadmapFile => JSON.parse(readFileSync(path, 'utf8'));
+/** Every core blood-test row on disk, any status: they live in labValues (US-66 AC1). */
+const coreRows = (path: string) => read(path).labValues.filter((l) => l.core === true);
 const backups = (dir: string) => readdirSync(dir).filter((n) => n.includes('.bak-'));
 
 describe('US-31 AC1/AC5 — add', () => {
+  it('US-06 AC18: a raised PSA of 4.04 echoes 4.04, as the app prints it, not 4.0', async () => {
+    const { dir, path } = writeFixture();
+    const result = await captureRun(['add', path, '--metric', 'psa', '--value', '4.04', '--date', '2026-08-14']);
+    expect(result.code).toBe(0);
+    expect(result.stdout).toMatch(/^Added psa 4\.04 ng\/mL on 2026-08-14/);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
   it('adds a core metric in SI and reports the row it wrote', async () => {
     const { dir, path } = writeFixture();
     const result = await captureRun(['add', path, '--metric', 'hdl', '--value', '1.2', '--date', '2026-08-14']);
 
     expect(result.code).toBe(0);
     expect(result.stdout).toMatch(/^Added hdl 1\.2 mmol\/L on 2026-08-14 — new row \S+/);
-    const row = read(path).measurements.find((m) => m.metricType === 'hdl')!;
-    expect(row).toMatchObject({ value: 1.2, status: 'active', source: 'manual', correctsId: null });
+    // US-66 AC6: --metric with a blood test writes a core row in labValues.
+    const row = coreRows(path).find((l) => l.metricName === 'hdl')!;
+    expect(row).toMatchObject({ value: 1.2, unit: 'mmol/L', status: 'active', source: 'manual', correctsId: null });
+    expect(read(path).measurements).toEqual([]); // the fixture's old-shape ldl moved too (US-66 AC2)
     expect(result.stdout).toContain(row.id);
     rmSync(dir, { recursive: true, force: true });
   });
@@ -73,7 +85,7 @@ describe('US-31 AC1/AC5 — add', () => {
   it('converts a value given in the other unit system, and refuses a unit that is neither', async () => {
     const { dir, path } = writeFixture();
     expect((await captureRun(['add', path, '--metric', 'ldl', '--value', '81', '--unit', 'mg/dL', '--date', '2026-08-14'])).code).toBe(0);
-    expect(read(path).measurements.find((m) => m.recordedAt === '2026-08-14')!.value).toBeCloseTo(81 / 38.67, 6);
+    expect(coreRows(path).find((l) => l.recordedAt === '2026-08-14')!.value).toBeCloseTo(81 / 38.67, 6);
 
     // Stored unrounded, exactly as the app stores a converted value; echoed rounded.
     expect((await captureRun(['add', path, '--metric', 'ldl', '--value', '81', '--unit', 'mg/dL', '--date', '2026-08-15'])).stdout)
@@ -89,7 +101,7 @@ describe('US-31 AC1/AC5 — add', () => {
     const { dir, path } = writeFixture();
     expect((await captureRun(['add', path, '--metric', 'lpa', '--value', '156', '--unit', 'mg/dL', '--date', '2026-08-14'])).code).toBe(0);
     expect((await captureRun(['add', path, '--metric', 'lpa', '--value', '93', '--unit', 'mg/L', '--date', '2026-08-15'])).code).toBe(0);
-    const lpa = (day: string) => read(path).measurements.find((m) => m.metricType === 'lpa' && m.recordedAt === day)!.value;
+    const lpa = (day: string) => coreRows(path).find((l) => l.metricName === 'lpa' && l.recordedAt === day)!.value;
     expect(lpa('2026-08-14')).toBeCloseTo(390, 9);
     expect(lpa('2026-08-15')).toBeCloseTo(23.25, 9);
     rmSync(dir, { recursive: true, force: true });
@@ -137,7 +149,7 @@ describe('US-31 AC1/AC5 — add', () => {
     const result = await captureRun(['add', path, '--metric', 'ldl', '--value', '9999', '--date', '2026-08-14']);
     expect(result.code).toBe(1);
     expect(result.stderr).toContain('12.9');
-    expect(read(path).measurements.length).toBe(1);
+    expect(read(path).measurements.length).toBe(1); // nothing written: the fixture is untouched
     rmSync(dir, { recursive: true, force: true });
   });
 });
@@ -150,9 +162,10 @@ describe('US-31 AC3 — correct', () => {
     expect(result.code).toBe(0);
     expect(result.stdout).toMatch(/^Corrected ldl 3\.4 → 2\.1 mmol\/L on 2026-07-14 — new row \S+/);
     const file = read(path);
-    expect(file.measurements.find((m) => m.id === 'm1')!.status).toBe('entered-in-error');
-    const fresh = file.measurements.find((m) => m.correctsId === 'm1')!;
-    expect(fresh).toMatchObject({ value: 2.1, recordedAt: '2026-07-14', status: 'active', source: 'manual_correction' });
+    // US-66 AC6: a correction of a moved row finds it by id; both rows are core rows now.
+    expect(file.labValues.find((l) => l.id === 'm1')!).toMatchObject({ core: true, status: 'entered-in-error' });
+    const fresh = file.labValues.find((l) => l.correctsId === 'm1')!;
+    expect(fresh).toMatchObject({ metricName: 'ldl', core: true, value: 2.1, recordedAt: '2026-07-14', status: 'active', source: 'manual_correction' });
     rmSync(dir, { recursive: true, force: true });
   });
 
@@ -264,6 +277,7 @@ describe('US-31 AC9 — what the CLI wrote is what the app reads', () => {
 
     expect(inputs.ldlC).toBe(2.1); // the correction is current, the 3.4 is not
     expect(inputs.weightKg).toBe(92.4);
+    // A core row is never an "additional" lab row (US-66 AC8).
     expect(store.loadLabValues().map((l) => l.metricName)).toEqual(['ferritin']);
     expect(store.loadAllHistory().some((m) => m.value === 3.4)).toBe(false);
     rmSync(dir, { recursive: true, force: true });
@@ -331,14 +345,26 @@ describe('US-31 — adversarial review fixes', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('F2: a core metric under --test is refused however it is spelled', async () => {
+  it('F2 / US-66 AC6: a core blood test under --test writes its core row; a vital is refused', async () => {
     const { dir, path } = writeFixture();
-    for (const name of ['LDL', 'HbA1c', 'Weight']) {
-      const result = await captureRun(['add', path, '--test', name, '--value', '2.1', '--unit', 'mmol/L', '--date', '2026-08-14']);
-      expect(result.code).toBe(1);
-      expect(result.stderr).toContain('core metric');
-    }
-    expect(read(path).labValues).toEqual([]);
+    // A blood test by its printed name lands where --metric would: one core row, converted.
+    const ldl = await captureRun(['add', path, '--test', 'LDL Cholesterol', '--value', '81', '--unit', 'mg/dL', '--date', '2026-08-14']);
+    expect(ldl.code).toBe(0);
+    expect(ldl.stdout).toContain('Added ldl 2.1 mmol/L on 2026-08-14');
+    expect(coreRows(path).filter((l) => l.recordedAt === '2026-08-14')).toEqual([
+      expect.objectContaining({ metricName: 'ldl', unit: 'mmol/L', value: expect.closeTo(81 / 38.67, 6) }),
+    ]);
+    // …and holds the same slot --metric does.
+    const twice = await captureRun(['add', path, '--metric', 'ldl', '--value', '2.0', '--date', '2026-08-14']);
+    expect(twice.code).toBe(1);
+    expect(twice.stderr).toContain('ldl already has a value on 2026-08-14');
+    // A unit that does not convert for the test is refused, not stored as printed.
+    expect((await captureRun(['add', path, '--test', 'HbA1c', '--value', '2.1', '--unit', 'mmol/L', '--date', '2026-08-14'])).code).toBe(1);
+    // A vital is not a blood test.
+    const weight = await captureRun(['add', path, '--test', 'Weight', '--value', '2.1', '--unit', 'mmol/L', '--date', '2026-08-14']);
+    expect(weight.code).toBe(1);
+    expect(weight.stderr).toContain('core metric');
+    expect(read(path).labValues.filter((l) => !l.core)).toEqual([]);
     rmSync(dir, { recursive: true, force: true });
   });
 
@@ -410,7 +436,7 @@ describe('US-31 AC8 — two people, or two agents, writing at once', () => {
     const results = await Promise.all(runs);
 
     const file = read(path);
-    const landed = file.measurements.map((row) => row.metricType);
+    const landed = [...file.measurements.map((row) => row.metricType), ...bloodTestRows(file).map((row) => row.metricType)];
     for (const result of results) {
       // Whatever it reported must be true: a write it claimed is on disk, and
       // a write it disowned left the record alone.

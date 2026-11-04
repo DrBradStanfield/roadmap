@@ -15,7 +15,7 @@
  * until a test saves it.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ConflictError, createEmptyFile, createMeasurement, MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME, StorageError, type RoadmapFile } from '@roadmap/health-core';
+import { ConflictError, createEmptyFile, createMeasurement, MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME, StorageError, toOldShape, type RoadmapFile } from '@roadmap/health-core';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from './roadmap-store';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { BT_TIMELINE_DRAFT_KEY, DRAFTS_CLEARED_EVENT, VITALS_DRAFT_KEY } from '../lib/storage';
@@ -34,9 +34,10 @@ function stored(): RoadmapFile {
 function rev(): number {
   return parseInt(localStorage.getItem(REV_KEY) ?? '0', 10);
 }
-/** Every stored row as "metric value status", sorted. */
+/** Every stored row as "metric value status", sorted: a blood test is a core
+ *  lab row (US-66), read here as the measurement it was. */
 function rows(): string[] {
-  return stored().measurements.map((m) => `${m.metricType} ${m.value} ${m.status}`).sort();
+  return toOldShape(stored()).measurements.map((m) => `${m.metricType} ${m.value} ${m.status}`).sort();
 }
 
 /** The record both tabs open on: one weight, saved a week ago. */
@@ -149,7 +150,7 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
     const next = await RoadmapStore.create(new MemoryAdapter(cloud)); // the next load lifts the mirror
     await next.flush();
     const file = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
-    expect(file.measurements.map((m) => m.metricType)).toEqual(['hdl']);
+    expect(toOldShape(file).measurements.map((m) => m.metricType)).toEqual(['hdl']);
     expect(file.meta.eraseEpoch).toBe(1);
   });
 

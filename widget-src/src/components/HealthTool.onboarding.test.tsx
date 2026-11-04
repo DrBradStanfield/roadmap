@@ -122,6 +122,9 @@ async function measurements(view: RenderResult, height = '178', weight = '80') {
   leave(q(view, '#weightKg'));
   await waitFor(async () => expect(await activeWeights()).toEqual([[Number(weight), TODAY]]), { timeout: 2000 });
 }
+/** One animation frame: what a click scheduled with requestAnimationFrame
+ *  (a stage's reveal focusing the next question) has run. */
+const nextFrame = () => act(async () => { await new Promise((r) => requestAnimationFrame(() => r(null))); });
 /** The birth date with no jump to the email box: the year is completed while
  *  the month is unset, then the month is set (US-62 AC12, Brad 2026-11-02). */
 function birthWithoutJump(view: RenderResult, month = '5', year = '1975') {
@@ -873,6 +876,87 @@ describe('US-02 AC9 in feet and inches (simplify A1)', () => {
   });
 });
 
+// US-02 AC11: the feet and inches boxes keep what is typed in them. Typing the
+// feet wrote the height, and the height wrote "0" back into the inches box, so
+// the "1" of 5 ft 10 in made "01", the form moved on to the weight at once,
+// and 5 ft 1 in was saved.
+describe('US-02 AC11: feet and inches keep what is typed', () => {
+  const toFeetInches = async (view: RenderResult) => {
+    fireEvent.click(within(q(view, 'label[for="heightCm"]') as HTMLElement).getByRole('button')); // cm to ft/in
+    return waitFor(() => { const f = q(view, '#heightFeet'); expect(f).toBeTruthy(); return f as HTMLInputElement; });
+  };
+  const inchesBox = (view: RenderResult) => q(view, '#heightInches') as HTMLInputElement;
+  /** A key typed at the end of what the box shows, as the caret sits after the hand-off. */
+  const key = (input: HTMLInputElement, digit: string) => fireEvent.change(input, { target: { value: input.value + digit } });
+
+  it('5 ft then 1 0 in: the inches box stays empty after the feet, waits on the 1, and 5 ft 10 in is saved', async () => {
+    const view = await open();
+    const feet = await toFeetInches(view);
+    type(feet, '5');
+    await waitFor(() => expect(document.activeElement?.id).toBe('heightInches')); // the hand-off
+    expect(inchesBox(view).value).toBe('');
+    key(inchesBox(view), '1');
+    await nextFrame();
+    expect(document.activeElement?.id).toBe('heightInches'); // "1" may be 10 or 11: no move to the weight yet
+    key(inchesBox(view), '0');
+    await waitFor(() => expect(document.activeElement?.id).toBe('weightKg'));
+    expect([feet.value, inchesBox(view).value]).toEqual(['5', '10']);
+    await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // the profile's 500 ms save
+    expect((await recordOnDisk()).profile.heightCm).toBeCloseTo(177.8, 1);
+  });
+
+  it('clearing the feet leaves the inches as typed and the feet box empty, not "0"; clearing both empties both', async () => {
+    const view = await open();
+    const feet = await toFeetInches(view);
+    type(feet, '5');
+    key(inchesBox(view), '8');
+    type(feet, '');
+    expect([feet.value, inchesBox(view).value]).toEqual(['', '8']);
+    type(inchesBox(view), '');
+    expect([feet.value, inchesBox(view).value]).toEqual(['', '']);
+  });
+
+  it('inches typed before the feet leave the feet box empty', async () => {
+    const view = await open();
+    const feet = await toFeetInches(view);
+    type(inchesBox(view), '8');
+    expect([feet.value, inchesBox(view).value]).toEqual(['', '8']);
+  });
+
+  it('a height typed in feet and inches shows again after cm and back', async () => {
+    const view = await open();
+    const feet = await toFeetInches(view);
+    type(feet, '5');
+    key(inchesBox(view), '1');
+    key(inchesBox(view), '0');
+    fireEvent.click(within(q(view, 'label[for="heightCm"]') as HTMLElement).getByRole('button')); // to cm
+    await waitFor(() => expect(q(view, '#heightCm')).toBeTruthy());
+    const back = await toFeetInches(view);
+    expect([back.value, inchesBox(view).value]).toEqual(['5', '10']);
+  });
+
+  it('a saved height still shows in feet and inches', async () => {
+    await saveChangedMeasurements({ heightCm: 178 }, {});
+    const view = await open();
+    const feet = await toFeetInches(view);
+    expect([feet.value, inchesBox(view).value]).toEqual(['5', '10']);
+  });
+
+  it('a height another device saves after typing still shows in the boxes', async () => {
+    const view = await open();
+    const feet = await toFeetInches(view);
+    type(feet, '5');
+    key(inchesBox(view), '1');
+    key(inchesBox(view), '0');
+    await act(async () => { await new Promise((r) => setTimeout(r, 900)); }); // the profile's 500 ms save
+    const typed = (await recordOnDisk()).profile.heightCm;
+    await saveChangedMeasurements({ heightCm: 160 }, { heightCm: typed }); // another device
+    await flushRoadmapStore();
+    await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    await waitFor(() => expect([feet.value, inchesBox(view).value]).toEqual(['5', '3']), { timeout: 3000 });
+  });
+});
+
 describe('US-02 AC5: an out-of-range first-time value stays in its field, its error shown, and is never written', () => {
   const shown = (view: RenderResult) => Array.from(view.container.querySelectorAll('.error-message')).map((e) => e.textContent);
 
@@ -953,6 +1037,7 @@ describe('PR 518 review: refused and erased records', () => {
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
     birthWithoutJump(view);
     await waitFor(() => expect(fullForm(view)).toBe(true));
+    await nextFrame(); // the Male click's reveal focuses the month on the next frame: let it land first
     const year = q(view, '#birthYear') as HTMLElement;
     act(() => { year.focus(); });
     fireEvent.pointerDown(view.getByRole('radio', { name: 'Male' })); // Safari: the toggle takes no focus
@@ -1084,6 +1169,7 @@ describe('PR 518 adversary re-check', () => {
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
     birthWithoutJump(view);
     await waitFor(() => expect(fullForm(view)).toBe(true));
+    await nextFrame(); // the Male click's reveal focuses the month on the next frame: let it land first
     const year = q(view, '#birthYear') as HTMLElement;
     act(() => { year.focus(); });
     fireEvent.pointerDown(view.getByRole('radio', { name: 'Male' }));
@@ -1100,6 +1186,7 @@ describe('PR 518 adversary re-check', () => {
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
     birthWithoutJump(view);
     await waitFor(() => expect(fullForm(view)).toBe(true));
+    await nextFrame(); // the Male click's reveal focuses the month on the next frame: let it land first
     const year = q(view, '#birthYear') as HTMLElement;
     act(() => { year.focus(); });
     const male = view.getByRole('radio', { name: 'Male' });
@@ -1128,5 +1215,37 @@ describe('PR 518 adversary re-check', () => {
     act(() => chat.proposeEdit!([{ kind: 'field', field: 'systolicBp', displayValue: 5, unitSystem: 'si', date: null }]));
     await waitFor(() => expect((q(view, '#systolicBp') as HTMLInputElement).value).toBe('5'));
     expect(shown()).toContain('Systolic BP must be at least 60 mmHg');
+  });
+});
+
+describe('US-11 AC6: a remote erase always applies', () => {
+  it('a height of 19 refused by the autosave, then the record erased on another device: the erase applies and the draft goes', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female' }, {});
+    await addMeasurement('weight', 70, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(sexQuestion(view)).toBeTruthy());
+    const height = q(view, '#heightCm') as HTMLInputElement;
+    type(height, '19');
+    leave(height);
+    await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // the autosave refuses 19
+    expect((await recordOnDisk())?.profile?.heightCm).toBe(170);
+    // Another device erases the record, as its deleteUserData writes it.
+    const adapter = new LocalStorageAdapter();
+    const { body, version } = await adapter.read(ROADMAP_FILE_NAME);
+    const now = new Date(Date.now() + 1000).toISOString();
+    const prior = migrateFile(body, { deviceId: 'other-device', now });
+    const erased = migrateFile(null, { deviceId: 'other-device', now });
+    const epoch = (prior.meta.eraseEpoch ?? 0) + 1;
+    erased.schemaVersion = CURRENT_SCHEMA_VERSION;
+    erased.erasedRows = { fromEpoch: epoch, ids: [...new Set(rowRootIds(prior))].sort() };
+    erased.meta.eraseEpoch = epoch;
+    erased.meta.erasedAt = now;
+    await adapter.write(ROADMAP_FILE_NAME, erased, version);
+    await act(async () => { window.dispatchEvent(new StorageEvent('storage', { key: null })); });
+    // No further edit or save: the erase still applies.
+    await waitFor(() => expect(sexQuestion(view)).toBeNull(), { timeout: 3000 });
+    expect((q(view, '#heightCm') as HTMLInputElement).value).toBe('');
+    expect(Array.from(view.container.querySelectorAll('.error-message')).map((e) => e.textContent)).not.toContain('Height must be at least 50 cm');
   });
 });

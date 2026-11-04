@@ -1,7 +1,7 @@
 /**
  * The document row, built once for every writer: the website and the iPhone
  * app through `saveDocuments` (document-save.ts), and the connector's import
- * commit (mcp-tools.ts). This module holds no save and no I/O, so the
+ * commit (mcp-import.ts). This module holds no save and no I/O, so the
  * connector builds its rows without importing the blob-writing path.
  */
 import { LAB_ARCHIVE_TITLE } from './document-path';

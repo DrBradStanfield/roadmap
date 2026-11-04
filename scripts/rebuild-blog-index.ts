@@ -54,8 +54,10 @@ interface IndexEntry {
   topics?: string[];
   /** Set only on a single-subject post: the router may drop it once its masters are up to date (US-50 AC3). */
   router?: 'hidden';
-  /** A master's review date, YYYY-MM-DD (US-50 AC1). */
+  /** A master's or condition guide's review date, YYYY-MM-DD (US-50 AC1, US-70 AC1). */
   reviewed?: string;
+  /** Set only on a guideline that is a condition guide (US-70 AC1): the loader puts it first (AC7). */
+  kind?: 'condition';
 }
 
 // Directories to scan for content files
@@ -86,6 +88,7 @@ export function indexEntry(handle: string, fm: Record<string, any>): IndexEntry 
   if (fm.router === 'hidden' && (fm.type ?? 'article') === 'article') entry.router = 'hidden';
   else if (fm.router !== undefined) console.warn(`  ⚠ ${handle}: router: ${fm.router} refused (only "hidden", on an article)`);
   if (typeof fm.reviewed === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fm.reviewed)) entry.reviewed = fm.reviewed;
+  if (fm.kind === 'condition' && fm.type === 'guideline') entry.kind = 'condition';
   return entry;
 }
 

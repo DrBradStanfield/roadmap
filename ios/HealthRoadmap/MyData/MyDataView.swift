@@ -46,11 +46,7 @@ struct MyDataView: View {
             }
         }
             .toolbar(.hidden, for: .navigationBar)
-            // With no bar, iOS 26's edge effect leaves rows legible under the clock.
-            // A zero-height inset whose background reaches into the status bar hides them.
-            .safeAreaInset(edge: .top, spacing: 0) {
-                Color.clear.frame(height: 0).background(Color(uiColor: .systemGroupedBackground), ignoresSafeAreaEdges: .top)
-            }
+            .solidStatusBar()
             .navigationDestination(item: $detail) { row in
                 MetricDetailView(store: store, row: row, saved: saved)
             }
@@ -75,7 +71,7 @@ struct MyDataView: View {
                     // Under blood pressure: heart rate, resting heart rate and sleep, or the Turn On or Open Settings row (US-56 AC5, AC6).
                     LiveCardsSection(metrics: LiveMetric.vitals) { liveDetail = $0 }
                     LiveCardsSection(metrics: LiveMetric.fitness, bands: data.vo2Bands?.value.map { [.vo2Max: $0] } ?? [:]) { liveDetail = $0 }
-                    metrics(data.bloodTests) {
+                    metrics(data.bloodTests, labs: data.labTests ?? []) {
                         // Tour tip 3 (US-57 AC7); its action is the lab upload.
                         SectionTitle.bloodTests().tourTip(BloodTestsTip(), action: { addingLabs = true })
                     }
@@ -165,10 +161,19 @@ struct MyDataView: View {
         .fixedSize()
     }
 
-    private func metrics(_ rows: [MyData.Row], @ViewBuilder header: () -> some View) -> some View {
+    /// `labs`: the lab tests beyond the core ones, after them as on the web (US-62 AC8). Each opens
+    /// its own page, as the web's does (US-25 AC25).
+    private func metrics(_ rows: [MyData.Row], labs: [MyData.Row] = [], @ViewBuilder header: () -> some View) -> some View {
         Section {
-            let column = ValueRow.Column(rows.map { ($0.latest?.value, $0.previous, $0.unit, nil) })
+            let column = ValueRow.Column((rows + labs).map { ($0.latest?.value, $0.previous, $0.unit, nil) })
             ForEach(rows) { metric($0, column: column) }
+            ForEach(labs) { lab in
+                Button { open(lab) } label: {
+                    Self.valueRow(lab, tint: MetricChart.labTint, column: column)
+                }
+                .tint(.primary)
+                .disabled(store.unitSwitches > 0)
+            }
         } header: {
             header()
         }
@@ -202,12 +207,17 @@ struct MyDataView: View {
     private func metric(_ row: MyData.Row, card: Bool = false, column: ValueRow.Column? = nil) -> some View {
         // A unit switch still landing would open a sheet on the old choices (AC17e).
         Button { open(row) } label: {
-            ValueRow(label: row.label, value: row.latest?.value, unit: row.unit, day: row.latest?.day,
-                     target: row.target, previous: row.previous, trend: row.trend ?? [], tint: MetricChart.colors(for: row.metric)[0], card: card,
-                     column: column)
+            Self.valueRow(row, tint: MetricChart.colors(for: row.metric)[0], card: card, column: column)
         }
         .tint(.primary)
         .disabled(store.unitSwitches > 0)
+    }
+
+    /// The engine's row as a `ValueRow`: its value, target, previous value, trend and grade.
+    static func valueRow(_ row: MyData.Row, tint: Color, card: Bool = false, column: ValueRow.Column? = nil) -> ValueRow {
+        ValueRow(label: row.label, value: row.latest?.value, unit: row.unit, day: row.latest?.day,
+                 target: row.target, previous: row.previous, grade: row.grade, gradeWords: row.gradeWords, note: row.note,
+                 trend: row.trend ?? [], tint: tint, card: card, column: column)
     }
 
     /// Every value opens its page (US-25 AC9, US-58 AC4b): every metric has a guide, and a page
@@ -248,7 +258,7 @@ struct MyDataView: View {
 
     @discardableResult
     private func saved(_ result: RecordStore.ApplyResult) -> RecordStore.ApplyResult {
-        if result == .saved { saves += 1 }
+        if result == .saved() { saves += 1 }
         return result
     }
 }
@@ -279,5 +289,15 @@ struct ControlsHeader<Trailing: View>: View {
             .labelStyle(.iconOnly)
             .font(.title3)
             .textCase(nil)
+    }
+}
+
+extension View {
+    /// For a tab with no title bar, My data's and My plan's: iOS 26's edge effect leaves rows
+    /// legible under the clock. A zero-height inset whose background reaches into the status bar hides them.
+    func solidStatusBar() -> some View {
+        safeAreaInset(edge: .top, spacing: 0) {
+            Color.clear.frame(height: 0).background(Color(uiColor: .systemGroupedBackground), ignoresSafeAreaEdges: .top)
+        }
     }
 }

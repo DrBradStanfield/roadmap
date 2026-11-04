@@ -31,6 +31,8 @@ describe('screenJson (US-25 AC2, AC22)', () => {
     expect(JSON.parse(screenJson(sample, NOW, 'phone', UNITS))).toEqual({
       myData: JSON.parse(JSON.stringify(myData(file, NOW, choices))),
       plan: { sections: JSON.parse(JSON.stringify(planSections(plan.results.suggestions))), tiles: JSON.parse(JSON.stringify(tiles)), ms: expect.any(Number) },
+      // The sample is an old-shape record: the app writes it once, moved (US-66 AC14).
+      movedRecord: JSON.stringify(file),
     });
   });
 
