@@ -386,6 +386,14 @@ describe('scrubText', () => {
     expect(scrubText('42 is my hba1c')).toBe('[value] is my hba1c');
   });
 
+  it('US-09 AC7f — redacts a value before a name that starts or ends without a word character', () => {
+    expect(scrubText('120 Lp(a)')).toBe('[value] Lp(a)');
+    expect(scrubText('came back 120 lp(a)')).toBe('came back [value] lp(a)');
+    expect(scrubText('33 γ-GT')).toBe('[value] γ-GT');
+    expect(scrubText('12 bananas')).toBe('12 bananas');
+    expect(scrubText('2 cholesterols')).toBe('2 cholesterols');
+  });
+
   it('redacts a blood-pressure pair', () => {
     expect(scrubText('BP 140/90')).toBe('BP [value]');
     expect(scrubText('blood pressure 138/88 mmHg')).toBe('blood pressure [value]');
