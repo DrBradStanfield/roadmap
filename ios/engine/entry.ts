@@ -3,6 +3,7 @@
 // string-in, string-out door, because JSON is the one shape both sides share.
 // Its door list is bridge-contract.json; bridge.test.ts holds the two together.
 import { mergeFiles } from '../../packages/health-core/src/merge';
+import { isCalendarDay } from '../../packages/health-core/src/measurement-history';
 import { computePlan, PlanError, type Plan } from '../../packages/health-core/src/plan';
 import { CURRENT_SCHEMA_VERSION } from '../../packages/health-core/src/roadmap-file';
 import { planSections, type PlanSection } from '../../packages/health-core/src/plan-sections';
@@ -169,7 +170,17 @@ export function historyJson(recordJson: string, metric: string, nowIso: string, 
 }
 // Chat and lab upload (US-52): app-doors.ts.
 export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson, chatDeleteJson, settledJson, labReviewJson, labSaveSummaryJson } from './app-doors';
-/** The phone's reminders (reminders.ts): health-core's schedule plus the notification days, as JSON. */
-export function remindersJson(recordJson: string, nowIso: string, deviceId: string): string {
-  return JSON.stringify(phoneReminders(readView(recordJson, nowIso, deviceId), new Date(nowIso)));
+/** The phone's reminders (reminders.ts): health-core's schedule plus the notification days, as JSON.
+ *  `firstSeenJson` (US-17 AC15): the follow-up first-seen days the app keeps; anything that is not
+ *  an object of calendar days counts as none kept. An app before it sends none, and is answered as before. */
+export function remindersJson(recordJson: string, nowIso: string, deviceId: string, firstSeenJson?: string): string {
+  return JSON.stringify(phoneReminders(readView(recordJson, nowIso, deviceId), new Date(nowIso), undefined,
+    firstSeenJson === undefined ? undefined : readFirstSeen(firstSeenJson)));
+}
+
+function readFirstSeen(text: string): Record<string, string> {
+  let parsed: unknown;
+  try { parsed = JSON.parse(text); } catch { return {}; }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+  return Object.fromEntries(Object.entries(parsed).filter(([, day]) => typeof day === 'string' && isCalendarDay(day)));
 }

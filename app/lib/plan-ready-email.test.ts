@@ -189,6 +189,22 @@ describe('reminder email carries the full calendar (US-23 AC3) and typed promine
   });
 });
 
+// US-17 AC15 — the server cannot tell a follow-up from a routine item (its labels
+// carry no result), so every reminder email carries the same follow-up line, once.
+describe('US-17 AC15 — the follow-up line', () => {
+  const line = 'If you have a follow-up to arrange or a result to record, open the Health Roadmap.';
+  it.each([
+    [[{ label: 'Colonoscopy', dueAt: '2026-09-01' }]],
+    [[{ label: 'Lipid panel blood test', dueAt: '2026-08-01' }, { label: 'Mammogram', dueAt: '2026-08-01' }]],
+  ])('appears once in every reminder email', (items) => {
+    const html = buildReminderV2EmailHtml(items, 'https://x.example/unsubscribe');
+    expect(html.split(line)).toHaveLength(2);
+    expect(html).not.toContain('\u2014');
+    // US-22 AC12 / US-23 AC10: the button opens the tool; it cannot promise the plan.
+    expect(visible(html)).not.toContain('open your plan');
+  });
+});
+
 /**
  * US-23 AC10 — the reminder button pointed at the GitHub Pages build
  * (drbradstanfield.github.io), a different site from the one every reminder
