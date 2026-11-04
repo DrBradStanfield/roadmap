@@ -24,8 +24,8 @@ let BackendPickerModal: typeof import('./backend-picker').BackendPickerModal;
 
 const DROPBOX_TOKENS = 'health_roadmap_dropbox_tokens';
 const GITHUB_CONFIG = 'health_roadmap_github';
-const GOOD_TOKEN = 'github_pat_SYNTHETIC_GOOD';
-const TYPO_TOKEN = 'github_pat_SYNTHETIC_TYPO';
+const GOOD_TOKEN = 'test-token-good';
+const TYPO_TOKEN = 'test-token-typo';
 
 let fetchCalls: string[];
 let reload: ReturnType<typeof vi.fn>;
