@@ -61,7 +61,10 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    script proves the work reached `main` by ancestry. Only Brad's account merges to `main` by hand, his
    sessions included; contributors get no write access (Brad 2026-11-04). Brad's account merges
    workflow-file PRs.
-5. **Deploy** only merged code: the CI Deploy always builds main's tip. Run it once per batch of merges, not
+5. **Deploy** only merged code (and, after a merge that touches `roadmap_text.html`, publish the changed section to
+   drstanfield.com/pages/roadmap through the Admin API, backup first, then run `node tools/roadmap-page-drift.mjs`
+   until it prints IN SYNC; report it with the deploy. The page is published by hand, so it drifts silently: US-64
+   AC16): the CI Deploy always builds main's tip. Run it once per batch of merges, not
    once per PR (auto-ship still deploys each merge it makes). A manual release follows
    docs/deploy-runbook.md step 0: `bash tools/release-checkout.sh` from the main checkout makes a detached
    checkout of exactly `origin/main` outside the repo (it refuses a folder that exists, or a dirty result).
