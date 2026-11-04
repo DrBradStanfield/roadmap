@@ -106,8 +106,10 @@ function allSegments(s, depth = 0) {
     for (let k = 0; k < seg.length; k++) {
       const t = seg[k];
       if (!skip.has(k) && depth < 3 && mayHoldCommand(t)) {
-        // ANSI-C `$'...'` text (escapes not decoded here) or a string led by a variable cannot be read: fail closed.
-        const inner = t.startsWith('$') ? null : allSegments(t, depth + 1);
+        // `CMD="..."` is read as the command it stores (for a later eval). ANSI-C `$'...'` text (escapes not decoded
+        // here) or a string led by a variable cannot be read: fail closed.
+        const body = t.replace(/^[A-Za-z_]\w*=/, '');
+        const inner = body.startsWith('$') ? null : allSegments(body, depth + 1);
         if (inner === null) return null;
         out.push(...inner);
       }

@@ -155,6 +155,9 @@ describe('git push guard, as .claude/settings.json runs it', () => {
       'sh -c "g\\\\h a\\\\pi -X PUT repos/o/r/contents/X -f message=m -f content=eA=="',
       "g''h a''pi -X PUT repos/o/r/contents/X -f message=m -f content=eA==",
       'gh api graphql -f query="mutation { $(cat body) }"',
+      // A command saved in a variable for a later eval is read where it is assigned.
+      'CMD="gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234"; eval "$CMD"',
+      "CMD=$'gh api -X PATCH repos/o/r/git/refs/heads/main'; eval \"$CMD\"",
     ]) {
       const r = runHook(scratch, cmd);
       expect(r.stderr, cmd).toBe('');
