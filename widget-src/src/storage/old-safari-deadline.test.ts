@@ -151,6 +151,51 @@ describe('US-09 AC13g: on a browser without AbortSignal.timeout (Safari 14/15)',
     await expect(read).rejects.toThrow();
   });
 
+  // Merged with #840 (US-09 AC13h): the token refresh the email read runs
+  // first goes through fetchOrFail at 5 s, so here it is bounded by this
+  // PR's fallback timer, not left open as before.
+  it('a Dropbox account-email read behind a token refresh that gets no answer gives up at 5 s, grant kept', async () => {
+    vi.useFakeTimers();
+    localStorage.setItem('health_roadmap_dropbox_tokens', JSON.stringify({ accessToken: 'live', refreshToken: 'refresh', expiresAt: Date.now() + 30_000 }));
+    const fetch = hungFetch();
+    vi.stubGlobal('fetch', fetch);
+    const read = new DropboxAdapter(DROPBOX_CONFIG).accountEmail();
+    read.catch(() => undefined);
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch.mock.calls[0][0]).toBe('https://api.dropboxapi.com/oauth2/token');
+    await vi.advanceTimersByTimeAsync(4_999);
+    expect(await settled(read)).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await settled(read)).toBe(true);
+    await expect(read).rejects.toThrow('Dropbox did not answer');
+    expect(fetch).toHaveBeenCalledTimes(1); // the email request is never sent
+    expect(JSON.parse(localStorage.getItem('health_roadmap_dropbox_tokens')!).refreshToken).toBe('refresh');
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('the 10 s of a Dropbox email read counts the refresh before it: a slow refresh then no answer ends at 10 s, not 14', async () => {
+    vi.useFakeTimers();
+    localStorage.setItem('health_roadmap_dropbox_tokens', JSON.stringify({ accessToken: 'live', refreshToken: 'refresh', expiresAt: Date.now() + 30_000 }));
+    const hung = hungFetch();
+    const fetch = vi.fn((url: string, init?: RequestInit) => (url.includes('oauth2/token')
+      ? new Promise<Response>((resolve) => setTimeout(() => resolve(new Response(JSON.stringify({ access_token: 'fresh', expires_in: 14_400 }), { status: 200 })), 4_000))
+      : hung(url, init)));
+    vi.stubGlobal('fetch', fetch);
+    const read = new DropboxAdapter(DROPBOX_CONFIG).accountEmail();
+    read.catch(() => undefined);
+
+    await vi.advanceTimersByTimeAsync(4_000);
+    expect(fetch).toHaveBeenCalledTimes(2); // the refresh, then the email request
+    await vi.advanceTimersByTimeAsync(5_999);
+    expect(await settled(read)).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await settled(read)).toBe(true);
+    await expect(read).rejects.toThrow();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('the GitHub account email is read', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify([
       { email: 'other@example.com', primary: false, verified: true },
