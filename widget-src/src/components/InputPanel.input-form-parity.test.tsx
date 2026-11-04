@@ -92,6 +92,15 @@ describe('US-25 AC8, US-06 — the web screening cards are screeningForm', () =>
     ['man of 60, former smoker, 25 pack-years, annual LDCT', 60, 'male', {
       lung_smoking_history: 'former_smoker', lung_pack_years: '25', lung_screening: 'annual_ldct',
     }],
+    ['US-07 AC1f: man of 60, 15 pack-years, abnormal LDCT recorded', 60, 'male', {
+      lung_smoking_history: 'former_smoker', lung_pack_years: '15', lung_screening: 'annual_ldct', lung_last_date: '2025-01', lung_result: 'abnormal',
+    }],
+    ['US-07 AC1g: man of 81, abnormal LDCT recorded', 81, 'male', {
+      lung_smoking_history: 'former_smoker', lung_pack_years: '25', lung_screening: 'annual_ldct', lung_last_date: '2025-01', lung_result: 'abnormal',
+    }],
+    ['US-07 AC1g: man of 81, normal LDCT recorded', 81, 'male', {
+      lung_smoking_history: 'former_smoker', lung_pack_years: '25', lung_screening: 'annual_ldct', lung_last_date: '2025-01', lung_result: 'normal',
+    }],
     ['man of 55 who will screen', 55, 'male', { prostate_discussion: 'will_screen' }],
     ['man of 72, DEXA osteoporosis', 72, 'male', {
       dexa_screening: 'dexa_scan', dexa_last_date: '2024-06', dexa_result: 'osteoporosis', dexa_followup_status: 'completed',
@@ -102,6 +111,30 @@ describe('US-25 AC8, US-06 — the web screening cards are screeningForm', () =>
     const sections = screeningForm(age, sex, screeningsToInputs(screeningRows(screenings)));
     expect(sections.length).toBeGreaterThan(0);
     expectParity(container, sections);
+  });
+
+  it('US-07 AC1g: at 81 the web shows an abnormal LDCT\'s follow-up, keeps the group for any LDCT answer, and none without one', () => {
+    const lung = { lung_smoking_history: 'former_smoker', lung_pack_years: '25', lung_screening: 'annual_ldct', lung_last_date: '2025-01' };
+    expect(renderPanel({ sex: 'male', basis: { age: 81 }, screenings: { ...lung, lung_result: 'abnormal' } }).querySelector('#lung-followup-status')).not.toBeNull();
+    cleanup();
+    // Review of commit 5, R2: a stored LDCT answer keeps the group past 80, so the result can be put back.
+    expect(renderPanel({ sex: 'male', basis: { age: 81 }, screenings: { ...lung, lung_result: 'normal' } }).querySelector('#lung-result')).not.toBeNull();
+    cleanup();
+    expect(renderPanel({ sex: 'male', basis: { age: 81 }, screenings: { lung_smoking_history: 'former_smoker', lung_pack_years: '25' } }).querySelector('#lung-smoking-history')).toBeNull();
+  });
+
+  it('US-07 AC1f: below 20 pack-years the web still shows a recorded abnormal LDCT\'s follow-up', () => {
+    const container = renderPanel({ sex: 'male', basis: { age: 60 }, screenings: {
+      lung_smoking_history: 'former_smoker', lung_pack_years: '15', lung_screening: 'annual_ldct', lung_last_date: '2025-01', lung_result: 'abnormal',
+    } });
+    expect(container.querySelector('#lung-followup-status')).not.toBeNull();
+    cleanup();
+    const none = renderPanel({ sex: 'male', basis: { age: 60 }, screenings: { lung_smoking_history: 'former_smoker', lung_pack_years: '15' } });
+    expect(none.querySelector('#lung-screening')).toBeNull();
+    cleanup();
+    // Review R4: after "Not yet started" the question stays, so LDCT can be picked again.
+    const notYet = renderPanel({ sex: 'male', basis: { age: 60 }, screenings: { lung_smoking_history: 'former_smoker', lung_pack_years: '15', lung_screening: 'not_yet_started' } });
+    expect(notYet.querySelector('#lung-screening')).not.toBeNull();
   });
 });
 

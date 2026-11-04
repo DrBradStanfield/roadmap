@@ -78,9 +78,10 @@ import {
   followupDateLabel,
   anyScreeningEligible,
   dexaEligible,
+  lungGroupShown,
+  lungScreeningAsked,
   customSupplementAdd,
   customSupplementMatch,
-  LUNG_PACK_YEARS,
   type FormOption,
   type MedicationInputs,
 } from '@roadmap/health-core';
@@ -2056,8 +2057,8 @@ export function InputPanel({
               </div>
             )}
 
-            {/* Lung (age 50-80, all genders) */}
-            {age >= 50 && age <= 80 && (
+            {/* Lung (age 50-80, all genders; past 80 for an abnormal CT or any stored LDCT answer, US-07 AC1g) */}
+            {lungGroupShown(age, scr) && (
               <div className="screening-group">
                 <h4>Lung</h4>
 
@@ -2092,7 +2093,7 @@ export function InputPanel({
                       <span className="field-hint">{SCREENING_TEXT.packYearsHint}</span>
                     </div>
 
-                    {scr.lungPackYears !== undefined && scr.lungPackYears >= LUNG_PACK_YEARS && (
+                    {lungScreeningAsked(scr) && (
                       <>
                         <div className="health-field">
                           <label htmlFor="lung-screening">{SCREENING_LABELS.lungScreening}</label>

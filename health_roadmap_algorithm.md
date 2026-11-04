@@ -1051,12 +1051,16 @@ Source: `suggestions.ts` (screening section) + `types.ts` (intervals/follow-up)
 | Colorectal | 35-75 | Both | — |
 | Breast | 40+ | Female | 40-44 optional (info), 45+ recommended (attention) |
 | Cervical | 25-65 | Female | — |
-| Lung | 50-80 | Both | Former/current smoker AND >= 20 pack-years (USPSTF 2021) |
+| Lung | 50-80 | Both | Former/current smoker AND >= 20 pack-years (ACS 2023; no quit window) |
 | Prostate | 45+ | Male | Shared decision |
 | Endometrial | 45+ | Female | Abnormal bleeding = urgent |
 | DEXA | Female >= 50, Male >= 70 | Both | — |
 
 With no sex on record only the unsexed screenings (colorectal, lung) show (US-07 AC8).
+
+Lung: the plan does not ask when someone quit. Like the American Cancer Society's 2023 guideline, a former smoker with >= 20 pack-years stays eligible however long ago they quit (Brad 2026-11-03; US-07 AC1e).
+
+Lung follow-up: once an abnormal low-dose CT is recorded, its follow-up stays in the plan and the reminders whatever the pack-years and past 80, so a later correction below 20, or turning 81, never drops it (Brad 2026-11-03; US-07 AC1f, AC1g). Routine eligibility is age 50-80 with >= 20 pack-years; the follow-up exception needs only age 50 or over, a former/current smoking history, a last CT date and the abnormal result. Outside routine eligibility (below 20 pack-years or past 80) only the follow-up's organize and scheduled states show, as the urgent "Organize ..." card or the "follow-up scheduled" card; once the follow-up is completed, dated or not, there is no card and no reminder, because resuming annual screening is routine screening. No start, routine overdue/up-to-date or post-follow-up card shows there. Its reminder runs while the organize or scheduled card shows and falls on the routine annual date, 12 months after the last CT, not on the follow-up's own date. At 50-80 with >= 20 pack-years nothing changes: a completed follow-up gives the post-follow-up card and reminder, and a completed one with no date falls back to the routine card and reminder.
 
 ### Screening Intervals (months)
 
