@@ -26,7 +26,10 @@
 # accepts; a commit by anyone but DrBradStanfield (or with no linked login)
 # never ships, except this workflow's own GitHub-signed update-branch merge of
 # main, though a spoofed author email still maps to Brad until commits must
-# be verified (US-46 AC14); a
+# be verified (US-46 AC14). That merge exception checks the commit's shape
+# (github-actions[bot], committed and signed by web-flow, two parents, the
+# second on main), not its tree: only a contents:write GITHUB_TOKEN can mint
+# one, and no workflow here runs PR code with that permission. Keep it so. A
 # poisoned diff still has to survive the fresh-context reviewer, and this
 # workflow's own 30-min wait step is the Tier 3 veto window regardless.
 # Editing this file is Brad-only (constitution Guardrails).

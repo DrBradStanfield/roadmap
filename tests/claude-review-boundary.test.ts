@@ -61,6 +61,10 @@ describe("CI reviewer boundary (US-40 AC16)", () => {
     expect(effective(TAG_MODE.apiSigning, old)).toContain("mcp__github_file_ops__commit_files");
   });
 
+  it("WebFetch and WebSearch are denied outright (the action's fixture never lists them, so effective() cannot catch their removal)", () => {
+    expect(deny).toEqual(expect.arrayContaining(["WebFetch", "WebSearch"]));
+  });
+
   it("Read cannot reach the token in .git or the process environment", () => {
     expect(deny).toEqual(expect.arrayContaining(["Read(./.git/**)", "Read(//proc/**)"]));
   });
