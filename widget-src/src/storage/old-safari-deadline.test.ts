@@ -300,6 +300,16 @@ describe('#788 review, finding 1: a Drive refresh whose 200 body cannot be read 
     expect(JSON.parse(localStorage.getItem('health_roadmap_gdrive_tokens')!).refreshToken).toBe('refresh');
   });
 
+  it.each([400, 401])('a %s (refresh token revoked) clears the tokens, and the reminder identity is null, not a retry', async (status) => {
+    seedDrive();
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status })));
+
+    await expect(new GoogleDriveAdapter(DRIVE_CONFIG).tryServerRefresh()).resolves.toBe(false);
+    expect(localStorage.getItem('health_roadmap_gdrive_tokens')).toBeNull();
+    seedDrive();
+    await expect(new GoogleDriveAdapter(DRIVE_CONFIG).getReminderIdToken()).resolves.toBeNull();
+  });
+
   it('a 503 from the endpoint is transient and its body is not read', async () => {
     seedDrive();
     const answer = new Response('{"accessToken":"never-used","expiresIn":3600}', { status: 503 });
@@ -308,5 +318,7 @@ describe('#788 review, finding 1: a Drive refresh whose 200 body cannot be read 
     await expect(new GoogleDriveAdapter(DRIVE_CONFIG).tryServerRefresh()).resolves.toBe(false);
     expect(answer.bodyUsed).toBe(false);
     expect(JSON.parse(localStorage.getItem('health_roadmap_gdrive_tokens')!)).toMatchObject({ accessToken: 'old', refreshToken: 'refresh' });
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('', { status: 503 })));
+    await expect(new GoogleDriveAdapter(DRIVE_CONFIG).getReminderIdToken()).rejects.toThrow('retry later');
   });
 });
