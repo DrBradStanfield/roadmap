@@ -133,6 +133,8 @@ describe('a cloud tab left open after another tab moved this browser to "This de
 
 describe('an erase taken in from another device, on the cloud this browser still uses (US-06 AC13)', () => {
   it('removes the copy this tab wrote as it was hidden, and its marker', async () => {
+    // The key browsers already hold the remembered backend under (connect.ts re-exports it).
+    expect(BACKEND_KEY).toBe('health_roadmap_backend');
     const cloud = new MemoryCloud();
     localStorage.setItem(BACKEND_KEY, 'memory');
     const tab = await RecordSession.open(webRecordHost(new MemoryAdapter(cloud)));

@@ -487,6 +487,18 @@ describe('RecordSession: the device copy a cloud page leaves behind (US-06 AC13,
     expect(ids(stored(fake.mirrorCloud))).toEqual(['guest']);
   });
 
+  it('a save reads no device copy and clears nothing when no marker is set', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const { host, device } = withDeviceSync(fake);
+    const readSync = vi.spyOn(device, 'readSync');
+    const session = await RecordSession.open(host);
+    add(session, 'a');
+    await session.flush();
+    expect(readSync).not.toHaveBeenCalled();
+    expect(fake.calls).not.toContain('pending.clear');
+  });
+
   it('a marker with no copy beside it is cleared by a save', async () => {
     const store = new TestStore();
     const fake = fakeHost(store);
