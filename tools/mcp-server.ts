@@ -15,7 +15,8 @@
  * stdout is the transport — it carries JSON-RPC and nothing else. Anything a
  * human should read goes to stderr.
  */
-import { pathToFileURL } from 'node:url';
+import { existsSync, realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { FileAdapter } from '../packages/health-core/src/file-adapter';
 import { type ImportCommit, type ImportPayload, type ImportSurface, MCP_TOOLS, DOCUMENT_TEXT_NOTE, OPEN_SOURCE_NOTE, SI_NOTE, RECEIPT_LIFETIME_SECONDS, runToolOverSync, type ToolAnswer } from '../packages/health-core/src/mcp-tools';
 import { dispatchRpc, INVALID_REQUEST, PARSE_ERROR, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../packages/health-core/src/mcp-rpc';
@@ -237,7 +238,11 @@ export function main(argv: string[]): number {
   return 0;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// The CLI runs only when this is the script Node was asked to run. Node gives
+// import.meta.url as the real path and argv[1] as typed, so both are resolved:
+// through a symlinked folder a plain compare never matched (US-32 AC56).
+const entry = process.argv[1] && existsSync(process.argv[1]) ? realpathSync(process.argv[1]) : '';
+if (entry === realpathSync(fileURLToPath(import.meta.url))) {
   const code = main(process.argv.slice(2));
   if (code !== 0) process.exit(code);
 }
