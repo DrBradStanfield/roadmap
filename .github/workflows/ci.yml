@@ -12,7 +12,7 @@ permissions:
 
 # Three jobs (US-64 AC12, Brad 2026-11-04): the suite took 7.6 of CI's 9
 # minutes on one runner, and every PR waited on it. `checks` runs everything
-# but the suite; `unit` splits the suite by file over 4 runners; `test` passes
+# but the suite; `unit` splits the suite by file over 6 runners; `test` passes
 # only when both did. Its name is the check auto-ship.yml waits for, so keep it.
 jobs:
   checks:
@@ -102,7 +102,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -113,8 +113,8 @@ jobs:
       # test:all runs the root vitest config — a strict superset of `npm test`
       # (health-core + app/lib) that also picks up widget-src and app/routes
       # suites, which were previously never executed in CI. Each runner takes
-      # a quarter of the test files.
-      - run: npm run test:all -- --shard=${{ matrix.shard }}/4
+      # a sixth of the test files.
+      - run: npm run test:all -- --shard=${{ matrix.shard }}/6
 
   test:
     if: always()

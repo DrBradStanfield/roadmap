@@ -2,7 +2,7 @@ node_modules/
 .env
 .env.local
 .env.*.local
-# Secrets (US-64 AC13), mirrored from .gitignore. Docker anchors a bare pattern
+# Secrets (US-64 AC14), mirrored from .gitignore. Docker anchors a bare pattern
 # at the context root, so `**/` makes them match at any depth, as git does.
 # The template stays in the context.
 **/.env.*

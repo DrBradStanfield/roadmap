@@ -99,9 +99,9 @@ describe('.dockerignore covers the .gitignore data patterns', () => {
   });
 });
 
-// US-64 AC13: env variants, keys and certificates stay out of the repo and the
+// US-64 AC14: env variants, keys and certificates stay out of the repo and the
 // image at any depth; the tracked template .env.example stays in both.
-describe('secret files are ignored by git and Docker (US-64 AC13)', () => {
+describe('secret files are ignored by git and Docker (US-64 AC14)', () => {
   const SECRETS = ['.env.*', '!.env.example', '*.pem', '*.key', '*.p8', '*.p12', 'service-account*.json'];
   const docker = patterns('.dockerignore');
 
