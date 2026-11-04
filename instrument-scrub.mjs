@@ -175,8 +175,8 @@ export const SCRUB_UNITS = [
   'mg/g creat', 'mg/g creatinine', 'mg/mg', 'ml/min/1.73 m²', 'ml/min/1.73', 'mmol/kg', 'mosmol/kg', 'g/dl',
   '×10⁶/µl', 'm/µl', 'million/µl', 't/l', '×10³/µl', 'k/µl', 'thou/µl', 'thousand/µl', 'cells/µl', 'mg/l (feu)',
   'µg/ml feu', 'µg/ml (feu)', 'ng/ml feu', 'ng/ml (feu)', 'µg/l feu', 'µg/l (feu)', 'µiu/ml', 'mu/l',
-  'microiu/ml', 'mciu/ml', 'ng/dl', 'pg/ml', 'kiu/l', 'µg/dl', 'miu/ml', 'mm/h', 'µu/ml', 'mm Hg', 'micromol/L',
-  'lb', 'mcg', 'µg', 'mg', 'g', 'IU', 'mL', 'units', '"',
+  'µu/ml', 'microiu/ml', 'mciu/ml', 'ng/dl', 'pg/ml', 'kiu/l', 'µg/dl', 'miu/ml', 'mu/ml', 'mm/h', 'mm Hg',
+  'micromol/L', 'lb', 'mcg', 'µg', 'mg', 'g', 'IU', 'mL', 'units', '"',
 ];
 
 export const SCRUB_METRIC_WORDS = [
