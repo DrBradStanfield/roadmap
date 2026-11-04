@@ -122,6 +122,8 @@ describe('git push guard, as .claude/settings.json runs it', () => {
       'gh api -X PUT repos/o/r/contents/X -f message=m -f content=eA==',
       'gh api -X PUT repos/o/r/contents/X -f branch="$BR" -f message=m -f content=eA==',
       'gh api -X PUT repos/o/r/contents/X --input body.json',
+      // With --input the file is the body; a branch field beside it is not what GitHub reads.
+      'gh api -X PUT repos/o/r/contents/X -f branch=claude/x --input body.json',
       'gh api -X DELETE repos/o/r/contents/X -f message=m -f sha=abc1234',
       // gh fills {branch} with the current branch, which may be main; xargs supplies an endpoint the guard never sees.
       'gh api -X PATCH "repos/{owner}/{repo}/git/refs/heads/{branch}" -f sha=abc1234',
