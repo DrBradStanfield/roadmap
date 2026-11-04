@@ -4,7 +4,7 @@
  * sees: exit code, stderr, the files and the history left behind.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -257,6 +257,26 @@ describe('merge-batch.mjs (US-64 AC13)', () => {
     expect(existsSync(join(batch, '.git/MERGE_HEAD'))).toBe(true);
   });
 
+  it('refuses a moved head on a later PR before any earlier PR merges (exit 1)', () => {
+    const first = pr(62, baseSha, (d) => write(d, 'src/new.txt', 'new by 62\n'));
+    const reviewed = pr(63, baseSha, (d) => write(d, 'src/b.txt', 'reviewed\n'));
+    pr(63, baseSha, (d) => write(d, 'src/b.txt', 'pushed after review\n'));
+    const r = runBatch([`62 ${first}`, `63 ${reviewed}`]);
+    expect(r.code).toBe(1);
+    expect(r.err).toContain('#63');
+    expect(r.err).toContain('head moved');
+    expect(git(batch, 'rev-parse', 'HEAD')).toBe(git(batch, 'rev-parse', 'origin/main'));
+  });
+
+  it('keeps its exit code when stderr cannot be written (exit 4, not a crash in stop)', async () => {
+    const list = join(root, 'list.txt');
+    writeFileSync(list, `70 ${'a'.repeat(40)}\n`); // origin has no refs/pull/70/head: a git failure, exit 4
+    const child = spawn('node', [SCRIPT, list], { cwd: batch, env: ENV, stdio: ['ignore', 'ignore', 'pipe'] });
+    child.stderr.destroy(); // the reader is gone, so the script's stderr write fails with EPIPE
+    const code = await new Promise((done) => child.on('exit', done));
+    expect(code).toBe(4);
+  });
+
   it('refuses a head that moved since the review (exit 1) and merges nothing from it', () => {
     const reviewed = pr(61, baseSha, (d) => write(d, 'src/b.txt', 'reviewed\n'));
     pr(61, baseSha, (d) => write(d, 'src/b.txt', 'pushed after review\n')); // overwrites refs/pull/61/head
@@ -341,6 +361,44 @@ describe('merge-batch.mjs --skip and pre-flight (US-64 AC15)', () => {
     expect(git(batch, 'rev-parse', 'HEAD')).toBe(git(batch, 'rev-parse', 'origin/main'));
   });
 
+  /** Skipped PR 87 reviewed at A2 (on A1), then force-pushed onto an unrelated commit; kept PR 88 is built on A1. */
+  function forcePushedSkip() {
+    const a1 = pr(87, baseSha, (d) => write(d, 'src/b.txt', 'b by 87, first\n'));
+    const a2 = pr(87, a1, (d) => write(d, 'src/b.txt', 'b by 87, second\n'));
+    const c = pr(88, a1, (d) => write(d, 'src/new.txt', 'new by 88\n'));
+    pr(87, baseSha, (d) => write(d, 'src/other.txt', 'rewritten 87\n')); // A2 is now on no PR ref
+    return { a2, c };
+  }
+
+  it('--skip stops (exit 4, naming the PR) when a skipped PR\'s reviewed head cannot be fetched', () => {
+    const { a2, c } = forcePushedSkip();
+    git(origin, 'reflog', 'expire', '--expire=now', '--all');
+    git(origin, 'gc', '-q', '--prune=now'); // A2 is gone from origin too
+    const r = runBatch([`87 ${a2}`, `88 ${c}`], false, ['--skip', '87']);
+    expect(r.code).toBe(4);
+    expect(r.err).toContain('#87');
+    expect(git(batch, 'rev-parse', 'HEAD')).toBe(git(batch, 'rev-parse', 'origin/main'));
+  });
+
+  it('--skip fetches a skipped PR\'s force-pushed reviewed head and still catches the shared commit', () => {
+    const { a2, c } = forcePushedSkip();
+    const r = runBatch([`87 ${a2}`, `88 ${c}`], false, ['--skip', '87']);
+    expect(r.code).toBe(1);
+    expect(r.err).toContain('#88');
+    expect(r.err).toContain('#87');
+    expect(git(batch, 'rev-parse', 'HEAD')).toBe(git(batch, 'rev-parse', 'origin/main'));
+  });
+
+  it('--skip still checks a skipped PR\'s current head after fetching its reviewed one by sha', () => {
+    const reviewed = pr(87, baseSha, (d) => write(d, 'src/b.txt', 'b by 87, reviewed\n'));
+    const now = pr(87, baseSha, (d) => write(d, 'src/other.txt', 'rewritten 87\n')); // reviewed is now on no ref
+    const c = pr(88, now, (d) => write(d, 'src/new.txt', 'new by 88\n')); // built on 87's current head
+    const r = runBatch([`87 ${reviewed}`, `88 ${c}`], false, ['--skip', '87']);
+    expect(r.code).toBe(1);
+    expect(r.err).toContain('#88');
+    expect(git(batch, 'rev-parse', 'HEAD')).toBe(git(batch, 'rev-parse', 'origin/main'));
+  });
+
   it('--skip that leaves nothing to build exits 1', () => {
     const a = pr(89, baseSha, (d) => write(d, 'src/b.txt', 'b by 89\n'));
     const r = runBatch([`89 ${a}`], false, ['--skip', '89']);
@@ -370,16 +428,17 @@ describe('merge-batch.mjs --skip and pre-flight (US-64 AC15)', () => {
     expect(r.err).not.toContain('abcd');
   });
 
-  it('pre-flight scans a 50,000-line hunk of credential shapes in linear time', () => {
-    const lines = Array.from({ length: 50000 }, (_, i) => `v${i} ${pat}`).join('\n');
+  it('pre-flight scans a 150,000-line hunk of credential shapes in linear time', () => {
+    const lines = Array.from({ length: 150000 }, (_, i) => `v${i} ${pat}`).join('\n');
     const sha = pr(95, baseSha, (d) => write(d, 'src/big.txt', `${lines}\n`));
     const r = runBatch([`95 ${sha}`]);
     expect(r.code).toBe(5);
     expect(r.err).toContain('src/big.txt:1 github_pat');
-    expect(r.err).toContain('src/big.txt:50000 github_pat');
+    expect(r.err).toContain('src/big.txt:150000 github_pat'); // the whole report, not cut short at exit
     expect(r.err).not.toContain(pat);
+    // Linear takes about a second here; the old per-match search took about 9x the 50,000-line case's 5 s.
     expect(r.ms).toBeLessThan(4000);
-  }, 60000);
+  }, 120000);
 
   /** The batch as a linked worktree of a main clone whose own hook is `hook`; main has two package folders. */
   function inWorktree(hook: string): { main: string; got: string } {

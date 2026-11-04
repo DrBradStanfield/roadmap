@@ -28,7 +28,11 @@ const gitOk = (...args) => {
   }
 };
 const stop = (code, msg) => {
-  writeSync(2, `${msg}\n`); // console.error to a pipe is async on macOS: exit would cut a long report short
+  try {
+    writeSync(2, `${msg}\n`); // console.error to a pipe is async on macOS: exit would cut a long report short
+  } catch {
+    /* stderr is gone; the exit code still says what happened */
+  }
   process.exit(code);
 };
 
@@ -218,15 +222,29 @@ function main() {
   const out = [];
   for (const e of all.filter((x) => skipped.includes(x.pr))) {
     git('fetch', 'origin', `pull/${e.pr}/head`);
-    for (const s of new Set([e.sha, git('rev-parse', 'FETCH_HEAD').trim()])) out.push({ pr: e.pr, sha: s });
+    const now = git('rev-parse', 'FETCH_HEAD').trim(); // before a fetch by sha moves FETCH_HEAD
+    // A head force-pushed away since the review may not be here: fetch it by sha, or stop unable to check.
+    const have = () => gitOk('cat-file', '-e', `${e.sha}^{commit}`);
+    if (!have() && !(gitOk('fetch', 'origin', e.sha) && have())) {
+      stop(4, `skipped PR #${e.pr}: reviewed head ${e.sha.slice(0, 8)} cannot be fetched, so its commits cannot be checked`);
+    }
+    for (const s of new Set([e.sha, now])) out.push({ pr: e.pr, sha: s });
   }
-  const bases = (a, b) => (gitOk('merge-base', a, b) ? git('merge-base', '--all', a, b).split('\n').filter(Boolean) : []);
+  // Exit 1 with no output is "no common ancestor"; any other failure means the ancestry is unknown.
+  const bases = (a, b, what) => {
+    try {
+      return git('merge-base', '--all', a, b).split('\n').filter(Boolean);
+    } catch (err) {
+      if (err.status === 1 && !`${err.stdout}${err.stderr}`.trim()) return [];
+      stop(4, `${what} cannot be checked: ${String(err.stderr || err.message).trim()}`);
+    }
+  };
   for (const { pr, sha } of entries) {
     git('fetch', 'origin', `pull/${pr}/head`);
     const head = git('rev-parse', 'FETCH_HEAD').trim();
     if (head !== sha) stop(1, `PR #${pr}: head moved (now ${head.slice(0, 8)}, reviewed ${sha.slice(0, 8)}): needs a new review`);
     for (const s of out) {
-      const shared = bases(s.sha, sha).find((b) => !gitOk('merge-base', '--is-ancestor', b, 'origin/main'));
+      const shared = bases(s.sha, sha, `PR #${pr}: its ancestry against skipped PR #${s.pr}`).find((b) => !gitOk('merge-base', '--is-ancestor', b, 'origin/main'));
       if (shared) stop(1, `PR #${pr} shares commit ${shared.slice(0, 8)} with skipped PR #${s.pr}, not on main; skip both or neither`);
     }
   }
