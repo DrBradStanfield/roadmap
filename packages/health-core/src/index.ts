@@ -442,7 +442,7 @@ export {
   fetchOrFail,
   jsonBody,
   sleepUntilAborted,
-  timeoutSignal,
+  timeoutDeadline,
   catchUpAfterFailure,
   type StorageAdapter,
   type StorageBackendId,

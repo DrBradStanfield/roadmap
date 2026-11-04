@@ -1,10 +1,10 @@
 /**
- * US-09 AC13g: `timeoutSignal`, the deadline the cloud adapters set on their
+ * US-09 AC13g: `timeoutDeadline`, the deadline the cloud adapters set on their
  * own calls. The adapters are pinned through the real code in
  * widget-src/src/storage/old-safari-deadline.test.ts.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { timeoutSignal } from './adapter';
+import { fetchOrFail, timeoutDeadline } from './adapter';
 
 const nativeTimeout = AbortSignal.timeout;
 
@@ -14,10 +14,10 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe('US-09 AC13g: timeoutSignal', () => {
+describe('US-09 AC13g: timeoutDeadline', () => {
   it('uses AbortSignal.timeout where the browser has it', () => {
     const timeout = vi.spyOn(AbortSignal, 'timeout');
-    const signal = timeoutSignal(5_000);
+    const { signal } = timeoutDeadline(5_000);
     expect(timeout).toHaveBeenCalledWith(5_000);
     expect(signal).toBe(timeout.mock.results[0].value);
   });
@@ -25,11 +25,53 @@ describe('US-09 AC13g: timeoutSignal', () => {
   it('without it (Safari 14/15), aborts at the same deadline, not before, as a TimeoutError', async () => {
     vi.useFakeTimers();
     Object.defineProperty(AbortSignal, 'timeout', { value: undefined, configurable: true, writable: true });
-    const signal = timeoutSignal(5_000);
+    const { signal } = timeoutDeadline(5_000);
     await vi.advanceTimersByTimeAsync(4_999);
     expect(signal.aborted).toBe(false);
     await vi.advanceTimersByTimeAsync(1);
     expect(signal.aborted).toBe(true);
     expect((signal.reason as Error).name).toBe('TimeoutError');
+  });
+
+  it('without it, clear frees the timer and the signal never aborts', async () => {
+    vi.useFakeTimers();
+    Object.defineProperty(AbortSignal, 'timeout', { value: undefined, configurable: true, writable: true });
+    const { signal, clear } = timeoutDeadline(5_000);
+    expect(vi.getTimerCount()).toBe(1);
+    clear();
+    expect(vi.getTimerCount()).toBe(0);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(signal.aborted).toBe(false);
+  });
+});
+
+// Review of #788 (Brad, 2026-11-04, finding 2): fetchOrFail kept its own
+// feature check and ran with no deadline on Safari 14/15.
+describe('US-09 AC13g: fetchOrFail without AbortSignal.timeout (Safari 14/15)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('gives up at 30 s, not before, when the provider never answers', async () => {
+    vi.useFakeTimers();
+    Object.defineProperty(AbortSignal, 'timeout', { value: undefined, configurable: true, writable: true });
+    vi.stubGlobal('fetch', vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(init.signal!.reason));
+    })));
+    let outcome: unknown = 'pending';
+    fetchOrFail('Dropbox', 'https://example.test/file').then(() => { outcome = 'resolved'; }, (e: unknown) => { outcome = e; });
+
+    await vi.advanceTimersByTimeAsync(29_999);
+    expect(outcome).toBe('pending');
+    await vi.advanceTimersByTimeAsync(1);
+    expect((outcome as Error).message).toBe('Dropbox did not answer');
+  });
+
+  it('frees its deadline timer once the answer and its body are in', async () => {
+    vi.useFakeTimers();
+    Object.defineProperty(AbortSignal, 'timeout', { value: undefined, configurable: true, writable: true });
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{"ok":true}', { status: 200 })));
+
+    const res = await fetchOrFail('Dropbox', 'https://example.test/file');
+    expect(await res.json()).toEqual({ ok: true });
+    expect(vi.getTimerCount()).toBe(0);
   });
 });

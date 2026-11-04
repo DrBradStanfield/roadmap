@@ -46,7 +46,7 @@ import {
   catchUpAfterFailure,
   StorageError,
   jsonBody,
-  timeoutSignal,
+  timeoutDeadline,
   type ReadResult,
   type StorageAdapter,
   type WriteResult,
@@ -374,25 +374,31 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const startedFrom = this.tokens?.refreshToken;
     if (!startedFrom) return 'none';
     let res: Response;
+    let json: { accessToken: string; expiresIn: number; idToken?: string } | undefined;
+    // This runs at page load before first render — a black-holing server must
+    // fail fast into the on-device + Reconnect fallback, not hang. The body read
+    // is inside the same 5 s and the same catch: a 200 whose body stalls, dies or
+    // is not JSON is transient too, never a rejection (review of #788).
+    const deadline = timeoutDeadline(5000);
     try {
       res = await fetch(this.config.exchangeUrl, {
         method: 'POST',
         // No Content-Type: keep it a CORS simple request (no preflight).
         body: JSON.stringify({ grantType: 'refresh', refreshToken: startedFrom }),
-        // This runs at page load before first render — a black-holing server
-        // must fail fast into the on-device + Reconnect fallback, not hang.
-        signal: timeoutSignal(5000),
+        signal: deadline.signal,
       });
+      if (res.ok) json = await res.json();
     } catch {
       return 'transient'; // network/server down/timeout → caller falls back to the popup path
+    } finally {
+      deadline.clear();
     }
     if (res.status === 400 || res.status === 401) {
       if (this.grantMoved(startedFrom)) return 'none';
       this.clearTokens(); // refresh token revoked/expired — stop retrying
       return 'none';
     }
-    if (!res.ok) return 'transient';
-    const json = (await res.json()) as { accessToken: string; expiresIn: number; idToken?: string };
+    if (!json) return 'transient';
     if (this.grantMoved(startedFrom)) return 'none';
     this.lastIdToken = json.idToken ?? null;
     const accountEmail = this.lastIdToken ? decodeIdTokenEmail(this.lastIdToken) : null;

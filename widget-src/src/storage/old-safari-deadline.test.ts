@@ -2,13 +2,15 @@
  * US-09 AC13g: the cloud adapters' own deadlines work on a browser without
  * `AbortSignal.timeout` (Safari 14/15, iOS 15).
  *
- * `fetchOrFail` already feature-detects it (docs/reference.md, d909fe2). Three
- * calls the adapters make themselves did not: Drive's token refresh (5 s) and
- * the Dropbox and GitHub account-email reads (10 s, US-17 AC7, AC12). Called
- * unguarded, `AbortSignal.timeout` throws a TypeError before the request is
- * made, so on those browsers a Drive refresh always failed (once the access
+ * Three calls the adapters make themselves used it bare: Drive's token refresh
+ * (5 s) and the Dropbox and GitHub account-email reads (10 s, US-17 AC7, AC12).
+ * Called unguarded, `AbortSignal.timeout` throws a TypeError before the request
+ * is made, so on those browsers a Drive refresh always failed (once the access
  * token's hour ran out, the page opened on-device with Reconnect instead of on
  * Drive) and the reminders email read always failed (no auto-enrolment).
+ * `fetchOrFail` feature-detected it (docs/reference.md, d909fe2) but then ran
+ * with no deadline. Review of #788: the Drive refresh's body read must sit
+ * inside the same deadline and catch, or a stalled 200 body blanks startup.
  *
  * Each test removes `AbortSignal.timeout` the way an old Safari lacks it, then
  * drives the real adapter against a synthetic provider.
@@ -17,6 +19,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GoogleDriveAdapter } from './drive';
 import { DropboxAdapter } from './dropbox';
 import { GitHubAdapter } from './github';
+import { BACKEND_KEY, resolveRemembered } from '../../standalone/connect';
 
 const DRIVE_CONFIG = {
   clientId: 'test-client-id',
@@ -44,6 +47,18 @@ function hungFetch() {
   return vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
     init?.signal?.addEventListener('abort', () => reject(init.signal!.reason));
   }));
+}
+
+/**
+ * A provider that sends 200 headers at once and then never finishes the body,
+ * until the request's signal aborts it, as a real fetch's body read does.
+ */
+function stalledBodyFetch() {
+  return vi.fn((_url: string, init?: RequestInit) => Promise.resolve(new Response(new ReadableStream({
+    start(controller) {
+      init?.signal?.addEventListener('abort', () => controller.error(init.signal!.reason));
+    },
+  }), { status: 200 })));
 }
 
 /** Whether a promise has settled, without waiting for it. */
@@ -156,6 +171,94 @@ describe('US-09 AC13g: on a browser without AbortSignal.timeout (Safari 14/15)',
     expect(await settled(read)).toBe(true);
     await expect(read).rejects.toThrow();
   });
+
+  // Review of #788 (Brad, 2026-11-04, finding 1): the body read is bounded by
+  // the same 5 s, so a 200 whose body stalls must also end as a transient
+  // failure, never as a rejection. resolveRemembered awaits the refresh before
+  // the widget is rendered, so a rejection there is a blank widget.
+  it('a Drive refresh whose 200 body stalls gives up at 5 s, as a transient failure', async () => {
+    vi.useFakeTimers();
+    seedDrive();
+    vi.stubGlobal('fetch', stalledBodyFetch());
+    const refresh = new GoogleDriveAdapter(DRIVE_CONFIG).tryServerRefresh();
+    refresh.catch(() => undefined);
+
+    await vi.advanceTimersByTimeAsync(4_999);
+    expect(await settled(refresh)).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(refresh).resolves.toBe(false);
+    expect(JSON.parse(localStorage.getItem('health_roadmap_gdrive_tokens')!).refreshToken).toBe('refresh');
+  });
+
+  it('page load with a stalled refresh body opens on this device with Reconnect, choice kept', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('location', { origin: 'https://example.test', pathname: '/roadmap' });
+    seedDrive();
+    localStorage.setItem(BACKEND_KEY, 'google-drive');
+    vi.stubGlobal('fetch', stalledBodyFetch());
+    const startup = resolveRemembered();
+    startup.catch(() => undefined);
+
+    await vi.advanceTimersByTimeAsync(5_000);
+    const resolved = await startup;
+    expect(resolved.backend).toBe('local');
+    expect(resolved.reconnect).toBe('google-drive');
+    expect(localStorage.getItem(BACKEND_KEY)).toBe('google-drive');
+  });
+
+  it.each([
+    ['Dropbox', () => { seedDropbox(); return new DropboxAdapter(DROPBOX_CONFIG).accountEmail(); }],
+    ['GitHub', () => new GitHubAdapter(GITHUB_CONFIG).accountEmail()],
+  ])('a %s email read whose 200 body stalls rejects at 10 s, not before', async (_name, start) => {
+    vi.useFakeTimers();
+    vi.stubGlobal('fetch', stalledBodyFetch());
+    const read = start();
+    read.catch(() => undefined);
+
+    await vi.advanceTimersByTimeAsync(9_999);
+    expect(await settled(read)).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(read).rejects.toThrow();
+  });
+
+  // Finding 2: fetchOrFail ran with no deadline at all here.
+  it('a GitHub record read through fetchOrFail that gets no answer gives up at 30 s', async () => {
+    vi.useFakeTimers();
+    const fetch = hungFetch();
+    vi.stubGlobal('fetch', fetch);
+    const read = new GitHubAdapter(GITHUB_CONFIG).read('health-roadmap.json');
+    read.catch(() => undefined);
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(29_999);
+    expect(await settled(read)).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await settled(read)).toBe(true);
+    await expect(read).rejects.toThrow('GitHub did not answer');
+  });
+
+  // Finding 2: the fallback timer is freed once the call is over.
+  it('leaves no deadline timer behind after a Drive refresh, an email read and a record read succeed', async () => {
+    vi.useFakeTimers();
+    seedDrive();
+    seedDropbox();
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => new Response(
+      url.includes('dropbox') ? JSON.stringify({ email: 'a@example.com', email_verified: true })
+        : url.includes('github') ? JSON.stringify(url.includes('emails') ? [{ email: 'a@example.com', primary: true, verified: true }] : { content: '', sha: 'abc' })
+          : JSON.stringify({ accessToken: 'fresh', expiresIn: 3600 }),
+      { status: 200 },
+    )));
+
+    expect(await new GoogleDriveAdapter(DRIVE_CONFIG).tryServerRefresh()).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+    await new DropboxAdapter(DROPBOX_CONFIG).accountEmail();
+    expect(vi.getTimerCount()).toBe(0);
+    await new GitHubAdapter(GITHUB_CONFIG).accountEmail();
+    expect(vi.getTimerCount()).toBe(0);
+    await new GitHubAdapter(GITHUB_CONFIG).read('health-roadmap.json').catch(() => undefined);
+    expect(vi.getTimerCount()).toBe(0);
+  });
 });
 
 describe('US-09 AC13g control: a browser that has AbortSignal.timeout still uses it', () => {
@@ -175,5 +278,21 @@ describe('US-09 AC13g control: a browser that has AbortSignal.timeout still uses
     expect(timeout).toHaveBeenLastCalledWith(5_000);
     await new DropboxAdapter(DROPBOX_CONFIG).accountEmail();
     expect(timeout).toHaveBeenLastCalledWith(10_000);
+  });
+});
+
+describe('#788 review, finding 1: a Drive refresh whose 200 body cannot be read is transient on every browser', () => {
+  beforeEach(() => vi.stubGlobal('localStorage', makeStorage()));
+  afterEach(() => vi.unstubAllGlobals());
+
+  it.each([
+    ['is not JSON', () => new Response('<html>gateway</html>', { status: 200 })],
+    ['dies mid-download', () => new Response(new ReadableStream({ start(c) { c.error(new TypeError('terminated')); } }), { status: 200 })],
+  ])('a 200 whose body %s: false, refresh token kept', async (_label, answer) => {
+    seedDrive();
+    vi.stubGlobal('fetch', vi.fn(async () => answer()));
+
+    await expect(new GoogleDriveAdapter(DRIVE_CONFIG).tryServerRefresh()).resolves.toBe(false);
+    expect(JSON.parse(localStorage.getItem('health_roadmap_gdrive_tokens')!).refreshToken).toBe('refresh');
   });
 });

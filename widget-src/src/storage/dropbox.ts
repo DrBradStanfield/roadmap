@@ -28,7 +28,7 @@ import {
   sleepUntilAborted,
   catchUpAfterFailure,
   StorageError,
-  timeoutSignal,
+  timeoutDeadline,
   type ReadResult,
   type StorageAdapter,
   type WriteResult,
@@ -291,8 +291,13 @@ export class DropboxAdapter implements StorageAdapter {
    * caller retries next visit) — a Dropbox account always has an email.
    */
   async accountEmail(): Promise<string> {
-    const res = await this.rpc(ACCOUNT_URL, null, timeoutSignal(10_000), true);
-    const account = (await res.json()) as { email?: string; email_verified?: boolean };
+    const deadline = timeoutDeadline(10_000);
+    let account: { email?: string; email_verified?: boolean };
+    try {
+      account = (await (await this.rpc(ACCOUNT_URL, null, deadline.signal, true)).json()) as typeof account;
+    } finally {
+      deadline.clear();
+    }
     if (!account.email || account.email_verified !== true) throw new StorageError('Dropbox has not verified this account\'s email.');
     return account.email.toLowerCase();
   }
