@@ -53,6 +53,12 @@ const NO_PENDING: ChatPending = { thinking: '', text: '', status: '', sources: [
 /** How long another tab's reply in flight may lock this tab's chat with no word from it (US-15 AC17a). */
 export const REMOTE_PENDING_MS = 5 * 60_000;
 
+/** Enter sends, Shift+Enter is a new line, and an Enter that commits an input method's composition only commits it
+ *  (US-15 AC26a): Chrome and Firefox mark it `isComposing`, Safari sends it just after with keyCode 229. */
+export function sendsOnEnter(e: React.KeyboardEvent): boolean {
+  return e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229;
+}
+
 export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemoteConversationSelected, onProposeEdit }: UseChatStateOptions) {
   const [instanceId] = useState(generateInstanceId);
 
