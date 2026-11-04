@@ -142,6 +142,98 @@ describe('US-34 AC1 — DropboxAdapter.watch', () => {
     stop.abort();
   });
 
+  it('after a dropped long-poll, re-reads once on the fresh cursor: a change made in the gap is not lost (US-34 AC1b)', async () => {
+    // The long-poll connection drops. The fresh cursor lists the folder as it
+    // stands now, so a change another device made before it is never
+    // announced by a later poll: the watch has to say "look" itself, once.
+    let polls = 0;
+    answer = (url) => {
+      if (url === LIST) return { cursor: `c${at(LIST).length}` };
+      if (url === LONGPOLL) return ++polls === 1 ? null : { changes: false };
+      return { cursor: 'unused' };
+    };
+    const onChange = vi.fn();
+    const stop = new AbortController();
+    adapter().watch('health-roadmap.json', onChange, stop.signal);
+    await settle();
+    expect(at(LONGPOLL)).toHaveLength(1);
+    expect(onChange).not.toHaveBeenCalled(); // nothing to say while Dropbox cannot be asked
+
+    await settle(1_100); // the retry lists the folder afresh
+    expect(at(LIST)).toHaveLength(2);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(at(LONGPOLL)[1].body.cursor).toBe('c2');
+
+    await settle(HELD_MS * 3); // quiet polls afterwards: no further re-reads
+    expect(onChange).toHaveBeenCalledTimes(1);
+    stop.abort();
+  });
+
+  it('a change the poll reported but the continue could not take is still read, once, after the retry (US-34 AC1b)', async () => {
+    let continues = 0;
+    let polls = 0;
+    answer = (url) => {
+      if (url === LIST) return { cursor: `c${at(LIST).length}` };
+      if (url === LONGPOLL) return ++polls === 1 ? { changes: true } : { changes: false };
+      return ++continues === 1 ? null : { cursor: 'unused' }; // the continue fails
+    };
+    const onChange = vi.fn();
+    const stop = new AbortController();
+    adapter().watch('health-roadmap.json', onChange, stop.signal);
+    await settle();
+    expect(onChange).not.toHaveBeenCalled();
+
+    await settle(1_100);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    await settle(HELD_MS * 2);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    stop.abort();
+  });
+
+  it('a clean start, and quiet polls, owe no re-read (US-34 AC1b)', async () => {
+    answer = (url) => (url === LIST ? { cursor: 'c0' } : { changes: false });
+    const onChange = vi.fn();
+    const stop = new AbortController();
+    adapter().watch('health-roadmap.json', onChange, stop.signal);
+    await settle(HELD_MS * 3);
+    expect(at(LONGPOLL).length).toBeGreaterThan(2);
+    expect(onChange).not.toHaveBeenCalled();
+    stop.abort();
+  });
+
+  it('a dropped long-poll, then an abort while the fresh listing is on its way: no re-read (US-34 AC1b)', async () => {
+    // The tab is hidden (the watch is aborted) after a failure, while the
+    // retry's folder listing is in the air. Its answer still arrives, but a
+    // watch that has been stopped owes the store nothing.
+    const stop = new AbortController();
+    answer = (url) => {
+      if (url === LONGPOLL) return null; // the long-poll drops
+      if (at(LIST).length === 2) stop.abort(); // the retry's listing
+      return { cursor: `c${at(LIST).length}` };
+    };
+    const onChange = vi.fn();
+    adapter().watch('health-roadmap.json', onChange, stop.signal);
+    await settle();
+    await settle(1_100); // the retry lists the folder, and the abort lands meanwhile
+    expect(at(LIST)).toHaveLength(2);
+    await settle(HELD_MS * 3);
+    expect(at(LIST)).toHaveLength(2);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('a listing that answers while the long-poll keeps failing: re-reads follow the back-off (US-34 AC1b)', async () => {
+    // Only a whole good poll turn resets the back-off, so a working listing on
+    // a failing long-poll re-reads at 1, 3, 7, 15, 31 and 63 s, then once a minute.
+    answer = (url) => (url === LIST ? { cursor: 'c' } : null);
+    const onChange = vi.fn();
+    const stop = new AbortController();
+    adapter().watch('health-roadmap.json', onChange, stop.signal);
+    await settle();
+    for (let i = 0; i < 60; i++) await settle(10_000); // ten minutes
+    expect(onChange).toHaveBeenCalledTimes(14); // 6 while doubling, then 123 s, 183 s ... 543 s
+    stop.abort();
+  });
+
   it('makes no request once the signal is aborted', async () => {
     answer = (url) => (url === LIST ? { cursor: 'c0' } : { changes: false });
     const onChange = vi.fn();
