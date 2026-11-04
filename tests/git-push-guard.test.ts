@@ -151,6 +151,10 @@ describe('git push guard, as .claude/settings.json runs it', () => {
       'gh api -X PUT repos/o/r/contents/X -f branch="`cat b`" -f message=m -f content=eA==',
       'gh api -X PUT repos/o/r/contents/X -f branch=claude/x -f branch=main -f message=m -f content=eA==',
       `bash -c $'g''h a''pi -X PATCH repos/o/r/git/refs/heads/main'`,
+      // No literal `gh`, `git` or `api` anywhere in the text: only the guard's own parse can see these.
+      'sh -c "g\\\\h a\\\\pi -X PUT repos/o/r/contents/X -f message=m -f content=eA=="',
+      "g''h a''pi -X PUT repos/o/r/contents/X -f message=m -f content=eA==",
+      'gh api graphql -f query="mutation { $(cat body) }"',
     ]) {
       const r = runHook(scratch, cmd);
       expect(r.stderr, cmd).toBe('');
