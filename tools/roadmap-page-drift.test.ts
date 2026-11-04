@@ -9,7 +9,7 @@ import { compareArticles, decodeEntities, extractBlocks, formatDiffs, main, pars
 
 const repo = '<h2>Lung</h2><p>Screen at 50 to 80 with 20 pack-years.</p><ul><li>First</li><li>Second</li></ul>';
 type Diff = { live: string | null; repo: string | null };
-const TOKEN = 'q7x9k2m4v8w1z3r5';
+const TOKEN = 'zqxjzqxjzqxjzqxj';
 const SHOP = 'edu-store.myshopify.com';
 const SHA = 'abc1234';
 
