@@ -330,9 +330,12 @@ describe('US-09 AC2g: what the page saved between the two tries reaches the new 
       if (key.startsWith('health_roadmap_file_v2')) throw new DOMException('synthetic quota', 'QuotaExceededError');
       setItem.call(this, key, value);
     });
-    await connectGitHub(view, GOOD_TOKEN);
-    await vi.waitFor(() => expect(document.querySelector('.hr-sync-error')?.textContent).toMatch(/could not be copied to this browser/), { timeout: 10_000 });
-    full.mockRestore();
+    try {
+      await connectGitHub(view, GOOD_TOKEN);
+      await vi.waitFor(() => expect(document.querySelector('.hr-sync-error')?.textContent).toMatch(/could not be copied to this browser/), { timeout: 10_000 });
+    } finally {
+      full.mockRestore();
+    }
     expect(githubFile).toBeNull();
     expect(localStorage.getItem(GITHUB_CONFIG)).toBeNull();
     expect(localStorage.getItem('health_roadmap_backend')).toBe('dropbox');
