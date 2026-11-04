@@ -146,6 +146,7 @@ describe('git push guard, as .claude/settings.json runs it', () => {
       'gh api -X PATCH "repos/o/r/git/refs/heads/`cat b`" -f sha=abc1234',
       'gh api -X PATCH "repos/$R/git/refs/heads/$B" -f sha=abc1234',
       'gh api -X POST "repos/o/r/merge$S" -f base=main -f head=claude/x',
+      'gh api -X PATCH "repos/o/r//$P" -f sha=abc1234',
       'gh api -X PUT repos/o/r/contents/X -f branch=refs/heads/main -f message=m -f content=eA==',
       'gh api -X PUT repos/o/r/contents/X -F branch=@b.txt -f message=m -f content=eA==',
       'gh api -X PUT repos/o/r/contents/X -f branch="`cat b`" -f message=m -f content=eA==',
