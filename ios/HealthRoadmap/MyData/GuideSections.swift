@@ -68,14 +68,30 @@ struct GuideSections: View {
 
 /// A medicine's guide in a sheet (US-58 AC5): the same sections as a metric page's.
 struct GuideSheet: View {
-    let guide: MetricGuide
+    let guide: MetricGuide?
+    /// PROTOTYPE (My health, round 4): the plan's suggestions for the question, first, each as
+    /// its plan card opens: the text, then the reason and references (SuggestionDetails).
+    var suggestions: [Suggestion] = []
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
-            List { GuideSections(guide: guide, counts: false) }
+            List {
+                ForEach(suggestions) { suggestion in
+                    Section {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(suggestion.description)
+                            SuggestionDetails(suggestion: suggestion)
+                        }
+                        .padding(.vertical, 4)
+                    } header: {
+                        Text(suggestion.title).font(.headline).foregroundStyle(.primary).textCase(nil)
+                    }
+                }
+                if let guide { GuideSections(guide: guide, counts: false) }
+            }
                 .listStyle(.insetGrouped)
-                .navigationTitle(guide.title)
+                .navigationTitle(guide?.title ?? suggestions.first?.title ?? "")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }

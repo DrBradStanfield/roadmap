@@ -16,6 +16,9 @@ struct FormFieldRow: View {
     var openMeasurement: () -> Void = {}
     /// The question's guide (US-58 AC5), opened from the info button beside it.
     var guide: MetricGuide?
+    /// PROTOTYPE (My health, round 4): the plan's suggestions for this question, shown first in
+    /// the info sheet; the info button then takes the attention colour.
+    var suggestions: [Suggestion] = []
     @Environment(\.analytics) private var analytics
     @State private var guideShown = false
 
@@ -119,18 +122,21 @@ struct FormFieldRow: View {
     private func title(_ label: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(label)
-            if let guide {
+            if guide != nil || !suggestions.isEmpty {
                 Button {
                     guideShown = true
                     analytics?.event(.guideOpened)
                 } label: {
-                    Image(systemName: "info.circle").foregroundStyle(Color.accentColor)
+                    Image(systemName: suggestions.isEmpty ? "info.circle" : "info.circle.fill")
+                        .foregroundStyle(suggestions.isEmpty ? Color.accentColor : Color.status("attention"))
                 }
                 .buttonStyle(.borderless)
                 // A 44-point tap area that leaves the row's layout as it was.
                 .padding(12).contentShape(Rectangle()).padding(-12)
-                .accessibilityLabel("About \(guide.title)")
-                .sheet(isPresented: $guideShown) { GuideSheet(guide: guide) }
+                .accessibilityLabel("About \(guide?.title ?? label)")
+                // The suggestions' own titles, so VoiceOver says one is inside.
+                .accessibilityValue(suggestions.map(\.title).joined(separator: ", "))
+                .sheet(isPresented: $guideShown) { GuideSheet(guide: guide, suggestions: suggestions) }
             }
         }
     }

@@ -118,14 +118,15 @@ struct MyDataView: View {
             top(plan, proxy: proxy)
             weight(data, plan: plan, tiles: tiles)
             heading(.sleep)
-            LiveCardsSection(metrics: [.sleep], title: nil, keepsReconnect: false) { liveDetail = $0 }
+            LiveCardsSection(metrics: [.sleep], title: nil, keepsReconnect: false, footer: false) { liveDetail = $0 }
             cards(plan[.sleep])
             heading(.fitness)
-            LiveCardsSection(metrics: [.vo2Max, .restingHeartRate, .heartRate, .steps], bands: data.vo2Bands?.value.map { [.vo2Max: $0] } ?? [:],
-                             title: nil, keepsReconnect: true) { liveDetail = $0 }
+            // No heart rate card (Brad, round 4).
+            LiveCardsSection(metrics: [.vo2Max, .restingHeartRate, .steps], bands: data.vo2Bands?.value.map { [.vo2Max: $0] } ?? [:],
+                             title: nil, keepsReconnect: true, footer: false) { liveDetail = $0 }
             cards(plan[.fitness])
-            bloodPressure(data, plan: plan)
-            bloodTests(data, plan: plan, tiles: tiles)
+            bloodPressure(data, plan: plan, tiles: tiles)
+            cholesterol(data, plan: plan)
             // No heading of its own: the engine's sections carry their titles ("Cancer Screening"…).
             ScreeningsSection(store: store, data: data, saved: saved, open: open)
             cards(plan[.screening])
@@ -133,6 +134,7 @@ struct MyDataView: View {
                 heading(.skin)
                 cards(plan[.skin])
             }
+            bloodTests(data, plan: plan, tiles: tiles)
             // No heading of its own: the section's header says Supplements.
             SupplementsSection(store: store, supplements: data.supplements, saved: saved)
             cards(plan[.supplements], footer: plan.ownershipLine)
@@ -144,10 +146,34 @@ struct MyDataView: View {
         .listStyle(.insetGrouped)
     }
 
-    /// The title with the person button, lab upload and Sync; the urgent banner.
+    /// The title with the person button, lab upload and Sync, as a row so nothing holds space
+    /// under it; then the urgent banner, only when a card is urgent.
     @ViewBuilder
     private func top(_ plan: TopicPlan, proxy: ScrollViewProxy) -> some View {
         Section {
+            HStack(spacing: 14) {
+                Text("My health")
+                    .font(.largeTitle.bold())
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                Group {
+                    Button { showSettings = true } label: {
+                        Label("Settings", systemImage: "person.crop.circle")
+                    }
+                    Button { addingLabs = true } label: {
+                        Label("Add medical records", systemImage: "plus")
+                    }
+                    .accessibilityHint("Upload a lab report or clinic letter")
+                    Button { showSync = true } label: {
+                        Label("Sync", systemImage: SyncStatusText.symbol(sync.status, provider: sync.provider))
+                    }
+                }
+                .buttonStyle(.borderless)
+                .labelStyle(.iconOnly)
+                .font(.title3)
+            }
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 8, leading: 4, bottom: 0, trailing: 4))
             if let urgent = plan.urgent, let first = urgent.suggestions.first {
                 Button {
                     withAnimation { proxy.scrollTo(TopicPlan.anchor(urgent), anchor: .center) }
@@ -164,31 +190,8 @@ struct MyDataView: View {
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
             }
-        } header: {
-            HStack(spacing: 14) {
-                Text("My health")
-                    .font(.largeTitle.bold())
-                    // A section header greys its text; the title stays in the label colour.
-                    .foregroundStyle(Color(.label))
-                    .accessibilityAddTraits(.isHeader)
-                Spacer()
-                Group {
-                    Button { showSettings = true } label: {
-                        Label("Settings", systemImage: "person.crop.circle")
-                    }
-                    Button { addingLabs = true } label: {
-                        Label("Add medical records", systemImage: "plus")
-                    }
-                    .accessibilityHint("Upload a lab report or clinic letter")
-                    Button { showSync = true } label: {
-                        Label("Sync", systemImage: SyncStatusText.symbol(sync.status, provider: sync.provider))
-                    }
-                }
-                .labelStyle(.iconOnly)
-                .font(.title3)
-            }
-            .textCase(nil)
         }
+        .listSectionSpacing(.compact)
     }
 
     /// A topic's heading, a row in the list's own flow.
@@ -262,42 +265,49 @@ struct MyDataView: View {
         }
         .listSectionSpacing(.compact)
         cards(plan[.weight])
-        MedicationsSection(store: store, data: data, saved: saved, only: "weight-medications", inPlaceOfIntro: plan.weightMedicines)
+        MedicationsSection(store: store, data: data, saved: saved, only: "weight-medications", suggestions: plan.medicines)
     }
 
-    /// Today's large blood pressure card, then the blood pressure cards.
+    /// Today's large blood pressure card, the kidney rows (creatinine, eGFR as its small line),
+    /// then the blood pressure cards.
     @ViewBuilder
-    private func bloodPressure(_ data: MyData, plan: TopicPlan) -> some View {
+    private func bloodPressure(_ data: MyData, plan: TopicPlan, tiles: PlanTiles) -> some View {
         heading(.bloodPressure)
         if let pressure = data.vitals.first(where: { $0.metric == MyData.bloodPressure }) {
             Section { metric(pressure, card: pressure.latest != nil) }
                 .listSectionSpacing(.compact)
         }
+        if let creatinine = data.bloodTests.first(where: { $0.metric == "creatinine" }) {
+            Section { bloodTest(creatinine, column: nil, tiles: tiles) }
+                .listSectionSpacing(.compact)
+        }
         cards(plan[.bloodPressure])
     }
 
-    /// The rows in today's order, eGFR under creatinine; the cholesterol medicines; the lipid cards.
+    /// ApoB, LDL, total cholesterol, HDL, triglycerides and Lp(a); the lipid cards; the cholesterol medicines.
+    @ViewBuilder
+    private func cholesterol(_ data: MyData, plan: TopicPlan) -> some View {
+        heading(.cholesterol)
+        let lipids = ["apob", "ldl", "total_cholesterol", "hdl", "triglycerides", "lpa"]
+        let rows = lipids.compactMap { metric in data.bloodTests.first { $0.metric == metric } }
+        Section {
+            let column = ValueRow.Column(rows.map { ($0.latest?.value, $0.previous, $0.unit, nil) })
+            ForEach(rows) { metric($0, column: column) }
+        }
+        .listSectionSpacing(.compact)
+        cards(plan[.cholesterol])
+        MedicationsSection(store: store, data: data, saved: saved, only: "lipid-medications", suggestions: plan.medicines)
+    }
+
+    /// Every blood test, as today, eGFR under creatinine.
     @ViewBuilder
     private func bloodTests(_ data: MyData, plan: TopicPlan, tiles: PlanTiles) -> some View {
         heading(.bloodTests)
-        // HbA1c shows here too, in its usual place, as well as under Weight & diabetes (Brad, round 3).
         let rows = data.bloodTests
         let labs = data.labTests ?? []
         Section {
             let column = ValueRow.Column((rows + labs).map { ($0.latest?.value, $0.previous, $0.unit, nil) })
-            ForEach(rows) { row in
-                if row.metric == "creatinine", let egfr = tiles["egfr"] {
-                    VStack(alignment: .leading, spacing: 2) {
-                        metric(row, column: column)
-                        Button { openedTile = egfr } label: {
-                            Text("\(egfr.label) \(egfr.value) \(egfr.unit)").font(.caption).foregroundStyle(.secondary)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                } else {
-                    metric(row, column: column)
-                }
-            }
+            ForEach(rows) { bloodTest($0, column: column, tiles: tiles) }
             ForEach(labs) { lab in
                 Button { open(lab) } label: {
                     Self.valueRow(lab, tint: MetricChart.labTint, column: column)
@@ -307,8 +317,23 @@ struct MyDataView: View {
             }
         }
         .listSectionSpacing(.compact)
-        MedicationsSection(store: store, data: data, saved: saved, only: "lipid-medications")
         cards(plan[.bloodTests])
+    }
+
+    /// A blood test's row; creatinine's carries eGFR as a small line under it.
+    @ViewBuilder
+    private func bloodTest(_ row: MyData.Row, column: ValueRow.Column?, tiles: PlanTiles) -> some View {
+        if row.metric == "creatinine", let egfr = tiles["egfr"] {
+            VStack(alignment: .leading, spacing: 2) {
+                metric(row, column: column)
+                Button { openedTile = egfr } label: {
+                    Text("\(egfr.label) \(egfr.value) \(egfr.unit)").font(.caption).foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+        } else {
+            metric(row, column: column)
+        }
     }
 
     /// The reduce-alcohol card's question (US-60), as My plan asked it.

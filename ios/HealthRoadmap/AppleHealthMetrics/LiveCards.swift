@@ -65,6 +65,9 @@ struct LiveCardsSection: View {
     var title: SectionTitle? = .fitness()
     /// PROTOTYPE (My health tab): this place keeps the Turn On / Open Settings row; nil: Vitals does.
     var keepsReconnect: Bool? = nil
+    /// PROTOTYPE (My health, round 4): false leaves out the "From Apple Health…" line, which the
+    /// person sheet's Apple Health section carries instead.
+    var footer = true
     let open: (LiveMetric) -> Void
 
     /// What a place shows.
@@ -113,7 +116,7 @@ struct LiveCardsSection: View {
                             if !vitals, metric == shown.first, let title { title }
                         } footer: {
                             // Fitness, when shown, carries the access line, so it is said once.
-                            if metric == shown.last, keepsReconnect != false { Text(vitals && fitnessFollows ? LiveFooter.shownOnly : "\(LiveFooter.shownOnly) \(LiveFooter.access)") }
+                            if metric == shown.last, keepsReconnect != false, footer { Text(vitals && fitnessFollows ? LiveFooter.shownOnly : "\(LiveFooter.shownOnly) \(LiveFooter.access)") }
                         }
                         .listSectionSpacing(.compact)
                     }

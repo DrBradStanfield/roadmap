@@ -70,7 +70,7 @@ struct AlcoholQuestion {
 
 /// A suggestion's title and two lines; a tap opens everything the web shows:
 /// the full text, ingredients, guideline tags, the reason and the references.
-struct SuggestionRow: View {
+private struct SuggestionRow: View {
     let suggestion: Suggestion
     let showsIcon: Bool
     /// Shown as a Dismiss button under the text when set.
@@ -184,7 +184,7 @@ private struct USProductBlock: View {
 }
 
 /// The parts of a suggestion behind the tap. Links open in the browser.
-private struct SuggestionDetails: View {
+struct SuggestionDetails: View {
     let suggestion: Suggestion
 
     var body: some View {

@@ -1,9 +1,10 @@
 import SwiftUI
 
 /// PROTOTYPE (My health tab, docs/drafts/my-health-tab.md): the My health tab's topics, in
-/// Brad's order (2026-11-03): weight first, since "so much flows through" it.
+/// Brad's order (round 4): weight first, since "so much flows through" it; the full blood-test
+/// list near the end.
 enum HealthTopic: String, CaseIterable, Identifiable {
-    case weight, sleep, fitness, bloodPressure, bloodTests, screening, skin, supplements
+    case weight, sleep, fitness, bloodPressure, cholesterol, screening, skin, bloodTests, supplements
 
     var id: String { rawValue }
 
@@ -13,9 +14,11 @@ enum HealthTopic: String, CaseIterable, Identifiable {
         case .sleep: SectionTitle(title: "Sleep", symbol: "bed.double.fill", tint: .cyan)
         case .fitness: .fitness()
         case .bloodPressure: SectionTitle(title: "Blood pressure", symbol: "heart.fill", tint: .red)
-        case .bloodTests: .bloodTests()
+        // The plan's bloodwork icon (CategoryIcon), in the lipid cards' red.
+        case .cholesterol: SectionTitle(title: "Cholesterol", symbol: "drop.fill", tint: .red)
         case .screening: .screening("Cancer screening")
         case .skin: SectionTitle(title: "Skin", symbol: "sun.max.fill", tint: .orange)
+        case .bloodTests: .bloodTests()
         case .supplements: .supplements()
         }
     }
@@ -23,26 +26,29 @@ enum HealthTopic: String, CaseIterable, Identifiable {
 
 /// PROTOTYPE: the plan's cards split by topic. Swift only: health-core's cards, words and
 /// priorities are unchanged. A card whose suggestions fall in two topics becomes one card in
-/// each, badged with its own suggestions' highest priority. Within a topic the cards keep
-/// the plan's own order (urgent, attention, info, then skin and supplements).
+/// each, badged with its own suggestions' highest priority. Within a topic the cards go by
+/// priority (urgent, attention, info), the engine's order kept within each (Brad, round 4).
+/// Medicine suggestions are no cards: they sit behind their question's info button.
 struct TopicPlan {
     private(set) var cards: [HealthTopic: [PlanCard]] = [:]
     /// Who owns the products (US-61 AC7), under the supplement cards.
     private(set) var ownershipLine: String?
-    /// The weight-medicine step suggestions (`weight-med-*`): drawn in the Weight & Diabetes
-    /// Medications section in place of its intro, never as cards (Brad, round 3).
-    private(set) var weightMedicines: [Suggestion] = []
+    /// Every medicine suggestion (`weight-glp1`, `weight-med-*`, `med-*`), shown inside its
+    /// medicine question instead of as a card (Brad, round 4).
+    private(set) var medicines: [Suggestion] = []
 
     init(_ state: PlanState?) {
         guard case .planned(_, let sections, _) = state else { return }
         for card in sections.flatMap(\.cards) {
-            weightMedicines += card.suggestions.filter(Self.isWeightMedicine)
-            let byTopic = Dictionary(grouping: card.suggestions.filter { !Self.isWeightMedicine($0) }, by: Self.topic)
+            medicines += card.suggestions.filter(Self.isMedicine)
+            let byTopic = Dictionary(grouping: card.suggestions.filter { !Self.isMedicine($0) }, by: Self.topic)
             for topic in HealthTopic.allCases {
                 guard let suggestions = byTopic[topic] else { continue }
                 cards[topic, default: []].append(PlanCard(category: card.category, priority: Self.highest(suggestions), suggestions: suggestions))
             }
         }
+        for topic in cards.keys { cards[topic] = Self.byPriority(cards[topic] ?? []) }
+        cards[.weight] = Self.fibreUnderProtein(cards[.weight] ?? [])
         ownershipLine = sections.compactMap(\.ownershipLine).first
     }
 
@@ -53,25 +59,27 @@ struct TopicPlan {
         HealthTopic.allCases.lazy.compactMap { self[$0].first { $0.priority == "urgent" } }.first
     }
 
-    static func isWeightMedicine(_ suggestion: Suggestion) -> Bool { suggestion.id.hasPrefix("weight-med-") }
+    static func isMedicine(_ suggestion: Suggestion) -> Bool { suggestion.category == "medication" }
 
     /// The scroll id of a card on the tab.
     static func anchor(_ card: PlanCard) -> String { card.anchor }
 
-    /// By category first; medication and nutrition by suggestion (orchestrator, 2026-11-05).
+    /// By category first; nutrition and bloodwork by suggestion (orchestrator, rounds 1 to 4).
     static func topic(_ suggestion: Suggestion) -> HealthTopic {
         switch suggestion.category {
-        case "medication": suggestion.id.hasPrefix("weight-") ? .weight : .bloodTests
         case "nutrition":
             switch suggestion.id {
             case "low-salt", "high-potassium": .bloodPressure
-            case "lipid-diet", "trig-nutrition": .bloodTests
+            case "lipid-diet", "trig-nutrition": .cholesterol
             default: .weight
             }
         case "exercise": .fitness
         case "sleep": .sleep
         case "blood_pressure": .bloodPressure
-        case "bloodwork": suggestion.id.hasPrefix("hba1c-") ? .weight : .bloodTests
+        case "bloodwork":
+            if suggestion.id.hasPrefix("hba1c-") { .weight }
+            else if lipidPrefixes.contains(where: suggestion.id.hasPrefix) { .cholesterol }
+            else { .bloodTests }
         case "screening": .screening
         case "skin": .skin
         case "supplements": .supplements
@@ -79,9 +87,43 @@ struct TopicPlan {
         }
     }
 
+    /// The lipid cards' ids (suggestions.ts): ApoB, LDL, non-HDL, Lp(a), total cholesterol, HDL, triglycerides.
+    private static let lipidPrefixes = ["apob-", "ldl-", "non-hdl-", "lpa-", "total-chol-", "hdl-", "trig-"]
+
+    /// The medicine question a suggestion belongs beside, best first: its step's own question
+    /// (`med-statin-dose` to `statin_dose`), its escalation question, then the drug's own.
+    static func questionKeys(for suggestion: Suggestion) -> [String] {
+        var step = suggestion.id
+        for prefix in ["weight-med-", "weight-", "med-"] where step.hasPrefix(prefix) {
+            step = String(step.dropFirst(prefix.count))
+            break
+        }
+        let key = step.replacingOccurrences(of: "-", with: "_")
+        let drug = String(key.split(separator: "_").first ?? "")
+        return [key, "\(drug)_escalation", drug]
+    }
+
+    private static let priorities = ["urgent", "attention", "info"]
+
+    private static func rank(_ priority: String) -> Int { priorities.firstIndex(of: priority) ?? priorities.count }
+
     private static func highest(_ suggestions: [Suggestion]) -> String {
-        let order = ["urgent", "attention", "info"]
-        return suggestions.map(\.priority).min { (order.firstIndex(of: $0) ?? 3) < (order.firstIndex(of: $1) ?? 3) } ?? "info"
+        suggestions.map(\.priority).min { rank($0) < rank($1) } ?? "info"
+    }
+
+    /// Urgent, then attention, then info; a stable sort, so the engine's order holds within each.
+    private static func byPriority(_ cards: [PlanCard]) -> [PlanCard] {
+        cards.enumerated().sorted { (rank($0.element.priority), $0.offset) < (rank($1.element.priority), $1.offset) }.map(\.element)
+    }
+
+    /// The fibre card directly under the daily protein target (Brad, round 4).
+    private static func fibreUnderProtein(_ cards: [PlanCard]) -> [PlanCard] {
+        let isFibre = { (card: PlanCard) in card.suggestions.map(\.id) == ["fiber"] }
+        guard let fibre = cards.first(where: isFibre) else { return cards }
+        var rest = cards.filter { !isFibre($0) }
+        guard let protein = rest.firstIndex(where: { $0.suggestions.contains { $0.id == "protein-target" } }) else { return cards }
+        rest.insert(fibre, at: protein + 1)
+        return rest
     }
 }
 

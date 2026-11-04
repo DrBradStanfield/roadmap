@@ -16,21 +16,14 @@ struct FormSectionsList: View {
     var openMeasurement: (String) -> Void = { _ in }
     /// Guides by question key (US-58 AC5): a question with one gets an info button that opens it.
     var guides: MetricGuides?
-    /// PROTOTYPE (My health, round 3): suggestions drawn in place of the first section's intro,
-    /// each as the plan card draws it (title, text, and the reason and references behind a tap).
-    var inPlaceOfIntro: [Suggestion] = []
+    /// PROTOTYPE (My health, round 4): medicine suggestions, each shown in its question's info
+    /// sheet (TopicPlan.questionKeys); one with no question here is left out.
+    var suggestions: [Suggestion] = []
 
     var body: some View {
         ForEach(sections) { section in
             Section {
-                if inPlaceOfIntro.isEmpty || section.id != sections.first?.id {
-                    Text(section.intro).font(.subheadline).foregroundStyle(.secondary)
-                } else {
-                    ForEach(inPlaceOfIntro) { suggestion in
-                        SuggestionRow(suggestion: suggestion, showsIcon: false, dismiss: nil)
-                            .listRowInsets(EdgeInsets())
-                    }
-                }
+                Text(section.intro).font(.subheadline).foregroundStyle(.secondary)
                 ForEach(section.groups.filter(\.title.isEmpty)) { group in
                     rows(group)
                 }
@@ -53,8 +46,18 @@ struct FormSectionsList: View {
         ForEach(group.fields) { field in
             FormFieldRow(field: field, months: months, answer: { value in await answer(key(field), value) },
                          measurement: metric(field).flatMap(measurement), openMeasurement: { metric(field).map(openMeasurement) },
-                         guide: guides?[key(field)])
+                         guide: guides?[key(field)], suggestions: placed[key(field)] ?? [])
         }
+    }
+
+    /// Each suggestion beside the first of its questions that this list asks.
+    private var placed: [String: [Suggestion]] {
+        let asked = Set(sections.flatMap(\.groups).flatMap(\.fields).map(key))
+        var placed: [String: [Suggestion]] = [:]
+        for suggestion in suggestions {
+            if let key = TopicPlan.questionKeys(for: suggestion).first(where: asked.contains) { placed[key, default: []].append(suggestion) }
+        }
+        return placed
     }
 
     private func key(_ field: FormField) -> String {
