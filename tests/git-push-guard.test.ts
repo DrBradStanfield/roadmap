@@ -49,7 +49,10 @@ function runHook(cwd: string, command: string) {
 describe('git push guard, as .claude/settings.json runs it', () => {
   let scratch: string;
   beforeAll(() => {
-    scratch = mkdtempSync(join(tmpdir(), 'push-guard-'));
+    // The hook input holds the cwd. A folder named after a gate word would send every payload to the guard and hide
+    // a word missing from the settings gate, so the folder name holds none of them.
+    scratch = mkdtempSync(join(tmpdir(), 'hook-wiring-'));
+    expect(scratch).not.toMatch(/push|merge|refs\/heads\/main|updateRef/);
   });
   afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
@@ -71,6 +74,26 @@ describe('git push guard, as .claude/settings.json runs it', () => {
     expect(r.stderr).toBe('');
     expect(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision).toBe('deny');
     expect(runHook(scratch, 'gh pr merge 415 --merge --match-head-commit abc1234').stdout).toBe('');
+  });
+
+  // US-64 AC5: a write to main through `gh api` is refused. These commands hold neither "push" nor "merge", so the
+  // settings wiring must still send them to the guard (the shell test pipes straight into the guard and skips it).
+  it('reaches the guard for a gh api write to main, which holds no "push" or "merge" (US-64 AC5)', () => {
+    for (const cmd of [
+      'gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234',
+      'gh api --method PATCH -f sha=abc1234 repos/o/r/git/refs/heads/main',
+      'gh api repos/o/r/git/refs/heads/main --method=PATCH -f sha=abc1234',
+      "gh api graphql -f query='mutation { updateRef(input: {}) { clientMutationId } }'",
+      "gh api graphql -f query='mutation M { updateRef(input: {}) { clientMutationId } }'",
+      "gh api graphql -f query='mutation { updateRefs(input: {}) { clientMutationId } }'",
+    ]) {
+      const r = runHook(scratch, cmd);
+      expect(r.stderr, cmd).toBe('');
+      expect(r.stdout, cmd).not.toBe('');
+      expect(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision, cmd).toBe('deny');
+    }
+    // A read of main's ref is still allowed.
+    expect(runHook(scratch, 'gh api repos/o/r/git/refs/heads/main').stdout).toBe('');
   });
 
   it('settings.json allows exactly the reviewed merge form and denies the four flags (US-64 AC5)', () => {
