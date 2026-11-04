@@ -33,7 +33,8 @@ on:
         default: all
       pages_sha:
         # auto-ship passes the commit it merged (US-46 AC15): main may have
-        # moved on by the time pages-smoke runs. Empty = main's tip.
+        # moved on by the time pages-smoke runs, and then the tip's own Pages
+        # run is waited on too. Empty = main's tip only.
         description: "Commit whose Pages run the Pages smoke waits for (empty = main's tip)"
         type: string
         default: ""
@@ -139,34 +140,52 @@ jobs:
           # US-46 AC15: auto-ship names the commit it merged and has just
           # dispatched its Pages run, which takes a few seconds to list, so look
           # for up to 2 minutes. A push's own Pages run lists at once: one look.
-          SHA="${PAGES_SHA:-$(git rev-parse HEAD)}"
+          # The deploy job ships main's tip, so when main has moved on past the
+          # named commit, the tip's own Pages run is waited on too (one look).
+          HEAD_SHA=$(git rev-parse HEAD)
+          SHA="${PAGES_SHA:-${HEAD_SHA}}"
           [[ "${SHA}" =~ ^[0-9a-f]{40}$ ]] \
             || { echo "::error::pages_sha must be a full 40-character commit sha."; exit 1; }
+          # find_run SHA LOOKS: run_id = the newest pages.yml run for SHA, or empty.
+          find_run() {
+            for i in $(seq 1 "$2"); do
+              run_id=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/pages.yml/runs?head_sha=$1" \
+                --jq '.workflow_runs[0].id // empty')
+              [ -n "${run_id}" ] || [ "${i}" -eq "$2" ] || { sleep 10; continue; }
+              break
+            done
+          }
+          # wait_run ID: up to 25 minutes for the run to finish; fails the step unless it succeeded.
+          wait_run() {
+            for i in $(seq 1 150); do
+              status=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/$1" --jq '.status')
+              conclusion=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/$1" --jq '.conclusion // ""')
+              if [ "${status}" = "completed" ]; then
+                [ "${conclusion}" = "success" ] || { echo "::error::Pages deploy failed (${conclusion})"; exit 1; }
+                echo "Pages deploy succeeded."; return 0
+              fi
+              sleep 10
+            done
+            echo "::error::Timed out waiting for the Pages deploy."; exit 1
+          }
           tries=1; [ -z "${PAGES_SHA:-}" ] || tries=12
-          for i in $(seq 1 "${tries}"); do
-            run_id=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/pages.yml/runs?head_sha=${SHA}" \
-              --jq '.workflow_runs[0].id // empty')
-            [ -n "${run_id}" ] || [ "${i}" -eq "${tries}" ] || { sleep 10; continue; }
-            break
-          done
-          if [ -z "${run_id}" ] && [ -n "${PAGES_SHA:-}" ]; then
+          find_run "${SHA}" "${tries}"
+          if [ -n "${run_id}" ]; then
+            wait_run "${run_id}"
+          elif [ -n "${PAGES_SHA:-}" ]; then
             echo "::warning::No pages.yml run for ${SHA} after 12 looks (about 2 minutes) — smoking the existing Pages site."
-            exit 0
-          fi
-          if [ -z "${run_id}" ]; then
+          else
             echo "No pages.yml run for ${SHA} (server-only change) — smoking the existing Pages site."
-            exit 0
           fi
-          for i in $(seq 1 150); do
-            status=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" --jq '.status')
-            conclusion=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" --jq '.conclusion // ""')
-            if [ "${status}" = "completed" ]; then
-              [ "${conclusion}" = "success" ] || { echo "::error::Pages deploy failed (${conclusion})"; exit 1; }
-              echo "Pages deploy succeeded."; exit 0
+          if [ "${HEAD_SHA}" != "${SHA}" ]; then
+            find_run "${HEAD_SHA}" 1
+            if [ -n "${run_id}" ]; then
+              echo "main has moved on to ${HEAD_SHA}, which the deploy ships: waiting for its Pages run too."
+              wait_run "${run_id}"
+            else
+              echo "main has moved on to ${HEAD_SHA}; no pages.yml run for it (server-only change)."
             fi
-            sleep 10
-          done
-          echo "::error::Timed out waiting for the Pages deploy."; exit 1
+          fi
       - uses: actions/setup-node@v5
         with:
           node-version: 22

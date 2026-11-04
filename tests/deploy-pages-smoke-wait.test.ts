@@ -32,7 +32,8 @@ function stepScript(yaml: string, name: string): string {
 const M = "1".repeat(40); // the commit auto-ship merged
 const N = "2".repeat(40); // main's tip when pages-smoke starts (a later server-only commit)
 
-// Scenario: runs[sha] = { id, appearsOn (1-based list call it first shows on), conclusion }.
+// Scenario: runs[sha] = { id, appearsOn (1-based list call for that sha it first shows on), conclusion
+// ("running" = still in progress on every poll) }.
 const FAKE_GH = `#!/usr/bin/env bash
 echo "$*" >> "$LOG"
 [ "$1" = api ] || exit 0
@@ -40,11 +41,13 @@ p=$2; jqe=""; shift 2
 while [ $# -gt 0 ]; do [ "$1" = --jq ] && jqe=$2; shift; done
 case "$p" in
   */actions/workflows/pages.yml/runs\\?head_sha=*) sha=\${p##*head_sha=}
-    n=$(( $(cat "$LOG.lists" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$LOG.lists"
+    n=$(( $(cat "$LOG.lists.$sha" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$LOG.lists.$sha"
     jq -c --arg s "$sha" --argjson n "$n" \\
       '{workflow_runs: [(.runs[$s] // empty) | select(.appearsOn <= $n) | {id}]}' "$SCEN" | jq -r "$jqe";;
   */actions/runs/*) id=\${p##*/}
-    jq -c --argjson id "$id" '[.runs[] | select(.id == $id)][0] | {status: "completed", conclusion}' "$SCEN" | jq -r "$jqe";;
+    jq -c --argjson id "$id" '[.runs[] | select(.id == $id)][0]
+      | if .conclusion == "running" then {status: "in_progress", conclusion: null} else {status: "completed", conclusion} end' \\
+      "$SCEN" | jq -r "$jqe";;
   *) echo "unexpected: $p" >&2; exit 9;;
 esac
 `;
@@ -112,10 +115,57 @@ describe("pages-smoke waits for the merged commit's Pages run (US-46 AC15)", { t
   it("no Pages run for the named commit after 12 lookups: it warns and smokes the existing site", () => {
     const r = run({ pagesSha: M, runs: { [M]: { id: 5, appearsOn: 13, conclusion: "failure" } } });
     expect(r.code).toBe(0);
-    expect(r.lists).toEqual(Array(12).fill(listFor(M)));
+    // Then one look at main's tip, which has no Pages run of its own here.
+    expect(r.lists).toEqual([...Array(12).fill(listFor(M)), listFor(N)]);
     expect(r.sleeps).toEqual(Array(11).fill("10")); // no sleep after the last look
     expect(r.out).toContain(`::warning::No pages.yml run for ${M} after 12 looks (about 2 minutes)`);
     expect(r.out).toContain("smoking the existing Pages site");
+  });
+
+  // Adversary B1 (round 2): the deploy job ships main's tip, so a commit that
+  // landed after the merge must not reach production without its own Pages run.
+  it("main moved on to a commit whose own Pages run failed: the step fails", () => {
+    const r = run({ pagesSha: M, runs: { [M]: { id: 5, appearsOn: 1, conclusion: "success" },
+      [N]: { id: 6, appearsOn: 1, conclusion: "failure" } } });
+    expect(r.code).toBe(1);
+    expect(r.out).toContain("Pages deploy failed (failure)");
+    expect(r.out).toContain(`main has moved on to ${N}`);
+    expect(r.lists).toEqual([listFor(M), listFor(N)]);
+    expect(r.calls).toContain("api repos/o/r/actions/runs/5 --jq .conclusion // \"\"");
+    expect(r.calls).toContain("api repos/o/r/actions/runs/6 --jq .conclusion // \"\"");
+  });
+
+  it("main moved on: main's tip is waited on even when the merged commit's run never listed", () => {
+    const r = run({ pagesSha: M, runs: { [N]: { id: 6, appearsOn: 1, conclusion: "cancelled" } } });
+    expect(r.code).toBe(1);
+    expect(r.out).toContain(`::warning::No pages.yml run for ${M} after 12 looks`);
+    expect(r.out).toContain("Pages deploy failed (cancelled)");
+    expect(r.lists).toEqual([...Array(12).fill(listFor(M)), listFor(N)]);
+  });
+
+  it("main moved on: both Pages runs succeed, so the smoke goes ahead", () => {
+    const r = run({ pagesSha: M, runs: { [M]: { id: 5, appearsOn: 1, conclusion: "success" },
+      [N]: { id: 6, appearsOn: 1, conclusion: "success" } } });
+    expect(r.code).toBe(0);
+    expect(r.out.match(/Pages deploy succeeded\./g)).toHaveLength(2);
+    expect(r.calls).toContain("api repos/o/r/actions/runs/6 --jq .status");
+  });
+
+  it("main moved on to a commit with no Pages run listed: one look at it, then the smoke goes ahead", () => {
+    // N's run listing on its second look is not seen: main's tip gets one look, as the manual path does.
+    const r = run({ pagesSha: M, runs: { [M]: { id: 5, appearsOn: 1, conclusion: "success" },
+      [N]: { id: 6, appearsOn: 2, conclusion: "failure" } } });
+    expect(r.code).toBe(0);
+    expect(r.lists).toEqual([listFor(M), listFor(N)]);
+    expect(r.sleeps).toEqual([]);
+    expect(r.out).toContain(`main has moved on to ${N}; no pages.yml run for it (server-only change)`);
+  });
+
+  it("main has not moved on (pages_sha is main's tip): one wait, no second lookup", () => {
+    const r = run({ pagesSha: N, runs: { [N]: { id: 6, appearsOn: 1, conclusion: "success" } } });
+    expect(r.code).toBe(0);
+    expect(r.lists).toEqual([listFor(N)]);
+    expect(r.out).not.toContain("main has moved on");
   });
 
   it("a manual deploy (no pages_sha) still looks up main's tip once, as before", () => {
@@ -125,10 +175,20 @@ describe("pages-smoke waits for the merged commit's Pages run (US-46 AC15)", { t
       expect(none.lists).toEqual([listFor(N)]);
       expect(none.out).toContain(`No pages.yml run for ${N} (server-only change)`);
       expect(none.sleeps).toEqual([]);
+      expect(none.out).not.toContain("main has moved on");
       const found = run({ pagesSha, runs: { [N]: { id: 6, appearsOn: 1, conclusion: "cancelled" } } });
       expect(found.code).toBe(1);
       expect(found.out).toContain("Pages deploy failed (cancelled)");
     }
+  });
+
+  it("a Pages run still running after 150 polls, 10 s apart, fails the step", () => {
+    const r = run({ pagesSha: M, runs: { [M]: { id: 5, appearsOn: 1, conclusion: "running" } } });
+    expect(r.code).toBe(1);
+    expect(r.out).toContain("::error::Timed out waiting for the Pages deploy.");
+    expect(r.calls.filter((c) => c === "api repos/o/r/actions/runs/5 --jq .status")).toHaveLength(150);
+    expect(r.sleeps).toEqual(Array(150).fill("10"));
+    expect(r.lists).toEqual([listFor(M)]);
   });
 
   it("refuses a pages_sha that is not a full lowercase commit sha, before any lookup", () => {
