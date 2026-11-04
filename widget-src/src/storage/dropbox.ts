@@ -24,6 +24,7 @@ import {
   dropboxUploadDocument,
   dropboxWrite,
   DROPBOX_TOKEN_URL,
+  fetchOrFail,
   ROADMAP_FILE_NAME,
   sleepUntilAborted,
   catchUpAfterFailure,
@@ -317,10 +318,15 @@ export class DropboxAdapter implements StorageAdapter {
       refresh_token: startedFrom,
       client_id: this.config.clientId,
     });
-    const res = await fetch(TOKEN_URL, {
+    // Bounded like Drive's refresh (US-09 AC13h): every read and save waits on it.
+    const res = await fetchOrFail('Dropbox', TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
+      timeoutMs: 5000,
+    }).catch((error: unknown) => {
+      this.dropIfGrantMoved(startedFrom);
+      throw error;
     });
     if (!res.ok) {
       this.dropIfGrantMoved(startedFrom);
