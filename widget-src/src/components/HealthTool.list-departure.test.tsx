@@ -128,6 +128,16 @@ describe('US-06 AC13: a list change made just before the tab goes away is saved'
     expect(onDevice().supplements.find(s => s.supplementKey === 'custom_test_supplement')?.status).toBe('stopped');
   });
 
+  it('a supplement stopped while its dose save waits stays stopped when the page goes', async () => {
+    const view = await page('.supplement-dose');
+    fireEvent.change(view.container.querySelector('.supplement-dose')!, { target: { value: '50' } });
+    fireEvent.click(view.container.querySelector('.supplement-remove')!); // within the 300 ms
+    await act(async () => { await flushRoadmapStore(); });
+    act(() => leave.pagehide());
+    await act(async () => { await flushRoadmapStore(); });
+    expect(onDevice().supplements.find(s => s.supplementKey === 'custom_test_supplement')?.status).toBe('stopped');
+  });
+
   it('an unmounted page stops listening: a later hide writes nothing from it', async () => {
     const view = await page('#glp1-dose');
     fireEvent.change(view.container.querySelector('#glp1-dose')!, { target: { value: '1.7' } });
