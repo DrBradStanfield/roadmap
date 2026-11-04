@@ -17,26 +17,34 @@
 import type { ChatHistoryStore } from '../storage/chat-history-store';
 
 let factory: (() => Promise<ChatHistoryStore>) | null = null;
+/** The page's one opened store, and what callers are served: it, or its re-read. */
+let opened: Promise<ChatHistoryStore | null> | null = null;
 let store: Promise<ChatHistoryStore | null> | null = null;
-/** The record's erase identity, and the one the cached store was read at. */
+/** The record's erase identity, and the one the store was read at (null: read again). */
 let eraseIdentity = (): string => '';
-let readAt = '';
+let readAt: string | null = '';
 
 export function setChatHistoryFactory(f: (() => Promise<ChatHistoryStore>) | null, identity = (): string => ''): void {
   factory = f;
-  store = null;
+  opened = store = null;
   eraseIdentity = identity;
 }
 
 /**
  * The cached store, read again first when the record's erase identity moved
  * since it was read (US-11 AC2g): after another device's erase it still holds
- * the erased conversations live. A failed re-read resolves null, as a failed
- * open does, so no list from before the erase is served.
+ * the erased conversations live. A failed re-read resolves null, so no list
+ * from before the erase is served, but it is not kept: the next caller reads
+ * again.
  */
 function cached(): Promise<ChatHistoryStore | null> | null {
   const now = eraseIdentity();
-  if (store && now !== readAt) store = store.then((s) => s && s.reload().then(() => s, () => null));
+  if (opened && now !== readAt) {
+    store = opened.then((s) => s && s.reload().then(() => s, () => {
+      readAt = null;
+      return null;
+    }));
+  }
   readAt = now;
   return store;
 }
@@ -45,7 +53,7 @@ function cached(): Promise<ChatHistoryStore | null> | null {
  *  the cloud read failed). Never rejects. */
 export function getChatHistory(): Promise<ChatHistoryStore | null> {
   if (!factory) return Promise.resolve(null);
-  return cached() ?? (store = factory().catch(() => null));
+  return cached() ?? (opened = store = factory().catch(() => null));
 }
 
 /**
@@ -61,6 +69,6 @@ export async function openChatHistory(): Promise<ChatHistoryStore | null> {
   const open = await cached();
   if (open) return open;
   const opening = factory();
-  store = opening.catch(() => null);
+  opened = store = opening.catch(() => null);
   return opening;
 }

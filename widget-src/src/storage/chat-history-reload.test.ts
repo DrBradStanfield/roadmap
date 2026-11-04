@@ -83,6 +83,19 @@ describe('the page\'s chat history follows the record\'s erase identity (US-11 A
     expect(ids(opened)).toEqual([]);
   });
 
+  it('a store the erase\'s open opened is read again too once the identity moves', async () => {
+    const cloud = new MemoryCloud();
+    await savedConversation(cloud);
+    const identity = register(cloud);
+    const opened = await openChatHistory(); // the first to open it this page
+    expect(ids(opened)).toEqual(['c1']);
+    await otherDeviceErases(cloud);
+    identity.now = 'erase-2';
+    const reread = await getChatHistory();
+    expect(reread).toBe(opened);
+    expect(ids(reread)).toEqual([]);
+  });
+
   it('a re-read that fails serves no list; the erase\'s open tries again', async () => {
     const cloud = new MemoryCloud();
     await savedConversation(cloud);
@@ -93,5 +106,22 @@ describe('the page\'s chat history follows the record\'s erase identity (US-11 A
     vi.spyOn(MemoryAdapter.prototype, 'read').mockRejectedValueOnce(new Error('Synthetic: the cloud did not answer'));
     expect(await getChatHistory()).toBeNull();
     expect(ids(await openChatHistory())).toEqual([]);
+  });
+
+  it('a re-read that fails is not kept: once the cloud answers, the next caller gets the merged copy and new exchanges are saved', async () => {
+    const cloud = new MemoryCloud();
+    await savedConversation(cloud);
+    const identity = register(cloud);
+    expect(ids(await getChatHistory())).toEqual(['c1']);
+    await otherDeviceErases(cloud);
+    identity.now = 'erase-2';
+    vi.spyOn(MemoryAdapter.prototype, 'read').mockRejectedValueOnce(new Error('Synthetic: the cloud did not answer'));
+    expect(await getChatHistory()).toBeNull(); // no list from before the erase
+    const next = await getChatHistory(); // the cloud answers again: read again, no page reload
+    expect(ids(next)).toEqual([]);
+    await next!.recordExchange({ conversationId: 'c2', isNew: true, userText: 'my bp is 128/82', assistantText: 'ok' });
+    const stored = (await new MemoryAdapter(cloud).read(CHAT_FILE)).body as { conversations: { id: string; deleted?: boolean }[] };
+    expect(stored.conversations.filter((c) => !c.deleted).map((c) => c.id)).toEqual(['c2']);
+    expect(await getChatHistory()).toBe(next); // read once; the same instance after that
   });
 });
