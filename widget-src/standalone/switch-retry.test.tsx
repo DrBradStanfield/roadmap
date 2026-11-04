@@ -269,10 +269,16 @@ describe('US-09 AC2g: what the page saved between the two tries reaches the new 
     await data.flushRoadmapStore();
     expect(weightsIn(dropboxBody())).toEqual({ '2026-01-01': 80, '2026-01-02': 79 });
 
+    await new Promise((done) => setTimeout(done, 5));
+    const retryStarted = new Date().toISOString();
     await connectGitHub(view, GOOD_TOKEN);
     await vi.waitFor(() => expect(reload).toHaveBeenCalledTimes(1), { timeout: 10_000 });
     expect(weightsIn(githubBody())).toEqual({ '2026-01-01': 80, '2026-01-02': 79 });
-    expect(weightsIn(localStorage.getItem('health_roadmap_file_v2') ?? undefined)).toEqual({ '2026-01-01': 80, '2026-01-02': 79 });
+    const device = JSON.parse(localStorage.getItem('health_roadmap_file_v2') ?? '{}') as { meta: { updatedAt: string; lastDeviceId: string } };
+    expect(weightsIn(JSON.stringify(device))).toEqual({ '2026-01-01': 80, '2026-01-02': 79 });
+    // The retry wrote that device copy itself: as this device, at its own time.
+    expect(device.meta.updatedAt >= retryStarted).toBe(true);
+    expect(device.meta.lastDeviceId).toBe(localStorage.getItem('health_roadmap_device_id'));
     expect(localStorage.getItem(DROPBOX_TOKENS)).toBeNull();
   });
 
