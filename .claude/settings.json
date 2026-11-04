@@ -22,7 +22,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-push-guard.cjs\""
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-push-guard.cjs\"",
+            "onFailure": "block"
           },
           {
             "type": "command",

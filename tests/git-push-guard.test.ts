@@ -12,7 +12,7 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -129,7 +129,7 @@ describe('git push guard, as .claude/settings.json runs it', () => {
       'gh api -X PATCH "repos/{owner}/{repo}/git/refs/heads/{branch}" -f sha=abc1234',
       'gh api -X PUT repos/o/r/contents/X -F branch={branch} -f message=m -f content=eA==',
       'echo repos/o/r/git/refs/heads/main | xargs gh api -X PATCH -f sha=abc1234',
-      // ANSI-C quoting is not parsed, so a command in it is refused rather than passed.
+      // ANSI-C text is decoded as bash decodes it, so the command in it is read.
       "bash -c $'gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234'",
       // An inner string that does not parse is refused when the command holds `gh api`.
       `bash -c "echo it's; gh api repos/o/r/pulls/1"`,
@@ -261,7 +261,8 @@ describe('git push guard, as .claude/settings.json runs it', () => {
       'gh api GraphQL --input q.json',
       'gh api graphql -f "$K=@q.graphql"',
       'gh api -X PUT repos/o/r/contents/X -f branch=dev "-$X"',
-      "bash -c $'gi''t pu''sh origin main'",
+      // ANSI-C text is decoded (round 4), so this is `git push origin HEAD:main`, refused as it is when typed plainly.
+      "bash -c $'gi''t pu''sh origin HEAD:main'",
       // B3: one bad escape does not stop the good ones being decoded.
       "gh api -X PATCH 'repos/o/r/git/refs/heads/%6Dain?x=%FF' -f sha=abc1234",
       "gh api -X PUT 'repos/o/r/%63ontents/README.md?x=%FF' -f message=m -f content=eA==",
@@ -362,21 +363,213 @@ describe('git push guard, as .claude/settings.json runs it', () => {
     }
   });
 
+  // US-64 AC5, round 4 (adversary at ac0e6655): the guard pairs quotes as bash does (top-level comments, ANSI-C and
+  // locale strings, heredoc bodies), so a quote it reads differently cannot hide a command inside echo text or a
+  // message; a word that may still differ from bash's reading is read as commands. Multi-word expansions are unknown
+  // arguments, and quoting inside the command word is decoded.
+  it('reads comments, ANSI-C strings, heredocs and multi-word expansions as bash does (US-64 AC5)', () => {
+    const PATCH_MAIN = 'gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234';
+    const MERGE = 'gh api -X PUT repos/o/r/pulls/1/merge';
+    for (const cmd of [
+      // B7: a quote inside a comment, an escaped quote inside $'...', and a quote inside a quoted heredoc's body.
+      `echo x # '\n${PATCH_MAIN}\necho y # '`,
+      `echo x # "\n${PATCH_MAIN}\necho y # "`,
+      `echo x #'\n${PATCH_MAIN}\necho y #'`,
+      `grep -n x f # '\n${PATCH_MAIN}\n# '`,
+      `echo $'a\\'' ; ${PATCH_MAIN} ; # '`,
+      `git commit -m $'a\\'' ; ${PATCH_MAIN} ; # '`,
+      `gh pr comment 1 --body $'a\\'' ; ${PATCH_MAIN} ; # '`,
+      `cat <<'EOF'\necho '\nEOF\n${PATCH_MAIN}\n# '`,
+      `cat <<'EOF'\necho '\nEOF\n${PATCH_MAIN}\nEOF2='`,
+      `cat <<-"EOF"\n\techo '\n\tEOF\n${PATCH_MAIN}\n# '`,
+      `cat <<EOF; echo x\nbody '\nEOF\n${PATCH_MAIN}\n# '`,
+      `echo x # '\ngh repo sync o/r --branch main --force\necho y # '`,
+      // The merge flags main already refused, behind the same trick (it passed at ac0e6655).
+      `echo x # '\ngh pr merge 1 --admin --squash\necho y # '`,
+      // A # inside a word is not a comment.
+      'gh api -X PATCH repos/o/r/git/refs/heads/main#x -f sha=abc1234',
+      'true # ok\n' + PATCH_MAIN,
+      `echo a#; ${PATCH_MAIN}`,
+      `echo x # c\n${PATCH_MAIN}`,
+      // An unterminated $'...' is unparseable.
+      `echo $'x\\'; ${PATCH_MAIN}`,
+      // Nested strings keep no comment rule: the quote opens, and the text it swallows is read as commands.
+      `bash -c "echo x # '\n${PATCH_MAIN}\necho y # '"`,
+      // ...because the text may not be shell: in JS, #x is a private field.
+      `node -e "class A { #x = require('child_process').execSync('${PATCH_MAIN}') }; new A()"`,
+      // The decoded text is what the inner shell parses: a decoded \n separates commands, and a quote left open there
+      // is unparseable.
+      `bash -c $'echo x\\n${PATCH_MAIN}'`,
+      `bash -c $'echo it\\'s; gh api repos/o/r/pulls/1'`,
+      // An outer string's $M is expanded before the inner shell reads $'...' or a heredoc body, and an unquoted
+      // heredoc expands $M inside single quotes: the query is hidden.
+      `bash -c "gh api graphql -f query=$'mutation { $M }'"`,
+      `bash <<EOF\ngh api graphql -f query='mutation { $M }'\nEOF`,
+      `bash -c "bash <<'EOF'\ngh api graphql -f query='mutation { $M }'\nEOF"`,
+      // echo text or a message holding a newline, ; & | ( or ) is read as commands, even where bash would not run it.
+      `echo 'a\n${PATCH_MAIN}'`,
+      `echo 'a; ${PATCH_MAIN}'`,
+      `echo 'a && ${PATCH_MAIN}'`,
+      `echo '(${PATCH_MAIN}'`,
+      `echo '${PATCH_MAIN})'`,
+      `git commit -m "a\n${MERGE}"`,
+      `gh pr create --title t --body 'x | ${MERGE}'`,
+      // bash 3.2 ends the $( at an unbalanced ) in a quoted heredoc body and runs a later $(...) or backtick (checked
+      // with /bin/bash 3.2 for the first three, `# (` and `$((1))`). After a quote, backslash, backtick, # or ${ the
+      // count no longer trusts a ( (bash skips one in a comment), so the rest are read as commands too, though bash
+      // 3.2 does not run `${x/(/}`'s.
+      `git commit -m "$(cat <<'EOF'\na) $(${MERGE})\nEOF\n)"`,
+      `git commit -m "$(cat <<'EOF'\n(a) b) \`${MERGE}\`\nEOF\n)"`,
+      `git commit -m "$(cat <<'EOF'\n'(' a) \`${MERGE}\`\nEOF\n)"`,
+      `git commit -m "$(cat <<'EOF'\n\${x/(/} a) \`${MERGE}\`\nEOF\n)"`,
+      `git commit -m "$(cat <<'EOF'\n# (\na) \`${MERGE}\`\nEOF\n)"`,
+      `git commit -m "$(cat <<'EOF'\n$((1)) a) \`${MERGE}\`\nEOF\n)"`,
+      `git commit -m "$(cat <<'EOF'\n\\\\( a) \`${MERGE}\`\nEOF\n)"`,
+      `git commit -m "$(cat <<'EOF'\n\`x\` ( a) \`${MERGE}\`\nEOF\n)"`,
+      // B8: expansions that become several words inside double quotes.
+      'set -- repos/o/r/git/refs/heads/main -X PATCH -f sha=abc1234; gh api "${@}"',
+      'set -- repos/o/r/git/refs/heads/main -X PATCH -f sha=abc1234; gh api "${@:1}"',
+      'x=@; set -- repos/o/r/git/refs/heads/main -X PATCH -f sha=abc1234; gh api "${!x}"',
+      'A=(repos/o/r/git/refs/heads/main -X PATCH -f sha=abc1234); x="A[@]"; gh api "${!x}"',
+      'gh api "${ARGS_WITH_A_LONG_NAME_PAST_SIXTY_FOUR_CHARACTERS_OF_TEXT_ABCDEFGH[@]}"',
+      'gh api "${(@)A}"',
+      'gh api "${=A}"',
+      'gh api "$=A"',
+      'gh api "$A[@]"',
+      'gh api repos/o/r/git/refs/heads/main "${x:-${A[@]}}"',
+      'gh api repos/o/r/git/refs/heads/main --jq "${A[@]}"',
+      // B9: ANSI-C and locale quoting in the command and subcommand words.
+      `gh $'api' -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234`,
+      'gh $"api" -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234',
+      `gh $'\\x61pi' -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234`,
+      `gh $'\\141pi' -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234`,
+      `gh $'\\u0061pi' -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234`,
+      `gh $'\\U00000061pi' -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234`,
+      `$'gh' api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234`,
+      `gh a$'p'i -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234`,
+      `gh $'api\\0x' -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234`,
+      `gh $'api\\c@x' -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234`,
+      `gh $'repo' sync o/r --branch main --force`,
+      `git $'push' origin HEAD:main`,
+      `gh $'pr' merge 1 --squash`,
+      `gh pr merge 1 --merge --match-head-commit abc1234 $'--\\x61dmin'`,
+      `gh api -X PATCH repos/o/r/git/refs/heads/$'\\x6d'ain -f sha=abc1234`,
+      // A string led by a variable is not read, it is refused: here the variable may be the command.
+      'bash -c "${GH:-gh} api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234"',
+      // R6: zsh's =gh runs gh.
+      `=gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234`,
+      '=git push origin HEAD:main',
+    ]) {
+      const r = runHook(scratch, cmd);
+      expect(r.stderr, cmd).toBe('');
+      expect(r.stdout, cmd).not.toBe('');
+      expect(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision, cmd).toBe('deny');
+    }
+    for (const cmd of [
+      // R9: a comment is not read, apostrophe or not.
+      "gh api repos/o/r/pulls/805 --jq .head.sha  # PR's head",
+      "# check the PR's head sha\ngh api repos/o/r/pulls/805 --jq .head.sha",
+      "gh api graphql -f query='{ viewer { login } }' # it's a read",
+      `true # ${PATCH_MAIN}`,
+      `x=1;# ${PATCH_MAIN}`,
+      `ls # \`${MERGE}\``,
+      // A heredoc ends at its delimiter: an apostrophe in its text no longer hides the commands after it.
+      "cat > n.md <<'EOF'\nIt's done.\nEOF\ngh api repos/o/r/pulls/1",
+      'cat > n.md <<EOF\nIt\'s $HOME\nEOF\ngh api repos/o/r/pulls/1',
+      "cat <<'A' <<'B'\nit's\nA\nwon't\nB\ngh api repos/o/r/pulls/1",
+      "cat <<-'EOF'\n\tit's\n\tEOF\ngh api repos/o/r/pulls/1",
+      "cat <<'EOF'\nx\nEOF\necho ok\n# it's\ngh api repos/o/r/pulls/1",
+      "cat <<'EOF'; # it's\ngh api docs\nEOF\ngh api repos/o/r/pulls/1",
+      "cat <<<x\n# it's\ngh api repos/o/r/pulls/1",
+      // A quoted delimiter keeps the body literal: $n is GraphQL's own.
+      "bash <<'EOF'\ngh api graphql -f query='query($n: Int!) { viewer { login } }' -F n=1\nEOF",
+      // A < redirect and a # inside a word are not globs.
+      'gh api repos/o/r/contents/README.md --jq .sha < /dev/null',
+      'gh api repos/o/r/contents/README.md#L1 --jq .sha',
+      // ANSI-C and locale strings are read, not refused.
+      `gh api $'repos/o/r/pulls/1'`,
+      `bash -c $'gh api repos/o/r/pulls/1'`,
+      'gh api $"repos/o/r/pulls/1"',
+      `echo $'it\\'s'`,
+      `gh api repos/o/r/pulls/1 --jq $'.title + " it\\'s"'`,
+      `echo $'\\U00110000'`,
+      // A quoted heredoc message with balanced parentheses before its backticks stays text.
+      `git commit -m "$(cat <<'EOF'\nFix (US-64): \`${PATCH_MAIN}\` is refused\nEOF\n)"`,
+      // One-line echo text and messages stay data.
+      `echo "${PATCH_MAIN}"`,
+      `git commit -m "Refuse ${MERGE}"`,
+      // A quoted ${A[*]} is one word, here an option's value.
+      'gh api repos/o/r/git/refs/heads/main --jq "${A[*]}"',
+    ]) {
+      expect(runHook(scratch, cmd).stdout, cmd).toBe('');
+    }
+  });
+
+  // US-64 AC5, round 4 (adversary at ac0e6655, B10): a guard that crashed exited 1, which Claude Code reads as "go
+  // ahead", and a guard still running at Claude Code's hook timeout lets the call through. Every error now refuses,
+  // the guard refuses once its own 60 s budget is spent, and settings.json blocks the call if the hook fails anyway.
+  it('refuses when it crashes or runs out of time, never lets the command run (US-64 AC5)', () => {
+    const PATCH_MAIN = 'gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234';
+    const run = (command: unknown, env: Record<string, string> = {}, raw?: string) => spawnSync('bash', ['-c', settingsHookCommand()], {
+      input: raw ?? JSON.stringify({ cwd: scratch, tool_input: { command } }), encoding: 'utf8', timeout: 60_000,
+      maxBuffer: 1 << 26, env: { ...GIT_ENV, CLAUDE_PROJECT_DIR: ROOT, ...env },
+    });
+    const denied = (r: ReturnType<typeof run>) => r.status === 0 && JSON.parse(r.stdout || '{}').hookSpecificOutput?.permissionDecision === 'deny';
+    // Shapes that overflowed the stack (one string holding over 125k commands).
+    for (const cmd of [
+      `bash -c '${':\n'.repeat(140_000)}${PATCH_MAIN}'`,
+      `echo "${'`:`'.repeat(130_000)}"; ${PATCH_MAIN}`,
+      `X="${':;'.repeat(130_000)} ${PATCH_MAIN}"; eval "$X"`,
+    ]) {
+      const r = run(cmd);
+      expect(r.stderr, cmd.slice(-80)).toBe('');
+      expect(denied(r), cmd.slice(-80)).toBe(true);
+    }
+    // Any error refuses: input that is not JSON, or a command that is not a string.
+    for (const r of [run(null, {}, 'not json'), run(['gh', 'api'])]) {
+      expect(denied(r)).toBe(true);
+      expect(JSON.parse(r.stdout).hookSpecificOutput.permissionDecisionReason).toMatch(/^Push guard failed/);
+    }
+    // Past its budget it refuses. PUSH_GUARD_BUDGET_MS can only lower the 60 s budget.
+    const late = run('git push origin claude/x', { PUSH_GUARD_BUDGET_MS: '1' });
+    expect(denied(late)).toBe(true);
+    expect(JSON.parse(late.stdout).hookSpecificOutput.permissionDecisionReason).toMatch(/ran out of time/);
+    expect(denied(run('gh api repos/o/r/pulls/1', { PUSH_GUARD_BUDGET_MS: '-1' }))).toBe(true); // spent before the first check
+    expect(run('git push origin claude/x', { PUSH_GUARD_BUDGET_MS: '600000' }).stdout).toBe('');
+    // A git call that hangs is cut off at the budget, and the guard refuses (here the fetch for a plain push's
+    // behind-main check, the last check, whose own failure lets the push go ahead: see the next test).
+    const bin = mkdtempSync(join(tmpdir(), 'slow-git-'));
+    const realGit = spawnSync('bash', ['-c', 'command -v git'], { encoding: 'utf8' }).stdout.trim();
+    writeFileSync(join(bin, 'git'), `#!/bin/bash\ncase " $* " in *" fetch "*) exec sleep 30;; esac\nexec ${realGit} "$@"\n`);
+    chmodSync(join(bin, 'git'), 0o755);
+    const t0 = Date.now();
+    const slow = run('git push', { PATH: `${bin}:${process.env.PATH}`, PUSH_GUARD_BUDGET_MS: '4000' });
+    expect(denied(slow)).toBe(true);
+    expect(Date.now() - t0).toBeLessThan(20_000); // cut off at the budget, not at the fetch's own 30 s timeout
+    expect(JSON.parse(slow.stdout).hookSpecificOutput.permissionDecisionReason).toMatch(/ran out of time/);
+    rmSync(bin, { recursive: true, force: true });
+    // Claude Code (v2.1.295+) blocks the call when the hook fails to start, exits other than 0 or 2, or times out.
+    const settings = JSON.parse(readFileSync(join(ROOT, '.claude/settings.json'), 'utf8'));
+    expect(settings.hooks.PreToolUse.find((h: { matcher: string }) => h.matcher === 'Bash').hooks[0].onFailure).toBe('block');
+  }, 120_000);
+
   // US-64 AC5, round 3: a long command the guard cannot parse (a heredoc with one apostrophe) is decided in linear
   // time. The old fallback regexes took over 120 s on 1 MB.
+  // Round 4: so is a 1 MB run of `${x}` (each `${` looks ahead for `[@` and `}`).
   it('decides an unparseable 1 MB command quickly (US-64 AC5)', () => {
-    const cmd = `cat > notes.md <<'EOF'\nDon't ${'git gh word '.repeat(90_000)}\nEOF`;
-    expect(cmd.length).toBeGreaterThan(1_000_000);
-    const t0 = Date.now();
-    const payload = JSON.stringify({ cwd: scratch, tool_input: { command: cmd } });
-    const r = spawnSync('bash', ['-c', settingsHookCommand()], {
-      input: payload, encoding: 'utf8', timeout: 20_000, env: { ...GIT_ENV, CLAUDE_PROJECT_DIR: ROOT },
-    });
-    const ms = Date.now() - t0;
-    expect(r.status).toBe(0);
-    expect(r.stdout).toBe('');
-    expect(ms).toBeLessThan(3000);
-  }, 30_000);
+    for (const cmd of [`cat > notes.md <<'EOF'\nDon't ${'git gh word '.repeat(90_000)}\nEOF`, `echo "${'${x}'.repeat(260_000)}"`]) {
+      expect(cmd.length).toBeGreaterThan(1_000_000);
+      const t0 = Date.now();
+      const payload = JSON.stringify({ cwd: scratch, tool_input: { command: cmd } });
+      const r = spawnSync('bash', ['-c', settingsHookCommand()], {
+        input: payload, encoding: 'utf8', timeout: 20_000, env: { ...GIT_ENV, CLAUDE_PROJECT_DIR: ROOT },
+      });
+      const ms = Date.now() - t0;
+      expect(r.status).toBe(0);
+      expect(r.stdout).toBe('');
+      expect(ms).toBeLessThan(3000);
+    }
+  }, 60_000);
 
   it('settings.json allows exactly the reviewed merge form and denies the four flags (US-64 AC5)', () => {
     // Claude Code's Bash(...) rules: `*` matches any text; a deny beats an allow.

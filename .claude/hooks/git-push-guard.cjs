@@ -8,8 +8,8 @@
 //   3. A claude/ branch never pushes to main, and `gh pr merge` runs only as
 //      `--merge --match-head-commit <sha>` (docs/git-workflow.md).
 // Fails open on fetch errors (GitHub still rejects a non-fast-forward push); fails
-// closed on a git push it cannot tokenize. The same file lives in claude_business
-// and roadmap: edit both.
+// closed on a git push it cannot tokenize, on any error of its own, and once its
+// time budget is spent. The same file lives in claude_business and roadmap: edit both.
 const { execFileSync } = require('child_process');
 const path = require('path');
 
@@ -19,22 +19,53 @@ function deny(reason) {
   }));
   process.exit(0);
 }
+// Claude Code runs the command when a PreToolUse hook exits other than 0 or 2, so an error here (input that is not
+// JSON, a stack overflow) must refuse rather than crash.
+process.on('uncaughtException', (e) => deny(`Push guard failed (${String(e).slice(0, 200)}), so it refuses this command.`));
+// The guard must decide before Claude Code's hook timeout (600 s, after which the call would go ahead): past its own
+// budget it refuses. PUSH_GUARD_BUDGET_MS can only lower it.
+const T0 = Date.now();
+const BUDGET_MS = Math.min(60000, Number(process.env.PUSH_GUARD_BUDGET_MS) || 60000);
+function msLeft() {
+  const ms = BUDGET_MS - (Date.now() - T0);
+  if (ms <= 0) deny(`Push guard ran out of time (${BUDGET_MS} ms) checking this command, so it refuses it. Run each git push or gh call on its own.`);
+  return ms;
+}
 
-let input;
-try { input = JSON.parse(require('fs').readFileSync(0, 'utf8')); } catch { process.exit(0); }
+const input = JSON.parse(require('fs').readFileSync(0, 'utf8'));
 const cmd = (input.tool_input && input.tool_input.command) || '';
 const cwd = input.cwd || process.cwd();
 
 // What bash may still change in a word at run time (bits): EXPANDS, a `$` or backtick outside single quotes (inside
-// them too when the text itself came from an expansion, `outer`); SPLITS, one outside any quotes or a "$@" (it may
-// become several words, flags included; so does an unquoted brace list, `{a,b}` or `{1..3}`); GLOB, an unquoted * or [.
+// them too when the text itself came from an expansion, `outer`); SPLITS, one outside any quotes or a quoted
+// expansion that may give several words (below; flags included; so does an unquoted brace list, `{a,b}` or `{1..3}`);
+// GLOB, an unquoted * or [.
 const EXPANDS = 1, SPLITS = 2, GLOB = 4, BRACE = 8;
 const DYN_CHAR = /[$`]/;
-// The bits of a character that ends a plain run (below) and is added to the word: `$`/backtick, or unquoted * [ {.
-function charDyn(s, i, q) {
+// The bits of a character that ends a plain run (below) and is added to the word: `$`/backtick, or unquoted * [ {
+// (unquoted < and # end a run too, and add nothing).
+function charDyn(s, i, q, t) {
   if (s[i] === '{') return BRACE;
-  if (!DYN_CHAR.test(s[i])) return GLOB;
-  return q === '' || /^\$(@|\{[^}]*\[@\])/.test(s.slice(i, i + 64)) ? EXPANDS | SPLITS : EXPANDS;
+  if (!DYN_CHAR.test(s[i])) return /[*[]/.test(s[i]) ? GLOB : 0;
+  return q === '' || manyWords(s, i, t) ? EXPANDS | SPLITS : EXPANDS;
+}
+// A `$` that may give several words even inside double quotes: $@, ${@...}, ${!...} (indirect: it may name @ or
+// A[@]), ${name[@]...}, and zsh's ${(@)...} flags, $=A / ${=A} splitting and $A[@] subscripts.
+const NAME_AT = /[A-Za-z_]\w*\[@/y;
+function manyWords(s, i, t) {
+  if ('@='.includes(s[i + 1])) return true;
+  if (s[i + 1] === '{') return '@!(='.includes(s[i + 2]) || nextAt(t, s, '[@', i) < nextAt(t, s, '}', i);
+  NAME_AT.lastIndex = i + 1;
+  return NAME_AT.test(s);
+}
+// The index of the next `str` at or after `from` (s.length if none), remembered, so a long run of `${` stays linear.
+function nextAt(t, s, str, from) {
+  let at = t.next[str];
+  if (at === undefined || at < from) {
+    at = s.indexOf(str, from);
+    t.next[str] = at < 0 ? s.length : at;
+  }
+  return t.next[str];
 }
 const newSeg = () => Object.assign([], { dyn: [] });
 function endWord(t) {
@@ -49,7 +80,7 @@ function endWord(t) {
 const addText = (t, text) => { t.word = (t.word ?? '') + text; };
 // Characters with no meaning in the current quoting, taken as one run (linear, and fast on a long heredoc). Returns
 // the index of the run's last character, or -1 when s[i] is special.
-const RUNS = { "'": /[^']+/y, '"': /[^"\\$`]+/y, '`': /[^`\\]+/y, '': /[^\s"'\\;&|()$`*[{]+/y };
+const RUNS = { "'": /[^']+/y, '"': /[^"\\$`]+/y, '`': /[^`\\]+/y, '': /[^\s"'\\;&|()$`*[{<#]+/y };
 function plainRun(t, s, i) {
   const re = RUNS[t.q];
   re.lastIndex = i;
@@ -68,7 +99,7 @@ function quoted(t, s, i) {
   const ch = s[i];
   if (ch === t.q) { if (ch === '`') addText(t, ch); t.q = ''; }
   else if (ch === '\\' && i + 1 < s.length) return escaped(t, s, i);
-  else { addText(t, ch); t.dyn |= charDyn(s, i, t.q); }
+  else { addText(t, ch); t.dyn |= charDyn(s, i, t.q, t); }
   return i;
 }
 function openQuote(t, ch) {
@@ -76,19 +107,92 @@ function openQuote(t, ch) {
   addText(t, ch === '`' ? ch : '');
   if (ch === '`') t.dyn |= EXPANDS | SPLITS;
 }
-function unquoted(t, s, i) {
+// What starts something other than plain text outside quotes: a quote, a backslash escape, `$'...'` or `$"..."`, or
+// (in the command itself, not a string inside it) a `#` that starts a word, a comment to the end of the line. Returns
+// the index of the last character used, or -1.
+function opener(t, s, i) {
   const ch = s[i];
-  if (ch === '"' || ch === "'" || ch === '`') { openQuote(t, ch); return i; }
+  if (/["'`]/.test(ch)) { openQuote(t, ch); return i; }
   if (ch === '\\' && i + 1 < s.length) return escaped(t, s, i);
+  if (/^\$["']/.test(s.slice(i, i + 2))) return dollarQuote(t, s, i);
+  return ch === '#' && t.word === null && t.top ? lineEnd(s, i) : -1;
+}
+const lineEnd = (s, i) => (s.indexOf('\n', i) + 1 || s.length + 1) - 2;
+// `$"..."` is a locale string (plain double quotes here); `$'...'` is ANSI-C text, decoded as bash decodes it.
+function dollarQuote(t, s, i) {
+  if (s[i + 1] === '"') { openQuote(t, '"'); return i + 1; }
+  const end = ansiEnd(s, i + 2);
+  if (end < 0) { t.q = "'"; return s.length - 1; }
+  const raw = s.slice(i + 2, end);
+  addText(t, ansiC(raw));
+  if (t.outer && DYN_CHAR.test(raw)) t.dyn |= EXPANDS;
+  return end;
+}
+// The quote that ends `$'...'` (a backslash escapes it), or -1.
+function ansiEnd(s, from) {
+  for (let j = s.indexOf("'", from); j >= 0; j = s.indexOf("'", j + 1)) {
+    let k = j;
+    while (k > from && s[k - 1] === '\\') k--;
+    if ((j - k) % 2 === 0) return j;
+  }
+  return -1;
+}
+const ANSI = { a: '\x07', b: '\b', e: '\x1b', E: '\x1b', f: '\f', n: '\n', r: '\r', t: '\t', v: '\v', '\\': '\\', "'": "'", '"': '"', '?': '?' };
+// bash's escapes (octal, \x, \c, and \u/\U, which bash 3.2 keeps but zsh and newer bash decode); the text ends at a NUL,
+// as an argument does. An unknown escape stays as written.
+const ansiC = (raw) => raw.replace(/\\(?:([0-7]{1,3})|x([0-9a-fA-F]{1,2})|u([0-9a-fA-F]{1,4})|U([0-9a-fA-F]{1,8})|c([\s\S])|([\s\S]))/g,
+  (m, oct, hex, u, U, ctl, other) => ansiChar(m, ctl ? ctl.charCodeAt(0) & 31 : oct ? parseInt(oct, 8) : parseInt(hex ?? u ?? U, 16), other)).split('\0')[0];
+// One escape's text: a named one (\n, \', ...; an unknown one stays as written) or a code point (\cX is X's control
+// character, so \c@ is a NUL).
+const ansiChar = (m, n, other) => (other !== undefined ? ANSI[other] ?? m : codePoint(m, n));
+const codePoint = (m, n) => (n <= 0x10ffff ? String.fromCodePoint(n) : m);
+// A heredoc (`<<WORD`, `<<-'WORD'`; not a `<<<` here-string): its body starts after the line's newline.
+const HEREDOC = /<<(-?)[ \t]*((?:[^\s;&|()<>"'\\]|"[^"]*"|'[^']*'|\\[\s\S])+)/y;
+// (A `<` after another is the second of `<<`, or a here-string's `<<<`; the regex needs `<<` at i.)
+function heredocOp(t, s, i) {
+  if (s[i - 1] === '<') return;
+  HEREDOC.lastIndex = i;
+  const m = HEREDOC.exec(s);
+  if (m) t.pending.push({ delim: plain(m[2]), strip: m[1] === '-', quoted: /["'\\]/.test(m[2]) });
+}
+// At an unquoted newline each waiting heredoc takes the lines up to its delimiter (tabs dropped for `<<-`). Its body
+// becomes a segment of its own, one word, read as commands when it may hold one (fed to a shell it runs; an unquoted
+// delimiter runs its `$(...)` and backticks in any case). Returns the index of the last character used.
+function heredocBodies(t, s, i) {
+  let at = i + 1;
+  for (const h of t.pending.splice(0)) {
+    const start = at;
+    let end = s.length;
+    while (at < s.length) {
+      const nl = s.indexOf('\n', at) + 1 || s.length + 1;
+      const line = s.slice(at, nl - 1);
+      if ((h.strip ? line.replace(/^\t+/, '') : line) === h.delim) { end = at; at = nl; break; }
+      at = nl;
+    }
+    t.segs.push(bodySeg(t, h, s.slice(start, end)));
+  }
+  return at - 1;
+}
+const bodySeg = (t, h, body) => Object.assign([body], { dyn: [(!h.quoted || t.outer) && DYN_CHAR.test(body) ? EXPANDS : 0] });
+function unquoted(t, s, i) {
+  const r = opener(t, s, i);
+  if (r >= 0) return r;
+  const ch = s[i];
   if (/\s/.test(ch) && ch !== '\n') endWord(t);
-  else if (';&|()\n'.includes(ch)) { endWord(t); t.segs.push(newSeg()); }
-  else { addText(t, ch); t.dyn |= charDyn(s, i, ''); }
+  else if (';&|()\n'.includes(ch)) return separator(t, s, i);
+  else { heredocOp(t, s, i); addText(t, ch); t.dyn |= charDyn(s, i, '', t); }
   return i;
 }
+function separator(t, s, i) {
+  endWord(t);
+  const end = s[i] === '\n' ? heredocBodies(t, s, i) : i;
+  t.segs.push(newSeg());
+  return end;
+}
 // Shell-ish tokenizer: words with quotes removed; ; & | ( ) and newlines become separators. Each segment's `dyn`
-// holds the run-time bits of each word.
-function segments(s, outer = 0) {
-  const t = { segs: [newSeg()], word: null, dyn: 0, q: '', outer };
+// holds the run-time bits of each word. `top`: the command itself (comments are read only there).
+function segments(s, outer = 0, top = false) {
+  const t = { segs: [newSeg()], word: null, dyn: 0, q: '', outer, top, pending: [], next: {} };
   for (let i = 0; i < s.length; i++) {
     const r = plainRun(t, s, i);
     i = r >= 0 ? r : t.q ? quoted(t, s, i) : unquoted(t, s, i);
@@ -102,8 +206,8 @@ function segments(s, outer = 0) {
 const VALUE_OPTS = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace', '--exec-path', '--super-prefix', '--config-env']);
 const expand = (d) => d.replace(/^~(?=\/|$)/, process.env.HOME || '~');
 // The word that runs `name`: its first appearance that is not followed by itself (`xargs -I gh gh api ...` runs the
-// second one).
-const isCmd = (t, name) => t === name || String(t).endsWith(`/${name}`);
+// second one). zsh runs `=gh` as gh.
+const isCmd = (t, name) => t === name || t === `=${name}` || String(t).endsWith(`/${name}`);
 function cmdAt(seg, name) {
   for (let k = 0; k < seg.length; k++) if (isCmd(seg[k], name) && !isCmd(seg[k + 1], name)) return k;
   return -1;
@@ -159,52 +263,68 @@ function messageOpts(seg) {
 const plain = (t) => t.replace(/['"\\]/g, '');
 const mayHoldCommand = (t) => /\s/.test(t) && /\b(git|gh)\b/.test(plain(t)) && /\b(push|pull|merge|api|sync)\b/.test(plain(t));
 // Every simple command, recursing into each quoted string that may hold one (`bash -lc 'gh api ...'`,
-// `python -c`, `node -e`, `watch`, `ssh host '...'`, a here-string), except message values (above) and data
-// (below). A string nested deeper than 3 levels is not read: the command is refused as unparseable.
-function allSegments(s, depth = 0, outer = 0) {
-  const segs = segments(s, outer);
+// `python -c`, `node -e`, `watch`, `ssh host '...'`, a here-string, a heredoc body), except message values (above)
+// and data (below). Segments are added to `out` one at a time (a spread of a huge list overflows the stack). A string
+// nested deeper than 3 levels is not read: the command is refused as unparseable.
+function allSegments(s, depth = 0, outer = 0, out = []) {
+  const segs = segments(s, outer, depth === 0);
   if (segs === null) return null;
-  const out = [];
   for (const seg of segs) {
-    const inner = innerSegments(seg, depth);
-    if (inner === null) return null;
-    out.push(seg, ...inner);
+    out.push(seg);
+    if (!innerSegments(seg, depth, out)) return null;
   }
   return out;
 }
-function innerSegments(seg, depth) {
-  if (isData(seg)) return [];
+function innerSegments(seg, depth, out) {
+  const data = isData(seg);
   const skip = messageValues(seg);
-  const out = [];
   for (let k = 0; k < seg.length; k++) {
-    if (skip.has(k) && literalMessage(seg[k], seg.dyn[k])) continue;
-    const inner = wordCommands(seg[k], seg.dyn[k], depth);
-    if (inner === null) return null;
-    out.push(...inner);
+    if (data ? SURE.test(seg[k]) : skip.has(k) && literalMessage(seg[k], seg.dyn[k])) continue;
+    if (!wordCommands(seg[k], seg.dyn[k], depth, out)) return false;
   }
-  return out;
+  return true;
 }
+// Text the guard's reading of quotes may still split differently from bash's: a word holding a command boundary
+// (newline ; & | ( )) could hold a command that bash runs. Such a word is never data or message text; it is read as
+// commands.
+const SURE = /^[^\n;&|()]*$/;
 // A message value is text unless bash runs something in it: a `$(...)` or backtick outside single quotes, other than
 // one whole `$(cat <<'EOF' ... EOF)` heredoc (its quoted delimiter keeps the body literal).
 const QUOTED_HEREDOC = /^\$\(cat <<-?[ \t]*(['"])(\w+)\1\n((?![ \t]*\2[ \t]*\n)[^\n]*\n)*[ \t]*\2\s*\)$/;
-const literalMessage = (t, d) => !(d & EXPANDS) || !/`|\$\(/.test(t) || QUOTED_HEREDOC.test(t);
-// The commands a word may run: each backtick substitution's body, and a quoted string holding a guarded command
-// (substitutions there marked `$`). `CMD="..."` is read as the command it stores (for a later eval), `bash<<<'...'`
-// as the here-string. ANSI-C `$'...'` text (escapes not decoded here), a string led by a variable, or nesting past
-// 3 levels cannot be read: fail closed.
-function wordCommands(t, d, depth) {
+const literalMessage = (t, d) => heredocMessage(t) || (SURE.test(t) && (!(d & EXPANDS) || !/`|\$\(/.test(t)));
+// bash 3.2 reads `"$(...)"` by counting parentheses, not heredocs: a `)` in the body can end the `$(` early, and a
+// `$(...)` or backtick after that point runs. So the heredoc is text only when none follows the earliest point bash
+// could end it.
+function heredocMessage(t) {
+  if (!QUOTED_HEREDOC.test(t)) return false;
+  const body = t.slice(t.indexOf('\n'), t.lastIndexOf(')'));
+  return !/`|\$\(/.test(body.slice(earlyClose(body)));
+}
+// Where bash 3.2 could end the `$(` in this body (its length if nowhere). Found conservatively: after the first
+// quote, backslash, backtick, `#` or `${`, a `(` no longer counts (bash may skip it inside those; it skips one in a
+// comment), while every `)` still does. (A `"` cannot be here: it would have ended the message word.)
+function earlyClose(body) {
+  let depth = 0;
+  let counting = true;
+  for (let i = 0; i < body.length; i++) {
+    if (/['\\`#]/.test(body[i]) || body.startsWith('${', i)) counting = false;
+    depth += body[i] === ')' ? -1 : body[i] === '(' && counting ? 1 : 0;
+    if (depth < 0) return i;
+  }
+  return body.length;
+}
+// The commands a word may run, added to `out`: each backtick substitution's body, and a quoted string holding a
+// guarded command (substitutions there marked `$`). `CMD="..."` is read as the command it stores (for a later
+// eval), `bash<<<'...'` as the here-string. A string led by a variable, or nesting past 3 levels, cannot be read:
+// fail closed (false).
+function wordCommands(t, d, depth, out) {
   const parts = d & EXPANDS ? t.split('`') : [t];
   const bodies = parts.filter((_, j) => j % 2);
   const text = parts.map((x, j) => (j % 2 ? '$' : x)).join('');
   if (mayHoldCommand(text)) bodies.push(text.replace(/^([^\s<]*<<<|[A-Za-z_]\w*=)/, ''));
-  const out = [];
-  for (const body of bodies) {
-    const inner = depth >= 3 || body.startsWith('$') ? null : allSegments(body, depth + 1, d);
-    if (inner === null) return null;
-    out.push(...inner);
-  }
-  return out;
+  return bodies.every((body) => depth < 3 && !body.startsWith('$') && allSegments(body, depth + 1, d, out) !== null);
 }
+
 // echo text and grep/rg patterns are data, not commands, when nothing in the whole command runs output: no
 // substitution (`$(...)`, a backtick, `<(...)`), no stdout redirect (a file a later command might run; stderr and
 // /dev/null are fine) and every pipe feeding a reader.
@@ -354,6 +474,13 @@ function apiRefusal(seg, gh) {
 }
 // `gh repo sync --force` hard-resets the destination branch (main by default) to the source.
 const forcedSync = (seg, gh) => seg[gh + 1] === 'repo' && seg[gh + 2] === 'sync' && seg.some((t) => /^--force(=|$)/.test(t));
+// git in `dir`, given no more than the time left in the budget; once the budget is spent (a run it cut short
+// included) the guard refuses.
+function git(dir, args, timeout, encoding) {
+  try {
+    return execFileSync('git', ['-C', dir, ...args], { encoding, timeout: Math.min(timeout, msLeft()), stdio: ['ignore', encoding ? 'pipe' : 'ignore', 'ignore'] });
+  } finally { msLeft(); }
+}
 // Linear: the first `a` word, then `b` anywhere after it (a regex with [\s\S]* between them is quadratic).
 const wordThen = (t, a, b) => { const i = t.search(a); return i >= 0 && b.test(t.slice(i)); };
 
@@ -370,6 +497,7 @@ let here = cwd; // follows `cd` through the command
 let configChanged = false;
 const synced = new Set(); // repos an earlier git pull/merge in this same command synced
 for (const seg of segs) {
+  msLeft();
   if (seg[0] === 'cd' || seg[0] === 'pushd') { here = path.resolve(here, expand(seg[1] || process.env.HOME || '~')); continue; }
   // A PR merges only as a merge commit of the exact head that was reviewed (docs/git-workflow.md step 4; Brad
   // 2026-11-01): `gh pr merge <n> --merge --match-head-commit <sha>`, never --admin/--squash/--rebase/--auto.
@@ -426,7 +554,7 @@ for (const seg of segs) {
       + 'or other sessions pushed. Pull, merge deliberately, push normally. A merged claude/ branch: `git push origin --delete '
       + 'claude/<name>` alone. Any other branch delete Brad has approved: he runs it himself.');
   }
-  const gitq = (args, timeout = 10000) => { try { return execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8', timeout, stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { return ''; } };
+  const gitq = (args, timeout = 10000) => { try { return git(dir, args, timeout, 'utf8').trim(); } catch { return ''; } };
   // Push config from the repo ("key value") and from this command's -c ("key=value"), as "key=value" lines.
   const conf = [...gitq(['config', '--get-regexp', '^(remote\\..*\\.(push|mirror)|push\\.default)$']).split('\n').filter(Boolean)
     .map((l) => l.replace(' ', '=')), ...g.cfg];
@@ -468,13 +596,13 @@ for (const seg of segs) {
     for (const n of names) if (!/^[0-9a-f]{40,64}$/.test(tips.get(`refs/heads/${n}`) || '')) refuse(`${n} is not on origin`);
     const have = (sha) => gitq(['rev-parse', '--verify', '--quiet', `${sha}^{commit}`]) === sha;
     if (![mainTip, ...names.map((n) => tips.get(`refs/heads/${n}`))].every(have)) {
-      try { execFileSync('git', ['-C', dir, 'fetch', '-q', 'origin', 'main'], { stdio: 'ignore', timeout: 30000 }); } catch { /* re-checked below */ }
+      try { git(dir, ['fetch', '-q', 'origin', 'main'], 30000); } catch { /* re-checked below */ }
     }
     if (!have(mainTip)) refuse("the check could not run (main's tip is not here after a fetch)");
     for (const n of names) {
       const tip = tips.get(`refs/heads/${n}`);
       if (!have(tip)) refuse(`${n} is not merged into main (its tip is not in main's history)`);
-      try { execFileSync('git', ['-C', dir, 'merge-base', '--is-ancestor', tip, mainTip], { stdio: 'ignore', timeout: 10000 }); } catch (e) {
+      try { git(dir, ['merge-base', '--is-ancestor', tip, mainTip], 10000); } catch (e) {
         refuse(e.status === 1 ? `${n} is not merged into main` : `the check could not run for ${n} (merge-base failed)`);
       }
     }
@@ -536,9 +664,8 @@ for (const seg of segs) {
 
   let behind = 0;
   try {
-    execFileSync('git', ['-C', dir, 'fetch', '-q', 'origin', 'main'], { stdio: 'ignore', timeout: 30000 });
-    behind = parseInt(execFileSync('git', ['-C', dir, 'rev-list', '--count', 'HEAD..origin/main'],
-      { encoding: 'utf8', timeout: 10000, stdio: ['ignore', 'pipe', 'ignore'] }).trim(), 10) || 0;
+    git(dir, ['fetch', '-q', 'origin', 'main'], 30000);
+    behind = parseInt(git(dir, ['rev-list', '--count', 'HEAD..origin/main'], 10000, 'utf8').trim(), 10) || 0;
   } catch { continue; }
   if (behind > 0) {
     deny(`origin/main has ${behind} commit(s) this checkout lacks (a cloud loop or another session pushed). `
