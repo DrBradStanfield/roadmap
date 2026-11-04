@@ -286,6 +286,22 @@ describe('US-09 AC13g: on a browser without AbortSignal.timeout (Safari 14/15)',
     await expect(read).rejects.toThrow('GitHub did not answer');
   });
 
+  // Finding 1's stalled body, on fetchOrFail's fallback path: the 30 s covers
+  // the body read too, so the timer must not be cleared once headers arrive.
+  it('a GitHub record read whose 200 body stalls gives up at 30 s, not before, and leaves no timer', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('fetch', stalledBodyFetch());
+    const read = new GitHubAdapter(GITHUB_CONFIG).read('health-roadmap.json');
+    read.catch(() => undefined);
+
+    await vi.advanceTimersByTimeAsync(29_999);
+    expect(await settled(read)).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await settled(read)).toBe(true);
+    await expect(read).rejects.toThrow('GitHub did not answer');
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   // Finding 2: the fallback timer is freed once the call is over.
   it('leaves no deadline timer behind after a Drive refresh, an email read and a record read succeed', async () => {
     vi.useFakeTimers();
