@@ -126,14 +126,14 @@ struct MyDataView: View {
             cards(plan[.fitness])
             bloodPressure(data, plan: plan)
             bloodTests(data, plan: plan, tiles: tiles)
-            heading(.screening)
+            // No heading of its own: the engine's sections carry their titles ("Cancer Screening"…).
             ScreeningsSection(store: store, data: data, saved: saved, open: open)
             cards(plan[.screening])
             if !plan[.skin].isEmpty {
                 heading(.skin)
                 cards(plan[.skin])
             }
-            heading(.supplements)
+            // No heading of its own: the section's header says Supplements.
             SupplementsSection(store: store, supplements: data.supplements, saved: saved)
             cards(plan[.supplements], footer: plan.ownershipLine)
             Section {
@@ -226,12 +226,11 @@ struct MyDataView: View {
     private func cards(_ cards: [PlanCard], footer: String? = nil) -> some View {
         if !cards.isEmpty {
             Section {
-                ForEach(cards) { card in
+                ForEach(cards, id: \.anchor) { card in
                     PlanCardView(card: card, askAboutAlcohol: card.suggestions.contains { $0.id == Suggestion.reduceAlcohol } ? alcoholQuestion : nil)
                         .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
-                        .id(TopicPlan.anchor(card))
                 }
             } footer: {
                 if let footer { Text(footer).accessibilityIdentifier("plan.ownershipLine") }

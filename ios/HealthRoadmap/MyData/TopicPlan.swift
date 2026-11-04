@@ -64,7 +64,7 @@ struct TopicPlan {
     }
 
     /// The scroll id of a card on the tab.
-    static func anchor(_ card: PlanCard) -> String { "card.\(card.id)" }
+    static func anchor(_ card: PlanCard) -> String { card.anchor }
 
     /// By category first; medication and nutrition by suggestion (orchestrator, 2026-11-05).
     static func topic(_ suggestion: Suggestion) -> HealthTopic {
@@ -91,6 +91,12 @@ struct TopicPlan {
         let order = ["urgent", "attention", "info"]
         return suggestions.map(\.priority).min { (order.firstIndex(of: $0) ?? 3) < (order.firstIndex(of: $1) ?? 3) } ?? "info"
     }
+}
+
+extension PlanCard {
+    /// The card's scroll id on My health, and its List identity: a `.id` on a ForEach row is not
+    /// what List scrolls by, so the banner's scroll found nothing (seen 2026-11-05).
+    var anchor: String { "card.\(id)" }
 }
 
 /// PROTOTYPE: the plan's summary tiles by key (whtr, bmi, ibw, protein, egfr…), for the rows
