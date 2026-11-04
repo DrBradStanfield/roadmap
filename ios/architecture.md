@@ -1049,7 +1049,7 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
   the app to see which." The procedure's name is shown only inside the app. Revisit if
   Brad prefers the name ("Colonoscopy due") on the lock screen. The in-app list names a
   follow-up after an abnormal result as its plan card does ("Follow-up to organize:
-  repeat colonoscopy", "Follow-up check-in: colposcopy"; US-17 AC15, drafts), from
+  repeat colonoscopy", "Follow-up check-in: colposcopy"; US-17 AC15 and US-25 AC27, approved by Brad 2026-11-05), from
   `followupKinds` on the phone's own record; the lock screen stays generic (Brad
   2026-11-05) and the pushed web schedule keeps the plain label.
 - **Follow-ups fire the first morning they are seen** (US-17 AC15, Brad 2026-11-05). A
