@@ -98,3 +98,43 @@ describe('.dockerignore covers the .gitignore data patterns', () => {
     }
   });
 });
+
+// US-64 AC13: env variants, keys and certificates stay out of the repo and the
+// image at any depth; the tracked template .env.example stays in both.
+describe('secret files are ignored by git and Docker (US-64 AC13)', () => {
+  const SECRETS = ['.env.*', '!.env.example', '*.pem', '*.key', '*.p8', '*.p12', 'service-account*.json'];
+  const docker = patterns('.dockerignore');
+
+  // Docker's rule: the LAST matching line wins, and `!` re-includes. `**/`
+  // matches zero or more leading folders.
+  function dockerIgnores(path: string): boolean {
+    let ignored = false;
+    for (const line of docker) {
+      const neg = line.startsWith('!');
+      const p = neg ? line.slice(1) : line;
+      const any = p.startsWith('**/');
+      const re = toRegExp(any ? p.slice(3) : p);
+      const parts = path.split('/');
+      const tails = any ? parts.map((_, i) => parts.slice(i).join('/')) : [path];
+      if (tails.some((t) => re.test(t))) ignored = !neg;
+    }
+    return ignored;
+  }
+
+  it.each(SECRETS)('.gitignore lists %s', (rule) => {
+    expect(patterns('.gitignore')).toContain(rule);
+  });
+
+  it.each([
+    '.env.production', 'app/.env.staging', '.env.local', 'certs/server.pem', 'tls.key',
+    'ios/AuthKey_ABC123.p8', 'dist-cert.p12', 'service-account.json', 'tools/service-account-prod.json',
+  ])('.dockerignore keeps %s out of the image', (path) => {
+    expect(dockerIgnores(path)).toBe(true);
+  });
+
+  it('.dockerignore keeps .env.example and the server inputs in the build context', () => {
+    for (const path of ['.env.example', 'package.json', 'app/lib/chat.server.ts', 'app/lib/rate-limiter.env-cap.test.txt']) {
+      expect(dockerIgnores(path), path).toBe(false);
+    }
+  });
+});

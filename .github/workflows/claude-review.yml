@@ -2,17 +2,30 @@
 #
 # Fires on same-repo PRs from claude/* branches: a FRESH-context Claude reviews
 # the diff adversarially with a correctness-only mandate and posts its verdict
-# as a comment. ADVISORY ONLY: it cannot approve (no Bash, no gh), cannot
-# merge, cannot push. The deploy gate counts only HUMAN owner/collaborator
-# approvals on the final commit (deploy.yml), so this review informs Brad's
-# approval — it never substitutes for it.
+# as a comment. ADVISORY ONLY: the deploy gate counts only HUMAN owner/
+# collaborator approvals on the final commit (deploy.yml), so this review
+# informs Brad's approval and never substitutes for it.
 #
-# Security posture (audit 2026-08-10): NO Bash — the reviewer reads untrusted
-# content (agent-authored diffs quoting user text), and a Bash tool alongside
-# ANTHROPIC_API_KEY in env is a prompt-injection exfiltration channel. It also
-# must not execute repo code (a malicious diff's tests/postinstall would run
-# in this job). CI already runs the full suite on every PR; the reviewer READS
-# that verdict instead of re-running it.
+# Security posture (US-40, re-audited 2026-11-04 against the pinned SHA): the
+# reviewer reads untrusted content (agent-authored diffs quoting user text), so
+# it must not run code, edit files or push. The old header said it had no Bash
+# and could not push; that was wrong. track_progress forces the action's tag
+# mode on pull_request, and tag mode itself allows Bash(git add/commit/rm),
+# its git-push wrapper and --permission-mode acceptEdits, and writes the job's
+# token into origin's URL in .git/config. Our claude_args are appended after
+# those, so the reviewer is held to read-only by:
+#   --disallowedTools Bash,Edit,MultiEdit,Write,NotebookEdit,Read(./.git/**)
+#     (deny beats allow: no shell, no git push, no file writes, and no read of
+#     .git/config, where the token sits);
+#   --allowedTools Read,Grep,Glob plus the one write channel,
+#     mcp__github_comment__update_claude_comment (the verdict comment).
+# include_comments_by_actor limits the PR's issue comments in the prompt to
+# Brad and the reviewer itself, so a stranger's comment cannot steer it.
+# Residual (no input at this SHA covers it): review bodies and inline review
+# comments are NOT filtered by actor and still reach the prompt. The prompt
+# tells the reviewer to treat all PR text as data; the verdict stays advisory
+# and auto-ship checks its own facts (sha pin, CI, commit authors). Never set
+# allowed_non_write_users: it changes how the action stores the token.
 #
 # Uses ANTHROPIC_API_KEY (metered; keep a spend cap on this key at
 # console.anthropic.com). Editing this file is Brad-only (constitution
@@ -52,6 +65,10 @@ jobs:
           # enough (shakedown fix #3: verdict produced, 5 permission denials,
           # nothing posted).
           track_progress: true
+          # US-40: only Brad's and the reviewer's own PR comments reach the
+          # prompt. Review bodies and inline review comments are not filtered
+          # (see the header).
+          include_comments_by_actor: "DrBradStanfield,claude[bot]"
           prompt: |
             You are the INDEPENDENT REVIEWER in this repo's Tier 3 ship
             pipeline (docs/loops/deploy-pipeline-proposal.md). Review PR
@@ -108,3 +125,4 @@ jobs:
             or "VERDICT: REJECT — <one-line reason list>".
           claude_args: |
             --allowedTools "Read,Grep,Glob,mcp__github_comment__update_claude_comment"
+            --disallowedTools "Bash,Edit,MultiEdit,Write,NotebookEdit,Read(./.git/**)"

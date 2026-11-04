@@ -2,6 +2,15 @@ node_modules
 .env
 .env.local
 .env.*.local
+# Secrets in any env variant, key or certificate file (US-64 AC13). Only the
+# template is tracked.
+.env.*
+!.env.example
+*.pem
+*.key
+*.p8
+*.p12
+service-account*.json
 dist/
 dist-pages/
 _site/
