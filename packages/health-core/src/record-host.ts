@@ -21,6 +21,10 @@ export interface SyncStorage {
  *  and the marker that says it is there (US-09 AC4). */
 export interface DeviceMirror {
   adapter: StorageAdapter;
+  /** The device copy's synchronous path, when it has one (localStorage on the
+   *  web): a page going away writes its unsaved changes there at once, since
+   *  it cannot wait for the cloud save (US-06 AC13). */
+  sync?: SyncStorage;
   pending: { get(): boolean; set(): void; clear(): void };
   /** True once this device has logged off: no write may recreate the record
    *  here (US-09 AC2c). */

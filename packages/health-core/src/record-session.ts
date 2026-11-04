@@ -10,7 +10,7 @@ import { ConflictError, ROADMAP_FILE_NAME, type StorageAdapter } from './adapter
 import { buildErasedFile } from './erase';
 import { CLOCK_KEYS, mergeFiles } from './merge';
 import { SchemaTooNewError } from './migrate';
-import type { RecordHost, SyncStorage } from './record-host';
+import type { DeviceMirror, RecordHost, SyncStorage } from './record-host';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { CURRENT_SCHEMA_VERSION, stableStringify, type RoadmapFile } from './roadmap-file';
 import { SyncManager, type SyncContext } from './sync-manager';
@@ -479,7 +479,8 @@ export class RecordSession {
    * synchronous path merges into the one file every page shares, so the
    * write has landed when this returns, whatever the async save may come to
    * await; then it takes the merge in, as a save does. Any other store, and a
-   * refused synchronous write, fall back to the async save.
+   * refused synchronous write, fall back to the async save; on a cloud the
+   * device copy holds the changes meanwhile (mirrorNow).
    */
   flushSync(): void {
     if (!this.unsaved) return;
@@ -499,8 +500,32 @@ export class RecordSession {
         // and lands it. A newer app's record, unreadable bytes or a full disk:
         // it meets the same refusal, and reports it (US-10 AC5).
       }
+    } else if (this.host.tier === 'cloud') {
+      this.mirrorNow(this.host.mirror);
     }
     void this.persist();
+  }
+
+  /**
+   * Cloud tier, page going away: the save below may never land, so the
+   * unsaved changes go to the device copy now, merged and marked pending as
+   * a failed save's are, and the next session lifts them up (US-06 AC13,
+   * US-09 AC4). The merge keeps a row only the device copy holds and drops
+   * one an erase listed. Nothing after log-off (US-09 AC2c). Best-effort: an
+   * unreadable or full device copy leaves only the async save.
+   */
+  private mirrorNow(mirror: DeviceMirror): void {
+    if (!mirror.sync || mirror.writesStopped()) return;
+    try {
+      // The device tier's merge above: the merge moves the clock, so no edit is rewound.
+      const ctx = this.ctx();
+      const { body, version } = mirror.sync.readSync(ROADMAP_FILE_NAME);
+      const merged = ROADMAP_DOC.merge(this.current, ROADMAP_DOC.migrate(body, ctx), ctx);
+      mirror.pending.set();
+      mirror.sync.writeSync(ROADMAP_FILE_NAME, merged, version);
+    } catch {
+      /* the async save below is all that is left */
+    }
   }
 
   /**

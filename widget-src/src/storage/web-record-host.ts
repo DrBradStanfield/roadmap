@@ -142,6 +142,7 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     tier: 'cloud',
     mirror: {
       adapter: device,
+      sync: device,
       pending: { get: isSyncPending, set: markSyncPending, clear: clearSyncPending },
       writesStopped: roadmapLocalWritesStopped,
       wipe: () => device.disconnect(),
