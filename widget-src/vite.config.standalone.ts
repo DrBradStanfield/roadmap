@@ -5,7 +5,6 @@ import { execSync } from 'child_process';
 
 // Standalone static build for GitHub Pages / self-host (front door B).
 //   index.html → the full Health Roadmap app (Phase 1+), local-first storage
-//   test.html  → the storage self-test + live Dropbox round-trip (Phase 0 harness)
 //
 // base '/roadmap/' targets https://drbradstanfield.github.io/roadmap/.
 let gitHash = 'dev';
@@ -74,7 +73,6 @@ export default defineConfig(({ command }) => ({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'standalone/index.html'),
-        test: resolve(__dirname, 'standalone/test.html'),
       },
     },
   },

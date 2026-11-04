@@ -447,7 +447,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'bp-stage1': {
-    reason: 'Stage 1 hypertension (130–139 systolic or 80–89 diastolic mmHg; this plan flags a diastolic above 80) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.',
+    reason: 'Stage 1 hypertension (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.',
     guidelines: [...GUIDELINES_BP, 'SPRINT 2015', 'ESPRIT 2024'],
     references: [...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS],
   },
@@ -525,7 +525,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'screening-lung': {
-    reason: 'The USPSTF recommends annual low-dose CT screening for adults aged 50–80 with a smoking history of ≥15 pack-years (current or former smokers). Low-dose CT can detect lung cancer at an early, treatable stage, significantly reducing lung cancer mortality.',
+    reason: 'The USPSTF recommends annual low-dose CT screening for adults aged 50–80 with a smoking history of ≥20 pack-years (current or former smokers). Low-dose CT can detect lung cancer at an early, treatable stage, significantly reducing lung cancer mortality.',
     guidelines: ['USPSTF 2021'],
     references: [
       ...REFS_SCREENING_ACS,

@@ -206,21 +206,32 @@ export function scrubBreadcrumbData(
 // the same lists as literals, and `instrument-scrub-parity.test.ts` compares
 // the two arrays and prints the literal to paste when the catalogue moves.
 
+/** The first spelling of each unit, whatever its case (the scrub ignores case). */
+const caselessUnique = (units: string[]): string[] =>
+  units.filter((unit, i) => units.findIndex((u) => u.toLowerCase() === unit.toLowerCase()) === i);
+
 /**
  * Unit spellings that make a bare number a health value: every unit the record
- * prints, plus the ASCII and dose spellings a sentence uses ("metformin 500mg").
+ * prints or the catalogue accepts, plus the ASCII and dose spellings a sentence
+ * uses ("metformin 500mg").
  */
-export const SCRUB_UNITS: readonly string[] = [
-  // Every unit the record can print, read off UNIT_DEFS and the lab catalogue.
+export const SCRUB_UNITS: readonly string[] = caselessUnique([
+  // Every unit the record can print, read off UNIT_DEFS and the lab catalogue,
+  // then every spelling the catalogue reads as one (US-09 AC7e). An alias that
+  // is only letters ("ratio", "fraction") is English first, so it is left out.
+  // The other spellings normalizeLabUnit folds into these are matched by
+  // unitPattern below.
   ...CATALOG_UNITS,
-  // ASCII spellings a report or a log writes instead of the µ/space forms.
-  'mm Hg', 'umol/L', 'micromol/L', 'ug/L', 'lb',
+  ...LAB_CATALOG.flatMap((entry) => [...(entry.unitAliases ?? []), ...Object.keys(entry.conversions ?? {})])
+    .filter((spelling) => !/^[a-z]+$/i.test(spelling)),
+  // Spellings no catalogue list holds.
+  'mm Hg', 'micromol/L', 'lb',
   // Dose units — "metformin 500mg" is a health value with no metric name in it.
   'mcg', 'µg', 'mg', 'g', 'IU', 'mL', 'ml', 'units',
   // Inches: matched by a stricter rule (see INCH_UNIT) — "5 in the morning"
   // is English, not a height.
   '"',
-];
+]);
 
 /** Metric and lab names that make an adjacent number a health value. */
 export const SCRUB_METRIC_WORDS: readonly string[] = [...new Set([
@@ -240,17 +251,39 @@ export const SCRUB_METRIC_WORDS: readonly string[] = [...new Set([
 /** A number, or a blood-pressure pair ("140/90"). */
 const NUMBER = '\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?';
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-/** Longest first so "mmol/L" wins over "mol" and "ldl cholesterol" over "ldl". */
-const alternation = (words: readonly string[]) =>
-  [...words].sort((a, b) => b.length - a.length).map(escapeRe).join('|');
+/** Longest pattern first so "mmol/L" wins over "mol", "ldl cholesterol" over
+ *  "ldl", and "Units/L" (a U/L) over the dose word "units". */
+const alternation = (words: readonly string[], pattern = escapeRe) =>
+  words.map(pattern).sort((a, b) => b.length - a.length).join('|');
+
+/**
+ * Every spelling normalizeLabUnit (lab-catalog.ts) folds into a part of a
+ * listed unit, as regex (US-09 AC7e): any cell-count exponent ("10^9", "x 10e9",
+ * "x10(3)", "10³"), a micro written u, μ or mc, a microlitre written uL, mcL,
+ * mm3 or cmm, a squared metre written m2 or m^2, gm/dL, and Unit(s) for U.
+ */
+const NORMALISER_SPELLINGS: Record<string, string> = {
+  '×10': '(?:[x×]\\s*)?10\\s*(?:(?:e|\\^|\\*{1,2})\\s*\\d+|(?:\\^|\\*{1,2})?\\(\\s*\\d+\\s*\\)|[⁰¹²³⁴⁵⁶⁷⁸⁹]+)',
+  '/µl': '/(?:(?:[µμu]|mc)l|mm[3³]|cmm|cumm|cu[ .]mm|c\\.mm)',
+  'µ': '(?:[µμu]|mc)',
+  'm²': 'm(?:²|\\^?2)',
+  u: '(?:u|units?)',
+  g: 'gm?',
+};
+const unitPattern = (unit: string) => escapeRe(unit.toLowerCase())
+  .replace(/×10[⁰¹²³⁴⁵⁶⁷⁸⁹]+|\/µl|µ|m²|^u(?=\/)|^g(?=\/dl)/g,
+    (part) => NORMALISER_SPELLINGS[part.startsWith('×') ? '×10' : part]);
 
 /** Inches only at the end of a phrase — never "in" leading a word. */
 const INCH_UNIT = '(?:in(?=\\s*(?:[^A-Za-z0-9\\s]|$))|")';
 const PLAIN_UNITS = SCRUB_UNITS.filter(u => u !== 'in' && u !== '"');
+/** Every listed unit in every spelling the normaliser folds into it, as one
+ *  regex alternation (the chat-question archive check uses it too, US-15 AC44a). */
+export const SCRUB_UNIT_PATTERN = alternation(PLAIN_UNITS, unitPattern);
 
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const UNIT_VALUE_RE = new RegExp(
-  `\\b${NUMBER}\\s*(?:(?:${alternation(PLAIN_UNITS)})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
+  `\\b${NUMBER}\\s*(?:(?:${SCRUB_UNIT_PATTERN})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
 // A name starts where no letter or digit runs into it ("γ-GT" starts with no
 // word character, so not a word boundary) and ends where no letter does: digits straight
 // after a name are its value ("ldl140"), never part of it. A number inside a

@@ -4,6 +4,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generateSuggestions, weightMedicationTrigger, lipidMarkerFor, joinWithAnd } from './suggestions';
 import { SUGGESTION_EVIDENCE } from './evidence';
+import { screeningForm } from './input-form';
 import { LIPID_TREATMENT_TARGETS, NON_HDL_THRESHOLDS, type UnitSystem } from './units';
 import type { HealthInputs, HealthResults, MedicationInputs, SuggestionInputs, ScreeningInputs } from './types';
 import {
@@ -386,8 +387,16 @@ describe('generateSuggestions', () => {
       expect(bpSuggestions.length).toBe(0);
     });
 
-    it('does not generate suggestion for BP 126/80 (diastolic 80 is not elevated)', () => {
-      const { inputs, results } = createTestData({ systolicBp: 126, diastolicBp: 80 }, { age: 55 });
+    it('US-07 AC1c: 115/80 gets the stage 1 card (stage 1 diastolic starts at 80, ACC/AHA 2017)', () => {
+      const { inputs, results } = createTestData({ systolicBp: 115, diastolicBp: 80 }, { age: 55 });
+      const suggestions = generateSuggestions(inputs, results);
+
+      expect(suggestions.filter(s => s.id.startsWith('bp-')).map(s => s.id)).toEqual(['bp-stage1']);
+      expect(suggestions.find(s => s.id === 'bp-stage1')?.description).toContain('Your BP of 115/80 mmHg indicates stage 1 hypertension.');
+    });
+
+    it('does not generate suggestion for BP 126/79 (diastolic below 80)', () => {
+      const { inputs, results } = createTestData({ systolicBp: 126, diastolicBp: 79 }, { age: 55 });
       const suggestions = generateSuggestions(inputs, results);
 
       const bpSuggestions = suggestions.filter(s => s.id.startsWith('bp-'));
@@ -1413,16 +1422,16 @@ describe('generateSuggestions', () => {
     });
 
     // Lung
-    it('suggests lung screening for smoker 50+ with 15+ pack-years (USPSTF 2021)', () => {
+    it('suggests lung screening for smoker 50+ with 20+ pack-years (USPSTF 2021)', () => {
       const { inputs, results } = createTestData({ birthYear: 1970, birthMonth: 1 }, { age: 56 });
       const scr: ScreeningInputs = { lungSmokingHistory: 'current_smoker', lungPackYears: 25 };
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
       expect(suggestions.find(s => s.id === 'screening-lung')).toBeDefined();
     });
 
-    it('suggests lung screening at exactly 15 pack-years (boundary)', () => {
+    it('suggests lung screening at exactly 20 pack-years (boundary)', () => {
       const { inputs, results } = createTestData({ birthYear: 1970, birthMonth: 1 }, { age: 56 });
-      const scr: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 15 };
+      const scr: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 20 };
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
       expect(suggestions.find(s => s.id === 'screening-lung')).toBeDefined();
     });
@@ -1434,11 +1443,19 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'screening-lung')).toBeUndefined();
     });
 
-    it('does not suggest lung screening for smoker with <15 pack-years', () => {
+    it('does not suggest lung screening for smoker with <20 pack-years', () => {
       const { inputs, results } = createTestData({ birthYear: 1970, birthMonth: 1 }, { age: 56 });
-      const scr: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 14 };
+      const scr: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 19 };
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
       expect(suggestions.find(s => s.id === 'screening-lung')).toBeUndefined();
+    });
+
+    it('US-07 AC1d (#285): 17 pack-years gets no lung card, as the form asks no lung question below 20', () => {
+      const { inputs, results } = createTestData({ birthYear: 1966, birthMonth: 1 }, { age: 60 });
+      const scr: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 17 };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-lung')).toBeUndefined();
+      expect(screeningForm(60, 'male', scr).flatMap((s) => s.groups.flatMap((g) => g.fields.map((f) => ('key' in f ? f.key : ''))))).not.toContain('lung_screening');
     });
 
     // Prostate
@@ -1775,7 +1792,7 @@ describe('generateSuggestions', () => {
 
   describe('Weight & diabetes medication cascade', () => {
     // Trigger (US-06 AC6): BMI >= 25 with a raised marker (HbA1c prediabetic, trigs >= 150,
-    // BP >= 130 systolic or > 80 diastolic, the plan's lipid marker at its risk-enhancing
+    // BP >= 130 systolic or >= 80 diastolic, the plan's lipid marker at its risk-enhancing
     // line, WHtR >= 0.5), or an elevated BMI category with BMI > 28
     it('shows GLP-1 suggestion when BMI > 25 AND HbA1c prediabetic', () => {
       const { inputs, results } = createTestData(
@@ -2086,12 +2103,14 @@ describe('generateSuggestions', () => {
       { name: 'BMI 25.0, healthy waist (WHtR 0.47), HbA1c 40', weightKg: 79.1, waistCm: 83.7, hba1c: 40, on: true, reasons: [HBA1C] },
       { name: 'BMI 26.0, healthy waist (WHtR 0.46), BP 135/85 (group 2)', weightKg: 82.4, waistCm: 81.9, systolicBp: 135, diastolicBp: 85, on: true, reasons: [BP] },
       { name: 'BMI 26.0, healthy waist, BP 125/85 only', weightKg: 82.4, waistCm: 81.9, systolicBp: 125, diastolicBp: 85, on: true, reasons: [BP] },
-      { name: 'BMI 26.0, healthy waist, BP 129/80', weightKg: 82.4, waistCm: 81.9, systolicBp: 129, diastolicBp: 80, on: false, reasons: [] },
+      { name: 'BMI 26.0, healthy waist, BP 129/80', weightKg: 82.4, waistCm: 81.9, systolicBp: 129, diastolicBp: 80, on: true, reasons: [BP] },
+      { name: 'BMI 26.0, healthy waist, BP 129/79', weightKg: 82.4, waistCm: 81.9, systolicBp: 129, diastolicBp: 79, on: false, reasons: [] },
       { name: 'BMI 26.0, healthy waist, BP 129/81', weightKg: 82.4, waistCm: 81.9, systolicBp: 129, diastolicBp: 81, on: true, reasons: [BP] },
       { name: 'BMI 26.0, healthy waist, systolic 135 with no diastolic (either half counts)', weightKg: 82.4, waistCm: 81.9, systolicBp: 135, on: true, reasons: [BP] },
       { name: 'BMI 26.0, healthy waist, systolic 129 with no diastolic', weightKg: 82.4, waistCm: 81.9, systolicBp: 129, on: false, reasons: [] },
       { name: 'BMI 26.0, healthy waist, diastolic 85 with no systolic (either half counts)', weightKg: 82.4, waistCm: 81.9, diastolicBp: 85, on: true, reasons: [BP] },
-      { name: 'BMI 26.0, healthy waist, diastolic 80 with no systolic', weightKg: 82.4, waistCm: 81.9, diastolicBp: 80, on: false, reasons: [] },
+      { name: 'BMI 26.0, healthy waist, diastolic 80 with no systolic (US-07 AC1c)', weightKg: 82.4, waistCm: 81.9, diastolicBp: 80, on: true, reasons: [BP] },
+      { name: 'BMI 26.0, healthy waist, diastolic 79 with no systolic', weightKg: 82.4, waistCm: 81.9, diastolicBp: 79, on: false, reasons: [] },
       { name: 'BMI 26.0, healthy waist, LDL 4.2 alone', weightKg: 82.4, waistCm: 81.9, ldlC: 4.2, on: true, reasons: [LDL] },
       { name: 'BMI 26.0, healthy waist, LDL 4.0 alone', weightKg: 82.4, waistCm: 81.9, ldlC: 4.0, on: false, reasons: [] },
       { name: 'BMI 26.0, healthy waist, LDL 160 mg/dL', weightKg: 82.4, waistCm: 81.9, ldlC: ldl(160), on: true, reasons: [LDL] },

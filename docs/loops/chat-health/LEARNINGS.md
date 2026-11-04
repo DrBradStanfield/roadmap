@@ -177,3 +177,4 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   **Brad 11-01: no interim router fix.** A pathway replacement is due in about
   two weeks; re-point these fixtures to its entries when it lands. Until then,
   report the count and propose nothing for it.
+- **2026-11-03 [loop]** YouTube assistant rows are not all replies: from US-15 AC52 a fallback or refusal stores its unposted line, and SKIP_NO_REPLY was always stored; filter them out of reply metrics (Gather step).

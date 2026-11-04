@@ -15,6 +15,11 @@ const workerBlob = new Blob([WITH_RESOLVERS_PREFIX, workerCode], { type: 'applic
 pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(workerBlob);
 
 const TEXT_THRESHOLD = 50; // chars per page to consider "text-based"
+/** A scanned page's longest rendered side in pixels, the iPhone app's cap (LabFileReader.jpegPage; US-12 AC22). */
+const MAX_RENDER_SIDE = 2000;
+
+/** 1.5x, or less when 1.5x would put a side past MAX_RENDER_SIDE: a photo saved as a PDF has a page as large as its pixels. */
+const renderScale = ({ width, height }: { width: number; height: number }) => Math.min(1.5, MAX_RENDER_SIDE / Math.max(width, height));
 
 export interface PageContent {
   type: 'text' | 'image';
@@ -31,8 +36,16 @@ export interface PageContent {
  */
 export async function extractFromPdf(file: File): Promise<{ pages: PageContent[]; truncated: boolean }> {
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  // pdf.js starts a worker for each document: release it once read or failed (AC7a).
+  const task = pdfjsLib.getDocument({ data: arrayBuffer });
+  try {
+    return await readPdf(await task.promise);
+  } finally {
+    await task.destroy();
+  }
+}
 
+async function readPdf(pdf: pdfjsLib.PDFDocumentProxy): Promise<{ pages: PageContent[]; truncated: boolean }> {
   const pageCount = Math.min(pdf.numPages, IMPORT_LIMITS.websitePdfPages);
   const pages: PageContent[] = [];
   let cut = false;
@@ -54,7 +67,7 @@ export async function extractFromPdf(file: File): Promise<{ pages: PageContent[]
       pages.push({ type: 'text', content: label + kept });
     } else {
       // Scanned page — render to canvas → JPEG
-      const viewport = page.getViewport({ scale: 1.5 });
+      const viewport = page.getViewport({ scale: renderScale(page.getViewport({ scale: 1 })) });
       const canvas = document.createElement('canvas');
       canvas.width = viewport.width;
       canvas.height = viewport.height;

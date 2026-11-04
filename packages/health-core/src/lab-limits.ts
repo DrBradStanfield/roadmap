@@ -14,7 +14,7 @@
  */
 import type { HealthInputs } from './types';
 import {
-  UNIT_DEFS, formatDisplayValue, fromCanonicalValue, type MetricType, type UnitSystem,
+  UNIT_DEFS, formatDisplayValue, formatGradedReading, fromCanonicalValue, type MetricType, type UnitSystem,
   APOB_RISK_ENHANCING, APOB_THRESHOLDS, BP_THRESHOLDS, CREATININE_GRID_BANDS, EGFR_THRESHOLDS, HBA1C_THRESHOLDS,
   HDL_GRID_BANDS, HDL_THRESHOLDS, LDL_THRESHOLDS, LIPID_TREATMENT_TARGETS, LPA_THRESHOLDS, PSA_THRESHOLDS,
   TOTAL_CHOLESTEROL_THRESHOLDS, TRIGLYCERIDES_THRESHOLDS, bpTargetFor,
@@ -74,6 +74,11 @@ export function formatValue(metric: MetricType, value: number, system: UnitSyste
   return comparator ? formatLimit(metric, { comparator, bound: value }, system) : formatDisplayValue(metric, value, system);
 }
 
+/** As `formatValue`, for a read-only line beside a grade: a value prints on its grade's side (`formatGradedReading`). */
+export function formatGradedOrLimit(metric: MetricType, value: number, system: UnitSystem, comparator?: Comparator | null): string {
+  return comparator ? formatLimit(metric, { comparator, bound: value }, system) : formatGradedReading(metric, value, system);
+}
+
 /** What a report's symbol is in the file's code. */
 const PRINTED: Record<string, Comparator> = { '<': '<', '>': '>', '≤': '<=', '≥': '>=' };
 
@@ -102,7 +107,11 @@ const values = (o: object): number[] => Object.values(o).flatMap((v) => (typeof 
  * constants, never copied; lab-limits.test.ts fails when a constant or a
  * literal is in neither this list nor `LIMIT_LABEL_CUTOFFS`. Non-HDL's lines
  * are absent on purpose: non-HDL is derived, and never derived from a limit.
- * Creatinine and PSA have none: the plan grades neither directly.
+ * Creatinine has none: the plan grades it only through eGFR. PSA's is the
+ * "Elevated PSA" card's 4.0 (US-06 AC14). A line is reached at or above it,
+ * though that card fires only above 4.0, so "<= 4.0" stays undecided and
+ * reads as ungraded: conservative, and kept so HbA1c's "<=" at a line stays
+ * undecided too (US-12 AC20).
  */
 export const LIMIT_CUTOFFS: Readonly<Record<LimitField, readonly number[]>> = {
   hba1c: values(HBA1C_THRESHOLDS),
@@ -112,7 +121,7 @@ export const LIMIT_CUTOFFS: Readonly<Record<LimitField, readonly number[]>> = {
   triglycerides: [TRIGLYCERIDES_THRESHOLDS.borderline, TRIGLYCERIDES_THRESHOLDS.veryHigh],
   apoB: [...values(APOB_THRESHOLDS), LIPID_TREATMENT_TARGETS.apobGl, APOB_RISK_ENHANCING],
   creatinine: [],
-  psa: [],
+  psa: [PSA_THRESHOLDS.normal],
   lpa: values(LPA_THRESHOLDS),
   systolicBp: [BP_THRESHOLDS.stage1Sys, BP_THRESHOLDS.stage2Sys, BP_THRESHOLDS.crisisSys, bpTargetFor(undefined), bpTargetFor(65)],
   diastolicBp: [BP_THRESHOLDS.stage1Dia, BP_THRESHOLDS.stage2Dia, BP_THRESHOLDS.crisisDia],

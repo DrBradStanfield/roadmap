@@ -207,6 +207,9 @@ function loadGis(): Promise<void> {
       const s = document.createElement('script');
       s.src = 'https://accounts.google.com/gsi/client';
       s.async = true;
+      // A script that failed (the network was down) is taken out, so the next
+      // load asks again instead of waiting on it forever (US-09 AC30a).
+      s.onerror = () => s.remove();
       document.head.appendChild(s);
     }
     const startedAt = Date.now();
@@ -366,13 +369,14 @@ export class GoogleDriveAdapter implements StorageAdapter {
    * transient failure must not block auto-enrolment forever (review 2026-09-10).
    */
   private async refresh(): Promise<'ok' | 'none' | 'transient'> {
-    if (!this.tokens?.refreshToken) return 'none';
+    const startedFrom = this.tokens?.refreshToken;
+    if (!startedFrom) return 'none';
     let res: Response;
     try {
       res = await fetch(this.config.exchangeUrl, {
         method: 'POST',
         // No Content-Type: keep it a CORS simple request (no preflight).
-        body: JSON.stringify({ grantType: 'refresh', refreshToken: this.tokens.refreshToken }),
+        body: JSON.stringify({ grantType: 'refresh', refreshToken: startedFrom }),
         // This runs at page load before first render — a black-holing server
         // must fail fast into the on-device + Reconnect fallback, not hang.
         signal: AbortSignal.timeout(5000),
@@ -381,11 +385,13 @@ export class GoogleDriveAdapter implements StorageAdapter {
       return 'transient'; // network/server down/timeout → caller falls back to the popup path
     }
     if (res.status === 400 || res.status === 401) {
+      if (this.grantMoved(startedFrom)) return 'none';
       this.clearTokens(); // refresh token revoked/expired — stop retrying
       return 'none';
     }
     if (!res.ok) return 'transient';
     const json = (await res.json()) as { accessToken: string; expiresIn: number; idToken?: string };
+    if (this.grantMoved(startedFrom)) return 'none';
     this.lastIdToken = json.idToken ?? null;
     const accountEmail = this.lastIdToken ? decodeIdTokenEmail(this.lastIdToken) : null;
     if (accountEmail && this.stored && this.stored.accountEmail !== accountEmail) {
@@ -394,10 +400,23 @@ export class GoogleDriveAdapter implements StorageAdapter {
     }
     this.saveTokens({
       accessToken: json.accessToken,
-      refreshToken: this.tokens.refreshToken, // refresh grants don't re-issue it
+      refreshToken: startedFrom, // refresh grants don't re-issue it
       expiresAt: expiry(json.expiresIn),
     });
     return 'ok';
+  }
+
+  /**
+   * Disconnect and a sign-in elsewhere run on other adapters, so the stored
+   * grant is the only shared truth. Read after a refresh's last await: if it is
+   * no longer the grant the refresh started from, this adapter keeps nothing
+   * and leaves storage alone. A replaced grant may be another account, so it
+   * is never adopted (US-09 AC2f).
+   */
+  private grantMoved(startedFrom: string): boolean {
+    if (getJson<DriveTokens>(TOKENS_KEY)?.refreshToken === startedFrom) return false;
+    this.tokens = null;
+    return true;
   }
 
   async disconnect(): Promise<void> {

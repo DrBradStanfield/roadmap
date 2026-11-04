@@ -630,7 +630,7 @@ input[type="number"] {
   flex: 0 0 80px;
 }
 
-.psa-inline-row select {
+.psa-inline-row input[type="date"] {
   flex: 1;
 }
 
@@ -704,7 +704,6 @@ input[type="number"] {
 .plan-empty-intro {
   margin: 0;
   padding: 17px;
-  opacity: 0.6;
   border: 1px solid #d4ebe4;
   border-radius: 10px;
   background: #f1faf6;
@@ -4136,12 +4135,6 @@ input[type="number"] {
   bottom: auto;
   z-index: auto;
   max-height: none;
-}
-
-/* Hide the widget's chat FAB on mobile (roadmap page) —
-   widget CSS only loads on the roadmap page, so this is naturally scoped. */
-@media (max-width: 767px) {
-  .chat-fab { display: none; }
 }
 
 /* Mobile: the chat tab is a screen tall, less the top and tab bars, so its

@@ -1,8 +1,11 @@
 # Git workflow: one worktree, one branch, one PR per session
 
 Brad, 2026-10-31: worktrees are fine "so long as everything is properly committed, PRs, pushed". Roadmap PR #389
-set the rule; PR 415 added the enforcement. Both repos run one design (claude_business PRs 31 and 32, Brad's
-2026-11-01 rulings). Binding rule: CLAUDE.md § Development Rules. Story: US-64.
+set the rule; PR 415 added the enforcement. Binding rule: CLAUDE.md § Development Rules. Story: US-64.
+
+**This rule is the roadmap repo's only.** claude_business ran the same design from 2026-10-31 to 2026-11-04, then
+went back to everything on `main` with every commit sweeping all changes (Brad 2026-11-04; its docs/git-workflow.md).
+The two repos' git rules now differ on purpose: never copy a git rule or hook change from one repo to the other.
 
 ## Why the old rule went
 
@@ -20,7 +23,7 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    `sh tools/worktree-new.sh <short-topic-name>` prints the path, then call **EnterWorktree** with `path` set
    to it. The branch is `claude/<name>`, cut from the latest `origin/main`, and tracks nothing, so a bare push
    can never land on `main`. The worktree is locked, so bulk cleanup never removes a live session's.
-   (Don't use EnterWorktree with `name`: that makes `worktree-<name>` branches, and both repos use `claude/`.)
+   (Don't use EnterWorktree with `name`: that makes `worktree-<name>` branches, and this repo uses `claude/`.)
    Resuming a thread: EnterWorktree `path` into its existing worktree.
 2. **Work**: edit only inside the worktree. The guard hook gives the worktree its own copy-on-write clone of the
    main checkout's `node_modules`, `widget-src/node_modules` and `packages/health-core/node_modules` (kept in
@@ -35,18 +38,31 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
 3. **Every turn ends landed**: commit your own changes, `git push -u origin claude/<name>`, and have a PR
    open (`gh pr create`; `--draft` while Brad is still deciding). The Stop hook blocks the turn's end, once,
    until this is true.
-4. **Merge** it yourself when the work is done and its gates have passed (CLAUDE.md: `test:all`, adversary +
+4. **Merge** it yourself when the work is done and its gates have passed (CI green on the PR, adversary +
    Codex where required, clinical citation numbering). The project settings allow exactly
    `gh pr merge <n> --merge --match-head-commit <sha>` and deny `--admin`, `--squash`, `--rebase` and `--auto`;
    the push guard refuses any other form (Brad 2026-11-01): the sha must be 7-40 hex, each option once, no
    `-d`/`--delete-branch` (it deletes with no merged check, so that stays Brad's), and no merge or write to main through `gh api`. It is a
    policy guard, not a complete one: a gh alias, another tool or the web UI is invisible to it. Nothing on
    GitHub enforces the reviews, so you do.
-   First `git fetch origin main`, then (its own command) `git merge --no-edit origin/main`, re-run `test:all`,
-   re-review if main touched your files (PR 150), push, wait for CI, then merge. Or let auto-ship merge it. Use
-   merge commits, not squash: the cleanup script proves the work reached `main` by ancestry. Brad's account
-   merges workflow-file PRs.
-5. **Deploy** only merged code: the CI Deploy always builds main's tip. A manual release follows
+   **The merge gate is CI green on the PR's head** (US-64 AC9, Brad 2026-11-04). CI tested the PR merged with
+   main as main stood at the PR's last push, which is what a local `test:all` tested too, so a full local run
+   is never a gate: while working, run only the tests your change touches (`npx vitest related <changed files>
+   --run`, seconds). GitHub does not re-run CI when main moves, so before merging, `git fetch origin main` and
+   compare the files each side changed since they split (`git diff --name-only origin/main...HEAD` and
+   `git diff --name-only HEAD...origin/main`). If they share any file other than `docs/user-stories.md` (docs
+   count: tests read them), or GitHub says the PR conflicts, merge main in (`git merge --no-edit origin/main`,
+   its own command), re-review that part (PR 150), push, and let CI run again; otherwise merge as is. What
+   that skips (main changed a file the PR only calls) is first tested by CI on main, and nothing ships before
+   it passes: Pages waits for that run on the exact commit, and Deploy runs the full suite itself. A red main
+   is then the next session's first fix. Once a re-run or a fix turns it green, a Pages run that already
+   refused it does not come back on its own: `gh workflow run pages.yml`, or the next Deploy's Pages smoke
+   fails on the refused run. Or let auto-ship merge it. Use merge commits, not squash: the cleanup
+   script proves the work reached `main` by ancestry. Only Brad's account merges to `main` by hand, his
+   sessions included; contributors get no write access (Brad 2026-11-04). Brad's account merges
+   workflow-file PRs.
+5. **Deploy** only merged code: the CI Deploy always builds main's tip. Run it once per batch of merges, not
+   once per PR (auto-ship still deploys each merge it makes). A manual release follows
    docs/deploy-runbook.md step 0: `bash tools/release-checkout.sh` from the main checkout makes a detached
    checkout of exactly `origin/main` outside the repo (it refuses a folder that exists, or a dirty result).
 6. **Finish**: ExitWorktree (`keep`), then from the main checkout `git pull --ff-only` and
@@ -61,6 +77,46 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
 
 **One owner per PR.** Whoever opens a PR merges or closes it (with a note on where the work went), or names
 it in the final message as still open and why.
+
+## Contributor PRs merge in batches
+
+Brad, 2026-11-04 (US-64 AC10). Austin's PRs come from his fork, so no CI reviewer or auto-ship runs on them,
+and Brad merges them. One at a time, each merge made the rest conflict and re-run everything. In batches:
+
+1. **Triage by class.** High risk: clinical, merge/FHIR, security, agent contracts (MCP tools, hooks, guards),
+   workflows, live write paths (sync, storage, erase, reminders). Low risk: everything else (UI, focus,
+   keyboard, copy, tests only). Read each PR's files, not only its title.
+2. **Review first, pinned to a SHA.** Record each PR's head (`gh pr view <n> --json headRefOid`) before the
+   review and check it is unchanged after (`gh pr diff` shows the current head). One fresh
+   `adversary` reads each low-risk PR's diff against its story and gives a verdict per PR; no
+   Codex. A high-risk PR gets its own adversary plus Codex, as CLAUDE.md requires; `.github/workflows/**`
+   changes need Brad's explicit yes. A rejected PR stays out of the batch, with a comment on it saying why.
+   Never merge a PR into a batch and then revert it: its head would still reach main, and GitHub would mark
+   it merged.
+3. **Build the batch, 8 to 10 low-risk PRs** (high-risk ones alone, or a few that touch the same area).
+   `sh tools/worktree-new.sh batch-<date>-<n>`, write a list file (`<pr> <full reviewed head sha>` per line),
+   run `node tools/merge-batch.mjs <list-file>` in the worktree. It fetches each head, refuses a moved one
+   (exit 1), merges the reviewed head as is (GitHub then marks the PR merged when the batch lands), drops a
+   PR's `docs/user-stories.html` and merges add-only `docs/user-stories.md` conflicts (both sides' `- AC`
+   lines, in order). The tool proves that merge changed the stories file by exactly the PR's own lines
+   (exit 3 and the merge undone if not), so those conflicts need no reviewer re-check. A repeated AC number or any other conflict stops it (exit 2): fix
+   it by hand and get one scoped re-check by a fresh adversary, since the fix is new lines.
+   Spawn reviewers and workers from the main checkout, never while the orchestrator sits in a session
+   worktree: a spawned agent is pinned to the orchestrator's folder (2026-11-04 one lost its shell when that
+   worktree was removed, and workers could not enter their own worktrees).
+   High-risk PRs are built into a group branch first (`claude/group-<area>`); open its PR with `hold` so CI
+   runs during review, and a fresh adversary plus Codex review that built branch (each PR's pinned head plus
+   the conflict fixes).
+4. **Open the batch PR with the `hold` label, always** (`gh pr create --label hold`). A `claude/` branch in this
+   repo gets the CI reviewer and auto-ship, and auto-ship would merge contributor code after 30 minutes with
+   no Codex and no human merge. The label stops it; Brad's session merges by hand, `hold` still on. List each
+   PR and its reviewed SHA in the body.
+5. **One CI run, one merge, one deploy.** Wait for CI, merge with `--match-head-commit`, run the CI Deploy
+   once, only after any running Deploy finishes (deploy.yml's later jobs check out main by name). If CI fails, find the PR by halves (rebuild the batch without half, re-run) rather than re-running
+   each PR alone.
+
+Rough cost (2026-11-04): one PR at a time paid about 9 min of CI, 8 min of local tests and its own review and
+deploy, repeated for every PR after each conflict. A batch pays one 3 min CI run and one review round.
 
 ## What enforces it
 
@@ -78,7 +134,7 @@ it in the final message as still open and why.
 | Deploy | `deploy.yml` (CI, `ref: main`); `tools/release-checkout.sh` (manual, docs/deploy-runbook.md step 0) | Only merged code ships |
 
 Tests: `tests/worktree-guard.test.ts`, `tests/git-push-guard.test.ts` (runs `.claude/hooks/git-push-guard.test.sh`),
-`tests/write-gate.test.ts`, `tests/release-checkout.test.ts` and `tests/stale-prs.test.ts`, all in `test:all`. The same hooks live in claude_business: edit both.
+`tests/write-gate.test.ts`, `tests/release-checkout.test.ts` and `tests/stale-prs.test.ts`, all in `test:all`. claude_business has no worktree guard since 2026-11-04; its push guard is a separate copy with its own rules.
 
 ## Exceptions
 
@@ -139,7 +195,8 @@ Tests: `tests/worktree-guard.test.ts`, `tests/git-push-guard.test.ts` (runs `.cl
 - The push guard refuses a Bash command naming `git` and `push` that it cannot tokenize (an unbalanced quote,
   as in a heredoc with an apostrophe). Put such text in a file instead.
 - Hooks load from the session's settings at start; a hook change applies to new sessions.
-- `npm run test:all` takes a machine-wide lock so one full local run happens at a time (US-68). It lives at
+- A full local `npm run test:all` is never a merge gate (CI is, step 4); run it only when you want the whole
+  suite on this Mac. It takes a machine-wide lock so one full local run happens at a time (US-71). It lives at
   `<main checkout>/.git/test-all.lock` (`owner.json` holds the wrapper and vitest pids, start, cwd).
   A lock whose pid is dead is taken over by the next run; to clear a stuck one, `rm -rf` that directory.
   Waiters give up after 60 min (`TEST_ALL_LOCK_TIMEOUT_MIN`); workers cap at max(2, cpus/4)

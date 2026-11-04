@@ -249,6 +249,25 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(bulkSaveMeasurements).toHaveBeenCalledTimes(2);
     expect(bulkSaveDocuments).toHaveBeenCalledOnce();
   });
+  it('US-12 AC6b: files a re-ticked letter on the retry when its first save threw and the values saved', async () => {
+    const earlier = { ...archivedLetter, id: 'd0', title: 'Synthetic earlier letter' };
+    vi.mocked(labImport).mockResolvedValue({ result: { ...extraction.result, classification: 'clinic_letter', document: letter } } as Awaited<ReturnType<typeof labImport>>);
+    vi.mocked(bulkSaveDocuments).mockRejectedValueOnce(new Error('synthetic document failure'));
+    // The reload after the partial save: the record holds what it held, in a new list.
+    render(<Harness initialHistory={{ ...emptyHistory, documents: [earlier] }} completedHistory={{ ...emptyHistory, documents: [{ ...earlier }] }} />);
+    await ready();
+    const box = () => document.querySelector<HTMLInputElement>('.review-document-header input[type=checkbox]')!;
+    expect(screen.getByText('Already saved')).toBeTruthy();
+    fireEvent.click(box());
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByText('Some items could not be saved. Please try again.');
+    expect(onComplete).toHaveBeenCalledOnce();
+    expect(box().checked).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(bulkSaveDocuments).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(bulkSaveDocuments).mock.calls[1][0]).toEqual([expect.objectContaining({ title: letter.title, sourceFileName: 'test.pdf' })]);
+  });
   it('keeps a dismissed connect-first panel dismissed when processing is cancelled (US-12 AC4)', async () => {
     vi.mocked(getDocumentArchiveMode).mockReturnValue('device-only');
     extractFromPdf.mockReturnValue(deferred<never>().promise);

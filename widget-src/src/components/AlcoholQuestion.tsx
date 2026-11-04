@@ -5,7 +5,7 @@
  * then the profile autosave). About you's rows show it and can change it once
  * onboarding is done (US-60 AC4, Brad 2026-11-02).
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { REDUCE_ALCOHOL_ID, type AlcoholAnswer, type Suggestion } from '@roadmap/health-core';
 
@@ -35,11 +35,37 @@ export function alcoholDismiss(suggestion: Suggestion, question?: AlcoholQuestio
   return suggestion.id === REDUCE_ALCOHOL_ID && question ? <AlcoholDismiss drinks={question.answer === 'drinks'} onChoose={question.onAnswer} aboutYouRow={question.aboutYouRow} /> : null;
 }
 
+/** Tab and Shift+Tab go round the open dialog's buttons, never to the page behind it (US-60 AC3a). */
+function keepTabIn(dialog: HTMLElement, e: KeyboardEvent) {
+  const buttons = [...dialog.querySelectorAll<HTMLButtonElement>('button')];
+  const at = buttons.indexOf(document.activeElement as HTMLButtonElement);
+  e.preventDefault();
+  buttons[at < 0 ? 0 : (at + (e.shiftKey ? buttons.length - 1 : 1)) % buttons.length].focus();
+}
+
+/** US-60 AC3a: while the dialog shows, Tab stays in it; once it closes, the focus goes back
+ *  to Dismiss. An answer that takes the card off the plan unmounts Dismiss too, and React
+ *  has cleared its ref by the time this cleanup runs. */
+function useModalFocus(shown: boolean, dialogRef: RefObject<HTMLElement>, dismissRef: RefObject<HTMLElement>) {
+  useEffect(() => {
+    if (!shown) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Tab' && dialogRef.current) keepTabIn(dialogRef.current, e); };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      dismissRef.current?.focus();
+    };
+  }, [shown]);
+}
+
 /** The Dismiss button and its question. */
 function AlcoholDismiss({ drinks, onChoose, aboutYouRow }: { drinks: boolean; onChoose: (answer: AlcoholAnswer) => void; aboutYouRow?: boolean }) {
   // 'stays': "I still drink" was chosen, and the dialog says why the card stays.
   const [open, setOpen] = useState<false | 'ask' | 'stays'>(false);
   const firstRef = useRef<HTMLButtonElement>(null);
+  const dismissRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus(open !== false, dialogRef, dismissRef);
 
   useEffect(() => {
     if (!open) return;
@@ -58,7 +84,7 @@ function AlcoholDismiss({ drinks, onChoose, aboutYouRow }: { drinks: boolean; on
 
   return (
     <>
-      <button type="button" className="suggestion-dismiss no-print" onClick={(e) => { e.stopPropagation(); setOpen('ask'); }}>
+      <button ref={dismissRef} type="button" className="suggestion-dismiss no-print" onClick={(e) => { e.stopPropagation(); setOpen('ask'); }}>
         Dismiss
       </button>
       {/* Portaled: the plan card is transformed on hover and as it enters, and
@@ -67,7 +93,7 @@ function AlcoholDismiss({ drinks, onChoose, aboutYouRow }: { drinks: boolean; on
       {open && createPortal(
         <div className="upload-modal-backdrop no-print" data-clarity-mask="true"
           onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
-          <div className="upload-modal alcohol-dialog" role="dialog" aria-modal="true" aria-labelledby="alcohol-dialog-title">
+          <div ref={dialogRef} className="upload-modal alcohol-dialog" role="dialog" aria-modal="true" aria-labelledby="alcohol-dialog-title">
             {open === 'stays' ? (
               <>
                 <p id="alcohol-dialog-title" className="alcohol-dialog-note">{stillDrinkLine(aboutYouRow)}</p>

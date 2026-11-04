@@ -238,7 +238,7 @@ export function offerCoreExtras(result: Pick<FileResult, 'values' | 'additionalV
     if (!metric || metric === 'creatinine') { additionalValues.push(v); continue; }
     const day = { ...(v.recordedAt ? { recordedAt: v.recordedAt } : null), ...(v.printedMonth ? { printedMonth: v.printedMonth } : null) };
     if (reportedToCanonical(metric, v.value, v.unit)) {
-      values.push(...resolveLabValues([{ metric, value: v.value, unit: v.unit, confidence: 'high', ...day, ...comparatorOf(v) }]));
+      values.push(...resolveLabValues([{ metric, value: v.value, unit: v.unit, confidence: v.confidence ?? 'high', question: v.question, printedName: v.printedName, ...day, ...comparatorOf(v) }]));
     } else {
       const { si, conventional } = UNIT_DEFS[metric].label;
       refusedValues.push({ metric, value: v.value, unit: v.unit, reason: `This test is measured in ${si === conventional ? si : `${si} or ${conventional}`}.`, ...day });
@@ -675,7 +675,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
 
     updateProgress({ current: 33, total: 100, fileName: `Analyzing ${allFiles.length} files...` });
 
-    const { batchId, error: batchError, errorCode: batchErrorCode } = await labImportBatch(allFiles);
+    const { batchId, error: batchError, errorCode: batchErrorCode } = await labImportBatch(allFiles, abort.signal);
     if (abort.signal.aborted) return [];
     if (!batchId) throw new UploadError(batchError || 'Failed to start processing', batchErrorCode || 'server_error');
 

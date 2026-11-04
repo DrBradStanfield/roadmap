@@ -12,9 +12,11 @@ const state = vi.hoisted(() => ({
   /** Every request body, and replies to hand back in order (then the default). */
   bodies: [] as Array<Record<string, any>>,
   replies: [] as Array<{ text: string; blocks: unknown[] } | Error>,
+  /** The chat-history store getChatHistory hands back: null, as when it could not be opened. */
+  store: null as null | { getMessages: (id: string) => Array<{ role: string; content: string }>; recordExchange: () => Promise<void> },
 }));
 
-vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(null) }));
+vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(state.store) }));
 vi.mock('./byok-anthropic', () => ({
   ByokAnthropicError: class ByokAnthropicError extends Error {
     constructor(readonly code: string, message: string) { super(message); }
@@ -97,6 +99,15 @@ describe('BYOK chat context — per-field sanitizing', () => {
     expect(state.sent!.system).toMatch(/needs height to work out the plan/);
     // US-07 AC8: a plan without sex lacks its sex parts; the model asks rather than works them out.
     expect(state.sent!.system).toMatch(/`missingInputs` naming `sex`.*never work them out yourself/);
+  });
+
+  // US-67 N3 (Brad 2026-11-03, "Option 1"): only the banner knows whether it can offer
+  // an Undo, so neither the prompt nor the tools tell the model to promise one.
+  it('US-67 N3: the prompt and tools never tell the model the user can undo', async () => {
+    await contextSent(SNAPSHOT);
+    expect(state.sent!.system).toMatch(/Do not offer an Undo yourself; if asked, say the banner shows Undo when one is available/);
+    expect(state.sent!.system).not.toMatch(/tell them they can undo/i);
+    expect(JSON.stringify(state.bodies.at(-1)!.tools)).not.toMatch(/that they can undo/i);
   });
 
   it('US-15 AC36: an empty form still sends no context', async () => {
@@ -310,5 +321,62 @@ describe('US-15 AC34: a Pages chat reply cut off before any text is an error, no
     const out = await sendMessage('hi', null, SNAPSHOT);
     expect(out.result).toBeNull();
     expect(out.error).toEqual({ error: 'Empty response from Anthropic. Try again.' });
+  });
+});
+
+// US-15 AC47a: getChatHistory() resolves null when the history file could not
+// be opened, and keeps that null for later chat sends unless an erase opens the
+// file again. The Pages chat read a follow-up's earlier turns only from the
+// store, so every follow-up then went to the model alone, while the thread on
+// screen carried on.
+describe('US-15 AC47a: a Pages chat follow-up keeps its conversation when the history file is not open', () => {
+  const SHOWN = [
+    { id: 'u1', role: 'user' as const, content: 'What is my LDL target?', createdAt: '2026-01-01T00:00:00Z' },
+    { id: 'a1', role: 'assistant' as const, content: 'Synthetic answer about LDL.', createdAt: '2026-01-01T00:00:05Z' },
+  ];
+  beforeEach(() => {
+    const keys = new Map([['hr_anthropic_key', 'sk-ant-test']]);
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => keys.get(k) ?? null,
+      setItem: (k: string, v: string) => void keys.set(k, v),
+      removeItem: (k: string) => void keys.delete(k),
+    });
+    state.bodies = [];
+    state.store = null;
+  });
+
+  it('sends the turns the chat shows when no store is open', async () => {
+    const { error } = await sendMessage('And my HDL?', 'conv-1', null, SHOWN);
+    expect(error).toBeNull();
+    expect(state.bodies[0].messages.map((m: { role: string; content: string }) => [m.role, m.content])).toEqual([
+      ['user', 'What is my LDL target?'],
+      ['assistant', 'Synthetic answer about LDL.'],
+      ['user', 'And my HDL?'],
+    ]);
+  });
+
+  it('keeps the 20-turn cap on the copy on screen', async () => {
+    const shown = Array.from({ length: 22 }, (_, i) => ({
+      id: `m${i + 1}`,
+      role: (i % 2 === 0 ? 'user' : 'assistant') as 'user' | 'assistant',
+      content: `Shown turn ${i + 1}`,
+      createdAt: '2026-01-01T00:00:00Z',
+    }));
+    await sendMessage('And my HDL?', 'conv-1', null, shown);
+    const sent = state.bodies[0].messages.map((m: { content: string }) => m.content);
+    expect(sent).toHaveLength(21);
+    expect(sent[0]).toBe('Shown turn 3');
+    expect(sent[20]).toBe('And my HDL?');
+  });
+
+  it('control: an open store is still the history, not the copy on screen', async () => {
+    state.store = { getMessages: () => [{ role: 'user', content: 'Stored question' }, { role: 'assistant', content: 'Stored answer' }], recordExchange: async () => {} };
+    await sendMessage('And my HDL?', 'conv-1', null, SHOWN);
+    expect(state.bodies[0].messages.map((m: { content: string }) => m.content)).toEqual(['Stored question', 'Stored answer', 'And my HDL?']);
+  });
+
+  it('control: a new conversation sends no earlier turns', async () => {
+    await sendMessage('What is my LDL target?', null, null, SHOWN);
+    expect(state.bodies[0].messages.map((m: { role: string }) => m.role)).toEqual(['user']);
   });
 });

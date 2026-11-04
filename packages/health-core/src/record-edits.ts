@@ -159,7 +159,7 @@ function reject<R extends string = EditRejectionReason>(reason: R, message: stri
 }
 
 /** Float noise from a unit conversion is not a mismatch; a wrong number is. */
-function sameValue(a: number, b: number): boolean {
+export function sameValue(a: number, b: number): boolean {
   return Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
@@ -216,14 +216,14 @@ function coreUnitRefusal(metric: MetricType, unit: string): EditRejection {
 
 /**
  * Rule 8 for a lab value: the row a catalogued test is STORED in, or the
- * refusal. The three write doors — `appendLabValue`, `bulkAppendValues` and
- * the lab branch of `correctValue` — all come here, because a second opinion
+ * refusal. The write doors — `appendLabValue`, `bulkAppendValues`, the lab
+ * branch of `correctValue` and the Health Records import — all come here, because a second opinion
  * about a factor is a wrong lab result.
  *
  * A test the catalogue does not know is returned untouched: there is no SI
  * definition to convert it to, and refusing it would throw the value away.
  */
-function toStoredLab(
+export function toStoredLab(
   entry: LabCatalogEntry | undefined, value: number, unit: string,
   referenceLow?: number | null, referenceHigh?: number | null,
 ): StoredLabRow | (EditRejection & { fault?: CountFault }) {
@@ -335,7 +335,7 @@ function slotBase(row: FileMeasurement | FileLabValue): string {
   return 'metricType' in row ? `m:${row.metricType}` : labRowSlot(row);
 }
 
-function slotOfRow(row: FileMeasurement | FileLabValue, day = dayOf(row.recordedAt ?? '')): string {
+export function slotOfRow(row: FileMeasurement | FileLabValue, day = dayOf(row.recordedAt ?? '')): string {
   return `${slotBase(row)}@${day}`;
 }
 

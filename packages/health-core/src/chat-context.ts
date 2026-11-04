@@ -65,11 +65,11 @@ import {
   healthInputSchema, inRange, inputsPressureInverted, sanitizeInputs, excludedInputFields, MEDICATION_KEYS, SCREENING_KEYS,
 } from './validation';
 import {
-  FIELD_UNITS, LONGITUDINAL_FIELDS, METRIC_TO_FIELD, medicationsToInputs, screeningRange, screeningsToInputs,
+  FIELD_UNITS, LONGITUDINAL_FIELDS, METRIC_TO_FIELD, medicationsToInputs, screeningRange, screeningsToInputs, withPsaMeasurement,
   type ApiMedication, type ApiScreening,
 } from './mappings';
 import {
-  buildMeasurementHistory, latestFromHistory, HISTORY_CAP_PER_METRIC, ISO_DATE,
+  buildMeasurementHistory, latestFromHistory, newestUsablePsa, HISTORY_CAP_PER_METRIC, ISO_DATE,
   type MeasurementHistoryMap,
 } from './measurement-history';
 import { calculateAge, calculateHealthResults, knownMinorOf, missingPlanInputs } from './calculations';
@@ -97,7 +97,7 @@ export function chatContextOf(
   unitSystem: UnitSystem,
   medications: ApiMedication[],
   screenings: ApiScreening[],
-  dated: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator }>,
+  dated: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator; id?: string; createdAt?: string }>,
 ): ChatContextPayload {
   const measurementHistory = buildMeasurementHistory(dated);
   // A limit travels as `limits` alone (US-12 AC20): its field's representative
@@ -211,10 +211,15 @@ export function buildChatContextJson(payload: unknown): string | null {
   const unitSystem: UnitSystem = raw.unitSystem === 'conventional' ? 'conventional' : 'si';
   const medicationRowsOnRecord = medicationRows(raw.medications);
   const screenings = screeningsToInputs(screeningRows(raw.screenings));
+  // US-06 AC14: the prostate cards read the newest usable saved PSA, by the plan's own rule; `screenings` stays
+  // the answers. A day's points arrive in the plan's order (buildMeasurementHistory), so the later point wins a tie.
+  const psaPoints = (measurementHistory.psa ?? []).map((p, i) =>
+    ({ id: String(i).padStart(4, '0'), metricType: 'psa', value: p.value, recordedAt: p.date, ...comparatorOf(p) }));
+  const planScreenings = withPsaMeasurement(screenings, newestUsablePsa(psaPoints, new Date()));
   // US-07 AC11: a left-out pair turns the blood pressure prompt into "check your reading".
   const planInputs = parsed.success ? { ...inputs, ...(pressure ? { pressureOrder: true as const } : {}) } as SuggestionInputs : null;
   const results = planInputs
-    ? calculateHealthResults(planInputs, unitSystem, medicationsToInputs(medicationRowsOnRecord), screenings)
+    ? calculateHealthResults(planInputs, unitSystem, medicationsToInputs(medicationRowsOnRecord), planScreenings)
     : null;
   // An unlisted drug name must never reach the prompt, so it reads UNLISTED
   // here, and a dose shows only within (0, MAX_DOSE]. The plan above used the
@@ -230,7 +235,7 @@ export function buildChatContextJson(payload: unknown): string | null {
   // US-15 AC31: each card's description, from the plan over the medications
   // above, so no unlisted name or out-of-range dose reaches the prompt.
   const descriptions = new Map(planInputs
-    ? calculateHealthResults(planInputs, unitSystem, medications, screenings).suggestions.map(s => [s.id, s.description])
+    ? calculateHealthResults(planInputs, unitSystem, medications, planScreenings).suggestions.map(s => [s.id, s.description])
     : []);
   // As plan.ts: a known minor's raw numbers stay; the adult readings go (US-07 AC6).
   const adult = results?.knownMinor ? undefined : results;

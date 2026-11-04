@@ -57,10 +57,10 @@ final class RecordPipelineTests: XCTestCase {
         let secondResult = await second.value
         let thirdResult = await third.value
         let fourthResult = await fourth.value
-        XCTAssertEqual(firstResult, .saved)
+        XCTAssertEqual(firstResult, .saved())
         guard case .refused(_, let existingId?) = secondResult else { return XCTFail("the second edit did not see the first: \(secondResult)") }
-        XCTAssertEqual(thirdResult, .saved)
-        XCTAssertEqual(fourthResult, .saved)
+        XCTAssertEqual(thirdResult, .saved())
+        XCTAssertEqual(fourthResult, .saved())
 
         let onDisk = try String(contentsOf: file, encoding: .utf8)
         XCTAssertEqual(onDisk, store.recordJSON, "the screen shows what is on disk")
@@ -90,8 +90,8 @@ final class RecordPipelineTests: XCTestCase {
         store.unpinScreen()
         let beforeResult = await before.value
         let saveResult = await save.value
-        XCTAssertEqual(beforeResult, .saved)
-        XCTAssertEqual(saveResult, .saved)
+        XCTAssertEqual(beforeResult, .saved())
+        XCTAssertEqual(saveResult, .saved())
         // 80 in the units the sheet showed: 80 kg on a metric record, 80 lb (36.3 kg) on a US one.
         let stored = try XCTUnwrap(weights(store.recordJSON).last?.value)
         XCTAssertEqual(stored, recordUnits == "si" ? 80 : 36.287, accuracy: 0.01)
@@ -109,7 +109,7 @@ final class RecordPipelineTests: XCTestCase {
         let shown = store.showCloud(HealthEngine.CloudView(record: cloudRecord, erase: "e1", session: 1))
         let result = await edit.value
         await shown.value
-        XCTAssertEqual(result, .saved, "the edit was asked for on the phone's file and lands there")
+        XCTAssertEqual(result, .saved(), "the edit was asked for on the phone's file and lands there")
         XCTAssertEqual(weights(try String(contentsOf: file, encoding: .utf8)).map(\.day), ["2026-10-20"])
         XCTAssertEqual(store.cloudErase, "e1", "then the cloud record is shown")
         XCTAssertEqual(store.recordJSON, cloudRecord)
@@ -126,7 +126,7 @@ final class RecordPipelineTests: XCTestCase {
         let shown = store.showCloud(HealthEngine.CloudView(record: cloudRecord, erase: "e1", session: 1))
         let late = Task { await store.apply(.add(metric: "weight", value: 81, day: "2026-10-21")) }
         let result = await edit.value
-        XCTAssertEqual(result, .saved)
+        XCTAssertEqual(result, .saved())
         await shown.value
         guard case .refused = await late.value else { return XCTFail("an edit asked for on the phone's screen reached the cloud record") }
     }
@@ -161,7 +161,7 @@ final class RecordPipelineTests: XCTestCase {
         let switched = Task { await store.applyNow(.units(other)) }
         let sheet = Task { await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")) }
         let switchResult = await switched.value
-        XCTAssertEqual(switchResult, .saved)
+        XCTAssertEqual(switchResult, .saved())
         guard case .refused(let words, _) = await sheet.value else { return XCTFail("a value typed in the old units was saved") }
         XCTAssertTrue(words.hasPrefix("Your units changed while this was open"))
         XCTAssertEqual(weights(try String(contentsOf: file, encoding: .utf8)).count, 0, "nothing stored")
@@ -186,7 +186,7 @@ final class RecordPipelineTests: XCTestCase {
         XCTAssertEqual(store.unitSwitches, 0)
         let saved = await save.value
         store.unpinScreen()
-        XCTAssertEqual(saved, .saved)
+        XCTAssertEqual(saved, .saved())
         XCTAssertEqual(try XCTUnwrap(weights(store.recordJSON).last?.value), recordUnits == "si" ? 80 : 36.287, accuracy: 0.01,
                        "read in the units the sheet showed, not the switch that landed behind it")
     }
@@ -203,7 +203,7 @@ final class RecordPipelineTests: XCTestCase {
         store.pinScreen() // a sheet opened anyway, on the old units
         let save = Task { await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")) }
         let switchResult = await switched.value
-        XCTAssertEqual(switchResult, .saved)
+        XCTAssertEqual(switchResult, .saved())
         XCTAssertEqual(store.unitSwitches, 0)
         guard case .refused(let words, _) = await save.value else { return XCTFail("a value typed in the old units was stored") }
         store.unpinScreen()

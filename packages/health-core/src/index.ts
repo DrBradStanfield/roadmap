@@ -56,6 +56,7 @@ export {
   POST_FOLLOWUP_INTERVALS,
   SCREENING_FOLLOWUP_INFO,
   SCREENING_MIN_AGE,
+  LUNG_PACK_YEARS,
   isScreeningEligible,
   // Supplement options
   SUPPLEMENT_OPTIONS,
@@ -164,6 +165,7 @@ export {
   type ApiProfile,
   type ApiMedication,
   medicationsToInputs,
+  withPsaMeasurement,
   type ApiScreening,
   screeningsToInputs,
   computeFormStage,
@@ -317,7 +319,7 @@ export { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertS
 export { isTakingDrug } from './history-change';
 export { recordedTime, medicationAnnotations, medicationChanges, type ChartAnnotation, type MedicationChange } from './medication-annotations';
 export { migrateFile, SchemaTooNewError, RecordShapeError } from './migrate';
-export { readableView, unreadableNote } from './readable-rows';
+export { isReadableRow, readableView, unreadableNote } from './readable-rows';
 
 // v2 reminder schedule (client-computed; the server is a dumb scheduler — §10)
 export {
@@ -359,6 +361,7 @@ export {
   isCalendarDay,
   isClinicalDay,
   latestActivePerMetric,
+  newestUsablePsa,
   latestFromHistory,
   HISTORY_CAP_PER_METRIC,
   type DatedMeasurement,
@@ -502,6 +505,9 @@ export { planInputsFrom } from './plan';
 // US-25 AC22: the plan's summary tiles, the web's Quick Stats and the phone's My plan tiles.
 export { statTiles, statTileText, type StatTile, type StatTileOptions, type StatTileStatus, type StatTone } from './stat-tiles';
 export {
-  LIMIT_NOT_GRADED, comparatorOf, comparatorSymbol, formatValue, isComparator, isLimitField, limitLabelValue, limitRepresentative,
+  LIMIT_NOT_GRADED, comparatorOf, comparatorSymbol, formatGradedOrLimit, formatValue, isComparator, isLimitField, limitLabelValue, limitRepresentative,
   limitText, withComparator, type Comparator, type InputLimit, type InputLimits, type LimitField,
 } from './lab-limits';
+
+// US-72: lab results from Apple Health Records, read from their FHIR JSON.
+export { HEALTH_RECORDS_LOINC, importHealthRecords, type ClinicalRecordInput, type HealthRecordsCounts } from './health-records-import';

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * `npm run test:all` for a Mac running many sessions: one full local run at a
- * time across every checkout and worktree (US-68), with a worker cap.
+ * time across every checkout and worktree (US-71), with a worker cap.
  * The lock is a directory in the git common dir, shared by all worktrees.
  * CI skips the lock and the cap. A run with file or other non-flag arguments
  * (a targeted run) skips the lock but keeps the cap. Extra args go to vitest.

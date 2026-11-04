@@ -448,7 +448,7 @@ Three-file sync: `evidence.ts` and `roadmap_text.html` are untouched because no 
 
 **Cortisol by timing (US-07 AC9, Brad 2026-11-02, issue 476).** Cortisol is read against the time it was drawn, so each timing has its own entry, in nmol/L at the same 27.59 µg/dL factor. A name that prints no timing ("Cortisol") is a morning cortisol, `cortisol_am` "Cortisol (morning)", since most cortisol tests are drawn in the morning. AM or morning spellings go there too. A random cortisol goes to `cortisol_random` "Cortisol (random)". A PM, evening or (blood) midnight cortisol goes to `cortisol_pm` "Cortisol (PM)". Salivary and urine cortisol are not catalogued: they keep their printed names. A row stored earlier under a random or PM name was uncatalogued; slots are computed on read, so it now reads under its new entry, and one printed in µg/dL is converted at load by an appended correction row (`migrate.ts`, as for every newly catalogued test). A bare "Cortisol" row stays in `cortisol_am`. The upload prompt offers all three cortisol names (US-07 AC10, Brad 2026-11-02: "just switch over"). Punctuated spellings ("Cortisol, A.M.", "cortisol-pm", "P.M. cortisol") reach the same entries through the second, punctuation-free try above.
 
-**Printed name decides (US-07 AC10, Brad 2026-11-02).** On a website or BYOK upload the model also returns each row's name as the report prints it. When that printed name resolves (the exact lookup or the punctuation-free one, never part of a name) to a core metric or a catalogued test, it decides where the row is filed, over the model's pick: a bare "Cortisol" is a morning cortisol whatever key the model chose, and a printed urine creatinine is a lab row, never serum creatinine. When it resolves to nothing, the model's pick stands. Specimen: when one name says urine or saliva and the other does not, the one that says it wins, for every test (a plain "Sodium" under a URINE heading stays urine sodium); for creatinine, a row the model listed among other tests is promoted when its printed name is a serum creatinine name; the unit check still refuses urine-only units. No review flag is added. A row with no printed name is filed as before. No row is edited; the connector, chat and agent paths are unchanged.
+**Printed name decides (US-07 AC10, Brad 2026-11-02).** On a website or BYOK upload the model also returns each row's name as the report prints it. When that printed name resolves (the exact lookup or the punctuation-free one, never part of a name) to a core metric or a catalogued test, it decides where the row is filed, over the model's pick: a bare "Cortisol" is a morning cortisol whatever key the model chose, and a printed urine creatinine is a lab row, never serum creatinine. When it resolves to nothing, the model's pick stands. Specimen: when one name says urine or saliva and the other does not, the one that says it wins, for every test (a plain "Sodium" under a URINE heading stays urine sodium); for creatinine, a row the model listed among other tests is promoted when its printed name is a serum creatinine name; the unit check still refuses urine-only units. No review flag is added. A row the model lists among the core tests under a name that is no core key (US-12 AC11a), with or without a printed name, is filed by its printed name when it has one, or else by that name, and is never dropped, on every path that reads the model's answer, the connector's folder import included. As one of the 11 core values it keeps the model's confidence and question, also when a held slot leaves it a lab row that is offered as that core value; creatinine needs a printed serum creatinine name; weight, waist, height and any other name are lab rows; a row with no name at all is counted as not saved. Any other row with no printed name keeps the model's pick. No row is edited; chat, agent writes and the assistant's own read are unchanged.
 
 ---
 
@@ -532,7 +532,7 @@ With no sex on record the plan grades no HDL, so `hdl-low` does not show (US-07 
 | Stage 2 | 140 | 90 |
 | Crisis | 180 | 120 |
 
-**Raised blood pressure** means one thing everywhere (the `bp-stage1` card and the weight-medication trigger): systolic >= 130 OR diastolic > 80. Either half counts on its own; the stage cards still need both halves to show.
+**Raised blood pressure** means one thing everywhere (the `bp-stage1` card and the weight-medication trigger): systolic >= 130 OR diastolic >= 80 (ACC/AHA 2017: stage 1 is 130–139 or 80–89; Brad 2026-11-03). Either half counts on its own; the stage cards still need both halves to show.
 
 **Inverted blood pressure (US-02 AC8):** a pair from one day with systolic at or below diastolic is not a blood pressure. When the newest systolic and diastolic are from the same day and inverted, the plan leaves both out (`validateHealthInputs` names the rule on both), so it shows no blood pressure tier card and raises no marker, the weight-medication trigger included, until a half is corrected. The plan shows the `measure-bp` card in its "Check your blood pressure reading" form instead (section 4, Missing Measurements First; US-07 AC11). It does not fall back to an earlier day. Halves from different days are not judged as a pair and are used as before. Writes refuse such a pair (section 12); a merge of two devices' one-half corrections can still make one. `evidence.ts` and `roadmap_text.html` do not change: this is an input-integrity rule, with no new threshold, card text or citation.
 
@@ -591,7 +591,7 @@ Mass → molar is approximate: the plan uses nmol/L = 2.5 × mg/dL, the interim 
 
 ### On-Treatment Lipid Targets
 
-Used when medications are tracked and a lipid is at or above its target: the value should be below it, so the target itself counts as above target (Brad, 2026-09-28). Cards and the form say "the treatment target is below X". Every "<X" statement of a lipid target (these cards, the borderline cards, the Lp(a) checklist and the reference hints) prints X as the first value, at the unit's display step, that the plan grades at or above the target (`formatTargetLine`): 0.50, 1.4 and 1.6 in SI; 50, 55 and 62 in mg/dL. 54 mg/dL of LDL is 1.396 mmol/L, which the plan grades below 1.4, so the mg/dL target reads 55. The LDL and non-HDL targets are also the tiles' Optimal line and the `lipid-diet` trigger, which use the same `>=` comparison. In the read-only summaries, a value printed beside its target (the cards' "Your LDL-c is…" sentence, the form's cholesterol intro, the Lp(a) checklist, the lipid tile and the MCP `get_plan` currentValues) shows on the side of X the plan grades it (`formatGradedValue`). It rounds to the display step as everywhere else, unless that would put it on the other side of X. Then a value graded at or above the target shows X, and a value graded below it shows one more decimal place, rounded down, which is always below X. So 1.40 mmol/L of LDL, at the target, shows as 55 mg/dL, not 54; 54 mg/dL (1.3964 mmol/L), below it, shows as 1.39 mmol/L, not 1.4; a non-HDL of 1.56 shows as 1.56. A value typed in the shown unit, on the display step, shows as typed. The history matrices (blood tests and vitals) are editable, so they show plain values, rounded to the display step: the number a typed value is compared against, so re-entering the shown number writes nothing (US-03 AC3). Their colour is the plan's grade. So a value within one display step of its line, entered in the other unit, can read on the other side of the hint there: 1.40 mmol/L of LDL shows as 54 mg/dL beside "<55", coloured above optimal.
+Used when medications are tracked and a lipid is at or above its target: the value should be below it, so the target itself counts as above target (Brad, 2026-09-28). Cards and the form say "the treatment target is below X". Every "<X" statement of a lipid target (these cards, the borderline cards, the Lp(a) checklist and the reference hints) prints X as the first value, at the unit's display step, that the plan grades at or above the target (`formatTargetLine`): 0.50, 1.4 and 1.6 in SI; 50, 55 and 62 in mg/dL. 54 mg/dL of LDL is 1.396 mmol/L, which the plan grades below 1.4, so the mg/dL target reads 55. The LDL and non-HDL targets are also the tiles' Optimal line and the `lipid-diet` trigger, which use the same `>=` comparison. In the read-only summaries, a value printed beside its target (the cards' "Your LDL-c is…" sentence, the form's cholesterol intro, the Lp(a) checklist, the lipid tile and the MCP `get_plan` currentValues) shows on the side of X the plan grades it (`formatGradedValue`). It rounds to the display step as everywhere else, unless that would put it on the other side of X. Then a value graded at or above the target shows X, and a value graded below it shows one more decimal place, rounded down, which is always below X. So 1.40 mmol/L of LDL, at the target, shows as 55 mg/dL, not 54; 54 mg/dL (1.3964 mmol/L), below it, shows as 1.39 mmol/L, not 1.4; a non-HDL of 1.56 shows as 1.56. A value typed in the shown unit, on the display step, shows as typed. HbA1c and Lp(a) follow the same rule at each of their grade lines (5.7 and 6.5 %, 75 and 125 nmol/L) in their tiles, the cards (with the Lp(a) checklist's HbA1c line) and `get_plan` (`formatGradedReading`, US-07 AC15): 47 mmol/mol, graded prediabetic, shows as 6.45 %, not 6.5 %. The history matrices (blood tests and vitals) are editable, so they show plain values, rounded to the display step: the number a typed value is compared against, so re-entering the shown number writes nothing (US-03 AC3). Their colour is the plan's grade. So a value within one display step of its line, entered in the other unit, can read on the other side of the hint there: 1.40 mmol/L of LDL shows as 54 mg/dL beside "<55", coloured above optimal.
 
 | Marker | Target | Conventional |
 |--------|--------|-------------|
@@ -787,7 +787,7 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 |----|-----------|----------|
 | `bp-crisis` | sys >= 180 OR dia >= 120 | urgent |
 | `bp-stage2` | sys >= 140 OR dia >= 90 | urgent |
-| `bp-stage1` | sys >= 130 OR dia > 80 | attention |
+| `bp-stage1` | sys >= 130 OR dia >= 80 | attention |
 
 Stage 1 shows age-dependent target: < 120/80 for age < 65, < 130/80 for age >= 65.
 
@@ -932,7 +932,7 @@ So: BMI >= 30 is always on; 28 < BMI < 30 is on unless the waist is healthy and 
 Raised markers, each named in the card in the plan's words:
 - HbA1c >= 38.8 mmol/mol (prediabetic) → "prediabetic HbA1c"
 - Triglycerides 150 mg/dL (about 1.7 mmol/L) or more → "elevated triglycerides"
-- Raised blood pressure: systolic >= 130 OR diastolic > 80, either half on its own (section 3) → "elevated blood pressure"
+- Raised blood pressure: systolic >= 130 OR diastolic >= 80, either half on its own (section 3) → "elevated blood pressure"
 - The plan's lipid marker (ApoB, else non-HDL, else LDL: `lipidMarkerFor`) at or above its risk-enhancing line → "elevated ApoB", "elevated non-HDL cholesterol" or "elevated LDL cholesterol":
   - ApoB >= 1.3 g/L (130 mg/dL)
   - Non-HDL >= 190 mg/dL (4.913 mmol/L), compared unrounded (section 1)
@@ -1043,7 +1043,7 @@ Source: `suggestions.ts` (screening section) + `types.ts` (intervals/follow-up)
 | Colorectal | 35-75 | Both | — |
 | Breast | 40+ | Female | 40-44 optional (info), 45+ recommended (attention) |
 | Cervical | 25-65 | Female | — |
-| Lung | 50-80 | Both | Former/current smoker AND >= 15 pack-years (USPSTF 2021) |
+| Lung | 50-80 | Both | Former/current smoker AND >= 20 pack-years (USPSTF 2021) |
 | Prostate | 45+ | Male | Shared decision |
 | Endometrial | 45+ | Female | Abnormal bleeding = urgent |
 | DEXA | Female >= 50, Male >= 70 | Both | — |
@@ -1101,8 +1101,12 @@ overdue = now > nextDue
 
 ### Prostate-Specific
 
-- PSA > 4.0 ng/mL -> `screening-prostate-elevated` (attention)
-- `elected_not_to` -> no suggestion shown
+- PSA > 4.0 ng/mL -> `screening-prostate-elevated` (attention), whatever the screening answer
+- `elected_not_to` -> no screening card and no PSA reminder; a saved PSA above 4.0 still shows `screening-prostate-elevated` (Brad 2026-11-03)
+- Where the PSA comes from (US-06 AC14): the newest usable active `psa` row, its value and its day, a core lab row since US-66. Usable: a value in the PSA range (0 to 10,000 ng/mL) and a real day no later than the latest day anywhere on Earth (UTC+14), so a server in UTC still counts the person's today; a newer unusable row never hides an older usable one. Ties on a day go to the later `createdAt`, then the id. A PSA printed as a limit (US-12 AC20) is graded only when the limit decides against 4.0: "> 100" is elevated, and the card shows it as printed ("Your PSA of > 100.0 ng/mL ..."); "< 0.1" is not; "< 5", "<= 4.0" and ">= 4.0" leave it uncertain, so no elevated card. Its day still dates the next test. The old answers `prostate_psa_value` and `prostate_last_date` count only when there is no usable row or when they are newer by date, value and day together; an answer that gives only a month loses to a row from that month. The web plan, `computePlan`, the reminder schedule and the chat's plan all read it this way.
+- While `screening-prostate-elevated` shows, `screening-prostate-upcoming` ("PSA test up to date") does not: beside a raised PSA it reads as all clear. `screening-prostate-overdue` and the `screening_prostate` reminder are unchanged (US-06 AC17, Brad 2026-11-03).
+- A raised PSA never prints as 4.0 (US-06 AC18, Brad 2026-11-03): where one decimal would print 4.0 or less, a PSA above 4.0 prints two, rounded up (4.04 reads 4.04, not 4.0), on the card, `get_plan` and the PSA field's line on the web and the iPhone (`formatGradedReading`). Any other PSA prints to one decimal. A limit prints as printed.
+- A PSA typed in the prostate section (US-06 AC15) is saved as a `psa` row on the day picked beside it (a full date, today until changed; never after today), as every blood test is dated. That day is also the last PSA test for the due card and the reminder: no client asks for or writes `prostate_last_date` any more.
 
 ### DEXA-Specific
 
@@ -1308,4 +1312,4 @@ Automatic from `drug_name`:
 
 ### Unit System Detection
 
-Auto-detected from browser locale. Countries using conventional: US, LR (Liberia), MM (Myanmar). Special en-US cross-check: if timezone is non-US (e.g. Pacific/Auckland), defaults to SI.
+Auto-detected from browser locale. Countries using conventional: US, LR (Liberia), MM (Myanmar), and the US territories PR (Puerto Rico), VI (US Virgin Islands), GU (Guam), MP (Northern Mariana Islands) and AS (American Samoa) (US-05 AC5). Special en-US cross-check: if timezone is non-US (e.g. Pacific/Auckland), defaults to SI; the territories' own zones count as US.
