@@ -200,6 +200,60 @@ describe('ChatSession on the device tier', () => {
   });
 });
 
+describe('US-11 AC2f: deleting a conversation again after a failed save writes the tombstone', () => {
+  type Stored = { conversations: Array<{ id: string; deleted?: boolean; title: string; messages: unknown[] }> };
+
+  it('cloud: the retry writes, and a fresh open no longer shows the conversation', async () => {
+    class FailsOnce extends MemoryAdapter {
+      failNext = false;
+      writes = 0;
+      async write(name: string, body: object, expected: string | null, signal?: AbortSignal) {
+        if (this.failNext) { this.failNext = false; throw new Error('network down'); }
+        this.writes++;
+        return super.write(name, body, expected, signal);
+      }
+    }
+    const store = new FailsOnce();
+    const s = await ChatSession.open(cloudHost(store));
+    await exchange(s, 'c1', 'private words');
+    await exchange(s, 'c2');
+    store.failNext = true;
+    await expect(s.deleteConversation('c1')).rejects.toThrow('network down');
+    const writesBefore = store.writes;
+    await s.deleteConversation('c1'); // the user presses Delete again
+    expect(store.writes).toBe(writesBefore + 1);
+    const stored = (await store.read('chat-history.json')).body as Stored;
+    expect(stored.conversations.find((c) => c.id === 'c1')).toEqual(expect.objectContaining({ deleted: true, title: '', messages: [] }));
+    expect((await ChatSession.open(cloudHost(store))).listConversations().map((c) => c.id)).toEqual(['c2']);
+  });
+
+  it('device tier: the retry writes the tombstone to the device store', async () => {
+    class FullOnce extends DeviceStore {
+      failNext = false;
+      writeSync(name: string, body: object, expected: string | null) {
+        if (this.failNext) { this.failNext = false; throw new Error('quota exceeded'); }
+        return super.writeSync(name, body, expected);
+      }
+    }
+    const sync = new FullOnce();
+    const fence = { value: null };
+    const s = await ChatSession.open(deviceHost(sync, fence));
+    await exchange(s, 'c1', 'private words');
+    sync.failNext = true;
+    await expect(s.deleteConversation('c1')).rejects.toThrow('quota exceeded');
+    await s.deleteConversation('c1');
+    const stored = sync.readSync('chat-history.json').body as Stored;
+    expect(stored.conversations).toEqual([expect.objectContaining({ id: 'c1', deleted: true, title: '', messages: [] })]);
+  });
+
+  it('a conversation this copy never held still writes nothing', async () => {
+    const store = new MemoryAdapter();
+    const s = await ChatSession.open(cloudHost(store));
+    await s.deleteConversation('nope');
+    expect((await store.read('chat-history.json')).body).toBeNull();
+  });
+});
+
 describe('US-52 AC6 / US-15 AC7: a saved conversation keeps each question above its answer', () => {
   it('reads question, answer, question, answer after a second exchange', async () => {
     const sync = new DeviceStore();

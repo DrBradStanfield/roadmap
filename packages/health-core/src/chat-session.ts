@@ -203,7 +203,9 @@ export class ChatSession {
   async deleteConversation(conversationId: string): Promise<void> {
     this.refreshAfterDeviceErase();
     const conv = this.file.conversations.find((c) => c.id === conversationId);
-    if (!conv || conv.deleted) return;
+    // A tombstone already in this copy may never have been stored (a failed
+    // save), so a second press writes it again rather than reporting done (US-11 AC2f).
+    if (!conv) return;
     tombstone(conv);
     await this.persist(true);
   }
