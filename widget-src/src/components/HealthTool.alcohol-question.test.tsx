@@ -261,3 +261,82 @@ it('US-60 AC3 (C2): in a grouped Nutrition card the Dismiss sits on the alcohol 
   expect(alcoholCard(view.container)).toBeUndefined();
   expect(trigText()).toBe('Blood triglycerides are very diet-sensitive—improvements can be seen within 2-3 weeks. Key measures: reduce sugar intake, and reduce total fat and calorie intake.');
 });
+
+// US-60 AC3a: the dialog is modal (aria-modal) for the keyboard too.
+const dismissButton = async (root: HTMLElement) => {
+  const card = await waitFor(() => { const c = alcoholCard(root); expect(c).toBeDefined(); return c!; });
+  return card.closest('.suggestion-subsection, .suggestion-card')!.querySelector<HTMLButtonElement>('.suggestion-dismiss')!;
+};
+/** Tab as a browser does it: the page's keydown handlers first; unless one prevents it,
+ *  the focus moves to the next (or previous) focusable element, wrapping round. */
+const pressTab = (shift = false) => {
+  const from = document.activeElement as HTMLElement;
+  if (!fireEvent.keyDown(from, { key: 'Tab', shiftKey: shift })) return;
+  const all = [...document.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href], [tabindex]')]
+    .filter((el) => el.tabIndex >= 0 && !(el as HTMLButtonElement).disabled);
+  const at = all.indexOf(from);
+  all[(at + (shift ? all.length - 1 : 1)) % all.length].focus();
+};
+const focused = () => document.activeElement?.textContent;
+
+it('US-60 AC3a: Tab and Shift+Tab go round the dialog\'s buttons and never reach the page behind it', async () => {
+  const view = render(<HealthTool />);
+  await dismiss(view.container);
+  expect(focused()).toBe("I don't drink");
+  pressTab(true);
+  expect(focused()).toBe('Cancel');
+  pressTab();
+  expect(focused()).toBe("I don't drink");
+  pressTab();
+  expect(focused()).toBe('I drink');
+  pressTab();
+  expect(focused()).toBe('Cancel');
+  pressTab();
+  expect(focused()).toBe("I don't drink");
+  expect(dialog()!.contains(document.activeElement)).toBe(true);
+  // Only Tab is taken: another key leaves the focus where it is.
+  fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' });
+  expect(focused()).toBe("I don't drink");
+  // The focus off every button (a click on the dialog's text): Tab starts again at the first.
+  (document.activeElement as HTMLElement).blur();
+  pressTab();
+  expect(focused()).toBe("I don't drink");
+});
+
+it('US-60 AC3a: Cancel, Escape, a click on the backdrop and "I drink" give the focus back to Dismiss', async () => {
+  const view = render(<HealthTool />);
+  await dismiss(view.container);
+  fireEvent.click(within(dialog()!).getByText('Cancel'));
+  expect(document.activeElement).toBe(await dismissButton(view.container));
+
+  await dismiss(view.container);
+  fireEvent.keyDown(document, { key: 'Escape' });
+  expect(dialog()).toBeNull();
+  expect(document.activeElement).toBe(await dismissButton(view.container));
+
+  await dismiss(view.container);
+  fireEvent.click(dialog()!.parentElement!);
+  expect(dialog()).toBeNull();
+  expect(document.activeElement).toBe(await dismissButton(view.container));
+
+  await dismiss(view.container);
+  fireEvent.click(within(dialog()!).getByText('I drink'));
+  await persist();
+  expect(saved().profile.alcohol).toBe('drinks');
+  expect(document.activeElement).toBe(await dismissButton(view.container));
+});
+
+it('US-60 AC3a: after "I still drink", the line\'s OK keeps the focus while shown and gives it back to Dismiss', async () => {
+  await saveChangedMeasurements({ alcohol: 'drinks' }, {});
+  await flushRoadmapStore();
+  const view = render(<HealthTool />);
+  await dismiss(view.container, 'Do you still drink alcohol?');
+  fireEvent.click(within(dialog()!).getByText('I still drink'));
+  expect(focused()).toBe('OK');
+  pressTab();
+  expect(focused()).toBe('OK');
+  pressTab(true);
+  expect(focused()).toBe('OK');
+  fireEvent.click(within(dialog()!).getByText('OK'));
+  expect(document.activeElement).toBe(await dismissButton(view.container));
+});
