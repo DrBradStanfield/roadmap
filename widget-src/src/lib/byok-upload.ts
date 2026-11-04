@@ -130,6 +130,8 @@ const BATCH_CONCURRENCY = 2;
 
 export async function labImportBatch(
   files: Array<{ pages: PageContent[] }>,
+  // The modal's Cancel (US-12 AC5a): a file not yet sent is never sent.
+  signal?: AbortSignal,
 ): Promise<{ batchId: string | null; error?: string; errorCode?: UploadErrorCode }> {
   const apiKey = getAnthropicKey();
   if (!apiKey) return { batchId: null, error: NO_KEY_MESSAGE, errorCode: 'server_error' };
@@ -137,18 +139,27 @@ export async function labImportBatch(
   const batchId = `byok-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const batch: ByokBatch = { total: files.length, completed: 0, done: false, results: [] };
   activeBatches.set(batchId, batch);
+  // Nothing polls a cancelled batch again, so its results are not kept.
+  onCancel(signal, () => activeBatches.delete(batchId));
 
-  void runBatch(apiKey, files, batch);
+  void runBatch(apiKey, files, batch, signal);
   return { batchId };
+}
+
+/** Runs `stop` on the upload modal's Cancel (US-12 AC5a). */
+function onCancel(signal: AbortSignal | undefined, stop: () => void): void {
+  signal?.addEventListener('abort', stop, { once: true });
 }
 
 async function runBatch(
   apiKey: string,
   files: Array<{ pages: PageContent[] }>,
   batch: ByokBatch,
+  signal?: AbortSignal,
 ): Promise<void> {
   const results: ByokBatch['results'] = new Array(files.length);
   let next = 0;
+  onCancel(signal, () => { next = files.length; });
 
   async function worker(): Promise<void> {
     while (next < files.length) {

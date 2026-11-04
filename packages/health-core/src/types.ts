@@ -384,6 +384,8 @@ export interface ScreeningInputs {
   // Prostate
   prostateDiscussion?: 'not_yet' | 'elected_not_to' | 'will_screen';
   prostatePsaValue?: number;
+  /** The saved PSA was printed as this limit (US-12 AC20): the card shows it, never `prostatePsaValue`. Derived, never stored. */
+  prostatePsaLimit?: { comparator: import('./lab-limits').Comparator; bound: number };
   prostateLastDate?: string;
 
   // Endometrial

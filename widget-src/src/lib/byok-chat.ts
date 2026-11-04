@@ -187,9 +187,11 @@ export async function sendMessage(
   conversationId?: string | null,
   guestInputs?: Record<string, unknown> | null,
   // The shared hook's history, delta callback and edit flag: this transport
-  // reads its own history, does not stream (US-15 AC16 is the Shopify
-  // widget's), and always sends its tools, since it runs only inside the app.
-  _history?: unknown,
+  // reads its history from the store, and the hook's copy (the thread on
+  // screen) only when no store could be opened (US-15 AC47a); it does not
+  // stream (US-15 AC16 is the Shopify widget's), and always sends its tools,
+  // since it runs only inside the app.
+  shownHistory: ChatMessage[] = [],
   _onDelta?: (delta: ChatDelta) => void,
   _canApplyEdits?: boolean,
 ): Promise<{ result: SendMessageResult | null; error: ChatError | null }> {
@@ -202,7 +204,7 @@ export async function sendMessage(
   // (for history); new conversations use it solely for the fire-and-forget
   // persist below.
   const storePromise = getChatHistory();
-  const history = (conversationId ? (await storePromise)?.getMessages(conversationId) ?? [] : []).slice(
+  const history = (conversationId ? (await storePromise)?.getMessages(conversationId) ?? shownHistory : []).slice(
     -MAX_HISTORY_MESSAGES,
   );
 

@@ -25,10 +25,11 @@ struct SleepPage: View {
     @State private var opening = true
     /// The wake and appearance the nights belong to (AC2, Codex R1).
     @State private var readFor: ReadFor?
+    @Environment(\.dynamicTypeSize) private var textSize
 
     var body: some View {
-        LivePageFrame(metric: .sleep, ranges: LiveRange.sleep, range: $range, empty: read && !nights.contains(where: \.hasSleep), key: live.wakes, guide: guide) { shows in
-            await load(ReadFor(wakes: live.wakes, shows: shows))
+        LivePageFrame(metric: .sleep, ranges: LiveRange.sleep, range: $range, empty: read && !nights.contains(where: \.hasSleep), key: [live.wakes, live.removals[.sleep] ?? 0], guide: guide) { shows in
+            await load(ReadFor(wakes: live.wakes, shows: shows, removals: live.removals[.sleep] ?? 0))
         } reset: {
             selected = nil
             scrolledTo = geometry.opening(showing: reading)
@@ -56,13 +57,29 @@ struct SleepPage: View {
         picked.flatMap { day in nights.first { $0.day == day } } ?? LiveMaths.newestNight(nights, today: live.calendar.startOfDay(for: live.now()))
     }
 
+    /// The kept nights draw at once (a first visit: 200 nights, while every night is read and
+    /// kept), then the samples added or deleted in Health since are applied (AC7a). A cancelled
+    /// read marks nothing read (N1).
     private func load(_ fresh: ReadFor) async {
         guard fresh != readFor else { return }
-        // A cancelled read marks nothing read (N1).
-        guard let read = try? await LiveHealth.readNights(live.store, reaching: reading, now: live.now(), calendar: live.calendar), !Task.isCancelled else { return }
+        // Sleep's history was removed: nothing old stays drawn (Codex R2).
+        if let readFor, readFor.removals != fresh.removals {
+            nights = []
+            read = false
+            picked = nil
+            selected = nil
+        }
+        let (store, now, calendar) = (live.store, live.now(), live.calendar)
+        if nights.isEmpty, let kept = await live.history.keptNights(calendar: calendar), !Task.isCancelled { land(kept) }
+        if nights.isEmpty, let first = try? await LiveHealth.readNights(store, reaching: reading, now: now, calendar: calendar), !Task.isCancelled { land(first) }
+        guard let read = try? await live.history.refreshNights(store, now: now, calendar: calendar), !Task.isCancelled else { return }
+        land(read)
+        readFor = fresh
+    }
+
+    private func land(_ read: [SleepNight]) {
         if read != nights { nights = read }
         self.read = true
-        readFor = fresh
         scrolledTo = Self.landed(opening: opening, scrolledTo: scrolledTo, geometry: geometry, reading: reading)
         opening = false
     }
@@ -104,24 +121,65 @@ struct SleepPage: View {
         return head
     }
 
-    /// The night's stages over its clock times, a row per stage, as Apple Health draws them.
+    /// The night's stages over its clock times, a band per stage, as Apple Health draws them:
+    /// the stage's name at its band's top left, its bars under the name, lines between bands.
     private func hypnogram(_ night: SleepNight) -> some View {
         let rows: [SleepStage] = night.hasStages ? SleepStage.drawn : [.awake, .asleep, .inBed].filter { stage in night.segments.contains { $0.stage == stage } }
         let segments = night.segments.filter { rows.contains($0.stage) }
-        return Chart(Array(segments.enumerated()), id: \.offset) { _, segment in
-            BarMark(xStart: .value("Start", segment.start), xEnd: .value("End", segment.end), y: .value("Stage", segment.stage.label))
-                .foregroundStyle(segment.stage.tint)
-                .clipShape(RoundedRectangle(cornerRadius: 3))
+        let bands = SleepBands(rows: rows.count, label: SleepBands.labelHeight(textSize))
+        // Charts' y grows upwards; the bands are measured from the top.
+        let up = { (top: CGFloat) -> Double in Double(bands.height - top) }
+        let bars: [(segment: SleepSegment, bottom: Double, top: Double)] = segments.map { segment in
+            let bar = bands.bar(rows.firstIndex(of: segment.stage) ?? 0)
+            return (segment, up(bar.upperBound), up(bar.lowerBound))
         }
-        .chartYScale(domain: rows.map(\.label))
+        let lines = bands.lines.map(up)
+        return Chart {
+            ForEach(lines, id: \.self) { line in
+                RuleMark(y: .value("Between", line))
+                    .foregroundStyle(Color(uiColor: .separator))
+                    .lineStyle(StrokeStyle(lineWidth: 1))
+            }
+            ForEach(bars.indices, id: \.self) { index in
+                Self.stageBar(bars[index].segment, bottom: bars[index].bottom, top: bars[index].top)
+            }
+        }
+        .chartYScale(domain: 0...Double(bands.height))
+        .chartYAxis(.hidden)
+        .chartPlotStyle { $0.frame(height: bands.height) }
+        .chartOverlay { proxy in stageNames(rows, bands: bands, proxy: proxy) }
         .chartXAxis { AxisMarks(values: .automatic(desiredCount: 4)) { _ in
             AxisGridLine()
             AxisValueLabel(format: .dateTime.hour())
         } }
         .environment(\.calendar, live.calendar)
         .environment(\.timeZone, live.calendar.timeZone)
-        .frame(minHeight: 200)
         .accessibilityChartDescriptor(SleepNightDescriptor(night: night, rows: rows, calendar: live.calendar))
+    }
+
+    private static func stageBar(_ segment: SleepSegment, bottom: Double, top: Double) -> some ChartContent {
+        let x0: PlottableValue<Date> = .value("Start", segment.start)
+        let x1: PlottableValue<Date> = .value("End", segment.end)
+        let y0: PlottableValue<Double> = .value("Bottom", bottom)
+        let y1: PlottableValue<Double> = .value("Top", top)
+        return RectangleMark(xStart: x0, xEnd: x1, yStart: y0, yEnd: y1)
+            .foregroundStyle(segment.stage.tint)
+            .clipShape(RoundedRectangle(cornerRadius: 3))
+    }
+
+    /// Each stage's name at its band's top left. VoiceOver reads the night through the
+    /// chart's audio graph, so the names are hidden from it.
+    private func stageNames(_ rows: [SleepStage], bands: SleepBands, proxy: ChartProxy) -> some View {
+        GeometryReader { geometry in
+            if let anchor = proxy.plotFrame {
+                let plot = geometry[anchor]
+                ForEach(rows.indices, id: \.self) { row in
+                    Text(rows[row].label).font(.caption).foregroundStyle(.secondary).lineLimit(1).fixedSize()
+                        .offset(x: plot.minX + SleepBands.gap, y: plot.minY + bands.label(row).lowerBound)
+                }
+            }
+        }
+        .accessibilityHidden(true)
     }
 
     // MARK: W, M, 6M
@@ -205,6 +263,39 @@ private struct SleepRangeChart: View {
     }
 
     private static let stacked: [SleepStage] = [.deep, .core, .rem, .asleep, .inBed]
+}
+
+/// D's bands, in points from the plot's top, as Apple Health lays them out (AC9a): each stage
+/// a band, its name at the top left, its bar centred in the band when the name leaves room,
+/// else just under the name; the lines run only between bands, so none crosses a name. A
+/// larger text size makes the bands taller, never the name smaller.
+struct SleepBands {
+    let rows: Int
+    /// The name's line height at the current text size.
+    let label: CGFloat
+
+    static let gap: CGFloat = 3
+    static let barHeight: CGFloat = 16
+    static let minBand: CGFloat = 58
+
+    var band: CGFloat { max(Self.minBand, Self.gap + label + Self.gap + Self.barHeight + Self.gap) }
+    var height: CGFloat { band * CGFloat(rows) }
+    var lines: [CGFloat] { rows > 1 ? (1..<rows).map { band * CGFloat($0) } : [] }
+
+    func label(_ row: Int) -> ClosedRange<CGFloat> {
+        let top = band * CGFloat(row) + Self.gap
+        return top...top + label
+    }
+
+    func bar(_ row: Int) -> ClosedRange<CGFloat> {
+        let top = band * CGFloat(row) + max((band - Self.barHeight) / 2, Self.gap + label + Self.gap)
+        return top...top + Self.barHeight
+    }
+
+    /// The caption's line height at a text size, as the name is drawn.
+    static func labelHeight(_ size: DynamicTypeSize) -> CGFloat {
+        ceil(UIFont.preferredFont(forTextStyle: .caption1, compatibleWith: UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size))).lineHeight)
+    }
 }
 
 /// VoiceOver's audio graph of one night: each segment's stage over time (AC12). A night

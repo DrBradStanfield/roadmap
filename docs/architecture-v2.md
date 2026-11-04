@@ -14,7 +14,7 @@ Last updated 2026-09-29. **Status: Live in production** — drstanfield.com serv
 
 **What it isn't:** a changelog or a build log. It captures architectural *shape* as it exists in code today. For the dated *why* behind each decision and the step-by-step migration record, read the git history; for agent-facing build/deploy instructions, see [CLAUDE.md](../CLAUDE.md).
 
-**Companion — the product spec:** [user-stories.html](user-stories.html) is the user-perspective catalogue (35 stories: acceptance criteria, usage evidence, test status). This page answers *how the system works*; that one answers *what it must do for users*. Every feature or bug fix starts from a story there — the story-driven development pathway (Lane A fixes / Lane B new features) is codified in [CLAUDE.md → Development Pathway](../CLAUDE.md). Grounding data: [the 2026-08 usage audit](usage-audit-2026-08.md) and the weekly reports in `docs/loops/`.
+**Companion — the product spec:** [user-stories.html](https://drbradstanfield.github.io/roadmap/user-stories.html) is the user-perspective catalogue (35 stories: acceptance criteria, usage evidence, test status). This page answers *how the system works*; that one answers *what it must do for users*. Every feature or bug fix starts from a story there — the story-driven development pathway (Lane A fixes / Lane B new features) is codified in [CLAUDE.md → Development Pathway](../CLAUDE.md). Grounding data: [the 2026-08 usage audit](usage-audit-2026-08.md) and the weekly reports in `docs/loops/`.
 
 **New features must declare their usage signal before code is written.** Every new story states which `product_events` funnel event (or existing metric) will prove people actually use the feature — the weekly product-health report then shows its adoption numbers and forces an explicit iterate-or-kill decision. This rule exists because the reminders feature was built without one and sat at 2 total opt-ins for months with nobody noticing. A feature that can't be measured can't be evaluated.
 
@@ -31,7 +31,7 @@ This page holds the Overview. The other sections live in one file per part, in t
 - **[Server & data](architecture-v2/server-and-data.md)** — [API endpoints](architecture-v2/server-and-data.md#api) · [Crons](architecture-v2/server-and-data.md#crons) · [Supabase today + purge](architecture-v2/server-and-data.md#supabase)
 - **[Ops](architecture-v2/ops-deployment.md)** — [Deployment topology (2 stores)](architecture-v2/ops-deployment.md#deployment-topology) · [Dev → prod pipeline](architecture-v2/ops-deployment.md#pipeline) · [Education / commerce split](architecture-v2/ops-deployment.md#edu-store) · [Deployment](architecture-v2/ops-deployment.md#deploy) · [Security model](architecture-v2/ops-deployment.md#security)
 - **[Reference](architecture-v2/teardown-rejected-gotchas.md)** — [v1 → v2 teardown](architecture-v2/teardown-rejected-gotchas.md#migration) · [Rejected paths](architecture-v2/teardown-rejected-gotchas.md#rejected) · [Dangerous gotchas](architecture-v2/teardown-rejected-gotchas.md#gotchas)
-- **Product** — [User stories ↗](user-stories.html) · [Usage audit (2026-08) ↗](usage-audit-2026-08.md) · [Loop fleet ↗](loops/loop-master-architecture-explanation.md)
+- **Product** — [User stories ↗](https://drbradstanfield.github.io/roadmap/user-stories.html) · [Usage audit (2026-08) ↗](usage-audit-2026-08.md) · [Loop fleet ↗](loops/loop-master-architecture-explanation.md)
 
 <a id="big-idea"></a>
 ## The big idea: local-first, user-owned cloud

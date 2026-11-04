@@ -15,6 +15,7 @@ import { BatchDateCell, BloodTestTimeline } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
 import { MOVE_CHANGED, MOVE_LPA, MOVE_TYPED, useMoveTest } from './MoveTestPanel';
 import type { ApiLabValue } from '../lib/api-types';
+import { pickDraftDate } from '../testing/matrix-gestures';
 
 const FROM = '2024-03-12';
 const TO = '2024-02-21';
@@ -222,6 +223,60 @@ describe('US-04 AC5: the panel', () => {
     expect(onMove).not.toHaveBeenCalled();
     expect(panel()).toBeNull();
     expect(status()).toBe(MOVE_TYPED);
+  });
+
+  // US-04 AC5b: the new day's column too. The moved row would fill the slot a
+  // typed value waits in, and that value would leave the page unsaved.
+  it('typed text in the new day\'s column writes nothing at the press, and says which day (AC5b)', async () => {
+    file.labValues.push(createCoreRow({ id: 'hdlT', metric: 'hdl', value: 1.4, recordedAt: day(TO), createdAt: day(TO) }));
+    const { view, pick, moveButton, panel, status, onMove } = matrix();
+    const toLdl = view.container.querySelectorAll<HTMLInputElement>('[data-metric="ldl"] .bt-cell-backfill input');
+    expect(toLdl).toHaveLength(1); // TO's empty LDL cell: the slot the moving LDL takes
+    fireEvent.change(toLdl[0], { target: { value: '3.0' } });
+    pick(FROM, TO);
+    fireEvent.click(moveButton());
+    await wait(0);
+    expect(onMove).not.toHaveBeenCalled();
+    expect(panel()).toBeNull();
+    expect(status()).toBe("Save or clear the values you typed on 21 Feb '24 first.");
+    expect((view.container.querySelector('[data-metric="ldl"] .bt-cell-backfill input') as HTMLInputElement).value).toBe('3.0');
+  });
+
+  it('an open editor in the new day\'s column at the press writes nothing (AC5b)', async () => {
+    file.labValues.push(createCoreRow({ id: 'hdlT', metric: 'hdl', value: 1.4, recordedAt: day(TO), createdAt: day(TO) }));
+    const { view, pick, moveButton, panel, status, onMove } = matrix();
+    pick(FROM, TO);
+    fireEvent.click(view.container.querySelector<HTMLElement>('[data-metric="hdl"] .bt-cell-clickable')!); // TO's HDL, the only one
+    expect(view.container.querySelector('[data-metric="hdl"] input')).not.toBeNull();
+    fireEvent.click(moveButton());
+    await wait(0);
+    expect(onMove).not.toHaveBeenCalled();
+    expect(panel()).toBeNull();
+    expect(status()).toBe("Save or clear the values you typed on 21 Feb '24 first.");
+  });
+
+  it('a New column dated the new day, with a value typed, writes nothing at the press (AC5b)', async () => {
+    const { view, pick, moveButton, panel, status, onMove } = matrix();
+    const table = view.container.querySelector('.bt-timeline') as HTMLElement;
+    pickDraftDate(table, TO);
+    fireEvent.change(table.querySelector<HTMLInputElement>('[data-metric="ldl"] .bt-cell-draft input')!, { target: { value: '3.0' } });
+    pick(FROM, TO);
+    fireEvent.click(moveButton());
+    await wait(0);
+    expect(onMove).not.toHaveBeenCalled();
+    expect(panel()).toBeNull();
+    expect(status()).toBe("Save or clear the values you typed on 21 Feb '24 first.");
+  });
+
+  it('typed text on a third day does not hold the move (AC5b)', async () => {
+    file.labValues.push(createCoreRow({ id: 'hdlT', metric: 'hdl', value: 1.4, recordedAt: day(TO), createdAt: day(TO) }));
+    const { view, pick, moveButton, onMove } = matrix();
+    const oldest = view.container.querySelectorAll<HTMLInputElement>('[data-metric="apob"] .bt-cell-backfill input')[0]; // 5 Jan '23
+    fireEvent.change(oldest, { target: { value: '0.9' } });
+    pick(FROM, TO);
+    fireEvent.click(moveButton());
+    await wait(0);
+    expect(onMove).toHaveBeenCalledWith(FROM, TO, ['ldl1', 'psa1', 'fer1'], {});
   });
 
   it('waits while an Lp(a) value on the day has an unanswered check (adversary R1)', () => {
