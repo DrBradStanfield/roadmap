@@ -608,12 +608,11 @@ export class RecordSession {
     }
     if (!erased && !mirror.pending.get()) return;
     try {
+      // No copy at all reads as an empty record, which holds nothing more.
       const { body, version } = sync.readSync(ROADMAP_FILE_NAME);
-      if (body != null) {
-        const ctx = this.ctx();
-        if (contentOf(mergeFiles(this.current, ROADMAP_DOC.migrate(body, ctx), ctx)) !== contentOf(this.current)) return;
-        sync.removeSync(ROADMAP_FILE_NAME, version);
-      }
+      const ctx = this.ctx();
+      if (contentOf(mergeFiles(this.current, ROADMAP_DOC.migrate(body, ctx), ctx)) !== contentOf(this.current)) return;
+      sync.removeSync(ROADMAP_FILE_NAME, version);
     } catch {
       return;
     }
