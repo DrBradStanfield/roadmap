@@ -22,6 +22,8 @@ on:
       # Fleet dashboard: rebuilt from docs/loops CSVs on every loop commit.
       - 'docs/loops/**'
       - 'scripts/build-fleet-dashboard.mjs'
+      - 'docs/user-stories.md'
+      - 'scripts/build-user-stories-html.ts'
   workflow_dispatch:
 
 permissions:
@@ -62,6 +64,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/build-fleet-dashboard.mjs _site/fleet.html
+
+      # The user-stories browser copy: built here, never tracked (US-64 AC11),
+      # so PRs that add ACs stop conflicting on a 1.7 MB generated file.
+      - name: Build user stories → /user-stories.html
+        run: npx tsx scripts/build-user-stories-html.ts --link-base https://github.com/DrBradStanfield/roadmap/blob/main/docs/ docs/user-stories.md _site/user-stories.html
 
       # Staging: dev → /dev/. Best-effort — reuses main's node_modules (dev
       # rarely diverges in deps); a failed dev build warns and is skipped so it

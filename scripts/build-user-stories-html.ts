@@ -1,28 +1,31 @@
 /**
- * Generate docs/user-stories.html from docs/user-stories.md.
+ * Generate docs/user-stories.html from docs/user-stories.md, and guard the .md.
  *
- * The .md is the SOURCE OF TRUTH (agents read/edit it, tests cite its US-ids);
- * the .html is the browser-readable companion linked from architecture-v2.md.
- * Regenerate after every .md edit:  npx tsx scripts/build-user-stories-html.ts
- * (Same derived-artifact pattern as rebuild-blog-index.ts.)
+ * The .md is the SOURCE OF TRUTH (agents read/edit it, tests cite its US-ids).
+ * The .html is a browser copy, no longer tracked in git (Brad 2026-11-04: every
+ * PR rebuilt the 1.7 MB file, so every merge conflicted with every other PR).
+ * pages.yml builds it to https://drbradstanfield.github.io/roadmap/user-stories.html;
+ * a local copy is `npx tsx scripts/build-user-stories-html.ts` (gitignored).
  *
  * It is also the spec's integrity gate. On 2026-09-01 a session read the .md
  * through a truncating reader, wrote the whole file back, and silently dropped
- * 17 stories (US-12–US-28); this script then regenerated the .html from the
- * truncated source, so both copies agreed and nothing noticed for four days.
- * Two checks now refuse that build: a story present in the previous .html but
- * absent from the .md (removal needs ALLOW_STORY_REMOVAL=1), and a US-id the
- * text references but never defines.
+ * 17 stories (US-12–US-28); nothing noticed for four days. Two checks refuse
+ * that now: a US-id the text references but never defines (every run), and,
+ * with `--check-against <git-ref>` (CI, against the PR's base), a story the
+ * base defines that the .md dropped. A story is retired by keeping its heading
+ * and saying so, never removed; ALLOW_STORY_REMOVAL=1 lets a local check through.
  *
- * Usage: npx tsx scripts/build-user-stories-html.ts [source.md] [out.html]
+ * Usage: npx tsx scripts/build-user-stories-html.ts [--link-base <url>] [source.md] [out.html]
+ *        npx tsx scripts/build-user-stories-html.ts --check-against <git-ref> [source.md]
  */
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { basename, join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = process.argv[2] ?? join(root, 'docs', 'user-stories.md');
-const OUT = process.argv[3] ?? join(root, 'docs', 'user-stories.html');
+/** Prefix for relative links, so a copy served away from docs/ (Pages) still resolves them. */
+let linkBase = '';
 
 const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -33,7 +36,8 @@ function inline(s: string): string {
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/~~([^~]+)~~/g, '<del>$1</del>')
-    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>');
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, text: string, href: string) =>
+      `<a href="${linkBase && !/^([a-z]+:|#|\/)/i.test(href) ? linkBase + href : href}">${text}</a>`);
 }
 
 function render(md: string): { body: string; toc: string } {
@@ -74,37 +78,67 @@ function render(md: string): { body: string; toc: string } {
 const definedIds = (md: string) => new Set([...md.matchAll(/^### US-(\d+)\b/gm)].map((m) => Number(m[1])));
 /** Story ids the markdown MENTIONS anywhere (`US-12`, `US-12/US-15`, `US-12 AC3`). */
 const referencedIds = (md: string) => new Set([...md.matchAll(/\bUS-(\d+)\b/g)].map((m) => Number(m[1])));
-/** Story ids the previously generated html carried (`<h3 id="us-12-…">`). */
-const publishedIds = (html: string) => new Set([...html.matchAll(/<h3 id="us-(\d+)(?:-|")/g)].map((m) => Number(m[1])));
-
 /** The names of the checks that failed, or none. Pure, so the test can drive it without a filesystem. */
-export function integrityProblems(md: string, previousHtml: string | null, allowRemoval: boolean): string[] {
+export function integrityProblems(md: string, baselineMd: string | null, allowRemoval: boolean): string[] {
   const defined = definedIds(md);
   const problems: string[] = [];
   const dangling = [...referencedIds(md)].filter((id) => !defined.has(id)).sort((a, b) => a - b);
   if (dangling.length) {
     problems.push(`references stories it never defines: ${dangling.map((id) => `US-${id}`).join(', ')}`);
   }
-  if (previousHtml !== null && !allowRemoval) {
-    const dropped = [...publishedIds(previousHtml)].filter((id) => !defined.has(id)).sort((a, b) => a - b);
+  if (baselineMd !== null && !allowRemoval) {
+    const dropped = [...definedIds(baselineMd)].filter((id) => !defined.has(id)).sort((a, b) => a - b);
     if (dropped.length) {
       problems.push(
-        `drops stories the published html still carries: ${dropped.map((id) => `US-${id}`).join(', ')} ` +
-          '(a truncated read written back whole looks exactly like this; set ALLOW_STORY_REMOVAL=1 for a deliberate removal)',
+        `drops stories the base still defines: ${dropped.map((id) => `US-${id}`).join(', ')} ` +
+          '(a truncated read written back whole looks exactly like this; retire a story by keeping its heading and marking it retired)',
       );
     }
   }
   return problems;
 }
 
+/** The source as `ref` holds it; null when that commit has no such file (a first build). Throws on a bad ref. */
+function sourceAt(ref: string, src: string): string | null {
+  const git = (args: string[]) =>
+    execFileSync('git', args, { cwd: dirname(src), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 64 * 1024 * 1024 });
+  git(['rev-parse', '--verify', '--quiet', `${ref}^{commit}`]);
+  try {
+    return git(['show', `${ref}:./${basename(src)}`]);
+  } catch {
+    return null;
+  }
+}
+
 function main(): void {
+  const args = process.argv.slice(2);
+  const option = (name: string) => {
+    const i = args.indexOf(name);
+    return i < 0 ? undefined : args.splice(i, 2)[1];
+  };
+  const against = option('--check-against');
+  linkBase = option('--link-base') ?? '';
+  const SRC = args[0] ?? join(root, 'docs', 'user-stories.md');
+  const OUT = args[1] ?? join(root, 'docs', 'user-stories.html');
   const md = readFileSync(SRC, 'utf8');
-  const previousHtml = existsSync(OUT) ? readFileSync(OUT, 'utf8') : null;
-  const problems = integrityProblems(md, previousHtml, process.env.ALLOW_STORY_REMOVAL === '1');
+  let baseline: string | null = null;
+  if (against !== undefined) {
+    try {
+      baseline = sourceAt(against, SRC);
+    } catch {
+      console.error(`user-stories.md: cannot read git ref ${against || '(empty)'}; nothing checked.`);
+      process.exit(1);
+    }
+  }
+  const problems = integrityProblems(md, baseline, process.env.ALLOW_STORY_REMOVAL === '1');
   if (problems.length) {
     for (const p of problems) console.error(`user-stories.md ${p}`);
-    console.error(`Nothing written to ${OUT}.`);
+    console.error(against === undefined ? `Nothing written to ${OUT}.` : 'Check failed.');
     process.exit(1);
+  }
+  if (against !== undefined) {
+    console.log(`user-stories.md: ${definedIds(md).size} stories, none dropped since ${against}.`);
+    return;
   }
   const { body, toc } = render(md);
 
