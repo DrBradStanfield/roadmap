@@ -36,6 +36,7 @@ const SAMPLE_ARGS: Record<string, unknown[]> = {
   chatEditsJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'),
     JSON.stringify([{ kind: 'field', field: 'ldlC', displayValue: 3.4, unitSystem: 'si', date: '2026-10-01' }]), NOW, 'phone', '2026-10-21', '{}'],
   historyJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'), 'ldl', NOW, 'phone', '{}'],
+  remindersJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'), NOW, 'phone'],
 };
 /** A door's answer with its timing fields (`ms`) left out, which differ call to call. */
 const untimed = (text: string) => JSON.stringify(JSON.parse(text, (key, value) => (key === 'ms' ? undefined : value)));

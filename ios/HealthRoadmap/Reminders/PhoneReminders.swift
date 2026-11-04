@@ -33,12 +33,17 @@ struct PhoneReminders: Decodable, Equatable {
     let upcoming: [Item]
     /// Soonest first, at most iOS's 64.
     let notifications: [Notification]
+    /// US-17 AC15: the day each follow-up was first seen, to keep on this phone and send
+    /// back. Only when asked; an engine before it sends none.
+    var firstSeen: [String: String]? = nil
 }
 
 extension HealthEngine {
     /// The record's reminders, from the engine.
-    func reminders(recordJSON: String, now: Date, deviceId: String) throws -> PhoneReminders {
-        let json = try call("remindersJson", [recordJSON, now.formatted(Self.iso), deviceId])
+    func reminders(recordJSON: String, now: Date, deviceId: String, firstSeen: [String: String]? = nil) throws -> PhoneReminders {
+        var arguments: [Any] = [recordJSON, now.formatted(Self.iso), deviceId]
+        if let firstSeen, let kept = try? JSONEncoder().encode(firstSeen) { arguments.append(String(decoding: kept, as: UTF8.self)) }
+        let json = try call("remindersJson", arguments)
         return try JSONDecoder().decode(PhoneReminders.self, from: Data(json.utf8))
     }
 }

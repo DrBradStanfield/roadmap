@@ -267,6 +267,11 @@ function prominentUnsubscribeBlock(unsubscribeUrl: string): string {
  */
 const SERVER_FOOTPRINT = "Dr Brad's server keeps your reminder calendar and this email address. Your plan is not stored there.";
 
+/** US-17 AC15: one line in every reminder email (DRAFT for Brad). The server's
+ *  labels carry no result, so it cannot tell a follow-up from a routine item. It
+ *  names the tool, never "your plan", as the button does (US-22 AC12, US-23 AC10). */
+const FOLLOWUP_LINE = 'If you have a follow-up to arrange or a result to record, open the Health Roadmap.';
+
 /** The one button both emails carry (US-22 AC12, US-23 AC10). It opens the tool;
  *  it cannot promise the plan, which lives wherever the reader saved it. */
 const OPEN_TOOL_LABEL = 'Open the Health Roadmap';
@@ -314,6 +319,8 @@ export function buildReminderV2EmailHtml(
       </p>
 
       ${items}
+
+      <p style="color:#333;font-size:16px;line-height:1.5;margin:0 0 24px;">${FOLLOWUP_LINE}</p>
 
       <div style="text-align:center;margin:32px 0;">
         <a href="${ROADMAP_OPEN_URL}?src=reminder"

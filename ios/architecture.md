@@ -1047,7 +1047,20 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
   the web's emails who also turns on phone reminders is reminded twice; no dedupe.
 - **Lock-screen words: generic.** Title "Health Roadmap", body "A check-up is due. Open
   the app to see which." The procedure's name is shown only inside the app. Revisit if
-  Brad prefers the name ("Colonoscopy due") on the lock screen.
+  Brad prefers the name ("Colonoscopy due") on the lock screen. The in-app list names a
+  follow-up after an abnormal result as its plan card does ("Follow-up to organize:
+  repeat colonoscopy", "Follow-up check-in: colposcopy"; US-17 AC15, drafts), from
+  `followupKinds` on the phone's own record; the lock screen stays generic (Brad
+  2026-11-05) and the pushed web schedule keeps the plain label.
+- **Follow-ups fire the first morning they are seen** (US-17 AC15, Brad 2026-11-05). A
+  follow-up's due day is already past, so counting from it would wait up to 90 days. The
+  app keeps the day each follow-up was first seen in `reminders-first-seen`, beside the
+  opt-in in the folder backups leave out (D5), and sends it back through `remindersJson`'s
+  optional `firstSeenJson`; the engine fires that morning (or the next if 09:00 has
+  passed, `NOTIFY_HOUR`, pinned equal to `ReminderScheduler.hour` by a test), or on its due
+  day if later, and every 90 days from it. Cleared whenever reminders are off, refused or
+  erased, even if the engine failed; an item no longer a follow-up drops its entry; a lost
+  entry fires once more, never in a loop; a kept day in the future heals. Never sent anywhere.
 - **Rebuilt from scratch** on launch, on return to the foreground and on every record
   change: remove our pending ones (ids start `reminder.`), add the soonest 64. One
   notification a day, however many things fall due on it (the words are generic, so two
