@@ -36,7 +36,8 @@ const N = "2".repeat(40); // main's tip when pages-smoke starts (a later server-
 
 // Scenario: runs[sha] = { id, appearsOn (1-based list call for that sha it first shows on), conclusion
 // ("running" = still in progress on every poll) }; main = the runs on main by id, newest first in the list
-// (appearsOn counts the branch=main list calls); failComment = `gh issue comment` fails.
+// (appearsOn counts the branch=main list calls); failComment = `gh issue comment` fails; failNewer = every
+// branch=main list call fails (HTTP 502).
 const FAKE_GH = `#!/usr/bin/env bash
 echo "$*" >> "$LOG"
 [ "$1" = issue ] && [ "$(jq -r '.failComment' "$SCEN")" = true ] && exit 1
@@ -50,6 +51,7 @@ case "$p" in
       '{workflow_runs: [(.runs[$s] // empty) | select(.appearsOn <= $n) | {id}]}' "$SCEN" | jq -r "$jqe";;
   *"/actions/workflows/pages.yml/runs?branch=main&per_page=1") n=$(( $(cat "$LOG.newer" 2>/dev/null || echo 0) + 1 ))
     echo "$n" > "$LOG.newer"
+    [ "$(jq -r '.failNewer' "$SCEN")" = true ] && { echo "HTTP 502" >&2; exit 1; }
     jq -c --argjson n "$n" '{workflow_runs: [.main | map(select(.appearsOn <= $n)) | sort_by(-.id) | .[0] // empty | {id}]}' \\
       "$SCEN" | jq -r "$jqe";;
   */actions/runs/*) id=\${p##*/}
@@ -62,7 +64,7 @@ esac
 
 type Run = { id: number; appearsOn: number; conclusion: string };
 function run(opts: { pagesSha?: string; runs?: Record<string, Run>; main?: { id: number; appearsOn: number }[];
-  notifyIssue?: string; failComment?: boolean }) {
+  notifyIssue?: string; failComment?: boolean; failNewer?: boolean }) {
   const dir = mkdtempSync(join(tmpdir(), "pages-smoke-"));
   const bin = join(dir, "bin");
   const log = join(dir, "calls.log");
@@ -74,7 +76,8 @@ function run(opts: { pagesSha?: string; runs?: Record<string, Run>; main?: { id:
   writeFileSync(join(bin, "sleep"), "#!/bin/sh\necho \"$1\" >> \"$LOG.sleeps\"\n");
   for (const f of ["gh", "git", "sleep"]) chmodSync(join(bin, f), 0o755);
   writeFileSync(log, "");
-  writeFileSync(scen, JSON.stringify({ runs: opts.runs ?? {}, main: opts.main ?? [], failComment: opts.failComment ?? false }));
+  writeFileSync(scen, JSON.stringify({ runs: opts.runs ?? {}, main: opts.main ?? [], failComment: opts.failComment ?? false,
+    failNewer: opts.failNewer ?? false }));
   writeFileSync(join(dir, "step.sh"), stepScript(deploy, STEP));
   const r = spawnSync("bash", [join(dir, "step.sh")], {
     env: { PATH: `${bin}:${process.env.PATH}`, GH_TOKEN: "x", GITHUB_REPOSITORY: "o/r", LOG: log, SCEN: scen,
@@ -221,8 +224,8 @@ describe("pages-smoke waits for the merged commit's Pages run (US-46 AC15)", { t
 const P = "3".repeat(40); // a commit that landed on main after M; its Pages run is the newer one
 const notice = (sha: string) =>
   `issue comment 42 -R o/r --body @DrBradStanfield, the Pages smoke found no pages.yml run for \`${sha}\` after 12 looks ` +
-  "(about 2 minutes), so it smoked the Pages site as it already was, which may not hold this commit yet. " +
-  "The deploy goes on. Run: https://x/o/r/actions/runs/77";
+  "(about 2 minutes), so it will smoke the existing Pages site, which may not hold this commit yet. " +
+  "A missing run does not stop the deploy: it goes on unless a later step fails. Run: https://x/o/r/actions/runs/77";
 
 describe("pages-smoke: a replaced Pages run, a missing run (US-46 AC16)", { timeout: 60_000 }, () => {
   it("the merged commit's run cancelled by a newer Pages run on main: it waits for the newer run instead", () => {
@@ -298,6 +301,15 @@ describe("pages-smoke: a replaced Pages run, a missing run (US-46 AC16)", { time
       [P]: { id: 7, appearsOn: 1, conclusion: "success" } }, main: [{ id: 7, appearsOn: 1 }] });
     expect(hand.code).toBe(0);
     expect(hand.newer).toEqual([newerThan(6)]);
+  });
+
+  it("a failed newer-run lookup ends the step at once: no retry, no further looks, no ::error:: line", () => {
+    const r = run({ pagesSha: M, runs: { [M]: { id: 5, appearsOn: 1, conclusion: "cancelled" } }, failNewer: true });
+    expect(r.code).toBe(1);
+    expect(r.out).toContain("HTTP 502");
+    expect(r.out).not.toContain("::error::");
+    expect(r.newer).toEqual([newerThan(5)]);
+    expect(r.sleeps).toEqual([]);
   });
 
   it("no run for the named commit after 12 looks: it comments on the deploy's notification issue and goes on", () => {

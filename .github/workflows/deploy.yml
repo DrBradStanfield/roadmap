@@ -135,7 +135,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           ref: main
-          persist-credentials: false # the token stays in the wait step, out of npm ci's reach
+          persist-credentials: false # keeps the token out of .git/config (it is still in the runner's memory)
       - name: Wait for the Pages deploy of this commit (if one was triggered)
         env:
           GH_TOKEN: ${{ github.token }}
@@ -200,7 +200,7 @@ jobs:
             echo "::warning::No pages.yml run for ${SHA} after 12 looks (about 2 minutes) — smoking the existing Pages site."
             # A ::warning:: reaches no one: say it on the deploy's notification issue (US-46 AC16).
             if [ -n "${NOTIFY_ISSUE:-}" ]; then
-              gh issue comment "${NOTIFY_ISSUE}" -R "${GITHUB_REPOSITORY}" --body "@DrBradStanfield, the Pages smoke found no pages.yml run for \`${SHA}\` after 12 looks (about 2 minutes), so it smoked the Pages site as it already was, which may not hold this commit yet. The deploy goes on. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+              gh issue comment "${NOTIFY_ISSUE}" -R "${GITHUB_REPOSITORY}" --body "@DrBradStanfield, the Pages smoke found no pages.yml run for \`${SHA}\` after 12 looks (about 2 minutes), so it will smoke the existing Pages site, which may not hold this commit yet. A missing run does not stop the deploy: it goes on unless a later step fails. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
                 || echo "::warning::Could not comment on the deploy notification issue #${NOTIFY_ISSUE}."
             fi
           else
