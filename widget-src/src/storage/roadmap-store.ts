@@ -76,7 +76,7 @@ import {
 } from '@roadmap/health-core';
 import { bloodTableReport, inputRangeFault, isAlcoholAnswer, isCoreRow, isReadableRow, readableView, ROADMAP_DOC, ROADMAP_FILE_NAME, type FileLabValue, type FileMeasurement } from '@roadmap/health-core';
 import { currentValueRows } from '@roadmap/health-core/blood-tests';
-import { type EraseResult, type EraseSteps, type RecordHost, type StorageAdapter } from '@roadmap/health-core';
+import { saveRecordInto, type EraseResult, type EraseSteps, type RecordHost, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { webRecordHost } from './web-record-host';
 import { Sentry } from '../lib/sentry';
@@ -616,6 +616,16 @@ export class RoadmapStore {
   /** Force-persist any pending changes (call before navigation). */
   flush(): Promise<void> {
     return this.session.flush();
+  }
+
+  /** Leaving this cloud (US-09 AC2g): merge the working copy, saved or still
+   *  waiting to save, into this device's copy, which the new connect lifts.
+   *  A cloud session saves to the device only when a save fails, so after a
+   *  failed connect the page's later saves reach the old cloud alone. */
+  async copyToDevice(): Promise<void> {
+    if (this.host.tier !== 'cloud') return;
+    const ctx = { deviceId: this.host.deviceId(), now: new Date(this.host.clock.now()).toISOString() };
+    await saveRecordInto(this.host.mirror.adapter, this.file, ctx);
   }
 
   /** Re-read the record and merge what came back (US-34); see the session. */

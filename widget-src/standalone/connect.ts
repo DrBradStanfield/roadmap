@@ -26,6 +26,7 @@ import { googleDriveConfig } from './google-config';
 import { clearLocalStorage, clearOffFileHealthData, safeGetItem, safeRemoveItem, safeSetItem } from '../src/lib/storage';
 import { failureTags, recordFailure } from '../src/lib/error-diagnostics';
 import { trackProductEvent } from '../src/lib/server-api';
+import { copyRecordToDevice } from '../src/lib/roadmap-data';
 import { Sentry } from '../src/lib/sentry';
 
 /** Which backend the app is currently using (a UI-level subset of StorageBackendId). */
@@ -308,6 +309,10 @@ export async function prepareSwitch(current: Backend): Promise<void> {
   if (!adapter) return;
   try {
     await copyDownOnce(adapter, current);
+    // The page's live adapter keeps its token in memory, so after a failed
+    // connect it went on saving to the old cloud; its record holds those
+    // saves, and any still waiting (US-09 AC2g).
+    await copyRecordToDevice();
   } catch (error) {
     console.warn('Copy-down before switch failed');
     Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'copy-down', backend: current } });
@@ -322,10 +327,10 @@ export async function prepareSwitch(current: Backend): Promise<void> {
 /** The cloud this page has already copied down and signed out of. A switch
  *  that works leaves the page (a redirect or a reload), so a second switch on
  *  the same page means the new connect failed and the user is trying again:
- *  the record is already on this device and the old tokens are gone, so the
- *  copy-down is not run again against a cloud it can no longer read. The
- *  tokens are still dropped again, in case a late refresh wrote them back
- *  (US-09 AC2g). */
+ *  the old tokens are gone, so the copy-down is not run again against a cloud
+ *  it can no longer read. What the page saved since comes down from its own
+ *  record instead (copyRecordToDevice), and the tokens are dropped again, in
+ *  case a late refresh wrote them back (US-09 AC2g). */
 let preparedFrom: Backend | null = null;
 
 async function copyDownOnce(adapter: StorageAdapter, current: Backend): Promise<void> {
