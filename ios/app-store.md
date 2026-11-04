@@ -142,10 +142,10 @@ declares the three rows below; declare them as written.
   heart rate, sleep, VO2 max and steps. A person who skipped that connects from My
   data's Apple Health row, which shows the same sheet. A person who connected before this
   was added gets "Turn On" on My data, the same sheet again; after a refusal, "Open Settings"
-  opens Settings. These five never go into the record: the app reads them each time a card
-  or chart shows, keeps only what the cards draw (each card's latest reading and the past month's
-  daily values behind its trend line) in one file on this iPhone (not backed up, deleted by
-  "Delete all my data") so the cards show at launch, and never sends them.
+  opens Settings. These five never go into the record: the app keeps a copy of what the cards
+  and charts draw (each card's latest reading and trend values, each chart's daily history, the
+  last week of hourly values, and sleep's stages) in files on this iPhone only (not backed up,
+  deleted by "Delete all my data"), so they show at once, and never sends them.
   For the next version: 0.1 is in review with the old text ("These five are shown from
   Apple Health, never kept: ... holds them in memory while it is open, and never saves or
   sends them."). To see them on a device without a watch, add sample data in the Health

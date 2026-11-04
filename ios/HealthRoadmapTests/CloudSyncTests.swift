@@ -174,6 +174,8 @@ final class CloudSyncTests: XCTestCase {
         dropbox.put(erased)
 
         await sync.syncNow()
+        // The re-read's news is drawn on the store's own chain, after syncNow returns.
+        await drawn(store) { self.activeDays(store.recordJSON) == [] }
         XCTAssertEqual(activeDays(store.recordJSON), [], "the erase reached the phone")
         let shown = try JSONSerialization.jsonObject(with: Data(store.recordJSON.utf8)) as! [String: Any]
         XCTAssertEqual((shown["meta"] as? [String: Any])?["eraseEpoch"] as? Int, 1)
@@ -444,6 +446,7 @@ final class CloudSyncTests: XCTestCase {
         store.pinScreen() // a sheet opens on the pre-erase record
         dropbox.put(erased(before))
         await sync.syncNow()
+        await drawn(store) { self.activeDays(store.recordJSON) == [] }
         XCTAssertEqual(activeDays(store.recordJSON), [], "the erase reached the phone")
         guard case .refused = await store.apply(.add(metric: "weight", value: 80, day: "2026-10-02")) else {
             return XCTFail("the old sheet's value must not land in the erased record")

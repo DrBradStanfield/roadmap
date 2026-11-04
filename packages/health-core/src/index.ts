@@ -442,6 +442,7 @@ export {
   fetchOrFail,
   jsonBody,
   sleepUntilAborted,
+  catchUpAfterFailure,
   type StorageAdapter,
   type StorageBackendId,
   type DocumentAccess,

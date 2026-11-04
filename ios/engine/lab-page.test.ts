@@ -62,7 +62,8 @@ describe('the history door for a lab test (US-25 AC25)', () => {
 
   it('an exact value carries its unrounded number for the chart; the text is for reading (review R5)', () => {
     const history = labHistory(record([lab('t1', 'tsh', 0.001, 'mIU/L', '2026-08-01'), lab('t2', 'tsh', 0.004, 'mIU/L', '2026-09-01')]), 'tsh');
-    expect(history.rows.map((r) => [r.value, r.number])).toEqual([['0', 0.004], ['0', 0.001]]);
+    // Below 0.1 the text keeps two significant figures (US-21 AC25, Brad 2026-11-04); it read "0" for both.
+    expect(history.rows.map((r) => [r.value, r.number])).toEqual([['0.004', 0.004], ['0.001', 0.001]]);
   });
 
   it('answers through historyJson with series "lab", and as before without it', () => {

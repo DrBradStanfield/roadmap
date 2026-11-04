@@ -90,6 +90,52 @@ Read my health record.
   });
 });
 
+// US-38 AC6: a list in a guide is a list on the page. Without this the lines of
+// a list ran together into one paragraph of dashes on the live guides.
+describe('build-guide-html.mjs — lists', () => {
+  let html = '';
+  beforeAll(() => {
+    html = build(`${FRONT_MATTER}You may see more than the record.
+
+- \`chat-history.json\` holds your chats.
+- Lab reports sit in a folder for each year, such as 2026. They
+  stay beside the record.
+- A [pending import](/blogs/guides/upload-lab-report) can wait for you.
+
+1. Open "the tool".
+2. Press Upload.
+
+9. Drop your files in.
+10. Check what it read.
+
+A line with - a dash and 1. a number inside it stays prose.
+
+2.5 mg is a dose, not a step.
+`).html;
+  });
+
+  it('renders dash lines as one bulleted list, one item per line', () => {
+    expect(html).toContain(
+      '<ul><li><code>chat-history.json</code> holds your chats.</li>' +
+        '<li>Lab reports sit in a folder for each year, such as 2026. They stay beside the record.</li>' +
+        '<li>A <a href="/blogs/guides/upload-lab-report">pending import</a> can wait for you.</li></ul>',
+    );
+    expect(html).not.toContain('<p>- ');
+  });
+
+  it('renders numbered lines as a numbered list, and a step after a break keeps its number', () => {
+    expect(html).toContain('<ol><li>Open “the tool”.</li><li>Press Upload.</li></ol>');
+    expect(html).toContain('<ol start="9"><li>Drop your files in.</li><li>Check what it read.</li></ol>');
+    expect(html).not.toMatch(/<p>\d+\. /);
+  });
+
+  it('leaves a paragraph that only contains a dash or a number as a paragraph', () => {
+    expect(html).toContain('<p>You may see more than the record.</p>');
+    expect(html).toContain('<p>A line with - a dash and 1. a number inside it stays prose.</p>');
+    expect(html).toContain('<p>2.5 mg is a dose, not a step.</p>');
+  });
+});
+
 describe('build-guide-html.mjs — a guide that is missing something', () => {
   it('builds a guide with no bootstrap-prompt fence, dropping the prompt box and its script', () => {
     const { html } = build(`${FRONT_MATTER}Just prose, no prompt.\n`);
@@ -251,6 +297,8 @@ describe('build-guide-html.mjs — the guides actually shipped', () => {
       expect(html, guide).toContain('<div class="rmguide">');
       expect(html, guide).not.toContain('@@');
       expect(html, guide).not.toContain('[diagram:');
+      // US-38 AC6: no list reaches the page as a paragraph of dashes or numbers.
+      expect(html, guide).not.toMatch(/<p>(?:- |\d+\. )/);
       // A copy box exists to carry a block: only a guide that has one.
       const source = readFileSync(join(GUIDES, guide), 'utf8');
       const carriesBox = source.includes('```bootstrap-prompt') || source.includes('```copy-box');
