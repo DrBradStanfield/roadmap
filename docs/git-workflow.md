@@ -94,17 +94,25 @@ and Brad merges them. One at a time, each merge made the rest conflict and re-ru
    Never merge a PR into a batch and then revert it: its head would still reach main, and GitHub would mark
    it merged.
 3. **Build the batch, 8 to 10 low-risk PRs** (high-risk ones alone, or a few that touch the same area).
-   `sh tools/worktree-new.sh batch-<date>-<n>`, then per approved PR: `git fetch origin pull/<n>/head`, check
-   `git rev-parse FETCH_HEAD` equals the recorded SHA (a new push means a new review), and
-   `git merge --no-edit <sha>`. Merging the reviewed head as is lets GitHub mark the PR merged when the batch
-   lands. Resolve conflicts once; a PR's `docs/user-stories.html` gets `git rm` (Pages builds it). The
-   conflict fixes are new lines: one scoped re-check by a fresh adversary covers them.
+   `sh tools/worktree-new.sh batch-<date>-<n>`, write a list file (`<pr> <full reviewed head sha>` per line),
+   run `node tools/merge-batch.mjs <list-file>` in the worktree. It fetches each head, refuses a moved one
+   (exit 1), merges the reviewed head as is (GitHub then marks the PR merged when the batch lands), drops a
+   PR's `docs/user-stories.html` and merges add-only `docs/user-stories.md` conflicts (both sides' `- AC`
+   lines, in order). The tool proves that merge changed the stories file by exactly the PR's own lines
+   (exit 3 if not), so those conflicts need no reviewer re-check. Any other conflict stops it (exit 2): fix
+   it by hand and get one scoped re-check by a fresh adversary, since the fix is new lines.
+   Spawn reviewers and workers from the main checkout, never while the orchestrator sits in a session
+   worktree: a spawned agent is pinned to the orchestrator's folder (2026-11-04 one lost its shell when that
+   worktree was removed, and workers could not enter their own worktrees).
+   High-risk PRs are built into a group branch first (`claude/group-<area>`); open its PR with `hold` so CI
+   runs during review, and a fresh adversary plus Codex review that built branch (each PR's pinned head plus
+   the conflict fixes).
 4. **Open the batch PR with the `hold` label, always** (`gh pr create --label hold`). A `claude/` branch in this
    repo gets the CI reviewer and auto-ship, and auto-ship would merge contributor code after 30 minutes with
    no Codex and no human merge. The label stops it; Brad's session merges by hand, `hold` still on. List each
    PR and its reviewed SHA in the body.
 5. **One CI run, one merge, one deploy.** Wait for CI, merge with `--match-head-commit`, run the CI Deploy
-   once. If CI fails, find the PR by halves (rebuild the batch without half, re-run) rather than re-running
+   once, only after any running Deploy finishes (deploy.yml's later jobs check out main by name). If CI fails, find the PR by halves (rebuild the batch without half, re-run) rather than re-running
    each PR alone.
 
 Rough cost (2026-11-04): one PR at a time paid about 9 min of CI, 8 min of local tests and its own review and
