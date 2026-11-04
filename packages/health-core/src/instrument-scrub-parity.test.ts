@@ -204,8 +204,12 @@ const TEXTS = [
   // US-09 AC7f: a value never starts inside a digit run; the winner is unchanged.
   '1.2.3 ldl', '12.34.5 ldl', '1,2,3 ldl', '120/80/60 bp', '1.2/3.4/5 bp', '12345 ldl',
   '2026.11.04 ldl', 'v1.2.3 ldl', '1/2/3 hba1c', '3.2.1 Lp(a)', '5 17-ohp', '12 25(oh)d',
-  // US-09 AC7f: an address starts at the head of its run; the winner is unchanged.
+  // US-09 AC7f: bounded email parts; two adjacent addresses both go.
   'mail x.y+z@ex.co.uk now', 'a@b.com@c.org', '..a@b.co', '(brad@example.com)', 'é-brad@example.com', 'brad@@example.com',
+  'mailto:a@b.com%2Cc@d.com', 'a@b.com+joe@x.com', 'a@b.com-joe@x.com', 'a@b.com_joe@x.com', 'a@b.com1x@y.com',
+  'a@b.co.uk-x@y.com', 'first@example.com+second@example.org', 'a@b.com%20c@d.com', `${'x'.repeat(100)}@example.com`,
+  // US-09 AC7f: a name ending in a symbol ends there, whatever follows.
+  '120 lp(a)s', '120 lp(a)x',
 ];
 
 describe('free-text scrub parity', () => {
@@ -374,6 +378,8 @@ describe('free-text scrub parity', () => {
     for (const impl of [source, copy]) {
       for (const [text, scrubbed] of [
         ['120 Lp(a)', '[value] Lp(a)'], ['came back 120 lp(a)', 'came back [value] lp(a)'], ['33 γ-GT', '[value] γ-GT'],
+        // A name ending in a symbol ends there, whatever follows, as with \b.
+        ['120 lp(a)s', '[value] lp(a)s'], ['120 lp(a)x', '[value] lp(a)x'],
         // Controls that already behaved: either order, a unit between, a symbol name.
         ['41 GGT', '[value] GGT'], ['Lp(a) 120', 'Lp(a) [value]'], ['γ-GT 33', 'γ-GT [value]'],
         ['120 nmol/L Lp(a)', '[value] Lp(a)'], ['4.2 k+', '[value] k+'], ['7.1 a1c', '[value] a1c'],
@@ -400,11 +406,18 @@ describe('free-text scrub parity', () => {
     }
   });
 
-  it('US-09 AC7f — an address starts at the head of its run, so the match that wins is unchanged, on both copies', () => {
+  it('US-09 AC7f — bounded email parts scrub both of two adjacent addresses, on both copies', () => {
     for (const impl of [source, copy]) {
       for (const [text, scrubbed] of [
         ['mail x.y+z@ex.co.uk now', 'mail [email] now'], ['a@b.com@c.org', '[email]@c.org'], ['..a@b.co', '[email]'],
         ['(brad@example.com)', '([email])'], ['é-brad@example.com', 'é[email]'], ['brad@@example.com', 'brad@@example.com'],
+        // A second address straight after the first, joined by a character an address can hold.
+        ['mailto:a@b.com%2Cc@d.com', 'mailto:[email][email]'], ['a@b.com+joe@x.com', '[email][email]'],
+        ['a@b.com-joe@x.com', '[email][email]'], ['a@b.com_joe@x.com', '[email][email]'], ['a@b.com1x@y.com', '[email][email]'],
+        ['a@b.co.uk-x@y.com', '[email][email]'], ['first@example.com+second@example.org', '[email][email]'],
+        ['a@b.com%20c@d.com', '[email][email]'],
+        // A local part over 64 characters keeps all but its last 64 (a stated residual).
+        [`${'x'.repeat(100)}@example.com`, `${'x'.repeat(36)}[email]`],
       ]) {
         expect(impl.scrubText(text), text).toBe(scrubbed);
       }
@@ -427,10 +440,12 @@ describe('free-text scrub parity', () => {
   it('US-09 AC7f — the server hook scrubs the value from the message and the exception value', () => {
     const event = copy.scrubServerEvent({
       message: 'came back 120 lp(a)',
-      exception: { values: [{ type: 'Error', value: 'import failed at 33 γ-GT' }] },
+      exception: { values: [{ type: 'Error', value: 'import failed at 33 γ-GT for mailto:a@b.com%2Cc@d.com' }] },
+      extra: { to: 'first@example.com+second@example.org', level: '120 lp(a)s' },
     });
     expect(event.message).toBe('came back [value] lp(a)');
-    expect(event.exception.values[0].value).toBe('import failed at [value] γ-GT');
+    expect(event.exception.values[0].value).toBe('import failed at [value] γ-GT for mailto:[email][email]');
+    expect(event.extra).toEqual({ to: '[email][email]', level: '[value] lp(a)s' });
   });
 
   it('scrubText produces identical output', () => {
