@@ -47,6 +47,13 @@ function resendErrorText(error: { name?: string; message?: string }): string {
   return `${error.name ?? 'unknown'} — ${scrubText(error.message ?? JSON.stringify(error))}`;
 }
 
+/** An accepted email has an id; a send with no error and no id is a failure
+ *  in every sender, not a success (US-17 AC14). */
+function requireResendId(data: { id?: string } | null): string {
+  if (!data?.id) throw new Error('Resend returned no error and no id — unexpected SDK response shape');
+  return data.id;
+}
+
 /**
  * Send an email via Resend. Throws on configuration miss OR on Resend API errors.
  *
@@ -72,10 +79,7 @@ export async function sendEmail(
   if (error) {
     throw new Error(`Resend rejected an email: ${resendErrorText(error)}`);
   }
-  if (!data?.id) {
-    throw new Error('Resend returned no error and no id — unexpected SDK response shape');
-  }
-  return { id: data.id };
+  return { id: requireResendId(data) };
 }
 
 // ---------------------------------------------------------------------------
@@ -107,7 +111,7 @@ export async function sendReminderEmail(
   }
 
   try {
-    const { error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: `Dr Brad Stanfield <${RESEND_FROM_EMAIL}>`,
       to,
       subject,
@@ -120,6 +124,7 @@ export async function sendReminderEmail(
     if (error) {
       throw new Error(`Resend rejected a reminder: ${resendErrorText(error)}`);
     }
+    requireResendId(data);
     return true;
   } catch (error) {
     console.error('Error sending reminder email:', error);
@@ -152,7 +157,7 @@ export async function sendFeedbackEmail(
     const customerLine = customerId ? `Customer ID: ${customerId}` : 'Guest user';
     const timestamp = new Date().toISOString();
 
-    const { error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: `Health Roadmap Feedback <${RESEND_FROM_EMAIL}>`,
       to: FEEDBACK_EMAIL,
       subject: 'Health Roadmap Feedback',
@@ -162,6 +167,7 @@ export async function sendFeedbackEmail(
     if (error) {
       throw new Error(`Resend rejected a feedback email: ${resendErrorText(error)}`);
     }
+    requireResendId(data);
     return true;
   } catch (error) {
     console.error('Error sending feedback email:', error);

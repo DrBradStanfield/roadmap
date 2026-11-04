@@ -114,22 +114,43 @@ async function countTodayPosts(): Promise<number> {
   return count ?? 0;
 }
 
-/** Single-query fetch of how many replies we've posted on each video.
- *  Called once per tick to avoid N queries in the per-comment loop.
+/** Rows asked for per page of readPostedRows; PostgREST answers at most 1000 (Supabase's default max rows). */
+const VIDEO_COUNT_PAGE = 1000;
+
+/** Every posted row in youtube_bot_log, read in pages by id until a page comes
+ *  back empty (US-27 AC4): one select answered only the first 1000 posted rows,
+ *  so past 1000 replies the lifetime cap undercounted. An empty page, not a
+ *  short one, ends the read, so a server cap below the page size still reads all.
+ *  Throws when any page is unreadable (US-27 AC1). */
+async function readPostedRows(): Promise<{ id: number; video_id: string | null }[]> {
+  if (!supabaseAdmin) throw new Error('supabaseAdmin not configured');
+  const rows: { id: number; video_id: string | null }[] = [];
+  let afterId = 0;
+  for (;;) {
+    const { data, error } = await supabaseAdmin
+      .from('youtube_bot_log')
+      .select('id, video_id')
+      .eq('posted', true)
+      .gt('id', afterId)
+      .order('id', { ascending: true })
+      .limit(VIDEO_COUNT_PAGE);
+    if (error) {
+      Sentry.captureException(error, { tags: { feature: 'youtube-bot' } });
+      throw error;
+    }
+    if (!data.length) return rows;
+    rows.push(...data);
+    afterId = data[data.length - 1].id;
+  }
+}
+
+/** How many replies we've posted on each video, read once per tick so the
+ *  per-comment loop makes no queries.
  *  Throws when the counts are unreadable (US-27 AC1) — an empty map on error
  *  bypassed PER_VIDEO_REPLY_CAP (Sentry JAVASCRIPT-REMIX-64). */
 async function fetchVideoPostCounts(): Promise<Map<string, number>> {
-  if (!supabaseAdmin) throw new Error('supabaseAdmin not configured');
-  const { data, error } = await supabaseAdmin
-    .from('youtube_bot_log')
-    .select('video_id')
-    .eq('posted', true);
-  if (error) {
-    Sentry.captureException(error, { tags: { feature: 'youtube-bot' } });
-    throw error;
-  }
   const counts = new Map<string, number>();
-  for (const row of data ?? []) {
+  for (const row of await readPostedRows()) {
     if (row.video_id) counts.set(row.video_id, (counts.get(row.video_id) ?? 0) + 1);
   }
   return counts;
