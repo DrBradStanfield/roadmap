@@ -223,6 +223,10 @@ function fakeClouds(input: RequestInfo | URL, init?: RequestInit): Promise<Respo
   return Promise.reject(new Error(`unexpected fetch ${url}`));
 }
 
+/** What each cloud holds now (a function, so TypeScript does not narrow it to the reset). */
+const dropboxBody = (): string | undefined => dropboxFile?.body;
+const githubBody = (): string | undefined => githubFile?.body;
+
 /** The weights a stored record holds, by day. */
 function weightsIn(body: string | undefined): Record<string, number> {
   const file = JSON.parse(body ?? '{"measurements":[]}') as { measurements: { metricType: string; value: number; recordedAt: string }[] };
@@ -243,7 +247,7 @@ describe('US-09 AC2g: what the page saved between the two tries reaches the new 
     await data.initRoadmapStore(connect.adapterFor('dropbox')!);
     expect((await data.addMeasurement('weight', 80, '2026-01-01')).status).toBe('inserted');
     await data.flushRoadmapStore();
-    expect(weightsIn(dropboxFile?.body)).toEqual({ '2026-01-01': 80 });
+    expect(weightsIn(dropboxBody())).toEqual({ '2026-01-01': 80 });
   });
 
   it('a value logged after the refused token is in GitHub after the corrected try', async () => {
@@ -257,11 +261,11 @@ describe('US-09 AC2g: what the page saved between the two tries reaches the new 
     // holds its token in memory, so the save lands in Dropbox, not on the device.
     expect((await data.addMeasurement('weight', 79, '2026-01-02')).status).toBe('inserted');
     await data.flushRoadmapStore();
-    expect(weightsIn(dropboxFile?.body)).toEqual({ '2026-01-01': 80, '2026-01-02': 79 });
+    expect(weightsIn(dropboxBody())).toEqual({ '2026-01-01': 80, '2026-01-02': 79 });
 
     await connectGitHub(view, GOOD_TOKEN);
     await vi.waitFor(() => expect(reload).toHaveBeenCalledTimes(1), { timeout: 10_000 });
-    expect(weightsIn(githubFile?.body)).toEqual({ '2026-01-01': 80, '2026-01-02': 79 });
+    expect(weightsIn(githubBody())).toEqual({ '2026-01-01': 80, '2026-01-02': 79 });
     expect(weightsIn(localStorage.getItem('health_roadmap_file_v2') ?? undefined)).toEqual({ '2026-01-01': 80, '2026-01-02': 79 });
     expect(localStorage.getItem(DROPBOX_TOKENS)).toBeNull();
   });
@@ -276,7 +280,7 @@ describe('US-09 AC2g: what the page saved between the two tries reaches the new 
     expect((await data.addMeasurement('weight', 78, '2026-01-03')).status).toBe('inserted');
     await connectGitHub(view, GOOD_TOKEN);
     await vi.waitFor(() => expect(reload).toHaveBeenCalledTimes(1), { timeout: 10_000 });
-    expect(weightsIn(githubFile?.body)).toMatchObject({ '2026-01-01': 80, '2026-01-03': 78 });
+    expect(weightsIn(githubBody())).toMatchObject({ '2026-01-01': 80, '2026-01-03': 78 });
   });
 
   it('a value an assistant wrote to Dropbox, which the page took in between the tries, is in GitHub too', async () => {
@@ -297,7 +301,7 @@ describe('US-09 AC2g: what the page saved between the two tries reaches the new 
 
     await connectGitHub(view, GOOD_TOKEN);
     await vi.waitFor(() => expect(reload).toHaveBeenCalledTimes(1), { timeout: 10_000 });
-    expect(weightsIn(githubFile?.body)).toEqual({ '2026-01-01': 80, '2026-01-04': 77 });
+    expect(weightsIn(githubBody())).toEqual({ '2026-01-01': 80, '2026-01-04': 77 });
   });
 
   it('a device that refuses the copy stops the corrected try before GitHub', async () => {
@@ -333,7 +337,7 @@ describe('US-09 AC2g: what the page saved between the two tries reaches the new 
     await connectGitHub(view, GOOD_TOKEN);
     await vi.waitFor(() => expect(reload).toHaveBeenCalledTimes(1), { timeout: 10_000 });
     expect(document.querySelector('.hr-sync-error')).toBeNull();
-    expect(weightsIn(githubFile?.body)).toEqual({ '2026-01-01': 80 });
+    expect(weightsIn(githubBody())).toEqual({ '2026-01-01': 80 });
   });
 
   it('control: the first try copies down what the page saved before it', async () => {
@@ -341,6 +345,6 @@ describe('US-09 AC2g: what the page saved between the two tries reaches the new 
     fireEvent.click(view.getByRole('button', { name: /^GitHub/ }));
     await connectGitHub(view, GOOD_TOKEN);
     await vi.waitFor(() => expect(reload).toHaveBeenCalledTimes(1), { timeout: 10_000 });
-    expect(weightsIn(githubFile?.body)).toEqual({ '2026-01-01': 80 });
+    expect(weightsIn(githubBody())).toEqual({ '2026-01-01': 80 });
   });
 });
