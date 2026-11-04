@@ -4,8 +4,8 @@
 #
 # Path: claude/* PR → Claude Review posts "VERDICT: APPROVE <head-sha>" →
 # this workflow verifies (same-repo claude/* PR, 'test' check green on that
-# exact sha, verdict comment authored by a trusted bot login, no 'hold'
-# label) → opens the veto issue (native email to Brad) → waits 30 min →
+# exact sha, verdict comment authored by a trusted bot login, every commit
+# authored by DrBradStanfield, no 'hold' label) → opens the veto issue (native email to Brad) → waits 30 min →
 # re-verifies (sha unchanged, still open, no 'hold') → if the branch is behind
 # main, merges main into it via the API and re-runs 'test' on the new head
 # (US-46 AC5; up to 3 rounds) → merges at that exact sha → dispatches deploy.yml, which runs its own gate job (the
@@ -23,7 +23,13 @@
 # claude-code-action posts the review as (not github-actions[bot], which any
 # workflow run in this repo posts as), pinned to the head SHA (no stale
 # approvals); the veto email quotes the latest comment that same filter
-# accepts; a
+# accepts; a commit by anyone but DrBradStanfield (or with no linked login)
+# never ships, except this workflow's own GitHub-signed update-branch merge of
+# main, though a spoofed author email still maps to Brad until commits must
+# be verified (US-46 AC14). That merge exception checks the commit's shape
+# (github-actions[bot], committed and signed by web-flow, two parents, the
+# second on main), not its tree: only a contents:write GITHUB_TOKEN can mint
+# one, and no workflow here runs PR code with that permission. Keep it so. A
 # poisoned diff still has to survive the fresh-context reviewer, and this
 # workflow's own 30-min wait step is the Tier 3 veto window regardless.
 # Editing this file is Brad-only (constitution Guardrails).
@@ -121,6 +127,37 @@ jobs:
           }
           wait_test
           [ "${st}" = success ] || { echo "'test' check ${st} on ${HEAD_SHA} — not shipping."; [ "${st}" = failed ] && exit 0; exit 1; }
+
+          # Author gate (US-46 AC14): every commit on the PR must be authored by
+          # Brad's GitHub account; a commit with no linked login is unknown and
+          # refused, and so is an API failure (fail closed). One exception: this
+          # workflow's own update-branch merge (claim 7 below), authored by
+          # github-actions[bot], committed and signed by GitHub (web-flow,
+          # verified), with two parents, the second already on main. The list's
+          # length must equal the PR's commit count (GitHub caps the endpoint at
+          # 250) and it must hold HEAD_SHA (a head moved since the read above).
+          # Residual: author.login follows the commit's email, so a commit with a
+          # spoofed author email maps to Brad. Closing that needs verified
+          # (signed) commits, which is Brad's call.
+          commits=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR}/commits?per_page=100" \
+            --jq '.[] | [.sha, (.author.login // "(none)"), (.committer.login // "(none)"),
+              (.commit.verification.verified // false), (.parents | length), (.parents[1].sha // "-")] | @tsv') \
+            || { echo "Could not list the PR's commits — not shipping (author gate fails closed)."; exit 0; }
+          want=$(pr_json | jq -r '.commits')
+          [ "$(grep -c . <<<"${commits}")" = "${want}" ] \
+            || { echo "Commit list does not hold all ${want} commits — not shipping."; exit 0; }
+          grep -q "^${HEAD_SHA}"$'\t' <<<"${commits}" \
+            || { echo "Commit list does not include head ${HEAD_SHA} — not shipping."; exit 0; }
+          while IFS=$'\t' read -r c_sha c_login c_committer c_verified c_parents c_main; do
+            [ "${c_login}" = DrBradStanfield ] && continue
+            if [ "${c_login}" = "github-actions[bot]" ] && [ "${c_committer}" = web-flow ] \
+              && [ "${c_verified}" = true ] && [ "${c_parents}" = 2 ]; then
+              case "$(gh api "repos/${GITHUB_REPOSITORY}/compare/${c_main}...main" --jq '.status' </dev/null 2>/dev/null || true)" in
+                ahead|identical) continue;;
+              esac
+            fi
+            echo "Commit ${c_sha} authored by ${c_login}, not DrBradStanfield — not shipping."; exit 0
+          done <<<"${commits}"
 
           # Veto window: notify (native email via issue), wait 30 minutes.
           # The email must stand alone — what the change is, why it exists, and
