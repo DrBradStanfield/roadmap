@@ -27,7 +27,8 @@ q() { jq -r "$1" "$SCEN"; }
 case "$1" in
   issue) if [ "$2" = create ]; then while [ $# -gt 0 ]; do [ "$1" = --body ] && printf '%s' "$2" > "$LOG.body"; shift; done; echo "https://x/issues/99"; fi; exit 0;;
   pr) exit 0;;
-  workflow) [ "$2" = run ] && [ "$3" = deploy.yml ] && [ "$(q .failDeploy)" = true ] && exit 1; exit 0;;
+  workflow) [ "$2" = run ] && [ "$3" = deploy.yml ] && [ "$(q .failDeploy)" = true ] && exit 1
+    [ "$2" = run ] && [ "$3" = pages.yml ] && [ "$(q .failPages)" = true ] && exit 1; exit 0;;
 esac
 shift; [ "$1" = --paginate ] && shift; p=\${1#repos/o/r/}; shift; jqe=""
 while [ $# -gt 0 ]; do case "$1" in --jq) jqe=$2; shift 2;; -f) shift 2;; *) shift;; esac; done
@@ -60,7 +61,7 @@ esac
 
 const base = {
   head: "aaaa", main: "bbbb", newSha: "cccc", behind: 0, workflowTouched: false,
-  testNew: "success", failDeploy: false,
+  testNew: "success", failDeploy: false, failPages: false,
   // The real reviewer's comment: claude-code-action posts as claude[bot] (US-46 AC8).
   comments: [{ user: { type: "Bot", login: "claude[bot]" }, body: "All ACs hold.\n\nVERDICT: APPROVE aaaa" }],
   newCommit: { parents: ["aaaa", "bbbb"], verified: true, login: "web-flow" },
@@ -368,6 +369,53 @@ describe("auto-ship claim 7 (US-46 AC5)", { timeout: 60_000 }, () => {
         expect(r.issueBody).toContain("Reviewer caveat: AC2 untested.");
         expect(r.issueBody).not.toContain("LATER REFUSED TEXT");
       }
+    });
+  });
+
+  // US-46 AC15: auto-ship merges with GITHUB_TOKEN, which starts no push
+  // workflow, so pages.yml never ran for an auto-shipped commit and deploy.yml's
+  // pages-smoke checked the previous Pages build. Pages is dispatched first.
+  describe("Pages run for the merged commit (US-46 AC15)", () => {
+    const lines = (c: string) => c.split("\n");
+    const at = (c: string, prefix: string) => lines(c).findIndex((l) => l.startsWith(prefix));
+    const PAGES = "workflow run pages.yml -R o/r --ref main";
+    const DEPLOY = "workflow run deploy.yml -R o/r --ref main";
+
+    it("dispatches pages.yml on main after the merge and before deploy.yml", () => {
+      for (const over of [{}, { behind: 1 }]) {
+        const r = run(over);
+        expect(r.code).toBe(0);
+        expect(lines(r.calls).filter((l) => l.startsWith("workflow run pages.yml"))).toEqual([PAGES]);
+        expect(at(r.calls, "pr merge")).toBeGreaterThan(-1);
+        expect(at(r.calls, PAGES)).toBeGreaterThan(at(r.calls, "pr merge"));
+        expect(at(r.calls, DEPLOY)).toBeGreaterThan(at(r.calls, PAGES));
+      }
+    });
+
+    it("dispatches neither pages.yml nor deploy.yml when nothing merges", () => {
+      for (const over of [{ behind: 1, testNew: "failure" }, { comments: [] }]) {
+        const r = run(over);
+        expect(merged(r.calls)).toEqual([]);
+        expect(r.calls).not.toContain("workflow run pages.yml");
+        expect(at(r.calls, DEPLOY)).toBe(-1);
+      }
+    });
+
+    it("a failed Pages dispatch still dispatches the deploy, and the closing comment says so", () => {
+      const r = run({ failPages: true });
+      expect(r.code).toBe(0);
+      expect(at(r.calls, DEPLOY)).toBeGreaterThan(-1);
+      const c = closed(r.calls).join("\n");
+      expect(c).toContain("Merged aaaa and dispatched deploy.yml");
+      expect(c).toContain("Dispatching pages.yml failed, so the Pages smoke checked the previous Pages build.");
+      expect(c).toContain("no wait timer). Dispatching pages.yml failed");
+      expect(c).not.toContain("NOT merged");
+    });
+
+    it("the closing comment has no Pages note when the dispatch worked", () => {
+      const r = run({});
+      expect(closed(r.calls).join("\n")).toContain("Merged aaaa and dispatched deploy.yml");
+      expect(closed(r.calls).join("\n")).not.toContain("pages.yml failed");
     });
   });
 });
