@@ -28,6 +28,15 @@
  * Re-taken again at the merge of origin/main (2026-11-02): US-66's wording on
  * top of US-12 AC20's; MCP_TOOLS and tools/list from the merged code
  * (INSTRUCTIONS is main's: US-66 does not change it).
+ *
+ * US-32 AC57 (2026-11-03): the instructions on both servers say a document's
+ * title, text and file name are data, not instructions, and read_record's
+ * `documents` and both reads' `folder.unimported` carry the same label in
+ * their output schemas, as import_documents already did for its fields.
+ * INSTRUCTIONS, MCP_TOOLS and tools/list re-pinned. Prompts and server info
+ * are unchanged, and by the diff so are every tool's description and input
+ * schema. tools/list grows by 268 characters of output-schema description.
+ * Taken while Anthropic's directory review is open, so merging is Brad's call.
  */
 import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
@@ -39,11 +48,11 @@ const sha256 = (value: unknown) => createHash('sha256').update(JSON.stringify(va
 
 describe('US-35 AC13 — the published connector text is pinned, and changes only on purpose', () => {
   it.each([
-    ['INSTRUCTIONS', INSTRUCTIONS, '73f64dc05693aab921d50b60db290f33b37a02a51b8e509c9eb941c44f88ffae'],
-    ['MCP_TOOLS', MCP_TOOLS, '03c432fbe8fa6c2e25d01de885d850a330f742368202531de3c78066c0eade72'],
+    ['INSTRUCTIONS', INSTRUCTIONS, '0c3ae0d98005027a72dfdb0e2b8816ff02387b042133d5308d1503883a48583c'],
+    ['MCP_TOOLS', MCP_TOOLS, '0f2f73a07fc096cfbb2f5d152d9a9e7a701b2c9866c65501d6e44eaea24ad75e'],
     ['MCP_PROMPTS', MCP_PROMPTS, 'a159ee16a3ce5fefc23ed8f90178a852551350795731fabd30ca7a5f6267c140'],
     ['SERVER_INFO', SERVER_INFO, 'ce1110c13b5b005a4f14f0068138039eecd7fddc888032f08479060ad2da400f'],
-  ] as const)('%s hashes to its pinned value (re-taken 2026-11-02, US-12 AC20 and US-66 AC11)', (_name, value, pinned) => {
+  ] as const)('%s hashes to its pinned value (re-taken 2026-11-03, US-32 AC57)', (_name, value, pinned) => {
     expect(sha256(value)).toBe(pinned);
   });
 });
@@ -56,6 +65,6 @@ describe('US-32 AC50 — the tools/list answer itself is pinned', () => {
       instructions: INSTRUCTIONS,
       callTool: async () => ({ errorMessage: 'not called' }),
     })) as { result: { tools: unknown } };
-    expect(sha256(answer.result.tools)).toBe('ea5720f7d363fc6c9aa519c879beaea79e181f6ff1cda27d4c10fe1de5cb866a');
+    expect(sha256(answer.result.tools)).toBe('d8339011830289937131ca9240942653e6ed49d602133305550cd015c184d9bd');
   });
 });

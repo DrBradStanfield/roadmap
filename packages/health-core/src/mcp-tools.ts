@@ -67,6 +67,7 @@ export {
   addMeasurementOutput,
   correctValueInput,
   correctValueOutput,
+  DOCUMENT_TEXT_NOTE,
   FEEDBACK_REPO,
   fileResultRow,
   fileResultsInput,
