@@ -202,6 +202,182 @@ describe('git push guard, as .claude/settings.json runs it', () => {
     }
   });
 
+  // US-64 AC5, round 3 (adversary at 67f28818): what the guard cannot read is refused when the call could reach
+  // GraphQL or main: run-time arguments, xargs, query or fragment suffixes on graphql, a bad percent escape beside a
+  // good one, line continuations, deep nesting, globs; plus GraphQL deleteRef, merge-upstream and a forced repo sync.
+  it('refuses gh api writes whose arguments are only known at run time (US-64 AC5)', () => {
+    const q = (s: string) => `'${s.replace(/'/g, `'"'"'`)}'`;
+    const nest = (n: number, inner: string): string => (n === 0 ? inner : `bash -c ${q(nest(n - 1, inner))}`);
+    const PATCH_MAIN = 'gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234';
+    for (const cmd of [
+      // B1: method, fields or GraphQL text from a variable, a substitution or xargs.
+      'gh api graphql -f query="mutation { $M }"',
+      'gh api graphql -f query="mutation { ${M} }"',
+      'gh api graphql -f "$KV"',
+      'gh api graphql -F "$KV"',
+      'gh api graphql $ARGS',
+      'gh api repos/o/r/git/refs/heads/main $ARGS',
+      'gh api repos/o/r/git/refs/heads/main $(echo -X PATCH -f sha=abc1234)',
+      'gh api repos/o/r/git/refs/heads/main "$F"',
+      'gh api repos/o/r/git/refs/heads/main --jq $J',
+      'gh api repos/o/r/contents/X $ARGS',
+      'gh api $EP',
+      'echo -X PATCH -f sha=abc1234 | xargs gh api repos/o/r/git/refs/heads/main',
+      'echo main | xargs -I X gh api -X PATCH repos/o/r/git/refs/heads/X -f sha=abc1234',
+      `bash -c "gh api graphql -f query='mutation { $M }'"`,
+      'gh api repos/o/r/git/refs/heads/main {-XPATCH,-fsha=abc1234}',
+      'gh api {-XPATCH,-fsha=abc1234,repos/o/r/git/refs/heads/main}',
+      'gh api repos/o/r/git/refs/heads/main "-$V"',
+      'gh api repos/o/r/git/refs/heads/main *',
+      'echo fsha=abc1234 | xargs -I Z gh api repos/o/r/git/refs/heads/main -Z',
+      `sh -c 'gh api repos/o/r/git/refs/heads/main "$@"' _ -XPATCH -fsha=abc1234`,
+      `sh -c 'gh api "$@"' _ repos/o/r/git/refs/heads/main -XPATCH -fsha=abc1234`,
+      'echo -XPATCH | parallel gh api repos/o/r/git/refs/heads/main',
+      // R3: the call is the gh/git word that runs, not the first one (an xargs replace string).
+      `xargs -I gh ${PATCH_MAIN} < /dev/null`,
+      'xargs -I git git push origin HEAD:main < /dev/null',
+      // B2: gh sends graphql?x / graphql#x in REST mode and GitHub still runs the query.
+      "gh api 'graphql?x=1' -F query=@q.graphql",
+      "gh api 'graphql#x' --input q.json",
+      'gh api graphql/ -F query=@q.graphql',
+      "gh api 'graphql?x=1' -f query='mutation { updateRef(input: {}) { clientMutationId } }'",
+      "gh api 'graphql?query=mutation%7B%75pdateRef(input:{})%7D'",
+      `gh api "repos/o/r/issues/$N" -f query='mutation { updateRef(input: {}) { clientMutationId } }'`,
+      "gh api --jq $J repos/o/r/issues/1/comments -f query='mutation { updateRef(input: {}) { clientMutationId } }'",
+      'gh api --jq $J repos/o/r/issues/1/comments -F query=@q.graphql',
+      "gh api --jq * repos/o/r/issues/1/comments -f query='mutation { updateRef(input: {}) { clientMutationId } }'",
+      'echo a`gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234`b',
+      'gh api -X GET repos/o/r/git/refs/heads/main --jq `cat jq.txt`',
+      `git commit -m "$(cat <<EOF\nok \`gh api -X PUT repos/o/r/pulls/1/merge\`\nEOF\n)"`,
+      "bash -c 'gh repo sync o/r --branch main --force'",
+      "cat > n.md <<'EOF'\nDon't gh repo sync --force\nEOF",
+      // Only commit/tag messages and gh pr|issue create/comment/edit/merge bodies are text; other quoted text naming a
+      // write is read as a command (AC5's new refusals).
+      'git stash push -m "gh api -X PUT repos/o/r/pulls/1/merge"',
+      'gh release create v1 --title "gh api -X PUT repos/o/r/pulls/1/merge"',
+      'gh pr checkout 1 -b "gh api -X PUT repos/o/r/pulls/1/merge"',
+      'gh api graphql "-$X"',
+      "gh api graphql -F n={1..2} -f query='query { viewer { login } }'",
+      'gh api GraphQL --input q.json',
+      'gh api graphql -f "$K=@q.graphql"',
+      'gh api -X PUT repos/o/r/contents/X -f branch=dev "-$X"',
+      "bash -c $'gi''t pu''sh origin main'",
+      // B3: one bad escape does not stop the good ones being decoded.
+      "gh api -X PATCH 'repos/o/r/git/refs/heads/%6Dain?x=%FF' -f sha=abc1234",
+      "gh api -X PUT 'repos/o/r/%63ontents/README.md?x=%FF' -f message=m -f content=eA==",
+      // B4: bash deletes a backslash-newline.
+      'gh \\\napi -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234',
+      'gh api -X PATCH repos/o/r/git/refs/heads/ma\\\nin -f sha=abc1234',
+      'gh api -X PATCH "repos/o/r/git/refs/heads/ma\\\nin" -f sha=abc1234',
+      'git \\\npush origin HEAD:main',
+      // B5: nesting past the depth the guard reads is refused, not passed.
+      nest(4, PATCH_MAIN),
+      nest(5, PATCH_MAIN),
+      // Past that depth even a read is refused: the guard cannot see what it holds.
+      nest(4, 'gh api repos/o/r/pulls/1'),
+      // An unquoted backslash escapes one character: bash reads `ma\in` as main.
+      'gh api -X PATCH repos/o/r/git/refs/heads/ma\\in -f sha=abc1234',
+      // A here-string glued to its operator.
+      `bash <<<${q(PATCH_MAIN)}`,
+      `bash<<<${q(PATCH_MAIN)}`,
+      // R1, R2, R4.
+      "gh api graphql -f query='mutation { deleteRef(input: {}) { clientMutationId } }'",
+      'gh api -X POST repos/o/r/merge-upstream -f branch=main',
+      'gh repo sync o/r --branch main --force',
+      'gh repo sync --force',
+      'gh api -X PATCH repos/o/r/git/refs/heads/ma[i]n -f sha=abc1234',
+      'gh api -X PATCH repos/o/r/git/refs/heads/m* -f sha=abc1234',
+      // Text that a shell runs is still read: echo or grep output sent to a shell, a substitution, a file.
+      `echo ${q(PATCH_MAIN)} | sh`,
+      `$(echo ${q(PATCH_MAIN)})`,
+      `\`echo ${q(PATCH_MAIN)}\``,
+      // A backtick substitution runs its body, quoted or not, inside a message value too; so does `$(...)` there.
+      'echo "`gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234`"',
+      '`gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234`',
+      'x=`gh api -X PUT repos/o/r/pulls/1/merge`',
+      'ls `gh api -X PUT repos/o/r/pulls/1/merge`',
+      'echo "a `gh api -X PUT repos/o/r/pulls/1/merge` b"',
+      'git commit -m "`gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234`"',
+      'git commit -m "$(gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234)"',
+      'gh pr comment 1 --body "$(gh api -X PUT repos/o/r/pulls/1/merge)"',
+      `git commit -m "$(cat <<'EOF'\nok\nEOF\n)$(gh api -X PUT repos/o/r/pulls/1/merge)"`,
+      `git commit -m "$(cat <<'EOF'\nok\nEOF\n)\n\`gh api -X PUT repos/o/r/pulls/1/merge\`"`,
+      `git commit -m "$(cat <<'EOF'\nok\nEOF\n) \`gh api -X PUT repos/o/r/pulls/1/merge\` $(cat <<'EOF'\nEOF\n)"`,
+      'gh api -X PATCH "repos/o/r/git/refs/heads/`echo main`" -f sha=abc1234',
+      'bash -c "gh api -X PATCH repos/o/r/git/refs/heads/\\`echo main\\` -f sha=$S"',
+      `bash <(echo ${q(PATCH_MAIN)})`,
+      `echo ${q(PATCH_MAIN)} > run.sh`,
+      `grep -ohF ${q(PATCH_MAIN)} tests/git-push-guard.test.ts | bash`,
+      `printf -v C '%s' ${q(PATCH_MAIN)}; eval "$C"`,
+    ]) {
+      const r = runHook(scratch, cmd);
+      expect(r.stderr, cmd).toBe('');
+      expect(r.stdout, cmd).not.toBe('');
+      expect(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision, cmd).toBe('deny');
+    }
+    for (const cmd of [
+      // GraphQL variables: a `$` in single quotes is GraphQL's, and a variable's value may come from the shell.
+      "gh api graphql -f query='query($n: Int!) { viewer { login } }' -F n=1",
+      `gh api graphql -f query='query($o: String!) { repository(owner: $o, name: "r") { id } }' -F o="$OWNER"`,
+      `bash -c "gh api graphql -f query='query(\\$n: Int!) { viewer { login } }' -F n=1"`,
+      // Reads with a run-time endpoint, and writes elsewhere with run-time values.
+      'gh api "$EP"',
+      'gh api repos/o/r/pulls/$N',
+      'gh api repos/{owner}/{repo}/pulls --jq .[0].number',
+      'gh api repos/{owner}/{repo}/contents/README.md',
+      `gh api graphql -f query='{ repository(owner: "o", name: "r") { id } }'`,
+      'gh api repos/o/r/contents/README.md?ref=main',
+      'gh api -X POST "repos/o/r/issues/$N/comments" -f body="$MSG"',
+      'echo 123 | xargs -I{} gh api repos/o/r/pulls/{}',
+      'gh api repos/o/r/git/refs/heads/main --jq xargs',
+      '/bin/echo "gh api -X PATCH repos/o/r/git/refs/heads/main"',
+      'gh api -X PATCH repos/o/r/labels/graphql-api --input label.json',
+      'gh extension install owner/gh-ext --force',
+      'echo gh api -X PATCH repos/o/r/git/refs/heads/main',
+      'echo "`gh api repos/o/r/pulls/1`"',
+      'x=`gh api repos/o/r/pulls/1 --jq .title`',
+      'git tag -a v1 -m "Note: gh api -X PUT repos/o/r/pulls/1/merge is refused"',
+      'git commit --message="Note: gh api -X PUT repos/o/r/pulls/1/merge is refused"',
+      'sudo -u git gh pr comment 1 --body "Refuses gh api -X PUT repos/o/r/pulls/1/merge"',
+      "git commit -m 'Refuse `gh api -X PATCH repos/o/r/git/refs/heads/main`'",
+      `git commit -m "$(cat <<'EOF'\nNote: \`gh api -X PATCH repos/o/r/git/refs/heads/main\` is refused; \$(git push) too\nEOF\n)"`,
+      'git commit -m "Bump to $VERSION before the git push"',
+      "cat > n.md <<'EOF'\nDon't push yet; run git status.\nEOF",
+      'gh api repos/o/r/pulls/805/merge',
+      'gh repo sync o/r --branch main',
+      // A comment body that names a mutation is text, not a GraphQL query.
+      "gh api -X POST repos/o/r/issues/805/comments -f body='Fixed: updateRef is now refused'",
+      // grep/rg patterns and echo text are data when nothing runs the output.
+      "grep -rn 'gh api -X PATCH' tests/",
+      `rg -n "gh api -X PATCH repos/o/r/git/refs/heads/main" tests/`,
+      `echo "gh api -X PATCH repos/o/r/git/refs/heads/main"`,
+      "grep -rn 'gh api -X PATCH' tests/ 2>/dev/null | head -5",
+      "grep -rn 'gh api -X PATCH' tests/ 2>err.log",
+      `echo "gh api -X PATCH repos/o/r/git/refs/heads/main" > /dev/null`,
+      `echo "gh api -X PATCH repos/o/r/git/refs/heads/main" >&2`,
+      'gh \\\napi repos/o/r/pulls/1',
+      nest(3, 'gh api repos/o/r/pulls/1'),
+    ]) {
+      expect(runHook(scratch, cmd).stdout, cmd).toBe('');
+    }
+  });
+
+  // US-64 AC5, round 3: a long command the guard cannot parse (a heredoc with one apostrophe) is decided in linear
+  // time. The old fallback regexes took over 120 s on 1 MB.
+  it('decides an unparseable 1 MB command quickly (US-64 AC5)', () => {
+    const cmd = `cat > notes.md <<'EOF'\nDon't ${'git gh word '.repeat(90_000)}\nEOF`;
+    expect(cmd.length).toBeGreaterThan(1_000_000);
+    const t0 = Date.now();
+    const payload = JSON.stringify({ cwd: scratch, tool_input: { command: cmd } });
+    const r = spawnSync('bash', ['-c', settingsHookCommand()], {
+      input: payload, encoding: 'utf8', timeout: 20_000, env: { ...GIT_ENV, CLAUDE_PROJECT_DIR: ROOT },
+    });
+    const ms = Date.now() - t0;
+    expect(r.status).toBe(0);
+    expect(r.stdout).toBe('');
+    expect(ms).toBeLessThan(3000);
+  }, 30_000);
+
   it('settings.json allows exactly the reviewed merge form and denies the four flags (US-64 AC5)', () => {
     // Claude Code's Bash(...) rules: `*` matches any text; a deny beats an allow.
     const { allow, deny } = JSON.parse(readFileSync(join(ROOT, '.claude/settings.json'), 'utf8')).permissions;
