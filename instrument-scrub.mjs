@@ -326,8 +326,10 @@ const UNIT_VALUE_RE = new RegExp(
 // (the 1 of "A1c") is never the value (mirror of sentry-scrub.ts).
 const METRIC_THEN_VALUE_RE = new RegExp(
   `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])([^\\d\\n]{0,20}?)(?!(?<=[a-z])\\d+(?:[.,]\\d+)?[a-z])(${NUMBER})`, 'gi');
+// The same name edges, not \b: "Lp(a)" ends and "γ-GT" starts with no word
+// character, so \b never matched there (US-09 AC7f).
 const VALUE_THEN_METRIC_RE = new RegExp(
-  `(${NUMBER})([^\\d\\n]{0,20}?)\\b(${alternation(SCRUB_METRIC_WORDS)})\\b`, 'gi');
+  `(${NUMBER})([^\\d\\n]{0,20}?)(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z0-9])`, 'gi');
 
 export function scrubText(text) {
   return text

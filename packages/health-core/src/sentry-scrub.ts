@@ -291,8 +291,10 @@ const UNIT_VALUE_RE = new RegExp(
 // "Hb" cannot take it in "Hb A1c 7.2"; "a1c" scrubs the 7.2 itself.
 const METRIC_THEN_VALUE_RE = new RegExp(
   `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])([^\\d\\n]{0,20}?)(?!(?<=[a-z])\\d+(?:[.,]\\d+)?[a-z])(${NUMBER})`, 'gi');
+// The same name edges, not \b: "Lp(a)" ends and "γ-GT" starts with no word
+// character, so \b never matched there (US-09 AC7f).
 const VALUE_THEN_METRIC_RE = new RegExp(
-  `(${NUMBER})([^\\d\\n]{0,20}?)\\b(${alternation(SCRUB_METRIC_WORDS)})\\b`, 'gi');
+  `(${NUMBER})([^\\d\\n]{0,20}?)(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z0-9])`, 'gi');
 
 /** Redact health values and emails written into free text. */
 export function scrubText(text: string): string {

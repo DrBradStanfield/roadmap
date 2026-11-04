@@ -197,6 +197,10 @@ const TEXTS = [
   'BP 140/90 and blood pressure 138/88 on metformin 500mg',
   'my ldl on the panel read 4.2 today',  // 19-char gap: inside the window
   'ran 5 in the morning, status 500 in 12ms, took 250 in total',
+  // US-09 AC7f: a name that starts or ends without a word character.
+  '120 Lp(a)', 'came back 120 lp(a)', '33 γ-GT',
+  '41 GGT', 'Lp(a) 120', 'γ-GT 33', '120 nmol/L Lp(a)', '4.2 k+', '7.1 a1c',
+  '12 bananas', '2 cholesterols',
 ];
 
 describe('free-text scrub parity', () => {
@@ -359,6 +363,30 @@ describe('free-text scrub parity', () => {
         }
       }
     }
+  });
+
+  it('US-09 AC7f — a value before a name that starts or ends without a word character is scrubbed, on both copies', () => {
+    for (const impl of [source, copy]) {
+      for (const [text, scrubbed] of [
+        ['120 Lp(a)', '[value] Lp(a)'], ['came back 120 lp(a)', 'came back [value] lp(a)'], ['33 γ-GT', '[value] γ-GT'],
+        // Controls that already behaved: either order, a unit between, a symbol name.
+        ['41 GGT', '[value] GGT'], ['Lp(a) 120', 'Lp(a) [value]'], ['γ-GT 33', 'γ-GT [value]'],
+        ['120 nmol/L Lp(a)', '[value] Lp(a)'], ['4.2 k+', '[value] k+'], ['7.1 a1c', '[value] a1c'],
+        // A name inside a longer word is not the name.
+        ['12 bananas', '12 bananas'], ['2 cholesterols', '2 cholesterols'],
+      ]) {
+        expect(impl.scrubText(text), text).toBe(scrubbed);
+      }
+    }
+  });
+
+  it('US-09 AC7f — the server hook scrubs the value from the message and the exception value', () => {
+    const event = copy.scrubServerEvent({
+      message: 'came back 120 lp(a)',
+      exception: { values: [{ type: 'Error', value: 'import failed at 33 γ-GT' }] },
+    });
+    expect(event.message).toBe('came back [value] lp(a)');
+    expect(event.exception.values[0].value).toBe('import failed at [value] γ-GT');
   });
 
   it('scrubText produces identical output', () => {
