@@ -127,7 +127,8 @@ describe('secret files are ignored by git and Docker (US-64 AC13)', () => {
 
   it.each([
     '.env.production', 'app/.env.staging', '.env.local', 'certs/server.pem', 'tls.key',
-    'ios/AuthKey_ABC123.p8', 'dist-cert.p12', 'service-account.json', 'tools/service-account-prod.json',
+    'dist-cert.p12', 'service-account.json', 'tools/service-account-prod.json',
+    'ios/AuthKey_ABC123.p8', // last on its line: gitleaks reads "Key... , 'x'" as a key assignment
   ])('.dockerignore keeps %s out of the image', (path) => {
     expect(dockerIgnores(path)).toBe(true);
   });
