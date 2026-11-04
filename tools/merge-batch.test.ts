@@ -225,6 +225,33 @@ describe('merge-batch.mjs (US-64 AC13)', () => {
     expect(mid.err).toContain('in progress');
   });
 
+  it('names git\'s own error when a merge fails with no conflicted file (US-64 AC17)', () => {
+    const sha = pr(80, baseSha, (d) => write(d, 'src/new.txt', 'new\n'));
+    runBatch([`80 ${sha}`]);
+    git(batch, 'reset', '-q', '--hard', 'origin/main');
+    // A held index lock fails the merge with nothing unmerged: the only evidence is git's message.
+    writeFileSync(join(git(batch, 'rev-parse', '--absolute-git-dir'), 'index.lock'), '');
+    const r = runBatch([`80 ${sha}`], true);
+    expect(r.code).toBe(2);
+    expect(r.err).toContain('merge failed with no conflicted file');
+    expect(r.err).toContain('index.lock');
+  });
+
+  it('merges over an ignored local docs/user-stories.html the PR tracks and drops it (US-64 AC17)', () => {
+    const sha = pr(81, baseSha, (d) => write(d, 'docs/user-stories.html', '<p>pr</p>\n'));
+    advanceMain((d) => git(d, 'rm', '-q', 'docs/user-stories.html'));
+    git(batch, 'fetch', '-q', 'origin', 'main');
+    git(batch, 'reset', '-q', '--hard', 'origin/main');
+    write(batch, '.gitignore', 'docs/user-stories.html\n');
+    git(batch, 'add', '.gitignore');
+    git(batch, 'commit', '-q', '-m', 'ignore it');
+    write(batch, 'docs/user-stories.html', '<p>local build</p>\n');
+    const r = runBatch([`81 ${sha}`], true);
+    expect(r.err).toBe('');
+    expect(r.code).toBe(0);
+    expect(git(batch, 'ls-files', 'docs/user-stories.html')).toBe('');
+  });
+
   it('exits 4 when a git command fails, apart from a moved head', () => {
     const r = runBatch([`70 ${'a'.repeat(40)}`]); // origin has no refs/pull/70/head
     expect(r.code).toBe(4);

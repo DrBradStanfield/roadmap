@@ -253,9 +253,15 @@ function main() {
     const msg = `Merge PR #${pr} (${sha.slice(0, 8)}) into the batch`;
     const note = [];
 
-    if (!gitOk('merge', '--no-ff', '--no-edit', '-m', msg, sha)) {
+    let mergeErr = null;
+    try {
+      git('merge', '--no-ff', '--no-edit', '-m', msg, sha);
+    } catch (err) {
+      mergeErr = String(err.stderr || err.message).trim();
+    }
+    if (mergeErr !== null) {
       const unmerged = git('diff', '--name-only', '--diff-filter=U').split('\n').filter(Boolean);
-      if (unmerged.length === 0) stop(2, `PR #${pr}: merge failed with no conflicted file; resolve by hand`);
+      if (unmerged.length === 0) stop(2, `PR #${pr}: merge failed with no conflicted file; resolve by hand. git said: ${mergeErr || '(nothing)'}`);
       const other = unmerged.find((f) => f !== HTML && f !== MD);
       if (other) stop(2, `PR #${pr}: conflict in ${other}; resolve by hand`);
       if (unmerged.includes(HTML)) {
