@@ -197,6 +197,21 @@ const TEXTS = [
   'BP 140/90 and blood pressure 138/88 on metformin 500mg',
   'my ldl on the panel read 4.2 today',  // 19-char gap: inside the window
   'ran 5 in the morning, status 500 in 12ms, took 250 in total',
+  // US-09 AC7f: a name that starts or ends without a word character.
+  '120 Lp(a)', 'came back 120 lp(a)', '33 γ-GT',
+  '41 GGT', 'Lp(a) 120', 'γ-GT 33', '120 nmol/L Lp(a)', '4.2 k+', '7.1 a1c',
+  '12 bananas', '2 cholesterols',
+  // US-09 AC7f: a value never starts inside a digit run; the winner is unchanged.
+  '1.2.3 ldl', '12.34.5 ldl', '1,2,3 ldl', '120/80/60 bp', '1.2/3.4/5 bp', '12345 ldl',
+  '2026.11.04 ldl', 'v1.2.3 ldl', '1/2/3 hba1c', '3.2.1 Lp(a)', '5 17-ohp', '12 25(oh)d',
+  // US-09 AC7f: bounded email parts; two adjacent addresses both go.
+  'mail x.y+z@ex.co.uk now', 'a@b.com@c.org', '..a@b.co', '(brad@example.com)', 'é-brad@example.com', 'brad@@example.com',
+  'mailto:a@b.com%2Cc@d.com', 'a@b.com+joe@x.com', 'a@b.com-joe@x.com', 'a@b.com_joe@x.com', 'a@b.com1x@y.com',
+  'a@b.co.uk-x@y.com', 'first@example.com+second@example.org', 'a@b.com%20c@d.com', `${'x'.repeat(100)}@example.com`,
+  // US-09 AC7f: a name ending in a symbol ends there, whatever follows.
+  '120 lp(a)s', '120 lp(a)x',
+  // US-09 AC7f: a name starting with a symbol starts there, whatever precedes it.
+  '33 xγ-GT', '1xγ-gt', ')25(oh)dγ-gt',
 ];
 
 describe('free-text scrub parity', () => {
@@ -359,6 +374,82 @@ describe('free-text scrub parity', () => {
         }
       }
     }
+  });
+
+  it('US-09 AC7f — a value before a name that starts or ends without a word character is scrubbed, on both copies', () => {
+    for (const impl of [source, copy]) {
+      for (const [text, scrubbed] of [
+        ['120 Lp(a)', '[value] Lp(a)'], ['came back 120 lp(a)', 'came back [value] lp(a)'], ['33 γ-GT', '[value] γ-GT'],
+        // A name ending in a symbol ends there, whatever follows, as with \b.
+        ['120 lp(a)s', '[value] lp(a)s'], ['120 lp(a)x', '[value] lp(a)x'],
+        // A name starting with a symbol starts there, whatever precedes it, as with \b.
+        ['33 xγ-GT', '[value] xγ-GT'], ['1xγ-gt', '[value]xγ-gt'], [')25(oh)dγ-gt', ')[value](oh)dγ-gt'],
+        // Controls that already behaved: either order, a unit between, a symbol name.
+        ['41 GGT', '[value] GGT'], ['Lp(a) 120', 'Lp(a) [value]'], ['γ-GT 33', 'γ-GT [value]'],
+        ['120 nmol/L Lp(a)', '[value] Lp(a)'], ['4.2 k+', '[value] k+'], ['7.1 a1c', '[value] a1c'],
+        // A name inside a longer word is not the name.
+        ['12 bananas', '12 bananas'], ['2 cholesterols', '2 cholesterols'],
+      ]) {
+        expect(impl.scrubText(text), text).toBe(scrubbed);
+      }
+    }
+  });
+
+  it('US-09 AC7f — a value starts at the head of its digit run, so the match that wins is unchanged, on both copies', () => {
+    for (const impl of [source, copy]) {
+      for (const [text, scrubbed] of [
+        ['1.2.3 ldl', '1.[value] ldl'], ['12.34.5 ldl', '12.[value] ldl'], ['1,2,3 ldl', '1,[value] ldl'],
+        ['120/80/60 bp', '120/[value] bp'], ['1.2/3.4/5 bp', '1.2/[value] bp'], ['12345 ldl', '[value] ldl'],
+        ['2026.11.04 ldl', '2026.[value] ldl'], ['v1.2.3 ldl', 'v1.[value] ldl'], ['1/2/3 hba1c', '1/[value] hba1c'],
+        ['3.2.1 Lp(a)', '3.[value] Lp(a)'],
+        // A name that starts with digits is the name, not part of the value.
+        ['5 17-ohp', '[value] 17-ohp'], ['12 25(oh)d', '[value] 25(oh)d'],
+      ]) {
+        expect(impl.scrubText(text), text).toBe(scrubbed);
+      }
+    }
+  });
+
+  it('US-09 AC7f — bounded email parts scrub both of two adjacent addresses, on both copies', () => {
+    for (const impl of [source, copy]) {
+      for (const [text, scrubbed] of [
+        ['mail x.y+z@ex.co.uk now', 'mail [email] now'], ['a@b.com@c.org', '[email]@c.org'], ['..a@b.co', '[email]'],
+        ['(brad@example.com)', '([email])'], ['é-brad@example.com', 'é[email]'], ['brad@@example.com', 'brad@@example.com'],
+        // A second address straight after the first, joined by a character an address can hold.
+        ['mailto:a@b.com%2Cc@d.com', 'mailto:[email][email]'], ['a@b.com+joe@x.com', '[email][email]'],
+        ['a@b.com-joe@x.com', '[email][email]'], ['a@b.com_joe@x.com', '[email][email]'], ['a@b.com1x@y.com', '[email][email]'],
+        ['a@b.co.uk-x@y.com', '[email][email]'], ['first@example.com+second@example.org', '[email][email]'],
+        ['a@b.com%20c@d.com', '[email][email]'],
+        // A local part over 64 characters keeps all but its last 64 (a stated residual).
+        [`${'x'.repeat(100)}@example.com`, `${'x'.repeat(36)}[email]`],
+      ]) {
+        expect(impl.scrubText(text), text).toBe(scrubbed);
+      }
+    }
+  });
+
+  // The value and email rules backtracked from every position inside a long
+  // run: about 0.8 s for 40,000 digits or letters. Linear now; the bound is
+  // generous for a slow CI runner.
+  it('US-09 AC7f — 40,000 digits or letters scrub in well under a second, on both copies', () => {
+    for (const impl of [source, copy]) {
+      for (const run of ['1'.repeat(40_000), 'a'.repeat(40_000)]) {
+        const start = performance.now();
+        expect(impl.scrubText(run)).toBe(run);
+        expect(performance.now() - start, `${impl === copy ? 'copy' : 'source'} ${run[0]}`).toBeLessThan(300);
+      }
+    }
+  });
+
+  it('US-09 AC7f — the server hook scrubs the value from the message and the exception value', () => {
+    const event = copy.scrubServerEvent({
+      message: 'came back 120 lp(a)',
+      exception: { values: [{ type: 'Error', value: 'import failed at 33 γ-GT for mailto:a@b.com%2Cc@d.com' }] },
+      extra: { to: 'first@example.com+second@example.org', level: '120 lp(a)s' },
+    });
+    expect(event.message).toBe('came back [value] lp(a)');
+    expect(event.exception.values[0].value).toBe('import failed at [value] γ-GT for mailto:[email][email]');
+    expect(event.extra).toEqual({ to: '[email][email]', level: '[value] lp(a)s' });
   });
 
   it('scrubText produces identical output', () => {

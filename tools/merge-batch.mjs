@@ -1,18 +1,24 @@
 #!/usr/bin/env node
 /**
- * Builds a contributor batch (US-64 AC13). Run inside a batch worktree:
- *   node tools/merge-batch.mjs <list-file>      lines: <pr-number> <full head sha>
- * Exit 0 done; 1 head moved, bad input or a worktree that is not clean; 2 conflict for a human (a stories
- * conflict that is not only added, non-duplicate `- AC` lines counts); 3 stories proof failed (merge aborted,
- * tree as before); 4 a git command failed.
+ * Builds a contributor batch (US-64 AC13, AC15). Run inside a batch worktree:
+ *   node tools/merge-batch.mjs <list-file> [--skip <pr>[,<pr>...]]   lines: <pr-number> <full head sha>
+ * --skip builds the list without those PRs, so dropping a rejected PR is one rerun on a fresh worktree.
+ * After a build, a pre-flight gives the worktree its package clones and scans the batch's added lines for
+ * secret-shaped text. Exit 0 done; 1 head moved, bad input or a worktree that is not clean; 2 conflict for a
+ * human (a stories conflict that is not only added, non-duplicate `- AC` lines counts); 3 stories proof failed
+ * (merge aborted, tree as before); 4 a git command failed; 5 pre-flight found secret-shaped text (the batch
+ * commits stay; fix the fixture).
  */
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, writeFileSync, writeSync } from 'node:fs';
+import { join } from 'node:path';
+import { mainOf, PATTERNS } from './secret-rules.mjs';
 
 const HTML = 'docs/user-stories.html';
 const MD = 'docs/user-stories.md';
 
-const git = (...args) => execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+// A batch's diff can pass the default 1 MB output cap (ENOBUFS, exit 4).
+const git = (...args) => execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 1 << 30 });
 const gitOk = (...args) => {
   try {
     git(...args);
@@ -22,7 +28,11 @@ const gitOk = (...args) => {
   }
 };
 const stop = (code, msg) => {
-  console.error(msg);
+  try {
+    writeSync(2, `${msg}\n`); // console.error to a pipe is async on macOS: exit would cut a long report short
+  } catch {
+    /* stderr is gone; the exit code still says what happened */
+  }
   process.exit(code);
 };
 
@@ -88,10 +98,108 @@ const plusMinus = (diff) =>
     .sort()
     .join('\n');
 
+// Approximates gitleaks' generic-api-key rule (CI's secret scan): a keyword, an operator, then a 10+ character
+// value whose Shannon entropy is 3.5 or more. Skipped like gitleaks skips them: a value of only letters, `_`, `.`
+// and `-` (its own allowlist), and one holding a word (5+ letters of one case), standing in for its ~1,500 stop
+// words. CI's gitleaks stays the real gate.
+const GENERIC =
+  /(?:access|auth|api|credential|creds|key|passw(?:or)?d|secret|token)[ \t\w.-]{0,20}[\s'"]{0,3}(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[`'"\s=]{0,5}([\w.=-]{10,150}|[a-z0-9][a-z0-9+/]{11,}={0,3})(?=[`'"\s;]|\\[nr]|$)/gi;
+const entropy = (s) => {
+  const n = {};
+  for (const c of s) n[c] = (n[c] || 0) + 1;
+  return Object.values(n).reduce((e, k) => e - (k / s.length) * Math.log2(k / s.length), 0);
+};
+const generic = (v) => !/^[a-zA-Z_.-]+$|[a-z]{5}|[A-Z]{5}/.test(v) && entropy(v) >= 3.5;
+const SHAPES = Object.entries(PATTERNS).map(([rule, re]) => [rule, new RegExp(re, 'g')]);
+
+/**
+ * file:line and rule of every added line shaped like a secret; never the value. The credential shapes are matched
+ * across each run of added lines (a private key spans lines); the generic rule line by line, as gitleaks does.
+ */
+function secretShapes(diff) {
+  const hits = new Set();
+  let file = '';
+  let line = 0;
+  let header = false;
+  let block = [];
+  const flush = () => {
+    const first = line - block.length;
+    const starts = [];
+    let at = 0;
+    for (const t of block) {
+      starts.push(at);
+      at += t.length + 1;
+    }
+    const text = block.join('\n');
+    for (const [rule, re] of SHAPES) {
+      let k = 0; // matches come in offset order, so one forward pass maps them all to lines
+      for (const m of text.matchAll(re)) {
+        while (k + 1 < starts.length && starts[k + 1] <= m.index) k++;
+        hits.add(`${file}:${first + k} ${rule}`);
+      }
+    }
+    block.forEach((t, k) => {
+      if ([...t.matchAll(GENERIC)].some((m) => generic(m[1]))) hits.add(`${file}:${first + k} generic-api-key`);
+    });
+    block = [];
+  };
+  for (const l of diff.split('\n')) {
+    if (!header && l.startsWith('+')) {
+      block.push(l.slice(1));
+      line++;
+      continue;
+    }
+    flush();
+    if (l.startsWith('diff --git ')) header = true;
+    else if (header && l.startsWith('+++ ')) file = l.slice(4).replace(/^b\//, '');
+    else if (l.startsWith('@@')) {
+      header = false;
+      line = Number(/\+(\d+)/.exec(l)[1]);
+    }
+  }
+  flush();
+  return [...hits];
+}
+
+/**
+ * Package clones, so reviewers spawned from the main checkout can run tests here: the worktree hook makes them
+ * only when a session first runs a command inside, so feed it that event (its linkPackages does the work). Always
+ * the MAIN checkout's hook: the batch tree's copy is contributor code until it lands. Its own folder list.
+ */
+const PACKAGE_DIRS = ['node_modules', 'widget-src/node_modules', 'packages/health-core/node_modules'];
+function linkClones() {
+  const top = realpathSync(git('rev-parse', '--show-toplevel').trim());
+  const main = mainOf(top);
+  if (!main || main === top) return; // the main checkout has its own packages
+  const hook = join(main, '.claude/hooks/worktree-guard.cjs');
+  const missing = () => PACKAGE_DIRS.filter((d) => existsSync(join(main, d)) && !existsSync(join(top, d)));
+  if (!existsSync(hook) || !missing().length) return;
+  const input = JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Bash', cwd: top });
+  try {
+    execFileSync('node', [hook], { cwd: main, input, stdio: ['pipe', 'ignore', 'ignore'], timeout: 300000 });
+  } catch {
+    /* reported below */
+  }
+  const still = missing();
+  if (still.length) console.log(`pre-flight: no ${still.join(', ')}; run: echo '${input}' | node ${hook}`);
+}
+
+/** Before reviewers start: the worktree's package clones, then the secret scan. */
+function preflight() {
+  linkClones();
+  const hits = secretShapes(git('diff', '-U0', '--no-color', '--no-ext-diff', 'origin/main...HEAD'));
+  if (hits.length) stop(5, `pre-flight found secret-shaped text (the batch commits stay; fix the fixture):\n${hits.join('\n')}`);
+  console.log('pre-flight ok: no secret-shaped text');
+}
+
 function main() {
-  const listFile = process.argv[2];
-  if (!listFile) stop(1, 'usage: node tools/merge-batch.mjs <list-file>');
-  const entries = readFileSync(listFile, 'utf8')
+  const args = process.argv.slice(2);
+  const at = args.indexOf('--skip');
+  const skip = at >= 0 ? args.splice(at, 2)[1] : '';
+  if (at >= 0 && !/^\d+(,\d+)*$/.test(skip || '')) stop(1, '--skip wants <pr>[,<pr>...]');
+  const listFile = args[0];
+  if (!listFile || args.length > 1) stop(1, 'usage: node tools/merge-batch.mjs <list-file> [--skip <pr>[,<pr>...]]');
+  const all = readFileSync(listFile, 'utf8')
     .split('\n')
     .map((l) => l.trim())
     .filter(Boolean)
@@ -100,14 +208,48 @@ function main() {
       if (!m) stop(1, `bad line "${l}": want "<pr-number> <full head sha>"`);
       return { pr: m[1], sha: m[2] };
     });
+  const skipped = skip ? skip.split(',') : [];
+  const unknown = skipped.filter((p) => !all.some((e) => e.pr === p));
+  if (unknown.length) stop(1, `--skip: PR #${unknown.join(', #')} is not in ${listFile}`);
+  const entries = all.filter((e) => !skipped.includes(e.pr));
+  if (!entries.length) stop(1, `--skip leaves nothing to build from ${listFile}`);
 
   if (gitOk('rev-parse', '-q', '--verify', 'MERGE_HEAD')) stop(1, 'a merge is in progress; finish or abort it first');
   if (git('status', '--porcelain').trim()) stop(1, 'the worktree is not clean; commit or stash first');
 
+  // A skipped PR must stay out: no kept head may share a commit main lacks with its reviewed or current head, so
+  // a kept PR built on any of its commits, the middle ones included, is refused. All checked before anything merges.
+  const out = [];
+  for (const e of all.filter((x) => skipped.includes(x.pr))) {
+    git('fetch', 'origin', `pull/${e.pr}/head`);
+    const now = git('rev-parse', 'FETCH_HEAD').trim(); // before a fetch by sha moves FETCH_HEAD
+    // A head force-pushed away since the review may not be here: fetch it by sha, or stop unable to check.
+    const have = () => gitOk('cat-file', '-e', `${e.sha}^{commit}`);
+    if (!have() && !(gitOk('fetch', 'origin', e.sha) && have())) {
+      stop(4, `skipped PR #${e.pr}: reviewed head ${e.sha.slice(0, 8)} cannot be fetched, so its commits cannot be checked`);
+    }
+    for (const s of new Set([e.sha, now])) out.push({ pr: e.pr, sha: s });
+  }
+  // Exit 1 with no output is "no common ancestor"; any other failure means the ancestry is unknown.
+  const bases = (a, b, what) => {
+    try {
+      return git('merge-base', '--all', a, b).split('\n').filter(Boolean);
+    } catch (err) {
+      if (err.status === 1 && !`${err.stdout}${err.stderr}`.trim()) return [];
+      stop(4, `${what} cannot be checked: ${String(err.stderr || err.message).trim()}`);
+    }
+  };
   for (const { pr, sha } of entries) {
     git('fetch', 'origin', `pull/${pr}/head`);
     const head = git('rev-parse', 'FETCH_HEAD').trim();
     if (head !== sha) stop(1, `PR #${pr}: head moved (now ${head.slice(0, 8)}, reviewed ${sha.slice(0, 8)}): needs a new review`);
+    for (const s of out) {
+      const shared = bases(s.sha, sha, `PR #${pr}: its ancestry against skipped PR #${s.pr}`).find((b) => !gitOk('merge-base', '--is-ancestor', b, 'origin/main'));
+      if (shared) stop(1, `PR #${pr} shares commit ${shared.slice(0, 8)} with skipped PR #${s.pr}, not on main; skip both or neither`);
+    }
+  }
+
+  for (const { pr, sha } of entries) {
     const msg = `Merge PR #${pr} (${sha.slice(0, 8)}) into the batch`;
     const note = [];
 
@@ -146,6 +288,7 @@ function main() {
     console.log(`PR #${pr} ${sha.slice(0, 8)} merged${note.length ? ` (${[...new Set(note)].join('; ')})` : ''}`);
   }
   console.log(`HEAD ${git('rev-parse', 'HEAD').trim()}`);
+  preflight();
 }
 
 try {

@@ -24,8 +24,10 @@ import {
   dropboxUploadDocument,
   dropboxWrite,
   DROPBOX_TOKEN_URL,
+  fetchOrFail,
   ROADMAP_FILE_NAME,
   sleepUntilAborted,
+  catchUpAfterFailure,
   StorageError,
   type ReadResult,
   type StorageAdapter,
@@ -220,7 +222,10 @@ export class DropboxAdapter implements StorageAdapter {
       try {
         // A cursor is dropped on every failure, so this re-establishes it: the
         // one Dropbox refused may be expired, and re-listing is cheap.
-        if (!cursor) cursor = await this.folderCursor(signal);
+        if (!cursor) {
+          cursor = await this.folderCursor(signal);
+          catchUpAfterFailure(retryMs, signal, onChange);
+        }
         const poll = await this.rpc(LONGPOLL_URL, { cursor, timeout: LONGPOLL_TIMEOUT_S }, signal);
         const result = (await poll.json()) as { changes?: boolean; backoff?: number };
         // Dropbox asking for room comes before anything else we do with it.
@@ -307,10 +312,15 @@ export class DropboxAdapter implements StorageAdapter {
       refresh_token: startedFrom,
       client_id: this.config.clientId,
     });
-    const res = await fetch(TOKEN_URL, {
+    // Bounded like Drive's refresh (US-09 AC13h): every read and save waits on it.
+    const res = await fetchOrFail('Dropbox', TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
+      timeoutMs: 5000,
+    }).catch((error: unknown) => {
+      this.dropIfGrantMoved(startedFrom);
+      throw error;
     });
     if (!res.ok) {
       this.dropIfGrantMoved(startedFrom);
