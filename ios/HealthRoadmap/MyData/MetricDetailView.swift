@@ -72,7 +72,8 @@ struct MetricDetailView: View {
             }
             // PROTOTYPE (My health, round 2): ideal body weight moved here from the weight row, with
             // the plan tile's own explainer (statTiles' `about` and evidence, as TileExplainerSheet shows them).
-            if row.metric == "weight", row.series == nil, let ideal = PlanTiles(store.plan)["ibw"] {
+            // Round 7: eGFR's on the creatinine page, the same way.
+            if row.series == nil, let key = ["weight": "ibw", "creatinine": "egfr"][row.metric], let ideal = PlanTiles(store.plan)[key] {
                 Section {
                     LabeledContent {
                         Text("\(ideal.value) \(ideal.unit)").font(.body.weight(.semibold)).monospacedDigit()
