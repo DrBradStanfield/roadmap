@@ -200,7 +200,7 @@ jobs:
             echo "::warning::No pages.yml run for ${SHA} after 12 looks (about 2 minutes) — smoking the existing Pages site."
             # A ::warning:: reaches no one: say it on the deploy's notification issue (US-46 AC16).
             if [ -n "${NOTIFY_ISSUE:-}" ]; then
-              gh issue comment "${NOTIFY_ISSUE}" -R "${GITHUB_REPOSITORY}" --body "@DrBradStanfield, the Pages smoke found no pages.yml run for \`${SHA}\` after 12 looks (about 2 minutes), so it will smoke the existing Pages site, which may not hold this commit yet. A missing run does not stop the deploy: it goes on unless a later step fails. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+              gh issue comment "${NOTIFY_ISSUE}" -R "${GITHUB_REPOSITORY}" --body "@DrBradStanfield, the Pages smoke found no pages.yml run for \`${SHA}\` after 12 looks (about 2 minutes); this alone does not stop the deploy. If main has moved on and its tip has a Pages run, the deploy waits for that run and stops unless it (or a newer run that replaces it) succeeds. Otherwise it smokes the Pages site as it stands, which may not hold this commit yet. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
                 || echo "::warning::Could not comment on the deploy notification issue #${NOTIFY_ISSUE}."
             fi
           else

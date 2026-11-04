@@ -224,8 +224,9 @@ describe("pages-smoke waits for the merged commit's Pages run (US-46 AC15)", { t
 const P = "3".repeat(40); // a commit that landed on main after M; its Pages run is the newer one
 const notice = (sha: string) =>
   `issue comment 42 -R o/r --body @DrBradStanfield, the Pages smoke found no pages.yml run for \`${sha}\` after 12 looks ` +
-  "(about 2 minutes), so it will smoke the existing Pages site, which may not hold this commit yet. " +
-  "A missing run does not stop the deploy: it goes on unless a later step fails. Run: https://x/o/r/actions/runs/77";
+  "(about 2 minutes); this alone does not stop the deploy. If main has moved on and its tip has a Pages run, the " +
+  "deploy waits for that run and stops unless it (or a newer run that replaces it) succeeds. Otherwise it smokes the " +
+  "Pages site as it stands, which may not hold this commit yet. Run: https://x/o/r/actions/runs/77";
 
 describe("pages-smoke: a replaced Pages run, a missing run (US-46 AC16)", { timeout: 60_000 }, () => {
   it("the merged commit's run cancelled by a newer Pages run on main: it waits for the newer run instead", () => {
@@ -318,6 +319,19 @@ describe("pages-smoke: a replaced Pages run, a missing run (US-46 AC16)", { time
     expect(r.comments).toEqual([notice(M)]);
     expect(r.calls.indexOf(notice(M))).toBeGreaterThan(r.calls.lastIndexOf(listFor(M)));
     expect(r.out).toContain(`::warning::No pages.yml run for ${M} after 12 looks`);
+  });
+
+  it("no run for the named commit, then main's tip run: one comment first, and the tip's run decides the step", () => {
+    // What the comment says: the step goes on to wait for the tip's Pages run and stops unless it succeeds.
+    for (const [conclusion, code] of [["failure", 1], ["cancelled", 1], ["success", 0]] as const) {
+      const r = run({ pagesSha: M, notifyIssue: "42", runs: { [N]: { id: 6, appearsOn: 1, conclusion } } });
+      expect(r.code).toBe(code);
+      expect(r.comments).toEqual([notice(M)]);
+      expect(r.calls.indexOf(notice(M))).toBeLessThan(r.calls.indexOf(listFor(N)));
+      expect(r.lists).toEqual([...Array(12).fill(listFor(M)), listFor(N)]);
+      expect(r.out).toContain(`main has moved on to ${N}, which the deploy ships: waiting for its Pages run too.`);
+      expect(r.out).toContain(code === 0 ? "Pages deploy succeeded." : `::error::Pages deploy failed (${conclusion})`);
+    }
   });
 
   it("a failed comment only warns: the step still goes on", () => {
