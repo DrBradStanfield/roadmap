@@ -743,7 +743,7 @@ export class RecordSession {
           const ctx = this.ctx();
           if (ctx.now > this.current.meta.updatedAt) this.current.meta.updatedAt = ctx.now;
           await saveRecordInto(mirror.adapter, this.current, ctx);
-          this.deviceCopySeen = mirror.sync?.revision(ROADMAP_FILE_NAME);
+          this.deviceCopySeen = deviceCopyRevision(this.host);
         } catch {
           /* device storage unavailable — memory-only is the best we have */
         }
