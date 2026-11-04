@@ -10,9 +10,9 @@
  * commits stay; fix the fixture).
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { PATTERNS } from './secret-rules.mjs';
+import { mainOf, PATTERNS } from './secret-rules.mjs';
 
 const HTML = 'docs/user-stories.html';
 const MD = 'docs/user-stories.md';
@@ -105,45 +105,74 @@ const entropy = (s) => {
   return Object.values(n).reduce((e, k) => e - (k / s.length) * Math.log2(k / s.length), 0);
 };
 const generic = (v) => !/^[a-zA-Z_.-]+$|[a-z]{5}|[A-Z]{5}/.test(v) && entropy(v) >= 3.5;
-const SHAPES = Object.entries(PATTERNS).map(([rule, re]) => [rule, new RegExp(re)]);
+const SHAPES = Object.entries(PATTERNS).map(([rule, re]) => [rule, new RegExp(re, 'g')]);
 
-/** file:line and rule of every added line shaped like a secret; never the value. */
+/**
+ * file:line and rule of every added line shaped like a secret; never the value. The credential shapes are matched
+ * across each run of added lines (a private key spans lines); the generic rule line by line, as gitleaks does.
+ */
 function secretShapes(diff) {
-  const hits = [];
+  const hits = new Set();
   let file = '';
   let line = 0;
   let header = false;
+  let block = [];
+  const flush = () => {
+    const first = line - block.length;
+    const starts = [];
+    let at = 0;
+    for (const t of block) {
+      starts.push(at);
+      at += t.length + 1;
+    }
+    const text = block.join('\n');
+    for (const [rule, re] of SHAPES) {
+      for (const m of text.matchAll(re)) hits.add(`${file}:${first + starts.findLastIndex((s) => s <= m.index)} ${rule}`);
+    }
+    block.forEach((t, k) => {
+      if ([...t.matchAll(GENERIC)].some((m) => generic(m[1]))) hits.add(`${file}:${first + k} generic-api-key`);
+    });
+    block = [];
+  };
   for (const l of diff.split('\n')) {
+    if (!header && l.startsWith('+')) {
+      block.push(l.slice(1));
+      line++;
+      continue;
+    }
+    flush();
     if (l.startsWith('diff --git ')) header = true;
     else if (header && l.startsWith('+++ ')) file = l.slice(4).replace(/^b\//, '');
     else if (l.startsWith('@@')) {
       header = false;
       line = Number(/\+(\d+)/.exec(l)[1]);
-    } else if (!header && l.startsWith('+')) {
-      const text = l.slice(1);
-      for (const [rule, re] of SHAPES) if (re.test(text)) hits.push(`${file}:${line} ${rule}`);
-      if ([...text.matchAll(GENERIC)].some((m) => generic(m[1]))) hits.push(`${file}:${line} generic-api-key`);
-      line++;
     }
   }
-  return hits;
+  flush();
+  return [...hits];
 }
 
 /**
  * Package clones, so reviewers spawned from the main checkout can run tests here: the worktree hook makes them
- * only when a session first runs a command inside, so feed it that event (its linkPackages does the work).
+ * only when a session first runs a command inside, so feed it that event (its linkPackages does the work). Always
+ * the MAIN checkout's hook: the batch tree's copy is contributor code until it lands. Its own folder list.
  */
+const PACKAGE_DIRS = ['node_modules', 'widget-src/node_modules', 'packages/health-core/node_modules'];
 function linkClones() {
-  const top = git('rev-parse', '--show-toplevel').trim();
-  const hook = join(top, '.claude/hooks/worktree-guard.cjs');
-  if (!existsSync(hook) || existsSync(join(top, 'node_modules'))) return;
+  const top = realpathSync(git('rev-parse', '--show-toplevel').trim());
+  const main = mainOf(top);
+  if (!main || main === top) return; // the main checkout has its own packages
+  const hook = join(main, '.claude/hooks/worktree-guard.cjs');
+  const missing = () => PACKAGE_DIRS.filter((d) => existsSync(join(main, d)) && !existsSync(join(top, d)));
+  if (!existsSync(hook) || !missing().length) return;
   const input = JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Bash', cwd: top });
   try {
-    execFileSync('node', [hook], { input, stdio: ['pipe', 'ignore', 'ignore'], timeout: 300000 });
+    execFileSync('node', [hook], { cwd: main, input, stdio: ['pipe', 'ignore', 'ignore'], timeout: 300000 });
   } catch {
     /* reported below */
   }
-  if (!existsSync(join(top, 'node_modules'))) console.log(`pre-flight: no node_modules; run: echo '${input}' | node ${hook}`);
+  const still = missing();
+  if (still.length) console.log(`pre-flight: no ${still.join(', ')}; run: echo '${input}' | node ${hook}`);
 }
 
 /** Before reviewers start: the worktree's package clones, then the secret scan. */
@@ -174,14 +203,26 @@ function main() {
   const unknown = skipped.filter((p) => !all.some((e) => e.pr === p));
   if (unknown.length) stop(1, `--skip: PR #${unknown.join(', #')} is not in ${listFile}`);
   const entries = all.filter((e) => !skipped.includes(e.pr));
+  if (!entries.length) stop(1, `--skip leaves nothing to build from ${listFile}`);
 
   if (gitOk('rev-parse', '-q', '--verify', 'MERGE_HEAD')) stop(1, 'a merge is in progress; finish or abort it first');
   if (git('status', '--porcelain').trim()) stop(1, 'the worktree is not clean; commit or stash first');
+
+  // A skipped PR must stay out: its reviewed head and its current one, unless main already has them.
+  const out = [];
+  for (const e of all.filter((x) => skipped.includes(x.pr))) {
+    git('fetch', 'origin', `pull/${e.pr}/head`);
+    for (const s of new Set([e.sha, git('rev-parse', 'FETCH_HEAD').trim()])) {
+      if (!gitOk('merge-base', '--is-ancestor', s, 'origin/main')) out.push({ pr: e.pr, sha: s });
+    }
+  }
 
   for (const { pr, sha } of entries) {
     git('fetch', 'origin', `pull/${pr}/head`);
     const head = git('rev-parse', 'FETCH_HEAD').trim();
     if (head !== sha) stop(1, `PR #${pr}: head moved (now ${head.slice(0, 8)}, reviewed ${sha.slice(0, 8)}): needs a new review`);
+    const holds = out.find((s) => gitOk('merge-base', '--is-ancestor', s.sha, sha));
+    if (holds) stop(1, `PR #${pr} contains skipped PR #${holds.pr} (${holds.sha.slice(0, 8)}); skip both or neither`);
     const msg = `Merge PR #${pr} (${sha.slice(0, 8)}) into the batch`;
     const note = [];
 

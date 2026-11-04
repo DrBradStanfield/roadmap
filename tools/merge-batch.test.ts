@@ -5,7 +5,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -316,5 +316,72 @@ describe('merge-batch.mjs --skip and pre-flight (US-64 AC15)', () => {
     const r = runBatch([`86 ${sha}`]);
     expect(r.code).toBe(0);
     expect(r.out).toContain('pre-flight ok');
+  });
+
+  it('--skip refuses a kept PR whose head contains the skipped one (exit 1), naming both, before merging', () => {
+    const a = pr(87, baseSha, (d) => write(d, 'src/b.txt', 'b by 87\n'));
+    const c = pr(88, a, (d) => write(d, 'src/new.txt', 'new by 88\n')); // built on 87
+    const r = runBatch([`87 ${a}`, `88 ${c}`], false, ['--skip', '87']);
+    expect(r.code).toBe(1);
+    expect(r.err).toContain('#88');
+    expect(r.err).toContain('#87');
+    expect(git(batch, 'rev-parse', 'HEAD')).toBe(git(batch, 'rev-parse', 'origin/main'));
+  });
+
+  it('--skip that leaves nothing to build exits 1', () => {
+    const a = pr(89, baseSha, (d) => write(d, 'src/b.txt', 'b by 89\n'));
+    const r = runBatch([`89 ${a}`], false, ['--skip', '89']);
+    expect(r.code).toBe(1);
+    expect(r.err).toContain('nothing to build');
+  });
+
+  it('pre-flight finds a private key whose body is on the next line, at the header line', () => {
+    const pem = ['-----BEGIN ', 'PRIVATE KEY-----', '\n', 'MIIE', 'abcd'.repeat(10), '\n'].join('');
+    const sha = pr(90, baseSha, (d) => write(d, 'src/key.txt', `intro\n${pem}`));
+    const r = runBatch([`90 ${sha}`]);
+    expect(r.code).toBe(5);
+    expect(r.err).toContain('src/key.txt:2 private_key');
+    expect(r.err).not.toContain('abcd');
+  });
+
+  /** The batch as a linked worktree of a main clone whose own hook is `hook`; main has two package folders. */
+  function inWorktree(hook: string): { main: string; got: string } {
+    const main = join(root, 'main-clone');
+    git(root, 'clone', '-q', origin, main);
+    write(main, '.claude/hooks/worktree-guard.cjs', hook);
+    writeFileSync(join(main, '.git/info/exclude'), '.claude/hooks/\nnode_modules\n');
+    mkdirSync(join(main, 'node_modules'));
+    mkdirSync(join(main, 'widget-src/node_modules'), { recursive: true });
+    batch = join(main, '.claude/worktrees/b');
+    git(main, 'worktree', 'add', '-q', '--detach', batch, 'origin/main');
+    return { main, got: join(main, '.claude/hooks/got.json') };
+  }
+  const RECORD = "const fs = require('fs'); const path = require('path'); const i = fs.readFileSync(0, 'utf8'); fs.writeFileSync(path.join(__dirname, 'got.json'), i);\n";
+
+  it('pre-flight runs the main checkout hook for the worktree, never the batch tree copy', () => {
+    const made = "for (const d of ['node_modules', 'widget-src/node_modules']) fs.mkdirSync(path.join(JSON.parse(i).cwd, d), { recursive: true });\n";
+    const { got } = inWorktree(RECORD + made);
+    const trap = join(root, 'trapped');
+    const sha = pr(91, baseSha, (d) =>
+      write(d, '.claude/hooks/worktree-guard.cjs', `require('fs').writeFileSync(${JSON.stringify(trap)}, 'ran');\n`),
+    );
+    const r = runBatch([`91 ${sha}`]);
+    expect(r.code).toBe(0);
+    expect(existsSync(trap)).toBe(false);
+    const event = JSON.parse(readFileSync(got, 'utf8'));
+    expect(event).toMatchObject({ hook_event_name: 'PreToolUse', tool_name: 'Bash', cwd: realpathSync(batch) });
+    expect(existsSync(join(batch, 'widget-src/node_modules'))).toBe(true);
+    expect(r.out).not.toContain('run:');
+  });
+
+  it('pre-flight calls the hook when only some package folders exist, and prints the command for the rest', () => {
+    const { main, got } = inWorktree(RECORD);
+    mkdirSync(join(batch, 'node_modules'));
+    const sha = pr(92, baseSha, (d) => write(d, 'src/new.txt', 'new by 92\n'));
+    const r = runBatch([`92 ${sha}`]);
+    expect(r.code).toBe(0);
+    expect(existsSync(got)).toBe(true);
+    expect(r.out).toContain('no widget-src/node_modules;');
+    expect(r.out).toContain(`| node ${join(realpathSync(main), '.claude/hooks/worktree-guard.cjs')}`);
   });
 });

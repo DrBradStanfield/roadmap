@@ -96,20 +96,24 @@ and Brad merges them. One at a time, each merge made the rest conflict and re-ru
 3. **Build the batch, 8 to 10 low-risk PRs** (high-risk ones alone, or in a group of at most three).
    `sh tools/worktree-new.sh batch-<date>-<n>`, write a list file (`<pr> <full reviewed head sha>` per line),
    run `node tools/merge-batch.mjs <list-file>` in the worktree. To drop a rejected PR, keep the list file and
-   rebuild on a fresh worktree: `node tools/merge-batch.mjs <list-file> --skip <pr>[,<pr>...]`. A skipped
-   number not in the list stops it (exit 1). It fetches each head, refuses a moved one
+   rebuild on a fresh worktree: `node tools/merge-batch.mjs <list-file> --skip <pr>[,<pr>...]`. It stops
+   (exit 1) on a skipped number not in the list, on skipping every PR, and on a kept PR whose head contains
+   a skipped one (skip both, or neither). It fetches each head, refuses a moved one
    (exit 1), merges the reviewed head as is (GitHub then marks the PR merged when the batch lands), drops a
    PR's `docs/user-stories.html` and merges add-only `docs/user-stories.md` conflicts (both sides' `- AC`
    lines, in order). The tool proves that merge changed the stories file by exactly the PR's own lines
    (exit 3 and the merge undone if not), so those conflicts need no reviewer re-check. A repeated AC number or any other conflict stops it (exit 2): fix
    it by hand and get one scoped re-check by a fresh adversary, since the fix is new lines.
    After a clean build, a pre-flight runs before any reviewer starts. It gives the worktree its package
-   clones (the worktree hook's own step, so reviewers spawned from the main checkout can run tests there),
-   or prints the one command to run. Then it scans the batch's added lines for secret-shaped text: the
-   credential shapes codex-review refuses, and an approximation of gitleaks' generic-api-key rule. A hit
-   prints file:line and the rule, never the value, and exits 5 with the batch commits left in place. Fix the
-   fixture (assemble it at run time) before review: on 2026-11-04 two review rounds were lost to fixtures
-   that stopped CI's gitleaks and codex-review.
+   clones by running the main checkout's worktree hook (never the batch tree's copy, which is contributor
+   code until it lands), so reviewers spawned from the main checkout can run tests there. If a package
+   folder is still missing, it prints the one command to run. Then it scans the batch's added lines for
+   secret-shaped text: the credential shapes codex-review refuses, and an approximation of gitleaks'
+   generic-api-key rule. A hit prints file:line and the rule, never the value, and exits 5 with the batch
+   commits left in place. On 2026-11-04 two review rounds were lost to such fixtures. When there is time,
+   ask the contributor to fix the fixture on their PR (assemble it at run time) and rebuild. Otherwise fix it
+   in a new commit on the batch: like any hand resolution, it gets one scoped re-check by a fresh adversary,
+   and a `--skip` rebuild on a fresh worktree drops it, so apply it again there.
    Spawn reviewers and workers from the main checkout, never while the orchestrator sits in a session
    worktree: a spawned agent is pinned to the orchestrator's folder (2026-11-04 one lost its shell when that
    worktree was removed, and workers could not enter their own worktrees).
