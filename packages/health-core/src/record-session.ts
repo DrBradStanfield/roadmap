@@ -581,9 +581,43 @@ export class RecordSession {
   private adopt(merged: RoadmapFile): boolean {
     const seen = visibleContentOf(this.current);
     // An erase from elsewhere, a later one at the same epoch included (adversary R6).
-    if (eraseIdentityOf(merged) !== this.eraseIdentity) this.clearOffFile(merged);
+    const erasedElsewhere = eraseIdentityOf(merged) !== this.eraseIdentity;
+    if (erasedElsewhere) this.clearOffFile(merged);
     this.current = merged;
+    // Nor a full pre-erase copy of the record on this device (US-06 AC13).
+    if (erasedElsewhere && this.host.tier === 'cloud' && !this.unsaved) this.releaseDeviceCopy(this.host.mirror, true);
     return visibleContentOf(merged) !== seen;
+  }
+
+  /**
+   * The cloud holds the working copy. The device copy a failed save or a page
+   * going away left (US-09 AC4, US-06 AC13) goes once it holds nothing more,
+   * and its marker with it, so no full copy of the record stays on the device.
+   * A copy that holds more, such as another tab's departure written since
+   * this save began, keeps both for the next load to lift up, and so does one
+   * that cannot be read or has moved since it was read. `erased`: an erase was
+   * taken in, so a copy no marker names goes too. A host whose copy has no
+   * synchronous remove only clears the marker after a save, as before (the
+   * iPhone's marker holds its own generation).
+   */
+  private releaseDeviceCopy(mirror: DeviceMirror, erased: boolean): void {
+    const sync = mirror.sync;
+    if (!sync?.removeSync) {
+      if (!erased) mirror.pending.clear();
+      return;
+    }
+    if (!erased && !mirror.pending.get()) return;
+    try {
+      const { body, version } = sync.readSync(ROADMAP_FILE_NAME);
+      if (body != null) {
+        const ctx = this.ctx();
+        if (contentOf(mergeFiles(this.current, ROADMAP_DOC.migrate(body, ctx), ctx)) !== contentOf(this.current)) return;
+        sync.removeSync(ROADMAP_FILE_NAME, version);
+      }
+    } catch {
+      return;
+    }
+    mirror.pending.clear();
   }
 
   /** Mark dirty + schedule a debounced persist. */
@@ -648,7 +682,7 @@ export class RecordSession {
       if (remoteFolded) this.host.remoteChanged();
       // A skipped (unreadable) mirror holds data this save did NOT include —
       // keep its marker so the next load retries it.
-      if (this.host.tier === 'cloud' && !this.mirrorSkipped) this.host.mirror.pending.clear();
+      if (this.host.tier === 'cloud' && !this.mirrorSkipped) this.releaseDeviceCopy(this.host.mirror, false);
       return true;
     } catch (error) {
       this.running = null; // as above: ended before the marker is announced

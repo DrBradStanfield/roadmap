@@ -15,6 +15,9 @@ export interface SyncStorage {
   writeSync(fileName: string, body: object, expectedVersion: string | null): WriteResult;
   /** The file's stored revision; null when there is none. */
   revision(fileName: string): string | null;
+  /** Remove the file, only at `expectedVersion` (ConflictError otherwise), so
+   *  another page's write since stays (US-06 AC13). */
+  removeSync?(fileName: string, expectedVersion: string | null): void;
 }
 
 /** On a cloud: the copy on this device that holds a save the cloud refused,
