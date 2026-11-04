@@ -1,4 +1,4 @@
-<!-- generated — never edit; source hash sha256:523ee7a3a193caed4cb30e871ee637a4c508a2ad59ac1e161ccf3ac3a2df53f9 -->
+<!-- generated — never edit; source hash sha256:edcd18b9bea3947ac53d5db2b7382b7cc59f23bb271d9e389fd28b2f8e4d874c -->
 <!-- Built by claude_business tools/sync-shared-docs.mjs from docs/customer-service/answer-bank.md. Edit the master there and rerun the sync. -->
 
 Approved answers to questions customers have asked by email (81 entries), written in the first person. Each entry gives the question, then the answer.
@@ -305,7 +305,7 @@ Please let me know if you have any other questions
 Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 Was it only one night that you tried the Sleep supplement?
-Did you take it 3 hours before wanting to fall asleep?
+Did you take it 3 to 4 hours before wanting to fall asleep?
 
 And final question, did you try taking only 1 capsule (instead of the usual
 4), and then slowly build up to see how your body reacts to the supplement?
