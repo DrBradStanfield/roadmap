@@ -39,6 +39,7 @@ case "$p" in
     jq -c '.commits // [{sha:.head,author:{login:"DrBradStanfield"}}]' "$SCEN" | out;;
   pulls/7/files) jq -c '.prFiles // []' "$SCEN" | out;;
   pulls/7) jq -c --argjson u $upd '{state:"open",title:"t",body:(.prBody // "b"),user:{login:"u"},labels:[],
+    commits:(.prCommitCount // ((.commits // [1]) | length)),
     head:{ref:"claude/x",repo:{full_name:"o/r"},sha:(if $u==1 then .newSha else .head end)}}' "$SCEN" | out;;
   issues/7/comments*) jq -c '.comments // [{user:{type:"Bot",login:"github-actions[bot]"},body:("VERDICT: APPROVE "+.head)}]' "$SCEN" | out;;
   commits/main) jq -c '{sha:.main}' "$SCEN" | out;;
@@ -47,6 +48,8 @@ case "$p" in
       elif .testNew=="none" then {check_runs:[]}
       else {check_runs:[{app:{slug:"github-actions"},conclusion:.testNew,check_suite:{id:2}}]} end' "$SCEN" | out;;
   commits/*) jq -c '{parents:(.newCommit.parents|map({sha:.})),commit:{verification:{verified:.newCommit.verified}},committer:{login:.newCommit.login}}' "$SCEN" | out;;
+  compare/*...main) left=\${p#compare/}; left=\${left%%...*}
+    jq -c --arg b "$left" '{status:(if ((.mainAncestors // []) | index($b)) != null then "ahead" else "diverged" end)}' "$SCEN" | out;;
   compare/*) left=\${p#compare/}; left=\${left%%...*}
     if [ "$left" = "$(q .main)" ]; then jq -c --argjson u $upd '{behind_by:(if $u==1 then 0 else .behind end)}' "$SCEN" | out
     else jq -c '{files:[{filename:(if .workflowTouched then ".github/workflows/ci.yml" else "a.ts" end)}]}' "$SCEN" | out; fi;;
@@ -248,6 +251,35 @@ describe("auto-ship claim 7 (US-46 AC5)", { timeout: 60_000 }, () => {
     });
     it("a list without the head sha refuses", () => {
       refusedBy({ commits: [brad("1111")] }, "Commit list does not include head aaaa — not shipping.");
+    });
+    it("a list shorter than the PR's commit count refuses (the 250 cap)", () => {
+      refusedBy({ commits: [brad("1111"), brad("aaaa")], prCommitCount: 251 }, "Commit list does not hold all 251 commits — not shipping.");
+    });
+
+    // Auto-ship's own update-branch merge (claim 7) is authored by
+    // github-actions[bot] and committed and signed by GitHub (web-flow); without
+    // this exception every later run would refuse that PR forever (#739 aabf6bd3).
+    const updateMerge = (over: Record<string, unknown> = {}) => ({
+      sha: "eeee", author: { login: "github-actions[bot]" }, committer: { login: "web-flow" },
+      commit: { verification: { verified: true } }, parents: [{ sha: "1111" }, { sha: "mmmm" }], ...over,
+    });
+    it("auto-ship's own GitHub-signed merge of main ships", () => {
+      const r = run({ commits: [brad("1111"), updateMerge(), brad("aaaa")], mainAncestors: ["mmmm"] });
+      expect(r.code).toBe(0);
+      expect(r.calls).toContain("api repos/o/r/compare/mmmm...main --jq .status");
+      expect(issueOpened(r.calls)).toBe(true);
+      expect(merged(r.calls)).toEqual(["pr merge 7 -R o/r --merge --match-head-commit aaaa"]);
+    });
+    it("a github-actions[bot] commit that is not that merge refuses", () => {
+      const line = "Commit eeee authored by github-actions[bot], not DrBradStanfield — not shipping.";
+      for (const bad of [
+        updateMerge({ parents: [{ sha: "1111" }] }),
+        updateMerge({ commit: { verification: { verified: false } } }),
+        updateMerge({ committer: { login: "DrBradStanfield" } }),
+        updateMerge({ parents: [{ sha: "1111" }, { sha: "zzzz" }] }), // second parent not on main
+      ]) {
+        refusedBy({ commits: [brad("1111"), bad, brad("aaaa")], mainAncestors: ["mmmm"] }, line);
+      }
     });
   });
 
