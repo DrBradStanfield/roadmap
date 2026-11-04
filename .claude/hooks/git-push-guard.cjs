@@ -90,7 +90,11 @@ function messageValues(seg) {
   }
   return skip;
 }
-// Every simple command, recursing into every quoted string that may hold one (`bash -lc 'git push ...'`,
+// A quoted string that may hold a guarded command: `git` or `gh` with push, pull, merge or api, read with its own
+// quotes and backslashes dropped (`g''h a''pi` is `gh api` to the inner shell).
+const plain = (t) => t.replace(/['"\\]/g, '');
+const mayHoldCommand = (t) => /\s/.test(t) && /\b(git|gh)\b/.test(plain(t)) && /\b(push|pull|merge|api)\b/.test(plain(t));
+// Every simple command, recursing into each quoted string that may hold one (`bash -lc 'gh api ...'`,
 // `python -c`, `node -e`, `watch`, `ssh host '...'`), except message values (above).
 function allSegments(s, depth = 0) {
   const segs = segments(s);
@@ -101,8 +105,9 @@ function allSegments(s, depth = 0) {
     const skip = messageValues(seg);
     for (let k = 0; k < seg.length; k++) {
       const t = seg[k];
-      if (!skip.has(k) && depth < 3 && /\s/.test(t) && /\b(git|gh)\b/.test(t) && /\b(push|pull|merge)\b/.test(t)) {
-        const inner = allSegments(t, depth + 1);
+      if (!skip.has(k) && depth < 3 && mayHoldCommand(t)) {
+        // ANSI-C `$'...'` text (escapes not decoded here) or a string led by a variable cannot be read: fail closed.
+        const inner = t.startsWith('$') ? null : allSegments(t, depth + 1);
         if (inner === null) return null;
         out.push(...inner);
       }
@@ -137,9 +142,67 @@ function plainDelete(g) {
 // an unknown value ("=?", from --config-env) counts as bad.
 const badConfig = (kv) => /^remote\..*\.(push=\s*[+:?]|mirror(=|$))/i.test(kv) && !/\.mirror=\s*false$/i.test(kv);
 
+// `gh api` arguments: the last explicit method (-X/--method), the -f/-F/--field/--raw-field values, --input, and the
+// positionals (the endpoint). Short flags may be bundled or joined (`-iXPATCH`, `-X=PATCH`, `-fk=v`).
+const API_LONG = /^--(method|field|raw-field|input|header|jq|template|preview|hostname|cache)$/;
+const API_SHORT = 'XfFHpqt';
+function apiArgs(a) {
+  const api = { method: null, fields: [], input: false, positional: [] };
+  const take = (flag, val) => {
+    if (flag === 'X' || flag === 'method') api.method = val;
+    else if (/^(f|F|field|raw-field)$/.test(flag)) api.fields.push(val);
+    else if (flag === 'input') api.input = true;
+  };
+  for (let k = 0; k < a.length; k++) {
+    const t = a[k];
+    const long = t.match(/^--([a-z-]+)(?:=([\s\S]*))?$/);
+    if (long) {
+      if (API_LONG.test(`--${long[1]}`)) take(long[1], long[2] ?? a[++k] ?? '');
+    } else if (/^-[^-]/.test(t)) {
+      const at = [...t.slice(1)].findIndex((c) => API_SHORT.includes(c)) + 1;
+      if (at > 0) take(t[at], t.slice(at + 1).replace(/^=/, '') || (a[++k] ?? ''));
+    } else api.positional.push(t);
+  }
+  return api;
+}
+const decode = (t) => { try { return decodeURIComponent(t); } catch { return t; } };
+// A merge, or a mutation that writes a branch (main by default), named anywhere in the call.
+const API_MERGE = /pulls\/[^/\s]+\/merge\b|\/merges\b|mergePullRequest|mergeBranch|updateRef|createCommitOnBranch|enablePullRequestAutoMerge|enqueuePullRequest/i;
+// Text the guard cannot resolve: a variable, a substitution, or a brace other than gh's {owner}/{repo} ({branch} is
+// the current branch, which may be main; {} is an xargs or find slot). Before it, the endpoint must already name a
+// resource other than git refs or contents.
+const UNRESOLVED = /[$`]|\{(?!owner\}|repo\})/;
+const SAFE_PREFIX = /^\/?(https?:\/\/[^/]+\/)?repos\/[^/]+\/[^/]+\/(?!git\/|contents\/)[A-Za-z_-]+\//;
+const hiddenEndpoint = (p) => UNRESOLVED.test(p) && !SAFE_PREFIX.test(p.slice(0, p.search(UNRESOLVED)));
+// A contents write lands on the default branch (main) unless a literal `branch` field names another one.
+function contentsToMain(api) {
+  const branches = api.fields.filter((f) => f.startsWith('branch=')).map((f) => f.slice(7));
+  return api.input || !branches.length || branches.some((b) => /^(refs\/)?(heads\/)?main$/.test(b) || /^[@{]|[$`]/.test(b));
+}
+// A GraphQL query the guard cannot read: from --input, a file or stdin (`query=@...`), a variable or a substitution.
+const hiddenQuery = (api) => api.input || api.fields.some((f) => /^query=(@|\$)|^query=.*(\$\(|`)/.test(f));
+// Why a `gh api` call is refused, or null. A write is any explicit method but GET/HEAD; with no method, a field or
+// --input makes it a POST (gh's own rule).
+function apiRefusal(a) {
+  const api = apiArgs(a);
+  const write = api.method !== null ? !/^(GET|HEAD)$/i.test(api.method) : api.fields.length > 0 || api.input;
+  const ends = api.positional.map(decode);
+  if (a.map(decode).some((t) => API_MERGE.test(t))) return 'it merges or writes a branch';
+  if (ends.some((p) => p === 'graphql' || p.endsWith('/graphql')) && hiddenQuery(api)) {
+    return 'the GraphQL query is not inline, so it cannot be checked; write it as -f query=\'...\'';
+  }
+  if (!write) return null;
+  if (!ends.length) return 'the endpoint is not on the command line (xargs, stdin), so it cannot be checked';
+  if (ends.some((p) => /git\/refs\/heads\/main\b/.test(p))) return "it writes main's ref";
+  if (ends.some(hiddenEndpoint)) return 'the endpoint holds a variable or substitution, so it cannot be checked; write the path out';
+  if (ends.some((p) => /\/contents(\/|$)/.test(p)) && contentsToMain(api)) return 'it writes a file on main (no literal branch other than main)';
+  return null;
+}
+
 const segs = allSegments(cmd);
 if (segs === null) {
   if (/\bgit\b[\s\S]*\bpush\b/.test(cmd)) deny('Push guard could not parse this command (unbalanced quotes). Run the git push on its own line.');
+  if (/\bgh\b[\s\S]*\bapi\b/.test(plain(cmd))) deny('Push guard could not parse this command (unbalanced quotes). Run the gh api call on its own line.');
   process.exit(0);
 }
 
@@ -176,17 +239,13 @@ for (const seg of segs) {
     }
     continue;
   }
-  // The same merge, or a write to main, through the REST or GraphQL API skips those checks: a PR merge, a branch
-  // merge (/merges), a write to refs/heads/main, GraphQL mergePullRequest/mergeBranch/updateRef. A policy guard,
-  // not a wall: a gh alias or another tool cannot be seen here.
+  // The same merge, or a write to main, through the REST or GraphQL API skips those checks (apiRefusal above). A
+  // policy guard that reads text, not a wall: a gh alias, a command in a variable or another tool cannot be seen here.
   if (gh >= 0 && seg[gh + 1] === 'api') {
-    const a = seg.slice(gh + 2);
-    const writes = a.some((t, k) => (/^(-X|--method)$/.test(a[k - 1] || '') || /^(-X|--method=)/.test(t)) && /(PATCH|POST|PUT)$/i.test(t))
-      || a.some((t) => /^(-f|-F|--field|--raw-field|--input)(=|$)/.test(t));
-    if (a.some((t) => /pulls\/[^/\s]+\/merge\b|\/merges\b|mergePullRequest|mergeBranch|updateRef/i.test(t))
-        || (writes && a.some((t) => /git\/refs\/heads\/main\b/.test(t)))) {
-      deny('Merge PRs only with `gh pr merge <n> --merge --match-head-commit <reviewed sha>`, never through `gh api`, '
-        + 'and never write main through it (docs/git-workflow.md step 4).');
+    const why = apiRefusal(seg.slice(gh + 2));
+    if (why) {
+      deny(`Refused \`gh api\` call: ${why}. Merge PRs only with \`gh pr merge <n> --merge --match-head-commit <reviewed sha>\`, `
+        + 'never through `gh api`, and never write main through it (docs/git-workflow.md step 4).');
     }
   }
   const g = gitCall(seg, here);

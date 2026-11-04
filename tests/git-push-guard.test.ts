@@ -49,8 +49,8 @@ function runHook(cwd: string, command: string) {
 describe('git push guard, as .claude/settings.json runs it', () => {
   let scratch: string;
   beforeAll(() => {
-    // The hook input holds the cwd. A folder named after a gate word would send every payload to the guard and hide
-    // a word missing from the settings gate, so the folder name holds none of them.
+    // The hook input holds the cwd. The settings wiring now runs the guard on every Bash call; the folder name still
+    // holds none of the old gate words, so a word gate put back in settings cannot pass these tests through the cwd.
     scratch = mkdtempSync(join(tmpdir(), 'hook-wiring-'));
     expect(scratch).not.toMatch(/push|merge|refs\/heads\/main|updateRef/);
   });
@@ -94,6 +94,67 @@ describe('git push guard, as .claude/settings.json runs it', () => {
     }
     // A read of main's ref is still allowed.
     expect(runHook(scratch, 'gh api repos/o/r/git/refs/heads/main').stdout).toBe('');
+  });
+
+  // US-64 AC5, Brad's review of #805 (group #830): forms that still reached main. A quoted `bash -lc '...'` command
+  // was not parsed; spellings without a gate word never reached the guard; a file, a variable or an encoded path hid
+  // the target; GraphQL createCommitOnBranch and the contents API write main without any keyword.
+  it('refuses quoted, encoded, hidden and keyword-free gh api writes to main (US-64 AC5)', () => {
+    for (const cmd of [
+      "bash -lc 'gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234'",
+      `bash -lc "gh api graphql -f query='mutation { mergePullRequest(input: {}) { clientMutationId } }'"`,
+      `sh -c "g''h a''pi -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234"`,
+      "gh api -X PATCH repos/o/r/git/refs/heads/ma''in -f sha=abc1234",
+      'gh api -X PATCH "repos/o/r/git/refs/heads/$B" -f sha=abc1234',
+      'gh api -X PATCH "repos/o/r/$REF" -f sha=abc1234',
+      'gh api -X PATCH repos/o/r/git/refs/heads%2Fmain -f sha=abc1234',
+      'gh api -X PATCH repos/o/r/git/refs/heads/%6Dain -f sha=abc1234',
+      'gh api -iXPATCH repos/o/r/git/refs/heads/main -f sha=abc1234',
+      'gh api -X GET -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234',
+      'gh api -X DELETE repos/o/r/git/refs/heads/main',
+      'gh api graphql -F query=@q.graphql',
+      'gh api graphql --input q.json',
+      'gh api graphql -f query="$Q"',
+      'gh api graphql -f query="$(cat q.graphql)"',
+      "gh api graphql -f query='mutation { createCommitOnBranch(input: {}) { commit { oid } } }'",
+      "gh api graphql -f query='mutation { enablePullRequestAutoMerge(input: {}) { clientMutationId } }'",
+      'gh api -X PUT repos/o/r/contents/X -f branch=main -f message=m -f content=eA==',
+      'gh api -X PUT repos/o/r/contents/X -f message=m -f content=eA==',
+      'gh api -X PUT repos/o/r/contents/X -f branch="$BR" -f message=m -f content=eA==',
+      'gh api -X PUT repos/o/r/contents/X --input body.json',
+      'gh api -X DELETE repos/o/r/contents/X -f message=m -f sha=abc1234',
+      // gh fills {branch} with the current branch, which may be main; xargs supplies an endpoint the guard never sees.
+      'gh api -X PATCH "repos/{owner}/{repo}/git/refs/heads/{branch}" -f sha=abc1234',
+      'gh api -X PUT repos/o/r/contents/X -F branch={branch} -f message=m -f content=eA==',
+      'echo repos/o/r/git/refs/heads/main | xargs gh api -X PATCH -f sha=abc1234',
+      // ANSI-C quoting is not parsed, so a command in it is refused rather than passed.
+      "bash -c $'gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234'",
+      // An inner string that does not parse is refused when the command holds `gh api`.
+      `bash -c "echo it's; gh api repos/o/r/pulls/1"`,
+      "gh api graphql -f query='mutation { enqueuePullRequest(input: {}) { clientMutationId } }'",
+    ]) {
+      const r = runHook(scratch, cmd);
+      expect(r.stderr, cmd).toBe('');
+      expect(r.stdout, cmd).not.toBe('');
+      expect(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision, cmd).toBe('deny');
+    }
+    // Reads, an explicit GET with fields, a write elsewhere, and a contents write to a named other branch stay allowed.
+    for (const cmd of [
+      'echo hello',
+      'gh api -X GET repos/o/r/git/refs/heads/main -f per_page=1',
+      'gh api --method=get repos/o/r/git/refs/heads/main -F per_page=1',
+      'gh api repos/o/r/git/refs/heads/main',
+      "gh api graphql -f query='query { viewer { login } }'",
+      'gh api -X POST repos/o/r/issues/5/comments -f body=hi',
+      'gh api -X POST "repos/o/r/issues/$N/comments" -f body=hi',
+      'gh api -X PUT repos/o/r/contents/X -f branch=claude/x -f message=m -f content=eA==',
+      "bash -lc 'gh api repos/o/r/git/refs/heads/main'",
+      'gh api -X POST "repos/{owner}/{repo}/issues/{}/comments" -f body=hi',
+      'gh api -X HEAD repos/o/r/git/refs/heads/main -f per_page=1',
+      'gh api -X POST repos/o/r/git/refs -f ref=refs/heads/claude/x -f sha=abc1234',
+    ]) {
+      expect(runHook(scratch, cmd).stdout, cmd).toBe('');
+    }
   });
 
   it('settings.json allows exactly the reviewed merge form and denies the four flags (US-64 AC5)', () => {
