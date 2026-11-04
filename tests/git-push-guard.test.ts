@@ -160,6 +160,8 @@ describe('git push guard, as .claude/settings.json runs it', () => {
       "CMD=$'gh api -X PATCH repos/o/r/git/refs/heads/main'; eval \"$CMD\"",
       // `--` ends the options; it is not an endpoint, so xargs still supplies the only one.
       'echo repos/o/r/git/refs/heads/main | xargs gh api -X PATCH -f sha=abc1234 --',
+      // A field flag with no value (last on the line) must not crash the guard, which would let the call through.
+      'gh api -X PUT repos/o/r/contents/X -f message=m -f',
     ]) {
       const r = runHook(scratch, cmd);
       expect(r.stderr, cmd).toBe('');
