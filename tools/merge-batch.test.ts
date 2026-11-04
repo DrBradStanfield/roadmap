@@ -1,5 +1,5 @@
 /**
- * US-64 AC13: tools/merge-batch.mjs builds a contributor batch. Every test runs the real script
+ * US-64 AC13, AC15: tools/merge-batch.mjs builds a contributor batch. Every test runs the real script
  * in a scratch clone whose bare "origin" holds refs/pull/<n>/head, and checks what the caller
  * sees: exit code, stderr, the files and the history left behind.
  */
@@ -55,14 +55,14 @@ function advanceMain(edit: (dir: string) => void): void {
   git(dir, 'push', '-q', 'origin', 'HEAD:main');
 }
 
-function runBatch(lines: string[], keep = false) {
+function runBatch(lines: string[], keep = false, extra: string[] = []) {
   if (!keep) {
     git(batch, 'fetch', '-q', 'origin', 'main');
     git(batch, 'reset', '-q', '--hard', 'origin/main');
   }
   const list = join(root, 'list.txt');
   writeFileSync(list, lines.join('\n') + '\n');
-  const r = spawnSync('node', [SCRIPT, list], { cwd: batch, env: ENV, encoding: 'utf8' });
+  const r = spawnSync('node', [SCRIPT, list, ...extra], { cwd: batch, env: ENV, encoding: 'utf8' });
   return { code: r.status, out: r.stdout, err: r.stderr };
 }
 
@@ -264,5 +264,57 @@ describe('merge-batch.mjs (US-64 AC13)', () => {
     expect(r.err).toContain('#61');
     expect(r.err).toContain('head moved');
     expect(readFileSync(join(batch, 'src/b.txt'), 'utf8')).toBe('b\n');
+  });
+});
+
+describe('merge-batch.mjs --skip and pre-flight (US-64 AC15)', () => {
+  it('--skip builds the list without the skipped PR', () => {
+    const a = pr(81, baseSha, (d) => write(d, 'src/b.txt', 'b by 81\n'));
+    const c = pr(82, baseSha, (d) => write(d, 'src/new.txt', 'new by 82\n'));
+    const r = runBatch([`81 ${a}`, `82 ${c}`], false, ['--skip', '81']);
+    expect(r.code).toBe(0);
+    expect(r.out).not.toContain('PR #81');
+    expect(readFileSync(join(batch, 'src/b.txt'), 'utf8')).toBe('b\n');
+    expect(existsSync(join(batch, 'src/new.txt'))).toBe(true);
+    expect(() => git(batch, 'merge-base', '--is-ancestor', a, 'HEAD')).toThrow();
+    expect(() => git(batch, 'merge-base', '--is-ancestor', c, 'HEAD')).not.toThrow();
+  });
+
+  it('--skip refuses a PR number that is not in the list (exit 1) and merges nothing', () => {
+    const a = pr(83, baseSha, (d) => write(d, 'src/b.txt', 'b by 83\n'));
+    const r = runBatch([`83 ${a}`], false, ['--skip', '83,99']);
+    expect(r.code).toBe(1);
+    expect(r.err).toContain('#99');
+    expect(git(batch, 'rev-parse', 'HEAD')).toBe(git(batch, 'rev-parse', 'origin/main'));
+  });
+
+  // Fixtures are assembled at run time, so this file is never secret-shaped itself.
+  const pat = ['github', '_pat_', 'SYNT', 'HETIC0123456789'].join('');
+  const q = (s: string) => `'${s}'`;
+  const authKeyLine = `  ${q('ios/Auth' + 'Key_ABC123.p8')}, ${q('dist' + '-cert.p12')},`;
+
+  it('pre-flight stops with exit 5 on a PAT-shaped string, naming file:line and rule but not the value', () => {
+    const sha = pr(84, baseSha, (d) => write(d, 'src/fixture.ts', `// fixture\nconst sample = '${pat}';\n`));
+    const r = runBatch([`84 ${sha}`]);
+    expect(r.code).toBe(5);
+    expect(r.err).toContain('src/fixture.ts:2 github_pat');
+    expect(r.err).not.toContain(pat);
+    // The batch commits stay for a human to fix the fixture.
+    expect(() => git(batch, 'merge-base', '--is-ancestor', sha, 'HEAD')).not.toThrow();
+  });
+
+  it('pre-flight stops with exit 5 on the generic-api-key shape (the AuthKey line CI\'s gitleaks caught)', () => {
+    const sha = pr(85, baseSha, (d) => write(d, 'src/files.ts', `const files = [\n${authKeyLine}\n];\n`));
+    const r = runBatch([`85 ${sha}`]);
+    expect(r.code).toBe(5);
+    expect(r.err).toContain('src/files.ts:2 generic-api-key');
+    expect(r.err).not.toContain('dist-cert');
+  });
+
+  it('pre-flight passes a plain test string', () => {
+    const sha = pr(86, baseSha, (d) => write(d, 'src/plain.ts', "const label = 'plain test string';\nconst key = 'unitChoices.v1';\n"));
+    const r = runBatch([`86 ${sha}`]);
+    expect(r.code).toBe(0);
+    expect(r.out).toContain('pre-flight ok');
   });
 });

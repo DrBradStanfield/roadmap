@@ -1,13 +1,18 @@
 #!/usr/bin/env node
 /**
- * Builds a contributor batch (US-64 AC13). Run inside a batch worktree:
- *   node tools/merge-batch.mjs <list-file>      lines: <pr-number> <full head sha>
- * Exit 0 done; 1 head moved, bad input or a worktree that is not clean; 2 conflict for a human (a stories
- * conflict that is not only added, non-duplicate `- AC` lines counts); 3 stories proof failed (merge aborted,
- * tree as before); 4 a git command failed.
+ * Builds a contributor batch (US-64 AC13, AC15). Run inside a batch worktree:
+ *   node tools/merge-batch.mjs <list-file> [--skip <pr>[,<pr>...]]   lines: <pr-number> <full head sha>
+ * --skip builds the list without those PRs, so dropping a rejected PR is one rerun on a fresh worktree.
+ * After a build, a pre-flight gives the worktree its package clones and scans the batch's added lines for
+ * secret-shaped text. Exit 0 done; 1 head moved, bad input or a worktree that is not clean; 2 conflict for a
+ * human (a stories conflict that is not only added, non-duplicate `- AC` lines counts); 3 stories proof failed
+ * (merge aborted, tree as before); 4 a git command failed; 5 pre-flight found secret-shaped text (the batch
+ * commits stay; fix the fixture).
  */
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { PATTERNS } from './secret-rules.mjs';
 
 const HTML = 'docs/user-stories.html';
 const MD = 'docs/user-stories.md';
@@ -88,10 +93,75 @@ const plusMinus = (diff) =>
     .sort()
     .join('\n');
 
+// Approximates gitleaks' generic-api-key rule (CI's secret scan): a keyword, an operator, then a 10+ character
+// value whose Shannon entropy is 3.5 or more. Skipped like gitleaks skips them: a value of only letters, `_`, `.`
+// and `-` (its own allowlist), and one holding a word (5+ letters of one case), standing in for its ~1,500 stop
+// words. CI's gitleaks stays the real gate.
+const GENERIC =
+  /(?:access|auth|api|credential|creds|key|passw(?:or)?d|secret|token)[ \t\w.-]{0,20}[\s'"]{0,3}(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[`'"\s=]{0,5}([\w.=-]{10,150}|[a-z0-9][a-z0-9+/]{11,}={0,3})(?=[`'"\s;]|\\[nr]|$)/gi;
+const entropy = (s) => {
+  const n = {};
+  for (const c of s) n[c] = (n[c] || 0) + 1;
+  return Object.values(n).reduce((e, k) => e - (k / s.length) * Math.log2(k / s.length), 0);
+};
+const generic = (v) => !/^[a-zA-Z_.-]+$|[a-z]{5}|[A-Z]{5}/.test(v) && entropy(v) >= 3.5;
+const SHAPES = Object.entries(PATTERNS).map(([rule, re]) => [rule, new RegExp(re)]);
+
+/** file:line and rule of every added line shaped like a secret; never the value. */
+function secretShapes(diff) {
+  const hits = [];
+  let file = '';
+  let line = 0;
+  let header = false;
+  for (const l of diff.split('\n')) {
+    if (l.startsWith('diff --git ')) header = true;
+    else if (header && l.startsWith('+++ ')) file = l.slice(4).replace(/^b\//, '');
+    else if (l.startsWith('@@')) {
+      header = false;
+      line = Number(/\+(\d+)/.exec(l)[1]);
+    } else if (!header && l.startsWith('+')) {
+      const text = l.slice(1);
+      for (const [rule, re] of SHAPES) if (re.test(text)) hits.push(`${file}:${line} ${rule}`);
+      if ([...text.matchAll(GENERIC)].some((m) => generic(m[1]))) hits.push(`${file}:${line} generic-api-key`);
+      line++;
+    }
+  }
+  return hits;
+}
+
+/**
+ * Package clones, so reviewers spawned from the main checkout can run tests here: the worktree hook makes them
+ * only when a session first runs a command inside, so feed it that event (its linkPackages does the work).
+ */
+function linkClones() {
+  const top = git('rev-parse', '--show-toplevel').trim();
+  const hook = join(top, '.claude/hooks/worktree-guard.cjs');
+  if (!existsSync(hook) || existsSync(join(top, 'node_modules'))) return;
+  const input = JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Bash', cwd: top });
+  try {
+    execFileSync('node', [hook], { input, stdio: ['pipe', 'ignore', 'ignore'], timeout: 300000 });
+  } catch {
+    /* reported below */
+  }
+  if (!existsSync(join(top, 'node_modules'))) console.log(`pre-flight: no node_modules; run: echo '${input}' | node ${hook}`);
+}
+
+/** Before reviewers start: the worktree's package clones, then the secret scan. */
+function preflight() {
+  linkClones();
+  const hits = secretShapes(git('diff', '-U0', '--no-color', '--no-ext-diff', 'origin/main...HEAD'));
+  if (hits.length) stop(5, `pre-flight found secret-shaped text (the batch commits stay; fix the fixture):\n${hits.join('\n')}`);
+  console.log('pre-flight ok: no secret-shaped text');
+}
+
 function main() {
-  const listFile = process.argv[2];
-  if (!listFile) stop(1, 'usage: node tools/merge-batch.mjs <list-file>');
-  const entries = readFileSync(listFile, 'utf8')
+  const args = process.argv.slice(2);
+  const at = args.indexOf('--skip');
+  const skip = at >= 0 ? args.splice(at, 2)[1] : '';
+  if (at >= 0 && !/^\d+(,\d+)*$/.test(skip || '')) stop(1, '--skip wants <pr>[,<pr>...]');
+  const listFile = args[0];
+  if (!listFile || args.length > 1) stop(1, 'usage: node tools/merge-batch.mjs <list-file> [--skip <pr>[,<pr>...]]');
+  const all = readFileSync(listFile, 'utf8')
     .split('\n')
     .map((l) => l.trim())
     .filter(Boolean)
@@ -100,6 +170,10 @@ function main() {
       if (!m) stop(1, `bad line "${l}": want "<pr-number> <full head sha>"`);
       return { pr: m[1], sha: m[2] };
     });
+  const skipped = skip ? skip.split(',') : [];
+  const unknown = skipped.filter((p) => !all.some((e) => e.pr === p));
+  if (unknown.length) stop(1, `--skip: PR #${unknown.join(', #')} is not in ${listFile}`);
+  const entries = all.filter((e) => !skipped.includes(e.pr));
 
   if (gitOk('rev-parse', '-q', '--verify', 'MERGE_HEAD')) stop(1, 'a merge is in progress; finish or abort it first');
   if (git('status', '--porcelain').trim()) stop(1, 'the worktree is not clean; commit or stash first');
@@ -146,6 +220,7 @@ function main() {
     console.log(`PR #${pr} ${sha.slice(0, 8)} merged${note.length ? ` (${[...new Set(note)].join('; ')})` : ''}`);
   }
   console.log(`HEAD ${git('rev-parse', 'HEAD').trim()}`);
+  preflight();
 }
 
 try {

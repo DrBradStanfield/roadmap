@@ -93,20 +93,30 @@ and Brad merges them. One at a time, each merge made the rest conflict and re-ru
    changes need Brad's explicit yes. A rejected PR stays out of the batch, with a comment on it saying why.
    Never merge a PR into a batch and then revert it: its head would still reach main, and GitHub would mark
    it merged.
-3. **Build the batch, 8 to 10 low-risk PRs** (high-risk ones alone, or a few that touch the same area).
+3. **Build the batch, 8 to 10 low-risk PRs** (high-risk ones alone, or in a group of at most three).
    `sh tools/worktree-new.sh batch-<date>-<n>`, write a list file (`<pr> <full reviewed head sha>` per line),
-   run `node tools/merge-batch.mjs <list-file>` in the worktree. It fetches each head, refuses a moved one
+   run `node tools/merge-batch.mjs <list-file>` in the worktree. To drop a rejected PR, keep the list file and
+   rebuild on a fresh worktree: `node tools/merge-batch.mjs <list-file> --skip <pr>[,<pr>...]`. A skipped
+   number not in the list stops it (exit 1). It fetches each head, refuses a moved one
    (exit 1), merges the reviewed head as is (GitHub then marks the PR merged when the batch lands), drops a
    PR's `docs/user-stories.html` and merges add-only `docs/user-stories.md` conflicts (both sides' `- AC`
    lines, in order). The tool proves that merge changed the stories file by exactly the PR's own lines
    (exit 3 and the merge undone if not), so those conflicts need no reviewer re-check. A repeated AC number or any other conflict stops it (exit 2): fix
    it by hand and get one scoped re-check by a fresh adversary, since the fix is new lines.
+   After a clean build, a pre-flight runs before any reviewer starts. It gives the worktree its package
+   clones (the worktree hook's own step, so reviewers spawned from the main checkout can run tests there),
+   or prints the one command to run. Then it scans the batch's added lines for secret-shaped text: the
+   credential shapes codex-review refuses, and an approximation of gitleaks' generic-api-key rule. A hit
+   prints file:line and the rule, never the value, and exits 5 with the batch commits left in place. Fix the
+   fixture (assemble it at run time) before review: on 2026-11-04 two review rounds were lost to fixtures
+   that stopped CI's gitleaks and codex-review.
    Spawn reviewers and workers from the main checkout, never while the orchestrator sits in a session
    worktree: a spawned agent is pinned to the orchestrator's folder (2026-11-04 one lost its shell when that
    worktree was removed, and workers could not enter their own worktrees).
    High-risk PRs are built into a group branch first (`claude/group-<area>`); open its PR with `hold` so CI
    runs during review, and a fresh adversary plus Codex review that built branch (each PR's pinned head plus
-   the conflict fixes).
+   the conflict fixes). A group holds at most three PRs, grouped by the files they share, not by broad
+   topic: on 2026-11-04 one rejected PR forced a hand rebuild of three groups out of five.
 4. **Open the batch PR with the `hold` label, always** (`gh pr create --label hold`). A `claude/` branch in this
    repo gets the CI reviewer and auto-ship, and auto-ship would merge contributor code after 30 minutes with
    no Codex and no human merge. The label stops it; Brad's session merges by hand, `hold` still on. List each
@@ -117,6 +127,13 @@ and Brad merges them. One at a time, each merge made the rest conflict and re-ru
 
 Rough cost (2026-11-04): one PR at a time paid about 9 min of CI, 8 min of local tests and its own review and
 deploy, repeated for every PR after each conflict. A batch pays one 3 min CI run and one review round.
+
+**What a contributor PR should do before it opens** (Brad 2026-11-04):
+- Start from a fresh `main`, so the PR does not carry old conflicts.
+- Take the next free AC number on `main`, not on an older branch.
+- Never use secret-shaped test values (keys, tokens, PATs, a `key = 'x1y2…'` line); assemble any such
+  fixture at run time.
+- Run its own adversarial pass against docs/review-format.md before opening.
 
 ## What enforces it
 
