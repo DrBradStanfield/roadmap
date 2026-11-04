@@ -217,6 +217,15 @@ export class ChatSession {
    */
   async eraseAll(): Promise<void> {
     this.refreshAfterDeviceErase();
+    if (this.sync) {
+      // The stored file too, not just this page's copy: another device may
+      // have saved conversations since the open (US-11 AC2e). This page's are
+      // tombstoned first, so if the read fails the next chat save still
+      // sends them. Not on the device tier: the web's record erase removes
+      // that file (AC3), and the iPhone opens the file it has just read.
+      for (const conv of this.file.conversations) tombstone(conv);
+      this.file = mergeChatHistoryFiles(this.file, await this.sync.load(), contextOf(this.host));
+    }
     if (this.file.conversations.length === 0) return; // nothing to tombstone
     const now = new Date(this.host.clock.now()).toISOString();
     for (const conv of this.file.conversations) tombstone(conv, now);
