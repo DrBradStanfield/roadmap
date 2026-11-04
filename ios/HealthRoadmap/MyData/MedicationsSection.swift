@@ -13,12 +13,15 @@ struct MedicationsSection: View {
     /// PROTOTYPE (My health tab): only the section with this id ("weight-medications",
     /// "lipid-medications"), and nothing when the engine has none; nil: all, as My data showed them.
     var only: String? = nil
+    /// PROTOTYPE (My health, round 3): the plan's weight-medicine suggestions, drawn in place of
+    /// the section's intro, each as the plan card draws it; none keeps the intro.
+    var inPlaceOfIntro: [Suggestion] = []
 
     var body: some View {
         if let only {
             FormSectionsList(sections: data.medications.filter { $0.id == only }, months: data.months, title: SectionTitle.medications, answer: { field, value in
                 saved(await store.apply(.form(.medicationField(field: field, value: value))))
-            }, guides: data.guides)
+            }, guides: data.guides, inPlaceOfIntro: inPlaceOfIntro)
         } else if data.medications.isEmpty {
             Section {
                 Label("Medication questions appear once you add a cholesterol, HbA1c or triglyceride value, or your weight and height.", systemImage: "pills")

@@ -6,8 +6,6 @@ enum HealthTopic: String, CaseIterable, Identifiable {
     case weight, sleep, fitness, bloodPressure, bloodTests, screening, skin, supplements
 
     var id: String { rawValue }
-    /// The scroll id of the topic's heading.
-    var anchor: String { "topic.\(rawValue)" }
 
     var title: SectionTitle {
         switch self {
@@ -21,18 +19,6 @@ enum HealthTopic: String, CaseIterable, Identifiable {
         case .supplements: .supplements()
         }
     }
-
-    /// The jump chips' words; nil for a topic with no chip.
-    var chip: String? {
-        switch self {
-        case .weight: "Weight"
-        case .sleep: "Sleep"
-        case .fitness: "Fitness"
-        case .bloodPressure: "BP"
-        case .bloodTests: "Blood tests"
-        case .screening, .skin, .supplements: nil
-        }
-    }
 }
 
 /// PROTOTYPE: the plan's cards split by topic. Swift only: health-core's cards, words and
@@ -43,11 +29,15 @@ struct TopicPlan {
     private(set) var cards: [HealthTopic: [PlanCard]] = [:]
     /// Who owns the products (US-61 AC7), under the supplement cards.
     private(set) var ownershipLine: String?
+    /// The weight-medicine step suggestions (`weight-med-*`): drawn in the Weight & Diabetes
+    /// Medications section in place of its intro, never as cards (Brad, round 3).
+    private(set) var weightMedicines: [Suggestion] = []
 
     init(_ state: PlanState?) {
         guard case .planned(_, let sections, _) = state else { return }
         for card in sections.flatMap(\.cards) {
-            let byTopic = Dictionary(grouping: card.suggestions, by: Self.topic)
+            weightMedicines += card.suggestions.filter(Self.isWeightMedicine)
+            let byTopic = Dictionary(grouping: card.suggestions.filter { !Self.isWeightMedicine($0) }, by: Self.topic)
             for topic in HealthTopic.allCases {
                 guard let suggestions = byTopic[topic] else { continue }
                 cards[topic, default: []].append(PlanCard(category: card.category, priority: Self.highest(suggestions), suggestions: suggestions))
@@ -62,6 +52,8 @@ struct TopicPlan {
     var urgent: PlanCard? {
         HealthTopic.allCases.lazy.compactMap { self[$0].first { $0.priority == "urgent" } }.first
     }
+
+    static func isWeightMedicine(_ suggestion: Suggestion) -> Bool { suggestion.id.hasPrefix("weight-med-") }
 
     /// The scroll id of a card on the tab.
     static func anchor(_ card: PlanCard) -> String { card.anchor }
@@ -79,7 +71,7 @@ struct TopicPlan {
         case "exercise": .fitness
         case "sleep": .sleep
         case "blood_pressure": .bloodPressure
-        case "bloodwork": .bloodTests
+        case "bloodwork": suggestion.id.hasPrefix("hba1c-") ? .weight : .bloodTests
         case "screening": .screening
         case "skin": .skin
         case "supplements": .supplements

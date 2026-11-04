@@ -144,26 +144,10 @@ struct MyDataView: View {
         .listStyle(.insetGrouped)
     }
 
-    /// The title with the person button, lab upload and Sync; the jump chips; the urgent banner.
+    /// The title with the person button, lab upload and Sync; the urgent banner.
     @ViewBuilder
     private func top(_ plan: TopicPlan, proxy: ScrollViewProxy) -> some View {
         Section {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(HealthTopic.allCases.filter { $0.chip != nil }) { topic in
-                        Button(topic.chip ?? "") {
-                            withAnimation { proxy.scrollTo(topic.anchor, anchor: .top) }
-                        }
-                        .buttonStyle(.bordered)
-                        .buttonBorderShape(.capsule)
-                        .controlSize(.small)
-                        .tint(.primary)
-                    }
-                }
-                .padding(.horizontal, 4)
-            }
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
             if let urgent = plan.urgent, let first = urgent.suggestions.first {
                 Button {
                     withAnimation { proxy.scrollTo(TopicPlan.anchor(urgent), anchor: .center) }
@@ -207,7 +191,7 @@ struct MyDataView: View {
         }
     }
 
-    /// A topic's heading, a row so the chips can scroll to it.
+    /// A topic's heading, a row in the list's own flow.
     private func heading(_ topic: HealthTopic) -> some View {
         Section {
             topic.title
@@ -216,7 +200,6 @@ struct MyDataView: View {
                 .accessibilityAddTraits(.isHeader)
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 20, leading: 4, bottom: 0, trailing: 4))
-                .id(topic.anchor)
         }
         .listSectionSpacing(.compact)
     }
@@ -279,7 +262,7 @@ struct MyDataView: View {
         }
         .listSectionSpacing(.compact)
         cards(plan[.weight])
-        MedicationsSection(store: store, data: data, saved: saved, only: "weight-medications")
+        MedicationsSection(store: store, data: data, saved: saved, only: "weight-medications", inPlaceOfIntro: plan.weightMedicines)
     }
 
     /// Today's large blood pressure card, then the blood pressure cards.
@@ -297,8 +280,8 @@ struct MyDataView: View {
     @ViewBuilder
     private func bloodTests(_ data: MyData, plan: TopicPlan, tiles: PlanTiles) -> some View {
         heading(.bloodTests)
-        // HbA1c shows once, under Weight & diabetes (Brad, round 2).
-        let rows = data.bloodTests.filter { $0.metric != "hba1c" }
+        // HbA1c shows here too, in its usual place, as well as under Weight & diabetes (Brad, round 3).
+        let rows = data.bloodTests
         let labs = data.labTests ?? []
         Section {
             let column = ValueRow.Column((rows + labs).map { ($0.latest?.value, $0.previous, $0.unit, nil) })

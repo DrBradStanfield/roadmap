@@ -16,11 +16,21 @@ struct FormSectionsList: View {
     var openMeasurement: (String) -> Void = { _ in }
     /// Guides by question key (US-58 AC5): a question with one gets an info button that opens it.
     var guides: MetricGuides?
+    /// PROTOTYPE (My health, round 3): suggestions drawn in place of the first section's intro,
+    /// each as the plan card draws it (title, text, and the reason and references behind a tap).
+    var inPlaceOfIntro: [Suggestion] = []
 
     var body: some View {
         ForEach(sections) { section in
             Section {
-                Text(section.intro).font(.subheadline).foregroundStyle(.secondary)
+                if inPlaceOfIntro.isEmpty || section.id != sections.first?.id {
+                    Text(section.intro).font(.subheadline).foregroundStyle(.secondary)
+                } else {
+                    ForEach(inPlaceOfIntro) { suggestion in
+                        SuggestionRow(suggestion: suggestion, showsIcon: false, dismiss: nil)
+                            .listRowInsets(EdgeInsets())
+                    }
+                }
                 ForEach(section.groups.filter(\.title.isEmpty)) { group in
                     rows(group)
                 }
