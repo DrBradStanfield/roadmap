@@ -1,15 +1,17 @@
 import SwiftUI
 
-/// The My data tab (US-25 AC5, AC17): vitals, blood tests and about you, each
-/// row with its current value. Every change goes through `RecordStore.apply`,
-/// so the engine's rules decide what is saved. The web twins are
-/// StartingInfoVitals.tsx and BloodTestTimeline.tsx.
+/// The My health tab (PROTOTYPE, docs/drafts/my-health-tab.md; was My data, US-25 AC5, AC17):
+/// one page by topic, weight first, each topic's values then its plan cards. About you,
+/// reminders, Apple Health and the record sit in a settings sheet behind the person button
+/// (`Layout.settings`). Every change goes through `RecordStore.apply`, so the engine's rules
+/// decide what is saved. The web twins are StartingInfoVitals.tsx and BloodTestTimeline.tsx.
 ///
-/// No title bar (Brad 2026-10-22): lab upload and Sync sit on the Vitals line;
-/// the unit switch is a row in About you, near the end, since it is set once
-/// (Brad 2026-10-23). A tap on a value opens its
-/// page in the tab's navigation stack (MetricDetailView).
+/// No title bar (Brad 2026-10-22): the person button, lab upload and Sync sit on the title line.
+/// A tap on a value opens its page in the tab's navigation stack (MetricDetailView).
 struct MyDataView: View {
+    /// The tab itself, or the settings sheet behind its person button.
+    enum Layout { case health, settings }
+
     /// Which value the entry sheet is for, with the screen it was read on: the sheet's save is checked
     /// against that, whatever lands before it appears (Codex R2).
     private enum Entry: Identifiable {
@@ -21,29 +23,37 @@ struct MyDataView: View {
     let engine: HealthEngine
     let store: RecordStore
     let sync: CloudSync
+    var layout: Layout = .health
     @State private var entry: Entry?
     /// The metric whose page is pushed.
     @State private var detail: MyData.Row?
     @State private var showSync = false
+    @State private var showSettings = false
     @State private var addingLabs = false
     @State private var refusal: String?
     @State private var saves = 0
     /// A picker's edit is landing: the pickers wait, so a quick change back is never lost.
     @State private var picking = false
+    /// The tile whose explainer is open (waist-to-height, weight, protein).
+    @State private var openedTile: StatTile?
     /// US-56: Apple Health's heart, sleep and fitness metrics, read live; the one whose page is pushed.
     @Environment(LiveHealth.self) private var live: LiveHealth?
     @State private var liveDetail: LiveMetric?
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.analytics) private var analytics
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
+        switch layout {
+        case .health: health
+        case .settings: settings
+        }
+    }
+
+    private var health: some View {
         // The tab's NavigationStack is RootView's; this screen hides its bar.
         ScrollViewReader { proxy in
-            // Tour tip 3 is due (tip 2's Next, or My data opened after it): bring Blood tests into view (US-57 AC2).
-            content.task {
-                for await due in BloodTestsTip().shouldDisplayUpdates where due {
-                    withAnimation { proxy.scrollTo(store.myData?.bloodTests.first?.id, anchor: .center) }
-                }
-            }
+            editing(content { healthList($0, proxy: proxy) })
         }
             .toolbar(.hidden, for: .navigationBar)
             .solidStatusBar()
@@ -54,61 +64,321 @@ struct MyDataView: View {
                 if let live { LiveHealthPage(live: live, metric: metric, bands: metric == .vo2Max ? store.myData?.vo2Bands?.value : nil,
                                               guide: store.myData?.guides?[metric.guideKey]) }
             }
-            // Read from Health each time My data shows and on return to the app; nothing is kept (US-56 AC2).
+            // Read from Health each time My health shows and on return to the app; nothing is kept (US-56 AC2).
             .task { await live?.refresh() }
             .onChange(of: scenePhase) { if scenePhase == .active { live?.wake() } }
             .sheet(isPresented: $showSync) { SyncView(sync: sync) }
             // Here, not on the header's "+": a sheet declared in a section header took
             // its grey text, large font and icon-only labels (seen 2026-10-22).
             .sheet(isPresented: $addingLabs) { LabUploadSheet(engine: engine, store: store) }
+            .sheet(isPresented: $showSettings) {
+                NavigationStack { MyDataView(engine: engine, store: store, sync: sync, layout: .settings) }
+            }
+            .sheet(item: $openedTile) { tile in
+                TileExplainerSheet(title: tile.label, about: tile.about, evidence: tile.evidence)
+            }
+            .animation(.spring(duration: 0.35, bounce: 0.2), value: store.myData?.profile.alcohol?.value)
     }
 
-    private var content: some View {
-        Group {
-            if let data = store.myData {
-                List {
-                    vitals(data)
-                    // Under blood pressure: heart rate, resting heart rate and sleep, or the Turn On or Open Settings row (US-56 AC5, AC6).
-                    LiveCardsSection(metrics: LiveMetric.vitals) { liveDetail = $0 }
-                    LiveCardsSection(metrics: LiveMetric.fitness, bands: data.vo2Bands?.value.map { [.vo2Max: $0] } ?? [:]) { liveDetail = $0 }
-                    metrics(data.bloodTests, labs: data.labTests ?? []) {
-                        // Tour tip 3 (US-57 AC7); its action is the lab upload.
-                        SectionTitle.bloodTests().tourTip(BloodTestsTip(), action: { addingLabs = true })
-                    }
-                    MedicationsSection(store: store, data: data, saved: saved)
-                    ScreeningsSection(store: store, data: data, saved: saved, open: open)
-                    SupplementsSection(store: store, supplements: data.supplements, saved: saved)
-                    RemindersSection()
-                    aboutYou(data)
-                    AppleHealthSection()
-                    // US-65: entries the engine could not read are kept unchanged; one calm line says how many.
-                    if let note = data.unreadableNote {
-                        Section {
-                        } footer: {
-                            Text(note)
-                        }
-                    }
-                    RecordSection(store: store, sync: sync)
-                    Section {
-                    } footer: {
-                        Label(SyncStatusText.myDataFooter(provider: sync.provider, earlier: sync.syncedBefore), systemImage: "lock.shield")
-                            .frame(maxWidth: .infinity)
-                    }
-                }
-                .listStyle(.insetGrouped)
-            } else {
-                ContentUnavailableView("Your record could not be opened", systemImage: "exclamationmark.triangle", description: Text(store.problem ?? ""))
+    private var settings: some View {
+        editing(content(settingsList))
+            .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+            }
+    }
+
+    /// The record's list, or why it cannot be shown.
+    @ViewBuilder
+    private func content(@ViewBuilder _ list: (MyData) -> some View) -> some View {
+        if let data = store.myData {
+            list(data)
+        } else {
+            ContentUnavailableView("Your record could not be opened", systemImage: "exclamationmark.triangle", description: Text(store.problem ?? ""))
+        }
+    }
+
+    private func editing(_ view: some View) -> some View {
+        view
+            .sheet(item: $entry) { entry in
+                sheet(for: entry)
+                    .presentationDetents([.medium, .large])
+            }
+            .refusalAlert($refusal)
+            .sensoryFeedback(.success, trigger: saves)
+    }
+
+    // MARK: My health
+
+    private func healthList(_ data: MyData, proxy: ScrollViewProxy) -> some View {
+        let plan = TopicPlan(store.plan)
+        let tiles = PlanTiles(store.plan)
+        return List {
+            top(plan, proxy: proxy)
+            weight(data, plan: plan, tiles: tiles)
+            heading(.sleep)
+            LiveCardsSection(metrics: [.sleep], title: nil, keepsReconnect: false) { liveDetail = $0 }
+            cards(plan[.sleep])
+            heading(.fitness)
+            LiveCardsSection(metrics: [.vo2Max, .restingHeartRate, .heartRate, .steps], bands: data.vo2Bands?.value.map { [.vo2Max: $0] } ?? [:],
+                             title: nil, keepsReconnect: true) { liveDetail = $0 }
+            cards(plan[.fitness])
+            bloodPressure(data, plan: plan)
+            bloodTests(data, plan: plan, tiles: tiles)
+            heading(.screening)
+            ScreeningsSection(store: store, data: data, saved: saved, open: open)
+            cards(plan[.screening])
+            if !plan[.skin].isEmpty {
+                heading(.skin)
+                cards(plan[.skin])
+            }
+            heading(.supplements)
+            SupplementsSection(store: store, supplements: data.supplements, saved: saved)
+            cards(plan[.supplements], footer: plan.ownershipLine)
+            Section {
+            } footer: {
+                Text(PlanList.disclaimer)
             }
         }
-        .sheet(item: $entry) { entry in
-            sheet(for: entry)
-                .presentationDetents([.medium, .large])
-        }
-        .refusalAlert($refusal)
-        .sensoryFeedback(.success, trigger: saves)
+        .listStyle(.insetGrouped)
     }
 
-    // MARK: Sections
+    /// The title with the person button, lab upload and Sync; the jump chips; the urgent banner.
+    @ViewBuilder
+    private func top(_ plan: TopicPlan, proxy: ScrollViewProxy) -> some View {
+        Section {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(HealthTopic.allCases.filter { $0.chip != nil }) { topic in
+                        Button(topic.chip ?? "") {
+                            withAnimation { proxy.scrollTo(topic.anchor, anchor: .top) }
+                        }
+                        .buttonStyle(.bordered)
+                        .buttonBorderShape(.capsule)
+                        .controlSize(.small)
+                        .tint(.primary)
+                    }
+                }
+                .padding(.horizontal, 4)
+            }
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+            if let urgent = plan.urgent, let first = urgent.suggestions.first {
+                Button {
+                    withAnimation { proxy.scrollTo(TopicPlan.anchor(urgent), anchor: .center) }
+                } label: {
+                    Label("Needs attention: \(first.title)", systemImage: "exclamationmark.triangle.fill")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(14)
+                        .background(Color.status("urgent"), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(PressableStyle())
+                .accessibilityHint("Scrolls to the card")
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+            }
+        } header: {
+            HStack(spacing: 14) {
+                Text("My health")
+                    .font(.largeTitle.bold())
+                    // A section header greys its text; the title stays in the label colour.
+                    .foregroundStyle(Color(.label))
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                Group {
+                    Button { showSettings = true } label: {
+                        Label("Settings", systemImage: "person.crop.circle")
+                    }
+                    Button { addingLabs = true } label: {
+                        Label("Add medical records", systemImage: "plus")
+                    }
+                    .accessibilityHint("Upload a lab report or clinic letter")
+                    Button { showSync = true } label: {
+                        Label("Sync", systemImage: SyncStatusText.symbol(sync.status, provider: sync.provider))
+                    }
+                }
+                .labelStyle(.iconOnly)
+                .font(.title3)
+            }
+            .textCase(nil)
+        }
+    }
+
+    /// A topic's heading, a row so the chips can scroll to it.
+    private func heading(_ topic: HealthTopic) -> some View {
+        Section {
+            topic.title
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(Color(.label))
+                .accessibilityAddTraits(.isHeader)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 20, leading: 4, bottom: 0, trailing: 4))
+                .id(topic.anchor)
+        }
+        .listSectionSpacing(.compact)
+    }
+
+    /// A topic's plan cards, each in the plan's own card style.
+    @ViewBuilder
+    private func cards(_ cards: [PlanCard], footer: String? = nil) -> some View {
+        if !cards.isEmpty {
+            Section {
+                ForEach(cards) { card in
+                    PlanCardView(card: card, askAboutAlcohol: card.suggestions.contains { $0.id == Suggestion.reduceAlcohol } ? alcoholQuestion : nil)
+                        .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .id(TopicPlan.anchor(card))
+                }
+            } footer: {
+                if let footer { Text(footer).accessibilityIdentifier("plan.ownershipLine") }
+            }
+            .listSectionSpacing(.compact)
+        }
+    }
+
+    /// Waist-to-height, weight with its ideal and BMI, waist, protein and fibre, the weight
+    /// medicines, then the weight cards.
+    @ViewBuilder
+    private func weight(_ data: MyData, plan: TopicPlan, tiles: PlanTiles) -> some View {
+        heading(.weight)
+        let weight = data.vitals.first { $0.metric == "weight" }
+        let waist = data.vitals.first { $0.metric == "waist" }
+        Section {
+            if let whtr = tiles["whtr"] {
+                Button { openedTile = whtr } label: {
+                    ValueRow(label: whtr.label, value: whtr.value, unit: whtr.unit, day: waist?.latest?.day,
+                             target: whtr.status?.label, grade: PlanTiles.grade(whtr), tint: MetricChart.colors(for: "waist")[0])
+                }
+                .tint(.primary)
+            }
+            if let weight {
+                let ideal = tiles["ibw"].map { "Ideal \($0.value) \($0.unit)" }
+                VStack(alignment: .leading, spacing: 2) {
+                    Button { open(weight) } label: {
+                        ValueRow(label: weight.label, value: weight.latest?.value, unit: weight.unit, day: weight.latest?.day,
+                                 target: ideal ?? weight.target, previous: weight.previous, grade: weight.grade, gradeWords: weight.gradeWords,
+                                 note: weight.note, trend: weight.trend ?? [], tint: MetricChart.colors(for: weight.metric)[0])
+                    }
+                    .tint(.primary)
+                    .disabled(store.unitSwitches > 0)
+                    if let bmi = tiles["bmi"] {
+                        Button { openedTile = bmi } label: {
+                            Text("\(bmi.label) \(bmi.value)").font(.caption).foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            if let waist { metric(waist) }
+        }
+        .listSectionSpacing(.compact)
+        let protein = tiles["protein"]
+        let fibre = PlanTiles.fibre(plan)
+        if protein != nil || fibre != nil {
+            Section {
+                // Two across, as the plan's tiles: protein alone keeps half the width.
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+                    ForEach([protein, fibre].compactMap { $0 }) { tile in
+                        Button { openedTile = tile } label: { TileCard(tile: tile) }
+                            .buttonStyle(PressableStyle())
+                    }
+                }
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+            }
+            .listSectionSpacing(.compact)
+        }
+        MedicationsSection(store: store, data: data, saved: saved, only: "weight-medications")
+        cards(plan[.weight])
+    }
+
+    /// Today's large blood pressure card, then the blood pressure cards.
+    @ViewBuilder
+    private func bloodPressure(_ data: MyData, plan: TopicPlan) -> some View {
+        heading(.bloodPressure)
+        if let pressure = data.vitals.first(where: { $0.metric == MyData.bloodPressure }) {
+            Section { metric(pressure, card: pressure.latest != nil) }
+                .listSectionSpacing(.compact)
+        }
+        cards(plan[.bloodPressure])
+    }
+
+    /// The rows in today's order, eGFR under creatinine; the cholesterol medicines; the lipid cards.
+    @ViewBuilder
+    private func bloodTests(_ data: MyData, plan: TopicPlan, tiles: PlanTiles) -> some View {
+        heading(.bloodTests)
+        let rows = data.bloodTests
+        let labs = data.labTests ?? []
+        Section {
+            let column = ValueRow.Column((rows + labs).map { ($0.latest?.value, $0.previous, $0.unit, nil) })
+            ForEach(rows) { row in
+                if row.metric == "creatinine", let egfr = tiles["egfr"] {
+                    VStack(alignment: .leading, spacing: 2) {
+                        metric(row, column: column)
+                        Button { openedTile = egfr } label: {
+                            Text("\(egfr.label) \(egfr.value) \(egfr.unit)").font(.caption).foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } else {
+                    metric(row, column: column)
+                }
+            }
+            ForEach(labs) { lab in
+                Button { open(lab) } label: {
+                    Self.valueRow(lab, tint: MetricChart.labTint, column: column)
+                }
+                .tint(.primary)
+                .disabled(store.unitSwitches > 0)
+            }
+        }
+        .listSectionSpacing(.compact)
+        MedicationsSection(store: store, data: data, saved: saved, only: "lipid-medications")
+        cards(plan[.bloodTests])
+    }
+
+    /// The reduce-alcohol card's question (US-60), as My plan asked it.
+    private var alcoholQuestion: AlcoholQuestion? {
+        AlcoholQuestion(answered: store.myData?.profile.alcohol?.value) { [store, analytics] in
+            let seen = store.screen
+            return { choice in
+                Task {
+                    switch await store.apply(.alcohol(choice), as: seen) {
+                    case .saved: analytics?.event(.alcoholAnswered)
+                    case .refused(let message, _): refusal = message
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: Settings
+
+    private func settingsList(_ data: MyData) -> some View {
+        List {
+            aboutYou(data)
+            RemindersSection()
+            AppleHealthSection()
+            // US-65: entries the engine could not read are kept unchanged; one calm line says how many.
+            if let note = data.unreadableNote {
+                Section {
+                } footer: {
+                    Text(note)
+                }
+            }
+            RecordSection(store: store, sync: sync)
+            Section {
+            } footer: {
+                Label(SyncStatusText.myDataFooter(provider: sync.provider, earlier: sync.syncedBefore), systemImage: "lock.shield")
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .listStyle(.insetGrouped)
+    }
 
     private func aboutYou(_ data: MyData) -> some View {
         Section {
@@ -161,47 +431,7 @@ struct MyDataView: View {
         .fixedSize()
     }
 
-    /// `labs`: the lab tests beyond the core ones, after them as on the web (US-62 AC8). Each opens
-    /// its own page, as the web's does (US-25 AC25).
-    private func metrics(_ rows: [MyData.Row], labs: [MyData.Row] = [], @ViewBuilder header: () -> some View) -> some View {
-        Section {
-            let column = ValueRow.Column((rows + labs).map { ($0.latest?.value, $0.previous, $0.unit, nil) })
-            ForEach(rows) { metric($0, column: column) }
-            ForEach(labs) { lab in
-                Button { open(lab) } label: {
-                    Self.valueRow(lab, tint: MetricChart.labTint, column: column)
-                }
-                .tint(.primary)
-                .disabled(store.unitSwitches > 0)
-            }
-        } header: {
-            header()
-        }
-    }
-
-    /// Vitals as Apple Health's cards (Brad 2026-10-23): each its own tile, a gap between;
-    /// a value with a reading shows large with its trend, one with none says Add.
-    @ViewBuilder
-    private func vitals(_ data: MyData) -> some View {
-        ForEach(Array(data.vitals.enumerated()), id: \.element.id) { index, row in
-            Section {
-                metric(row, card: row.latest != nil)
-            } header: {
-                if index == 0 {
-                    ControlsHeader(title: .vitals()) {
-                        Button { addingLabs = true } label: {
-                            Label("Add medical records", systemImage: "plus")
-                        }
-                        .accessibilityHint("Upload a lab report or clinic letter")
-                        Button { showSync = true } label: {
-                            Label("Sync", systemImage: SyncStatusText.symbol(sync.status, provider: sync.provider))
-                        }
-                    }
-                }
-            }
-            .listSectionSpacing(.compact)
-        }
-    }
+    // MARK: Rows
 
     /// `column`: the section's widest reading, which sets every row's value column.
     private func metric(_ row: MyData.Row, card: Bool = false, column: ValueRow.Column? = nil) -> some View {

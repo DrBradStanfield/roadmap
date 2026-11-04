@@ -122,8 +122,7 @@ struct PlanList: View {
                         }
                     }
 
-                    // Same words as the web's disclaimer (ResultsPanel.tsx, `health-disclaimer`).
-                    Text("**Disclaimer:** This tool is for educational purposes only and is not a substitute for professional medical advice. Always consult with your healthcare provider before making any health decisions. Suggestions are based on general guidelines and may not apply to your individual situation.")
+                    Text(Self.disclaimer)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 4)
@@ -164,6 +163,8 @@ struct PlanList: View {
 
     /// The scroll id of the Foundation section's first card.
     private static let foundationCard = "tour.foundation"
+    /// Same words as the web's disclaimer (ResultsPanel.tsx, `health-disclaimer`); My health's footer too.
+    static let disclaimer: LocalizedStringKey = "**Disclaimer:** This tool is for educational purposes only and is not a substitute for professional medical advice. Always consult with your healthcare provider before making any health decisions. Suggestions are based on general guidelines and may not apply to your individual situation."
     /// The tiles' heading, as the web's (ResultsPanel.tsx, US-62 AC16).
     static let snapshots = "Your health snapshots"
 }

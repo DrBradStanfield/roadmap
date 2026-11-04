@@ -8,13 +8,14 @@ import SwiftUI
 /// to frosted glass as content scrolls under it; My data has no bar (Brad
 /// 2026-10-22, US-25 AC17), and a strip of its background keeps rows from the clock.
 struct RootView: View {
-    enum Tab: Hashable { case data, plan, chat }
+    /// PROTOTYPE: My data and My plan merged into My health (docs/drafts/my-health-tab.md).
+    enum Tab: Hashable { case health, chat }
 
     let engine: HealthEngine
     let store: RecordStore
     let sync: CloudSync
     let chat: ChatHistoryStore
-    @State private var tab = Tab.data
+    @State private var tab = Tab.health
     @State private var reviewPrompt = ReviewPrompt()
     @State private var analytics = Analytics()
     /// The backup offer after the person's third save (US-57 AC8).
@@ -61,12 +62,8 @@ struct RootView: View {
     var body: some View {
         TabView(selection: $tab) {
             NavigationStack { MyDataView(engine: engine, store: store, sync: sync).firmTopEdge() }
-                .tabItem { Label("My data", systemImage: "list.bullet.clipboard") }
-                .tag(Tab.data)
-            // No title bar: the plan's own headings scroll with it (US-25 AC26, Brad 2026-11-03).
-            PlanView(store: store, showMyData: { tab = .data }).solidStatusBar().firmTopEdge()
-                .tabItem { Label("My plan", systemImage: "heart.text.square") }
-                .tag(Tab.plan)
+                .tabItem { Label("My health", systemImage: "heart.text.square") }
+                .tag(Tab.health)
             // ChatView keeps its own navigation stack and title.
             ChatView(engine: engine, store: store, history: chat)
                 .tabItem { Label("Chat", systemImage: "bubble.left.and.text.bubble.right") }
@@ -75,7 +72,7 @@ struct RootView: View {
         .sensoryFeedback(.selection, trigger: tab)
         .onChange(of: tab) { offerCloud() }
         // A tour tip shows only on its own tab (TourTips.swift).
-        .onChange(of: tab, initial: true) { Tour.showing(tab == .plan ? .plan : tab == .data ? .data : .other) }
+        .onChange(of: tab, initial: true) { Tour.showing(tab == .health ? .data : .other) }
         // Clarity starts only once the whole window is masked (Analytics.swift, D9).
         .background(WindowReader {
             window = $0
@@ -129,11 +126,11 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged).receive(on: RunLoop.main)) { _ in
             if scenePhase == .active { store.redraw() }
         }
-        .onChange(of: reminderTaps.planRequests, initial: true) { if reminderTaps.planRequests > 0 { tab = .plan } }
+        .onChange(of: reminderTaps.planRequests, initial: true) { if reminderTaps.planRequests > 0 { tab = .health } }
         .task(id: tab) {
             // A pause first, so the plan is on screen before iOS's rating sheet;
             // leaving the tab during it cancels the ask without using it up.
-            guard tab == .plan else { return }
+            guard tab == .health else { return }
             try? await Task.sleep(for: .seconds(2))
             // Never over the cloud prompt, a tour tip or any sheet (review R7): a later
             // visit asks instead, since planOpened is not used up here.
@@ -180,7 +177,7 @@ struct RootView: View {
         case .welcome: .welcome
         case .questions: .onboarding
         // A US-56 page on My data names only the screen, never the metric (its usage signal).
-        case nil: switch tab { case .data: (live?.pagesOpen ?? 0) > 0 ? .appleHealthMetric : .myData; case .plan: .plan; case .chat: .chat }
+        case nil: switch tab { case .health: (live?.pagesOpen ?? 0) > 0 ? .appleHealthMetric : .myData; case .chat: .chat }
         }
     }
 
@@ -246,7 +243,7 @@ struct RootView: View {
         onboardingFromHealth = ""
         afterErase = false
         takeCount()
-        tab = .plan
+        tab = .health
         firstRun = nil
         // Onboarding's answers, the last one included, are not the person's own saves (R1).
         cloudPrompt.ignoreSaves(upTo: store.ownSaves)

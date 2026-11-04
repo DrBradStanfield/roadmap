@@ -50,7 +50,7 @@ private struct SnapshotAnchor: ViewModifier {
 /// One tile: the name in plain text, the value large with its unit, and the status below.
 /// Colour only where it carries meaning: the status capsule, in the web's status colours
 /// with normal in the brand teal-green (Brad 2026-10-23, 2026-10-30).
-private struct TileCard: View {
+struct TileCard: View {
     let tile: StatTile
 
     var body: some View {

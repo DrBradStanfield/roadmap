@@ -138,7 +138,7 @@ struct AppParts {
     let live: LiveHealth = {
         let calendar = Calendar.autoupdatingCurrent
         #if DEBUG
-        if DemoRecord.isOn { return LiveHealth(store: NoLiveHealth(), calendar: calendar) }
+        if DemoRecord.isOn, !DemoRecord.keepsLiveHealth { return LiveHealth(store: NoLiveHealth(), calendar: calendar) }
         #endif
         return LiveHealth(store: LiveHealthKitStore(calendar: calendar), calendar: calendar, kept: try? LiveHealth.keptFile())
     }()

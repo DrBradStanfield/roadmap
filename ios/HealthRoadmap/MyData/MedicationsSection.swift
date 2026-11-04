@@ -10,9 +10,16 @@ struct MedicationsSection: View {
     let data: MyData
     /// Called after a save, for the success haptic.
     let saved: (RecordStore.ApplyResult) -> RecordStore.ApplyResult
+    /// PROTOTYPE (My health tab): only the section with this id ("weight-medications",
+    /// "lipid-medications"), and nothing when the engine has none; nil: all, as My data showed them.
+    var only: String? = nil
 
     var body: some View {
-        if data.medications.isEmpty {
+        if let only {
+            FormSectionsList(sections: data.medications.filter { $0.id == only }, months: data.months, title: SectionTitle.medications, answer: { field, value in
+                saved(await store.apply(.form(.medicationField(field: field, value: value))))
+            }, guides: data.guides)
+        } else if data.medications.isEmpty {
             Section {
                 Label("Medication questions appear once you add a cholesterol, HbA1c or triglyceride value, or your weight and height.", systemImage: "pills")
                     .font(.subheadline)

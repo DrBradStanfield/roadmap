@@ -61,6 +61,10 @@ struct LiveCardsSection: View {
     let metrics: [LiveMetric]
     /// The bands by metric, for a card's band (US-56 AC8): My data hands VO2 max's only.
     var bands: [LiveMetric: Vo2MaxBands] = [:]
+    /// PROTOTYPE (My health tab): the title over the first card; nil for none.
+    var title: SectionTitle? = .fitness()
+    /// PROTOTYPE (My health tab): this place keeps the Turn On / Open Settings row; nil: Vitals does.
+    var keepsReconnect: Bool? = nil
     let open: (LiveMetric) -> Void
 
     /// What a place shows.
@@ -75,8 +79,8 @@ struct LiveCardsSection: View {
     /// cards with a reading. With none anywhere, after a "Don't Allow" or with an empty Health
     /// (iOS cannot tell them apart), Vitals shows one calm Open Settings row, never an error or a
     /// greyed line (AC5b, Brad 2026-10-25). Nothing while the answer is unknown or unread.
-    static func shown(_ metrics: [LiveMetric], connected: Bool, needsAccess: Bool?, hasRead: Bool, cards: [LiveMetric: LiveCard]) -> Shown {
-        let vitals = metrics == LiveMetric.vitals
+    static func shown(_ metrics: [LiveMetric], connected: Bool, needsAccess: Bool?, hasRead: Bool, cards: [LiveMetric: LiveCard], keepsReconnect: Bool? = nil) -> Shown {
+        let vitals = keepsReconnect ?? (metrics == LiveMetric.vitals)
         if needsAccess == true { return vitals && connected ? .turnOn : .nothing }
         guard needsAccess == false, hasRead else { return .nothing }
         if vitals, cards.isEmpty { return .reconnect }
@@ -88,8 +92,9 @@ struct LiveCardsSection: View {
         if let live, live.available {
             // The sync's status is read only where it matters, Vitals before the sheet, so its
             // import never redraws the cards (review, efficiency 2).
-            let connected = metrics == LiveMetric.vitals && live.needsAccess == true && health?.connected == true
-            let shown = Self.shown(metrics, connected: connected, needsAccess: live.needsAccess, hasRead: live.hasRead, cards: live.cards)
+            let reconnects = keepsReconnect ?? (metrics == LiveMetric.vitals)
+            let connected = reconnects && live.needsAccess == true && health?.connected == true
+            let shown = Self.shown(metrics, connected: connected, needsAccess: live.needsAccess, hasRead: live.hasRead, cards: live.cards, keepsReconnect: keepsReconnect)
             switch shown {
             case .nothing:
                 EmptyView()
@@ -97,18 +102,18 @@ struct LiveCardsSection: View {
                 Section { LiveReconnectRow(live: live, turnOn: shown == .turnOn) }
                     .listSectionSpacing(.compact)
             case .cards(let shown):
-                let vitals = metrics == LiveMetric.vitals
-                let fitnessFollows = LiveMetric.fitness.contains { live.cards[$0] != nil }
+                let vitals = keepsReconnect == nil && metrics == LiveMetric.vitals
+                let fitnessFollows = keepsReconnect == nil && LiveMetric.fitness.contains { live.cards[$0] != nil }
                 ForEach(shown) { metric in
                     if let card = live.cards[metric] {
                         Section {
                             Button { open(metric) } label: { LiveCardView(metric: metric, card: card, now: live.now(), calendar: live.calendar, band: bands[metric]?.band(card.value)) }
                                 .tint(.primary)
                         } header: {
-                            if !vitals, metric == shown.first { SectionTitle.fitness() }
+                            if !vitals, metric == shown.first, let title { title }
                         } footer: {
                             // Fitness, when shown, carries the access line, so it is said once.
-                            if metric == shown.last { Text(vitals && fitnessFollows ? LiveFooter.shownOnly : "\(LiveFooter.shownOnly) \(LiveFooter.access)") }
+                            if metric == shown.last, keepsReconnect != false { Text(vitals && fitnessFollows ? LiveFooter.shownOnly : "\(LiveFooter.shownOnly) \(LiveFooter.access)") }
                         }
                         .listSectionSpacing(.compact)
                     }
