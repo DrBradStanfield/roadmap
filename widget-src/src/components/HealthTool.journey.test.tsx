@@ -443,6 +443,27 @@ describe('the 2026-09-22 feedback: blood tests on the wrong day', () => {
     expect(ldlInChat()).toEqual([2.1, 2.1]);
   });
 
+  it('US-04 AC5b: a value typed on the day a test moves to is kept, and nothing moves', async () => {
+    await guest({ weight: 82 });
+    await addMeasurement('hdl', 1.4, '2026-01-10'); // that day's LDL cell is empty
+    await addMeasurement('ldl', 2.1, RIGHT_DAY);
+    const view = render(<HealthTool />);
+    await shown(view.container, '.bt-timeline-title');
+    showTables(view.container);
+    typeInto(backfillInput(bloodMatrix(view.container), 'LDL Cholesterol'), '3.0');
+
+    const header = Array.from(bloodMatrix(view.container).querySelectorAll<HTMLElement>('.bt-cell-movable'))
+      .find((b) => b.querySelector('input')!.value === RIGHT_DAY)!;
+    fireEvent.change(header.querySelector('input[type="date"]')!, { target: { value: '2026-01-10' } });
+    fireEvent.click(within(view.container.querySelector('.bt-move-panel') as HTMLElement).getByRole('button', { name: 'Move' }));
+
+    await waitFor(() => expect(view.container.querySelector('.bt-move-status')?.textContent)
+      .toBe("Save or clear the values you typed on 10 Jan '26 first."));
+    expect(await activeOn('ldl')).toEqual([[2.1, RIGHT_DAY]]);
+    expect(backfillInput(bloodMatrix(view.container), 'LDL Cholesterol').value).toBe('3.0');
+    expect(trackProductEvent).not.toHaveBeenCalledWith('blood_test_moved');
+  });
+
   it('US-34: a correction made through a connector reaches the plan and the chat', async () => {
     await guest({ weight: 82 });
     const view = render(<HealthTool />);

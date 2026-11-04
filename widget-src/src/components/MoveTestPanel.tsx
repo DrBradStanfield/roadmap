@@ -40,6 +40,17 @@ export const MOVE_LPA = "First answer the question about this test's Lp(a) resul
 /** "21 Feb '24", as the column headers read. */
 const shortDay = (day: string) => headerDay(day).join(' ');
 
+/** Typed text or an open editor on the day the test moves to (US-04 AC5b). */
+export const moveTypedOn = (day: string) => `Save or clear the values you typed on ${shortDay(day)} first.`;
+
+/** Why the press writes nothing, or null: a column the move reads holds typed
+ *  text or an open editor, the test's own day (AC5) or the new day (AC5b), where
+ *  the moved row would fill the slot a typed value waits in. */
+function typedHold(from: string, to: string, isHeld: (day: string) => boolean): string | null {
+  if (isHeld(from)) return MOVE_TYPED;
+  return isHeld(to) ? moveTypedOn(to) : null;
+}
+
 /** The core test a row is, or null for an extra lab row: a core blood test is a flagged lab row (US-66 AC1). */
 const coreOf = (row: Row): MetricType | null => ('metricName' in row && isCoreRow(row) ? row.metricName as MetricType : null);
 
@@ -158,8 +169,9 @@ function MoveTestPanel({ from, to, api, unitSystem, unitOverrides, bloodTestHist
 
   const press = async () => {
     if (refused) return;
-    // Typed since the picker opened: nothing is written (Codex R2).
-    if (isHeld(from)) { onClose(); say(MOVE_TYPED); return; }
+    // Typed since the picker opened, or on the new day: nothing is written (Codex R2).
+    const typed = typedHold(from, plan.to, isHeld);
+    if (typed) { onClose(); say(typed); return; }
     setSaving(true);
     setError(null);
     const keep = Object.fromEntries(plan.clashes.map(c => [c.held.id, answers[c.held.id]]));
