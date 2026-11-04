@@ -18,17 +18,34 @@ import type { ChatHistoryStore } from '../storage/chat-history-store';
 
 let factory: (() => Promise<ChatHistoryStore>) | null = null;
 let store: Promise<ChatHistoryStore | null> | null = null;
+/** The record's erase identity, and the one the cached store was read at. */
+let eraseIdentity = (): string => '';
+let readAt = '';
 
-export function setChatHistoryFactory(f: (() => Promise<ChatHistoryStore>) | null): void {
+export function setChatHistoryFactory(f: (() => Promise<ChatHistoryStore>) | null, identity = (): string => ''): void {
   factory = f;
   store = null;
+  eraseIdentity = identity;
+}
+
+/**
+ * The cached store, read again first when the record's erase identity moved
+ * since it was read (US-11 AC2g): after another device's erase it still holds
+ * the erased conversations live. A failed re-read resolves null, as a failed
+ * open does, so no list from before the erase is served.
+ */
+function cached(): Promise<ChatHistoryStore | null> | null {
+  const now = eraseIdentity();
+  if (store && now !== readAt) store = store.then((s) => s && s.reload().then(() => s, () => null));
+  readAt = now;
+  return store;
 }
 
 /** The cloud chat-history store, or null (production build, no data layer, or
  *  the cloud read failed). Never rejects. */
 export function getChatHistory(): Promise<ChatHistoryStore | null> {
   if (!factory) return Promise.resolve(null);
-  return (store ??= factory().catch(() => null));
+  return cached() ?? (store = factory().catch(() => null));
 }
 
 /**
@@ -41,8 +58,8 @@ export function getChatHistory(): Promise<ChatHistoryStore | null> {
  */
 export async function openChatHistory(): Promise<ChatHistoryStore | null> {
   if (!factory) return null;
-  const cached = store ? await store : null;
-  if (cached) return cached;
+  const open = await cached();
+  if (open) return open;
   const opening = factory();
   store = opening.catch(() => null);
   return opening;

@@ -142,6 +142,20 @@ export class ChatSession {
     return liveOf(this.file).map(({ id, title, createdAt, updatedAt }) => ({ id, title, createdAt, updatedAt }));
   }
 
+  /**
+   * Read the stored file again and merge it into the working copy, after the
+   * record's erase moved (US-11 AC2g): another device's erase tombstones then
+   * replace the conversations this copy still holds live. Merged, not put in
+   * place, so this page's own unsaved tombstones stay. Rejects when the read
+   * fails. The device tier re-reads at its erase fence already.
+   */
+  async reload(): Promise<void> {
+    this.refreshAfterDeviceErase();
+    if (!this.sync) return;
+    const stored = await this.sync.load();
+    this.file = mergeChatHistoryFiles(this.file, stored, contextOf(this.host));
+  }
+
   getMessages(conversationId: string): ChatFileMessage[] {
     this.refreshAfterDeviceErase();
     const conv = this.file.conversations.find((c) => c.id === conversationId);
