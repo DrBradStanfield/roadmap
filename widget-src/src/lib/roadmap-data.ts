@@ -53,7 +53,8 @@ export async function initRoadmapStore(adapter: StorageAdapter, cloudUnreachable
   store.startLiveRefresh();
   // Chat history (chat-history.json) syncs over the SAME adapter, created
   // lazily on first chat use (see chat-history-access.ts for the policy).
-  setChatHistoryFactory(() => ChatHistoryStore.create(adapter));
+  // It is read again after an erase, this page's or another device's (US-11 AC2g).
+  setChatHistoryFactory(() => ChatHistoryStore.create(adapter), getEraseIdentity);
 }
 
 /** Flush pending writes (call before navigation). */
