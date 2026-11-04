@@ -95,6 +95,15 @@ attention bit, and if users click on that, then it needs to scroll down to that 
 Dropped unless Brad raises it again: moving HbA1c into Weight, and the lipids next to blood
 pressure under "Heart". His "same as today" call on blood tests replaced that idea.
 
+## Brad's answers, 2026-11-05
+
+- **Settings behind a person button:** agreed.
+- **Fibre:** keep 25–35 g for this redesign. A personal target is a separate change.
+- **iPhone first.** The web follows later. The shared BMI tile stays until the web catches up.
+- **The design is not final.** Brad likes the existing blood-test rows, VO2 max, weight and the
+  rest. To him this is mostly a new order and no separate My plan tab.
+- **Develop in the simulator here**, not on his phone.
+
 ## Next steps
 
 1. Lane B: write the user story, its acceptance criteria and a `product_events` usage signal.
