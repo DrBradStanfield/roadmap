@@ -75,3 +75,44 @@ describe('US-09 AC13g: fetchOrFail without AbortSignal.timeout (Safari 14/15)', 
     expect(vi.getTimerCount()).toBe(0);
   });
 });
+
+describe('US-09 AC13g: fetchOrFail with a caller\'s own signal', () => {
+  const nativeAny = AbortSignal.any;
+  afterEach(() => {
+    Object.defineProperty(AbortSignal, 'any', { value: nativeAny, configurable: true, writable: true });
+    vi.unstubAllGlobals();
+  });
+  const hung = () => vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+    init?.signal?.addEventListener('abort', () => reject(init.signal!.reason));
+  }));
+
+  it('with AbortSignal.any, a caller signal that never fires still meets the bound', async () => {
+    vi.useFakeTimers();
+    Object.defineProperty(AbortSignal, 'timeout', { value: undefined, configurable: true, writable: true });
+    vi.stubGlobal('fetch', hung());
+    let outcome: unknown = 'pending';
+    fetchOrFail('Dropbox', 'https://example.test/file', { signal: new AbortController().signal, timeoutMs: 1_000 })
+      .then(() => { outcome = 'resolved'; }, (e: unknown) => { outcome = e; });
+
+    await vi.advanceTimersByTimeAsync(999);
+    expect(outcome).toBe('pending');
+    await vi.advanceTimersByTimeAsync(1);
+    expect((outcome as Error).message).toBe('Dropbox did not answer');
+  });
+
+  it('without AbortSignal.any or .timeout (Safari 14/15), the caller\'s own signal ends the call at once', async () => {
+    vi.useFakeTimers();
+    Object.defineProperty(AbortSignal, 'any', { value: undefined, configurable: true, writable: true });
+    Object.defineProperty(AbortSignal, 'timeout', { value: undefined, configurable: true, writable: true });
+    vi.stubGlobal('fetch', hung());
+    const caller = new AbortController();
+    let outcome: unknown = 'pending';
+    fetchOrFail('Dropbox', 'https://example.test/file', { signal: caller.signal })
+      .then(() => { outcome = 'resolved'; }, (e: unknown) => { outcome = e; });
+    caller.abort(new DOMException('caller gave up', 'AbortError'));
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect((outcome as Error).message).toBe('Dropbox did not answer');
+    expect(vi.getTimerCount()).toBe(0);
+  });
+});
