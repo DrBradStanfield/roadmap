@@ -27,7 +27,7 @@ enum HealthTopic: String, CaseIterable, Identifiable {
 /// PROTOTYPE: the plan's cards split by topic. Swift only: health-core's cards, words and
 /// priorities are unchanged. A card whose suggestions fall in two topics becomes one card in
 /// each, badged with its own suggestions' highest priority. Within a topic the cards go by
-/// priority (urgent, attention, info), the engine's order kept within each (Brad, round 4).
+/// priority (urgent, attention, info), results before lifestyle advice within each (Brad, rounds 4-5).
 /// Medicine suggestions are no cards: they sit behind their question's info button.
 struct TopicPlan {
     private(set) var cards: [HealthTopic: [PlanCard]] = [:]
@@ -111,9 +111,16 @@ struct TopicPlan {
         suggestions.map(\.priority).min { rank($0) < rank($1) } ?? "info"
     }
 
-    /// Urgent, then attention, then info; a stable sort, so the engine's order holds within each.
+    /// Urgent, then attention, then info. Within a level, a card about a result (a blood test or
+    /// blood pressure) comes before lifestyle advice, so "HbA1c indicates prediabetes" leads
+    /// "Reduce alcohol" (Brad, round 5). A stable sort, so the engine's order holds otherwise.
     private static func byPriority(_ cards: [PlanCard]) -> [PlanCard] {
-        cards.enumerated().sorted { (rank($0.element.priority), $0.offset) < (rank($1.element.priority), $1.offset) }.map(\.element)
+        func key(_ card: PlanCard, _ offset: Int) -> (Int, Int, Int) { (rank(card.priority), isResult(card) ? 0 : 1, offset) }
+        return cards.enumerated().sorted { key($0.element, $0.offset) < key($1.element, $1.offset) }.map(\.element)
+    }
+
+    private static func isResult(_ card: PlanCard) -> Bool {
+        card.suggestions.contains { ["bloodwork", "blood_pressure"].contains($0.category) }
     }
 
     /// The fibre card directly under the daily protein target (Brad, round 4).
