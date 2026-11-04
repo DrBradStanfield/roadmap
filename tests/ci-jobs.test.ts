@@ -39,6 +39,9 @@ describe('ci.yml jobs (US-64 AC12)', () => {
     expect(test).toContain('CHECKS: ${{ needs.checks.result }}');
     expect(test).toContain('UNIT: ${{ needs.unit.result }}');
     expect(test).toMatch(/\[ "\$\{CHECKS\}" = success \] && \[ "\$\{UNIT\}" = success \]/);
+    // A job or step allowed to fail reports success to `needs`, so `test` would go green over a red shard.
+    expect(job('checks')).not.toMatch(/continue-on-error/);
+    expect(job('unit')).not.toMatch(/continue-on-error/);
   });
 
   it('the checks job keeps every gate the single job had, plus the story gate (AC11)', () => {
@@ -59,5 +62,24 @@ describe('ci.yml jobs (US-64 AC12)', () => {
     }
     expect(checks).toContain('BASE: ${{ github.event.pull_request.base.sha || github.event.before }}');
     expect(checks).not.toContain('test:all');
+  });
+});
+
+describe('pages.yml publishes only what CI passed (US-64 AC9)', () => {
+  const pages = readFileSync(join(ROOT, '.github/workflows/pages.yml'), 'utf8');
+  const wait = pages.indexOf('- name: Wait for CI to pass on the main commit being published');
+  const build = pages.indexOf('- name: Build main → /');
+
+  it('waits for ci.yml\'s test check on main before building, and builds that exact commit', () => {
+    expect(wait).toBeGreaterThan(-1);
+    expect(wait).toBeLessThan(build);
+    const step = pages.slice(wait, build);
+    expect(step).toContain('check-runs?check_name=test');
+    expect(step).toContain('[ "${path}" = ".github/workflows/ci.yml" ]');
+    expect(step).toMatch(/CI failed on \$\{SHA\}; not publishing it\."; exit 1/);
+    expect(step).not.toMatch(/continue-on-error/);
+    expect(pages.slice(build)).toMatch(/git checkout --detach "\$\{MAIN_SHA\}"/);
+    expect(pages).toMatch(/checks: read/);
+    expect(pages).toMatch(/actions: read/);
   });
 });

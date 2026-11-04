@@ -36,8 +36,14 @@ function inline(s: string): string {
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/~~([^~]+)~~/g, '<del>$1</del>')
-    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, text: string, href: string) =>
-      `<a href="${linkBase && !/^([a-z]+:|#|\/)/i.test(href) ? linkBase + href : href}">${text}</a>`);
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, text: string, href: string) => {
+      // The Pages copy shares its origin with the self-hosted app and its stored record and keys,
+      // so a link may only go somewhere safe: http(s), mailto, an anchor, or a relative path.
+      const scheme = href.match(/^([a-z][a-z0-9+.-]*):/i)?.[1].toLowerCase();
+      if (scheme && !['http', 'https', 'mailto'].includes(scheme)) return text;
+      const url = linkBase && !scheme && !/^[#/]/.test(href) ? linkBase + href : href;
+      return `<a href="${url.replace(/"/g, '&quot;')}">${text}</a>`;
+    });
 }
 
 function render(md: string): { body: string; toc: string } {
@@ -105,8 +111,10 @@ function sourceAt(ref: string, src: string): string | null {
   git(['rev-parse', '--verify', '--quiet', `${ref}^{commit}`]);
   try {
     return git(['show', `${ref}:./${basename(src)}`]);
-  } catch {
-    return null;
+  } catch (e) {
+    // Only "that commit has no such path" means a first build; any other failure must not pass the gate.
+    if (/does not exist in|exists on disk, but not in/.test(String((e as { stderr?: unknown }).stderr ?? ''))) return null;
+    throw e;
   }
 }
 
@@ -114,7 +122,7 @@ function main(): void {
   const args = process.argv.slice(2);
   const option = (name: string) => {
     const i = args.indexOf(name);
-    return i < 0 ? undefined : args.splice(i, 2)[1];
+    return i < 0 ? undefined : (args.splice(i, 2)[1] ?? ''); // a flag with no value is an empty one, never absent
   };
   const against = option('--check-against');
   linkBase = option('--link-base') ?? '';
@@ -147,6 +155,7 @@ function main(): void {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src https: data:; base-uri 'none'; form-action 'none'">
 <title>Health by Dr Brad — User Stories</title>
 <style>
   :root {
@@ -188,7 +197,7 @@ function main(): void {
 <body>
 <div class="layout">
 <nav class="toc">
-  <a href="architecture-v2.md">← Architecture (v2)</a>
+  <a href="${linkBase}architecture-v2.md">← Architecture (v2)</a>
   ${toc}
 </nav>
 <main>

@@ -103,6 +103,22 @@ describe('build-user-stories-html.ts — the build', () => {
     expect(html).toContain('<a href="https://x.test/a">site</a>');
     expect(html).toContain('<a href="/abs">root</a>');
     expect(build(md).html).toContain('<a href="git-workflow.md">the workflow</a>');
+    // The page's own navigation link takes the base too.
+    expect(html).toContain('<a href="https://github.com/o/r/blob/main/docs/architecture-v2.md">← Architecture (v2)</a>');
+  });
+
+  it('never publishes a script: unsafe link schemes become plain text, quotes cannot leave the href, and a CSP blocks scripts', () => {
+    // The Pages copy shares its origin with the self-hosted app's stored record and keys (Codex R1, 2026-11-04).
+    const md = `${spec(1)}\n[a](javascript:alert%281%29) [b](JavaScript:x) [c](data:text/html,x) [d](vbscript:x) [e](foo"onmouseover=alert(1)) [f](mailto:a@b.test)\n`;
+    for (const html of [build(md).html!, run(md, ['--link-base', 'https://github.com/o/r/blob/main/docs/']).html!]) {
+      expect(html).not.toMatch(/href="(javascript|data|vbscript):/i);
+      expect(html).toMatch(/<p>a b c d /);
+      expect(html).not.toContain('"onmouseover');
+      expect(html).toContain('foo&quot;onmouseover=alert(1">e</a>');
+      expect(html).toContain('<a href="mailto:a@b.test">f</a>');
+      expect(html).toContain(`content="default-src 'none'; style-src 'unsafe-inline'`);
+      expect(html).not.toContain('<script');
+    }
   });
 
   it('runs the build when invoked through a symlink, rather than silently doing nothing', () => {
@@ -157,6 +173,21 @@ describe('build-user-stories-html.ts --check-against — the CI gate (US-64 AC11
       const { ok, stderr } = check(spec(1, 2), spec(1, 2), ref);
       expect(ok, ref).toBe(false);
       expect(stderr).toContain('cannot read git ref');
+    }
+  });
+
+  it('a trailing --check-against with no value fails, rather than falling back to a build that passes', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'stories-flag-'));
+    try {
+      const src = join(dir, 'stories.md');
+      const out = join(dir, 'stories.html');
+      writeFileSync(src, spec(1, 2));
+      const r = spawnSync(TSX, [SCRIPT, src, out, '--check-against'], { encoding: 'utf8' });
+      expect(r.status).not.toBe(0);
+      expect(r.stderr).toContain('cannot read git ref (empty)');
+      expect(existsSync(out)).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 

@@ -179,9 +179,9 @@ test. Miss a step = the value silently fails to round-trip.
 
 - **Every change: its own worktree, `claude/` branch and PR (HARD, Brad 2026-10-31)**: `sh tools/worktree-new.sh <name>`,
   EnterWorktree `path`; hooks deny main-checkout edits and an un-PR'd turn end, and clone node_modules in.
-  Merge gate = CI green on the PR (no full local `test:all`); merge main in only if it changed your code files
+  Merge gate = CI green on the PR (no full local `test:all`); merge main in only if it changed a file you changed
   (PR 150); reviews by class; citation numbering. Merge only `gh pr merge <n> --merge --match-head-commit <sha>`
-  (or auto-ship), then CI Deploy; only Brad's account merges (Brad 2026-11-04). Contributor PRs merge in batches.
+  (or auto-ship), then CI Deploy. Contributor PRs: Brad's sessions merge them by hand in batches, `hold` on.
   Live writes and deploys run merged code only; then `tools/worktree-done.sh`. Steps: docs/git-workflow.md.
 - **One owner per PR (HARD):** whoever opens it merges or closes it before ending, or the final report names
   it. `stale-pr-watch.yml` (PRs idle >48h) and `stranded-branch-watch.yml` email Brad. Work found uncommitted

@@ -30,6 +30,8 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  checks: read   # the CI wait below
+  actions: read  # which workflow a passing 'test' came from
 
 # Allow one concurrent deployment; let an in-progress run finish.
 concurrency:
@@ -48,11 +50,38 @@ jobs:
           node-version: 22
           cache: npm
 
+      # Publish only a main commit CI passed (US-64 AC9, Brad 2026-11-04). PRs
+      # no longer re-test against every newer main before merging, so two PRs'
+      # combination may first be tested by CI on main; Pages is a production
+      # surface, so it waits for that run (CI starts on the same push) and
+      # refuses a red one. Same check auto-ship trusts: 'test' from ci.yml.
+      - name: Wait for CI to pass on the main commit being published
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          SHA=$(git rev-parse origin/main)
+          echo "MAIN_SHA=${SHA}" >> "$GITHUB_ENV"
+          for _ in $(seq 120); do
+            runs=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${SHA}/check-runs?check_name=test" \
+              --jq '[.check_runs[] | select(.app.slug == "github-actions")]' || echo '[]')
+            for suite in $(jq -r '.[] | select(.conclusion == "success") | .check_suite.id' <<<"${runs}"); do
+              path=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?check_suite_id=${suite}" \
+                --jq '.workflow_runs[0].path // empty' || true)
+              if [ "${path}" = ".github/workflows/ci.yml" ]; then echo "CI passed on ${SHA}."; exit 0; fi
+            done
+            if jq -e 'length > 0 and all(.conclusion != null and .conclusion != "success")' <<<"${runs}" >/dev/null; then
+              echo "::error::CI failed on ${SHA}; not publishing it."; exit 1
+            fi
+            sleep 10
+          done
+          echo "::error::Timed out waiting for CI on ${SHA}."; exit 1
+
       # Prod: main → site root. Always built, regardless of which branch
       # triggered the run, so the root is never left pointing at stale code.
       - name: Build main → /
         run: |
-          git checkout --detach origin/main
+          git checkout --detach "${MAIN_SHA}"
           npm ci
           VITE_BASE=/roadmap/ npm run build:pages
           mkdir -p _site && cp -r widget-src/dist-pages/. _site/
@@ -66,8 +95,10 @@ jobs:
         run: node scripts/build-fleet-dashboard.mjs _site/fleet.html
 
       # The user-stories browser copy: built here, never tracked (US-64 AC11),
-      # so PRs that add ACs stop conflicting on a 1.7 MB generated file.
+      # so PRs that add ACs stop conflicting on a 1.7 MB generated file. A bad
+      # story line must not hold back the app, so this step only warns.
       - name: Build user stories → /user-stories.html
+        continue-on-error: true
         run: npx tsx scripts/build-user-stories-html.ts --link-base https://github.com/DrBradStanfield/roadmap/blob/main/docs/ docs/user-stories.md _site/user-stories.html
 
       # Staging: dev → /dev/. Best-effort — reuses main's node_modules (dev
