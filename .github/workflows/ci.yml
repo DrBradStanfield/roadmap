@@ -12,7 +12,7 @@ permissions:
 
 # Three jobs (US-64 AC12, Brad 2026-11-04): the suite took 7.6 of CI's 9
 # minutes on one runner, and every PR waited on it. `checks` runs everything
-# but the suite; `unit` splits the suite by file over 4 runners; `test` passes
+# but the suite; `unit` splits the suite by file over 6 runners; `test` passes
 # only when both did. Its name is the check auto-ship.yml waits for, so keep it.
 jobs:
   checks:

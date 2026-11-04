@@ -99,7 +99,7 @@ and Brad merges them. One at a time, each merge made the rest conflict and re-ru
    (exit 1), merges the reviewed head as is (GitHub then marks the PR merged when the batch lands), drops a
    PR's `docs/user-stories.html` and merges add-only `docs/user-stories.md` conflicts (both sides' `- AC`
    lines, in order). The tool proves that merge changed the stories file by exactly the PR's own lines
-   (exit 3 if not), so those conflicts need no reviewer re-check. Any other conflict stops it (exit 2): fix
+   (exit 3 and the merge undone if not), so those conflicts need no reviewer re-check. A repeated AC number or any other conflict stops it (exit 2): fix
    it by hand and get one scoped re-check by a fresh adversary, since the fix is new lines.
    Spawn reviewers and workers from the main checkout, never while the orchestrator sits in a session
    worktree: a spawned agent is pinned to the orchestrator's folder (2026-11-04 one lost its shell when that

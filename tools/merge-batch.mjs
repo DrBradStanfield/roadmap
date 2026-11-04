@@ -2,7 +2,9 @@
 /**
  * Builds a contributor batch (US-64 AC13). Run inside a batch worktree:
  *   node tools/merge-batch.mjs <list-file>      lines: <pr-number> <full head sha>
- * Exit 0 done, 1 head moved or bad input, 2 conflict for a human, 3 stories proof failed.
+ * Exit 0 done; 1 head moved, bad input or a worktree that is not clean; 2 conflict for a human (a stories
+ * conflict that is not only added, non-duplicate `- AC` lines counts); 3 stories proof failed (merge aborted,
+ * tree as before); 4 a git command failed.
  */
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -34,10 +36,13 @@ const byAc = (a, b) => {
   return an - bn || (al < bl ? -1 : al > bl ? 1 : 0);
 };
 
-/** Keep both sides of every conflict block when each is only added `- AC` lines; null otherwise. */
+const acId = (line) => acKey(line).join('');
+
+/** Keep both sides of every conflict block when each is only added `- AC` lines; { fail } otherwise. */
 function resolveStories(text) {
   const lines = text.split('\n');
   const out = [];
+  const blocks = [];
   for (let i = 0; i < lines.length; i++) {
     if (!lines[i].startsWith('<<<<<<< ')) {
       out.push(lines[i]);
@@ -53,13 +58,27 @@ function resolveStories(text) {
         base = false;
       } else if (!base) sides[side].push(lines[i]);
     }
-    if (i >= lines.length) return null;
     const all = [...sides[0], ...sides[1]];
-    if (all.length === 0 || !all.every((l) => acKey(l))) return null;
+    if (i >= lines.length || all.length === 0 || !all.every((l) => acKey(l))) return { fail: 'is not only added "- AC" lines' };
     const seen = new Set();
-    out.push(...all.filter((l) => !seen.has(l) && seen.add(l)).sort(byAc));
+    const kept = all.filter((l) => !seen.has(l) && seen.add(l)).sort(byAc);
+    blocks.push({ start: out.length, end: out.length + kept.length });
+    out.push(...kept);
   }
-  return out.join('\n');
+  // Two PRs that each took the next free number must not both land under one story.
+  for (const { start, end } of blocks) {
+    let from = start;
+    while (from > 0 && !out[from - 1].startsWith('### ')) from--;
+    let to = end;
+    while (to < out.length && !out[to].startsWith('### ')) to++;
+    const taken = new Set();
+    for (let k = from; k < to; k++) if (acKey(out[k]) && !(k >= start && k < end)) taken.add(acId(out[k]));
+    for (let k = start; k < end; k++) {
+      if (taken.has(acId(out[k]))) return { fail: `repeats AC${acId(out[k])} of the same story` };
+      taken.add(acId(out[k]));
+    }
+  }
+  return { text: out.join('\n') };
 }
 
 const plusMinus = (diff) =>
@@ -82,6 +101,9 @@ function main() {
       return { pr: m[1], sha: m[2] };
     });
 
+  if (gitOk('rev-parse', '-q', '--verify', 'MERGE_HEAD')) stop(1, 'a merge is in progress; finish or abort it first');
+  if (git('status', '--porcelain').trim()) stop(1, 'the worktree is not clean; commit or stash first');
+
   for (const { pr, sha } of entries) {
     git('fetch', 'origin', `pull/${pr}/head`);
     const head = git('rev-parse', 'FETCH_HEAD').trim();
@@ -100,13 +122,17 @@ function main() {
       }
       if (unmerged.includes(MD)) {
         const fixed = resolveStories(readFileSync(MD, 'utf8'));
-        if (fixed === null) stop(2, `PR #${pr}: conflict in ${MD} is not only added "- AC" lines; resolve by hand`);
-        writeFileSync(MD, fixed);
+        if (fixed.fail) stop(2, `PR #${pr}: conflict in ${MD} ${fixed.fail}; resolve by hand`);
+        writeFileSync(MD, fixed.text);
         git('add', '--', MD);
-        git('commit', '-q', '-m', msg);
-        const merged = plusMinus(git('diff', 'HEAD^1', 'HEAD', '--', MD));
+        // Prove before committing: on a mismatch the merge is aborted and the tree is as it was.
+        const merged = plusMinus(git('diff', '--cached', 'HEAD', '--', MD));
         const own = plusMinus(git('diff', `origin/main...${sha}`, '--', MD));
-        if (merged !== own) stop(3, `PR #${pr}: merge changed ${MD} by more than the PR's own lines; stopped`);
+        if (merged !== own) {
+          git('merge', '--abort');
+          stop(3, `PR #${pr}: merge would change ${MD} by more than the PR's own lines; merge aborted`);
+        }
+        git('commit', '-q', '-m', msg);
         note.push('stories ACs merged, proof ok');
       } else {
         git('commit', '-q', '-m', msg);
@@ -122,4 +148,8 @@ function main() {
   console.log(`HEAD ${git('rev-parse', 'HEAD').trim()}`);
 }
 
-main();
+try {
+  main();
+} catch (e) {
+  stop(4, `git failed: ${String(e.stderr || e.message).trim()}`);
+}

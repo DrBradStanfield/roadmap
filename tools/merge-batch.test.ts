@@ -55,9 +55,11 @@ function advanceMain(edit: (dir: string) => void): void {
   git(dir, 'push', '-q', 'origin', 'HEAD:main');
 }
 
-function runBatch(lines: string[]) {
-  git(batch, 'fetch', '-q', 'origin', 'main');
-  git(batch, 'reset', '-q', '--hard', 'origin/main');
+function runBatch(lines: string[], keep = false) {
+  if (!keep) {
+    git(batch, 'fetch', '-q', 'origin', 'main');
+    git(batch, 'reset', '-q', '--hard', 'origin/main');
+  }
   const list = join(root, 'list.txt');
   writeFileSync(list, lines.join('\n') + '\n');
   const r = spawnSync('node', [SCRIPT, list], { cwd: batch, env: ENV, encoding: 'utf8' });
@@ -167,14 +169,65 @@ describe('merge-batch.mjs (US-64 AC13)', () => {
     expect(md.indexOf('- AC3a first')).toBeLessThan(md.indexOf('- AC3b second'));
   });
 
-  it('stops with exit 3 when the resolved stories change is not exactly the PR own lines', () => {
+  it('stops with exit 3 when the resolved stories change is not exactly the PR own lines, and undoes the merge', () => {
     // Both PRs add "- AC3 x" in different company: keeping each line once makes the merge add
     // fewer lines than the second PR's own diff, so the proof must refuse.
     const a = pr(38, baseSha, addAc('- AC3 x\n- AC5 y'));
     const b = pr(39, baseSha, addAc('- AC4 z\n- AC3 x'));
-    const r = runBatch([`38 ${a}`, `39 ${b}`]);
+    const list = [`38 ${a}`, `39 ${b}`];
+    const r = runBatch(list);
     expect(r.code).toBe(3);
     expect(r.err).toContain('#39');
+    // Nothing of the unproven merge stays: no merge in progress, clean tree, PR 39 not in history.
+    expect(existsSync(join(batch, '.git/MERGE_HEAD'))).toBe(false);
+    expect(git(batch, 'status', '--porcelain')).toBe('');
+    expect(() => git(batch, 'merge-base', '--is-ancestor', b, 'HEAD')).toThrow();
+    expect(() => git(batch, 'merge-base', '--is-ancestor', a, 'HEAD')).not.toThrow();
+    // A rerun refuses again rather than reporting "Already up to date".
+    const before = git(batch, 'rev-parse', 'HEAD');
+    expect(runBatch([`39 ${b}`], true).code).toBe(3);
+    expect(git(batch, 'rev-parse', 'HEAD')).toBe(before);
+  });
+
+  it('stops with exit 2 when two PRs take the same next AC number in one story', () => {
+    const a = pr(43, baseSha, addAc('- AC3 from forty-three'));
+    const b = pr(44, baseSha, addAc('- AC3 from forty-four'));
+    const r = runBatch([`43 ${a}`, `44 ${b}`]);
+    expect(r.code).toBe(2);
+    expect(r.err).toContain('#44');
+    expect(r.err).toContain('AC3');
+  });
+
+  it('stops with exit 2 when a PR adds an AC number its story already has', () => {
+    const a = pr(45, baseSha, addAc('- AC3 from forty-five'));
+    advanceMain((d) => {
+      const p = join(d, 'docs/user-stories.md');
+      writeFileSync(p, readFileSync(p, 'utf8').replace('- AC2 two', '- AC2 two\n- AC3 on main\n- AC4 on main'));
+    });
+    const r = runBatch([`45 ${a}`]);
+    expect(r.code).toBe(2);
+    expect(r.err).toContain('#45');
+  });
+
+  it('refuses to start mid-merge or in an unclean worktree (exit 1)', () => {
+    const sha = pr(47, baseSha, (d) => write(d, 'src/new.txt', 'new\n'));
+    runBatch([`47 ${sha}`]);
+    write(batch, 'src/b.txt', 'local edit\n');
+    const dirty = runBatch([`47 ${sha}`], true);
+    expect(dirty.code).toBe(1);
+    expect(dirty.err).toContain('not clean');
+    const a = pr(48, baseSha, (d) => write(d, 'src/a.txt', 'a1\nfrom 48\na3\n'));
+    const b = pr(49, baseSha, (d) => write(d, 'src/a.txt', 'a1\nfrom 49\na3\n'));
+    expect(runBatch([`48 ${a}`, `49 ${b}`]).code).toBe(2);
+    const mid = runBatch([`48 ${a}`], true);
+    expect(mid.code).toBe(1);
+    expect(mid.err).toContain('in progress');
+  });
+
+  it('exits 4 when a git command fails, apart from a moved head', () => {
+    const r = runBatch([`70 ${'a'.repeat(40)}`]); // origin has no refs/pull/70/head
+    expect(r.code).toBe(4);
+    expect(r.err).toContain('git failed');
   });
 
   it('stops with exit 2 when the stories conflict is not only added AC lines', () => {
