@@ -231,6 +231,7 @@ describe("pages-smoke: a replaced Pages run, a missing run (US-46 AC16)", { time
     expect(r.code).toBe(0);
     expect(r.out).toContain("Pages run 5 was cancelled; newer Pages run 7 on main replaced it: waiting for that one.");
     expect(r.out).not.toContain("::error::");
+    expect(r.out.match(/Pages deploy succeeded\./g)).toHaveLength(1); // run 7's, once: run 5 never "succeeded"
     expect(r.newer).toEqual([newerThan(5)]);
     expect(r.calls).toContain("api repos/o/r/actions/runs/7 --jq .conclusion // \"\"");
     expect(r.lists).toEqual([listFor(M), listFor(N)]); // then the tip's one look, as before
