@@ -204,6 +204,8 @@ const TEXTS = [
   // US-09 AC7f: a value never starts inside a digit run; the winner is unchanged.
   '1.2.3 ldl', '12.34.5 ldl', '1,2,3 ldl', '120/80/60 bp', '1.2/3.4/5 bp', '12345 ldl',
   '2026.11.04 ldl', 'v1.2.3 ldl', '1/2/3 hba1c', '3.2.1 Lp(a)', '5 17-ohp', '12 25(oh)d',
+  // US-09 AC7f: an address starts at the head of its run; the winner is unchanged.
+  'mail x.y+z@ex.co.uk now', 'a@b.com@c.org', '..a@b.co', '(brad@example.com)', 'é-brad@example.com', 'brad@@example.com',
 ];
 
 describe('free-text scrub parity', () => {
@@ -394,6 +396,30 @@ describe('free-text scrub parity', () => {
         ['5 17-ohp', '[value] 17-ohp'], ['12 25(oh)d', '[value] 25(oh)d'],
       ]) {
         expect(impl.scrubText(text), text).toBe(scrubbed);
+      }
+    }
+  });
+
+  it('US-09 AC7f — an address starts at the head of its run, so the match that wins is unchanged, on both copies', () => {
+    for (const impl of [source, copy]) {
+      for (const [text, scrubbed] of [
+        ['mail x.y+z@ex.co.uk now', 'mail [email] now'], ['a@b.com@c.org', '[email]@c.org'], ['..a@b.co', '[email]'],
+        ['(brad@example.com)', '([email])'], ['é-brad@example.com', 'é[email]'], ['brad@@example.com', 'brad@@example.com'],
+      ]) {
+        expect(impl.scrubText(text), text).toBe(scrubbed);
+      }
+    }
+  });
+
+  // The value and email rules backtracked from every position inside a long
+  // run: about 0.8 s for 40,000 digits or letters. Linear now; the bound is
+  // generous for a slow CI runner.
+  it('US-09 AC7f — 40,000 digits or letters scrub in well under a second, on both copies', () => {
+    for (const impl of [source, copy]) {
+      for (const run of ['1'.repeat(40_000), 'a'.repeat(40_000)]) {
+        const start = performance.now();
+        expect(impl.scrubText(run)).toBe(run);
+        expect(performance.now() - start, `${impl === copy ? 'copy' : 'source'} ${run[0]}`).toBeLessThan(300);
       }
     }
   });

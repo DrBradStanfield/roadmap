@@ -318,7 +318,8 @@ const PLAIN_UNITS = SCRUB_UNITS.filter(u => u !== 'in' && u !== '"');
  *  regex alternation (the chat-question archive check uses it too, US-15 AC44a). */
 export const SCRUB_UNIT_PATTERN = alternation(PLAIN_UNITS, unitPattern);
 
-const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+// An address starts at the head of its run: linear on a long run (US-09 AC7f).
+const EMAIL_RE = /(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const UNIT_VALUE_RE = new RegExp(
   `\\b${NUMBER}\\s*(?:(?:${SCRUB_UNIT_PATTERN})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
 // A name starts where no letter or digit runs into it and ends where no letter
