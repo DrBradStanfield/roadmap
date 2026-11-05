@@ -1,4 +1,4 @@
-<!-- generated — never edit; source hash sha256:edcd18b9bea3947ac53d5db2b7382b7cc59f23bb271d9e389fd28b2f8e4d874c -->
+<!-- generated — never edit; source hash sha256:0c7e3b05aae469053d98a43faa801b68d1efab67abdcbaa6e092a0f6a64f883e -->
 <!-- Built by claude_business tools/sync-shared-docs.mjs from docs/customer-service/answer-bank.md. Edit the master there and rerun the sync. -->
 
 Approved answers to questions customers have asked by email (81 entries), written in the first person. Each entry gives the question, then the answer.
@@ -431,6 +431,8 @@ Have you looked at ConsumerLab for recommendations?
 Looking forward to hearing from you
 
 ### How much calcium does a woman after menopause need, and what are good food sources?
+
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 Best to discuss with your doctor
 
