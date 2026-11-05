@@ -263,7 +263,8 @@ struct MyDataView: View {
                         analytics?.event(.jumpPillTapped)
                         withAnimation { proxy.scrollTo(topic.anchor, anchor: .top) }
                     } label: {
-                        Text(topic.title.title).lineLimit(1).frame(maxWidth: .infinity)
+                        // One line, shrunk at the largest sizes rather than cut to "Blood te…" (TextSizeLayoutTests).
+                        Text(topic.title.title).lineLimit(1).minimumScaleFactor(0.7).frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
                     .buttonBorderShape(.capsule)
@@ -308,19 +309,24 @@ struct MyDataView: View {
     }
 
     /// A topic's heading, a row in the list's own flow, so the pills can scroll to it; any
-    /// controls at its trailing end (Blood tests: lab upload and Sync, round 7).
+    /// controls at its trailing end (Blood tests: lab upload and Sync, round 7). At the largest
+    /// sizes a one-word title shrinks to one line and the controls go under it, so no word
+    /// breaks ("Supplem-ents", TextSizeLayoutTests, US-25 AC26).
     private func heading(_ topic: HealthTopic, @ViewBuilder controls: () -> some View = { EmptyView() }) -> some View {
         Section {
-            let row = HStack(spacing: 14) {
-                topic.title
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(Color(.label))
-                    .accessibilityAddTraits(.isHeader)
-                Spacer()
-                controls()
-                    .buttonStyle(.borderless)
-                    .labelStyle(.iconOnly)
-                    .font(.title3)
+            let title = topic.title
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(Color(.label))
+                .lineLimit(topic.title.title.contains(" ") ? nil : 1)
+                .minimumScaleFactor(0.7)
+                .accessibilityAddTraits(.isHeader)
+            let buttons = controls()
+                .buttonStyle(.borderless)
+                .labelStyle(.iconOnly)
+                .font(.title3)
+            let row = ViewThatFits(in: .horizontal) {
+                HStack(spacing: 14) { title.fixedSize(); Spacer(); buttons }
+                VStack(alignment: .leading, spacing: 8) { title; buttons }
             }
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 20, leading: 4, bottom: 0, trailing: 4))

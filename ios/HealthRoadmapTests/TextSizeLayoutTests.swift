@@ -184,6 +184,50 @@ final class TextSizeLayoutTests: XCTestCase {
         }
     }
 
+    /// US-25 AC26 and AC17g (review R5): at the largest accessibility size My health's title, its
+    /// three pills and its topic headings are never cut short and never broken mid-word, on an
+    /// SE and a 17e. No text on the drawn page ends in "…", and every word of them fits the row it
+    /// sits in (the inset list's margins and the rows' own insets), so no line breaks inside one:
+    /// a pill and a one-word heading may shrink to 0.7, as they are drawn; Blood tests' buttons go
+    /// under its title when they do not fit beside it.
+    func testMyHealthsTitlePillsAndHeadingsNeverBreakAWord_US25_AC26() throws {
+        guard #available(iOS 18, *) else { throw XCTSkip("Text.Layout.isTruncated needs iOS 18") }
+        let folder = FileManager.default.temporaryDirectory.appending(path: "My Health Text \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let sample = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "sample.record", withExtension: "json"))
+        try FileManager.default.copyItem(at: sample, to: folder.appending(path: "health-roadmap.json"))
+        let engine = try HealthEngine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        let page = MyHealthHost.view(store: store, engine: engine)
+        let words = { (text: String) in text.split(separator: " ").map(String.init) }
+        for screen in screens {
+            let texts = try drawnTexts(in: page, at: largest, screen: screen.size)
+            XCTAssertGreaterThanOrEqual(texts.drawn, 4, "\(screen.name): the page drew its words (a text that may shrink draws outside the probe, so the pills are measured below)")
+            XCTAssertEqual(texts.cut, 0, "\(screen.name): no words end in …")
+            let row = screen.size.width - 2 * 20 - 8
+            for word in words("My health") {
+                let width = try measure(Text(word).font(.largeTitle.bold()).fixedSize(), at: largest).width
+                XCTAssertLessThanOrEqual(width, row, "\(screen.name): \(word) fits the title's row")
+            }
+            for topic in HealthTopic.pills {
+                let pill = try measure(Button {} label: { Text(topic.title.title) }.buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.small).fixedSize(), at: largest).width
+                XCTAssertLessThanOrEqual(pill * 0.7, screen.size.width - 2 * 20, "\(screen.name): the \(topic.rawValue) pill fits on one line")
+            }
+            for topic in HealthTopic.allCases {
+                let title = topic.title
+                let scale = title.title.contains(" ") ? 1 : 0.7
+                for (index, word) in words(title.title).enumerated() {
+                    // The icon leads the first line only.
+                    let font = Font.title3.weight(.semibold)
+                    let width = index == 0 ? try measure(SectionTitle(title: word, symbol: title.symbol, tint: title.tint).font(font).fixedSize(), at: largest).width
+                        : try measure(Text(word).font(font).fixedSize(), at: largest).width
+                    XCTAssertLessThanOrEqual(width * scale, row, "\(screen.name): \(topic.rawValue)'s \(word) fits its heading")
+                }
+            }
+        }
+    }
+
     /// The height `view` takes when offered `room`: more than `room` means it runs off screen.
     private func taken(by view: some View, in room: CGSize, at category: UIContentSizeCategory) throws -> CGSize {
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
@@ -227,5 +271,3 @@ private struct QuestionHost: View {
         QuestionField(draft: $draft, asking: $asking)
     }
 }
-
-/// The Vitals header's controls, as MyDataView shows them.
