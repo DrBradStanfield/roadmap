@@ -32,13 +32,13 @@ import { trendWindow } from '../../packages/health-core/src/recent-trend';
 import { isAlcoholAnswer, type AlcoholAnswer } from '../../packages/health-core/src/types';
 import { readableView, unreadableNote } from '../../packages/health-core/src/readable-rows';
 import {
-  cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, getDisplayLabel, LPA_UNITS, toCanonicalValue, UNIT_DEFS,
+  cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, getDisplayLabel, LPA_UNITS, reportedToCanonical, toCanonicalValue, UNIT_DEFS,
   type LpaUnit, type MetricType, type UnitSystem,
 } from '../../packages/health-core/src/units';
 import { applyPressure, BLOOD_PRESSURE, pressureHistory, type PressureEdit } from './blood-pressure';
 import { applyChatEdit, type ChatEdit } from './chat-edits';
 import { cellUnitFor, lpaUnitOf, SWITCHABLE, unitsOf, type UnitChoices } from './unit-choices';
-import { cellFromSI, cellLabel, cellRange, isLpaUnit, type CellUnit } from '../../packages/health-core/src/cell-unit';
+import { cellFromSI, cellLabel, cellRange, isLpaUnit, rangeMessage, type CellUnit } from '../../packages/health-core/src/cell-unit';
 import { LIMIT_NOT_GRADED, comparatorOf, isComparator } from '../../packages/health-core/src/lab-limits';
 
 /** One row of Vitals or Blood tests: the plan's current value, if any, in the user's units. */
@@ -139,8 +139,10 @@ export type Edit =
   /** The ticked values of an uploaded lab report (US-52 AC8), written by the web's bulk rule. */
   | { kind: 'labImport'; extractionJson: string; refs: string[]; reportDay: string }
   /** A new value for a lab test the record holds, on a day, in the unit the sheet showed (US-25 AC25):
-   *  health-core's `addLabValue`, the web's lab add too, named by its series key (`labSlotKey`). */
-  | { kind: 'labAdd'; series: string; value: number; day?: string; unit?: string }
+   *  health-core's `addLabValue`, the web's lab add too, named by its series key (`labSlotKey`).
+   *  With `name` (US-73 AC8), the add sheet's: any test by name and `unit`, `series` unread, as the
+   *  web's general add (AddLabTest.tsx). An engine before it finds no series and refuses. */
+  | { kind: 'labAdd'; series: string; value: number; day?: string; unit?: string; name?: string }
   /** What the chat proposed, and its medications' Undo (US-67, chat-edits.ts). */
   | ChatEdit;
 
@@ -443,7 +445,7 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       return { ok: true, file: bulkAppendValues(file, rows.rows, now).file };
     }
     case 'labAdd':
-      return addSeriesValue(file, edit, now);
+      return typeof edit.name === 'string' ? addByName(file, edit, now, choices) : addSeriesValue(file, edit, now);
     case 'chatEdits':
     case 'chatUndo':
       return applyChatEdit(file, edit, now, choices);
@@ -465,6 +467,30 @@ function addSeriesValue(file: RoadmapFile, edit: Extract<Edit, { kind: 'labAdd' 
   const unit = edit.unit ?? displayLabUnit(named.unit ?? '', resolveLabCatalogEntry(named.metricName));
   const added = addLabValue(file, { metricName: named.metricName, unit, value: edit.value, day: edit.day }, now);
   return added.ok ? { ok: true, file: added.file } : added;
+}
+
+/**
+ * The add sheet's add by name (US-73 AC8): the web's general add (AddLabTest.tsx), health-core's
+ * `addLabValue`. A core test's name writes its core row, range-checked (US-66 AC6); a catalogue
+ * test keeps its key and canonical unit, and a unit it does not take is refused (US-21 AC3, AC4);
+ * any other name is a new test in the unit typed. A held day names what it holds and offers it for
+ * correcting only when the number differs in the same unit (US-21 AC13). Never a second row.
+ */
+function addByName(file: RoadmapFile, edit: Extract<Edit, { kind: 'labAdd' }>, now: string, choices: UnitChoices): EditOutcome {
+  const unit = edit.unit ?? '';
+  const added = addLabValue(file, { metricName: edit.name!, unit, value: edit.value, day: edit.day }, now);
+  if (added.ok) return { ok: true, file: added.file };
+  const core = bloodTestKeyOf(edit.name!.trim());
+  const { bound, refused: _refused, ...refusal } = added;
+  // Out of range, in the web's words: the end it missed, in the unit typed.
+  const system = bound && core && reportedToCanonical(core, edit.value, unit)?.system;
+  if (system) return { ...refusal, message: rangeMessage(core!, system, bound!) };
+  // The correction is the `correct` edit, which reads its number in the unit the core row shows.
+  if (core && refusal.existingId && displayLabUnit(unit) !== cellLabel(core, cellUnitFor(file, core, choices))) {
+    const { existingId: _held, ...rest } = refusal;
+    return rest;
+  }
+  return refusal;
 }
 
 /** An Lp(a) value out of range, said in the unit it was typed in with the web's range

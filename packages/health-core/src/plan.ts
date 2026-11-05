@@ -7,7 +7,7 @@
  * `renderJson` is the agent-facing shape, and both surfaces return it.
  */
 import { currentValueRows, isCoreRow } from './blood-tests';
-import { calculateHealthResults, missingPlanInputs } from './calculations';
+import { ageOnDay, calculateEGFR, calculateHealthResults, missingPlanInputs } from './calculations';
 import { fileProfileToApi, fileScreeningRows } from './file-inputs';
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
 import {
@@ -157,10 +157,46 @@ export type LabEgfr = Pick<HealthInputs, 'labEgfr'> & Required<Pick<HealthInputs
  * does not decide is still the latest eGFR, never passed over for an older one.
  */
 export function labEgfrOf(labValues: readonly LabRowLike[]): LabEgfr | null {
-  const rows = labValues.filter((l) => labSlotKey(l.metricName) === 'egfr'
-    && l.unit === resolveLabCatalogEntry(l.metricName)?.unit && 'labEgfr' in sanitizeInputs({ labEgfr: l.value }));
-  const lab = latestActivePerMetric(rows.map((l) => ({ ...l, metricType: 'egfr' })))[0];
+  const lab = latestActivePerMetric(labValues.filter(isLabEgfrRow).map((l) => ({ ...l, metricType: 'egfr' })))[0];
   return lab ? labEgfrFrom(lab.value, dayOf(lab.recordedAt), lab.comparator) : null;
+}
+
+/** A lab's creatinine eGFR the plan reads: in the catalogue's unit and the schema's range. */
+function isLabEgfrRow(l: LabRowLike): boolean {
+  return labSlotKey(l.metricName) === 'egfr' && l.unit === resolveLabCatalogEntry(l.metricName)?.unit && 'labEgfr' in sanitizeInputs({ labEgfr: l.value });
+}
+
+/** One day of the eGFR history: the lab's printed number, or ours from that day's creatinine. */
+export interface EgfrPoint { id: string; day: string; value: number; source: 'lab' | 'calculated' }
+
+/**
+ * Every day's eGFR, newest first (US-73 AC7, US-07 AC7 and AC8). A day's lab
+ * eGFR (labEgfrOf's rows) wins it, as withLabEgfr lets it win the plan's day.
+ * Else the core creatinine's (never a kept-apart row, which may be urine,
+ * US-12 AC11), calculated as the plan does, with the age on that day: only
+ * with a sex and a birth year, and never under 18. A value printed as a limit
+ * gives no point (US-12 AC20); a lab limit holds its day, so no number is
+ * worked out under it.
+ */
+export function egfrSeries(file: Pick<RoadmapFile, 'measurements' | 'labValues' | 'profile'>): EgfrPoint[] {
+  const days = new Map<string, EgfrPoint | null>();
+  for (const l of file.labValues) {
+    const day = dayOf(l.recordedAt);
+    if (l.status !== 'active' || isCoreRow(l) || !isLabEgfrRow(l) || days.has(day)) continue;
+    days.set(day, comparatorOf(l).comparator ? null : { id: l.id, day, value: Math.round(l.value), source: 'lab' });
+  }
+  const { sex, birthYear, birthMonth } = file.profile;
+  for (const row of currentValueRows(file)) {
+    const day = dayOf(row.recordedAt);
+    if (row.metricType !== 'creatinine' || days.has(day)) continue;
+    const usable = sanitizeInputs({ creatinine: row.value, birthYear: birthYear ?? undefined, sex: sex ?? undefined });
+    const age = usable.birthYear === undefined ? undefined : ageOnDay(usable.birthYear, birthMonth ?? undefined, day);
+    const exact = !comparatorOf(row).comparator && usable.creatinine !== undefined;
+    days.set(day, exact && usable.sex && age !== undefined && age >= 18
+      ? { id: row.id, day, value: Math.round(calculateEGFR(usable.creatinine!, age, usable.sex)), source: 'calculated' }
+      : null);
+  }
+  return [...days.values()].filter((p): p is EgfrPoint => p !== null).sort((a, b) => b.day.localeCompare(a.day));
 }
 
 /** A lab eGFR candidate from its printed number, day and code: a limit graded by

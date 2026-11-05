@@ -73,3 +73,11 @@ export function cellRange(metric: MetricType, unit: CellUnit): ValidationRange {
   const range = UNIT_DEFS[metric].validationRange.si; // Lp(a)'s canonical unit is its SI one
   return { ...range, min: cellFromSI(metric, range.min, unit), max: cellFromSI(metric, range.max, unit) };
 }
+
+/** The words for a number past one end of the metric's range, in `display` units: the web's
+ *  matrix and lab add, and the iPhone's add by name (US-66 AC6). */
+export function rangeMessage(metric: MetricType, display: CellUnit, fault: 'above' | 'below'): string {
+  const range = cellRange(metric, display);
+  const unit = cellLabel(metric, display);
+  return fault === 'below' ? `${range.minExclusive ? 'Must be above' : 'Min'} ${range.min} ${unit}` : `Max ${range.max} ${unit}`;
+}

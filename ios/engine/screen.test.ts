@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as planModule from '../../packages/health-core/src/plan';
-import { planSections } from '../../packages/health-core/src/plan-sections';
+import { planSections, topicSections } from '../../packages/health-core/src/plan-sections';
 import { statTiles } from '../../packages/health-core/src/stat-tiles';
 import { myData, newRecord, readRecord } from './my-data';
 import { screenJson } from './entry';
@@ -28,9 +28,15 @@ describe('screenJson (US-25 AC2, AC22)', () => {
     const choices = { hba1c: 'conventional', ldl: 'conventional' } as const;
     const plan = planModule.computePlan(file, new Date(NOW), choices);
     const tiles = statTiles(plan.results, { unitSystem: plan.unitSystem, unitOverrides: choices, sex: plan.inputs.sex });
+    const data = myData(file, NOW, choices);
+    const sections = planSections(plan.results.suggestions);
     expect(JSON.parse(screenJson(sample, NOW, 'phone', UNITS))).toEqual({
-      myData: JSON.parse(JSON.stringify(myData(file, NOW, choices))),
-      plan: { sections: JSON.parse(JSON.stringify(planSections(plan.results.suggestions))), tiles: JSON.parse(JSON.stringify(tiles)), ms: expect.any(Number) },
+      myData: JSON.parse(JSON.stringify(data)),
+      plan: {
+        sections: JSON.parse(JSON.stringify(sections)), tiles: JSON.parse(JSON.stringify(tiles)),
+        // US-73 AC3: the same cards by topic, placed against My data's own questions.
+        topics: JSON.parse(JSON.stringify(topicSections(sections, data))), ms: expect.any(Number),
+      },
       // The sample is an old-shape record: the app writes it once, moved (US-66 AC14).
       movedRecord: JSON.stringify(file),
     });

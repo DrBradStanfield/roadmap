@@ -54,6 +54,13 @@ export function calculateAge(birthYear: number, birthMonth: number, now = new Da
   return Math.max(age, 0);
 }
 
+/** The age on a calendar day (YYYY-MM-DD), by calculateAge's rule: a year is
+ *  counted from the birth month, January when the month is not known. */
+export function ageOnDay(birthYear: number, birthMonth: number | undefined, day: string): number {
+  const [year, month] = day.split('-').map(Number);
+  return Math.max(year - birthYear - (month < (birthMonth ?? 1) ? 1 : 0), 0);
+}
+
 /**
  * The plan's adults-only gate (US-07 AC6): a known age under 18. For this gate
  * alone a missing birth month is a minor until 1 January of the year after

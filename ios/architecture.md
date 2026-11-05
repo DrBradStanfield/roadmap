@@ -269,6 +269,12 @@ A signature means "the key holder approved this bundle", nothing more.
   the edit path's atomic write and no pending marker (the move changes no value; an open cloud
   writes its own copy, in `cloudOpen`, through `commit` as an edit does). A field, not a new
   door, so the bridge id stays: an older app ignores it, an older engine sends none.
+  Fifth use (2026-11-05, US-73, PR B of the My health plan): `screenJson`'s `plan.topics`
+  (health-core `topicSections`) and three new `historyJson` series, `egfr`, `whtr` and `search`
+  (the add sheet's name search, health-core `labSearch`; the record unread). The search rides the
+  history door because a new door is not a both-way addition: `bridge.test.ts` holds the engine's
+  doors to the hashed contract. The add by name is an optional `name` on the `labAdd` edit,
+  inside `editJson`, so no contract field moves; an older engine finds no series and refuses it.
   **Schema 3 (Brad 2026-11-02, US-66 AC15):** a record holding a core blood row is
   `schemaVersion` 3, so the engine's `schemaVersion` fact becomes 3. Build 3 bundles a
   schema-2 engine: it refuses a moved record with its "update the app" path (US-65 AC5) and

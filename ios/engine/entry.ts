@@ -6,14 +6,14 @@ import { mergeFiles } from '../../packages/health-core/src/merge';
 import { isCalendarDay } from '../../packages/health-core/src/measurement-history';
 import { computePlan, PlanError, type Plan } from '../../packages/health-core/src/plan';
 import { CURRENT_SCHEMA_VERSION } from '../../packages/health-core/src/roadmap-file';
-import { planSections, type PlanSection } from '../../packages/health-core/src/plan-sections';
+import { planSections, topicSections, type PlanSection, type TopicLayout } from '../../packages/health-core/src/plan-sections';
 import { statTiles, type StatTile } from '../../packages/health-core/src/stat-tiles';
 import { cmToFeetInches, formatDisplayValue, fromCanonicalValue, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from '../../packages/health-core/src/units';
-import { fileNameLine, MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
+import { fileNameLine, labSearch, MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
 import { deviceWrites } from '../../packages/health-core/src/device-export';
 import { usProductSections, type UsPlanSection } from '../../packages/health-core/src/us-products';
 import { applyEdit, movedRecord, myData, newRecord, readNumber, readRecord, readView, type Edit } from './my-data';
-import { labHistory, metricHistory } from './my-data-forms';
+import { derivedHistory, labHistory, metricHistory } from './my-data-forms';
 import { chatEditsPreview } from './chat-edits';
 import { readUnitChoices } from './unit-choices';
 import { phoneReminders } from './reminders';
@@ -91,12 +91,14 @@ export function newRecordJson(nowIso: string, deviceId: string, locale: string, 
  *  an app older than it included, gives none.
  *  `movedRecord`: the record as text, when reading `recordJson` moved its blood tests into
  *  one table (US-66 AC14); the app writes it to the phone's file once, as it opens it. Left
- *  out when nothing moved, so the written record never gives it again. */
+ *  out when nothing moved, so the written record never gives it again.
+ *  `plan.topics`: the same cards by topic for My health (health-core topicSections, US-73 AC3),
+ *  from `usProducts` when it shows, else `sections`, placed against My data's own questions. */
 export function screenJson(recordJson: string, nowIso: string, deviceId: string, unitsJson?: string, isUS?: boolean): string {
   const file = readView(recordJson, nowIso, deviceId);
   const choices = readUnitChoices(unitsJson);
   let plan: Plan | null = null;
-  let view: { sections: PlanSection[]; tiles: StatTile[]; usProducts?: UsPlanSection[]; ms: number } | { error: string; planError: boolean };
+  let view: { sections: PlanSection[]; tiles: StatTile[]; usProducts?: UsPlanSection[]; topics?: TopicLayout; ms: number } | { error: string; planError: boolean };
   try {
     const start = Date.now();
     plan = computePlan(file, new Date(nowIso), choices);
@@ -112,8 +114,16 @@ export function screenJson(recordJson: string, nowIso: string, deviceId: string,
   } catch (error) {
     view = { error: String(error), planError: error instanceof PlanError };
   }
+  const data = myData(file, nowIso, choices, plan);
+  if ('sections' in view) {
+    try {
+      view.topics = topicSections(view.usProducts ?? view.sections, data);
+    } catch {
+      // no topics: the app draws the sections
+    }
+  }
   const moved = movedRecord(recordJson, nowIso, deviceId);
-  return JSON.stringify({ myData: myData(file, nowIso, choices, plan), plan: view, ...(moved ? { movedRecord: moved } : null) });
+  return JSON.stringify({ myData: data, plan: view, ...(moved ? { movedRecord: moved } : null) });
 }
 
 /** One edit, as JSON: `{ ok: true, record }` with the new record as text (and the
@@ -163,9 +173,14 @@ export function healthWritesJson(recordJson: string, nowIso: string, deviceId: s
 }
 
 /** Every value recorded for one metric, newest first, as JSON (US-25 AC9). `series` "lab": `metric`
- *  is a lab test's series key (US-25 AC25); an app before it sends none, and is answered as before. */
+ *  is a lab test's series key (US-25 AC25); an app before it sends none, and is answered as before.
+ *  "egfr" and "whtr": the worked-out series of that name, `metric` unread (US-73 AC7). "search":
+ *  `metric` is a typed test name, and the answer is `{matches}`, the core and catalogue tests it
+ *  finds (health-core labSearch, US-73 AC8); the record is unread. */
 export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string, unitsJson?: string, series?: string): string {
+  if (series === 'search') return JSON.stringify({ matches: labSearch(metric) });
   const file = readView(recordJson, nowIso, deviceId);
+  if (series === 'egfr' || series === 'whtr') return JSON.stringify(derivedHistory(file, series));
   return JSON.stringify(series === 'lab' ? labHistory(file, metric) : metricHistory(file, metric, nowIso, readUnitChoices(unitsJson)));
 }
 // Chat and lab upload (US-52): app-doors.ts.

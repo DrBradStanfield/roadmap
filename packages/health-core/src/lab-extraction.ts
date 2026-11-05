@@ -14,14 +14,14 @@
  *    extraction, not clinical IP (the algorithm doc never leaves the server).
  */
 import * as z from './zod';
-import { getDisplayRange, rangeFault, reportedToCanonical, toCanonicalValue, type MetricType, type UnitSystem } from './units';
-import { foldName, isLooseCatalogueName, LAB_CATALOG, LAB_GROUPS, labTestLabel, looseFold, normalizeLabUnit, resolveLabCatalogEntry, type LabCatalogEntry } from './lab-catalog';
+import { getDisplayLabel, getDisplayRange, LPA_UNITS, rangeFault, reportedToCanonical, toCanonicalValue, type MetricType, type UnitSystem } from './units';
+import { acceptedLabUnits, foldName, isLooseCatalogueName, LAB_CATALOG, LAB_GROUPS, labTestLabel, looseFold, normalizeLabUnit, resolveLabCatalogEntry, type LabCatalogEntry } from './lab-catalog';
 import { cutText } from './chat-history';
 import { parseLocalisedNumber } from './parseNumber';
 import { DOCUMENT_TYPES, METRIC_TYPES } from './validation';
 import { isCalendarDay } from './measurement-history';
 import { COMPARATORS, comparatorOf, readPrintedLimit, uploadLimitUngraded, type Comparator } from './lab-limits';
-import { METRIC_TO_FIELD } from './mappings';
+import { BLOOD_TEST_METRICS, METRIC_LABELS, METRIC_TO_FIELD } from './mappings';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -287,6 +287,43 @@ export function resolveName(name: string): ResolvedName {
   if (core) return { kind: 'core', metric: core };
   const entry = resolveLabCatalogEntry(name);
   return entry ? { kind: 'lab', key: entry.key, entry } : null;
+}
+
+/** A test an add sheet offers for a typed name (US-73 AC8): its label, its key, the unit it is
+ *  stored in, and every unit it takes (a core test's two, Lp(a)'s three; a catalogue test's spellings). */
+export interface LabSearchMatch { name: string; key: string; kind: 'core' | 'catalogue'; unit: string; units: string[] }
+
+/** Every blood test the record knows by name, each with the names it answers to, loosely folded. */
+const SEARCHABLE: ReadonlyArray<LabSearchMatch & { names: string[] }> = [
+  ...BLOOD_TEST_METRICS.map((key) => {
+    const metric = key as MetricType;
+    const units = metric === 'lpa' ? [...LPA_UNITS] : [...new Set([getDisplayLabel(metric, 'si'), getDisplayLabel(metric, 'conventional')])];
+    return { name: METRIC_LABELS[key], key, kind: 'core' as const, unit: units[0], units, names: [key, METRIC_LABELS[key], ...CORE_METRIC_ALIASES[metric]] };
+  }),
+  ...LAB_CATALOG.map((entry) => ({
+    name: entry.label, key: entry.key, kind: 'catalogue' as const, unit: entry.unit, units: acceptedLabUnits(entry), names: [entry.key, entry.label, ...entry.aliases],
+  })),
+].map((test) => ({ ...test, names: [...new Set(test.names.map(looseFold))] }));
+
+/**
+ * The core and catalogue tests a typed name finds, best first (US-73 AC8): the
+ * test `resolveName` reads it as, then those with a name or alias it is, starts,
+ * starts a word of, or sits inside ("test" finds Testosterone, "hba" HbA1c);
+ * within that, the label's own match, then the shorter label. Nothing for blank
+ * text; at most `limit`.
+ */
+export function labSearch(text: string, limit = 20): LabSearchMatch[] {
+  const typed = looseFold(text);
+  if (!typed) return [];
+  const resolved = resolveName(text);
+  const exactKey = resolved?.kind === 'core' ? resolved.metric : resolved?.key;
+  const rank = (name: string) => (name === typed ? 0 : name.startsWith(typed) ? 1 : name.split(' ').some((w) => w.startsWith(typed)) ? 2 : name.includes(typed) ? 3 : 4);
+  return SEARCHABLE
+    .map(({ names, ...test }) => ({ test, rank: test.key === exactKey ? -1 : Math.min(...names.map(rank)), label: rank(looseFold(test.name)) }))
+    .filter((m) => m.rank < 4)
+    .sort((a, b) => a.rank - b.rank || a.label - b.label || a.test.name.length - b.test.name.length || a.test.name.localeCompare(b.test.name))
+    .slice(0, limit)
+    .map(({ test }) => test);
 }
 
 /** A flag printed beside a value or its unit (H, L, HH, LL, *, ↑, ↓, any case):

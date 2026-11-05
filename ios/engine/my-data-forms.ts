@@ -5,8 +5,8 @@
 // schema. Swift renders what comes out and sends answers back; it decides
 // nothing clinical.
 import { CORE_BLOOD_UNITS, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { isCoreRow } from '../../packages/health-core/src/blood-tests';
-import { computePlan, derivePlanInputs, type Plan } from '../../packages/health-core/src/plan';
+import { currentValueRows, isCoreRow } from '../../packages/health-core/src/blood-tests';
+import { computePlan, derivePlanInputs, egfrSeries, type Plan } from '../../packages/health-core/src/plan';
 import {
   SUPPLEMENT_DOSE_UNITS, SUPPLEMENT_TEXT, medicationForm, medicationWrites, screeningForm,
   screeningMonths, screeningWrites, type FormField, type FormSection,
@@ -19,7 +19,7 @@ import { localDay } from '../../packages/health-core/src/merge';
 import { METRIC_LABELS, METRIC_TO_FIELD } from '../../packages/health-core/src/mappings';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { isVersionMarker } from '../../packages/health-core/src/health-records-import';
-import type { MetricType } from '../../packages/health-core/src/units';
+import { WHTR_TARGET, waistToHeightRatio, type MetricType } from '../../packages/health-core/src/units';
 import { BLOOD_PRESSURE, pressureHistory } from './blood-pressure';
 import { cellUnitFor, systemFor, type UnitChoices } from './unit-choices';
 import type { EditOutcome } from './my-data';
@@ -86,6 +86,8 @@ export interface HistoryRow {
   unit?: string;
   /** A lab test's exact value, unrounded, for the chart (`value` is for reading). */
   number?: number;
+  /** An eGFR row's: the lab printed it, or the app worked it out from that day's creatinine (US-73 AC7). */
+  source?: 'lab' | 'calculated';
 }
 
 export interface MetricHistory {
@@ -98,6 +100,8 @@ export interface MetricHistory {
   /** A lab test reported in more than one unit: why the page draws no chart, in the web's words
    *  (`mixedUnitsNote`, US-21 AC3a). Absent otherwise. */
   unitsNote?: string;
+  /** A worked-out series' target, as a row prints it under the name: waist-to-height's "Normal <0.5". */
+  target?: string;
 }
 
 /** One recorded medication change on a metric page. */
@@ -346,6 +350,38 @@ export function labHistory(file: RoadmapFile, seriesKey: string): MetricHistory 
       };
     }),
     ...(series?.mixedUnits ? { unitsNote: mixedUnitsNote([...new Set(series.points.map((p) => p.unit))]) } : null),
+  };
+}
+
+/**
+ * A worked-out series (US-73 AC7), one row a day, newest first, in a history's shape: `egfr`, the
+ * lab's eGFR or ours from the core creatinine (health-core egfrSeries), each row saying which; or
+ * `whtr`, each day's waist over the CURRENT height (the record holds one), to two places, so past
+ * ratios move if the height is edited. A waist printed as a limit is no ratio. Read only: a row's
+ * id is the series' own (`egfr:<row id>`), so no correction can reach the creatinine or waist
+ * behind it; those are corrected on their own pages.
+ */
+export function derivedHistory(file: RoadmapFile, series: 'egfr' | 'whtr'): MetricHistory {
+  const row = (id: string, day: string, value: number, text: string, i: number) => ({
+    id: `${series}:${id}`, value: text, day, status: 'active' as const, current: i === 0, correction: false, number: value,
+  });
+  if (series === 'egfr') {
+    const entry = resolveLabCatalogEntry('egfr')!;
+    return {
+      metric: 'egfr', label: entry.label, unit: entry.unit, excluded: false, markers: [],
+      rows: egfrSeries(file).map((p, i) => ({ ...row(p.id, p.day, p.value, String(p.value), i), source: p.source })),
+    };
+  }
+  const height = file.profile.heightCm;
+  const days = new Map<string, { id: string; ratio: number }>();
+  for (const waist of currentValueRows(file).filter((m) => m.metricType === 'waist').sort((a, b) => b.recordedAt.localeCompare(a.recordedAt))) {
+    const day = waist.recordedAt.slice(0, 10);
+    if (typeof height !== 'number' || height <= 0 || days.has(day) || isComparator(waist.comparator)) continue;
+    days.set(day, { id: waist.id, ratio: waistToHeightRatio(waist.value, height) });
+  }
+  return {
+    metric: 'whtr', label: 'Waist-to-height', unit: '', excluded: false, markers: [], target: WHTR_TARGET,
+    rows: [...days].map(([day, { id, ratio }], i) => row(id, day, ratio, ratio.toFixed(2), i)),
   };
 }
 
