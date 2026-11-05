@@ -48,7 +48,7 @@ enum LiveFooter {
     /// The settings sheet's line on the cards: kept on this iPhone, and where to change access.
     static var cards: String { "\(shownOnly) \(access)" }
     /// The Turn On and Open Settings row's words (AC5, AC5b).
-    static let reconnect = "Heart rate, sleep, VO2 max and steps can show here from Apple Health."
+    static let reconnect = "Resting heart rate, sleep, VO2 max and steps can show here from Apple Health."
     /// The line under the row's button: these are Apple Health's settings, and where (AC5c, Brad 2026-11-01).
     static var healthSettings: String { "The Apple Health settings for this app are in \(healthPath)." }
 }

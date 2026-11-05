@@ -56,7 +56,7 @@ flowchart TD
    record in, so a web user never types their details twice.
 2. **Apple Health.** The only page before Apple's sheet: "Use your Apple Health data",
    six tiles (sex, birth date, height, weight, waist, blood pressure) ticking in, a quiet
-   line under them naming US-56's five ("It also shows your heart rate, sleep, VO2 max and
+   line under them naming US-56's five ("It also shows your resting heart rate, sleep, VO2 max and
    steps here, never in your record."; "never kept" until 2026-10-27, US-56 AC2), one line
    ("So you type less."; since 2026-10-27 it names the six, "Your sex, birth date, height,
    weight, waist and blood pressure go only into your record", since US-56's five are kept

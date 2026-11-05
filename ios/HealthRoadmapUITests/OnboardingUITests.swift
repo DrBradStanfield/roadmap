@@ -499,7 +499,7 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertTrue(allow.waitForExistence(timeout: 5))
         XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Next, Apple asks for access. Turn everything on, then tap Allow.")).firstMatch.exists,
                       "the hint above the button says what Apple's sheet asks (Brad 2026-10-25)")
-        XCTAssertTrue(app.staticTexts["It also shows your heart rate, sleep, VO2 max and steps here, never in your record."].exists,
+        XCTAssertTrue(app.staticTexts["It also shows your resting heart rate, sleep, VO2 max and steps here, never in your record."].exists,
                       "the page names US-56's five too (adversary R5)")
         snap(app, "health hint")
         allow.tap()
@@ -569,7 +569,7 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertFalse(app.buttons["Reconnect"].exists, "never Reconnect")
         // iOS 18 moved Health under Settings › Apps; the app runs from iOS 17.
         let apps = (Int(UIDevice.current.systemVersion.split(separator: ".").first ?? "") ?? 0) >= 18 ? "Apps › " : ""
-        let line = "Heart rate, sleep, VO2 max and steps can show here from Apple Health. The Apple Health settings for this app are in Settings › \(apps)Health › Data Access & Devices › Health Roadmap."
+        let line = "Resting heart rate, sleep, VO2 max and steps can show here from Apple Health. The Apple Health settings for this app are in Settings › \(apps)Health › Data Access & Devices › Health Roadmap."
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label == %@", line)).firstMatch.exists,
                       "the row's words and where Apple Health's settings are, read as one")
         snap(app, "us56 open settings row")

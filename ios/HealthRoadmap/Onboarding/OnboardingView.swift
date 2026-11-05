@@ -560,7 +560,7 @@ struct OnboardingView: View {
     /// Built once: the wheels redraw on every tick.
     static let appleAsksNextWords = "Next, Apple asks for access. Turn everything on, then tap **Allow**."
     /// The five US-56 readings, named on the Apple Health page (adversary R5).
-    static let liveLine = "It also shows your heart rate, sleep, VO2 max and steps here, never in your record."
+    static let liveLine = "It also shows your resting heart rate, sleep, VO2 max and steps here, never in your record."
     private static let birthYears = DayText.birthYears(now: .now)
 
     /// What each box takes as typed: whole feet, whole inches (centimetres and weight take `.value`).

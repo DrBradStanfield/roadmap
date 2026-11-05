@@ -138,7 +138,7 @@ declares the three rows below; declare them as written.
   dose or measure anything with the phone's sensors.
 - Apple Health (guideline 2.5.1): the app imports Health values into the person's
   record and writes typed values back. In the same single permission sheet, shown once
-  during onboarding ("Connect Apple Health"), it also asks to read heart rate, resting
+  during onboarding ("Connect Apple Health"), it also asks to read resting
   heart rate, sleep, VO2 max and steps. A person who skipped that connects from My
   data's Apple Health row, which shows the same sheet. A person who connected before this
   was added gets "Turn On" on My data, the same sheet again; after a refusal, "Open Settings"

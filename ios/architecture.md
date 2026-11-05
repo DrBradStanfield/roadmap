@@ -933,9 +933,9 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   the answer `LiveHealth` had, so the row never flashes (adversary R4). Every call is
   `@concurrent`: HealthKit and the maths run off the main thread. HealthKit's statistics collection
   queries do the daily and hourly maths, chosen by each metric's `aggregation` (`.sum` steps,
-  `.range` heart rate's min, max and average, `.mean` the others); sleep is a category sample query.
-  The same field picks the headline, the mark, the y-scale, the audio graph's series and the card
-  rule (heart rate's card is its newest sample, with the time).
+  `.mean` the others); sleep is a category sample query. The same field picks the headline, the
+  mark, the y-scale and the audio graph's series. (`.range`, heart rate's min, max and average,
+  and its newest-sample card went with heart rate, US-73 round 4.)
 - **One calendar (adversary R2, 2026-10-25):** `Calendar.autoupdatingCurrent`, made once in
   `AppParts` and given to both `LiveHealthKitStore` (the statistics' day and hour anchor) and
   `LiveHealth` (days, nights, labels), so a trip to another zone never labels a day with the
@@ -1840,8 +1840,9 @@ this release on). Apple Health never gets a limit (device-export.ts). The phone 
 My data and My plan became one tab, My health, beside Chat (seven prototype rounds, draft PR
 842). Swift places no suggestion: `screenJson`'s `plan.topics` (health-core `topicSections`)
 puts each in a topic's cards or on a row (a medicine question by key, a screening group by
-id), an urgent one in both. `HealthPage` reads it once per record change, with the two series
-below, and `MyDataView` only maps the page to views, so a test on the page is a test on what
+id), an urgent one in both. `HealthPage` reads it once per draw (`RecordStore.draws`: an edit,
+and also a redraw at foreground, midnight or a storefront switch, which moves no `revision`;
+review round 2), with the two series below, and `MyDataView` only maps the page to views, so a test on the page is a test on what
 is drawn (each suggestion exactly once; an urgent one in its card and on its row). An unknown
 topic goes under Other, and with no layout every card does, so nothing is dropped. An urgent
 card leads its section and the red banner scrolls to it. The waist-to-height row reads
