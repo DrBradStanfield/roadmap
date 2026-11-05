@@ -30,7 +30,7 @@ struct AddBloodTestSheet: View {
         let items = self.items
         NavigationStack {
             List {
-                ForEach(items, id: \.name) { item in
+                ForEach(items, id: \.id) { item in
                     Button {
                         pick(item.pick)
                         dismiss()
@@ -78,7 +78,10 @@ struct AddBloodTestSheet: View {
         if let matches { found = matches } else { searches = false }
     }
 
-    private struct Item {
+    struct Item {
+        /// The row's own id, or the match's kind and key: two tests can share a name (the core
+        /// creatinine and a kept-apart lab "creatinine", review round 2).
+        let id: String
         let name: String
         let unit: String
         let pick: Pick
@@ -93,18 +96,22 @@ struct AddBloodTestSheet: View {
         return data.bloodTests + (data.psa.latest != nil || prostate ? [data.psa] : []) + (data.labTests ?? [])
     }
 
-    private var items: [Item] {
-        let row = { (row: MyData.Row) in Item(name: row.label, unit: row.unit, pick: .row(row)) }
+    private var items: [Item] { Self.items(typed: typed, held: held, found: found, searches: searches) }
+
+    /// The list for the text typed: the record's tests, or the engine's matches and the record's
+    /// tests whose name holds the text.
+    static func items(typed: String, held: [MyData.Row], found: [LabSearchMatch], searches: Bool) -> [Item] {
+        let row = { (row: MyData.Row) in Item(id: "row:\(row.id)", name: row.label, unit: row.unit, pick: .row(row)) }
         guard !typed.isEmpty else { return held.map(row) }
         let named = held.filter { $0.label.localizedCaseInsensitiveContains(typed) }
         guard searches else { return named.map(row) }
         // A match the record holds opens its row: a core test's by its key, a catalogue test's by its series key.
         let matched = found.map { match in
             held.first { $0.metric == match.key && ($0.series == nil) == (match.kind == "core") }.map(row)
-                ?? Item(name: match.name, unit: match.units.first ?? "", pick: .named(match.name, units: match.units))
+                ?? Item(id: "match:\(match.kind):\(match.key)", name: match.name, unit: match.units.first ?? "", pick: .named(match.name, units: match.units))
         }
-        let shown = Set(matched.map(\.name))
-        return matched + named.filter { !shown.contains($0.label) }.map(row)
+        let shown = Set(matched.map(\.id))
+        return matched + named.map(row).filter { !shown.contains($0.id) }
     }
 }
 

@@ -200,9 +200,10 @@ struct HealthPage {
         guard let tile, let history else { return nil }
         let rows = history.rows
         guard let current = history.plan ?? rows.first.flatMap({ row in row.source.map { MetricHistory.PlanEgfr(day: row.day, source: $0) } }) else { return nil }
-        // The plan's point in the series. A lab limit has none, and every point is older than it.
+        // The plan's point in the series; a lab limit has none. Older means before the plan's day:
+        // a point on that day the plan did not use is never its previous value (review round 2).
         let at = rows.firstIndex { $0.day == current.day && $0.source == current.source }
-        let older = at.map { Array(rows.dropFirst($0 + 1)) } ?? rows
+        let older = rows.filter { $0.day < current.day }
         let lab = current.source == "lab"
         return Egfr(label: history.label, value: tile.value, unit: history.unit, day: current.day,
                     target: [tile.status?.label, lab ? "Lab result" : "Calculated"].compactMap { $0 }.joined(separator: " · "),

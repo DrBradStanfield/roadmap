@@ -49,9 +49,9 @@ struct MyDataView: View {
     /// "Add blood test", and the test picked in it (round 7).
     @State private var addingTest = false
     @State private var pickedTest: PickedTest?
-    /// The page as last built, and the revision it was built for (`currentPage`).
+    /// The page as last built, and the screen it was built for (`currentPage`).
     @State private var page: HealthPage?
-    @State private var pageRevision: Int?
+    @State private var pageBuiltFor: Int?
     @State private var refusal: String?
     @State private var saves = 0
     /// A picker's edit is landing: the pickers wait, so a quick change back is never lost.
@@ -137,12 +137,16 @@ struct MyDataView: View {
 
     // MARK: My health
 
-    /// The page for this record: built once per revision, when its series have been read; until
+    /// The page for this screen: built once per draw, when its series have been read; until
     /// then, from what the store shows now.
     private var currentPage: HealthPage {
-        if let page, pageRevision == store.revision { return page }
+        if let page, pageBuiltFor == Self.pageKey(store) { return page }
         return HealthPage(store)
     }
+
+    /// What the page is built for: the screen drawn, so a redraw at a new day or for another
+    /// storefront builds it again. The series it reads stay keyed on the record's `revision`.
+    static func pageKey(_ store: RecordStore) -> Int { store.draws }
 
     private func healthList(_ data: MyData, proxy: ScrollViewProxy) -> some View {
         let page = currentPage
@@ -194,13 +198,13 @@ struct MyDataView: View {
         // The title where a large title sits, not under the list's top margin (Brad, round 7).
         .contentMargins(.top, 0, for: .scrollContent)
         // The worked-out rows read their engine series once per record change (US-73 AC7); then
-        // the page is built once for that revision.
-        .task(id: store.revision) {
-            let revision = store.revision
+        // the page is built once for each screen drawn.
+        .task(id: Self.pageKey(store)) {
+            let key = Self.pageKey(store)
             for series in HealthPage.series { _ = await store.chart(for: series, series: series) }
-            guard !Task.isCancelled, revision == store.revision else { return }
+            guard !Task.isCancelled, key == Self.pageKey(store) else { return }
             self.page = HealthPage(store)
-            pageRevision = revision
+            pageBuiltFor = key
         }
         // Each tour tip, once due, brings its anchor into view (US-57); a weight section with
         // no card passes tip 2 (review R4).

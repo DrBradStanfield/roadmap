@@ -227,6 +227,56 @@ final class MyHealthTests: XCTestCase {
         XCTAssertTrue(minor.labs.contains(where: HealthPage.isLabEgfr))
     }
 
+    /// Review round 2: the bracketed value and the trend come strictly before the plan's day. A
+    /// series point on that day the plan did not use (a lab one, the plan's calculated) is neither.
+    func testTheEgfrRowsOlderValuesAreBeforeThePlansDay_US73_AC7() throws {
+        let point = { (id: String, value: Int, day: String, source: String) in
+            #"{"id":"egfr:\#(id)","value":"\#(value)","day":"\#(day)","status":"active","current":false,"correction":false,"number":\#(value),"source":"\#(source)"}"#
+        }
+        let series = #"{"metric":"egfr","label":"eGFR","unit":"mL/min/1.73m²","excluded":false,"plan":{"day":"2026-06-01","source":"calculated"},"rows":["#
+            + [point("l1", 150, "2026-06-01", "lab"), point("c1", 80, "2026-03-01", "calculated"), point("c0", 76, "2026-01-01", "calculated")].joined(separator: ",") + "]}"
+        let history = try JSONDecoder().decode(MetricHistory.self, from: Data(series.utf8))
+        let tile = try JSONDecoder().decode(StatTile.self, from: Data(#"{"key":"egfr","label":"eGFR","value":"78","unit":"mL/min","about":"eGFR"}"#.utf8))
+        let creatinine = try XCTUnwrap(try drawn(try text(sample())).myData.bloodTests.first { $0.metric == "creatinine" })
+        let egfr = try XCTUnwrap(HealthPage.egfr(history, tile: tile, creatinine: creatinine, labs: []))
+        XCTAssertEqual(egfr.value, "78")
+        XCTAssertEqual(egfr.day, "2026-06-01")
+        XCTAssertEqual(egfr.previous, "80", "the value before the plan's day, never the one it set aside")
+        XCTAssertEqual(egfr.trend, [76, 80])
+    }
+
+    /// Review round 2: a redraw of the same record (at a later time, or for another storefront)
+    /// moves what the page is built for, so My health never keeps the earlier screen's cards.
+    func testARedrawMovesThePage_US73_AC3() async throws {
+        let store = try store(try text(sample()))
+        let built = MyDataView.pageKey(store)
+        let before = HealthPage(store).drawn
+        await store.redraw(now: try XCTUnwrap(Calendar.current.date(byAdding: .year, value: 12, to: .now))).value
+        let after = HealthPage(store).drawn
+        XCTAssertNotEqual(Set((after.cards + after.rows).map(\.id)), Set((before.cards + before.rows).map(\.id)), "twelve years on, the plan differs")
+        XCTAssertNotEqual(MyDataView.pageKey(store), built, "a redraw builds the page again")
+        let redrawn = MyDataView.pageKey(store)
+        await store.follow(storefrontIsUS: true)
+        XCTAssertNotEqual(MyDataView.pageKey(store), redrawn, "so does a storefront switch")
+    }
+
+    /// Review round 2: the core creatinine and a kept-apart lab "creatinine" series share a name,
+    /// and stay two rows of the add sheet, each opening its own test, typed or not.
+    func testTheAddSheetKeepsSameNamedTestsApart_US73_AC8() throws {
+        let data = try drawn(try record(labs: [Self.lab("u1", "creatinine", 9, "mmol/L", "2026-08-01")])).myData
+        let held = AddBloodTestSheet.held(data)
+        let creatinines = held.filter { $0.metric == "creatinine" }
+        XCTAssertEqual(Set(creatinines.map(\.id)), ["creatinine", "lab:creatinine"])
+        XCTAssertEqual(Set(creatinines.map(\.label)).count, 1, "the two share a name: \(creatinines.map(\.label))")
+        let core = LabSearchMatch(name: "Creatinine", key: "creatinine", kind: "core", units: ["µmol/L"])
+        for (typed, found) in [("", [LabSearchMatch]()), ("creat", [core])] {
+            let items = AddBloodTestSheet.items(typed: typed, held: held, found: found, searches: true)
+            XCTAssertEqual(Set(items.map(\.id)).count, items.count, "'\(typed)': one identity a row, \(items.map(\.id))")
+            let rows = items.compactMap { item -> String? in if case .row(let row) = item.pick { row.id } else { nil } }
+            XCTAssertTrue(Set(rows).isSuperset(of: ["creatinine", "lab:creatinine"]), "'\(typed)': both can be picked, \(rows)")
+        }
+    }
+
     /// Each eGFR history's page links to the other, so a lab eGFR can always be reached for
     /// correction (US-25 AC9).
     func testEachEgfrPageLinksToTheOther_US73_AC7() throws {

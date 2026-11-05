@@ -56,6 +56,9 @@ final class RecordStore {
     private(set) var ownSaves = 0
     /// Moves whenever the record or the per-test units change: a page keyed on it asks again.
     private(set) var revision = 0
+    /// Moves with every screen drawn: each edit, and a redraw of the same record (a new day, a
+    /// storefront switch), which moves no `revision`. My health builds its page on it (review round 2).
+    private(set) var draws = 0
     /// Where the record is kept.
     let file: URL
     let deviceId: String
@@ -151,6 +154,7 @@ final class RecordStore {
     /// to catch (US-25 AC18, review R5).
     private func display(_ drawn: HealthEngine.Drawn?) {
         self.drawn = drawn
+        draws += 1
         if drawn?.plan.planned == true { engine.trial?.confirm() }
     }
 
