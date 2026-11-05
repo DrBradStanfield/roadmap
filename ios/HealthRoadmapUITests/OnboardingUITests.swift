@@ -480,8 +480,9 @@ final class OnboardingUITests: XCTestCase {
         return seen.map { $0.replacingOccurrences(of: "UIA.Health.Read.", with: "").replacingOccurrences(of: ".SwitchCell.Switch", with: "") }.sorted()
     }
 
-    /// Everything the app reads, in one sheet (US-54 AC3, US-56 AC4, Brad 2026-10-26).
-    private let everything = ["BloodPressure", "CardioFitness", "DateofBirth", "HeartRate", "Height", "RestingHeartRate", "Sex", "Sleep", "Steps", "WaistCircumference", "Weight"]
+    /// Everything the app reads, in one sheet (US-54 AC3, US-56 AC4, Brad 2026-10-26); no heart
+    /// rate since its card went (US-73).
+    private let everything = ["BloodPressure", "CardioFitness", "DateofBirth", "Height", "RestingHeartRate", "Sex", "Sleep", "Steps", "WaistCircumference", "Weight"]
 
     /// "Connect Apple Health" shows Apple's Health sheet once, asking for everything the app
     /// reads: onboarding's record types and US-56's five (AC3, US-56 AC4). The sheet runs in
