@@ -47,7 +47,7 @@ import { normalizeLabUnit, resolveLabCatalogEntry } from './lab-catalog';
 import { isClinicalDay } from './measurement-history';
 import { comparatorOf, isComparator, type Comparator } from './lab-limits';
 import { dayOf, latestDayOnEarth } from './merge';
-import { coreStored, createCoreRow, isBloodTestKey, labRowSlot } from './blood-tests';
+import { coreStored, createCoreRow, isActive, isBloodTestKey, labRowSlot } from './blood-tests';
 import { measurementValueFault, newId, sameValue, slotOfRow, stampUpdatedAt, toStoredLab } from './record-edits';
 import { createLabValue, type FileLabValue, type RoadmapFile } from './roadmap-file';
 
@@ -338,7 +338,7 @@ export function importHealthRecords(
   const taken = new Map<string, number>();
   rows.forEach((row, at) => {
     remember(at);
-    if (row.status === 'active') taken.set(slotOfRow(row), at);
+    if (isActive(row)) taken.set(slotOfRow(row), at);
   });
   let changed = false;
 
@@ -348,7 +348,7 @@ export function importHealthRecords(
     const externalId = `${identity}#${version}`;
     const withdrawal = obs.status === 'entered-in-error';
     const mine = byIdentity.get(identity) ?? [];
-    const active = mine.find((at) => rows[at].status === 'active');
+    const active = mine.find((at) => isActive(rows[at]));
     const withdraw = (at: number) => {
       rows[at] = { ...rows[at], status: 'entered-in-error' };
       taken.delete(slotOfRow(rows[at]));

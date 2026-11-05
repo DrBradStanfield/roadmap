@@ -341,7 +341,7 @@ The Portfolio Diet is a targeted LDL-lowering dietary pattern. Brad's algorithm 
 
 **Brad's position:** The algorithm implements this directly. The `lipid-diet` suggestion is triggered when any atherogenic marker is borderline or above (ApoB ≥ 0.5 g/L, Non-HDL ≥ 4.14 mmol/L, or LDL-C ≥ 3.36 mmol/L). Foods are categorised as "Universal (IBS/IBD-safe)" and "Additional options (no IBS/IBD)" — the universal foods are all low-FODMAP at recommended amounts.
 
-**Algorithm link:** `lipid-diet` suggestion (Section 4b). When active, suppresses the generic `fiber` suggestion.
+**Algorithm link:** `lipid-diet` suggestion (Section 4b). The generic `fiber` suggestion shows beside it (Brad 2026-11-05).
 
 **References:**
 - Jenkins 2011, Portfolio Diet, JAMA (DOI: 10.1001/jama.2011.1202)

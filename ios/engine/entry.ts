@@ -177,7 +177,7 @@ export function healthWritesJson(recordJson: string, nowIso: string, deviceId: s
  *  "egfr" and "whtr": the worked-out series of that name, `metric` unread (US-73 AC7). */
 export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string, unitsJson?: string, series?: string): string {
   const file = readView(recordJson, nowIso, deviceId);
-  if (series === 'egfr' || series === 'whtr') return JSON.stringify(derivedHistory(file, series));
+  if (series === 'egfr' || series === 'whtr') return JSON.stringify(derivedHistory(file, series, nowIso));
   return JSON.stringify(series === 'lab' ? labHistory(file, metric) : metricHistory(file, metric, nowIso, readUnitChoices(unitsJson)));
 }
 

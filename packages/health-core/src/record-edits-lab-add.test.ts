@@ -1,7 +1,7 @@
 // US-25 AC25, US-21: the one lab add both apps use (record-edits.ts addLabValue): the web's
 // "+ Add a value" (AddLabTest.tsx) and the iPhone's lab page. Synthetic values.
 import { describe, expect, it } from 'vitest';
-import { addLabValue } from './record-edits';
+import { addLabValue, bulkAppendValues } from './record-edits';
 import { createEmptyFile, type FileLabValue, type RoadmapFile } from './roadmap-file';
 import { createCoreRow } from './blood-tests';
 import { reportedToCanonical } from './units';
@@ -40,6 +40,59 @@ describe('addLabValue (US-25 AC25)', () => {
     expect(addLabValue(record([]), { metricName: ' ', unit: 'µg/L', value: 1, day: '2026-10-01' }, NOW)).toMatchObject({ ok: false, reason: 'invalid-value' });
     expect(addLabValue(record([]), { metricName: 'ferritin', unit: 'mg/dL', value: 1, day: '2026-10-01' }, NOW))
       .toMatchObject({ ok: false, reason: 'unknown-unit', message: expect.stringMatching(/^Ferritin: unit not recognised \(mg\/dL\)/) });
+  });
+});
+
+// US-73 AC8 (with US-66 AC6): a vital is no lab test, and a test nothing names needs the unit it was
+// reported in, as appendLabValue refuses both (record-edits.test.ts, the MCP tools).
+describe('addLabValue — a vital\'s name or no unit (US-73 AC8)', () => {
+  it('refuses a vital\'s name: weight, height, blood pressure, waist', () => {
+    for (const metricName of ['Weight', 'height', 'Systolic BP', 'Waist']) {
+      expect(addLabValue(record([]), { metricName, unit: 'kg', value: 80, day: '2026-10-01' }, NOW), metricName)
+        .toEqual({ ok: false, reason: 'core-metric', message: `"${metricName}" is not a lab test: add it from its own row.` });
+    }
+  });
+
+  it('a kept-apart lab series named like a vital takes no add by name, only its own page\'s "+" (US-25 AC25)', () => {
+    const file = record([held('w1', 'Weight', 70, 'kg', '2026-09-01')]);
+    expect(addLabValue(file, { metricName: 'Weight', unit: 'kg', value: 71, day: '2026-10-01' }, NOW)).toMatchObject({ ok: false, reason: 'core-metric' });
+    const out = addLabValue(file, { metricName: 'Weight', unit: 'kg', value: 71, day: '2026-10-01', existingSeries: true }, NOW);
+    if (!out.ok) throw new Error(out.message);
+    expect(out.row).toMatchObject({ metricName: 'Weight', unit: 'kg', value: 71 });
+  });
+
+  it('a series saved with no unit (a lab import\'s INR) takes its page\'s "+", never an add by name (US-25 AC25)', () => {
+    const saved = bulkAppendValues(record([]), [{ kind: 'lab', metricName: 'INR', value: 1.1, unit: '', recordedAt: '2026-09-01T00:00:00.000Z', source: 'lab_import' }], NOW);
+    expect(saved.saved).toHaveLength(1);
+    const out = addLabValue(saved.file, { metricName: 'INR', unit: '', value: 1.2, day: '2026-10-01', existingSeries: true }, NOW);
+    if (!out.ok) throw new Error(out.message);
+    expect(out.row).toMatchObject({ metricName: 'INR', unit: '', value: 1.2, source: 'manual' });
+    expect(addLabValue(record([]), { metricName: 'INR', unit: '', value: 1.2, day: '2026-10-01' }, NOW))
+      .toEqual({ ok: false, reason: 'invalid-value', message: 'A lab value needs the unit the lab reported it in' });
+  });
+
+  it('existingSeries adds only to a series the record holds: an active, non-core row of that test (US-25 AC25)', () => {
+    const none = { ok: false, reason: 'not-found', message: 'There is no such lab test in your record.' };
+    const add = (file: RoadmapFile, metricName: string, unit: string) => addLabValue(file, { metricName, unit, value: 1.2, day: '2026-10-01', existingSeries: true }, NOW);
+    // Never a new vital-named or unit-less series.
+    expect(add(record([]), 'Weight', 'kg')).toEqual(none);
+    expect(add(record([]), 'INR', '')).toEqual(none);
+    expect(add(record([held('f1', 'ferritin', 80, 'µg/L', '2026-09-01')]), 'INR', '')).toEqual(none);
+    // A withdrawn row or a core row holds no lab series.
+    expect(add(record([{ ...held('i1', 'INR', 1.1, '', '2026-09-01'), status: 'entered-in-error' }]), 'INR', '')).toEqual(none);
+    const core = createCoreRow({ id: 'c1', metric: 'ldl', value: 3, recordedAt: '2026-09-01T00:00:00.000Z', createdAt: NOW, source: 'manual' });
+    expect(add(record([core]), 'ldl', 'mmol/L')).toEqual(none);
+    // Any spelling of the held test, and a legacy row with no status, holds it.
+    expect(add(record([held('i1', 'INR', 1.1, '', '2026-09-01')]), 'inr', '')).toMatchObject({ ok: true });
+    const { status: _status, ...legacy } = held('z1', 'Zinc custom', 80, 'µg/dL', '2026-09-01');
+    expect(add(record([legacy as FileLabValue]), 'Zinc custom', 'µg/dL')).toMatchObject({ ok: true });
+  });
+
+  it('refuses a test nothing names with no unit, in appendLabValue\'s words', () => {
+    for (const unit of ['', '  ']) {
+      expect(addLabValue(record([]), { metricName: 'Zinc custom', unit, value: 80, day: '2026-10-01' }, NOW))
+        .toEqual({ ok: false, reason: 'invalid-value', message: 'A lab value needs the unit the lab reported it in' });
+    }
   });
 });
 

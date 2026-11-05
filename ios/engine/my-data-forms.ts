@@ -5,8 +5,8 @@
 // schema. Swift renders what comes out and sends answers back; it decides
 // nothing clinical.
 import { CORE_BLOOD_UNITS, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { currentValueRows, isCoreRow } from '../../packages/health-core/src/blood-tests';
-import { computePlan, derivePlanInputs, egfrSeries, type Plan } from '../../packages/health-core/src/plan';
+import { isActive, isCoreRow } from '../../packages/health-core/src/blood-tests';
+import { computePlan, derivePlanInputs, egfrSeries, whtrSeries, type Plan } from '../../packages/health-core/src/plan';
 import {
   SUPPLEMENT_DOSE_UNITS, SUPPLEMENT_TEXT, medicationForm, medicationWrites, screeningForm,
   screeningMonths, screeningWrites, type FormField, type FormSection,
@@ -19,7 +19,7 @@ import { localDay } from '../../packages/health-core/src/merge';
 import { METRIC_LABELS, METRIC_TO_FIELD } from '../../packages/health-core/src/mappings';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { isVersionMarker } from '../../packages/health-core/src/health-records-import';
-import { WHTR_TARGET, waistToHeightRatio, type MetricType } from '../../packages/health-core/src/units';
+import { WHTR_TARGET, type MetricType } from '../../packages/health-core/src/units';
 import { BLOOD_PRESSURE, pressureHistory } from './blood-pressure';
 import { cellUnitFor, systemFor, type UnitChoices } from './unit-choices';
 import type { EditOutcome } from './my-data';
@@ -341,7 +341,7 @@ export function labHistory(file: RoadmapFile, seriesKey: string): MetricHistory 
         id: row.id,
         value: savedLabText(row.value, comparator),
         day: row.recordedAt.slice(0, 10),
-        status: row.status,
+        status: shownStatus(row),
         current: false,
         correction: !!row.correctsId,
         unit: unitOf(row),
@@ -356,12 +356,11 @@ export function labHistory(file: RoadmapFile, seriesKey: string): MetricHistory 
 /**
  * A worked-out series (US-73 AC7), one row a day, newest first, in a history's shape: `egfr`, the
  * lab's eGFR or ours from the core creatinine (health-core egfrSeries), each row saying which; or
- * `whtr`, each day's waist over the CURRENT height (the record holds one), to two places, so past
- * ratios move if the height is edited. A waist printed as a limit is no ratio. Read only: a row's
+ * `whtr`, each day's waist over the current height (health-core whtrSeries). Read only: a row's
  * id is the series' own (`egfr:<row id>`), so no correction can reach the creatinine or waist
  * behind it; those are corrected on their own pages.
  */
-export function derivedHistory(file: RoadmapFile, series: 'egfr' | 'whtr'): MetricHistory {
+export function derivedHistory(file: RoadmapFile, series: 'egfr' | 'whtr', now: string): MetricHistory {
   const row = (id: string, day: string, value: number, text: string, i: number) => ({
     id: `${series}:${id}`, value: text, day, status: 'active' as const, current: i === 0, correction: false, number: value,
   });
@@ -369,28 +368,24 @@ export function derivedHistory(file: RoadmapFile, series: 'egfr' | 'whtr'): Metr
     const entry = resolveLabCatalogEntry('egfr')!;
     return {
       metric: 'egfr', label: entry.label, unit: entry.unit, excluded: false, markers: [],
-      rows: egfrSeries(file).map((p, i) => ({ ...row(p.id, p.day, p.value, String(p.value), i), source: p.source })),
+      rows: egfrSeries(file, new Date(now)).map((p, i) => ({ ...row(p.id, p.day, p.value, String(p.value), i), source: p.source })),
     };
-  }
-  const height = file.profile.heightCm;
-  const days = new Map<string, { id: string; ratio: number }>();
-  for (const waist of currentValueRows(file).filter((m) => m.metricType === 'waist').sort((a, b) => b.recordedAt.localeCompare(a.recordedAt))) {
-    const day = waist.recordedAt.slice(0, 10);
-    if (typeof height !== 'number' || height <= 0 || days.has(day) || isComparator(waist.comparator)) continue;
-    days.set(day, { id: waist.id, ratio: waistToHeightRatio(waist.value, height) });
   }
   return {
     metric: 'whtr', label: 'Waist-to-height', unit: '', excluded: false, markers: [], target: WHTR_TARGET,
-    rows: [...days].map(([day, { id, ratio }], i) => row(id, day, ratio, ratio.toFixed(2), i)),
+    rows: whtrSeries(file).map((p, i) => row(p.id, p.day, p.ratio, p.ratio.toFixed(2), i)),
   };
 }
 
 /** A metric's or a lab test's rows as a history lists them: newest day first; within a day,
  *  newest written first, the active row above the ones it replaced. */
-function newestFirst(a: { recordedAt: string; createdAt?: string | null; status: string }, b: { recordedAt: string; createdAt?: string | null; status: string }): number {
+function newestFirst(a: { recordedAt: string; createdAt?: string | null; status?: string }, b: { recordedAt: string; createdAt?: string | null; status?: string }): number {
   return b.recordedAt.slice(0, 10).localeCompare(a.recordedAt.slice(0, 10)) || String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? ''))
-    || Number(b.status === 'active') - Number(a.status === 'active');
+    || Number(isActive(b)) - Number(isActive(a));
 }
+
+/** A row's status as a page shows it: a legacy row with none is active (c71d283c). */
+const shownStatus = (row: { status?: string }): HistoryRow['status'] => (isActive(row) ? 'active' : 'entered-in-error');
 
 /** A stored value printed as a limit the shared rule leaves ungraded (`limitUngraded`). */
 export function ungradedLimit(metric: MetricType, row: { value: number; comparator?: unknown }, ctx: GradeContext): boolean {
@@ -425,7 +420,7 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
       .map((row) => ({ ...row, metricType: metric })),
   ].filter((row) => !isVersionMarker(row));
   // The plan's own pick of the current value.
-  const current = latestActivePerMetric(rows.filter((row) => row.status === 'active'))[0];
+  const current = latestActivePerMetric(rows.filter(isActive))[0];
   return {
     metric,
     excluded: excludedFields.includes(METRIC_TO_FIELD[metric]),
@@ -439,12 +434,12 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
         id: row.id,
         value: rowText(metric as MetricType, row, shown),
         day: row.recordedAt.slice(0, 10),
-        status: row.status,
+        status: shownStatus(row),
         current: row.id === current?.id,
         // A legacy row may lack the key: only a named row is a correction.
         correction: !!row.correctsId,
         ...(isComparator(row.comparator) ? { bound: cellFromSI(metric as MetricType, row.value, shown) } : null),
-        ...(row.status === 'active' && ungradedLimit(metric as MetricType, row, ctx) ? { note: LIMIT_NOT_GRADED } : null),
+        ...(isActive(row) && ungradedLimit(metric as MetricType, row, ctx) ? { note: LIMIT_NOT_GRADED } : null),
       })),
   };
 }

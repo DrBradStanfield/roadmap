@@ -8,7 +8,7 @@
 // number reads as the matrix says it.
 
 import { useEffect, useState, type MutableRefObject } from 'react';
-import { canonicalToReported, commaQuestion, displayLabUnit, LAB_CATALOG, LAB_GROUPS, localDay, parseLocalisedNumber, rangeMessage, reportedToCanonical, resolveLabCatalogEntry, savedLabText, slotKey, type ApiMeasurement, type Comparator } from '@roadmap/health-core';
+import { canonicalToReported, commaQuestion, displayLabUnit, LAB_CATALOG, LAB_GROUPS, labRangeMessage, localDay, parseLocalisedNumber, resolveLabCatalogEntry, savedLabText, slotKey, type ApiMeasurement, type Comparator } from '@roadmap/health-core';
 import { bloodTestKeyOf, coreStored } from '@roadmap/health-core/blood-tests';
 import { UnitChip } from './UnitChip';
 import { SAVE_ERRORS } from './BloodTestTimeline';
@@ -128,7 +128,8 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
     try {
       // health-core's one lab add (US-25 AC25): it files the test, refuses a unit the catalogue does
       // not take in the upload summary's words (US-21 AC15), and names a held value on that day.
-      const result = await addLabValue({ metricName, unit, value: value!, day: date });
+      // A value page adds to its own series, whatever its name or unit (US-25 AC25).
+      const result = await addLabValue({ metricName, unit, value: value!, day: date, ...(preset ? { existingSeries: true } : null) });
       if (!result) {
         setNotice('Could not save — please try again.');
       } else if (result.ok) {
@@ -137,8 +138,7 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
         onAdded();
       } else if (result.bound) {
         // A core value out of range reads as the matrix says it, in the unit typed (US-66 AC6).
-        const system = core && reportedToCanonical(core, value!, unit)?.system;
-        setNotice(system ? rangeMessage(core, system, result.bound) : SAVE_ERRORS.invalid);
+        setNotice((core && labRangeMessage(core, unit, result.bound)) || SAVE_ERRORS.invalid);
       } else {
         setNotice(result.message);
         // A held value in the same unit holding another number: offer to replace it (US-21 AC13).

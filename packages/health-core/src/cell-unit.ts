@@ -81,3 +81,16 @@ export function rangeMessage(metric: MetricType, display: CellUnit, fault: 'abov
   const unit = cellLabel(metric, display);
   return fault === 'below' ? `${range.minExclusive ? 'Must be above' : 'Min'} ${range.min} ${unit}` : `Max ${range.max} ${unit}`;
 }
+
+/** `rangeMessage` for a value typed in a printed unit (a lab add by name): the range in that
+ *  unit, Lp(a)'s own when it is one of its three (mg/L reads "Max 3000 mg/L", not mg/dL's).
+ *  Null when the metric does not take the unit. */
+export function labRangeMessage(metric: MetricType, typedUnit: string, fault: 'above' | 'below'): string | null {
+  const alias = lookupUnit(metric, typedUnit);
+  if (!alias) return null;
+  const same = (unit: LpaUnit) => {
+    const own = lookupUnit(metric, unit);
+    return own?.system === alias.system && (own.scale ?? 1) === (alias.scale ?? 1);
+  };
+  return rangeMessage(metric, (metric === 'lpa' && LPA_UNITS.find(same)) || alias.system, fault);
+}

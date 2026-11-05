@@ -112,6 +112,15 @@ describe('US-04 AC5: refusals leave the file unchanged', () => {
     expect('rows' in p ? null : (p.existing as FileLabValue).metricName).toBe('ldl');
   });
 
+  // c71d283c: a legacy row with no status is active, so beside an active LDL its day holds two.
+  it('refuses a target day holding an active LDL and a legacy one with no status, writing nothing', () => {
+    const file = base();
+    const { status: _s, ...legacy } = m('ldl2', 'ldl', 3.4, TO) as FileLabValue;
+    add(file, m('ldl2b', 'ldl', 3.3, TO), legacy as FileLabValue);
+    const result = moveBloodTest(file, { from: FROM, to: TO, expectedIds: ['ldl1', 'hdl1', 'psa1', 'fer1'], keep: {}, ...EDIT });
+    expect(result).toMatchObject({ ok: false, reason: 'duplicate-slot' });
+  });
+
   it('refuses stale ids, and a missing or extra clash answer, writing nothing', () => {
     const file = base();
     add(file, m('ldlT', 'ldl', 2.9, TO));

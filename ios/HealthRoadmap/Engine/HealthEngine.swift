@@ -228,7 +228,9 @@ actor HealthEngine {
 
     /// Calls an optional door (bridge-optional.json `optionalDoors`, D3): one the hashed contract
     /// leaves out, so the bridge id stays. A door the engine lacks answers nil, the feature
-    /// unavailable, never a crash. The app's only way to an optional door (EngineBridgeContractTests).
+    /// unavailable, never a crash. The app normally runs an engine at least as new as its bundled
+    /// one, so the nil is insurance, not the expected path; but safety rests on it, not on that.
+    /// The app's only way to an optional door (EngineBridgeContractTests).
     func optionalCall(_ name: String, _ arguments: [Any]) throws -> String? {
         checkJSThread()
         guard let function = exports.objectForKeyedSubscript(name), !function.isUndefined else { return nil }

@@ -4,8 +4,8 @@
 import { describe, expect, it } from 'vitest';
 import { ageOnDay, calculateAge, calculateEGFR } from './calculations';
 import { createCoreRow } from './blood-tests';
-import { computePlan, egfrSeries } from './plan';
-import { createEmptyFile, type FileLabValue, type RoadmapFile } from './roadmap-file';
+import { computePlan, egfrSeries, whtrSeries } from './plan';
+import { createEmptyFile, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 
 const NOW = '2026-10-21T08:00:00.000Z';
 const creatinine = (id: string, value: number, day: string, extra: Partial<FileLabValue> = {}) =>
@@ -93,11 +93,76 @@ describe('egfrSeries (US-73 AC7)', () => {
     expect(points[0].value).toBe(ours(60, 18));
   });
 
+  // US-07 AC7: the plan's own minor gate, a known minor today OR on the creatinine's day,
+  // a missing birth month a minor until 1 January after the 18th birthday.
+  it('no calculated point while a known minor today: born 2008, no month, creatinine 2026-06-01', () => {
+    const file = record([creatinine('c1', 60, '2026-06-01')], { sex: 'male', birthYear: 2008, birthMonth: undefined });
+    expect(egfrSeries(file, new Date(NOW))).toEqual([]);
+    expect(computePlan(file, new Date(NOW)).results.eGFR).toBeUndefined();
+  });
+
+  it('no calculated point from a known minor on its day: born 2007, no month, creatinine 2025-03-01', () => {
+    const file = record([creatinine('c1', 60, '2025-03-01')], { sex: 'male', birthYear: 2007, birthMonth: undefined });
+    expect(egfrSeries(file, new Date(NOW))).toEqual([]);
+    expect(computePlan(file, new Date(NOW)).results.eGFR).toBeUndefined();
+  });
+
+  it('a birth month out of range is dropped as the plan drops it: the age counts from January', () => {
+    const file = record([creatinine('c1', 80, '2025-12-01')], { sex: 'male', birthYear: 1976, birthMonth: 13 });
+    const [newest] = egfrSeries(file, new Date(NOW));
+    expect(newest.value).toBe(ours(80, 49));
+    expect(newest.value).toBe(computePlan(file, new Date(NOW)).results.eGFR);
+  });
+
+  it('the newest point is the plan\'s tile value when the age on its day is not today\'s', () => {
+    // Born June 1976: 48 on 2025-01-10, 50 today.
+    const file = record([creatinine('c1', 80, '2025-01-10')]);
+    const [newest] = egfrSeries(file, new Date(NOW));
+    expect(newest.value).toBe(ours(80, 48));
+    expect(newest.value).not.toBe(ours(80, 50));
+    expect(newest.value).toBe(computePlan(file, new Date(NOW)).results.eGFR);
+  });
+
+  it('a legacy row with no status is active: a lab-only history (US-73 AC7)', () => {
+    const points = egfrSeries(record([lab('e1', 'eGFR', 70, EGFR, '2025-02-10', { status: undefined as never })]), new Date(NOW));
+    expect(points).toEqual([{ id: 'e1', day: '2025-02-10', value: 70, source: 'lab' }]);
+  });
+
+  it('a legacy custom lab row with no status is listed in the plan\'s labs, so get_plan agrees with the page (US-73 AC8)', () => {
+    const file = record([lab('z1', 'Zinc custom', 80, 'µg/dL', '2025-02-10', { status: undefined as never })]);
+    expect(computePlan(file, new Date(NOW)).labs.map((l) => l.id)).toEqual(['z1']);
+  });
+
+  it('a legacy lab eGFR with no status still wins its day over the creatinine', () => {
+    const points = egfrSeries(record([
+      creatinine('c1', 80, '2025-02-10', { status: undefined as never }), lab('e1', 'eGFR', 64, EGFR, '2025-02-10', { status: undefined as never }),
+    ]), new Date(NOW));
+    expect(points).toEqual([{ id: 'e1', day: '2025-02-10', value: 64, source: 'lab' }]);
+  });
+
   it('the newest point is the plan\'s eGFR when the age on its day is today\'s', () => {
     const calculated = record([lab('e1', 'eGFR', 70, EGFR, '2025-02-10'), creatinine('c1', 95, '2026-07-01')]);
     expect(egfrSeries(calculated)[0].value).toBe(computePlan(calculated, new Date(NOW)).results.eGFR);
     const printed = record([creatinine('c1', 95, '2026-07-01'), lab('e1', 'eGFR', 64, EGFR, '2026-07-01')]);
     expect(egfrSeries(printed)[0]).toMatchObject({ value: 64, source: 'lab' });
     expect(computePlan(printed, new Date(NOW)).results.eGFR).toBe(64);
+  });
+});
+
+describe('whtrSeries (US-73 AC7)', () => {
+  const waist = (id: string, value: number, recordedAt: string, extra: Partial<FileMeasurement> = {}) =>
+    createMeasurement({ id, metricType: 'waist', value, recordedAt, createdAt: NOW, source: 'manual', ...extra });
+  const file = (measurements: FileMeasurement[], heightCm?: number): RoadmapFile => ({ ...record([], { heightCm }), measurements });
+
+  it('is each day\'s waist over the current height, to two places, newest first; none without a height', () => {
+    const rows = [waist('w1', 88, '2026-01-01T00:00:00.000Z'), waist('w2', 92.7, '2026-06-01T00:00:00.000Z'),
+      waist('w3', 120, '2026-07-01T00:00:00.000Z', { status: 'entered-in-error' })];
+    expect(whtrSeries(file(rows, 180))).toEqual([{ id: 'w2', day: '2026-06-01', ratio: 0.52 }, { id: 'w1', day: '2026-01-01', ratio: 0.49 }]);
+    expect(whtrSeries(file(rows, undefined))).toEqual([]);
+  });
+
+  it('a waist printed as a limit holds its day: no ratio from it, nor from an earlier waist that day (US-12 AC20)', () => {
+    const rows = [waist('w1', 88, '2026-06-01T07:00:00.000Z'), waist('w2', 95, '2026-06-01T09:00:00.000Z', { comparator: '>' })];
+    expect(whtrSeries(file(rows, 180))).toEqual([]);
   });
 });

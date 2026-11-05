@@ -961,6 +961,14 @@ describe('odd rows the migration keeps (adversary R2, R3)', () => {
     const rows = metricHistory(odd, 'weight').rows;
     expect(rows.map((r) => [r.id === 'legacy', r.correction])).toEqual([[false, false], [true, false]]);
   });
+
+  // c71d283c: a legacy row with no status holds its day, so the page shows it as the current value.
+  it('shows a legacy row with no status as the active, current value, as the writes treat it', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'add', metric: 'weight', value: 80, day: '2026-09-01' });
+    const { status: _s, ...legacy } = file.measurements[0];
+    const odd = { ...file, measurements: [legacy] } as unknown as RoadmapFile;
+    expect(metricHistory(odd, 'weight', NOW).rows.map((r) => [r.status, r.current])).toEqual([['active', true]]);
+  });
 });
 
 // US-25 AC9, Codex R2: a value the plan excludes (out of its accepted range)

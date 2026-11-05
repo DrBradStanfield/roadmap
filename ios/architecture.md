@@ -271,16 +271,18 @@ A signature means "the key holder approved this bundle", nothing more.
   door, so the bridge id stays: an older app ignores it, an older engine sends none.
   Fifth use (2026-11-05, US-73, PR B of the My health plan): `screenJson`'s `plan.topics`
   (health-core `topicSections`) and two new `historyJson` series, `egfr` and `whtr`. The add by
-  name is an optional `name` on the `labAdd` edit, inside `editJson`, so no contract field moves;
-  an older engine finds no series and refuses it.
+  name is a new edit kind, `labAddName` `{name, value, unit, day?}`, inside `editJson`, so no
+  contract field moves; an older engine knows no such kind, and the edit fails as an error.
   **Optional doors (rule extension, 2026-11-05, orchestrator decision):** a third kind in
   `bridge-optional.json`, `optionalDoors`: a whole door `entry.ts` exports that the hashed contract
-  leaves out, so adding it keeps the bridge id. Why it works both ways: a new app always runs an
-  engine at least as new as its bundled one (an over-the-air version must beat the bundled
-  engine's, the anti-rollback rule above), so the engine has every door the app was built with;
-  an old app never calls a door it does not know. Swift reaches an optional door only through
+  leaves out, so adding it keeps the bridge id. An old app never calls a door it does not know.
+  A new app normally runs an engine at least as new as its bundled one (an over-the-air version
+  must beat the bundled engine's, the anti-rollback rule above), so the door is normally there.
+  Safety does not rest on that: Swift reaches an optional door only through
   `HealthEngine.optionalCall`, which answers nil for a door the engine lacks (the feature
-  unavailable, never a crash), and `EngineSelfTest`'s door list never names one. Enforced:
+  unavailable, never a crash). That nil is the insurance, not the expected path. The frozen
+  shapes are append-only (`bridge.test.ts` snapshots each door's arguments and answer), and
+  `EngineSelfTest`'s door list never names one. Enforced:
   `bridge.test.ts` (every export is in the contract or an optional door, never both, with its
   arity and argument names) and `EngineBridgeContractTests` (outside the contract and the
   self-test list, in the bundled engine with its arity, and no Swift call to it but through

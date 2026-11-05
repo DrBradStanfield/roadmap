@@ -101,12 +101,11 @@ struct ScreeningMonths: Decodable, Equatable {
 }
 
 /// A blood test the add sheet's search finds (US-73 AC8, health-core labSearch): `kind` is
-/// "core" or "catalogue"; `unit` is the one it is stored in, `units` every one it takes.
+/// "core" or "catalogue"; `units` every unit it takes, the one it is stored in first.
 struct LabSearchMatch: Decodable, Equatable {
     let name: String
     let key: String
     let kind: String
-    let unit: String
     let units: [String]
 }
 

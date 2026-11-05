@@ -59,10 +59,11 @@ final class EngineBridgeContractTests: XCTestCase {
         XCTAssertTrue(Set(extra.doors.keys).isSubset(of: contract.doors.keys))
     }
 
-    /// An optional door keeps the bridge id because a new app always runs an engine at least as
-    /// new as its bundled one (anti-rollback) and an old app never calls it. So: never in the
-    /// contract or the self-test's list, in the bundled engine with its arity, and called from the
-    /// app only through `optionalCall`, which reads a missing door as the feature unavailable.
+    /// An optional door keeps the bridge id: an old app never calls it, and a new app reaches it
+    /// only through `optionalCall`, which reads a missing door as the feature unavailable. A new
+    /// app normally runs an engine at least as new as its bundled one (anti-rollback), but safety
+    /// rests on the nil, not on that. So: never in the contract or the self-test's list, in the
+    /// bundled engine with its arity, and called from the app only through `optionalCall`.
     func testAnOptionalDoorIsOutsideTheContractAndCalledOnlyThroughTheGuard() throws {
         let contract = try JSONDecoder().decode(Contract.self, from: contractBytes())
         let optional = try additions().optionalDoors
@@ -86,7 +87,8 @@ final class EngineBridgeContractTests: XCTestCase {
         let engine = try HealthEngine()
         XCTAssertNil(try engine.blocking { try $0.optionalCall("noSuchOptionalDoor", []) })
         let matches = try XCTUnwrap(engine.blocking { try $0.labSearch("ferr") })
-        XCTAssertEqual(matches.first, LabSearchMatch(name: "Ferritin", key: "ferritin", kind: "catalogue", unit: "µg/L", units: matches.first?.units ?? []))
+        XCTAssertEqual(matches.first, LabSearchMatch(name: "Ferritin", key: "ferritin", kind: "catalogue", units: matches.first?.units ?? []))
+        XCTAssertEqual(matches.first?.units.first, "µg/L")
         XCTAssertTrue(matches.first?.units.contains("ng/ml") ?? false)
     }
 

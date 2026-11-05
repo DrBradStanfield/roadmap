@@ -24,10 +24,20 @@ describe('labSearch (US-73 AC8)', () => {
     expect(keys('cholesterol')).toEqual(expect.arrayContaining(['total_cholesterol', 'ldl', 'hdl']));
   });
 
-  it('says what each test is and the units it takes', () => {
-    expect(labSearch('hba1c')[0]).toEqual({ name: 'HbA1c', key: 'hba1c', kind: 'core', unit: 'mmol/mol', units: ['mmol/mol', '%'] });
-    expect(labSearch('lp(a)')[0]).toMatchObject({ key: 'lpa', kind: 'core', unit: 'nmol/L', units: ['nmol/L', 'mg/dL', 'mg/L'] });
-    expect(labSearch('ferritin')[0]).toMatchObject({ name: 'Ferritin', key: 'ferritin', kind: 'catalogue', unit: 'µg/L' });
+  it('a name or word start ranks above a match mid-word, which needs four letters', () => {
+    const tes = keys('tes');
+    expect(tes[0]).toBe('testosterone_total');
+    expect(tes).not.toContain('monocytes');
+    expect(keys('cyt')).not.toContain('monocytes');
+    expect(keys('cytes')).toEqual(expect.arrayContaining(['monocytes', 'lymphocytes']));
+    expect(keys('osterone')).toContain('testosterone_total');
+  });
+
+  it('says what each test is and the units it takes, the stored one first', () => {
+    expect(labSearch('hba1c')[0]).toEqual({ name: 'HbA1c', key: 'hba1c', kind: 'core', units: ['mmol/mol', '%'] });
+    expect(labSearch('lp(a)')[0]).toEqual({ name: 'Lp(a)', key: 'lpa', kind: 'core', units: ['nmol/L', 'mg/dL', 'mg/L'] });
+    expect(labSearch('ferritin')[0]).toMatchObject({ name: 'Ferritin', key: 'ferritin', kind: 'catalogue' });
+    expect(labSearch('ferritin')[0]).not.toHaveProperty('unit');
     expect(labSearch('ferritin')[0].units[0]).toBe('µg/L');
     expect(labSearch('ferritin')[0].units).toContain('ng/ml');
   });

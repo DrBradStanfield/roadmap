@@ -131,6 +131,18 @@ describe('US-72 AC2: what lands', () => {
     ]);
   });
 
+  // c71d283c: a legacy row with no status holds its day, so a result corrects it, never lands beside it.
+  it('AC9: a typed LDL with no status (legacy) holds its day: the result corrects it', () => {
+    const typed = appendMeasurement(empty(), { metricType: 'ldl', value: 3.1, recordedAt: '2026-10-21', now: NOW });
+    if (!typed.ok) throw new Error('setup');
+    const { status: _s, ...legacy } = typed.file.labValues[0];
+    const { file, counts } = run({ ...typed.file, labValues: [legacy as RoadmapFile['labValues'][number]] }, [rec(obs(R4_LDL))], LATER);
+    expect(counts).toMatchObject({ added: 0, corrected: 1 });
+    expect(file.labValues.map((l) => [l.id, l.status, l.value, l.correctsId])).toEqual([
+      [legacy.id, 'entered-in-error', 3.1, null], [expect.any(String), 'active', 4.6, legacy.id],
+    ]);
+  });
+
   it('AC2 DSTU2: the HL7 HDL lands, DSTU2 comment keys and all', () => {
     const { file, counts } = run(empty(), [rec(obs(DSTU2_HDL), { fhirVersion: DSTU2 })]);
     expect(counts.added).toBe(1);
