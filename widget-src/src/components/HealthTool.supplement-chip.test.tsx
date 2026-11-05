@@ -63,6 +63,7 @@ describe('US-06 AC19: a double click on a featured supplement chip adds only tha
     expect(under.textContent).toBe('+ Creatine'); // the next chip is now under the pointer
     fireEvent.click(under, { detail: 2 });
     fireEvent.dblClick(under, { detail: 2 });
+    fireEvent.click(under, { detail: 3 }); // a triple click's third click adds nothing either
     await settle();
     expect(await activeKeys()).toEqual(['custom_test_supplement', 'microvitamin']);
     expect(chips(view.container).map(c => c.textContent)).toEqual([
