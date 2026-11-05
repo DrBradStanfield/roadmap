@@ -225,6 +225,7 @@ async function runMainUntilLoaded(other: OtherTab, resolveBackend: () => Promise
     takeEmailFlag: () => false,
     resolveBackend,
     startOnBackend: other.connect.startOnBackend,
+    showLoadFailure: (error: unknown) => { throw error; }, // US-65 AC7's page message; these loads succeed
     initRoadmapStore: async (adapter: Resolved['adapter']) => { store = await other.storage.RoadmapStore.create(adapter); },
     noteOtherTabsLogOffWhileLoading: other.local.noteOtherTabsLogOffWhileLoading,
   });
