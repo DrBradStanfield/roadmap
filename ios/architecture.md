@@ -914,7 +914,7 @@ stages, VO2 max and steps, read live from HealthKit each time they show and neve
 record, merge, website, chat and engine never see them. Display only; no heart rate variability.
 Access is asked in onboarding's one Apple Health request, with D6's types (Brad 2026-10-26: "just
 do it in one step"; it replaced asking later from a card on My data). Heart rate, resting heart rate
-and sleep sit in Vitals under blood pressure; VO2 max and steps under a new Fitness heading.
+and sleep sit in Vitals under blood pressure; VO2 max and steps under a new Fitness heading. Since US-73 (2026-11-05) sleep sits under Sleep and VO2 max, resting heart rate and steps under Fitness; heart rate is gone (Brad dropped its card, round 4), so it is no longer read or kept, and a launch deletes its kept history once (`LiveHistory.forgetDropped`).
 VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note under D2).
 
 **US-56, built 2026-10-25 (phases 1 and 2), on My data.** `HealthRoadmap/AppleHealthMetrics/`:
@@ -1840,18 +1840,24 @@ this release on). Apple Health never gets a limit (device-export.ts). The phone 
 My data and My plan became one tab, My health, beside Chat (seven prototype rounds, draft PR
 842). Swift places no suggestion: `screenJson`'s `plan.topics` (health-core `topicSections`)
 puts each in a topic's cards or on a row (a medicine question by key, a screening group by
-id), an urgent one in both; `TopicPlan` only reads it, an unknown topic goes under Other,
-and with no layout every card does, so nothing is dropped. An urgent card leads its section
-and the red banner scrolls to it. The waist-to-height and eGFR rows read `historyJson`'s
-`whtr` and `egfr` series (`RecordStore.chart`, once per revision); the lab's own eGFR row
-folds into the one eGFR row while that series has points. The tiles are gone: each tile's
-explainer sits on its row's page (`PlanTiles.pages`). The add sheet searches through the
-optional door `labSearchJson` and adds by name in one place (`RecordEdit.labAddName`); an
-engine without the door lists the record's own tests only. About you, units, alcohol,
-reminders, Apple Health and the record sit in a settings sheet behind the person button; its
-close lets a due backup offer show (US-57 AC8). The review prompt waits for a plan card on
-screen (US-25 AC8). The tour's three tips anchor on the tab (US-57, words pending Brad).
-Clarity's screen and event words are unchanged until Brad's D9 call.
+id), an urgent one in both. `HealthPage` reads it once per record change, with the two series
+below, and `MyDataView` only maps the page to views, so a test on the page is a test on what
+is drawn (each suggestion exactly once; an urgent one in its card and on its row). An unknown
+topic goes under Other, and with no layout every card does, so nothing is dropped. An urgent
+card leads its section and the red banner scrolls to it. The waist-to-height row reads
+`historyJson`'s `whtr` series; the eGFR row is the plan's current eGFR (its tile, on the day and
+from the source the `egfr` series' `plan` names, a lab limit included), the series giving only
+the previous value and the trend. It opens its source's page, and creatinine's and the lab
+eGFR's pages link to each other; the lab's own eGFR row leaves Blood tests only while the eGFR
+row stands for it. The tiles are gone: each tile's explainer sits on its row's page
+(`PlanTiles.pages`). The add sheet searches through the optional door `labSearchJson` and adds
+by name in one place (`RecordEdit.labAddName`); an engine without the door lists the record's
+own tests only. About you, units, alcohol, reminders, Apple Health and the record sit in a
+settings sheet behind the person button; its close lets a due backup offer show (US-57 AC8).
+The review prompt waits for a plan card on screen (US-25 AC10). The tour's three tips anchor on
+the tab in Brad's words (US-57, approved 2026-11-05). Clarity's screen is "My health", with two
+new events, "Jump pill tapped" and "Blood test added" (D9, Brad 2026-11-05). Sleep and Fitness
+read Apple Health in their own view, so a live refresh never rebuilds the list.
 
 ## Phases
 
