@@ -331,3 +331,32 @@ describe('blood pressure the right way up (US-02 AC8)', () => {
     expect(applyEdit(sys, { kind: 'add', metric: 'diastolic_bp', value: 120, day: '2026-10-20' }, LATER)).toMatchObject({ ok: false, reason: 'out-of-range', message: expect.stringContaining(`${ORDER} To change both numbers`) });
   });
 });
+
+// A legacy row with no status is active (blood-tests isActive, c71d283c). The BP sheet's page and
+// its save must agree on the pair the day holds, or the sheet can never save that day.
+describe('US-25 AC17: a legacy BP half with no status holds its day', () => {
+  const legacyHalf = (): RoadmapFile => {
+    const file = edited(nz(), NOW, { kind: 'add', metric: 'systolic_bp', value: 120, day: '2026-10-20' });
+    const { status: _status, ...legacy } = file.measurements[0];
+    return { ...file, measurements: [legacy as RoadmapFile['measurements'][number]] };
+  };
+
+  it('the page shows it as the pair now, and the sheet saves with the seenIds it gives: a correction', () => {
+    const file = legacyHalf();
+    const id = file.measurements[0].id;
+    const page = metricHistory(file, 'blood_pressure', LATER).rows;
+    expect(page.map((row) => [row.value, row.status, row.current])).toEqual([['120/–', 'active', true]]);
+    expect(page[0].pairIds).toEqual([id]);
+    // The sheet's first save asks first, offering the held half.
+    expect(applyEdit(file, { kind: 'bloodPressure', systolic: 125, diastolic: 80, day: '2026-10-20' }, LATER))
+      .toMatchObject({ ok: false, reason: 'slot-occupied', existingId: id });
+    // The replace sends back the ids the page gave.
+    const out = applyEdit(file, { kind: 'bloodPressure', systolic: 125, diastolic: 80, day: '2026-10-20', replace: true, seenIds: page[0].pairIds }, LATER);
+    if (!out.ok) throw new Error(out.message);
+    expect(out.file.measurements.map((row) => [row.metricType, row.value, row.status, row.correctsId ?? null])).toEqual([
+      ['systolic_bp', 120, 'entered-in-error', null],
+      ['systolic_bp', 125, 'active', id],
+      ['diastolic_bp', 80, 'active', null],
+    ]);
+  });
+});

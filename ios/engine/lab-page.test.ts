@@ -139,6 +139,10 @@ describe('adding and correcting a lab value (US-25 AC25)', () => {
       expect(out.record).toBeUndefined();
     });
 
+    it('its page lists it as active, as the writes hold it', () => {
+      expect(labHistory(JSON.parse(legacyJson()), 'zinc custom').rows.map((r) => [r.id, r.status])).toEqual([['z1', 'active']]);
+    });
+
     it('corrects it: a new row names it, and it turns entered-in-error', () => {
       const out = edit(legacyJson(), { kind: 'correct', id: 'z1', value: 85 });
       expect(out.ok).toBe(true);

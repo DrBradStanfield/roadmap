@@ -6,6 +6,7 @@ import type { FileMeasurement, RoadmapFile } from '../../packages/health-core/sr
 import { appendMeasurement, correctValue, findActiveInSlot, resolveRecordedAt, slotKey } from '../../packages/health-core/src/record-edits';
 import { PRESSURE_ORDER, pressureInverted } from '../../packages/health-core/src/validation';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
+import { isActive } from '../../packages/health-core/src/blood-tests';
 import { formatDisplayValue } from '../../packages/health-core/src/units';
 import { formatValue } from '../../packages/health-core/src/lab-limits';
 import { comparatorOf } from '../../packages/health-core/src/lab-limits';
@@ -106,13 +107,13 @@ export function pressureHistory(file: RoadmapFile, excludedFields: readonly stri
     if (onDay) onDay.push(row);
     else byDay.set(day, [row]);
     const slot = slotKey('measurement', row.metricType, row.recordedAt);
-    if (row.status === 'active' && !firstActive.has(slot)) firstActive.set(slot, row);
+    if (isActive(row) && !firstActive.has(slot)) firstActive.set(slot, row);
   }
   const pairs: HistoryRow[] = [];
   for (const day of [...byDay.keys()].sort().reverse()) {
     const onDay = byDay.get(day)!;
     const named = new Set(onDay.map((row) => row.correctsId));
-    const lost = (row: FileMeasurement) => row.status !== 'active' && !named.has(row.id);
+    const lost = (row: FileMeasurement) => !isActive(row) && !named.has(row.id);
     let state: Partial<Record<string, FileMeasurement>> = {};
     let stateAt = -1;
     const snapshots: Array<{ id: string; sys?: FileMeasurement; dia?: FileMeasurement; rows: FileMeasurement[] }> = [];
@@ -121,7 +122,7 @@ export function pressureHistory(file: RoadmapFile, excludedFields: readonly stri
       const before = snapshots.at(-1);
       const same = before && before.sys?.value === afterWrite.systolic_bp?.value && before.dia?.value === afterWrite.diastolic_bp?.value;
       // Nothing new: the same values again, written only by rows now set aside.
-      if (same && write.every((row) => row.status !== 'active')) continue;
+      if (same && write.every((row) => !isActive(row))) continue;
       snapshots.push({ id: write.map((row) => row.id).join('+'), sys: afterWrite.systolic_bp, dia: afterWrite.diastolic_bp, rows: write });
       if (!write.every(lost)) {
         state = afterWrite;

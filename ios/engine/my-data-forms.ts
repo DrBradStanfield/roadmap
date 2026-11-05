@@ -5,7 +5,7 @@
 // schema. Swift renders what comes out and sends answers back; it decides
 // nothing clinical.
 import { CORE_BLOOD_UNITS, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { isCoreRow } from '../../packages/health-core/src/blood-tests';
+import { isActive, isCoreRow } from '../../packages/health-core/src/blood-tests';
 import { computePlan, derivePlanInputs, egfrSeries, whtrSeries, type Plan } from '../../packages/health-core/src/plan';
 import {
   SUPPLEMENT_DOSE_UNITS, SUPPLEMENT_TEXT, medicationForm, medicationWrites, screeningForm,
@@ -341,7 +341,7 @@ export function labHistory(file: RoadmapFile, seriesKey: string): MetricHistory 
         id: row.id,
         value: savedLabText(row.value, comparator),
         day: row.recordedAt.slice(0, 10),
-        status: row.status,
+        status: shownStatus(row),
         current: false,
         correction: !!row.correctsId,
         unit: unitOf(row),
@@ -379,10 +379,13 @@ export function derivedHistory(file: RoadmapFile, series: 'egfr' | 'whtr', now: 
 
 /** A metric's or a lab test's rows as a history lists them: newest day first; within a day,
  *  newest written first, the active row above the ones it replaced. */
-function newestFirst(a: { recordedAt: string; createdAt?: string | null; status: string }, b: { recordedAt: string; createdAt?: string | null; status: string }): number {
+function newestFirst(a: { recordedAt: string; createdAt?: string | null; status?: string }, b: { recordedAt: string; createdAt?: string | null; status?: string }): number {
   return b.recordedAt.slice(0, 10).localeCompare(a.recordedAt.slice(0, 10)) || String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? ''))
-    || Number(b.status === 'active') - Number(a.status === 'active');
+    || Number(isActive(b)) - Number(isActive(a));
 }
+
+/** A row's status as a page shows it: a legacy row with none is active (c71d283c). */
+const shownStatus = (row: { status?: string }): HistoryRow['status'] => (isActive(row) ? 'active' : 'entered-in-error');
 
 /** A stored value printed as a limit the shared rule leaves ungraded (`limitUngraded`). */
 export function ungradedLimit(metric: MetricType, row: { value: number; comparator?: unknown }, ctx: GradeContext): boolean {
@@ -417,7 +420,7 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
       .map((row) => ({ ...row, metricType: metric })),
   ].filter((row) => !isVersionMarker(row));
   // The plan's own pick of the current value.
-  const current = latestActivePerMetric(rows.filter((row) => row.status === 'active'))[0];
+  const current = latestActivePerMetric(rows.filter(isActive))[0];
   return {
     metric,
     excluded: excludedFields.includes(METRIC_TO_FIELD[metric]),
@@ -431,12 +434,12 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
         id: row.id,
         value: rowText(metric as MetricType, row, shown),
         day: row.recordedAt.slice(0, 10),
-        status: row.status,
+        status: shownStatus(row),
         current: row.id === current?.id,
         // A legacy row may lack the key: only a named row is a correction.
         correction: !!row.correctsId,
         ...(isComparator(row.comparator) ? { bound: cellFromSI(metric as MetricType, row.value, shown) } : null),
-        ...(row.status === 'active' && ungradedLimit(metric as MetricType, row, ctx) ? { note: LIMIT_NOT_GRADED } : null),
+        ...(isActive(row) && ungradedLimit(metric as MetricType, row, ctx) ? { note: LIMIT_NOT_GRADED } : null),
       })),
   };
 }

@@ -426,12 +426,13 @@ describe('US-67 AC4: unreadable rows in the pair and the escalation, and a medic
     expect(med$(back.file, 'statin_escalation')!.drugName).toBe('not_tolerated');
   });
 
-  it('US-67 AC4: a pair with a hidden half that reads as the same number corrects that half too', () => {
+  // A legacy row with no status is active too (c71d283c): its hidden half is replaced the same way.
+  it.each([['active', { status: 'active' }], ['no status (legacy)', {}]])('US-67 AC4, US-65 AC2: a pair with a hidden half (%s) that reads as the same number corrects that half too', (_label, status) => {
     const file = {
       ...metric(),
       measurements: [
         { id: 'sys', metricType: 'systolic_bp', value: 120, recordedAt: DAY, createdAt: NOW, status: 'active', source: 'manual' },
-        { id: 'dia', metricType: 'diastolic_bp', value: '82', recordedAt: DAY, createdAt: NOW, status: 'active', source: 'manual' },
+        { id: 'dia', metricType: 'diastolic_bp', value: '82', recordedAt: DAY, createdAt: NOW, source: 'manual', ...status },
       ],
     } as unknown as RoadmapFile;
     const edits = [field('systolicBp', 128, 'mmHg'), field('diastolicBp', 82, 'mmHg')];
