@@ -753,9 +753,6 @@ export function metricNameWords(minLength: number): string[] {
       ...Object.keys(METRIC_LABELS),
       ...Object.values(METRIC_LABELS),
       ...LAB_CATALOG.flatMap((entry) => [entry.key, entry.label, ...entry.aliases]),
-      // How people type a name, never an alias (no stored row moves slot): the add sheet's
-      // search reads "vit" as vitamin, so the privacy guards read it too (US-73 AC8).
-      'vit',
     ]
       .flatMap((name) => foldLpa(name).match(/[a-z0-9]+/g) ?? [])
       .filter((word) => word.length >= minLength && !/^\d+$/.test(word)

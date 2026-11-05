@@ -36,7 +36,7 @@ const VALUE_WITH_UNIT = new RegExp(
 );
 
 /** Every word a metric or catalogued test is known by; 2 over-refuses on purpose. */
-const METRIC_WORDS = new Set(metricNameWords(2));
+const METRIC_WORDS = new Set([...metricNameWords(2), 'vit']); // "vit" typed for vitamin (US-73 AC8)
 
 /** Words as the guard reads them; a number keeps its decimal ("3.2", "hba1c"). */
 const FEEDBACK_WORD = /[a-z0-9]+(?:[.,]\d+)?/g;

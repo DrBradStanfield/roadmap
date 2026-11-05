@@ -439,12 +439,17 @@ describe('a typed short name (US-09 AC7, US-73 AC8)', () => {
     expect(scrubText('Vit D 45')).toBe('Vit D [value]');
     expect(scrubText('vit b12 300')).toBe('vit b12 [value]');
     expect(scrubText('Vit D3 80')).toBe('Vit D3 [value]');
+    expect(scrubText('Vit. D 45')).toBe('Vit. D [value]');
+    // Never worse than "b12" alone: a period or a second space still scrubs the value.
+    for (const text of ['Vit. B12 300', 'vit. b12 300', 'Vit  B12 300', 'vit.b12 300', 'vit-b12 300', 'vit_b12 300', 'vit:b12 300', 'vit\tb12 300', 'vitamin b12 300']) {
+      expect(scrubText(text), text).not.toContain('300');
+    }
     expect(scrubText('vitals ok')).toBe('vitals ok');
   });
 });
 
 describe('scrubEventText', () => {
-  const AUDIT ='My LDL is 3.2 mmol/L and I have diabetes';
+  const AUDIT = 'My LDL is 3.2 mmol/L and I have diabetes';
 
   it('scrubs the exception value, extra strings and breadcrumbs, keeping frames', () => {
     const event = {
