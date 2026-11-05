@@ -290,7 +290,7 @@ export const SCRUB_METRIC_WORDS = [
   'hs-troponin t', 'high sensitivity troponin t', 'hs-tnt', 'hs-ctnt', 'troponin_i', 'troponin i',
   'hs troponin i', 'hs-troponin i', 'high sensitivity troponin i', 'hs-tni', 'hs-ctni', 'c_peptide',
   'c-peptide', 'estimated average glucose', 'vldl cholesterol', 'vldl-c', 'vldl chol', 'lactic acid',
-  'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height',
+  'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height', 'vit',
 ];
 
 const NUMBER = '\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?';
@@ -325,9 +325,12 @@ const UNIT_VALUE_RE = new RegExp(
   `\\b${NUMBER}\\s*(?:(?:${SCRUB_UNIT_PATTERN})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
 // A name starts where no letter or digit runs into it and ends where no letter
 // does: digits straight after a name are its value. A number inside a word
-// (the 1 of "A1c") is never the value (mirror of sentry-scrub.ts).
+// (the 1 of "A1c") is never the value. A name is never a value: the gap stops
+// where another name starts, and a number glued to a letter with another number
+// after it ("T4 15") takes that number too (mirror of sentry-scrub.ts, US-09 AC7g).
+const METRIC_NAME = `(?<![a-z0-9])(?:${alternation(SCRUB_METRIC_WORDS)})(?![a-z])`;
 const METRIC_THEN_VALUE_RE = new RegExp(
-  `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])([^\\d\\n]{0,20}?)(?!(?<=[a-z])\\d+(?:[.,]\\d+)?[a-z])(${NUMBER})`, 'gi');
+  `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])((?:(?!${METRIC_NAME})[^\\d\\n]){0,20}?)(?!(?<=[a-z])\\d+(?:[.,]\\d+)?[a-z]|${METRIC_NAME})((?<=[a-z]-?)${NUMBER}[ \\t:=]+(?!${METRIC_NAME})${NUMBER}|${NUMBER})`, 'gi');
 // Name edges, not \b: "Lp(a)" ends and "γ-GT" starts with no word character,
 // so \b never matched there. A name starts where no letter or digit runs into
 // it, or at its own first character when that is a symbol ("xγ-GT"), and ends

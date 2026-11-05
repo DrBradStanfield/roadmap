@@ -364,6 +364,37 @@ describe('free-text scrub parity', () => {
     }
   });
 
+  it('US-09 AC7g — a name is never a value: a name with no value before another name never takes the second name\'s digits, on both copies', () => {
+    for (const impl of [source, copy]) {
+      for (const [text, scrubbed] of [
+        // A first name with no value: the value after the second name goes.
+        ['Ferritin pending, B12 300', 'Ferritin pending, B12 [value]'], ['Vitamin D pending, B12 300', 'Vitamin D pending, B12 [value]'],
+        ['LDL n/a, HbA1c 6.1', 'LDL n/a, HbA1c [value]'], ['Ferritin unknown; Vitamin B12 300 pmol/L', 'Ferritin unknown; Vitamin B1[value] [value]'],
+        ['Ferritin B12 300', 'Ferritin B12 [value]'], ['LDL HbA1c 6.1', 'LDL HbA1c [value]'], ['LDL 25(oh)d 80', 'LDL 25(oh)d [value]'],
+        // A name the vocabulary does not hold, ending in digits: a number after it is the value, and both go.
+        ['TSH: -, T4 15', 'TSH: -, T[value]'], ['LDL D3 45', 'LDL D[value]'], ['ldl T3 4.1', 'ldl T[value]'],
+        ['ldl b6 40', 'ldl b[value]'], ['ferritin CA-125 30', 'ferritin CA-[value]'], ['LDL Omega-3 8', 'LDL Omega-[value]'],
+        ['ldl140 160', 'ldl[value]'],
+      ]) {
+        expect(impl.scrubText(text), text).toBe(scrubbed);
+      }
+    }
+  });
+
+  it('US-09 AC7g — "vit", the typed short form of vitamin, is a name, and never takes the next name\'s digits, on both copies', () => {
+    for (const impl of [source, copy]) {
+      for (const [text, scrubbed] of [
+        ['Vit D 45', 'Vit D [value]'], ['vit. d 45', 'vit. d [value]'], ['Vit B12 300', 'Vit B12 [value]'],
+        ['Vit. B12 300', 'Vit. B12 [value]'], ['Vit D pending, B12 300', 'Vit D pending, B12 [value]'], ['vit d3 45', 'vit d[value]'],
+        // "vit" inside a longer word is not the name.
+        ['vitals ok', 'vitals ok'], ['vitals 3', 'vitals 3'], ['multivit 2 daily', 'multivit 2 daily'],
+        ['vital signs 3 of 4', 'vital signs 3 of 4'],
+      ]) {
+        expect(impl.scrubText(text), text).toBe(scrubbed);
+      }
+    }
+  });
+
   it('US-21 AC17 — every catalogue key, label and alias, followed by a value, loses the value', () => {
     for (const impl of [source, copy]) {
       for (const entry of LAB_CATALOG) {
