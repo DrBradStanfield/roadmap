@@ -40,7 +40,8 @@ final class PlanLayoutTests: XCTestCase {
             ["bp-stage1"],
         ])
         XCTAssertEqual(layout[1].1, [
-            ["protein-target", "low-salt", "lipid-diet"],
+            // PR 859 (Brad 2026-11-05): fibre for everyone, after salt.
+            ["protein-target", "low-salt", "fiber", "lipid-diet"],
             ["exercise"],
             ["sleep"],
             ["screening-breast"],
