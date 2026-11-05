@@ -178,6 +178,8 @@ describe('labAdd by name: the add sheet\'s add (US-73 AC8, US-21, US-66 AC6)', (
 
   it('a core value out of range is refused in the web\'s words, in the unit typed', () => {
     expect(add(record(), 'LDL', 99999, 'mg/dL')).toEqual({ ok: false, reason: 'invalid-value', message: expect.stringMatching(/^Max \d+ mg\/dL$/) });
+    // Lp(a) in mg/L reads its mg/L range, never the mg/dL one (health-core labRangeMessage).
+    expect(add(record(), 'Lp(a)', 5000, 'mg/L')).toEqual({ ok: false, reason: 'invalid-value', message: 'Max 3000 mg/L' });
   });
 
   it('a catalogue test keeps its key and canonical unit; a spelling of it converts; a unit it does not take is refused', () => {

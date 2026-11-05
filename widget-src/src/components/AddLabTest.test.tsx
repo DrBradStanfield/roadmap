@@ -393,6 +393,17 @@ describe('US-66 AC6 — a core test typed under "Other"', () => {
     expect(trackProductEvent).not.toHaveBeenCalled(); // the value never enters telemetry
   });
 
+  it('an out-of-range Lp(a) in mg/L names its mg/L range, never the mg/dL one', async () => {
+    const utils = render(<AddLabTest onAdded={vi.fn()} labValues={[]} coreValues={[]} onCorrect={vi.fn()} />);
+    fireEvent.click(utils.getByRole('button', { name: /add a blood test/i }));
+    fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });
+    fireEvent.change(utils.getByLabelText('Test name'), { target: { value: 'Lp(a)' } });
+    fireEvent.change(utils.getByLabelText('Unit'), { target: { value: 'mg/L' } });
+    fireEvent.change(utils.getByLabelText('Value'), { target: { value: '5000' } });
+    fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+    expect(await utils.findByText('Max 3000 mg/L')).toBeTruthy();
+  });
+
   it('US-66 AC8 — the core rows the form reads are never listed as extra rows', () => {
     const { queryByText, getByRole } = render(<AdditionalLabRows labValues={[]} coreValues={[core]} onAdded={vi.fn()} />);
     expect(getByRole('button', { name: /add a blood test/i })).toBeTruthy();

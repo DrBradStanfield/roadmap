@@ -32,13 +32,13 @@ import { trendWindow } from '../../packages/health-core/src/recent-trend';
 import { isAlcoholAnswer, type AlcoholAnswer } from '../../packages/health-core/src/types';
 import { readableView, unreadableNote } from '../../packages/health-core/src/readable-rows';
 import {
-  cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, getDisplayLabel, LPA_UNITS, reportedToCanonical, toCanonicalValue, UNIT_DEFS,
+  cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, getDisplayLabel, LPA_UNITS, toCanonicalValue, UNIT_DEFS,
   type LpaUnit, type MetricType, type UnitSystem,
 } from '../../packages/health-core/src/units';
 import { applyPressure, BLOOD_PRESSURE, pressureHistory, type PressureEdit } from './blood-pressure';
 import { applyChatEdit, type ChatEdit } from './chat-edits';
 import { cellUnitFor, lpaUnitOf, SWITCHABLE, unitsOf, type UnitChoices } from './unit-choices';
-import { cellFromSI, cellLabel, cellRange, isLpaUnit, rangeMessage, type CellUnit } from '../../packages/health-core/src/cell-unit';
+import { cellFromSI, cellLabel, cellRange, isLpaUnit, labRangeMessage, type CellUnit } from '../../packages/health-core/src/cell-unit';
 import { LIMIT_NOT_GRADED, comparatorOf, isComparator } from '../../packages/health-core/src/lab-limits';
 
 /** One row of Vitals or Blood tests: the plan's current value, if any, in the user's units. */
@@ -483,8 +483,8 @@ function addByName(file: RoadmapFile, edit: Extract<Edit, { kind: 'labAdd' }>, n
   const core = bloodTestKeyOf(edit.name!.trim());
   const { bound, refused: _refused, ...refusal } = added;
   // Out of range, in the web's words: the end it missed, in the unit typed.
-  const system = bound && core && reportedToCanonical(core, edit.value, unit)?.system;
-  if (system) return { ...refusal, message: rangeMessage(core!, system, bound!) };
+  const range = bound && core && labRangeMessage(core, unit, bound);
+  if (range) return { ...refusal, message: range };
   // The correction is the `correct` edit, which reads its number in the unit the core row shows.
   if (core && refusal.existingId && displayLabUnit(unit) !== cellLabel(core, cellUnitFor(file, core, choices))) {
     const { existingId: _held, ...rest } = refusal;
