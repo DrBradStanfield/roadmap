@@ -55,6 +55,14 @@ export function calculateAge(birthYear: number, birthMonth: number, now = new Da
 }
 
 /**
+ * Age on a YYYY-MM-DD day, by calculateAge's rule: a missing month is January.
+ */
+export function ageOnDay(birthYear: number, birthMonth: number | undefined, day: string): number {
+  const [year, month, date] = day.split('-').map(Number);
+  return calculateAge(birthYear, birthMonth ?? 1, new Date(year, month - 1, date));
+}
+
+/**
  * The plan's adults-only gate (US-07 AC6): a known age under 18. For this gate
  * alone a missing birth month is a minor until 1 January of the year after
  * they turn 18 (birthYear + 19), and the date is judged at UTC-12, the zone
@@ -259,7 +267,9 @@ export function calculateHealthResults(inputs: SuggestionInputs, unitSystem?: Un
     results.eGFRFromLab = true;
   } else if (inputs.creatinine !== undefined && !limitOf(inputs, 'creatinine') && !limitOf(inputs, 'labEgfr') && results.age !== undefined && inputs.sex) {
     // Never from a creatinine printed as a limit, nor past a lab eGFR printed as one (US-12 AC20).
-    results.eGFR = Math.round(calculateEGFR(inputs.creatinine, results.age, inputs.sex));
+    // The age on the creatinine's day (today's when the day is unknown); none under 18 on it (US-07 AC7).
+    const age = inputs.creatinineDay ? ageOnDay(inputs.birthYear!, inputs.birthMonth, inputs.creatinineDay) : results.age;
+    if (age >= 18) results.eGFR = Math.round(calculateEGFR(inputs.creatinine, age, inputs.sex));
   }
 
   // Adjust protein target for CKD Stage 3b+ (eGFR < 45): 1.0g/kg instead of 1.2g/kg

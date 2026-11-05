@@ -49,7 +49,15 @@ export interface HealthInputs {
 /** What the plan computes from: the inputs, plus `pressureOrder` (US-07 AC11) when the
  *  newest pair was the wrong way up and the caller left both halves out (US-02 AC8). The
  *  blood pressure prompt then asks to check the reading. Never stored or sent. */
-export type SuggestionInputs = HealthInputs & { pressureOrder?: true };
+/**
+ * US-07 AC7: the day (YYYY-MM-DD) of the creatinine the inputs hold, set only by
+ * `withLabEgfr`. The calculated eGFR uses the age on that day. Kept out of
+ * HealthInputs on purpose: it never travels in a chat context (chatContextOf
+ * drops it), and the chat's server reads the day from `measurementHistory`.
+ */
+export type CreatinineDay = { creatinineDay?: string };
+
+export type SuggestionInputs = HealthInputs & CreatinineDay & { pressureOrder?: true };
 
 /** US-60: the two answers to "Do you drink alcohol?". */
 export const ALCOHOL_ANSWERS = ['none', 'drinks'] as const;

@@ -27,6 +27,9 @@
  *     fields' SI unit, from FIELD_UNITS.
  *   - labEgfr, labEgfrDate, labEgfrOutdated (US-07 AC7, AC8): the input schema (ranged number;
  *     YYYY-MM-DD; true or absent); the plan reads them, and only derivedValues.eGFR prints.
+ *   - the creatinine's day (US-07 AC7) is never read from the payload: it is the
+ *     newest measurementHistory creatinine point's date when that point holds
+ *     the creatinine sent, else today; runRoadmap passes a stated value's own.
  *   - limits (US-12 AC20): input-schema field names, the four comparator
  *     codes and finite bounds only; each is graded again here, and its
  *     latestValues entry prints "> 1.5", never a number the client sent.
@@ -58,7 +61,7 @@
  *     the plan's gating field names it lacks. uploadedDocuments is always empty.
  * Every other key is dropped.
  */
-import type { HealthInputs, SuggestionInputs } from './types';
+import type { CreatinineDay, HealthInputs, SuggestionInputs } from './types';
 import { MEDICATION_ANSWERS } from './chat-edits';
 import { rangeFault, type UnitSystem } from './units';
 import {
@@ -105,6 +108,9 @@ export function chatContextOf(
   // cannot pass it off as an exact value. The builder grades `limits` again.
   const sent: Record<string, unknown> = { ...inputs };
   for (const field of Object.keys(inputs.limits ?? {})) delete sent[field];
+  // The creatinine's day stays home too (US-07 AC7): the server reads it from
+  // measurementHistory, so a phone's allow-list never has to know the key.
+  delete sent.creatinineDay;
   return {
     ...(sent as Partial<HealthInputs>),
     unitSystem,
@@ -169,7 +175,7 @@ export const LIMIT_CHAT_RULE =
  * The JSON the model reads for a payload, or null when it holds nothing:
  * no plan and nothing saved (an empty form). See the header for what reaches it.
  */
-export function buildChatContextJson(payload: unknown): string | null {
+export function buildChatContextJson(payload: unknown, stated?: CreatinineDay): string | null {
   const raw = (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>;
   // Sanitize per field first: one out-of-range number must cost its own field,
   // not collapse the whole context to "no data entered". The snapshot is read
@@ -217,7 +223,11 @@ export function buildChatContextJson(payload: unknown): string | null {
     ({ id: String(i).padStart(4, '0'), metricType: 'psa', value: p.value, recordedAt: p.date, ...comparatorOf(p) }));
   const planScreenings = withPsaMeasurement(screenings, newestUsablePsa(psaPoints, new Date()));
   // US-07 AC11: a left-out pair turns the blood pressure prompt into "check your reading".
-  const planInputs = parsed.success ? { ...inputs, ...(pressure ? { pressureOrder: true as const } : {}) } as SuggestionInputs : null;
+  // US-07 AC7: the eGFR's age is the one on the creatinine's day: a stated value's own, else the saved point's.
+  const creatinineDay = stated?.creatinineDay ?? creatinineDayOf(inputs.creatinine, measurementHistory);
+  const planInputs = parsed.success ? {
+    ...inputs, ...(pressure ? { pressureOrder: true as const } : {}), ...(creatinineDay ? { creatinineDay } : {}),
+  } as SuggestionInputs : null;
   const results = planInputs
     ? calculateHealthResults(planInputs, unitSystem, medicationsToInputs(medicationRowsOnRecord), planScreenings)
     : null;
@@ -412,6 +422,18 @@ function limitsOf(raw: unknown): { limits: Partial<Record<LimitField, { comparat
     else outOfRange.push(field);
   }
   return { limits, outOfRange };
+}
+
+/**
+ * The day of the creatinine the plan reads, as the client's plan dated it: the
+ * newest saved point, when it holds that value (a day's last point is the row
+ * the plan reads). Otherwise the value was typed and not saved yet: undefined,
+ * which the plan reads as today.
+ */
+function creatinineDayOf(creatinine: number | undefined, history: MeasurementHistoryMap): string | undefined {
+  const newest = (history.creatinine ?? []).reduce<{ date: string; value: number } | undefined>(
+    (best, p) => (!best || p.date >= best.date ? p : best), undefined);
+  return newest && newest.value === creatinine ? newest.date : undefined;
 }
 
 function historyOf(raw: unknown): MeasurementHistoryMap {

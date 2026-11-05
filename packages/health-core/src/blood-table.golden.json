@@ -3357,7 +3357,8 @@
         "birthYear": 1965,
         "birthMonth": 3,
         "unitSystem": "conventional",
-        "heightCm": 180
+        "heightCm": 180,
+        "creatinineDay": "2026-03-01"
       },
       "missingInputs": [],
       "currentValues": [

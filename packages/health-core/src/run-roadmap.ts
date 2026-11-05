@@ -323,7 +323,9 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   if (base.unitSystem !== 'si' && base.unitSystem !== 'conventional') {
     payload.unitSystem = stated.values().next().value?.system ?? 'si';
   }
-  const contextJson = buildChatContextJson(payload);
+  // US-07 AC7: a stated creatinine's eGFR uses the age on its day (an undated one is today's).
+  const statedCreatinine = stated.get('creatinine');
+  const contextJson = buildChatContextJson(payload, statedCreatinine ? { creatinineDay: statedCreatinine.date } : undefined);
   const plan = contextJson ? JSON.parse(contextJson) : null;
   // No usable height: the context carries the values but no cards (US-15 AC36);
   // this tool still answers "no plan". A known minor's context has no cards either, and is sent.

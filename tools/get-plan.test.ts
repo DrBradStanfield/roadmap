@@ -30,7 +30,13 @@ import {
 import { RoadmapStore } from '../widget-src/src/storage/roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../packages/health-core/src/adapter';
-import { computePlan, derivePlanInputs, NEEDS_SEX, renderJson, PlanError } from '../packages/health-core/src/plan';
+import { computePlan, derivePlanInputs, labEgfrOf, NEEDS_SEX, planInputsFrom, renderJson, PlanError, withLabEgfr } from '../packages/health-core/src/plan';
+import { calculateEGFR } from '../packages/health-core/src/calculations';
+import { buildChatContextJson, chatContextOf } from '../packages/health-core/src/chat-context';
+import { currentValueRows } from '../packages/health-core/src/blood-tests';
+import { validateHealthInputs } from '../packages/health-core/src/validation';
+import { chatContextJson } from '../ios/engine/app-doors';
+import { dayOf, localDay } from '../packages/health-core/src/merge';
 import { loadRecord, renderHtml, renderText, run } from './get-plan';
 
 const CTX = { deviceId: 'us30_test', now: '2026-09-01T09:00:00Z' };
@@ -112,7 +118,10 @@ async function widgetInputs(file: RoadmapFile): Promise<Partial<HealthInputs>> {
   const cloud = new MemoryCloud();
   cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(file), version: 1 });
   const latest = (await RoadmapStore.create(new MemoryAdapter(cloud))).loadLatestMeasurements();
-  return mergeLongitudinalInputs(latest.inputs, latest.previousMeasurements);
+  // As HealthTool: the lab eGFR candidate and the saved creatinine's day (US-07 AC7).
+  const creatinine = latest.previousMeasurements.find((m) => m.metricType === 'creatinine');
+  return withLabEgfr(mergeLongitudinalInputs(latest.inputs, latest.previousMeasurements),
+    creatinine ? dayOf(creatinine.recordedAt) : null, labEgfrOf(file.labValues), localDay(new Date()));
 }
 
 describe('US-30 AC2 — the CLI computes what the widget computes', () => {
@@ -141,6 +150,25 @@ describe('US-30 AC2 — the CLI computes what the widget computes', () => {
     const cli = computePlan(file, NOW).results;
     expect(cli.suggestions.map((s) => s.id)).toEqual(widget.suggestions.map((s) => s.id));
     expect(cli.suggestions).toEqual(widget.suggestions);
+  });
+
+  // US-07 AC7 (Brad 2026-11-05): the age on the creatinine's day, and none under 18 on it,
+  // on every surface: the web plan, the iPhone plan (computePlan) and both chats.
+  it.each([
+    ['a creatinine from ten years ago (45 then, 55 now)', 1971, '2016-07-14', Math.round(calculateEGFR(88, 45, 'male'))],
+    ['a creatinine taken at 17, by someone 18 now', 2008, '2026-02-14', undefined],
+  ])('%s: every surface computes the same eGFR', async (_name, birthYear, day, expected) => {
+    const file = fixture();
+    file.profile.birthYear = birthYear;
+    // The migrated file keeps creatinine as a core blood-test row (US-66).
+    const row = file.labValues.find((l) => l.metricName === 'creatinine')!;
+    Object.assign(row, { recordedAt: `${day}T00:00:00.000Z`, createdAt: `${day}T08:00:00Z` });
+    const iphonePlan = computePlan(file, NOW).results.eGFR;
+    const web = await widgetInputs(file);
+    const webPlan = calculateHealthResults(planInputsFrom(web, validateHealthInputs(web, undefined, NOW))!, 'si', undefined, undefined, undefined, NOW).eGFR;
+    const webChat = JSON.parse(buildChatContextJson(chatContextOf(web, 'si', [], [], currentValueRows(file)))!).derivedValues.eGFR ?? undefined;
+    const iphoneChat = JSON.parse(buildChatContextJson(JSON.parse(chatContextJson(JSON.stringify(file), NOW.toISOString(), 'us07')))!).derivedValues.eGFR ?? undefined;
+    expect([iphonePlan, webPlan, webChat, iphoneChat]).toEqual([expected, expected, expected, expected]);
   });
 });
 
