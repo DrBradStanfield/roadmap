@@ -12,6 +12,8 @@ vi.mock('../src/lib/sentry', () => ({ initSentry: vi.fn(), Sentry: { captureExce
 vi.mock('../src/lib/server-api', async (importOriginal) => ({ ...(await importOriginal<object>()), trackProductEvent: vi.fn() }));
 
 const FILE_KEY = 'health_roadmap_file_v2';
+const REV_KEY = 'health_roadmap_file_v2_rev';
+const REV = '7-synthetic';
 const SKELETON = '<div class="hr-skeleton" aria-hidden="true">synthetic skeleton</div>';
 
 function recordWith(change: Record<string, unknown>): string {
@@ -55,14 +57,19 @@ afterEach(() => {
 describe('US-65 AC7: an on-device record the app refuses at load is explained, not a stuck skeleton', () => {
   it.each(UNREADABLE)('%s shows the refusal and leaves the stored bytes alone', async (_label, stored, message) => {
     localStorage.setItem(FILE_KEY, stored);
+    localStorage.setItem(REV_KEY, REV);
     await import('./app');
 
     const root = document.getElementById('health-tool-root')!;
     await vi.waitFor(() => expect(root.textContent).toContain(message), { timeout: 5000 });
     expect(root.querySelector('.hr-skeleton')).toBeNull();
     expect(root.querySelector('[role="alert"]')).not.toBeNull();
-    expect(localStorage.getItem(FILE_KEY)).toBe(stored); // never written over
+    // The record and its revision are never written over.
+    expect(localStorage.getItem(FILE_KEY)).toBe(stored);
+    expect(localStorage.getItem(REV_KEY)).toBe(REV);
+    // main() still rejects, and with the refusal itself, not a later error.
     await vi.waitFor(() => expect(rejections).toHaveLength(1));
+    expect((rejections[0] as Error).message).toContain(message);
   });
 
   it('a remembered cloud that cannot be reached falls back to that same device copy, and is explained too', async () => {
@@ -70,6 +77,7 @@ describe('US-65 AC7: an on-device record the app refuses at load is explained, n
     // unreadable one, the fallback refuses as the guest load does.
     const stored = recordWith({ schemaVersion: 99 });
     localStorage.setItem(FILE_KEY, stored);
+    localStorage.setItem(REV_KEY, REV);
     localStorage.setItem('health_roadmap_backend', 'dropbox');
     localStorage.setItem('health_roadmap_dropbox_tokens', JSON.stringify({ accessToken: 'synthetic-access', refreshToken: 'synthetic-refresh', expiresAt: Date.now() + 3_600_000 }));
     await import('./app');
@@ -77,6 +85,29 @@ describe('US-65 AC7: an on-device record the app refuses at load is explained, n
     const root = document.getElementById('health-tool-root')!;
     await vi.waitFor(() => expect(root.textContent).toContain('Update the app before writing, or your newer data could be lost.'), { timeout: 5000 });
     expect(localStorage.getItem(FILE_KEY)).toBe(stored);
+    expect(localStorage.getItem(REV_KEY)).toBe(REV);
     expect(vi.mocked(fetch)).toHaveBeenCalled(); // the cloud was tried first
+    await vi.waitFor(() => expect(rejections).toHaveLength(1));
+    expect((rejections[0] as Error).name).toBe('SchemaTooNewError');
+  });
+
+  it('a startup error that is not a storage failure shows no panel and still rejects', async () => {
+    // AC7's stated limit: only a storage failure is named on the page. A bug
+    // elsewhere must not tell the person their record is bad.
+    const bug = new TypeError('synthetic bug');
+    vi.doMock('../src/lib/roadmap-data', async (importOriginal) => ({
+      ...(await importOriginal<object>()),
+      initRoadmapStore: async () => { throw bug; },
+    }));
+    try {
+      await import('./app');
+      await vi.waitFor(() => expect(rejections).toHaveLength(1), { timeout: 5000 });
+      expect(rejections[0]).toBe(bug);
+      const root = document.getElementById('health-tool-root')!;
+      expect(root.textContent).toBe('synthetic skeleton');
+      expect(root.querySelector('[role="alert"]')).toBeNull();
+    } finally {
+      vi.doUnmock('../src/lib/roadmap-data');
+    }
   });
 });

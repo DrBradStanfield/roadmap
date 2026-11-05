@@ -2,9 +2,10 @@ import { createRoot } from 'react-dom/client';
 import { isStorageFailure } from '@roadmap/health-core';
 
 /**
- * US-65 AC7: a record the app refuses at load (US-65 AC5) is named on the
- * page with the refusal's own words, in the ErrorBoundary's markup, instead
- * of the loading skeleton staying forever. Nothing is written. The error is
+ * US-65 AC7: a record the app refuses at load (US-65 AC5), or any other
+ * storage failure at load, is named on the page with its own words, in the
+ * ErrorBoundary's markup, instead of the loading skeleton staying forever.
+ * This never writes the record. Any other error renders nothing. The error is
  * thrown on, so main() still rejects as before.
  */
 export function showLoadFailure(error: unknown): never {
