@@ -206,7 +206,7 @@ export const SCRUB_METRIC_WORDS = [
   'systolic', 't3u', 'testosterone', 'tgab', 'thiamin', 'thiamine', 'thyroglobulin', 'thyroid', 'thyrotropin',
   'thyroxine', 'tibc', 'tni', 'tnt', 'tocopherol', 'tpo', 'tpoab', 'trab', 'transferase', 'transferrin',
   'transglutaminase', 'triglycerides', 'triiodothyronine', 'troponin', 'tsat', 'tsh', 'ttg', 'uibc', 'upcr',
-  'urate', 'urea', 'uric', 'urinary', 'urine', 'vitamin', 'vldl', 'waist', 'wbc', 'weight', 'zinc', 'na', 'na+',
+  'urate', 'urea', 'uric', 'urinary', 'urine', 'vit', 'vitamin', 'vldl', 'waist', 'wbc', 'weight', 'zinc', 'na', 'na+',
   'k', 'k+', 'cl', 'cl-', 'total co2', 'carbon dioxide, total', 'carbon dioxide', 'blood urea nitrogen',
   'urea nitrogen', 'urea nitrogen (bun)', 'blood urea nitrogen (bun)', 'urea (bun)', 'uric acid', 'urine_acr',
   'urine acr', 'albumin creatinine ratio', 'microalbumin ratio', 'urine_creatinine', 'urine creatinine',
@@ -291,6 +291,7 @@ export const SCRUB_METRIC_WORDS = [
   'hs troponin i', 'hs-troponin i', 'high sensitivity troponin i', 'hs-tni', 'hs-ctni', 'c_peptide',
   'c-peptide', 'estimated average glucose', 'vldl cholesterol', 'vldl-c', 'vldl chol', 'lactic acid',
   'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height',
+  'vit d', 'vit d3', 'vit b12',
 ];
 
 const NUMBER = '\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?';

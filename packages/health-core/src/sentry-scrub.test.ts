@@ -434,8 +434,17 @@ describe('scrubText', () => {
   });
 });
 
+describe('a typed short name (US-09 AC7, US-73 AC8)', () => {
+  it('scrubs a value written after "Vit", as the add sheet\'s search reads it', () => {
+    expect(scrubText('Vit D 45')).toBe('Vit D [value]');
+    expect(scrubText('vit b12 300')).toBe('vit b12 [value]');
+    expect(scrubText('Vit D3 80')).toBe('Vit D3 [value]');
+    expect(scrubText('vitals ok')).toBe('vitals ok');
+  });
+});
+
 describe('scrubEventText', () => {
-  const AUDIT = 'My LDL is 3.2 mmol/L and I have diabetes';
+  const AUDIT ='My LDL is 3.2 mmol/L and I have diabetes';
 
   it('scrubs the exception value, extra strings and breadcrumbs, keeping frames', () => {
     const event = {

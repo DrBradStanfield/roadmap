@@ -246,6 +246,8 @@ export const SCRUB_METRIC_WORDS: readonly string[] = [...new Set([
   // What no name in either list spells: the phrases a person writes, and the
   // metrics that live in the calculator rather than the catalogue.
   'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height',
+  // "vit" typed for vitamin (US-73 AC8), whole, so "vit b12 300" keeps its 12.
+  'vit d', 'vit d3', 'vit b12',
 ])];
 
 /** A number, or a blood-pressure pair ("140/90"). */
