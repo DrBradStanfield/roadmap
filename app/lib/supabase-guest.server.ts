@@ -69,6 +69,14 @@ async function cleanupStep(step: 'profile' | 'auth_user', run: () => PromiseLike
   });
 }
 
+/** Removes the ghost profile and auth user a failed creation made, each
+ *  attempted whatever the other did. A failed step leaves an orphan, so it is
+ *  reported (US-15 AC7c). Deleting a profile that was never written is harmless. */
+async function removeGhost(admin: NonNullable<typeof supabaseAdmin>, sessionId: string): Promise<void> {
+  await cleanupStep('profile', () => admin.from('profiles').delete().eq('id', sessionId));
+  await cleanupStep('auth_user', () => admin.auth.admin.deleteUser(sessionId));
+}
+
 /**
  * Get or create a guest chat session. Creates a ghost profile if needed.
  * Uses supabaseAdmin for session management (same pattern as getOrCreateSupabaseUser).
@@ -130,6 +138,7 @@ export async function getOrCreateGuestSession(
     .upsert({ id: sessionId, email: guestEmail, is_guest: true }, { onConflict: 'id' });
 
   if (profileError) {
+    await removeGhost(supabaseAdmin, sessionId); // US-15 AC7d
     console.error('Failed to create guest profile:', profileError);
     throw new Error('Failed to create guest session');
   }
@@ -141,12 +150,7 @@ export async function getOrCreateGuestSession(
     .single();
 
   if (sessionError || !newSession) {
-    // Clean up both the ghost profile and auth user, each attempted whatever
-    // the other did. A failed step leaves an orphan, so it is reported (US-15 AC7c).
-    // A local const: the null check above does not narrow the import inside closures.
-    const admin = supabaseAdmin;
-    await cleanupStep('profile', () => admin.from('profiles').delete().eq('id', sessionId));
-    await cleanupStep('auth_user', () => admin.auth.admin.deleteUser(sessionId));
+    await removeGhost(supabaseAdmin, sessionId);
     console.error('Failed to create guest session:', sessionError);
     throw new Error('Failed to create guest session');
   }
