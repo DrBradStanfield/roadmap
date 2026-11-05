@@ -819,6 +819,15 @@ describe('US-32 — correct_value', () => {
     expect(again.status).toBe('rejected');
     expect(again.text).toContain('entered-in-error');
   });
+
+  // US-21 AC26 (review round 1): an agent's correction is checked as the apps' add is.
+  it('refuses a catalogued lab value past its plausible range, and writes nothing', () => {
+    const slip = correctValueTool(base(), { id: 'l1', newValue: 600000, unit: 'ng/mL' }, NOW);
+    expect(slip.status).toBe('rejected');
+    expect(slip.text).toContain('600,000 ng/mL is 600,000 µg/L. Ferritin above 500,000 µg/L is almost certainly a typing or unit mistake');
+    expect((slip as { file?: RoadmapFile }).file).toBeUndefined();
+    expect(ok(correctValueTool(base(), { id: 'l1', newValue: 250 }, NOW)).file).toBeDefined();
+  });
 });
 
 describe('US-34 — update_profile changes who the record is about', () => {

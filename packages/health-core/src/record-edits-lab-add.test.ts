@@ -1,7 +1,7 @@
 // US-25 AC25, US-21: the one lab add both apps use (record-edits.ts addLabValue): the web's
 // "+ Add a value" (AddLabTest.tsx) and the iPhone's lab page. Synthetic values.
 import { describe, expect, it } from 'vitest';
-import { addLabValue, appendLabValue, bulkAppendValues } from './record-edits';
+import { addLabValue, appendLabValue, bulkAppendValues, correctValue } from './record-edits';
 import { LAB_CATALOG, LAB_PLAUSIBLE_RANGES } from './lab-catalog';
 import { groupLabValues } from './lab-series';
 import { createEmptyFile, type FileLabValue, type RoadmapFile } from './roadmap-file';
@@ -144,15 +144,32 @@ describe('addLabValue — plausible range (US-21 AC26)', () => {
   });
 
   it('refuses a value past either end in the canonical unit, with no conversion clause', () => {
-    expect(add('glucose', 'mmol/L', 101)).toEqual({
+    expect(add('glucose', 'mmol/L', 151)).toEqual({
       ok: false, reason: 'invalid-value',
-      message: 'Glucose above 100 mmol/L is almost certainly a typing or unit mistake: check the number and its unit.',
+      message: 'Glucose above 150 mmol/L is almost certainly a typing or unit mistake: check the number and its unit.',
     });
-    expect(add('Haemoglobin', 'g/dL', 140)).toMatchObject({ ok: false, reason: 'invalid-value', message: expect.stringMatching(/^140 g\/dL is 1400 g\/L\. Haemoglobin above 300 g\/L/) });
+    expect(add('Haemoglobin', 'g/dL', 140)).toMatchObject({ ok: false, reason: 'invalid-value', message: expect.stringMatching(/^140 g\/dL is 1,400 g\/L\. Haemoglobin above 300 g\/L/) });
+  });
+
+  it('formats both numbers alike, thousands separated, at the matrix\'s precision (review round 1)', () => {
+    expect(add('glucose', 'mg/dL', 2800)).toMatchObject({
+      message: '2,800 mg/dL is 155.43 mmol/L. Glucose above 150 mmol/L is almost certainly a typing or unit mistake: check the number and its unit.',
+    });
+  });
+
+  it('names a same-scale alias it was typed in, as a conversion (review round 1)', () => {
+    expect(add('TSH', 'µIU/mL', 2500)).toMatchObject({
+      message: '2,500 µIU/mL is 2,500 mIU/L. TSH above 2,000 mIU/L is almost certainly a typing or unit mistake: check the number and its unit.',
+    });
+  });
+
+  it('accepts documented survived extremes: HHS glucose 2,656 mg/dL, TSH 1,099 mIU/L (review round 1)', () => {
+    expect(add('glucose', 'mg/dL', 2656).ok).toBe(true);
+    expect(add('TSH', 'mIU/L', 1099).ok).toBe(true);
   });
 
   it('accepts both edges, and a converted value just inside', () => {
-    for (const value of [0.5, 100]) expect(add('glucose', 'mmol/L', value).ok).toBe(true);
+    for (const value of [0.5, 150]) expect(add('glucose', 'mmol/L', value).ok).toBe(true);
     expect(add('glucose', 'mg/dL', 90).ok).toBe(true);
     expect(add('Glucose (random)', 'mg/dL', 1800).ok).toBe(true);
   });
@@ -183,5 +200,27 @@ describe('addLabValue — plausible range (US-21 AC26)', () => {
 
   it('the agent and import doors are unchanged for now: appendLabValue still files it (not in AC26)', () => {
     expect(appendLabValue(record([]), { metricName: 'glucose', value: 5.5, unit: 'mg/dL', recordedAt: '2026-10-01', now: NOW }).ok).toBe(true);
+  });
+});
+
+// US-21 AC26 (review round 1): a correction is typed too, so the web's value page and matrix, the
+// iPhone's correct edit and MCP correct_value refuse what the add refuses. Synthetic values.
+describe('correctValue — plausible range (US-21 AC26)', () => {
+  const file = () => record([held('g1', 'glucose', 5.2, 'mmol/L', '2026-09-01')]);
+  const correct = (newValue: number, unit?: string) => correctValue(file(), { id: 'g1', newValue, ...(unit ? { unit } : null), now: NOW });
+
+  it('refuses a corrected catalogue value past its bound, in the unit typed or the row\'s own', () => {
+    expect(correct(5.5, 'mg/dL')).toEqual({
+      ok: false, reason: 'invalid-value',
+      message: '5.5 mg/dL is 0.31 mmol/L. Glucose below 0.5 mmol/L is almost certainly a typing or unit mistake: check the number and its unit.',
+    });
+    expect(correct(151)).toMatchObject({ ok: false, reason: 'invalid-value', message: expect.stringMatching(/^Glucose above 150 mmol\/L/) });
+  });
+
+  it('still corrects a value inside its bounds, and a test without one', () => {
+    expect(correct(99, 'mg/dL').ok).toBe(true);
+    expect(correct(5.5).ok).toBe(true);
+    const ggt = record([held('t1', 'ggt', 30, 'U/L', '2026-09-01')]);
+    expect(correctValue(ggt, { id: 't1', newValue: 999999, now: NOW }).ok).toBe(true);
   });
 });

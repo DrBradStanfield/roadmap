@@ -31,7 +31,7 @@
  * writer can only edit safely with the lamport discipline this does not take on.
  */
 import {
-  canonicalLabRow, canonicalLabValue, correctionOffScale, type CountFault, displayLabUnit, foldName, labCountFault, type LabCatalogEntry, labPlausibleRefusal,
+  canonicalLabRow, canonicalLabValue, correctionOffScale, type CountFault, displayLabUnit, foldName, labCountFault, type LabCatalogEntry, LAB_PLAUSIBLE_RANGES,
   labSlotKey, looseFold, labUnitRefusal, normalizeLabUnit, resolveLabCatalogEntry, type StoredLabRow,
 } from './lab-catalog';
 import { bloodTestKeyOf, coreStored, createCoreRow, isActive, isBloodTestKey, isCoreRow, labRowSlot } from './blood-tests';
@@ -40,7 +40,7 @@ import { resolveCoreMetricName } from './lab-extraction';
 import { dayOf, latestStamp, localDay, rootIdOf } from './merge';
 import { isCalendarDay, isClinicalDay } from './measurement-history';
 import { CORE_BLOOD_UNITS, createLabValue, createMeasurement, recordSchemaVersion, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
-import { canonicalToReported, reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
+import { canonicalToReported, rangeFault, reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
 import { comparatorOf, type Comparator } from './lab-limits';
 import { formatLabValue, labUnitRefusalLine, savedLabText } from './lab-series';
 import { withEffectiveComparator } from './readable-rows';
@@ -506,6 +506,21 @@ export type AddLabValueResult =
 /** Blood pressure's own names, loosely folded: no lab test, though no one core metric either. */
 const BLOOD_PRESSURE_NAMES = new Set(['blood pressure', 'bp', 'blood pressure systolic', 'blood pressure diastolic', 'bp systolic', 'bp diastolic']);
 
+/** Why a typed value of a catalogued test is refused (US-21 AC26), or null inside its bounds, with
+ *  none, or in a unit it does not take: a value past its plausible range, in the stored SI unit, is
+ *  a slip of the number or unit. Names the number as typed, what it converted to, and the end it
+ *  passed, each as the matrix prints it, thousands separated. For the person who typed it. */
+function labPlausibleRefusal(entry: LabCatalogEntry, typed: number, unit: string): string | null {
+  const converted = canonicalLabValue(entry, typed, unit);
+  const range = converted && LAB_PLAUSIBLE_RANGES[entry.key];
+  const fault = range && rangeFault(range, converted.value);
+  if (!fault) return null;
+  const shown = (v: number) => Number(formatLabValue(v)).toLocaleString('en-US', { maximumFractionDigits: 20 });
+  const typedUnit = normalizeLabUnit(unit);
+  const conversion = typedUnit.toLowerCase() === entry.unit.toLowerCase() ? '' : `${shown(typed)} ${typedUnit} is ${shown(converted.value)} ${entry.unit}. `;
+  return `${conversion}${entry.label} ${fault} ${shown(fault === 'below' ? range.min : range.max)} ${entry.unit} is almost certainly a typing or unit mistake: check the number and its unit.`;
+}
+
 /**
  * The one lab add, the web's "+ Add a value" (AddLabTest.tsx) and the iPhone's lab page (US-25
  * AC25), in words a person reads. A catalogued test given in its catalogue unit is filed under the
@@ -535,9 +550,7 @@ export function addLabValue(file: RoadmapFile, request: AddLabValueRequest, now:
   if (typeof day !== 'string') return { ok: false, reason: 'invalid-date', message: 'A lab value is for a real day, today or before.' };
   const entry = resolveLabCatalogEntry(name);
   if (!given && !entry && !bloodTestKeyOf(name) && !request.existingSeries) return { ok: false, reason: 'invalid-value', message: NEEDS_UNIT };
-  // A typed value past its test's plausible range is a slip of the number or unit (US-21 AC26).
-  const converted = entry && canonicalLabValue(entry, request.value, given);
-  const implausible = converted && labPlausibleRefusal(entry, request.value, given, converted.value);
+  const implausible = entry && labPlausibleRefusal(entry, request.value, given);
   if (implausible) return { ok: false, reason: 'invalid-value', message: implausible };
   const exact = !!entry && displayLabUnit(given, entry) === entry.unit;
   const metricName = exact ? entry!.key : name;
@@ -639,6 +652,9 @@ export function correctValue(file: RoadmapFile, request: CorrectValueRequest): E
     ? { value: request.newValue, unit: labRow.unit }
     : toStoredLab(entry, request.newValue, request.unit);
   if ('ok' in stored) return stored;
+  // A corrected number is typed too, so it meets the add's plausible range (US-21 AC26).
+  const implausible = entry && labPlausibleRefusal(entry, request.newValue, request.unit ?? labRow.unit);
+  if (implausible) return reject('invalid-value', implausible);
   // The row carries the unit it is STORED in, which is the conversion's answer
   // and not the old row's label: a legacy row in a spelling the catalogue
   // refuses is corrected INTO the canonical unit, and saying otherwise would
