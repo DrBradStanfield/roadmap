@@ -65,7 +65,8 @@ async function chipOf(view: RenderResult, label: string): Promise<HTMLElement> {
 }
 
 describe('US-05 AC6: a stored unit toggle that is not a plain object of units is ignored', () => {
-  it.each([['null'], ['"metric"'], ['[1,2]'], ['7']])('%s: the page loads in the page units, and a toggle writes only that toggle', async (stored) => {
+  // An array of valid units passes the value filter, so only the array check stops its {"0":...} write.
+  it.each([['null'], ['"metric"'], ['[1,2]'], ['["conventional","si"]'], ['7']])('%s: the page loads in the page units, and a toggle writes only that toggle', async (stored) => {
     localStorage.setItem(KEY, stored);
     const view = render(<HealthTool />);
     const weight = await chipOf(view, 'Weight');
