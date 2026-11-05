@@ -25,6 +25,7 @@ import { latestDayOnEarth } from './merge';
 import { resolveRecordedAt } from './record-edits';
 import { isKnownMinorOnDay, knownMinorOf } from './calculations';
 import { buildChatContextJson, creatinineDayOf } from './chat-context';
+import { withoutLimit, type InputLimits } from './lab-limits';
 import {
   APP_CHAT_EDIT_TOOLS, CHAT_EDIT_TOOLS, EDITABLE_FIELDS, PROPOSE_FIELD_EDIT_TOOL, PROPOSE_PROFILE_EDIT_TOOL, medicationAnswerMisfit, parseProposedEdit, parseProposedEdits,
   type EditableField, type ProposedEdit,
@@ -305,15 +306,17 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   for (const f of unusable) delete payload[f];
   // US-07 AC7: a stated creatinine, used or not, from after the lab eGFR's day outdates it (with no
   // age or sex to read it by, lostEgfr below withholds the protein card and asks). So does the creatinine
-  // in use (a marked draft's day, else the newest saved point's: creatinineDayOf, the plan's own rule),
+  // in use (a marked draft's day, else the newest saved point's: creatinineDayOf, the plan's own rule;
+  // else, typed with no day or saved for a day not yet reached, today's, as withLabEgfr reads it),
   // newer than the lab eGFR, once the plan can calculate from it: the client kept the lab eGFR
   // only because it had no age (or no sex, AC8), and a stated one supplies it.
   const saved = sanitizeInputs({
     creatinine: payload.creatinine, birthYear: payload.birthYear, birthMonth: payload.birthMonth, sex: payload.sex,
   } as Partial<HealthInputs>);
+  const inUseDay = saved.creatinine !== undefined && saved.birthYear !== undefined && saved.sex !== undefined
+    ? creatinineDayOf(saved.creatinine, base.measurementHistory) ?? today : undefined;
   const creatinineDay = stated.get('creatinine')?.date ?? blocked.get('creatinine')
-    ?? (saved.creatinine !== undefined && saved.birthYear !== undefined && saved.sex !== undefined
-      ? creatinineDayOf(saved.creatinine, base.measurementHistory) : undefined);
+    ?? (inUseDay !== undefined && inUseDay > today ? today : inUseDay);
   if (creatinineDay !== undefined && !(creatinineDay <= String(base.labEgfrDate ?? ''))) {
     // ...unless a known minor took it: no eGFR comes from it, so the lab's stands, outdated (withLabEgfr's rule).
     if (isKnownMinorOnDay(saved.birthYear, saved.birthMonth, creatinineDay)) {
@@ -322,6 +325,9 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
       delete payload.labEgfr;
       delete payload.labEgfrDate;
       delete payload.labEgfrOutdated;
+      // Its limit goes too, or buildChatContextJson would read the lab eGFR back from it (withRowValue).
+      delete payload.limits;
+      Object.assign(payload, withoutLimit(base.limits as InputLimits | undefined, 'labEgfr'));
     }
   }
   if (unusable.size > 0 && base.measurementHistory !== undefined) {

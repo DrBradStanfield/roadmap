@@ -482,6 +482,53 @@ describe('US-07 AC7: the lab eGFR is weighed against the creatinine in use, a ma
     expect(out.derivedValues.eGFR).toBe(25);
   });
 
+  /** The protein card a saved file with creatinine 200 on 2026-08-01 gets: the reduced target. */
+  const reducedCard = () => {
+    const saved = fileWith({ creatinine: [{ value: 200, day: '2026-08-01' }], labs: [{ value: 95, day: '2026-07-01' }] });
+    expect(plan(saved).results.proteinTarget).toBe(Math.round(plan(saved).results.idealBodyWeight! * 1.0));
+    return card(JSON.parse(buildChatContextJson(chatContextOf(plan(saved).inputs, 'si', [], [], saved.measurements))!));
+  };
+  const calc200 = Math.round(calculateEGFR(200, 76, 'female'));
+
+  it('run_roadmap: an undated typed creatinine is today\'s, so it outdates an older lab eGFR (adversary + Codex, US-07 AC7)', () => {
+    const file = noSex(fileWith({ creatinine: [{ value: 80, day: '2026-08-01' }], labs: [{ value: 95, day: '2026-07-01' }] }));
+    const payload = { ...chatContextOf(plan(file).inputs, 'si', [], [], file.measurements), creatinine: 200 };
+    const out = JSON.parse(runRoadmap(payload, { sex: 'female' }, NOW).contextJson!);
+    expect(calc200).toBeLessThan(45);
+    expect(out.derivedValues.eGFR).toBe(calc200);
+    expect(card(out)).toEqual(reducedCard());
+  });
+
+  it('run_roadmap: the same with nothing saved, a lab eGFR and a typed creatinine only (US-07 AC7)', () => {
+    const file = noSex(fileWith({ labs: [{ value: 95, day: '2026-07-01' }] }));
+    const payload = { ...chatContextOf(plan(file).inputs, 'si', [], [], file.measurements), creatinine: 200 };
+    const out = JSON.parse(runRoadmap(payload, { sex: 'female' }, NOW).contextJson!);
+    expect(out.derivedValues.eGFR).toBe(calc200);
+    expect(card(out)).toEqual(reducedCard());
+  });
+
+  it('run_roadmap: a lab eGFR printed as a limit, outdated by a draft, leaves with its limit (Codex R2, US-07 AC7)', () => {
+    const file = noSex(fileWith({ labs: [{ value: 90, day: '2026-07-01' }] }));
+    file.labValues[0].comparator = '>';
+    const payload = draftPayload(file, 200, '2026-08-01');
+    expect(payload.limits?.labEgfr).toMatchObject({ comparator: '>', bound: 90 });
+    const out = JSON.parse(runRoadmap(payload, { sex: 'female' }, NOW).contextJson!);
+    expect(out.derivedValues.eGFR).toBe(calc200);
+    expect(card(out)).toEqual(reducedCard());
+    expect(out.currentSuggestions.map((c: { id: string }) => c.id)).not.toContain('high-potassium');
+  });
+
+  it('run_roadmap: a saved creatinine dated after today does not outdate a lab eGFR from today (savedLatestDay\'s rule)', () => {
+    // latestDayOnEarth(NOW) is 2026-09-02: a point after it is not yet reached, so the creatinine reads as today's.
+    const file = noSex(fileWith({ labs: [{ value: 95, day: '2026-09-02' }] }));
+    const payload = {
+      ...chatContextOf(plan(file).inputs, 'si', [], [], file.measurements),
+      creatinine: 200, measurementHistory: { creatinine: [{ date: '2026-09-05', value: 200 }] },
+    };
+    const out = JSON.parse(runRoadmap(payload, { sex: 'female' }, NOW).contextJson!);
+    expect(out.derivedValues.eGFR).toBe(95);
+  });
+
   it('a draft point on another metric is dropped and dates nothing', () => {
     const file = fileWith({ creatinine: [{ value: 80, day: '2016-03-01' }] });
     const payload = chatContextOf(plan(file).inputs, 'si', [], [], file.measurements);
