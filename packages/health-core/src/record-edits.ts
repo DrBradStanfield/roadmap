@@ -32,9 +32,9 @@
  */
 import {
   canonicalLabRow, canonicalLabValue, correctionOffScale, type CountFault, displayLabUnit, foldName, labCountFault, type LabCatalogEntry,
-  labUnitRefusal, normalizeLabUnit, resolveLabCatalogEntry, type StoredLabRow,
+  labSlotKey, labUnitRefusal, normalizeLabUnit, resolveLabCatalogEntry, type StoredLabRow,
 } from './lab-catalog';
-import { bloodTestKeyOf, coreStored, createCoreRow, isBloodTestKey, isCoreRow, labRowSlot } from './blood-tests';
+import { bloodTestKeyOf, coreStored, createCoreRow, isActive, isBloodTestKey, isCoreRow, labRowSlot } from './blood-tests';
 import { METRIC_TO_FIELD } from './mappings';
 import { resolveCoreMetricName } from './lab-extraction';
 import { dayOf, latestStamp, localDay, rootIdOf } from './merge';
@@ -514,8 +514,10 @@ export function addLabValue(file: RoadmapFile, request: AddLabValueRequest, now:
   const name = request.metricName.trim();
   const given = request.unit.trim();
   if (!name) return { ok: false, reason: 'invalid-value', message: 'A lab value needs a test name.' };
-  // A vital (weight, height, blood pressure, waist) is no lab test, as appendLabValue refuses it.
-  const vital = !bloodTestKeyOf(name) && resolveCoreMetricName(name);
+  // A vital (weight, height, blood pressure, waist) is no lab test, as appendLabValue refuses it;
+  // a lab test the record already files under one keeps its "+" (US-25 AC25).
+  const vital = !bloodTestKeyOf(name) && resolveCoreMetricName(name)
+    && !file.labValues.some((row) => isActive(row) && !isCoreRow(row) && labSlotKey(row.metricName) === labSlotKey(name));
   if (vital) return { ok: false, reason: 'core-metric', message: `"${name}" is not a lab test: add it from its own row.` };
   if (!Number.isFinite(request.value) || request.value < 0) return { ok: false, reason: 'invalid-value', message: 'A lab value is a number, 0 or more.' };
   const day = resolveRecordedAt(request.day, { now });

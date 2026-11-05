@@ -53,6 +53,14 @@ describe('addLabValue — a vital\'s name or no unit (US-73 AC8)', () => {
     }
   });
 
+  it('a lab test the record already files under a vital\'s name keeps its "+" (US-25 AC25)', () => {
+    const out = addLabValue(record([held('w1', 'Weight', 70, 'kg', '2026-09-01')]), { metricName: 'Weight', unit: 'kg', value: 71, day: '2026-10-01' }, NOW);
+    if (!out.ok) throw new Error(out.message);
+    expect(out.row).toMatchObject({ metricName: 'Weight', unit: 'kg', value: 71 });
+    const struck = record([{ ...held('w1', 'Weight', 70, 'kg', '2026-09-01'), status: 'entered-in-error' }]);
+    expect(addLabValue(struck, { metricName: 'Weight', unit: 'kg', value: 71, day: '2026-10-01' }, NOW)).toMatchObject({ ok: false, reason: 'core-metric' });
+  });
+
   it('refuses a test nothing names with no unit, in appendLabValue\'s words', () => {
     for (const unit of ['', '  ']) {
       expect(addLabValue(record([]), { metricName: 'Zinc custom', unit, value: 80, day: '2026-10-01' }, NOW))
