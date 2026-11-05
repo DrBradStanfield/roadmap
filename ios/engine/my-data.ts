@@ -139,10 +139,11 @@ export type Edit =
   /** The ticked values of an uploaded lab report (US-52 AC8), written by the web's bulk rule. */
   | { kind: 'labImport'; extractionJson: string; refs: string[]; reportDay: string }
   /** A new value for a lab test the record holds, on a day, in the unit the sheet showed (US-25 AC25):
-   *  health-core's `addLabValue`, the web's lab add too, named by its series key (`labSlotKey`).
-   *  With `name` (US-73 AC8), the add sheet's: any test by name and `unit`, `series` unread, as the
-   *  web's general add (AddLabTest.tsx). An engine before it finds no series and refuses. */
-  | { kind: 'labAdd'; series: string; value: number; day?: string; unit?: string; name?: string }
+   *  health-core's `addLabValue`, the web's lab add too, named by its series key (`labSlotKey`). */
+  | { kind: 'labAdd'; series: string; value: number; day?: string; unit?: string }
+  /** The add sheet's add (US-73 AC8): any test by name, in the unit typed, as the web's general add
+   *  (AddLabTest.tsx). An engine before it knows no such kind, and the edit fails. */
+  | { kind: 'labAddName'; name: string; value: number; unit: string; day?: string }
   /** What the chat proposed, and its medications' Undo (US-67, chat-edits.ts). */
   | ChatEdit;
 
@@ -445,7 +446,9 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       return { ok: true, file: bulkAppendValues(file, rows.rows, now).file };
     }
     case 'labAdd':
-      return typeof edit.name === 'string' ? addByName(file, edit, now, choices) : addSeriesValue(file, edit, now);
+      return addSeriesValue(file, edit, now);
+    case 'labAddName':
+      return addByName(file, edit, now, choices);
     case 'chatEdits':
     case 'chatUndo':
       return applyChatEdit(file, edit, now, choices);
@@ -476,11 +479,11 @@ function addSeriesValue(file: RoadmapFile, edit: Extract<Edit, { kind: 'labAdd' 
  * any other name is a new test in the unit typed. A held day names what it holds and offers it for
  * correcting only when the number differs in the same unit (US-21 AC13). Never a second row.
  */
-function addByName(file: RoadmapFile, edit: Extract<Edit, { kind: 'labAdd' }>, now: string, choices: UnitChoices): EditOutcome {
-  const unit = edit.unit ?? '';
-  const added = addLabValue(file, { metricName: edit.name!, unit, value: edit.value, day: edit.day }, now);
+function addByName(file: RoadmapFile, edit: Extract<Edit, { kind: 'labAddName' }>, now: string, choices: UnitChoices): EditOutcome {
+  const { name, unit = '' } = edit;
+  const added = addLabValue(file, { metricName: name, unit, value: edit.value, day: edit.day }, now);
   if (added.ok) return { ok: true, file: added.file };
-  const core = bloodTestKeyOf(edit.name!.trim());
+  const core = bloodTestKeyOf(name.trim());
   const { bound, refused: _refused, ...refusal } = added;
   // Out of range, in the web's words: the end it missed, in the unit typed.
   const range = bound && core && labRangeMessage(core, unit, bound);

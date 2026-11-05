@@ -1,6 +1,6 @@
 // US-73: what the iPhone's My health tab reads from the engine. The eGFR and waist-to-height rows'
 // histories through the history door (historyJson), the add sheet's search (labSearchJson), the plan by topic
-// on screenJson (plan.topics), and the add sheet's add by name (labAdd with `name`), which is the
+// on screenJson (plan.topics), and the add sheet's add by name (the labAddName edit), which is the
 // web's general add (AddLabTest.tsx, US-21 phase 2, US-66 AC6). Synthetic values.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -12,7 +12,7 @@ import type { TopicLayout } from '../../packages/health-core/src/plan-sections';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import type { Suggestion } from '../../packages/health-core/src/types';
 import { historyJson, labSearchJson, screenJson } from './entry';
-import { applyEdit, newRecord } from './my-data';
+import { applyEdit, newRecord, type Edit } from './my-data';
 
 const NOW = '2026-10-21T08:00:00.000Z';
 const sample = readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8');
@@ -165,9 +165,9 @@ describe('screenJson plan.topics (US-73 AC3)', () => {
 
 // AC8 with US-21 phase 2 and US-66 AC6: the same cases as the web's AddLabTest and
 // health-core's record-edits-lab-add.test.ts, through the phone's edit.
-describe('labAdd by name: the add sheet\'s add (US-73 AC8, US-21, US-66 AC6)', () => {
+describe('labAddName: the add sheet\'s add (US-73 AC8, US-21, US-66 AC6)', () => {
   const add = (file: RoadmapFile, name: string, value: number, unit: string, day = '2026-10-01') =>
-    applyEdit(file, { kind: 'labAdd', series: '', name, value, unit, day }, NOW);
+    applyEdit(file, { kind: 'labAddName', name, value, unit, day }, NOW);
   const active = (file: RoadmapFile, day: string) => file.labValues.filter((r) => r.status === 'active' && r.recordedAt.startsWith(day));
 
   it('a core test\'s name writes its core row, in its canonical unit', () => {
@@ -239,7 +239,13 @@ describe('labAdd by name: the add sheet\'s add (US-73 AC8, US-21, US-66 AC6)', (
     expect(add(record(), ' ', 1, 'µg/L')).toMatchObject({ ok: false, reason: 'invalid-value' });
   });
 
-  it('without a name, labAdd is the lab page\'s add, as before', () => {
-    expect(applyEdit(record(), { kind: 'labAdd', series: 'ferritin', value: 90, day: '2026-10-01' }, NOW)).toMatchObject({ ok: false, reason: 'not-found' });
+  it('refuses a vital\'s name and a new test with no unit, as the web does', () => {
+    expect(add(record(), 'Weight', 80, 'kg')).toMatchObject({ ok: false, reason: 'core-metric' });
+    expect(add(record(), 'Zinc custom', 80, '')).toEqual({ ok: false, reason: 'invalid-value', message: 'A lab value needs the unit the lab reported it in' });
+  });
+
+  it('labAdd is only the lab page\'s add: a name on it is unread', () => {
+    const named = { kind: 'labAdd', series: 'ferritin', value: 90, day: '2026-10-01', name: 'Ferritin', unit: 'µg/L' } as Edit;
+    expect(applyEdit(record(), named, NOW)).toMatchObject({ ok: false, reason: 'not-found' });
   });
 });
