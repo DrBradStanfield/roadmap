@@ -131,7 +131,7 @@ export function chatContextOf(
  * (`creatinineDay`). When it is not the newest saved point, it travels as one
  * more creatinine point marked `draft`, after the saved ones, which it never
  * displaces; the server reads its day and drops it (historyOf). A typed value
- * with no day is left for the server to read as today's.
+ * carries the client's day (withLabEgfr sets it), so the server never guesses it.
  */
 function withCreatinineDraft(history: MeasurementHistoryMap, inputs: Partial<HealthInputs> & CreatinineDay): MeasurementHistoryMap {
   const { creatinine, creatinineDay } = inputs;
@@ -448,9 +448,9 @@ function limitsOf(raw: unknown): { limits: Partial<Record<LimitField, { comparat
 /**
  * The day of the creatinine the plan reads, as the client's plan dated it: the
  * draft point's, when it holds that value; else the newest saved point
- * (latestFromHistory's), when it does. Otherwise the value was typed with no
- * day: undefined, which the plan reads as today. `rawHistory` is the history
- * as sent; runRoadmap weighs the lab eGFR by the same day (US-07 AC7).
+ * (latestFromHistory's), when it does. Otherwise undefined: the plan reads
+ * today's age, and runRoadmap, which weighs the lab eGFR by the same day,
+ * keeps the lab eGFR (US-07 AC7). `rawHistory` is the history as sent.
  */
 export function creatinineDayOf(creatinine: number | undefined, rawHistory: unknown): string | undefined {
   const { history, creatinineDraft: draft } = historyOf(rawHistory);

@@ -182,7 +182,8 @@ export function labEgfrFrom(value: number, labEgfrDate: string, comparator?: Com
  * day it would be saved with. A newer creatinine the plan cannot calculate
  * from (no sex, no birth year, or taken by a known minor on its day) keeps the
  * lab's, with `labEgfrOutdated` (AC8).
- * The day itself goes on as `creatinineDay`, for the age the eGFR is worked out at.
+ * The day itself goes on as `creatinineDay`, for the age the eGFR is worked out at,
+ * `today` for a typed one: the chat sends it, so the server never guesses it.
  */
 export function withLabEgfr<T extends Partial<HealthInputs>>(
   inputs: T, creatinineDay: string | null, lab: LabEgfr | null, today: string,
@@ -205,7 +206,7 @@ export function withLabEgfr<T extends Partial<HealthInputs>>(
     ...rest, ...value, ...(newer ? { labEgfrOutdated: true } : {}),
     ...(labEgfrLimit ? { limits: { ...kept, labEgfr: labEgfrLimit } } : others),
   };
-  return { ...out, ...(creatinineDay ? { creatinineDay } : {}) } as T & CreatinineDay;
+  return { ...out, ...(creatinineDay || inputs.creatinine !== undefined ? { creatinineDay: day } : {}) } as T & CreatinineDay;
 }
 
 export interface PlanLab {

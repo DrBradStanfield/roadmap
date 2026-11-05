@@ -490,9 +490,13 @@ describe('US-07 AC7: the lab eGFR is weighed against the creatinine in use, a ma
   };
   const calc200 = Math.round(calculateEGFR(200, 76, 'female'));
 
-  it('run_roadmap: an undated typed creatinine is today\'s, so it outdates an older lab eGFR (adversary + Codex, US-07 AC7)', () => {
+  /** The client's payload with a creatinine typed with no day: withLabEgfr dates it the client's local day. */
+  const typedPayload = (file: RoadmapFile, creatinine: number, localDay = '2026-09-01') => chatContextOf(
+    withLabEgfr({ ...plan(file).inputs, creatinine }, null, labEgfrOf(file.labValues), localDay), 'si', [], [], file.measurements);
+
+  it('run_roadmap: an undated typed creatinine is the client\'s today, so it outdates an older lab eGFR (adversary + Codex, US-07 AC7)', () => {
     const file = noSex(fileWith({ creatinine: [{ value: 80, day: '2026-08-01' }], labs: [{ value: 95, day: '2026-07-01' }] }));
-    const payload = { ...chatContextOf(plan(file).inputs, 'si', [], [], file.measurements), creatinine: 200 };
+    const payload = typedPayload(file, 200);
     const out = JSON.parse(runRoadmap(payload, { sex: 'female' }, NOW).contextJson!);
     expect(calc200).toBeLessThan(45);
     expect(out.derivedValues.eGFR).toBe(calc200);
@@ -501,10 +505,29 @@ describe('US-07 AC7: the lab eGFR is weighed against the creatinine in use, a ma
 
   it('run_roadmap: the same with nothing saved, a lab eGFR and a typed creatinine only (US-07 AC7)', () => {
     const file = noSex(fileWith({ labs: [{ value: 95, day: '2026-07-01' }] }));
-    const payload = { ...chatContextOf(plan(file).inputs, 'si', [], [], file.measurements), creatinine: 200 };
+    const payload = typedPayload(file, 200);
     const out = JSON.parse(runRoadmap(payload, { sex: 'female' }, NOW).contextJson!);
     expect(out.derivedValues.eGFR).toBe(calc200);
     expect(card(out)).toEqual(reducedCard());
+  });
+
+  it('run_roadmap: a creatinine typed on a lab eGFR\'s own local day leaves the lab eGFR standing (US-07 AC7)', () => {
+    // New York, 11:00 on 2026-09-01: the client's day is the lab's, though somewhere on Earth it is already 2026-09-02.
+    const now = new Date('2026-09-01T15:00:00.000Z');
+    const file = fileWith({ labs: [{ value: 40, day: '2026-09-01' }] });
+    const payload = typedPayload(file, 15, '2026-09-01');
+    expect(JSON.parse(buildChatContextJson(payload)!).derivedValues.eGFR).toBe(40);
+    const out = JSON.parse(runRoadmap(payload, { values: [{ field: 'ldl', value: 3, unit: 'mmol/L' }] }, now).contextJson!);
+    expect(out.derivedValues.eGFR).toBe(40);
+    expect(out.currentSuggestions.map((c: { id: string }) => c.id)).not.toContain('high-potassium');
+  });
+
+  it('run_roadmap: a creatinine with no day to read keeps the lab eGFR; the server never guesses one (US-07 AC7)', () => {
+    const file = fileWith({ creatinine: [{ value: 80, day: '2020-03-01' }], labs: [{ value: 52, day: '2026-07-01' }] });
+    const { measurementHistory: _history, ...bare } = chatContextOf(plan(file).inputs, 'si', [], [], file.measurements);
+    expect(bare).toMatchObject({ creatinine: 80, labEgfr: 52 });
+    const out = JSON.parse(runRoadmap(bare, { values: [{ field: 'ldl', value: 3, unit: 'mmol/L' }] }, NOW).contextJson!);
+    expect(out.derivedValues.eGFR).toBe(52);
   });
 
   it('run_roadmap: a lab eGFR printed as a limit, outdated by a draft, leaves with its limit (Codex R2, US-07 AC7)', () => {
