@@ -27,7 +27,7 @@ Add your height, weight, blood pressure and blood tests. Apple Health can fill i
 the vitals, and you can upload a lab report from your phone, Dropbox or Google
 Drive. The app reads it and asks you to confirm each value before saving it.
 
-If you allow it, My data also shows your heart rate, resting heart rate, sleep, VO2
+If you allow it, My data also shows your resting heart rate, sleep, VO2
 max and steps from Apple Health, with a chart for each. They stay out of your record
 and never leave your iPhone.
 *(For the next version: 0.1 is in review with the old text, "They are shown from Apple
@@ -72,7 +72,7 @@ three together. Brad's rule (2026-10-22): over-declare rather than under-declare
   Apple's definition of this type names: "data from the Clinical Health Records API"), and the lab values read from an uploaded
   report. Purpose: App Functionality only. Linked to the user's identity: Yes, because an
   uploaded report carries the patient's name and Anthropic may keep API inputs for a time.
-  Used for tracking: No. Heart rate, resting heart rate, sleep and VO2 max are not part of
+  Used for tracking: No. Resting heart rate, sleep, VO2 max and steps are not part of
   this: the app reads them from Apple Health and shows them on the phone, never in the
   record, and they never leave the device (Apple counts data as collected only when it
   leaves the device).
@@ -142,7 +142,7 @@ declares the three rows below; declare them as written.
   heart rate, sleep, VO2 max and steps. A person who skipped that connects from My
   data's Apple Health row, which shows the same sheet. A person who connected before this
   was added gets "Turn On" on My data, the same sheet again; after a refusal, "Open Settings"
-  opens Settings. These five never go into the record: the app keeps a copy of what the cards
+  opens Settings. These four never go into the record: the app keeps a copy of what the cards
   and charts draw (each card's latest reading and trend values, each chart's daily history, the
   last week of hourly values, and sleep's stages) in files on this iPhone only (not backed up,
   deleted by "Delete all my data"), so they show at once, and never sends them.
@@ -164,7 +164,7 @@ declares the three rows below; declare them as written.
 - Guideline 5.1.3: HealthKit data is not used for advertising or marketing, not sold,
   and not stored in iCloud by us. It reaches our server only inside the record summary
   a chat question carries, after the user agrees to the chat; the server keeps no copy
-  (privacy policy, "Chat"). The five readings shown from Apple Health are not in the
+  (privacy policy, "Chat"). The four readings shown from Apple Health are not in the
   record, so they never reach the server.
 
 ## Before submission (Brad)

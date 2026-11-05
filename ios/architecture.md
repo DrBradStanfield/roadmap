@@ -919,7 +919,7 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
 
 **US-56, built 2026-10-25 (phases 1 and 2), on My data.** `HealthRoadmap/AppleHealthMetrics/`:
 - `LiveHealthStore` is the protocol; `LiveHealthKitStore` the only code reading HealthKit for these
-  five types, on its own `HKHealthStore`. It names exactly heart rate, resting heart rate, sleep
+  four types, on its own `HKHealthStore` (heart rate dropped, US-73, 2026-11-05). It names exactly resting heart rate, sleep
   analysis, VO2 max and step count (`readTypes`), shares none, and never asks for them itself:
   **one request (Brad 2026-10-26):** `HealthKitClient.requested` is the union of D6's types, sex and
   date of birth, and `readTypes`, and `HealthKitClient.requestAuthorization` is the app's only Health
@@ -927,9 +927,9 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   the DEBUG seed). Both sets are `static let`, and all three share one `HKHealthStore.app`, as
   Apple recommends. So onboarding's "Connect Apple Health", My data's Apple Health row and the
   Turn On row all show one sheet; iOS lists only the types not yet asked, so a person connected
-  before 2026-10-26 sees just the five. `AppleHealthSync.connect()` is the one connect: it holds the
+  before 2026-10-26 sees just the four. `AppleHealthSync.connect()` is the one connect: it holds the
   app's `LiveHealth` (given once, in `AppParts`), so the cards read as soon as the sheet is answered, beside the import. It uses
-  `statusForAuthorizationRequest` on the five for the Turn On row; a status check that throws keeps
+  `statusForAuthorizationRequest` on the four for the Turn On row; a status check that throws keeps
   the answer `LiveHealth` had, so the row never flashes (adversary R4). Every call is
   `@concurrent`: HealthKit and the maths run off the main thread. HealthKit's statistics collection
   queries do the daily and hourly maths, chosen by each metric's `aggregation` (`.sum` steps,
@@ -991,12 +991,12 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   `SleepPage` (D's stages over the night, W/M/6M stacked nights with stage averages, its chart its
   own view, E3). Both pages share `LivePageFrame` (picker, empty line, footnote, read, range
   reset), `ScrollingChart` (axes, scroll, scrub, haptic, calendar) with `SelectionRule`, and
-  `PageHeadline`, which `MetricDetailView` uses too. Every metric page, MetricDetailView's included, takes `metricPageList` (inset grouped, inline title, an 8 pt top margin so the picker sits under the title; Brad 2026-10-25). While the sheet is still due for the five and Apple Health is connected (so only for someone connected before 2026-10-26) Vitals shows `LiveReconnectRow` with **Turn On** (US-56 AC5; the "Show from Apple Health" card is gone; not connected, My data's Apple Health row is the one way in), and after "Don't Allow" (or an empty Health) the same row with **Open Settings** (AC5b; "Reconnect" until 2026-11-01, AC5c). Turn On runs `connect()` on the known answer; Open Settings checks the status afresh and runs it while the sheet is due, else opens Settings (`LiveReconnectRow.action`); Settings opens at its top and iOS 27's app page there has no Health row, so the row names the path, chosen by OS (`LiveFooter.healthPath`: Settings › Apps › Health › Data Access & Devices › Health Roadmap from iOS 18, Settings › Health › … on iOS 17). **A page always shows its card's reading
+  `PageHeadline`, which `MetricDetailView` uses too. Every metric page, MetricDetailView's included, takes `metricPageList` (inset grouped, inline title, an 8 pt top margin so the picker sits under the title; Brad 2026-10-25). While the sheet is still due for the four and Apple Health is connected (so only for someone connected before 2026-10-26) Vitals shows `LiveReconnectRow` with **Turn On** (US-56 AC5; the "Show from Apple Health" card is gone; not connected, My data's Apple Health row is the one way in), and after "Don't Allow" (or an empty Health) the same row with **Open Settings** (AC5b; "Reconnect" until 2026-11-01, AC5c). Turn On runs `connect()` on the known answer; Open Settings checks the status afresh and runs it while the sheet is due, else opens Settings (`LiveReconnectRow.action`); Settings opens at its top and iOS 27's app page there has no Health row, so the row names the path, chosen by OS (`LiveFooter.healthPath`: Settings › Apps › Health › Data Access & Devices › Health Roadmap from iOS 18, Settings › Health › … on iOS 17). **A page always shows its card's reading
   (Codex R2, adversary R7):** it holds the metric's whole history, from its oldest sample
   (`LiveHealthStore.earliest`, never before 2014), by day as HealthKit sums or averages it, so a
   decade is about 3,650 points; sleep keeps every night's samples. **Decision, 2026-11-03 (US-56
   AC7a): the histories are kept on the phone.** Why: Brad found VO2 max stopped a year back while
-  Weight scrolled to its first reading, and reading a decade of heart rate or sleep each time a
+  Weight scrolled to its first reading, and reading a decade of resting heart rate or sleep each time a
   page opens is slow ("store it so that we can quickly load it and we don't have to keep fetching
   it. And that load needs to not be in the user interface main thread"). This reverses AC2's
   2026-10-27 line that pages are read fresh. How: the `LiveHistory` actor keeps one file per
@@ -1027,11 +1027,11 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   record metric's page. `LivePageFrame` draws it last; `MyDataView` hands it in from My data's `guides` by
   `LiveMetric.guideKey` (the snake-case key, as `paletteKey`). No engine change: the engine already serves every guide.
 - Simulator seeding: `App/LiveHealthSeed.swift`, DEBUG only (`#if DEBUG`, never in a release build):
-  `--seed-live-health` asks to write the five types and saves three years of every metric in
+  `--seed-live-health` asks to write the four types and saves three years of every metric in
   batches of 5,000 (a page keeps and scrolls a long history, AC7a). A sheet asked for during launch is dismissed by iOS, so it waits 4 s. Apple's
   sheet in iOS 27 answers by "Select All", "Continue", "All Recorded Data", "Allow"; a UI test can
   tap them only by screen point (the sheet reports its frames at a third of screen points).
-- Purpose string: the six "go only into your record"; the five are kept only on this iPhone, never in the record (AC10, AC2 since 2026-10-27).
+- Purpose string: the six "go only into your record"; the four are kept only on this iPhone, never in the record (AC10, AC2 since 2026-10-27).
 - **AC8 built 2026-10-26 (Brad: "do it. we want the bands").** Apple publishes only the Low rule
   (white paper, May 2021: lowest FRIEND quintile for sex and decade at 20 to 59, Kaminsky 2015;
   below 18 mL/kg/min for men and 15 for women at 60 and over), so the page shows FRIEND 2022
@@ -1897,7 +1897,7 @@ read Apple Health in their own view, so a live refresh never rebuilds the list.
 1. Engine work off the main thread: stages 1 to 4 done (above). Left: profile Charts' first draw
    on a real iPhone (277 ms in a debug build in the simulator, 2026-10-23, the largest stall
    under an app screen).
-2. US-56: heart rate, resting heart rate, sleep, VO2 max and steps from Apple Health, read live (D6).
+2. US-56: resting heart rate, sleep, VO2 max and steps from Apple Health, read live (D6).
    Built 2026-10-25 (D6), checked on seeded simulator data; AC8's bands built 2026-10-26; left: the
    side-by-side comparison on Brad's iPhone with a watch.
 3. `APP_ATTEST_TEAM_ID` on the education server, so chat and lab upload work on a phone (D8).
