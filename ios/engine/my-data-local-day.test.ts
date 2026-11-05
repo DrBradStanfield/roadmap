@@ -78,3 +78,37 @@ describe('a metric page\'s medication markers in Auckland (US-25 AC9b)', () => {
     expect(metricHistory(withAnswer, 'ldl', NOW).markers?.map((m) => m.id)).toEqual([row.id]);
   });
 });
+
+// US-73 AC10b (simulator break-test 2026-11-06): a supplement's days are the phone's own.
+// At 9 am on 22 October in Auckland it is still 21 October in UTC.
+describe('a supplement\'s start and stop days in Auckland (US-73 AC10b)', () => {
+  const omega3 = { kind: 'supplement', supplementKey: 'omega3', supplementName: 'Omega-3', doseValue: 1, doseUnit: 'g' } as const;
+  const LATER = '2026-10-23T19:30:00.000Z'; // 24 October, 8:30 am in Auckland
+
+  it('starts a supplement added now on the local day, not UTC\'s', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { ...omega3, status: 'active' });
+    expect(myData(file, NOW).supplements.active.map((s) => s.startedDay)).toEqual(['2026-10-22']);
+  });
+
+  it('keeps a start stored as a bare day as that day', () => {
+    let file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { ...omega3, status: 'active' });
+    file = { ...file, supplements: file.supplements.map((s) => ({ ...s, startedAt: '2026-10-01' })) };
+    expect(myData(file, NOW).supplements.active.map((s) => s.startedDay)).toEqual(['2026-10-01']);
+  });
+
+  it('gives a stopped supplement the local day of its latest stop', () => {
+    let file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { ...omega3, status: 'active' }, { ...omega3, status: 'stopped' });
+    let outcome = applyEdit(file, { ...omega3, status: 'active' }, LATER);
+    if (!outcome.ok) throw new Error(outcome.message);
+    outcome = applyEdit(outcome.file, { ...omega3, status: 'stopped' }, LATER);
+    if (!outcome.ok) throw new Error(outcome.message);
+    file = outcome.file;
+    const { active, stopped } = myData(file, LATER).supplements;
+    expect(stopped.map((s) => [s.startedDay, s.stoppedDay])).toEqual([['2026-10-22', '2026-10-24']]);
+    // A stopped row with no stop in its history (another writer) has no stop day, and an active one none.
+    file = { ...file, supplementHistory: [] };
+    expect(myData(file, LATER).supplements.stopped.map((s) => s.stoppedDay)).toEqual([null]);
+    expect(active).toEqual([]);
+    expect(myData(edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { ...omega3, status: 'active' }), NOW).supplements.active[0].stoppedDay).toBeNull();
+  });
+});
