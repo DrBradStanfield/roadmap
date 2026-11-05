@@ -277,17 +277,6 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
 
   // ── Apple Health (US-56 pages; US-58 AC7, Brad 2026-10-31) ──
   // Apple's pages are cited only for how its devices measure, never for a clinical claim.
-  heart_rate: {
-    title: 'Heart rate',
-    whatItIs: 'How many times your heart beats each minute (bpm). Apple Watch measures your pulse with light sensors on its back, through the day and during workouts.',
-    whyItMatters: 'Heart rate rises with activity, stress, caffeine, heat, dehydration and illness, and falls as you rest. The pattern over days tells you more than any one reading. Get emergency care for chest pain, whatever your pulse, or for a racing pulse with fainting, dizziness or breathlessness. A very slow pulse with fainting, dizziness or breathlessness needs prompt medical care.',
-    howTo: { heading: READ, points: [
-      'Compare readings taken at rest with each other, not with readings taken just after moving.',
-      'Wear the watch so it fits well. A good fit helps the reading.',
-      'If your watch warns of a high, low or irregular heart rate, tell your doctor.',
-    ] },
-    sources: [ref('Gulati 2021'), ref('NHS 2024'), ref('Kusumoto 2019'), ref('Apple 2026 – Monitor your heart rate')],
-  },
   resting_heart_rate: {
     title: 'Resting heart rate',
     whatItIs: 'Your heart rate when you are calm and still: the lowest it runs while you are awake and resting. Apple Watch estimates it each day from readings taken while you sit still, so the day\'s value can change as more readings come in.',
