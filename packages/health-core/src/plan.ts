@@ -31,7 +31,7 @@ import {
 } from './lab-limits';
 import type { CreatinineDay, HealthInputs, HealthResults, MedicationInputs, ScreeningInputs, SuggestionInputs } from './types';
 import {
-  UNIT_DEFS, formatGradedReading, formatGradedValue, getDisplayLabel, unitSystemOf, type MetricType, type UnitSystem,
+  UNIT_DEFS, formatGradedReading, formatGradedValue, getDisplayLabel, unitSystemOf, waistToHeightRatio, type MetricType, type UnitSystem,
 } from './units';
 import { getValidationErrors, PRESSURE_ORDER, sanitizeInputs, validateHealthInputs } from './validation';
 
@@ -202,6 +202,27 @@ export function egfrSeries(file: Pick<RoadmapFile, 'measurements' | 'labValues' 
       : null);
   }
   return [...days.values()].filter((p): p is EgfrPoint => p !== null).sort((a, b) => b.day.localeCompare(a.day));
+}
+
+/** One day of the waist-to-height history. */
+export interface WhtrPoint { id: string; day: string; ratio: number }
+
+/**
+ * Every day's waist over the CURRENT height (the record holds one), to two
+ * places, newest first (US-73 AC7): past ratios move if the height is edited.
+ * The day's newest active waist decides it; one printed as a limit holds its
+ * day with no ratio, as a lab eGFR limit does (US-12 AC20). None without a height.
+ */
+export function whtrSeries(file: Pick<RoadmapFile, 'measurements' | 'labValues' | 'profile'>): WhtrPoint[] {
+  const height = file.profile.heightCm;
+  if (typeof height !== 'number' || height <= 0) return [];
+  const days = new Map<string, WhtrPoint | null>();
+  const waists = currentValueRows(file).filter((m) => m.metricType === 'waist').sort((a, b) => b.recordedAt.localeCompare(a.recordedAt));
+  for (const waist of waists) {
+    const day = dayOf(waist.recordedAt);
+    if (!days.has(day)) days.set(day, comparatorOf(waist).comparator ? null : { id: waist.id, day, ratio: waistToHeightRatio(waist.value, height) });
+  }
+  return [...days.values()].filter((p): p is WhtrPoint => p !== null);
 }
 
 /** A lab eGFR candidate from its printed number, day and code: a limit graded by

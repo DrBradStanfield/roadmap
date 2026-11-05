@@ -40,8 +40,19 @@ function highestPriority(suggestions: Suggestion[]): Suggestion['priority'] {
   return suggestions.some((s) => s.priority === 'attention') ? 'attention' : 'info';
 }
 
-function card(suggestions: Suggestion[]): PlanCard {
+function card<S extends Suggestion>(suggestions: S[]): TopicCard<S> {
   return { category: suggestions[0].category, priority: highestPriority(suggestions), suggestions };
+}
+
+/** A skin or supplement suggestion: planSections gives it its own section, never grouped, and
+ *  repeats one raised to attention or urgent in that priority's section. */
+export const isSectionedApart = (s: Pick<Suggestion, 'category'>) => s.category === 'supplements' || s.category === 'skin';
+
+/** Appends `item` to `key`'s list, starting the list when the map has none. */
+function push<K, T>(map: Map<K, T[]>, key: K, item: T): void {
+  const list = map.get(key);
+  if (list) list.push(item);
+  else map.set(key, [item]);
 }
 
 function orderedCards(suggestions: Suggestion[]): PlanCard[] {
@@ -69,11 +80,10 @@ function orderedCards(suggestions: Suggestion[]): PlanCard[] {
  * attention or urgent also shows in that priority's section.
  */
 export function planSections(suggestions: Suggestion[]): PlanSection[] {
-  const special = (s: Suggestion) => s.category === 'supplements' || s.category === 'skin';
   const sections: PlanSection[] = [
     { key: 'urgent', title: 'Requires Attention', cards: orderedCards(suggestions.filter((s) => s.priority === 'urgent')) },
     { key: 'attention', title: 'Next Steps', cards: orderedCards(suggestions.filter((s) => s.priority === 'attention')) },
-    { key: 'info', title: 'Foundation', cards: orderedCards(suggestions.filter((s) => s.priority === 'info' && !special(s))) },
+    { key: 'info', title: 'Foundation', cards: orderedCards(suggestions.filter((s) => s.priority === 'info' && !isSectionedApart(s))) },
     { key: 'skin', title: 'Skin Health', cards: suggestions.filter((s) => s.category === 'skin').map((s) => card([s])) },
     { key: 'supplements', title: 'Supplements', cards: suggestions.filter((s) => s.category === 'supplements').map((s) => card([s])) },
   ];
@@ -186,24 +196,21 @@ export function topicSections<S extends Suggestion>(
   const cards = new Map<TopicId, TopicCard<S>[]>();
   const medicines = new Map<string, S[]>();
   const screenings = new Map<string, S[]>();
-  const add = <K>(map: Map<K, S[]>, key: K, s: S) => map.set(key, [...(map.get(key) ?? []), s]);
   for (const section of sections) {
     // planSections repeats a skin or supplement suggestion raised to urgent or attention there.
-    const repeated = (s: S) => (section.key === 'urgent' || section.key === 'attention') && (s.category === 'skin' || s.category === 'supplements');
-    for (const card of section.cards) {
+    const repeated = (s: S) => (section.key === 'urgent' || section.key === 'attention') && isSectionedApart(s);
+    for (const { suggestions } of section.cards) {
       const byTopic = new Map<TopicId, S[]>();
-      for (const s of card.suggestions) {
+      for (const s of suggestions) {
         if (repeated(s)) continue;
         const key = s.category === 'medication' ? questionKeys(s.id).find((k) => asked.has(k)) : undefined;
         const group = screeningGroupOf(s);
-        if (key) add(medicines, key, s);
-        else if (group && groups.has(group)) add(screenings, group, s);
-        else { add(byTopic, topicOf(s), s); continue; }
-        if (s.priority === 'urgent') add(byTopic, topicOf(s), s);
+        if (key) push(medicines, key, s);
+        else if (group && groups.has(group)) push(screenings, group, s);
+        else { push(byTopic, topicOf(s), s); continue; }
+        if (s.priority === 'urgent') push(byTopic, topicOf(s), s);
       }
-      for (const [topic, suggestions] of byTopic) {
-        cards.set(topic, [...(cards.get(topic) ?? []), { category: card.category, priority: highestPriority(suggestions), suggestions }]);
-      }
+      for (const [topic, inTopic] of byTopic) push(cards, topic, card(inTopic));
     }
   }
   const ownershipLine = sections.find((section) => section.ownershipLine)?.ownershipLine;

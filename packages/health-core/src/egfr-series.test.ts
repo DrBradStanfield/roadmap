@@ -4,8 +4,8 @@
 import { describe, expect, it } from 'vitest';
 import { ageOnDay, calculateAge, calculateEGFR } from './calculations';
 import { createCoreRow } from './blood-tests';
-import { computePlan, egfrSeries } from './plan';
-import { createEmptyFile, type FileLabValue, type RoadmapFile } from './roadmap-file';
+import { computePlan, egfrSeries, whtrSeries } from './plan';
+import { createEmptyFile, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 
 const NOW = '2026-10-21T08:00:00.000Z';
 const creatinine = (id: string, value: number, day: string, extra: Partial<FileLabValue> = {}) =>
@@ -141,5 +141,23 @@ describe('egfrSeries (US-73 AC7)', () => {
     const printed = record([creatinine('c1', 95, '2026-07-01'), lab('e1', 'eGFR', 64, EGFR, '2026-07-01')]);
     expect(egfrSeries(printed)[0]).toMatchObject({ value: 64, source: 'lab' });
     expect(computePlan(printed, new Date(NOW)).results.eGFR).toBe(64);
+  });
+});
+
+describe('whtrSeries (US-73 AC7)', () => {
+  const waist = (id: string, value: number, recordedAt: string, extra: Partial<FileMeasurement> = {}) =>
+    createMeasurement({ id, metricType: 'waist', value, recordedAt, createdAt: NOW, source: 'manual', ...extra });
+  const file = (measurements: FileMeasurement[], heightCm?: number): RoadmapFile => ({ ...record([], { heightCm }), measurements });
+
+  it('is each day\'s waist over the current height, to two places, newest first; none without a height', () => {
+    const rows = [waist('w1', 88, '2026-01-01T00:00:00.000Z'), waist('w2', 92.7, '2026-06-01T00:00:00.000Z'),
+      waist('w3', 120, '2026-07-01T00:00:00.000Z', { status: 'entered-in-error' })];
+    expect(whtrSeries(file(rows, 180))).toEqual([{ id: 'w2', day: '2026-06-01', ratio: 0.52 }, { id: 'w1', day: '2026-01-01', ratio: 0.49 }]);
+    expect(whtrSeries(file(rows, undefined))).toEqual([]);
+  });
+
+  it('a waist printed as a limit holds its day: no ratio from it, nor from an earlier waist that day (US-12 AC20)', () => {
+    const rows = [waist('w1', 88, '2026-06-01T07:00:00.000Z'), waist('w2', 95, '2026-06-01T09:00:00.000Z', { comparator: '>' })];
+    expect(whtrSeries(file(rows, 180))).toEqual([]);
   });
 });

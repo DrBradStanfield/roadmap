@@ -74,6 +74,14 @@ describe('the waist-to-height row\'s history (US-73 AC7)', () => {
     ]);
   });
 
+  it('a waist printed as a limit holds its day, as a lab eGFR limit does: no ratio from an earlier waist that day', () => {
+    const file = record({ measurements: [
+      measurement('w1', 'waist', 88, '2026-06-01', { recordedAt: '2026-06-01T07:00:00.000Z' }),
+      measurement('w2', 'waist', 95, '2026-06-01', { recordedAt: '2026-06-01T09:00:00.000Z', comparator: '>' } as Partial<FileMeasurement>),
+    ] });
+    expect(history(file, 'whtr').rows).toEqual([]);
+  });
+
   it('moves every ratio when the height is edited, and has none without a height', () => {
     const file = record({ measurements: [measurement('w1', 'waist', 88, '2026-01-01')] });
     expect(history({ ...file, profile: { ...file.profile, heightCm: 160 } }, 'whtr').rows[0].value).toBe('0.55');
@@ -118,24 +126,28 @@ describe('screenJson plan.topics (US-73 AC3)', () => {
     out.noSex = { ...clone(), profile: { ...clone().profile, sex: undefined } };
     out.empty = record();
     out.older = { ...clone(), profile: { ...clone().profile, birthYear: 1950 } };
+    // An abnormal colonoscopy with no follow-up: an urgent suggestion on its screening row.
+    out.followup = { ...clone(), profile: { ...clone().profile, birthYear: 1970 }, screenings: { ...clone().screenings, colorectalMethod: 'colonoscopy_10yr', colorectalLastDate: '2026-09', colorectalResult: 'abnormal', colorectalFollowupStatus: 'not_organized' } as RoadmapFile['screenings'] };
     return out;
   })();
-  const seen = { medicine: 0, screening: 0, urgent: 0, urgentInRow: 0 };
+  /** One record's screen, its suggestions by id, and where topics placed each one. */
+  const layout = (name: string, isUS: boolean) => {
+    const { myData, plan } = JSON.parse(screenJson(JSON.stringify(records[name]), NOW, 'phone', '{}', isUS));
+    const topics: TopicLayout = plan.topics;
+    const all = new Map<string, Suggestion>(plan.sections.flatMap((s: { cards: Array<{ suggestions: Suggestion[] }> }) => s.cards.flatMap((c) => c.suggestions)).map((s: Suggestion) => [s.id, s]));
+    const inCards = topics.sections.flatMap((s) => s.cards.flatMap((c) => c.suggestions.map((x) => x.id)));
+    const inRows = [...topics.medicines.flatMap((r) => r.suggestions), ...topics.screenings.flatMap((r) => r.suggestions)].map((x) => x.id);
+    return { myData, plan, topics, all, inCards, inRows };
+  };
 
   it.each(Object.keys(records))('places every suggestion of the %s record', (name) => {
     for (const isUS of [false, true]) {
-      const { myData, plan } = JSON.parse(screenJson(JSON.stringify(records[name]), NOW, 'phone', '{}', isUS));
-      const topics: TopicLayout = plan.topics;
-      const all = new Map<string, Suggestion>(plan.sections.flatMap((s: { cards: Array<{ suggestions: Suggestion[] }> }) => s.cards.flatMap((c) => c.suggestions)).map((s: Suggestion) => [s.id, s]));
-      const inCards = topics.sections.flatMap((s) => s.cards.flatMap((c) => c.suggestions.map((x) => x.id)));
-      const inRows = [...topics.medicines.flatMap((r) => r.suggestions), ...topics.screenings.flatMap((r) => r.suggestions)].map((x) => x.id);
+      const { myData, plan, topics, all, inCards, inRows } = layout(name, isUS);
       for (const [id, suggestion] of all) {
         const cardsOf = inCards.filter((x) => x === id).length;
         const rowsOf = inRows.filter((x) => x === id).length;
         expect(rowsOf, id).toBeLessThanOrEqual(1);
         expect(cardsOf, id).toBe(rowsOf === 0 || suggestion.priority === 'urgent' ? 1 : 0);
-        if (suggestion.priority === 'urgent') seen.urgent++;
-        if (suggestion.priority === 'urgent' && rowsOf) seen.urgentInRow++;
       }
       expect(new Set([...inCards, ...inRows])).toEqual(new Set(all.keys()));
       // A row is a question this screen asks.
@@ -143,17 +155,29 @@ describe('screenJson plan.topics (US-73 AC3)', () => {
       const groups = new Set((myData.screenings as FormSection[]).flatMap((s) => s.groups.filter((g) => g.fields.length).map((g) => g.id)));
       for (const row of topics.medicines) expect(asked.has(row.key), row.key).toBe(true);
       for (const row of topics.screenings) expect(groups.has(row.group), row.group).toBe(true);
-      seen.medicine += topics.medicines.length;
-      seen.screening += topics.screenings.length;
       // US-61: the US overlay's supplement cards and ownership line come through.
       if (isUS && plan.usProducts) expect(topics.sections.find((s) => s.topic === 'supplements')?.ownershipLine).toBeTruthy();
     }
   });
 
-  it('the records above reach medicine rows, screening rows and an urgent suggestion', () => {
+  it('the records above reach medicine rows, screening rows, an urgent suggestion and an urgent one in a row', () => {
+    const seen = { medicine: 0, screening: 0, urgent: 0, urgentInRow: 0 };
+    for (const name of Object.keys(records)) {
+      for (const isUS of [false, true]) {
+        const { topics, all, inRows } = layout(name, isUS);
+        seen.medicine += topics.medicines.length;
+        seen.screening += topics.screenings.length;
+        for (const [id, suggestion] of all) {
+          if (suggestion.priority !== 'urgent') continue;
+          seen.urgent++;
+          if (inRows.includes(id)) seen.urgentInRow++;
+        }
+      }
+    }
     expect(seen.medicine).toBeGreaterThan(0);
     expect(seen.screening).toBeGreaterThan(0);
     expect(seen.urgent).toBeGreaterThan(0);
+    expect(seen.urgentInRow).toBeGreaterThan(0);
   });
 
   it('a record that cannot be planned has no topics', () => {
