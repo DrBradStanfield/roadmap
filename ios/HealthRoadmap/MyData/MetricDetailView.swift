@@ -70,6 +70,23 @@ struct MetricDetailView: View {
                     .disabled(store.unitSwitches > 0)
                 }
             }
+            // The plan tiles' explainers on their row's page (US-73 AC9, `PlanTiles.pages`): the
+            // value, its status, what it is and the evidence, as the plan's tiles opened them.
+            ForEach(PlanTiles.pages[row.id, default: []].compactMap { PlanTiles(store.plan)[$0] }) { tile in
+                Section {
+                    LabeledContent {
+                        Text("\(tile.value) \(tile.unit)").font(.body.weight(.semibold)).monospacedDigit()
+                    } label: {
+                        Text(tile.label)
+                        if let status = tile.status { Text(status.label) }
+                    }
+                    Text(tile.about)
+                    if let evidence = tile.evidence {
+                        EvidenceDetails(reason: evidence.reason, guidelines: evidence.guidelines, references: evidence.references,
+                                        heading: "The evidence")
+                    }
+                }
+            }
             // Apple Health's About section, then its sources (US-58 AC4).
             if let guide = Self.guide(for: row, in: store.myData?.guides) {
                 GuideSections(guide: guide)

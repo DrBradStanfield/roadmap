@@ -60,7 +60,6 @@ final class Analytics {
         case tourStarted = "Tour started"
         case tourTipClosed1 = "Tour tip closed 1", tourTipClosed2 = "Tour tip closed 2", tourTipClosed3 = "Tour tip closed 3"
         case tourSkipped1 = "Tour skipped 1", tourSkipped2 = "Tour skipped 2", tourSkipped3 = "Tour skipped 3"
-        case tileExplainerOpened = "Tile explainer opened"
         case cloudPromptShown = "Cloud prompt shown", cloudPromptBackUp = "Cloud prompt back up", cloudPromptNotNow = "Cloud prompt not now"
         /// A metric page's About section shown, or a medicine's guide opened from its info
         /// button (US-58); never which one.
@@ -90,7 +89,7 @@ final class Analytics {
 
     /// The only screen names Clarity ever gets.
     enum Screen: String {
-        case welcome = "Welcome", onboarding = "Onboarding", myData = "My data", plan = "My plan", chat = "Chat"
+        case welcome = "Welcome", onboarding = "Onboarding", myData = "My data", chat = "Chat"
         /// A US-56 metric page: the screen only, never which metric or a value.
         case appleHealthMetric = "Apple Health metric"
     }

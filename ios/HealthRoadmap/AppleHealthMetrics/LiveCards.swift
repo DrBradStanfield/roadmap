@@ -51,16 +51,18 @@ enum LiveFooter {
     static var healthSettings: String { "The Apple Health settings for this app are in \(healthPath)." }
 }
 
-/// One place's cards (AC5, AC6), each its own section as the vitals are. In Vitals, under
-/// blood pressure: the Turn On row, or heart rate, resting heart rate and sleep, or the
-/// Open Settings row. Under Fitness: VO2 max and steps, not shown when neither has data.
+/// One place's cards (AC5, AC6), each its own section. On My health (US-73): sleep under
+/// Sleep; under Fitness VO2 max, resting heart rate and steps, or the Turn On or Open
+/// Settings row.
 struct LiveCardsSection: View {
     @Environment(LiveHealth.self) private var live: LiveHealth?
     @Environment(AppleHealthSync.self) private var health: AppleHealthSync?
-    /// `LiveMetric.vitals` or `LiveMetric.fitness`.
     let metrics: [LiveMetric]
     /// The bands by metric, for a card's band (US-56 AC8): My data hands VO2 max's only.
     var bands: [LiveMetric: Vo2MaxBands] = [:]
+    /// This place keeps the Turn On / Open Settings row: My health's Fitness, not its Sleep (US-73).
+    /// Their "From Apple Health…" line is in the settings sheet's Apple Health section.
+    let keepsReconnect: Bool
     let open: (LiveMetric) -> Void
 
     /// What a place shows.
@@ -75,8 +77,8 @@ struct LiveCardsSection: View {
     /// cards with a reading. With none anywhere, after a "Don't Allow" or with an empty Health
     /// (iOS cannot tell them apart), Vitals shows one calm Open Settings row, never an error or a
     /// greyed line (AC5b, Brad 2026-10-25). Nothing while the answer is unknown or unread.
-    static func shown(_ metrics: [LiveMetric], connected: Bool, needsAccess: Bool?, hasRead: Bool, cards: [LiveMetric: LiveCard]) -> Shown {
-        let vitals = metrics == LiveMetric.vitals
+    static func shown(_ metrics: [LiveMetric], connected: Bool, needsAccess: Bool?, hasRead: Bool, cards: [LiveMetric: LiveCard], keepsReconnect: Bool? = nil) -> Shown {
+        let vitals = keepsReconnect ?? (metrics == LiveMetric.vitals)
         if needsAccess == true { return vitals && connected ? .turnOn : .nothing }
         guard needsAccess == false, hasRead else { return .nothing }
         if vitals, cards.isEmpty { return .reconnect }
@@ -84,12 +86,22 @@ struct LiveCardsSection: View {
         return held.isEmpty && !vitals ? .nothing : .cards(held)
     }
 
+    /// What this place shows now; `.nothing` without live Health. The sync's status is read only
+    /// where it matters, before the sheet, so its import never redraws the cards (review, efficiency 2).
+    @MainActor static func shown(_ metrics: [LiveMetric], keepsReconnect: Bool, live: LiveHealth?, health: AppleHealthSync?) -> Shown {
+        guard let live, live.available else { return .nothing }
+        let connected = keepsReconnect && live.needsAccess == true && health?.connected == true
+        return shown(metrics, connected: connected, needsAccess: live.needsAccess, hasRead: live.hasRead, cards: live.cards, keepsReconnect: keepsReconnect)
+    }
+
+    /// Whether this place shows anything, so My health can hide an empty section's heading (US-73 AC2).
+    @MainActor static func shows(_ metrics: [LiveMetric], keepsReconnect: Bool, live: LiveHealth?, health: AppleHealthSync?) -> Bool {
+        shown(metrics, keepsReconnect: keepsReconnect, live: live, health: health) != .nothing
+    }
+
     var body: some View {
-        if let live, live.available {
-            // The sync's status is read only where it matters, Vitals before the sheet, so its
-            // import never redraws the cards (review, efficiency 2).
-            let connected = metrics == LiveMetric.vitals && live.needsAccess == true && health?.connected == true
-            let shown = Self.shown(metrics, connected: connected, needsAccess: live.needsAccess, hasRead: live.hasRead, cards: live.cards)
+        if let live {
+            let shown = Self.shown(metrics, keepsReconnect: keepsReconnect, live: live, health: health)
             switch shown {
             case .nothing:
                 EmptyView()
@@ -97,18 +109,11 @@ struct LiveCardsSection: View {
                 Section { LiveReconnectRow(live: live, turnOn: shown == .turnOn) }
                     .listSectionSpacing(.compact)
             case .cards(let shown):
-                let vitals = metrics == LiveMetric.vitals
-                let fitnessFollows = LiveMetric.fitness.contains { live.cards[$0] != nil }
                 ForEach(shown) { metric in
                     if let card = live.cards[metric] {
                         Section {
                             Button { open(metric) } label: { LiveCardView(metric: metric, card: card, now: live.now(), calendar: live.calendar, band: bands[metric]?.band(card.value)) }
                                 .tint(.primary)
-                        } header: {
-                            if !vitals, metric == shown.first { SectionTitle.fitness() }
-                        } footer: {
-                            // Fitness, when shown, carries the access line, so it is said once.
-                            if metric == shown.last { Text(vitals && fitnessFollows ? LiveFooter.shownOnly : "\(LiveFooter.shownOnly) \(LiveFooter.access)") }
                         }
                         .listSectionSpacing(.compact)
                     }

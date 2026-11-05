@@ -77,7 +77,7 @@ struct SupplementsView: Decodable, Equatable {
         var id: String { key }
     }
 
-    /// One the user could add: featured ones are the web's quick-add chips.
+    /// One the user could add: featured ones are the web's quick-add chips, starred in the add sheet.
     struct Choice: Decodable, Identifiable, Equatable {
         let key: String
         let name: String
@@ -87,7 +87,6 @@ struct SupplementsView: Decodable, Equatable {
         var id: String { key }
     }
 
-    let intro: String
     let active: [Row]
     let stopped: [Row]
     let choices: [Choice]
@@ -138,6 +137,8 @@ struct MetricHistory: Decodable, Equatable {
         var unit: String? = nil
         /// A lab test's exact value, unrounded, for the chart (`value` is for reading); nil otherwise.
         var number: Double? = nil
+        /// An eGFR series row's: "lab" or "calculated" (US-73 AC7); nil elsewhere, or from an older engine.
+        var source: String? = nil
 
         var isActive: Bool { status == "active" }
     }
@@ -149,6 +150,8 @@ struct MetricHistory: Decodable, Equatable {
     /// A lab test reported in more than one unit: why the page draws no chart, in the web's words
     /// (US-21 AC3a); nil otherwise, or from an older engine.
     var unitsNote: String? = nil
+    /// A worked-out series' target, as a row prints it: waist-to-height's "Normal <0.5" (US-73 AC7).
+    var target: String? = nil
     /// The plan set the current value aside (outside the range it accepts), so it does not use it.
     let excluded: Bool
     /// The recorded medication changes this metric's chart marks, health-core's

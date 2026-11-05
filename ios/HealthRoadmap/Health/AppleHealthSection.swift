@@ -5,6 +5,8 @@ import SwiftUI
 /// The sync comes from the environment (HealthRoadmapApp), so My data needs one line.
 struct AppleHealthSection: View {
     @Environment(AppleHealthSync.self) private var health: AppleHealthSync?
+    /// US-56: the live cards' disclosure lives here now (My health, round 4), said once.
+    @Environment(LiveHealth.self) private var live: LiveHealth?
 
     var body: some View {
         if let health, health.status != .unavailable {
@@ -26,7 +28,16 @@ struct AppleHealthSection: View {
                     if case .failed(let why) = health.status { Text(why).foregroundStyle(.red) }
                     if health.status == .notAllowed { Text(LiveFooter.access) }
                     Text("Weight, height, waist and blood pressure come in from Health. Values you type here go to Health. A value you typed is never replaced by Health, and deleting a reading in Health leaves it here.")
+                    if live?.available == true { Text("\(LiveFooter.shownOnly) \(LiveFooter.access)") }
                 }
+            }
+        } else if live?.available == true {
+            // No record sync here (a demo record), but the live cards still read Health.
+            Section {
+            } header: {
+                SectionTitle.appleHealth()
+            } footer: {
+                Text("\(LiveFooter.shownOnly) \(LiveFooter.access)")
             }
         }
     }

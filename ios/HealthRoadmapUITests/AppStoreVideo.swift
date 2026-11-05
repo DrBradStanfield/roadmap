@@ -20,8 +20,8 @@ final class AppStoreVideo: XCTestCase {
         app.launch()
 
         let tabs = app.tabBars
-        XCTAssertTrue(tabs.buttons["My data"].waitForExistence(timeout: 15), "the seeded record opens on the tabs")
-        tabs.buttons["My data"].tap()
+        XCTAssertTrue(tabs.buttons["My health"].waitForExistence(timeout: 15), "the seeded record opens on the tabs")
+        tabs.buttons["My health"].tap()
         pause(1.5)
         mark("mydata")
         pause(3.0)
@@ -73,16 +73,17 @@ final class AppStoreVideo: XCTestCase {
         XCTAssertTrue(done.isHittable, "the review offers Done")
         pause(1.2)
         done.tap()
-        // Back on My data: the blood tests the report filled in.
+        // Back on My health: the blood tests the report filled in.
         pause(1.0)
         mark("after")
         pause(1.5)
         scroll(app, 0.3, velocity: 220)
         pause(2.5)
 
-        tabs.buttons["My plan"].tap()
+        // The plan's cards sit in My health's sections (US-73): back to the top, Weight & diabetes.
+        for _ in 0..<4 { scroll(app, -0.6, velocity: 600) }
         mark("plan")
-        XCTAssertTrue(app.staticTexts["Next Steps"].waitForExistence(timeout: 10) || app.staticTexts["Requires Attention"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Weight & diabetes"].waitForExistence(timeout: 10))
         pause(2.5)
         scroll(app, 0.35, velocity: 240)
         pause(2.0)

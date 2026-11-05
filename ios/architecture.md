@@ -1831,6 +1831,24 @@ limit as `limits` only, never the field's hidden representative, and `limits` jo
 this release on). Apple Health never gets a limit (device-export.ts). The phone sends no
 `product_events`, so it has no count of limits.
 
+### D16 · My health: one tab, laid out by the engine (Brad, 2026-11-05, US-73)
+
+My data and My plan became one tab, My health, beside Chat (seven prototype rounds, draft PR
+842). Swift places no suggestion: `screenJson`'s `plan.topics` (health-core `topicSections`)
+puts each in a topic's cards or on a row (a medicine question by key, a screening group by
+id), an urgent one in both; `TopicPlan` only reads it, an unknown topic goes under Other,
+and with no layout every card does, so nothing is dropped. An urgent card leads its section
+and the red banner scrolls to it. The waist-to-height and eGFR rows read `historyJson`'s
+`whtr` and `egfr` series (`RecordStore.chart`, once per revision); the lab's own eGFR row
+folds into the one eGFR row while that series has points. The tiles are gone: each tile's
+explainer sits on its row's page (`PlanTiles.pages`). The add sheet searches through the
+optional door `labSearchJson` and adds by name in one place (`RecordEdit.labAddName`); an
+engine without the door lists the record's own tests only. About you, units, alcohol,
+reminders, Apple Health and the record sit in a settings sheet behind the person button; its
+close lets a due backup offer show (US-57 AC8). The review prompt waits for a plan card on
+screen (US-25 AC8). The tour's three tips anchor on the tab (US-57, words pending Brad).
+Clarity's screen and event words are unchanged until Brad's D9 call.
+
 ## Phases
 
 0. **Readiness (Brad, in progress 2026-10-21):** macOS upgrade, Xcode 26, Apple Developer

@@ -21,8 +21,8 @@ final class PlanLayoutTests: XCTestCase {
 
     /// Adversary R4: the engine's clock counts whole milliseconds, so a fast plan reads 0.
     func testTheFooterSaysUnderOneMillisecondForZero() {
-        XCTAssertEqual(PlanView.workedOut(ms: 0), "Worked out on this iPhone in under 1 ms.")
-        XCTAssertEqual(PlanView.workedOut(ms: 3), "Worked out on this iPhone in 3 ms.")
+        XCTAssertEqual(PlanText.workedOut(ms: 0), "Worked out on this iPhone in under 1 ms.")
+        XCTAssertEqual(PlanText.workedOut(ms: 3), "Worked out on this iPhone in 3 ms.")
     }
 
     func testSampleRecordMatchesTheWebLayout() throws {

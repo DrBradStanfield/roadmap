@@ -6,7 +6,7 @@ import TipKit
 enum TourStep: Int, Codable, Sendable, CaseIterable {
     case notStarted, snapshot, foundation, bloodTests, done
 
-    /// After onboarding finishes on My plan (AC1). Once only: a started tour never restarts.
+    /// After onboarding finishes on My health (AC1). Once only: a started tour never restarts.
     func started() -> TourStep { self == .notStarted ? .snapshot : self }
 
     /// A tip of this step was closed or acted on (AC2, AC3): the next tip, or done.
@@ -30,7 +30,7 @@ enum Tour {
     @Parameter static var step: Int = TourStep.notStarted.rawValue
 
     /// The tab on screen, `TourTab`'s raw value. TabView keeps a hidden tab's views, so a
-    /// tip due on My data showed over My plan without it.
+    /// tip due on one tab showed over another without it.
     @Parameter static var tab: Int = 0
 
     /// RootView tells the tour which tab shows.
@@ -79,7 +79,7 @@ enum Tour {
 }
 
 /// The tabs a tip can show on.
-enum TourTab: Int { case plan = 1, data, other }
+enum TourTab: Int { case health = 1, other }
 
 /// One of the tour's three tips: one line, then "Skip tour", its counter and "Next"
 /// (Brad 2026-10-25), shown only at its own step and on its own tab.
@@ -106,24 +106,24 @@ extension TourTip {
     }
 }
 
-/// Tip 1 (AC4): the whole row of summary tiles at the top of My plan, one tip.
+/// Tip 1 (AC4): My health's first row, waist-to-height (US-73 AC11; words to be Brad's).
 struct SnapshotTip: TourTip {
     static let step = TourStep.snapshot
-    static let tab = TourTab.plan
+    static let tab = TourTab.health
     static let line = "A snapshot of your health. Tap any tile to learn more."
 }
 
-/// Tip 2 (AC6): the first card of the Foundation section.
+/// Tip 2 (AC6): the first card in Weight & diabetes.
 struct FoundationTip: TourTip {
     static let step = TourStep.foundation
-    static let tab = TourTab.plan
+    static let tab = TourTab.health
     static let line = "Start here. Each step comes with the reason and the evidence."
 }
 
-/// Tip 3 (AC7): Blood tests on My data, with the lab upload above the row.
+/// Tip 3 (AC7): the Blood tests heading, with the lab upload on it.
 struct BloodTestsTip: TourTip {
     static let step = TourStep.bloodTests
-    static let tab = TourTab.data
+    static let tab = TourTab.health
     static let line = "The more data you add, the more personal your plan. You can upload lab reports to fill these in for you."
     static let actionTitle = "Add a lab report"
     var actions: [Action] { [Action(id: Tour.uploadAction, title: Self.actionTitle)] + Self.controls }
@@ -138,7 +138,7 @@ extension View {
         modifier(TourTipAnchor(tip: tip, arrowEdge: arrowEdge, next: next, action: action))
     }
 
-    /// A screen that cannot draw `tip`'s anchor (no tiles, no Foundation card): the step
+    /// A screen that cannot draw `tip`'s anchor (no Weight & diabetes card): the step
     /// passes as closed once due, so the tour never stalls on it (review R4).
     func tourStep<T: TourTip>(_ tip: T, hasNoAnchor missing: Bool) -> some View {
         modifier(TourStepWithoutAnchor(tip: tip, missing: missing))

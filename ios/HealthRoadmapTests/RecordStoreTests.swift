@@ -274,11 +274,12 @@ final class RecordStoreTests: XCTestCase {
         guard case .planned = store.plan else { return XCTFail("the edit's one call planned the new record") }
 
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
-        window.rootViewController = UIHostingController(rootView: PlanView(store: store, showMyData: {}))
+        window.rootViewController = UIHostingController(rootView: MyHealthHost.view(store: store, engine: engine))
         window.makeKeyAndVisible()
         try await Task.sleep(for: .milliseconds(300))
         window.isHidden = true
-        XCTAssertEqual(try doors(), "", "the Plan tab draws the stored plan and asks the engine nothing")
+        // Only its two worked-out rows' series (US-73 AC7): no plan of its own.
+        XCTAssertEqual(try doors().split(separator: " ").filter { $0 != "historyJson" }, [], "My health draws the stored plan and plans nothing itself")
     }
 
     /// Codex R1, adversary R1: the plan reads the date (ages, screening due dates), so a return
@@ -318,20 +319,6 @@ final class RecordStoreTests: XCTestCase {
     private func suggestionIds(_ plan: PlanState?) -> [String] {
         guard case .planned(_, let sections, _) = plan else { return [] }
         return sections.flatMap(\.cards).flatMap(\.suggestions).map(\.id)
-    }
-
-    /// Adversary R3: a record that cannot be read shows its problem on the Plan tab, as
-    /// My data does, never "Your plan needs a few details". Read from the screen's body:
-    /// unit tests have no accessibility tree to search.
-    func testThePlanTabShowsWhyARecordCannotBeOpened() throws {
-        try Data("not a record".utf8).write(to: file)
-        let store = try store()
-        let problem = try XCTUnwrap(store.problem)
-        var shown = ""
-        dump(PlanView(store: store, showMyData: {}).body, to: &shown)
-        XCTAssertTrue(shown.contains("Your record could not be opened"), shown)
-        XCTAssertTrue(shown.contains(String(reflecting: problem)), shown) // dump quotes and escapes it
-        XCTAssertFalse(shown.contains("needs a few details"), shown)
     }
 
     func testTheRecordIsKeptOutOfBackups() throws {

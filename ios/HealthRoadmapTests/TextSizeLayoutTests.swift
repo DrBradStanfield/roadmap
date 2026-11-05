@@ -50,27 +50,6 @@ final class TextSizeLayoutTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(row, icon + 14 + words - 1)
     }
 
-    /// US-25 AC17g: at the largest size the Vitals "+" and Sync go under the title, so
-    /// "Vitals" never breaks mid-word beside them; at the default size it is one row.
-    func testTheVitalsHeaderStacksItsButtonsAtTheLargestSize_US25_AC17g() throws {
-        let width = phone.width - 40 // the list's margins
-        func height(_ view: some View, at category: UIContentSizeCategory) throws -> CGFloat {
-            try measure(view, at: category, width: width).height
-        }
-        let header = ControlsHeader(title: .vitals()) { HeaderButtons() }
-        let buttons = HStack(spacing: 14) { HeaderButtons() }.labelStyle(.iconOnly).font(.title3)
-        let title = SectionTitle.vitals().fixedSize()
-
-        // Exactly a one-line title over the buttons: a title broken beside them
-        // ("Vi-tals" on two lines) gives a height close to this, but not equal.
-        let largest = try height(header, at: self.largest)
-        XCTAssertEqual(largest, try height(title, at: self.largest) + 8 + height(buttons, at: self.largest), accuracy: 0.5,
-                       "the buttons sit under the whole title")
-        let normal = try height(header, at: .large)
-        XCTAssertLessThan(normal, try height(title, at: .large) + height(buttons, at: .large),
-                          "at the default size title and buttons share a row")
-    }
-
     // MARK: Text that never truncates (break-it pass 2026-11-01, iPhone 17e)
 
     /// The smallest supported iPhone (SE) and the iPhone 17e, with the insets of their
@@ -132,20 +111,6 @@ final class TextSizeLayoutTests: XCTestCase {
             for category in sizes {
                 let texts = try drawnTexts(in: page, at: category, screen: screen.size)
                 XCTAssertGreaterThan(texts.drawn, 5, "\(screen.name) \(category.rawValue): the page drew its words")
-                XCTAssertEqual(texts.cut, 0, "\(screen.name) \(category.rawValue): no words end in …")
-            }
-        }
-    }
-
-    /// US-25 AC26: the plan's headings, "Your health snapshots" the longest, wrap rather than
-    /// end in "…", on an SE and a 17e at every size.
-    func testThePlanHeadingsNeverCutTheirWords_US25_AC26() throws {
-        guard #available(iOS 18, *) else { throw XCTSkip("Text.Layout.isTruncated needs iOS 18") }
-        let headings = ScrollView { VStack(alignment: .leading) { PlanHeading(title: PlanList.snapshots); PlanHeading(title: "Next Steps") } }
-        for screen in screens {
-            for category in sizes {
-                let texts = try drawnTexts(in: headings, at: category, screen: screen.size)
-                XCTAssertGreaterThanOrEqual(texts.drawn, 2, "\(screen.name) \(category.rawValue): both headings drew")
                 XCTAssertEqual(texts.cut, 0, "\(screen.name) \(category.rawValue): no words end in …")
             }
         }
@@ -264,9 +229,3 @@ private struct QuestionHost: View {
 }
 
 /// The Vitals header's controls, as MyDataView shows them.
-private struct HeaderButtons: View {
-    var body: some View {
-        Button {} label: { Label("Add medical records", systemImage: "plus") }
-        Button {} label: { Label("Sync", systemImage: "icloud") }
-    }
-}

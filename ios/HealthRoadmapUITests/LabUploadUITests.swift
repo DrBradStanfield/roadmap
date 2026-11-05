@@ -14,9 +14,9 @@ final class LabUploadUITests: XCTestCase {
         app.launchArguments = ["--ui-testing", "-welcomed", "YES", "-onboarded", "YES"]
         app.launch()
 
-        let myData = app.tabBars.buttons["My data"]
-        XCTAssertTrue(myData.waitForExistence(timeout: 15), "the tabs, not onboarding")
-        myData.tap()
+        let myHealth = app.tabBars.buttons["My health"]
+        XCTAssertTrue(myHealth.waitForExistence(timeout: 15), "the tabs, not onboarding")
+        myHealth.tap()
         app.buttons["Add medical records"].firstMatch.tap()
         XCTAssertTrue(app.staticTexts["Where are your medical records?"].waitForExistence(timeout: 5)
                       || app.staticTexts["WHERE ARE YOUR MEDICAL RECORDS?"].exists, "the sheet's sources")

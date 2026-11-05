@@ -5,12 +5,16 @@ import SwiftUI
 /// `setScreening` with the web's clearing rules. PSA, under prostate, is a
 /// dated value: it opens its page or entry like any blood test (`open`). The web
 /// twin is InputPanel.tsx renderScreening and renderBoneDensity.
+/// Under My health's own heading, so no title of its own; each group in one row, with
+/// the plan's suggestions about it under it (US-73 AC6).
 struct ScreeningsSection: View {
     let store: RecordStore
     let data: MyData
     let saved: (RecordStore.ApplyResult) -> RecordStore.ApplyResult
     /// Opens a dated value's page, or its entry when it has none (MyDataView).
     let open: (MyData.Row) -> Void
+    /// The plan's screening suggestions by group id (`TopicPlan.screenings`).
+    var grouped: [String: [Suggestion]] = [:]
 
     var body: some View {
         if let note = data.screeningNote {
@@ -18,15 +22,14 @@ struct ScreeningsSection: View {
                 Label(note, systemImage: "stethoscope")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-            } header: {
-                SectionTitle.screening()
             }
         } else {
             FormSectionsList(
                 sections: data.screenings, months: data.months, title: SectionTitle.screening,
                 answer: { key, value in saved(await store.apply(.form(.screening(key: key, value: value)))) },
                 measurement: { $0 == data.psa.metric ? data.psa : nil },
-                openMeasurement: { _ in open(data.psa) }
+                openMeasurement: { _ in open(data.psa) },
+                grouped: grouped, compact: true
             )
         }
     }

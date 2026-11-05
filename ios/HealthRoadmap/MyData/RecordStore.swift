@@ -27,6 +27,8 @@ final class RecordStore {
     var myData: MyData? { drawn?.myData }
     /// What the Plan tab shows; nil while the record cannot be read.
     var plan: PlanState? { drawn?.plan }
+    /// The plan's cards by topic, from the same call (US-73 AC3).
+    var topics: TopicLayout? { drawn?.topics }
     /// Why the record cannot be read, if it cannot. The app then writes nothing.
     private(set) var problem: String?
     /// While a cloud record is open (US-25 AC11): the erase the screen shows. Every

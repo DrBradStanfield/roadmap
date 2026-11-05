@@ -19,12 +19,12 @@ final class AppStoreScreenshots: XCTestCase {
         app.launch()
 
         let tabs = app.tabBars
-        XCTAssertTrue(tabs.buttons["My data"].waitForExistence(timeout: 15), "the seeded record opens on the tabs, not onboarding")
+        XCTAssertTrue(tabs.buttons["My health"].waitForExistence(timeout: 15), "the seeded record opens on the tabs, not onboarding")
 
-        // My plan, scrolled until Next Steps sits near the top (no title bar, US-25 AC26): its first cards show whole.
-        tabs.buttons["My plan"].tap()
-        let nextSteps = app.staticTexts["Next Steps"]
-        XCTAssertTrue(nextSteps.waitForExistence(timeout: 10), "the Next Steps heading")
+        // My health (US-73), scrolled until Weight & diabetes sits near the top: its first cards show whole.
+        // The App Store set is Brad's to redo for the new tab; these shots only keep the test running.
+        let nextSteps = app.staticTexts["Weight & diabetes"]
+        XCTAssertTrue(nextSteps.waitForExistence(timeout: 10), "the Weight & diabetes heading")
         scrollUntil(app, nextSteps, isAbove: 0.18)
         shoot(app, "1 my plan")
         // The call-out: Next Steps and its first card, down to the line under the card's second step.
@@ -43,8 +43,7 @@ final class AppStoreScreenshots: XCTestCase {
         crop("3", top: why.frame.minY - 14, bottom: steps.element(boundBy: 1).frame.minY - 18)
         card.tap()
 
-        // My data at the top: the vitals, then the blood tests with their values.
-        tabs.buttons["My data"].tap()
+        // My health at the top: the weight rows, then the blood tests with their values.
         for _ in 0..<3 { app.swipeDown() }
         XCTAssertTrue(app.staticTexts["Weight"].firstMatch.waitForExistence(timeout: 5), "the Weight row")
         shoot(app, "4 my data")

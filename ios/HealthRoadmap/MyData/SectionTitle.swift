@@ -17,7 +17,6 @@ struct SectionTitle: View {
     }
 
     static func aboutYou() -> Self { Self(title: "About you", symbol: "person.crop.circle.fill", tint: .orange) }
-    static func vitals() -> Self { Self(title: "Vitals", symbol: "heart.fill", tint: .red) }
     static func bloodTests() -> Self { Self(title: "Blood tests", symbol: "drop.fill", tint: .blue) }
     static func medications(_ title: String = "Medications") -> Self { Self(title: title, symbol: "pills.fill", tint: .teal) }
     static func screening(_ title: String = "Screening") -> Self { Self(title: title, symbol: "stethoscope", tint: .indigo) }
