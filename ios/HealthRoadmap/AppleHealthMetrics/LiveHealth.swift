@@ -57,10 +57,15 @@ final class LiveHealth {
         // Read here, so the first frame has the cards; the first read updates them (AC15).
         // A file that is missing, damaged or another version is no file.
         if let kept, let data = try? Data(contentsOf: kept), let file = try? JSONDecoder().decode(KeptCards.self, from: data),
-           file.version == KeptCards.current, !file.cards.isEmpty {
-            cards = file.cards
-            needsAccess = false
-            hasRead = true
+           file.version == KeptCards.current {
+            // A metric no longer shown (heart rate, US-73) is left out, and the file kept without it.
+            let shown = file.shown
+            if shown.count < file.cards.count { keep(shown) }
+            if !shown.isEmpty {
+                cards = shown
+                needsAccess = false
+                hasRead = true
+            }
         }
         // A locked phone's read keeps what was drawn; the unlock reads again (AC13). A new day or
         // a new time zone reads again too, so "Today" and the days move (N5).
@@ -170,7 +175,17 @@ final class LiveHealth {
     private struct KeptCards: Codable {
         static let current = 1
         var version = current
-        let cards: [LiveMetric: LiveCard]
+        /// By metric name, so a file holding one the app no longer shows still reads.
+        let cards: [String: LiveCard]
+
+        init(cards: [LiveMetric: LiveCard]) {
+            self.cards = Dictionary(uniqueKeysWithValues: cards.map { ($0.key.rawValue, $0.value) })
+        }
+
+        /// The metrics the app shows.
+        var shown: [LiveMetric: LiveCard] {
+            Dictionary(uniqueKeysWithValues: cards.compactMap { key, card in LiveMetric(rawValue: key).map { ($0, card) } })
+        }
     }
 
     /// The cards' readings, off the main thread, each metric on its own: its newest sample

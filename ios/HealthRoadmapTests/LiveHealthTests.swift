@@ -123,6 +123,24 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertTrue(left.contains("history-steps.json"), "the others stay")
     }
 
+    /// AC15 with US-73 (review round 2): cards kept before heart rate was dropped still draw in
+    /// the first frame, without heart rate, and the file is written again without it.
+    func testCardsKeptWithHeartRateStillDrawAndLoseIt_AC15_US73() throws {
+        let kept = try keptFile()
+        let legacy = #"{"version":1,"cards":{"heartRate":{"value":64,"date":815000000,"trend":[60,64],"inBed":false},"#
+            + #""sleep":{"value":27000,"date":815000000,"trend":[26000,27000],"inBed":false},"steps":{"value":9000,"date":815000000,"trend":[8000,9000],"inBed":false}}}"#
+        try Data(legacy.utf8).write(to: kept)
+        let launch = LiveHealth(store: FakeLiveStore(due: false), now: { [now] in now }, calendar: utc, kept: kept)
+        XCTAssertEqual(Set(launch.cards.keys), [.sleep, .steps], "sleep and steps from the file, before any read")
+        XCTAssertEqual(launch.cards[.sleep]?.value, 27000)
+        XCTAssertEqual(launch.cards[.steps]?.value, 9000)
+        XCTAssertTrue(launch.hasRead)
+        let rewritten = try String(contentsOf: kept, encoding: .utf8)
+        XCTAssertFalse(rewritten.contains("heartRate"), "heart rate's reading is gone from the file")
+        XCTAssertTrue(rewritten.contains("steps"), "the others stay")
+        XCTAssertEqual(LiveHealth(store: FakeLiveStore(due: false), now: { [now] in now }, calendar: utc, kept: kept).cards, launch.cards)
+    }
+
     func testEveryTypeAskedForIsDrawn_AC10_AC6() async {
         let store = FakeLiveStore(due: false)
         store.fill(now: now)
