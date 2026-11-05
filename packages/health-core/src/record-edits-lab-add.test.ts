@@ -43,6 +43,24 @@ describe('addLabValue (US-25 AC25)', () => {
   });
 });
 
+// US-73 AC8 (with US-66 AC6): a vital is no lab test, and a test nothing names needs the unit it was
+// reported in, as appendLabValue refuses both (record-edits.test.ts, the MCP tools).
+describe('addLabValue — a vital\'s name or no unit (US-73 AC8)', () => {
+  it('refuses a vital\'s name: weight, height, blood pressure, waist', () => {
+    for (const metricName of ['Weight', 'height', 'Systolic BP', 'Waist']) {
+      expect(addLabValue(record([]), { metricName, unit: 'kg', value: 80, day: '2026-10-01' }, NOW), metricName)
+        .toEqual({ ok: false, reason: 'core-metric', message: `"${metricName}" is not a lab test: add it from its own row.` });
+    }
+  });
+
+  it('refuses a test nothing names with no unit, in appendLabValue\'s words', () => {
+    for (const unit of ['', '  ']) {
+      expect(addLabValue(record([]), { metricName: 'Zinc custom', unit, value: 80, day: '2026-10-01' }, NOW))
+        .toEqual({ ok: false, reason: 'invalid-value', message: 'A lab value needs the unit the lab reported it in' });
+    }
+  });
+});
+
 // US-66 AC6 (with US-21 AC13): a core test's name writes its core row, so a held day names the core
 // value in the unit typed and offers it for replacing, and a number out of range says so: never
 // "already has a value" for a day that holds nothing.

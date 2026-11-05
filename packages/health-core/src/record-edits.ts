@@ -463,7 +463,7 @@ export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest
       : `"${request.metricName}" is the core metric ${coreMetric} — write it as a measurement, in SI units`);
   }
   if (!Number.isFinite(value)) return reject('invalid-value', 'A value must be a finite number');
-  if (!request.unit.trim()) return reject('invalid-value', 'A lab value needs the unit the lab reported it in');
+  if (!request.unit.trim()) return reject('invalid-value', NEEDS_UNIT);
   const recordedAt = resolveRecordedAt(request.recordedAt, request);
   if (typeof recordedAt !== 'string') return recordedAt;
 
@@ -491,12 +491,15 @@ export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest
   return { ok: true, file: withRow(file, 'labValues', [...file.labValues, row], now), row };
 }
 
+/** A lab value with no unit: appendLabValue's words and addLabValue's, one string. */
+const NEEDS_UNIT = 'A lab value needs the unit the lab reported it in';
+
 /** A lab value a person adds (US-25 AC25): the test's name, the unit they read it in, the number and the day. */
 export interface AddLabValueRequest { metricName: string; unit: string; value: number; day?: string }
 
 export type AddLabValueResult =
   | { ok: true; file: RoadmapFile; row: FileLabValue }
-  | { ok: false; reason: 'invalid-value' | 'invalid-date' | 'unknown-unit' | 'slot-occupied'; message: string; existingId?: string; refused?: LabUnitRefusal; bound?: 'above' | 'below' };
+  | { ok: false; reason: 'invalid-value' | 'invalid-date' | 'unknown-unit' | 'slot-occupied' | 'core-metric'; message: string; existingId?: string; refused?: LabUnitRefusal; bound?: 'above' | 'below' };
 
 /**
  * The one lab add, the web's "+ Add a value" (AddLabTest.tsx) and the iPhone's lab page (US-25
@@ -511,10 +514,14 @@ export function addLabValue(file: RoadmapFile, request: AddLabValueRequest, now:
   const name = request.metricName.trim();
   const given = request.unit.trim();
   if (!name) return { ok: false, reason: 'invalid-value', message: 'A lab value needs a test name.' };
+  // A vital (weight, height, blood pressure, waist) is no lab test, as appendLabValue refuses it.
+  const vital = !bloodTestKeyOf(name) && resolveCoreMetricName(name);
+  if (vital) return { ok: false, reason: 'core-metric', message: `"${name}" is not a lab test: add it from its own row.` };
   if (!Number.isFinite(request.value) || request.value < 0) return { ok: false, reason: 'invalid-value', message: 'A lab value is a number, 0 or more.' };
   const day = resolveRecordedAt(request.day, { now });
   if (typeof day !== 'string') return { ok: false, reason: 'invalid-date', message: 'A lab value is for a real day, today or before.' };
   const entry = resolveLabCatalogEntry(name);
+  if (!given && !entry && !bloodTestKeyOf(name)) return { ok: false, reason: 'invalid-value', message: NEEDS_UNIT };
   const exact = !!entry && displayLabUnit(given, entry) === entry.unit;
   const metricName = exact ? entry!.key : name;
   const unit = exact ? entry!.unit : given;

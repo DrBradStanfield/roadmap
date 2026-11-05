@@ -130,13 +130,12 @@ describe('a lab test and a core metric by origin, never by name (review R1)', ()
     expect(data.vitals.find((r) => r.metric === 'weight')?.series).toBeUndefined();
   });
 
-  it('each page reads its own history and adds to its own table', () => {
+  it('each page reads its own history; only the core page adds, as a vital is no lab test (US-73 AC8)', () => {
     const text = JSON.stringify(both());
     expect(JSON.parse(historyJson(text, 'weight', NOW, 'phone', '{}', 'lab')).rows.map((r: { id: string }) => r.id)).toEqual(['w1']);
     expect(JSON.parse(historyJson(text, 'weight', NOW, 'phone', '{}')).rows).toHaveLength(1);
-    const lab = applyEdit(both(), { kind: 'labAdd', series: 'weight', value: 71, day: '2026-09-01', unit: 'kg' }, NOW);
-    if (!lab.ok) throw new Error(lab.message);
-    expect([lab.file.labValues.length, lab.file.measurements.length]).toEqual([2, 1]);
+    expect(applyEdit(both(), { kind: 'labAdd', series: 'weight', value: 71, day: '2026-09-01', unit: 'kg' }, NOW))
+      .toEqual({ ok: false, reason: 'core-metric', message: '"Weight" is not a lab test: add it from its own row.' });
     const core = applyEdit(both(), { kind: 'add', metric: 'weight', value: 81, day: '2026-09-01' }, NOW);
     if (!core.ok) throw new Error(core.message);
     expect([core.file.labValues.length, core.file.measurements.length]).toEqual([1, 2]);
