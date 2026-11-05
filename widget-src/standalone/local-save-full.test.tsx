@@ -18,7 +18,7 @@ vi.mock('../src/lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('./reminders', () => ({ remindersSupported: () => false }));
 vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 
-import { SyncControl } from './sync-control';
+import { StorageBar, SyncControl } from './sync-control';
 import { RoadmapStore } from '../src/storage/roadmap-store';
 import { LocalStorageAdapter } from '../src/storage/local-storage-adapter';
 
@@ -53,6 +53,9 @@ function fullStorage(): ByteBudgetStorage {
 }
 
 const alertText = () => document.querySelector('[role="alert"]')?.textContent ?? null;
+/** The top bar's storage button, where the alert sits: on a phone it is above
+ *  every tab, so the guest sees it while editing (review of this fix, finding 1). */
+const bar = (backend: 'local' | 'dropbox' = 'local') => render(<StorageBar backend={backend} />);
 
 afterEach(() => {
   cleanup();
@@ -69,7 +72,7 @@ describe('US-01 AC5: a guest save refused by a full browser storage is said on s
     const store = await RoadmapStore.create(new LocalStorageAdapter());
     expect(store.addMeasurement('weight', 78, '2026-01-10T00:00:00.000Z').status).toBe('inserted');
     await store.flush();
-    render(<SyncControl backend="local" hasData />);
+    bar();
     expect(alertText()).toBeNull();
 
     const before = storage.getItem(BODY);
@@ -92,7 +95,7 @@ describe('US-01 AC5: a guest save refused by a full browser storage is said on s
     storage.limit = storage.used;
     store.addMeasurement('weight', 93, '2026-02-10T00:00:00.000Z');
     await expect(store.flush()).rejects.toThrow();
-    render(<SyncControl backend="local" hasData />);
+    bar();
     expect(alertText()).toContain(FULL_LINE);
 
     storage.limit = Number.POSITIVE_INFINITY; // the person freed some space
@@ -101,13 +104,13 @@ describe('US-01 AC5: a guest save refused by a full browser storage is said on s
     expect(alertText()).toBeNull();
   });
 
-  it('shows on a guest with no plan yet too', async () => {
+  it('shows before the guest has any data saved too', async () => {
     const storage = fullStorage();
     const store = await RoadmapStore.create(new LocalStorageAdapter());
     storage.limit = storage.used;
     store.addMeasurement('weight', 93, '2026-02-10T00:00:00.000Z');
     await expect(store.flush()).rejects.toThrow();
-    render(<SyncControl backend="local" hasData={false} />);
+    bar();
     expect(alertText()).toContain(FULL_LINE);
   });
 
@@ -115,7 +118,7 @@ describe('US-01 AC5: a guest save refused by a full browser storage is said on s
     const storage = fullStorage();
     const adapter = new LocalStorageAdapter();
     const v1 = adapter.writeSync(ROADMAP_FILE_NAME, { n: 1 }, null).version;
-    render(<SyncControl backend="local" hasData />);
+    bar();
 
     // The revision is refused and the old record goes back: nothing stored.
     storage.refuse = (key) => key === REV;
@@ -137,7 +140,48 @@ describe('US-01 AC5: a guest save refused by a full browser storage is said on s
     const adapter = new LocalStorageAdapter();
     storage.limit = 0;
     expect(() => adapter.writeSync(ROADMAP_FILE_NAME, { n: 1 }, null)).toThrow(StorageError);
-    render(<SyncControl backend="dropbox" hasData />);
+    bar('dropbox');
     expect(alertText()).toBeNull();
+  });
+
+  it('shows once, in the top bar, not in the plan panel as well', () => {
+    const storage = fullStorage();
+    const adapter = new LocalStorageAdapter();
+    storage.limit = 0;
+    render(
+      <>
+        <div data-testid="bar"><StorageBar backend="local" /></div>
+        <div data-testid="plan"><SyncControl backend="local" hasData /></div>
+      </>,
+    );
+    act(() => { expect(() => adapter.writeSync(ROADMAP_FILE_NAME, { n: 1 }, null)).toThrow(StorageError); });
+    const alerts = [...document.querySelectorAll('[role="alert"]')];
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0].closest('[data-testid="bar"]')).not.toBeNull();
+    expect(alerts[0].textContent).toContain(FULL_LINE);
+  });
+
+  it('only the record counts: a refused chat history write does not show it', () => {
+    const storage = fullStorage();
+    const adapter = new LocalStorageAdapter();
+    adapter.writeSync(ROADMAP_FILE_NAME, { n: 1 }, null);
+    bar();
+    storage.refuse = (key) => key !== BODY && key !== REV;
+    act(() => { expect(() => adapter.writeSync('chat-history.json', { m: 1 }, null)).toThrow(StorageError); });
+    expect(alertText()).toBeNull();
+  });
+
+  it('only the record counts: a chat history write that lands does not hide a refused record save', () => {
+    const storage = fullStorage();
+    const adapter = new LocalStorageAdapter();
+    const v1 = adapter.writeSync(ROADMAP_FILE_NAME, { n: 1 }, null).version;
+    bar();
+    storage.refuse = (key) => key === BODY;
+    act(() => { expect(() => adapter.writeSync(ROADMAP_FILE_NAME, { n: 2 }, v1)).toThrow(StorageError); });
+    expect(alertText()).toContain(FULL_LINE);
+    storage.refuse = () => false;
+    act(() => { adapter.writeSync('chat-history.json', { m: 1 }, null); });
+    expect(JSON.parse(storage.getItem(BODY)!)).toEqual({ n: 1 });
+    expect(alertText()).toContain(FULL_LINE);
   });
 });

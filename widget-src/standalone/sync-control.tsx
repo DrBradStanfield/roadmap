@@ -112,6 +112,7 @@ function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
  *  state opens the one picker, which SyncControl hosts (AC13). */
 export function StorageBar({ backend, reconnect }: { backend: Backend; reconnect?: Exclude<Backend, 'local'> }) {
   const pendingSync = usePendingSync(backend);
+  const localRefused = useLocalSaveRefused(backend);
   const { busy, error, reconnectNow } = useReconnect(reconnect);
   return (
     <>
@@ -125,6 +126,8 @@ export function StorageBar({ backend, reconnect }: { backend: Backend; reconnect
         {busy ? 'Reconnecting…' : storageBarLabel(backend, reconnect, pendingSync)}
       </button>
       {error && <span className="hr-sync-error" role="alert">{error}</span>}
+      {/* US-01 AC5: here, not in the plan, so a phone shows it above every tab. */}
+      {localRefused && <span className="hr-sync-error" role="alert">{LOCAL_SAVE_REFUSED}</span>}
     </>
   );
 }
@@ -157,7 +160,6 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
   }, []);
 
   const pendingSync = usePendingSync(backend);
-  const localRefused = useLocalSaveRefused(backend);
 
   // Forget the unreachable connection (no copy-down needed — this session
   // already runs on the device copy; the cloud file stays put).
@@ -246,7 +248,6 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
 
   return (
     <>
-      {localRefused && <p className="hr-sync-error" role="alert">{LOCAL_SAVE_REFUSED}</p>}
       {content}
       {/* An unreachable provider is still the CURRENT one: the picker must copy
           it down (and fail loudly if it cannot) before any switch, or the
