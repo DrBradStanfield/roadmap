@@ -7,6 +7,7 @@ import { describe, it, expect } from 'vitest';
 import { createEmptyFile, createLabValue, createMeasurement, type RoadmapFile } from './roadmap-file';
 import { computePlan, labEgfrOf, planPayload, withLabEgfr } from './plan';
 import { buildChatContextJson, chatContextOf } from './chat-context';
+import { HISTORY_CAP_PER_METRIC } from './measurement-history';
 import { ageOnDay, calculateEGFR, missingPlanInputs } from './calculations';
 import { statTiles, STAT_TILE_ABOUT } from './stat-tiles';
 import { runRoadmap } from './run-roadmap';
@@ -328,6 +329,19 @@ describe('US-07 AC7: the eGFR uses the age on the creatinine\'s day', () => {
     }
   });
 
+  it('a dated draft goes on as the newest creatinine point, within the per-metric cap; the saved newest is not repeated', () => {
+    const days = Array.from({ length: HISTORY_CAP_PER_METRIC }, (_, i) => `20${String(i + 1).padStart(2, '0')}-03-01`);
+    const file = fileWith({ creatinine: days.map((day) => ({ value: 80, day })) });
+    const draft = chatContextOf({ ...plan(file).inputs, creatinine: 60, creatinineDay: '2010-06-01' }, 'si', [], [], file.measurements);
+    expect(draft.measurementHistory!.creatinine).toHaveLength(HISTORY_CAP_PER_METRIC);
+    expect(draft.measurementHistory!.creatinine.at(-1)).toEqual({ date: '2010-06-01', value: 60 });
+    expect(JSON.parse(buildChatContextJson(draft)!).derivedValues.eGFR).toBe(Math.round(calculateEGFR(60, 60, 'female')));
+    const saved = chatContextOf(plan(file).inputs, 'si', [], [], file.measurements);
+    expect(plan(file).inputs.creatinineDay).toBe(days.at(-1));
+    expect(saved.measurementHistory!.creatinine).toHaveLength(HISTORY_CAP_PER_METRIC);
+    expect(saved.measurementHistory!.creatinine.at(-1)).toEqual({ date: days.at(-1), value: 80 });
+  });
+
   it('the chat ignores a creatinineDay a client sends, and a value the history lacks (typed) is today\'s', () => {
     const file = fileWith({ creatinine: [{ value: 80, day: '2016-03-01' }] });
     const payload = chatContextOf(plan(file).inputs, 'si', [], [], file.measurements);
@@ -386,6 +400,23 @@ describe('US-07 AC7: the eGFR uses the age on the creatinine\'s day', () => {
     // At 18 the stated creatinine outranks it.
     expect(run([{ field: 'creatinine', value: 70, unit: 'µmol/L', date: '2026-02-15' }]).derivedValues.eGFR)
       .toBe(Math.round(calculateEGFR(70, 18, 'female')));
+  });
+
+  it('run_roadmap: a creatinine stated for a day the person was a known minor, no lab eGFR: the standard protein card, nothing refused', () => {
+    // As the saved case: no eGFR comes from it, and that is the age rule, not a lost kidney adjustment.
+    const savedAt17 = fileWith({ birthYear: 2008, creatinine: [{ value: 70, day: '2025-12-15' }] });
+    const savedRun = JSON.parse(buildChatContextJson(chatContextOf(plan(savedAt17).inputs, 'si', [], [], savedAt17.measurements))!);
+    const none = fileWith({ birthYear: 2008 });
+    const run = runRoadmap(chatContextOf(plan(none).inputs, 'si', [], [], none.measurements), {
+      values: [{ field: 'creatinine', value: 70, unit: 'µmol/L', date: '2025-12-15' }],
+    }, NOW);
+    const out = JSON.parse(run.contextJson!);
+    expect(out.latestValues.creatinine).toBe('70');
+    expect(out.derivedValues.eGFR).toBeUndefined();
+    expect(run.rejected).toEqual([]);
+    expect(out.currentSuggestions.find((c: { id: string }) => c.id === 'protein-target'))
+      .toEqual(savedRun.currentSuggestions.find((c: { id: string }) => c.id === 'protein-target'));
+    expect(out.currentSuggestions.map((c: { id: string }) => c.id)).toContain('protein-target');
   });
 
   it('run_roadmap: an undated stated creatinine is today\'s, never the day of a saved point with the same value', () => {

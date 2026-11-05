@@ -339,8 +339,10 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   if (!plan?.currentSuggestions && !plan?.profile?.knownMinor) return { contextJson: null, applied, rejected };
   // Without an eGFR the protein card falls back to the standard target. When this run
   // has none although the saved data had one, or a creatinine was stated, that would
-  // quietly drop a kidney adjustment: withhold the card. (A minor's eGFR is hidden, not lost.)
-  const lostEgfr = plan.derivedValues?.eGFR === undefined && !plan.profile?.knownMinor
+  // quietly drop a kidney adjustment: withhold the card. (A minor's eGFR is hidden, not lost;
+  // nor is one from a creatinine stated for a day they were a known minor, US-07 AC7: the card stands, as when saved.)
+  const statedAtMinor = stated.has('creatinine') && isKnownMinorOnDay(saved.birthYear, saved.birthMonth, stated.get('creatinine')!.date);
+  const lostEgfr = plan.derivedValues?.eGFR === undefined && !plan.profile?.knownMinor && !statedAtMinor
     && (items.some(raw => obj(raw).field === 'creatinine')
       || JSON.parse(buildChatContextJson(base) ?? '{}').derivedValues?.eGFR !== undefined);
   if (!lostEgfr) return { contextJson, applied, rejected };

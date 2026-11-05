@@ -190,7 +190,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
     guidelines: [],
     references: [
       { label: 'Reynolds 2019 – Carbohydrate quality & human health (Lancet meta-analyses)', url: 'https://doi.org/10.1016/S0140-6736(18)31809-9' },
-      { label: 'Hartley 2016 – Fibre lowers cholesterol & blood pressure (Cochrane Review)', url: 'https://doi.org/10.1002/14651858.CD011472.pub2' },
+      { label: 'Hartley 2016 – Fibre may lower cholesterol and diastolic blood pressure (Cochrane Review)', url: 'https://doi.org/10.1002/14651858.CD011472.pub2' },
     ],
   },
 

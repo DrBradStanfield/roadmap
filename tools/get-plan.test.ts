@@ -113,15 +113,27 @@ function writeFixture(file: RoadmapFile): { dir: string; path: string } {
  * file only exists for a connected user. It is a parity ORACLE, so it is a copy
  * on purpose; the cost is that editing HealthTool's merge without editing this
  * copy makes the test agree with itself. Change one, change both.
+ * `draft` is an unsaved dated creatinine, lent over the record as HealthTool's
+ * `lent`/`lentDays` lend it (inputDay gives the plan the draft's own day).
  */
-async function widgetInputs(file: RoadmapFile): Promise<Partial<HealthInputs>> {
+async function widgetInputs(file: RoadmapFile, draft?: { value: number; day: string }): Promise<Partial<HealthInputs>> {
   const cloud = new MemoryCloud();
   cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(file), version: 1 });
   const latest = (await RoadmapStore.create(new MemoryAdapter(cloud))).loadLatestMeasurements();
-  // As HealthTool: the lab eGFR candidate and the saved creatinine's day (US-07 AC7).
+  // As HealthTool: the lab eGFR candidate and the creatinine's day, a draft's own, else the saved row's (US-07 AC7).
   const creatinine = latest.previousMeasurements.find((m) => m.metricType === 'creatinine');
-  return withLabEgfr(mergeLongitudinalInputs(latest.inputs, latest.previousMeasurements),
-    creatinine ? dayOf(creatinine.recordedAt) : null, labEgfrOf(file.labValues), localDay(new Date()));
+  return withLabEgfr(mergeLongitudinalInputs({ ...latest.inputs, ...(draft ? { creatinine: draft.value } : {}) }, latest.previousMeasurements),
+    draft ? draft.day : creatinine ? dayOf(creatinine.recordedAt) : null, labEgfrOf(file.labValues), localDay(new Date()));
+}
+
+/** The web form's plan and its chat (chatContextOf, as HealthTool sends it, then the server's builder) over `web`. */
+function webPlanAndChat(file: RoadmapFile, web: Partial<HealthInputs>) {
+  const plan = calculateHealthResults(planInputsFrom(web, validateHealthInputs(web, undefined, NOW))!, 'si', undefined, undefined, undefined, NOW);
+  const chat = JSON.parse(buildChatContextJson(chatContextOf(web, 'si', [], [], currentValueRows(file)))!);
+  return {
+    plan: { eGFR: plan.eGFR, ids: plan.suggestions.map((s) => s.id) },
+    chat: { eGFR: chat.derivedValues.eGFR ?? undefined, ids: chat.currentSuggestions.map((s: { id: string }) => s.id) as string[], creatinine: chat.latestValues.creatinine },
+  };
 }
 
 describe('US-30 AC2 — the CLI computes what the widget computes', () => {
@@ -163,12 +175,31 @@ describe('US-30 AC2 — the CLI computes what the widget computes', () => {
     // The migrated file keeps creatinine as a core blood-test row (US-66).
     const row = file.labValues.find((l) => l.metricName === 'creatinine')!;
     Object.assign(row, { recordedAt: `${day}T00:00:00.000Z`, createdAt: `${day}T08:00:00Z` });
-    const iphonePlan = computePlan(file, NOW).results.eGFR;
+    const iphone = computePlan(file, NOW);
     const web = await widgetInputs(file);
-    const webPlan = calculateHealthResults(planInputsFrom(web, validateHealthInputs(web, undefined, NOW))!, 'si', undefined, undefined, undefined, NOW).eGFR;
-    const webChat = JSON.parse(buildChatContextJson(chatContextOf(web, 'si', [], [], currentValueRows(file)))!).derivedValues.eGFR ?? undefined;
-    const iphoneChat = JSON.parse(buildChatContextJson(JSON.parse(chatContextJson(JSON.stringify(file), NOW.toISOString(), 'us07')))!).derivedValues.eGFR ?? undefined;
-    expect([iphonePlan, webPlan, webChat, iphoneChat]).toEqual([expected, expected, expected, expected]);
+    const { plan: webPlan, chat: webChat } = webPlanAndChat(file, web);
+    const iphoneChat = JSON.parse(buildChatContextJson(JSON.parse(chatContextJson(JSON.stringify(file), NOW.toISOString(), 'us07')))!);
+    // The creatinine reached every surface, so "no eGFR" is the age rule's, not a missing value's.
+    expect([iphone.inputs.creatinine, web.creatinine, webChat.creatinine, iphoneChat.latestValues.creatinine]).toEqual([88, 88, '88', '88']);
+    expect([iphone.results.eGFR, webPlan.eGFR, webChat.eGFR, iphoneChat.derivedValues.eGFR ?? undefined])
+      .toEqual([expected, expected, expected, expected]);
+  });
+
+  // US-07 AC7 (Brad 2026-11-05): an unsaved dated creatinine draft. The form's plan
+  // reads the draft's own day (HealthTool's inputDay), so the chat must too.
+  it.each([
+    ['a draft taken at 17 by an adult (born Jan 2008, 2025-12-01), none saved', 2008, false, '2025-12-01', undefined],
+    ['a draft from 2010 by someone born 1950 (60 then), a newer one saved', 1950, true, '2010-06-01', Math.round(calculateEGFR(60, 60, 'male'))],
+  ])('%s: the form\'s plan and the chat give the same eGFR', async (_name, birthYear, keepSaved, day, expected) => {
+    const file = fixture();
+    Object.assign(file.profile, { birthYear, birthMonth: 1 });
+    if (!keepSaved) file.labValues = file.labValues.filter((l) => l.metricName !== 'creatinine');
+    const web = await widgetInputs(file, { value: 60, day });
+    const { plan, chat } = webPlanAndChat(file, web);
+    expect([web.creatinine, chat.creatinine]).toEqual([60, '60']);
+    expect([plan.eGFR, chat.eGFR]).toEqual([expected, expected]);
+    // The card the eGFR gates (eGFR >= 45): on both, or on neither.
+    expect([plan.ids.includes('high-potassium'), chat.ids.includes('high-potassium')]).toEqual([expected !== undefined, expected !== undefined]);
   });
 });
 

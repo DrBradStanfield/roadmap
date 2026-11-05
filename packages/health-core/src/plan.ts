@@ -180,7 +180,8 @@ export function labEgfrFrom(value: number, labEgfrDate: string, comparator?: Com
  * the same day the lab's does, since ours may come from a misread creatinine.
  * A creatinine with no date (typed, not yet saved: `null`) is `today`'s, the
  * day it would be saved with. A newer creatinine the plan cannot calculate
- * from (no sex or no birth year) keeps the lab's, with `labEgfrOutdated` (AC8).
+ * from (no sex, no birth year, or taken by a known minor on its day) keeps the
+ * lab's, with `labEgfrOutdated` (AC8).
  * The day itself goes on as `creatinineDay`, for the age the eGFR is worked out at.
  */
 export function withLabEgfr<T extends Partial<HealthInputs>>(

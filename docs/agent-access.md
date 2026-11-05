@@ -177,7 +177,11 @@ someone's medical history, or lose their data at the next device sync.
    (no sex, no birth year, or taken by a known minor): the lab eGFR still shows and still sets the protein
    target, but the plan gives no potassium advice from it (US-07 AC8). `inputs.creatinineDay`
    (YYYY-MM-DD) is the day of the creatinine the plan read: a calculated eGFR uses the age
-   on that day, and there is none when they were a known minor on that day (US-07 AC7). All four are
+   on that day, and there is none when they were a known minor on that day (US-07 AC7). So when
+   the only creatinine was taken as a minor, and there is no lab eGFR, `profile.eGFR` is `null`
+   with no field saying why: compare `inputs.creatinineDay` with `inputs.birthYear` (and
+   `inputs.birthMonth`; with none, a minor until the year `birthYear + 19` begins), and tell the
+   person the plan works out no eGFR from a test taken before 18. All four are
    derived, never stored: write lab values, not these fields.
    One exception to "converted": LDL and ApoB, the lipids with a target line, print on
    the side of their line the plan grades them (US-07 AC5). A value within one display

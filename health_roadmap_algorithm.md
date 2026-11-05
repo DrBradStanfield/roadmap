@@ -715,7 +715,7 @@ Evidence: `measure-waist` keeps AACE 2025, NICE and Ashwell 2012 (WHtR a better 
 | ID | Category | What | Evidence |
 |----|----------|------|----------|
 | `protein-target` | nutrition | Daily protein target (CKD-adjusted if eGFR < 45). Needs sex: absent with no sex on record (US-07 AC8) | ISSN 2017 |
-| `fiber` | nutrition | 25-35g fiber daily | Reynolds 2019 |
+| `fiber` | nutrition | 25-35g fiber daily | Reynolds 2019; Hartley 2016 |
 | `exercise` | exercise | At least 150 min moderate cardio, or 75 min vigorous, or a mix (1 vigorous min = 2 moderate) + 2-3 resistance sessions/week | WHO 2020; Physical Activity Guidelines 2018 |
 | `sleep` | sleep | 7-9 hours nightly | Cappuccio 2010 |
 

@@ -29,7 +29,8 @@
  *     YYYY-MM-DD; true or absent); the plan reads them, and only derivedValues.eGFR prints.
  *   - the creatinine's day (US-07 AC7) is never read from the payload: it is the
  *     newest measurementHistory creatinine point's date when that point holds
- *     the creatinine sent, else today; runRoadmap passes a stated value's own.
+ *     the creatinine sent (chatContextOf puts a dated draft there), else today;
+ *     runRoadmap passes a stated value's own.
  *   - limits (US-12 AC20): input-schema field names, the four comparator
  *     codes and finite bounds only; each is graded again here, and its
  *     latestValues entry prints "> 1.5", never a number the client sent.
@@ -61,7 +62,7 @@
  *     the plan's gating field names it lacks. uploadedDocuments is always empty.
  * Every other key is dropped.
  */
-import type { HealthInputs, SuggestionInputs } from './types';
+import type { CreatinineDay, HealthInputs, SuggestionInputs } from './types';
 import { MEDICATION_ANSWERS } from './chat-edits';
 import { rangeFault, type UnitSystem } from './units';
 import {
@@ -96,20 +97,21 @@ export type ChatContextPayload = Partial<HealthInputs> & {
  * history built from `dated` (any rows with a `recordedAt`).
  */
 export function chatContextOf(
-  inputs: Partial<HealthInputs>,
+  inputs: Partial<HealthInputs> & CreatinineDay,
   unitSystem: UnitSystem,
   medications: ApiMedication[],
   screenings: ApiScreening[],
   dated: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator; id?: string; createdAt?: string }>,
 ): ChatContextPayload {
-  const measurementHistory = buildMeasurementHistory(dated);
+  const measurementHistory = withCreatinineDay(buildMeasurementHistory(dated), inputs);
   // A limit travels as `limits` alone (US-12 AC20): its field's representative
   // stays home, so a client allow-list that strips `limits` (an older phone)
   // cannot pass it off as an exact value. The builder grades `limits` again.
   const sent: Record<string, unknown> = { ...inputs };
   for (const field of Object.keys(inputs.limits ?? {})) delete sent[field];
   // The creatinine's day stays home too (US-07 AC7): the server reads it from
-  // measurementHistory, so a phone's allow-list never has to know the key.
+  // measurementHistory (withCreatinineDay put it there), so a phone's
+  // allow-list never has to know the key.
   delete sent.creatinineDay;
   return {
     ...(sent as Partial<HealthInputs>),
@@ -121,6 +123,22 @@ export function chatContextOf(
     screenings: screenings.flatMap(r => (r && typeof r === 'object' ? [{ screeningKey: r.screeningKey, value: r.value }] : [])),
     ...(Object.keys(measurementHistory).length > 0 ? { measurementHistory } : {}),
   };
+}
+
+/**
+ * US-07 AC7: the server dates the creatinine from the newest history point
+ * that holds it (creatinineDayOf). The plan may read an unsaved draft dated
+ * its own day (`creatinineDay`), so that value and day go on as the newest
+ * point when the newest saved one differs, within the per-metric cap the
+ * server keeps. A typed value with no day is left for the server to read as today's.
+ */
+function withCreatinineDay(history: MeasurementHistoryMap, inputs: Partial<HealthInputs> & CreatinineDay): MeasurementHistoryMap {
+  const { creatinine, creatinineDay } = inputs;
+  if (creatinine === undefined || !creatinineDay || inputs.limits?.creatinine) return history;
+  const series = history.creatinine ?? [];
+  const newest = newestExactPoint(series);
+  if (newest?.value === creatinine && newest.date === creatinineDay) return history;
+  return { ...history, creatinine: [...series, { date: creatinineDay, value: creatinine }].slice(-HISTORY_CAP_PER_METRIC) };
 }
 
 /**
