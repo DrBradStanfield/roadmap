@@ -45,6 +45,31 @@ describe('the eGFR row\'s history (US-73 AC7)', () => {
         { id: 'egfr:c1', value: String(Math.round(calculateEGFR(80, 53, 'male'))), day: '2024-01-10', status: 'active', current: false, correction: false,
           number: Math.round(calculateEGFR(80, 53, 'male')), source: 'calculated' },
       ],
+      plan: { day: '2026-05-01', source: 'lab' },
+    });
+  });
+
+  // The row draws the plan's eGFR, never the series' newest point (Codex R1, R3; adversary R2).
+  describe('names the plan\'s own eGFR, its day and its source', () => {
+    it('a lab ">90" newer than a calculated value: the lab\'s, though the series has no point for a limit', () => {
+      const file = record({ labValues: [core('c1', 'creatinine', 80, '2026-03-01'), lab('e1', 'eGFR', 90, EGFR, '2026-07-01', { comparator: '>' } as Partial<FileLabValue>)] });
+      const egfr = history(file, 'egfr');
+      expect(egfr.rows.map((r: { day: string }) => r.day)).toEqual(['2026-03-01']);
+      expect(egfr.plan).toEqual({ day: '2026-07-01', source: 'lab' });
+    });
+    it('a calculated value newer than a lab one: ours, on the creatinine\'s day', () => {
+      const file = record({ labValues: [lab('e1', 'eGFR', 72, EGFR, '2026-03-01'), core('c1', 'creatinine', 85, '2026-06-01')] });
+      expect(history(file, 'egfr').plan).toEqual({ day: '2026-06-01', source: 'calculated' });
+    });
+    it('a lab value only', () => {
+      expect(history(record({ labValues: [lab('e1', 'eGFR', 72, EGFR, '2026-07-01')] }), 'egfr').plan).toEqual({ day: '2026-07-01', source: 'lab' });
+    });
+    it('a calculated value only', () => {
+      expect(history(record({ labValues: [core('c1', 'creatinine', 85, '2026-06-01')] }), 'egfr').plan).toEqual({ day: '2026-06-01', source: 'calculated' });
+    });
+    it('none when the plan has no eGFR: a known minor, or no plan at all', () => {
+      expect(history(record({ labValues: [core('c1', 'creatinine', 60, '2026-06-01')] }, { birthYear: 2015 }), 'egfr').plan).toBeUndefined();
+      expect(history(record({ labValues: [lab('e1', 'eGFR', 72, EGFR, '2026-07-01')] }, { heightCm: undefined }), 'egfr').plan).toBeUndefined();
     });
   });
 
