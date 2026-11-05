@@ -1,5 +1,5 @@
 // US-73: what the iPhone's My health tab reads from the engine. The eGFR and waist-to-height rows'
-// histories and the add sheet's search through the history door (historyJson), the plan by topic
+// histories through the history door (historyJson), the add sheet's search (labSearchJson), the plan by topic
 // on screenJson (plan.topics), and the add sheet's add by name (labAdd with `name`), which is the
 // web's general add (AddLabTest.tsx, US-21 phase 2, US-66 AC6). Synthetic values.
 import { readFileSync } from 'node:fs';
@@ -11,7 +11,7 @@ import type { FormField, FormSection } from '../../packages/health-core/src/inpu
 import type { TopicLayout } from '../../packages/health-core/src/plan-sections';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import type { Suggestion } from '../../packages/health-core/src/types';
-import { historyJson, screenJson } from './entry';
+import { historyJson, labSearchJson, screenJson } from './entry';
 import { applyEdit, newRecord } from './my-data';
 
 const NOW = '2026-10-21T08:00:00.000Z';
@@ -77,10 +77,16 @@ describe('the waist-to-height row\'s history (US-73 AC7)', () => {
 });
 
 describe('the add sheet\'s search (US-73 AC8)', () => {
-  it('answers matches for the typed text without reading the record', () => {
-    const { matches } = JSON.parse(historyJson('not a record', 'ferr', NOW, 'phone', '{}', 'search'));
+  it('is an optional door answering the core and catalogue tests a typed name finds', () => {
+    const matches = JSON.parse(labSearchJson('ferr'));
     expect(matches[0]).toEqual({ name: 'Ferritin', key: 'ferritin', kind: 'catalogue', unit: 'µg/L', units: expect.arrayContaining(['µg/L', 'ng/ml']) });
-    expect(JSON.parse(historyJson('', 'HbA1', NOW, 'phone', undefined, 'search')).matches[0]).toMatchObject({ key: 'hba1c', kind: 'core' });
+    expect(JSON.parse(labSearchJson('HbA1'))[0]).toMatchObject({ key: 'hba1c', kind: 'core' });
+    expect(JSON.parse(labSearchJson(' '))).toEqual([]);
+  });
+
+  it('the history door no longer searches: "search" is no series of its own', () => {
+    const file = JSON.stringify(record());
+    expect(historyJson(file, 'weight', NOW, 'phone', '{}', 'search')).toBe(historyJson(file, 'weight', NOW, 'phone', '{}'));
   });
 });
 

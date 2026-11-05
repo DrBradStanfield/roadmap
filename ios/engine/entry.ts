@@ -174,14 +174,18 @@ export function healthWritesJson(recordJson: string, nowIso: string, deviceId: s
 
 /** Every value recorded for one metric, newest first, as JSON (US-25 AC9). `series` "lab": `metric`
  *  is a lab test's series key (US-25 AC25); an app before it sends none, and is answered as before.
- *  "egfr" and "whtr": the worked-out series of that name, `metric` unread (US-73 AC7). "search":
- *  `metric` is a typed test name, and the answer is `{matches}`, the core and catalogue tests it
- *  finds (health-core labSearch, US-73 AC8); the record is unread. */
+ *  "egfr" and "whtr": the worked-out series of that name, `metric` unread (US-73 AC7). */
 export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string, unitsJson?: string, series?: string): string {
-  if (series === 'search') return JSON.stringify({ matches: labSearch(metric) });
   const file = readView(recordJson, nowIso, deviceId);
   if (series === 'egfr' || series === 'whtr') return JSON.stringify(derivedHistory(file, series));
   return JSON.stringify(series === 'lab' ? labHistory(file, metric) : metricHistory(file, metric, nowIso, readUnitChoices(unitsJson)));
+}
+
+/** The core and catalogue blood tests a typed name finds, best first, as JSON (health-core labSearch,
+ *  US-73 AC8): the add sheet's matches. An optional door (bridge-optional.json): not in the hashed
+ *  contract, so an app reaches it only through HealthEngine.optionalCall. */
+export function labSearchJson(text: string): string {
+  return JSON.stringify(labSearch(text));
 }
 // Chat and lab upload (US-52): app-doors.ts.
 export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson, chatDeleteJson, settledJson, labReviewJson, labSaveSummaryJson } from './app-doors';

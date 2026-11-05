@@ -17,9 +17,10 @@ const contract = JSON.parse(readFileSync(join(__dirname, 'bridge-contract.json')
 // Both-way additions that keep the bridge id (D14): never hashed.
 const optional = JSON.parse(readFileSync(join(__dirname, 'bridge-optional.json'), 'utf8')) as {
   doors: Record<string, { optionalArgs?: string[]; optionalReturns?: string }>;
+  optionalDoors: Record<string, { args: string[]; returns: string }>;
 };
 const optionalArgs = (name: string) => optional.doors[name]?.optionalArgs ?? [];
-const arity = (name: string) => contract.doors[name].args.length + optionalArgs(name).length;
+const arity = (name: string) => (optional.optionalDoors[name]?.args.length ?? contract.doors[name].args.length + optionalArgs(name).length);
 
 /** A door's parameter names, in order, read from entry.ts's signature. */
 function parameters(name: string): string[] {
@@ -50,16 +51,28 @@ function members(file: string, name: string): string[] {
 }
 
 describe('bridge contract (US-25 AC18)', () => {
-  it('every door the engine exports is in the contract, with its arity', () => {
+  it('every door the engine exports is in the contract or is an optional door, never both, with its arity', () => {
     const doors = Object.entries(entry).filter(([, v]) => typeof v === 'function');
-    expect(doors.map(([k]) => k).sort()).toEqual(Object.keys(contract.doors).sort());
+    const listed = [...Object.keys(contract.doors), ...Object.keys(optional.optionalDoors)];
+    expect(doors.map(([k]) => k).sort()).toEqual(listed.sort());
+    expect(new Set(listed).size, 'a door in both').toBe(listed.length);
     for (const [name, fn] of doors) expect((fn as (...a: unknown[]) => unknown).length, name).toBe(arity(name));
+  });
+
+  // 2026-11-05 (orchestrator): an optional door keeps the bridge id. A new app always runs an
+  // engine at least as new as its bundled one (anti-rollback), and an old app never calls it.
+  it('an optional door names its arguments in entry.ts, says what it answers, and is nowhere in the contract', () => {
+    for (const [name, door] of Object.entries(optional.optionalDoors)) {
+      expect(parameters(name), name).toEqual(door.args);
+      expect(door.returns, name).toBeTruthy();
+      expect(readFileSync(join(__dirname, 'bridge-contract.json'), 'utf8'), name).not.toContain(name);
+    }
   });
 
   // US-61 / D14: an optional trailing argument or return field keeps the bridge id, so
   // over-the-air engines keep reaching the builds that serve it.
   it('optional additions name only contract doors, add only arguments and returns, and never repeat a contract arg', () => {
-    expect(Object.keys(optional).sort()).toEqual(['about', 'doors']);
+    expect(Object.keys(optional).sort()).toEqual(['about', 'doors', 'optionalDoors']);
     for (const [name, door] of Object.entries(optional.doors)) {
       expect(contract.doors[name], name).toBeDefined();
       expect(Object.keys(door).every((k) => k === 'optionalArgs' || k === 'optionalReturns'), name).toBe(true);
