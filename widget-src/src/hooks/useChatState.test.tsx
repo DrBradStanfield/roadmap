@@ -294,6 +294,16 @@ describe('US-15 AC6a — the reply came back in a new conversation', () => {
     expect(postSync.mock.calls.at(-1)![0].payload).toMatchObject({ activeConversationId: 'c2' });
   });
 
+  it('US-15 AC26b: the new conversation\'s title in the list is never cut through an emoji', async () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    act(() => hook.result.current.actions.handleInputChange(`${'q'.repeat(79)}\u{1F600} and more`));
+    let sending!: Promise<void>;
+    act(() => { sending = hook.result.current.actions.handleSend(); });
+    await act(async () => { send.resolve!({ result: { conversationId: 'c9', messageId: 'm9', content: 'ok' }, error: null }); await sending; });
+    expect(hook.result.current.state.conversations[0].title).toBe('q'.repeat(79));
+    expect(JSON.stringify(postSync.mock.calls.at(-1)![0].payload)).not.toMatch(/\\ud83d(?!\\ude00)/i);
+  });
+
   it('US-15 AC6a: opening a thread the server no longer recognizes drops it from the list', async () => {
     const { loadConversation } = await import('../lib/chat-api');
     vi.mocked(loadConversation).mockResolvedValueOnce(null);
