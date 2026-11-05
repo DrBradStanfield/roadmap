@@ -702,11 +702,16 @@ export function waistToHeightRatio(waistCm: number, heightCm: number): number {
   return Math.round((waistCm / heightCm) * 100) / 100;
 }
 
+const WHTR_ELEVATED = 0.5;
+
 /** Central adiposity: the plan's rounded ratio at 0.5 or more. The plan and
  *  the vitals matrix both grade the waist by this (US-06 AC5). */
 export function isWaistToHeightElevated(ratio: number): boolean {
-  return ratio >= 0.5;
+  return ratio >= WHTR_ELEVATED;
 }
+
+/** The waist-to-height row's target, as the blood-test rows print theirs (US-73 AC7). */
+export const WHTR_TARGET = `Normal <${WHTR_ELEVATED}`;
 
 /** The waist, in cm, from which the plan counts the ratio as elevated at this
  *  height: it rounds to 0.50 from 0.495. */

@@ -16,7 +16,7 @@ import { stampProfile, upsertMedication, upsertSupplement } from '../../packages
 import { medicationSchema, supplementSchema, zod3Message } from '../../packages/health-core/src/validation';
 import { customSupplementAdd, customSupplementMatch } from '../../packages/health-core/src/input-form';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
-import { bloodTableReport, bloodTestKeyOf, currentValueRows, isCoreRow } from '../../packages/health-core/src/blood-tests';
+import { bloodTableReport, bloodTestKeyOf, currentValueRows, isActive, isCoreRow } from '../../packages/health-core/src/blood-tests';
 import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
 import { importHealthRecords, type ClinicalRecordInput, type HealthRecordsCounts } from '../../packages/health-core/src/health-records-import';
 import { applyFormEdit, formsOf, gradeContextOf, planOf, rowText, ungradedLimit, type FormEdit, type FormsView } from './my-data-forms';
@@ -38,7 +38,7 @@ import {
 import { applyPressure, BLOOD_PRESSURE, pressureHistory, type PressureEdit } from './blood-pressure';
 import { applyChatEdit, type ChatEdit } from './chat-edits';
 import { cellUnitFor, lpaUnitOf, SWITCHABLE, unitsOf, type UnitChoices } from './unit-choices';
-import { cellFromSI, cellLabel, cellRange, isLpaUnit, type CellUnit } from '../../packages/health-core/src/cell-unit';
+import { cellFromSI, cellLabel, cellRange, isLpaUnit, labRangeMessage, type CellUnit } from '../../packages/health-core/src/cell-unit';
 import { LIMIT_NOT_GRADED, comparatorOf, isComparator } from '../../packages/health-core/src/lab-limits';
 
 /** One row of Vitals or Blood tests: the plan's current value, if any, in the user's units. */
@@ -141,6 +141,9 @@ export type Edit =
   /** A new value for a lab test the record holds, on a day, in the unit the sheet showed (US-25 AC25):
    *  health-core's `addLabValue`, the web's lab add too, named by its series key (`labSlotKey`). */
   | { kind: 'labAdd'; series: string; value: number; day?: string; unit?: string }
+  /** The add sheet's add (US-73 AC8): any test by name, in the unit typed, as the web's general add
+   *  (AddLabTest.tsx). An engine before it knows no such kind, and the edit fails. */
+  | { kind: 'labAddName'; name: string; value: number; unit: string; day?: string }
   /** What the chat proposed, and its medications' Undo (US-67, chat-edits.ts). */
   | ChatEdit;
 
@@ -444,6 +447,8 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
     }
     case 'labAdd':
       return addSeriesValue(file, edit, now);
+    case 'labAddName':
+      return addByName(file, edit, now, choices);
     case 'chatEdits':
     case 'chatUndo':
       return applyChatEdit(file, edit, now, choices);
@@ -457,14 +462,38 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
  */
 function addSeriesValue(file: RoadmapFile, edit: Extract<Edit, { kind: 'labAdd' }>, now: string): EditOutcome {
   const rows = file.labValues.filter((row) => !isCoreRow(row) && labSlotKey(row.metricName) === edit.series);
-  const named = rows.filter((row) => row.status === 'active').sort((a, b) => a.recordedAt.localeCompare(b.recordedAt)).at(-1);
+  const named = rows.filter(isActive).sort((a, b) => a.recordedAt.localeCompare(b.recordedAt)).at(-1);
   if (!named) return { ok: false, reason: 'not-found', message: 'There is no such lab test in your record.' };
   // A kept-apart row named like a core test (an old "creatinine" may be urine, US-12 AC11): the add would
   // write the core value, which this page never shows. It goes on the core test's own row (US-66 AC5).
   if (bloodTestKeyOf(named.metricName)) return { ok: false, reason: 'core-name', message: 'Add this test from its row in Blood tests.' };
   const unit = edit.unit ?? displayLabUnit(named.unit ?? '', resolveLabCatalogEntry(named.metricName));
-  const added = addLabValue(file, { metricName: named.metricName, unit, value: edit.value, day: edit.day }, now);
+  const added = addLabValue(file, { metricName: named.metricName, unit, value: edit.value, day: edit.day, existingSeries: true }, now);
   return added.ok ? { ok: true, file: added.file } : added;
+}
+
+/**
+ * The add sheet's add by name (US-73 AC8): the web's general add (AddLabTest.tsx), health-core's
+ * `addLabValue`. A core test's name writes its core row, range-checked (US-66 AC6); a catalogue
+ * test keeps its key and canonical unit, and a unit it does not take is refused (US-21 AC3, AC4);
+ * any other name is a new test in the unit typed. A held day names what it holds and offers it for
+ * correcting only when the number differs in the same unit (US-21 AC13). Never a second row.
+ */
+function addByName(file: RoadmapFile, edit: Extract<Edit, { kind: 'labAddName' }>, now: string, choices: UnitChoices): EditOutcome {
+  const { name, unit = '' } = edit;
+  const added = addLabValue(file, { metricName: name, unit, value: edit.value, day: edit.day }, now);
+  if (added.ok) return { ok: true, file: added.file };
+  const core = bloodTestKeyOf(name.trim());
+  const { bound, refused: _refused, ...refusal } = added;
+  // Out of range, in the web's words: the end it missed, in the unit typed.
+  const range = bound && core && labRangeMessage(core, unit, bound);
+  if (range) return { ...refusal, message: range };
+  // The correction is the `correct` edit, which reads its number in the unit the core row shows.
+  if (core && refusal.existingId && displayLabUnit(unit) !== cellLabel(core, cellUnitFor(file, core, choices))) {
+    const { existingId: _held, ...rest } = refusal;
+    return rest;
+  }
+  return refusal;
 }
 
 /** An Lp(a) value out of range, said in the unit it was typed in with the web's range

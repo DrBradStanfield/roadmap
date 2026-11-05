@@ -269,6 +269,25 @@ A signature means "the key holder approved this bundle", nothing more.
   the edit path's atomic write and no pending marker (the move changes no value; an open cloud
   writes its own copy, in `cloudOpen`, through `commit` as an edit does). A field, not a new
   door, so the bridge id stays: an older app ignores it, an older engine sends none.
+  Fifth use (2026-11-05, US-73, PR B of the My health plan): `screenJson`'s `plan.topics`
+  (health-core `topicSections`) and two new `historyJson` series, `egfr` and `whtr`. The add by
+  name is a new edit kind, `labAddName` `{name, value, unit, day?}`, inside `editJson`, so no
+  contract field moves; an older engine knows no such kind, and the edit fails as an error.
+  **Optional doors (rule extension, 2026-11-05, orchestrator decision):** a third kind in
+  `bridge-optional.json`, `optionalDoors`: a whole door `entry.ts` exports that the hashed contract
+  leaves out, so adding it keeps the bridge id. An old app never calls a door it does not know.
+  A new app normally runs an engine at least as new as its bundled one (an over-the-air version
+  must beat the bundled engine's, the anti-rollback rule above), so the door is normally there.
+  Safety does not rest on that: Swift reaches an optional door only through
+  `HealthEngine.optionalCall`, which answers nil for a door the engine lacks (the feature
+  unavailable, never a crash). That nil is the insurance, not the expected path. The frozen
+  shapes are append-only (`bridge.test.ts` snapshots each door's arguments and answer), and
+  `EngineSelfTest`'s door list never names one. Enforced:
+  `bridge.test.ts` (every export is in the contract or an optional door, never both, with its
+  arity and argument names) and `EngineBridgeContractTests` (outside the contract and the
+  self-test list, in the bundled engine with its arity, and no Swift call to it but through
+  `optionalCall`). First: `labSearchJson(text)`, the add sheet's name search (health-core
+  `labSearch`, US-73 AC8), read in Swift as `HealthEngine.labSearch`.
   **Schema 3 (Brad 2026-11-02, US-66 AC15):** a record holding a core blood row is
   `schemaVersion` 3, so the engine's `schemaVersion` fact becomes 3. Build 3 bundles a
   schema-2 engine: it refuses a moved record with its "update the app" path (US-65 AC5) and

@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as planModule from '../../packages/health-core/src/plan';
-import { planSections } from '../../packages/health-core/src/plan-sections';
+import { planSections, topicSections } from '../../packages/health-core/src/plan-sections';
 import { statTiles } from '../../packages/health-core/src/stat-tiles';
 import { myData, newRecord, readRecord } from './my-data';
 import { screenJson } from './entry';
@@ -15,6 +15,11 @@ vi.mock('../../packages/health-core/src/plan', async (original) => {
   return { ...real, computePlan: vi.fn(real.computePlan) };
 });
 const computePlan = vi.mocked(planModule.computePlan);
+vi.mock('../../packages/health-core/src/plan-sections', async (original) => {
+  const real = await original<typeof import('../../packages/health-core/src/plan-sections')>();
+  return { ...real, topicSections: vi.fn(real.topicSections) };
+});
+const topicsMock = vi.mocked(topicSections);
 
 const NOW = '2026-10-21T08:00:00.000Z';
 const sample = readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8');
@@ -28,9 +33,15 @@ describe('screenJson (US-25 AC2, AC22)', () => {
     const choices = { hba1c: 'conventional', ldl: 'conventional' } as const;
     const plan = planModule.computePlan(file, new Date(NOW), choices);
     const tiles = statTiles(plan.results, { unitSystem: plan.unitSystem, unitOverrides: choices, sex: plan.inputs.sex });
+    const data = myData(file, NOW, choices);
+    const sections = planSections(plan.results.suggestions);
     expect(JSON.parse(screenJson(sample, NOW, 'phone', UNITS))).toEqual({
-      myData: JSON.parse(JSON.stringify(myData(file, NOW, choices))),
-      plan: { sections: JSON.parse(JSON.stringify(planSections(plan.results.suggestions))), tiles: JSON.parse(JSON.stringify(tiles)), ms: expect.any(Number) },
+      myData: JSON.parse(JSON.stringify(data)),
+      plan: {
+        sections: JSON.parse(JSON.stringify(sections)), tiles: JSON.parse(JSON.stringify(tiles)),
+        // US-73 AC3: the same cards by topic, placed against My data's own questions.
+        topics: JSON.parse(JSON.stringify(topicSections(sections, data))), ms: expect.any(Number),
+      },
       // The sample is an old-shape record: the app writes it once, moved (US-66 AC14).
       movedRecord: JSON.stringify(file),
     });
@@ -80,5 +91,15 @@ describe('screenJson (US-25 AC2, AC22)', () => {
     const screen = JSON.parse(screenJson(sample, NOW, 'phone', '{}'));
     expect(screen.myData.vitals.length).toBeGreaterThan(0);
     expect(screen.plan).toEqual({ error: 'Error: broken on purpose', planError: false });
+  });
+
+  // US-73 AC3: a layout by topic that throws loses only plan.topics; the app then draws the sections.
+  it('keeps My data and the plan when the layout by topic throws, without plan.topics', () => {
+    topicsMock.mockImplementationOnce(() => { throw new Error('broken on purpose'); });
+    const screen = JSON.parse(screenJson(sample, NOW, 'phone', UNITS));
+    expect(screen.myData.vitals.length).toBeGreaterThan(0);
+    expect(screen.plan.sections.length).toBeGreaterThan(0);
+    expect(screen.plan.tiles.length).toBeGreaterThan(0);
+    expect(screen.plan).not.toHaveProperty('topics');
   });
 });

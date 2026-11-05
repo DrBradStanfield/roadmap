@@ -101,6 +101,15 @@ struct ScreeningMonths: Decodable, Equatable {
     let future: [String]
 }
 
+/// A blood test the add sheet's search finds (US-73 AC8, health-core labSearch): `kind` is
+/// "core" or "catalogue"; `units` every unit it takes, the one it is stored in first.
+struct LabSearchMatch: Decodable, Equatable {
+    let name: String
+    let key: String
+    let kind: String
+    let units: [String]
+}
+
 /// Every value recorded for one metric, newest first (US-25 AC9).
 struct MetricHistory: Decodable, Equatable {
     struct Row: Decodable, Identifiable, Equatable {

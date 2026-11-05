@@ -6,8 +6,8 @@
  * terminal. The CLI keeps reading the file and rendering text and HTML;
  * `renderJson` is the agent-facing shape, and both surfaces return it.
  */
-import { currentValueRows, isCoreRow } from './blood-tests';
-import { calculateHealthResults, isKnownMinorOnDay, missingPlanInputs } from './calculations';
+import { currentValueRows, isActive, isCoreRow } from './blood-tests';
+import { ageOnDay, calculateEGFR, calculateHealthResults, isKnownMinorOnDay, knownMinorOf, missingPlanInputs } from './calculations';
 import { fileProfileToApi, fileScreeningRows } from './file-inputs';
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
 import {
@@ -31,7 +31,7 @@ import {
 } from './lab-limits';
 import type { CreatinineDay, HealthInputs, HealthResults, MedicationInputs, ScreeningInputs, SuggestionInputs } from './types';
 import {
-  UNIT_DEFS, formatGradedReading, formatGradedValue, getDisplayLabel, unitSystemOf, type MetricType, type UnitSystem,
+  UNIT_DEFS, formatGradedReading, formatGradedValue, getDisplayLabel, unitSystemOf, waistToHeightRatio, type MetricType, type UnitSystem,
 } from './units';
 import { getValidationErrors, PRESSURE_ORDER, sanitizeInputs, validateHealthInputs } from './validation';
 
@@ -157,10 +157,72 @@ export type LabEgfr = Pick<HealthInputs, 'labEgfr'> & Required<Pick<HealthInputs
  * does not decide is still the latest eGFR, never passed over for an older one.
  */
 export function labEgfrOf(labValues: readonly LabRowLike[]): LabEgfr | null {
-  const rows = labValues.filter((l) => labSlotKey(l.metricName) === 'egfr'
-    && l.unit === resolveLabCatalogEntry(l.metricName)?.unit && 'labEgfr' in sanitizeInputs({ labEgfr: l.value }));
-  const lab = latestActivePerMetric(rows.map((l) => ({ ...l, metricType: 'egfr' })))[0];
+  const lab = latestActivePerMetric(labValues.filter(isLabEgfrRow).map((l) => ({ ...l, metricType: 'egfr' })))[0];
   return lab ? labEgfrFrom(lab.value, dayOf(lab.recordedAt), lab.comparator) : null;
+}
+
+/** A lab's creatinine eGFR the plan reads: in the catalogue's unit and the schema's range. */
+function isLabEgfrRow(l: LabRowLike): boolean {
+  return labSlotKey(l.metricName) === 'egfr' && l.unit === resolveLabCatalogEntry(l.metricName)?.unit && 'labEgfr' in sanitizeInputs({ labEgfr: l.value });
+}
+
+/** One day of the eGFR history: the lab's printed number, or ours from that day's creatinine. */
+export interface EgfrPoint { id: string; day: string; value: number; source: 'lab' | 'calculated' }
+
+/**
+ * Every day's eGFR, newest first (US-73 AC7, US-07 AC7 and AC8). A day's lab
+ * eGFR (labEgfrOf's rows) wins it, as withLabEgfr lets it win the plan's day.
+ * Else the core creatinine's (never a kept-apart row, which may be urine,
+ * US-12 AC11), calculated as the plan does, with the age on that day: only
+ * with a sex and a birth year, and never by the plan's minor gate: a known
+ * minor today (`now`) or on the creatinine's day, over the birth info the plan
+ * keeps. A value printed as a limit gives no point (US-12 AC20); a lab limit
+ * holds its day, so no number is worked out under it. A row with no status is
+ * active (US-65 AC1).
+ */
+export function egfrSeries(file: Pick<RoadmapFile, 'measurements' | 'labValues' | 'profile'>, now = new Date()): EgfrPoint[] {
+  const days = new Map<string, EgfrPoint | null>();
+  for (const l of file.labValues) {
+    const day = dayOf(l.recordedAt);
+    if (!isActive(l) || isCoreRow(l) || !isLabEgfrRow(l) || days.has(day)) continue;
+    days.set(day, comparatorOf(l).comparator ? null : { id: l.id, day, value: Math.round(l.value), source: 'lab' });
+  }
+  const { sex, birthYear, birthMonth } = sanitizeInputs({
+    sex: file.profile.sex ?? undefined, birthYear: file.profile.birthYear ?? undefined, birthMonth: file.profile.birthMonth ?? undefined,
+  });
+  const minorToday = knownMinorOf({ birthYear, birthMonth }, now);
+  for (const row of currentValueRows(file)) {
+    const day = dayOf(row.recordedAt);
+    if (row.metricType !== 'creatinine' || days.has(day)) continue;
+    const { creatinine } = sanitizeInputs({ creatinine: row.value });
+    // calculateHealthResults's gate exactly (US-07 AC7).
+    const adult = birthYear !== undefined && !minorToday && !isKnownMinorOnDay(birthYear, birthMonth, day);
+    days.set(day, !comparatorOf(row).comparator && creatinine !== undefined && sex && adult
+      ? { id: row.id, day, value: Math.round(calculateEGFR(creatinine, ageOnDay(birthYear, birthMonth, day), sex)), source: 'calculated' }
+      : null);
+  }
+  return [...days.values()].filter((p): p is EgfrPoint => p !== null).sort((a, b) => b.day.localeCompare(a.day));
+}
+
+/** One day of the waist-to-height history. */
+export interface WhtrPoint { id: string; day: string; ratio: number }
+
+/**
+ * Every day's waist over the CURRENT height (the record holds one), to two
+ * places, newest first (US-73 AC7): past ratios move if the height is edited.
+ * The day's newest active waist decides it; one printed as a limit holds its
+ * day with no ratio, as a lab eGFR limit does (US-12 AC20). None without a height.
+ */
+export function whtrSeries(file: Pick<RoadmapFile, 'measurements' | 'labValues' | 'profile'>): WhtrPoint[] {
+  const height = file.profile.heightCm;
+  if (typeof height !== 'number' || height <= 0) return [];
+  const days = new Map<string, WhtrPoint | null>();
+  const waists = currentValueRows(file).filter((m) => m.metricType === 'waist').sort((a, b) => b.recordedAt.localeCompare(a.recordedAt));
+  for (const waist of waists) {
+    const day = dayOf(waist.recordedAt);
+    if (!days.has(day)) days.set(day, comparatorOf(waist).comparator ? null : { id: waist.id, day, ratio: waistToHeightRatio(waist.value, height) });
+  }
+  return [...days.values()].filter((p): p is WhtrPoint => p !== null);
 }
 
 /** A lab eGFR candidate from its printed number, day and code: a limit graded by
@@ -223,7 +285,7 @@ export interface PlanLab {
 
 /** Latest active row per lab test, named and unit-labelled from the catalogue. A core value is a current value, never listed here (US-66 AC8). */
 function derivePlanLabs(file: RoadmapFile): PlanLab[] {
-  const active = file.labValues.filter((l) => l.status === 'active' && !isCoreRow(l));
+  const active = file.labValues.filter((l) => isActive(l) && !isCoreRow(l));
   const rows = latestActivePerMetric(active.map((l) => ({ ...l, metricType: labSlotKey(l.metricName) }))) as FileLabValue[];
   return rows
     .map((l) => {

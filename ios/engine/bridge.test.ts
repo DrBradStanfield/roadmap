@@ -17,9 +17,10 @@ const contract = JSON.parse(readFileSync(join(__dirname, 'bridge-contract.json')
 // Both-way additions that keep the bridge id (D14): never hashed.
 const optional = JSON.parse(readFileSync(join(__dirname, 'bridge-optional.json'), 'utf8')) as {
   doors: Record<string, { optionalArgs?: string[]; optionalReturns?: string }>;
+  optionalDoors: Record<string, { args: string[]; returns: string }>;
 };
 const optionalArgs = (name: string) => optional.doors[name]?.optionalArgs ?? [];
-const arity = (name: string) => contract.doors[name].args.length + optionalArgs(name).length;
+const arity = (name: string) => (optional.optionalDoors[name]?.args.length ?? contract.doors[name].args.length + optionalArgs(name).length);
 
 /** A door's parameter names, in order, read from entry.ts's signature. */
 function parameters(name: string): string[] {
@@ -50,16 +51,61 @@ function members(file: string, name: string): string[] {
 }
 
 describe('bridge contract (US-25 AC18)', () => {
-  it('every door the engine exports is in the contract, with its arity', () => {
+  it('every door the engine exports is in the contract or is an optional door, never both, with its arity', () => {
     const doors = Object.entries(entry).filter(([, v]) => typeof v === 'function');
-    expect(doors.map(([k]) => k).sort()).toEqual(Object.keys(contract.doors).sort());
+    const listed = [...Object.keys(contract.doors), ...Object.keys(optional.optionalDoors)];
+    expect(doors.map(([k]) => k).sort()).toEqual(listed.sort());
+    expect(new Set(listed).size, 'a door in both').toBe(listed.length);
     for (const [name, fn] of doors) expect((fn as (...a: unknown[]) => unknown).length, name).toBe(arity(name));
+  });
+
+  // 2026-11-05 (orchestrator): an optional door keeps the bridge id. An old app never calls it; a
+  // new app reaches it only through optionalCall, whose nil for a missing door is the safety.
+  it('an optional door names its arguments in entry.ts, says what it answers, and is nowhere in the contract', () => {
+    for (const [name, door] of Object.entries(optional.optionalDoors)) {
+      expect(parameters(name), name).toEqual(door.args);
+      expect(door.returns, name).toBeTruthy();
+      expect(readFileSync(join(__dirname, 'bridge-contract.json'), 'utf8'), name).not.toContain(name);
+    }
+  });
+
+  // Append-only: a shipped app decodes each optional door's answer. A door or a field may be added
+  // here; none is ever renamed, retyped or dropped, and a door's arguments never change.
+  const FROZEN_OPTIONAL_DOORS: Record<string, { args: string[]; call: unknown[]; shape: unknown }> = {
+    labSearchJson: { args: ['text'], call: ['ferr'], shape: [{ name: 'string', key: 'string', kind: 'string', units: ['string'] }] },
+  };
+  /** Where `answer` drops or retypes what `frozen` holds: [] when it holds at least the frozen shape. */
+  function shapeFaults(frozen: unknown, answer: unknown, at = '$'): string[] {
+    if (typeof frozen === 'string') return typeof answer === frozen ? [] : [`${at}: ${typeof answer}, not ${frozen}`];
+    if (Array.isArray(frozen)) {
+      if (!Array.isArray(answer) || !answer.length) return [`${at}: no array to check`];
+      return answer.flatMap((item, i) => shapeFaults(frozen[0], item, `${at}[${i}]`));
+    }
+    if (typeof answer !== 'object' || answer === null) return [`${at}: not an object`];
+    return Object.entries(frozen as Record<string, unknown>).flatMap(([key, inner]) =>
+      key in answer ? shapeFaults(inner, (answer as Record<string, unknown>)[key], `${at}.${key}`) : [`${at}.${key}: missing`]);
+  }
+
+  it('every optional door is frozen, its arguments as they shipped and its answer holding the frozen shape', () => {
+    expect(Object.keys(optional.optionalDoors).sort()).toEqual(Object.keys(FROZEN_OPTIONAL_DOORS).sort());
+    for (const [name, frozen] of Object.entries(FROZEN_OPTIONAL_DOORS)) {
+      expect(optional.optionalDoors[name].args, name).toEqual(frozen.args);
+      const door = (entry as unknown as Record<string, (...a: unknown[]) => string>)[name];
+      expect(shapeFaults(frozen.shape, JSON.parse(door(...frozen.call))), name).toEqual([]);
+    }
+  });
+
+  it('the frozen-shape check catches a dropped or retyped field', () => {
+    const shape = [{ name: 'string', units: ['string'] }];
+    expect(shapeFaults(shape, [{ name: 'Ferritin', units: ['µg/L'], extra: 1 }])).toEqual([]);
+    expect(shapeFaults(shape, [{ units: ['µg/L'] }])).toEqual(['$[0].name: missing']);
+    expect(shapeFaults(shape, [{ name: 'Ferritin', units: [1] }])).toEqual(['$[0].units[0]: number, not string']);
   });
 
   // US-61 / D14: an optional trailing argument or return field keeps the bridge id, so
   // over-the-air engines keep reaching the builds that serve it.
   it('optional additions name only contract doors, add only arguments and returns, and never repeat a contract arg', () => {
-    expect(Object.keys(optional).sort()).toEqual(['about', 'doors']);
+    expect(Object.keys(optional).sort()).toEqual(['about', 'doors', 'optionalDoors']);
     for (const [name, door] of Object.entries(optional.doors)) {
       expect(contract.doors[name], name).toBeDefined();
       expect(Object.keys(door).every((k) => k === 'optionalArgs' || k === 'optionalReturns'), name).toBe(true);

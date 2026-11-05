@@ -101,6 +101,8 @@ describe('statTiles (US-25 AC22)', () => {
       expect(JSON.parse(screenJson(record, NOW, 'phone', units)).plan).toEqual({
         sections: JSON.parse(sectionsJson(plan)),
         tiles: JSON.parse(JSON.stringify(tiles)),
+        // US-73: the same cards by topic, as my-health.test.ts checks.
+        topics: expect.any(Object),
         ms: expect.any(Number),
       });
     }

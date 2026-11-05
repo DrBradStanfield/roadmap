@@ -213,6 +213,24 @@ actor HealthEngine {
         return try JSONDecoder().decode(MetricHistory.self, from: Data(json.utf8))
     }
 
+    /// The core and catalogue blood tests a typed name finds, best first (US-73 AC8,
+    /// `labSearchJson`); nil from an engine without that door: no search.
+    func labSearch(_ text: String) throws -> [LabSearchMatch]? {
+        guard let json = try optionalCall("labSearchJson", [text]) else { return nil }
+        return try JSONDecoder().decode([LabSearchMatch].self, from: Data(json.utf8))
+    }
+
+    /// Calls an optional door (bridge-optional.json `optionalDoors`, D3): one the hashed contract
+    /// leaves out, so the bridge id stays. A door the engine lacks answers nil, the feature
+    /// unavailable, never a crash. The app normally runs an engine at least as new as its bundled
+    /// one, so the nil is insurance, not the expected path; but safety rests on it, not on that.
+    /// The app's only way to an optional door (EngineBridgeContractTests).
+    func optionalCall(_ name: String, _ arguments: [Any]) throws -> String? {
+        checkJSThread()
+        guard let function = exports.objectForKeyedSubscript(name), !function.isUndefined else { return nil }
+        return try call(name, arguments)
+    }
+
     /// A typed value in the other units, by health-core's factors (`convertJson`): onboarding's
     /// unit switches are for entry only (US-54 AC6). `from`, `to`: "si" or "conventional".
     func convert(_ value: Double, metric: String, from: String, to: String) throws -> Conversion {
