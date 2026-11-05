@@ -4,18 +4,22 @@
 // the overflow evenly; then swaps its status bar (a back link, Focus, the real time) for the
 // simulator's clean 9:41 one, taken from one of app-store-shots.sh's light captures and
 // redrawn in white or black to suit the capture's own background (dark mode or light).
-//   swift ios/scripts/app-store-drop-in.swift <capture.mov|.png> <seconds> "ios/build/app-store-shots/4 my data.png" \
-//     ios/build/app-store-assets/screenshots/drop-in/5.png
+// A Chat tab capture from the simulator, given last, also replaces the capture's tab bar with
+// the app's own: the iPhone footage predates My health and shows the old three tabs (light only).
+//   swift ios/scripts/app-store-drop-in.swift <capture.mov|.png> <seconds> "ios/build/app-store-shots/1 my health.png" \
+//     ios/build/app-store-assets/screenshots/drop-in/5.png ["ios/build/app-store-shots/5 chat tab bar.png"]
 import AVFoundation
 import AppKit
 
 let width = 1206, height = 2622
 /// The status bar's band on the 6.3-inch screen, in pixels: the clock and icons sit inside it.
 let band = 160
+/// The tab bar's band, from this row down: below Chat's question field, on its white ground.
+let tabBarTop = 2360
 
 let args = CommandLine.arguments
-guard args.count == 5, let seconds = Double(args[2]) else {
-    print("usage: app-store-drop-in.swift <capture.mov|.png> <seconds> <simulator capture.png> <out.png>"); exit(2)
+guard args.count == 5 || args.count == 6, let seconds = Double(args[2]) else {
+    print("usage: app-store-drop-in.swift <capture.mov|.png> <seconds> <simulator capture.png> <out.png> [simulator Chat tab.png]"); exit(2)
 }
 let input = URL(fileURLWithPath: args[1])
 
@@ -37,6 +41,10 @@ if ["mov", "mp4", "m4v"].contains(input.pathExtension.lowercased()) {
 }
 guard let simulator = load(URL(fileURLWithPath: args[3])), simulator.width == width, simulator.height == height else {
     print("the simulator capture must be \(width) × \(height)"); exit(1)
+}
+let tabBar = args.count == 6 ? load(URL(fileURLWithPath: args[5])) : nil
+if args.count == 6, tabBar?.width != width || tabBar?.height != height {
+    print("the Chat tab capture must be \(width) × \(height)"); exit(1)
 }
 
 // RGBA bitmaps we can read and write pixel by pixel.
@@ -68,6 +76,14 @@ for y in 0..<band {
         let cover = max(0, min(1, 1 - lum / max(simGround.reduce(0, +) / 3, 1)))
         for c in 0..<3 { pixels[i + c] = UInt8((ground[c] * (1 - cover) + ink * cover).rounded()) }
     }
+}
+
+// The tab bar: the simulator's Chat tab band copied over the capture's, row for row.
+if let tabBar {
+    let bar = canvas()
+    bar.draw(tabBar, in: CGRect(x: 0, y: 0, width: width, height: height))
+    let rows = bar.data!.bindMemory(to: UInt8.self, capacity: width * height * 4)
+    for i in (4 * tabBarTop * width)..<(4 * height * width) { pixels[i] = rows[i] }
 }
 
 let file = URL(fileURLWithPath: args[4])

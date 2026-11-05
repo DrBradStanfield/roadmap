@@ -185,11 +185,12 @@ declares the three rows below; declare them as written.
    `ios/build/app-store-assets/screenshots/` (`app-store-compose.swift`). Slot 5 (Chat)
    and slot 2 (check each value) are drop-ins (`app-store-drop-in.swift`): Chat from an
    iPhone recording in the DEBUG `--demo-record` mode, slot 2 from the video's simulator
-   footage. Before filming, install a Debug build and seed the demo record: write the
+   footage. The Chat recording predates My health (US-73), so the drop-in and the video
+   take the simulator's current tab bar from `5 chat tab bar.png`. Before filming, install a Debug build and seed the demo record: write the
    screenshots' record (the sample plus the extra values in `app-store-shots.sh`) to a
    file, then `xcrun devicectl device copy to --device <id> --domain-type appDataContainer
    --domain-identifier com.drstanfield.healthroadmap --source <file> --destination
-   "Library/Application Support/Demo/health-roadmap.json"`, and check My data shows
+   "Library/Application Support/Demo/health-roadmap.json"`, and check My health shows
    weight 68.5 kg and ApoB 1.02 before you record. Without a seed the demo starts empty.
    Launch the iPhone demo with `--ui-testing` too, so analytics stay off:
    `xcrun devicectl device process launch --device <id> --terminate-existing com.drstanfield.healthroadmap --demo-record --ui-testing`.
