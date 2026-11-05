@@ -327,10 +327,12 @@ const UNIT_VALUE_RE = new RegExp(
 // does: digits straight after a name are its value. A number inside a word
 // (the 1 of "A1c") is never the value. A name is never a value: the gap stops
 // where another name starts, and a number glued to a letter with another number
-// after it ("T4 15") takes that number too (mirror of sentry-scrub.ts, US-09 AC7g).
+// after it, across the same gap a name takes ("T4 15", "T4 <15"), takes that number too (mirror of sentry-scrub.ts, US-09 AC7g).
 const METRIC_NAME = `(?<![a-z0-9])(?:${alternation(SCRUB_METRIC_WORDS)})(?![a-z])`;
+/** What may stand between a name and its value: up to 20 characters, no digit, no other name. */
+const NAME_GAP = `(?:(?!${METRIC_NAME})[^\\d\\n]){0,20}?`;
 const METRIC_THEN_VALUE_RE = new RegExp(
-  `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])((?:(?!${METRIC_NAME})[^\\d\\n]){0,20}?)(?!(?<=[a-z])\\d+(?:[.,]\\d+)?[a-z]|${METRIC_NAME})((?<=[a-z]-?)${NUMBER}[ \\t:=]+(?!${METRIC_NAME})${NUMBER}|${NUMBER})`, 'gi');
+  `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])(${NAME_GAP})(?!(?<=[a-z])\\d+(?:[.,]\\d+)?[a-z]|${METRIC_NAME})((?<=[a-z]-?)${NUMBER}${NAME_GAP}(?!${METRIC_NAME})${NUMBER}|${NUMBER})`, 'gi');
 // Name edges, not \b: "Lp(a)" ends and "γ-GT" starts with no word character,
 // so \b never matched there. A name starts where no letter or digit runs into
 // it, or at its own first character when that is a symbol ("xγ-GT"), and ends

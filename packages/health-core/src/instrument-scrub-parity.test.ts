@@ -395,6 +395,20 @@ describe('free-text scrub parity', () => {
     }
   });
 
+  // Codex and adversary review of f866201a: a digit name's value went when a space stood
+  // between, and stayed behind any other separator the name-then-value gap accepts.
+  it('US-09 AC7g — a digit name\'s value goes behind a comparator or any separator, on both copies', () => {
+    for (const impl of [source, copy]) {
+      for (const [text, value] of [
+        ['TSH: -, T4 <15', '15'], ['LDL n/a, T3 >4.1', '4.1'], ['ferritin CA-125 <30', '30'], ['LDL D3 ≥ 45', '45'],
+        ['Ferritin pending, B12 <300', '300'], ['LDL T4 - 15', '15'], ['LDL T4, 15', '15'], ['LDL T4 (15)', '15'],
+        ['Vit D3 - 45', '45'], ['vit d3, 45', '45'],
+      ]) {
+        expect(impl.scrubText(text), text).not.toContain(value);
+      }
+    }
+  });
+
   it('US-21 AC17 — every catalogue key, label and alias, followed by a value, loses the value', () => {
     for (const impl of [source, copy]) {
       for (const entry of LAB_CATALOG) {
