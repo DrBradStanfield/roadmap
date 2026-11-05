@@ -11,7 +11,7 @@ import { cleanup, fireEvent, render } from '@testing-library/react';
 import { LIMIT_NOT_GRADED, type ApiMeasurement } from '@roadmap/health-core';
 import { BloodTestTimeline } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
-import { BloodTestRows, type RowContext } from './MyDataRows';
+import { BloodTestRows, VitalsRows, type RowContext } from './MyDataRows';
 import { NumericInputCell } from './NumericInputCell';
 import type { ApiLabValue } from '../lib/api-types';
 
@@ -115,6 +115,40 @@ describe('US-12 AC20: the phone rows', () => {
     // One exact day: no line is drawn through the limit, and the exact day is a filled dot.
     expect(lpa.querySelectorAll('.md-row-trend path')).toHaveLength(0);
     expect([...lpa.querySelectorAll('.md-row-trend circle')].map(c => c.getAttribute('fill'))).toEqual(['#B2598C', 'none']);
+  });
+});
+
+describe('US-12 AC20a: the phone blood pressure row', () => {
+  const ctx: RowContext = { grading: { sex: 'male' }, plan: null, unitOf: () => 'si' };
+  const day = (ago: number) => new Date(Date.now() - ago * 86_400_000).toISOString().slice(0, 10);
+  /** Three days of pairs, the middle one with the given limits, and the BP row's trend dots' fills. */
+  function bpDots(limits: { sys?: '<' | '>'; dia?: '<' | '>' }) {
+    const rows = [
+      row('s1', 'systolic_bp', 128, day(5)), row('d1', 'diastolic_bp', 82, day(5)),
+      row('s2', 'systolic_bp', 125, day(3), limits.sys), row('d2', 'diastolic_bp', 78, day(3), limits.dia),
+      row('s3', 'systolic_bp', 122, day(1)), row('d3', 'diastolic_bp', 79, day(1)),
+    ];
+    const view = render(<VitalsRows history={rows} ctx={ctx} onOpen={() => {}}/>);
+    const bp = [...view.container.querySelectorAll('.md-row')]
+      .find(r => r.querySelector('.md-row-label')?.textContent === 'Blood Pressure') as HTMLElement;
+    return {
+      hollow: bp.querySelectorAll('circle.md-trend-limit').length,
+      fills: [...bp.querySelectorAll('.md-row-trend circle')].map(c => c.getAttribute('fill')),
+    };
+  }
+
+  it('draws a day whose systolic was printed as a limit hollow, as the desktop trend does', () => {
+    expect(bpDots({ sys: '<' }).hollow).toBe(1);
+  });
+
+  it('draws a day whose diastolic alone was printed as a limit hollow too', () => {
+    expect(bpDots({ dia: '>' }).hollow).toBe(1);
+  });
+
+  it('draws no hollow point when neither half was a limit', () => {
+    const { hollow, fills } = bpDots({});
+    expect(hollow).toBe(0);
+    expect(fills).not.toContain('none');
   });
 });
 
