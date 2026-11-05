@@ -267,8 +267,8 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'hcg', label: 'hCG', group: 'hormones', unit: 'IU/L', aliases: ['beta hcg', 'beta-hcg', 'b-hcg', 'human chorionic gonadotropin', 'total hcg'], unitAliases: ['miu/ml', 'mu/ml'] },
 
   // ── Vitamins & minerals ───────────────────────────────────────────────
-  { key: 'vitamin_d', label: 'Vitamin D (25-OH)', group: 'vitamins', unit: 'nmol/L', aliases: ['25-hydroxyvitamin d', '25-oh vitamin d', 'vitamin d3', '25(oh)d', 'vitamin d, 25-hydroxy', '25-hydroxy vitamin d', '25 oh vitamin d', 'vitamin d (25 oh)'], conversions: { 'ng/ml': 2.496, 'µg/l': 2.496 } }, // 25-OH-D 400.64 g/mol
-  { key: 'vitamin_b12', label: 'Vitamin B12', group: 'vitamins', unit: 'pmol/L', aliases: ['b12', 'cobalamin', 'vitamin b12 (cobalamin)'], conversions: { 'pg/ml': 0.738, 'ng/l': 0.738 } }, // cyanocobalamin 1355.4 g/mol
+  { key: 'vitamin_d', label: 'Vitamin D (25-OH)', group: 'vitamins', unit: 'nmol/L', aliases: ['25-hydroxyvitamin d', '25-oh vitamin d', 'vitamin d3', '25(oh)d', 'vitamin d, 25-hydroxy', '25-hydroxy vitamin d', '25 oh vitamin d', 'vitamin d (25 oh)', 'vit d', 'vit d3'], conversions: { 'ng/ml': 2.496, 'µg/l': 2.496 } }, // 25-OH-D 400.64 g/mol
+  { key: 'vitamin_b12', label: 'Vitamin B12', group: 'vitamins', unit: 'pmol/L', aliases: ['b12', 'cobalamin', 'vitamin b12 (cobalamin)', 'vit b12'], conversions: { 'pg/ml': 0.738, 'ng/l': 0.738 } }, // cyanocobalamin 1355.4 g/mol
   { key: 'b12_active', label: 'Active B12', group: 'vitamins', unit: 'pmol/L', aliases: ['holotranscobalamin', 'holotc'] },
   { key: 'folate', label: 'Folate', group: 'vitamins', unit: 'nmol/L', aliases: ['folic acid', 'serum folate', 'folate, serum'], conversions: { 'ng/ml': 2.266, 'µg/l': 2.266 } }, // folate 441.4 g/mol
   { key: 'ferritin', label: 'Ferritin', group: 'vitamins', unit: 'µg/L', aliases: ['ferritin (serum)'], unitAliases: ['ng/ml'] },

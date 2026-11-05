@@ -122,6 +122,12 @@ describe('the add sheet\'s search (US-73 AC8)', () => {
     expect(JSON.parse(labSearchJson(' '))).toEqual([]);
   });
 
+  it('finds vitamin D and B12 by their short names, "vit d" and "vit b12" (review round 3)', () => {
+    expect(JSON.parse(labSearchJson('vit d'))[0]).toMatchObject({ name: 'Vitamin D (25-OH)', key: 'vitamin_d' });
+    expect(JSON.parse(labSearchJson('vit d3'))[0]).toMatchObject({ key: 'vitamin_d' });
+    expect(JSON.parse(labSearchJson('vit b12'))[0]).toMatchObject({ key: 'vitamin_b12' });
+  });
+
   it('the history door no longer searches: "search" is no series of its own', () => {
     const file = JSON.stringify(record());
     expect(historyJson(file, 'weight', NOW, 'phone', '{}', 'search')).toBe(historyJson(file, 'weight', NOW, 'phone', '{}'));
@@ -290,6 +296,9 @@ describe('labAddName: the add sheet\'s add (US-73 AC8, US-21, US-66 AC6)', () =>
 
   it('refuses a vital\'s name and a new test with no unit, as the web does', () => {
     expect(add(record(), 'Weight', 80, 'kg')).toMatchObject({ ok: false, reason: 'core-metric' });
+    // The add sheet offers "Blood pressure" as a new test; its save is refused in the sheet (review round 3).
+    expect(JSON.parse(labSearchJson('Blood pressure'))).toEqual([]);
+    expect(add(record(), 'Blood pressure', 70, 'kg')).toEqual({ ok: false, reason: 'core-metric', message: '"Blood pressure" is not a lab test: add it from its own row.' });
     expect(add(record(), 'Zinc custom', 80, '')).toEqual({ ok: false, reason: 'invalid-value', message: 'A lab value needs the unit the lab reported it in' });
   });
 
