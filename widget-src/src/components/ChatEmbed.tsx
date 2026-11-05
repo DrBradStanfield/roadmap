@@ -10,6 +10,7 @@ import type { ProposedEdit } from '@roadmap/health-core';
 import { getChatGate } from '../lib/chat-api';
 import { observeVisibility } from '../lib/observe-visibility';
 import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource } from '../hooks/useChatState';
+import { useFollowLatest } from '../hooks/useFollowLatest';
 import { ChatKeyGate } from './ChatKeyGate';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { SubscriptionChangeCard } from './SubscriptionChangeCard';
@@ -39,7 +40,6 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
   });
   const { inputRef, messagesContainerRef } = refs;
 
-  const [showScrollBtn, setShowScrollBtn] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   // Lazy-load conversations: fire only when this panel enters the viewport
@@ -54,20 +54,8 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
     }, { threshold: 0.1 });
   }, [actions.loadConversationsIfNeeded]);
 
-  // Auto-scroll messages to bottom on a new message or any pending-reply change
-  useEffect(() => {
-    const el = messagesContainerRef.current;
-    if (!el) return;
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
-    if (nearBottom) el.scrollTop = el.scrollHeight;
-  }, [state.messages, state.pending, messagesContainerRef]);
-
-  const handleMessagesScroll = useCallback(() => {
-    const el = messagesContainerRef.current;
-    if (!el) return;
-    const shouldShow = el.scrollHeight - el.scrollTop - el.clientHeight > 100;
-    setShowScrollBtn(prev => prev === shouldShow ? prev : shouldShow);
-  }, [messagesContainerRef]);
+  // Follow a new message or any pending-reply change while the reader is at the latest one
+  const { showScrollBtn, onScroll: handleMessagesScroll } = useFollowLatest(messagesContainerRef, state.activeConversationId, state.messages, [state.pending]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (sendsOnEnter(e)) {
