@@ -339,6 +339,7 @@ describe("pages-smoke: a replaced Pages run, a missing run (US-46 AC16)", { time
     expect(r.code).toBe(0);
     expect(r.comments).toEqual([notice(M)]);
     expect(r.out).toContain("::warning::Could not comment on the deploy notification issue #42.");
+    expect(r.lists).toEqual([...Array(12).fill(listFor(M)), listFor(N)]); // the tip look still happens
   });
 
   it("no notification issue: the warning only, no comment call", () => {
