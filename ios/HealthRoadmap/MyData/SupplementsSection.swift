@@ -41,7 +41,7 @@ struct SupplementsSection: View {
             Section {
                 ForEach(supplements.stopped) { row in
                     HStack {
-                        SupplementRow(row: row).foregroundStyle(.secondary)
+                        SupplementRow(row: row, stopped: true).foregroundStyle(.secondary)
                         Button("Taking again") { take(row) }
                             .disabled(saving)
                             .buttonStyle(.bordered)
@@ -66,15 +66,16 @@ struct SupplementsSection: View {
     }
 }
 
-/// A supplement's name, its dose, and since when.
+/// A supplement's name, its dose, and since when, or for a stopped one the day it stopped.
 private struct SupplementRow: View {
     let row: SupplementsView.Row
+    var stopped = false
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(row.name)
-                Text("Since \(DayText.short(row.startedDay))").font(.caption).foregroundStyle(.secondary)
+                Text(row.dayLine(stopped: stopped)).font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
             if let dose = row.dose {

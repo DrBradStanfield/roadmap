@@ -80,9 +80,17 @@ struct SupplementsView: Decodable, Equatable {
         let name: String
         let dose: Double?
         let unit: String?
-        /// YYYY-MM-DD
+        /// YYYY-MM-DD, the phone's own day
         let startedDay: String
+        /// A stopped one's latest stop, YYYY-MM-DD; nil from an engine before it (US-73 AC10b).
+        var stoppedDay: String?
         var id: String { key }
+
+        /// "Since 6 Nov 2026", or for a stopped one "Stopped 6 Nov 2026" (US-73 AC10b).
+        func dayLine(stopped: Bool) -> String {
+            guard stopped else { return "Since \(DayText.short(startedDay))" }
+            return stoppedDay.map { "Stopped \(DayText.short($0))" } ?? "Stopped"
+        }
     }
 
     /// One the user could add: featured ones are the web's quick-add chips, starred in the add sheet.

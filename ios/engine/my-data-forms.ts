@@ -37,8 +37,10 @@ export interface SupplementRow {
   name: string;
   dose: number | null;
   unit: string | null;
-  /** YYYY-MM-DD */
+  /** YYYY-MM-DD, the phone's own day (US-73 AC10b) */
   startedDay: string;
+  /** A stopped one's latest stop, YYYY-MM-DD on the phone; null when active or no stop is recorded. */
+  stoppedDay: string | null;
 }
 
 export interface SupplementsView {
@@ -161,12 +163,20 @@ function basisOf(file: RoadmapFile, choices: UnitChoices, plan: Plan | null) {
  * shapes (hand edits, other writers), so each field is read defensively:
  * one odd row must never lock the tab.
  */
-function supplementRow(row: RoadmapFile['supplements'][number]): SupplementRow {
+function supplementRow(row: RoadmapFile['supplements'][number], history: RoadmapFile['supplementHistory']): SupplementRow {
   const text = (value: unknown) => (typeof value === 'string' ? value : null);
+  // An instant shows on the phone's own day (US-73 AC10b); a bare day, or text that is no date, as stored.
+  const day = (value: unknown) => {
+    const stored = text(value) ?? '';
+    return stored.length > 10 && !Number.isNaN(Date.parse(stored)) ? localDay(stored) : stored.slice(0, 10);
+  };
+  const stops = row.status === 'stopped'
+    ? history.filter((h) => h.supplementKey === row.supplementKey && h.changeType === 'stopped').map((h) => text(h.updatedAt) ?? '').sort()
+    : [];
   return {
     key: row.supplementKey, name: row.supplementName,
     dose: typeof row.doseValue === 'number' && Number.isFinite(row.doseValue) ? row.doseValue : null,
-    unit: text(row.doseUnit), startedDay: (text(row.startedAt) ?? '').slice(0, 10),
+    unit: text(row.doseUnit), startedDay: day(row.startedAt), stoppedDay: stops.length > 0 ? day(stops.at(-1)) : null,
   };
 }
 
@@ -221,8 +231,8 @@ function buildForms(file: RoadmapFile, now: string, basis: Basis): FormsView {
           : 'No screening questions apply at your age and sex yet.',
     supplements: {
       intro: SUPPLEMENT_TEXT.intro,
-      active: listable(file, 'active').map(supplementRow),
-      stopped: listable(file, 'stopped').sort((a, b) => String(b.updatedAt ?? '').localeCompare(String(a.updatedAt ?? ''))).map(supplementRow),
+      active: listable(file, 'active').map((s) => supplementRow(s, file.supplementHistory)),
+      stopped: listable(file, 'stopped').sort((a, b) => String(b.updatedAt ?? '').localeCompare(String(a.updatedAt ?? ''))).map((s) => supplementRow(s, file.supplementHistory)),
       choices: featuredFirst.filter((o) => !taking.has(o.key)).map((o) => ({
         key: o.key, name: o.name, featured: o.category === 'featured', dose: o.defaultDose ?? null, unit: o.defaultUnit ?? null,
       })),
