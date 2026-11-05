@@ -273,9 +273,11 @@ export function calculateHealthResults(inputs: SuggestionInputs, unitSystem?: Un
   } else if (inputs.creatinine !== undefined && !limitOf(inputs, 'creatinine') && !limitOf(inputs, 'labEgfr') && results.age !== undefined && inputs.sex) {
     // Never from a creatinine printed as a limit, nor past a lab eGFR printed as one (US-12 AC20).
     // The age on the creatinine's day (today's when the day is unknown); none from a
-    // creatinine taken while a known minor, the minor gate judged on its day (US-07 AC7).
+    // creatinine taken while a known minor, the minor gate judged on its day (US-07 AC7), nor while one
+    // today: on the boundary day a local day can say adult while UTC-12 still says minor.
     const day = inputs.creatinineDay;
-    const minor = day ? isKnownMinorOnDay(inputs.birthYear, inputs.birthMonth, day) : isKnownMinor(inputs.birthYear, inputs.birthMonth, now);
+    const minor = isKnownMinor(inputs.birthYear, inputs.birthMonth, now)
+      || (!!day && isKnownMinorOnDay(inputs.birthYear, inputs.birthMonth, day));
     const age = day ? ageOnDay(inputs.birthYear!, inputs.birthMonth, day) : results.age;
     if (!minor) results.eGFR = Math.round(calculateEGFR(inputs.creatinine, age, inputs.sex));
   }

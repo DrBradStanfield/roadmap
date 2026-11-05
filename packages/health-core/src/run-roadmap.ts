@@ -310,14 +310,14 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   // own rule), newer than the lab eGFR, once the plan can calculate from it: the client kept the lab eGFR
   // only because it had no age (or no sex, AC8), and a stated one supplies it. The client always sends
   // that day; with none to read, the server never guesses one, and the lab eGFR stands. Any day after
-  // today (not yet reached) reads as today's.
+  // today (not yet reached) reads as today's; UNKNOWN_DAY (a refused creatinine) stays later than every day.
   const saved = sanitizeInputs({
     creatinine: payload.creatinine, birthYear: payload.birthYear, birthMonth: payload.birthMonth, sex: payload.sex,
   } as Partial<HealthInputs>);
   const inUseDay = saved.creatinine !== undefined && saved.birthYear !== undefined && saved.sex !== undefined
     ? creatinineDayOf(saved.creatinine, base.measurementHistory) : undefined;
   const dayInUse = stated.get('creatinine')?.date ?? blocked.get('creatinine') ?? inUseDay;
-  const creatinineDay = dayInUse !== undefined && dayInUse > today ? today : dayInUse;
+  const creatinineDay = dayInUse !== undefined && dayInUse !== UNKNOWN_DAY && dayInUse > today ? today : dayInUse;
   if (creatinineDay !== undefined && !(creatinineDay <= String(base.labEgfrDate ?? ''))) {
     // ...unless a known minor took it: no eGFR comes from it, so the lab's stands, outdated (withLabEgfr's rule).
     if (isKnownMinorOnDay(saved.birthYear, saved.birthMonth, creatinineDay)) {

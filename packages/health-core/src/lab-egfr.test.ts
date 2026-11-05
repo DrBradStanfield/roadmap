@@ -8,7 +8,7 @@ import { createEmptyFile, createLabValue, createMeasurement, type RoadmapFile } 
 import { computePlan, labEgfrOf, planPayload, withLabEgfr } from './plan';
 import { buildChatContextJson, chatContextOf } from './chat-context';
 import { HISTORY_CAP_PER_METRIC } from './measurement-history';
-import { ageOnDay, calculateEGFR, missingPlanInputs } from './calculations';
+import { ageOnDay, calculateEGFR, calculateHealthResults, missingPlanInputs } from './calculations';
 import { statTiles, STAT_TILE_ABOUT } from './stat-tiles';
 import { runRoadmap } from './run-roadmap';
 
@@ -411,6 +411,16 @@ describe('US-07 AC7: the eGFR uses the age on the creatinine\'s day', () => {
     expect(JSON.parse(buildChatContextJson(payload)!).derivedValues.eGFR ?? undefined).toBeUndefined();
   });
 
+  it('the boundary day: a minor today at UTC-12 gets no calculated eGFR, though an adult on the creatinine\'s local day (adversary, US-07 AC7)', () => {
+    // Auckland, 10:00 on 2027-01-01 local (2026-12-31 at UTC-12). Born 2008, no month: a minor until 2027 begins at UTC-12.
+    const now = new Date('2026-12-31T21:00:00.000Z');
+    const results = calculateHealthResults({
+      heightCm: 165, sex: 'female', birthYear: 2008, creatinine: 60, creatinineDay: '2027-01-01',
+    } as Parameters<typeof calculateHealthResults>[0], 'si', undefined, undefined, undefined, now);
+    expect(results.knownMinor).toBe(true);
+    expect(results.eGFR).toBeUndefined();
+  });
+
   it('run_roadmap keeps an older lab eGFR exactly when the plan does: a newer creatinine taken at 17 leaves it, outdated', () => {
     const file = fileWith({ birthYear: 2008, creatinine: [{ value: 60, day: '2025-12-01' }], labs: [{ value: 95, day: '2025-10-01' }] });
     const base = chatContextOf(plan(file).inputs, 'si', [], [], file.measurements);
@@ -550,6 +560,27 @@ describe('US-07 AC7: the lab eGFR is weighed against the creatinine in use, a ma
     };
     const out = JSON.parse(runRoadmap(payload, { sex: 'female' }, NOW).contextJson!);
     expect(out.derivedValues.eGFR).toBe(95);
+  });
+
+  // Codex R1: a refused creatinine's day is UNKNOWN_DAY, later than every real day; the future-day clamp must not touch it.
+  const refusedCreatinine = (values: unknown[]) => {
+    // latestDayOnEarth(NOW) is 2026-09-02: a lab eGFR from that day, the creatinine saved before it.
+    const file = fileWith({ creatinine: [{ value: 80, day: '2026-08-01' }], labs: [{ value: 95, day: '2026-09-02' }] });
+    const run = runRoadmap(chatContextOf(plan(file).inputs, 'si', [], [], file.measurements), { values }, NOW);
+    const out = JSON.parse(run.contextJson!);
+    expect(out.derivedValues.eGFR).toBeUndefined();
+    expect(card(out)).toBeUndefined();
+    expect(out.currentSuggestions.map((c: { id: string }) => c.id)).not.toContain('high-potassium');
+    expect(run.rejected).toContainEqual({ field: 'creatinine', reason: expect.stringContaining('protein target') });
+  };
+
+  it('run_roadmap: a stated creatinine with an invalid date sets aside a lab eGFR from today (Codex R1, US-07 AC7)', () => {
+    refusedCreatinine([{ field: 'creatinine', value: 70, unit: 'µmol/L', date: '2026-13-01' }]);
+  });
+
+  it('run_roadmap: a creatinine beyond the value cap sets aside a lab eGFR from today (Codex R1, US-07 AC7)', () => {
+    const ldl = Array.from({ length: 20 }, () => ({ field: 'ldl', value: 3, unit: 'mmol/L' }));
+    refusedCreatinine([...ldl, { field: 'creatinine', value: 70, unit: 'µmol/L' }]);
   });
 
   it('a draft point on another metric is dropped and dates nothing', () => {
