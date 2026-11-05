@@ -36,7 +36,14 @@ threshold, formula or rule except the two text changes in PR A, which Brad worde
 
 ## PRs
 
-Four PRs, landed in this order. Each is small enough to review on its own.
+Five PRs, landed in this order. Each is small enough to review on its own.
+
+### PR 0: the story first (Lane B; Codex R1)
+
+US-73 and its ACs (below) go into `docs/user-stories.md` before any build, with the edits to the
+stories it changes: US-25 (AC2, AC5, AC6, AC17, AC22, AC26), US-57 (tour anchors), US-56
+(placement), US-61 AC7 (ownership line), US-21 and US-66 AC6 (the iPhone add sheet). Each later PR
+updates `ios/architecture.md` for the decision it changes and its story's test status.
 
 ### PR A: clinical text (clinical class: fresh adversary + Codex)
 
@@ -51,14 +58,21 @@ Four PRs, landed in this order. Each is small enough to review on its own.
    to a great diet, cholesterol-lowering medications can also be added in steps." Change both
    copies: `input-form.ts:198` (iPhone) and `widget-src/.../InputPanel.tsx:1678` (web). The
    `lipid-diet` card keeps `LIPID_DIET_ADVICE`. Tests pin the new sentence on both.
+3. **eGFR uses the age on the test's day** (Brad 2026-11-05, clinical point 2). Today the tile
+   computes eGFR from the latest creatinine with today's age. It will use the age on that
+   creatinine's day. Three-file sync: `health_roadmap_algorithm.md`, `evidence.ts` if it says how age
+   is taken, `roadmap_text.html`. Golden refresh, checked value by value: a record whose eGFR moves
+   across 60 or 45 changes its stage text or its protein target, and the review must list them.
 
 ### PR B: engine (health-core + `ios/engine`; the add is a write path: adversary + Codex)
 
-1. **eGFR history.** A per-reading eGFR series for the creatinine row: `calculateEGFR` on each
-   active creatinine value, age from birth year/month at that reading's day, the record's sex. A
-   lab-reported eGFR on the same day wins, as the tile prefers it. No point for a creatinine printed
-   as a limit, none without sex or birth year (US-07 AC8). Exposed through `historyJson` (series
-   `egfr`) so the row gets its sparkline and previous value.
+1. **eGFR history.** One point per day from two sources (Codex R2): every active lab-reported eGFR,
+   and `calculateEGFR` on every active creatinine (age on that day, the record's sex). The lab's
+   value wins a day both have, as the tile prefers it (US-07 AC7). Sex and birth year are needed
+   only for calculated points (AC8); a record with lab eGFRs and no sex still gets its history, and
+   one with no creatinine at all gets an eGFR row from the lab values alone. No point from a
+   creatinine or eGFR printed as a limit (US-12 AC20). The newest point equals the tile's value
+   (PR A item 3 makes them agree). Exposed through `historyJson` (series `egfr`).
 2. **Waist-to-height history** moves from Swift into the engine the same way (`historyJson`
    series `whtr`: waist ÷ the height in force that day, two decimals).
 3. **Topic grouping** moves from Swift (`TopicPlan.swift`) into health-core as `topicSections`
@@ -73,8 +87,9 @@ Four PRs, landed in this order. Each is small enough to review on its own.
    - a catalogue test saves under its stable key with its accepted units only (US-21 AC3, AC4);
    - "Other" takes the typed name and the unit the person types, kept as typed (the catalogue rule:
      an unknown test keeps its reported unit, never an inferred canonical one);
-   - a core test's name is refused with the iPhone's existing words ("Add this test from its row in
-     Blood tests."), as the web does;
+   - a core test's name (LDL, HbA1c…) writes the core row through `addLabValue`, range-checked,
+     as the web's general add does (US-66 AC6; Codex R3). The refusal ("Add this test from its row
+     in Blood tests.") stays only where it applies today: adding to an existing extra-lab page;
    - one active value per test per day: a held day is surfaced and can be replaced through the
      correction path, never a second row (US-21 AC13);
    - extends the existing `labAdd` edit rather than adding a new edit kind; update
@@ -87,29 +102,32 @@ Four PRs, landed in this order. Each is small enough to review on its own.
 2. **Add blood test sheet**: a search field; as people type, catalogue matches appear ("test" →
    Testosterone, "ferr" → Ferritin); picking one opens the value entry with its units; no match
    offers "Add '<typed name>' as a new test" with value, unit and day.
-3. Delete what the merge orphans, with call-site evidence: `PlanView` and its list, `ControlsHeader`,
+3. **Brad's answers 3 and 4:** an urgent suggestion is always a red card at the top of its section,
+   and also shows in its screening or medicine row. A medicine suggestion shows its title as one line
+   under its row; the full text stays behind the info icon.
+4. Delete what the merge orphans, with call-site evidence: `PlanView` and its list, `ControlsHeader`,
    `TourTab.plan`, the old tile row and `tileExplainerOpened` if nothing else sends it, the plan
    tab's tour anchors, the prototype's DEBUG launch flags that only the prototype used (keep
    `--demo-live-health` if the screenshot harness needs it).
-4. **Tour (US-57)**: its three tips anchored on the Plan tiles, the Foundation card and My data's
+5. **Tour (US-57)**: its three tips anchored on the Plan tiles, the Foundation card and My data's
    blood tests. New anchors: the waist-to-height row, the first plan card in Weight & diabetes, the
    Blood tests heading. Words stay unless an anchor no longer fits; any new words go to Brad.
-5. Reminder taps, end of onboarding and the review prompt go to `.health` (done in the prototype).
-6. Text in the app and chat that names "My data" or "My plan": find every one (app strings, chat
+6. Reminder taps, end of onboarding and the review prompt go to `.health` (done in the prototype).
+7. Text in the app and chat that names "My data" or "My plan": find every one (app strings, chat
    system prompt and knowledge, onboarding, App Store text) and list them; change the app's own;
    the chat and App Store ones go to Brad.
-7. Tests (XCTest, run by a worker): section order; a card's section; the results-first sort; the
+8. Tests (XCTest, run by a worker): section order; a card's section; the results-first sort; the
    urgent banner's target, including an urgent screening suggestion; medicine and screening
    suggestions shown inside their rows and not as cards; WHtR and eGFR rows' values; the add sheet's
    search and its three outcomes; the demo record renders. Plus TS tests for PR B.
-8. Verify in the simulator (demo record, empty record, a record with no sex, an urgent record,
+9. Verify in the simulator (demo record, empty record, a record with no sex, an urgent record,
    Dynamic Type at the largest size, dark mode, VoiceOver labels on rows, pills and info icons),
    then a TestFlight build to Brad and Austin. Never Brad's phone directly.
 
-### PR D: docs
+### PR D: wrap-up docs
 
-- The new story (below) and the US-25, US-57, US-56 placement and US-61 AC7 edits; `ios/architecture.md`;
-  close PR 839 by folding `my-health-tab.md` into this plan's history section.
+- Story test status, the gotcha archive if any, and close PR 839 by folding `my-health-tab.md`
+  into this plan's history section.
 
 ## The user story (Lane B)
 
@@ -137,26 +155,26 @@ added (new)", "Medicine info opened". The question it answers: do people use the
 row, and do they find the suggestions that moved behind the info icons? Read at 4 weeks after the
 App Store release.
 
-## Clinical points for Brad (none is built until he answers)
+## Clinical points: Brad's answers, 2026-11-05
 
 1. **Fibre and the lipid diet card both show** for someone with high lipids. The old rule hid fibre
    because the lipid card already covers fibre (psyllium). Brad chose everyone; flagging the overlap
-   once. No change planned.
+   once. **Brad: "that's fine. fiber is crucial".** No change.
 2. **eGFR age.** The tile uses today's age with the latest creatinine, even if that test is a year
    old. The history uses the age on each test's day, which is the standard. So the graph's last point
    can be 1 lower than the row's value when the test is old. Options: (a) leave the tile; the row's
    value and the graph can differ by about 1; (b) make the tile use the age on the test's day too,
    a small clinical change (three-file sync; it can move a protein-target or stage boundary).
-   Recommendation: (b), in PR A.
+   **Brad: (b), agreed.** PR A item 3.
 3. **Urgent screening advice inside a row.** "Report abnormal uterine bleeding" is urgent. Inside the
    screening row it has no red, only the banner. Recommendation: urgent suggestions always stay as
-   cards, at the top of their section, and also show in the row.
+   cards, at the top of their section, and also show in the row. **Brad: yes.** PR C.
 4. **Medicine "next steps" behind an icon.** A card such as "consider adding ezetimibe" was a full
    card; now it is an orange icon on the row. Recommendation: show the suggestion's title as one line
-   under the medicine row, the full text behind the icon.
+   under the medicine row, the full text behind the icon. **Brad: yes.** PR C.
 5. **No "Requires attention" overview.** Attention cards now sit in their sections, so a person with
    three warnings sees them in three places. The banner only covers urgent. Recommendation: leave it
-   for now and read the usage signal; revisit if people miss them.
+   for now and read the usage signal; revisit if people miss them. **Brad: agreed.**
 6. **Waist-to-height "Normal <0.5"** is shown to everyone the row shows for. The cut-off is the same
    one the engine uses (`isWaistToHeightElevated`); no change.
 
