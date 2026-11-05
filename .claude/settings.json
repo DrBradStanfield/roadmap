@@ -22,7 +22,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat); case \"$input\" in *push*|*merge*) printf '%s' \"$input\" | node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-push-guard.cjs\";; esac"
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-push-guard.cjs\"",
+            "onFailure": "block"
           },
           {
             "type": "command",
