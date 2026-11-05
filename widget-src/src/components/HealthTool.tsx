@@ -82,6 +82,7 @@ import {
   loadUnitPreference,
   safeSetItem,
   safeRemoveItem,
+  getJson,
   localHealthWritesStopped,
 } from '../lib/storage';
 import {
@@ -220,6 +221,15 @@ async function mirrorSavedLists(): Promise<void> {
 
 /** Each key's waiting save: its timer and the save itself. */
 type ListSaves = Map<string, { timer: ReturnType<typeof setTimeout>; fire: () => void }>;
+
+/** This device's per-field unit toggles: the entries whose unit is 'si' or
+ *  'conventional'. A stored value that is not a plain object reads as none,
+ *  so a hand edit or an old build's junk never breaks the page (US-05 AC6). */
+function loadUnitOverrides(): Record<string, UnitSystem> {
+  const stored = getJson<unknown>('health_roadmap_unit_overrides');
+  if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return {};
+  return Object.fromEntries(Object.entries(stored).filter(([, us]) => us === 'si' || us === 'conventional'));
+}
 
 /** One save per key, 300 ms after its last change: rapid dropdown changes
  *  would otherwise race. The save carries the erase the page showed when the
@@ -375,12 +385,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   });
 
   // Per-field unit overrides (persisted to localStorage)
-  const [unitOverrides, setUnitOverrides] = useState<Record<string, UnitSystem>>(() => {
-    try {
-      const stored = localStorage.getItem('health_roadmap_unit_overrides');
-      return stored ? JSON.parse(stored) : {};
-    } catch { return {}; }
-  });
+  const [unitOverrides, setUnitOverrides] = useState(loadUnitOverrides);
 
   // Track previously saved inputs to only save changed fields (demographics + height only)
   const previousInputsRef = useRef<Partial<HealthInputs>>({});
