@@ -170,13 +170,15 @@ function supplementRow(row: RoadmapFile['supplements'][number], history: Roadmap
     const stored = text(value) ?? '';
     return stored.length > 10 && !Number.isNaN(Date.parse(stored)) ? localDay(stored) : stored.slice(0, 10);
   };
-  const stops = row.status === 'stopped'
-    ? history.filter((h) => h.supplementKey === row.supplementKey && h.changeType === 'stopped').map((h) => text(h.updatedAt) ?? '').sort()
-    : [];
+  const changes = (type: string) => history.filter((h) => h.supplementKey === row.supplementKey && h.changeType === type).map((h) => text(h.updatedAt) ?? '').sort();
+  const stops = changes('stopped');
+  // One taken again after a stop is "Since" that day, not its first start (Brad 2026-11-06).
+  const restart = row.status === 'active' && stops.length > 0 ? changes('started').filter((at) => at > stops.at(-1)!).at(-1) : undefined;
   return {
     key: row.supplementKey, name: row.supplementName,
     dose: typeof row.doseValue === 'number' && Number.isFinite(row.doseValue) ? row.doseValue : null,
-    unit: text(row.doseUnit), startedDay: day(row.startedAt), stoppedDay: stops.length > 0 ? day(stops.at(-1)) : null,
+    unit: text(row.doseUnit), startedDay: day(restart ?? row.startedAt),
+    stoppedDay: row.status === 'stopped' && stops.length > 0 ? day(stops.at(-1)) : null,
   };
 }
 

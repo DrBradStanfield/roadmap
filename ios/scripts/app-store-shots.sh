@@ -4,7 +4,8 @@
 # skips the welcome and onboarding, sets Apple's 9:41 status bar, then runs the opt-in
 # AppStoreScreenshots UI test and saves its pictures in ios/build/app-store-shots/.
 # Last, app-store-compose.swift frames them with their headlines in
-# ios/build/app-store-assets/screenshots/ (Chat's capture comes from a real iPhone: see there).
+# ios/build/app-store-assets/screenshots/ (Chat's capture comes from a real iPhone: see there;
+# "5 chat tab bar.png" gives it the current tab bar, app-store-drop-in.swift).
 # Uninstalls the app from that simulator first.
 #   ios/scripts/app-store-shots.sh ["iPhone 18 Pro"]  (App Store Connect's iPhone slot takes 1206 × 2622, 2026-10-26)
 #   ios/scripts/app-store-shots.sh --compose-only    (frames the captures already taken)
@@ -33,7 +34,7 @@ DATA=$(xcrun simctl get_app_container "$ID" "$APP_ID" data)
 for _ in 1 2 3 4 5 6 7 8 9 10; do [ -d "$DATA/Library/Application Support/Record" ] && break; sleep 1; done
 xcrun simctl terminate "$ID" "$APP_ID"
 # The fictional sample record (docs/examples/README.md), plus five earlier weights so the
-# value page shows a trend, a waist and the rest of the blood tests so My data looks
+# value page shows a trend, a waist and the rest of the blood tests so My health looks
 # full. All fictional. The sample itself is untouched: tests pin it.
 node -e '
 const fs = require("fs");
@@ -73,7 +74,7 @@ TEST_RUNNER_APP_STORE_SHOTS=1 xcodebuild test-without-building -project HealthRo
 
 rm -rf "$OUT" && mkdir -p "$OUT"
 xcrun xcresulttool export attachments --path "$RESULT" --output-path "$OUT" >/dev/null
-# Name each picture by its step ("1 my plan.png", ...), and the call-outs' crops.json.
+# Name each picture by its step ("1 my health.png", ...), and the call-outs' crops.json.
 node -e '
 const fs = require("fs"), path = require("path"), dir = process.argv[1];
 for (const test of JSON.parse(fs.readFileSync(path.join(dir, "manifest.json"), "utf8")))
