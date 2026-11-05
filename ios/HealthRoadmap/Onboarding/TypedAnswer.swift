@@ -23,6 +23,24 @@ struct TypedAnswer: Equatable {
     /// Unit taps so far (Codex): two taps never leave the box as it was, so a conversion
     /// begun for an earlier tap never lands over a later one (`land`).
     private(set) var taps = 0
+    /// What the person typed, kept while the box shows only its conversion (US-54 AC6b): a
+    /// switch back shows it again and a save reads it, never the rounded text shown.
+    private var typed: Entry?
+    /// The box as the last switch left it; a keystroke since makes the shown text the answer.
+    private var converted: Entry?
+
+    private struct Entry: Equatable {
+        var text, feet, inches: String
+        var us: Bool
+    }
+
+    private var entry: Entry {
+        get { Entry(text: text, feet: feet, inches: inches, us: us) }
+        set { (text, feet, inches, us) = (newValue.text, newValue.feet, newValue.inches, newValue.us) }
+    }
+
+    /// What the person typed: kept from before the last switch if nothing was typed since, else the box.
+    private var answer: Entry { entry == converted ? typed ?? entry : entry }
 
     /// A unit tap, counted in the tap: the box its conversion starts from.
     mutating func tapped() -> TypedAnswer {
@@ -53,6 +71,13 @@ struct TypedAnswer: Equatable {
         return feetInches.map { Double($0.feet * 12 + $0.inches) }
     }
 
+    /// An entry's number in its own units, read as `value` reads the box.
+    private func number(_ entry: Entry) -> Double? {
+        var box = self
+        box.entry = entry
+        return box.value
+    }
+
     /// What the page asks while a typed comma cannot be read ("100,500" kg), so Continue is
     /// never disabled without a word (US-02 AC7). No range is needed: a height's or weight's
     /// thousands reading ("1,000" and up) is never inside its range, so a comma there is
@@ -66,25 +91,31 @@ struct TypedAnswer: Equatable {
         fill(shown)
     }
 
-    /// The other units. A box left alone shows the record's value again; a typed one is
-    /// converted once, and stays the person's.
+    /// The other units. A box left alone shows the record's value again; a typed one shows
+    /// its conversion, and back in the units it was typed in, what was typed (US-54 AC6b).
     mutating func switchUnits(toUS: Bool, recorded: Double?, recordUnits: String, convert: Convert) async {
         guard toUS != us else { return }
-        let typed: HealthEngine.Conversion? = if edited, let value { await convert(value, metric, Self.system(us), Self.system(toUS)) } else { nil }
+        let mine = answer
+        let shown: HealthEngine.Conversion? = if edited, mine.us != toUS, let value = number(mine) { await convert(value, metric, Self.system(mine.us), Self.system(toUS)) } else { nil }
         us = toUS
         if !edited {
             await show(recorded, recordUnits: recordUnits, convert: convert)
-        } else if let typed {
-            fill(typed)
+        } else if mine.us == toUS {
+            entry = mine
+            (typed, converted) = (nil, nil)
+        } else if let shown {
+            fill(shown)
+            (typed, converted) = (mine, entry)
         }
     }
 
     /// What to save, in `recordUnits` (the units the engine's edit reads), or nil when
     /// the person typed nothing here.
     func saved(recordUnits: String, convert: Convert) async -> Double? {
-        guard edited, let typed = value else { return nil }
-        if Self.system(us) == recordUnits { return typed }
-        return await convert(typed, metric, Self.system(us), recordUnits)?.value
+        let mine = answer
+        guard edited, let typed = number(mine) else { return nil }
+        if Self.system(mine.us) == recordUnits { return typed }
+        return await convert(typed, metric, Self.system(mine.us), recordUnits)?.value
     }
 
     /// The typed value is `recorded` (in `recordUnits`) to within half the box's own step,

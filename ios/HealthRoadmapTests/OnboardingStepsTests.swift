@@ -163,6 +163,32 @@ final class OnboardingStepsTests: XCTestCase {
         XCTAssertTrue(weight.edited)
     }
 
+    /// US-54 AC6b (break-test 2026-11-06): 80 kg typed, then lb, then kg shows 80, never 79.8,
+    /// and saves 80 in either unit; a keystroke after a switch makes the shown text the answer.
+    func testATypedWeightSwitchedToLbAndBackIsWhatWasTyped_AC6b() async {
+        var weight = TypedAnswer(metric: "weight")
+        weight.text = "80"
+        weight.edited = true
+        await weight.switchUnits(toUS: true, recorded: nil, recordUnits: "si", convert: convert)
+        XCTAssertEqual(weight.text, "176")
+        let inLb = await weight.saved(recordUnits: "si", convert: convert)
+        XCTAssertEqual(inLb, 80, "shown in lb, saved as typed")
+        await weight.switchUnits(toUS: false, recorded: nil, recordUnits: "si", convert: convert)
+        XCTAssertEqual(weight.text, "80", "back in kg, as typed")
+        XCTAssertFalse(weight.us)
+        let inKg = await weight.saved(recordUnits: "si", convert: convert)
+        XCTAssertEqual(inKg, 80)
+        let onAUSRecord = await weight.saved(recordUnits: "conventional", convert: convert)
+        XCTAssertEqual(onAUSRecord ?? 0, 176.37, accuracy: 0.01, "80 kg in lb, not 176 lb")
+        // Retyped in lb: that is the answer now, and kg shows its conversion.
+        await weight.switchUnits(toUS: true, recorded: nil, recordUnits: "si", convert: convert)
+        weight.text = "180"
+        await weight.switchUnits(toUS: false, recorded: nil, recordUnits: "si", convert: convert)
+        XCTAssertEqual(weight.text, "81.6", "180 lb in kg")
+        let retyped = await weight.saved(recordUnits: "si", convert: convert)
+        XCTAssertEqual(retyped ?? 0, 81.65, accuracy: 0.01, "180 lb, whatever kg shows")
+    }
+
     /// A height typed in feet and inches or centimetres is the right height, in either record's units.
     func testATypedHeightIsSavedInTheEditsUnits_AC6() async {
         var height = TypedAnswer(metric: "height")
