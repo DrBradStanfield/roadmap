@@ -13,7 +13,7 @@ struct ScreeningsSection: View {
     let saved: (RecordStore.ApplyResult) -> RecordStore.ApplyResult
     /// Opens a dated value's page, or its entry when it has none (MyDataView).
     let open: (MyData.Row) -> Void
-    /// The plan's screening suggestions by group id (`TopicPlan.screenings`).
+    /// The plan's screening suggestions by group id (`HealthPage.screenings`).
     var grouped: [String: [Suggestion]] = [:]
 
     var body: some View {

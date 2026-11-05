@@ -27,9 +27,10 @@ struct AddBloodTestSheet: View {
     @State private var searches = true
 
     var body: some View {
+        let items = self.items
         NavigationStack {
             List {
-                ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                ForEach(items, id: \.name) { item in
                     Button {
                         pick(item.pick)
                         dismiss()
@@ -83,8 +84,14 @@ struct AddBloodTestSheet: View {
         let pick: Pick
     }
 
-    /// The record's tests: the core ones, PSA, then its lab tests.
-    private var held: [MyData.Row] { data.bloodTests + [data.psa] + (data.labTests ?? []) }
+    private var held: [MyData.Row] { Self.held(data) }
+
+    /// The record's tests: the core ones, PSA, then its lab tests. PSA only with a value or
+    /// with the prostate screening group on screen, where the plan asks for it (review R9).
+    static func held(_ data: MyData) -> [MyData.Row] {
+        let prostate = data.screeningNote == nil && data.screenings.contains { $0.groups.contains { $0.id == "prostate" } }
+        return data.bloodTests + (data.psa.latest != nil || prostate ? [data.psa] : []) + (data.labTests ?? [])
+    }
 
     private var items: [Item] {
         let row = { (row: MyData.Row) in Item(name: row.label, unit: row.unit, pick: .row(row)) }
@@ -117,9 +124,7 @@ struct NamedTestEntry: View {
         _unit = State(initialValue: units.first ?? "")
     }
 
-    var body: some View { sheet }
-
-    private var sheet: ValueEntrySheet {
+    var body: some View {
         var sheet = ValueEntrySheet(title: name, unit: unit, current: nil, asksForDay: true) { value, day in
             saved(await store.apply(.labAddName(name: name, value: value, day: day, unit: unit.trimmingCharacters(in: .whitespaces)), as: seen))
         } replace: { existingId, value in

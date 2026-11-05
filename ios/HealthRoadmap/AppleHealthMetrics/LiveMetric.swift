@@ -9,10 +9,6 @@ enum LiveMetric: String, CaseIterable, Identifiable, Codable, CodingKeyRepresent
 
     var id: String { rawValue }
 
-    /// Heart rate, resting heart rate and sleep sit in Vitals; VO2 max and steps under Fitness (AC6).
-    static let vitals: [LiveMetric] = [.heartRate, .restingHeartRate, .sleep]
-    static let fitness: [LiveMetric] = [.vo2Max, .steps]
-
     /// How a bucket's readings combine, as Apple Health combines them: steps summed (and
     /// sleep, a night's stages added up, on its own path); heart rate as its lowest to
     /// highest; resting heart rate and VO2 max averaged. It sets the HealthKit statistics

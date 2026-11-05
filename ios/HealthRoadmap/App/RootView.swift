@@ -15,7 +15,7 @@ struct RootView: View {
     let chat: ChatHistoryStore
     @State private var tab = Tab.health
     @State private var reviewPrompt = ReviewPrompt()
-    /// A plan card has come on screen on My health: the review prompt waits for it (US-25 AC8).
+    /// A plan card has come on screen on My health: the review prompt waits for it (US-25 AC10).
     @State private var planShowing = false
     @State private var analytics = Analytics()
     /// The backup offer after the person's third save (US-57 AC8).
@@ -129,7 +129,7 @@ struct RootView: View {
         }
         .onChange(of: reminderTaps.planRequests, initial: true) { if reminderTaps.planRequests > 0 { tab = .health } }
         .task(id: ReviewMoment(tab: tab, planShowing: planShowing)) {
-            // Only once a plan card is on screen (US-25 AC8), and a pause first, so the plan is
+            // Only once a plan card is on screen (US-25 AC10), and a pause first, so the plan is
             // read before iOS's rating sheet; leaving the tab during it cancels the ask without using it up.
             guard tab == .health, planShowing else { return }
             try? await Task.sleep(for: .seconds(2))
@@ -177,7 +177,7 @@ struct RootView: View {
         switch firstRun {
         case .welcome: .welcome
         case .questions: .onboarding
-        // A US-56 page names only the screen, never the metric (its usage signal). D9's words, unchanged for now.
+        // A US-56 page names only the screen, never the metric (its usage signal). D9's words (Brad 2026-11-05).
         case nil: switch tab { case .health: (live?.pagesOpen ?? 0) > 0 ? .appleHealthMetric : .myHealth; case .chat: .chat }
         }
     }
@@ -216,7 +216,7 @@ struct RootView: View {
     private func decideFirstRun() {
         guard !decided else { return }
         decided = true
-        // At launch the cover is simply there, never sliding up over an empty My data
+        // At launch the cover is simply there, never sliding up over an empty My health
         // (US-25 AC21b, Brad 2026-10-26).
         var now = Transaction()
         now.disablesAnimations = true

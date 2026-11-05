@@ -2,9 +2,8 @@ import SwiftUI
 import TipKit
 
 /// The My health tab (US-73; was My data and My plan, US-25 AC5, AC17): one page by topic,
-/// weight first, each topic's values then its plan cards, as the engine places them
-/// (`TopicPlan`). About you,
-/// reminders, Apple Health and the record sit in a settings sheet behind the person button
+/// weight first, each topic's values then its plan cards, as the engine places them; the
+/// view draws only `HealthPage`, built once per record change. About you, reminders, Apple Health and the record sit in a settings sheet behind the person button
 /// (`Layout.settings`). Every change goes through `RecordStore.apply`, so the engine's rules
 /// decide what is saved. The web twins are StartingInfoVitals.tsx and BloodTestTimeline.tsx.
 ///
@@ -16,7 +15,7 @@ struct MyDataView: View {
 
     /// Which value the entry sheet is for, with the screen it was read on: the sheet's save is checked
     /// against that, whatever lands before it appears (Codex R2).
-    private enum Entry: Identifiable {
+    enum Entry: Identifiable {
         case height(RecordStore.Screen)
         /// A value for a test picked in "Add blood test" (US-73 AC8): one the record lists, or one by name.
         case test(MyData.Row, RecordStore.Screen)
@@ -35,7 +34,7 @@ struct MyDataView: View {
     let store: RecordStore
     let sync: CloudSync
     var layout: Layout = .health
-    /// A plan card came on screen: the review prompt waits for it (US-25 AC8).
+    /// A plan card came on screen: the review prompt waits for it (US-25 AC10).
     var planShown: () -> Void = {}
     /// The settings sheet closed: a backup offer its saves made due can show now (US-57 AC8).
     var settingsClosed: () -> Void = {}
@@ -49,12 +48,15 @@ struct MyDataView: View {
     @State private var bloodTestsTipReady = false
     /// "Add blood test", and the test picked in it (round 7).
     @State private var addingTest = false
-    @State private var pickedTest: AddBloodTestSheet.Pick?
+    @State private var pickedTest: PickedTest?
+    /// The page as last built, and the revision it was built for (`currentPage`).
+    @State private var page: HealthPage?
+    @State private var pageRevision: Int?
     @State private var refusal: String?
     @State private var saves = 0
     /// A picker's edit is landing: the pickers wait, so a quick change back is never lost.
     @State private var picking = false
-    /// US-56: Apple Health's heart, sleep and fitness metrics, read live; the one whose page is pushed.
+    /// US-56: Apple Health's sleep and fitness metrics, read live; the one whose page is pushed.
     @Environment(LiveHealth.self) private var live: LiveHealth?
     @Environment(AppleHealthSync.self) private var healthSync: AppleHealthSync?
     @State private var liveDetail: LiveMetric?
@@ -92,14 +94,10 @@ struct MyDataView: View {
             // its grey text, large font and icon-only labels (seen 2026-10-22).
             .sheet(isPresented: $addingLabs) { LabUploadSheet(engine: engine, store: store) }
             .sheet(isPresented: $addingTest, onDismiss: {
-                switch pickedTest {
-                case .row(let row): entry = .test(row, store.screen)
-                case .named(let name, let units): entry = .named(name, units: units, store.screen)
-                case nil: break
-                }
+                if let pickedTest { entry = Self.entry(for: pickedTest, now: store.screen, data: store.myData) }
                 pickedTest = nil
             }) {
-                if let data = store.myData { AddBloodTestSheet(engine: engine, data: data) { pickedTest = $0 } }
+                if let data = store.myData { AddBloodTestSheet(engine: engine, data: data) { pickedTest = PickedTest(pick: $0, seen: store.screen) } }
             }
             // Settings' own saves wait for it to close before the backup offer (US-57 AC8).
             .sheet(isPresented: $showSettings, onDismiss: settingsClosed) {
@@ -139,43 +137,47 @@ struct MyDataView: View {
 
     // MARK: My health
 
+    /// The page for this record: built once per revision, when its series have been read; until
+    /// then, from what the store shows now.
+    private var currentPage: HealthPage {
+        if let page, pageRevision == store.revision { return page }
+        return HealthPage(store)
+    }
+
     private func healthList(_ data: MyData, proxy: ScrollViewProxy) -> some View {
-        let plan = TopicPlan(store.topics, plan: store.plan)
-        let tiles = PlanTiles(store.plan)
-        let derived = Derived(store)
+        let page = currentPage
         return List {
-            top(plan, proxy: proxy)
+            top(page, proxy: proxy)
             planNotice
-            weight(data, plan: plan, tiles: tiles, derived: derived)
-            if !plan[.sleep].isEmpty || LiveCardsSection.shows([.sleep], keepsReconnect: false, live: live, health: healthSync) {
-                heading(.sleep)
-                urgentCards(plan[.sleep])
-                LiveCardsSection(metrics: [.sleep], keepsReconnect: false) { liveDetail = $0 }
-                cards(plan[.sleep])
+            topicSection(.weight, page, rows: { weightRows(page) }, after: {
+                MedicationsSection(store: store, sections: page.weightMedications, data: data, saved: saved, placed: page.medicines)
+            })
+            liveTopic(.sleep, page)
+            liveTopic(.fitness, page, bands: data.vo2Bands?.value.map { [.vo2Max: $0] } ?? [:])
+            topicSection(.bloodPressure, page, rows: {
+                if let pressure = page.pressure {
+                    Section { metric(pressure, card: pressure.latest != nil) }
+                        .listSectionSpacing(.compact)
+                }
+                if let creatinine = page.creatinine {
+                    Section { bloodTest(creatinine, column: page.pressureColumn, page: page) }
+                        .listSectionSpacing(.compact)
+                }
+            })
+            topicSection(.cholesterol, page, rows: { cholesterolRows(page) }, after: {
+                MedicationsSection(store: store, sections: page.lipidMedications, data: data, saved: saved, placed: page.medicines)
+            })
+            if page.showsScreening {
+                topicSection(.screening, page, rows: {
+                    ScreeningsSection(store: store, data: data, saved: saved, open: open, grouped: page.screenings)
+                })
             }
-            // No heart rate card (Brad, round 4).
-            let fitness: [LiveMetric] = [.vo2Max, .restingHeartRate, .steps]
-            if !plan[.fitness].isEmpty || LiveCardsSection.shows(fitness, keepsReconnect: true, live: live, health: healthSync) {
-                heading(.fitness)
-                urgentCards(plan[.fitness])
-                LiveCardsSection(metrics: fitness, bands: data.vo2Bands?.value.map { [.vo2Max: $0] } ?? [:], keepsReconnect: true) { liveDetail = $0 }
-                cards(plan[.fitness])
-            }
-            bloodPressure(data, plan: plan, tiles: tiles, derived: derived)
-            cholesterol(data, plan: plan, tiles: tiles)
-            if data.screeningNote != nil || !data.screenings.isEmpty || !plan[.screening].isEmpty {
-                heading(.screening)
-                urgentCards(plan[.screening])
-                ScreeningsSection(store: store, data: data, saved: saved, open: open, grouped: plan.screenings)
-                cards(plan[.screening])
-            }
-            topic(.skin, plan)
-            bloodTests(data, plan: plan, tiles: tiles, derived: derived)
-            heading(.supplements)
-            urgentCards(plan[.supplements])
-            cards(plan[.supplements], footer: plan.ownershipLine)
-            SupplementsSection(store: store, supplements: data.supplements, saved: saved)
-            topic(.other, plan)
+            if !page[.skin].isEmpty { topicSection(.skin, page) }
+            topicSection(.bloodTests, page, controls: { recordButtons }, rows: { bloodTestRows(page) })
+            topicSection(.supplements, page, footer: page.ownershipLine, after: {
+                SupplementsSection(store: store, supplements: data.supplements, saved: saved)
+            })
+            if !page[.other].isEmpty { topicSection(.other, page) }
             Section {
             } footer: {
                 VStack(spacing: 12) {
@@ -191,18 +193,23 @@ struct MyDataView: View {
         .listStyle(.insetGrouped)
         // The title where a large title sits, not under the list's top margin (Brad, round 7).
         .contentMargins(.top, 0, for: .scrollContent)
-        // The worked-out rows read their engine series once per record change (US-73 AC7).
+        // The worked-out rows read their engine series once per record change (US-73 AC7); then
+        // the page is built once for that revision.
         .task(id: store.revision) {
-            for series in Derived.series { _ = await store.chart(for: series, series: series) }
+            let revision = store.revision
+            for series in HealthPage.series { _ = await store.chart(for: series, series: series) }
+            guard !Task.isCancelled, revision == store.revision else { return }
+            self.page = HealthPage(store)
+            pageRevision = revision
         }
         // Each tour tip, once due, brings its anchor into view (US-57); a weight section with
         // no card passes tip 2 (review R4).
         .task { await bringIntoView(SnapshotTip(), Self.firstRow, proxy: proxy, at: .center) }
-        .task { await bringIntoView(FoundationTip(), plan[.weight].first?.anchor, proxy: proxy, at: .center) }
+        .task { await bringIntoView(FoundationTip(), currentPage.firstWeightCard, proxy: proxy, at: .center) }
         .task {
             // Tip 3 is drawn only once its heading has stopped moving: due while the heading
-            // was off screen and the list mid-scroll (or scrolling to the top after a tap by the
-            // clock dismissed tip 2), its popover never showed (US-57 AC2).
+            // was off screen and the list mid-scroll (after tip 2's Next or a tap outside it, or
+            // scrolling to the top after a tap by the clock), its popover never showed (US-57 AC2).
             for await due in BloodTestsTip().shouldDisplayUpdates {
                 guard due else { bloodTestsTipReady = false; continue }
                 withAnimation { proxy.scrollTo(HealthTopic.bloodTests.anchor, anchor: .top) }
@@ -211,23 +218,23 @@ struct MyDataView: View {
                 bloodTestsTipReady = true
             }
         }
-        .tourStep(FoundationTip(), hasNoAnchor: plan[.weight].isEmpty)
+        .tourStep(FoundationTip(), hasNoAnchor: page.firstWeightCard == nil)
     }
 
     /// The scroll id of Weight & diabetes' first row, tour tip 1's anchor.
     private static let firstRow = "tour.firstRow"
 
     /// Once `tip` is due, scrolls its anchor into view (US-57).
-    private func bringIntoView(_ tip: some Tip, _ anchor: String?, proxy: ScrollViewProxy, at point: UnitPoint) async {
+    private func bringIntoView(_ tip: some Tip, _ anchor: @autoclosure () -> String?, proxy: ScrollViewProxy, at point: UnitPoint) async {
         for await due in tip.shouldDisplayUpdates where due {
-            withAnimation { proxy.scrollTo(anchor, anchor: point) }
+            withAnimation { proxy.scrollTo(anchor(), anchor: point) }
         }
     }
 
     /// The title with the person button, lab upload and Sync, as a row so nothing holds space
     /// under it; then the urgent banner, only when a card is urgent.
     @ViewBuilder
-    private func top(_ plan: TopicPlan, proxy: ScrollViewProxy) -> some View {
+    private func top(_ page: HealthPage, proxy: ScrollViewProxy) -> some View {
         Section {
             let title = Text("My health").font(.largeTitle.bold()).accessibilityAddTraits(.isHeader)
             let buttons = HStack(spacing: 14) {
@@ -240,7 +247,7 @@ struct MyDataView: View {
             .labelStyle(.iconOnly)
             .font(.title3)
             // The buttons go under the title when both do not fit: beside them at the largest
-            // sizes, the title broke mid-word ("heal th", as "Vi-tals" did, US-25 AC17g).
+            // sizes, the title broke mid-word ("heal th", TextSizeLayoutTests, US-25 AC26).
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 14) { title.fixedSize(); Spacer(); buttons }
                 VStack(alignment: .leading, spacing: 8) { title; buttons }
@@ -267,7 +274,7 @@ struct MyDataView: View {
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
             .listRowSeparator(.hidden)
-            if let urgent = plan.urgent {
+            if let urgent = page.urgent {
                 Button {
                     withAnimation { proxy.scrollTo(urgent.anchor, anchor: .center) }
                 } label: {
@@ -324,6 +331,34 @@ struct MyDataView: View {
         .listSectionSpacing(.compact)
     }
 
+    /// One topic as every section draws it: its heading, its urgent cards over its rows (Brad
+    /// 2026-11-05: an urgent suggestion on a row shows there too), its rows, its other cards
+    /// (with `footer` under them), then anything after (a section's medicines).
+    @ViewBuilder
+    private func topicSection(_ topic: HealthTopic, _ page: HealthPage, footer: String? = nil,
+                              @ViewBuilder controls: () -> some View = { EmptyView() },
+                              @ViewBuilder rows: () -> some View = { EmptyView() },
+                              @ViewBuilder after: () -> some View = { EmptyView() }) -> some View {
+        heading(topic, controls: controls)
+        cardSection(page[topic].urgent, page: page)
+        rows()
+        cardSection(page[topic].cards, page: page, footer: footer)
+        after()
+    }
+
+    /// Sleep or Fitness: the Apple Health cards between the topic's urgent and other cards. The
+    /// section reads Health itself, so a live refresh never rebuilds this list (/simplify, efficiency).
+    private func liveTopic(_ topic: HealthTopic, _ page: HealthPage, bands: [LiveMetric: Vo2MaxBands] = [:]) -> some View {
+        LiveCardsSection(metrics: topic.liveMetrics, bands: bands, keepsReconnect: topic == .fitness, hasCards: !page[topic].isEmpty) {
+            liveDetail = $0
+        } header: {
+            heading(topic)
+            cardSection(page[topic].urgent, page: page)
+        } footer: {
+            cardSection(page[topic].cards, page: page)
+        }
+    }
+
     /// Why there is no plan yet, when there is none: health-core's PlanError needs sex and
     /// height, set in Settings; any other failure in the engine's words.
     @ViewBuilder
@@ -345,31 +380,10 @@ struct MyDataView: View {
         }
     }
 
-    /// A topic with only cards (Skin, Other), hidden when it has none.
-    @ViewBuilder
-    private func topic(_ topic: HealthTopic, _ plan: TopicPlan) -> some View {
-        if !plan[topic].isEmpty {
-            heading(topic)
-            urgentCards(plan[topic])
-            cards(plan[topic])
-        }
-    }
-
-    /// A section's urgent cards, at its top over its rows (Brad 2026-11-05): an urgent
-    /// suggestion on a row shows there too.
-    private func urgentCards(_ cards: [PlanCard]) -> some View {
-        cardSection(cards.filter { $0.priority == "urgent" })
-    }
-
-    /// A section's other cards, after its rows.
-    private func cards(_ cards: [PlanCard], footer: String? = nil) -> some View {
-        cardSection(cards.filter { $0.priority != "urgent" }, footer: footer)
-    }
-
     /// Plan cards in the plan's own card style. A card on screen is the plan shown, which the
-    /// review prompt waits for (US-25 AC8); the first Weight & diabetes card carries tour tip 2.
+    /// review prompt waits for (US-25 AC10); the first Weight & diabetes card carries tour tip 2.
     @ViewBuilder
-    private func cardSection(_ cards: [PlanCard], footer: String? = nil) -> some View {
+    private func cardSection(_ cards: [PlanCard], page: HealthPage, footer: String? = nil) -> some View {
         if !cards.isEmpty {
             Section {
                 ForEach(cards, id: \.anchor) { card in
@@ -378,7 +392,7 @@ struct MyDataView: View {
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .onAppear(perform: planShown)
-                    if card.anchor == firstWeightCard { view.tourTip(FoundationTip()) } else { view }
+                    if card.anchor == page.firstWeightCard { view.tourTip(FoundationTip()) } else { view }
                 }
             } footer: {
                 if let footer { Text(footer).accessibilityIdentifier("plan.ownershipLine") }
@@ -387,168 +401,76 @@ struct MyDataView: View {
         }
     }
 
-    /// Tour tip 2's card (US-57 AC6): the first in Weight & diabetes.
-    private var firstWeightCard: String? { TopicPlan(store.topics, plan: store.plan)[.weight].first?.anchor }
-
-    /// Weight & diabetes (Brad, round 2): waist-to-height, weight with its BMI, HbA1c; then the
-    /// weight cards; then the weight and diabetes medicines.
-    @ViewBuilder
-    private func weight(_ data: MyData, plan: TopicPlan, tiles: PlanTiles, derived: Derived) -> some View {
-        heading(.weight)
-        urgentCards(plan[.weight])
-        let weight = data.vitals.first { $0.metric == "weight" }
-        let waist = data.vitals.first { $0.metric == "waist" }
-        let hba1c = data.bloodTests.first { $0.metric == "hba1c" }
-        let ratio = derived.whtr
-        let column = ValueRow.Column([(ratio?.latest.value, ratio?.previous, "", nil)]
-            + [weight, hba1c].compactMap { $0 }.map { ($0.latest?.value, $0.previous, $0.unit, nil) })
+    /// Weight & diabetes (Brad, round 2): waist-to-height, weight with its BMI, HbA1c.
+    private func weightRows(_ page: HealthPage) -> some View {
         Section {
             // Tour tip 1 (US-57 AC4) on the first row. The ratio's row opens the waist page, where
             // waist is added or corrected; with no ratio (no waist yet), the waist row itself.
             Group {
-                if let ratio, let waist {
-                    Button { open(waist) } label: {
-                        ValueRow(label: ratio.history.label, value: ratio.latest.value, unit: "", day: ratio.latest.day,
-                                 target: ratio.history.target, previous: ratio.previous, grade: PlanTiles.grade(tiles["whtr"]),
-                                 trend: ratio.trend, tint: MetricChart.colors(for: "waist")[0], column: column)
-                    }
-                    .tint(.primary)
-                    .disabled(store.unitSwitches > 0)
-                } else if let waist {
-                    metric(waist, column: column)
+                if let ratio = page.whtr, let waist = page.waist {
+                    metric(waist, label: ValueRow(label: ratio.history.label, value: ratio.latest.value, unit: "", day: ratio.latest.day,
+                                                  target: ratio.history.target, previous: ratio.previous, grade: PlanTiles.grade(page.tiles["whtr"]),
+                                                  trend: ratio.trend, tint: MetricChart.colors(for: "waist")[0], column: page.weightColumn))
+                } else if let waist = page.waist {
+                    metric(waist, column: page.weightColumn)
                 }
             }
             .tourTip(SnapshotTip())
             .id(Self.firstRow)
-            if let weight {
-                Button { open(weight) } label: {
-                    ValueRow(label: weight.label, value: weight.latest?.value, unit: weight.unit, day: weight.latest?.day,
-                             target: tiles["bmi"].map { "\($0.label) \($0.value)" } ?? weight.target, previous: weight.previous,
-                             grade: weight.grade, gradeWords: weight.gradeWords, note: weight.note, trend: weight.trend ?? [],
-                             tint: MetricChart.colors(for: weight.metric)[0], column: column)
-                }
-                .tint(.primary)
-                .disabled(store.unitSwitches > 0)
+            if let weight = page.weight {
+                metric(weight, label: ValueRow(label: weight.label, value: weight.latest?.value, unit: weight.unit, day: weight.latest?.day,
+                                               target: page.weightTarget, previous: weight.previous, grade: weight.grade, gradeWords: weight.gradeWords,
+                                               note: weight.note, trend: weight.trend ?? [], tint: MetricChart.colors(for: weight.metric)[0], column: page.weightColumn))
             }
-            if let hba1c { metric(hba1c, column: column) }
+            if let hba1c = page.hba1c { metric(hba1c, column: page.weightColumn) }
         }
         .listSectionSpacing(.compact)
-        cards(plan[.weight])
-        MedicationsSection(store: store, data: data, saved: saved, section: "weight-medications", placed: plan.medicines)
     }
 
-    /// Today's large blood pressure card, the kidney rows (creatinine, then eGFR), then the
-    /// blood pressure cards.
-    @ViewBuilder
-    private func bloodPressure(_ data: MyData, plan: TopicPlan, tiles: PlanTiles, derived: Derived) -> some View {
-        heading(.bloodPressure)
-        urgentCards(plan[.bloodPressure])
-        if let pressure = data.vitals.first(where: { $0.metric == MyData.bloodPressure }) {
-            Section { metric(pressure, card: pressure.latest != nil) }
-                .listSectionSpacing(.compact)
-        }
-        if let creatinine = data.bloodTests.first(where: { $0.metric == "creatinine" }) {
-            let column = ValueRow.Column([(creatinine.latest?.value, creatinine.previous, creatinine.unit, nil)] + derived.egfrColumn)
-            Section { bloodTest(creatinine, column: column, data: data, tiles: tiles, derived: derived) }
-                .listSectionSpacing(.compact)
-        }
-        cards(plan[.bloodPressure])
-    }
-
-    /// ApoB, LDL, total cholesterol, HDL, non-HDL when the plan works it out, triglycerides and
-    /// Lp(a); the lipid cards; the cholesterol medicines.
-    @ViewBuilder
-    private func cholesterol(_ data: MyData, plan: TopicPlan, tiles: PlanTiles) -> some View {
-        heading(.cholesterol)
-        urgentCards(plan[.cholesterol])
-        let lipids = ["apob", "ldl", "total_cholesterol", "hdl", "triglycerides", "lpa"]
-        let rows = lipids.compactMap { metric in data.bloodTests.first { $0.metric == metric } }
-        let nonHdl = tiles["nonHdl"]
+    /// ApoB, LDL, total cholesterol, HDL, non-HDL when the plan works it out, triglycerides and Lp(a).
+    private func cholesterolRows(_ page: HealthPage) -> some View {
         Section {
-            let column = ValueRow.Column(rows.map { ($0.latest?.value, $0.previous, $0.unit, nil) } + (nonHdl.map { [($0.value, nil, $0.unit, nil)] } ?? []))
-            ForEach(rows) { row in
-                metric(row, column: column)
+            ForEach(page.lipids) { row in
+                metric(row, column: page.lipidColumn)
                 // Non-HDL is total cholesterol less HDL: its row opens total cholesterol's page, which explains it.
-                if row.metric == "hdl", let nonHdl, let total = rows.first(where: { $0.metric == "total_cholesterol" }) {
-                    Button { open(total) } label: {
-                        ValueRow(label: nonHdl.label, value: nonHdl.value, unit: nonHdl.unit, day: total.latest?.day, target: nonHdl.status?.label,
-                                 grade: PlanTiles.grade(nonHdl), tint: MetricChart.colors(for: "total_cholesterol")[0], column: column)
-                    }
-                    .tint(.primary)
-                    .disabled(store.unitSwitches > 0)
+                if row.metric == "hdl", let nonHdl = page.nonHdl {
+                    metric(nonHdl.total, label: ValueRow(label: nonHdl.tile.label, value: nonHdl.tile.value, unit: nonHdl.tile.unit, day: nonHdl.total.latest?.day,
+                                                         target: nonHdl.tile.status?.label, grade: PlanTiles.grade(nonHdl.tile),
+                                                         tint: MetricChart.colors(for: "total_cholesterol")[0], column: page.lipidColumn))
                 }
             }
         }
         .listSectionSpacing(.compact)
-        cards(plan[.cholesterol])
-        MedicationsSection(store: store, data: data, saved: saved, section: "lipid-medications", placed: plan.medicines)
     }
 
-    /// Every blood test, eGFR's one row under creatinine (a lab eGFR folds into it), then
+    /// Every blood test, eGFR's one row under creatinine (it stands for the lab's eGFR), then
     /// "Add blood test".
-    @ViewBuilder
-    private func bloodTests(_ data: MyData, plan: TopicPlan, tiles: PlanTiles, derived: Derived) -> some View {
-        heading(.bloodTests) { recordButtons }
-        urgentCards(plan[.bloodTests])
-        let rows = data.bloodTests
-        let labs = (data.labTests ?? []).filter { !(derived.egfr != nil && Derived.isLabEgfr($0)) }
+    private func bloodTestRows(_ page: HealthPage) -> some View {
         Section {
-            let column = ValueRow.Column((rows + labs).map { ($0.latest?.value, $0.previous, $0.unit, nil) } + derived.egfrColumn)
-            ForEach(rows) { bloodTest($0, column: column, data: data, tiles: tiles, derived: derived) }
-            ForEach(labs) { lab in
-                Button { open(lab) } label: {
-                    Self.valueRow(lab, tint: MetricChart.labTint, column: column)
-                }
-                .tint(.primary)
-                .disabled(store.unitSwitches > 0)
+            ForEach(page.bloodTests) { bloodTest($0, column: page.bloodColumn, page: page) }
+            ForEach(page.labs) { lab in
+                metric(lab, label: Self.valueRow(lab, tint: MetricChart.labTint, column: page.bloodColumn))
             }
             // A row like "Add another supplement"; a test found by name opens its entry.
             Button { addingTest = true } label: { Label("Add blood test", systemImage: "plus.circle.fill") }
         }
         .listSectionSpacing(.compact)
-        cards(plan[.bloodTests])
     }
 
-    /// A blood test's row; creatinine's has eGFR's one row under it (US-73 AC7): the engine's
-    /// series, lab or calculated, with its previous value and trend. It opens the page its
-    /// newest value came from: the lab eGFR's, or creatinine's.
+    /// A blood test's row; creatinine's has eGFR's one row under it (US-73 AC7): the plan's
+    /// current eGFR, with the series' previous value and trend. It opens the page of its
+    /// source, the lab eGFR's or creatinine's, each linking to the other.
     @ViewBuilder
-    private func bloodTest(_ row: MyData.Row, column: ValueRow.Column?, data: MyData, tiles: PlanTiles, derived: Derived) -> some View {
+    private func bloodTest(_ row: MyData.Row, column: ValueRow.Column, page: HealthPage) -> some View {
         metric(row, column: column)
-        if row.metric == "creatinine", let egfr = derived.egfr {
-            let page = egfr.latest.source == "lab" ? data.labTests?.first(where: Derived.isLabEgfr) ?? row : row
-            Button { open(page) } label: {
-                ValueRow(label: egfr.history.label, value: egfr.latest.value, unit: egfr.history.unit, day: egfr.latest.day,
-                         target: [tiles["egfr"]?.status?.label, egfr.source].compactMap { $0 }.joined(separator: " · "),
-                         previous: egfr.previous, grade: PlanTiles.grade(tiles["egfr"]), trend: egfr.trend,
-                         tint: MetricChart.colors(for: row.metric)[0], column: column)
-            }
-            .tint(.primary)
-            .disabled(store.unitSwitches > 0)
+        if row.metric == "creatinine", let egfr = page.egfr {
+            metric(egfr.page, label: ValueRow(label: egfr.label, value: egfr.value, unit: egfr.unit, day: egfr.day, target: egfr.target,
+                                              previous: egfr.previous, grade: egfr.grade, trend: egfr.trend,
+                                              tint: MetricChart.colors(for: row.metric)[0], column: column))
         }
     }
 
-    /// The worked-out series My health draws as rows, as last read (`RecordStore.chart`).
-    struct Derived {
-        static let series = ["whtr", "egfr"]
-        let whtr: DerivedRow?
-        let egfr: DerivedRow?
-
-        @MainActor init(_ store: RecordStore) {
-            whtr = DerivedRow(store.shownChart(for: "whtr", series: "whtr")?.history)
-            egfr = DerivedRow(store.shownChart(for: "egfr", series: "egfr")?.history)
-        }
-
-        /// eGFR's reading, for a section's value column.
-        var egfrColumn: [(value: String?, previous: String?, unit: String, feetInches: MyData.FeetInches?)] {
-            egfr.map { [($0.latest.value, $0.previous, $0.history.unit, nil)] } ?? []
-        }
-
-        /// The lab's own eGFR row, which the eGFR row stands for (one eGFR row, US-73 AC7).
-        static func isLabEgfr(_ row: MyData.Row) -> Bool { row.series == "lab" && row.metric == "egfr" }
-    }
-
-    /// The reduce-alcohol card's question (US-60), as My plan asked it: offered unanswered and
+    /// The reduce-alcohol card's question (US-60), as the plan cards ask it: offered unanswered and
     /// to a drinker. Called at the tap, it checks the answer against the screen then.
     private var alcoholQuestion: AlcoholQuestion? {
         AlcoholQuestion(answered: store.myData?.profile.alcohol?.value) { [store, analytics] in
@@ -643,12 +565,15 @@ struct MyDataView: View {
 
     /// `column`: the section's widest reading, which sets every row's value column.
     private func metric(_ row: MyData.Row, card: Bool = false, column: ValueRow.Column? = nil) -> some View {
-        // A unit switch still landing would open a sheet on the old choices (AC17e).
-        Button { open(row) } label: {
-            Self.valueRow(row, tint: MetricChart.colors(for: row.metric)[0], card: card, column: column)
-        }
-        .tint(.primary)
-        .disabled(store.unitSwitches > 0)
+        metric(row, label: Self.valueRow(row, tint: MetricChart.colors(for: row.metric)[0], card: card, column: column))
+    }
+
+    /// A row drawn as `label` that opens `page`'s page. A unit switch still landing would open a
+    /// sheet on the old choices (AC17e), so it waits.
+    private func metric(_ page: MyData.Row, label: ValueRow) -> some View {
+        Button { open(page) } label: { label }
+            .tint(.primary)
+            .disabled(store.unitSwitches > 0)
     }
 
     /// The engine's row as a `ValueRow`: its value, target, previous value, trend and grade.
@@ -665,6 +590,23 @@ struct MyDataView: View {
     }
 
     // MARK: Entry
+
+    /// A pick in Add blood test with the screen it was made on (Codex R2).
+    struct PickedTest {
+        let pick: AddBloodTestSheet.Pick
+        let seen: RecordStore.Screen
+    }
+
+    /// The entry a pick opens once its sheet has gone: a row and the screen it was read on, of
+    /// one moment. When the units moved since the pick, the row as it reads now, on the screen
+    /// now, so the sheet's unit and the check on its save agree (Codex R2).
+    static func entry(for picked: PickedTest, now: RecordStore.Screen, data: MyData?) -> Entry? {
+        switch picked.pick {
+        case .row(let row) where picked.seen == now: .test(row, now)
+        case .row(let row): data.flatMap { MetricDetailView.live(row, in: $0) }.map { .test($0, now) }
+        case .named(let name, let units): .named(name, units: units, now)
+        }
+    }
 
     @ViewBuilder
     private func sheet(for entry: Entry) -> some View {

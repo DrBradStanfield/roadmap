@@ -31,7 +31,7 @@ struct Suggestion: Decodable, Identifiable {
     static let reduceAlcohol = "reduce-alcohol"
 }
 
-/// The Plan tab for one record, as the engine's `screenJson` gave it with My data (US-25 AC2).
+/// The plan for one record, as the engine's `screenJson` gave it with My health's rows (US-25 AC2).
 enum PlanState: Sendable {
     /// The plan, and how long the engine took to plan it (D2's plan budget).
     case planned(tiles: [StatTile], sections: [PlanSection], ms: Double)
@@ -59,8 +59,6 @@ struct PlanSection: Decodable, Identifiable {
     let ownershipLine: String?
 
     var id: String { key }
-    /// health-core's Foundation section (planSections' `info`), where tour tip 2 anchors.
-    var isFoundation: Bool { key == "info" }
 }
 
 /// One card: a single suggestion, or two or more of one category grouped together.

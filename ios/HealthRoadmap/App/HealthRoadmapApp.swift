@@ -46,7 +46,7 @@ final class Launch {
         #endif
         // TipKit before any view asks for a tip (US-57 AC10).
         TourSetup.configure()
-        // Before launch finishes, so a tap that starts the app still reaches My plan.
+        // Before launch finishes, so a tap that starts the app still reaches My health.
         let reminderTaps = ReminderTaps()
         UNUserNotificationCenter.current().delegate = reminderTaps
         #if DEBUG
@@ -209,9 +209,9 @@ private struct LaunchFiles: Sendable {
     }
 }
 
-/// What shows while the parts are built (about 100 ms on an iPhone 15 Pro Max): My data's
+/// What shows while the parts are built (about 100 ms on an iPhone 15 Pro Max): My health's
 /// plain background, also the system launch screen's colour (`LaunchBackground`), so
-/// nothing changes on screen until My data appears (US-25 AC21b, Brad 2026-10-26).
+/// nothing changes on screen until My health appears (US-25 AC21b, Brad 2026-10-26).
 struct LaunchView: View {
     var body: some View {
         Color(.systemGroupedBackground)

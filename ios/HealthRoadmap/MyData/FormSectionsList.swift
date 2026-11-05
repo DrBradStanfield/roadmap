@@ -81,7 +81,7 @@ struct FormSectionsList: View {
 
     /// The group's notes, less one a suggestion shown in the group already says (Brad, round 6: prostate's PSA line).
     private func notes(_ group: FormGroup) -> some View {
-        let said = ((grouped[group.id] ?? []) + group.fields.flatMap { placed[key($0)] ?? [] }).map(\.description)
+        let said = ((grouped[group.id] ?? []) + group.fields.flatMap { placed[$0.key] ?? [] }).map(\.description)
         return ForEach(group.notes.filter { note in !(compact && said.contains { $0.contains(note) }) }, id: \.self) { note in
             Label(note, systemImage: "info.circle")
                 .font(.footnote)
@@ -90,16 +90,9 @@ struct FormSectionsList: View {
     }
 
     private func row(_ field: FormField, heading: String? = nil, more: [Suggestion] = []) -> some View {
-        FormFieldRow(field: field, months: months, answer: { value in await answer(key(field), value) },
+        FormFieldRow(field: field, months: months, answer: { value in await answer(field.key, value) },
                      measurement: metric(field).flatMap(measurement), openMeasurement: { metric(field).map(openMeasurement) },
-                     guide: guides?[key(field)], suggestions: more + (placed[key(field)] ?? []), heading: heading, describes: compact)
-    }
-
-    private func key(_ field: FormField) -> String {
-        switch field {
-        case .choice(let key, _, _, _, _), .month(let key, _, _, _), .number(let key, _, _, _): key
-        case .measurement(let metric, _, _): metric
-        }
+                     guide: guides?[field.key], suggestions: more + (placed[field.key] ?? []), heading: heading, describes: compact)
     }
 
     private func metric(_ field: FormField) -> String? {

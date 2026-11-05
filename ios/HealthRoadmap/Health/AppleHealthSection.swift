@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// The Apple Health section of My data (US-25 AC15): one row to connect, then the
-/// sync's state. Readings land in the Vitals rows above; typed vitals go to Health.
-/// The sync comes from the environment (HealthRoadmapApp), so My data needs one line.
+/// The Apple Health section of My health's settings sheet (US-25 AC15): one row to connect,
+/// then the sync's state. Readings land in My health's rows; typed values go to Health.
+/// The sync comes from the environment (HealthRoadmapApp), so the sheet needs one line.
 struct AppleHealthSection: View {
     @Environment(AppleHealthSync.self) private var health: AppleHealthSync?
     /// US-56: the live cards' disclosure lives here now (My health, round 4), said once.
@@ -28,7 +28,7 @@ struct AppleHealthSection: View {
                     if case .failed(let why) = health.status { Text(why).foregroundStyle(.red) }
                     if health.status == .notAllowed { Text(LiveFooter.access) }
                     Text("Weight, height, waist and blood pressure come in from Health. Values you type here go to Health. A value you typed is never replaced by Health, and deleting a reading in Health leaves it here.")
-                    if live?.available == true { Text("\(LiveFooter.shownOnly) \(LiveFooter.access)") }
+                    if live?.available == true { Text(LiveFooter.cards) }
                 }
             }
         } else if live?.available == true {
@@ -37,7 +37,7 @@ struct AppleHealthSection: View {
             } header: {
                 SectionTitle.appleHealth()
             } footer: {
-                Text("\(LiveFooter.shownOnly) \(LiveFooter.access)")
+                Text(LiveFooter.cards)
             }
         }
     }

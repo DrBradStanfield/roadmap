@@ -30,8 +30,6 @@ final class PlanLayoutTests: XCTestCase {
         let layout = sections.map { section in (section.title, section.cards.map { $0.suggestions.map(\.id) }) }
 
         XCTAssertEqual(layout.map(\.0), ["Next Steps", "Foundation", "Skin Health", "Supplements"])
-        // US-57 AC6: tour tip 2 anchors on the Foundation section's first card.
-        XCTAssertEqual(sections.map(\.isFoundation), [false, true, false, false])
         // US-07 AC11: the waist prompt leads Next Steps.
         XCTAssertEqual(layout[0].1, [
             ["measure-waist"],

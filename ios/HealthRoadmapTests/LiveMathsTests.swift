@@ -29,8 +29,8 @@ final class LiveMathsTests: XCTestCase {
         XCTAssertEqual(LiveMetric.vo2Max.text(38.44), 38.4.formatted(.number.precision(.fractionLength(1))))
         XCTAssertEqual(LiveMetric.steps.text(8432.4), 8432.formatted(.number.grouping(.automatic)))
         XCTAssertEqual(LiveMetric.allCases.map(\.unit), ["bpm", "bpm", "", "mL/kg/min", "steps"])
-        XCTAssertEqual(LiveMetric.vitals, [.heartRate, .restingHeartRate, .sleep])
-        XCTAssertEqual(LiveMetric.fitness, [.vo2Max, .steps])
+        XCTAssertEqual(HealthTopic.sleep.liveMetrics, [.sleep])
+        XCTAssertEqual(HealthTopic.fitness.liveMetrics, [.vo2Max, .restingHeartRate, .steps], "no heart rate card (Brad, round 4)")
     }
 
     // MARK: Buckets and headlines

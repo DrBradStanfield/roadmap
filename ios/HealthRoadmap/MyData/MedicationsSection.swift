@@ -8,16 +8,16 @@ import SwiftUI
 /// is InputPanel.tsx renderMedications.
 struct MedicationsSection: View {
     let store: RecordStore
+    /// The engine's "weight-medications" or "lipid-medications" section; none when it has none.
+    let sections: [FormSection]
     let data: MyData
     /// Called after a save, for the success haptic.
     let saved: (RecordStore.ApplyResult) -> RecordStore.ApplyResult
-    /// The engine's section id, "weight-medications" or "lipid-medications"; nothing when it has none.
-    let section: String
-    /// The plan's medicine suggestions by question key (`TopicPlan.medicines`).
+    /// The plan's medicine suggestions by question key (`HealthPage.medicines`).
     var placed: [String: [Suggestion]] = [:]
 
     var body: some View {
-        FormSectionsList(sections: data.medications.filter { $0.id == section }, months: data.months, title: SectionTitle.medications, answer: { field, value in
+        FormSectionsList(sections: sections, months: data.months, title: SectionTitle.medications, answer: { field, value in
             saved(await store.apply(.form(.medicationField(field: field, value: value))))
         }, guides: data.guides, placed: placed)
     }

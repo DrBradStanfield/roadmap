@@ -134,7 +134,7 @@ struct FormFieldRow: View {
             if guide != nil || !suggestions.isEmpty {
                 Button {
                     guideShown = true
-                    analytics?.event(.guideOpened)
+                    if let event = Self.opened(guide: guide) { analytics?.event(event) }
                 } label: {
                     Image(systemName: suggestions.isEmpty ? "info.circle" : "info.circle.fill")
                         .foregroundStyle(suggestions.isEmpty ? Color.accentColor : Color.status("attention"))
@@ -148,6 +148,12 @@ struct FormFieldRow: View {
                 .sheet(isPresented: $guideShown) { GuideSheet(guide: guide, suggestions: suggestions) }
             }
         }
+    }
+
+    /// The info button's event: "Guide opened" only when its sheet shows a guide, never for a
+    /// sheet of the plan's suggestions alone (review R7).
+    static func opened(guide: MetricGuide?) -> Analytics.Event? {
+        guide == nil ? nil : .guideOpened
     }
 
     /// The question on the left, wrapped as long as it needs, the answer on the right, the hint below.

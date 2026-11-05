@@ -1,10 +1,10 @@
 import SwiftUI
 import UIKit
 
-/// US-56's cards on My data: the Turn On row until Apple's sheet is done (AC4, AC5), then
-/// heart rate, resting heart rate and sleep in Vitals and VO2 max and steps under Fitness
-/// (AC6), each in the vitals card style. A metric with no data is left out. The section
-/// reads `LiveHealth` from the environment, so My data adds one line for each place.
+/// US-56's cards on My health: the Turn On row until Apple's sheet is done (AC4, AC5), then
+/// sleep under Sleep and VO2 max, resting heart rate and steps under Fitness (AC6, US-73),
+/// each in the vitals card style. A metric with no data is left out. The section reads
+/// `LiveHealth` from the environment, so My health adds one line for each place.
 
 extension LiveMetric {
     /// Its graph colour.
@@ -45,81 +45,89 @@ enum LiveFooter {
         return healthPath(appsMenu: false)
     }
     static var access: String { "To change what Health Roadmap can read: \(healthPath)." }
+    /// The settings sheet's line on the cards: kept on this iPhone, and where to change access.
+    static var cards: String { "\(shownOnly) \(access)" }
     /// The Turn On and Open Settings row's words (AC5, AC5b).
     static let reconnect = "Heart rate, sleep, VO2 max and steps can show here from Apple Health."
     /// The line under the row's button: these are Apple Health's settings, and where (AC5c, Brad 2026-11-01).
     static var healthSettings: String { "The Apple Health settings for this app are in \(healthPath)." }
 }
 
-/// One place's cards (AC5, AC6), each its own section. On My health (US-73): sleep under
-/// Sleep; under Fitness VO2 max, resting heart rate and steps, or the Turn On or Open
-/// Settings row.
-struct LiveCardsSection: View {
+/// One topic's Apple Health cards (AC5, AC6), each its own section, under the topic's heading
+/// and urgent cards (`header`) and over its other plan cards (`footer`). On My health (US-73):
+/// sleep under Sleep; under Fitness VO2 max, resting heart rate and steps, or the Turn On or
+/// Open Settings row. It reads `LiveHealth` here, not in My health's list, so a live refresh
+/// redraws this section alone; the heading shows when the topic has plan cards or this has rows.
+struct LiveCardsSection<Header: View, Footer: View>: View {
     @Environment(LiveHealth.self) private var live: LiveHealth?
     @Environment(AppleHealthSync.self) private var health: AppleHealthSync?
     let metrics: [LiveMetric]
-    /// The bands by metric, for a card's band (US-56 AC8): My data hands VO2 max's only.
+    /// The bands by metric, for a card's band (US-56 AC8): My health hands VO2 max's only.
     var bands: [LiveMetric: Vo2MaxBands] = [:]
     /// This place keeps the Turn On / Open Settings row: My health's Fitness, not its Sleep (US-73).
     /// Their "From Apple Health…" line is in the settings sheet's Apple Health section.
     let keepsReconnect: Bool
+    /// The topic has plan cards, so its heading shows whatever Health holds.
+    let hasCards: Bool
     let open: (LiveMetric) -> Void
+    @ViewBuilder let header: Header
+    @ViewBuilder let footer: Footer
 
-    /// What a place shows.
-    enum Shown: Equatable {
-        case nothing, turnOn, reconnect
-        /// The metrics with a reading, in order.
-        case cards([LiveMetric])
+    var body: some View {
+        let shown = LiveShown.shown(metrics, keepsReconnect: keepsReconnect, live: live, health: health)
+        if hasCards || shown != .nothing {
+            header
+            if let live {
+                switch shown {
+                case .nothing:
+                    EmptyView()
+                case .turnOn, .reconnect:
+                    Section { LiveReconnectRow(live: live, turnOn: shown == .turnOn) }
+                        .listSectionSpacing(.compact)
+                case .cards(let shown):
+                    ForEach(shown) { metric in
+                        if let card = live.cards[metric] {
+                            Section {
+                                Button { open(metric) } label: { LiveCardView(metric: metric, card: card, now: live.now(), calendar: live.calendar, band: bands[metric]?.band(card.value)) }
+                                    .tint(.primary)
+                            }
+                            .listSectionSpacing(.compact)
+                        }
+                    }
+                }
+            }
+            footer
+        }
     }
+}
 
-    /// Vitals shows the Turn On row until Apple's sheet is done (AC4, AC5), only to a person
-    /// who connected Apple Health: otherwise My data's Apple Health row is the way in. After it, the
-    /// cards with a reading. With none anywhere, after a "Don't Allow" or with an empty Health
-    /// (iOS cannot tell them apart), Vitals shows one calm Open Settings row, never an error or a
-    /// greyed line (AC5b, Brad 2026-10-25). Nothing while the answer is unknown or unread.
-    static func shown(_ metrics: [LiveMetric], connected: Bool, needsAccess: Bool?, hasRead: Bool, cards: [LiveMetric: LiveCard], keepsReconnect: Bool? = nil) -> Shown {
-        let vitals = keepsReconnect ?? (metrics == LiveMetric.vitals)
-        if needsAccess == true { return vitals && connected ? .turnOn : .nothing }
+/// What a place of Apple Health cards shows.
+enum LiveShown: Equatable {
+    case nothing, turnOn, reconnect
+    /// The metrics with a reading, in order.
+    case cards([LiveMetric])
+
+    /// The place that keeps the reconnect row shows the Turn On row until Apple's sheet is done
+    /// (AC4, AC5), only to a person who connected Apple Health: otherwise the settings sheet's
+    /// Apple Health row is the way in. After it, the cards with a reading. With none anywhere,
+    /// after a "Don't Allow" or with an empty Health (iOS cannot tell them apart), it shows one
+    /// calm Open Settings row, never an error or a greyed line (AC5b, Brad 2026-10-25). A place
+    /// with none of its own metrics shows nothing, so its heading hides (US-73 AC2). Nothing
+    /// while the answer is unknown or unread.
+    static func shown(_ metrics: [LiveMetric], connected: Bool, needsAccess: Bool?, hasRead: Bool, cards: [LiveMetric: LiveCard], keepsReconnect: Bool) -> LiveShown {
+        if needsAccess == true { return keepsReconnect && connected ? .turnOn : .nothing }
         guard needsAccess == false, hasRead else { return .nothing }
-        if vitals, cards.isEmpty { return .reconnect }
+        if keepsReconnect, cards.isEmpty { return .reconnect }
         let held = metrics.filter { cards[$0] != nil }
-        return held.isEmpty && !vitals ? .nothing : .cards(held)
+        return held.isEmpty ? .nothing : .cards(held)
     }
 
     /// What this place shows now; `.nothing` without live Health. The sync's status is read only
     /// where it matters, before the sheet, so its import never redraws the cards (review, efficiency 2).
-    @MainActor static func shown(_ metrics: [LiveMetric], keepsReconnect: Bool, live: LiveHealth?, health: AppleHealthSync?) -> Shown {
+    @MainActor static func shown(_ metrics: [LiveMetric], keepsReconnect: Bool, live: LiveHealth?, health: AppleHealthSync?) -> LiveShown {
         guard let live, live.available else { return .nothing }
         let connected = keepsReconnect && live.needsAccess == true && health?.connected == true
         return shown(metrics, connected: connected, needsAccess: live.needsAccess, hasRead: live.hasRead, cards: live.cards, keepsReconnect: keepsReconnect)
-    }
-
-    /// Whether this place shows anything, so My health can hide an empty section's heading (US-73 AC2).
-    @MainActor static func shows(_ metrics: [LiveMetric], keepsReconnect: Bool, live: LiveHealth?, health: AppleHealthSync?) -> Bool {
-        shown(metrics, keepsReconnect: keepsReconnect, live: live, health: health) != .nothing
-    }
-
-    var body: some View {
-        if let live {
-            let shown = Self.shown(metrics, keepsReconnect: keepsReconnect, live: live, health: health)
-            switch shown {
-            case .nothing:
-                EmptyView()
-            case .turnOn, .reconnect:
-                Section { LiveReconnectRow(live: live, turnOn: shown == .turnOn) }
-                    .listSectionSpacing(.compact)
-            case .cards(let shown):
-                ForEach(shown) { metric in
-                    if let card = live.cards[metric] {
-                        Section {
-                            Button { open(metric) } label: { LiveCardView(metric: metric, card: card, now: live.now(), calendar: live.calendar, band: bands[metric]?.band(card.value)) }
-                                .tint(.primary)
-                        }
-                        .listSectionSpacing(.compact)
-                    }
-                }
-            }
-        }
     }
 }
 

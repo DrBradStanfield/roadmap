@@ -1,6 +1,6 @@
 import Foundation
 
-/// What the My data tab shows (US-25 AC5), as the engine writes it
+/// My health's rows and forms (US-25 AC5, US-73), as the engine writes it
 /// (`MyData` in ios/engine/my-data.ts). Values are already in the user's units.
 struct MyData: Decodable {
     struct Profile: Decodable {

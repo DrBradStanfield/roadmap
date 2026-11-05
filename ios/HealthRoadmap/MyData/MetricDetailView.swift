@@ -70,9 +70,17 @@ struct MetricDetailView: View {
                     .disabled(store.unitSwitches > 0)
                 }
             }
+            // eGFR's two histories, each a link from the other's page, so a lab eGFR is always
+            // reachable for correction (US-73 AC7, US-25 AC9).
+            if let other = Self.otherEgfr(row, in: store.myData) {
+                Section {
+                    NavigationLink(other.title) { MetricDetailView(store: store, row: other.row, saved: saved) }
+                }
+            }
             // The plan tiles' explainers on their row's page (US-73 AC9, `PlanTiles.pages`): the
             // value, its status, what it is and the evidence, as the plan's tiles opened them.
-            ForEach(PlanTiles.pages[row.id, default: []].compactMap { PlanTiles(store.plan)[$0] }) { tile in
+            let tiles = PlanTiles(store.plan)
+            ForEach(PlanTiles.pages[row.id, default: []].compactMap { tiles[$0] }) { tile in
                 Section {
                     LabeledContent {
                         Text("\(tile.value) \(tile.unit)").font(.body.weight(.semibold)).monospacedDigit()
@@ -122,10 +130,27 @@ struct MetricDetailView: View {
 
     /// This metric's row in My data now, so a units switch shows at once; a lab test's too (US-25 AC25).
     static func live(_ row: MyData.Row, in store: RecordStore) -> MyData.Row? {
-        guard let data = store.myData else { return nil }
+        store.myData.flatMap { live(row, in: $0) }
+    }
+
+    /// This metric's row in `data`.
+    static func live(_ row: MyData.Row, in data: MyData) -> MyData.Row? {
         // By id: a lab test named like a core metric is its own row ("lab:weight").
         return data.vitals.first { $0.id == row.id } ?? data.bloodTests.first { $0.id == row.id }
             ?? (data.psa.id == row.id ? data.psa : nil) ?? data.labTests?.first { $0.id == row.id }
+    }
+
+    /// The other eGFR history, when it exists: creatinine's page links to the lab's eGFR results,
+    /// the lab eGFR's page to creatinine (US-73 AC7).
+    static func otherEgfr(_ row: MyData.Row, in data: MyData?) -> (title: String, row: MyData.Row)? {
+        guard let data else { return nil }
+        if row.metric == "creatinine", row.series == nil, let lab = data.labTests?.first(where: HealthPage.isLabEgfr) {
+            return ("Lab eGFR results", lab)
+        }
+        if HealthPage.isLabEgfr(row), let creatinine = data.bloodTests.first(where: { $0.metric == "creatinine" }), creatinine.latest != nil {
+            return ("Creatinine", creatinine)
+        }
+        return nil
     }
 
     /// Why a page with values draws no line: units that vary between reports, as the web says it

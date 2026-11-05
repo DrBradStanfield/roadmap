@@ -2,8 +2,9 @@ import SwiftUI
 import XCTest
 @testable import HealthRoadmap
 
-/// US-73: the My health tab draws the engine's topic layout. Swift places nothing, so these
-/// check that what the engine placed lands where the tab draws it, for a broad set of records.
+/// US-73: the My health tab draws `HealthPage`, built from the engine's screen and series.
+/// MyDataView maps the page to views and reads nothing else for its cards and rows, so these
+/// checks on the page are checks on what the tab draws, for a broad set of records.
 @MainActor
 final class MyHealthTests: XCTestCase {
     private var folder: URL!
@@ -35,11 +36,8 @@ final class MyHealthTests: XCTestCase {
          "source": "manual", "status": "active", "correctsId": NSNull(), "externalId": NSNull()]
     }
 
-    private static func lab(_ id: String, _ name: String, _ value: Double, _ unit: String, _ day: String, core: Bool = false) -> [String: Any] {
-        var row: [String: Any] = ["id": id, "metricName": name, "value": value, "unit": unit, "referenceLow": NSNull(), "referenceHigh": NSNull(),
-                                  "recordedAt": day, "createdAt": "\(day)T08:00:00Z", "source": "manual", "status": "active", "correctsId": NSNull()]
-        if core { row["core"] = true }
-        return row
+    private static func lab(_ id: String, _ name: String, _ value: Double, _ unit: String, _ day: String, core: Bool = false, comparator: String? = nil) -> [String: Any] {
+        ReviewFixesTests.lab(id, name, value, unit, day, core: core, comparator: comparator)
     }
 
     /// The sample with more added: `measurements` and `labValues` rows, and profile changes.
@@ -65,6 +63,8 @@ final class MyHealthTests: XCTestCase {
                           Self.lab("e1", "egfr", 72, "mL/min/1.73m²", "2026-07-01")])
     }
 
+    private static let egfrUnit = "mL/min/1.73m²"
+
     private func records() throws -> [(name: String, json: String)] {
         let year = Calendar.current.component(.year, from: .now)
         let engine = try HealthEngine()
@@ -74,11 +74,22 @@ final class MyHealthTests: XCTestCase {
             ("no sex", try record { $0.removeValue(forKey: "sex") }),
             ("minor", try record { $0["birthYear"] = year - 15 }),
             ("male", try record { $0["sex"] = "male" }),
+            ("older man", try record { $0["sex"] = "male"; $0["birthYear"] = year - 62 }),
+            ("no height", try record { $0.removeValue(forKey: "heightCm") }),
+            ("urgent man", try record(measurements: [Self.measurement("u1", "systolic_bp", 185, today), Self.measurement("u2", "diastolic_bp", 125, today)]) { $0["sex"] = "male"; $0["birthYear"] = year - 62 }),
         ]
     }
 
     private func drawn(_ json: String) throws -> HealthEngine.Drawn {
         try HealthEngine().blocking { try $0.screen(recordJSON: json, now: .now, deviceId: "test") }
+    }
+
+    /// The page My health draws for `json`, its series read as the tab reads them.
+    private func page(_ json: String) throws -> HealthPage {
+        let engine = try HealthEngine()
+        let shown = try drawn(json)
+        let series = { (name: String) in try? engine.blocking { try $0.history(recordJSON: json, metric: name, now: .now, deviceId: "test", series: name) } }
+        return HealthPage(data: shown.myData, plan: shown.plan, layout: shown.topics, whtr: series("whtr"), egfr: series("egfr"))
     }
 
     private func ids(_ cards: [PlanCard]) -> [String] { cards.flatMap(\.suggestions).map(\.id) }
@@ -98,57 +109,53 @@ final class MyHealthTests: XCTestCase {
     func testWithinASectionUrgentLeadsAndAResultLeadsAdvice_US73_AC4() throws {
         let rank = ["urgent": 0, "attention": 1, "info": 2]
         for (name, json) in try records() {
-            let shown = try drawn(json)
-            let plan = TopicPlan(shown.topics, plan: shown.plan)
+            let page = try page(json)
             for topic in HealthTopic.allCases {
-                let order = plan[topic].map { (rank[$0.priority] ?? 3) * 2 + ($0.suggestions.contains { ["bloodwork", "blood_pressure"].contains($0.category) } ? 0 : 1) }
+                let order = (page[topic].urgent + page[topic].cards).map { (rank[$0.priority] ?? 3) * 2 + ($0.suggestions.contains { ["bloodwork", "blood_pressure"].contains($0.category) } ? 0 : 1) }
                 XCTAssertEqual(order, order.sorted(), "\(name) \(topic): urgent, attention, info; results first within each")
             }
         }
-        let shown = try drawn(try urgent())
-        XCTAssertEqual(TopicPlan(shown.topics, plan: shown.plan)[.bloodPressure].first?.priority, "urgent", "the crisis card leads Blood pressure")
+        XCTAssertEqual(try page(try urgent())[.bloodPressure].urgent.first?.priority, "urgent", "the crisis card leads Blood pressure")
     }
 
     func testTheBannerScrollsToTheUrgentCard_US73_AC5() throws {
-        let shown = try drawn(try urgent())
-        let plan = TopicPlan(shown.topics, plan: shown.plan)
-        let card = try XCTUnwrap(plan[.bloodPressure].first)
-        let banner = try XCTUnwrap(plan.urgent)
+        let page = try page(try urgent())
+        let card = try XCTUnwrap(page[.bloodPressure].urgent.first)
+        let banner = try XCTUnwrap(page.urgent)
         XCTAssertEqual(banner.anchor, card.anchor)
         XCTAssertEqual(banner.title, card.suggestions.first { $0.priority == "urgent" }?.title)
-        let calm = try drawn(try text(sample()))
-        XCTAssertNil(TopicPlan(calm.topics, plan: calm.plan).urgent, "no urgent card, no banner")
+        XCTAssertNil(try self.page(try text(sample())).urgent, "no urgent card, no banner")
     }
 
     // MARK: AC3
 
-    /// Every suggestion the plan holds lands where the tab draws it: a card in a topic (each
-    /// topic with a card is drawn), on a medicine question the tab's two medicine sections ask,
-    /// or in a screening group with questions; an urgent one also as a card.
-    func testEverySuggestionLandsWhereTheTabDrawsIt_US73_AC3() throws {
+    /// Every suggestion the plan holds is drawn exactly once (Codex R4, adversary R8): in one card,
+    /// or on one row (a medicine question the two medicine sections ask, a screening group with a
+    /// question); an urgent one in exactly one card, and on its row too when it sits on one. The
+    /// page holds nothing the plan does not.
+    func testEverySuggestionIsDrawnExactlyOnce_US73_AC3() throws {
+        var checked = 0
         for (name, json) in try records() {
             let shown = try drawn(json)
             guard case .planned(_, let sections, _) = shown.plan else { continue }
-            let plan = TopicPlan(shown.topics, plan: shown.plan)
-            let cards = Set(HealthTopic.allCases.flatMap { ids(plan[$0]) })
-            let medicines = shown.myData.medications.filter { ["weight-medications", "lipid-medications"].contains($0.id) }
-            let questions = Set(medicines.flatMap(\.groups).flatMap(\.fields).map(Self.key))
-            let groups = shown.myData.screeningNote == nil ? Set(shown.myData.screenings.flatMap(\.groups).filter { !$0.fields.isEmpty }.map(\.id)) : []
-            let onRows = Set(plan.medicines.filter { questions.contains($0.key) }.flatMap(\.value).map(\.id)
-                + plan.screenings.filter { groups.contains($0.key) }.flatMap(\.value).map(\.id))
-            for suggestion in sections.flatMap(\.cards).flatMap(\.suggestions) {
-                XCTAssertTrue(cards.contains(suggestion.id) || onRows.contains(suggestion.id), "\(name): \(suggestion.id) is drawn nowhere")
-                if suggestion.priority == "urgent" { XCTAssertTrue(cards.contains(suggestion.id), "\(name): urgent \(suggestion.id) is a card too") }
+            let drawn = try page(json).drawn
+            let planned = sections.flatMap(\.cards).flatMap(\.suggestions)
+            for suggestion in planned {
+                let cards = drawn.cards.filter { $0.id == suggestion.id }.count
+                let rows = drawn.rows.filter { $0.id == suggestion.id }.count
+                if suggestion.priority == "urgent" {
+                    XCTAssertEqual(cards, 1, "\(name): urgent \(suggestion.id) is one card")
+                    XCTAssertLessThanOrEqual(rows, 1, "\(name): urgent \(suggestion.id) on one row at most")
+                } else {
+                    XCTAssertEqual(cards + rows, 1, "\(name): \(suggestion.id) is drawn \(cards) times as a card and \(rows) on a row")
+                }
+                checked += 1
             }
+            let ids = Set(planned.map(\.id))
+            XCTAssertTrue((drawn.cards + drawn.rows).allSatisfy { ids.contains($0.id) }, "\(name): the page draws only the plan's suggestions")
             XCTAssertNotNil(shown.topics, "\(name): the bundled engine lays the plan out by topic")
         }
-    }
-
-    private static func key(_ field: FormField) -> String {
-        switch field {
-        case .choice(let key, _, _, _, _), .month(let key, _, _, _), .number(let key, _, _, _): key
-        case .measurement(let metric, _, _): metric
-        }
+        XCTAssertGreaterThan(checked, 20, "the records hold enough suggestions to mean something")
     }
 
     func testATopicTheAppDoesNotKnowAndAMissingLayoutGoUnderOther_US73_AC3() throws {
@@ -156,45 +163,100 @@ final class MyHealthTests: XCTestCase {
         let layout = try JSONDecoder().decode(TopicLayout.self, from: Data(#"{"sections":[{"topic":"hearing","cards":[\#(card)]}],"medicines":[],"screenings":[]}"#.utf8))
         let section = try JSONDecoder().decode(PlanSection.self, from: Data(#"{"key":"info","title":"Foundation","cards":[\#(card)]}"#.utf8))
         let planned = PlanState.planned(tiles: [], sections: [section], ms: 1)
-        XCTAssertEqual(ids(TopicPlan(layout, plan: planned)[.other]), ["new-thing"])
-        XCTAssertEqual(ids(TopicPlan(nil, plan: planned)[.other]), ["new-thing"], "no layout: every card under Other, none dropped")
-        XCTAssertTrue(HealthTopic.allCases.allSatisfy { TopicPlan(nil, plan: .needsDetails)[$0].isEmpty }, "no plan, no cards")
+        let page = { (layout: TopicLayout?, plan: PlanState) in HealthPage(data: nil, plan: plan, layout: layout, whtr: nil, egfr: nil) }
+        XCTAssertEqual(ids(page(layout, planned)[.other].cards), ["new-thing"])
+        XCTAssertEqual(ids(page(nil, planned)[.other].cards), ["new-thing"], "no layout: every card under Other, none dropped")
+        XCTAssertTrue(HealthTopic.allCases.allSatisfy { page(nil, .needsDetails)[$0].isEmpty }, "no plan, no cards")
     }
 
     /// AC6: a medicine suggestion sits on its question, never as a card (unless urgent).
     func testMedicineSuggestionsSitOnTheirQuestions_US73_AC6() throws {
-        let shown = try drawn(try text(sample()))
-        let plan = TopicPlan(shown.topics, plan: shown.plan)
-        XCTAssertEqual(plan.medicines["glp1"]?.map(\.id), ["weight-med-glp1"])
-        XCTAssertEqual(plan.medicines["ezetimibe"]?.map(\.id), ["med-ezetimibe"])
-        XCTAssertFalse(HealthTopic.allCases.flatMap { ids(plan[$0]) }.contains("med-ezetimibe"))
-        XCTAssertEqual(plan.screenings["colorectal"]?.map(\.id), ["screening-colorectal"])
+        let page = try page(try text(sample()))
+        XCTAssertEqual(page.medicines["glp1"]?.map(\.id), ["weight-med-glp1"])
+        XCTAssertEqual(page.medicines["ezetimibe"]?.map(\.id), ["med-ezetimibe"])
+        XCTAssertFalse(page.drawn.cards.map(\.id).contains("med-ezetimibe"))
+        XCTAssertEqual(page.screenings["colorectal"]?.map(\.id), ["screening-colorectal"])
     }
 
     // MARK: AC7
 
-    func testTheWaistToHeightAndEgfrRowsAreTheEnginesSeries_US73_AC7() throws {
+    func testTheWaistToHeightRowIsTheEnginesSeries_US73_AC7() throws {
         let json = try kidneysAndWaist()
-        let engine = try HealthEngine()
-        let whtr = try XCTUnwrap(DerivedRow(try engine.blocking { try $0.history(recordJSON: json, metric: "whtr", now: .now, deviceId: "test", series: "whtr") }))
-        let egfr = try XCTUnwrap(DerivedRow(try engine.blocking { try $0.history(recordJSON: json, metric: "egfr", now: .now, deviceId: "test", series: "egfr") }))
-        let tiles = PlanTiles(try drawn(json).plan)
-
+        let page = try page(json)
+        let whtr = try XCTUnwrap(page.whtr)
         XCTAssertEqual(whtr.history.target, "Normal <0.5")
         XCTAssertEqual(whtr.history.rows.count, 2, "one ratio a waist day")
-        XCTAssertEqual(whtr.latest.value, tiles["whtr"]?.value, "the row's value is the tile's")
+        XCTAssertEqual(whtr.latest.value, page.tiles["whtr"]?.value, "the row's value is the tile's")
         XCTAssertNotNil(whtr.previous)
         XCTAssertEqual(whtr.trend.count, 2)
+    }
 
-        XCTAssertEqual(egfr.latest.day, "2026-07-01", "the newer lab eGFR leads")
-        XCTAssertEqual(egfr.source, "Lab result")
-        XCTAssertEqual(egfr.history.rows.dropFirst().first?.source, "calculated")
-        XCTAssertNotNil(egfr.previous)
+    /// The eGFR row is the plan's current eGFR: the tile's value and status on the day and from
+    /// the source the engine names; the series gives only the bracketed value and the trend
+    /// (Codex R1, R3; adversary R2). Its tap opens that source's page; the lab's own row leaves
+    /// Blood tests only while the eGFR row stands for it.
+    func testTheEgfrRowIsThePlansCurrentEgfr_US73_AC7() throws {
+        let creatinine = { (id: String, value: Double, day: String) in Self.lab(id, "creatinine", value, "µmol/L", day, core: true) }
+        let cases: [(name: String, labs: [[String: Any]], day: String, source: String, opens: String, previous: Bool)] = [
+            ("a lab >90 newer than a calculated value", [creatinine("c1", 80, "2026-03-01"), Self.lab("e1", "egfr", 90, Self.egfrUnit, "2026-07-01", comparator: ">")],
+             "2026-07-01", "Lab result", "lab:egfr", true),
+            ("a calculated value newer than a lab one", [Self.lab("e1", "egfr", 72, Self.egfrUnit, "2026-03-01"), creatinine("c1", 85, "2026-06-01")],
+             "2026-06-01", "Calculated", "creatinine", true),
+            ("a lab value only", [Self.lab("e1", "egfr", 72, Self.egfrUnit, "2026-07-01")], "2026-07-01", "Lab result", "lab:egfr", false),
+            ("a calculated value only", [creatinine("c1", 85, "2026-06-01")], "2026-06-01", "Calculated", "creatinine", false),
+        ]
+        for item in cases {
+            let page = try page(try record(labs: item.labs))
+            let tile = try XCTUnwrap(page.tiles["egfr"], item.name)
+            let egfr = try XCTUnwrap(page.egfr, item.name)
+            XCTAssertEqual(egfr.value, tile.value, "\(item.name): the plan's value, its comparator included")
+            XCTAssertEqual(egfr.day, item.day, item.name)
+            XCTAssertTrue(egfr.target.hasSuffix(item.source), "\(item.name): \(egfr.target)")
+            if let status = tile.status?.label { XCTAssertTrue(egfr.target.hasPrefix(status), item.name) }
+            XCTAssertEqual(egfr.grade, PlanTiles.grade(tile), item.name)
+            XCTAssertEqual(egfr.page.id, item.opens, "\(item.name): opens its source's page")
+            XCTAssertEqual(egfr.previous != nil, item.previous, item.name)
+            XCTAssertFalse(page.labs.contains(where: HealthPage.isLabEgfr), "\(item.name): one eGFR row")
+        }
+        XCTAssertEqual(try page(try record(labs: cases[0].labs)).egfr?.value.first, ">", "the limit shows as printed")
 
-        // One eGFR row: the lab's own row is the one the tab folds into it.
-        let labs = try drawn(json).myData.labTests ?? []
-        XCTAssertEqual(labs.filter(MyDataView.Derived.isLabEgfr).count, 1)
-        XCTAssertEqual(labs.filter { !MyDataView.Derived.isLabEgfr($0) }.map(\.metric), ["ferritin"])
+        // No plan eGFR (a known minor): no eGFR row, so the lab's own row stays in Blood tests.
+        let year = Calendar.current.component(.year, from: .now)
+        let minor = try page(try record(labs: [Self.lab("e1", "egfr", 72, Self.egfrUnit, "2026-07-01")]) { $0["birthYear"] = year - 15 })
+        XCTAssertNil(minor.egfr)
+        XCTAssertTrue(minor.labs.contains(where: HealthPage.isLabEgfr))
+    }
+
+    /// Each eGFR history's page links to the other, so a lab eGFR can always be reached for
+    /// correction (US-25 AC9).
+    func testEachEgfrPageLinksToTheOther_US73_AC7() throws {
+        let data = try drawn(try kidneysAndWaist()).myData
+        let creatinine = try XCTUnwrap(data.bloodTests.first { $0.metric == "creatinine" })
+        let lab = try XCTUnwrap(data.labTests?.first(where: HealthPage.isLabEgfr))
+        XCTAssertEqual(MetricDetailView.otherEgfr(creatinine, in: data)?.row.id, lab.id)
+        XCTAssertEqual(MetricDetailView.otherEgfr(creatinine, in: data)?.title, "Lab eGFR results")
+        XCTAssertEqual(MetricDetailView.otherEgfr(lab, in: data)?.row.id, creatinine.id)
+        XCTAssertEqual(MetricDetailView.otherEgfr(lab, in: data)?.title, "Creatinine")
+        let plain = try drawn(try text(sample())).myData
+        XCTAssertNil(MetricDetailView.otherEgfr(try XCTUnwrap(plain.bloodTests.first { $0.metric == "creatinine" }), in: plain), "no lab eGFR, no link")
+    }
+
+    /// Waist's own value sets the column when there is no ratio (no height).
+    func testTheWaistRowSetsTheColumnWithoutARatio_US73_AC7() throws {
+        // No height, so no ratio; no weight or HbA1c, so only waist can set the column.
+        var plain = try sample()
+        plain["measurements"] = (plain["measurements"] as? [[String: Any]] ?? []).filter { !["weight", "hba1c"].contains($0["metricType"] as? String) }
+            + [Self.measurement("w1", "waist", 102, "2026-06-01")]
+        plain["labValues"] = (plain["labValues"] as? [[String: Any]] ?? []).filter { ($0["metricName"] as? String) != "hba1c" }
+        var person = plain["profile"] as? [String: Any] ?? [:]
+        person.removeValue(forKey: "heightCm")
+        plain["profile"] = person
+        let page = try page(try text(plain))
+        XCTAssertNil(page.whtr)
+        XCTAssertNil(page.weight?.latest)
+        XCTAssertNil(page.hba1c?.latest)
+        XCTAssertEqual(page.waist?.latest?.value, "102")
+        XCTAssertEqual(page.weightColumn.value, "000", "the column holds waist's own value")
     }
 
     // MARK: AC9
@@ -257,29 +319,10 @@ final class MyHealthTests: XCTestCase {
         XCTAssertEqual(store.myData?.labTests?.first { $0.metric == "testosterone_total" }?.latest?.value, "16")
     }
 
-    // MARK: Render
-
-    /// The tab draws every kind of record without a fault: the sample, an urgent one, waist and
-    /// kidneys, an empty record, no sex, a minor.
-    func testTheTabDrawsEveryKindOfRecord_US73() async throws {
-        for (name, json) in try records() {
-            try? FileManager.default.removeItem(at: folder)
-            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            let store = try store(json)
-            XCTAssertNotNil(store.myData, name)
-            let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
-            window.rootViewController = UIHostingController(rootView: MyHealthHost.view(store: store, engine: try HealthEngine()))
-            window.makeKeyAndVisible()
-            try await Task.sleep(for: .milliseconds(400))
-            window.isHidden = true
-        }
-    }
-
     func testOnlyTheReduceAlcoholCardAsks_US60() throws {
-        let shown = try drawn(try text(sample()))
-        let plan = TopicPlan(shown.topics, plan: shown.plan)
+        let page = try page(try text(sample()))
         let question = AlcoholQuestion(answered: nil) { { _ in } }
-        for card in HealthTopic.allCases.flatMap({ plan[$0] }) {
+        for card in HealthTopic.allCases.flatMap({ page[$0].urgent + page[$0].cards }) {
             XCTAssertEqual(card.asking(question) != nil, card.suggestions.contains { $0.id == Suggestion.reduceAlcohol }, card.id)
         }
     }

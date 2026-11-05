@@ -44,6 +44,14 @@ enum FormField: Decodable, Identifiable, Equatable {
         }
     }
 
+    /// The key its answer and the plan's suggestions on it go by: a dated value's metric.
+    var key: String {
+        switch self {
+        case .choice(let key, _, _, _, _), .month(let key, _, _, _), .number(let key, _, _, _): key
+        case .measurement(let metric, _, _): metric
+        }
+    }
+
     private enum Key: String, CodingKey { case kind, key, label, hint, options, value, when, metric }
 
     init(from decoder: Decoder) throws {
@@ -151,6 +159,14 @@ struct MetricHistory: Decodable, Equatable {
     var unitsNote: String? = nil
     /// A worked-out series' target, as a row prints it: waist-to-height's "Normal <0.5" (US-73 AC7).
     var target: String? = nil
+    /// The eGFR series only: the day and source ("lab" or "calculated") of the eGFR the plan
+    /// uses now, a lab limit included; nil when the plan has none, or from an older engine.
+    var plan: PlanEgfr? = nil
+
+    struct PlanEgfr: Decodable, Equatable {
+        let day: String
+        let source: String
+    }
     /// The plan set the current value aside (outside the range it accepts), so it does not use it.
     let excluded: Bool
     /// The recorded medication changes this metric's chart marks, health-core's

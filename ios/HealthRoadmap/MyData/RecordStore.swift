@@ -20,12 +20,12 @@ final class RecordStore {
 
     /// The record as stored, JSON text.
     private(set) var recordJSON: String { didSet { if recordJSON != oldValue { revision += 1 } } }
-    /// My data and the plan, from one engine call, so the two always show the same record
+    /// My health's rows and the plan, from one engine call, so the two always show the same record
     /// (US-25 AC2); nil while the record cannot be read.
     private(set) var drawn: HealthEngine.Drawn?
-    /// What My data shows; nil while the record cannot be read.
+    /// My health's rows and forms; nil while the record cannot be read.
     var myData: MyData? { drawn?.myData }
-    /// What the Plan tab shows; nil while the record cannot be read.
+    /// My health's plan; nil while the record cannot be read.
     var plan: PlanState? { drawn?.plan }
     /// The plan's cards by topic, from the same call (US-73 AC3).
     var topics: TopicLayout? { drawn?.topics }
