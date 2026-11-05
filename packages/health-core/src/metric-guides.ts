@@ -7,13 +7,13 @@
  * standard prescribing facts Brad approved (side effects, how a drug works; Brad
  * 2026-10-25), the standard measuring and preparation tips he approved as a category,
  * and the lines he restored (Brad 2026-10-26; docs/drafts/metric-guides.md). Sources are evidence.ts's own references, never a new citation.
- * The five Apple Health guides (Brad 2026-10-31; docs/drafts/live-metric-guides.md) restate the claims he
+ * The four Apple Health guides (Brad 2026-10-31, heart rate's deleted 2026-11-06; docs/drafts/live-metric-guides.md) restate the claims he
  * approved there, which roadmap_text.html now states and cites; Apple sources back only device facts.
  * metric-guides.test.ts holds both rules: every source resolves to an evidence.ts
  * reference, and every number is on its entry's list, found in the clinical files.
  *
  * Keys: metric types from mappings.ts (blood pressure as one, `blood_pressure`), height,
- * MEDICATION_KEYS without the two escalation answers, and the five Apple Health metrics in snake case
+ * MEDICATION_KEYS without the two escalation answers, and the four Apple Health metrics in snake case
  * (the app's `LiveMetric.guideKey`). The iOS engine serves them on
  * My data (ios/engine/my-data.ts), so a correction ships over the air (ios/architecture.md D3).
  */

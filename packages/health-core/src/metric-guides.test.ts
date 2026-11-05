@@ -125,7 +125,7 @@ const QUANTITY = new RegExp(`\\d+(?:\\.\\d+)?|\\b(?:${Object.keys(WORDS).join('|
 const quantities = (text: string) =>
   (text.match(QUANTITY) ?? []).map((q) => WORDS[q.toLowerCase()] ?? Number(q)).sort((a, b) => a - b);
 
-/** The five Apple Health metrics' keys (AC7): the app's `LiveMetric.guideKey`, snake case (Brad's decision 1). */
+/** The four Apple Health metrics' keys (AC7): the app's `LiveMetric.guideKey`, snake case (Brad's decision 1). */
 const APPLE_HEALTH = ['resting_heart_rate', 'sleep', 'vo2_max', 'steps'];
 
 /** roadmap_text.html's numbered references, in order, and the numbers its text cites. */
