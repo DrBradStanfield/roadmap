@@ -172,3 +172,30 @@ describe('US-04 AC1 — a lab matrix says its cells\' messages', () => {
     await vi.waitFor(() => expect(region.textContent).toBe('Could not save. Check your connection and try again.'));
   });
 });
+
+/**
+ * US-21 AC26 (2026-11-06): a correction past a test's plausible range was
+ * refused on the web as "That value is outside the range this record takes."
+ * The iPhone and MCP show the engine's own words, which name the end passed.
+ */
+describe('US-21 AC26 — a refused lab correction says why, in the engine\'s words', () => {
+  it('a sodium corrected to 30 mmol/L shows the plausibility refusal, through the real store', async () => {
+    const { RoadmapStore } = await import('../storage/roadmap-store');
+    const { MemoryAdapter } = await import('@roadmap/health-core');
+    const store = await RoadmapStore.create(new MemoryAdapter());
+    const added = store.addLabValue({ metricName: 'sodium', unit: 'mmol/L', value: 141, day: '2026-05-12' });
+    expect(added?.ok).toBe(true);
+    const onCorrect: CorrectFn = async (id, value) => store.correctValue(id, value);
+    const { container, getByRole } = render(<AdditionalLabRows labValues={store.loadLabValues()} onCorrect={onCorrect} />);
+    fireEvent.click(getByRole('button', { name: /Renal/ }));
+    fireEvent.click(Array.from(container.querySelectorAll('.bt-cell-clickable')).find((c) => c.textContent === '141') as HTMLElement);
+    const input = container.querySelector('.bt-cell-correcting input') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '30' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    const cell = () => container.querySelector('.bt-cell-correcting') as HTMLElement;
+    await vi.waitFor(() => expect(within(cell()).getByText(
+      'Sodium below 70 mmol/L is almost certainly a typing or unit mistake: check the number and its unit.',
+    )).toBeTruthy());
+    expect(within(cell()).queryByText('That value is outside the range this record takes.')).toBeNull();
+  });
+});

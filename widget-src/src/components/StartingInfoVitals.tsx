@@ -62,7 +62,7 @@ import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { useRangeWait } from '../lib/useRangeWait';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { usePrefillRef } from '../lib/usePrefillRef';
-import { Sparkline, ValueCell, BatchDateCell, BackfillCell, SAVE_ERRORS, SAVE_FAILED, SAME_SLOT, useLiveRegion } from './BloodTestTimeline';
+import { Sparkline, ValueCell, BatchDateCell, BackfillCell, saveErrorText, SAVE_FAILED, SAME_SLOT, useLiveRegion } from './BloodTestTimeline';
 import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
 import { UnitChip } from './UnitChip';
@@ -484,7 +484,7 @@ export function StartingInfoVitals({
       })));
       settle(ready.flatMap(c => {
         const status = Object.keys(c.values!).map(metric => refusedSlots.get(slotOf(c.date, metric))).find(Boolean);
-        return c.keys.map((key): [CellRef<VitalsKey>, string | undefined] => [[c.column, key], status && SAVE_ERRORS[status]]);
+        return c.keys.map((key): [CellRef<VitalsKey>, string | undefined] => [[c.column, key], status && saveErrorText(status)]);
       }));
       if (refusedSlots.size === 0) setActiveCell(null);
     } finally {

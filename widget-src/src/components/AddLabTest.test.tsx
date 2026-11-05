@@ -260,6 +260,15 @@ describe('US-21 phase 2 — AddLabTest', () => {
     });
   });
 
+  it('US-21 AC26 — a catalogued value past its plausible range shows why and saves nothing', async () => {
+    const { getByLabelText, getByRole, onAdded, findByText } = openForm();
+    fireEvent.change(getByLabelText('Test'), { target: { value: 'potassium' } });
+    fireEvent.change(getByLabelText('Value'), { target: { value: '42' } });
+    fireEvent.click(getByRole('button', { name: /^save$/i }));
+    expect(await findByText('Potassium above 20 mmol/L is almost certainly a typing or unit mistake: check the number and its unit.')).toBeTruthy();
+    expect(onAdded).not.toHaveBeenCalled();
+  });
+
   it('Save is disabled until a test and a parseable value are entered', () => {
     const { getByLabelText, getByRole } = openForm();
     const save = getByRole('button', { name: /^save$/i }) as HTMLButtonElement;

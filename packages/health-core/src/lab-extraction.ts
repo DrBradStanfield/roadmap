@@ -301,7 +301,7 @@ const SEARCHABLE: ReadonlyArray<LabSearchMatch & { names: string[]; folded: stri
     return { name: METRIC_LABELS[key], key, kind: 'core' as const, units, names: [key, METRIC_LABELS[key], ...CORE_METRIC_ALIASES[metric]] };
   }),
   ...LAB_CATALOG.map((entry) => ({
-    name: entry.label, key: entry.key, kind: 'catalogue' as const, units: acceptedLabUnits(entry), names: [entry.key, entry.label, ...entry.aliases],
+    name: entry.label, key: entry.key, kind: 'catalogue' as const, units: [...new Set(acceptedLabUnits(entry).map((unit) => normalizeLabUnit(unit)))], names: [entry.key, entry.label, ...entry.aliases],
   })),
 ].map((test) => ({ ...test, names: [...new Set(test.names.map(looseFold))], folded: looseFold(test.name) }));
 

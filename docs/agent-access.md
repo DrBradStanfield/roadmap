@@ -376,6 +376,10 @@ the hosted server they take two calls: a proposal with a `confirm` receipt, then
 call with it after your yes, carrying your words as `approval`, quoted. An import's
 `commit` carries `approval` the same way. The server holds those words for one request
 and never stores or logs them (the mechanism and its limits: docs/mcp-architecture.md §3).
+`correct_value` refuses a catalogued lab test corrected past its plausible range
+(`LAB_PLAUSIBLE_RANGES`, US-21 AC26: glucose 5.5 mg/dL is 0.31 mmol/L) as a typing or unit
+slip, on every path: ask the user to check the number and its unit. `add_lab_values` does
+not check it yet.
 Every tool declares an `outputSchema` and answers with `structuredContent` beside the
 text: the same answer typed, so a row id is read, not parsed out of a sentence. A refusal
 carries none, it is an error result.

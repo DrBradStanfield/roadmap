@@ -161,12 +161,14 @@ export type AddMeasurementResult =
 /** How a correction ended. `changed`: the value named is not there any
  *  more, or another row has replaced it (another device, a connector).
  *  `invalid`: the record does not take that number (outside the metric's
- *  range). `error`: no record is open. */
-export type CorrectStatus = 'ok' | 'changed' | 'invalid' | 'error';
+ *  range). `refused`: a lab value past its plausible range, in the engine's
+ *  words, which the page shows as the iPhone and MCP do (US-21 AC26).
+ *  `error`: no record is open. */
+export type CorrectStatus = 'ok' | 'changed' | 'invalid' | 'error' | { refused: string };
 /** How a blood test move ended (US-04 AC5), as a correction does. `changed`:
  *  the test on that day is not what the page showed. `invalid` carries the
  *  record's refusal, for the page to say. */
-export type MoveOutcome = { status: Exclude<CorrectStatus, 'invalid'> } | { status: 'invalid'; refusal: MoveRejection };
+export type MoveOutcome = { status: Exclude<Extract<CorrectStatus, string>, 'invalid'> } | { status: 'invalid'; refusal: MoveRejection };
 /** A birth month in the future that a save refused (US-54 AC5b): the pair judged. */
 export interface BirthRefusal { birthYear: number; birthMonth: number | undefined }
 /** A profile save: refused by the erase, or saved with any birth month it refused. */
@@ -405,7 +407,10 @@ export class RoadmapStore {
   correctValue(id: string, newValue: number, erase?: string): CorrectStatus {
     if (this.refuses(erase)) return 'error';
     const result = correctRecordValue(this.file, { id, newValue, now: new Date().toISOString() });
-    if (!result.ok) return result.reason === 'not-found' || result.reason === 'not-active' ? 'changed' : 'invalid';
+    if (!result.ok) {
+      if (result.reason === 'not-found' || result.reason === 'not-active') return 'changed';
+      return result.reason === 'invalid-value' ? { refused: result.message } : 'invalid';
+    }
     this.session.edit(() => result.file, erase);
     return 'ok';
   }

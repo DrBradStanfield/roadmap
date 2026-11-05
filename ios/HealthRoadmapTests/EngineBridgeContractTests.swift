@@ -89,7 +89,7 @@ final class EngineBridgeContractTests: XCTestCase {
         let matches = try XCTUnwrap(engine.blocking { try $0.labSearch("ferr") })
         XCTAssertEqual(matches.first, LabSearchMatch(name: "Ferritin", key: "ferritin", kind: "catalogue", units: matches.first?.units ?? []))
         XCTAssertEqual(matches.first?.units.first, "µg/L")
-        XCTAssertTrue(matches.first?.units.contains("ng/ml") ?? false)
+        XCTAssertTrue(matches.first?.units.contains("ng/mL") ?? false)
     }
 
     func testCloudSyncHandlesEveryContractEvent() throws {

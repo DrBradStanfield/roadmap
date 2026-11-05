@@ -39,7 +39,7 @@ describe('labSearch (US-73 AC8)', () => {
     expect(labSearch('ferritin')[0]).toMatchObject({ name: 'Ferritin', key: 'ferritin', kind: 'catalogue' });
     expect(labSearch('ferritin')[0]).not.toHaveProperty('unit');
     expect(labSearch('ferritin')[0].units[0]).toBe('µg/L');
-    expect(labSearch('ferritin')[0].units).toContain('ng/ml');
+    expect(labSearch('ferritin')[0].units).toContain('ng/mL');
   });
 
   it('finds nothing for blank text or a name nothing knows, and at most the limit', () => {
