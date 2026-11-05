@@ -70,7 +70,7 @@ jobs:
       # the commit tag v1 (= v1.0.265) pointed to on 2026-10-30.
       - uses: anthropics/claude-code-action@6d5ae526d25ce88daa2200be073e1a373167f064 # v1 / v1.0.265
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Without this the action never creates its PR comment NOR registers
           # the github_comment MCP server — allow-listing the tool alone is not
           # enough (shakedown fix #3: verdict produced, 5 permission denials,
