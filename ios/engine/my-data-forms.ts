@@ -361,7 +361,7 @@ export function labHistory(file: RoadmapFile, seriesKey: string): MetricHistory 
  * id is the series' own (`egfr:<row id>`), so no correction can reach the creatinine or waist
  * behind it; those are corrected on their own pages.
  */
-export function derivedHistory(file: RoadmapFile, series: 'egfr' | 'whtr'): MetricHistory {
+export function derivedHistory(file: RoadmapFile, series: 'egfr' | 'whtr', now: string): MetricHistory {
   const row = (id: string, day: string, value: number, text: string, i: number) => ({
     id: `${series}:${id}`, value: text, day, status: 'active' as const, current: i === 0, correction: false, number: value,
   });
@@ -369,7 +369,7 @@ export function derivedHistory(file: RoadmapFile, series: 'egfr' | 'whtr'): Metr
     const entry = resolveLabCatalogEntry('egfr')!;
     return {
       metric: 'egfr', label: entry.label, unit: entry.unit, excluded: false, markers: [],
-      rows: egfrSeries(file).map((p, i) => ({ ...row(p.id, p.day, p.value, String(p.value), i), source: p.source })),
+      rows: egfrSeries(file, new Date(now)).map((p, i) => ({ ...row(p.id, p.day, p.value, String(p.value), i), source: p.source })),
     };
   }
   const height = file.profile.heightCm;

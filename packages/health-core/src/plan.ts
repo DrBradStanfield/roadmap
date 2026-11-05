@@ -6,8 +6,8 @@
  * terminal. The CLI keeps reading the file and rendering text and HTML;
  * `renderJson` is the agent-facing shape, and both surfaces return it.
  */
-import { currentValueRows, isCoreRow } from './blood-tests';
-import { ageOnDay, calculateEGFR, calculateHealthResults, isKnownMinorOnDay, missingPlanInputs } from './calculations';
+import { currentValueRows, isActive, isCoreRow } from './blood-tests';
+import { ageOnDay, calculateEGFR, calculateHealthResults, isKnownMinorOnDay, knownMinorOf, missingPlanInputs } from './calculations';
 import { fileProfileToApi, fileScreeningRows } from './file-inputs';
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
 import {
@@ -174,26 +174,31 @@ export interface EgfrPoint { id: string; day: string; value: number; source: 'la
  * eGFR (labEgfrOf's rows) wins it, as withLabEgfr lets it win the plan's day.
  * Else the core creatinine's (never a kept-apart row, which may be urine,
  * US-12 AC11), calculated as the plan does, with the age on that day: only
- * with a sex and a birth year, and never under 18. A value printed as a limit
- * gives no point (US-12 AC20); a lab limit holds its day, so no number is
- * worked out under it.
+ * with a sex and a birth year, and never by the plan's minor gate: a known
+ * minor today (`now`) or on the creatinine's day, over the birth info the plan
+ * keeps. A value printed as a limit gives no point (US-12 AC20); a lab limit
+ * holds its day, so no number is worked out under it. A row with no status is
+ * active (US-65 AC1).
  */
-export function egfrSeries(file: Pick<RoadmapFile, 'measurements' | 'labValues' | 'profile'>): EgfrPoint[] {
+export function egfrSeries(file: Pick<RoadmapFile, 'measurements' | 'labValues' | 'profile'>, now = new Date()): EgfrPoint[] {
   const days = new Map<string, EgfrPoint | null>();
   for (const l of file.labValues) {
     const day = dayOf(l.recordedAt);
-    if (l.status !== 'active' || isCoreRow(l) || !isLabEgfrRow(l) || days.has(day)) continue;
+    if (!isActive(l) || isCoreRow(l) || !isLabEgfrRow(l) || days.has(day)) continue;
     days.set(day, comparatorOf(l).comparator ? null : { id: l.id, day, value: Math.round(l.value), source: 'lab' });
   }
-  const { sex, birthYear, birthMonth } = file.profile;
+  const { sex, birthYear, birthMonth } = sanitizeInputs({
+    sex: file.profile.sex ?? undefined, birthYear: file.profile.birthYear ?? undefined, birthMonth: file.profile.birthMonth ?? undefined,
+  });
+  const minorToday = knownMinorOf({ birthYear, birthMonth }, now);
   for (const row of currentValueRows(file)) {
     const day = dayOf(row.recordedAt);
     if (row.metricType !== 'creatinine' || days.has(day)) continue;
-    const usable = sanitizeInputs({ creatinine: row.value, birthYear: birthYear ?? undefined, sex: sex ?? undefined });
-    const age = usable.birthYear === undefined ? undefined : ageOnDay(usable.birthYear, birthMonth ?? undefined, day);
-    const exact = !comparatorOf(row).comparator && usable.creatinine !== undefined;
-    days.set(day, exact && usable.sex && age !== undefined && age >= 18
-      ? { id: row.id, day, value: Math.round(calculateEGFR(usable.creatinine!, age, usable.sex)), source: 'calculated' }
+    const { creatinine } = sanitizeInputs({ creatinine: row.value });
+    // calculateHealthResults's gate exactly (US-07 AC7).
+    const adult = birthYear !== undefined && !minorToday && !isKnownMinorOnDay(birthYear, birthMonth, day);
+    days.set(day, !comparatorOf(row).comparator && creatinine !== undefined && sex && adult
+      ? { id: row.id, day, value: Math.round(calculateEGFR(creatinine, ageOnDay(birthYear, birthMonth, day), sex)), source: 'calculated' }
       : null);
   }
   return [...days.values()].filter((p): p is EgfrPoint => p !== null).sort((a, b) => b.day.localeCompare(a.day));

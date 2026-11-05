@@ -48,6 +48,11 @@ describe('the eGFR row\'s history (US-73 AC7)', () => {
     });
   });
 
+  it('has no calculated row while a known minor today, by the plan\'s gate at the phone\'s clock (US-07 AC7)', () => {
+    const file = record({ labValues: [core('c1', 'creatinine', 60, '2026-06-01')] }, { birthYear: 2008, birthMonth: undefined });
+    expect(history(file, 'egfr').rows).toEqual([]);
+  });
+
   it('a row id reaches no row, so a correction from this page cannot write an eGFR into a creatinine', () => {
     const file = record({ labValues: [core('c1', 'creatinine', 80, '2024-01-10')] });
     const [row] = history(file, 'egfr').rows;

@@ -93,6 +93,48 @@ describe('egfrSeries (US-73 AC7)', () => {
     expect(points[0].value).toBe(ours(60, 18));
   });
 
+  // US-07 AC7: the plan's own minor gate, a known minor today OR on the creatinine's day,
+  // a missing birth month a minor until 1 January after the 18th birthday.
+  it('no calculated point while a known minor today: born 2008, no month, creatinine 2026-06-01', () => {
+    const file = record([creatinine('c1', 60, '2026-06-01')], { sex: 'male', birthYear: 2008, birthMonth: undefined });
+    expect(egfrSeries(file, new Date(NOW))).toEqual([]);
+    expect(computePlan(file, new Date(NOW)).results.eGFR).toBeUndefined();
+  });
+
+  it('no calculated point from a known minor on its day: born 2007, no month, creatinine 2025-03-01', () => {
+    const file = record([creatinine('c1', 60, '2025-03-01')], { sex: 'male', birthYear: 2007, birthMonth: undefined });
+    expect(egfrSeries(file, new Date(NOW))).toEqual([]);
+    expect(computePlan(file, new Date(NOW)).results.eGFR).toBeUndefined();
+  });
+
+  it('a birth month out of range is dropped as the plan drops it: the age counts from January', () => {
+    const file = record([creatinine('c1', 80, '2025-12-01')], { sex: 'male', birthYear: 1976, birthMonth: 13 });
+    const [newest] = egfrSeries(file, new Date(NOW));
+    expect(newest.value).toBe(ours(80, 49));
+    expect(newest.value).toBe(computePlan(file, new Date(NOW)).results.eGFR);
+  });
+
+  it('the newest point is the plan\'s tile value when the age on its day is not today\'s', () => {
+    // Born June 1976: 48 on 2025-01-10, 50 today.
+    const file = record([creatinine('c1', 80, '2025-01-10')]);
+    const [newest] = egfrSeries(file, new Date(NOW));
+    expect(newest.value).toBe(ours(80, 48));
+    expect(newest.value).not.toBe(ours(80, 50));
+    expect(newest.value).toBe(computePlan(file, new Date(NOW)).results.eGFR);
+  });
+
+  it('a legacy row with no status is active: a lab-only history (US-73 AC7)', () => {
+    const points = egfrSeries(record([lab('e1', 'eGFR', 70, EGFR, '2025-02-10', { status: undefined as never })]), new Date(NOW));
+    expect(points).toEqual([{ id: 'e1', day: '2025-02-10', value: 70, source: 'lab' }]);
+  });
+
+  it('a legacy lab eGFR with no status still wins its day over the creatinine', () => {
+    const points = egfrSeries(record([
+      creatinine('c1', 80, '2025-02-10', { status: undefined as never }), lab('e1', 'eGFR', 64, EGFR, '2025-02-10', { status: undefined as never }),
+    ]), new Date(NOW));
+    expect(points).toEqual([{ id: 'e1', day: '2025-02-10', value: 64, source: 'lab' }]);
+  });
+
   it('the newest point is the plan\'s eGFR when the age on its day is today\'s', () => {
     const calculated = record([lab('e1', 'eGFR', 70, EGFR, '2025-02-10'), creatinine('c1', 95, '2026-07-01')]);
     expect(egfrSeries(calculated)[0].value).toBe(computePlan(calculated, new Date(NOW)).results.eGFR);
