@@ -11,8 +11,7 @@ protocol LiveHealthStore: Sendable {
     /// cannot say (a locked phone, an error): the caller keeps what it knew (adversary R4).
     func needsRequest() async throws -> Bool
     /// One point per `component` (an hour or a day) from `start` to `end`, HealthKit's own
-    /// statistics: steps summed; heart rate lowest, highest and average; resting heart rate
-    /// and VO2 max averaged. Not sleep.
+    /// statistics: steps summed; resting heart rate and VO2 max averaged. Not sleep.
     func points(_ metric: LiveMetric, from start: Date, to end: Date, every component: Calendar.Component) async throws -> [LivePoint]
     /// The metric's newest sample, however old: its value and when it ended. Each card
     /// starts from it, so a reading older than a card's trend still shows (Codex R2).
@@ -50,12 +49,11 @@ final class LiveHealthKitStore: LiveHealthStore {
         self.calendar = calendar
     }
 
-    /// The five types, and nothing else (AC10). `HealthKitClient.requested` asks for them.
+    /// The four types, and nothing else (AC10). `HealthKitClient.requested` asks for them.
     static let readTypes: Set<HKObjectType> = Set(LiveMetric.allCases.map(type(of:)))
 
     static func type(of metric: LiveMetric) -> HKObjectType {
         switch metric {
-        case .heartRate: HKQuantityType(.heartRate)
         case .restingHeartRate: HKQuantityType(.restingHeartRate)
         case .sleep: HKCategoryType(.sleepAnalysis)
         case .vo2Max: HKQuantityType(.vo2Max)
@@ -75,7 +73,6 @@ final class LiveHealthKitStore: LiveHealthStore {
         guard let type = Self.type(of: metric) as? HKQuantityType else { return [] }
         let options: HKStatisticsOptions = switch metric.aggregation {
         case .sum: .cumulativeSum
-        case .range: [.discreteMin, .discreteMax, .discreteAverage]
         case .mean: .discreteAverage
         }
         let anchor = calendar.dateInterval(of: component, for: start)?.start ?? start
@@ -89,10 +86,8 @@ final class LiveHealthKitStore: LiveHealthStore {
         var points: [LivePoint] = []
         collection.enumerateStatistics(from: start, to: end) { statistics, _ in
             let point = LivePoint(start: statistics.startDate,
-                                  value: (metric.aggregation == .sum ? statistics.sumQuantity() : statistics.averageQuantity())?.doubleValue(for: unit),
-                                  low: statistics.minimumQuantity()?.doubleValue(for: unit),
-                                  high: statistics.maximumQuantity()?.doubleValue(for: unit))
-            if point.value != nil || point.low != nil { points.append(point) }
+                                  value: (metric.aggregation == .sum ? statistics.sumQuantity() : statistics.averageQuantity())?.doubleValue(for: unit))
+            if point.value != nil { points.append(point) }
         }
         return points
     }
@@ -171,7 +166,7 @@ final class LiveHealthKitStore: LiveHealthStore {
 
     static func unit(_ metric: LiveMetric) -> HKUnit {
         switch metric {
-        case .heartRate, .restingHeartRate: .count().unitDivided(by: .minute())
+        case .restingHeartRate: .count().unitDivided(by: .minute())
         case .vo2Max: .literUnit(with: .milli).unitDivided(by: .gramUnit(with: .kilo).unitMultiplied(by: .minute()))
         case .steps, .sleep: .count()
         }

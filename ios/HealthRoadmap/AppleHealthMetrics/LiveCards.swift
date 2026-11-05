@@ -200,8 +200,7 @@ struct LiveCardView: View {
     var band: Vo2MaxBand? = nil
 
     var body: some View {
-        // Heart rate's card is its newest sample: today it shows the time, as Apple Health's does.
-        let when = DayText.when(card.date, time: metric.aggregation == .range, now: now, calendar: calendar)
+        let when = DayText.when(card.date, time: false, now: now, calendar: calendar)
         CardShell(label: metric.label, when: when, trend: card.trend, tint: metric.tint) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 LiveValue(metric: metric, value: card.value)
@@ -213,7 +212,7 @@ struct LiveCardView: View {
         .accessibilityLabel(LiveCardView.spoken(metric, card: card, when: when, band: band))
     }
 
-    /// "Heart Rate, 72 beats per minute, 10:42."
+    /// "Resting Heart Rate, 58 beats per minute, Today."
     static func spoken(_ metric: LiveMetric, card: LiveCard, when: String, band: Vo2MaxBand? = nil) -> String {
         let reading = metric == .sleep ? "\(metric.text(card.value)) \(card.inBed ? "in bed" : "asleep")" : "\(metric.text(card.value)) \(metric.spokenUnit)"
         return "\(metric.label), \(reading), \(when)\(band.map { ", \($0.label)" } ?? "")"

@@ -22,10 +22,10 @@ struct LiveHealthPage: View {
     }
 }
 
-/// Heart rate, resting heart rate, VO2 max or steps, as Apple Health's page draws them
+/// Resting heart rate, VO2 max or steps, as Apple Health's page draws them
 /// (AC7): the range picker (D, W, M, 6M, Y), the headline for what is in view, the chart,
 /// a scrub that shows the touched bar's value. Read-only: no "+", no list, no correction,
-/// no Unit menu. Heart rate draws each bar low to high; steps as bars; resting heart rate
+/// no Unit menu. Steps as bars; resting heart rate
 /// and VO2 max as points. No target band; VO2 max shades its fitness bands behind the chart,
 /// with a legend under it (AC8). Read from HealthKit each time it shows, on a return to the
 /// app and on unlock (AC2, Codex R1).
@@ -224,11 +224,6 @@ struct LiveMetricPage: View {
                 case .sum:
                     BarMark(x: .value("Time", point.start, unit: unit), y: .value(metric.label, point.value ?? 0))
                         .foregroundStyle(tint)
-                case .range:
-                    let (low, high) = Self.span(point)
-                    BarMark(x: .value("Time", point.start, unit: unit), yStart: .value("Low", low), yEnd: .value("High", high), width: .ratio(0.45))
-                        .clipShape(Capsule())
-                        .foregroundStyle(tint)
                 case .mean:
                     // With bands, at the value's shown place, so the dot sits in the band it is placed in (AC8).
                     PointMark(x: .value("Time", point.start, unit: unit), y: .value(metric.unit, bands == nil ? point.value ?? 0 : Vo2MaxBands.shown(point.value ?? 0)))
@@ -259,12 +254,6 @@ struct LiveMetricPage: View {
         case .high: 0.26
         }
         return tint.opacity(opacity)
-    }
-
-    /// Heart rate's bar: a single reading still shows as a short capsule, as Apple Health's dot.
-    static func span(_ point: LivePoint) -> (Double, Double) {
-        let (low, high) = (point.low ?? point.value ?? 0, point.high ?? point.value ?? 0)
-        return high - low < 1 ? (low - 0.5, high + 0.5) : (low, high)
     }
 }
 
@@ -382,8 +371,8 @@ struct SelectionRule: ChartContent {
     }
 }
 
-/// The axis spans the readings in view, as Apple Health's does: heart rate and the means not
-/// from zero; sums from zero.
+/// The axis spans the readings in view, as Apple Health's does: the means not from zero;
+/// sums from zero.
 private struct LiveYScale: ViewModifier {
     let metric: LiveMetric
     let points: [LivePoint]
@@ -393,8 +382,6 @@ private struct LiveYScale: ViewModifier {
     func body(content: Content) -> some View {
         if let domain {
             content.chartYScale(domain: domain)
-        } else if metric.aggregation == .range, let low = points.compactMap(\.low).min(), let high = points.compactMap(\.high).max() {
-            content.chartYScale(domain: (low - 10).rounded(.down)...(high + 10).rounded(.up))
         } else if let high = points.compactMap(\.value).max(), let low = points.compactMap(\.value).min() {
             content.chartYScale(domain: metric.aggregation == .sum ? 0...max(high * 1.1, 1) : (low - 5).rounded(.down)...(high + 5).rounded(.up))
         } else {
@@ -519,8 +506,8 @@ struct LiveChartDescriptor: AXChartDescriptorRepresentable {
 
     func makeChartDescriptor() -> AXChartDescriptor {
         let times = points.map { $0.start.timeIntervalSince1970 }
-        let values = points.compactMap { $0.high ?? $0.value }
-        let lows = points.compactMap { $0.low ?? $0.value }
+        let values = points.compactMap(\.value)
+        let lows = values
         let (calendar, metric) = (calendar, metric)
         let xAxis = AXNumericDataAxisDescriptor(title: "Time", range: (times.min() ?? 0)...(times.max() ?? 0), gridlinePositions: []) {
             Date(timeIntervalSince1970: $0).formatted(Date.FormatStyle(date: .abbreviated, time: .shortened, calendar: calendar, timeZone: calendar.timeZone))
@@ -528,10 +515,7 @@ struct LiveChartDescriptor: AXChartDescriptorRepresentable {
         let yAxis = AXNumericDataAxisDescriptor(title: metric.spokenUnit, range: (lows.min() ?? 0)...(values.max() ?? 0), gridlinePositions: []) {
             "\(metric.text($0)) \(metric.spokenUnit)"
         }
-        let series: [AXDataSeriesDescriptor] = metric.aggregation == .range
-            ? [AXDataSeriesDescriptor(name: "Lowest", isContinuous: false, dataPoints: points.compactMap { p in p.low.map { AXDataPoint(x: p.start.timeIntervalSince1970, y: $0) } }),
-               AXDataSeriesDescriptor(name: "Highest", isContinuous: false, dataPoints: points.compactMap { p in p.high.map { AXDataPoint(x: p.start.timeIntervalSince1970, y: $0) } })]
-            : [AXDataSeriesDescriptor(name: metric.label, isContinuous: false, dataPoints: points.compactMap { p in p.value.map { AXDataPoint(x: p.start.timeIntervalSince1970, y: $0) } })]
+        let series = [AXDataSeriesDescriptor(name: metric.label, isContinuous: false, dataPoints: points.compactMap { p in p.value.map { AXDataPoint(x: p.start.timeIntervalSince1970, y: $0) } })]
         return AXChartDescriptor(title: metric.label, summary: summary, xAxis: xAxis, yAxis: yAxis, additionalAxes: [], series: series)
     }
 }

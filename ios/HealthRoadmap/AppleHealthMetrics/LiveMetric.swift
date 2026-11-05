@@ -1,25 +1,22 @@
 import Foundation
 
-/// The five Apple Health metrics the app shows (US-56): read from HealthKit each time they
+/// The four Apple Health metrics the app shows (US-56; heart rate out since US-73, Brad round 4): read from HealthKit each time they
 /// show, with only the cards' last readings kept on this iPhone (AC2, Brad 2026-10-27), never
 /// in the record or UserDefaults, and never sent to telemetry or a log.
 /// Display only (AC1): nothing here feeds the plan, the engine or the chat.
 enum LiveMetric: String, CaseIterable, Identifiable, Codable, CodingKeyRepresentable {
-    case heartRate, restingHeartRate, sleep, vo2Max, steps
+    case restingHeartRate, sleep, vo2Max, steps
 
     var id: String { rawValue }
 
     /// How a bucket's readings combine, as Apple Health combines them: steps summed (and
-    /// sleep, a night's stages added up, on its own path); heart rate as its lowest to
-    /// highest; resting heart rate and VO2 max averaged. It sets the HealthKit statistics
-    /// asked for, the headline, the mark, the y-scale, the audio graph's series and the
-    /// card's reading (heart rate's is its newest sample, with the time).
-    enum Aggregation { case sum, range, mean }
+    /// sleep, a night's stages added up, on its own path); resting heart rate and VO2 max
+    /// averaged. It sets the HealthKit statistics asked for, the headline, the mark and the y-scale.
+    enum Aggregation { case sum, mean }
 
     var aggregation: Aggregation {
         switch self {
         case .steps, .sleep: .sum
-        case .heartRate: .range
         case .restingHeartRate, .vo2Max: .mean
         }
     }
@@ -27,7 +24,6 @@ enum LiveMetric: String, CaseIterable, Identifiable, Codable, CodingKeyRepresent
     /// Apple Health's names, VO2 max as the story names it.
     var label: String {
         switch self {
-        case .heartRate: "Heart Rate"
         case .restingHeartRate: "Resting Heart Rate"
         case .sleep: "Sleep"
         case .vo2Max: "VO2 max"
@@ -38,7 +34,7 @@ enum LiveMetric: String, CaseIterable, Identifiable, Codable, CodingKeyRepresent
     /// One unit each (AC6): the unit switch never changes them.
     var unit: String {
         switch self {
-        case .heartRate, .restingHeartRate: "bpm"
+        case .restingHeartRate: "bpm"
         case .sleep: ""
         case .vo2Max: "mL/kg/min"
         case .steps: "steps"
@@ -48,7 +44,7 @@ enum LiveMetric: String, CaseIterable, Identifiable, Codable, CodingKeyRepresent
     /// What VoiceOver says for the unit (AC12).
     var spokenUnit: String {
         switch self {
-        case .heartRate, .restingHeartRate: "beats per minute"
+        case .restingHeartRate: "beats per minute"
         case .sleep: ""
         case .vo2Max: "millilitres per kilogram per minute"
         case .steps: "steps"
@@ -58,7 +54,6 @@ enum LiveMetric: String, CaseIterable, Identifiable, Codable, CodingKeyRepresent
     /// The key of its graph colour in `MetricChart.palette`.
     var paletteKey: String {
         switch self {
-        case .heartRate: "heart_rate"
         case .restingHeartRate: "resting_heart_rate"
         case .sleep: "sleep"
         case .vo2Max: "vo2_max"
@@ -70,12 +65,11 @@ enum LiveMetric: String, CaseIterable, Identifiable, Codable, CodingKeyRepresent
     /// snake-case key as its graph colour (Brad's decision 1, 2026-10-31).
     var guideKey: String { paletteKey }
 
-    /// The range its page opens on, as Apple Health's: the day for heart rate, steps and
-    /// sleep; the week for resting heart rate, one value a day; six months for VO2 max, a
+    /// The range its page opens on, as Apple Health's: the day for steps and sleep; the week for resting heart rate, one value a day; six months for VO2 max, a
     /// few a month.
     var opening: LiveRange {
         switch self {
-        case .heartRate, .steps, .sleep: .day
+        case .steps, .sleep: .day
         case .restingHeartRate: .week
         case .vo2Max: .sixMonths
         }
@@ -87,7 +81,7 @@ enum LiveMetric: String, CaseIterable, Identifiable, Codable, CodingKeyRepresent
     /// The value as Apple Health writes it: whole beats and steps (steps grouped), VO2 max to one place.
     func text(_ value: Double) -> String {
         switch self {
-        case .heartRate, .restingHeartRate: String(Int(value.rounded()))
+        case .restingHeartRate: String(Int(value.rounded()))
         case .steps: Int(value.rounded()).formatted(.number.grouping(.automatic))
         case .vo2Max: Vo2MaxBands.shown(value).formatted(.number.precision(.fractionLength(1)))
         case .sleep: LiveMaths.duration(value).map { "\($0.number) \($0.unit)" }.joined(separator: " ")
@@ -96,13 +90,11 @@ enum LiveMetric: String, CaseIterable, Identifiable, Codable, CodingKeyRepresent
 }
 
 /// One bar or point: an hour, a day, a week or a month, starting at `start`. Steps carry
-/// `value` (the sum, or a daily average for a week or month); heart rate `low` and `high`
-/// (and `value`, the average, for its trend); resting heart rate and VO2 max `value`.
+/// `value` as the sum, or a daily average for a week or month; resting heart rate and VO2
+/// max as the average.
 struct LivePoint: Equatable, Identifiable, Codable {
     let start: Date
     var value: Double?
-    var low: Double?
-    var high: Double?
 
     var id: Date { start }
 }
@@ -110,7 +102,7 @@ struct LivePoint: Equatable, Identifiable, Codable {
 /// The latest reading of one metric, for its card; Codable for the kept readings (AC2).
 struct LiveCard: Equatable, Codable {
     let value: Double
-    /// When it was taken (heart rate) or the day or night it belongs to.
+    /// The day or night it belongs to.
     let date: Date
     /// The recent days or nights, oldest first, for the card's trend line.
     let trend: [Double]
@@ -242,34 +234,27 @@ enum LiveMaths {
     // MARK: Buckets
 
     /// Days grouped into weeks or months: steps as the daily average of the days with
-    /// steps (Apple Health's 6M and Y bars), heart rate as the lowest to highest, resting
-    /// heart rate and VO2 max as the mean.
+    /// steps (Apple Health's 6M and Y bars), resting heart rate and VO2 max as the mean.
     static func bucket(_ days: [LivePoint], by component: Calendar.Component, calendar: Calendar) -> [LivePoint] {
         guard component != .day, component != .hour else { return days }
         let groups = Dictionary(grouping: days) { calendar.dateInterval(of: component, for: $0.start)?.start ?? $0.start }
         return groups.keys.sorted().map { start in
             let group = groups[start]!
             let values = group.compactMap(\.value)
-            return LivePoint(start: start,
-                             value: values.isEmpty ? nil : values.reduce(0, +) / Double(values.count),
-                             low: group.compactMap(\.low).min(),
-                             high: group.compactMap(\.high).max())
+            return LivePoint(start: start, value: values.isEmpty ? nil : values.reduce(0, +) / Double(values.count))
         }
     }
 
     // MARK: Headline
 
-    /// The headline for what is in view: steps a day's total or the daily average, heart
-    /// rate its lowest to highest, resting heart rate and VO2 max their average. `points`
+    /// The headline for what is in view: steps a day's total or the daily average, resting
+    /// heart rate and VO2 max their average. `points`
     /// are the range's own buckets for D (hours) and W or M (days); for 6M and Y pass the days,
     /// so the average is of days, not of weekly averages.
     static func headline(_ metric: LiveMetric, range: LiveRange, points: [LivePoint]) -> Headline {
         let shown = { (text: String) in [Headline.Part(number: text, unit: metric.unit)] }
         let values = points.compactMap(\.value)
         switch metric.aggregation {
-        case .range:
-            guard let low = points.compactMap(\.low).min(), let high = points.compactMap(\.high).max() else { return Headline(title: "Range") }
-            return Headline(title: "Range", parts: shown("\(metric.text(low))–\(metric.text(high))"))
         case .sum where range == .day:
             return Headline(title: "Total", parts: values.isEmpty ? [] : shown(metric.text(values.reduce(0, +))))
         case .sum, .mean:
@@ -298,12 +283,10 @@ enum LiveMaths {
         calendar.date(byAdding: .day, value: -29, to: calendar.startOfDay(for: today)) ?? today
     }
 
-    /// A card from the recent days: the newest day with a value, and its `trend`. Heart
-    /// rate's card takes its newest sample (`latest`) and its days' averages for the trend.
-    static func card(days: [LivePoint], latest: (value: Double, date: Date)? = nil, today: Date, calendar: Calendar) -> LiveCard? {
+    /// A card from the recent days: the newest day with a value, and its `trend`.
+    static func card(days: [LivePoint], today: Date, calendar: Calendar) -> LiveCard? {
         let held = days.filter { $0.value != nil }.sorted { $0.start < $1.start }
         let trend = trend(held.map { (day: $0.start, value: $0.value!) }, today: today, calendar: calendar)
-        if let latest { return LiveCard(value: latest.value, date: latest.date, trend: trend) }
         guard let newest = held.last, let value = newest.value else { return nil }
         return LiveCard(value: value, date: newest.start, trend: trend)
     }

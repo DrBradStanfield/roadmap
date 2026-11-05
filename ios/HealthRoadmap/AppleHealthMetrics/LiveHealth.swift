@@ -50,6 +50,8 @@ final class LiveHealth {
         self.calendar = calendar
         self.kept = kept
         history = LiveHistory(folder: kept?.deletingLastPathComponent())
+        // Heart rate is no longer shown, so no longer read or kept: its history goes once (US-73).
+        if kept != nil { Task { [history] in await history.forgetDropped() } }
         available = store.isAvailable
         guard available else { return }
         // Read here, so the first frame has the cards; the first read updates them (AC15).
@@ -232,18 +234,15 @@ final class LiveHealth {
         }
         let from = calendar.date(byAdding: .day, value: -29, to: calendar.startOfDay(for: newest)) ?? newest
         let days = try await days(store, metric, from: from, to: now)
-        // Heart rate's card is its newest sample; its trend is the days' averages.
-        let sample = metric.aggregation == .range ? latest.value.map { (value: $0, date: latest.date) } : nil
-        let card = LiveMaths.card(days: days, latest: sample, today: now, calendar: calendar)
+        let card = LiveMaths.card(days: days, today: now, calendar: calendar)
         let held = days.filter { $0.value != nil }
         guard let card, LiveMaths.readsBack(held.map(\.start), today: now, calendar: calendar) else { return card }
         // The last seven, however old, may be further back (AC14). A read-back that fails or
-        // finds nothing more keeps the first card: heart rate's would otherwise lose its
-        // trend, since its newest sample makes a card from no days (Codex R2, 2026-10-26).
+        // finds nothing more keeps the first card (Codex R2, 2026-10-26).
         let back = calendar.date(byAdding: .day, value: -400, to: from) ?? from
         let older = try await self.days(store, metric, from: back, to: now)
         guard older.filter({ $0.value != nil }).count > held.count else { return card }
-        return LiveMaths.card(days: older, latest: sample, today: now, calendar: calendar) ?? card
+        return LiveMaths.card(days: older, today: now, calendar: calendar) ?? card
     }
 
     /// The first instant a page reads: `back` days before today, or the day of the card's

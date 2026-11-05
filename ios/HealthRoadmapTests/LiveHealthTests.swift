@@ -20,13 +20,15 @@ final class LiveHealthTests: XCTestCase {
         return calendar
     }
 
-    func testItAsksToReadExactlyTheFiveTypes_AC10() {
+    /// Four since 2026-11-05: heart rate is no longer shown (US-73), so it is not read.
+    func testItAsksToReadExactlyTheFourTypes_AC10() {
         let expected: Set<HKObjectType> = [
-            HKQuantityType(.heartRate), HKQuantityType(.restingHeartRate), HKCategoryType(.sleepAnalysis),
+            HKQuantityType(.restingHeartRate), HKCategoryType(.sleepAnalysis),
             HKQuantityType(.vo2Max), HKQuantityType(.stepCount),
         ]
         XCTAssertEqual(LiveHealthKitStore.readTypes, expected, "no HRV, nothing else")
         XCTAssertFalse(LiveHealthKitStore.readTypes.contains(HKQuantityType(.heartRateVariabilitySDNN)))
+        XCTAssertFalse(LiveHealthKitStore.readTypes.contains(HKQuantityType(.heartRate)), "no heart rate card, no heart rate read")
     }
 
     /// AC4 (Brad 2026-10-26): one request for everything. Onboarding's connect asks for the
@@ -108,6 +110,19 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertFalse(live.cards.isEmpty)
     }
 
+    /// US-73 (Brad dropped the heart rate card, round 4): a phone that kept heart rate's history
+    /// deletes it at the next launch; the other metrics' files stay.
+    func testALaunchDeletesTheKeptHeartRateHistory_US73() async throws {
+        let kept = try keptFile()
+        let folder = kept.deletingLastPathComponent()
+        for name in LiveHistory.dropped + ["history-steps.json"] { try Data("{}".utf8).write(to: folder.appending(path: name)) }
+        let live = LiveHealth(store: FakeLiveStore(due: false), now: { [now] in now }, calendar: utc, kept: kept)
+        await live.history.forgetDropped()
+        let left = try FileManager.default.contentsOfDirectory(atPath: folder.path(percentEncoded: false))
+        XCTAssertFalse(left.contains { LiveHistory.dropped.contains($0) }, "heart rate's history is gone")
+        XCTAssertTrue(left.contains("history-steps.json"), "the others stay")
+    }
+
     func testEveryTypeAskedForIsDrawn_AC10_AC6() async {
         let store = FakeLiveStore(due: false)
         store.fill(now: now)
@@ -115,7 +130,7 @@ final class LiveHealthTests: XCTestCase {
         await live.refresh()
         XCTAssertEqual(Set(live.cards.keys), Set(LiveMetric.allCases))
         XCTAssertEqual(live.cards[.steps]?.value, 9000)
-        XCTAssertEqual(live.cards[.heartRate]?.value, 64, "the newest sample")
+        XCTAssertEqual(live.cards[.restingHeartRate]?.value, 58, "the newest day")
         XCTAssertEqual(live.cards[.sleep]?.value, 7 * 3600)
     }
 
@@ -196,24 +211,23 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertEqual(store.calls[.steps], 2, "one recent reading: it reads back")
     }
 
-    /// Codex R2: a read-back that fails keeps the card the first read drew, trend and all,
-    /// heart rate's too (its card stands on its newest sample, so an empty read still makes one).
+    /// Codex R2: a read-back that fails keeps the card the first read drew, trend and all.
     func testAFailedReadBackKeepsTheFirstCard_AC14() async throws {
         let store = FakeLiveStore(due: false)
         store.fill(now: now)
         let today = utc.startOfDay(for: now)
         let day = { (back: Int) in today.addingTimeInterval(Double(-back) * 86_400) }
-        store.set(.heartRate, days: [LivePoint(start: day(90), value: 66, low: 50, high: 120), LivePoint(start: day(1), value: 72, low: 55, high: 130)])
+        store.set(.restingHeartRate, days: [LivePoint(start: day(90), value: 66), LivePoint(start: day(1), value: 72)])
         store.set(.vo2Max, days: [LivePoint(start: day(90), value: 39), LivePoint(start: day(3), value: 41)])
         store.set(.sleep, segments: [90, 2].map {
             SleepSegment(stage: .core, start: day($0).addingTimeInterval(-3600), end: day($0).addingTimeInterval(6 * 3600), source: "watch")
         })
-        store.failFrom = [.heartRate: 2, .vo2Max: 2, .sleep: 2]
+        store.failFrom = [.restingHeartRate: 2, .vo2Max: 2, .sleep: 2]
         let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
         await live.refresh()
-        XCTAssertEqual(store.calls[.heartRate], 2, "it tried to read back")
-        XCTAssertEqual(live.cards[.heartRate]?.trend, [72], "heart rate keeps its first trend")
-        XCTAssertEqual(live.cards[.heartRate]?.value, 64)
+        XCTAssertEqual(store.calls[.restingHeartRate], 2, "it tried to read back")
+        XCTAssertEqual(live.cards[.restingHeartRate]?.trend, [72], "resting heart rate keeps its first trend")
+        XCTAssertEqual(live.cards[.restingHeartRate]?.value, 72)
         XCTAssertEqual(live.cards[.vo2Max]?.trend, [41])
         XCTAssertEqual(live.cards[.sleep]?.trend, [7])
     }
@@ -480,17 +494,17 @@ final class LiveHealthTests: XCTestCase {
         let store = FakeLiveStore(due: false)
         store.fill(now: now)
         let today = utc.startOfDay(for: now)
-        let days = try await LiveHealth.readDays(store, .heartRate, reaching: nil, now: now, calendar: utc)
+        let days = try await LiveHealth.readDays(store, .restingHeartRate, reaching: nil, now: now, calendar: utc)
         XCTAssertFalse(days.isEmpty)
         XCTAssertEqual(store.queries.last?.start, today.addingTimeInterval(-400 * 86_400), "400 days back")
         XCTAssertEqual(store.queries.last?.end, now)
         XCTAssertEqual(store.queries.last?.component, .day)
         let yesterday = today.addingTimeInterval(-86_400 + 3600)
-        _ = try await LiveHistory(folder: nil).refreshHours(store, .heartRate, day: yesterday, now: now, calendar: utc)
+        _ = try await LiveHistory(folder: nil).refreshHours(store, .restingHeartRate, day: yesterday, now: now, calendar: utc)
         XCTAssertEqual(store.queries.last?.start, today.addingTimeInterval(-86_400), "the day D shows")
         XCTAssertEqual(store.queries.last?.end, today)
         XCTAssertEqual(store.queries.last?.component, .hour)
-        _ = try await LiveHistory(folder: nil).refreshHours(store, .heartRate, day: now, now: now, calendar: utc)
+        _ = try await LiveHistory(folder: nil).refreshHours(store, .restingHeartRate, day: now, now: now, calendar: utc)
         XCTAssertEqual(store.queries.last?.end, now, "today, as it stands")
         _ = try await LiveHealth.readNights(store, reaching: nil, now: now, calendar: utc)
     }
@@ -558,13 +572,13 @@ final class LiveHealthTests: XCTestCase {
         store.fill(now: now)
         let kept = try keptFile()
         let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
-        let days = try await live.history.refreshDays(store, .heartRate, now: now, calendar: utc)
+        let days = try await live.history.refreshDays(store, .restingHeartRate, now: now, calendar: utc)
         let nights = try await live.history.refreshNights(store, now: now, calendar: utc)
         let reads = (store.reads, store.calls[.sleep] ?? 0)
-        let drawn = await live.firstDays(.heartRate, reaching: nil)
+        let drawn = await live.firstDays(.restingHeartRate, reaching: nil)
         XCTAssertEqual(drawn, days)
         let relaunched = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
-        let drawnAgain = await relaunched.firstDays(.heartRate, reaching: nil)
+        let drawnAgain = await relaunched.firstDays(.restingHeartRate, reaching: nil)
         let keptNights = await relaunched.history.keptNights(calendar: utc)
         XCTAssertEqual(drawnAgain, days, "after a relaunch, from the file")
         XCTAssertEqual(keptNights, nights)
@@ -572,7 +586,7 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertEqual(store.reads, reads.0, "no HealthKit read")
         XCTAssertEqual(store.calls[.sleep] ?? 0, reads.1)
         let fresh = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: try keptFile())
-        _ = await fresh.firstDays(.heartRate, reaching: nil)
+        _ = await fresh.firstDays(.restingHeartRate, reaching: nil)
         XCTAssertEqual(store.queries.last?.start, utc.startOfDay(for: now).addingTimeInterval(-400 * 86_400), "nothing kept: 400 days read now")
     }
 
@@ -706,18 +720,18 @@ final class LiveHealthTests: XCTestCase {
         let store = FakeLiveStore(due: false)
         let today = utc.startOfDay(for: now)
         let hourly = (0..<10 * 24).map { LivePoint(start: today.addingTimeInterval(Double(-$0) * 3600), value: 70) }
-        store.set(.heartRate, days: hourly)
+        store.set(.restingHeartRate, days: hourly)
         let folder = try folder()
         let history = LiveHistory(folder: folder)
         let old = today.addingTimeInterval(-9 * 86_400)
-        let oldHours = try await history.refreshHours(store, .heartRate, day: old, now: now, calendar: utc)
+        let oldHours = try await history.refreshHours(store, .restingHeartRate, day: old, now: now, calendar: utc)
         XCTAssertFalse(oldHours.isEmpty, "a day scrolled back to is read and shown")
-        let todays = try await history.refreshHours(store, .heartRate, day: now, now: now, calendar: utc)
+        let todays = try await history.refreshHours(store, .restingHeartRate, day: now, now: now, calendar: utc)
         XCTAssertEqual(store.queries.last?.component, .hour)
-        let kept = await LiveHistory(folder: folder).keptHours(.heartRate, calendar: utc)
+        let kept = await LiveHistory(folder: folder).keptHours(.restingHeartRate, calendar: utc)
         XCTAssertEqual(kept, todays, "today's hours kept, the day nine days back not")
-        let again = try await history.refreshHours(store, .heartRate, day: now, now: now, calendar: utc)
-        let keptAgain = await history.keptHours(.heartRate, calendar: utc)
+        let again = try await history.refreshHours(store, .restingHeartRate, day: now, now: now, calendar: utc)
+        let keptAgain = await history.keptHours(.restingHeartRate, calendar: utc)
         XCTAssertEqual(keptAgain, again, "a day read again replaces its hours, never doubles them")
     }
 
@@ -751,8 +765,8 @@ final class LiveHealthTests: XCTestCase {
             _ = try await live.history.refreshNights(store, now: now, calendar: utc)
         }
         try await fill()
-        XCTAssertEqual(try histories(), ["history-heartRate.json", "history-restingHeartRate.json", "history-sleep.json", "history-steps.json", "history-vo2Max.json",
-                                         "hours-heartRate.json", "hours-restingHeartRate.json", "hours-steps.json", "hours-vo2Max.json"])
+        XCTAssertEqual(try histories(), ["history-restingHeartRate.json", "history-sleep.json", "history-steps.json", "history-vo2Max.json",
+                                         "hours-restingHeartRate.json", "hours-steps.json", "hours-vo2Max.json"])
         let (writes, onMain) = (await live.history.writes, await live.history.writesOnMain)
         XCTAssertGreaterThan(writes, 0)
         XCTAssertEqual(onMain, 0, "every write ran off the main thread")
@@ -798,14 +812,14 @@ final class LiveHealthTests: XCTestCase {
         store.fill(now: now)
         let folder = try folder()
         let history = LiveHistory(folder: folder)
-        let todays = try await history.refreshHours(store, .heartRate, day: now, now: now, calendar: utc)
+        let todays = try await history.refreshHours(store, .restingHeartRate, day: now, now: now, calendar: utc)
         XCTAssertFalse(todays.isEmpty)
-        store.failFrom = [.heartRate: (store.calls[.heartRate] ?? 0) + 1]
+        store.failFrom = [.restingHeartRate: (store.calls[.restingHeartRate] ?? 0) + 1]
         do {
-            _ = try await history.refreshHours(store, .heartRate, day: now, now: now, calendar: utc)
+            _ = try await history.refreshHours(store, .restingHeartRate, day: now, now: now, calendar: utc)
             XCTFail("a failed hourly read throws, never an empty day")
         } catch {}
-        let kept = await LiveHistory(folder: folder).keptHours(.heartRate, calendar: utc)
+        let kept = await LiveHistory(folder: folder).keptHours(.restingHeartRate, calendar: utc)
         XCTAssertEqual(kept, todays, "the kept hours stay")
     }
 
@@ -1096,7 +1110,7 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertEqual(LiveHealthKitStore.stage(HKCategoryValueSleepAnalysis.asleepDeep.rawValue), .deep)
         XCTAssertEqual(LiveHealthKitStore.stage(HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue), .asleep)
         XCTAssertNil(LiveHealthKitStore.stage(99), "an unknown value is left out")
-        XCTAssertEqual(LiveHealthKitStore.unit(.heartRate), HKUnit.count().unitDivided(by: .minute()))
+        XCTAssertEqual(LiveHealthKitStore.unit(.restingHeartRate), HKUnit.count().unitDivided(by: .minute()))
         XCTAssertEqual(LiveHealthKitStore.unit(.restingHeartRate), HKUnit(from: "count/min"))
         XCTAssertEqual(LiveHealthKitStore.unit(.vo2Max), HKUnit(from: "ml/kg*min"))
         XCTAssertEqual(LiveHealthKitStore.unit(.steps), .count())
@@ -1164,7 +1178,6 @@ final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
         var latestCalls = 0
         var queries: [(start: Date, end: Date, component: Calendar.Component)] = []
         var days: [LiveMetric: [LivePoint]] = [:]
-        var latest: (Double, Date)?
         var segments: [SleepSegment] = []
         var calls: [LiveMetric: Int] = [:]
         var failFrom: [LiveMetric: Int] = [:]
@@ -1223,10 +1236,8 @@ final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
         let days = (0..<14).map { today.addingTimeInterval(Double($0 - 13) * 86_400) }
         with { state in
             state.days[.steps] = days.enumerated().map { LivePoint(start: $1, value: Double(8000 + ($0 == 13 ? 1000 : 0))) }
-            state.days[.heartRate] = days.map { LivePoint(start: $0, value: 70, low: 50, high: 140) }
             state.days[.restingHeartRate] = days.map { LivePoint(start: $0, value: 58) }
             state.days[.vo2Max] = [LivePoint(start: days[10], value: 41.2)]
-            state.latest = (64, now.addingTimeInterval(-600))
             state.segments = [SleepSegment(stage: .core, start: today.addingTimeInterval(-3600), end: today.addingTimeInterval(6 * 3600), source: "watch")]
             Self.record(&state)
         }
@@ -1261,7 +1272,6 @@ final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
             if state.latestFails { throw HKError(.errorHealthDataUnavailable) }
             if state.empty.contains(metric) { return nil }
             switch metric {
-            case .heartRate: return state.latest.map { (value: $0.0, date: $0.1) }
             case .sleep: return state.segments.map(\.end).max().map { (value: nil, date: $0) }
             default: return state.days[metric]?.filter { $0.value != nil }.max { $0.start < $1.start }.map { (value: $0.value!, date: $0.start.addingTimeInterval(43_200)) }
             }

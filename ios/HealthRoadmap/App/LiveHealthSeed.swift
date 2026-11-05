@@ -20,7 +20,7 @@ enum LiveHealthSeed {
     @concurrent
     private static func seed() async throws {
         let store = HKHealthStore.app
-        let types: Set<HKSampleType> = [HKQuantityType(.heartRate), HKQuantityType(.restingHeartRate), HKCategoryType(.sleepAnalysis),
+        let types: Set<HKSampleType> = [HKQuantityType(.restingHeartRate), HKCategoryType(.sleepAnalysis),
                                         HKQuantityType(.vo2Max), HKQuantityType(.stepCount)]
         try await store.requestAuthorization(toShare: types, read: types)
         let calendar = Calendar.current
@@ -40,14 +40,6 @@ enum LiveHealthSeed {
             for hour in 7..<22 {
                 let start = day.addingTimeInterval(Double(hour) * 3600)
                 quantity(.stepCount, Double(200 + (hour * 37 + back * 53) % 900), .count(), start, start.addingTimeInterval(3600))
-                for minute in stride(from: 0, to: 60, by: back < 7 ? 15 : 60) {
-                    let at = start.addingTimeInterval(Double(minute) * 60)
-                    quantity(.heartRate, 62 + Double((hour * 13 + minute + back * 7) % 60), bpm, at, at)
-                }
-            }
-            for hour in [0, 3, 5] {
-                let at = day.addingTimeInterval(Double(hour) * 3600)
-                quantity(.heartRate, 50 + Double((hour + back) % 6), bpm, at, at)
             }
             // A night of stages ending this morning, as a watch records it.
             var at = day.addingTimeInterval(-3600 + Double(back % 3) * 900)

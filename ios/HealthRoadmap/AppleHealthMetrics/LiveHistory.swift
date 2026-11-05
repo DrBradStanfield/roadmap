@@ -182,6 +182,15 @@ actor LiveHistory {
         }
     }
 
+    /// The files of a metric the app no longer shows (heart rate, Brad dropped its card in
+    /// US-73 round 4): deleted where a phone still has them.
+    static let dropped = ["history-heartRate.json", "hours-heartRate.json"]
+
+    func forgetDropped() {
+        guard let folder else { return }
+        for name in Self.dropped where (try? Data(contentsOf: folder.appending(path: name))) != nil { delete(name) }
+    }
+
     /// "Delete all my data" or an access reset: every history goes (AC2).
     func removeAll() {
         for metric in LiveMetric.allCases { remove(metric) }
