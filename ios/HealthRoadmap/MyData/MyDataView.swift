@@ -1,4 +1,5 @@
 import SwiftUI
+import TipKit
 
 /// The My health tab (US-73; was My data and My plan, US-25 AC5, AC17): one page by topic,
 /// weight first, each topic's values then its plan cards, as the engine places them
@@ -58,6 +59,7 @@ struct MyDataView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.analytics) private var analytics
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         switch layout {
@@ -193,40 +195,49 @@ struct MyDataView: View {
         }
         // Each tour tip, once due, brings its anchor into view (US-57); a weight section with
         // no card passes tip 2 (review R4).
-        .task { for await due in SnapshotTip().shouldDisplayUpdates where due { withAnimation { proxy.scrollTo(Self.firstRow, anchor: .center) } } }
-        .task { for await due in FoundationTip().shouldDisplayUpdates where due { withAnimation { proxy.scrollTo(plan[.weight].first?.anchor, anchor: .center) } } }
-        .task { for await due in BloodTestsTip().shouldDisplayUpdates where due { withAnimation { proxy.scrollTo(HealthTopic.bloodTests.anchor, anchor: .top) } } }
+        .task { await bringIntoView(SnapshotTip(), Self.firstRow, proxy: proxy, at: .center) }
+        .task { await bringIntoView(FoundationTip(), plan[.weight].first?.anchor, proxy: proxy, at: .center) }
+        .task { await bringIntoView(BloodTestsTip(), HealthTopic.bloodTests.anchor, proxy: proxy, at: .top) }
         .tourStep(FoundationTip(), hasNoAnchor: plan[.weight].isEmpty)
     }
 
     /// The scroll id of Weight & diabetes' first row, tour tip 1's anchor.
     private static let firstRow = "tour.firstRow"
 
+    /// Once `tip` is due, scrolls its anchor into view (US-57).
+    private func bringIntoView(_ tip: some Tip, _ anchor: String?, proxy: ScrollViewProxy, at point: UnitPoint) async {
+        for await due in tip.shouldDisplayUpdates where due {
+            withAnimation { proxy.scrollTo(anchor, anchor: point) }
+        }
+    }
+
     /// The title with the person button, lab upload and Sync, as a row so nothing holds space
     /// under it; then the urgent banner, only when a card is urgent.
     @ViewBuilder
     private func top(_ plan: TopicPlan, proxy: ScrollViewProxy) -> some View {
         Section {
-            HStack(spacing: 14) {
-                Text("My health")
-                    .font(.largeTitle.bold())
-                    .accessibilityAddTraits(.isHeader)
-                Spacer()
-                Group {
-                    Button { showSettings = true } label: {
-                        Label("Settings", systemImage: "person.crop.circle")
-                    }
-                    recordButtons
+            let title = Text("My health").font(.largeTitle.bold()).accessibilityAddTraits(.isHeader)
+            let buttons = HStack(spacing: 14) {
+                Button { showSettings = true } label: {
+                    Label("Settings", systemImage: "person.crop.circle")
                 }
-                .buttonStyle(.borderless)
-                .labelStyle(.iconOnly)
-                .font(.title3)
+                recordButtons
+            }
+            .buttonStyle(.borderless)
+            .labelStyle(.iconOnly)
+            .font(.title3)
+            // The buttons go under the title when both do not fit: beside them at the largest
+            // sizes, the title broke mid-word ("heal th", as "Vi-tals" did, US-25 AC17g).
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 14) { title.fixedSize(); Spacer(); buttons }
+                VStack(alignment: .leading, spacing: 8) { title; buttons }
             }
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 8, leading: 4, bottom: 0, trailing: 4))
             .listRowSeparator(.hidden)
             // The jump pills (Brad, round 6): they scroll with the page; equal widths across the cards' width (round 7).
-            HStack(spacing: 8) {
+            // One above another at accessibility sizes, where three across cut each to "Bl…".
+            (typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout(spacing: 8))) {
                 ForEach(HealthTopic.pills) { topic in
                     Button {
                         withAnimation { proxy.scrollTo(topic.anchor, anchor: .top) }
@@ -248,7 +259,8 @@ struct MyDataView: View {
                 } label: {
                     Label("Needs attention: \(urgent.title)", systemImage: "exclamationmark.triangle.fill")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        // White was hard to read on dark mode's light red; the page background reads on both reds.
+                        .foregroundStyle(Color(.systemBackground))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(14)
                         .background(Color.status("urgent"), in: RoundedRectangle(cornerRadius: 12, style: .continuous))

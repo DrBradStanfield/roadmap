@@ -254,6 +254,7 @@ final class OnboardingUITests: XCTestCase {
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8)).tap()
         XCTAssertTrue(snapshot.waitForNonExistence(timeout: 5))
         XCTAssertTrue(foundation.waitForExistence(timeout: 10), "a tap outside tip 1 moves on to tip 2")
+        // Above any popover; the list scrolls to its top, then tip 3 brings Blood tests back into view.
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08)).tap()
         XCTAssertTrue(foundation.waitForNonExistence(timeout: 5))
         XCTAssertTrue(app.tabBars.buttons["My health"].isSelected, "a tap outside never switches tabs")
