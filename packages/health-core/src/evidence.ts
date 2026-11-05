@@ -735,11 +735,6 @@ export const GUIDE_REFERENCES: SuggestionReference[] = [
   { label: 'Paluch 2022 – Daily steps & all-cause mortality: meta-analysis of 15 international cohorts (Lancet Public Health)', url: 'https://doi.org/10.1016/S2468-2667(21)00302-9' },
   { label: 'Watson 2015 – Recommended amount of sleep for a healthy adult: AASM and SRS consensus (J Clin Sleep Med)', url: 'https://doi.org/10.5664/jcsm.4758' },
   { label: 'Milanović 2015 – Interval versus continuous training for VO2 max: meta-analysis (Sports Med)', url: 'https://doi.org/10.1007/s40279-015-0365-0' },
-  // The heart rate guide's safety lines (Brad 2026-11-01). DOIs checked against PubMed on 2026-11-01.
-  { label: 'Gulati 2021 – AHA/ACC guideline for the evaluation and diagnosis of chest pain (Circulation)', url: 'https://doi.org/10.1161/CIR.0000000000001029' },
-  { label: 'NHS 2024 – Arrhythmia: when to call 999 or go to A&E (NHS website)', url: 'https://www.nhs.uk/conditions/arrhythmia/' },
-  { label: 'Kusumoto 2019 – 2018 ACC/AHA/HRS guideline on bradycardia and cardiac conduction delay (Circulation)', url: 'https://doi.org/10.1161/CIR.0000000000000628' },
-  { label: 'Apple 2026 – Monitor your heart rate with Apple Watch (Apple Support; how the watch measures)', url: 'https://support.apple.com/en-us/120277' },
   { label: 'Apple 2026 – HealthKit documentation: restingHeartRate (Apple Developer; how the estimate is made)', url: 'https://developer.apple.com/documentation/healthkit/hkquantitytypeidentifier/restingheartrate' },
   { label: 'Apple 2025 – Estimating Sleep Stages from Apple Watch (white paper; how the watch measures)', url: 'https://www.apple.com/health/pdf/Estimating_Sleep_Stages_from_Apple_Watch_Oct_2025.pdf' },
   { label: 'Apple 2026 – Track your cardio fitness levels (Apple Support; what feeds the estimate)', url: 'https://support.apple.com/en-us/108790' },
