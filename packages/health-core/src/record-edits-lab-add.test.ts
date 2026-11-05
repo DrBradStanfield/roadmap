@@ -71,6 +71,23 @@ describe('addLabValue — a vital\'s name or no unit (US-73 AC8)', () => {
       .toEqual({ ok: false, reason: 'invalid-value', message: 'A lab value needs the unit the lab reported it in' });
   });
 
+  it('existingSeries adds only to a series the record holds: an active, non-core row of that test (US-25 AC25)', () => {
+    const none = { ok: false, reason: 'not-found', message: 'There is no such lab test in your record.' };
+    const add = (file: RoadmapFile, metricName: string, unit: string) => addLabValue(file, { metricName, unit, value: 1.2, day: '2026-10-01', existingSeries: true }, NOW);
+    // Never a new vital-named or unit-less series.
+    expect(add(record([]), 'Weight', 'kg')).toEqual(none);
+    expect(add(record([]), 'INR', '')).toEqual(none);
+    expect(add(record([held('f1', 'ferritin', 80, 'µg/L', '2026-09-01')]), 'INR', '')).toEqual(none);
+    // A withdrawn row or a core row holds no lab series.
+    expect(add(record([{ ...held('i1', 'INR', 1.1, '', '2026-09-01'), status: 'entered-in-error' }]), 'INR', '')).toEqual(none);
+    const core = createCoreRow({ id: 'c1', metric: 'ldl', value: 3, recordedAt: '2026-09-01T00:00:00.000Z', createdAt: NOW, source: 'manual' });
+    expect(add(record([core]), 'ldl', 'mmol/L')).toEqual(none);
+    // Any spelling of the held test, and a legacy row with no status, holds it.
+    expect(add(record([held('i1', 'INR', 1.1, '', '2026-09-01')]), 'inr', '')).toMatchObject({ ok: true });
+    const { status: _status, ...legacy } = held('z1', 'Zinc custom', 80, 'µg/dL', '2026-09-01');
+    expect(add(record([legacy as FileLabValue]), 'Zinc custom', 'µg/dL')).toMatchObject({ ok: true });
+  });
+
   it('refuses a test nothing names with no unit, in appendLabValue\'s words', () => {
     for (const unit of ['', '  ']) {
       expect(addLabValue(record([]), { metricName: 'Zinc custom', unit, value: 80, day: '2026-10-01' }, NOW))

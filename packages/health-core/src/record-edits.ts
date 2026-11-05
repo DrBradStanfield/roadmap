@@ -32,9 +32,9 @@
  */
 import {
   canonicalLabRow, canonicalLabValue, correctionOffScale, type CountFault, displayLabUnit, foldName, labCountFault, type LabCatalogEntry,
-  labUnitRefusal, normalizeLabUnit, resolveLabCatalogEntry, type StoredLabRow,
+  labSlotKey, labUnitRefusal, normalizeLabUnit, resolveLabCatalogEntry, type StoredLabRow,
 } from './lab-catalog';
-import { bloodTestKeyOf, coreStored, createCoreRow, isBloodTestKey, isCoreRow, labRowSlot } from './blood-tests';
+import { bloodTestKeyOf, coreStored, createCoreRow, isActive, isBloodTestKey, isCoreRow, labRowSlot } from './blood-tests';
 import { METRIC_TO_FIELD } from './mappings';
 import { resolveCoreMetricName } from './lab-extraction';
 import { dayOf, latestStamp, localDay, rootIdOf } from './merge';
@@ -339,10 +339,10 @@ export function slotOfRow(row: FileMeasurement | FileLabValue, day = dayOf(row.r
   return `${slotBase(row)}@${day}`;
 }
 
-/** Every active row by its slot — one pass, for a writer with many rows to place. */
+/** Every active row (a legacy row with no status is active) by its slot — one pass, for a writer with many rows to place. */
 export function slotIndex(file: RoadmapFile): Map<string, FileMeasurement | FileLabValue> {
   const index = new Map<string, FileMeasurement | FileLabValue>();
-  for (const row of [...file.measurements, ...file.labValues]) if (row.status === 'active') index.set(slotOfRow(row), row);
+  for (const row of [...file.measurements, ...file.labValues]) if (isActive(row)) index.set(slotOfRow(row), row);
   return index;
 }
 
@@ -353,7 +353,7 @@ export function slotIndex(file: RoadmapFile): Map<string, FileMeasurement | File
  */
 export function findActiveInSlot(file: RoadmapFile, kind: SlotKind, metric: string, day: string): FileMeasurement | FileLabValue | undefined {
   const key = slotKey(kind, metric, day);
-  return [...file.measurements, ...file.labValues].find((row) => row.status === 'active' && slotOfRow(row) === key);
+  return [...file.measurements, ...file.labValues].find((row) => isActive(row) && slotOfRow(row) === key);
 }
 
 /**
@@ -501,7 +501,7 @@ export interface AddLabValueRequest { metricName: string; unit: string; value: n
 
 export type AddLabValueResult =
   | { ok: true; file: RoadmapFile; row: FileLabValue }
-  | { ok: false; reason: 'invalid-value' | 'invalid-date' | 'unknown-unit' | 'slot-occupied' | 'core-metric'; message: string; existingId?: string; refused?: LabUnitRefusal; bound?: 'above' | 'below' };
+  | { ok: false; reason: 'invalid-value' | 'invalid-date' | 'unknown-unit' | 'slot-occupied' | 'core-metric' | 'not-found'; message: string; existingId?: string; refused?: LabUnitRefusal; bound?: 'above' | 'below' };
 
 /**
  * The one lab add, the web's "+ Add a value" (AddLabTest.tsx) and the iPhone's lab page (US-25
@@ -516,6 +516,11 @@ export function addLabValue(file: RoadmapFile, request: AddLabValueRequest, now:
   const name = request.metricName.trim();
   const given = request.unit.trim();
   if (!name) return { ok: false, reason: 'invalid-value', message: 'A lab value needs a test name.' };
+  // The flag is a series' own page: it never starts a series, so never a new vital-named or unit-less one.
+  const series = labSlotKey(name);
+  if (request.existingSeries && !file.labValues.some((row) => isActive(row) && !isCoreRow(row) && labSlotKey(row.metricName) === series)) {
+    return { ok: false, reason: 'not-found', message: 'There is no such lab test in your record.' };
+  }
   // A vital (weight, height, blood pressure, waist) typed by name is no lab test, as appendLabValue
   // refuses it; a kept-apart lab series of that name adds from its own page (US-25 AC25).
   const vital = !request.existingSeries && !bloodTestKeyOf(name) && resolveCoreMetricName(name);
@@ -581,7 +586,7 @@ export function correctValue(file: RoadmapFile, request: CorrectValueRequest): E
   const measurement = found ?? (lab && isCoreRow(lab) ? { ...lab, metricType: lab.metricName } : undefined);
   const old = measurement ?? lab;
   if (!old) return reject('not-found', `No value in this record has id ${id}`);
-  if (old.status !== 'active') return reject('not-active', `Value ${id} is already entered-in-error; correct the row that replaced it`);
+  if (!isActive(old)) return reject('not-active', `Value ${id} is already entered-in-error; correct the row that replaced it`);
   // The refusal deliberately does not echo either number: a caller that
   // guessed must not learn the value by guessing at it.
   if (request.expectedValue !== undefined && !sameValue(old.value, request.expectedValue)) {
@@ -705,7 +710,7 @@ const metricOf = (row: ClinicalRow) => ('metricType' in row ? row.metricType : r
 /** Every active row on `day` that `pick` takes, measurements then lab values. */
 function activeOn(file: RoadmapFile, day: string, pick: (row: ClinicalRow) => boolean = () => true): ClinicalRow[] {
   const lists: ClinicalRow[][] = [file.measurements, file.labValues];
-  return lists.flatMap((list) => list.filter((row) => row.status === 'active' && dayOf(row.recordedAt ?? '') === day && pick(row)));
+  return lists.flatMap((list) => list.filter((row) => isActive(row) && dayOf(row.recordedAt ?? '') === day && pick(row)));
 }
 
 /**
@@ -944,7 +949,7 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
     if (input.correctsId) {
       const index = (inLabs ? atLab : atMeasurement).get(input.correctsId);
       const old = index === undefined ? undefined : list[index];
-      if (!old || old.status !== 'active' || slotOfRow(old) !== slot) { skippedDuplicates++; continue; }
+      if (!old || !isActive(old) || slotOfRow(old) !== slot) { skippedDuplicates++; continue; }
       list[index!] = { ...old, status: 'entered-in-error' };
       const row = makeRow(old.recordedAt, old.id);
       list.push(row);
