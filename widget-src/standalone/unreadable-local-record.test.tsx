@@ -64,12 +64,33 @@ describe('US-65 AC7: an on-device record the app refuses at load is explained, n
     await vi.waitFor(() => expect(root.textContent).toContain(message), { timeout: 5000 });
     expect(root.querySelector('.hr-skeleton')).toBeNull();
     expect(root.querySelector('[role="alert"]')).not.toBeNull();
+    // In the ErrorBoundary's markup: its class, own heading, the refusal's words, and the report link.
+    const panel = root.querySelector('.health-tool-error[role="alert"]');
+    expect(panel).not.toBeNull();
+    expect(panel!.querySelector('h3')?.textContent).toBe('Your saved record could not be opened');
+    expect(panel!.querySelector('p')?.textContent).toContain(message);
+    const report = panel!.querySelector('a');
+    expect(report?.textContent).toBe('Report this issue');
+    expect(report?.getAttribute('href')).toBe('mailto:brad@drstanfield.com?subject=Health%20Roadmap%20Bug%20Report');
+    expect(report?.parentElement?.tagName).toBe('P');
+    expect(report?.parentElement?.style.marginTop).toBe('8px');
+    expect(report?.parentElement?.style.fontSize).toBe('14px');
     // The record and its revision are never written over.
     expect(localStorage.getItem(FILE_KEY)).toBe(stored);
     expect(localStorage.getItem(REV_KEY)).toBe(REV);
     // main() still rejects, and with the refusal itself, not a later error.
     await vi.waitFor(() => expect(rejections).toHaveLength(1));
     expect((rejections[0] as Error).message).toContain(message);
+  });
+
+  it('a page without the mount point draws nothing and main() still rejects with the refusal itself', async () => {
+    document.body.innerHTML = '';
+    localStorage.setItem(FILE_KEY, recordWith({ schemaVersion: 99 }));
+    localStorage.setItem(REV_KEY, REV);
+    await import('./app');
+    await vi.waitFor(() => expect(rejections).toHaveLength(1), { timeout: 5000 });
+    expect((rejections[0] as Error).name).toBe('SchemaTooNewError');
+    expect(document.body.innerHTML).toBe('');
   });
 
   it('a remembered cloud that cannot be reached falls back to that same device copy, and is explained too', async () => {
