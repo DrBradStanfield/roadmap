@@ -54,8 +54,8 @@ export const US_SUPPLEMENT_DESCRIPTIONS: Readonly<Partial<Record<UsProductCardId
   'supplement-lutein-zeaxanthin': LUTEIN_PIGMENT,
 };
 
-/** Dietary advice for elevated lipids — shared between suggestion card and InputPanel medication cascade */
-export const LIPID_DIET_ADVICE = 'Specific foods can lower LDL cholesterol: oats, walnuts, almonds, ground flaxseed, edamame, and replacing butter with extra-virgin olive oil. If you don\'t have IBS or IBD, beans, lentils, chickpeas, and mixed vegetables are also great options. Psyllium husk is a soluble fibre that is well-tolerated even with IBS or IBD; discuss with your doctor whether it fits your routine.';
+/** Dietary advice for elevated lipids: the lipid-diet card's text. */
+const LIPID_DIET_ADVICE = 'Specific foods can lower LDL cholesterol: oats, walnuts, almonds, ground flaxseed, edamame, and replacing butter with extra-virgin olive oil. If you don\'t have IBS or IBD, beans, lentils, chickpeas, and mixed vegetables are also great options. Psyllium husk is a soluble fibre that is well-tolerated even with IBS or IBD; discuss with your doctor whether it fits your routine.';
 
 /** Format a metric value with its display unit, e.g. "5.7%", "39 mmol/mol" or a limit's "< 39 mmol/mol" (US-12 AC20). */
 function fmtMetric(metricType: MetricType, value: number, us: UnitSystem, comparator?: Comparator): string {
@@ -127,6 +127,9 @@ export function lipidTargetSentence(marker: LipidMarker, unitFor: (metric: Metri
   const u = unitFor(metric);
   return `Your ${marker.label} is ${fmtMarkerValue(marker, u)}; the treatment target is below ${fmtLipidTarget(metric, marker.target, u)}.`;
 }
+
+/** The form's cholesterol intro says it after lipidTargetSentence (US-73 AC6, Brad 2026-11-05). */
+export const LIPID_MEDS_IN_STEPS = 'In addition to a great diet, cholesterol-lowering medications can also be added in steps.';
 
 /** Join a list the way the plan writes it: "a, b and c". */
 export function joinWithAnd(items: string[]): string {
@@ -311,21 +314,19 @@ export function generateSuggestions(
   }
 
   // Whether any atherogenic marker is at or above its on-treatment target, the
-  // marker's own test (used for lipid-diet and fiber suppression, US-07 AC5)
+  // marker's own test (used for lipid-diet, US-07 AC5)
   const hasElevatedLipids = atOrAboveTarget(inputs.apoB, LIPID_TREATMENT_TARGETS.apobGl)
     || atOrAboveTarget(results.nonHdlCholesterol, LIPID_TREATMENT_TARGETS.nonHdlMmol)
     || atOrAboveTarget(inputs.ldlC, LIPID_TREATMENT_TARGETS.ldlMmol);
 
-  // Fiber — show when lipid-diet is not active (lipid-diet covers fiber advice more specifically)
-  if (!hasElevatedLipids) {
-    suggestions.push({
-      id: 'fiber',
-      category: 'nutrition',
-      priority: 'info',
-      title: 'Maximize fiber intake',
-      description: 'Aim for 25-35g of fiber daily from whole grains, fruits, and vegetables. Increase gradually to avoid discomfort. If you have IBS or IBD, discuss appropriate fiber levels with your doctor.',
-    });
-  }
+  // Fiber — shown to everyone, lipid-diet or not (Brad 2026-11-05)
+  suggestions.push({
+    id: 'fiber',
+    category: 'nutrition',
+    priority: 'info',
+    title: 'Maximize fiber intake',
+    description: 'Aim for 25-35g of fiber daily from whole grains, fruits, and vegetables. Increase gradually to avoid discomfort. If you have IBS or IBD, discuss appropriate fiber levels with your doctor.',
+  });
 
   // High-potassium diet — only when eGFR ≥ 45 (safe kidney function), from an eGFR no newer
   // creatinine has outdated (US-07 AC8): potassium advice errs on the cautious side.

@@ -5,6 +5,7 @@ import {
   customSupplementAdd, customSupplementKey, customSupplementMatch, medicationForm, medicationWrites, screeningForm, screeningMonths, screeningWrites,
   type FormField, type FormSection, type MedicationBasis,
 } from './input-form';
+import { LIPID_MEDS_IN_STEPS } from './suggestions';
 import type { MedicationInputs, ScreeningInputs } from './types';
 
 // US-06 AC1a: additions share identity rules without changing explicit keyed edits.
@@ -254,6 +255,13 @@ describe('medicationForm', () => {
     const onStatin: MedicationInputs = { statin: { drug: 'atorvastatin', dose: 10 } };
     expect(keys(medicationForm(onStatin, elevated))).toEqual(['statin', 'statin_dose', 'ezetimibe', 'glp1']);
     expect(field(medicationForm(onStatin, elevated), 'ezetimibe').hint).toMatch(/more ApoB reduction/);
+  });
+
+  it('US-73 AC6: the cholesterol medicines intro is the target, then Brad\'s medicines sentence, no food list (Brad 2026-11-05)', () => {
+    const intro = medicationForm({}, elevated)[0].intro!;
+    expect(intro).toMatch(/ApoB/);
+    expect(intro.endsWith(`. ${LIPID_MEDS_IN_STEPS}`)).toBe(true);
+    expect(intro).not.toMatch(/oats|walnuts|psyllium/i);
   });
 
   it('shows an unrecorded dose as "Add dose", not pickable', () => {
