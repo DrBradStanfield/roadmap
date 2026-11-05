@@ -11,7 +11,7 @@ import { useEffect, useState, type MutableRefObject } from 'react';
 import { canonicalToReported, commaQuestion, displayLabUnit, LAB_CATALOG, LAB_GROUPS, labRangeMessage, localDay, parseLocalisedNumber, resolveLabCatalogEntry, savedLabText, slotKey, type ApiMeasurement, type Comparator } from '@roadmap/health-core';
 import { bloodTestKeyOf, coreStored } from '@roadmap/health-core/blood-tests';
 import { UnitChip } from './UnitChip';
-import { SAVE_ERRORS } from './BloodTestTimeline';
+import { SAVE_ERRORS, saveErrorText } from './BloodTestTimeline';
 import { addLabValue } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { CorrectFn } from '../lib/matrix-save';
@@ -116,7 +116,7 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
     const status = await onCorrect!(there.id, stored!);
     setSaving(false);
     if (status === 'ok') close();
-    else setNotice(SAVE_ERRORS[status]);
+    else setNotice(saveErrorText(status));
   };
 
   const save = async () => {

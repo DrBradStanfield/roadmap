@@ -334,10 +334,10 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
  * Typing-mistake bounds (US-21 AC26), in each test's canonical unit: wide physiologic limits that
  * no real result passes, so a value typed past one is a slip of the number or the unit (glucose
  * 5.5 with mg/dL picked is 0.31 mmol/L). Not reference ranges and not grading. Checked only where
- * a person types a value (`addLabValue`, `correctValue`); a min of 0 checks the top end alone. Brad approves each.
+ * a person types a value (`addLabValue`, `correctValue`); a min of 0 checks the top end alone. Every bound approved by Brad 2026-11-06.
  */
 export const LAB_PLAUSIBLE_RANGES: Readonly<Record<string, ValidationRange>> = {
-  glucose: { min: 0.5, max: 150 }, // 9–2,700 mg/dL; the max clears a survived hyperosmolar 2,656 mg/dL (147 mmol/L) cited in review; the min has no source yet
+  glucose: { min: 0.5, max: 150 }, // 9–2,700 mg/dL; the max clears a survived hyperosmolar 2,656 mg/dL (147 mmol/L) cited in review; the min is Brad's (2026-11-06: "people would be dead at 0.5 mmol/L")
   glucose_random: { min: 0.5, max: 150 }, // the same test, not fasting
   sodium: { min: 70, max: 260 }, // survived extremes run from about 95 to 250 mmol/L
   potassium: { min: 0.5, max: 20 }, // lows near 1 are survived; haemolysed or contaminated samples pass 10

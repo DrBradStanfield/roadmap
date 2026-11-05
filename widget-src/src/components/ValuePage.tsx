@@ -32,7 +32,7 @@ import { pressureReadings, readingsOf, type DayReading } from '../lib/my-data-ro
 import { chartTimestamp, formatShortDate } from '../lib/constants';
 import { getShownErase } from '../lib/roadmap-data';
 import { ErrorBoundary } from './ErrorBoundary';
-import { SAVE_ERRORS, ValueCell, useLiveRegion } from './BloodTestTimeline';
+import { ValueCell, saveErrorText, useLiveRegion } from './BloodTestTimeline';
 import { AddLabTest } from './AddLabTest';
 import { pressureText, tintOf, type RowContext, type ValueSubject } from './MyDataRows';
 import type { ApiLabValue } from '../lib/api-types';
@@ -253,7 +253,7 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef 
     setSaving(false);
     const [why] = refused.values();
     if (why) {
-      setError(SAVE_ERRORS[why]);
+      setError(saveErrorText(why));
       // The form now shows what is there, so the next press is a deliberate correction of it.
       if (why === 'changed') setSeen({ day: date, rows: rowsOn(date), erase: seen?.erase ?? getShownErase() });
       return;
