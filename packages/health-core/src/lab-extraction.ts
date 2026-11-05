@@ -314,7 +314,7 @@ const SEARCHABLE: ReadonlyArray<LabSearchMatch & { names: string[]; folded: stri
  */
 export function labSearch(text: string, limit = 20): LabSearchMatch[] {
   // "vit" is typed for "vitamin" ("vit d"), read so for search only: never an alias, so no stored row moves slot.
-  const typed = looseFold(text).replace(/\bvit\b/g, 'vitamin');
+  const typed = looseFold(text).replace(/\bvit\b\.?/g, 'vitamin');
   if (!typed) return [];
   const resolved = resolveName(text);
   const exactKey = resolved?.kind === 'core' ? resolved.metric : resolved?.key;

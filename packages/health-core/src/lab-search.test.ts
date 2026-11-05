@@ -52,7 +52,9 @@ describe('labSearch (US-73 AC8)', () => {
     expect(labSearch('vit d')[0]).toMatchObject({ key: 'vitamin_d', name: 'Vitamin D (25-OH)' });
     expect(keys('Vit D3')[0]).toBe('vitamin_d');
     expect(keys('vit b12')[0]).toBe('vitamin_b12');
-    expect(keys('vitals')).not.toContain('vitamin_d');
+    expect(keys('Vit. D')[0]).toBe('vitamin_d');
+    expect(keys('vitals')).toEqual([]);
+    expect(keys('multivit')).toEqual([]);
     // Search only: a stored or imported "Vit D" keeps its own series, so no row moves slot (round 3 adversary R1).
     expect(resolveName('Vit D')).toBeNull();
     expect(resolveName('Vit B12')).toBeNull();
