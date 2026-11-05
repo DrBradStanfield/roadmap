@@ -84,7 +84,7 @@ describe('the waist-to-height row\'s history (US-73 AC7)', () => {
 describe('the add sheet\'s search (US-73 AC8)', () => {
   it('is an optional door answering the core and catalogue tests a typed name finds', () => {
     const matches = JSON.parse(labSearchJson('ferr'));
-    expect(matches[0]).toEqual({ name: 'Ferritin', key: 'ferritin', kind: 'catalogue', unit: 'µg/L', units: expect.arrayContaining(['µg/L', 'ng/ml']) });
+    expect(matches[0]).toEqual({ name: 'Ferritin', key: 'ferritin', kind: 'catalogue', units: expect.arrayContaining(['µg/L', 'ng/ml']) });
     expect(JSON.parse(labSearchJson('HbA1'))[0]).toMatchObject({ key: 'hba1c', kind: 'core' });
     expect(JSON.parse(labSearchJson(' '))).toEqual([]);
   });
