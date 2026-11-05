@@ -7,7 +7,7 @@ import HealthKit
 protocol LiveHealthStore: Sendable {
     /// False where the device has no Health database (an iPad without Health, AC13).
     var isAvailable: Bool { get }
-    /// Whether Apple's sheet would still show for the five types (AC4). Throws when iOS
+    /// Whether Apple's sheet would still show for the four types (AC4). Throws when iOS
     /// cannot say (a locked phone, an error): the caller keeps what it knew (adversary R4).
     func needsRequest() async throws -> Bool
     /// One point per `component` (an hour or a day) from `start` to `end`, HealthKit's own

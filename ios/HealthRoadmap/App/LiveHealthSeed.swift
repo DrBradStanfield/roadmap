@@ -1,10 +1,10 @@
 #if DEBUG
 import HealthKit
 
-/// DEBUG only, never in a release build: with `--seed-live-health`, writes synthetic heart
-/// rate, resting heart rate, sleep with stages, VO2 max and steps into the simulator's
-/// Health store, so US-56's cards and pages can be checked against data (ios/architecture.md
-/// D6). Asks to write the five types, which the shipped app never does (US-56 AC2, AC10).
+/// DEBUG only, never in a release build: with `--seed-live-health`, writes synthetic resting
+/// heart rate, sleep with stages, VO2 max and steps into the simulator's Health store, so
+/// US-56's cards and pages can be checked against data (ios/architecture.md D6). Asks to write
+/// the four types, which the shipped app never does (US-56 AC2, AC10).
 enum LiveHealthSeed {
     static let argument = "--seed-live-health"
 

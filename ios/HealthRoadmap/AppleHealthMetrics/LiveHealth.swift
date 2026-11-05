@@ -12,7 +12,7 @@ import UIKit
 final class LiveHealth {
     /// Health exists on this device. False on an iPad without Health: no card shows (AC13).
     let available: Bool
-    /// Apple's sheet would still show for the five types: My data shows the Turn On row
+    /// Apple's sheet would still show for the four types: My data shows the Turn On row
     /// (AC4, AC5). Nil until the first check.
     private(set) var needsAccess: Bool?
     /// Each metric's latest reading; a metric with none is left out (AC6).
