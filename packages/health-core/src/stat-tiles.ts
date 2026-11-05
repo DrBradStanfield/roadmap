@@ -177,7 +177,7 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
   const egfrLimit = results.limits?.labEgfr;
   if (adult && (results.eGFR !== undefined || egfrLimit)) {
     tiles.push({
-      key: 'egfr', label: 'eGFR', value: egfrLimit ? limitSIText('labEgfr', egfrLimit) : String(results.eGFR), unit: 'mL/min',
+      key: 'egfr', label: 'eGFR', value: egfrLimit ? limitSIText('labEgfr', egfrLimit) : String(results.eGFR), unit: 'mL/min/1.73m²',
       status: tileStatus('labEgfr', results.eGFR, (v) => graded(getEgfrStatus(v))), evidence: STAT_CARD_EVIDENCE['egfr'],
     });
   }
