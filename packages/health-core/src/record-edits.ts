@@ -504,7 +504,7 @@ export type AddLabValueResult =
   | { ok: false; reason: 'invalid-value' | 'invalid-date' | 'unknown-unit' | 'slot-occupied' | 'core-metric' | 'not-found'; message: string; existingId?: string; refused?: LabUnitRefusal; bound?: 'above' | 'below' };
 
 /** Blood pressure's own names, loosely folded: no lab test, though no one core metric either. */
-const BLOOD_PRESSURE_NAMES = new Set(['blood pressure', 'bp', 'blood pressure systolic', 'blood pressure diastolic']);
+const BLOOD_PRESSURE_NAMES = new Set(['blood pressure', 'bp', 'blood pressure systolic', 'blood pressure diastolic', 'bp systolic', 'bp diastolic']);
 
 /**
  * The one lab add, the web's "+ Add a value" (AddLabTest.tsx) and the iPhone's lab page (US-25
@@ -524,9 +524,10 @@ export function addLabValue(file: RoadmapFile, request: AddLabValueRequest, now:
   if (request.existingSeries && !file.labValues.some((row) => isActive(row) && !isCoreRow(row) && labSlotKey(row.metricName) === series)) {
     return { ok: false, reason: 'not-found', message: 'There is no such lab test in your record.' };
   }
-  // A vital (weight, height, blood pressure, waist) typed by name is no lab test, as appendLabValue
-  // refuses it; a kept-apart lab series of that name adds from its own page (US-25 AC25). Blood
-  // pressure by its own name names no one core metric, so it is listed here (review round 3).
+  // A vital (weight, height, blood pressure, waist) typed by name is no lab test; a kept-apart lab
+  // series of that name adds from its own page (US-25 AC25). Blood pressure by its own name names
+  // no one core metric, so it is listed here (review round 3). appendLabValue (MCP, CLI) still
+  // refuses only what resolveCoreMetricName knows: "BP" there is a free-hand lab row.
   const vital = !request.existingSeries && !bloodTestKeyOf(name) && (resolveCoreMetricName(name) || BLOOD_PRESSURE_NAMES.has(looseFold(name)));
   if (vital) return { ok: false, reason: 'core-metric', message: `"${name}" is not a lab test: add it from its own row.` };
   if (!Number.isFinite(request.value) || request.value < 0) return { ok: false, reason: 'invalid-value', message: 'A lab value is a number, 0 or more.' };

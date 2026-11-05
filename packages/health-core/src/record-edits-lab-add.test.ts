@@ -48,7 +48,7 @@ describe('addLabValue (US-25 AC25)', () => {
 describe('addLabValue — a vital\'s name or no unit (US-73 AC8)', () => {
   it('refuses a vital\'s name: weight, height, blood pressure, waist', () => {
     // Blood pressure by its own name too, which names no one core metric (review round 3).
-    for (const metricName of ['Weight', 'height', 'Systolic BP', 'Waist', 'Blood pressure', 'BP', 'blood pressure (systolic)', 'Blood Pressure - Diastolic']) {
+    for (const metricName of ['Weight', 'height', 'Systolic BP', 'Waist', 'Blood pressure', 'BP', 'blood pressure (systolic)', 'Blood Pressure - Diastolic', 'BP systolic', 'bp diastolic']) {
       expect(addLabValue(record([]), { metricName, unit: 'kg', value: 80, day: '2026-10-01' }, NOW), metricName)
         .toEqual({ ok: false, reason: 'core-metric', message: `"${metricName}" is not a lab test: add it from its own row.` });
     }

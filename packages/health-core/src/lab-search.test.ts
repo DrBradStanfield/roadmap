@@ -48,11 +48,13 @@ describe('labSearch (US-73 AC8)', () => {
     expect(labSearch('a', 5)).toHaveLength(5);
   });
 
-  it('finds vitamin D and B12 by "vit d", "vit d3" and "vit b12", and an import reads "Vit D" as vitamin D (review round 3)', () => {
+  it('finds vitamin D and B12 by "vit d", "vit d3" and "vit b12", a search word only (review round 3)', () => {
     expect(labSearch('vit d')[0]).toMatchObject({ key: 'vitamin_d', name: 'Vitamin D (25-OH)' });
-    expect(keys('vit d3')[0]).toBe('vitamin_d');
+    expect(keys('Vit D3')[0]).toBe('vitamin_d');
     expect(keys('vit b12')[0]).toBe('vitamin_b12');
-    expect(resolveName('Vit D')).toMatchObject({ kind: 'lab', key: 'vitamin_d' });
-    expect(resolveName('Vit B12')).toMatchObject({ kind: 'lab', key: 'vitamin_b12' });
+    expect(keys('vitals')).not.toContain('vitamin_d');
+    // Search only: a stored or imported "Vit D" keeps its own series, so no row moves slot (round 3 adversary R1).
+    expect(resolveName('Vit D')).toBeNull();
+    expect(resolveName('Vit B12')).toBeNull();
   });
 });
