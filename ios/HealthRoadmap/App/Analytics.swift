@@ -72,6 +72,9 @@ final class Analytics {
         /// US-72: Health showed its lab results sheet (HealthKit said it was needed), and a
         /// batch of lab results landed at least one row. Never a value, a test's name or a count.
         case healthRecordsAsked = "Health Records asked", healthRecordsImported = "Health Records imported"
+        /// US-73: one of My health's jump pills tapped, and a save from the Add blood test sheet.
+        /// Never which pill, which test or a value.
+        case jumpPillTapped = "Jump pill tapped", bloodTestAdded = "Blood test added"
 
         /// A tour tip closed (its Next or Done, a tap outside it, leaving it, its action, or no anchor) or skipped.
         static func tip(_ step: TourStep, skipped: Bool) -> Event? {
@@ -89,7 +92,7 @@ final class Analytics {
 
     /// The only screen names Clarity ever gets.
     enum Screen: String {
-        case welcome = "Welcome", onboarding = "Onboarding", myData = "My data", chat = "Chat"
+        case welcome = "Welcome", onboarding = "Onboarding", myHealth = "My health", chat = "Chat"
         /// A US-56 metric page: the screen only, never which metric or a value.
         case appleHealthMetric = "Apple Health metric"
     }

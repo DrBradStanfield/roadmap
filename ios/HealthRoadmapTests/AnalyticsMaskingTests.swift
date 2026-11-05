@@ -29,8 +29,8 @@ final class AnalyticsMaskingTests: XCTestCase {
         analytics.screen(.chat)
         XCTAssertEqual(sdk.calls, [], "nothing before Clarity starts")
         analytics.start(in: UIWindow())
-        analytics.screen(.myData)
-        XCTAssertEqual(sdk.calls.last, "screen My data")
+        analytics.screen(.myHealth)
+        XCTAssertEqual(sdk.calls.last, "screen My health")
     }
 
     /// US-57's usage signal (D9, Brad 2026-10-25): exactly these fixed words, no value and no
@@ -45,6 +45,7 @@ final class AnalyticsMaskingTests: XCTestCase {
             "Alcohol answered", // US-60's usage signal: never the answer
             "Chat edit proposed", "Chat edit saved", // US-67 AC6: never a value or field name
             "Health Records asked", "Health Records imported", // US-72 AC13: never a value, a test's name or a count
+            "Jump pill tapped", "Blood test added", // US-73's usage signal: never which pill, test or value
         ])
         let sdk = FakeSDK()
         let analytics = Analytics(sdk: sdk, projectId: "abc", testing: false)

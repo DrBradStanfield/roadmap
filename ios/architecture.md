@@ -1370,12 +1370,14 @@ health tool (`data-clarity-mask` on `HealthTool.tsx`'s root). The app matches th
   parent's mask does not force a text input's, so every TextField also carries
   `analyticsMasked()` (`clarityMask`). Screen names are fixed words (`Analytics.Screen`),
   never a navigation title, which can carry a supplement's name. Nothing is ever unmasked.
+  The screens (2026-11-05, US-73, Brad): "Welcome", "Onboarding", "My health" (was "My data";
+  "My plan" went with the merged tab), "Chat", "Apple Health metric".
 - `AnalyticsMaskingTests` (US-25 AC19) fails if the window is not masked first, if any code
   unmasks, if a text input lacks its mask, or if any file but Analytics.swift calls Clarity.
-- **Custom events, exactly eighteen fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58; "Alcohol answered" for US-60; "Chat edit proposed" and "Chat edit saved" for US-67; "Health Records asked" and "Health Records imported" 2026-11-02 for US-72 AC13):**
+- **Custom events, exactly nineteen fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58; "Alcohol answered" for US-60; "Chat edit proposed" and "Chat edit saved" for US-67; "Health Records asked" and "Health Records imported" 2026-11-02 for US-72 AC13; "Tile explainer opened" dropped and "Jump pill tapped" and "Blood test added" added 2026-11-05 for US-73, Brad):**
   `Analytics.event` sends `ClaritySDK.sendCustomEvent` with a word from one enum,
-  `Analytics.Event`: "Tour started", "Tour tip closed 1/2/3", "Tour skipped 1/2/3", "Tile
-  explainer opened", "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened", "Alcohol answered", "Chat edit proposed", "Chat edit saved", "Health Records asked", "Health Records imported".
+  `Analytics.Event`: "Tour started", "Tour tip closed 1/2/3", "Tour skipped 1/2/3",
+  "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened", "Alcohol answered", "Chat edit proposed", "Chat edit saved", "Health Records asked", "Health Records imported", "Jump pill tapped" (any of My health's jump pills, never which), "Blood test added" (a save from the Add blood test sheet, never which test or value).
   Never a value, a tile's name, a test's name, a count or any other text; nothing before Clarity starts.
   `AnalyticsMaskingTests` pins the list, so a new word is a test change and a D9 change.
   Views reach the one `Analytics` through the environment (`\.analytics`, set by RootView).

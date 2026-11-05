@@ -171,8 +171,8 @@ final class OnboardingUITests: XCTestCase {
 
     /// US-57's three tips, word for word (Brad 2026-10-25).
     static let tourLines = [
-        "A snapshot of your health. Tap any tile to learn more.",
-        "Start here. Each step comes with the reason and the evidence.",
+        "Your numbers, grouped by topic. Tap any row for its history and what it means.",
+        "Each step comes with the reason and the evidence. Tap a card to read it.",
         "The more data you add, the more personal your plan. You can upload lab reports to fill these in for you.",
     ]
 

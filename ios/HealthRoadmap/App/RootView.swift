@@ -178,7 +178,7 @@ struct RootView: View {
         case .welcome: .welcome
         case .questions: .onboarding
         // A US-56 page names only the screen, never the metric (its usage signal). D9's words, unchanged for now.
-        case nil: switch tab { case .health: (live?.pagesOpen ?? 0) > 0 ? .appleHealthMetric : .myData; case .chat: .chat }
+        case nil: switch tab { case .health: (live?.pagesOpen ?? 0) > 0 ? .appleHealthMetric : .myHealth; case .chat: .chat }
         }
     }
 

@@ -240,6 +240,7 @@ struct MyDataView: View {
             (typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout(spacing: 8))) {
                 ForEach(HealthTopic.pills) { topic in
                     Button {
+                        analytics?.event(.jumpPillTapped)
                         withAnimation { proxy.scrollTo(topic.anchor, anchor: .top) }
                     } label: {
                         Text(topic.title.title).lineLimit(1).frame(maxWidth: .infinity)
@@ -656,9 +657,9 @@ struct MyDataView: View {
     private func sheet(for entry: Entry) -> some View {
         switch entry {
         case .test(let row, let seen):
-            MetricEntrySheet(store: store, row: row, seen: seen, saved: saved)
+            MetricEntrySheet(store: store, row: row, seen: seen, saved: addedTest)
         case .named(let name, let units, let seen):
-            NamedTestEntry(store: store, name: name, units: units, seen: seen, saved: saved)
+            NamedTestEntry(store: store, name: name, units: units, seen: seen, saved: addedTest)
         case .height(let seen) where seen.units == "conventional":
             FeetInchesSheet(current: store.myData?.profile.feetInches) { height in
                 saved(await store.apply(.feetInches(feet: height.feet, inches: height.inches), as: seen))
@@ -688,6 +689,12 @@ struct MyDataView: View {
     private func saved(_ result: RecordStore.ApplyResult) -> RecordStore.ApplyResult {
         if result == .saved() { saves += 1 }
         return result
+    }
+
+    /// A save from the Add blood test sheet: US-73's usage signal, never which test or value.
+    private func addedTest(_ result: RecordStore.ApplyResult) -> RecordStore.ApplyResult {
+        if result == .saved() { analytics?.event(.bloodTestAdded) }
+        return saved(result)
     }
 }
 

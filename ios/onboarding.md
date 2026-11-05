@@ -172,6 +172,12 @@ After the last question the person lands on My plan, and a three-tip tour starts
 Apple's TipKit, shows each tip once and can be skipped. Brad: "This tour mustn't go on and
 on", so each tip is one line. The story and its ACs are US-57.
 
+**Since US-73 (2026-11-05)** the tour runs on My health, with Brad's new words for tips 1
+and 2: (1) on the waist-to-height row, "Your numbers, grouped by topic. Tap any row for its
+history and what it means."; (2) on the first Weight & diabetes card, "Each step comes
+with the reason and the evidence. Tap a card to read it."; (3) unchanged, on the Blood
+tests heading. The list below is the 2026-10-25 tour, kept for its reasons.
+
 1. **The snapshot**, one tip for the whole row of tiles: "A snapshot of your health. Tap
    any tile to learn more." Every tile opens its "what it is" line, for good.
 2. **The first Foundation card**: "Start here. Each step comes with the reason and the

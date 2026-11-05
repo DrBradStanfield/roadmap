@@ -106,18 +106,18 @@ extension TourTip {
     }
 }
 
-/// Tip 1 (AC4): My health's first row, waist-to-height (US-73 AC11; words to be Brad's).
+/// Tip 1 (AC4): My health's first row, waist-to-height (US-73 AC11; words Brad's, 2026-11-05).
 struct SnapshotTip: TourTip {
     static let step = TourStep.snapshot
     static let tab = TourTab.health
-    static let line = "A snapshot of your health. Tap any tile to learn more."
+    static let line = "Your numbers, grouped by topic. Tap any row for its history and what it means."
 }
 
-/// Tip 2 (AC6): the first card in Weight & diabetes.
+/// Tip 2 (AC6): the first card in Weight & diabetes (words Brad's, 2026-11-05).
 struct FoundationTip: TourTip {
     static let step = TourStep.foundation
     static let tab = TourTab.health
-    static let line = "Start here. Each step comes with the reason and the evidence."
+    static let line = "Each step comes with the reason and the evidence. Tap a card to read it."
 }
 
 /// Tip 3 (AC7): the Blood tests heading, with the lab upload on it.
