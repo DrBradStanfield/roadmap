@@ -2405,7 +2405,8 @@ export function InputPanel({
                 key={f.key}
                 type="button"
                 className="supplement-chip"
-                onClick={() => addSupplement(f.key, f.name, f.defaultDose, f.defaultUnit)}
+                // A double click's second click lands on the chip that slid into place: ignore it (US-06 AC19).
+                onClick={e => { if (e.detail <= 1) addSupplement(f.key, f.name, f.defaultDose, f.defaultUnit); }}
               >
                 + {f.name}
               </button>
