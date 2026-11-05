@@ -229,7 +229,7 @@ final class MyHealthTests: XCTestCase {
         XCTAssertEqual(store.myData?.labTests?.first { $0.metric == "testosterone_total" }?.latest?.value, "15")
         // A name nothing knows is a new test in the unit typed.
         await XCTAssertSaved(await store.apply(.labAddName(name: "Zeta marker", value: 5, day: today, unit: "zu/L")))
-        XCTAssertEqual(store.myData?.labTests?.first { $0.label == "Zeta marker" }?.unit, "zu/L")
+        XCTAssertEqual(store.myData?.labTests?.first { $0.metric == "zeta marker" }?.unit, "zu/L")
 
         // A unit the catalogue does not take, and an out-of-range value, are refused in the engine's words.
         guard case .refused(let unit, nil) = await store.apply(.labAddName(name: "Free testosterone", value: 15, day: today, unit: "furlongs")) else { return XCTFail("a bad unit saves nothing") }

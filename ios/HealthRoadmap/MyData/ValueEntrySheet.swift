@@ -63,6 +63,7 @@ struct ValueEntrySheet: View {
                         TextField("Unit, as the lab printed it", text: typedUnit)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
+                            .analyticsMasked()
                             .onChange(of: typedUnit.wrappedValue) { message = nil }
                     }
                 } footer: {
