@@ -403,6 +403,8 @@ describe('free-text scrub parity', () => {
         ['TSH: -, T4 <15', '15'], ['LDL n/a, T3 >4.1', '4.1'], ['ferritin CA-125 <30', '30'], ['LDL D3 ≥ 45', '45'],
         ['Ferritin pending, B12 <300', '300'], ['LDL T4 - 15', '15'], ['LDL T4, 15', '15'], ['LDL T4 (15)', '15'],
         ['Vit D3 - 45', '45'], ['vit d3, 45', '45'],
+        // Codex re-check: a long run of spaces still joins the two numbers, as before the shared gap.
+        ['TSH: -, T4' + ' '.repeat(21) + '15', '15'], ['LDL n/a, T3' + '\t'.repeat(30) + '4.1', '4.1'],
       ]) {
         expect(impl.scrubText(text), text).not.toContain(value);
       }
