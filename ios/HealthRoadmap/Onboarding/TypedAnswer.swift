@@ -118,12 +118,23 @@ struct TypedAnswer: Equatable {
         return await convert(typed, metric, Self.system(mine.us), recordUnits)?.value
     }
 
-    /// The typed value is `recorded` (in `recordUnits`) to within half the box's own step,
-    /// 0.1 kg or a whole pound: compared in kilograms, never by the text shown (US-54 AC5).
+    /// A height's edit: feet and inches as typed in them, else what `saved` reads (US-54 AC6b);
+    /// nil when nothing typed here can be read.
+    func edit(recordUnits: String, convert: Convert) async -> RecordEdit? {
+        guard edited else { return nil }
+        var mine = self
+        mine.entry = answer
+        if mine.us { return mine.feetInches.map { .feetInches(feet: $0.feet, inches: $0.inches) } }
+        return await saved(recordUnits: recordUnits, convert: convert).map { .profile(height: $0) }
+    }
+
+    /// The typed value is `recorded` (in `recordUnits`) to within half the step of the units
+    /// it was typed in, 0.1 kg or a whole pound: compared in kilograms, never by the text
+    /// shown (US-54 AC5, AC6b).
     func repeats(_ recorded: Double?, recordUnits: String, convert: Convert) async -> Bool {
         guard let recorded, let typed = await saved(recordUnits: "si", convert: convert),
               let kg = await (recordUnits == "si" ? recorded : convert(recorded, metric, recordUnits, "si")?.value),
-              let halfStep = await (us ? convert(0.5, metric, "conventional", "si")?.value : 0.05) else { return false }
+              let halfStep = await (answer.us ? convert(0.5, metric, "conventional", "si")?.value : 0.05) else { return false }
         return abs(typed - kg) < halfStep
     }
 

@@ -456,14 +456,8 @@ struct OnboardingView: View {
         // A box the person left alone saves nothing, whatever its units show (AC6). A typed
         // one that cannot be read or converted stays on its screen.
         case .height:
-            let height = answers.height
-            guard height.edited else { return .unchanged }
-            let edit: RecordEdit? = if height.us {
-                height.feetInches.map { .feetInches(feet: $0.feet, inches: $0.inches) }
-            } else {
-                await savedValue(.height).map { .profile(height: $0) }
-            }
-            return edit.map(Change.edit) ?? .stay
+            guard answers.height.edited else { return .unchanged }
+            return await answers.height.edit(recordUnits: recordUnits(.height), convert: store.convert).map(Change.edit) ?? .stay
         case .weight:
             // Health's year-old weight, left as it is, is confirmed as today's: an Apple Health
             // row in the row's own kilograms, never the rounded display, never written back (AC3b).

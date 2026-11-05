@@ -189,6 +189,35 @@ final class OnboardingStepsTests: XCTestCase {
         XCTAssertEqual(retyped ?? 0, 81.65, accuracy: 0.01, "180 lb, whatever kg shows")
     }
 
+    /// US-54 AC6b (adversary on ffb0586b): a height saves what was typed, in either unit. 183 cm
+    /// shown as 6 ft 0 in saves 183 cm, never 182.88; 6 ft 0 in shown as cm saves 6 ft 0 in.
+    func testATypedHeightSwitchedToFeetSavesWhatWasTyped_AC6b() async {
+        var cm = TypedAnswer(metric: "height")
+        cm.text = "183"
+        cm.edited = true
+        await cm.switchUnits(toUS: true, recorded: nil, recordUnits: "si", convert: convert)
+        XCTAssertEqual(cm.feetInches, MyData.FeetInches(feet: 6, inches: 0))
+        let fromCm = await cm.edit(recordUnits: "si", convert: convert)
+        XCTAssertEqual(fromCm, .profile(height: 183), "183 cm as typed")
+        var feet = TypedAnswer(metric: "height", us: true)
+        (feet.feet, feet.inches) = ("6", "0")
+        feet.edited = true
+        await feet.switchUnits(toUS: false, recorded: nil, recordUnits: "si", convert: convert)
+        let fromFeet = await feet.edit(recordUnits: "si", convert: convert)
+        XCTAssertEqual(fromFeet, .feetInches(feet: 6, inches: 0), "6 ft 0 in as typed")
+    }
+
+    /// US-54 AC6b (adversary on ffb0586b): 80 kg typed, shown in lb, is not 80.2 kg's repeat:
+    /// the tolerance is the typed unit's half step, 0.05 kg, not half a pound.
+    func testAWeightTypedInKgShownInLbKeepsTheKgTolerance_AC6b() async {
+        var weight = TypedAnswer(metric: "weight")
+        weight.text = "80"
+        weight.edited = true
+        await weight.switchUnits(toUS: true, recorded: 80.2, recordUnits: "si", convert: convert)
+        let repeated = await weight.repeats(80.2, recordUnits: "si", convert: convert)
+        XCTAssertFalse(repeated, "80 kg on 80.2 kg is written")
+    }
+
     /// A height typed in feet and inches or centimetres is the right height, in either record's units.
     func testATypedHeightIsSavedInTheEditsUnits_AC6() async {
         var height = TypedAnswer(metric: "height")
