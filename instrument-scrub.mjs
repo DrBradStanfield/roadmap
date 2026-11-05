@@ -291,7 +291,6 @@ export const SCRUB_METRIC_WORDS = [
   'hs troponin i', 'hs-troponin i', 'high sensitivity troponin i', 'hs-tni', 'hs-ctni', 'c_peptide',
   'c-peptide', 'estimated average glucose', 'vldl cholesterol', 'vldl-c', 'vldl chol', 'lactic acid',
   'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height',
-  'vit d', 'vit d3', 'vit b12', 'vit. d', 'vit. d3', 'vit. b12',
 ];
 
 const NUMBER = '\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?';

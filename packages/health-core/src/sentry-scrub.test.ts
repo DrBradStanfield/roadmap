@@ -435,13 +435,11 @@ describe('scrubText', () => {
 });
 
 describe('a typed short name (US-09 AC7, US-73 AC8)', () => {
-  it('scrubs a value written after "Vit", as the add sheet\'s search reads it', () => {
-    expect(scrubText('Vit D 45')).toBe('Vit D [value]');
-    expect(scrubText('vit b12 300')).toBe('vit b12 [value]');
-    expect(scrubText('Vit D3 80')).toBe('Vit D3 [value]');
-    expect(scrubText('Vit. D 45')).toBe('Vit. D [value]');
-    // Never worse than "b12" alone: a period or a second space still scrubs the value.
-    for (const text of ['Vit. B12 300', 'vit. b12 300', 'Vit  B12 300', 'vit.b12 300', 'vit-b12 300', 'vit_b12 300', 'vit:b12 300', 'vit\tb12 300', 'vitamin b12 300']) {
+  // The scrub has no "vit" word or phrase: either one swallowed another name's digits ("Vit. B12
+  // 300", "Vit D pending, B12 300") and left its value (review round 3). "Vit D 45" is still
+  // unscrubbed, as before US-73: a follow-up for the scrub's name-then-value rule.
+  it('a value after "B12" is scrubbed however "vit" is written before it', () => {
+    for (const text of ['Vit. B12 300', 'vit. b12 300', 'Vit  B12 300', 'vit.b12 300', 'vit-b12 300', 'vit_b12 300', 'vit:b12 300', 'vit\tb12 300', 'vit b12 300', 'vitamin b12 300', 'Vit D pending, B12 300']) {
       expect(scrubText(text), text).not.toContain('300');
     }
     expect(scrubText('vitals ok')).toBe('vitals ok');
