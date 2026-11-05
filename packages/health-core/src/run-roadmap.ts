@@ -163,13 +163,14 @@ function statedDay(date: unknown, now: Date): string | null {
   const day = resolveRecordedAt(date, { now: now.toISOString(), latestDay: latestDayOnEarth(now) });
   return typeof day === 'string' ? day : null;
 }
-/** The newest saved day for a metric's dated series ('' when none), ignoring days not yet reached. */
+/** The newest saved day for a metric's dated series ('' when none), ignoring days not yet reached
+ *  and a client's draft point, which is not saved (US-07 AC7). */
 function savedLatestDay(history: Record<string, unknown>, metric: string, today: string): string {
   const series = Object.prototype.hasOwnProperty.call(history, metric) ? history[metric] : null;
   if (!Array.isArray(series)) return '';
   return series.reduce<string>((max, p) => {
-    const d = obj(p).date;
-    return typeof d === 'string' && ISO_DATE.test(d) && d <= today && d > max ? d : max;
+    const { date: d, draft } = obj(p);
+    return typeof d === 'string' && ISO_DATE.test(d) && d <= today && d > max && draft === undefined ? d : max;
   }, '');
 }
 

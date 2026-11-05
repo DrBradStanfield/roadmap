@@ -181,7 +181,8 @@ someone's medical history, or lose their data at the next device sync.
    the only creatinine was taken as a minor, and there is no lab eGFR, `profile.eGFR` is `null`
    with no field saying why: compare `inputs.creatinineDay` with `inputs.birthYear` (and
    `inputs.birthMonth`; with none, a minor until the year `birthYear + 19` begins), and tell the
-   person the plan works out no eGFR from a test taken before 18. All four are
+   person the plan works out no eGFR from a test taken before 18 (with no birth month, from a
+   test taken when they may have been under 18). All four are
    derived, never stored: write lab values, not these fields.
    One exception to "converted": LDL and ApoB, the lipids with a target line, print on
    the side of their line the plan grades them (US-07 AC5). A value within one display

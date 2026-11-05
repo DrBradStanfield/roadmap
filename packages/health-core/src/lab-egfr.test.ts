@@ -329,17 +329,45 @@ describe('US-07 AC7: the eGFR uses the age on the creatinine\'s day', () => {
     }
   });
 
-  it('a dated draft goes on as the newest creatinine point, within the per-metric cap; the saved newest is not repeated', () => {
+  it('a dated draft travels as a marked creatinine point, beside every saved one; the saved newest is not repeated', () => {
     const days = Array.from({ length: HISTORY_CAP_PER_METRIC }, (_, i) => `20${String(i + 1).padStart(2, '0')}-03-01`);
     const file = fileWith({ creatinine: days.map((day) => ({ value: 80, day })) });
     const draft = chatContextOf({ ...plan(file).inputs, creatinine: 60, creatinineDay: '2010-06-01' }, 'si', [], [], file.measurements);
-    expect(draft.measurementHistory!.creatinine).toHaveLength(HISTORY_CAP_PER_METRIC);
-    expect(draft.measurementHistory!.creatinine.at(-1)).toEqual({ date: '2010-06-01', value: 60 });
+    expect(draft.measurementHistory!.creatinine.filter((p) => !p.draft).map((p) => p.date)).toEqual(days);
+    expect(draft.measurementHistory!.creatinine.filter((p) => p.draft)).toEqual([{ date: '2010-06-01', value: 60, draft: true }]);
     expect(JSON.parse(buildChatContextJson(draft)!).derivedValues.eGFR).toBe(Math.round(calculateEGFR(60, 60, 'female')));
     const saved = chatContextOf(plan(file).inputs, 'si', [], [], file.measurements);
     expect(plan(file).inputs.creatinineDay).toBe(days.at(-1));
     expect(saved.measurementHistory!.creatinine).toHaveLength(HISTORY_CAP_PER_METRIC);
-    expect(saved.measurementHistory!.creatinine.at(-1)).toEqual({ date: days.at(-1), value: 80 });
+    expect(saved.measurementHistory!.creatinine.some((p) => p.draft)).toBe(false);
+  });
+
+  it('a draft creatinine printed as a limit adds no point', () => {
+    const file = fileWith({ creatinine: [{ value: 80, day: '2016-03-01' }] });
+    const payload = chatContextOf({
+      ...plan(file).inputs, creatinine: 40, creatinineDay: '2020-01-01', limits: { creatinine: { comparator: '<', bound: 40 } },
+    }, 'si', [], [], file.measurements);
+    expect(payload.measurementHistory!.creatinine).toEqual([{ date: '2016-03-01', value: 80 }]);
+  });
+
+  it('the model and run_roadmap see saved points only: a 2010 draft beside points saved to 2024 (adversary)', () => {
+    const days = ['2020-03-01', '2022-03-01', '2024-03-01'];
+    const file = fileWith({ creatinine: days.map((day) => ({ value: 80, day })) });
+    const payload = chatContextOf({ ...plan(file).inputs, creatinine: 60, creatinineDay: '2010-06-01' }, 'si', [], [], file.measurements);
+    const sent = JSON.parse(buildChatContextJson(payload)!);
+    expect(sent.measurementHistory.creatinine).toEqual(days.map((date) => ({ date, value: 80 })));
+    expect(sent.derivedValues.eGFR).toBe(Math.round(calculateEGFR(60, 60, 'female')));
+    const run = JSON.parse(runRoadmap(payload, { values: [{ field: 'ldl', value: 3, unit: 'mmol/L' }] }, NOW).contextJson!);
+    expect(run.measurementHistory.creatinine).toEqual(days.map((date) => ({ date, value: 80 })));
+  });
+
+  it('run_roadmap: a stated creatinine older than an unsaved draft, with none saved, is not refused (Codex)', () => {
+    const file = fileWith({});
+    const payload = chatContextOf({ ...plan(file).inputs, creatinine: 80, creatinineDay: '2026-08-01' }, 'si', [], [], file.measurements);
+    const run = runRoadmap(payload, { values: [{ field: 'creatinine', value: 200, unit: 'µmol/L', date: '2026-07-01' }] }, NOW);
+    expect(run.rejected).toEqual([]);
+    expect(run.applied).toContain('creatinine');
+    expect(JSON.parse(run.contextJson!).derivedValues.eGFR).toBe(Math.round(calculateEGFR(200, 76, 'female')));
   });
 
   it('the chat ignores a creatinineDay a client sends, and a value the history lacks (typed) is today\'s', () => {

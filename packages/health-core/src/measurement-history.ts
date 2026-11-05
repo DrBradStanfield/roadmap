@@ -27,6 +27,8 @@ export interface DatedMeasurement {
   value: number;
   /** A lab result printed as a limit: `value` is its bound, not the result (US-12 AC20). */
   comparator?: Comparator;
+  /** An unsaved creatinine the client's plan read (US-07 AC7): the server takes its day, then drops it. */
+  draft?: true;
 }
 
 /** Per-metric chronological series — the LAST entry is the most recent. */
