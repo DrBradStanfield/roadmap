@@ -45,6 +45,8 @@ struct MyDataView: View {
     @State private var showSync = false
     @State private var showSettings = false
     @State private var addingLabs = false
+    /// Tour tip 3 is due and its heading has come to rest on screen (US-57 AC2).
+    @State private var bloodTestsTipReady = false
     /// "Add blood test", and the test picked in it (round 7).
     @State private var addingTest = false
     @State private var pickedTest: AddBloodTestSheet.Pick?
@@ -197,7 +199,18 @@ struct MyDataView: View {
         // no card passes tip 2 (review R4).
         .task { await bringIntoView(SnapshotTip(), Self.firstRow, proxy: proxy, at: .center) }
         .task { await bringIntoView(FoundationTip(), plan[.weight].first?.anchor, proxy: proxy, at: .center) }
-        .task { await bringIntoView(BloodTestsTip(), HealthTopic.bloodTests.anchor, proxy: proxy, at: .top) }
+        .task {
+            // Tip 3 is drawn only once its heading has stopped moving: due while the heading
+            // was off screen and the list mid-scroll (or scrolling to the top after a tap by the
+            // clock dismissed tip 2), its popover never showed (US-57 AC2).
+            for await due in BloodTestsTip().shouldDisplayUpdates {
+                guard due else { bloodTestsTipReady = false; continue }
+                withAnimation { proxy.scrollTo(HealthTopic.bloodTests.anchor, anchor: .top) }
+                try? await Task.sleep(for: .milliseconds(700))
+                proxy.scrollTo(HealthTopic.bloodTests.anchor, anchor: .top)
+                bloodTestsTipReady = true
+            }
+        }
         .tourStep(FoundationTip(), hasNoAnchor: plan[.weight].isEmpty)
     }
 
@@ -306,7 +319,7 @@ struct MyDataView: View {
             .listRowInsets(EdgeInsets(top: 20, leading: 4, bottom: 0, trailing: 4))
             .id(topic.anchor)
             // Tour tip 3 (US-57 AC7) on Blood tests; its action is the lab upload.
-            if topic == .bloodTests { row.tourTip(BloodTestsTip(), action: { addingLabs = true }) } else { row }
+            if topic == .bloodTests, bloodTestsTipReady { row.tourTip(BloodTestsTip(), action: { addingLabs = true }) } else { row }
         }
         .listSectionSpacing(.compact)
     }
