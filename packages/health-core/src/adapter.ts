@@ -110,14 +110,13 @@ export async function fetchOrFail(
   // Safari 14/15 has no `AbortSignal.timeout` and 16–17.3 no `AbortSignal.any`,
   // and the widget ships untranspiled to them: called unguarded, the bound
   // itself would be the outage, killing every read and save on those browsers.
-  // Missing either one, the call runs unbounded — as it did before the bound.
+  // Without `AbortSignal.timeout` the bound runs on the global timer (US-09
+  // AC13g). Without `AbortSignal.any`, a caller's own signal is the only bound.
   const { timeoutMs, mayHaveWritten, signal: callerSignal, ...rest } = init ?? {};
-  const timeout = typeof AbortSignal.timeout === 'function'
-    ? AbortSignal.timeout(timeoutMs ?? FETCH_TIMEOUT_MS)
-    : undefined;
-  const signal = callerSignal && timeout && typeof AbortSignal.any === 'function'
-    ? AbortSignal.any([callerSignal, timeout])
-    : callerSignal ?? timeout;
+  const timeout = timeoutDeadline(timeoutMs ?? FETCH_TIMEOUT_MS);
+  const signal = callerSignal && typeof AbortSignal.any === 'function'
+    ? AbortSignal.any([callerSignal, timeout.signal])
+    : callerSignal ?? timeout.signal;
   try {
     // The body is drained HERE, inside the try: a socket that dies mid-download
     // rejects the body read, not `fetch` (undici's `TypeError: terminated`), so
@@ -131,6 +130,8 @@ export async function fetchOrFail(
     return new Response(bytes.byteLength ? bytes : null, { status: res.status, statusText: res.statusText, headers: res.headers });
   } catch (error) {
     throw new StorageError(`${provider} did not answer`, unansweredHint(mayHaveWritten), error);
+  } finally {
+    timeout.clear();
   }
 }
 
@@ -287,4 +288,18 @@ export function deadlineSignal(deadline: number): AbortSignal {
   if (left <= 0) controller.abort(reason);
   else (setTimeout(() => controller.abort(reason), left) as { unref?(): void }).unref?.();
   return controller.signal;
+}
+
+/**
+ * `AbortSignal.timeout(ms)` where the browser has it, else the same bound on
+ * the global timer. Safari 14/15 has no `AbortSignal.timeout`, and the widget
+ * ships untranspiled to it: called bare, it throws before the request is made
+ * (US-09 AC13g). Call `clear` once the call and its body read are over; it
+ * frees the fallback timer.
+ */
+export function timeoutDeadline(ms: number): { signal: AbortSignal; clear(): void } {
+  if (typeof AbortSignal.timeout === 'function') return { signal: AbortSignal.timeout(ms), clear: () => undefined };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new DOMException('The deadline has passed', 'TimeoutError')), ms);
+  return { signal: controller.signal, clear: () => clearTimeout(timer) };
 }
