@@ -102,6 +102,9 @@ export interface MetricHistory {
   unitsNote?: string;
   /** A worked-out series' target, as a row prints it under the name: waist-to-height's "Normal <0.5". */
   target?: string;
+  /** The eGFR series only: the day and source of the eGFR the plan uses now, which a lab limit
+   *  (no point in the series) can be. Absent when the plan has none. */
+  plan?: { day: string; source: 'lab' | 'calculated' };
 }
 
 /** One recorded medication change on a metric page. */
@@ -366,9 +369,14 @@ export function derivedHistory(file: RoadmapFile, series: 'egfr' | 'whtr', now: 
   });
   if (series === 'egfr') {
     const entry = resolveLabCatalogEntry('egfr')!;
+    // The plan's own pick (withLabEgfr): the lab's, a limit included, or ours from the creatinine.
+    const plan = planOf(file, now, {});
+    const fromLab = !!(plan?.results.eGFRFromLab || plan?.results.limits?.labEgfr);
+    const day = fromLab ? plan?.inputs.labEgfrDate : plan?.results.eGFR !== undefined ? plan?.inputs.creatinineDay : undefined;
     return {
       metric: 'egfr', label: entry.label, unit: entry.unit, excluded: false, markers: [],
       rows: egfrSeries(file, new Date(now)).map((p, i) => ({ ...row(p.id, p.day, p.value, String(p.value), i), source: p.source })),
+      ...(day ? { plan: { day, source: fromLab ? 'lab' as const : 'calculated' as const } } : null),
     };
   }
   return {

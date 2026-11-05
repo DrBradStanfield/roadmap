@@ -37,7 +37,7 @@ final class HealthKitClient: HealthStoreClient {
 
     /// Everything the app asks Apple Health for, in one request (Brad 2026-10-26: "just do it
     /// in one step"): the D6 kinds, sex and date of birth for onboarding to preselect (US-54
-    /// AC3), and US-56's five live types, read only (AC4). iOS shows only the types not yet asked.
+    /// AC3), and US-56's four live types, read only (AC4). iOS shows only the types not yet asked.
     static let requested: (share: Set<HKSampleType>, read: Set<HKObjectType>) = {
         let characteristics: Set<HKObjectType> = [HKCharacteristicType(.biologicalSex), HKCharacteristicType(.dateOfBirth)]
         let read = Set<HKObjectType>(HealthKind.allCases.flatMap(quantityTypes)).union(characteristics).union(LiveHealthKitStore.readTypes)

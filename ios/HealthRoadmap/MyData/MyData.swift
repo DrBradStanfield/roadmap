@@ -1,6 +1,6 @@
 import Foundation
 
-/// What the My data tab shows (US-25 AC5), as the engine writes it
+/// My health's rows and forms (US-25 AC5, US-73), as the engine writes it
 /// (`MyData` in ios/engine/my-data.ts). Values are already in the user's units.
 struct MyData: Decodable {
     struct Profile: Decodable {
@@ -206,6 +206,9 @@ enum RecordEdit: Encodable, Equatable {
     /// A new value for a lab test the record holds, by its series key, in the unit the sheet showed,
     /// on a day, YYYY-MM-DD: health-core's lab add, the web's too (US-25 AC25).
     case labAdd(series: String, value: Double, day: String, unit: String)
+    /// A value for any blood test by name (US-73 AC8), the add sheet's: the engine finds a core or
+    /// catalogue test by the name or keeps a new one in `unit`, as the web's general add does.
+    case labAddName(name: String, value: Double, day: String, unit: String)
     /// Readings from Apple Health; the engine decides what lands (US-25 AC13).
     case appleHealth([HealthSample])
     /// Lab results from Health Records, as they came; the engine decides what lands (US-72).
@@ -239,7 +242,7 @@ enum RecordEdit: Encodable, Equatable {
     }
 
     private enum Key: String, CodingKey {
-        case kind, alcohol, sex, birthYear, birthMonth, height, heightFeet, heightInches, systolic, diastolic, replace, seenIds, unitSystem, unit, metric, value, day, id, extractionJson, refs, reportDay, samples, part, edits, today, seen, series, records
+        case kind, alcohol, sex, birthYear, birthMonth, height, heightFeet, heightInches, systolic, diastolic, replace, seenIds, unitSystem, unit, name, metric, value, day, id, extractionJson, refs, reportDay, samples, part, edits, today, seen, series, records
     }
 
     func encode(to encoder: Encoder) throws {
@@ -285,6 +288,13 @@ enum RecordEdit: Encodable, Equatable {
         case .labAdd(let series, let value, let day, let unit):
             try json.encode("labAdd", forKey: .kind)
             try json.encode(series, forKey: .series)
+            try json.encode(value, forKey: .value)
+            try json.encode(day, forKey: .day)
+            try json.encode(unit, forKey: .unit)
+        case .labAddName(let name, let value, let day, let unit):
+            // The engine's labAddName. The one place that builds it.
+            try json.encode("labAddName", forKey: .kind)
+            try json.encode(name, forKey: .name)
             try json.encode(value, forKey: .value)
             try json.encode(day, forKey: .day)
             try json.encode(unit, forKey: .unit)

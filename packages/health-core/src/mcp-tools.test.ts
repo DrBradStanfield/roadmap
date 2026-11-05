@@ -1248,6 +1248,8 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
     }
     // The title is guarded too, not just the detail.
     expect(reportFeedback({ ...GOOD, title: 'ferritin 210 ng/mL rejected' }, NOW).status).toBe('rejected');
+    // A short name with no unit: "Vit" is how people type vitamin (US-73 AC8).
+    expect(reportFeedback({ ...GOOD, detail: 'Vit D 45' }, NOW)).toMatchObject({ status: 'rejected', reason: 'health-value' });
   });
 
   it('refuses a bare number beside a name this record knows — the unit is not what makes it a value', () => {

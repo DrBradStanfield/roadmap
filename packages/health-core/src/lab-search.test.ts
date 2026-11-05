@@ -1,6 +1,6 @@
 // US-73 AC8: the iPhone's add sheet finds core and catalogue tests by name and alias as people type.
 import { describe, expect, it } from 'vitest';
-import { labSearch } from './lab-extraction';
+import { labSearch, resolveName } from './lab-extraction';
 
 const keys = (text: string) => labSearch(text).map((m) => m.key);
 
@@ -46,5 +46,17 @@ describe('labSearch (US-73 AC8)', () => {
     expect(labSearch('  ')).toEqual([]);
     expect(labSearch('zzqx')).toEqual([]);
     expect(labSearch('a', 5)).toHaveLength(5);
+  });
+
+  it('finds vitamin D and B12 by "vit d", "vit d3" and "vit b12", a search word only (review round 3)', () => {
+    expect(labSearch('vit d')[0]).toMatchObject({ key: 'vitamin_d', name: 'Vitamin D (25-OH)' });
+    expect(keys('Vit D3')[0]).toBe('vitamin_d');
+    expect(keys('vit b12')[0]).toBe('vitamin_b12');
+    expect(keys('Vit. D')[0]).toBe('vitamin_d');
+    expect(keys('vitals')).toEqual([]);
+    expect(keys('multivit')).toEqual([]);
+    // Search only: a stored or imported "Vit D" keeps its own series, so no row moves slot (round 3 adversary R1).
+    expect(resolveName('Vit D')).toBeNull();
+    expect(resolveName('Vit B12')).toBeNull();
   });
 });

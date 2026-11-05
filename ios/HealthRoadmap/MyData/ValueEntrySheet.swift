@@ -20,6 +20,8 @@ struct ValueEntrySheet: View {
     /// record's unit and answers a refusal's words, nil when it was taken.
     var units: [String] = []
     var chooseUnit: ((String) async -> String?)?
+    /// A new test's unit, typed (US-73 AC8): Save waits for one.
+    var typedUnit: Binding<String>?
     /// The value's input range in `unit` (`RecordStore.inputRange`): a typed "1,234" is the
     /// one reading inside it; nil (a form's question) asks which was meant (US-02 AC7).
     var range: ClosedRange<Double>?
@@ -57,6 +59,13 @@ struct ValueEntrySheet: View {
                         .pickerStyle(.segmented)
                         .disabled(saving)
                     }
+                    if let typedUnit {
+                        TextField("Unit, as the lab printed it", text: typedUnit)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .analyticsMasked()
+                            .onChange(of: typedUnit.wrappedValue) { message = nil }
+                    }
                 } footer: {
                     if let message = message ?? TypedNumber.question(text, range: range) {
                         Text(message).foregroundStyle(.red)
@@ -73,7 +82,7 @@ struct ValueEntrySheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", action: submit).disabled(number == nil || saving)
+                    Button("Save", action: submit).disabled(number == nil || saving || typedUnit?.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty == true)
                 }
             }
             .confirmationDialog("This day already has a value", isPresented: Binding(get: { held != nil }, set: { if !$0 { held = nil } }), titleVisibility: .visible) {

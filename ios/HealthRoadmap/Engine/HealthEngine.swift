@@ -118,13 +118,16 @@ actor HealthEngine {
     func screen(recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> Drawn {
         let json = try call("screenJson", [recordJSON, now.formatted(Self.iso), deviceId, units, storefrontIsUS])
         let answer = try JSONDecoder().decode(Drawn.Answer.self, from: Data(json.utf8))
-        return Drawn(myData: answer.myData, plan: answer.plan.state, movedRecord: answer.movedRecord)
+        return Drawn(myData: answer.myData, plan: answer.plan.state, topics: answer.plan.topics, movedRecord: answer.movedRecord)
     }
 
     /// One record as the screens show it: My data and the plan, from the same engine call.
     struct Drawn: Sendable {
         let myData: MyData
         let plan: PlanState
+        /// The plan's cards by topic for My health (US-73 AC3, `plan.topics`); nil when the engine
+        /// could not lay them out, and the tab then draws every card under Other.
+        let topics: TopicLayout?
         /// The record as text when reading it moved its blood tests into one table (US-66 AC14):
         /// opening the phone's file writes it once. nil when nothing moved, and from an engine before it.
         let movedRecord: String?
@@ -145,7 +148,9 @@ actor HealthEngine {
             let planError: Bool
             /// US-61's sections ready to draw, with the blocks; ones Swift cannot read show none, never a broken plan.
             let usProducts: [PlanSection]?
-            enum CodingKeys: CodingKey { case sections, tiles, ms, error, planError, usProducts }
+            /// Read leniently: a layout Swift cannot read leaves the cards under Other, never a broken plan.
+            let topics: TopicLayout?
+            enum CodingKeys: CodingKey { case sections, tiles, ms, error, planError, usProducts, topics }
             /// Sections decode strictly: sections Swift cannot read fail the plan, never My data.
             /// A tile Swift cannot read leaves no tiles, never a blank plan.
             init(from decoder: Decoder) throws {
@@ -154,6 +159,7 @@ actor HealthEngine {
                 ms = (try? c.decodeIfPresent(Double.self, forKey: .ms)) ?? 0
                 planError = (try? c.decodeIfPresent(Bool.self, forKey: .planError)) == true
                 usProducts = (try? c.decodeIfPresent([PlanSection].self, forKey: .usProducts)) ?? nil
+                topics = (try? c.decodeIfPresent(TopicLayout.self, forKey: .topics)) ?? nil
                 do {
                     (sections, error) = (try c.decodeIfPresent([PlanSection].self, forKey: .sections), try c.decodeIfPresent(String.self, forKey: .error))
                 } catch {

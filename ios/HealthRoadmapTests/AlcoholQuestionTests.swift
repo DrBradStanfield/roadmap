@@ -86,15 +86,15 @@ final class AlcoholQuestionTests: XCTestCase {
             return PlanCard(category: "nutrition", priority: "attention", suggestions: suggestions)
         }
         var asked = 0
-        let list = PlanList(tiles: [], sections: [], planMs: 0, showMyData: {}, askAboutAlcohol: AlcoholQuestion(answered: nil) { asked += 1; return { _ in } })
-        _ = try XCTUnwrap(list.asksAboutAlcohol(try card("trig-nutrition", "reduce-alcohol"))).ask()
+        let question = AlcoholQuestion(answered: nil) { asked += 1; return { _ in } }
+        _ = try XCTUnwrap(try card("trig-nutrition", "reduce-alcohol").asking(question)).ask()
         XCTAssertEqual(asked, 1)
-        XCTAssertNil(list.asksAboutAlcohol(try card("trig-nutrition", "weight-loss")))
-        let drinker = PlanList(tiles: [], sections: [], planMs: 0, showMyData: {}, askAboutAlcohol: AlcoholQuestion(answered: .drinks) { asked += 1; return { _ in } })
-        _ = try XCTUnwrap(drinker.asksAboutAlcohol(try card("reduce-alcohol")), "a drinker's card gets the question").ask()
+        XCTAssertNil(try card("trig-nutrition", "weight-loss").asking(question))
+        let drinker = AlcoholQuestion(answered: .drinks) { asked += 1; return { _ in } }
+        _ = try XCTUnwrap(try card("reduce-alcohol").asking(drinker), "a drinker's card gets the question").ask()
         XCTAssertEqual(asked, 2)
-        let none = PlanList(tiles: [], sections: [], planMs: 0, showMyData: {}, askAboutAlcohol: AlcoholQuestion(answered: .noDrinking) { { _ in } })
-        XCTAssertNil(none.asksAboutAlcohol(try card("reduce-alcohol")), "a non-drinker: no Dismiss")
+        let none = AlcoholQuestion(answered: .noDrinking) { { _ in } }
+        XCTAssertNil(try card("reduce-alcohol").asking(none), "a non-drinker: no Dismiss")
     }
 
     /// The right prompt per answer (US-60 AC3, Brad 2026-11-01): unanswered asks whether
@@ -105,7 +105,7 @@ final class AlcoholQuestionTests: XCTestCase {
         XCTAssertEqual(unanswered.title, "Do you drink alcohol?")
         XCTAssertEqual(unanswered.choices.map(\.label), ["I don't drink", "I drink"])
         XCTAssertEqual(unanswered.choices.map(\.action), [.save(.noDrinking), .save(.drinks)])
-        XCTAssertEqual(unanswered.message, "Your answer is kept in your record, so your plan follows it on every device. You can change it in My data, under About you.")
+        XCTAssertEqual(unanswered.message, "Your answer is kept in your record, so your plan follows it on every device. You can change it in Settings, under About you.")
         XCTAssertEqual(unanswered.hint, "Asks whether you drink alcohol")
         let drinker = try XCTUnwrap(AlcoholQuestion(answered: .drinks) { { _ in } })
         XCTAssertEqual(drinker.title, "Do you still drink alcohol?")
