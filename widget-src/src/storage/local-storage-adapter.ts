@@ -198,6 +198,15 @@ export class LocalStorageAdapter implements StorageAdapter {
     return safeGetItem(fileKey(fileName)) == null ? null : safeGetItem(versionKey(fileName)) ?? '0';
   }
 
+  /** Remove the file at the revision it was read at, as writeSync checks:
+   *  another tab's write since stays (US-06 AC13). */
+  removeSync(fileName: string, expectedVersion: string | null): void {
+    const current = this.revision(fileName);
+    if (expectedVersion !== current) throw new ConflictError(`expected version ${expectedVersion}, but local is ${current}`);
+    safeRemoveItem(fileKey(fileName));
+    safeRemoveItem(versionKey(fileName));
+  }
+
   /** Another tab's save. The browser fires `storage` in every OTHER tab of
    *  this origin when one tab changes a key (US-34 AC6). Only this file's key
    *  counts, and a clear(), which names no key. */

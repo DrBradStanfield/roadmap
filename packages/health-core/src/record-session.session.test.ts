@@ -48,6 +48,10 @@ class TestStore extends MemoryAdapter {
     const entry = this.cloud.files.get(fileName);
     return entry ? String(entry.version) : null;
   }
+  removeSync(fileName: string, expected: string | null): void {
+    if (this.revision(fileName) !== expected) throw new ConflictError('moved');
+    this.cloud.files.delete(fileName);
+  }
 }
 
 interface Fake {
@@ -197,6 +201,362 @@ describe('RecordSession: a failed save (US-09 AC4, US-10 AC5)', () => {
     session.flushSync(); // a hide retries it, and meets the same refusal
     await vi.waitFor(() => expect(fake.reports).toHaveLength(2));
     expect(fake.reports).toEqual([{ cause: 'QuotaExceededError', repeat: false }, { cause: 'QuotaExceededError', repeat: true }]);
+  });
+});
+
+/** A cloud whose save never answers: the page goes before the request ends. */
+class StalledStore extends TestStore {
+  async write(): Promise<WriteResult> {
+    this.writes += 1;
+    return new Promise<WriteResult>(() => {});
+  }
+}
+
+/** The fake cloud host, its device copy given the synchronous face localStorage has on the web.
+ *  `chosen`: this browser still uses this cloud (no other tab has switched it elsewhere); null: the host cannot tell. */
+function withDeviceSync(fake: Fake, stopped = false, chosen: boolean | null = true): { host: RecordHost; device: TestStore } {
+  const device = new TestStore(fake.mirrorCloud);
+  if (fake.host.tier !== 'cloud') throw new Error('cloud host expected');
+  const stillChosen = chosen == null ? {} : { stillChosen: () => chosen };
+  return { host: { ...fake.host, mirror: { ...fake.host.mirror, sync: device, writesStopped: () => stopped, ...stillChosen } }, device };
+}
+
+/** Another device erases the cloud record; this device's session then takes the erase in. */
+async function eraseElsewhere(cloud: MemoryCloud, session: RecordSession): Promise<void> {
+  const other = await RecordSession.open(fakeHost(new TestStore(cloud)).host);
+  clock += 60_000;
+  expect((await other.erase()).success).toBe(true);
+  clock += 60_000;
+  expect(await session.refreshFromRemote()).toBe(true);
+}
+
+describe('RecordSession: a cloud page goes away before its save lands (US-06 AC13, US-10 AC5)', () => {
+  it('writes the unsaved change to the device copy at once, marked for sync, and the next session lifts it up', async () => {
+    const store = new StalledStore();
+    const fake = fakeHost(store);
+    const { host } = withDeviceSync(fake);
+    const session = await RecordSession.open(host);
+    add(session, 'late');
+    session.flushSync();
+    // Synchronously, with the cloud save still in the air.
+    expect(ids(stored(fake.mirrorCloud))).toEqual(['late']);
+    expect(fake.pending.value).toBe(true);
+    expect(store.cloud.files.has(ROADMAP_FILE_NAME)).toBe(false);
+
+    const next = await RecordSession.open({ ...host, store: new TestStore(store.cloud) });
+    expect(ids(next.file)).toEqual(['late']);
+    await next.flush();
+    expect(ids(stored(store.cloud))).toEqual(['late']);
+    expect(fake.pending.value).toBe(false);
+  });
+
+  it('merges into the device copy: a row only it holds stays, and a row this copy erased does not come back', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const { host } = withDeviceSync(fake);
+    const session = await RecordSession.open(host);
+    add(session, 'erased');
+    await session.flush();
+    expect((await session.erase()).success).toBe(true);
+    // A device copy from before the erase, which also holds a row of its own.
+    const before = structuredClone(session.file);
+    before.meta.eraseEpoch = 0;
+    before.meta.erasedAt = undefined;
+    before.erasedRows = undefined;
+    before.measurements = [weight('erased', 80, '2026-10-01'), weight('device-only', 70, '2026-09-01')];
+    fake.mirrorCloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(before), version: 1 });
+    add(session, 'late', 82, '2026-10-03');
+    store.write = () => new Promise<WriteResult>(() => {}); // the save now hangs
+    session.flushSync();
+    const device = stored(fake.mirrorCloud);
+    expect(ids(device)).toEqual(['device-only', 'late']);
+    expect(device.meta.eraseEpoch).toBe(1);
+    expect(fake.pending.value).toBe(true);
+  });
+
+  it('writes and marks nothing on the device after log-off (US-09 AC2c)', async () => {
+    const store = new StalledStore();
+    const fake = fakeHost(store);
+    const { host, device } = withDeviceSync(fake, true);
+    const session = await RecordSession.open(host);
+    add(session, 'late');
+    const writes = device.writes;
+    session.flushSync();
+    expect(device.writes).toBe(writes);
+    expect(fake.mirrorCloud.files.has(ROADMAP_FILE_NAME)).toBe(false);
+    expect(fake.pending.value).toBe(false);
+  });
+
+  it('does nothing when nothing is unsaved', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const { host } = withDeviceSync(fake);
+    const session = await RecordSession.open(host);
+    add(session, 'a');
+    await session.flush();
+    session.flushSync();
+    expect(fake.mirrorCloud.files.has(ROADMAP_FILE_NAME)).toBe(false);
+    expect(fake.pending.value).toBe(false);
+  });
+});
+
+/** A cloud whose save waits until the test lets it land. */
+class HeldStore extends TestStore {
+  private held: Array<() => void> = [];
+  private open = false;
+  async write(fileName: string, body: object, expected: string | null): Promise<WriteResult> {
+    if (!this.open) await new Promise<void>((go) => this.held.push(go));
+    return super.write(fileName, body, expected);
+  }
+  release(): void {
+    this.open = true;
+    for (const go of this.held.splice(0)) go();
+  }
+}
+
+describe('RecordSession: the device copy a cloud page leaves behind (US-06 AC13, US-09 AC4)', () => {
+  it("another tab's save that did not include it keeps the copy and its marker, and the next load lifts it up", async () => {
+    // Two tabs on one device: one device copy and one marker, one cloud.
+    const cloud = new MemoryCloud();
+    const fake = fakeHost(new StalledStore(cloud));
+    const { host: closing } = withDeviceSync(fake);
+    const working: RecordHost = { ...closing, store: new TestStore(cloud) };
+    const tabA = await RecordSession.open(closing);
+    const tabB = await RecordSession.open(working);
+    add(tabA, 'dose');
+    tabA.flushSync(); // tab A closes: the copy is written, its cloud save never lands
+    expect(fake.pending.value).toBe(true);
+    add(tabB, 'other', 81, '2026-10-02');
+    await tabB.flush(); // an unrelated save, without tab A's change
+    expect(fake.pending.value).toBe(true);
+    expect(ids(stored(fake.mirrorCloud))).toEqual(['dose']);
+    const next = await RecordSession.open(working);
+    expect(ids(next.file)).toEqual(['dose', 'other']);
+    await next.flush();
+    expect(ids(stored(cloud))).toEqual(['dose', 'other']);
+    expect(fake.pending.value).toBe(false);
+  });
+
+  it('a cloud save that holds all of it clears the marker and leaves the copy, for a load that cannot reach the cloud (US-09 AC13)', async () => {
+    const store = new HeldStore();
+    const fake = fakeHost(store);
+    const { host } = withDeviceSync(fake);
+    const session = await RecordSession.open(host);
+    add(session, 'late');
+    session.flushSync(); // hidden: the copy is written, the save is in the air
+    expect(ids(stored(fake.mirrorCloud))).toEqual(['late']);
+    store.release();
+    await session.flush();
+    expect(ids(stored(store.cloud))).toEqual(['late']);
+    expect(ids(stored(fake.mirrorCloud))).toEqual(['late']);
+    expect(fake.pending.value).toBe(false);
+  });
+
+  it('an erase taken in from another device removes the copy this page wrote as it was hidden, once its save landed', async () => {
+    const store = new HeldStore();
+    const fake = fakeHost(store);
+    const { host } = withDeviceSync(fake);
+    const session = await RecordSession.open(host);
+    add(session, 'late');
+    session.flushSync();
+    store.release();
+    await session.flush();
+    await eraseElsewhere(store.cloud, session);
+    expect(fake.mirrorCloud.files.has(ROADMAP_FILE_NAME)).toBe(false);
+    expect(fake.pending.value).toBe(false);
+  });
+
+  it('an erase taken in from another device removes a copy it covers that was there when this page opened', async () => {
+    const store = new TestStore();
+    const seed = await RecordSession.open(fakeHost(store).host);
+    add(seed, 'a');
+    await seed.flush();
+    const fake = fakeHost(store);
+    // A full copy left on the device, no marker: what an earlier departure left once its save landed.
+    fake.mirrorCloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(seed.file), version: 1 });
+    const { host } = withDeviceSync(fake);
+    const session = await RecordSession.open(host);
+    fake.pending.value = true; // a marker beside it goes too
+    await eraseElsewhere(store.cloud, session);
+    expect(fake.mirrorCloud.files.has(ROADMAP_FILE_NAME)).toBe(false);
+    expect(fake.pending.value).toBe(false);
+  });
+
+  it('an erase taken in keeps the copy and its marker when the removal is refused (the copy moved)', async () => {
+    const store = new TestStore();
+    const seed = await RecordSession.open(fakeHost(store).host);
+    add(seed, 'a');
+    await seed.flush();
+    const fake = fakeHost(store);
+    fake.mirrorCloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(seed.file), version: 1 });
+    const { host, device } = withDeviceSync(fake);
+    device.removeSync = () => { throw new ConflictError('moved'); };
+    const session = await RecordSession.open(host);
+    fake.pending.value = true;
+    await eraseElsewhere(store.cloud, session);
+    expect(ids(stored(fake.mirrorCloud))).toEqual(['a']);
+    expect(fake.pending.value).toBe(true);
+  });
+
+  it('an erase taken in removes nothing on a host that cannot tell whether this browser still uses this cloud', async () => {
+    const store = new TestStore();
+    const seed = await RecordSession.open(fakeHost(store).host);
+    add(seed, 'a');
+    await seed.flush();
+    const fake = fakeHost(store);
+    fake.mirrorCloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(seed.file), version: 1 });
+    const { host } = withDeviceSync(fake, false, null);
+    const session = await RecordSession.open(host);
+    await eraseElsewhere(store.cloud, session);
+    expect(ids(stored(fake.mirrorCloud))).toEqual(['a']);
+  });
+
+  it('an erase taken in removes the copy a failed save wrote, once a later save holds it', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const { host } = withDeviceSync(fake);
+    const session = await RecordSession.open(host);
+    store.failWrites = true;
+    add(session, 'a');
+    await expect(session.flush()).rejects.toThrow('Cloud sync failed'); // mirrored, marked
+    store.failWrites = false;
+    add(session, 'b', 81, '2026-10-02');
+    await session.flush();
+    expect(ids(stored(fake.mirrorCloud))).toEqual(['a']);
+    expect(fake.pending.value).toBe(false);
+    await eraseElsewhere(store.cloud, session);
+    expect(fake.mirrorCloud.files.has(ROADMAP_FILE_NAME)).toBe(false);
+  });
+
+  it('an erase taken in keeps a copy written since this page last read or wrote it, and its marker', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const { host } = withDeviceSync(fake);
+    const session = await RecordSession.open(host);
+    add(session, 'a');
+    await session.flush();
+    // Another page wrote the device copy after this one opened: this page cannot tell what it is for.
+    fake.mirrorCloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(session.file), version: 1 });
+    fake.pending.value = true;
+    await eraseElsewhere(store.cloud, session);
+    expect(ids(stored(fake.mirrorCloud))).toEqual(['a']);
+    expect(fake.pending.value).toBe(true);
+  });
+
+  it('an erase taken in keeps the copy once another tab has moved this browser off this cloud (US-09 AC2)', async () => {
+    const store = new TestStore();
+    const seed = await RecordSession.open(fakeHost(store).host);
+    add(seed, 'a');
+    await seed.flush();
+    const fake = fakeHost(store);
+    // The record the other tab now runs on, on the device ("This device" or another cloud's copy).
+    fake.mirrorCloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(seed.file), version: 1 });
+    const { host } = withDeviceSync(fake, false, false);
+    const session = await RecordSession.open(host);
+    await eraseElsewhere(store.cloud, session);
+    expect(ids(stored(fake.mirrorCloud))).toEqual(['a']);
+  });
+
+  it('an erase taken in leaves a copy that holds a row the erase did not list', async () => {
+    const store = new TestStore();
+    const seed = await RecordSession.open(fakeHost(store).host);
+    add(seed, 'a');
+    await seed.flush();
+    const fake = fakeHost(store);
+    // The copy also holds a change that never reached the cloud, so no erase listed it.
+    const copy = structuredClone(seed.file);
+    copy.measurements.push(weight('unsynced', 70, '2026-09-01'));
+    fake.mirrorCloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(copy), version: 1 });
+    const { host } = withDeviceSync(fake);
+    const session = await RecordSession.open(host); // no marker: the change is not lifted up
+    await eraseElsewhere(store.cloud, session);
+    expect(ids(stored(fake.mirrorCloud))).toEqual(['a', 'unsynced']);
+  });
+
+  it('a save leaves a copy no marker names, as before', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const { host } = withDeviceSync(fake);
+    const session = await RecordSession.open(host);
+    // A copy from before this device connected the cloud: nothing marks it.
+    const copy = structuredClone(session.file);
+    copy.measurements.push(weight('guest', 70, '2026-09-01'));
+    fake.mirrorCloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(copy), version: 1 });
+    session.edit((file) => void file.measurements.push(weight('guest', 70, '2026-09-01')));
+    await session.flush();
+    expect(ids(stored(fake.mirrorCloud))).toEqual(['guest']);
+  });
+
+  it('a save reads no device copy and clears nothing when no marker is set', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const { host, device } = withDeviceSync(fake);
+    const readSync = vi.spyOn(device, 'readSync');
+    const session = await RecordSession.open(host);
+    add(session, 'a');
+    await session.flush();
+    expect(readSync).not.toHaveBeenCalled();
+    expect(fake.calls).not.toContain('pending.clear');
+  });
+
+  it('a marker with no copy beside it is cleared by a save', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const { host } = withDeviceSync(fake);
+    const session = await RecordSession.open(host);
+    fake.pending.value = true;
+    add(session, 'a');
+    await session.flush();
+    expect(fake.pending.value).toBe(false);
+  });
+
+  it('a copy that cannot be read keeps its marker after a save, for the next load to decide', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const { host } = withDeviceSync(fake);
+    const session = await RecordSession.open(host);
+    fake.mirrorCloud.files.set(ROADMAP_FILE_NAME, { json: '{not json', version: 1 });
+    fake.pending.value = true;
+    add(session, 'a');
+    await session.flush();
+    expect(fake.pending.value).toBe(true);
+    expect(fake.mirrorCloud.files.get(ROADMAP_FILE_NAME)?.json).toBe('{not json');
+  });
+
+  it('an erase taken in while this tab holds a change the cloud has not got keeps the copy and its marker', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const { host } = withDeviceSync(fake);
+    const session = await RecordSession.open(host);
+    add(session, 'a');
+    await session.flush();
+    store.failWrites = true;
+    add(session, 'unsaved', 81, '2026-10-02');
+    await expect(session.flush()).rejects.toThrow('Cloud sync failed'); // mirrored, marked
+    store.failWrites = false;
+    const other = await RecordSession.open(fakeHost(new TestStore(store.cloud)).host);
+    clock += 60_000;
+    expect((await other.erase()).success).toBe(true);
+    clock += 60_000;
+    expect(await session.refreshFromRemote()).toBe(true);
+    expect(ids(session.file)).toEqual(['unsaved']);
+    expect(ids(stored(fake.mirrorCloud))).toEqual(['a', 'unsaved']);
+    expect(fake.pending.value).toBe(true);
+  });
+
+  it('a host whose device copy has no synchronous remove keeps its marker when an erase is taken in', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    await session.flush();
+    fake.pending.value = true;
+    const other = await RecordSession.open(fakeHost(new TestStore(store.cloud)).host);
+    clock += 60_000;
+    expect((await other.erase()).success).toBe(true);
+    clock += 60_000;
+    expect(await session.refreshFromRemote()).toBe(true);
+    expect(fake.pending.value).toBe(true);
   });
 });
 
