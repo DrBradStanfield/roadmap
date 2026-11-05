@@ -128,6 +128,11 @@ describe('egfrSeries (US-73 AC7)', () => {
     expect(points).toEqual([{ id: 'e1', day: '2025-02-10', value: 70, source: 'lab' }]);
   });
 
+  it('a legacy custom lab row with no status is listed in the plan\'s labs, so get_plan agrees with the page (US-73 AC8)', () => {
+    const file = record([lab('z1', 'Zinc custom', 80, 'µg/dL', '2025-02-10', { status: undefined as never })]);
+    expect(computePlan(file, new Date(NOW)).labs.map((l) => l.id)).toEqual(['z1']);
+  });
+
   it('a legacy lab eGFR with no status still wins its day over the creatinine', () => {
     const points = egfrSeries(record([
       creatinine('c1', 80, '2025-02-10', { status: undefined as never }), lab('e1', 'eGFR', 64, EGFR, '2025-02-10', { status: undefined as never }),

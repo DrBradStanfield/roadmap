@@ -285,7 +285,7 @@ export interface PlanLab {
 
 /** Latest active row per lab test, named and unit-labelled from the catalogue. A core value is a current value, never listed here (US-66 AC8). */
 function derivePlanLabs(file: RoadmapFile): PlanLab[] {
-  const active = file.labValues.filter((l) => l.status === 'active' && !isCoreRow(l));
+  const active = file.labValues.filter((l) => isActive(l) && !isCoreRow(l));
   const rows = latestActivePerMetric(active.map((l) => ({ ...l, metricType: labSlotKey(l.metricName) }))) as FileLabValue[];
   return rows
     .map((l) => {
