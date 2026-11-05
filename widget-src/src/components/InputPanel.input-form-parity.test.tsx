@@ -10,7 +10,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from '@testing-library/react';
 import {
-  medicationForm, medicationsToInputs, screeningForm, screeningsToInputs,
+  LIPID_MEDS_IN_STEPS, medicationForm, medicationsToInputs, screeningForm, screeningsToInputs,
   type ApiMedication, type ApiScreening, type FormSection, type HealthInputs, type LipidMarker,
 } from '@roadmap/health-core';
 import { InputPanel, type PlanBasis } from './InputPanel';
@@ -170,6 +170,16 @@ describe('US-25 AC8, US-06 — the web medication cards are medicationForm', () 
     expect(sections.length).toBeGreaterThan(0);
     expectParity(container, sections);
   });
+});
+
+// US-73 AC6: the web card says Brad's medicines sentence, no food list (Brad 2026-11-05).
+it('the cholesterol medicines intro ends with the medicines sentence on the web', () => {
+  const ldl: LipidMarker = { kind: 'ldl', label: 'LDL-c', value: 3.5, target: 2.6, elevated: true };
+  const container = renderPanel({ sex: 'male', inputs: { ldlC: 3.5 }, basis: { age: 56, lipidMarker: ldl, weightMedTrigger: { on: false, reasons: [] } } });
+  const card = [...container.querySelectorAll('.section-card')].find(c => c.querySelector('h3')?.textContent === 'Cholesterol Medications');
+  const intro = card!.querySelector('.health-section-desc')!.textContent!.trim();
+  expect(intro.endsWith(`. ${LIPID_MEDS_IN_STEPS}`)).toBe(true);
+  expect(intro).not.toMatch(/oats|walnuts|psyllium/i);
 });
 
 // US-62 AC12: the phone layout shows the same cards.
