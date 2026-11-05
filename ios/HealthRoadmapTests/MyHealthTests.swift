@@ -236,6 +236,18 @@ final class MyHealthTests: XCTestCase {
         XCTAssertFalse(unit.isEmpty)
         guard case .refused(let range, _) = await store.apply(.labAddName(name: "LDL", value: 500, day: "2026-01-02", unit: "mmol/L")) else { return XCTFail("out of range saves nothing") }
         XCTAssertFalse(range.isEmpty)
+        // The range is in the unit typed: mg/dL typed, mg/dL in the words.
+        guard case .refused(let usRange, _) = await store.apply(.labAddName(name: "LDL", value: 5000, day: "2026-01-02", unit: "mg/dL")) else { return XCTFail("out of range saves nothing") }
+        XCTAssertTrue(usRange.contains("mg/dL"), usRange)
+        // A vital by name is no blood test, and a new test needs its unit: the engine's words, nothing saved.
+        guard case .refused(let vital, nil) = await store.apply(.labAddName(name: "Weight", value: 80, day: today, unit: "kg")) else { return XCTFail("a vital by name saves nothing") }
+        XCTAssertTrue(vital.contains("not a lab test"), vital)
+        guard case .refused(let unitless, nil) = await store.apply(.labAddName(name: "Omega marker", value: 5, day: today, unit: "")) else { return XCTFail("a new test with no unit saves nothing") }
+        XCTAssertTrue(unitless.contains("unit"), unitless)
+        XCTAssertNil(store.myData?.labTests?.first { $0.metric == "omega marker" })
+        // A series' own add to a series the record does not hold: not found, never a new test.
+        guard case .refused(let missing, nil) = await store.apply(.labAdd(series: "no such test", value: 5, day: today, unit: "zu/L")) else { return XCTFail("no series saves nothing") }
+        XCTAssertTrue(missing.contains("no such lab test"), missing)
 
         // A held day, another value in the same unit: refused with the row to correct, never a second row.
         guard case .refused(_, let held?) = await store.apply(.labAddName(name: "Testosterone (total)", value: 16, day: today, unit: "nmol/L")) else {

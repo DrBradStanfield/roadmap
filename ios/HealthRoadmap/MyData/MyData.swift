@@ -292,9 +292,8 @@ enum RecordEdit: Encodable, Equatable {
             try json.encode(day, forKey: .day)
             try json.encode(unit, forKey: .unit)
         case .labAddName(let name, let value, let day, let unit):
-            // The engine's labAdd with a name (its series unread). The one place that builds it.
-            try json.encode("labAdd", forKey: .kind)
-            try json.encode("", forKey: .series)
+            // The engine's labAddName. The one place that builds it.
+            try json.encode("labAddName", forKey: .kind)
             try json.encode(name, forKey: .name)
             try json.encode(value, forKey: .value)
             try json.encode(day, forKey: .day)
