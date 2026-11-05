@@ -85,6 +85,8 @@ describe('US-01 AC5: a guest save refused by a full browser storage is said on s
     expect(store.loadAllHistory().map((m) => m.value)).toContain(93);
     expect(alertText()).toContain(FULL_LINE);
     expect(alertText()).toContain('not saved');
+    // Styled as the bar's other errors: red, on its own line (standalone.css .hr-sync-error).
+    expect(document.querySelector('[role="alert"]')?.classList.contains('hr-sync-error')).toBe(true);
   });
 
   it('the message goes once a later save lands', async () => {

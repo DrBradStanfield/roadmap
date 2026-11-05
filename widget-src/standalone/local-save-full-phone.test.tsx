@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 /**
- * US-01 AC5 on a phone (768px or narrower): the guest edits on the Input tab,
- * which is the default, while the plan's tab is hidden. The alert must be
- * where they are: in the top bar above every tab, not in the hidden plan.
+ * US-01 AC5 on a phone (768px or narrower): a measurement is added through the
+ * store's addMeasurement while the Input tab is open (the default) and the
+ * plan's tab is hidden. No form field is typed into. The alert must be on the
+ * open tab: in the top bar above every tab, not in the hidden plan.
  * The whole widget is mounted as standalone/app.tsx mounts it (the top bar's
  * StorageBar and the plan's SyncControl), on the real store and device
  * adapter. The storage is a uniform byte budget, as in
