@@ -41,7 +41,6 @@ import {
   BEMPEDOIC_ACID_OPTIONS,
   SUPPLEMENT_OPTIONS,
   FEATURED_SUPPLEMENTS,
-  LIPID_DIET_ADVICE,
   cmToFeetInches,
   feetInchesToCm,
   formatHeightDisplay,
@@ -1676,7 +1675,7 @@ export function InputPanel({
               <p className="health-section-desc">
                 {/* It recommends only while the plan shows a step's card: with every
                     step answered the marker stays elevated and the plan shows none. */}
-                {cascade.suggest.length === 0 ? neutral : `${introText} ${LIPID_DIET_ADVICE} Medications can also be added in steps.`}
+                {cascade.suggest.length === 0 ? neutral : `${introText} In addition to a great diet, cholesterol-lowering medications can also be added in steps.`}
               </p>
 
               {statinDropdown}

@@ -12,7 +12,7 @@
 import { lipidCascade, weightCascade } from './medication-cascades';
 import { stampInstant } from './merge';
 import type { MedicationSave } from './state-edits';
-import { LIPID_DIET_ADVICE, lipidTargetSentence, weightMedIntro, type LipidMarker, type WeightMedicationTrigger } from './suggestions';
+import { lipidTargetSentence, weightMedIntro, type LipidMarker, type WeightMedicationTrigger } from './suggestions';
 import {
   BEMPEDOIC_ACID_OPTIONS, EZETIMIBE_OPTIONS, GLP1_DRUGS, GLP1_NAMES, METFORMIN_OPTIONS, PCSK9I_OPTIONS,
   LUNG_PACK_YEARS, SCREENING_FOLLOWUP_INFO, SGLT2I_DRUGS, SGLT2I_NAMES, STATIN_DRUGS, STATIN_NAMES,
@@ -195,7 +195,7 @@ function lipidSection(meds: MedicationInputs, basis: MedicationBasis): FormSecti
   // It recommends only while the plan shows a step's card: with every step
   // answered the marker stays elevated and the plan shows none.
   const intro = cascade.suggest.length === 0 ? T.lipidNeutral
-    : `${lipidTargetSentence(marker!, basis.unitFor)} ${LIPID_DIET_ADVICE} Medications can also be added in steps.`;
+    : `${lipidTargetSentence(marker!, basis.unitFor)} In addition to a great diet, cholesterol-lowering medications can also be added in steps.`;
   return { id: 'lipid-medications', title: T.lipidTitle, intro, groups };
 }
 

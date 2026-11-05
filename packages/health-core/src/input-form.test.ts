@@ -256,6 +256,13 @@ describe('medicationForm', () => {
     expect(field(medicationForm(onStatin, elevated), 'ezetimibe').hint).toMatch(/more ApoB reduction/);
   });
 
+  it('US-73 AC6: the cholesterol medicines intro is the target, then Brad\'s medicines sentence, no food list (Brad 2026-11-05)', () => {
+    const intro = medicationForm({}, elevated)[0].intro!;
+    expect(intro).toMatch(/ApoB/);
+    expect(intro.endsWith('. In addition to a great diet, cholesterol-lowering medications can also be added in steps.')).toBe(true);
+    expect(intro).not.toMatch(/oats|walnuts|psyllium/i);
+  });
+
   it('shows an unrecorded dose as "Add dose", not pickable', () => {
     const form = medicationForm({ statin: { drug: 'atorvastatin', dose: null } }, flat);
     expect(field(form, 'statin_dose').options![0]).toEqual({ value: '', label: 'Add dose', disabled: true });

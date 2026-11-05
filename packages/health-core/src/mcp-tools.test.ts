@@ -559,8 +559,8 @@ describe('US-32 — get_plan', () => {
     const ids = JSON.parse(ok(getPlan(file, NOW)).text).suggestions.map((s: { id: string }) => s.id);
     // protein-target, exercise and sleep rest on no measurement at all; the
     // screening, skin and supplement cards follow from sex and age; fiber shows
-    // whenever lipids are not elevated, absent included. Every other card needs
-    // a value, so an assistant reading a thin plan knows the difference.
+    // on every plan (Brad 2026-11-05). Every other card needs a value, so an
+    // assistant reading a thin plan knows the difference.
     expect(ids).toEqual(expect.arrayContaining(['protein-target', 'exercise', 'sleep', 'fiber']));
     expect(ids).not.toContain('lipid-diet');
   });

@@ -291,8 +291,8 @@ Validate your result against the schema before you write it back.
 - **A thin plan is not a clean bill of health.** On a record holding no measurement at
   all, `get_plan` still returns `protein-target` (when sex is known), `exercise` and `sleep` — they rest on
   no value whatever — plus the screening, skin and supplement cards, which follow from
-  sex and age alone, and `fiber`, which shows whenever lipids are NOT elevated, absent
-  lipids included: read it as "no lipid card", never as "lipids fine". Every other
+  sex and age alone, and `fiber`, which shows on every plan (Brad 2026-11-05), so it
+  says nothing about the lipids: a lipid card's absence is not "lipids fine". Every other
   suggestion is conditional on a measurement the record holds, and `missingInputs`
   names the ones whose absence removed content.
 - **The plan is built for adults** (US-07 AC6, 2026-10-14). When the birth year (and

@@ -172,6 +172,16 @@ describe('US-25 AC8, US-06 — the web medication cards are medicationForm', () 
   });
 });
 
+// US-73 AC6: the web card says Brad's medicines sentence, no food list (Brad 2026-11-05).
+it('the cholesterol medicines intro ends with the medicines sentence on the web', () => {
+  const ldl: LipidMarker = { kind: 'ldl', label: 'LDL-c', value: 3.5, target: 2.6, elevated: true };
+  const container = renderPanel({ sex: 'male', inputs: { ldlC: 3.5 }, basis: { age: 56, lipidMarker: ldl, weightMedTrigger: { on: false, reasons: [] } } });
+  const card = [...container.querySelectorAll('.section-card')].find(c => c.querySelector('h3')?.textContent === 'Cholesterol Medications');
+  const intro = card!.querySelector('.health-section-desc')!.textContent!.trim();
+  expect(intro.endsWith('. In addition to a great diet, cholesterol-lowering medications can also be added in steps.')).toBe(true);
+  expect(intro).not.toMatch(/oats|walnuts|psyllium/i);
+});
+
 // US-62 AC12: the phone layout shows the same cards.
 it('on a phone too, a medication card is medicationForm', () => {
   phone = true;

@@ -186,10 +186,11 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'fiber': {
-    reason: 'Dietary fibre lowers cardiovascular risk through multiple mechanisms: reducing cholesterol absorption, improving blood sugar control, and supporting a healthy gut microbiome. A Cochrane review found that higher fibre intake significantly reduces cardiovascular events.',
+    reason: 'Dietary fibre may lower cardiovascular risk through several mechanisms: reducing cholesterol absorption, improving blood sugar control, and supporting a healthy gut microbiome. Large cohort studies link the highest fibre intakes with roughly 15–30% lower rates of heart disease, stroke and death than the lowest, and trials show fibre lowers cholesterol and blood pressure.',
     guidelines: [],
     references: [
-      { label: 'Hartley 2016 – Dietary fibre & cardiovascular disease (Cochrane Review)', url: 'https://doi.org/10.1002/14651858.CD011472.pub2' },
+      { label: 'Reynolds 2019 – Carbohydrate quality & human health (Lancet meta-analyses)', url: 'https://doi.org/10.1016/S0140-6736(18)31809-9' },
+      { label: 'Hartley 2016 – Fibre lowers cholesterol & blood pressure (Cochrane Review)', url: 'https://doi.org/10.1002/14651858.CD011472.pub2' },
     ],
   },
 
