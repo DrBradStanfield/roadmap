@@ -345,7 +345,7 @@ describe('US-07 AC7: the eGFR uses the age on the creatinine\'s day', () => {
   it('a draft creatinine printed as a limit adds no point', () => {
     const file = fileWith({ creatinine: [{ value: 80, day: '2016-03-01' }] });
     const payload = chatContextOf({
-      ...plan(file).inputs, creatinine: 40, creatinineDay: '2020-01-01', limits: { creatinine: { comparator: '<', bound: 40 } },
+      ...plan(file).inputs, creatinine: 40, creatinineDay: '2020-01-01', limits: { creatinine: { comparator: '<', bound: 40, graded: true } },
     }, 'si', [], [], file.measurements);
     expect(payload.measurementHistory!.creatinine).toEqual([{ date: '2016-03-01', value: 80 }]);
   });

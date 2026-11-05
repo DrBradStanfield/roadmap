@@ -104,7 +104,7 @@ export function oneLine(text: string): string {
 // ---------------------------------------------------------------------------
 
 export interface PlanInputs {
-  inputs: Partial<HealthInputs>;
+  inputs: Partial<HealthInputs> & CreatinineDay;
   unitSystem: UnitSystem;
   medications: MedicationInputs;
   screenings: ScreeningInputs;
