@@ -26,7 +26,7 @@
  */
 
 import { METRIC_LABELS } from './mappings';
-import { UNIT_DEFS } from './units';
+import { rangeFault, UNIT_DEFS, type ValidationRange } from './units';
 
 export type LabGroupId =
   | 'renal'
@@ -329,6 +329,46 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'lactate', label: 'Lactate', group: 'metabolic', unit: 'mmol/L', aliases: ['lactic acid'], conversions: { 'mg/dl': 0.111 } }, // lactic acid 90.08 g/mol
   { key: 'fructosamine', label: 'Fructosamine', group: 'metabolic', unit: 'µmol/L', aliases: [] },
 ];
+
+/**
+ * Typing-mistake bounds (US-21 AC26), in each test's canonical unit: wide physiologic limits that
+ * no real result passes, so a value typed past one is a slip of the number or the unit (glucose
+ * 5.5 with mg/dL picked is 0.31 mmol/L). Not reference ranges and not grading. Checked only where
+ * a person types a value (`addLabValue`); a min of 0 checks the top end alone. Brad approves each.
+ */
+export const LAB_PLAUSIBLE_RANGES: Readonly<Record<string, ValidationRange>> = {
+  glucose: { min: 0.5, max: 100 }, // 9–1800 mg/dL: under the deepest reported hypoglycaemia, over all but record hyperosmolar states
+  glucose_random: { min: 0.5, max: 100 }, // the same test, not fasting
+  sodium: { min: 70, max: 260 }, // survived extremes run from about 95 to 250 mmol/L
+  potassium: { min: 0.5, max: 20 }, // lows near 1 are survived; haemolysed or contaminated samples pass 10
+  urate: { min: 0, max: 6 }, // ~100 mg/dL: tumour lysis rarely passes 3 mmol/L; near 0 after rasburicase
+  alt: { min: 0, max: 50000 }, // ischaemic or toxic hepatitis can pass 10,000 U/L
+  ast: { min: 0, max: 50000 }, // as ALT, and rhabdomyolysis
+  albumin: { min: 0, max: 80 }, // dehydration stays under 60 g/L; congenital analbuminaemia reads near 0
+  haemoglobin: { min: 5, max: 300 }, // survived anaemia near 7 g/L; polycythaemia and newborns stay under 250
+  wbc: { min: 0, max: 2000 }, // hyperleukocytosis in leukaemia can pass 1,000 ×10⁹/L; 0 in aplasia
+  platelets: { min: 0, max: 10000 }, // essential thrombocythaemia rarely passes 5,000 ×10⁹/L
+  tsh: { min: 0, max: 1000 }, // severe primary hypothyroidism reaches a few hundred; suppressed reads near 0
+  ft4: { min: 0, max: 200 }, // thyroid storm rarely passes 100 pmol/L; myxoedema reads near 0
+  crp: { min: 0, max: 1000 }, // severe sepsis rarely passes 500 mg/L
+  vitamin_d: { min: 0, max: 2500 }, // 1000 ng/mL: past reported intoxication (hundreds of ng/mL)
+  vitamin_b12: { min: 0, max: 20000 }, // injections or myeloproliferative disease can pass 7,000 pmol/L
+  folate: { min: 0, max: 1000 }, // supplemented serum folate rarely passes 100 nmol/L
+  ferritin: { min: 0, max: 500000 }, // haemophagocytic syndromes can pass 100,000 µg/L
+  iron: { min: 0, max: 1000 }, // iron poisoning can pass 180 µmol/L (1,000 µg/dL)
+};
+
+/** Why a typed value of a catalogued test is refused (US-21 AC26), or null inside its bounds or with
+ *  none: the number as typed, what it converted to, and the end it passed. For the person who typed it. */
+export function labPlausibleRefusal(entry: LabCatalogEntry, typed: number, typedUnit: string, valueSI: number): string | null {
+  const range = LAB_PLAUSIBLE_RANGES[entry.key];
+  const fault = range && rangeFault(range, valueSI);
+  if (!fault) return null;
+  const shownUnit = displayLabUnit(typedUnit, entry);
+  const converted = shownUnit === entry.unit ? '' : `${typed} ${shownUnit} is ${Number(valueSI.toPrecision(2))} ${entry.unit}. `;
+  const bound = (fault === 'below' ? range.min : range.max).toLocaleString('en-US');
+  return `${converted}${entry.label} ${fault} ${bound} ${entry.unit} is almost certainly a typing or unit mistake: check the number and its unit.`;
+}
 
 const SUPERSCRIPT_DIGITS: Record<string, string> = {
   '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',

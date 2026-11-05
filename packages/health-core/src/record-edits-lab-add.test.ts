@@ -1,7 +1,9 @@
 // US-25 AC25, US-21: the one lab add both apps use (record-edits.ts addLabValue): the web's
 // "+ Add a value" (AddLabTest.tsx) and the iPhone's lab page. Synthetic values.
 import { describe, expect, it } from 'vitest';
-import { addLabValue, bulkAppendValues } from './record-edits';
+import { addLabValue, appendLabValue, bulkAppendValues } from './record-edits';
+import { LAB_CATALOG, LAB_PLAUSIBLE_RANGES } from './lab-catalog';
+import { groupLabValues } from './lab-series';
 import { createEmptyFile, type FileLabValue, type RoadmapFile } from './roadmap-file';
 import { createCoreRow } from './blood-tests';
 import { reportedToCanonical } from './units';
@@ -118,5 +120,68 @@ describe('addLabValue — a core test by name (US-66 AC6)', () => {
     const added = ldl(131, record([]));
     if (!added.ok) throw new Error(added.message);
     expect(added.row).toMatchObject({ metricName: 'ldl', unit: 'mmol/L', core: true, source: 'manual' });
+  });
+});
+
+// US-21 AC26 (Brad 2026-11-06): a typed catalogue value past its test's plausible range, in the
+// stored SI unit after conversion, is a typing or unit mistake and is refused. A break-test typed
+// glucose 5.5, picked mg/dL and saved 0.31 mmol/L with no warning. Synthetic values.
+describe('addLabValue — plausible range (US-21 AC26)', () => {
+  const add = (metricName: string, unit: string, value: number, file = record([]), existingSeries?: true) =>
+    addLabValue(file, { metricName, unit, value, day: '2026-10-01', ...(existingSeries ? { existingSeries } : null) }, NOW);
+
+  it('refuses glucose 5.5 mg/dL (0.31 mmol/L), saying what it converted to', () => {
+    const out = add('Glucose', 'mg/dL', 5.5);
+    expect(out).toEqual({
+      ok: false, reason: 'invalid-value',
+      message: '5.5 mg/dL is 0.31 mmol/L. Glucose below 0.5 mmol/L is almost certainly a typing or unit mistake: check the number and its unit.',
+    });
+  });
+
+  it('refuses it from the test\'s own page too (the iPhone\'s and web\'s "+ Add a value")', () => {
+    const file = record([held('g1', 'glucose', 5.2, 'mmol/L', '2026-09-01')]);
+    expect(add('glucose', 'mg/dL', 5.5, file, true)).toMatchObject({ ok: false, reason: 'invalid-value' });
+  });
+
+  it('refuses a value past either end in the canonical unit, with no conversion clause', () => {
+    expect(add('glucose', 'mmol/L', 101)).toEqual({
+      ok: false, reason: 'invalid-value',
+      message: 'Glucose above 100 mmol/L is almost certainly a typing or unit mistake: check the number and its unit.',
+    });
+    expect(add('Haemoglobin', 'g/dL', 140)).toMatchObject({ ok: false, reason: 'invalid-value', message: expect.stringMatching(/^140 g\/dL is 1400 g\/L\. Haemoglobin above 300 g\/L/) });
+  });
+
+  it('accepts both edges, and a converted value just inside', () => {
+    for (const value of [0.5, 100]) expect(add('glucose', 'mmol/L', value).ok).toBe(true);
+    expect(add('glucose', 'mg/dL', 90).ok).toBe(true);
+    expect(add('Glucose (random)', 'mg/dL', 1800).ok).toBe(true);
+  });
+
+  it('checks every bound in the table at its edges, in the canonical unit', () => {
+    for (const [key, range] of Object.entries(LAB_PLAUSIBLE_RANGES)) {
+      const entry = LAB_CATALOG.find((e) => e.key === key);
+      expect(entry, key).toBeDefined();
+      expect(range.min, key).toBeLessThan(range.max);
+      expect(add(key, entry!.unit, range.min).ok, `${key} min`).toBe(true);
+      expect(add(key, entry!.unit, range.max).ok, `${key} max`).toBe(true);
+      expect(add(key, entry!.unit, range.max * 1.01 + 0.01), `${key} above`).toMatchObject({ ok: false, reason: 'invalid-value' });
+      if (range.min > 0) expect(add(key, entry!.unit, range.min * 0.99), `${key} below`).toMatchObject({ ok: false, reason: 'invalid-value' });
+    }
+  });
+
+  it('leaves a test without a bound, and a test off the catalogue, unchecked', () => {
+    expect(add('GGT', 'U/L', 999999).ok).toBe(true);
+    expect(add('Zinc custom', 'µg/dL', 999999).ok).toBe(true);
+  });
+
+  it('a stored row already past its bound still shows and still takes a new value on another day', () => {
+    const file = record([held('g0', 'glucose', 0.3, 'mmol/L', '2026-09-01')]);
+    const [series] = groupLabValues(file.labValues).flatMap((group) => group.series);
+    expect(series.points).toMatchObject([{ id: 'g0', value: 0.3, unit: 'mmol/L' }]);
+    expect(add('glucose', 'mmol/L', 5.4, file).ok).toBe(true);
+  });
+
+  it('the agent and import doors are unchanged for now: appendLabValue still files it (not in AC26)', () => {
+    expect(appendLabValue(record([]), { metricName: 'glucose', value: 5.5, unit: 'mg/dL', recordedAt: '2026-10-01', now: NOW }).ok).toBe(true);
   });
 });

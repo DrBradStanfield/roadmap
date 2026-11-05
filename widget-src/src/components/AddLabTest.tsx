@@ -63,7 +63,8 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
   }
 
   const entry = LAB_CATALOG.find(e => e.key === testKey);
-  // A catalogued test has no input range, so "1,050" is always asked about (US-02 AC7).
+  // A catalogued test has no input range, only the record's typing-mistake bounds checked on save
+  // (US-21 AC26), so "1,050" is always asked about (US-02 AC7).
   const value = parseLocalisedNumber(valueStr);
   const question = commaQuestion(valueStr);
   const metricName = entry ? entry.key : otherName(testKey, customName);

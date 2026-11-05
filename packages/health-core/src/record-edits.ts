@@ -31,7 +31,7 @@
  * writer can only edit safely with the lamport discipline this does not take on.
  */
 import {
-  canonicalLabRow, canonicalLabValue, correctionOffScale, type CountFault, displayLabUnit, foldName, labCountFault, type LabCatalogEntry,
+  canonicalLabRow, canonicalLabValue, correctionOffScale, type CountFault, displayLabUnit, foldName, labCountFault, type LabCatalogEntry, labPlausibleRefusal,
   labSlotKey, looseFold, labUnitRefusal, normalizeLabUnit, resolveLabCatalogEntry, type StoredLabRow,
 } from './lab-catalog';
 import { bloodTestKeyOf, coreStored, createCoreRow, isActive, isBloodTestKey, isCoreRow, labRowSlot } from './blood-tests';
@@ -535,6 +535,10 @@ export function addLabValue(file: RoadmapFile, request: AddLabValueRequest, now:
   if (typeof day !== 'string') return { ok: false, reason: 'invalid-date', message: 'A lab value is for a real day, today or before.' };
   const entry = resolveLabCatalogEntry(name);
   if (!given && !entry && !bloodTestKeyOf(name) && !request.existingSeries) return { ok: false, reason: 'invalid-value', message: NEEDS_UNIT };
+  // A typed value past its test's plausible range is a slip of the number or unit (US-21 AC26).
+  const converted = entry && canonicalLabValue(entry, request.value, given);
+  const implausible = converted && labPlausibleRefusal(entry, request.value, given, converted.value);
+  if (implausible) return { ok: false, reason: 'invalid-value', message: implausible };
   const exact = !!entry && displayLabUnit(given, entry) === entry.unit;
   const metricName = exact ? entry!.key : name;
   const unit = exact ? entry!.unit : given;
