@@ -92,4 +92,13 @@ describe('US-06 AC19: a double click on a featured supplement chip adds only tha
     expect((read.body as RoadmapFile).supplements.find(s => s.supplementKey === 'creatine'))
       .toMatchObject({ doseValue: 5, doseUnit: 'g' });
   });
+  it('a chip with no default dose (Omega-3) adds the supplement with its unit and no dose', async () => {
+    const view = await page();
+    fireEvent.click(chips(view.container)[3], { detail: 1 }); // Omega-3 (EPA/DHA)
+    await settle();
+    const read = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
+    const omega = (read.body as RoadmapFile).supplements.find(s => s.supplementKey === 'omega3');
+    expect(omega).toMatchObject({ status: 'active', doseUnit: 'mg' });
+    expect(omega!.doseValue ?? null).toBeNull();
+  });
 });

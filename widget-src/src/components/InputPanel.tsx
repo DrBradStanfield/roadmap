@@ -266,6 +266,11 @@ function useAutoAdvance(): (opts: { ambiguous: boolean; advance: () => void }) =
   };
 }
 
+/** A click handler that ignores the 2nd and later clicks of a double or triple click (US-06 AC19). */
+function firstClickOnly(action: () => void): (e: { detail: number }) => void {
+  return e => { if (e.detail <= 1) action(); };
+}
+
 export function InputPanel({
   storageBar, inputs, effectiveInputs, onChange: updateField, errors: allErrors, unitSystem, onUnitSystemChange,
   unitOverrides, onToggleFieldUnit,
@@ -2406,7 +2411,7 @@ export function InputPanel({
                 type="button"
                 className="supplement-chip"
                 // A double click's second click lands on the chip that slid into place: ignore it (US-06 AC19).
-                onClick={e => { if (e.detail <= 1) addSupplement(f.key, f.name, f.defaultDose, f.defaultUnit); }}
+                onClick={firstClickOnly(() => addSupplement(f.key, f.name, f.defaultDose, f.defaultUnit))}
               >
                 + {f.name}
               </button>
