@@ -68,10 +68,12 @@ describe('ChatSession on a cloud', () => {
     const s = await ChatSession.open(cloudHost(store));
     const first = exchange(s, 'c1');
     await new Promise((r) => setTimeout(r, 0));
-    await exchange(s, 'c2');
-    await s.deleteConversation('c1');
+    // This session's saves run one at a time, so these wait behind the held one.
+    const second = exchange(s, 'c2');
+    const deleting = s.deleteConversation('c1');
+    expect(s.listConversations().map((c) => c.id)).toEqual(['c2']);
     store.release();
-    await first;
+    await Promise.all([first, second, deleting]);
     expect(s.listConversations().map((c) => c.id)).toEqual(['c2']);
   });
 
@@ -82,6 +84,125 @@ describe('ChatSession on a cloud', () => {
     await s.eraseAll();
     const file = JSON.parse(cloud.files.get('chat-history.json')!.json);
     expect(file.conversations).toEqual([expect.objectContaining({ id: 'c1', deleted: true, title: '', messages: [] })]);
+  });
+
+  describe('US-11 AC2e: eraseAll erases what is stored, not only what this page loaded', () => {
+    /** The stored file, as a fresh device would read it. */
+    const storedOf = (cloud: MemoryCloud) =>
+      JSON.parse(cloud.files.get('chat-history.json')!.json) as { conversations: Array<{ id: string; deleted?: boolean; title: string; messages: unknown[] }> };
+    /** A cloud whose reads fail while `down`. */
+    class ReadFails extends MemoryAdapter {
+      down = false;
+      async read(name: string, signal?: AbortSignal) {
+        if (this.down) throw new Error('cloud down');
+        return super.read(name, signal);
+      }
+    }
+
+    it('tombstones a conversation another device saved after this page opened with nothing', async () => {
+      const cloud = new MemoryCloud();
+      const page = await ChatSession.open(cloudHost(new MemoryAdapter(cloud))); // opened before any chat
+      await exchange(await ChatSession.open(cloudHost(new MemoryAdapter(cloud))), 'other', 'words from the laptop');
+      await page.eraseAll();
+      expect(storedOf(cloud).conversations).toEqual([expect.objectContaining({ id: 'other', deleted: true, title: '', messages: [] })]);
+      expect(cloud.files.get('chat-history.json')!.json).not.toMatch(/laptop/);
+      expect(page.listConversations()).toEqual([]);
+    });
+
+    it('tombstones the other device\'s conversation as well as this page\'s own', async () => {
+      const cloud = new MemoryCloud();
+      const page = await ChatSession.open(cloudHost(new MemoryAdapter(cloud)));
+      await exchange(page, 'mine', 'words from the phone');
+      await exchange(await ChatSession.open(cloudHost(new MemoryAdapter(cloud))), 'other', 'words from the laptop');
+      await page.eraseAll();
+      const stored = storedOf(cloud).conversations;
+      expect(stored.map((c) => c.id).sort()).toEqual(['mine', 'other']);
+      expect(stored.every((c) => c.deleted === true && c.title === '' && c.messages.length === 0)).toBe(true);
+      expect((await ChatSession.open(cloudHost(new MemoryAdapter(cloud)))).listConversations()).toEqual([]);
+    });
+
+    it('fails, never reports done, when the stored file cannot be read', async () => {
+      const store = new ReadFails();
+      const page = await ChatSession.open(cloudHost(store)); // opened with nothing loaded
+      store.down = true;
+      await expect(page.eraseAll()).rejects.toThrow('cloud down');
+    });
+
+    it('a failed read still leaves this page\'s own tombstones for the next chat save', async () => {
+      // The page then says the history is erased on the next chat (ERASE_DONE_CHAT_PENDING).
+      const cloud = new MemoryCloud();
+      const store = new ReadFails(cloud);
+      const page = await ChatSession.open(cloudHost(store));
+      await exchange(page, 'mine', 'words from the phone');
+      store.down = true;
+      await expect(page.eraseAll()).rejects.toThrow('cloud down');
+      store.down = false;
+      await exchange(page, 'next', 'a new question');
+      expect(storedOf(cloud).conversations.find((c) => c.id === 'mine')).toMatchObject({ deleted: true, title: '', messages: [] });
+    });
+
+    it('erases this page\'s own conversation whose save is still in the air when the erase reads', async () => {
+      /** Holds the first write on the wire: its body is sent as it was when the write began. */
+      class HoldFirstWrite extends MemoryAdapter {
+        held = true;
+        release!: () => void;
+        gate = new Promise<void>((r) => { this.release = r; });
+        async write(name: string, body: object, expected: string | null) {
+          const sent = structuredClone(body);
+          if (this.held) { this.held = false; await this.gate; }
+          return super.write(name, sent, expected);
+        }
+      }
+      const cloud = new MemoryCloud();
+      const store = new HoldFirstWrite(cloud);
+      const page = await ChatSession.open(cloudHost(store));
+      const saving = exchange(page, 'mine', 'words still on their way');
+      await new Promise((r) => setTimeout(r, 0)); // its write is held: the stored file has nothing yet
+      const erasing = page.eraseAll(); // reads now; its own write waits for the held save
+      await new Promise((r) => setTimeout(r, 0));
+      store.release();
+      await saving;
+      await erasing;
+      expect(storedOf(cloud).conversations).toEqual([expect.objectContaining({ id: 'mine', deleted: true, title: '', messages: [] })]);
+      expect(cloud.files.get('chat-history.json')!.json).not.toMatch(/on their way/);
+    });
+
+    it('erases two conversations this page saved while the erase read was held', async () => {
+      // Brad's review (2026-11-04): each save replaces the working copy, so an
+      // erase that merged the copy it held before its read missed the second
+      // conversation, and its own save then wrote that one back live.
+      /** The next armed read is answered with what the file held when it was asked. */
+      class HoldNextRead extends MemoryAdapter {
+        armed = false;
+        release!: () => void;
+        async read(name: string, signal?: AbortSignal) {
+          if (!this.armed) return super.read(name, signal);
+          this.armed = false;
+          const answer = await super.read(name, signal);
+          await new Promise<void>((r) => { this.release = r; });
+          return answer;
+        }
+      }
+      const cloud = new MemoryCloud();
+      const store = new HoldNextRead(cloud);
+      const page = await ChatSession.open(cloudHost(store));
+      store.armed = true;
+      const erasing = page.eraseAll(); // its read is held, answering with nothing stored
+      await exchange(page, 'x', 'first words after the erase began');
+      await exchange(page, 'y', 'second words after the erase began');
+      store.release();
+      await erasing;
+      expect(storedOf(cloud).conversations.map((c) => [c.id, c.deleted]).sort()).toEqual([['x', true], ['y', true]]);
+      expect(cloud.files.get('chat-history.json')!.json).not.toMatch(/after the erase began/);
+      expect(page.listConversations()).toEqual([]);
+    });
+
+    it('still writes nothing when nothing is stored anywhere', async () => {
+      const cloud = new MemoryCloud();
+      const page = await ChatSession.open(cloudHost(new MemoryAdapter(cloud)));
+      await page.eraseAll();
+      expect(cloud.files.has('chat-history.json')).toBe(false);
+    });
   });
 });
 
@@ -392,5 +513,81 @@ describe('US-11 AC2d: a chat delete is reported only once the stored file holds 
     store.reads = 0;
     await exchange(s, 'c1');
     expect(store.reads).toBe(1);
+  });
+});
+
+describe('US-11 AC2e: a chat save already on its way lands before an erase or a delete writes', () => {
+  /** Google Drive's write (driveUpdateIfVersion): check the version, then
+   *  upload with no condition. An armed write passes its check and holds its
+   *  upload; its body goes as it was when the write began. */
+  class CheckThenUpload extends MemoryAdapter {
+    armed = false;
+    release!: () => void;
+    async write(name: string, body: object, expected: string | null, signal?: AbortSignal) {
+      const sent = structuredClone(body);
+      if ((await super.read(name, signal)).version !== expected) throw new ConflictError('moved');
+      if (this.armed) {
+        this.armed = false;
+        await new Promise<void>((r) => { this.release = r; });
+      }
+      return super.write(name, sent, (await super.read(name, signal)).version, signal);
+    }
+  }
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+  async function inFlight() {
+    const cloud = new MemoryCloud();
+    const store = new CheckThenUpload(cloud);
+    const page = await ChatSession.open(cloudHost(store));
+    await exchange(page, 'c1', 'first question');
+    store.armed = true;
+    const saving = exchange(page, 'c2', 'words already on their way');
+    await tick(); // c2's write has passed its check and holds its upload
+    return { cloud, store, page, saving };
+  }
+  const liveIn = async (store: MemoryAdapter) => (await ChatSession.open(cloudHost(store))).listConversations().map((c) => c.id);
+
+  it('eraseAll: the held upload cannot put the erased conversations back', async () => {
+    const { cloud, store, page, saving } = await inFlight();
+    const erasing = page.eraseAll();
+    for (let i = 0; i < 5; i++) await tick();
+    store.release();
+    await Promise.all([saving, erasing]);
+    expect(await liveIn(store)).toEqual([]);
+    expect(cloud.files.get('chat-history.json')!.json).not.toMatch(/question|on their way/);
+  });
+
+  it('deleteConversation: the held upload cannot put the deleted conversation back', async () => {
+    const { store, page, saving } = await inFlight();
+    const deleting = page.deleteConversation('c1');
+    for (let i = 0; i < 5; i++) await tick();
+    store.release();
+    await Promise.all([saving, deleting]);
+    expect(await liveIn(store)).toEqual(['c2']);
+  });
+
+  it('eraseAll waits for every save on its way, not only the last one started', async () => {
+    const { store, page, saving } = await inFlight();
+    const next = exchange(page, 'c3', 'a later question'); // started after the held one
+    const erasing = page.eraseAll();
+    for (let i = 0; i < 5; i++) await tick();
+    store.release();
+    await Promise.all([saving, next, erasing]);
+    expect(await liveIn(store)).toEqual([]);
+  });
+
+  it('a failed save rejects to its own caller, and the next save still runs', async () => {
+    class FailsOnce extends MemoryAdapter {
+      fail = false;
+      async write(name: string, body: object, expected: string | null, signal?: AbortSignal) {
+        if (this.fail) { this.fail = false; throw new Error('upload failed'); }
+        return super.write(name, body, expected, signal);
+      }
+    }
+    const store = new FailsOnce();
+    const page = await ChatSession.open(cloudHost(store));
+    store.fail = true;
+    await expect(exchange(page, 'c1')).rejects.toThrow('upload failed');
+    await exchange(page, 'c2');
+    expect((await liveIn(store)).sort()).toEqual(['c1', 'c2']);
   });
 });
