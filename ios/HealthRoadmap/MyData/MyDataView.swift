@@ -310,7 +310,7 @@ struct MyDataView: View {
 
     /// A topic's heading, a row in the list's own flow, so the pills can scroll to it; any
     /// controls at its trailing end (Blood tests: lab upload and Sync, round 7). At the largest
-    /// sizes a one-word title shrinks to one line and the controls go under it, so no word
+    /// sizes a one-word title shrinks to one line and any controls go under it, so no word
     /// breaks ("Supplem-ents", TextSizeLayoutTests, US-25 AC26).
     private func heading(_ topic: HealthTopic, @ViewBuilder controls: () -> some View = { EmptyView() }) -> some View {
         Section {
@@ -320,14 +320,13 @@ struct MyDataView: View {
                 .lineLimit(topic.title.title.contains(" ") ? nil : 1)
                 .minimumScaleFactor(0.7)
                 .accessibilityAddTraits(.isHeader)
-            let buttons = controls()
+            let buttons = HStack(spacing: 14) { controls() }
                 .buttonStyle(.borderless)
                 .labelStyle(.iconOnly)
                 .font(.title3)
-            let row = ViewThatFits(in: .horizontal) {
-                HStack(spacing: 14) { title.fixedSize(); Spacer(); buttons }
-                VStack(alignment: .leading, spacing: 8) { title; buttons }
-            }
+            let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 14))
+            let row = layout { title; Spacer(minLength: 0); buttons }
+                .frame(maxWidth: .infinity, alignment: .leading)
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 20, leading: 4, bottom: 0, trailing: 4))
             .id(topic.anchor)
