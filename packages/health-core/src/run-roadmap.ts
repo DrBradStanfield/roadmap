@@ -20,11 +20,11 @@ import type { HealthInputs } from './types';
 import { reportedToCanonical, toCanonicalValue, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
 import { FIELD_TO_METRIC } from './mappings';
 import { fieldBounds, inRange, PRESSURE_ORDER, pressureInverted, sanitizeInputs } from './validation';
-import { ISO_DATE } from './measurement-history';
+import { ISO_DATE, isDraftPoint } from './measurement-history';
 import { latestDayOnEarth } from './merge';
 import { resolveRecordedAt } from './record-edits';
 import { isKnownMinorOnDay, knownMinorOf } from './calculations';
-import { buildChatContextJson } from './chat-context';
+import { buildChatContextJson, creatinineDayOf } from './chat-context';
 import {
   APP_CHAT_EDIT_TOOLS, CHAT_EDIT_TOOLS, EDITABLE_FIELDS, PROPOSE_FIELD_EDIT_TOOL, PROPOSE_PROFILE_EDIT_TOOL, medicationAnswerMisfit, parseProposedEdit, parseProposedEdits,
   type EditableField, type ProposedEdit,
@@ -169,8 +169,8 @@ function savedLatestDay(history: Record<string, unknown>, metric: string, today:
   const series = Object.prototype.hasOwnProperty.call(history, metric) ? history[metric] : null;
   if (!Array.isArray(series)) return '';
   return series.reduce<string>((max, p) => {
-    const { date: d, draft } = obj(p);
-    return typeof d === 'string' && ISO_DATE.test(d) && d <= today && d > max && draft === undefined ? d : max;
+    const d = obj(p).date;
+    return typeof d === 'string' && ISO_DATE.test(d) && d <= today && d > max && !isDraftPoint(p) ? d : max;
   }, '');
 }
 
@@ -304,7 +304,8 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   if (payload.birthMonth === undefined) delete payload.birthMonth;
   for (const f of unusable) delete payload[f];
   // US-07 AC7: a stated creatinine, used or not, from after the lab eGFR's day outdates it (with no
-  // age or sex to read it by, lostEgfr below withholds the protein card and asks). So does the saved one,
+  // age or sex to read it by, lostEgfr below withholds the protein card and asks). So does the creatinine
+  // in use (a marked draft's day, else the newest saved point's: creatinineDayOf, the plan's own rule),
   // newer than the lab eGFR, once the plan can calculate from it: the client kept the lab eGFR
   // only because it had no age (or no sex, AC8), and a stated one supplies it.
   const saved = sanitizeInputs({
@@ -312,7 +313,7 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   } as Partial<HealthInputs>);
   const creatinineDay = stated.get('creatinine')?.date ?? blocked.get('creatinine')
     ?? (saved.creatinine !== undefined && saved.birthYear !== undefined && saved.sex !== undefined
-      ? savedLatestDay(history, 'creatinine', today) || undefined : undefined);
+      ? creatinineDayOf(saved.creatinine, base.measurementHistory) : undefined);
   if (creatinineDay !== undefined && !(creatinineDay <= String(base.labEgfrDate ?? ''))) {
     // ...unless a known minor took it: no eGFR comes from it, so the lab's stands, outdated (withLabEgfr's rule).
     if (isKnownMinorOnDay(saved.birthYear, saved.birthMonth, creatinineDay)) {

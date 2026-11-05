@@ -74,7 +74,7 @@ import {
   type ApiMedication, type ApiScreening,
 } from './mappings';
 import {
-  buildMeasurementHistory, latestFromHistory, newestExactPoint, newestUsablePsa, HISTORY_CAP_PER_METRIC, ISO_DATE,
+  buildMeasurementHistory, isDraftPoint, latestFromHistory, newestExactPoint, newestUsablePsa, HISTORY_CAP_PER_METRIC, ISO_DATE,
   type DatedMeasurement, type MeasurementHistoryMap,
 } from './measurement-history';
 import { calculateAge, calculateHealthResults, knownMinorOf, missingPlanInputs } from './calculations';
@@ -210,7 +210,7 @@ export function buildChatContextJson(payload: unknown, statedCreatinineDay?: str
   // A refused limit leaves its field out entirely: a number sent beside it is no value either.
   for (const field of outOfRange) delete sanitized[field];
   // Saved points only from here on: a draft creatinine point lends its day and nothing else (US-07 AC7).
-  const { history: measurementHistory, creatinineDraft } = historyOf(raw.measurementHistory);
+  const { history: measurementHistory } = historyOf(raw.measurementHistory);
   // US-02 AC8: a blood pressure the wrong way up from one day is no blood
   // pressure, for the plan and for latestValues alike.
   const pressure = pressureOf(sanitized, measurementHistory);
@@ -245,7 +245,7 @@ export function buildChatContextJson(payload: unknown, statedCreatinineDay?: str
   // US-07 AC11: a left-out pair turns the blood pressure prompt into "check your reading".
   // US-07 AC7: the eGFR's age is the one on the creatinine's day: a stated value's own
   // (runRoadmap passes today for an undated one), else the saved point's.
-  const creatinineDay = statedCreatinineDay ?? creatinineDayOf(inputs.creatinine, measurementHistory, creatinineDraft);
+  const creatinineDay = statedCreatinineDay ?? creatinineDayOf(inputs.creatinine, raw.measurementHistory);
   const planInputs = parsed.success ? {
     ...inputs, ...(pressure ? { pressureOrder: true as const } : {}), ...(creatinineDay ? { creatinineDay } : {}),
   } as SuggestionInputs : null;
@@ -449,9 +449,11 @@ function limitsOf(raw: unknown): { limits: Partial<Record<LimitField, { comparat
  * The day of the creatinine the plan reads, as the client's plan dated it: the
  * draft point's, when it holds that value; else the newest saved point
  * (latestFromHistory's), when it does. Otherwise the value was typed with no
- * day: undefined, which the plan reads as today.
+ * day: undefined, which the plan reads as today. `rawHistory` is the history
+ * as sent; runRoadmap weighs the lab eGFR by the same day (US-07 AC7).
  */
-function creatinineDayOf(creatinine: number | undefined, history: MeasurementHistoryMap, draft?: DatedMeasurement): string | undefined {
+export function creatinineDayOf(creatinine: number | undefined, rawHistory: unknown): string | undefined {
+  const { history, creatinineDraft: draft } = historyOf(rawHistory);
   if (draft && draft.value === creatinine) return draft.date;
   const newest = newestExactPoint(history.creatinine);
   return newest && newest.value === creatinine ? newest.date : undefined;
@@ -469,10 +471,10 @@ function historyOf(raw: unknown): { history: MeasurementHistoryMap; creatinineDr
     const field = METRIC_TO_FIELD[metric];
     const clean: Array<{ date: string; value: number }> = [];
     for (const entry of series) {
-      const { date, value, comparator, draft } = fields(entry);
+      const { date, value, comparator } = fields(entry);
       const valid = typeof date === 'string' && ISO_DATE.test(date) && typeof value === 'number' && shape[field].safeParse(value).success;
       // Any marked point is no saved one; only creatinine's, exact, lends its day.
-      if (draft !== undefined) {
+      if (isDraftPoint(entry)) {
         if (valid && metric === 'creatinine' && comparator === undefined) creatinineDraft = { date, value };
         continue;
       }

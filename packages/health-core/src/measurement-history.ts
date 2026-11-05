@@ -31,6 +31,9 @@ export interface DatedMeasurement {
   draft?: true;
 }
 
+/** A client's draft point (US-07 AC7): the marker counts only as `draft: true`; anything else is a saved point. */
+export const isDraftPoint = (p: unknown): boolean => !!p && typeof p === 'object' && (p as { draft?: unknown }).draft === true;
+
 /** Per-metric chronological series — the LAST entry is the most recent. */
 export type MeasurementHistoryMap = Record<string, DatedMeasurement[]>;
 
