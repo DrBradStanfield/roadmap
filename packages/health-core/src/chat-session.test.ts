@@ -53,6 +53,22 @@ describe('ChatSession on a cloud', () => {
     expect(again.getMessages('c1').map((m) => m.role)).toEqual(['user', 'assistant']);
   });
 
+  it('cuts a long first message to an 80-character title, never through an emoji (US-15 AC26b)', async () => {
+    const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+    const titles: Array<[string, string]> = [
+      ['q'.repeat(90), 'q'.repeat(80)],
+      [`${'q'.repeat(79)}\u{1F600} and more`, 'q'.repeat(79)], // the emoji's two units are 80 and 81: dropped
+      [`${'q'.repeat(78)}\u{1F600} and more`, `${'q'.repeat(78)}\u{1F600}`], // units 79 and 80: kept whole
+    ];
+    for (const [i, [text, expected]] of titles.entries()) {
+      const cloud = new MemoryCloud();
+      await exchange(await ChatSession.open(cloudHost(new MemoryAdapter(cloud))), `c${i}`, text);
+      const [title] = (await ChatSession.open(cloudHost(new MemoryAdapter(cloud)))).listConversations().map((c) => c.title);
+      expect(title).toBe(expected);
+      expect(LONE_SURROGATE.test(title)).toBe(false);
+    }
+  });
+
   it('keeps a delete made while an earlier save was in the air (US-11 AC2b)', async () => {
     class SlowFirst extends MemoryAdapter {
       held = true;
