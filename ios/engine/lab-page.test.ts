@@ -111,6 +111,20 @@ describe('adding and correcting a lab value (US-25 AC25)', () => {
     expect(limit.file.labValues.at(-1)!.comparator).toBeUndefined();
   });
 
+  it('adds to a series a lab import saved with no unit (INR), in no unit (US-25 AC25)', () => {
+    const file = record([lab('i1', 'INR', 1.1, '', '2026-08-01')]);
+    const out = applyEdit(file, { kind: 'labAdd', series: 'inr', value: 1.2, day: '2026-10-01', unit: '' }, NOW);
+    if (!out.ok) throw new Error(out.message);
+    expect(out.file.labValues.at(-1)).toMatchObject({ metricName: 'INR', value: 1.2, unit: '', source: 'manual', status: 'active' });
+  });
+
+  it('adds to a series whose rows predate status (a legacy row with none is active)', () => {
+    const { status: _status, ...legacy } = lab('z1', 'Zinc custom', 80, 'µg/dL', '2026-08-01');
+    const out = applyEdit(record([legacy as RoadmapFile['labValues'][number]]), { kind: 'labAdd', series: 'zinc custom', value: 85, day: '2026-10-01' }, NOW);
+    if (!out.ok) throw new Error(out.message);
+    expect(out.file.labValues.at(-1)).toMatchObject({ metricName: 'Zinc custom', value: 85, unit: 'µg/dL' });
+  });
+
   it('refuses to correct a row already entered in error', () => {
     expect(applyEdit(ferritin(), { kind: 'correct', id: 'f2', value: 99 }, NOW)).toMatchObject({ ok: false, reason: 'not-active' });
   });

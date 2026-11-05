@@ -32,9 +32,9 @@
  */
 import {
   canonicalLabRow, canonicalLabValue, correctionOffScale, type CountFault, displayLabUnit, foldName, labCountFault, type LabCatalogEntry,
-  labSlotKey, labUnitRefusal, normalizeLabUnit, resolveLabCatalogEntry, type StoredLabRow,
+  labUnitRefusal, normalizeLabUnit, resolveLabCatalogEntry, type StoredLabRow,
 } from './lab-catalog';
-import { bloodTestKeyOf, coreStored, createCoreRow, isActive, isBloodTestKey, isCoreRow, labRowSlot } from './blood-tests';
+import { bloodTestKeyOf, coreStored, createCoreRow, isBloodTestKey, isCoreRow, labRowSlot } from './blood-tests';
 import { METRIC_TO_FIELD } from './mappings';
 import { resolveCoreMetricName } from './lab-extraction';
 import { dayOf, latestStamp, localDay, rootIdOf } from './merge';
@@ -494,8 +494,10 @@ export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest
 /** A lab value with no unit: appendLabValue's words and addLabValue's, one string. */
 const NEEDS_UNIT = 'A lab value needs the unit the lab reported it in';
 
-/** A lab value a person adds (US-25 AC25): the test's name, the unit they read it in, the number and the day. */
-export interface AddLabValueRequest { metricName: string; unit: string; value: number; day?: string }
+/** A lab value a person adds (US-25 AC25): the test's name, the unit they read it in, the number and the day.
+ *  `existingSeries`: added from that test's own page (the web's preset form, the iPhone's labAdd), so its
+ *  name and unit are the record's own, never refused as a vital's or for having no unit. */
+export interface AddLabValueRequest { metricName: string; unit: string; value: number; day?: string; existingSeries?: boolean }
 
 export type AddLabValueResult =
   | { ok: true; file: RoadmapFile; row: FileLabValue }
@@ -514,16 +516,15 @@ export function addLabValue(file: RoadmapFile, request: AddLabValueRequest, now:
   const name = request.metricName.trim();
   const given = request.unit.trim();
   if (!name) return { ok: false, reason: 'invalid-value', message: 'A lab value needs a test name.' };
-  // A vital (weight, height, blood pressure, waist) is no lab test, as appendLabValue refuses it;
-  // a lab test the record already files under one keeps its "+" (US-25 AC25).
-  const vital = !bloodTestKeyOf(name) && resolveCoreMetricName(name)
-    && !file.labValues.some((row) => isActive(row) && !isCoreRow(row) && labSlotKey(row.metricName) === labSlotKey(name));
+  // A vital (weight, height, blood pressure, waist) typed by name is no lab test, as appendLabValue
+  // refuses it; a kept-apart lab series of that name adds from its own page (US-25 AC25).
+  const vital = !request.existingSeries && !bloodTestKeyOf(name) && resolveCoreMetricName(name);
   if (vital) return { ok: false, reason: 'core-metric', message: `"${name}" is not a lab test: add it from its own row.` };
   if (!Number.isFinite(request.value) || request.value < 0) return { ok: false, reason: 'invalid-value', message: 'A lab value is a number, 0 or more.' };
   const day = resolveRecordedAt(request.day, { now });
   if (typeof day !== 'string') return { ok: false, reason: 'invalid-date', message: 'A lab value is for a real day, today or before.' };
   const entry = resolveLabCatalogEntry(name);
-  if (!given && !entry && !bloodTestKeyOf(name)) return { ok: false, reason: 'invalid-value', message: NEEDS_UNIT };
+  if (!given && !entry && !bloodTestKeyOf(name) && !request.existingSeries) return { ok: false, reason: 'invalid-value', message: NEEDS_UNIT };
   const exact = !!entry && displayLabUnit(given, entry) === entry.unit;
   const metricName = exact ? entry!.key : name;
   const unit = exact ? entry!.unit : given;

@@ -128,7 +128,8 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
     try {
       // health-core's one lab add (US-25 AC25): it files the test, refuses a unit the catalogue does
       // not take in the upload summary's words (US-21 AC15), and names a held value on that day.
-      const result = await addLabValue({ metricName, unit, value: value!, day: date });
+      // A value page adds to its own series, whatever its name or unit (US-25 AC25).
+      const result = await addLabValue({ metricName, unit, value: value!, day: date, ...(preset ? { existingSeries: true } : null) });
       if (!result) {
         setNotice('Could not save — please try again.');
       } else if (result.ok) {

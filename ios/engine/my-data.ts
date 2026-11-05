@@ -16,7 +16,7 @@ import { stampProfile, upsertMedication, upsertSupplement } from '../../packages
 import { medicationSchema, supplementSchema, zod3Message } from '../../packages/health-core/src/validation';
 import { customSupplementAdd, customSupplementMatch } from '../../packages/health-core/src/input-form';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
-import { bloodTableReport, bloodTestKeyOf, currentValueRows, isCoreRow } from '../../packages/health-core/src/blood-tests';
+import { bloodTableReport, bloodTestKeyOf, currentValueRows, isActive, isCoreRow } from '../../packages/health-core/src/blood-tests';
 import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
 import { importHealthRecords, type ClinicalRecordInput, type HealthRecordsCounts } from '../../packages/health-core/src/health-records-import';
 import { applyFormEdit, formsOf, gradeContextOf, planOf, rowText, ungradedLimit, type FormEdit, type FormsView } from './my-data-forms';
@@ -462,13 +462,13 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
  */
 function addSeriesValue(file: RoadmapFile, edit: Extract<Edit, { kind: 'labAdd' }>, now: string): EditOutcome {
   const rows = file.labValues.filter((row) => !isCoreRow(row) && labSlotKey(row.metricName) === edit.series);
-  const named = rows.filter((row) => row.status === 'active').sort((a, b) => a.recordedAt.localeCompare(b.recordedAt)).at(-1);
+  const named = rows.filter(isActive).sort((a, b) => a.recordedAt.localeCompare(b.recordedAt)).at(-1);
   if (!named) return { ok: false, reason: 'not-found', message: 'There is no such lab test in your record.' };
   // A kept-apart row named like a core test (an old "creatinine" may be urine, US-12 AC11): the add would
   // write the core value, which this page never shows. It goes on the core test's own row (US-66 AC5).
   if (bloodTestKeyOf(named.metricName)) return { ok: false, reason: 'core-name', message: 'Add this test from its row in Blood tests.' };
   const unit = edit.unit ?? displayLabUnit(named.unit ?? '', resolveLabCatalogEntry(named.metricName));
-  const added = addLabValue(file, { metricName: named.metricName, unit, value: edit.value, day: edit.day }, now);
+  const added = addLabValue(file, { metricName: named.metricName, unit, value: edit.value, day: edit.day, existingSeries: true }, now);
   return added.ok ? { ok: true, file: added.file } : added;
 }
 

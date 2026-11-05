@@ -268,6 +268,18 @@ describe('labAddName: the add sheet\'s add (US-73 AC8, US-21, US-66 AC6)', () =>
     expect(add(record(), 'Zinc custom', 80, '')).toEqual({ ok: false, reason: 'invalid-value', message: 'A lab value needs the unit the lab reported it in' });
   });
 
+  it('a vital\'s name is refused even beside a kept-apart lab series of that name, whose page "+" still adds (US-25 AC25)', () => {
+    const file = record({ labValues: [lab('w1', 'Weight', 70, 'kg', '2026-09-01')] });
+    expect(add(file, 'Weight', 71, 'kg')).toMatchObject({ ok: false, reason: 'core-metric' });
+    const page = applyEdit(file, { kind: 'labAdd', series: 'weight', value: 71, day: '2026-10-01', unit: 'kg' }, NOW);
+    if (!page.ok) throw new Error(page.message);
+    expect(page.file.labValues.at(-1)).toMatchObject({ metricName: 'Weight', value: 71, unit: 'kg' });
+  });
+
+  it('a name with no unit and no series of its own is refused, though a lab import saved one so (INR)', () => {
+    expect(add(record(), 'INR', 1.2, '')).toEqual({ ok: false, reason: 'invalid-value', message: 'A lab value needs the unit the lab reported it in' });
+  });
+
   it('labAdd is only the lab page\'s add: a name on it is unread', () => {
     const named = { kind: 'labAdd', series: 'ferritin', value: 90, day: '2026-10-01', name: 'Ferritin', unit: 'µg/L' } as Edit;
     expect(applyEdit(record(), named, NOW)).toMatchObject({ ok: false, reason: 'not-found' });

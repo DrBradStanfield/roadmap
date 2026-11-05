@@ -15,6 +15,11 @@ vi.mock('../../packages/health-core/src/plan', async (original) => {
   return { ...real, computePlan: vi.fn(real.computePlan) };
 });
 const computePlan = vi.mocked(planModule.computePlan);
+vi.mock('../../packages/health-core/src/plan-sections', async (original) => {
+  const real = await original<typeof import('../../packages/health-core/src/plan-sections')>();
+  return { ...real, topicSections: vi.fn(real.topicSections) };
+});
+const topicsMock = vi.mocked(topicSections);
 
 const NOW = '2026-10-21T08:00:00.000Z';
 const sample = readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8');
@@ -86,5 +91,15 @@ describe('screenJson (US-25 AC2, AC22)', () => {
     const screen = JSON.parse(screenJson(sample, NOW, 'phone', '{}'));
     expect(screen.myData.vitals.length).toBeGreaterThan(0);
     expect(screen.plan).toEqual({ error: 'Error: broken on purpose', planError: false });
+  });
+
+  // US-73 AC3: a layout by topic that throws loses only plan.topics; the app then draws the sections.
+  it('keeps My data and the plan when the layout by topic throws, without plan.topics', () => {
+    topicsMock.mockImplementationOnce(() => { throw new Error('broken on purpose'); });
+    const screen = JSON.parse(screenJson(sample, NOW, 'phone', UNITS));
+    expect(screen.myData.vitals.length).toBeGreaterThan(0);
+    expect(screen.plan.sections.length).toBeGreaterThan(0);
+    expect(screen.plan.tiles.length).toBeGreaterThan(0);
+    expect(screen.plan).not.toHaveProperty('topics');
   });
 });

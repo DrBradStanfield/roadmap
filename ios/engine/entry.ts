@@ -115,7 +115,13 @@ export function screenJson(recordJson: string, nowIso: string, deviceId: string,
     view = { error: String(error), planError: error instanceof PlanError };
   }
   const data = myData(file, nowIso, choices, plan);
-  if ('sections' in view) view.topics = topicSections(view.usProducts ?? view.sections, data);
+  if ('sections' in view) {
+    try {
+      view.topics = topicSections(view.usProducts ?? view.sections, data);
+    } catch {
+      // no topics: the app draws the sections
+    }
+  }
   const moved = movedRecord(recordJson, nowIso, deviceId);
   return JSON.stringify({ myData: data, plan: view, ...(moved ? { movedRecord: moved } : null) });
 }

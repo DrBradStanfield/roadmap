@@ -411,6 +411,30 @@ describe('US-66 AC6 — a core test typed under "Other"', () => {
   });
 });
 
+// US-25 AC25: a value page's "+ Add a value" adds to its own series, whatever the general add refuses.
+describe('US-25 AC25: a value page adds to its own series', () => {
+  it('adds to a series a lab import saved with no unit (INR)', async () => {
+    holding({ id: 'i1', metricName: 'INR', value: 1.1, unit: '', recordedAt: '2026-01-01T00:00:00.000Z', createdAt: '2026-01-01T00:00:00.000Z', source: 'lab_import' });
+    const onAdded = vi.fn();
+    const { getByText, getByLabelText } = render(<AddLabTest onAdded={onAdded} labValues={[]} coreValues={[]} preset={{ metricName: 'INR', unit: '' }} />);
+    fireEvent.click(getByText('+ Add a value'));
+    fireEvent.change(getByLabelText(/value/i), { target: { value: '1.2' } });
+    fireEvent.click(getByText(/^save$/i));
+    await waitFor(() => expect(onAdded).toHaveBeenCalled());
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'INR', unit: '', value: 1.2, day: todayIso, existingSeries: true });
+  });
+
+  it('adds to a kept-apart lab series named like a vital (Weight)', async () => {
+    holding({ id: 'w1', metricName: 'Weight', value: 70, unit: 'kg', recordedAt: '2026-01-01T00:00:00.000Z', createdAt: '2026-01-01T00:00:00.000Z', source: 'lab_import' });
+    const onAdded = vi.fn();
+    const { getByText, getByLabelText } = render(<AddLabTest onAdded={onAdded} labValues={[]} coreValues={[]} preset={{ metricName: 'Weight', unit: 'kg' }} />);
+    fireEvent.click(getByText('+ Add a value'));
+    fireEvent.change(getByLabelText(/value/i), { target: { value: '71' } });
+    fireEvent.click(getByText(/^save$/i));
+    await waitFor(() => expect(onAdded).toHaveBeenCalled());
+  });
+});
+
 describe('US-66 AC5: a value page for a kept-apart core-named row', () => {
   it('never adds a core value from the page of an old "Creatinine" lab row', async () => {
     const { getByText, getByLabelText, findByText } = render(<AddLabTest onAdded={() => {}} labValues={[]} coreValues={[]} preset={{ metricName: 'Creatinine', unit: 'µmol/L' }} />);

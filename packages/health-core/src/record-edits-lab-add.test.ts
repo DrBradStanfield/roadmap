@@ -1,7 +1,7 @@
 // US-25 AC25, US-21: the one lab add both apps use (record-edits.ts addLabValue): the web's
 // "+ Add a value" (AddLabTest.tsx) and the iPhone's lab page. Synthetic values.
 import { describe, expect, it } from 'vitest';
-import { addLabValue } from './record-edits';
+import { addLabValue, bulkAppendValues } from './record-edits';
 import { createEmptyFile, type FileLabValue, type RoadmapFile } from './roadmap-file';
 import { createCoreRow } from './blood-tests';
 import { reportedToCanonical } from './units';
@@ -53,12 +53,22 @@ describe('addLabValue — a vital\'s name or no unit (US-73 AC8)', () => {
     }
   });
 
-  it('a lab test the record already files under a vital\'s name keeps its "+" (US-25 AC25)', () => {
-    const out = addLabValue(record([held('w1', 'Weight', 70, 'kg', '2026-09-01')]), { metricName: 'Weight', unit: 'kg', value: 71, day: '2026-10-01' }, NOW);
+  it('a kept-apart lab series named like a vital takes no add by name, only its own page\'s "+" (US-25 AC25)', () => {
+    const file = record([held('w1', 'Weight', 70, 'kg', '2026-09-01')]);
+    expect(addLabValue(file, { metricName: 'Weight', unit: 'kg', value: 71, day: '2026-10-01' }, NOW)).toMatchObject({ ok: false, reason: 'core-metric' });
+    const out = addLabValue(file, { metricName: 'Weight', unit: 'kg', value: 71, day: '2026-10-01', existingSeries: true }, NOW);
     if (!out.ok) throw new Error(out.message);
     expect(out.row).toMatchObject({ metricName: 'Weight', unit: 'kg', value: 71 });
-    const struck = record([{ ...held('w1', 'Weight', 70, 'kg', '2026-09-01'), status: 'entered-in-error' }]);
-    expect(addLabValue(struck, { metricName: 'Weight', unit: 'kg', value: 71, day: '2026-10-01' }, NOW)).toMatchObject({ ok: false, reason: 'core-metric' });
+  });
+
+  it('a series saved with no unit (a lab import\'s INR) takes its page\'s "+", never an add by name (US-25 AC25)', () => {
+    const saved = bulkAppendValues(record([]), [{ kind: 'lab', metricName: 'INR', value: 1.1, unit: '', recordedAt: '2026-09-01T00:00:00.000Z', source: 'lab_import' }], NOW);
+    expect(saved.saved).toHaveLength(1);
+    const out = addLabValue(saved.file, { metricName: 'INR', unit: '', value: 1.2, day: '2026-10-01', existingSeries: true }, NOW);
+    if (!out.ok) throw new Error(out.message);
+    expect(out.row).toMatchObject({ metricName: 'INR', unit: '', value: 1.2, source: 'manual' });
+    expect(addLabValue(record([]), { metricName: 'INR', unit: '', value: 1.2, day: '2026-10-01' }, NOW))
+      .toEqual({ ok: false, reason: 'invalid-value', message: 'A lab value needs the unit the lab reported it in' });
   });
 
   it('refuses a test nothing names with no unit, in appendLabValue\'s words', () => {
