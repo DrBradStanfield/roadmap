@@ -123,6 +123,16 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertTrue(left.contains("history-steps.json"), "the others stay")
     }
 
+    /// AC2 with US-73 (review round 3): "Delete all my data" removes heart rate's kept files too,
+    /// one a launch could not delete while the phone was locked.
+    func testRemovingEveryHistoryRemovesTheHeartRateFiles_AC2_US73() async throws {
+        let folder = try folder()
+        for name in LiveHistory.dropped + ["history-steps.json"] { try Data("{}".utf8).write(to: folder.appending(path: name)) }
+        await LiveHistory(folder: folder).removeAll()
+        let left = try FileManager.default.contentsOfDirectory(atPath: folder.path(percentEncoded: false))
+        XCTAssertEqual(left, [], "no history is left: \(left)")
+    }
+
     /// AC15 with US-73 (review round 2): cards kept before heart rate was dropped still draw in
     /// the first frame, without heart rate, and the file is written again without it.
     func testCardsKeptWithHeartRateStillDrawAndLoseIt_AC15_US73() throws {

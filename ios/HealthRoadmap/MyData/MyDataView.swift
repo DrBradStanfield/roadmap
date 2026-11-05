@@ -145,7 +145,9 @@ struct MyDataView: View {
     }
 
     /// What the page is built for: the screen drawn, so a redraw at a new day or for another
-    /// storefront builds it again. The series it reads stay keyed on the record's `revision`.
+    /// storefront builds it again. The worked-out series it reads are kept per screen drawn too
+    /// (`RecordStore.chart`); until they are read again the page draws the last ones, a frame's
+    /// stale day or source at most, with the new plan's own eGFR value (review round 3).
     static func pageKey(_ store: RecordStore) -> Int { store.draws }
 
     private func healthList(_ data: MyData, proxy: ScrollViewProxy) -> some View {
@@ -197,8 +199,8 @@ struct MyDataView: View {
         .listStyle(.insetGrouped)
         // The title where a large title sits, not under the list's top margin (Brad, round 7).
         .contentMargins(.top, 0, for: .scrollContent)
-        // The worked-out rows read their engine series once per record change (US-73 AC7); then
-        // the page is built once for each screen drawn.
+        // The worked-out rows read their engine series once per screen drawn (US-73 AC7), then
+        // the page is built from them.
         .task(id: Self.pageKey(store)) {
             let key = Self.pageKey(store)
             for series in HealthPage.series { _ = await store.chart(for: series, series: series) }

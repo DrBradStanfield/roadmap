@@ -258,6 +258,26 @@ final class MyHealthTests: XCTestCase {
         let redrawn = MyDataView.pageKey(store)
         await store.follow(storefrontIsUS: true)
         XCTAssertNotEqual(MyDataView.pageKey(store), redrawn, "so does a storefront switch")
+        try await redrawReadsTheWorkedOutSeriesAgain()
+    }
+
+    /// Review round 3: the worked-out series read the plan for the day drawn (an 18th birthday,
+    /// a next-day resume), so a redraw of the same record reads them again, as the page's task
+    /// does; a history read for the record alone stays current.
+    private func redrawReadsTheWorkedOutSeriesAgain() async throws {
+        let store = try store(try kidneysAndWaist())
+        for series in HealthPage.series { _ = await store.chart(for: series, series: series) }
+        _ = await store.chart(for: "waist")
+        for series in HealthPage.series { XCTAssertNotNil(store.shownHistory(for: series, series: series), "\(series) read for this screen") }
+        let revision = store.revision
+        await store.redraw().value
+        XCTAssertEqual(store.revision, revision, "a redraw moves no revision")
+        for series in HealthPage.series { XCTAssertNil(store.shownHistory(for: series, series: series), "\(series) trails the redraw") }
+        XCTAssertNotNil(store.shownHistory(for: "waist"), "a record's own history needs no second read")
+        XCTAssertNotNil(store.shownChart(for: "egfr", series: "egfr"), "until it is read again, the page draws the last one")
+        for series in HealthPage.series { _ = await store.chart(for: series, series: series) }
+        for series in HealthPage.series { XCTAssertNotNil(store.shownHistory(for: series, series: series), "\(series) read again for the redraw") }
+        XCTAssertNotNil(HealthPage(store).egfr, "the page built after the read has its eGFR row")
     }
 
     /// Review round 2: the core creatinine and a kept-apart lab "creatinine" series share a name,
@@ -354,6 +374,10 @@ final class MyHealthTests: XCTestCase {
         // A vital by name is no blood test, and a new test needs its unit: the engine's words, nothing saved.
         guard case .refused(let vital, nil) = await store.apply(.labAddName(name: "Weight", value: 80, day: today, unit: "kg")) else { return XCTFail("a vital by name saves nothing") }
         XCTAssertTrue(vital.contains("not a lab test"), vital)
+        // Blood pressure by its own name, offered as a new test, is refused in the sheet (review round 3).
+        guard case .refused(let pressure, nil) = await store.apply(.labAddName(name: "Blood pressure", value: 70, day: today, unit: "kg")) else { return XCTFail("blood pressure by name saves nothing") }
+        XCTAssertTrue(pressure.contains("not a lab test"), pressure)
+        XCTAssertNil(store.myData?.labTests?.first { $0.metric == "blood pressure" })
         guard case .refused(let unitless, nil) = await store.apply(.labAddName(name: "Omega marker", value: 5, day: today, unit: "")) else { return XCTFail("a new test with no unit saves nothing") }
         XCTAssertTrue(unitless.contains("unit"), unitless)
         XCTAssertNil(store.myData?.labTests?.first { $0.metric == "omega marker" })

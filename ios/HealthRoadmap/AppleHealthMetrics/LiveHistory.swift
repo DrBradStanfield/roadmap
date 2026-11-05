@@ -191,9 +191,11 @@ actor LiveHistory {
         for name in Self.dropped where (try? Data(contentsOf: folder.appending(path: name))) != nil { delete(name) }
     }
 
-    /// "Delete all my data" or an access reset: every history goes (AC2).
+    /// "Delete all my data" or an access reset: every history goes (AC2), heart rate's too, which
+    /// `forgetDropped` cannot read while the phone is locked (review round 3).
     func removeAll() {
         for metric in LiveMetric.allCases { remove(metric) }
+        for name in Self.dropped { delete(name) }
     }
 
     // MARK: Files
