@@ -5,6 +5,7 @@ import {
   customSupplementAdd, customSupplementKey, customSupplementMatch, medicationForm, medicationWrites, screeningForm, screeningMonths, screeningWrites,
   type FormField, type FormSection, type MedicationBasis,
 } from './input-form';
+import { LIPID_MEDS_IN_STEPS } from './suggestions';
 import type { MedicationInputs, ScreeningInputs } from './types';
 
 // US-06 AC1a: additions share identity rules without changing explicit keyed edits.
@@ -259,7 +260,7 @@ describe('medicationForm', () => {
   it('US-73 AC6: the cholesterol medicines intro is the target, then Brad\'s medicines sentence, no food list (Brad 2026-11-05)', () => {
     const intro = medicationForm({}, elevated)[0].intro!;
     expect(intro).toMatch(/ApoB/);
-    expect(intro.endsWith('. In addition to a great diet, cholesterol-lowering medications can also be added in steps.')).toBe(true);
+    expect(intro.endsWith(`. ${LIPID_MEDS_IN_STEPS}`)).toBe(true);
     expect(intro).not.toMatch(/oats|walnuts|psyllium/i);
   });
 

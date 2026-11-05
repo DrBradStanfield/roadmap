@@ -23,7 +23,7 @@ import { fieldBounds, inRange, PRESSURE_ORDER, pressureInverted, sanitizeInputs 
 import { ISO_DATE } from './measurement-history';
 import { latestDayOnEarth } from './merge';
 import { resolveRecordedAt } from './record-edits';
-import { knownMinorOf } from './calculations';
+import { isKnownMinorOnDay, knownMinorOf } from './calculations';
 import { buildChatContextJson } from './chat-context';
 import {
   APP_CHAT_EDIT_TOOLS, CHAT_EDIT_TOOLS, EDITABLE_FIELDS, PROPOSE_FIELD_EDIT_TOOL, PROPOSE_PROFILE_EDIT_TOOL, medicationAnswerMisfit, parseProposedEdit, parseProposedEdits,
@@ -306,14 +306,21 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   // age or sex to read it by, lostEgfr below withholds the protein card and asks). So does the saved one,
   // newer than the lab eGFR, once the plan can calculate from it: the client kept the lab eGFR
   // only because it had no age (or no sex, AC8), and a stated one supplies it.
-  const saved = sanitizeInputs({ creatinine: payload.creatinine, birthYear: payload.birthYear, sex: payload.sex } as Partial<HealthInputs>);
+  const saved = sanitizeInputs({
+    creatinine: payload.creatinine, birthYear: payload.birthYear, birthMonth: payload.birthMonth, sex: payload.sex,
+  } as Partial<HealthInputs>);
   const creatinineDay = stated.get('creatinine')?.date ?? blocked.get('creatinine')
     ?? (saved.creatinine !== undefined && saved.birthYear !== undefined && saved.sex !== undefined
       ? savedLatestDay(history, 'creatinine', today) || undefined : undefined);
   if (creatinineDay !== undefined && !(creatinineDay <= String(base.labEgfrDate ?? ''))) {
-    delete payload.labEgfr;
-    delete payload.labEgfrDate;
-    delete payload.labEgfrOutdated;
+    // ...unless a known minor took it: no eGFR comes from it, so the lab's stands, outdated (withLabEgfr's rule).
+    if (isKnownMinorOnDay(saved.birthYear, saved.birthMonth, creatinineDay)) {
+      if (payload.labEgfrDate !== undefined) payload.labEgfrOutdated = true;
+    } else {
+      delete payload.labEgfr;
+      delete payload.labEgfrDate;
+      delete payload.labEgfrOutdated;
+    }
   }
   if (unusable.size > 0 && base.measurementHistory !== undefined) {
     const gone = new Set([...unusable].map(f => FIELD_TO_METRIC[f]));
@@ -323,9 +330,9 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   if (base.unitSystem !== 'si' && base.unitSystem !== 'conventional') {
     payload.unitSystem = stated.values().next().value?.system ?? 'si';
   }
-  // US-07 AC7: a stated creatinine's eGFR uses the age on its day (an undated one is today's).
-  const statedCreatinine = stated.get('creatinine');
-  const contextJson = buildChatContextJson(payload, statedCreatinine ? { creatinineDay: statedCreatinine.date } : undefined);
+  // US-07 AC7: a stated creatinine's eGFR uses the age on its day; an undated one was given
+  // today's above, so it never falls back to the saved point's day.
+  const contextJson = buildChatContextJson(payload, stated.get('creatinine')?.date);
   const plan = contextJson ? JSON.parse(contextJson) : null;
   // No usable height: the context carries the values but no cards (US-15 AC36);
   // this tool still answers "no plan". A known minor's context has no cards either, and is sent.

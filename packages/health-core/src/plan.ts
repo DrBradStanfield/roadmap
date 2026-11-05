@@ -7,7 +7,7 @@
  * `renderJson` is the agent-facing shape, and both surfaces return it.
  */
 import { currentValueRows, isCoreRow } from './blood-tests';
-import { ageOnDay, calculateHealthResults, missingPlanInputs } from './calculations';
+import { calculateHealthResults, isKnownMinorOnDay, missingPlanInputs } from './calculations';
 import { fileProfileToApi, fileScreeningRows } from './file-inputs';
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
 import {
@@ -175,8 +175,8 @@ export function labEgfrFrom(value: number, labEgfrDate: string, comparator?: Com
  * it is the plan's eGFR, and cleared when it is not. The candidates are `lab`
  * (labEgfrOf) and the eGFR calculated from the creatinine the inputs hold,
  * dated `creatinineDay`. Only an eGFR the plan can calculate competes: a
- * creatinine the schema keeps, a birth year, a sex (AC8) and an age of 18 or
- * more on the creatinine's day. The newer by day wins; on
+ * creatinine the schema keeps, a birth year, a sex (AC8) and no known minor on
+ * the creatinine's day (isKnownMinor's rule). The newer by day wins; on
  * the same day the lab's does, since ours may come from a misread creatinine.
  * A creatinine with no date (typed, not yet saved: `null`) is `today`'s, the
  * day it would be saved with. A newer creatinine the plan cannot calculate
@@ -187,25 +187,24 @@ export function withLabEgfr<T extends Partial<HealthInputs>>(
   inputs: T, creatinineDay: string | null, lab: LabEgfr | null, today: string,
 ): T & CreatinineDay {
   const { labEgfr: _value, labEgfrDate: _day, labEgfrOutdated: _outdated, creatinineDay: _was, limits, ...rest } = inputs as T & CreatinineDay;
-  const dated = creatinineDay ? { creatinineDay } : {};
-  const others = { ...withoutLimit(limits, 'labEgfr'), ...dated };
+  const others = withoutLimit(limits, 'labEgfr');
   const kept = others.limits ?? {};
-  if (!lab) return { ...rest, ...others } as T & CreatinineDay;
   const usable = sanitizeInputs({ creatinine: inputs.creatinine, birthYear: inputs.birthYear, birthMonth: inputs.birthMonth, sex: inputs.sex });
   // A creatinine printed as a limit is held, but no eGFR is worked out from it (US-12 AC20).
   const day = creatinineDay ?? today;
-  const newer = (usable.creatinine !== undefined || !!kept.creatinine) && day > lab.labEgfrDate;
-  // US-07 AC7: none from a creatinine taken before 18, so that one cannot outrank the lab's.
-  const adult = usable.birthYear !== undefined && ageOnDay(usable.birthYear, usable.birthMonth, day) >= 18;
-  if (newer && !kept.creatinine && adult && usable.sex !== undefined) return { ...rest, ...others } as T & CreatinineDay;
+  const newer = !!lab && (usable.creatinine !== undefined || !!kept.creatinine) && day > lab.labEgfrDate;
+  // US-07 AC7: none from a creatinine taken by a known minor, so that one cannot outrank the lab's.
+  const adult = usable.birthYear !== undefined && !isKnownMinorOnDay(usable.birthYear, usable.birthMonth, day);
+  const ours = !lab || (newer && !kept.creatinine && adult && usable.sex !== undefined);
   // AC8: a newer creatinine the plan cannot read yet, or one printed as a limit, leaves the lab eGFR standing, marked outdated.
   // US-12 AC20: a limit that does not decide stands too, with no number; the
   // plan then has no eGFR, and never works one out from an older creatinine.
-  const { labEgfrLimit, ...value } = lab;
-  return {
+  const { labEgfrLimit, ...value } = lab ?? {};
+  const out = ours ? { ...rest, ...others } : {
     ...rest, ...value, ...(newer ? { labEgfrOutdated: true } : {}),
-    ...(labEgfrLimit ? { limits: { ...kept, labEgfr: labEgfrLimit }, ...dated } : others),
-  } as T & CreatinineDay;
+    ...(labEgfrLimit ? { limits: { ...kept, labEgfr: labEgfrLimit } } : others),
+  };
+  return { ...out, ...(creatinineDay ? { creatinineDay } : {}) } as T & CreatinineDay;
 }
 
 export interface PlanLab {

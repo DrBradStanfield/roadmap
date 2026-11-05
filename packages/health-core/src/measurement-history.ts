@@ -141,6 +141,12 @@ function beats(
   return a.id > b.id;
 }
 
+/** A series' newest point (the last: a series runs oldest first), or none when it is printed as a limit (US-12 AC20). */
+export function newestExactPoint(series: DatedMeasurement[] | undefined): DatedMeasurement | undefined {
+  const newest = series?.[series.length - 1];
+  return newest && !newest.comparator ? newest : undefined;
+}
+
 /**
  * The most recent dated reading per HealthInputs field (via METRIC_TO_FIELD).
  * Metrics with no field mapping are skipped. Callers merge this over their
@@ -152,8 +158,8 @@ export function latestFromHistory(
   const out: Partial<Record<keyof HealthInputs, number>> = {};
   for (const [metric, series] of Object.entries(history)) {
     const field = METRIC_TO_FIELD[metric];
-    // A newest point printed as a limit is no exact value to report (US-12 AC20).
-    if (field && series.length > 0 && !series[series.length - 1].comparator) out[field] = series[series.length - 1].value;
+    const newest = newestExactPoint(series);
+    if (field && newest) out[field] = newest.value;
   }
   return out;
 }

@@ -78,6 +78,11 @@ export function isKnownMinor(birthYear: number | undefined, birthMonth: number |
   return year - birthYear - (behind.getUTCMonth() + 1 < birthMonth ? 1 : 0) < 18;
 }
 
+/** isKnownMinor judged on a YYYY-MM-DD day: noon UTC is that day at UTC-12. */
+export function isKnownMinorOnDay(birthYear: number | undefined, birthMonth: number | undefined, day: string): boolean {
+  return isKnownMinor(birthYear, birthMonth, new Date(`${day}T12:00:00Z`));
+}
+
 /**
  * The gate over the birth info the plan keeps: a birth year or month outside
  * the plan's bounds is dropped first, as `computePlan` drops it. Every surface
@@ -267,9 +272,12 @@ export function calculateHealthResults(inputs: SuggestionInputs, unitSystem?: Un
     results.eGFRFromLab = true;
   } else if (inputs.creatinine !== undefined && !limitOf(inputs, 'creatinine') && !limitOf(inputs, 'labEgfr') && results.age !== undefined && inputs.sex) {
     // Never from a creatinine printed as a limit, nor past a lab eGFR printed as one (US-12 AC20).
-    // The age on the creatinine's day (today's when the day is unknown); none under 18 on it (US-07 AC7).
-    const age = inputs.creatinineDay ? ageOnDay(inputs.birthYear!, inputs.birthMonth, inputs.creatinineDay) : results.age;
-    if (age >= 18) results.eGFR = Math.round(calculateEGFR(inputs.creatinine, age, inputs.sex));
+    // The age on the creatinine's day (today's when the day is unknown); none from a
+    // creatinine taken while a known minor, the minor gate judged on its day (US-07 AC7).
+    const day = inputs.creatinineDay;
+    const minor = day ? isKnownMinorOnDay(inputs.birthYear, inputs.birthMonth, day) : isKnownMinor(inputs.birthYear, inputs.birthMonth, now);
+    const age = day ? ageOnDay(inputs.birthYear!, inputs.birthMonth, day) : results.age;
+    if (!minor) results.eGFR = Math.round(calculateEGFR(inputs.creatinine, age, inputs.sex));
   }
 
   // Adjust protein target for CKD Stage 3b+ (eGFR < 45): 1.0g/kg instead of 1.2g/kg

@@ -353,4 +353,47 @@ describe('US-07 AC7: the eGFR uses the age on the creatinine\'s day', () => {
     expect(stated('2025-12-15')).toBeUndefined();
     expect(stated('2026-02-15')).toBe(Math.round(calculateEGFR(70, 18, 'female')));
   });
+
+  it('the known-minor gate on the test day: no birth month, a creatinine from the year they turn 18 gives none', () => {
+    // Born 2007, month unknown: an adult today (2026), but a known minor all through 2025 (US-07 AC6's cautious rule).
+    const noMonth = (day: string) => {
+      const file = fileWith({ birthYear: 2007, creatinine: [{ value: 60, day }] });
+      delete file.profile.birthMonth;
+      return file;
+    };
+    expect(plan(noMonth('2025-12-01')).results.knownMinor).toBeUndefined();
+    expect(plan(noMonth('2025-12-01')).results.eGFR).toBeUndefined();
+    expect(plan(noMonth('2026-01-15')).results.eGFR).toBe(Math.round(calculateEGFR(60, 19, 'female')));
+    const { inputs, unitSystem } = plan(noMonth('2025-12-01'));
+    const payload = chatContextOf(inputs, unitSystem, [], [], noMonth('2025-12-01').measurements);
+    expect(JSON.parse(buildChatContextJson(payload)!).derivedValues.eGFR ?? undefined).toBeUndefined();
+  });
+
+  it('run_roadmap keeps an older lab eGFR exactly when the plan does: a newer creatinine taken at 17 leaves it, outdated', () => {
+    const file = fileWith({ birthYear: 2008, creatinine: [{ value: 60, day: '2025-12-01' }], labs: [{ value: 95, day: '2025-10-01' }] });
+    const base = chatContextOf(plan(file).inputs, 'si', [], [], file.measurements);
+    const run = (values: unknown[]) => JSON.parse(runRoadmap(base, { values }, NOW).contextJson!);
+    // The saved creatinine at 17: the lab eGFR stands, as on the client, with no potassium card.
+    const saved = run([{ field: 'weightKg', value: 60, unit: 'kg' }]);
+    expect(saved.derivedValues.eGFR).toBe(plan(file).results.eGFR);
+    expect(saved.derivedValues.eGFR).toBe(95);
+    expect(saved.currentSuggestions.map((c: { id: string }) => c.id)).not.toContain('high-potassium');
+    // A stated creatinine at 17, newer than the lab eGFR: the same.
+    const stated = run([{ field: 'creatinine', value: 70, unit: 'µmol/L', date: '2025-12-15' }]);
+    expect(stated.derivedValues.eGFR).toBe(95);
+    expect(stated.currentSuggestions.map((c: { id: string }) => c.id)).toContain('protein-target');
+    expect(stated.currentSuggestions.map((c: { id: string }) => c.id)).not.toContain('high-potassium');
+    // At 18 the stated creatinine outranks it.
+    expect(run([{ field: 'creatinine', value: 70, unit: 'µmol/L', date: '2026-02-15' }]).derivedValues.eGFR)
+      .toBe(Math.round(calculateEGFR(70, 18, 'female')));
+  });
+
+  it('run_roadmap: an undated stated creatinine is today\'s, never the day of a saved point with the same value', () => {
+    // Saved 70 at 17; the same 70 stated undated is read at today's age (18), not the saved day's.
+    const file = fileWith({ birthYear: 2008, creatinine: [{ value: 70, day: '2025-11-01' }] });
+    const base = chatContextOf(plan(file).inputs, 'si', [], [], file.measurements);
+    expect(JSON.parse(buildChatContextJson(base)!).derivedValues.eGFR ?? undefined).toBeUndefined();
+    const run = JSON.parse(runRoadmap(base, { values: [{ field: 'creatinine', value: 70, unit: 'µmol/L' }] }, NOW).contextJson!);
+    expect(run.derivedValues.eGFR).toBe(Math.round(calculateEGFR(70, 18, 'female')));
+  });
 });

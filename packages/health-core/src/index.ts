@@ -93,7 +93,7 @@ export {
 } from './calculations';
 
 // Suggestions
-export { generateSuggestions, REDUCE_ALCOHOL_ID, LIPID_DIET_ADVICE, lipidMarkerFor, lipidTargetSentence, medicinesShown, weightMedicationTrigger, weightMedIntro } from './suggestions';
+export { generateSuggestions, REDUCE_ALCOHOL_ID, LIPID_MEDS_IN_STEPS, lipidMarkerFor, lipidTargetSentence, medicinesShown, weightMedicationTrigger, weightMedIntro } from './suggestions';
 export type { LipidMarker, WeightMedicationTrigger } from './suggestions';
 export { weightCascade, lipidCascade } from './medication-cascades';
 export { planSections, type PlanSection, type PlanCard, type PlanSectionKey } from './plan-sections';

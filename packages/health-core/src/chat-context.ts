@@ -61,7 +61,7 @@
  *     the plan's gating field names it lacks. uploadedDocuments is always empty.
  * Every other key is dropped.
  */
-import type { CreatinineDay, HealthInputs, SuggestionInputs } from './types';
+import type { HealthInputs, SuggestionInputs } from './types';
 import { MEDICATION_ANSWERS } from './chat-edits';
 import { rangeFault, type UnitSystem } from './units';
 import {
@@ -72,7 +72,7 @@ import {
   type ApiMedication, type ApiScreening,
 } from './mappings';
 import {
-  buildMeasurementHistory, latestFromHistory, newestUsablePsa, HISTORY_CAP_PER_METRIC, ISO_DATE,
+  buildMeasurementHistory, latestFromHistory, newestExactPoint, newestUsablePsa, HISTORY_CAP_PER_METRIC, ISO_DATE,
   type MeasurementHistoryMap,
 } from './measurement-history';
 import { calculateAge, calculateHealthResults, knownMinorOf, missingPlanInputs } from './calculations';
@@ -175,7 +175,7 @@ export const LIMIT_CHAT_RULE =
  * The JSON the model reads for a payload, or null when it holds nothing:
  * no plan and nothing saved (an empty form). See the header for what reaches it.
  */
-export function buildChatContextJson(payload: unknown, stated?: CreatinineDay): string | null {
+export function buildChatContextJson(payload: unknown, statedCreatinineDay?: string): string | null {
   const raw = (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>;
   // Sanitize per field first: one out-of-range number must cost its own field,
   // not collapse the whole context to "no data entered". The snapshot is read
@@ -223,8 +223,9 @@ export function buildChatContextJson(payload: unknown, stated?: CreatinineDay): 
     ({ id: String(i).padStart(4, '0'), metricType: 'psa', value: p.value, recordedAt: p.date, ...comparatorOf(p) }));
   const planScreenings = withPsaMeasurement(screenings, newestUsablePsa(psaPoints, new Date()));
   // US-07 AC11: a left-out pair turns the blood pressure prompt into "check your reading".
-  // US-07 AC7: the eGFR's age is the one on the creatinine's day: a stated value's own, else the saved point's.
-  const creatinineDay = stated?.creatinineDay ?? creatinineDayOf(inputs.creatinine, measurementHistory);
+  // US-07 AC7: the eGFR's age is the one on the creatinine's day: a stated value's own
+  // (runRoadmap passes today for an undated one), else the saved point's.
+  const creatinineDay = statedCreatinineDay ?? creatinineDayOf(inputs.creatinine, measurementHistory);
   const planInputs = parsed.success ? {
     ...inputs, ...(pressure ? { pressureOrder: true as const } : {}), ...(creatinineDay ? { creatinineDay } : {}),
   } as SuggestionInputs : null;
@@ -426,13 +427,11 @@ function limitsOf(raw: unknown): { limits: Partial<Record<LimitField, { comparat
 
 /**
  * The day of the creatinine the plan reads, as the client's plan dated it: the
- * newest saved point, when it holds that value (a day's last point is the row
- * the plan reads). Otherwise the value was typed and not saved yet: undefined,
- * which the plan reads as today.
+ * newest saved point (latestFromHistory's), when it holds that value. Otherwise
+ * the value was typed and not saved yet: undefined, which the plan reads as today.
  */
 function creatinineDayOf(creatinine: number | undefined, history: MeasurementHistoryMap): string | undefined {
-  const newest = (history.creatinine ?? []).reduce<{ date: string; value: number } | undefined>(
-    (best, p) => (!best || p.date >= best.date ? p : best), undefined);
+  const newest = newestExactPoint(history.creatinine);
   return newest && newest.value === creatinine ? newest.date : undefined;
 }
 
