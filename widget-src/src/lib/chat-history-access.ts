@@ -17,8 +17,14 @@
 import type { ChatHistoryStore } from '../storage/chat-history-store';
 
 let factory: (() => Promise<ChatHistoryStore>) | null = null;
-/** The page's one opened store, and what callers are served: it, or its re-read. */
-let opened: Promise<ChatHistoryStore | null> | null = null;
+/**
+ * The page's one session: its open, in flight or done (rejecting if it
+ * failed). Set before any await and replaced only once it has failed, so the
+ * page never holds two sessions (US-11 AC2g): a second one would not wait
+ * for the first one's saves.
+ */
+let session: Promise<ChatHistoryStore> | null = null;
+/** What callers are served: the session, or its re-read (null: it failed). */
 let store: Promise<ChatHistoryStore | null> | null = null;
 /** The record's erase identity, and the one the store was read at (null: read again). */
 let eraseIdentity = (): string => '';
@@ -26,8 +32,16 @@ let readAt: string | null = '';
 
 export function setChatHistoryFactory(f: (() => Promise<ChatHistoryStore>) | null, identity = (): string => ''): void {
   factory = f;
-  opened = store = null;
+  session = store = null;
   eraseIdentity = identity;
+}
+
+function open(): Promise<ChatHistoryStore> {
+  const opening = factory!();
+  session = opening;
+  store = opening.catch(() => null);
+  readAt = eraseIdentity();
+  return opening;
 }
 
 /**
@@ -37,23 +51,23 @@ export function setChatHistoryFactory(f: (() => Promise<ChatHistoryStore>) | nul
  * from before the erase is served, but it is not kept: the next caller reads
  * again.
  */
-function cached(): Promise<ChatHistoryStore | null> | null {
+function cached(opened: Promise<ChatHistoryStore>): Promise<ChatHistoryStore | null> {
   const now = eraseIdentity();
-  if (opened && now !== readAt) {
-    store = opened.then((s) => s && s.reload().then(() => s, () => {
+  if (now !== readAt) {
+    store = opened.then((s) => s.reload().then(() => s, () => {
       readAt = null;
       return null;
-    }));
+    }), () => null);
   }
   readAt = now;
-  return store;
+  return store!;
 }
 
 /** The cloud chat-history store, or null (production build, no data layer, or
  *  the cloud read failed). Never rejects. */
 export function getChatHistory(): Promise<ChatHistoryStore | null> {
   if (!factory) return Promise.resolve(null);
-  return cached() ?? (opened = store = factory().catch(() => null));
+  return cached(session ?? open());
 }
 
 /**
@@ -62,17 +76,18 @@ export function getChatHistory(): Promise<ChatHistoryStore | null> {
  * open that failed earlier this page is tried again rather than taken from the
  * cache. Null only when no chat layer is registered, where no history exists.
  * A successful open becomes the shared instance, so a chat panel opened
- * afterwards sees the tombstones. When the page's open session failed its
- * re-read, that session reads again (rejecting if it fails): a second session
- * would not wait for the first one's saves (US-11 AC2g).
+ * afterwards sees the tombstones. When the page's session failed its re-read,
+ * it reads again. If that fails too, its copy is erased anyway (tombstoned
+ * even when the save fails), so deleting the file by hand lasts, and the open
+ * rejects unless that save got through (US-11 AC2g).
  */
 export async function openChatHistory(): Promise<ChatHistoryStore | null> {
   if (!factory) return null;
-  const open = await cached();
-  if (open) return open;
-  const held = await opened;
-  if (held) return held.reload().then(() => held);
-  const opening = factory();
-  opened = store = opening.catch(() => null);
-  return opening;
+  const earlier = session;
+  const opened = earlier ?? open();
+  const served = await cached(opened);
+  if (served) return served;
+  const held = await opened.catch(() => null);
+  if (held) return held.reload().then(() => held, (e: unknown) => held.eraseAll().then(() => held, () => { throw e; }));
+  return session === earlier ? open() : session;
 }

@@ -317,8 +317,8 @@ export async function deleteUserData(): Promise<{ success: boolean; error?: stri
   // it is refused before either step runs (US-09 AC23). Chat goes through the
   // singleton, so an open chat panel's instance is the one erased. In the
   // cloud, a history that could not be opened rejects, so the session reports
-  // it and never counts it erased; `chatUnread` tells the page no tombstone
-  // exists to send later (US-11 AC2c). On the device the record erase clears
+  // it and never counts it erased; `chatUnread` tells the page the file could
+  // not be read (US-11 AC2c). On the device the record erase clears
   // the chat file itself, so a failed open there loses nothing.
   let chatUnread = false;
   const chat = getBackendKind() === 'local' ? getChatHistory : () => openChatHistory().catch((error: unknown) => {

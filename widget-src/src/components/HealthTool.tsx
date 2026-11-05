@@ -186,9 +186,10 @@ export const ERASE_DONE_CHAT_PENDING =
   'Your health record is deleted. Your chat history could not be reached just now; ' +
   'it is erased on your next chat.' + ERASE_DONE_TAIL;
 
-// The cloud chat history could not even be opened (US-11 AC2c): no tombstone
-// exists in this page, so nothing goes up on the next chat, and the failure may
-// be lasting (a newer schema, an unreadable file). Say where it still is.
+// The cloud chat history could not be read (US-11 AC2c), so the stored file
+// still holds its conversations, and the failure may be lasting (a newer
+// schema, an unreadable file). Say where it still is. If this page had it
+// open, its copy is tombstoned all the same (AC2g), so a hand delete lasts.
 export const ERASE_DONE_CHAT_UNREAD =
   'Your health record is deleted. Your chat history could not be read, so any chats you saved ' +
   'are still in your cloud folder, in chat-history.json.' + ERASE_DONE_TAIL;

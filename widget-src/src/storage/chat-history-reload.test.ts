@@ -59,6 +59,7 @@ describe('the page\'s chat history follows the record\'s erase identity (US-11 A
     const identity = register(cloud);
     vi.spyOn(MemoryAdapter.prototype, 'read');
     expect(ids(await getChatHistory())).toEqual(['c1']);
+    expect(chatReads()).toBe(1); // the open's own read only
     await otherDeviceErases(cloud);
     const readsBefore = chatReads();
     expect(ids(await getChatHistory())).toEqual(['c1']); // same erase: the cached copy, no read
@@ -124,6 +125,47 @@ describe('the page\'s chat history follows the record\'s erase identity (US-11 A
     expect(factory).toHaveBeenCalledTimes(1);
     read.mockRestore();
     expect(await getChatHistory()).toBe(first); // read again once the cloud answers, still the same session
+  });
+
+  it('when both reads fail, the erase\'s open tombstones the page\'s copy and still rejects, so deleting the file by hand lasts', async () => {
+    const cloud = new MemoryCloud();
+    await savedConversation(cloud);
+    const identity = register(cloud);
+    expect(ids(await getChatHistory())).toEqual(['c1']);
+    identity.now = 'erase-2'; // another device erased the record; its chat step failed, so the file still holds c1 live
+    const read = vi.spyOn(MemoryAdapter.prototype, 'read').mockRejectedValue(new Error('Synthetic: the cloud did not answer'));
+    await expect(openChatHistory()).rejects.toThrow('Synthetic'); // the alert says the file could not be read
+    read.mockRestore();
+    cloud.files.delete(CHAT_FILE); // the user deletes chat-history.json by hand, as the alert says
+    const next = (await getChatHistory())!; // and chats again in the same tab
+    expect(ids(next)).toEqual([]);
+    await next.recordExchange({ conversationId: 'c2', isNew: true, userText: 'my bp is 128/82', assistantText: 'ok' });
+    expect(await storedLive(cloud)).toEqual(['c2']);
+  });
+
+  it('when both reads fail but the erase\'s own save gets through, the open answers with the page\'s erased session', async () => {
+    const cloud = new MemoryCloud();
+    await savedConversation(cloud);
+    const identity = register(cloud);
+    const page = await getChatHistory();
+    identity.now = 'erase-2';
+    vi.spyOn(MemoryAdapter.prototype, 'read')
+      .mockRejectedValueOnce(new Error('Synthetic: the cloud did not answer'))
+      .mockRejectedValueOnce(new Error('Synthetic: the cloud did not answer'));
+    expect(await openChatHistory()).toBe(page);
+    expect(await storedLive(cloud)).toEqual([]);
+  });
+
+  it('a failed open is kept for the chat\'s callers, even once the identity moves; the erase\'s first open tries once', async () => {
+    const cloud = new MemoryCloud();
+    const identity = { now: 'erase-1' };
+    const factory = vi.fn(() => ChatHistoryStore.create(new MemoryAdapter(cloud)));
+    setChatHistoryFactory(factory, () => identity.now);
+    vi.spyOn(MemoryAdapter.prototype, 'read').mockRejectedValueOnce(new Error('Synthetic: the cloud did not answer'));
+    await expect(openChatHistory()).rejects.toThrow('Synthetic');
+    expect(factory).toHaveBeenCalledTimes(1);
+    identity.now = 'erase-2';
+    expect(await getChatHistory()).toBeNull();
   });
 
   it('a re-read that fails is not kept: once the cloud answers, the next caller gets the merged copy and new exchanges are saved', async () => {
@@ -197,5 +239,58 @@ describe('a failed re-read never replaces the page\'s open session (US-11 AC2g)'
     expect(next).toBe(page);
     await next.recordExchange({ conversationId: 'c3', isNew: true, userText: 'my bp is 128/82', assistantText: 'ok' });
     expect(await storedLive(cloud)).toEqual(['c3']);
+  });
+});
+
+describe('the page opens one session, whoever asks first (US-11 AC2g)', () => {
+  it('the erase\'s first open and a chat list asked for in the next microtask share one session, so a held upload cannot restore the erase', async () => {
+    const cloud = new MemoryCloud();
+    await savedConversation(cloud); // saved in an earlier page; nothing is open on this one
+    const adapter = new CheckThenUpload(cloud);
+    const factory = vi.fn(() => ChatHistoryStore.create(adapter));
+    setChatHistoryFactory(factory, () => 'erase-1');
+    const opening = openChatHistory(); // Delete All My Data, the first to ask
+    await Promise.resolve();
+    const page = (await getChatHistory())!; // the chat list, in the next microtask
+    adapter.holdNextUpload();
+    const held = page.recordExchange({ conversationId: 'c2', isNew: true, userText: 'and my statin', assistantText: 'ok' });
+    await settle();
+    const erase = (await opening)!;
+    expect(erase).toBe(page);
+    expect(factory).toHaveBeenCalledTimes(1);
+    const erasing = erase.eraseAll();
+    await settle();
+    adapter.release();
+    await Promise.all([held, erasing]);
+    expect(ids(page)).toEqual([]);
+    const next = (await getChatHistory())!;
+    expect(next).toBe(page);
+    await next.recordExchange({ conversationId: 'c3', isNew: true, userText: 'my bp is 128/82', assistantText: 'ok' });
+    expect(await storedLive(cloud)).toEqual(['c3']);
+  });
+
+  it('whichever microtask the chat list asks in, the page opens one session', async () => {
+    for (let ticks = 0; ticks < 4; ticks++) {
+      const factory = vi.fn(() => ChatHistoryStore.create(new MemoryAdapter(new MemoryCloud())));
+      setChatHistoryFactory(factory);
+      const opening = openChatHistory();
+      for (let i = 0; i < ticks; i++) await Promise.resolve();
+      const listed = await getChatHistory();
+      expect(await opening).toBe(listed);
+      expect(factory).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it('two erase opens after a failed first open open one session between them', async () => {
+    const cloud = new MemoryCloud();
+    await savedConversation(cloud);
+    const factory = vi.fn(() => ChatHistoryStore.create(new MemoryAdapter(cloud)));
+    setChatHistoryFactory(factory, () => 'erase-1');
+    vi.spyOn(MemoryAdapter.prototype, 'read').mockRejectedValueOnce(new Error('Synthetic: the cloud did not answer'));
+    expect(await getChatHistory()).toBeNull(); // the first open failed
+    const [a, b] = await Promise.all([openChatHistory(), openChatHistory()]);
+    expect(a).toBe(b);
+    expect(factory).toHaveBeenCalledTimes(2); // the failed open, and one more
+    expect(await getChatHistory()).toBe(a);
   });
 });
