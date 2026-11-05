@@ -111,4 +111,14 @@ describe('a supplement\'s start and stop days in Auckland (US-73 AC10b)', () => 
     expect(active).toEqual([]);
     expect(myData(edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { ...omega3, status: 'active' }), NOW).supplements.active[0].stoppedDay).toBeNull();
   });
+
+  // Brad 2026-11-06: one taken again says "Since" the day it was taken again, not its first start.
+  it('gives a supplement taken again the local day it was taken again', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { ...omega3, status: 'active' }, { ...omega3, status: 'stopped' });
+    const outcome = applyEdit(file, { ...omega3, status: 'active' }, LATER);
+    if (!outcome.ok) throw new Error(outcome.message);
+    expect(myData(outcome.file, LATER).supplements.active.map((s) => [s.startedDay, s.stoppedDay])).toEqual([['2026-10-24', null]]);
+    // A row with no history (another writer) keeps its stored start.
+    expect(myData({ ...outcome.file, supplementHistory: [] }, LATER).supplements.active.map((s) => s.startedDay)).toEqual(['2026-10-22']);
+  });
 });
