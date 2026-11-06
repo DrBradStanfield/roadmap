@@ -39,8 +39,9 @@ case "$p" in
   pulls/7/commits*) [ "$(q .commitsError)" = true ] && { echo "HTTP 502" >&2; exit 1; }
     jq -c '.commits // [{sha:.head,author:{login:"DrBradStanfield"}}]' "$SCEN" | out;;
   pulls/7/files) jq -c '.prFiles // []' "$SCEN" | out;;
-  pulls/7) [ -f "$LOG.merged" ] && [ "$(q .failMergeRead)" = true ] && { echo "HTTP 502" >&2; exit 1; }
-    m=0; [ -f "$LOG.merged" ] && [ "$(q .staleMergeRead)" != true ] && m=1
+  pulls/7) k=0; [ -f "$LOG.merged" ] && { k=$(( $(cat "$LOG.reads" 2>/dev/null || echo 0) + 1 )); echo "$k" > "$LOG.reads"; }
+    [ -f "$LOG.merged" ] && { [ "$(q .failMergeRead)" = true ] || [ "$k" -le "$(q '.failMergeReads // 0')" ]; } && { echo "HTTP 502" >&2; exit 1; }
+    m=0; [ -f "$LOG.merged" ] && [ "$(q .staleMergeRead)" != true ] && [ "$k" -gt "$(q '.staleMergeReads // 0')" ] && m=1
     jq -c --argjson u $upd --argjson m $m '{state:"open",merged:($m==1),title:"t",body:(.prBody // "b"),user:{login:"u"},labels:[],
     commits:(.prCommitCount // ((.commits // [1]) | length)), merge_commit_sha:.mergeSha,
     head:{ref:"claude/x",repo:{full_name:"o/r"},sha:(if $u==1 then .newSha else .head end)}}' "$SCEN" | out;;
@@ -76,7 +77,7 @@ function run(over: Record<string, unknown>, script: string = stepScript()) {
   const scen = join(dir, "scen.json");
   mkdirSync(bin);
   writeFileSync(join(bin, "gh"), FAKE_GH);
-  writeFileSync(join(bin, "sleep"), "#!/bin/sh\nexit 0\n");
+  writeFileSync(join(bin, "sleep"), "#!/bin/sh\necho \"sleep $1\" >> \"$LOG\"\n");
   chmodSync(join(bin, "gh"), 0o755);
   chmodSync(join(bin, "sleep"), 0o755);
   writeFileSync(log, "");
@@ -439,6 +440,34 @@ describe("auto-ship claim 7 (US-46 AC5)", { timeout: 60_000 }, () => {
         expect(deploys(r.calls)).toEqual([`${DEPLOY} -f surfaces=all -f pages_sha=`]);
         expect(closed(r.calls).join("\n")).toContain("Merged aaaa and dispatched deploy.yml");
       }
+    });
+
+    // US-46 AC16 (Brad, 2026-11-04): the merged state can lag the merge call, so
+    // the read is tried 3 times, 2 s apart, before the deploy gets an empty pages_sha.
+    const afterMerge = (c: string) => lines(c).slice(at(c, "pr merge"), at(c, DEPLOY))
+      .filter((l) => l === "api repos/o/r/pulls/7" || l.startsWith("sleep"));
+    const READ = "api repos/o/r/pulls/7";
+
+    it("a merged state that shows on the second or third read still names the merge commit", () => {
+      const cases: { staleMergeReads?: number; failMergeReads?: number }[] = [{ staleMergeReads: 1 }, { staleMergeReads: 2 },
+        { failMergeReads: 1 }, { failMergeReads: 2 }, { failMergeReads: 1, staleMergeReads: 2 }];
+      for (const over of cases) {
+        const r = run(over);
+        expect(r.code).toBe(0);
+        expect(deploys(r.calls)).toEqual([`${DEPLOY} -f surfaces=all -f pages_sha=${"9".repeat(40)}`]);
+        const reads = 1 + Math.max(over.staleMergeReads ?? 0, over.failMergeReads ?? 0);
+        expect(afterMerge(r.calls)).toEqual([READ, ...Array(reads - 1).fill(["sleep 2", READ]).flat()]);
+      }
+    });
+
+    it("three reads, 2 s apart, then an empty pages_sha; one read when the first shows the merge", () => {
+      for (const over of [{ staleMergeRead: true }, { failMergeRead: true }, { mergeSha: null }, { staleMergeReads: 3 }]) {
+        const r = run(over);
+        expect(r.code).toBe(0);
+        expect(afterMerge(r.calls)).toEqual([READ, "sleep 2", READ, "sleep 2", READ]);
+        expect(deploys(r.calls)).toEqual([`${DEPLOY} -f surfaces=all -f pages_sha=`]);
+      }
+      expect(afterMerge(run({}).calls)).toEqual([READ]);
     });
   });
 });

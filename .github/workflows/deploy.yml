@@ -127,14 +127,20 @@ jobs:
     # pages.yml now waits for CI on main before building (US-64 AC9), so the
     # wait below allows 25 min: CI (~3-4) plus the Pages build, with queue room.
     timeout-minutes: 35
+    permissions:
+      contents: read
+      actions: read # the Pages run lookups
+      issues: write # the missing-run comment on the gate's issue (US-46 AC16)
     steps:
       - uses: actions/checkout@v5
         with:
           ref: main
+          persist-credentials: false # keeps the token out of .git/config (it is still in the runner's memory)
       - name: Wait for the Pages deploy of this commit (if one was triggered)
         env:
           GH_TOKEN: ${{ github.token }}
           PAGES_SHA: ${{ inputs.pages_sha }}
+          NOTIFY_ISSUE: ${{ needs.gate.outputs.notify_issue }}
         run: |
           set -euo pipefail
           # US-46 AC15: auto-ship names the commit it merged and has just
@@ -155,12 +161,30 @@ jobs:
               break
             done
           }
+          # newer_run ID: run_id = the newest pages.yml run on main if it is newer than run ID, or empty.
+          newer_run() {
+            for i in $(seq 1 12); do
+              run_id=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/pages.yml/runs?branch=main&per_page=1" \
+                --jq ".workflow_runs[0] | select(.id > $1) | .id")
+              [ -n "${run_id}" ] || [ "${i}" -eq 12 ] || { sleep 10; continue; }
+              break
+            done
+          }
           # wait_run ID: up to 25 minutes for the run to finish; fails the step unless it succeeded.
+          # US-46 AC16: pages.yml's concurrency cancels a pending run when a newer one queues, and
+          # every Pages run builds main's tip, so a cancelled run hands over to a newer run on main.
           wait_run() {
             for i in $(seq 1 150); do
               status=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/$1" --jq '.status')
               conclusion=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/$1" --jq '.conclusion // ""')
               if [ "${status}" = "completed" ]; then
+                if [ "${conclusion}" = "cancelled" ]; then
+                  newer_run "$1"
+                  if [ -n "${run_id}" ]; then
+                    echo "Pages run $1 was cancelled; newer Pages run ${run_id} on main replaced it: waiting for that one."
+                    wait_run "${run_id}"; return 0
+                  fi
+                fi
                 [ "${conclusion}" = "success" ] || { echo "::error::Pages deploy failed (${conclusion})"; exit 1; }
                 echo "Pages deploy succeeded."; return 0
               fi
@@ -174,6 +198,11 @@ jobs:
             wait_run "${run_id}"
           elif [ -n "${PAGES_SHA:-}" ]; then
             echo "::warning::No pages.yml run for ${SHA} after 12 looks (about 2 minutes) — smoking the existing Pages site."
+            # A ::warning:: reaches no one: say it on the deploy's notification issue (US-46 AC16).
+            if [ -n "${NOTIFY_ISSUE:-}" ]; then
+              gh issue comment "${NOTIFY_ISSUE}" -R "${GITHUB_REPOSITORY}" --body "@DrBradStanfield, the Pages smoke found no pages.yml run for \`${SHA}\` after 12 looks (about 2 minutes); this alone does not stop the deploy. If main has moved on and its tip has a Pages run, the deploy waits for that run and stops unless it (or a newer run that replaces it) succeeds. Otherwise it smokes the Pages site as it stands, which may not hold this commit yet. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+                || echo "::warning::Could not comment on the deploy notification issue #${NOTIFY_ISSUE}."
+            fi
           else
             echo "No pages.yml run for ${SHA} (server-only change) — smoking the existing Pages site."
           fi
