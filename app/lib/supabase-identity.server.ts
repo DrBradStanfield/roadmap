@@ -34,6 +34,14 @@ function cacheUserId(shopifyCustomerId: string, userId: string): void {
   });
 }
 
+/** What a database or auth error may log or report: its code, when a plain identifier of up to 32
+ *  letters, digits or underscores (else `unknown`), and its HTTP status when it has one. Never its
+ *  message, details or hint: a Postgres error's details can echo an id or an email (US-15 AC7e). */
+export function safeErrorFields(error: unknown): { code: string; status?: number } {
+  const { code, status } = (error ?? {}) as { code?: unknown; status?: unknown };
+  return { code: typeof code === 'string' && /^\w{1,32}$/.test(code) ? code : 'unknown', ...(typeof status === 'number' ? { status } : {}) };
+}
+
 // ---------------------------------------------------------------------------
 // Audit logging — fire-and-forget, never blocks or fails the request.
 // Uses supabaseAdmin (service role) because audit writes happen server-side
@@ -58,7 +66,7 @@ export function logAudit(
       metadata: metadata ?? null,
     })
     .then(({ error }) => {
-      if (error) console.error('Audit log failed:', error.message);
+      if (error) console.error('Audit log failed:', safeErrorFields(error));
     });
 }
 
@@ -171,7 +179,7 @@ export async function getOrCreateSupabaseUser(
     );
 
   if (upsertError) {
-    console.error('Failed to create profile:', upsertError);
+    console.error('Failed to create profile:', safeErrorFields(upsertError));
     throw new Error(`Failed to create profile: ${upsertError.message}`);
   }
 

@@ -5,7 +5,7 @@
 import crypto from 'node:crypto';
 import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin } from './supabase-client.server';
-import { logAudit } from './supabase-identity.server';
+import { logAudit, safeErrorFields } from './supabase-identity.server';
 
 // ---------------------------------------------------------------------------
 // Guest chat session management
@@ -59,8 +59,7 @@ async function cleanupStep(step: 'profile' | 'auth_user', run: () => PromiseLike
   try {
     const { error } = await run();
     if (!error) return;
-    const raw = (error as { code?: unknown }).code;
-    code = typeof raw === 'string' && /^\w{1,32}$/.test(raw) ? raw : 'unknown';
+    code = safeErrorFields(error).code;
   } catch {
     code = 'thrown';
   }
@@ -127,7 +126,7 @@ export async function getOrCreateGuestSession(
   });
 
   if (authError || !authUser?.user) {
-    console.error('Failed to create guest auth user:', authError);
+    console.error('Failed to create guest auth user:', safeErrorFields(authError));
     throw new Error('Failed to create guest session');
   }
 
@@ -139,7 +138,7 @@ export async function getOrCreateGuestSession(
 
   if (profileError) {
     await removeGhost(supabaseAdmin, sessionId); // US-15 AC7d
-    console.error('Failed to create guest profile:', profileError);
+    console.error('Failed to create guest profile:', safeErrorFields(profileError));
     throw new Error('Failed to create guest session');
   }
 
@@ -151,7 +150,7 @@ export async function getOrCreateGuestSession(
 
   if (sessionError || !newSession) {
     await removeGhost(supabaseAdmin, sessionId);
-    console.error('Failed to create guest session:', sessionError);
+    console.error('Failed to create guest session:', safeErrorFields(sessionError));
     throw new Error('Failed to create guest session');
   }
 
