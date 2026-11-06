@@ -27,6 +27,7 @@ import { StorageBar, SyncControl, RemindersSection } from './sync-control';
 import { ConnectRefusedNotice } from './connect-refused';
 import { EmailLandingNotice, emailLandingApplies, takeEmailFlag } from './email-landing';
 import { HistoryLightboxHost } from './history-lightbox';
+import { showLoadFailure } from './load-failure';
 import {
   connectRefusal,
   liftLocalInto,
@@ -91,7 +92,7 @@ async function main() {
   // Before the first await (US-22 AC13): an OAuth return rewrites the URL.
   const fromEmail = takeEmailFlag();
   const { resolved, refused } = await resolveBackend();
-  const { backend, reconnect } = await startOnBackend(resolved, initRoadmapStore);
+  const { backend, reconnect } = await startOnBackend(resolved, initRoadmapStore).catch(showLoadFailure);
   const state = storageState(backend, reconnect);
   const emailLanding = await emailLandingApplies(fromEmail, state);
   // "Delete all my data" must also delete the reminder row on Brad's server,
