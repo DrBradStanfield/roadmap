@@ -217,8 +217,11 @@ Tests: `tests/worktree-guard.test.ts`, `tests/git-push-guard.test.ts` (runs `.cl
 - In a session moved into a worktree, the harness may refuse a complex Bash command that runs git against
   another checkout, or names git twice. Use one git call per command, run from the worktree; a helper script
   (`bash tools/...`) is fine.
-- The push guard refuses a Bash command naming `git` and `push` that it cannot tokenize (an unbalanced quote,
-  as in a heredoc with an apostrophe). Put such text in a file instead.
+- The push guard refuses a Bash command naming `git` and `push` that it cannot tokenize: an unbalanced quote, a
+  heredoc whose end line is missing or not exact (trailing spaces, a CR), or a heredoc body that mentions a push
+  beside an odd apostrophe (any body naming git or gh with push, pull or merge is parsed as commands, US-64 AC18).
+  An apostrophe in any other heredoc body is fine. A commit or PR message is data only when it cannot expand
+  (US-64 AC19): `"$(cat <<'EOF' ... EOF)"` qualifies only with no `)` in the body. Put such text in a file instead.
 - Hooks load from the session's settings at start; a hook change applies to new sessions.
 - A full local `npm run test:all` is never a merge gate (CI is, step 4); run it only when you want the whole
   suite on this Mac. It takes a machine-wide lock so one full local run happens at a time (US-71). It lives at
