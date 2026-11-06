@@ -176,7 +176,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
               value={state.inputText}
               onChange={e => actions.handleInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask a follow-up…"
+              placeholder={state.messages.length === 0 ? 'Ask a question' : 'Ask a follow-up…'}
               disabled={state.isLoading}
               rows={1}
             />

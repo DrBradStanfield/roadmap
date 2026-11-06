@@ -68,7 +68,7 @@ import { InputPanel, type PlanBasis } from './InputPanel';
 import { OpenEvidenceContext, usePlanView } from './ResultsPanel';
 import { PersonButton } from './SettingsSheet';
 import { MyHealth, type FormSlots } from './MyHealth';
-import { revealAndFocus } from '../lib/reveal';
+import { revealAndFocus, stickyTop } from '../lib/reveal';
 import { CHAT_BUBBLES } from './icons';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
 import { ChatEmbed } from './ChatEmbed';
@@ -1107,10 +1107,14 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     if (!scrollOnSwitch.current) return;
     scrollOnSwitch.current = false;
     const saved = scrollByTab.current[activeTab];
-    const top = rootRef.current?.getBoundingClientRect().top ?? 0;
+    // A first visit opens at the tab's panel, just under the theme's sticky header; the chat's
+    // panel is sized to the screen left below it (styles.css, --hr-sticky-top).
+    const sticky = stickyTop();
+    rootRef.current?.style.setProperty('--hr-sticky-top', `${sticky}px`);
+    const top = (document.getElementById(panelDomId(tabIds, activeTab))?.getBoundingClientRect().top ?? 0) - sticky;
     // At once: the theme's smooth scrolling would slide the page from the top.
     if (saved !== undefined) window.scrollTo({ top: saved, behavior: 'instant' });
-    else if (top < 0) window.scrollTo({ top: window.scrollY + top, behavior: 'instant' });
+    else if (top !== 0) window.scrollTo({ top: window.scrollY + top, behavior: 'instant' });
   }, [activeTab]);
 
   // US-16 AC2 on a phone: after a chat edit switches to My data, the filled
