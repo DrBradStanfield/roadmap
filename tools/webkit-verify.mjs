@@ -131,6 +131,12 @@ export function assertPhoneLayout(data) {
   for (const g of data.gaps) assert(g === data.gaps[0], `phone section gaps differ (${data.gaps})`);
   assert.equal(data.pillRows, 1, 'the pills wrap');
   assert.deepEqual(data.smallTargets, [], `controls under 44px: ${data.smallTargets}`);
+  // US-62 AC28: Sign in and Settings sit quiet on the title's line, never a heavy row.
+  const h = data.header;
+  assert(h.height <= 52, `the title line is ${h.height}px tall`);
+  assert(h.actionBorders.every(b => b === 0), `a boxed title-line control (${h.actionBorders})`);
+  assert(h.actionHeights.every(x => x >= 43.5), `title-line controls under 44px (${h.actionHeights})`);
+  assert(h.centreOffset <= 4, `title-line controls not centred on the title (${h.centreOffset}px)`);
 }
 
 // Passed directly to Playwright's evaluate; keep this function self-contained.
@@ -142,7 +148,16 @@ export function collectPhoneLayout() {
   const smallTargets = [...document.querySelectorAll('.mh-sections button, .mh-sections a')]
     .filter(el => { const r = rect(el); return r.width > 0 && r.height > 0 && r.height < 43.5 && !el.closest('.md-table, .suggestion-evidence-section, .evidence-refs, .guideline-tag, .suggestion-title, .us-product') && !el.matches('.unit-toggle-pill'); })
     .map(el => `${(el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 24)} ${Math.round(rect(el).height)}px`);
-  return { gaps, pillRows: new Set(pills).size, smallTargets };
+  const title = document.querySelector('.mh-title');
+  const actions = [...document.querySelectorAll('.mh-header-actions > button')].filter(el => rect(el).height > 0);
+  const middle = (el) => rect(el).top + rect(el).height / 2;
+  const header = {
+    height: Math.round(rect(document.querySelector('.mh-header')).height),
+    actionBorders: actions.map(el => parseFloat(getComputedStyle(el).borderTopWidth)),
+    actionHeights: actions.map(el => Math.round(rect(el).height)),
+    centreOffset: Math.round(Math.max(0, ...actions.map(el => Math.abs(middle(el) - middle(title))))),
+  };
+  return { gaps, pillRows: new Set(pills).size, smallTargets, header };
 }
 
 // Passed directly to Playwright's evaluate; keep this function self-contained.

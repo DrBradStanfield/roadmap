@@ -87,13 +87,23 @@ describe('US-62 AC16, AC27: WebKit desktop gate', () => {
 });
 
 describe('US-62 AC14, AC17: WebKit phone gate', () => {
-  it('passes one gap between sections, the pills on one row, 44px controls', () => {
-    expect(() => assertPhoneLayout({ gaps: [16, 16, 16], pillRows: 1, smallTargets: [] })).not.toThrow();
+  const header = { height: 44, actionBorders: [0, 0], actionHeights: [44, 44], centreOffset: 1 };
+  it('passes one gap between sections, the pills on one row, 44px controls, a compact title line', () => {
+    expect(() => assertPhoneLayout({ gaps: [16, 16, 16], pillRows: 1, smallTargets: [], header })).not.toThrow();
   });
   it('fails uneven gaps, missing sections, wrapped pills and a small control', () => {
-    expect(() => assertPhoneLayout({ gaps: [8, 16], pillRows: 1, smallTargets: [] })).toThrow('gaps differ');
-    expect(() => assertPhoneLayout({ gaps: [16], pillRows: 1, smallTargets: [] })).toThrow('missing');
-    expect(() => assertPhoneLayout({ gaps: [16, 16], pillRows: 2, smallTargets: [] })).toThrow('wrap');
-    expect(() => assertPhoneLayout({ gaps: [16, 16], pillRows: 1, smallTargets: ['Dismiss 20px'] })).toThrow('44px');
+    expect(() => assertPhoneLayout({ gaps: [8, 16], pillRows: 1, smallTargets: [], header })).toThrow('gaps differ');
+    expect(() => assertPhoneLayout({ gaps: [16], pillRows: 1, smallTargets: [], header })).toThrow('missing');
+    expect(() => assertPhoneLayout({ gaps: [16, 16], pillRows: 2, smallTargets: [], header })).toThrow('wrap');
+    expect(() => assertPhoneLayout({ gaps: [16, 16], pillRows: 1, smallTargets: ['Dismiss 20px'], header })).toThrow('44px');
+  });
+  // US-62 AC28 (Brad 2026-11-06: "the login row ... takes up a whole row by itself"):
+  // Sign in and the person button are quiet controls on the title's line.
+  it('fails a heavy title line: a boxed Sign in, a tall row, a small target, an off-centre control', () => {
+    const gate = (h: Partial<typeof header>) => () => assertPhoneLayout({ gaps: [16, 16], pillRows: 1, smallTargets: [], header: { ...header, ...h } });
+    expect(gate({ actionBorders: [1, 0] })).toThrow('boxed');
+    expect(gate({ height: 90 })).toThrow('title line');
+    expect(gate({ actionHeights: [44, 40] })).toThrow('44px');
+    expect(gate({ centreOffset: 9 })).toThrow('centred');
   });
 });

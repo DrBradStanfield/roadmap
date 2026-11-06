@@ -5529,6 +5529,7 @@ input[type="number"] {
   min-height: 44px;
 }
 .mh-title {
+  flex: 0 0 auto;
   margin: 0;
   font-size: 28px;
   font-weight: 700;
@@ -5539,7 +5540,31 @@ input[type="number"] {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   font-size: 12px;
+}
+/* Sign in, or where the record lives: quiet teal text on the title's line, the iPhone's
+   toolbar button, not a box (Brad 2026-11-06). A long label shortens; the title never wraps. */
+.mh-header .action-btn-small,
+.mh-header .action-btn-small:hover {
+  min-height: 44px;
+  max-width: 14em;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--color-brand-text);
+  font-size: 15px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mh-header .action-btn-small:hover {
+  text-decoration: underline;
+}
+.mh-header .action-btn-small:focus-visible {
+  outline: 2px solid var(--color-brand-text);
+  outline-offset: -2px;
+  border-radius: 8px;
 }
 .mh-person-btn {
   display: inline-flex;
@@ -5947,6 +5972,30 @@ input[type="number"] {
   border-radius: 12px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
+/* Inside Settings the card is one more group of the sheet, not a box in a box. */
+.mh-settings .hr-sync {
+  box-shadow: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+/* The foot is quiet (design review 2026-11-06): the disclaimer needs no frame, and
+   "Send feedback" is a link beside "View source code", not a second filled button. */
+.mh-foot .health-disclaimer {
+  border: 0;
+  background: none;
+  padding: 0;
+}
+.mh-foot .feedback-btn,
+.mh-foot .feedback-btn:hover {
+  min-height: 44px;
+  padding: 0 4px;
+  background: none;
+  color: var(--color-brand-text);
+  font-weight: 600;
+}
+.mh-foot .feedback-btn:hover {
+  text-decoration: underline;
+}
 .mh-settings .hr-sync .hr-sync-btn,
 .mh-foot-storage .hr-sync .hr-sync-btn {
   width: auto;
@@ -6079,7 +6128,6 @@ input[type="number"] {
     margin-left: 10px;
     margin-right: 10px;
   }
-  .mh-header .action-btn-small,
   .suggestion-dismiss,
   .md-foot-btn,
   .md-back,
