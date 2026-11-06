@@ -1,5 +1,6 @@
 #!/bin/sh
 # Start a session's worktree: .claude/worktrees/<name> on a new claude/<name> branch from the latest origin/main.
+# It links the worktree's package clones before printing the path (US-64 AC21).
 # The branch tracks nothing, so a bare `git push` can never land on main; the first push is
 # `git push -u origin claude/<name>`. Next: EnterWorktree with path=<the printed path>.
 # Finish with `bash tools/worktree-done.sh <name>` once the PR is merged. Workflow: docs/git-workflow.md.
@@ -23,6 +24,13 @@ git -C "$MAIN" fetch -q origin main
 git -C "$MAIN" worktree add -q --no-track --lock --reason "session worktree, created $(date -u +%Y-%m-%dT%H:%MZ)" \
   -b "claude/$NAME" "$WT" origin/main
 # A new worktree starts with fresh package clones: drop any left by an earlier worktree at this same path.
-CLONES="$(node "$(dirname "$0")/../.claude/hooks/worktree-guard.cjs" --pkg-cache-dir "$WT" </dev/null 2>/dev/null)" || CLONES=""
+GUARD="$MAIN/.claude/hooks/worktree-guard.cjs"   # the main checkout's hook, as merge-batch.mjs runs it
+CLONES="$(node "$GUARD" --pkg-cache-dir "$WT" </dev/null 2>/dev/null)" || CLONES=""
 case "$CLONES" in */claude-worktree-packages/?*) rm -rf "$CLONES";; esac
+# Then make them now, through the hook's own linkPackages (fed the Bash event it answers): a subagent using
+# this worktree by absolute path runs with the main checkout as its cwd, so the hook never fires for it.
+node -e 'process.stdout.write(JSON.stringify({ hook_event_name: "PreToolUse", tool_name: "Bash", cwd: process.argv[1] }))' \
+  "$WT" | node "$GUARD" >/dev/null 2>&1
+[ ! -d "$MAIN/node_modules" ] || [ -e "$WT/node_modules" ] \
+  || echo "note: no package links yet; the first Bash call run inside $WT makes them" >&2
 echo "$WT"

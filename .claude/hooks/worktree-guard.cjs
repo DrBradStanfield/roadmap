@@ -8,8 +8,8 @@
 //                                 Bash writes (sed -i, >, cp) are NOT covered.
 //   Stop                          in a linked worktree, block ending the turn (once) while work is uncommitted,
 //                                 unpushed, or pushed with neither an open PR nor a merge into origin/main.
-//   SessionStart                  report local worktrees holding unlanded work, and uncommitted files in the main
-//                                 checkout.
+//   SessionStart                  report local worktrees holding unlanded work, uncommitted files in the main
+//                                 checkout, and merged worktrees not yet removed (with their worktree-done line).
 // Skipped in cloud sessions (CLAUDE_CODE_REMOTE=true: the loops commit to main from their own checkout, LOOP.md
 // landing check) and when CLAUDE_MAIN_CHECKOUT_WRITES=1 (an unattended local job that commits to main itself; none
 // in this repo today). Fails open on any git or gh error: the GitHub watches (stranded-branch-watch,
@@ -213,6 +213,8 @@ if (event === 'Stop') {
 
 if (event === 'SessionStart') {
   const notes = [];
+  const merged = []; // landed worktrees nobody finished (56 on 2026-11-06), each with the line that finishes it
+  let mainLine = null;
   let blocks = [];
   try { blocks = git(main, ['worktree', 'list', '--porcelain']).split('\n\n'); } catch { /* fall through */ }
   for (const block of blocks) {
@@ -227,6 +229,12 @@ if (event === 'SessionStart') {
       const ahead = s.ahead();
       if (dirty || s.localOnly !== '0' || ahead !== '0') {
         notes.push(`- ${path.relative(main, w)} [${br}]: ${dirty} uncommitted file(s), ${s.localOnly} unpushed commit(s), ${ahead} not on origin/main`);
+      } else if (same(path.dirname(w), path.join(main, '.claude', 'worktrees'))) {
+        // Landed: merged, unless HEAD is a commit of main's own line (a fresh worktree with nothing of its own yet).
+        mainLine = mainLine || new Set(git(main, ['rev-list', '--first-parent', 'origin/main']).split('\n'));
+        if (!mainLine.has(git(w, ['rev-parse', 'HEAD']))) {
+          merged.push(`- ${path.relative(main, w)} [${br}]: merged; if no session still uses it, bash tools/worktree-done.sh ${path.basename(w)}`);
+        }
       }
     } catch { /* one unreadable worktree must not hide the rest */ }
   }
@@ -252,9 +260,16 @@ if (event === 'SessionStart') {
     const mainDirty = git(main, ['status', '--porcelain']).split('\n').filter(Boolean);
     if (mainDirty.length) notes.push(`- main checkout: ${mainDirty.length} uncommitted file(s), e.g. ${mainDirty.slice(0, 5).map((l) => l.slice(3)).join(', ')}`);
   } catch { /* skip */ }
-  if (!notes.length) process.exit(0);
-  out({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext:
-    'Unlanded git work on this machine (another session may still own it; leave it alone unless Brad asks, but '
-    + 'mention it in your final message if it looks abandoned; docs/git-workflow.md):\n' + notes.join('\n') } });
+  if (!notes.length && !merged.length) process.exit(0);
+  const parts = [];
+  if (notes.length) {
+    parts.push('Unlanded git work on this machine (another session may still own it; leave it alone unless Brad asks, but '
+      + 'mention it in your final message if it looks abandoned; docs/git-workflow.md):\n' + notes.join('\n'));
+  }
+  if (merged.length) {
+    parts.push('Merged worktrees not yet removed (worktree-done refuses anything not landed; run it from the main '
+      + 'checkout):\n' + merged.join('\n'));
+  }
+  out({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: parts.join('\n\n') } });
 }
 process.exit(0);
