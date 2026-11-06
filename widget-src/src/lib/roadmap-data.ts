@@ -62,6 +62,11 @@ export async function flushRoadmapStore(): Promise<void> {
   await store?.flush();
 }
 
+/** Before leaving a cloud: this page's record onto the device (US-09 AC2g). */
+export async function copyRecordToDevice(): Promise<void> {
+  await store?.copyToDevice();
+}
+
 /** Synchronous last-ditch flush for tab-close / visibilitychange (mobile-safe). */
 export function flushRoadmapStoreSync(): void {
   store?.flushSync();
