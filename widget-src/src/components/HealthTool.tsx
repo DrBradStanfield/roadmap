@@ -1372,6 +1372,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     setProfileProposal(null);
   };
 
+  // Settings (US-62 AC24): the person button opens them in My health's place.
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const handleProposeEdit = useCallback((edits: ProposedEdit[]) => {
     // While the store holds an erase the screen does not show, the reply comes
     // from the conversation the erase tombstones: none of it applies (US-16 AC2a).
@@ -1414,6 +1416,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     // (they were on the chat tab). Mirror landOnMyHealth.
     if (editedField) {
       if (isMobileRef.current) selectTab('health');
+      setSettingsOpen(false); // they cover the field (US-62 AC11)
       setRevealCell({ field: editedField, grid: inGrid });
     }
   }, [applyFieldEdit, applyMedicationEdit, unitSystem, eraseUnshown, selectTab]);
@@ -1487,9 +1490,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer, aboutYouRow: aboutYouLow },
   });
 
-  // Settings (US-62 AC24): the person button opens them in My health's place.
   // Settings open in My health's place, so a press from elsewhere shows that tab first.
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const personRef = useRef<HTMLButtonElement>(null);
   const toggleSettings = useCallback(() => {
     selectTab('health');

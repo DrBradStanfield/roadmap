@@ -99,6 +99,31 @@ describe('US-16 AC2 on a phone: a chat edit lands on My health, on the cell it f
     expect([...view.container.querySelectorAll<HTMLElement>('.md-table')].every(t => t.hidden)).toBe(true);
   });
 
+  it.each([['phone', true], ['desktop', false]])('US-62 AC11 on a %s: a chat prefill with Settings open closes them, so the field shows', async (_, phone) => {
+    if (!phone) {
+      vi.stubGlobal('matchMedia', (q: string) => ({
+        matches: !q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {},
+      }));
+    }
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
+    await addMeasurement('ldl', 3.0, '2026-09-01');
+    await flushRoadmapStore();
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    await waitFor(() => expect(view.container.querySelector('#waistCm')).not.toBeNull());
+    fireEvent.click(view.getByRole('button', { name: 'Settings' }));
+    expect(view.container.querySelector('.mh-settings')).not.toBeNull();
+    if (phone) fireEvent.click(tab(view, 'Chat'));
+
+    act(() => chat.proposeEdit!([{ kind: 'field', field: 'waistCm', displayValue: 90, unitSystem: 'si', date: null }]));
+
+    await waitFor(() => expect(view.container.querySelector('.mh-settings')).toBeNull());
+    expect(view.container.querySelector('.health-input-panel')!.className).not.toContain('md-page-open');
+    const waist = view.container.querySelector<HTMLInputElement>('#waistCm')!;
+    expect(waist.value).toBe('90');
+    expect(waist.closest('[hidden]')).toBeNull();
+  });
+
   it('a blood test: My health shows, and the matrix cell holding the value is in view and focused', async () => {
     await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
     await addMeasurement('weight', 82, '2026-09-01');
