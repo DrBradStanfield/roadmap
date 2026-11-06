@@ -1237,7 +1237,7 @@ export function InputPanel({
       title={`Switch to ${unitSystem === 'si' ? 'US (in, lbs, mg/dL)' : 'Metric (cm, kg, mmol/L)'}`}
       aria-label={`Switch units. Current: ${unitSystem === 'si' ? 'Metric' : 'US'}`}
     >
-      {unitSystem === 'si' ? 'Metric (kg, cm, mmol/L)' : 'US (in, lbs, mg/dL)'}
+      {unitSystem === 'si' ? 'Metric' : 'US'}<span className="unit-pill-detail">{unitSystem === 'si' ? ' (kg, cm, mmol/L)' : ' (in, lbs, mg/dL)'}</span>
     </button>
   );
 
@@ -1272,7 +1272,7 @@ export function InputPanel({
           )}
           {!fullForm && (
             <p className="field-hint-attention field-hint-attention--centered">
-              {formStage === 1 ? 'Enter your height and weight — then more fields will appear.' : 'Fill in the above — then more fields will appear.'}
+              {formStage === 1 ? 'Enter your height and weight, then more fields will appear.' : 'Fill in the above, then more fields will appear.'}
             </p>
           )}
         </div>

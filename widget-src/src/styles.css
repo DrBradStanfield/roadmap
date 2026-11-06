@@ -3856,11 +3856,10 @@ input[type="number"] {
   justify-content: space-between;
   gap: 12px;
   padding: 0 4px;
-  margin-bottom: 12px;
-  /* All three headers one height, the height of the tallest thing any holds
-     (column 1's Sign in pill, the plan's Save as PDF), so every column's first
-     card starts on one line. */
-  min-height: 28px;
+  /* The chat column's header is My health's title line, 44px, its card the column's 8px gap below,
+     so the chat card's top lines up with the banner's or the first card's (design review 2026-11-06). */
+  margin-bottom: 0;
+  min-height: 44px;
 }
 .hr-col-title {
   font-size: 12px;
@@ -5812,9 +5811,8 @@ input[type="number"] {
 .mh-topics .screening-age-message {
   margin: 0 0 16px;
 }
-/* The quiet fill: a suggestion on its question (AC20), and the add form (AC22). */
-.mh-row-suggestion,
-.mh-add-test .alr-add-form {
+/* The quiet fill: a suggestion on its question (AC20). */
+.mh-row-suggestion {
   border: 0;
   border-radius: 10px;
   background: var(--bt-ink-50);
@@ -5919,9 +5917,12 @@ input[type="number"] {
   text-align: left;
   color: var(--color-brand-text);
 }
+/* On the card's own ground, no box in the box (design review 2026-11-06). */
 .mh-add-test .alr-add-form {
   margin: 4px 0 8px;
-  padding: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
 }
 .mh-add-test .alr-add-fields {
   display: grid;
@@ -5950,10 +5951,8 @@ input[type="number"] {
   border-color: var(--color-brand-text);
 }
 .mh-add-test .alr-add-save:disabled {
-  opacity: 1;
-  background: var(--bt-ink-100);
-  border-color: var(--bt-ink-100);
-  color: var(--bt-ink-500); /* 5:1 on its fill */
+  opacity: 0.45; /* still the teal button, waiting for a value */
+  color: #fff;
 }
 
 /* Settings (AC24): one heading level, plain group labels, the storage question in plain text. */
@@ -6145,10 +6144,10 @@ input[type="number"] {
   .health-tool .mh-nav-link { transition: none; }
 }
 
-/* The placeholder tiles before a plan: grey, not a status colour. */
+/* The placeholder tiles before a plan: grey words, not a status colour, and no box. */
 .stat-card--awaiting .stat-status {
   color: var(--color-text-secondary);
-  background: var(--bt-ink-50);
+  background: none;
 }
 
 @media (min-width: 769px) {
@@ -6203,9 +6202,13 @@ input[type="number"] {
   .feedback-btn {
     min-height: 44px;
   }
-  /* A unit pill is small to read but 44px to press. */
+  /* A unit pill is small to read but 44px to press; on a phone it names the system alone,
+     so "Starting info" never wraps beside it. */
   .health-tool .unit-toggle-pill {
     position: relative;
+  }
+  .unit-pill-detail {
+    display: none;
   }
   .health-tool .unit-toggle-pill::after {
     content: '';

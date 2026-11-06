@@ -124,6 +124,8 @@ export function assertDesktopLayout(data) {
   assert(!(data.chatColumn && data.floatingChat), 'the floating chat button shows beside the chat column');
   // Live test 2026-11-06: the section list, Dismiss and a supplement's × were 20-40px on desktop.
   assert.deepEqual(data.smallTargets, [], `controls under 44px: ${data.smallTargets}`);
+  // Design review 2026-11-06: the chat card's top on the line of My health's first card.
+  if (data.chatColumn) assert(Math.abs(data.chatCardTop - data.firstCardTop) <= 1, `chat card top ${data.chatCardTop} vs first card ${data.firstCardTop}`);
 }
 
 // US-62 AC14, AC17: on a phone, My health's topics are one gap apart, the
@@ -186,6 +188,8 @@ export function collectDesktopLayout() {
     unitSelect: unit && { paddingRight: parseFloat(unit.paddingRight) },
     chatColumn: !!document.querySelector('.health-tool-content .health-tool-chat'),
     floatingChat: [...document.querySelectorAll('.chat-fab')].some(b => rect(b).width > 0),
+    chatCardTop: Math.round(rect(document.querySelector('.health-tool-chat .chat-embed') ?? document.body).top),
+    firstCardTop: Math.round(rect(document.querySelector('.mh-banner, .mh-sections, .about-card') ?? document.body).top),
     smallTargets: [...document.querySelectorAll('.mh-sections button, .mh-sections a')]
       .filter(el => { const r = rect(el); return r.width > 0 && r.height > 0 && r.height < 43.5 && !el.closest('.md-table, .suggestion-evidence-section, .evidence-refs, .guideline-tag, .suggestion-title, .us-product') && !el.matches('.unit-toggle-pill'); })
       .map(el => `${(el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 24)} ${Math.round(rect(el).height)}px`),
