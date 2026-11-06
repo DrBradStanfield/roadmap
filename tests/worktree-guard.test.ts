@@ -74,8 +74,10 @@ beforeAll(() => {
   writeFileSync(join(BIN, 'gh'), '#!/bin/sh\n[ -n "$GH_FAIL" ] && exit 1\n'
     + 'case "$*" in *length*) echo "${GH_COUNT:-0}";; *) echo "${GH_STATE:-}";; esac\n');
   chmodSync(join(BIN, 'gh'), 0o755);
-  // cp passes through to the real one, unless CP_FAIL asks it to fail (a disk or OS with no clone support).
-  writeFileSync(join(BIN, 'cp'), `#!/bin/sh\n[ -n "$CP_FAIL" ] && exit 1\nexec ${spawnSync('sh', ['-c', 'command -v cp'], { encoding: 'utf8' }).stdout.trim()} "$@"\n`);
+  // cp passes through to the real one, unless CP_FAIL asks it to fail (a disk or OS with no clone support), or
+  // CP_FAIL_ON names a path in its arguments (one package folder's clone fails, the others work).
+  writeFileSync(join(BIN, 'cp'), `#!/bin/sh\n[ -n "$CP_FAIL" ] && exit 1\n`
+    + `case "$*" in *"\${CP_FAIL_ON:-//none//}"*) exit 1;; esac\nexec ${spawnSync('sh', ['-c', 'command -v cp'], { encoding: 'utf8' }).stdout.trim()} "$@"\n`);
   chmodSync(join(BIN, 'cp'), 0o755);
   ENV = {
     ...process.env,
@@ -384,6 +386,23 @@ describe('package clones: new worktrees, failures, races and orphans (US-64 AC3,
     expect(() => lstatSync(join(w, 'node_modules'))).toThrow();
     expect(readdirSync(cacheDir(w)).filter((f) => f.includes('.tmp-'))).toEqual([]);
   });
+  it('the note names each package folder left without a link, not only the root one (US-64 AC21, review R4)', () => {
+    const r = newWorktree('halfclone', { CP_FAIL_ON: 'widget-src/node_modules' });
+    expect(r.status).toBe(0);
+    expect(readlinkSync(join(r.path, 'node_modules'))).toBe(join(cacheDir(r.path), 'node_modules'));
+    expect(r.stderr).toMatch(/no package links yet for widget-src\/node_modules;/);
+    expect(r.stderr).not.toMatch(/for node_modules|packages\/health-core/); // linked, or absent in the main checkout
+  });
+  it('a guard that fails while linking still leaves the path printed and the run a success (US-64 AC21, review R3)', () => {
+    const good = readFileSync(GUARD, 'utf8');
+    writeFileSync(GUARD, 'process.exit(3);\n'); // fails, or is killed, after `git worktree add`
+    let r;
+    try { r = newWorktree('guardfail'); } finally { writeFileSync(GUARD, good); }
+    expect(r.status).toBe(0);
+    expect(r.path).toBe(join(MAIN, '.claude/worktrees/guardfail'));
+    expect(existsSync(join(r.path, 'tracked.txt'))).toBe(true);
+    expect(r.stderr).toMatch(/no package links yet for node_modules widget-src\/node_modules;/);
+  });
   it('three hooks at once leave one whole clone, one link per folder and no temp folders', async () => {
     for (let i = 0; i < 40; i++) {
       mkdirSync(join(MAIN, 'node_modules', `p${i}`), { recursive: true });
@@ -426,16 +445,36 @@ describe('package clones: new worktrees, failures, races and orphans (US-64 AC3,
 });
 
 describe('SessionStart names merged worktrees ready to remove (US-64 AC21)', () => {
+  // Commit, push and merge a worktree's own change, as a finished session leaves it.
+  const mergeIn = (w: string, name: string) => {
+    writeFileSync(join(w, `${name}.txt`), 'x\n');
+    sh(w, `git add ${name}.txt && git commit -q -m ${name} && git push -q -u origin claude/${name}`);
+    sh(MAIN, `git pull -q --ff-only && git merge -q --no-ff --no-edit origin/claude/${name} && git push -q origin main`);
+  };
+  // As worktree-done.sh's last-used test reads it: the worktree's git dir index and HEAD.
+  const ageGitDir = (w: string) => {
+    const old = new Date(Date.now() - 2 * 86_400_000);
+    for (const f of ['index', 'HEAD']) utimesSync(join(gitDirOf(w), f), old, old);
+  };
   it('lists a clean worktree whose branch was merged with the worktree-done line, and not a fresh one', () => {
     const fresh = newWorktree('nudge-fresh').path; // no commits of its own: a live session may just have started
     const w = newWorktree('nudge-merged').path;
-    writeFileSync(join(w, 'nudge.txt'), 'x\n');
-    sh(w, 'git add nudge.txt && git commit -q -m nudge && git push -q -u origin claude/nudge-merged');
-    sh(MAIN, 'git pull -q --ff-only && git merge -q --no-ff --no-edit origin/claude/nudge-merged && git push -q origin main');
+    mergeIn(w, 'nudge-merged');
+    sh(w, 'git status -s'); // settle the index, so the hook's own status leaves its mtime alone
+    ageGitDir(w);
     sh(fresh, 'git fetch -q origin');
     const ctx = hook({ hook_event_name: 'SessionStart', cwd: MAIN }).hookSpecificOutput.additionalContext as string;
     expect(ctx).toMatch(/- \.claude\/worktrees\/nudge-merged \[claude\/nudge-merged\]: merged; if no session still uses it, bash tools\/worktree-done\.sh nudge-merged/);
     expect(ctx).not.toMatch(/nudge-fresh/);
     expect(done('nudge-merged').stdout).toMatch(/^done/m); // the line it prints does finish it
+    expect(done('nudge-fresh').status).toBe(0);
+  });
+  it('a merged worktree used in the last day is marked in use, with no removal command (review R1)', () => {
+    const w = newWorktree('nudge-live').path; // merged, but its session may still be deploying or verifying
+    mergeIn(w, 'nudge-live');
+    const ctx = hook({ hook_event_name: 'SessionStart', cwd: MAIN }).hookSpecificOutput.additionalContext as string;
+    expect(ctx).toMatch(/- \.claude\/worktrees\/nudge-live \[claude\/nudge-live\]: merged, in use \(changed in the last day\); leave it/);
+    expect(ctx).not.toMatch(/worktree-done\.sh nudge-live/);
+    expect(done('nudge-live').status).toBe(0);
   });
 });

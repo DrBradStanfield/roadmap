@@ -257,7 +257,9 @@ function main() {
     try {
       // The merge runs `git stash create`, which reads the index unrefreshed. In a new worktree macOS is still
       // tagging files (com.apple.provenance), which bumps only their ctime, so that check saw changes its own
-      // refresh then did not, and it failed: "fatal: stash failed" (US-64 AC20). Edits always move mtime.
+      // refresh then did not, and it failed: "fatal: stash failed" (US-64 AC20). Ignoring ctime is safe here: the
+      // clean-tree check above trusts ctime (an edit that kept its mtime, as `touch -r` or `cp -p` can, still
+      // shows), and after it only git writes the tree.
       git('-c', 'core.trustctime=false', 'merge', '--no-ff', '--no-edit', '-m', msg, sha);
     } catch (err) {
       mergeErr = String(err.stderr || err.message).trim();

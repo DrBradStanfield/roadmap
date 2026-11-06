@@ -29,8 +29,12 @@ CLONES="$(node "$GUARD" --pkg-cache-dir "$WT" </dev/null 2>/dev/null)" || CLONES
 case "$CLONES" in */claude-worktree-packages/?*) rm -rf "$CLONES";; esac
 # Then make them now, through the hook's own linkPackages (fed the Bash event it answers): a subagent using
 # this worktree by absolute path runs with the main checkout as its cwd, so the hook never fires for it.
+# Never fatal: the worktree exists and is locked by now, so the path must print, or a rerun refuses the name.
 node -e 'process.stdout.write(JSON.stringify({ hook_event_name: "PreToolUse", tool_name: "Bash", cwd: process.argv[1] }))' \
-  "$WT" | node "$GUARD" >/dev/null 2>&1
-[ ! -d "$MAIN/node_modules" ] || [ -e "$WT/node_modules" ] \
-  || echo "note: no package links yet; the first Bash call run inside $WT makes them" >&2
+  "$WT" | node "$GUARD" >/dev/null 2>&1 || true
+MISSING=""
+for rel in node_modules widget-src/node_modules packages/health-core/node_modules; do   # as worktree-guard.cjs
+  [ ! -d "$MAIN/$rel" ] || [ -e "$WT/$rel" ] || MISSING="${MISSING:+$MISSING }$rel"
+done
+[ -z "$MISSING" ] || echo "note: no package links yet for $MISSING; the first Bash call run inside $WT makes them" >&2
 echo "$WT"
