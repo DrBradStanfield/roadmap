@@ -1517,7 +1517,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     storageCard,
     onDelete: async () => { if (await handleDeleteData()) { plan.onErased(); closeSettings(); } },
     isDeleting,
-    footStorage: getBackendKind() === 'local' ? storageCard : undefined,
+    storageAtFoot: getBackendKind() === 'local',
     healthDocuments: documentHistory,
     onDocumentDeleted: (docId: string) => {
       setDocumentHistory(prev => prev.filter(d => d.id !== docId));

@@ -72,8 +72,9 @@ export interface MyHealthProps {
   storageCard?: ReactNode;
   onDelete: () => void;
   isDeleting?: boolean;
-  /** A guest's storage card, at the foot too while Settings are shut (one picker on the page). */
-  footStorage?: ReactNode;
+  /** A guest's storage card shows at the foot while Settings are shut; a connected one waits
+   *  there hidden, so the picker it hosts still opens from the title line (US-09 AC30). */
+  storageAtFoot?: boolean;
   /** The topics' container: `results_viewed` watches it (US-62 AC5). */
   sectionsRef?: RefObject<HTMLDivElement>;
   healthDocuments?: ApiDocument[];
@@ -97,7 +98,7 @@ const RowsCard = memo(function RowsCard({ rows, onOpen, extra }: { rows: Array<R
   );
 });
 
-export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, personButton, settingsOpen, onSettingsClose, reminders, storageCard, onDelete, isDeleting, footStorage,
+export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, personButton, settingsOpen, onSettingsClose, reminders, storageCard, onDelete, isDeleting, storageAtFoot,
   sectionsRef, healthDocuments, onDocumentDeleted, setShowUploadModal }: MyHealthProps) {
   // The form's row opener changes every render; the rows take a stable one, so memo'd rows stay put.
   const openRef = useRef(form.rows.open);
@@ -255,7 +256,7 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
       {healthDocuments && healthDocuments.length > 0 && (
         <HealthRecordsSection documents={healthDocuments} onDeleted={onDocumentDeleted} />
       )}
-      {!settingsOpen && footStorage && <div className="mh-foot-storage">{footStorage}</div>}
+      {!settingsOpen && storageCard && <div className="mh-foot-storage" hidden={!storageAtFoot}>{storageCard}</div>}
       {plan.foot}
       {plan.report}
     </div>
