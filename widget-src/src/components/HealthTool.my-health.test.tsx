@@ -455,6 +455,50 @@ describe('US-62 AC28: Save as PDF prints the plan as it always has', () => {
   });
 });
 
+describe('US-62 live fixes (2026-11-06): jumps clear the theme\'s sticky header; Back finds its row', () => {
+  /** A theme header fixed over the viewport's top, 60px tall, as drstanfield.com's. */
+  function themeHeader(height: number) {
+    const bar = document.body.appendChild(document.createElement('header'));
+    bar.style.position = 'fixed';
+    vi.spyOn(bar, 'getBoundingClientRect').mockReturnValue({ top: 0, bottom: height, height } as DOMRect);
+    Object.defineProperty(document, 'elementsFromPoint', { configurable: true, value: () => [bar] });
+    return () => { bar.remove(); delete (document as { elementsFromPoint?: unknown }).elementsFromPoint; };
+  }
+
+  it('a pill, the banner and a value page land 12px under a 60px theme header; with none, 12px under the top', async () => {
+    const scrolled: Element[] = [];
+    Element.prototype.scrollIntoView = function (this: Element) { scrolled.push(this); };
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    const off = themeHeader(60);
+    fireEvent.click(view.getByRole('button', { name: 'Cholesterol' }));
+    const heading = view.container.querySelector<HTMLElement>('#mh-topic-cholesterol')!;
+    expect(scrolled.at(-1)).toBe(heading);
+    expect(heading.style.scrollMarginTop).toBe('72px');
+    fireEvent.click(view.container.querySelector('.mh-banner')!);
+    expect((scrolled.at(-1) as HTMLElement).style.scrollMarginTop).toBe('72px');
+    fireEvent.click(rowNamed(view, '[data-topic="weight"]', 'Weight')!);
+    const panel = view.container.querySelector<HTMLElement>('.health-input-panel')!;
+    expect(scrolled.at(-1)).toBe(panel);
+    expect(panel.style.scrollMarginTop).toBe('72px');
+    off();
+    fireEvent.click(view.getByRole('button', { name: '‹ My health' }));
+    fireEvent.click(view.getByRole('button', { name: 'Supplements' }));
+    expect(view.container.querySelector<HTMLElement>('#mh-topic-supplements')!.style.scrollMarginTop).toBe('12px');
+  });
+
+  it('Back from a value page focuses the row pressed and brings it into view, though the tap never focused it (WebKit)', async () => {
+    const scrolled: Element[] = [];
+    Element.prototype.scrollIntoView = function (this: Element) { scrolled.push(this); };
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    view.getByRole('button', { name: 'Settings' }).focus(); // focus elsewhere, as WebKit leaves it on a tap
+    const weight = rowNamed(view, '[data-topic="weight"]', 'Weight')!;
+    fireEvent.click(weight);
+    fireEvent.click(view.getByRole('button', { name: '‹ My health' }));
+    await waitFor(() => expect(document.activeElement).toBe(weight));
+    expect(scrolled.at(-1)).toBe(weight);
+  });
+});
+
 describe('US-62 AC27: the desktop section list', () => {
   it('lists the sections the page holds, in order, as links in a nav landmark; one is current; a red dot marks an urgent one', async () => {
     const scrolled: Element[] = [];

@@ -1108,8 +1108,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     scrollOnSwitch.current = false;
     const saved = scrollByTab.current[activeTab];
     const top = rootRef.current?.getBoundingClientRect().top ?? 0;
-    if (saved !== undefined) window.scrollTo(0, saved);
-    else if (top < 0) window.scrollTo(0, window.scrollY + top);
+    // At once: the theme's smooth scrolling would slide the page from the top.
+    if (saved !== undefined) window.scrollTo({ top: saved, behavior: 'instant' });
+    else if (top < 0) window.scrollTo({ top: window.scrollY + top, behavior: 'instant' });
   }, [activeTab]);
 
   // US-16 AC2 on a phone: after a chat edit switches to My data, the filled

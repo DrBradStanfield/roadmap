@@ -178,11 +178,11 @@ export function RowTrend({ points, limits, tint, width = 44, height = 18 }: { po
 }
 
 /** One row. Screen readers hear "81, previous 74": brackets alone say nothing out loud. */
-const MetricRow = memo(function MetricRow({ row, onOpen }: { row: RowModel; onOpen: (subject: ValueSubject) => void }) {
+const MetricRow = memo(function MetricRow({ row, onOpen }: { row: RowModel; onOpen: (subject: ValueSubject, from?: Element) => void }) {
   const meta = [row.target, row.day && monthYear(row.day)].filter(Boolean).join(' · ');
   return (
     <li>
-      <button type="button" className="md-row" onClick={() => onOpen(row.subject)} data-row={row.key ?? subjectKey(row.subject)}>
+      <button type="button" className="md-row" onClick={e => onOpen(row.subject, e.currentTarget)} data-row={row.key ?? subjectKey(row.subject)}>
         <span className="md-row-name">
           <span className="md-row-label">{row.label}</span>
           {meta && <span className="md-row-meta">{meta}</span>}
@@ -209,7 +209,7 @@ const MetricRow = memo(function MetricRow({ row, onOpen }: { row: RowModel; onOp
 export const subjectKey = (s: ValueSubject) => (s.kind === 'lab' ? `lab:${s.seriesKey}` : s.kind === 'bp' ? 'bp' : s.metric);
 
 /** A list of rows, the iPhone's ValueRow list. */
-export function MetricRows({ rows, onOpen }: { rows: RowModel[]; onOpen: (s: ValueSubject) => void }) {
+export function MetricRows({ rows, onOpen }: { rows: RowModel[]; onOpen: (s: ValueSubject, from?: Element) => void }) {
   if (rows.length === 0) return null;
   return (
     <ul className="md-rows">

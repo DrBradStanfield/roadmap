@@ -943,6 +943,14 @@ input[type="number"] {
   cursor: pointer;
 }
 .suggestion-dismiss:hover { color: var(--color-text-heading); }
+/* 44px to press on every width (live test 2026-11-06: 21px on desktop). */
+.suggestion-dismiss {
+  min-height: 44px;
+}
+.health-tool .supplement-remove {
+  min-width: 44px;
+  min-height: 44px;
+}
 .upload-modal.alcohol-dialog {
   max-width: 360px;
   padding: 20px;
@@ -6038,7 +6046,7 @@ input[type="number"] {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 14px;
   border-radius: 10px;
   color: var(--color-text-secondary);
@@ -6128,14 +6136,9 @@ input[type="number"] {
     margin-left: 10px;
     margin-right: 10px;
   }
-  .suggestion-dismiss,
   .md-foot-btn,
   .md-back,
   .feedback-btn {
-    min-height: 44px;
-  }
-  .supplement-remove {
-    min-width: 44px;
     min-height: 44px;
   }
   /* A unit pill is small to read but 44px to press. */

@@ -11,9 +11,12 @@ export interface NavTopic { id: string; title: string; urgent: boolean }
 /** The heading a section is reached by: `mh-topic-<id>`, TopicHeading's id. */
 const headingOf = (id: string) => document.getElementById(`mh-topic-${id}`);
 
-/** The section being read: the last whose heading has passed a line near the top. */
+/** The line near the top a heading must pass to make its section the one being read. */
+const readingLine = () => Math.min(160, window.innerHeight * 0.3);
+
+/** The section being read: the last whose heading has passed the reading line. */
 function currentTopic(topics: NavTopic[]): string | undefined {
-  const line = Math.min(160, window.innerHeight * 0.3);
+  const line = readingLine();
   let current = topics[0]?.id;
   for (const t of topics) {
     const heading = headingOf(t.id);
@@ -34,7 +37,9 @@ export function SectionNav({ topics, onJump }: { topics: NavTopic[]; onJump: (id
     const update = () => setActive(currentTopic(topics));
     const stops = topics.flatMap(t => {
       const heading = headingOf(t.id);
-      return heading ? [observeVisibility(heading, update, { rootMargin: '0px 0px -70% 0px' })] : [];
+      // The band ends at the reading line, so a heading fires as it crosses it, not short of it.
+      const rootMargin = `0px 0px ${-Math.round(window.innerHeight - readingLine())}px 0px`;
+      return heading ? [observeVisibility(heading, update, { rootMargin })] : [];
     });
     return () => { for (const stop of stops) stop(); };
   }, [key, isMobile]);
