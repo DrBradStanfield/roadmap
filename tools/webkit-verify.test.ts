@@ -60,7 +60,7 @@ describe('US-62 AC16, AC27: WebKit desktop gate', () => {
     viewportWidth: 1440, viewportHeight: 900, documentWidth: 1440, scrolled: 1154,
     nav: { links: 9, position: 'sticky', topAfter: 24, right: 244, current: 1 }, topicsLeft: 284, pillsShown: false,
     select: { appearance: 'none', paddingRight: 36, backgroundImage: 'url("data:image/svg+xml,…")' }, unitSelect: { paddingRight: 20 },
-    chatColumn: true, floatingChat: false, smallTargets: [] as string[], chatCardTop: 326, firstCardTop: 326,
+    chatColumn: true, floatingChat: false, smallTargets: [] as string[], chatCardTop: 52, firstCardTop: 52,
   };
   it('passes a sticky section list beside the topics, one current, no pills, drawn chevrons', () => {
     expect(() => assertDesktopLayout(valid)).not.toThrow();
@@ -81,7 +81,7 @@ describe('US-62 AC16, AC27: WebKit desktop gate', () => {
       [{ unitSelect: { paddingRight: 36 } }, 'clips its text'],
       [{ floatingChat: true }, 'beside the chat column'],
       [{ smallTargets: ['Skin 40px'] }, '44px'],
-      [{ chatCardTop: 322 }, 'chat card top'],
+      [{ chatCardTop: 48 }, 'chat card top'],
     ] as const) {
       expect(() => assertDesktopLayout({ ...valid, ...change })).toThrow(message);
     }
