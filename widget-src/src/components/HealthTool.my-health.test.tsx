@@ -467,7 +467,8 @@ describe('US-62 live fixes (2026-11-06): jumps clear the theme\'s sticky header;
 
   it('a pill, the banner and a value page land 12px under a 60px theme header; with none, 12px under the top', async () => {
     const scrolled: Element[] = [];
-    Element.prototype.scrollIntoView = function (this: Element) { scrolled.push(this); };
+    const how: Array<ScrollIntoViewOptions | undefined> = [];
+    Element.prototype.scrollIntoView = function (this: Element, o?: boolean | ScrollIntoViewOptions) { scrolled.push(this); how.push(o as ScrollIntoViewOptions); };
     const view = await show(RECORDS['urgent results, both cascades, a supplement']);
     const off = themeHeader(60);
     fireEvent.click(view.getByRole('button', { name: 'Cholesterol' }));
@@ -481,6 +482,8 @@ describe('US-62 live fixes (2026-11-06): jumps clear the theme\'s sticky header;
     const valuePage = view.container.querySelector<HTMLElement>('.md-page:not(.mh-settings)')!;
     expect(scrolled.at(-1)).toBe(valuePage);
     expect(valuePage.style.scrollMarginTop).toBe('72px');
+    // At once: the live theme's scroll-behavior: smooth slid it for up to a second (CI verify-live, PR 949).
+    expect(how.at(-1)).toEqual({ behavior: 'instant', block: 'start' });
     off();
     fireEvent.click(view.getByRole('button', { name: '‹ Back' }));
     fireEvent.click(view.getByRole('button', { name: 'Supplements' }));
