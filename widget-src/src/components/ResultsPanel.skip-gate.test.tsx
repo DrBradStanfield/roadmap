@@ -197,7 +197,7 @@ describe('US-18 AC6 — a refused print window is never silent', () => {
     expect(view.container.querySelector('#guestEmail')).toBeNull();
     const note = view.getByText(BLOCKED);
     expect(note.getAttribute('role')).toBe('status');
-    expect(note.closest('.hr-col-meta')).toBe(view.getByRole('button', { name: 'Save as PDF' }).closest('.hr-col-meta'));
+    expect(note.closest('.report-actions')).toBe(view.getByRole('button', { name: 'Save as PDF' }).closest('.report-actions'));
     expect(blockedEvents()).toEqual([['pdf_window_blocked']]);
   });
 
