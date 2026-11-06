@@ -80,10 +80,13 @@ interface RowModel {
 }
 
 /** A row's trend points, and which were printed as a limit. */
-function trendOf(readings: DayReading[]): Pick<RowModel, 'trend' | 'trendLimits'> {
+function trendOf(readings: DayReading[], isLimit = (r: DayReading) => !!r.comparator): Pick<RowModel, 'trend' | 'trendLimits'> {
   const recent = recentTrend(readings);
-  return { trend: recent.map(r => r.value), trendLimits: recent.map(r => !!r.comparator) };
+  return { trend: recent.map(r => r.value), trendLimits: recent.map(isLimit) };
 }
+
+/** A blood pressure day is a limit when either half was printed as one, as the desktop vitals trend reads it (US-12 AC20a). */
+const pressureLimit = (r: DayReading) => !!r.comparator || !!r.dia?.comparator;
 
 function coreRow(metric: MetricType, history: ApiMeasurement[], ctx: RowContext): RowModel {
   const unit = ctx.unitOf(metric);
@@ -118,7 +121,7 @@ function pressureRow(history: ApiMeasurement[], ctx: RowContext): RowModel {
     latest: latest ? pressureText(latest) : null,
     previous: previous ? pressureText(previous) : null,
     unit: 'mmHg',
-    trend: recentTrend(readings).map(r => r.value),
+    ...trendOf(readings, pressureLimit),
     ...(latest && limitUngraded('blood_pressure', status, ctx, latest) ? { note: LIMIT_NOT_GRADED } : {}),
     tint: TINT.blood_pressure,
     status,
