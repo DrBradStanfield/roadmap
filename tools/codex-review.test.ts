@@ -2274,6 +2274,32 @@ describe('US-40 AC15 — --subject reviews exact files, never whatever else the 
     expect(rg.report().files).toBe(1);
     expect(rg.r.stderr).toContain(`merge base ${fork.slice(0, 12)}`);
   });
+  it('--range takes the contract from A, not the merge base: a rule changed after the branch was cut still binds it (US-40 AC2, AC17)', () => {
+    const dir = realpathSync(freshRepo());
+    const trunk = sh(dir, 'git symbolic-ref --short HEAD').trim();
+    sh(dir, 'git checkout -q -b feat && printf "branch work\\n" > b.txt && git add b.txt && git commit -q -m branch-work');
+    sh(dir, `git checkout -q ${trunk} && printf "NEWER CONTRACT: added after the fork.\\n" > docs/review-format.md && git commit -q -am contract && git checkout -q feat`);
+    const g = grab();
+    const rg = run(dir, ['--range', `${trunk}..feat`], { during: g.during });
+    expect(rg.r.status).toBe(0);
+    expect(readFileSync(join(g.to, 'base-review-format.md'), 'utf8')).toBe('NEWER CONTRACT: added after the fork.\n');
+    expect(readFileSync(join(g.to, 'REVIEW_PATCH.diff'), 'utf8')).not.toContain('review-format');
+  });
+  it('--range with no work of its own, no shared history, or a malformed spelling never exits as a pass (US-40 AC17)', () => {
+    const dir = realpathSync(freshRepo());
+    sh(dir, 'printf "two\\n" > a.txt && git commit -q -am two');
+    const behind = run(dir, ['--range', 'HEAD..HEAD~1']);
+    expect([behind.r.status, behind.r.stdout.includes('E_RANGE_EMPTY')]).toEqual([3, true]);
+    const tipSha = sh(dir, 'git rev-parse HEAD').trim();
+    sh(dir, 'git checkout -q --orphan other && git rm -rqf . && printf "x\\n" > x.txt && git add x.txt && git commit -q -m other');
+    const unrelated = run(dir, ['--range', `other..${tipSha}`]);
+    expect([unrelated.r.status, unrelated.r.stdout.includes('E_RANGE_NO_BASE')]).toEqual([3, true]);
+    for (const spelling of ['a....b', '..HEAD', 'HEAD..HEAD..HEAD', 'no-such-ref..HEAD']) {
+      const bad = run(dir, ['--range', spelling]);
+      expect([spelling, bad.r.status]).toEqual([spelling, 1]);
+      expect(bad.r.stderr).toContain('--range');
+    }
+  });
   it('privacy: the shipped deny list names its patterns and matches no file tracked in this repo (it must never swallow code or ledgers)', () => {
     expect(SHIPPED_POLICY.privateDeny).toEqual(['**/comments-*', '**/competitor-*-comments.*', '**/objection-intel*', '**/research/channel/index.md', '**/*judgeme*.csv', '**/chatbot_*/messages*', '**/chatbot_*/conversations*']);
     const specs = SHIPPED_POLICY.privateDeny.flatMap((g: string) => [`:(glob,icase)${g}`, `:(glob,icase)${g}/**`]);

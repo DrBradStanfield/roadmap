@@ -100,12 +100,16 @@ further round. Review rounds are capped (Brad, 2026-10-19, usage audit): one ful
 re-check scoped to the fix diff and the findings it answers. Anything still unresolved after the
 re-check goes to Brad with both positions; never a third round or a fresh full re-review, with the evidence.
 
-**Every finding left open gets an owner before merge** (Brad, 2026-11-06). An optional finding, a
-note, or an out-of-scope defect the reviewer found becomes a GitHub issue labelled `review-note`
-before the PR merges: one issue per finding, titled with what goes wrong, citing the PR and the
-finding id, with the reviewer's failure scenario. The merging session opens them; the PR body or
-final report lists their numbers. Dropping one needs a stated reason (disputed, with evidence).
-Before, notes lived only in a chat report, and three from one day's reviews had no owner.
+**Every finding left open gets an owner before merge** (author's duty, Brad 2026-11-06; not a
+reviewer check: the issues are opened after the review, so a reviewer never flags their absence).
+An optional finding, a note, or an out-of-scope defect the reviewer found becomes a GitHub issue
+labelled `review-note`: one per finding, titled with what goes wrong, citing the PR and the finding
+id, with the failure scenario. The repo is public, so two kinds never go in an issue: a security or
+privacy finding goes to a draft private security advisory (SECURITY.md), and no issue quotes chat,
+feedback, record or other personal text. Whoever hands the PR to its merger files them: the merging
+session for a PR it merges by hand, the authoring session (a loop's included) before it opens a PR
+that auto-ship may merge. The PR body or final report lists their numbers. Dropping one needs a
+stated reason (disputed, with evidence).
 
 ## Merge
 
