@@ -60,7 +60,6 @@ export {
   isScreeningEligible,
   // Supplement options
   SUPPLEMENT_OPTIONS,
-  FEATURED_SUPPLEMENTS,
   // Database encoding helpers
   SEX_DB,
   UNIT_SYSTEM_DB,
@@ -96,7 +95,7 @@ export {
 export { generateSuggestions, REDUCE_ALCOHOL_ID, LIPID_MEDS_IN_STEPS, lipidMarkerFor, lipidTargetSentence, medicinesShown, weightMedicationTrigger, weightMedIntro } from './suggestions';
 export type { LipidMarker, WeightMedicationTrigger } from './suggestions';
 export { weightCascade, lipidCascade } from './medication-cascades';
-export { planSections, type PlanSection, type PlanCard, type PlanSectionKey } from './plan-sections';
+export { planSections, topicSections, TOPICS, type PlanSection, type PlanCard, type PlanSectionKey, type TopicCard, type TopicId, type TopicLayout, type TopicSection } from './plan-sections';
 
 // Validation
 export {
@@ -214,6 +213,7 @@ export {
   LPA_THRESHOLDS,
   waistToHeightRatio,
   isWaistToHeightElevated,
+  WHTR_TARGET,
   elevatedWaistFromCm,
   bpTargetFor,
   formatTargetLine,
@@ -500,7 +500,7 @@ export {
 } from './input-form';
 
 // US-07 AC7: the lab's printed eGFR, when it is the plan's.
-export { labEgfrFrom, labEgfrOf, withLabEgfr, type LabEgfr } from './plan';
+export { egfrSeries, labEgfrFrom, labEgfrOf, whtrSeries, withLabEgfr, type EgfrPoint, type LabEgfr, type WhtrPoint } from './plan';
 // US-07 AC11: the one strip of refused inputs every plan caller shares.
 export { planInputsFrom } from './plan';
 

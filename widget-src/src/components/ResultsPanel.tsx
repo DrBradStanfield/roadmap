@@ -1,47 +1,43 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+// The plan's parts on My health (US-62 AC17-AC26): its cards by topic, a
+// suggestion on its row, the tiles under the onboarding, and the foot. The plan
+// has no column of its own since phase 5; usePlanView builds what InputPanel draws.
+import React, { createContext, useCallback, useContext, useState, useRef, useEffect, useId, useMemo } from 'react';
+import { flushSync } from 'react-dom';
 import type { HealthResults, Suggestion } from '@roadmap/health-core';
 import {
   type SuggestionEvidence,
   statTileText,
   type StatTile,
   planSections,
+  topicSections,
+  type FormSection,
   type PlanCard,
+  type TopicCard,
+  type TopicLayout,
 } from '@roadmap/health-core';
 // US-61 AC5: called only under SHOPIFY_SURFACE, so the Pages build drops the module.
-import { usProductSections, type UsPlanCard, type UsPlanSection, type UsProduct, type UsProductBlock } from '@roadmap/health-core/us-products';
+import { usProductSections, type UsPlanSection, type UsProduct, type UsProductBlock, type UsSuggestion } from '@roadmap/health-core/us-products';
 import { getReportHtml, sendGuestReport, getReportEmailCaptured, markReportEmailCaptured } from '../lib/roadmap-data';
 import { trackABConversion, trackProductEvent } from '../lib/server-api';
 import { EMAIL_REGEX } from '../lib/email';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { getSkipEmailGate } from '../lib/assistant-config';
-import { ColumnHeader } from './ColumnHeader';
 import { GuideLink } from './GuideLink';
 import { FeedbackForm } from './FeedbackForm';
 import { alcoholDismiss, type AlcoholQuestion } from './AlcoholQuestion';
 import { CategoryIcon } from './icons';
 import { getMarketCountry } from '../lib/market-country';
 import { observeVisibility } from '../lib/observe-visibility';
-interface ResultsPanelProps {
-  results: HealthResults | null;
-  isValid: boolean;
-  hasUnsavedLongitudinal?: boolean;
-  onSaveLongitudinal?: () => Promise<unknown>;
-  /** Resolves true once the data is erased (false if cancelled or failed). */
-  onDeleteData?: () => Promise<boolean>;
-  isDeleting?: boolean;
-  /** The plan's tiles, computed once in HealthTool (`statTiles`). */
-  tiles: StatTile[];
-  showEmailCapture?: boolean;
-  formStage?: number;
-  /** Cloud connection controls shared by Shopify and Pages. Hidden for new users
-   *  until they have entered real data. `attention` (US-09 AC19): the guest has
-   *  their PDF, so the storage button may pulse. */
-  syncControl?: (ctx: { hasData: boolean; attention: boolean }) => React.ReactNode;
-  /** The local-first email-reminders section (US-17), rendered as its own block
-   *  lower in the plan — not bolted onto the sync line at the top. */
-  remindersSection?: React.ReactNode;
-  /** US-60: the question the "Reduce alcohol intake" card's Dismiss asks, and its save. */
-  alcoholQuestion?: AlcoholQuestion;
+import { ColumnHeader } from './ColumnHeader';
+
+/** Which reasons are open, by suggestion or tile, shared by the screen and its PDF (US-62 AC28). */
+interface OpenEvidence { opened: ReadonlySet<string>; toggle: (key: string) => void }
+export const OpenEvidenceContext = createContext<OpenEvidence | null>(null);
+/** One reason's open state: the plan's shared one, or, outside a plan, its own. */
+function useOpenEvidence(key: string): [boolean, () => void] {
+  const shared = useContext(OpenEvidenceContext);
+  const [own, setOwn] = useState(false);
+  return shared ? [shared.opened.has(key), () => shared.toggle(key)] : [own, () => setOwn(o => !o)];
 }
 
 /** A control that opens a card's evidence by mouse or keyboard (US-07 AC16):
@@ -59,17 +55,18 @@ function evidenceToggle(open: boolean, toggle: (() => void) | undefined) {
   };
 }
 
-function StatCard({ label, value, status, evidence }: {
+function StatCard({ openKey, label, value, status, evidence }: {
+  openKey: string;
   label: string;
   value: React.ReactNode;
   status?: { label: string; className: string };
   evidence?: SuggestionEvidence;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, toggle] = useOpenEvidence(openKey);
   const hasDetail = !!evidence;
   return (
     <div className={`stat-card${hasDetail ? ' stat-card-clickable' : ''}${open ? ' stat-card-open' : ''}`}
-         {...evidenceToggle(open, hasDetail ? () => setOpen(o => !o) : undefined)}>
+         {...evidenceToggle(open, hasDetail ? toggle : undefined)}>
       <span className="stat-label">{label}</span>
       <span className="stat-value">{value}</span>
       {status?.label && <span className={`stat-status ${status.className}`}>{status.label}</span>}
@@ -157,8 +154,17 @@ function UsProductBlockView({ block }: { block: UsProductBlock }) {
   );
 }
 
-function SuggestionCard({ suggestion, highlighted, fadingOut, alcoholQuestion, usBlock }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; alcoholQuestion?: AlcoholQuestion; usBlock?: UsProductBlock }) {
-  const [evidenceOpen, setEvidenceOpen] = useState(false);
+/** My health's card head (US-62 AC18, design review 2026-11-06): no category icon or chip; the
+ *  status alone, in words and one restrained colour, only where there is one. */
+const STATUS_WORDS: Partial<Record<Suggestion['priority'], string>> = { urgent: 'Urgent', attention: 'Next step' };
+function CalmStatus({ priority }: { priority: Suggestion['priority'] }) {
+  const words = STATUS_WORDS[priority];
+  return words ? <span className={`mh-status mh-status--${priority}`}>{words}</span> : null;
+}
+
+function SuggestionCard({ suggestion, highlighted, fadingOut, alcoholQuestion, usBlock, calm }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; alcoholQuestion?: AlcoholQuestion; usBlock?: UsProductBlock; calm?: boolean }) {
+  const [evidenceOpen, toggleOpen] = useOpenEvidence(suggestion.id);
+  const dismiss = alcoholDismiss(suggestion, alcoholQuestion);
   const hasEvidence = suggestionHasEvidence(suggestion);
   const isSupplementCard = suggestion.category === 'supplements';
   const isSkinCard = suggestion.category === 'skin';
@@ -166,11 +172,18 @@ function SuggestionCard({ suggestion, highlighted, fadingOut, alcoholQuestion, u
   const highlightClass = fadingOut ? ' suggestion-highlight suggestion-fade-out'
     : highlighted ? ' suggestion-highlight' : '';
 
-  const toggleEvidence = hasEvidence ? () => setEvidenceOpen(o => !o) : undefined;
+  const toggleEvidence = hasEvidence ? toggleOpen : undefined;
 
   return (
-    <div className={`suggestion-card ${priorityColors[suggestion.priority]}${isSupplementCard ? ' supplement-card' : ''}${isSkinCard ? ' skin-card' : ''}${highlightClass}${hasEvidence ? ' suggestion-card-clickable' : ''}`}>
-      {!isSpecialCard && (
+    <div className={`suggestion-card ${priorityColors[suggestion.priority]}${isSupplementCard ? ' supplement-card' : ''}${isSkinCard ? ' skin-card' : ''}${highlightClass}${hasEvidence ? ' suggestion-card-clickable' : ''}${calm ? ' suggestion-card--calm' : ''}`}>
+      {calm ? (
+        (STATUS_WORDS[suggestion.priority] || dismiss) && (
+          <div className="suggestion-header">
+            <CalmStatus priority={suggestion.priority}/>
+            {dismiss}
+          </div>
+        )
+      ) : !isSpecialCard && (
         <div className="suggestion-header">
           <span className="suggestion-header-lead">
             <CategoryIcon category={suggestion.category}/>
@@ -179,7 +192,7 @@ function SuggestionCard({ suggestion, highlighted, fadingOut, alcoholQuestion, u
               {suggestion.category.replace(/_/g, ' ')}
             </span>
           </span>
-          {alcoholDismiss(suggestion, alcoholQuestion)}
+          {dismiss}
         </div>
       )}
       <div className="suggestion-body" onClick={toggleEvidence}>
@@ -208,13 +221,13 @@ function SuggestionCard({ suggestion, highlighted, fadingOut, alcoholQuestion, u
 }
 
 function GroupedSubsection({ suggestion, highlighted, fadingOut, alcoholQuestion }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; alcoholQuestion?: AlcoholQuestion }) {
-  const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const [evidenceOpen, toggleOpen] = useOpenEvidence(suggestion.id);
   const hasEvidence = suggestionHasEvidence(suggestion);
   const highlightClass = fadingOut ? ' suggestion-highlight suggestion-fade-out'
     : highlighted ? ' suggestion-highlight' : '';
 
   const dismiss = alcoholDismiss(suggestion, alcoholQuestion);
-  const toggleEvidence = hasEvidence ? () => setEvidenceOpen(o => !o) : undefined;
+  const toggleEvidence = hasEvidence ? toggleOpen : undefined;
 
   return (
     <div className={`suggestion-subsection${highlightClass}${hasEvidence ? ' suggestion-subsection-clickable' : ''}`}>
@@ -236,11 +249,12 @@ function GroupedSubsection({ suggestion, highlighted, fadingOut, alcoholQuestion
   );
 }
 
-function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, alcoholQuestion }: { card: PlanCard; highlightedIds?: Set<string>; fadingOutIds?: Set<string>; alcoholQuestion?: AlcoholQuestion }) {
+function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, alcoholQuestion, calm }: { card: Pick<PlanCard, 'category' | 'priority' | 'suggestions'>; highlightedIds?: Set<string>; fadingOutIds?: Set<string>; alcoholQuestion?: AlcoholQuestion; calm?: boolean }) {
   const { suggestions, category, priority: highestPriority } = card;
 
   return (
-    <div className={`suggestion-card grouped-card ${priorityColors[highestPriority]}`}>
+    <div className={`suggestion-card grouped-card ${priorityColors[highestPriority]}${calm ? ' suggestion-card--calm' : ''}`}>
+      {calm ? STATUS_WORDS[highestPriority] && <div className="suggestion-header"><CalmStatus priority={highestPriority}/></div> : (
       <div className="suggestion-header">
         <span className="suggestion-header-lead">
           <CategoryIcon category={category}/>
@@ -250,6 +264,7 @@ function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, alcoholQues
           </span>
         </span>
       </div>
+      )}
       <div className="grouped-subsections">
         {suggestions.map((s) => (
           <GroupedSubsection key={s.id} suggestion={s} highlighted={highlightedIds?.has(s.id)} fadingOut={fadingOutIds?.has(s.id)} alcoholQuestion={alcoholQuestion} />
@@ -257,18 +272,6 @@ function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, alcoholQues
       </div>
     </div>
   );
-}
-
-/** A section's cards: grouped ones as one card, the rest one card each (layout: planSections;
- *  US-61's blocks and text: usProductSections). */
-function renderCards(cards: UsPlanCard[], highlightedIds: Set<string>, fadingOutIds: Set<string>, alcoholQuestion?: AlcoholQuestion) {
-  return cards.map((card) => {
-    if (card.suggestions.length > 1) {
-      return <GroupedSuggestionCard key={card.category} card={card} highlightedIds={highlightedIds} fadingOutIds={fadingOutIds} alcoholQuestion={alcoholQuestion} />;
-    }
-    const s = card.suggestions[0];
-    return <SuggestionCard key={s.id} suggestion={s} highlighted={highlightedIds.has(s.id)} fadingOut={fadingOutIds.has(s.id)} alcoholQuestion={alcoholQuestion} usBlock={s.usProduct} />;
-  });
 }
 
 // 'skipped' + 'reminded' are US-44's funnel-page states: the block skips the
@@ -298,7 +301,7 @@ export const REMINDER_SIGNUP_DONE = "You're signed up. We'll email you when a ch
 export const PDF_WINDOW_BLOCKED = "The PDF window didn't open. Try Save as PDF again. Some apps' built-in browsers block it.";
 
 /** The button whose print window was refused: the note sits beside it. */
-type PdfButton = 'header' | 'bottom' | 'capture';
+type PdfButton = 'bottom' | 'capture';
 
 /** US-18 AC6: always mounted and emptied before each try, so every refusal is announced. */
 function PdfNote({ show }: { show: boolean }) {
@@ -328,9 +331,10 @@ interface GuestEmailHook {
   gateSkipped?: boolean;
 }
 
-function useGuestEmailCapture(printReport: () => Promise<void>): GuestEmailHook {
-  const [email, setEmail] = useState('');
-  const [emailError, setEmailError] = useState('');
+/** The capture's state and the page's gate, held by usePlanView (the storage pulse reads them). */
+interface EmailCaptureState { state: GuestEmailState; setState: (s: GuestEmailState) => void; gateSkipped: boolean }
+
+function useEmailCaptureState(): EmailCaptureState {
   // US-44: the page decides, once per mount. Never written to the record.
   const [gateSkipped] = useState(getSkipEmailGate);
   // Returning local-first users who already captured: skip the email box and
@@ -338,6 +342,13 @@ function useGuestEmailCapture(printReport: () => Promise<void>): GuestEmailHook 
   const [state, setState] = useState<GuestEmailState>(
     () => (getReportEmailCaptured() ? 'captured' : gateSkipped ? 'skipped' : 'idle'),
   );
+  return { state, setState, gateSkipped };
+}
+
+/** The box's own typing, in the foot, so a keystroke re-renders the foot alone. */
+function useGuestEmailCapture(printReport: () => Promise<void>, { state, setState, gateSkipped }: EmailCaptureState): GuestEmailHook {
+  const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
   const helperText = LOCAL_FIRST_EMAIL_HELPER;
   // US-18 AC7: one send at a time. The button is disabled while sending, but
   // Enter in the box (either copy of it) reaches here too.
@@ -454,7 +465,7 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
   if (state === 'captured') {
     // Already captured (this submit, or a prior visit via the persisted flag):
     // the email box is gone and nothing renders here. The ungated "Save as PDF"
-    // button lives inline in the "Your plan…" header (planHeaderMeta) instead.
+    // button sits beside it in My health's foot instead.
     return null;
   }
 
@@ -488,16 +499,273 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
   );
 }
 
-export function ResultsPanel({ results, isValid, hasUnsavedLongitudinal, onSaveLongitudinal, onDeleteData, isDeleting, tiles, showEmailCapture, formStage, syncControl, remindersSection, alcoholQuestion }: ResultsPanelProps) {
-  // Track highlighted (new/changed) suggestion IDs
-  const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
-  const [fadingOutIds, setFadingOutIds] = useState<Set<string>>(new Set());
+/** The plan's view on My health (US-62 AC17-AC26): its cards by topic (health-core's
+ *  `topicSections`, with US-61's overlay on Shopify), the new-card highlight, the urgent
+ *  banner's target, and the foot. Built once, in HealthTool; InputPanel draws it. */
+/** One topic's cards, the urgent ones apart: they lead the topic, over its rows (US-62 AC18). */
+export interface TopicCards { urgent: TopicCard<UsSuggestion>[]; others: TopicCard<UsSuggestion>[]; ownershipLine?: string }
+
+export interface PlanView {
+  layout: TopicLayout<UsSuggestion>;
+  /** Each topic's cards, split once (US-62 AC18). */
+  topics: ReadonlyMap<string, TopicCards>;
+  /** A valid plan is on hand. */
+  planned: boolean;
+  highlights: Highlights;
+  alcoholQuestion?: AlcoholQuestion;
+  /** The first urgent card in topic order, for the banner (US-62 AC19). */
+  urgent: { title: string; cardId: string } | null;
+  /** Each card's DOM id: its place on the page, never what it found (US-09 AC7d). */
+  cardIds: ReadonlyMap<TopicCard<UsSuggestion>, string>;
+  /** The reasons open on screen; the PDF prints them open (US-62 AC28). Provide it as OpenEvidenceContext. */
+  evidence: OpenEvidence;
+  /** US-61 AC8: on the Supplements section, so its products count once it is on screen. */
+  supplementsRef: React.RefObject<HTMLElement>;
+  /** The foot: the PDF box and email, Save as PDF, the disclaimer, feedback, Supercharge, privacy. */
+  foot: React.ReactNode;
+  /** US-09 AC19: the guest has their PDF, so the storage card may pulse. */
+  attention: boolean;
+  /** An erase forgets the PDF this tab opened. */
+  onErased: () => void;
+  /** The plan as Save as PDF prints it (US-08): drawn, hidden, only while getReportHtml copies it. */
+  report: React.ReactNode;
+}
+
+interface Highlights { highlighted: Set<string>; fadingOut: Set<string> }
+/** A suggestion's glow classes (US-07 AC3). */
+const highlightClass = (id: string, { highlighted, fadingOut }: Highlights) =>
+  fadingOut.has(id) ? ' suggestion-highlight suggestion-fade-out' : highlighted.has(id) ? ' suggestion-highlight' : '';
+const NO_HIGHLIGHTS: Set<string> = new Set();
+
+/** New or changed suggestions glow for 3s, then fade, once the plan has settled (3s after mount). */
+function useHighlights(suggestions: Suggestion[] | undefined): Highlights {
+  const [highlighted, setHighlighted] = useState<Set<string>>(NO_HIGHLIGHTS);
+  const [fadingOut, setFadingOut] = useState<Set<string>>(NO_HIGHLIGHTS);
   const baselineRef = useRef<Map<string, { title: string; description: string }>>(new Map());
   const settledRef = useRef(false);
   const clearTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const fadeOutTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
-  // Report actions state (shared between top and bottom buttons)
+  // Settle after 3s: skip highlighting during the initial load.
+  useEffect(() => {
+    const timer = setTimeout(() => { settledRef.current = true; }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const current = suggestions ?? [];
+    const currentMap = new Map(current.map(s => [s.id, { title: s.title, description: s.description }]));
+    // Before settling, and for the first batch, the plan is the baseline: nothing glows.
+    if (!settledRef.current || (baselineRef.current.size === 0 && currentMap.size > 0)) {
+      baselineRef.current = currentMap;
+      return;
+    }
+    const next = new Set<string>();
+    for (const s of current) {
+      const prev = baselineRef.current.get(s.id);
+      if (!prev || prev.title !== s.title || prev.description !== s.description) next.add(s.id);
+    }
+    // Nothing new or changed, nothing glowing: no new state, so no re-render.
+    if (next.size === 0) {
+      baselineRef.current = currentMap;
+      return;
+    }
+    // Cancel any fade-out in progress.
+    if (fadeOutTimeoutRef.current) clearTimeout(fadeOutTimeoutRef.current);
+    setFadingOut(NO_HIGHLIGHTS);
+    setHighlighted(next);
+    if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
+    clearTimeoutRef.current = setTimeout(() => {
+      setFadingOut(next);
+      setHighlighted(NO_HIGHLIGHTS);
+      fadeOutTimeoutRef.current = setTimeout(() => {
+        setFadingOut(NO_HIGHLIGHTS);
+        baselineRef.current = currentMap;
+      }, 500);
+    }, 3000);
+    return () => {
+      if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
+      if (fadeOutTimeoutRef.current) clearTimeout(fadeOutTimeoutRef.current);
+    };
+  }, [suggestions]);
+  return { highlighted, fadingOut };
+}
+
+/** One topic's cards, each with its DOM id; a grouped card as one card (US-62 AC18). */
+export function PlanCardList({ cards, plan }: { cards: ReadonlyArray<TopicCard<UsSuggestion>>; plan: PlanView }) {
+  const { highlighted, fadingOut } = plan.highlights;
+  return (
+    <>
+      {cards.map((card) => {
+        const id = plan.cardIds.get(card)!;
+        const s = card.suggestions[0];
+        return (
+          <div key={id} id={id} tabIndex={-1} className="mh-card">
+            {card.suggestions.length > 1
+              ? <GroupedSuggestionCard card={card} highlightedIds={highlighted} fadingOutIds={fadingOut} alcoholQuestion={plan.alcoholQuestion} calm />
+              : <SuggestionCard suggestion={s} highlighted={highlighted.has(s.id)} fadingOut={fadingOut.has(s.id)} alcoholQuestion={plan.alcoholQuestion} usBlock={s.usProduct} calm />}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+/**
+ * The plan's suggestions on a row (US-62 AC20): a medicine's title as one line,
+ * a screening's text (`describes`); the info button opens the rest (the text, or
+ * the title) and the evidence. Coloured by priority, so an urgent one reads as one here too.
+ */
+export function RowSuggestions({ suggestions, highlights, describes = false }: { suggestions: readonly Suggestion[]; highlights: Highlights; describes?: boolean }) {
+  return <>{suggestions.map(s => <RowSuggestion key={s.id} suggestion={s} describes={describes} glow={highlightClass(s.id, highlights)}/>)}</>;
+}
+
+function RowSuggestion({ suggestion, describes, glow }: { suggestion: Suggestion; describes: boolean; glow: string }) {
+  const [open, setOpen] = useState(false);
+  const [evidenceOpen, toggleEvidence] = useOpenEvidence(suggestion.id);
+  const detailId = useId();
+  return (
+    <div className={`mh-row-suggestion ${priorityColors[suggestion.priority]}${glow}`}>
+      <div className="mh-row-suggestion-line">
+        <span className="mh-row-suggestion-text">{describes ? suggestion.description : suggestion.title}</span>
+        <button type="button" className="mh-info-btn" aria-expanded={open} aria-controls={detailId}
+                aria-label={`About: ${suggestion.title}`} onClick={() => setOpen(o => !o)}>
+          <span aria-hidden="true">i</span>
+        </button>
+      </div>
+      {open && (
+        <div id={detailId} className="mh-row-suggestion-detail">
+          {describes ? <p className="mh-row-suggestion-title">{suggestion.title}</p> : <p className="suggestion-desc">{suggestion.description}</p>}
+          <SuggestionEvidence suggestion={suggestion} open={evidenceOpen} onToggle={toggleEvidence} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** The plan's tiles (US-25 AC22), under the onboarding while it runs (US-62 AC25). */
+export function QuickStats({ tiles }: { tiles: StatTile[] }) {
+  return (
+    <section className="quick-stats">
+      <div className="stats-grid">
+        {tiles.map((tile) => <PlanTile key={tile.key} tile={tile}/>)}
+      </div>
+    </section>
+  );
+}
+
+/** One tile, its evidence a press away: in the tiles, and on its row's page (US-62 AC26). */
+export function PlanTile({ tile }: { tile: StatTile }) {
+  return (
+    <StatCard
+      openKey={`tile:${tile.key}`}
+      label={tile.label}
+      value={statTileText(tile)}
+      status={tile.status && { label: tile.status.label, className: tile.status.tone ? `status-${tile.status.tone}` : '' }}
+      evidence={tile.evidence}
+    />
+  );
+}
+
+/** What the plan looks like before there is one (no valid height yet). */
+export function PlanEmptyPreview() {
+  return (
+    <div className="plan-empty-preview">
+      <p className="plan-empty-intro">
+        <strong>Here's what your plan will look like.</strong> Real suggestions appear once you fill in your details.
+      </p>
+      <div className="stats-grid plan-empty-stats">
+        <div className="stat-card stat-card--awaiting">
+          <span className="stat-label">BMI</span>
+          <span className="stat-value">—</span>
+          <span className="stat-status">Awaiting</span>
+        </div>
+        <div className="stat-card stat-card--awaiting">
+          <span className="stat-label">Ideal Body Weight</span>
+          <span className="stat-value">—</span>
+          <span className="stat-status">Awaiting</span>
+        </div>
+        <div className="stat-card stat-card--awaiting">
+          <span className="stat-label">Protein Target</span>
+          <span className="stat-value">—</span>
+          <span className="stat-status">Awaiting</span>
+        </div>
+      </div>
+      <div className="plan-empty-example">
+        <span className="plan-empty-example-label">Example suggestion</span>
+        <div className="suggestion-card priority-low plan-empty-example-card">
+          <div className="suggestion-body">
+            <h4 className="suggestion-title">Increase potassium-rich foods</h4>
+            <p className="suggestion-desc">Aim for 3,500–5,000mg of potassium daily from fruits, vegetables, and legumes. High potassium intake supports healthy blood pressure and cardiovascular function.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+/**
+ * The plan as its PDF has always printed it (US-08, US-18, US-62 AC28): its
+ * title, the tiles, the suggestions by priority (planSections) with the reasons
+ * opened on screen, the disclaimer and the privacy link. Hidden, and drawn only
+ * while getReportHtml copies it: My health shows the same cards by topic.
+ */
+function PlanReport({ tiles, sections, alcoholQuestion }: { tiles: StatTile[]; sections: UsPlanSection[]; alcoholQuestion?: AlcoholQuestion }) {
+  return (
+    <div className="health-results-panel hr-report" hidden>
+      <ColumnHeader title="Your plan to discuss with your doctor"/>
+      <QuickStats tiles={tiles}/>
+      <section className="suggestions-section">
+        {sections.map((section) => (
+          <div key={section.key} className={`suggestions-group${section.key === 'skin' || section.key === 'supplements' ? ` ${section.key}-group` : ''}`}>
+            <h4 className={`suggestions-group-title ${section.key}`}>{section.title}</h4>
+            {section.cards.map((card) => (card.suggestions.length > 1
+              ? <GroupedSuggestionCard key={card.category} card={card} highlightedIds={NO_HIGHLIGHTS} fadingOutIds={NO_HIGHLIGHTS} alcoholQuestion={alcoholQuestion} />
+              : <SuggestionCard key={card.suggestions[0].id} suggestion={card.suggestions[0]} alcoholQuestion={alcoholQuestion} />))}
+          </div>
+        ))}
+      </section>
+      <div className="health-disclaimer">
+        <strong>Disclaimer:</strong> {DISCLAIMER}
+      </div>
+      <PrivacyLink/>
+    </div>
+  );
+}
+
+function PrivacyLink() {
+  return (
+    <div className="privacy-notice-link">
+      <a href="https://drstanfield.com/pages/connector-privacy" target="_blank" rel="noopener">
+        How your health data is handled
+      </a>
+    </div>
+  );
+}
+
+/** The plan's disclaimer, on the page's foot and in its PDF. */
+const DISCLAIMER = 'This tool is for educational purposes only and is not a substitute for professional medical advice. '
+  + 'Always consult with your healthcare provider before making any health decisions. '
+  + 'Suggestions are based on general guidelines and may not apply to your individual situation.';
+
+interface PlanViewOptions {
+  results: HealthResults | null;
+  isValid: boolean;
+  /** The plan's tiles, for the PDF. */
+  tiles: StatTile[];
+  /** The form's questions, so a medicine or screening suggestion sits on the row that asks it. */
+  forms: { medications: readonly FormSection[]; screenings: readonly FormSection[] };
+  hasUnsavedLongitudinal?: boolean;
+  onSaveLongitudinal?: () => Promise<unknown>;
+  showEmailCapture?: boolean;
+  formStage?: number;
+  alcoholQuestion?: AlcoholQuestion;
+}
+
+export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitudinal, onSaveLongitudinal, showEmailCapture, formStage, alcoholQuestion }: PlanViewOptions): PlanView {
+  const highlights = useHighlights(results?.suggestions);
+
   const [printStatus, setPrintStatus] = useState<'idle' | 'loading'>('idle');
   // US-18 AC6: where the last print window was refused (or its report could
   // not be built). A window that opens clears it, and so does an erase.
@@ -506,10 +774,16 @@ export function ResultsPanel({ results, isValid, hasUnsavedLongitudinal, onSaveL
   // US-09 AC19: a print window opened in this tab (the gate-skipped page's PDF).
   // Only an erase forgets it: the plan also goes blank mid-edit.
   const [pdfOpened, setPdfOpened] = useState(false);
+  // The PDF's copy of the plan is drawn only while it is copied (PlanReport).
+  const [printing, setPrinting] = useState(false);
   // Emptied first (inside the click) so a repeat refusal is announced again.
   const printReport = async (at: PdfButton) => {
     setPdfBlocked(null);
-    const report = await getReportHtml();
+    // Drawn synchronously, inside the click, so getReportHtml copies it before its first await.
+    flushSync(() => setPrinting(true));
+    const pending = getReportHtml();
+    setPrinting(false);
+    const report = await pending;
     const opened = report.success && !!report.html && openPrintWindow(report.html);
     setPdfBlocked(opened ? null : at);
     if (opened) setPdfOpened(true);
@@ -528,66 +802,14 @@ export function ResultsPanel({ results, isValid, hasUnsavedLongitudinal, onSaveL
     setPrintStatus('idle');
   };
 
-  // Settle after 3s — skip highlighting during initial load + Phase 2 API overwrite
-  useEffect(() => {
-    const timer = setTimeout(() => { settledRef.current = true; }, 3000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Detect new/changed suggestions
-  useEffect(() => {
-    const suggestions = results?.suggestions ?? [];
-    const currentMap = new Map(suggestions.map(s => [s.id, { title: s.title, description: s.description }]));
-
-    if (!settledRef.current) {
-      baselineRef.current = currentMap;
-      return;
-    }
-
-    // First batch of suggestions — accept as baseline without highlighting
-    if (baselineRef.current.size === 0 && currentMap.size > 0) {
-      baselineRef.current = currentMap;
-      return;
-    }
-
-    const newHighlights = new Set<string>();
-    for (const s of suggestions) {
-      const prev = baselineRef.current.get(s.id);
-      if (!prev) {
-        newHighlights.add(s.id);
-      } else if (prev.title !== s.title || prev.description !== s.description) {
-        newHighlights.add(s.id);
-      }
-    }
-
-    // Cancel any in-progress fade-out
-    if (fadeOutTimeoutRef.current) clearTimeout(fadeOutTimeoutRef.current);
-    setFadingOutIds(new Set());
-
-    setHighlightedIds(newHighlights);
-
-    if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
-    clearTimeoutRef.current = setTimeout(() => {
-      // Start fade-out animation
-      setFadingOutIds(newHighlights);
-      setHighlightedIds(new Set());
-      // After animation completes, clean up and update baseline
-      fadeOutTimeoutRef.current = setTimeout(() => {
-        setFadingOutIds(new Set());
-        baselineRef.current = currentMap;
-      }, 500);
-    }, 3000);
-
-    return () => {
-      if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
-      if (fadeOutTimeoutRef.current) clearTimeout(fadeOutTimeoutRef.current);
-    };
-  }, [results?.suggestions]);
-
-  // Shared state for guest email capture (top + bottom instances stay in sync)
-  const guestEmailHook = useGuestEmailCapture(() => printReport('capture'));
-
-  // Above the early return, as hooks must be; worked out again only when their inputs change.
+  const capture = useEmailCaptureState();
+  const [opened, setOpened] = useState<ReadonlySet<string>>(NO_HIGHLIGHTS);
+  const toggleEvidence = useCallback((key: string) => setOpened(was => {
+    const next = new Set(was);
+    if (!next.delete(key)) next.add(key);
+    return next;
+  }), []);
+  const evidence = useMemo(() => ({ opened, toggle: toggleEvidence }), [opened, toggleEvidence]);
 
   // US-61 AC5: Brad's products for a known adult in the US, on the Shopify build only.
   const sections = useMemo((): UsPlanSection[] => {
@@ -595,10 +817,25 @@ export function ResultsPanel({ results, isValid, hasUnsavedLongitudinal, onSaveL
     const plain = planSections(results.suggestions);
     return (SHOPIFY_SURFACE && usProductSections(plain, results, getMarketCountry() === 'US', 'web')) || plain;
   }, [results]);
+  const layout = useMemo(() => topicSections(sections, forms), [sections, forms]);
+  const topics = useMemo(() => new Map(layout.sections.map(({ topic, cards, ownershipLine }) => [topic, {
+    urgent: cards.filter(c => c.priority === 'urgent'), others: cards.filter(c => c.priority !== 'urgent'), ownershipLine,
+  }])), [layout]);
+  // A card's DOM id is its place on the page: Sentry's click paths keep ids (US-09 AC7d).
+  const cardIds = useMemo(() => new Map(layout.sections.flatMap(s => s.cards).map((card, i) => [card, `mh-card-${i}`])), [layout]);
+  // The banner names the first urgent card in topic order (US-62 AC19).
+  const urgent = useMemo(() => {
+    for (const section of layout.sections) {
+      const card = section.cards.find(c => c.priority === 'urgent');
+      if (card) return { title: (card.suggestions.find(s => s.priority === 'urgent') ?? card.suggestions[0]).title, cardId: cardIds.get(card)! };
+    }
+    return null;
+  }, [layout, cardIds]);
+
   // US-61 AC8: once the Supplements section is on screen, one count per product
   // (trackProductEvent keeps one per product per tab session).
-  const supplementsRef = useRef<HTMLDivElement>(null);
-  const usProducts = [...new Set(sections.flatMap((section) => section.cards.flatMap((card) => card.suggestions.flatMap((s) => s.usProduct?.product ?? []))))].join(' ');
+  const supplementsRef = useRef<HTMLElement>(null);
+  const usProducts = useMemo(() => [...new Set(layout.sections.flatMap((section) => section.cards.flatMap((card) => card.suggestions.flatMap((s) => s.usProduct?.product ?? []))))].join(' '), [layout]);
   useEffect(() => {
     const el = supplementsRef.current;
     if (!el || !usProducts) return;
@@ -613,182 +850,60 @@ export function ResultsPanel({ results, isValid, hasUnsavedLongitudinal, onSaveL
   // US-09 AC19: the guest has their PDF (or, on the gate-skipped page, signed up
   // for reminders, which marks the record captured). Never before, so the storage
   // button's pulse never competes with the email box. A known minor has no email
-  // box: their header Save as PDF counts, as on the gate-skipped page (US-07 AC6).
-  const { state: emailState, gateSkipped } = guestEmailHook;
+  // box: their Save as PDF counts, as on the gate-skipped page (US-07 AC6).
+  const { state: emailState, gateSkipped } = capture;
   // Pages has no email gate or funnel, even for a record captured on Shopify.
   const attention = SHOPIFY_SURFACE && (emailState === 'captured' || emailState === 'reminded' || ((!!gateSkipped || !!results?.knownMinor) && pdfOpened));
 
-  if (!isValid || !results) {
-    return (
-      <div className="health-results-panel">
-        <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={null} muted />
-        {/* The column's scroller, under its header, so the header never scrolls away (US-62). */}
-        <div className="hr-col-body">
-          {syncControl?.({ hasData: false, attention })}
-          <div className="plan-empty-preview">
-            <p className="plan-empty-intro">
-              <strong>Here's what your plan will look like.</strong> Real suggestions appear once you fill in your details.
-            </p>
-            <div className="stats-grid plan-empty-stats">
-              <div className="stat-card stat-card--awaiting">
-                <span className="stat-label">BMI</span>
-                <span className="stat-value">—</span>
-                <span className="stat-status">Awaiting</span>
-              </div>
-              <div className="stat-card stat-card--awaiting">
-                <span className="stat-label">Ideal Body Weight</span>
-                <span className="stat-value">—</span>
-                <span className="stat-status">Awaiting</span>
-              </div>
-              <div className="stat-card stat-card--awaiting">
-                <span className="stat-label">Protein Target</span>
-                <span className="stat-value">—</span>
-                <span className="stat-status">Awaiting</span>
-              </div>
-            </div>
-            <div className="plan-empty-example">
-              <span className="plan-empty-example-label">Example suggestion</span>
-              <div className="suggestion-card priority-low plan-empty-example-card">
-                <div className="suggestion-body">
-                  <h4 className="suggestion-title">Increase potassium-rich foods</h4>
-                  <p className="suggestion-desc">Aim for 3,500–5,000mg of potassium daily from fruits, vegetables, and legumes. High potassium intake supports healthy blood pressure and cardiovascular function.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          {/* US-38 AC1: the open-source link shows before a plan exists too. */}
-          <GuideLink />
-        </div>
-      </div>
-    );
-  }
-
-  // US-07 AC6: a known minor's tiles keep the values and drop every adult
-  // reading of them (health-core statTiles); here, no email and no reminders.
-  const adult = !results.knownMinor;
+  const planned = isValid && !!results;
   // US-07 AC6: a known minor is never asked for an email (either box joins the
   // mailing list). Their PDF is the gate-skipped page's Save as PDF (US-44 AC2).
-  const emailCapture = showEmailCapture && adult;
+  const adult = planned && !results.knownMinor;
+  const report = planned && printing && <PlanReport tiles={tiles} sections={sections} alcoholQuestion={alcoholQuestion}/>;
+  const foot = (
+    <PlanFoot planned={planned} adult={adult} emailCapture={!!showEmailCapture && adult} formStage={formStage} capture={capture}
+              printStatus={printStatus} pdfBlocked={pdfBlocked} onPrint={handlePrint} onCapturePrint={() => printReport('capture')}/>
+  );
 
+  return { layout, topics, planned, highlights, alcoholQuestion, urgent, cardIds, evidence, supplementsRef, foot, attention, onErased: () => { setPdfOpened(false); setOpened(NO_HIGHLIGHTS); }, report };
+}
 
+/** My health's foot (US-62 AC26): the email box and Save as PDF, the disclaimer, feedback, Supercharge and
+ *  the privacy link. It owns the box's typing, so a keystroke re-renders the foot alone. */
+function PlanFoot({ planned, adult, emailCapture, formStage, capture, printStatus, pdfBlocked, onPrint, onCapturePrint }: {
+  planned: boolean; adult: boolean; emailCapture: boolean; formStage?: number; capture: EmailCaptureState;
+  printStatus: 'idle' | 'loading'; pdfBlocked: PdfButton | null; onPrint: (at: PdfButton) => void; onCapturePrint: () => Promise<void>;
+}) {
+  const guestEmailHook = useGuestEmailCapture(onCapturePrint, capture);
   const printLabel = printStatus === 'loading' ? 'Loading...' : 'Save as PDF';
-  const headerNote = <PdfNote show={pdfBlocked === 'header' || pdfBlocked === 'capture'} />;
-
-  // Report actions: on the Shopify v2 surface the email-capture button IS the
-  // PDF path (gated behind the email — Brad), so no standalone buttons. Pages
-  // keeps an ungated Save-as-PDF; the mailto "Email Report" is gone on both v2
-  // surfaces (degraded plain-text self-compose — the capture email is better).
-  const planHeaderMeta = !SHOPIFY_SURFACE ? (
-    <>
-      <button type="button" className="action-btn-small no-print" onClick={() => handlePrint('header')} disabled={printStatus === 'loading'} title="Save your plan as a PDF">
-        {printLabel}
-      </button>
-      {headerNote}
-    </>
-  ) : (SHOPIFY_SURFACE && (guestEmailHook.state === 'captured' || guestEmailHook.gateSkipped || !adult)) ? (
-    // Shopify v2, post-capture (or US-44's gate-skipped page, or a known minor): the ungated
-    // Save-as-PDF lives inline in this header (Brad). handlePrint = getReportHtml + print.
-    <>
-      <button type="button" className="action-btn-small no-print" onClick={() => handlePrint('header')} disabled={printStatus === 'loading'} title="Save your plan as a PDF">
-        {printLabel}
-      </button>
-      {headerNote}
-    </>
-  ) : null;
-
+  // Save as PDF: always on Pages. On Shopify the email capture is the PDF path,
+  // so the ungated button shows once captured, on US-44's gate-skipped page, or
+  // for a known minor.
+  const ungatedPdf = planned && (!SHOPIFY_SURFACE || capture.state === 'captured' || capture.gateSkipped || !adult);
   return (
-    <div className="health-results-panel">
-      <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={planHeaderMeta} actions={planHeaderMeta !== null} />
-      <div className="hr-col-body">
-        {/* Quick Stats: the snapshot tiles lead the plan */}
-        <section className="quick-stats">
-          <div className="stats-grid">
-            {tiles.map((tile) => (
-              <StatCard
-                key={tile.key}
-                label={tile.label}
-                value={statTileText(tile)}
-                status={tile.status && { label: tile.status.label, className: tile.status.tone ? `status-${tile.status.tone}` : '' }}
-                evidence={tile.evidence}
-              />
-            ))}
-          </div>
-        </section>
+    <div className="mh-foot">
+      {emailCapture && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />}
+      {ungatedPdf && (
+        <div className="report-actions no-print">
+          <button type="button" className="action-btn" onClick={() => onPrint('bottom')} disabled={printStatus === 'loading'} title="Save your plan as a PDF">
+            {printLabel}
+          </button>
+          <PdfNote show={pdfBlocked === 'bottom' || pdfBlocked === 'capture'} />
+        </div>
+      )}
 
-        {/* The numbers first, then where the record lives and the PDF (Brad 2026-11-02). */}
-        {syncControl?.({ hasData: true, attention })}
-        {emailCapture && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />}
-
-        {/* Suggestions */}
-        <section className="suggestions-section">
-          {sections.map((section) => (
-            <div key={section.key} ref={section.key === 'supplements' ? supplementsRef : undefined} className={`suggestions-group${section.key === 'skin' || section.key === 'supplements' ? ` ${section.key}-group` : ''}`}>
-              <h4 className={`suggestions-group-title ${section.key}`}>{section.title}</h4>
-              {renderCards(section.cards, highlightedIds, fadingOutIds, alcoholQuestion)}
-              {section.ownershipLine && <p className="us-ownership no-print">{section.ownershipLine}</p>}
-            </div>
-          ))}
-        </section>
-
-        {/* Health Records — documents from uploads */}
-
-        {/* Report Actions (bottom). Hidden on the Shopify
-            v2 surface (the email-capture button is the PDF path there). */}
-        {!SHOPIFY_SURFACE && (
-          <div className="report-actions no-print">
-            <button type="button" className="action-btn" onClick={() => handlePrint('bottom')} disabled={printStatus === 'loading'}>
-              {printLabel}
-            </button>
-            <PdfNote show={pdfBlocked === 'bottom'} />
-          </div>
-        )}
-
-        {/* Disclaimer */}
+      {planned && (
         <div className="health-disclaimer">
-          <strong>Disclaimer:</strong> This tool is for educational purposes only
-          and is not a substitute for professional medical advice. Always consult
-          with your healthcare provider before making any health decisions.
-          Suggestions are based on general guidelines and may not apply to your
-          individual situation.
+          <strong>Disclaimer:</strong> {DISCLAIMER}
         </div>
+      )}
 
-        {/* Email reminders (US-17 cloud opt-in). The server-backed per-category
-            ReminderSettings that used to share this slot died with the v1 CRUD
-            layer — both v2 builds always pass remindersSection, so it was
-            unreachable (deleted 2026-08-13). US-07 AC6: none for a known minor,
-            who is never enrolled and must see no mailing-list box. */}
-        {adult && remindersSection}
+      {planned && SHOPIFY_SURFACE && <FeedbackForm />}
 
-        {/* US-44: the gate-skipped reminders box renders once, at the top. */}
-        {emailCapture && !guestEmailHook.gateSkipped && <GuestEmailCapture hook={guestEmailHook} pdfBlocked={pdfBlocked === 'capture'} />}
+      {/* US-38 AC1: the open-source link, at the foot of the plan, before a plan exists too. */}
+      <GuideLink />
 
-        {SHOPIFY_SURFACE && <FeedbackForm />}
-
-        {/* US-38 AC1: the open-source link, at the foot of the plan. */}
-        <GuideLink />
-
-        <div className="privacy-notice-link">
-          <a
-            href="https://drstanfield.com/pages/connector-privacy"
-            target="_blank"
-            rel="noopener"
-          >
-            How your health data is handled
-          </a>
-        </div>
-
-        {onDeleteData && (
-          <div className="delete-data-section">
-            <button
-              className="delete-data-link"
-              onClick={async () => { if (await onDeleteData()) setPdfOpened(false); }}
-              disabled={isDeleting}
-            >
-              {isDeleting ? 'Deleting...' : 'Delete All My Data'}
-            </button>
-          </div>
-        )}
-      </div>
+      {planned && <PrivacyLink/>}
     </div>
   );
 }

@@ -5,7 +5,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -235,6 +235,35 @@ describe('merge-batch.mjs (US-64 AC13)', () => {
     expect(r.code).toBe(2);
     expect(r.err).toContain('merge failed with no conflicted file');
     expect(r.err).toContain('index.lock');
+  });
+
+  it('merges while the OS is still bumping a fresh checkout\'s ctimes (US-64 AC20)', () => {
+    // macOS tags each file a new worktree writes with com.apple.provenance a second or two later, which bumps
+    // its ctime. `git merge` refreshes the index, then runs `git stash create`, whose unrefreshed pre-check sees
+    // the files tagged in between as changed; its own refresh then finds no change and it exits 1: "fatal:
+    // stash failed" (2026-11-06, four batches). A `git` shim on git's exec path replays that: it bumps every
+    // tracked file's ctime (mode off and on) just as `stash create` starts.
+    const real = git(root, '--exec-path');
+    const shim = join(root, 'exec-path');
+    mkdirSync(shim);
+    for (const f of readdirSync(real)) if (f !== 'git') symlinkSync(join(real, f), join(shim, f));
+    writeFileSync(join(shim, 'git'), `#!/bin/sh
+if [ "$1 $2" = "stash create" ]; then
+  sleep 1.1 # past the index's second, for a git built without nanosecond stat times
+  "${real}/git" ls-files -z | xargs -0 sh -c 'for f; do chmod u-w "$f"; chmod u+w "$f"; done' _
+fi
+exec "${real}/git" "$@"
+`);
+    chmodSync(join(shim, 'git'), 0o755);
+    const sha = pr(82, baseSha, (d) => write(d, 'src/new.txt', 'new\n'));
+    git(batch, 'fetch', '-q', 'origin', 'main');
+    git(batch, 'reset', '-q', '--hard', 'origin/main');
+    const list = join(root, 'list.txt');
+    writeFileSync(list, `82 ${sha}\n`);
+    const r = spawnSync('node', [SCRIPT, list], { cwd: batch, env: { ...ENV, GIT_EXEC_PATH: shim }, encoding: 'utf8' });
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+    expect(existsSync(join(batch, 'src/new.txt'))).toBe(true);
   });
 
   it('merges over an ignored local docs/user-stories.html the PR tracks and drops it (US-64 AC17)', () => {

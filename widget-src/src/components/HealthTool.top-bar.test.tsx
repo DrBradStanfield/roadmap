@@ -52,60 +52,51 @@ afterEach(async () => {
 describe.each([['desktop', false], ['phone', true]] as const)('on %s', (_, isPhone) => {
   beforeEach(() => { phone = isPhone; });
 
-  it('US-09 AC30: the input header holds the storage button on desktop, the top bar on a phone; no Supercharge there', async () => {
+  // US-62 AC16, AC24: My health's title line holds the storage and person buttons, phone and desktop.
+  it('US-09 AC30: the My health title line holds the storage and person buttons; no Supercharge there', async () => {
     const view = render(<HealthTool storageBar={<button type="button">Sign in</button>} />);
     const header = await waitFor(() => {
-      const el = view.container.querySelector('.health-input-panel > .hr-col-header');
+      const el = view.container.querySelector('.health-input-panel > .mh-header');
       expect(el).not.toBeNull();
       return el!;
     });
-    if (isPhone) {
-      expect(header.querySelector('.hr-col-meta')?.textContent).toBe('');
-      expect(header.classList.contains('hr-col-header--actions')).toBe(false); // the 768px rule hides it
-      expect(view.container.querySelector('.hr-top-bar')?.textContent).toBe('Sign in');
-    } else {
-      expect(header.querySelector('.hr-col-meta')?.textContent).toBe('Sign in');
-      expect(header.classList.contains('hr-col-header--actions')).toBe(true);
-      expect(view.container.querySelector('.hr-top-bar')).toBeNull();
-    }
-    expect(view.container.querySelector('.health-input-panel')?.textContent).not.toContain('Supercharge');
+    expect(header.querySelector('.mh-title')?.textContent).toBe('My health');
+    const holder = header.querySelector('.mh-header-actions')!;
+    expect(holder.querySelector('button')?.textContent).toBe('Sign in');
+    expect(holder.querySelector('button[aria-label="Settings"]')).not.toBeNull();
+    expect(view.container.querySelector('.hr-top-bar')).toBeNull();
+    expect(view.getAllByRole('button', { name: 'Sign in' })).toHaveLength(1);
+    expect(header.textContent).not.toContain('Supercharge');
   });
 
-  it('US-38 AC1: Supercharge is one card at the foot of the plan, linking to the guide', async () => {
+  it('US-38 AC1: Supercharge is one card at the foot of My health, linking to the guide', async () => {
     const view = render(<HealthTool />);
     const card = await waitFor(() => {
       const links = [...view.container.querySelectorAll('a')].filter((a) => a.textContent?.includes('Supercharge this tool'));
       expect(links).toHaveLength(1);
       return links[0];
     });
-    expect(card.closest('.health-results-panel')).not.toBeNull();
+    expect(card.closest('.mh-foot')).not.toBeNull();
     expect(card.textContent).toContain('Open source. Use your record with ChatGPT, Claude or the command line.');
     expect(card.getAttribute('href')).toBe(GUIDE_URL);
     // At the foot: after the disclaimer, before the privacy link.
-    const panel = card.closest('.health-results-panel')!;
-    const order = (el: Element | null) => [...panel.querySelectorAll('*')].indexOf(el!);
-    expect(order(card)).toBeGreaterThan(order(panel.querySelector('.health-disclaimer')));
-    expect(order(card)).toBeLessThan(order(panel.querySelector('.privacy-notice-link')));
+    const foot = card.closest('.mh-foot')!;
+    const order = (el: Element | null) => [...foot.querySelectorAll('*')].indexOf(el!);
+    expect(order(card)).toBeGreaterThan(order(foot.querySelector('.health-disclaimer')));
+    expect(order(card)).toBeLessThan(order(foot.querySelector('.privacy-notice-link')));
   });
 
-  it('US-38 AC1: before a plan exists, the empty plan still ends with the card', async () => {
+  it('US-38 AC1: before a plan exists, the page still ends with the card', async () => {
     localStorage.clear();
     await act(async () => { await initRoadmapStore(new LocalStorageAdapter()); });
     const view = render(<HealthTool />);
     const card = await waitFor(() => {
-      const link = view.container.querySelector('.health-results-panel .hr-guide-card');
+      const link = view.container.querySelector('.mh-foot .hr-guide-card');
       expect(link).not.toBeNull();
       return link!;
     });
-    expect(view.container.querySelector('.plan-empty-preview')).not.toBeNull(); // the empty branch
+    expect(view.container.querySelector('.plan-empty-preview')).not.toBeNull(); // no plan yet
     expect(card.textContent).toContain('Supercharge this tool');
     expect(card.getAttribute('href')).toBe(GUIDE_URL);
-  });
-
-  it('without a storage button (no picker host), the input header stays hidden on a phone', async () => {
-    const view = render(<HealthTool />);
-    await act(async () => {});
-    const header = view.container.querySelector('.health-input-panel > .hr-col-header');
-    expect(header?.classList.contains('hr-col-header--actions')).toBe(false);
   });
 });

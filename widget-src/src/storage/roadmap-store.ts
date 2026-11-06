@@ -74,7 +74,10 @@ import {
   type RoadmapFile,
   type RoadmapProfile,
 } from '@roadmap/health-core';
-import { bloodTableReport, inputRangeFault, isAlcoholAnswer, isCoreRow, isReadableRow, readableView, ROADMAP_DOC, ROADMAP_FILE_NAME, type FileLabValue, type FileMeasurement } from '@roadmap/health-core';
+import { bloodTableReport, egfrSeries, inputRangeFault, isAlcoholAnswer, isCoreRow, isReadableRow, readableView, ROADMAP_DOC, ROADMAP_FILE_NAME, whtrSeries, type EgfrPoint, type FileLabValue, type FileMeasurement, type WhtrPoint } from '@roadmap/health-core';
+
+/** The worked-out series My health's rows read (US-62 AC21). */
+export interface DerivedSeries { whtr: WhtrPoint[]; egfr: EgfrPoint[] }
 import { currentValueRows } from '@roadmap/health-core/blood-tests';
 import { saveRecordInto, type EraseResult, type EraseSteps, type RecordHost, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
@@ -376,6 +379,14 @@ export class RoadmapStore {
    *  shows, never an extra row too (US-66 AC8). */
   loadLabValues(): ApiLabValue[] {
     return activeOnly(this.view.labValues).filter((row) => !isCoreRow(row)) as ApiLabValue[];
+  }
+
+  /** My health's worked-out rows (US-62 AC21), the iPhone's series: each day's
+   *  waist over the current height, and each day's eGFR, lab or calculated. The
+   *  profile is the screen's (`shown`): an answer typed is read before its save lands. */
+  loadDerivedSeries(shown: Partial<Pick<RoadmapFile['profile'], 'heightCm' | 'sex' | 'birthYear' | 'birthMonth'>>, now = new Date()): DerivedSeries {
+    const file = { ...this.view, profile: { ...this.view.profile, ...shown } };
+    return { whtr: whtrSeries(file), egfr: egfrSeries(file, now) };
   }
 
   /** Non-tombstoned documents — the ONE place the deleted-filter invariant lives. */

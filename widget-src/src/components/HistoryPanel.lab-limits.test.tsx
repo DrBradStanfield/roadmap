@@ -61,7 +61,7 @@ it('US-12 AC20: a core and a lab limit plot hollow, off the line, and read with 
 it('US-12 AC20: a value page lists a limit with its symbol and charts it hollow, off the line', async () => {
   const ldl = (id: string, value: number, day: string, comparator?: '<') =>
     ({ id, metricType: 'ldl', value, recordedAt: `${day}T00:00:00.000Z`, createdAt: day, source: 'lab_import', ...(comparator ? { comparator } : {}) }) as any;
-  const view = render(<ValuePage subject={{ kind: 'core', metric: 'ldl' }} history={[ldl('l1', 2.8, '2026-06-01'), ldl('l2', 1.5, '2026-07-01', '<')]}
+  const view = render(<ValuePage tiles={[]} onOpen={() => {}} subject={{ kind: 'core', metric: 'ldl' }} history={[ldl('l1', 2.8, '2026-06-01'), ldl('l2', 1.5, '2026-07-01', '<')]}
     labValues={[]} ctx={{ grading: { sex: 'male' }, plan: null, unitOf: () => 'si' }} onSave={vi.fn()} onClose={() => {}} dirtyRef={{ current: false }}/>);
   const shown = [...view.container.querySelectorAll('.md-history .bt-value-num')].map(n => n.textContent);
   expect(shown).toEqual(['< 1.5', '2.8']);
@@ -75,7 +75,7 @@ it('US-12 AC21: on the value page, a limit\'s colour and note always agree, bloo
   const vital = (id: string, metricType: string, value: number, day: string, comparator?: '<' | '>') =>
     ({ id, metricType, value, recordedAt: `${day}T00:00:00.000Z`, createdAt: day, source: 'lab_import', ...(comparator ? { comparator } : {}) }) as any;
   const ctx = { grading: { sex: 'male' as const }, plan: { age: 50, idealBodyWeight: 70, heightCm: 180 }, unitOf: () => 'si' as const };
-  const page = (subject: any, history: any[]) => render(<ValuePage subject={subject} history={history} labValues={[]} ctx={ctx}
+  const page = (subject: any, history: any[]) => render(<ValuePage tiles={[]} onOpen={() => {}} subject={subject} history={history} labValues={[]} ctx={ctx}
     onSave={vi.fn()} onClose={() => {}} dirtyRef={{ current: false }}/>);
   // Weight "> 90" against a 70 kg ideal: certainly red, so no "cannot grade"; "> 70" is open: no colour, the note.
   const weights = page({ kind: 'core', metric: 'weight' }, [vital('w1', 'weight', 90, '2026-07-01', '>'), vital('w2', 'weight', 70, '2026-08-01', '>')]);
@@ -90,3 +90,21 @@ it('US-12 AC21: on the value page, a limit\'s colour and note always agree, bloo
   expect(pairs[0].textContent).toContain('< 125/78');
 });
 
+
+it('US-12 AC20a: a blood pressure value page draws each half printed as a limit hollow, off its line', async () => {
+  const vital = (id: string, metricType: string, value: number, day: string, comparator?: '<') =>
+    ({ id, metricType, value, recordedAt: `${day}T00:00:00.000Z`, createdAt: day, source: 'lab_import', ...(comparator ? { comparator } : {}) }) as any;
+  // Jun: exact 130/85. Jul: "< 125/78", the systolic alone a limit. Aug: "118/< 70", the diastolic alone.
+  render(<ValuePage subject={{ kind: 'bp' }} history={[
+    vital('s1', 'systolic_bp', 130, '2026-06-01'), vital('d1', 'diastolic_bp', 85, '2026-06-01'),
+    vital('s2', 'systolic_bp', 125, '2026-07-01', '<'), vital('d2', 'diastolic_bp', 78, '2026-07-01'),
+    vital('s3', 'systolic_bp', 118, '2026-08-01'), vital('d3', 'diastolic_bp', 70, '2026-08-01', '<'),
+  ]} labValues={[]} ctx={{ grading: { sex: 'male' }, plan: null, unitOf: () => 'si' }} tiles={[]} onOpen={() => {}} onSave={vi.fn()} onClose={() => {}} dirtyRef={{ current: false }}/>);
+  await waitFor(() => expect(charts.length).toBeGreaterThanOrEqual(2), { timeout: 10_000 });
+  const [systolic, diastolic] = charts.slice(-2).map(c => c.data.datasets);
+  expect(systolic[0].data.map((p: { y: number }) => p.y)).toEqual([130, 118]);
+  expect(systolic[1].pointBackgroundColor).toBe('transparent');
+  expect(systolic[1].data.map((p: { y: number; limit: string }) => [p.y, p.limit])).toEqual([[125, '< 125']]);
+  expect(diastolic[0].data.map((p: { y: number }) => p.y)).toEqual([85, 78]);
+  expect(diastolic[1].data.map((p: { y: number; limit: string }) => [p.y, p.limit])).toEqual([[70, '< 70']]);
+});

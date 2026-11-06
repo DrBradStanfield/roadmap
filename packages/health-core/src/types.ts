@@ -617,8 +617,6 @@ export const SUPPLEMENT_OPTIONS: SupplementOption[] = [
   { key: 'probiotics', name: 'Probiotics', category: 'general' },
 ];
 
-export const FEATURED_SUPPLEMENTS = SUPPLEMENT_OPTIONS.filter(s => s.category === 'featured');
-
 /**
  * A single immutable measurement record (maps to health_measurements table).
  */

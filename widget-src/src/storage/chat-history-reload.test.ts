@@ -225,7 +225,7 @@ describe('a failed re-read never replaces the page\'s open session (US-11 AC2g)'
     await settle();
     identity.now = 'erase-2'; // another device erased the record
     vi.spyOn(adapter, 'read').mockRejectedValueOnce(new Error('Synthetic: the cloud did not answer'));
-    // Delete All My Data: the erase's open, whose re-read fails once.
+    // Delete all my data: the erase's open, whose re-read fails once.
     const erase = (await openChatHistory())!;
     expect(erase).toBe(page);
     expect(factory).toHaveBeenCalledTimes(1);
@@ -249,7 +249,7 @@ describe('the page opens one session, whoever asks first (US-11 AC2g)', () => {
     const adapter = new CheckThenUpload(cloud);
     const factory = vi.fn(() => ChatHistoryStore.create(adapter));
     setChatHistoryFactory(factory, () => 'erase-1');
-    const opening = openChatHistory(); // Delete All My Data, the first to ask
+    const opening = openChatHistory(); // Delete all my data, the first to ask
     await Promise.resolve();
     const page = (await getChatHistory())!; // the chat list, in the next microtask
     adapter.holdNextUpload();

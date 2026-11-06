@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { MemoryAdapter, ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
 import { openAboutYou } from '../testing/health-tool-harness';
+import { deleteButton } from '../testing/settings';
 
 // Real form, data layer, session and device storage; no off-device requests.
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -137,12 +138,13 @@ it('US-10 AC9: an explicit birth-year clear is staged before departure', async (
 });
 
 it('US-11: departure after an erase here never replays a staged birth year', async () => {
-  const { view, year } = await form();
+  const { year } = await form();
   vi.spyOn(window, 'confirm').mockReturnValue(true);
   vi.spyOn(window, 'alert').mockImplementation(() => {});
   fireEvent.change(year, { target: { value: '1975' } });
+  const erase = deleteButton(); // opens Settings first (US-62 AC24)
   await act(async () => {
-    fireEvent.click(view.getByRole('button', { name: 'Delete All My Data' }));
+    fireEvent.click(erase);
   });
   expect(saved().meta.eraseEpoch).toBe(1);
   await act(async () => {
