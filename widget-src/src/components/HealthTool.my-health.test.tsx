@@ -395,6 +395,43 @@ describe('US-62 AC25, AC26: the onboarding first, the foot last', () => {
   });
 });
 
+describe('US-62 AC28: Save as PDF prints the plan as it always has', () => {
+  it('getReportHtml: the title, the tiles, the suggestions with a reason opened on screen and its references, the disclaimer, the privacy link; no controls', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    const written: string[] = [];
+    vi.spyOn(window, 'open').mockImplementation(() => ({ document: { write: (h: string) => written.push(h), close() {} }, print() {} }) as unknown as Window);
+    // A reason opened on a card, and one on a row.
+    const card = [...view.container.querySelectorAll('.mh-card')].find(c => c.querySelector('.evidence-toggle'))!;
+    const cardSuggestion = cardSuggestions(card)[0];
+    fireEvent.click(card.querySelector('.evidence-toggle')!);
+    expect(card.querySelector('.evidence-reason')!.textContent).toBe(cardSuggestion.reason);
+    const line = view.container.querySelector('.medication-cascade .mh-row-suggestion')!;
+    const rowSuggestionShown = rowSuggestion(line);
+    fireEvent.click(line.querySelector('.mh-info-btn')!);
+    fireEvent.click(line.querySelector('.evidence-toggle')!);
+    expect(line.querySelector('.evidence-reason')!.textContent).toBe(rowSuggestionShown.reason);
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await waitFor(() => expect(written).toHaveLength(1));
+    const doc = new DOMParser().parseFromString(written[0], 'text/html');
+    expect(doc.querySelector('.hr-col-title')!.textContent).toBe('Your plan to discuss with your doctor');
+    expect(doc.querySelectorAll('.stat-card').length).toBeGreaterThan(0);
+    const titles = [...doc.querySelectorAll('.suggestion-title')].map(t => t.textContent);
+    expect(titles.sort()).toEqual(planSeen.suggestions.map(s => s.title).sort());
+    const printed = [...doc.querySelectorAll('.suggestion-card, .suggestion-subsection')]
+      .find(c => c.querySelector('.suggestion-title')!.textContent === cardSuggestion.title)!;
+    expect(printed.querySelector('.evidence-reason')!.textContent).toBe(cardSuggestion.reason);
+    expect([...printed.querySelectorAll('.evidence-refs a')].map(a => a.getAttribute('href'))).toEqual(cardSuggestion.references!.map(r => r.url));
+    // A row's reason opened on screen prints open on its card; no other does.
+    const rowPrinted = [...doc.querySelectorAll('.suggestion-card, .suggestion-subsection')]
+      .find(c => c.querySelector('.suggestion-title')!.textContent === rowSuggestionShown.title)!;
+    expect(rowPrinted.querySelector('.evidence-reason')!.textContent).toBe(rowSuggestionShown.reason);
+    expect(doc.querySelectorAll('.evidence-reason')).toHaveLength(2);
+    expect(doc.querySelector('.health-disclaimer')!.textContent).toMatch(/^Disclaimer: This tool is for educational purposes only/);
+    expect(doc.querySelector('.privacy-notice-link a')!.getAttribute('href')).toBe('https://drstanfield.com/pages/connector-privacy');
+    expect(doc.querySelectorAll('button, input, select, textarea, .hr-guide-card, .feedback-form, .reminders-section')).toHaveLength(0);
+  });
+});
+
 describe('US-62 AC27: the desktop section list', () => {
   it('lists the sections the page holds, in order, as links in a nav landmark; one is current; a red dot marks an urgent one', async () => {
     const scrolled: Element[] = [];

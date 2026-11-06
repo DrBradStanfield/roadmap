@@ -65,9 +65,9 @@ import type { MoveTestApi } from './MoveTestPanel';
 import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';
 import type { ApiSupplement, ApiLabValue, LatestMeasurementsResult } from '../lib/api-types';
 import { InputPanel, type PlanBasis } from './InputPanel';
-import { usePlanView } from './ResultsPanel';
+import { OpenEvidenceContext, usePlanView } from './ResultsPanel';
 import { PersonButton } from './SettingsSheet';
-import { MyHealth } from './MyHealth';
+import { MyHealth, type FormSlots } from './MyHealth';
 import { revealAndFocus } from '../lib/reveal';
 import { CHAT_BUBBLES } from './icons';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
@@ -1524,6 +1524,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       setDocumentHistory(prev => prev.filter(d => d.id !== docId));
     },
   };
+  // The reasons open on screen are the PDF's too (US-62 AC28).
+  const myHealth = (form: FormSlots) => (
+    <OpenEvidenceContext.Provider value={plan.evidence}><MyHealth form={form} {...myHealthProps}/></OpenEvidenceContext.Provider>
+  );
 
   const inputPanelProps = {
     inputs,
@@ -1606,7 +1610,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       {unreadableLine && <p className="hr-unreadable-note no-print" role="status">{unreadableLine}</p>}
       {isMobile ? (
         <>
-          {panel('health', <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps}>{form => <MyHealth form={form} {...myHealthProps}/>}</InputPanel></fieldset>)}
+          {panel('health', <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps}>{myHealth}</InputPanel></fieldset>)}
           {panel('chat', (
             <div className="health-tool-chat">
               <ChatEmbed
@@ -1623,7 +1627,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
         <div className="health-tool-content">
           {/* US-62 AC16: one My health column, centred; the chat column beside it from 1200px. */}
           <div className="health-tool-main">
-            <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps}>{form => <MyHealth form={form} {...myHealthProps}/>}</InputPanel></fieldset>
+            <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps}>{myHealth}</InputPanel></fieldset>
           </div>
           {isWideDesktop && (
             <div className="health-tool-chat">

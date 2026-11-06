@@ -1,7 +1,7 @@
 // The plan's parts on My health (US-62 AC17-AC26): its cards by topic, a
 // suggestion on its row, the tiles under the onboarding, and the foot. The plan
 // has no column of its own since phase 5; usePlanView builds what InputPanel draws.
-import React, { useState, useRef, useEffect, useId, useMemo } from 'react';
+import React, { createContext, useCallback, useContext, useState, useRef, useEffect, useId, useMemo } from 'react';
 import { flushSync } from 'react-dom';
 import type { HealthResults, Suggestion } from '@roadmap/health-core';
 import {
@@ -28,6 +28,17 @@ import { alcoholDismiss, type AlcoholQuestion } from './AlcoholQuestion';
 import { CategoryIcon } from './icons';
 import { getMarketCountry } from '../lib/market-country';
 import { observeVisibility } from '../lib/observe-visibility';
+import { ColumnHeader } from './ColumnHeader';
+
+/** Which reasons are open, by suggestion or tile, shared by the screen and its PDF (US-62 AC28). */
+interface OpenEvidence { opened: ReadonlySet<string>; toggle: (key: string) => void }
+export const OpenEvidenceContext = createContext<OpenEvidence | null>(null);
+/** One reason's open state: the plan's shared one, or, outside a plan, its own. */
+function useOpenEvidence(key: string): [boolean, () => void] {
+  const shared = useContext(OpenEvidenceContext);
+  const [own, setOwn] = useState(false);
+  return shared ? [shared.opened.has(key), () => shared.toggle(key)] : [own, () => setOwn(o => !o)];
+}
 
 /** A control that opens a card's evidence by mouse or keyboard (US-07 AC16):
  *  focusable, says whether it is open, and Enter or Space toggles it. Enter or
@@ -44,17 +55,18 @@ function evidenceToggle(open: boolean, toggle: (() => void) | undefined) {
   };
 }
 
-function StatCard({ label, value, status, evidence }: {
+function StatCard({ openKey, label, value, status, evidence }: {
+  openKey: string;
   label: string;
   value: React.ReactNode;
   status?: { label: string; className: string };
   evidence?: SuggestionEvidence;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, toggle] = useOpenEvidence(openKey);
   const hasDetail = !!evidence;
   return (
     <div className={`stat-card${hasDetail ? ' stat-card-clickable' : ''}${open ? ' stat-card-open' : ''}`}
-         {...evidenceToggle(open, hasDetail ? () => setOpen(o => !o) : undefined)}>
+         {...evidenceToggle(open, hasDetail ? toggle : undefined)}>
       <span className="stat-label">{label}</span>
       <span className="stat-value">{value}</span>
       {status?.label && <span className={`stat-status ${status.className}`}>{status.label}</span>}
@@ -151,7 +163,7 @@ function CalmStatus({ priority }: { priority: Suggestion['priority'] }) {
 }
 
 function SuggestionCard({ suggestion, highlighted, fadingOut, alcoholQuestion, usBlock, calm }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; alcoholQuestion?: AlcoholQuestion; usBlock?: UsProductBlock; calm?: boolean }) {
-  const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const [evidenceOpen, toggleOpen] = useOpenEvidence(suggestion.id);
   const dismiss = alcoholDismiss(suggestion, alcoholQuestion);
   const hasEvidence = suggestionHasEvidence(suggestion);
   const isSupplementCard = suggestion.category === 'supplements';
@@ -160,7 +172,7 @@ function SuggestionCard({ suggestion, highlighted, fadingOut, alcoholQuestion, u
   const highlightClass = fadingOut ? ' suggestion-highlight suggestion-fade-out'
     : highlighted ? ' suggestion-highlight' : '';
 
-  const toggleEvidence = hasEvidence ? () => setEvidenceOpen(o => !o) : undefined;
+  const toggleEvidence = hasEvidence ? toggleOpen : undefined;
 
   return (
     <div className={`suggestion-card ${priorityColors[suggestion.priority]}${isSupplementCard ? ' supplement-card' : ''}${isSkinCard ? ' skin-card' : ''}${highlightClass}${hasEvidence ? ' suggestion-card-clickable' : ''}${calm ? ' suggestion-card--calm' : ''}`}>
@@ -209,13 +221,13 @@ function SuggestionCard({ suggestion, highlighted, fadingOut, alcoholQuestion, u
 }
 
 function GroupedSubsection({ suggestion, highlighted, fadingOut, alcoholQuestion }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; alcoholQuestion?: AlcoholQuestion }) {
-  const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const [evidenceOpen, toggleOpen] = useOpenEvidence(suggestion.id);
   const hasEvidence = suggestionHasEvidence(suggestion);
   const highlightClass = fadingOut ? ' suggestion-highlight suggestion-fade-out'
     : highlighted ? ' suggestion-highlight' : '';
 
   const dismiss = alcoholDismiss(suggestion, alcoholQuestion);
-  const toggleEvidence = hasEvidence ? () => setEvidenceOpen(o => !o) : undefined;
+  const toggleEvidence = hasEvidence ? toggleOpen : undefined;
 
   return (
     <div className={`suggestion-subsection${highlightClass}${hasEvidence ? ' suggestion-subsection-clickable' : ''}`}>
@@ -505,6 +517,8 @@ export interface PlanView {
   urgent: { title: string; cardId: string } | null;
   /** Each card's DOM id: its place on the page, never what it found (US-09 AC7d). */
   cardIds: ReadonlyMap<TopicCard<UsSuggestion>, string>;
+  /** The reasons open on screen; the PDF prints them open (US-62 AC28). Provide it as OpenEvidenceContext. */
+  evidence: OpenEvidence;
   /** US-61 AC8: on the Supplements section, so its products count once it is on screen. */
   supplementsRef: React.RefObject<HTMLElement>;
   /** The foot: the PDF box and email, Save as PDF, the disclaimer, feedback, Supercharge, privacy. */
@@ -605,7 +619,7 @@ export function RowSuggestions({ suggestions, describes = false }: { suggestions
 
 function RowSuggestion({ suggestion, describes }: { suggestion: Suggestion; describes: boolean }) {
   const [open, setOpen] = useState(false);
-  const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const [evidenceOpen, toggleEvidence] = useOpenEvidence(suggestion.id);
   const detailId = useId();
   return (
     <div className={`mh-row-suggestion ${priorityColors[suggestion.priority]}`}>
@@ -619,7 +633,7 @@ function RowSuggestion({ suggestion, describes }: { suggestion: Suggestion; desc
       {open && (
         <div id={detailId} className="mh-row-suggestion-detail">
           {describes ? <p className="mh-row-suggestion-title">{suggestion.title}</p> : <p className="suggestion-desc">{suggestion.description}</p>}
-          <SuggestionEvidence suggestion={suggestion} open={evidenceOpen} onToggle={() => setEvidenceOpen(o => !o)} />
+          <SuggestionEvidence suggestion={suggestion} open={evidenceOpen} onToggle={toggleEvidence} />
         </div>
       )}
     </div>
@@ -641,6 +655,7 @@ export function QuickStats({ tiles }: { tiles: StatTile[] }) {
 export function PlanTile({ tile }: { tile: StatTile }) {
   return (
     <StatCard
+      openKey={`tile:${tile.key}`}
       label={tile.label}
       value={statTileText(tile)}
       status={tile.status && { label: tile.status.label, className: tile.status.tone ? `status-${tile.status.tone}` : '' }}
@@ -688,13 +703,15 @@ export function PlanEmptyPreview() {
 
 
 /**
- * The plan as its PDF has always printed it (US-08, US-18): the tiles, then the
- * suggestions by priority (planSections), then the disclaimer. Hidden, and drawn
- * only while getReportHtml copies it: My health shows the same cards by topic.
+ * The plan as its PDF has always printed it (US-08, US-18, US-62 AC28): its
+ * title, the tiles, the suggestions by priority (planSections) with the reasons
+ * opened on screen, the disclaimer and the privacy link. Hidden, and drawn only
+ * while getReportHtml copies it: My health shows the same cards by topic.
  */
 function PlanReport({ tiles, sections, alcoholQuestion }: { tiles: StatTile[]; sections: UsPlanSection[]; alcoholQuestion?: AlcoholQuestion }) {
   return (
     <div className="health-results-panel hr-report" hidden>
+      <ColumnHeader title="Your plan to discuss with your doctor"/>
       <QuickStats tiles={tiles}/>
       <section className="suggestions-section">
         {sections.map((section) => (
@@ -709,6 +726,17 @@ function PlanReport({ tiles, sections, alcoholQuestion }: { tiles: StatTile[]; s
       <div className="health-disclaimer">
         <strong>Disclaimer:</strong> {DISCLAIMER}
       </div>
+      <PrivacyLink/>
+    </div>
+  );
+}
+
+function PrivacyLink() {
+  return (
+    <div className="privacy-notice-link">
+      <a href="https://drstanfield.com/pages/connector-privacy" target="_blank" rel="noopener">
+        How your health data is handled
+      </a>
     </div>
   );
 }
@@ -772,6 +800,13 @@ export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitud
   };
 
   const capture = useEmailCaptureState();
+  const [opened, setOpened] = useState<ReadonlySet<string>>(NO_HIGHLIGHTS);
+  const toggleEvidence = useCallback((key: string) => setOpened(was => {
+    const next = new Set(was);
+    if (!next.delete(key)) next.add(key);
+    return next;
+  }), []);
+  const evidence = useMemo(() => ({ opened, toggle: toggleEvidence }), [opened, toggleEvidence]);
 
   // US-61 AC5: Brad's products for a known adult in the US, on the Shopify build only.
   const sections = useMemo((): UsPlanSection[] => {
@@ -827,7 +862,7 @@ export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitud
               printStatus={printStatus} pdfBlocked={pdfBlocked} onPrint={handlePrint} onCapturePrint={() => printReport('capture')}/>
   );
 
-  return { layout, topics, planned, highlights, alcoholQuestion, urgent, cardIds, supplementsRef, foot, attention, onErased: () => setPdfOpened(false), report };
+  return { layout, topics, planned, highlights, alcoholQuestion, urgent, cardIds, evidence, supplementsRef, foot, attention, onErased: () => setPdfOpened(false), report };
 }
 
 /** My health's foot (US-62 AC26): the email box and Save as PDF, the disclaimer, feedback, Supercharge and
@@ -865,13 +900,7 @@ function PlanFoot({ planned, adult, emailCapture, formStage, capture, printStatu
       {/* US-38 AC1: the open-source link, at the foot of the plan, before a plan exists too. */}
       <GuideLink />
 
-      {planned && (
-        <div className="privacy-notice-link">
-          <a href="https://drstanfield.com/pages/connector-privacy" target="_blank" rel="noopener">
-            How your health data is handled
-          </a>
-        </div>
-      )}
+      {planned && <PrivacyLink/>}
     </div>
   );
 }

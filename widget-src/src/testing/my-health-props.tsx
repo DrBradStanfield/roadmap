@@ -10,6 +10,7 @@ export const NO_PLAN: PlanView = {
   highlights: { highlighted: new Set(), fadingOut: new Set() },
   urgent: null,
   cardIds: new Map(),
+  evidence: { opened: new Set(), toggle: () => {} },
   supplementsRef: { current: null },
   foot: null,
   attention: false,

@@ -50,7 +50,7 @@ afterEach(async () => {
   vi.restoreAllMocks(); vi.unstubAllGlobals();
 });
 
-const picker = () => document.querySelector('dialog.hr-modal');
+const picker = () => document.querySelector<HTMLElement>('dialog.hr-modal');
 
 it('US-09 AC30: the title line\'s Dropbox button opens the picker with Settings closed, and once with them open', async () => {
   const view = render(
