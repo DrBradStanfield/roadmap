@@ -1278,6 +1278,37 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
     }
   });
 
+  // US-32 AC9a: the words a person writes for a value no catalogue name spells,
+  // and a number typed straight after a name, are values too.
+  it('refuses a value named the way a person writes it, or glued to its name', () => {
+    for (const detail of [
+      'My blood pressure 140/90 shows as high',
+      'my a1c 7.2 is missing from the plan',
+      'A1C of 6.4 percent shows twice',
+      'BMI 31 is shown wrong',
+      'bmi is 31 on the plan',
+      'height 178 was not saved',
+      'ldl140 is read as one word',
+      'my ldl3.2 went in the wrong row',
+      'igf1 200 is missing',
+    ]) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW), detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
+    }
+    // The same words with no number are what a bug report is made of; a name
+    // that ends in a digit keeps it; digits glued to a word that is no name stay a word.
+    for (const detail of [
+      'the blood pressure chart is missing',
+      'the plan page lost its height after the update',
+      'under pressure the save button gives up',
+      'the a1c and bmi rows are in the wrong order',
+      'the igf1 row is missing',
+      'the omega3 row is missing',
+      'ldl in tab2 is blank',
+    ]) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
+    }
+  });
+
   it('refuses an email address, a phone number and a link carrying a query string — a public issue names nobody', () => {
     for (const detail of [
       'I have HIV. Contact synthetic@example.invalid',
