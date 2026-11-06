@@ -18,6 +18,7 @@ import {
   cellToSI,
   localDay,
   groupLabValues,
+  limitText,
   limitUngraded,
   LIMIT_NOT_GRADED,
   pressureInverted,
@@ -89,9 +90,11 @@ export function ValuePage({ subject, history, labValues, ctx, onSave, onCorrect,
     const series = (rows: DayReading[], y: (r: DayReading) => number, limit?: (r: DayReading) => string) => [...rows].reverse()
       .map(r => ({ x: chartTimestamp(r.day), y: y(r), ...(r.comparator && limit ? { limit: limit(r) } : {}) }));
     // Each line in its row's colour (`tintOf`), as the iPhone's metric page draws it.
+    // A pressure's line per half: each half is hollow where it alone was printed as a limit (US-12 AC20a).
+    const half = (r: DayReading) => limitText(r.value, 0, r.comparator!);
     if (subject.kind === 'bp') return [
-      { title: 'Systolic', data: series(readings, r => r.value), unit: 'mmHg', color: tintOf('blood_pressure') },
-      { title: 'Diastolic', data: series(readings, r => r.dia!.value), unit: 'mmHg', color: tintOf('diastolic_bp') },
+      { title: 'Systolic', data: series(readings, r => r.value, half), unit: 'mmHg', color: tintOf('blood_pressure') },
+      { title: 'Diastolic', data: series(readings.map(r => ({ day: r.day, ...r.dia! })), r => r.value, half), unit: 'mmHg', color: tintOf('diastolic_bp') },
     ];
     if (metric) return [{ title: label, data: series(readings, r => cellFromSI(metric, r.value, unit), r => savedCellText(metric, r.value, unit, r.comparator)), unit: cellLabel(metric, unit), color: tintOf(metric) }];
     return lab && !lab.mixedUnits ? [{ title: label, data: series(readings, r => r.value, r => savedLabText(r.value, r.comparator)), unit: lab.unit, color: tintOf(null) }] : [];

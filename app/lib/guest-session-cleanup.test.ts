@@ -18,6 +18,10 @@ const db = vi.hoisted(() => ({
   /** Ids a profiles delete was filtered on. */
   profileDeleteIds: [] as unknown[],
   deleteUser: vi.fn(async (_id: string) => ({ data: {}, error: null }) as unknown),
+  /** What the ghost auth user creation answers. */
+  createUser: (async () => ({ data: { user: { id: 'guest-uuid' } }, error: null })) as () => Promise<unknown>,
+  /** The error the session row insert answers with. */
+  sessionError: { message: 'synthetic insert failure' } as unknown,
 }));
 const sentry = vi.hoisted(() => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 vi.mock('@sentry/react-router', () => sentry);
@@ -26,7 +30,7 @@ vi.mock('@supabase/supabase-js', () => ({
   createClient: vi.fn(() => ({
     auth: {
       admin: {
-        createUser: vi.fn(async () => ({ data: { user: { id: 'guest-uuid' } }, error: null })),
+        createUser: () => db.createUser(),
         deleteUser: (id: string) => db.deleteUser(id),
       },
     },
@@ -44,7 +48,7 @@ vi.mock('@supabase/supabase-js', () => ({
       query.insert = () => { db.inserts.push(table); return query; };
       // The session row insert fails, which starts the cleanup.
       query.single = async () => (table === 'guest_chat_sessions'
-        ? { data: null, error: { message: 'synthetic insert failure' } }
+        ? { data: null, error: db.sessionError }
         : { data: null, error: null });
       query.then = (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) =>
         (deleting && table === 'profiles' ? db.profileDelete() : Promise.resolve({ error: null })).then(resolve, reject);
@@ -73,6 +77,8 @@ let ip = 0;
 beforeEach(() => {
   db.profileDelete = async () => ({ error: null });
   db.profileUpsert = async () => ({ error: null });
+  db.createUser = async () => ({ data: { user: { id: 'guest-uuid' } }, error: null });
+  db.sessionError = { message: 'synthetic insert failure' };
   db.inserts = [];
   db.profileDeleteIds = [];
   db.deleteUser.mockReset();
@@ -204,5 +210,41 @@ describe('US-15 AC7d: a ghost profile that cannot be written leaves no ghost aut
     await expect(create()).rejects.toThrow('Failed to create guest session');
     expectFixedReports([{ step: 'profile', code: 'thrown' }], 'fetch failed');
     expect(db.deleteUser).toHaveBeenCalledWith('guest-uuid');
+  });
+});
+
+describe('US-15 AC7e: a failed guest creation logs only the error code and status', () => {
+  const logged = () => vi.mocked(console.error).mock.calls;
+  beforeEach(() => vi.mocked(console.error).mockClear());
+
+  it('a profile write whose details hold the guest id logs its code, never its message, details or hint', async () => {
+    const failure = new PostgrestError({
+      message: 'duplicate key value violates unique constraint "profiles_pkey"',
+      details: 'Key (id)=(guest-uuid) already exists.',
+      hint: 'synthetic hint about guest-uuid',
+      code: '23505',
+    });
+    db.profileUpsert = async () => ({ error: failure });
+    await expect(create()).rejects.toThrow('Failed to create guest session');
+    expect(logged()).toEqual([['Failed to create guest profile:', { code: '23505' }]]);
+    const text = JSON.stringify(logged());
+    for (const raw of ['guest-uuid', failure.message, failure.details, failure.hint]) expect(text).not.toContain(raw);
+  });
+
+  it('a failed auth user creation logs its code and HTTP status, never its message', async () => {
+    const failure = new AuthApiError('A user with guest-uuid@guest.internal is already registered', 422, 'email_exists');
+    db.createUser = async () => ({ data: { user: null }, error: failure });
+    await expect(create()).rejects.toThrow('Failed to create guest session');
+    expect(logged()).toEqual([['Failed to create guest auth user:', { code: 'email_exists', status: 422 }]]);
+  });
+
+  it('a failed session row logs its code, and an error with no plain code logs unknown', async () => {
+    db.sessionError = new PostgrestError({ message: 'm', details: 'Key (id)=(guest-uuid) already exists.', hint: '', code: '23505' });
+    await expect(create()).rejects.toThrow('Failed to create guest session');
+    expect(logged()).toEqual([['Failed to create guest session:', { code: '23505' }]]);
+    vi.mocked(console.error).mockClear();
+    db.sessionError = { message: 'synthetic insert failure for guest-uuid' };
+    await expect(create()).rejects.toThrow('Failed to create guest session');
+    expect(logged()).toEqual([['Failed to create guest session:', { code: 'unknown' }]]);
   });
 });
