@@ -95,7 +95,7 @@ export {
 export { generateSuggestions, REDUCE_ALCOHOL_ID, LIPID_MEDS_IN_STEPS, lipidMarkerFor, lipidTargetSentence, medicinesShown, weightMedicationTrigger, weightMedIntro } from './suggestions';
 export type { LipidMarker, WeightMedicationTrigger } from './suggestions';
 export { weightCascade, lipidCascade } from './medication-cascades';
-export { planSections, topicSections, type PlanSection, type PlanCard, type PlanSectionKey, type TopicCard, type TopicId, type TopicLayout, type TopicSection } from './plan-sections';
+export { planSections, topicSections, TOPICS, type PlanSection, type PlanCard, type PlanSectionKey, type TopicCard, type TopicId, type TopicLayout, type TopicSection } from './plan-sections';
 
 // Validation
 export {

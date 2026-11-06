@@ -97,7 +97,7 @@ export function planSections(suggestions: Suggestion[]): PlanSection[] {
 /** The iPhone's My health sections, in order (US-73 AC2); `other` takes a suggestion no rule places. */
 export type TopicId = 'weight' | 'sleep' | 'fitness' | 'bloodPressure' | 'cholesterol' | 'screening' | 'skin' | 'bloodTests' | 'supplements' | 'other';
 
-const TOPICS: ReadonlyArray<{ topic: TopicId; title: string }> = [
+export const TOPICS: ReadonlyArray<{ topic: TopicId; title: string }> = [
   { topic: 'weight', title: 'Weight & diabetes' },
   { topic: 'sleep', title: 'Sleep' },
   { topic: 'fitness', title: 'Fitness' },

@@ -187,9 +187,9 @@ export async function loadLabValues(): Promise<ApiLabValue[] | null> {
 export function loadLabValuesSync(): ApiLabValue[] | null {
   return store ? store.loadLabValues() : null;
 }
-/** My health's worked-out series (US-62 AC21); none before the store opens. */
-export function loadDerivedSeries(): DerivedSeries {
-  return store ? store.loadDerivedSeries() : { whtr: [], egfr: [] };
+/** My health's worked-out series (US-62 AC21), over the screen's profile; none before the store opens. */
+export function loadDerivedSeries(shown: Parameters<RoadmapStore['loadDerivedSeries']>[0]): DerivedSeries {
+  return store ? store.loadDerivedSeries(shown) : { whtr: [], egfr: [] };
 }
 
 // --- writes ---

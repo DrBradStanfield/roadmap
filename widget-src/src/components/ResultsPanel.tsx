@@ -152,6 +152,7 @@ function CalmStatus({ priority }: { priority: Suggestion['priority'] }) {
 
 function SuggestionCard({ suggestion, highlighted, fadingOut, alcoholQuestion, usBlock, calm }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; alcoholQuestion?: AlcoholQuestion; usBlock?: UsProductBlock; calm?: boolean }) {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const dismiss = alcoholDismiss(suggestion, alcoholQuestion);
   const hasEvidence = suggestionHasEvidence(suggestion);
   const isSupplementCard = suggestion.category === 'supplements';
   const isSkinCard = suggestion.category === 'skin';
@@ -164,10 +165,10 @@ function SuggestionCard({ suggestion, highlighted, fadingOut, alcoholQuestion, u
   return (
     <div className={`suggestion-card ${priorityColors[suggestion.priority]}${isSupplementCard ? ' supplement-card' : ''}${isSkinCard ? ' skin-card' : ''}${highlightClass}${hasEvidence ? ' suggestion-card-clickable' : ''}${calm ? ' suggestion-card--calm' : ''}`}>
       {calm ? (
-        (STATUS_WORDS[suggestion.priority] || alcoholDismiss(suggestion, alcoholQuestion)) && (
+        (STATUS_WORDS[suggestion.priority] || dismiss) && (
           <div className="suggestion-header">
             <CalmStatus priority={suggestion.priority}/>
-            {alcoholDismiss(suggestion, alcoholQuestion)}
+            {dismiss}
           </div>
         )
       ) : !isSpecialCard && (
@@ -179,7 +180,7 @@ function SuggestionCard({ suggestion, highlighted, fadingOut, alcoholQuestion, u
               {suggestion.category.replace(/_/g, ' ')}
             </span>
           </span>
-          {alcoholDismiss(suggestion, alcoholQuestion)}
+          {dismiss}
         </div>
       )}
       <div className="suggestion-body" onClick={toggleEvidence}>
@@ -318,9 +319,10 @@ interface GuestEmailHook {
   gateSkipped?: boolean;
 }
 
-function useGuestEmailCapture(printReport: () => Promise<void>): GuestEmailHook {
-  const [email, setEmail] = useState('');
-  const [emailError, setEmailError] = useState('');
+/** The capture's state and the page's gate, held by usePlanView (the storage pulse reads them). */
+interface EmailCaptureState { state: GuestEmailState; setState: (s: GuestEmailState) => void; gateSkipped: boolean }
+
+function useEmailCaptureState(): EmailCaptureState {
   // US-44: the page decides, once per mount. Never written to the record.
   const [gateSkipped] = useState(getSkipEmailGate);
   // Returning local-first users who already captured: skip the email box and
@@ -328,6 +330,13 @@ function useGuestEmailCapture(printReport: () => Promise<void>): GuestEmailHook 
   const [state, setState] = useState<GuestEmailState>(
     () => (getReportEmailCaptured() ? 'captured' : gateSkipped ? 'skipped' : 'idle'),
   );
+  return { state, setState, gateSkipped };
+}
+
+/** The box's own typing, in the foot, so a keystroke re-renders the foot alone. */
+function useGuestEmailCapture(printReport: () => Promise<void>, { state, setState, gateSkipped }: EmailCaptureState): GuestEmailHook {
+  const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
   const helperText = LOCAL_FIRST_EMAIL_HELPER;
   // US-18 AC7: one send at a time. The button is disabled while sending, but
   // Enter in the box (either copy of it) reaches here too.
@@ -481,8 +490,15 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
 /** The plan's view on My health (US-62 AC17-AC26): its cards by topic (health-core's
  *  `topicSections`, with US-61's overlay on Shopify), the new-card highlight, the urgent
  *  banner's target, and the foot. Built once, in HealthTool; InputPanel draws it. */
+/** One topic's cards, the urgent ones apart: they lead the topic, over its rows (US-62 AC18). */
+export interface TopicCards { urgent: TopicCard<UsSuggestion>[]; others: TopicCard<UsSuggestion>[]; ownershipLine?: string }
+
 export interface PlanView {
   layout: TopicLayout<UsSuggestion>;
+  /** Each topic's cards, split once (US-62 AC18). */
+  topics: ReadonlyMap<string, TopicCards>;
+  /** A valid plan is on hand. */
+  planned: boolean;
   highlights: Highlights;
   alcoholQuestion?: AlcoholQuestion;
   /** The first urgent card in topic order, for the banner (US-62 AC19). */
@@ -500,14 +516,15 @@ export interface PlanView {
 }
 
 interface Highlights { highlighted: Set<string>; fadingOut: Set<string> }
+const NO_HIGHLIGHTS: Set<string> = new Set();
 
 /** A card's DOM id on My health: the banner scrolls to it (US-62 AC19). */
 export const cardDomId = (card: { suggestions: Array<{ id: string }> }) => `hr-card-${card.suggestions.map(s => s.id).join('--')}`;
 
 /** New or changed suggestions glow for 3s, then fade, once the plan has settled (3s after mount). */
 function useHighlights(suggestions: Suggestion[] | undefined): Highlights {
-  const [highlighted, setHighlighted] = useState<Set<string>>(new Set());
-  const [fadingOut, setFadingOut] = useState<Set<string>>(new Set());
+  const [highlighted, setHighlighted] = useState<Set<string>>(NO_HIGHLIGHTS);
+  const [fadingOut, setFadingOut] = useState<Set<string>>(NO_HIGHLIGHTS);
   const baselineRef = useRef<Map<string, { title: string; description: string }>>(new Map());
   const settledRef = useRef(false);
   const clearTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
@@ -532,16 +549,21 @@ function useHighlights(suggestions: Suggestion[] | undefined): Highlights {
       const prev = baselineRef.current.get(s.id);
       if (!prev || prev.title !== s.title || prev.description !== s.description) next.add(s.id);
     }
+    // Nothing new or changed, nothing glowing: no new state, so no re-render.
+    if (next.size === 0) {
+      baselineRef.current = currentMap;
+      return;
+    }
     // Cancel any fade-out in progress.
     if (fadeOutTimeoutRef.current) clearTimeout(fadeOutTimeoutRef.current);
-    setFadingOut(new Set());
+    setFadingOut(NO_HIGHLIGHTS);
     setHighlighted(next);
     if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
     clearTimeoutRef.current = setTimeout(() => {
       setFadingOut(next);
-      setHighlighted(new Set());
+      setHighlighted(NO_HIGHLIGHTS);
       fadeOutTimeoutRef.current = setTimeout(() => {
-        setFadingOut(new Set());
+        setFadingOut(NO_HIGHLIGHTS);
         baselineRef.current = currentMap;
       }, 500);
     }, 3000);
@@ -665,7 +687,6 @@ export function PlanEmptyPreview() {
   );
 }
 
-const NO_HIGHLIGHTS = new Set<string>();
 
 /**
  * The plan as its PDF has always printed it (US-08, US-18): the tiles, then the
@@ -751,7 +772,7 @@ export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitud
     setPrintStatus('idle');
   };
 
-  const guestEmailHook = useGuestEmailCapture(() => printReport('capture'));
+  const capture = useEmailCaptureState();
 
   // US-61 AC5: Brad's products for a known adult in the US, on the Shopify build only.
   const sections = useMemo((): UsPlanSection[] => {
@@ -760,6 +781,9 @@ export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitud
     return (SHOPIFY_SURFACE && usProductSections(plain, results, getMarketCountry() === 'US', 'web')) || plain;
   }, [results]);
   const layout = useMemo(() => topicSections(sections, forms), [sections, forms]);
+  const topics = useMemo(() => new Map(layout.sections.map(({ topic, cards, ownershipLine }) => [topic, {
+    urgent: cards.filter(c => c.priority === 'urgent'), others: cards.filter(c => c.priority !== 'urgent'), ownershipLine,
+  }])), [layout]);
   // The banner names the first urgent card in topic order (US-62 AC19).
   const urgent = useMemo(() => {
     for (const section of layout.sections) {
@@ -772,7 +796,7 @@ export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitud
   // US-61 AC8: once the Supplements section is on screen, one count per product
   // (trackProductEvent keeps one per product per tab session).
   const supplementsRef = useRef<HTMLElement>(null);
-  const usProducts = [...new Set(layout.sections.flatMap((section) => section.cards.flatMap((card) => card.suggestions.flatMap((s) => s.usProduct?.product ?? []))))].join(' ');
+  const usProducts = useMemo(() => [...new Set(layout.sections.flatMap((section) => section.cards.flatMap((card) => card.suggestions.flatMap((s) => s.usProduct?.product ?? []))))].join(' '), [layout]);
   useEffect(() => {
     const el = supplementsRef.current;
     if (!el || !usProducts) return;
@@ -788,7 +812,7 @@ export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitud
   // for reminders, which marks the record captured). Never before, so the storage
   // button's pulse never competes with the email box. A known minor has no email
   // box: their Save as PDF counts, as on the gate-skipped page (US-07 AC6).
-  const { state: emailState, gateSkipped } = guestEmailHook;
+  const { state: emailState, gateSkipped } = capture;
   // Pages has no email gate or funnel, even for a record captured on Shopify.
   const attention = SHOPIFY_SURFACE && (emailState === 'captured' || emailState === 'reminded' || ((!!gateSkipped || !!results?.knownMinor) && pdfOpened));
 
@@ -796,19 +820,33 @@ export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitud
   // US-07 AC6: a known minor is never asked for an email (either box joins the
   // mailing list). Their PDF is the gate-skipped page's Save as PDF (US-44 AC2).
   const adult = planned && !results.knownMinor;
-  const emailCapture = !!showEmailCapture && adult;
+  const report = planned && printing && <PlanReport tiles={tiles} sections={sections} alcoholQuestion={alcoholQuestion}/>;
+  const foot = (
+    <PlanFoot planned={planned} adult={adult} emailCapture={!!showEmailCapture && adult} formStage={formStage} capture={capture}
+              printStatus={printStatus} pdfBlocked={pdfBlocked} onPrint={handlePrint} onCapturePrint={() => printReport('capture')}/>
+  );
+
+  return { layout, topics, planned, highlights, alcoholQuestion, urgent, supplementsRef, foot, attention, onErased: () => setPdfOpened(false), report };
+}
+
+/** My health's foot (US-62 AC26): the email box and Save as PDF, the disclaimer, feedback, Supercharge and
+ *  the privacy link. It owns the box's typing, so a keystroke re-renders the foot alone. */
+function PlanFoot({ planned, adult, emailCapture, formStage, capture, printStatus, pdfBlocked, onPrint, onCapturePrint }: {
+  planned: boolean; adult: boolean; emailCapture: boolean; formStage?: number; capture: EmailCaptureState;
+  printStatus: 'idle' | 'loading'; pdfBlocked: PdfButton | null; onPrint: (at: PdfButton) => void; onCapturePrint: () => Promise<void>;
+}) {
+  const guestEmailHook = useGuestEmailCapture(onCapturePrint, capture);
   const printLabel = printStatus === 'loading' ? 'Loading...' : 'Save as PDF';
   // Save as PDF: always on Pages. On Shopify the email capture is the PDF path,
   // so the ungated button shows once captured, on US-44's gate-skipped page, or
   // for a known minor.
-  const ungatedPdf = planned && (!SHOPIFY_SURFACE || guestEmailHook.state === 'captured' || !!guestEmailHook.gateSkipped || !adult);
-
-  const foot = (
+  const ungatedPdf = planned && (!SHOPIFY_SURFACE || capture.state === 'captured' || capture.gateSkipped || !adult);
+  return (
     <div className="mh-foot">
       {emailCapture && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />}
       {ungatedPdf && (
         <div className="report-actions no-print">
-          <button type="button" className="action-btn" onClick={() => handlePrint('bottom')} disabled={printStatus === 'loading'} title="Save your plan as a PDF">
+          <button type="button" className="action-btn" onClick={() => onPrint('bottom')} disabled={printStatus === 'loading'} title="Save your plan as a PDF">
             {printLabel}
           </button>
           <PdfNote show={pdfBlocked === 'bottom' || pdfBlocked === 'capture'} />
@@ -835,7 +873,4 @@ export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitud
       )}
     </div>
   );
-
-  const report = planned && printing && <PlanReport tiles={tiles} sections={sections} alcoholQuestion={alcoholQuestion}/>;
-  return { layout, highlights, alcoholQuestion, urgent, supplementsRef, foot, attention, onErased: () => setPdfOpened(false), report };
 }

@@ -35,7 +35,7 @@ import { getShownErase } from '../lib/roadmap-data';
 import { ErrorBoundary } from './ErrorBoundary';
 import { ValueCell, saveErrorText, useLiveRegion } from './BloodTestTimeline';
 import { AddLabTest } from './AddLabTest';
-import { pressureText, tintOf, type RowContext, type ValueSubject } from './MyDataRows';
+import { LAB_EGFR, isLabEgfr, pressureText, subjectKey, tintOf, type RowContext, type ValueSubject } from './MyDataRows';
 import { PlanTile } from './ResultsPanel';
 import type { ApiLabValue } from '../lib/api-types';
 
@@ -80,15 +80,15 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
   useEffect(() => titleRef.current?.focus(), []);
   const [say, messages] = useLiveRegion('md-page-messages');
 
-  const lab = subject.kind === 'lab'
-    ? groupLabValues(labValues).flatMap(g => g.series).find(s => s.seriesKey === subject.seriesKey)
-    : undefined;
+  // The lab tests' series, grouped once: this page's, and whether the lab eGFR is held.
+  const series = useMemo(() => groupLabValues(labValues).flatMap(g => g.series), [labValues]);
+  const lab = subject.kind === 'lab' ? series.find(s => s.seriesKey === subject.seriesKey) : undefined;
   const metric = subject.kind === 'core' ? subject.metric : null;
   const unit = metric ? ctx.unitOf(metric) : 'si';
-  const pageKey = subject.kind === 'lab' ? `lab:${subject.seriesKey}` : subject.kind === 'bp' ? 'bp' : subject.metric;
+  const pageKey = subjectKey(subject);
   const pageTiles = (TILE_PAGES[pageKey] ?? []).flatMap(key => tiles.filter(t => t.key === key));
   // A lab eGFR can always be reached and corrected, whichever eGFR the row shows (US-73 AC7).
-  const labEgfrHeld = groupLabValues(labValues).some(g => g.series.some(s => s.seriesKey === 'egfr'));
+  const labEgfrHeld = series.some(s => s.seriesKey === LAB_EGFR);
   const label = subject.kind === 'bp' ? 'Blood Pressure' : metric ? METRIC_LABELS[metric] ?? metric : lab?.label ?? '';
   const latestLab = lab && labValues.find(v => v.id === lab.points[lab.points.length - 1].id);
   const target = subject.kind === 'bp' ? rowTarget('blood_pressure', 'si', ctx.grading, ctx.plan)
@@ -124,9 +124,9 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
       {target && target.bare && <p className="md-page-target">{target.full}</p>}
       {pageTiles.length > 0 && <div className="stats-grid md-page-tiles">{pageTiles.map(tile => <PlanTile key={tile.key} tile={tile}/>)}</div>}
       {pageKey === 'creatinine' && labEgfrHeld && (
-        <button type="button" className="md-foot-btn md-page-link" onClick={() => onOpen({ kind: 'lab', seriesKey: 'egfr' })}>Lab eGFR results</button>
+        <button type="button" className="md-foot-btn md-page-link" onClick={() => onOpen({ kind: 'lab', seriesKey: LAB_EGFR })}>Lab eGFR results</button>
       )}
-      {pageKey === 'lab:egfr' && (
+      {isLabEgfr(subject) && (
         <button type="button" className="md-foot-btn md-page-link" onClick={() => onOpen({ kind: 'core', metric: 'creatinine' })}>Creatinine</button>
       )}
 

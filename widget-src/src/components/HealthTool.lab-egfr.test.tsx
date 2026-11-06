@@ -22,7 +22,7 @@ vi.mock('../lib/server-api', async (importOriginal) => ({
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const seen = vi.hoisted(() => ({ panel: null as null | Record<string, any>, results: null as HealthResults | null, chat: null as null | (() => ChatContextPayload | null) }));
+const seen = vi.hoisted(() => ({ panel: null as null | Record<string, any>, results: null as HealthResults | null, tiles: [] as Array<{ label: string; value: string }>, chat: null as null | (() => ChatContextPayload | null) }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: ({ guestInputs }: { guestInputs: () => ChatContextPayload | null }) => { seen.chat = guestInputs; return null; } }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
@@ -30,7 +30,7 @@ vi.mock('./InputPanel', () => ({ InputPanel: (props: Record<string, unknown>) =>
 vi.mock('./ResultsPanel', async (importOriginal) => {
   const real = await importOriginal<typeof import('./ResultsPanel')>();
   // The plan My health draws (US-62 phase 5): what usePlanView is given.
-  return { ...real, usePlanView: (options: Parameters<typeof real.usePlanView>[0]) => { seen.results = options.results; return real.usePlanView(options); } };
+  return { ...real, usePlanView: (options: Parameters<typeof real.usePlanView>[0]) => { seen.results = options.results; seen.tiles = options.tiles; return real.usePlanView(options); } };
 });
 
 import { HealthTool } from './HealthTool';
@@ -47,7 +47,7 @@ async function seed(creatinine: Array<[value: number, day: string]>, lab: [value
 }
 
 // The eGFR tile the plan hands My health (on the creatinine page since US-62 AC26).
-const eGFRTile = (_container: HTMLElement) => (seen.panel?.tiles as Array<{ label: string; value: string }> | undefined)
+const eGFRTile = (_container: HTMLElement) => seen.tiles
   ?.find((t) => t.label === 'eGFR')?.value;
 const chatEGFR = () => JSON.parse(buildChatContextJson(seen.chat!()!)!).derivedValues.eGFR;
 

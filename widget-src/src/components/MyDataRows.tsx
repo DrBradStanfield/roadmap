@@ -3,7 +3,7 @@
 // value with the previous one in brackets over its unit. A tap opens the
 // value's page (ValuePage). Phone and desktop alike.
 
-import { useId } from 'react';
+import { memo, useId } from 'react';
 import {
   type ApiMeasurement,
   type CellUnit,
@@ -136,6 +136,11 @@ export function pressureRow(history: ApiMeasurement[], ctx: RowContext): RowMode
 }
 
 /** The lab tests beyond the core ones, one row per series, as the grid groups them (health-core's `labSeriesRows`). */
+/** The lab eGFR's series key (`labSlotKey`): its own row, page and correction (US-73 AC7). */
+export const LAB_EGFR = 'egfr';
+/** A row or page subject that is the lab's eGFR series. */
+export const isLabEgfr = (s: ValueSubject) => s.kind === 'lab' && s.seriesKey === LAB_EGFR;
+
 export function labRows(labValues: ApiLabValue[]): RowModel[] {
   return labSeriesRows(labValues).map(({ seriesKey, label, target, latest, previous, unit, trend, trendLimits }): RowModel => ({
     subject: { kind: 'lab', seriesKey }, label, target, day: latest.day, latest: latest.value, previous, unit,
@@ -173,7 +178,7 @@ export function RowTrend({ points, limits, tint, width = 44, height = 18 }: { po
 }
 
 /** One row. Screen readers hear "81, previous 74": brackets alone say nothing out loud. */
-function MetricRow({ row, onOpen }: { row: RowModel; onOpen: (subject: ValueSubject) => void }) {
+const MetricRow = memo(function MetricRow({ row, onOpen }: { row: RowModel; onOpen: (subject: ValueSubject) => void }) {
   const meta = [row.target, row.day && monthYear(row.day)].filter(Boolean).join(' · ');
   return (
     <li>
@@ -198,9 +203,10 @@ function MetricRow({ row, onOpen }: { row: RowModel; onOpen: (subject: ValueSubj
       </button>
     </li>
   );
-}
+});
 
-const subjectKey = (s: ValueSubject) => (s.kind === 'lab' ? `lab:${s.seriesKey}` : s.kind === 'bp' ? 'bp' : s.metric);
+/** A subject's stable key: a row's React key and its page's tile map key (ValuePage). */
+export const subjectKey = (s: ValueSubject) => (s.kind === 'lab' ? `lab:${s.seriesKey}` : s.kind === 'bp' ? 'bp' : s.metric);
 
 /** A list of rows, the iPhone's ValueRow list. */
 export function MetricRows({ rows, onOpen }: { rows: RowModel[]; onOpen: (s: ValueSubject) => void }) {
@@ -260,16 +266,17 @@ export function nonHdlRow(tile: StatTile | undefined, total: RowModel): RowModel
  * previous value and the trend. It opens the page of its source: the lab eGFR's, or
  * creatinine's. None without the plan's eGFR.
  */
-export function egfrRow(series: EgfrPoint[], tile: StatTile | undefined, current: { day: string; source: 'lab' | 'calculated' } | null, labSeriesKey: string | null): RowModel | null {
+export function egfrRow(series: EgfrPoint[], tile: StatTile | undefined, current: { day: string; source: 'lab' | 'calculated' } | null, labEgfrHeld: boolean): RowModel | null {
   if (!tile || !current) return null;
   const at = series.find(p => p.day === current.day && p.source === current.source);
   const older = series.filter(p => p.day < current.day);
   const lab = current.source === 'lab';
   return {
     key: 'egfr',
-    subject: lab && labSeriesKey ? { kind: 'lab', seriesKey: labSeriesKey } : { kind: 'core', metric: 'creatinine' },
+    subject: lab && labEgfrHeld ? { kind: 'lab', seriesKey: LAB_EGFR } : { kind: 'core', metric: 'creatinine' },
     label: 'eGFR', target: [tile.status?.label, lab ? 'Lab result' : 'Calculated'].filter(Boolean).join(' · '),
     day: current.day, latest: tile.value, previous: older[0] ? String(older[0].value) : null, unit: tile.unit,
+    // The plan's point and up to six before it, as the iPhone draws it (TopicPlan.swift HealthPage.egfr: prefix(7)).
     trend: [...(at ? [at] : []), ...older].slice(0, 7).map(p => p.value).reverse(),
     tint: TINT.creatinine, status: tileGrade(tile), graded: '',
   };

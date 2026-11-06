@@ -9,7 +9,7 @@
  */
 import type { CSSProperties, ReactNode } from 'react';
 
-type IconName = 'person' | 'heart' | 'drop' | 'pills' | 'stethoscope' | 'leaf' | 'folder'
+type IconName = 'person' | 'heart' | 'drop' | 'pills' | 'stethoscope' | 'leaf'
   | 'fork' | 'run' | 'moon' | 'sun' | 'sparkles' | 'scale' | 'bed' | 'ellipsis';
 
 /** Apple's system colours (light appearance), as the iPhone tints them. */
@@ -29,7 +29,6 @@ const SHAPES: Record<IconName, ReactNode> = {
   pills: <g transform="rotate(-45 12 12)"><path d="M12 8.5H7a3.5 3.5 0 0 0 0 7h5Z"/><path d="M12 8.5h5a3.5 3.5 0 0 1 0 7h-5Z" opacity="0.55"/></g>,
   stethoscope: <g {...line}><path d="M5 3v5a4 4 0 0 0 8 0V3"/><path d="M9 12v2.5a5 5 0 0 0 10 0V12"/><circle cx="19" cy="10" r="2"/></g>,
   leaf: <g><path d="M20 3.5C11 3.5 5 7.5 5 14c0 2.2.8 4 1.8 5.2C14.5 20 20.5 14 20 3.5Z"/><path {...line} d="M4 21c3-5 6-8 10-11"/></g>,
-  folder: <path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2h8.5A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5Z"/>,
   fork: <g {...line}><path d="M7 3v5a2 2 0 0 0 4 0V3M9 10v11"/><path d="M17 21V3c-2.2 1.8-3 4.6-3 8h3"/></g>,
   run: <g><circle cx="15" cy="4.5" r="2.2"/><path {...line} d="M7 9.5l4-2 3 2 2.5 3H19M14 9.5l-2.5 5 3 2.5-1.5 4.5M11.5 14.5L9 18H5"/></g>,
   moon: <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/>,
@@ -39,6 +38,20 @@ const SHAPES: Record<IconName, ReactNode> = {
   ellipsis: <path fillRule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20ZM7 10.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm5 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm5 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z"/>,
   sparkles: <g><path d="M10 3l1.8 5.2L17 10l-5.2 1.8L10 17l-1.8-5.2L3 10l5.2-1.8Z"/><path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9Z"/></g>,
 };
+
+/** A symbol on its own, in the current colour: the person button's, for one (US-62 AC24). */
+export function Glyph({ name, size }: { name: IconName; size: number }) {
+  return <Icon name={name} size={size}/>;
+}
+
+/** The chat's speech bubbles, one drawing for the Chat tab and the floating chat button. Stroked
+ *  in the current colour by its <svg> (bubble.left.and.text.bubble.right). */
+export const CHAT_BUBBLES = (
+  <>
+    <path d="M4 5h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H9l-3 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/>
+    <path d="M16 9h4a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1v3l-3-3h-3a2 2 0 0 1-2-1.5"/>
+  </>
+);
 
 function Icon({ name, size }: { name: IconName; size: number }) {
   return (
@@ -62,10 +75,8 @@ const SECTIONS = {
   other: ['ellipsis', 'gray'],
   vitals: ['heart', 'red'],
   bloodTests: ['drop', 'blue'],
-  medications: ['pills', 'teal'],
   screening: ['stethoscope', 'indigo'],
   supplements: ['leaf', 'green'],
-  record: ['folder', 'gray'],
 } as const satisfies Record<string, readonly [IconName, Tint]>;
 export type SectionKey = keyof typeof SECTIONS;
 

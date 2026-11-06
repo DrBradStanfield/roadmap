@@ -2,7 +2,9 @@
 // sections the page holds, in order, sticky beside them; the one being read
 // is marked (aria-current), and a red dot marks one holding an urgent card.
 // Hidden on a phone, where the three jump pills stay (iPhone parity).
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { observeVisibility } from '../lib/observe-visibility';
+import { useIsMobile } from '../lib/useIsMobile';
 
 export interface NavTopic { id: string; title: string; urgent: boolean }
 
@@ -21,30 +23,23 @@ function currentTopic(topics: NavTopic[]): string | undefined {
 }
 
 export function SectionNav({ topics, onJump }: { topics: NavTopic[]; onJump: (id: string) => void }) {
-  const navRef = useRef<HTMLElement>(null);
   const [active, setActive] = useState<string | undefined>(topics[0]?.id);
+  const isMobile = useIsMobile();
   const key = topics.map(t => t.id).join(' ');
+  // A heading crossing the band near the top of the screen (the viewport, whatever element
+  // scrolls: the storefront's theme scrolls a wrapper) re-reads which section is being read.
+  // Desktop only: a phone shows the pills, and its list does no work.
   useEffect(() => {
-    let frame = 0;
-    const update = () => {
-      frame = 0;
-      // Only where the list shows (desktop): a phone's hidden list does no work.
-      if (navRef.current?.offsetParent === null) return;
-      setActive(currentTopic(topics));
-    };
-    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };
-    update();
-    // Capture: the storefront's theme scrolls a wrapper, not the window.
-    document.addEventListener('scroll', onScroll, true);
-    window.addEventListener('resize', onScroll);
-    return () => {
-      document.removeEventListener('scroll', onScroll, true);
-      window.removeEventListener('resize', onScroll);
-      if (frame) cancelAnimationFrame(frame);
-    };
-  }, [key]);
+    if (isMobile) return;
+    const update = () => setActive(currentTopic(topics));
+    const stops = topics.flatMap(t => {
+      const heading = headingOf(t.id);
+      return heading ? [observeVisibility(heading, update, { rootMargin: '0px 0px -70% 0px' })] : [];
+    });
+    return () => { for (const stop of stops) stop(); };
+  }, [key, isMobile]);
   return (
-    <nav className="mh-nav no-print" aria-label="My health sections" ref={navRef}>
+    <nav className="mh-nav no-print" aria-label="My health sections">
       <ul className="mh-nav-list">
         {topics.map(t => (
           <li key={t.id}>

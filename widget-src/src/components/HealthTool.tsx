@@ -67,6 +67,9 @@ import type { ApiSupplement, ApiLabValue, LatestMeasurementsResult } from '../li
 import { InputPanel, type PlanBasis } from './InputPanel';
 import { usePlanView } from './ResultsPanel';
 import { PersonButton } from './SettingsSheet';
+import { MyHealth } from './MyHealth';
+import { revealAndFocus } from '../lib/reveal';
+import { CHAT_BUBBLES } from './icons';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
 import { ChatEmbed } from './ChatEmbed';
 import { listConversations } from '../lib/chat-api';
@@ -1082,7 +1085,11 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     [results, unitSystem, metricUnitOverrides, sex],
   );
   // My health's worked-out rows (US-62 AC21), read again as the record's rows or profile change.
-  const series = useMemo(() => loadDerivedSeries(), [history, labValueHistory, inputs.heightCm, inputs.sex, inputs.birthYear, inputs.birthMonth]);
+  // The rows' data follows `history` and the lab rows, both read again after every save and
+  // remote change; the profile is the screen's, so a typed height counts before its save lands.
+  const series = useMemo(() => loadDerivedSeries({
+    heightCm: inputs.heightCm, sex: inputs.sex, birthYear: inputs.birthYear, birthMonth: inputs.birthMonth,
+  }), [history, labValueHistory, inputs.heightCm, inputs.sex, inputs.birthYear, inputs.birthMonth]);
   // The day and source of the plan's eGFR, for its row (the plan's own pick, withLabEgfr).
   const egfrFromLab = !!(results?.eGFRFromLab || results?.limits?.labEgfr);
   const egfrDay = egfrFromLab ? planInputs.labEgfrDate : results?.eGFR !== undefined ? planInputs.creatinineDay ?? localDay(new Date()) : undefined;
@@ -1434,9 +1441,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     if (stageRef.current !== 4 || (!emailCaptureActive && !fromBirth)) return false;
     selectTab('health');
     requestAnimationFrame(() => {
-      const title = rootRef.current?.querySelector<HTMLElement>('.mh-title');
-      title?.scrollIntoView({ block: 'start' });
-      title?.focus({ preventScroll: true });
+      revealAndFocus(rootRef.current?.querySelector<HTMLElement>('.mh-title'), 'start', false);
     });
     return true;
   }, [emailCaptureActive, selectTab]);
@@ -1451,20 +1456,20 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // The form's medicine and screening questions, as health-core builds them
   // (the InputPanel parity test pins the two together): a suggestion sits on
   // the question that asks it (US-62 AC20).
-  const forms = useMemo(() => {
-    const e = effectiveInputs;
-    return {
-      medications: medicationForm(medicationsToInputs(medications), {
-        lipidMarker: planBasis?.lipidMarker ?? null,
-        weightMedTrigger: planBasis?.weightMedTrigger ?? { on: false, reasons: [] },
-        bmi: planBasis?.bmi,
-        hasLipidInput: e.apoB !== undefined || e.ldlC !== undefined || e.totalCholesterol !== undefined || e.hdlC !== undefined,
-        hasWeightInput: e.hba1c !== undefined || e.triglycerides !== undefined || (e.weightKg !== undefined && e.heightCm !== undefined),
-        unitFor: (metric) => unitOverrides[METRIC_TO_FIELD[metric]] ?? unitSystem,
-      }),
-      screenings: screeningForm(planBasis?.age, inputs.sex, screeningsToInputs(screenings)),
-    };
-  }, [effectiveInputs, medications, screenings, planBasis, inputs.sex, unitOverrides, unitSystem]);
+  const e = effectiveInputs;
+  const hasLipidInput = e.apoB !== undefined || e.ldlC !== undefined || e.totalCholesterol !== undefined || e.hdlC !== undefined;
+  const hasWeightInput = e.hba1c !== undefined || e.triglycerides !== undefined || (e.weightKg !== undefined && e.heightCm !== undefined);
+  const forms = useMemo(() => ({
+    medications: medicationForm(medicationsToInputs(medications), {
+      lipidMarker: planBasis?.lipidMarker ?? null,
+      weightMedTrigger: planBasis?.weightMedTrigger ?? { on: false, reasons: [] },
+      bmi: planBasis?.bmi,
+      hasLipidInput,
+      hasWeightInput,
+      unitFor: (metric) => unitOverrides[METRIC_TO_FIELD[metric]] ?? unitSystem,
+    }),
+    screenings: screeningForm(planBasis?.age, inputs.sex, screeningsToInputs(screenings)),
+  }), [hasLipidInput, hasWeightInput, medications, screenings, planBasis, inputs.sex, unitOverrides, unitSystem]);
 
   const plan = usePlanView({
     results,
@@ -1495,44 +1500,31 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     requestAnimationFrame(() => personRef.current?.focus());
   }, []);
   const personButton = <PersonButton onClick={toggleSettings} buttonRef={personRef} open={settingsOpen}/>;
-  const planned = isValid && !!results;
   // Where the record lives (US-09): in Settings, and for a guest (a record on this
   // device only) also at the foot of My health, so the sign-in prompt stays in the
   // page's flow (orchestrator 2026-11-06). Drawn in one place at a time: one picker.
-  const storageCard = syncControl?.({ hasData: planned, attention: plan.attention });
-  const settingsParts = (
-    <>
-      {/* US-07 AC6: no reminders for a known minor, who is never enrolled and must see no mailing-list box. */}
-      {planned && !results.knownMinor && remindersSection}
-      {/* Where the record lives (US-09). Hidden for new users until they have entered real data. */}
-      {storageCard}
-      {planned && (
-        <div className="delete-data-section">
-          <button
-            className="delete-data-link"
-            onClick={async () => { if (await handleDeleteData()) { plan.onErased(); closeSettings(); } }}
-            disabled={isDeleting}
-          >
-            {isDeleting ? 'Deleting...' : 'Delete all my data'}
-          </button>
-        </div>
-      )}
-    </>
-  );
+  const storageCard = syncControl?.({ hasData: plan.planned, attention: plan.attention });
 
-  const inputPanelProps = {
+  const myHealthProps = {
+    plan, tiles, series, egfrCurrent, sectionsRef, setShowUploadModal,
     // On My health's title line, phone and desktop: no band of its own (design review 2026-11-06).
     storageBar,
     personButton,
-    plan,
-    tiles,
-    series,
-    egfrCurrent,
     settingsOpen,
     onSettingsClose: closeSettings,
-    settingsParts,
+    // US-07 AC6: no reminders for a known minor, who is never enrolled and must see no mailing-list box.
+    reminders: plan.planned && !results?.knownMinor ? remindersSection : null,
+    storageCard,
+    onDelete: async () => { if (await handleDeleteData()) { plan.onErased(); closeSettings(); } },
+    isDeleting,
     footStorage: getBackendKind() === 'local' ? storageCard : undefined,
-    sectionsRef,
+    healthDocuments: documentHistory,
+    onDocumentDeleted: (docId: string) => {
+      setDocumentHistory(prev => prev.filter(d => d.id !== docId));
+    },
+  };
+
+  const inputPanelProps = {
     inputs,
     effectiveInputs,
     onChange: handleInputChange,
@@ -1578,10 +1570,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     setShowUploadModal,
     planBasis,
     grading,
-    healthDocuments: documentHistory,
-    onDocumentDeleted: (docId: string) => {
-      setDocumentHistory(prev => prev.filter(d => d.id !== docId));
-    },
     onOnboardingDone: landOnMyHealth,
     // On a phone a chat edit opens the grids, so the filled cell shows (US-62 AC11).
     revealCell,
@@ -1617,7 +1605,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       {unreadableLine && <p className="hr-unreadable-note no-print" role="status">{unreadableLine}</p>}
       {isMobile ? (
         <>
-          {panel('health', <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps} /></fieldset>)}
+          {panel('health', <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps}>{form => <MyHealth form={form} {...myHealthProps}/>}</InputPanel></fieldset>)}
           {panel('chat', (
             <div className="health-tool-chat">
               <ChatEmbed
@@ -1634,7 +1622,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
         <div className="health-tool-content">
           {/* US-62 AC16: one My health column, centred; the chat column beside it from 1200px. */}
           <div className="health-tool-main">
-            <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps} /></fieldset>
+            <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps}>{form => <MyHealth form={form} {...myHealthProps}/>}</InputPanel></fieldset>
           </div>
           {isWideDesktop && (
             <div className="health-tool-chat">
@@ -1719,9 +1707,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
           onClick={() => setFloatingChatOpen(true)}
           aria-label="Open chat"
         >
-          <svg className="chat-fab-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
-            <path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-4 3v-3H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
-          </svg>
+          <svg className="chat-fab-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8"
+               strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">{CHAT_BUBBLES}</svg>
           <span className="chat-fab-label">Ask about your health</span>
         </button>,
         document.body,

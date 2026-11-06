@@ -1,4 +1,5 @@
 import type { KeyboardEvent, ReactNode } from 'react';
+import { CHAT_BUBBLES } from './icons';
 
 export type TabId = 'health' | 'chat';
 
@@ -13,8 +14,7 @@ const TABS: Array<{ id: TabId; label: string; icon: ReactNode }> = [
   {
     id: 'chat',
     label: 'Chat',
-    // bubble.left.and.text.bubble.right
-    icon: <><path d="M4 5h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H9l-3 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" /><path d="M16 9h4a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1v3l-3-3h-3a2 2 0 0 1-2-1.5" /></>,
+    icon: CHAT_BUBBLES,
   },
 ];
 

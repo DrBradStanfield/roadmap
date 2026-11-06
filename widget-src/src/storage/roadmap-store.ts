@@ -382,9 +382,11 @@ export class RoadmapStore {
   }
 
   /** My health's worked-out rows (US-62 AC21), the iPhone's series: each day's
-   *  waist over the current height, and each day's eGFR, lab or calculated. */
-  loadDerivedSeries(now = new Date()): DerivedSeries {
-    return { whtr: whtrSeries(this.view), egfr: egfrSeries(this.view, now) };
+   *  waist over the current height, and each day's eGFR, lab or calculated. The
+   *  profile is the screen's (`shown`): an answer typed is read before its save lands. */
+  loadDerivedSeries(shown: Partial<Pick<RoadmapFile['profile'], 'heightCm' | 'sex' | 'birthYear' | 'birthMonth'>>, now = new Date()): DerivedSeries {
+    const file = { ...this.view, profile: { ...this.view.profile, ...shown } };
+    return { whtr: whtrSeries(file), egfr: egfrSeries(file, now) };
   }
 
   /** Non-tombstoned documents — the ONE place the deleted-filter invariant lives. */
