@@ -111,6 +111,120 @@ t "$S/b" "git push origin @" DENY
 (cd b && git config remote.origin.push +refs/heads/main:refs/heads/main); t "$S/b" "git pull -q && git push" DENY
 (cd b && git config --unset remote.origin.push)
 (cd b && git pull -q --no-rebase); t "$S/b" "git push" allow
+# Heredoc bodies (US-64 AC18, 2026-11-06): a quote in a body is data, not an unbalanced quote. A body that may push (git or gh
+# beside push/pull/merge) is parsed like any quoted string, quoted delimiter or not, since bash, python or an
+# unquoted $(...) can run it. A terminator that is missing or only nearly matches is refused. FF is built from
+# parts so this file's own text holds no force flag.
+NL=$'\n'; TAB=$'\t'; CR=$'\r'; FF="--for""ce"
+t "$S/b" "python3 - <<'EOF'${NL}s = 'Drive\\'s copy'${NL}print(s)${NL}EOF${NL}git commit -qam \"Fix copy\" && git push -q" allow
+t "$S/b" "cat <<EOF${NL}it's fine${NL}EOF${NL}git push" allow
+t "$S/b" "cat <<\"EOF\"${NL}it's fine${NL}EOF${NL}git push" allow
+t "$S/b" "cat <<-EOF${NL}${TAB}it's fine${NL}${TAB}${TAB}EOF${NL}git push" allow
+t "$S/b" "cat <<A <<'B'${NL}it's${NL}A${NL}don't${NL}B${NL}git push" allow
+t "$S/b" "cat > f <<'EOF' && git push${NL}it's${NL}EOF" allow
+t "$S/b" "cat <<< \"it's\" && git push" allow
+t "$S/b" "echo \"a <<EOF\" && git push" allow
+t "$S/b" "cat <<EOF${NL}\$(git push $FF origin main)${NL}EOF" DENY
+t "$S/b" "cat <<EOF${NL}\`git push $FF origin main\`${NL}EOF" DENY
+t "$S/b" "cat <<EOF${NL}\${X:-\$(git push $FF)}${NL}EOF" DENY
+t "$S/b" "echo \`git push $FF\`" DENY
+t "$S/b" "bash <<'EOF'${NL}git push $FF${NL}EOF" DENY
+t "$S/b" "sh <<EOF${NL}git push origin HEAD~1:main${NL}EOF" DENY
+t "$S/b" "zsh <<\"EOF\"${NL}git push -f${NL}EOF" DENY
+t "$S/b" "eval \"\$(cat <<'EOF'${NL}git push $FF${NL}EOF${NL})\"" DENY
+t "$S/b" "source /dev/stdin <<'EOF'${NL}git push origin --delete shared${NL}EOF" DENY
+t "$S/b" "cat <<'EOF' | bash${NL}git push $FF${NL}EOF" DENY
+t "$S/b" "python3 - <<'EOF'${NL}import os; os.system('git push $FF')${NL}EOF" DENY
+t "$S/b" "bash <<'EOF'${NL}g''it push $FF${NL}EOF" DENY
+t "$S/b" "bash <<'EOF'${NL}gh pr merge 5 --squash --match-head-commit abc1234${NL}EOF" DENY
+t "$S/b" "bash <<'EOF'${NL}gh api graphql -f query='mutation { mergePullRequest(input: {}) { clientMutationId } }'${NL}EOF" DENY
+t "$S/b" "bash <<'EOF'${NL}gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234${NL}EOF${NL}echo push" DENY
+t "$S/b" "bash <<'A'${NL}bash <<'B'${NL}bash <<'C'${NL}bash <<'D'${NL}git push $FF${NL}D${NL}C${NL}B${NL}A" DENY
+t "$S/b" "cat <<A; bash <<'B'${NL}x${NL}A${NL}git push $FF${NL}B" DENY
+t "$S/b" "cat <<'EOF'${NL}it's${NL}EOF${NL}git push $FF" DENY
+t "$S/b" "cat <<EOF${NL}foo\\${NL}EOF${NL}git push $FF${NL}EOF" DENY
+t "$S/b" "# see <<EOF${NL}git push $FF${NL}EOF" DENY
+t "$S/b" "bash <<< \"git push $FF\"" DENY
+# Refused rather than guessed: no terminator, one with trailing spaces, a CR, tabs without <<-, spaces with <<-,
+# an arithmetic shift read as a heredoc, and a quoted body that mentions a push beside an apostrophe.
+t "$S/b" "bash <<'EOF'${NL}git push" DENY
+t "$S/b" "bash <<'EOF'${NL}g''it push" DENY
+t "$S/b" "bash <<'EOF'${NL}gh pr merge 5 --squash" DENY
+t "$S/b" "cat <<'EOF'${NL}it's${NL}EOF ${NL}git push" DENY
+t "$S/b" "cat <<'EOF'${CR}${NL}it's${CR}${NL}EOF${CR}${NL}git push${CR}${NL}" DENY
+t "$S/b" "cat <<'EOF'${NL}it's${NL}${TAB}EOF${NL}git push" DENY
+t "$S/b" "cat <<-'EOF'${NL}it's${NL}  EOF${NL}git push" DENY
+t "$S/b" "echo \$((1<<2)) && git push" DENY
+t "$S/b" "cat <<'EOF'${NL}Don't git push here.${NL}EOF" DENY
+# Message values (US-64 AC19, 2026-11-06): a commit or PR message is data only when nothing in it can run. Single
+# quotes, $'...', or exactly "$(cat <<'EOF' ... EOF)" with no ")" in the body (bash 3.2, this Mac's /bin/bash,
+# ends that substitution at the first ")" and runs what follows). Any other $(, ` or ${ is parsed or refused.
+t "$S/b" "git commit -m \"\$(git push $FF origin main)\"" DENY
+t "$S/b" "gh pr create --body \"\`git push $FF\`\"" DENY
+t "$S/b" "gh pr create --body \"\${X:-\$(git push $FF)}\"" DENY
+t "$S/b" "git commit -m \"Note \$(git push $FF) here\"" DENY
+t "$S/b" "git commit --message=\"\$(git push $FF)\"" DENY
+t "$S/b" "git commit -m\"\$(git push $FF)\"" DENY
+t "$S/b" "git tag -a v1 -m \"\`git push $FF\`\"" DENY
+t "$S/b" "gh pr create --title \"\$(git push $FF)\" --body x" DENY
+t "$S/b" "gh pr comment 5 -b \"\$(gh pr merge 5 --squash)\"" DENY
+t "$S/b" "git commit -m \$(git push $FF)" DENY
+t "$S/b" "git commit -m \"\$(cat <<'EOF'${NL}x${NL}EOF${NL}git push $FF${NL}EOF${NL})\"" DENY
+t "$S/b" "git commit -m \"\$(cat <<EOF${NL}\$(git push $FF)${NL}EOF${NL})\"" DENY
+t "$S/b" "gh pr create --body \"\$(cat <<'EOF'${NL})\"; git push $FF; echo \"${NL}EOF${NL})\"" DENY
+t "$S/b" "gh pr create --body \"\$(cat <<'EOF'${NL}1) git push \`git push $FF\`${NL}EOF${NL})\"" DENY
+t "$S/b" "git commit -m \"plain text with 'quotes'\" && git push" allow
+t "$S/b" "git commit -m 'single \$(git push $FF) quoted' && git push" allow
+t "$S/b" "git commit -m \$'ansi it\\'s \$(git push $FF)' && git push" DENY
+t "$S/b" "git commit -m \$'a\\' ; git push $FF origin main ; #'" DENY
+t "$S/b" "git commit -m \$'line\\nnext \$(git push $FF)' && git push" allow
+t "$S/b" "git commit -m \"Fix \$HOME docs\" && git push" allow
+t "$S/b" "git commit -F - <<'EOF'${NL}Plain message (US-64).${NL}EOF${NL}git push" allow
+t "$S/b" "gh pr create --body \"\$(cat <<'EOF'${NL}Refuses git push $FF, \`code\` and \"quotes\".${NL}EOF${NL})\"" allow
+t "$S/b" "gh pr create --body \"\$(cat <<'EOF'${NL}Summary (US-64): it's fine.${NL}EOF${NL})\"" allow
+# PR 930 review (US-64 AC23): escapes are read in pairs, so "x\\" then a newline still ends the word.
+t "$S/b" "bash -c 'echo x\\\\${NL}git push $FF origin main'" DENY
+t "$S/b" "bash -c \"echo x\\\\\\\\${NL}git push $FF origin main\"" DENY
+t "$S/b" "bash <<'EOF'${NL}echo x\\\\${NL}git push $FF origin main${NL}EOF" DENY
+t "$S/b" "bash <<'EOF'${NL}echo x\\\\${NL}git push $FF origin main" DENY
+t "$S/b" "echo x\\\\${NL}git push $FF origin main${NL}echo \"unclosed" DENY
+t "$S/b" "bash -c 'echo x\\\\${NL}gh pr merge 5 --squash'" DENY
+# An unquoted-delimiter body expands $(, ${ and backticks even inside its quotes; a quoted one does not.
+t "$S/b" "cat <<EOF${NL}git commit -m '\$(git push $FF origin main)'${NL}EOF" DENY
+t "$S/b" "cat <<EOF${NL}gh pr create --body '\$(gh pr merge 5 --squash)'${NL}EOF" DENY
+t "$S/b" "bash <<EOF${NL}git commit -m \$'ansi it\\'s \$(git push $FF)' && git push${NL}EOF" DENY
+t "$S/b" "bash <<-EOF${NL}${TAB}git commit -m \$'ansi it\\'s \$(git push $FF)' && git push${NL}${TAB}EOF" DENY
+t "$S/b" "cat <<EOF${NL}x='\`git push $FF\`'${NL}EOF" DENY
+t "$S/b" "cat <<EOF${NL}x='\${X:-\$(git push $FF)}'${NL}EOF" DENY
+t "$S/b" "cat <<'EOF'${NL}git commit -m '\$(git push $FF origin main)'${NL}EOF" allow
+t "$S/b" "cat <<EOF${NL}it's \\\$(not run) fine${NL}EOF${NL}git push" allow
+# A backtick inside backticks is written \`; its escape layer is read before the inside is parsed.
+t "$S/b" "echo \`echo \\\`git push $FF origin main\\\` \`" DENY
+t "$S/b" "echo \"\`echo \\\`git push $FF\\\`\`\"" DENY
+# A # that starts a word starts a comment, so the next line is a command; inside a word it is text.
+t "$S/b" "git commit -m #\"${NL}git push $FF origin main${NL}\"" DENY
+t "$S/b" "git commit -m #'${NL}git push $FF origin main${NL}'" DENY
+t "$S/b" "gh pr create --body #\"${NL}gh pr merge 5 --squash${NL}\"" DENY
+t "$S/b" "git commit -m #\"${NL}git push $FF origin main${NL}#\"" DENY
+t "$S/b" "gi\\${NL}t push $FF origin main" DENY
+t "$S/b" "echo a#b && git push $FF" DENY
+t "$S/b" "echo \$(true)#; git push $FF" DENY
+t "$S/b" "echo \`true\`#; git push $FF" DENY
+t "$S/b" "git push # it's fine" allow
+# ANSI-C and locale quotes are decoded as bash does (\$'\\x67it' is git).
+t "$S/b" "\$'\\x67it' push $FF origin main" DENY
+t "$S/b" "g\$''it push $FF origin main" DENY
+t "$S/b" "\$\"git\" push $FF origin main" DENY
+t "$S/b" "bash -c \"\$'\\x67it' \$'\\x70ush' \$'\\x2df'\" # push" DENY
+# A cd inside a nested shell, backtick or heredoc does not move the outer command, so beside a push it is refused.
+t "$S/b" "bash -c 'cd ../a && git push'" DENY
+t "$S/b" "sh -c 'cd ../a'; git push" allow
+# A $(...) inside double quotes is parsed afresh: its own quotes, and its \\ kept (corpus rerun, 2026-11-06).
+t "$S/b" "echo \"\$(bash <<< \"git push $FF\")\"" DENY
+t "$S/b" "echo \"\$(bash -c 'echo x\\\\${NL}git push $FF origin main')\"" DENY
+t "$S/b" "echo \"\$(echo \"a b\" | wc -w)\" && git push" allow
+t "$S/b" "sh -c 'cd ../a && git pull'; git push" DENY
+t "$S/b" "echo \`cd ../a && git pull\`; git push" DENY
 # On main or a detached HEAD, a refspec onto main must push main itself (adversary R4).
 t "$S/b" "git push origin claude/x:main" DENY
 t "$S/b" "git push origin HEAD~1:refs/heads/main" DENY

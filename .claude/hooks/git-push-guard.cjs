@@ -25,24 +25,164 @@ try { input = JSON.parse(require('fs').readFileSync(0, 'utf8')); } catch { proce
 const cmd = (input.tool_input && input.tool_input.command) || '';
 const cwd = input.cwd || process.cwd();
 
-// Shell-ish tokenizer: words with quotes removed; ; & | ( ) and newlines become separators.
+// Shell-ish tokenizer: words with quotes removed; ; & | ( ) and newlines become separators; a # that starts a word
+// comments out the rest of its line; backslash-newline joins lines; $'...' and $"..." are decoded as bash does
+// ($'...' holding \' is null: dash reads it another way).
+// Text that is not a command word but may run one becomes a segment of its own, raw and marked `nested`, for
+// allSegments to parse when it may push:
+//   - the inside of a backtick, its escape layer (\\ \` \$) read, placed before the command it feeds. Its word
+//     keeps "`...`", so such a refspec stays unresolved.
+//   - a heredoc body (<<WORD, <<'WORD', <<"WORD", <<-WORD), quoted delimiter or not, since bash, python or an
+//     unquoted $(...) runs it. An unquoted delimiter's body expands $( ${ $[ and backticks even inside its quotes,
+//     so it is also parsed with its quotes removed.
+// A heredoc with no terminator line, or one that only nearly matches (spaces, a CR, the wrong tabs), is null.
+// Each segment's `live` set holds the indexes of words that run something when expanded: an unquoted or
+// double-quoted $( ${ $[ or backtick. Single quotes and $'...' never expand, and neither does exactly
+// "$(cat <<'EOF' ... EOF)" whose body holds no ")" (bash 3.2, this Mac's /bin/bash, ends the substitution at the
+// first ")" and runs what follows) and no terminator line.
+const CAT_DOC = /^"\$\(cat <<'([A-Za-z_][A-Za-z0-9_]*)'\n([\s\S]*?)\n\1\n\)"/;
+const ANSI_ESC = /^(x[0-9a-fA-F]{1,2}|u[0-9a-fA-F]{1,4}|U[0-9a-fA-F]{1,8}|[0-7]{1,3}|c[\s\S]|[\s\S])/;
+const ANSI_CHAR = { a: '\x07', b: '\b', e: '\x1b', E: '\x1b', f: '\f', n: '\n', r: '\r', t: '\t', v: '\v' };
+function ansi(e) {
+  const code = /^[xuU]/.test(e) && e.length > 1 ? parseInt(e.slice(1), 16) : /^[0-7]/.test(e) ? parseInt(e, 8) & 0xff : -1;
+  if (code >= 0) return code <= 0x10ffff ? String.fromCodePoint(code) : '?';
+  return e[0] === 'c' && e.length > 1 ? String.fromCharCode(e.charCodeAt(1) & 0x1f) : ANSI_CHAR[e] ?? e;
+}
+const raw = (t) => Object.assign([t], { nested: true });
 function segments(s) {
   const segs = [[]];
-  let word = null, q = null;
-  const end = () => { if (word !== null) { segs[segs.length - 1].push(word); word = null; } };
+  let word = null, q = null, live = false;
+  const docs = []; // heredocs whose bodies start after this line: { delim, strip, quoted }
+  const end = () => {
+    const seg = segs[segs.length - 1];
+    if (word !== null) { if (live) (seg.live ??= new Set()).add(seg.length); seg.push(word); word = null; }
+    live = false;
+  };
+  const expands = (i) => s[i] === '`' || (s[i] === '$' && '({['.includes(s[i + 1]));
+  // A backtick at i: its inside, escapes read (and \" too inside double quotes), as a segment before this command.
+  // The end of the $( at i, its own quotes and parens respected (-1 if it never closes). Inside double quotes a
+  // $(...) is parsed afresh, so "$(bash <<< "git push")" and its \\ are not the outer string's.
+  const subEnd = (i) => {
+    let depth = 0, q2 = null;
+    for (let j = i + 1; j < s.length; j++) {
+      const c = s[j];
+      if (q2) { if (c === q2) q2 = null; else if (c === '\\' && q2 !== "'") j++; continue; }
+      if (c === '\\') j++;
+      else if (c === "'" || c === '"' || c === '`') q2 = c;
+      else if (c === '(') depth++;
+      else if (c === ')' && --depth === 0) return j;
+    }
+    return -1;
+  };
+  const tick = (i, dq) => {
+    let j = i + 1;
+    while (j < s.length && s[j] !== '`') j += s[j] === '\\' ? 2 : 1;
+    if (j >= s.length) return -1;
+    segs.splice(segs.length - 1, 0, raw(s.slice(i + 1, j).replace(dq ? /\\([\\`$"])/g : /\\([\\`$])/g, '$1')));
+    word = `${word ?? ''}\`...\``;
+    live = true;
+    return j;
+  };
   for (let i = 0; i < s.length; i++) {
     const ch = s[i];
-    if (q) { if (ch === q) q = null; else if (ch === '\\' && q === '"' && i + 1 < s.length) word += s[++i]; else word += ch; continue; }
+    if (q) { // q is the open quote: ' or ", or $ for $'...'
+      if (ch === (q === '$' ? "'" : q)) q = null;
+      else if (ch === '\\' && q === '$' && i + 1 < s.length) {
+        // \' keeps a bash ANSI-C string open, but sh without $'...' (dash, Linux /bin/sh) closes it there: refused.
+        const e = s.slice(i + 1).match(ANSI_ESC)[0];
+        if (e === "'") return null;
+        i += e.length; word += ansi(e);
+      }
+      else if (ch === '\\' && q === '"' && i + 1 < s.length) { // escapes only $ ` " \ and newline, as in bash
+        i++; if (s[i] !== '\n') word += '$`"\\'.includes(s[i]) ? s[i] : `\\${s[i]}`;
+      }
+      else if (ch === '`' && q === '"') { i = tick(i, true); if (i < 0) return null; }
+      else {
+        if (q === '"' && expands(i)) live = true;
+        if (q === '"' && ch === '$' && s[i + 1] === '(') {
+          const e = subEnd(i);
+          if (e >= 0) segs.splice(segs.length - 1, 0, raw(s.slice(i + 2, e)));
+          else if (mayPush(s.slice(i))) return null;
+        }
+        word += ch;
+      }
+      continue;
+    }
+    // Not after ")": `$(x)#; git push` keeps "#" in its word, so what follows runs.
+    if (ch === '#' && word === null && (i === 0 || /[\s;&|(]/.test(s[i - 1]))) {
+      while (i + 1 < s.length && s[i + 1] !== '\n') i++;
+      continue;
+    }
+    if (ch === '$' && (s[i + 1] === "'" || s[i + 1] === '"')) { q = s[i + 1] === "'" ? '$' : '"'; word = word ?? ''; i++; continue; }
+    const doc = ch === '"' && s.slice(i).match(CAT_DOC);
+    if (doc && !doc[2].includes(')') && doc[2].split('\n').every((l) => l.trim() !== doc[1])) {
+      word = (word ?? '') + doc[0].slice(1, -1);
+      i += doc[0].length - 1; continue;
+    }
     if (ch === '"' || ch === "'") { q = ch; word = word ?? ''; continue; }
+    if (ch === '\\' && s[i + 1] === '\n') { i++; continue; }
     if (ch === '\\' && i + 1 < s.length) { word = (word ?? '') + s[++i]; continue; }
+    if (expands(i)) live = true;
+    if (ch === '`') { i = tick(i, false); if (i < 0) return null; continue; }
+    if (ch === '<' && s[i + 1] === '<') {
+      end();
+      if (s[i + 2] === '<') { i += 2; continue; } // a here-string: its word is an ordinary word
+      let j = i + 2;
+      const strip = s[j] === '-';
+      if (strip) j++;
+      while (s[j] === ' ' || s[j] === '\t') j++;
+      const from = j;
+      let delim = '', dq = null, quoted = false;
+      for (; j < s.length; j++) {
+        const c = s[j];
+        if (dq) { if (c === dq) dq = null; else if (c === '\\' && dq === '"' && j + 1 < s.length) delim += s[++j]; else delim += c; continue; }
+        if (c === '"' || c === "'") { dq = c; quoted = true; continue; }
+        if (c === '\\' && j + 1 < s.length) { delim += s[++j]; quoted = true; continue; }
+        if (/\s/.test(c) || ';&|()<>`'.includes(c)) break;
+        delim += c;
+      }
+      if (dq || j === from) return null;
+      docs.push({ delim, strip, quoted });
+      i = j - 1; continue;
+    }
     if (/\s/.test(ch) && ch !== '\n') { end(); continue; }
-    if (';&|()\n'.includes(ch)) { end(); segs.push([]); continue; }
+    if (';&|()\n'.includes(ch)) {
+      end(); segs.push([]);
+      if (ch === '\n') {
+        for (const d of docs.splice(0)) {
+          let body = '';
+          for (;;) {
+            if (i + 1 >= s.length) return null;
+            const e = s.indexOf('\n', i + 1) < 0 ? s.length : s.indexOf('\n', i + 1);
+            const line = s.slice(i + 1, e);
+            i = e;
+            if ((d.strip ? line.replace(/^\t+/, '') : line) === d.delim) break;
+            if (line.trim() === d.delim) return null;
+            body += `${line}\n`;
+          }
+          segs.push(raw(body));
+          if (!d.quoted && /`|\$[({[]/.test(body)) segs.push(raw(body.replace(/['"]/g, '')));
+          segs.push([]);
+        }
+      }
+      continue;
+    }
     word = (word ?? '') + ch;
   }
-  if (q) return null;
+  if (q || docs.length) return null;
   end();
   return segs.filter((x) => x.length);
 }
+// Whether to look closer at text: git or gh beside push, pull, merge, updateRef or refs/heads (every form the
+// checks below look for). Deliberately broad, since it only ever sends text to be parsed: it reads escapes in
+// pairs (backslash-newline joins) and drops quotes, and separately drops every backslash, quote and $; either
+// reading counts. An ANSI-C string with an escape ($'\x67it' is git) always counts.
+const mayPush = (t) => {
+  if (/\$'[^']*\\/.test(t)) return true;
+  const pairs = t.replace(/\\([\s\S])/g, (m, c) => (c === '\n' ? '' : c)).replace(/['"]/g, '');
+  return [pairs, t.replace(/[\\'"$]/g, '')]
+    .some((n) => /\b(git|gh)\b/.test(n) && /push|pull|merge|updateref|refs\/heads/i.test(n));
+};
 
 // Global options that take a separate value: `git -C dir push`, `git --git-dir x push`.
 const VALUE_OPTS = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace', '--exec-path', '--super-prefix', '--config-env']);
@@ -67,8 +207,9 @@ function gitCall(seg, base) {
 }
 
 // The indexes of a command's message values: the text of git commit/tag -m/--message/-F/--file, and of gh pr|issue
-// create/comment/edit/merge --body/--title/--subject/-b/-t/-F (a `$(cat <<'EOF' ... EOF)` heredoc there too). Such
-// text is data, so a commit message or PR body that mentions `gh pr merge --squash` is not a command.
+// create/comment/edit/merge --body/--title/--subject/-b/-t/-F, when they cannot expand (segments' `live`; a plain
+// `"$(cat <<'EOF' ... EOF)"` cannot). Such text is data, so a commit message or PR body that mentions
+// `gh pr merge --squash` is not a command.
 function messageValues(seg) {
   const skip = new Set();
   const g = seg.findIndex((t) => t === 'git' || t.endsWith('/git'));
@@ -84,14 +225,17 @@ function messageValues(seg) {
     from = h + 3; opts = /^(-b|-t|-F|--body|--title|--subject|--body-file)$/; inline = /^--(body|title|subject|body-file)=/;
   }
   if (from < 0) return skip;
+  // A value that expands ($(, ${, a backtick; see segments) runs code, so it is parsed like any other word.
+  const data = (k) => !(seg.live && seg.live.has(k));
   for (let k = from; k < seg.length; k++) {
-    if (opts.test(seg[k])) skip.add(++k);
-    else if (inline.test(seg[k])) skip.add(k);
+    if (opts.test(seg[k])) { if (data(k + 1)) skip.add(k + 1); k++; }
+    else if (inline.test(seg[k]) && data(k)) skip.add(k);
   }
   return skip;
 }
-// Every simple command, recursing into every quoted string that may hold one (`bash -lc 'git push ...'`,
-// `python -c`, `node -e`, `watch`, `ssh host '...'`), except message values (above).
+// Every simple command, recursing into every quoted string, heredoc body or backtick that may hold one
+// (`bash -lc 'git push ...'`, `python -c`, `node -e`, `watch`, `ssh host '...'`, `bash <<'EOF'`), except message
+// values (above). Nesting deeper than three is refused.
 function allSegments(s, depth = 0) {
   const segs = segments(s);
   if (segs === null) return null;
@@ -101,9 +245,11 @@ function allSegments(s, depth = 0) {
     const skip = messageValues(seg);
     for (let k = 0; k < seg.length; k++) {
       const t = seg[k];
-      if (!skip.has(k) && depth < 3 && /\s/.test(t) && /\b(git|gh)\b/.test(t) && /\b(push|pull|merge)\b/.test(t)) {
+      if (!skip.has(k) && /\s/.test(t) && mayPush(t)) {
+        if (depth >= 3) return null;
         const inner = allSegments(t, depth + 1);
         if (inner === null) return null;
+        for (const x of inner) x.nested = true;
         out.push(...inner);
       }
     }
@@ -139,15 +285,23 @@ const badConfig = (kv) => /^remote\..*\.(push=\s*[+:?]|mirror(=|$))/i.test(kv) &
 
 const segs = allSegments(cmd);
 if (segs === null) {
-  if (/\bgit\b[\s\S]*\bpush\b/.test(cmd)) deny('Push guard could not parse this command (unbalanced quotes). Run the git push on its own line.');
+  if (mayPush(cmd)) {
+    deny('Push guard could not parse this command (an unbalanced quote or backtick, a heredoc whose end line is '
+      + 'missing or not exact, or nesting too deep). Run the git push on its own line.');
+  }
   process.exit(0);
 }
 
 let here = cwd; // follows `cd` through the command
+let nestedCd = false;
 let configChanged = false;
 const synced = new Set(); // repos an earlier git pull/merge in this same command synced
 for (const seg of segs) {
-  if (seg[0] === 'cd' || seg[0] === 'pushd') { here = path.resolve(here, expand(seg[1] || process.env.HOME || '~')); continue; }
+  // A cd in a nested shell, backtick or heredoc moves only that shell, which a flat list cannot follow (below).
+  if (seg[0] === 'cd' || seg[0] === 'pushd') {
+    if (seg.nested) nestedCd = true; else here = path.resolve(here, expand(seg[1] || process.env.HOME || '~'));
+    continue;
+  }
   // A PR merges only as a merge commit of the exact head that was reviewed (docs/git-workflow.md step 4; Brad
   // 2026-11-01): `gh pr merge <n> --merge --match-head-commit <sha>`, never --admin/--squash/--rebase/--auto.
   const gh = seg.findIndex((t) => t === 'gh' || t.endsWith('/gh'));
@@ -196,6 +350,7 @@ for (const seg of segs) {
   // A `git config` that rewrites push behaviour runs after this hook, so its effect cannot be checked here.
   if (g.sub === 'config' && g.args.some((a) => /^remote\..*\.(push|mirror)\b/i.test(a))) configChanged = true;
   if (g.sub !== 'push') continue;
+  if (nestedCd) deny('This command runs a cd inside a nested shell, backtick or heredoc beside a git push, so the guard cannot tell which repo the push reaches. Run the cd and the push as plain commands.');
   if (configChanged) deny('This command changes remote push/mirror config and then pushes. Change the config in its own command first.');
 
   const bad = g.args.find(badArg) || g.cfg.find(badConfig);
