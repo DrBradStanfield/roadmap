@@ -327,11 +327,51 @@ describe('US-62 AC24: Settings behind the person button', () => {
     await waitFor(() => expect(document.activeElement).toBe(view.getByRole('button', { name: 'Settings' })));
   });
 
-  it('Escape closes them', async () => {
+  it('Escape inside them closes them; Escape elsewhere, or with another dialog open, does not', async () => {
     const view = await show(RECORDS['a known minor']);
     openSettings(view.container);
-    fireEvent.keyDown(document, { key: 'Escape' });
+    const sheet = view.container.querySelector<HTMLElement>('.mh-settings')!;
+    fireEvent.keyDown(document.body, { key: 'Escape' }); // focus outside the sheet
+    expect(view.container.querySelector('.mh-settings')).not.toBeNull();
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    dialog.setAttribute('open', '');
+    fireEvent.keyDown(within(sheet).getByRole('button', { name: 'Done' }), { key: 'Escape' });
+    expect(view.container.querySelector('.mh-settings')).not.toBeNull();
+    dialog.remove();
+    fireEvent.keyDown(within(sheet).getByRole('button', { name: 'Done' }), { key: 'Escape' });
     expect(view.container.querySelector('.mh-settings')).toBeNull();
+  });
+});
+
+describe('US-62 AC10: typed, unsaved Add input is never dropped silently', () => {
+  const valueInput = (view: RenderResult) => within(view.container.querySelector<HTMLElement>('.md-page:not(.mh-settings)')!).getByLabelText(/Value/) as HTMLInputElement;
+
+  it('Settings opened over a value page keep its typing; Done brings it back', async () => {
+    const view = await show(RECORDS['a low lab eGFR']);
+    fireEvent.click(rowNamed(view, '[data-topic="bloodTests"]', 'Creatinine')!);
+    fireEvent.change(valueInput(view), { target: { value: '101' } });
+    openSettings(view.container);
+    const sheet = view.container.querySelector<HTMLElement>('.mh-settings')!;
+    // The value page is out of sight behind Settings, not gone.
+    expect(view.container.querySelector('.md-page:not(.mh-settings)')!.closest('[hidden]')).not.toBeNull();
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Done' }));
+    expect(valueInput(view).value).toBe('101');
+    expect(view.container.querySelector('.md-page:not(.mh-settings)')!.closest('[hidden]')).toBeNull();
+  });
+
+  it('the creatinine page\'s link to the lab eGFR asks first; declined, the page and its typing stay', async () => {
+    const view = await show(RECORDS['a low lab eGFR']);
+    const confirm = vi.fn(() => false);
+    vi.stubGlobal('confirm', confirm);
+    fireEvent.click(rowNamed(view, '[data-topic="bloodTests"]', 'Creatinine')!);
+    fireEvent.change(valueInput(view), { target: { value: '101' } });
+    fireEvent.click(view.getByRole('button', { name: 'Lab eGFR results' }));
+    expect(confirm).toHaveBeenCalledWith('Leave without saving the value you typed?');
+    expect(view.container.querySelector('.md-page-title')!.textContent).toBe('Creatinine');
+    expect(valueInput(view).value).toBe('101');
+    confirm.mockReturnValue(true);
+    fireEvent.click(view.getByRole('button', { name: 'Lab eGFR results' }));
+    expect(view.container.querySelector('.md-page-title')!.textContent).not.toBe('Creatinine');
   });
 });
 

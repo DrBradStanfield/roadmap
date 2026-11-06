@@ -225,7 +225,8 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
           )}
         </SettingsSheet>
       )}
-      {!settingsOpen && form.renderPage(tiles)}
+      {/* Settings cover an open value page; it stays mounted, so its typing waits (US-62 AC10). */}
+      <div className="mh-page-host" hidden={settingsOpen}>{form.renderPage(tiles)}</div>
       {form.messages}
       {/* The onboarding, as before, until About you goes low (US-62 AC25); then About you sits in Settings. */}
       {!form.aboutYouLow && form.aboutCard}

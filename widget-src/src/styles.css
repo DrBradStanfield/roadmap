@@ -5206,8 +5206,11 @@ input[type="number"] {
   white-space: nowrap;
   border: 0;
 }
-.health-input-panel.md-page-open > :not(.md-page, .mh-header) {
+.health-input-panel.md-page-open > :not(.md-page, .mh-header, .mh-page-host) {
   display: none !important;
+}
+.mh-page-host {
+  display: contents;
 }
 /* The rows' inset is every card's: on a phone the card's own 12px padding
    (forced on every card there), on desktop, where this card has none, 24px. */

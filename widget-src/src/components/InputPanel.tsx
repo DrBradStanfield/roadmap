@@ -2449,7 +2449,7 @@ export function InputPanel({
     pageOpen: !!pageShown,
     renderPage: tiles => pageShown && (
       <ValuePage key={JSON.stringify(pageShown)} subject={pageShown} history={[...vitalsHistory, ...bloodTestHistory]} labValues={labValues}
-                 ctx={rowCtx} tiles={tiles} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} onOpen={openPage} dirtyRef={pageDirty}/>
+                 ctx={rowCtx} tiles={tiles} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} onOpen={subject => mayLeave() && openPage(subject)} dirtyRef={pageDirty}/>
     ),
     rows: { ctx: rowCtx, open: openPage, vitals: vitalsHistory, blood: bloodTestHistory, labs: labValues, vitalsAsRows: vitalsRows, withoutWeight: weightInProfile },
     legacyVitals: !vitalsRows && (
