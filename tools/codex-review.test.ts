@@ -2257,6 +2257,23 @@ describe('US-40 AC15 — --subject reviews exact files, never whatever else the 
     expect(rg.r.stderr).toContain('withheld 2 private-data path(s)');
     expect(rg.report().private_withheld).toBe(2);
   });
+  it('--range A..B reviews only what B added since it left A: a base that moved on is diffed from the merge base, so its new commits never read as reverted (2026-11-06)', () => {
+    const dir = realpathSync(freshRepo());
+    const trunk = sh(dir, 'git symbolic-ref --short HEAD').trim();
+    const fork = sh(dir, 'git rev-parse HEAD').trim();
+    sh(dir, 'git checkout -q -b feat && printf "branch work\\n" > b.txt && git add b.txt && git commit -q -m branch-work');
+    sh(dir, `git checkout -q ${trunk} && printf "landed on trunk later\\n" > a.txt && git commit -q -am trunk-moved && git checkout -q feat`);
+    const g = grab();
+    const rg = run(dir, ['--range', `${trunk}..feat`], { during: g.during });
+    expect(rg.r.status).toBe(0);
+    const patch = readFileSync(join(g.to, 'REVIEW_PATCH.diff'), 'utf8');
+    expect(patch).toContain('b.txt');
+    expect(patch).not.toContain('a.txt');
+    expect(patch).not.toContain('landed on trunk later');
+    expect(rg.report().base).toBe(fork);
+    expect(rg.report().files).toBe(1);
+    expect(rg.r.stderr).toContain(`merge base ${fork.slice(0, 12)}`);
+  });
   it('privacy: the shipped deny list names its patterns and matches no file tracked in this repo (it must never swallow code or ledgers)', () => {
     expect(SHIPPED_POLICY.privateDeny).toEqual(['**/comments-*', '**/competitor-*-comments.*', '**/objection-intel*', '**/research/channel/index.md', '**/*judgeme*.csv', '**/chatbot_*/messages*', '**/chatbot_*/conversations*']);
     const specs = SHIPPED_POLICY.privateDeny.flatMap((g: string) => [`:(glob,icase)${g}`, `:(glob,icase)${g}/**`]);

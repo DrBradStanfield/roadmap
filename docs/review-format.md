@@ -100,6 +100,13 @@ further round. Review rounds are capped (Brad, 2026-10-19, usage audit): one ful
 re-check scoped to the fix diff and the findings it answers. Anything still unresolved after the
 re-check goes to Brad with both positions; never a third round or a fresh full re-review, with the evidence.
 
+**Every finding left open gets an owner before merge** (Brad, 2026-11-06). An optional finding, a
+note, or an out-of-scope defect the reviewer found becomes a GitHub issue labelled `review-note`
+before the PR merges: one issue per finding, titled with what goes wrong, citing the PR and the
+finding id, with the reviewer's failure scenario. The merging session opens them; the PR body or
+final report lists their numbers. Dropping one needs a stated reason (disputed, with evidence).
+Before, notes lived only in a chat report, and three from one day's reviews had no owner.
+
 ## Merge
 
 Claude is the only model that merges. That is an instruction, not a

@@ -721,9 +721,13 @@ if (SUBJECT_MODE) {
   messages = git(["log", "--format=--- %H%n%B", `${base}..${sha}`]);
   label = `commit ${sha.slice(0, 12)}`;
 } else if (has("--range")) {
-  const [a, b] = opt("--range").split("..");
-  base = git(["rev-parse", a]).trim();
+  // `A..B` and `A...B` both mean what git log shows: B's own commits. The diff starts at the merge base, so a base
+  // branch that moved on after B left it (main took another PR) is not reviewed as B reverting that PR (2026-11-06).
+  const [a, b] = opt("--range").split(/\.{2,3}/);
+  const from = git(["rev-parse", a]).trim();
   const head = git(["rev-parse", b || "HEAD"]).trim();
+  base = git(["merge-base", from, head]).trim();
+  if (base !== from) console.error(`codex-review: ${a} moved on after ${b || "HEAD"} left it; diffing from the merge base ${base.slice(0, 12)}`);
   ({ patch, files, secretFiles, privateFiles } = committed(base, head));
   tip = head;
   messages = git(["log", "--format=--- %H%n%B", `${base}..${head}`]);
