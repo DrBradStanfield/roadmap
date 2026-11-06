@@ -5496,6 +5496,18 @@ input[type="number"] {
   min-width: 96px;
   justify-content: flex-end;
 }
+/* The value on the card's right edge with its unit, no grid divider (design review 2026-11-06). */
+.md-history-row .bt-cell-value {
+  flex: 0 0 auto;
+  align-items: flex-end;
+  padding-right: 0;
+  border-left: 0;
+}
+.md-history-row .alr-cell-unit {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
 .md-history-bp {
   display: flex;
   align-items: center;
@@ -6016,8 +6028,56 @@ input[type="number"] {
   font-weight: 600;
   text-align: left;
 }
-.md-page-tiles {
+/* The latest value leads the page, large, as the iPhone's metric page (design review 2026-11-06). */
+.md-page-latest {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  margin: 4px 0 6px;
+}
+.md-page-latest-value {
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+.md-page-latest-unit {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+}
+.md-page-latest-day {
+  flex-basis: 100%;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+/* The tiles on a page: one row of plain stats, parted by a hairline, not boxes in a grid. */
+.md-page .md-page-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
   margin: 8px 0 4px;
+}
+.md-page .md-page-tiles .stat-card,
+.md-page .md-page-tiles .stat-card:hover {
+  flex: 1 1 0;
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+  padding: 8px 12px;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  transform: none;
+  border-left: 1px solid var(--bt-ink-100);
+}
+.md-page .md-page-tiles .stat-card:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.md-page .md-page-tiles .stat-card-open {
+  flex-basis: 100%;
 }
 .md-page-link {
   display: block;

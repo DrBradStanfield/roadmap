@@ -481,7 +481,7 @@ describe('US-62 live fixes (2026-11-06): jumps clear the theme\'s sticky header;
     expect(scrolled.at(-1)).toBe(panel);
     expect(panel.style.scrollMarginTop).toBe('72px');
     off();
-    fireEvent.click(view.getByRole('button', { name: '‹ My health' }));
+    fireEvent.click(view.getByRole('button', { name: '‹ Back' }));
     fireEvent.click(view.getByRole('button', { name: 'Supplements' }));
     expect(view.container.querySelector<HTMLElement>('#mh-topic-supplements')!.style.scrollMarginTop).toBe('12px');
   });
@@ -493,9 +493,36 @@ describe('US-62 live fixes (2026-11-06): jumps clear the theme\'s sticky header;
     view.getByRole('button', { name: 'Settings' }).focus(); // focus elsewhere, as WebKit leaves it on a tap
     const weight = rowNamed(view, '[data-topic="weight"]', 'Weight')!;
     fireEvent.click(weight);
-    fireEvent.click(view.getByRole('button', { name: '‹ My health' }));
+    fireEvent.click(view.getByRole('button', { name: '‹ Back' }));
     await waitFor(() => expect(document.activeElement).toBe(weight));
     expect(scrolled.at(-1)).toBe(weight);
+  });
+});
+
+describe('US-62 AC10 (design review 2026-11-06): the value page leads with its latest value', () => {
+  it('the weight page: "‹ Back", the latest value large with its unit, the target said once, every history value with its unit', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    fireEvent.click(rowNamed(view, '[data-topic="weight"]', 'Weight')!);
+    const page = view.container.querySelector<HTMLElement>('.md-page')!;
+    expect(within(page).getByRole('button', { name: '‹ Back' })).toBeTruthy();
+    expect(page.querySelector('.md-page-latest-value')!.textContent).toBe('92.0');
+    expect(page.querySelector('.md-page-latest-unit')!.textContent).toBe('kg');
+    // The ideal weight tile says the target: no "Target:" line beside it.
+    expect(within(page).getByText('Ideal Body Weight', { selector: '.stat-label' })).toBeTruthy();
+    expect(page.querySelector('.md-page-target')).toBeNull();
+    const units = [...page.querySelectorAll('.md-history-row')].map(r => r.querySelector('.alr-cell-unit')?.textContent);
+    expect(units).toEqual(['kg', 'kg']);
+    expect(page.querySelector('.md-page-hint')!.textContent).toBe('Tap a value to correct it.');
+  });
+
+  it('a page without a tile for its target keeps the target line; with a mouse the hint says Click', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('min-width') || q.includes('pointer: fine'), media: q, addEventListener() {}, removeEventListener() {} }));
+    fireEvent.click(rowNamed(view, '[data-topic="bloodTests"]', 'Creatinine')!);
+    const page = view.container.querySelector<HTMLElement>('.md-page')!;
+    expect(page.querySelector('.md-page-target')!.textContent).toMatch(/^Normal: /);
+    expect(page.querySelector('.md-page-latest-unit')!.textContent).toBe('µmol/L');
+    expect(page.querySelector('.md-page-hint')!.textContent).toBe('Click a value to correct it.');
   });
 });
 
