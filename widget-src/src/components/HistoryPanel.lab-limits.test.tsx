@@ -99,7 +99,7 @@ it('US-12 AC20a: a blood pressure value page draws each half printed as a limit 
     vital('s1', 'systolic_bp', 130, '2026-06-01'), vital('d1', 'diastolic_bp', 85, '2026-06-01'),
     vital('s2', 'systolic_bp', 125, '2026-07-01', '<'), vital('d2', 'diastolic_bp', 78, '2026-07-01'),
     vital('s3', 'systolic_bp', 118, '2026-08-01'), vital('d3', 'diastolic_bp', 70, '2026-08-01', '<'),
-  ]} labValues={[]} ctx={{ grading: { sex: 'male' }, plan: null, unitOf: () => 'si' }} onSave={vi.fn()} onClose={() => {}} dirtyRef={{ current: false }}/>);
+  ]} labValues={[]} ctx={{ grading: { sex: 'male' }, plan: null, unitOf: () => 'si' }} tiles={[]} onOpen={() => {}} onSave={vi.fn()} onClose={() => {}} dirtyRef={{ current: false }}/>);
   await waitFor(() => expect(charts.length).toBeGreaterThanOrEqual(2), { timeout: 10_000 });
   const [systolic, diastolic] = charts.slice(-2).map(c => c.data.datasets);
   expect(systolic[0].data.map((p: { y: number }) => p.y)).toEqual([130, 118]);
