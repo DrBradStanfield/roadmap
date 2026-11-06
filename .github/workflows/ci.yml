@@ -12,12 +12,14 @@ permissions:
 
 # Three jobs (US-64 AC12, Brad 2026-11-04): the suite took 7.6 of CI's 9
 # minutes on one runner, and every PR waited on it. `checks` runs everything
-# but the suite; `unit` splits the suite by file over 6 runners; `test` passes
+# but the suite; `unit` splits the suite by file over 6 runners per zone; `test` passes
 # only when both did. Its name is the check auto-ship.yml waits for, so keep it.
 # The suite runs twice, in UTC and in Los Angeles (US-64 AC22, Brad 2026-11-06):
 # a test that assumes UTC passed CI and failed on Brad's Mac in Auckland (PR 911),
-# and 153 failed in a US zone. A zone behind UTC catches "today" read as the
-# UTC date every evening there; Brad's own runs cover a zone ahead of it.
+# and 153 failed in a US zone. Los Angeles catches US-zone behaviour on every
+# run, but "today" read as the UTC date only when CI runs 00:00-08:00 UTC (its
+# evening); Brad's own runs cover a zone ahead of UTC. Zones that differ from
+# UTC every hour (UTC-12 and UTC+14) wait on 28 fixed-clock fixtures (2026-11-06).
 # Public repo: the extra 6 runners cost no minutes and run in parallel.
 jobs:
   checks:
