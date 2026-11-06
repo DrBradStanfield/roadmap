@@ -642,6 +642,11 @@ input[type="number"] {
   gap: 12px;
 }
 
+/* A lone tile (the onboarding's BMI) spans the row: no void beside it (design re-check 2026-11-06). */
+.stats-grid > .stat-card:only-child {
+  grid-column: 1 / -1;
+}
+
 /* Two tiles a row on a phone. After the base rule, or the base rule wins. A
    long title ("Ideal Body Weight") wraps rather than spill at 320px. */
 @media (max-width: 768px) {
@@ -5483,14 +5488,16 @@ input[type="number"] {
 }
 .md-history-row {
   display: flex;
-  align-items: center;
+  /* The value on its date's baseline (design re-check 2026-11-06). */
+  align-items: baseline;
+  padding: 10px 0;
   justify-content: space-between;
   gap: 8px;
   min-height: 44px;
   border-top: 1px solid var(--bt-ink-100, #eceef0);
 }
 .md-history-day {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-text-secondary);
 }
 .md-history-row .bt-cell-value,
@@ -6080,6 +6087,26 @@ input[type="number"] {
 }
 .md-page .md-page-tiles .stat-card-open {
   flex-basis: 100%;
+}
+/* Tile words 13px or more, on one line each (design re-check 2026-11-06). */
+.md-page .md-page-tiles .stat-card > span:not(.stat-value) {
+  font-size: 13px;
+}
+.md-page .md-page-tiles .stat-label {
+  white-space: nowrap;
+}
+/* A phone: two tiles a row, so "Ideal Body Weight" never breaks mid-label. */
+@media (max-width: 768px) {
+  .md-page .md-page-tiles {
+    row-gap: 8px;
+  }
+  .md-page .md-page-tiles .stat-card {
+    flex: 0 0 50%;
+  }
+  .md-page .md-page-tiles .stat-card:nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
+  }
 }
 .md-page-link {
   display: block;

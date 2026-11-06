@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assertDesktopLayout, assertMatrixLayout, assertPhoneLayout, assertRows, assertTabBar } from './webkit-verify.mjs';
+import { assertDesktopLayout, assertMatrixLayout, assertPhoneLayout, assertRows, assertTabBar, assertValuePage } from './webkit-verify.mjs';
 
 describe('US-20: WebKit deployment gate', () => {
   const values = ['35', '36', '2.4'].map(text => ({ text, width: 72, height: 40, numberWidth: 20, numberHeight: 18, visible: true, boxSizing: 'border-box' }));
@@ -110,3 +110,19 @@ describe('US-62 AC14, AC17: WebKit phone gate', () => {
     expect(gate({ centreOffset: 9 })).toThrow('centred');
   });
 });
+
+describe('US-62 AC29 (design re-check 2026-11-06): WebKit value page gate', () => {
+  const valid = { headerBottom: 60, backTop: 72, tileFonts: [13, 13], wrappedLabels: [] as string[], baselines: [0, 1], dayFont: 13, valueFont: 16 };
+  it('passes a page clear of the header, 13px tile words on one line, values on their dates\' baseline', () => {
+    expect(() => assertValuePage(valid)).not.toThrow();
+  });
+  it('fails each regression', () => {
+    for (const [change, message] of [
+      [{ backTop: 40 }, 'under the theme'], [{ tileFonts: [11, 13] }, 'under 13px'], [{ wrappedLabels: ['Ideal Body Weight'] }, 'wrap'],
+      [{ baselines: [0, 6] }, 'baseline'], [{ dayFont: 16 }, 'quieter'],
+    ] as const) {
+      expect(() => assertValuePage({ ...valid, ...change })).toThrow(message);
+    }
+  });
+});
+

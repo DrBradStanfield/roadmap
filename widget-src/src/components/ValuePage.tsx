@@ -34,6 +34,7 @@ import { pressureReadings, readingsOf, type DayReading } from '../lib/my-data-ro
 import { chartTimestamp, formatShortDate } from '../lib/constants';
 import { getShownErase } from '../lib/roadmap-data';
 import { ErrorBoundary } from './ErrorBoundary';
+import { scrollToTop } from '../lib/reveal';
 import { ValueCell, saveErrorText, useLiveRegion } from './BloodTestTimeline';
 import { AddLabTest } from './AddLabTest';
 import { LAB_EGFR, isLabEgfr, pressureText, subjectKey, tintOf, type RowContext, type ValueSubject } from './MyDataRows';
@@ -77,8 +78,13 @@ const TILE_PAGES: Record<string, string[]> = {
 export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onCorrect, onLabAdded, onClose, onOpen, dirtyRef }: ValuePageProps) {
   const titleId = useId();
   const titleRef = useRef<HTMLHeadingElement>(null);
-  // The page opens with its title focused, so a screen reader starts here.
-  useEffect(() => titleRef.current?.focus(), []);
+  // The page opens at its own top (Back), clear of the theme's sticky header, with its title
+  // focused, so a screen reader starts here.
+  const pageRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    scrollToTop(pageRef.current);
+    titleRef.current?.focus({ preventScroll: true });
+  }, []);
   const [say, messages] = useLiveRegion('md-page-messages');
 
   // The lab tests' series, grouped once: this page's, and whether the lab eGFR is held.
@@ -131,7 +137,7 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
   const pointer = window.matchMedia?.('(pointer: fine)').matches ? 'Click' : 'Tap';
 
   return (
-    <section className="md-page" aria-labelledby={titleId}>
+    <section className="md-page" aria-labelledby={titleId} ref={pageRef}>
       <button type="button" className="md-back" onClick={onClose}>‹ Back</button>
       <h3 id={titleId} ref={titleRef} tabIndex={-1} className="health-section-title md-page-title">{label}</h3>
       {latest && (

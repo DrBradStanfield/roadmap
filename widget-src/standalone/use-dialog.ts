@@ -15,6 +15,8 @@ export function useModalDialog(): React.RefObject<HTMLDialogElement> {
   const [opener] = useState(() => document.activeElement as HTMLElement);
   useEffect(() => {
     dialogRef.current?.showModal();
+    // A dialog's own first focus, where it names one: its title, so a tap draws no ring on a button.
+    dialogRef.current?.querySelector<HTMLElement>('[data-initial-focus]')?.focus();
     const prevOverflow = document.documentElement.style.overflow;
     document.documentElement.style.overflow = 'hidden';
     return () => {

@@ -97,7 +97,6 @@ import { type RowContext, type ValueSubject } from './MyDataRows';
 import { ValuePage } from './ValuePage';
 import { AddLabTest } from './AddLabTest';
 import type { FormSlots, Placement } from './MyHealth';
-import { scrollToTop } from '../lib/reveal';
 
 /** The history-state key a phone value page's entry carries (US-62 AC10). */
 const VALUE_PAGE_STATE = 'hrValuePage';
@@ -386,7 +385,6 @@ export function InputPanel({
     setSeenReveal(revealCell);
     setValuePage(subject);
     if (!onPageEntry()) window.history.pushState({ ...window.history.state, [VALUE_PAGE_STATE]: true }, '');
-    scrollToTop(panelRef.current);
   };
   const finishClose = () => {
     pageDirty.current = false;
