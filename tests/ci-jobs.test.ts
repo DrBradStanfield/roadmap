@@ -32,6 +32,14 @@ describe('ci.yml jobs (US-64 AC12)', () => {
     expect(unit).toMatch(/fail-fast: false/);
   });
 
+  it('runs every shard in UTC and in a zone behind UTC, and every test starts in a non-US language (US-64 AC22)', () => {
+    const unit = job('unit');
+    expect(unit).toMatch(/tz: \[UTC, America\/Los_Angeles\]/);
+    expect(unit).toMatch(/TZ: \$\{\{ matrix\.tz \}\}/);
+    const config = readFileSync(join(ROOT, 'vitest.config.ts'), 'utf8');
+    expect(config).toMatch(/setupFiles: \['\.\/tests\/setup-locale\.ts'\]/);
+    expect(navigator.language).toBe('en-GB');
+  });
   it('`test` always runs and passes only when the checks and every shard succeeded', () => {
     const test = job('test');
     expect(test).toMatch(/if: always\(\)/);
