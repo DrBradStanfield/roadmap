@@ -11,7 +11,8 @@ import { computeReminderSchedule } from '../../packages/health-core/src/reminder
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { localDay } from '../../packages/health-core/src/merge';
 
-const NOW = '2026-10-21T08:00:00.000Z';
+// Phone wall-clock times, no zone: the engine reads the phone's own calendar and hour.
+const NOW = '2026-10-21T08:00:00.000';
 
 /** A 60-year-old woman with a colonoscopy, a mammogram and lipids on file. */
 function record(): RoadmapFile {
@@ -58,7 +59,7 @@ describe('phoneReminders (US-25 AC12)', () => {
 
   it('keeps a notification due today, on the phone\'s own day, so opening the app that morning does not drop it', () => {
     // A late-evening instant: in Pacific/Auckland its local day is a day past UTC's.
-    const now = new Date('2026-10-21T13:00:00.000Z');
+    const now = new Date('2026-10-21T13:00:00.000');
     const today = localDay(now);
     const yearAgo = `${Number(today.slice(0, 4)) - 1}${today.slice(4)}`;
     const file = record();
@@ -158,20 +159,20 @@ describe('follow-up reminders on the phone (US-17 AC15)', () => {
   });
 
   it('without first-seen days (an app before them) answers as before: repeats from the due day', () => {
-    const out = phoneReminders(abnormal(), new Date('2026-11-05T08:00:00.000Z'));
+    const out = phoneReminders(abnormal(), new Date('2026-11-05T08:00:00.000'));
     expect(out.firstSeen).toBeUndefined();
     expect(fireDays(out)[0]).toBe('2026-11-30'); // 2026-09-01 + 90 days
   });
 
   it('fires a follow-up to organize on the morning it is first seen, then every 90 days from it', () => {
-    const first = phoneReminders(abnormal(), new Date('2026-11-05T08:00:00.000Z'), undefined, {});
+    const first = phoneReminders(abnormal(), new Date('2026-11-05T08:00:00.000'), undefined, {});
     expect(first.firstSeen).toEqual({ 'screening_colorectal:organize': '2026-11-05' });
     expect(fireDays(first).slice(0, 2)).toEqual(['2026-11-05', '2027-02-03']);
     // Seen after 09:00: the next morning.
-    expect(phoneReminders(abnormal(), new Date('2026-11-05T15:00:00.000Z'), undefined, {}).firstSeen)
+    expect(phoneReminders(abnormal(), new Date('2026-11-05T15:00:00.000'), undefined, {}).firstSeen)
       .toEqual({ 'screening_colorectal:organize': '2026-11-06' });
     // Kept and passed back, the days never move.
-    for (const day of ['2026-11-06T08:00:00.000Z', '2026-11-07T20:00:00.000Z', '2027-01-10T08:00:00.000Z']) {
+    for (const day of ['2026-11-06T08:00:00.000', '2026-11-07T20:00:00.000', '2027-01-10T08:00:00.000']) {
       const later = phoneReminders(abnormal(), new Date(day), undefined, first.firstSeen);
       expect(later.firstSeen).toEqual(first.firstSeen);
       expect(fireDays(later)).toContain('2027-02-03');
@@ -180,9 +181,9 @@ describe('follow-up reminders on the phone (US-17 AC15)', () => {
   });
 
   it('a lost first-seen day (reinstall) fires once more, then holds', () => {
-    const again = phoneReminders(abnormal(), new Date('2026-12-01T08:00:00.000Z'), undefined, {});
+    const again = phoneReminders(abnormal(), new Date('2026-12-01T08:00:00.000'), undefined, {});
     expect(fireDays(again).slice(0, 2)).toEqual(['2026-12-01', '2027-03-01']);
-    const next = phoneReminders(abnormal(), new Date('2026-12-02T08:00:00.000Z'), undefined, again.firstSeen);
+    const next = phoneReminders(abnormal(), new Date('2026-12-02T08:00:00.000'), undefined, again.firstSeen);
     expect(fireDays(next).slice(0, 1)).toEqual(['2027-03-01']);
   });
 
@@ -194,15 +195,15 @@ describe('follow-up reminders on the phone (US-17 AC15)', () => {
   });
 
   it('keeps the check-in day across its morning: 23:00 the day before and 07:00 on the day', () => {
-    const seen = phoneReminders(abnormal('scheduled'), new Date('2026-11-05T08:00:00.000Z'), undefined, {}).firstSeen;
-    const eve = phoneReminders(abnormal('scheduled'), new Date('2026-11-30T23:00:00.000Z'), undefined, seen);
-    const morning = phoneReminders(abnormal('scheduled'), new Date('2026-12-01T07:00:00.000Z'), undefined, seen);
+    const seen = phoneReminders(abnormal('scheduled'), new Date('2026-11-05T08:00:00.000'), undefined, {}).firstSeen;
+    const eve = phoneReminders(abnormal('scheduled'), new Date('2026-11-30T23:00:00.000'), undefined, seen);
+    const morning = phoneReminders(abnormal('scheduled'), new Date('2026-12-01T07:00:00.000'), undefined, seen);
     expect(fireDays(eve)[0]).toBe('2026-12-01');
     expect(fireDays(morning)).toEqual(fireDays(eve));
   });
 
   it('reads what the app keeps defensively: an unreadable entry counts as none kept', () => {
-    const seen = (kept: string) => JSON.parse(remindersJson(JSON.stringify(abnormal()), '2026-11-05T08:00:00.000Z', 'phone', kept)).firstSeen;
+    const seen = (kept: string) => JSON.parse(remindersJson(JSON.stringify(abnormal()), '2026-11-05T08:00:00.000', 'phone', kept)).firstSeen;
     const fresh = { 'screening_colorectal:organize': '2026-11-05' };
     expect(seen('not json')).toEqual(fresh);
     expect(seen('[]')).toEqual(fresh);
@@ -212,10 +213,10 @@ describe('follow-up reminders on the phone (US-17 AC15)', () => {
 
   it('heals a kept first-seen day in the future (a clock that was set ahead) to this start day', () => {
     const ahead = { 'screening_colorectal:organize': '2027-01-01' };
-    const out = phoneReminders(abnormal(), new Date('2026-11-05T08:00:00.000Z'), undefined, ahead);
+    const out = phoneReminders(abnormal(), new Date('2026-11-05T08:00:00.000'), undefined, ahead);
     expect(out.firstSeen).toEqual({ 'screening_colorectal:organize': '2026-11-05' });
     expect(fireDays(out)[0]).toBe('2026-11-05');
-    expect(phoneReminders(abnormal(), new Date('2026-11-05T15:00:00.000Z'), undefined, ahead).firstSeen)
+    expect(phoneReminders(abnormal(), new Date('2026-11-05T15:00:00.000'), undefined, ahead).firstSeen)
       .toEqual({ 'screening_colorectal:organize': '2026-11-06' });
   });
 
