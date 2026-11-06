@@ -2285,11 +2285,21 @@ describe('US-40 AC15 — --subject reviews exact files, never whatever else the 
     expect(readFileSync(join(g.to, 'base-review-format.md'), 'utf8')).toBe('NEWER CONTRACT: added after the fork.\n');
     expect(readFileSync(join(g.to, 'REVIEW_PATCH.diff'), 'utf8')).not.toContain('review-format');
   });
+  it('--range scans the credential files of A too, since the contract and CLAUDE.md from A reach the reviewer (US-40 AC11, AC17)', () => {
+    const dir = realpathSync(freshRepo());
+    const trunk = sh(dir, 'git symbolic-ref --short HEAD').trim();
+    sh(dir, 'git checkout -q -b feat && printf "branch work\\n" > b.txt && git add b.txt && git commit -q -m branch-work');
+    sh(dir, `git checkout -q ${trunk} && printf "DB_PASSWORD=SECRETVAL-RANGE-A-ONLY-0017\\n" > .env && printf "rules SECRETVAL-RANGE-A-ONLY-0017\\n" > CLAUDE.md && git add .env CLAUDE.md && git commit -q -m a-only && git checkout -q feat`);
+    const r = run(dir, ['--range', `${trunk}..feat`]);
+    expect([r.r.status, r.r.stdout.includes('E_SECRET_VALUE')]).toEqual([3, true]);
+  });
   it('--range with no work of its own, no shared history, or a malformed spelling never exits as a pass (US-40 AC17)', () => {
     const dir = realpathSync(freshRepo());
     sh(dir, 'printf "two\\n" > a.txt && git commit -q -am two');
     const behind = run(dir, ['--range', 'HEAD..HEAD~1']);
     expect([behind.r.status, behind.r.stdout.includes('E_RANGE_EMPTY')]).toEqual([3, true]);
+    const same = run(dir, ['--range', 'HEAD..HEAD']);
+    expect([same.r.status, same.r.stdout.includes('E_RANGE_EMPTY')]).toEqual([3, true]);
     const tipSha = sh(dir, 'git rev-parse HEAD').trim();
     sh(dir, 'git checkout -q --orphan other && git rm -rqf . && printf "x\\n" > x.txt && git add x.txt && git commit -q -m other');
     const unrelated = run(dir, ['--range', `other..${tipSha}`]);

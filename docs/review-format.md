@@ -109,7 +109,8 @@ privacy finding goes to a draft private security advisory (SECURITY.md), and no 
 feedback, record or other personal text. Whoever hands the PR to its merger files them: the merging
 session for a PR it merges by hand, the authoring session (a loop's included) before it opens a PR
 that auto-ship may merge. The PR body or final report lists their numbers. Dropping one needs a
-stated reason (disputed, with evidence).
+stated reason (disputed, with evidence). Open gap (Brad's call): on a PR auto-ship merges, a note the
+CI reviewer posts after the PR opens has no session left to file it; it stays in that PR comment.
 
 ## Merge
 

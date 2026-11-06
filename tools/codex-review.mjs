@@ -731,7 +731,7 @@ if (SUBJECT_MODE) {
   const from = rev(a);
   const head = rev(b || "HEAD");
   try { base = git(["merge-base", from, head]).trim(); } catch { finish(incomplete(`E_RANGE_NO_BASE: ${a} and ${b || "HEAD"} share no history, so there is no branch work to review`), "0.0"); }
-  if (base === head && from !== head) finish(incomplete(`E_RANGE_EMPTY: ${b || "HEAD"} is already in ${a}, so the range holds no work of its own`), "0.0");
+  if (base === head) finish(incomplete(`E_RANGE_EMPTY: ${b || "HEAD"} is already in ${a}, so the range holds no work of its own`), "0.0");
   if (base !== from) console.error(`codex-review: ${a} has commits ${b || "HEAD"} lacks; diffing from the merge base ${base.slice(0, 12)}, contract from ${a}`);
   contractRev = from;
   ({ patch, files, secretFiles, privateFiles } = committed(base, head));
@@ -949,7 +949,7 @@ function collectCredentialValues(root = ROOT, name = null, extra = []) {
   const blobs = new Map(), texts = [], unreadable = [];
   const LINK = "120000"; // a symlink's blob is its target's path; the target is read from disk below
   const blobsOf = (rev) => { for (const e of nul(g(["ls-tree", "-r", "-z", "--full-tree", rev]))) { const t = e.indexOf("\t"); const [mode, type, sha] = e.slice(0, t).split(" "); if (type === "blob" && mode !== LINK && isSecretPath(e.slice(t + 1))) blobs.set(sha, tag(e.slice(t + 1))); } };
-  for (const rev of new Set(name ? [g(["rev-parse", "HEAD"]).trim()] : [base, g(["rev-parse", "HEAD"]).trim(), tip].filter(Boolean))) blobsOf(rev);
+  for (const rev of new Set(name ? [g(["rev-parse", "HEAD"]).trim()] : [base, g(["rev-parse", "HEAD"]).trim(), tip, contractRev].filter(Boolean))) blobsOf(rev);
   // Every credential blob any commit in the range added or removed: a file that lived only mid-range is known too. A merge is
   // diffed against each parent, so a blob a merge resolution added or dropped is known as well.
   if (tip && !name) {
