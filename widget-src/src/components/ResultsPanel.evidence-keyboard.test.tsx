@@ -5,7 +5,7 @@
  * and Enter or Space opens and closes them as a click does.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
 import { calculateHealthResults, statTiles, type HealthInputs } from '@roadmap/health-core';
 
 vi.mock('../lib/roadmap-data', () => ({
@@ -131,3 +131,15 @@ describe('US-07 AC16: the printed plan keeps them', () => {
     expect(printed.querySelectorAll('.evidence-toggle').length).toBeGreaterThan(1);
   });
 });
+
+// US-62 AC28, review re-check: which reasons are open is the screen's and its PDF's,
+// and an erase forgets it with the record.
+it('Delete all my data closes every opened reason', async () => {
+  const results = calculateHealthResults(inputs)!;
+  const view = render(<ResultsPanel results={results} isValid tiles={statTiles(results, { unitSystem: 'si' })} onDeleteData={async () => true}/>);
+  fireEvent.click(view.getAllByRole('button', { name: /Why this suggestion\?/ })[0]);
+  expect(view.container.querySelectorAll('.evidence-content')).toHaveLength(1);
+  fireEvent.click(view.getByRole('button', { name: 'Delete all my data' }));
+  await waitFor(() => expect(view.container.querySelectorAll('.evidence-content')).toHaveLength(0));
+});
+

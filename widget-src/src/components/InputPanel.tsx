@@ -409,6 +409,11 @@ export function InputPanel({
     const onPop = () => {
       // A page left open on My data while another tab shows does not answer Back.
       if (onPageEntry() || panelRef.current?.closest('[hidden]')) return;
+      // Settings cover the page: Back closes them (HealthTool), and the page keeps its entry.
+      if (panelRef.current?.querySelector('.mh-page-host[hidden]')) {
+        window.history.pushState({ ...window.history.state, [VALUE_PAGE_STATE]: true }, '');
+        return;
+      }
       // Back from a page holding typed input, declined: stay, and keep the entry.
       if (!mayLeave()) { window.history.pushState({ ...window.history.state, [VALUE_PAGE_STATE]: true }, ''); return; }
       finishClose();

@@ -5,7 +5,7 @@
  * jsdom's localStorage, with synthetic records only.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { render, waitFor, fireEvent, within, type RenderResult } from '@testing-library/react';
+import { act, render, waitFor, fireEvent, within, type RenderResult } from '@testing-library/react';
 import type { Suggestion } from '@roadmap/health-core';
 import {
   addMeasurement,
@@ -338,6 +338,13 @@ describe('US-62 AC24: Settings behind the person button', () => {
     fireEvent.keyDown(within(sheet).getByRole('button', { name: 'Done' }), { key: 'Escape' });
     expect(view.container.querySelector('.mh-settings')).not.toBeNull();
     dialog.remove();
+    // A dialog drawn as a div (the alcohol question's) counts too: its Escape is its own.
+    const popup = document.body.appendChild(document.createElement('div'));
+    popup.setAttribute('role', 'dialog');
+    popup.setAttribute('aria-modal', 'true');
+    fireEvent.keyDown(within(sheet).getByRole('button', { name: 'Done' }), { key: 'Escape' });
+    expect(view.container.querySelector('.mh-settings')).not.toBeNull();
+    popup.remove();
     fireEvent.keyDown(within(sheet).getByRole('button', { name: 'Done' }), { key: 'Escape' });
     expect(view.container.querySelector('.mh-settings')).toBeNull();
   });
@@ -357,6 +364,22 @@ describe('US-62 AC10: typed, unsaved Add input is never dropped silently', () =>
     fireEvent.click(within(sheet).getByRole('button', { name: 'Done' }));
     expect(valueInput(view).value).toBe('101');
     expect(view.container.querySelector('.md-page:not(.mh-settings)')!.closest('[hidden]')).toBeNull();
+  });
+
+  it('Back with Settings over a value page closes Settings; the page shows with its typing, nothing asked', async () => {
+    const view = await show(RECORDS['a low lab eGFR']);
+    const confirm = vi.fn(() => false);
+    vi.stubGlobal('confirm', confirm);
+    fireEvent.click(rowNamed(view, '[data-topic="bloodTests"]', 'Creatinine')!);
+    fireEvent.change(valueInput(view), { target: { value: '101' } });
+    openSettings(view.container);
+    act(() => { history.back(); });
+    await waitFor(() => expect(view.container.querySelector('.mh-settings')).toBeNull());
+    expect(confirm).not.toHaveBeenCalled();
+    expect(valueInput(view).value).toBe('101');
+    expect(view.container.querySelector('.md-page:not(.mh-settings)')!.closest('[hidden]')).toBeNull();
+    await waitFor(() => expect(history.state?.hrValuePage).toBe(true)); // the page keeps its entry
+    await waitFor(() => expect(document.activeElement).toBe(view.getByRole('button', { name: 'Settings' })));
   });
 
   it('the creatinine page\'s link to the lab eGFR asks first; declined, the page and its typing stay', async () => {

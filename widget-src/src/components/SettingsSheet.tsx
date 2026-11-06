@@ -25,9 +25,10 @@ export function SettingsSheet({ onClose, children }: { onClose: () => void; chil
   const titleId = useId();
   const titleRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => { titleRef.current?.focus(); }, []);
-  // The picker's dialog is a portal from inside the sheet: its Escape is its own.
+  // Another dialog's Escape is its own: the picker's (a native dialog, a portal from
+  // inside the sheet) and the alcohol question's (a div, aria-modal).
   const onKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && !document.querySelector('dialog[open]')) onClose();
+    if (e.key === 'Escape' && !document.querySelector('dialog[open], [aria-modal="true"]')) onClose();
   };
   return (
     <section className="md-page mh-settings" aria-labelledby={titleId} onKeyDown={onKeyDown}>

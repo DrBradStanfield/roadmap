@@ -865,7 +865,7 @@ export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitud
               printStatus={printStatus} pdfBlocked={pdfBlocked} onPrint={handlePrint} onCapturePrint={() => printReport('capture')}/>
   );
 
-  return { layout, topics, planned, highlights, alcoholQuestion, urgent, cardIds, evidence, supplementsRef, foot, attention, onErased: () => setPdfOpened(false), report };
+  return { layout, topics, planned, highlights, alcoholQuestion, urgent, cardIds, evidence, supplementsRef, foot, attention, onErased: () => { setPdfOpened(false); setOpened(NO_HIGHLIGHTS); }, report };
 }
 
 /** My health's foot (US-62 AC26): the email box and Save as PDF, the disclaimer, feedback, Supercharge and

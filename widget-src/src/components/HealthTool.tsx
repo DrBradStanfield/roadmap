@@ -1495,6 +1495,12 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     setSettingsOpen(false);
     requestAnimationFrame(() => personRef.current?.focus());
   }, []);
+  // Back closes Settings, as it closes a value page (US-62 AC24).
+  useEffect(() => {
+    if (!settingsOpen) return;
+    window.addEventListener('popstate', closeSettings);
+    return () => window.removeEventListener('popstate', closeSettings);
+  }, [settingsOpen, closeSettings]);
   const personButton = <PersonButton onClick={toggleSettings} buttonRef={personRef} open={settingsOpen}/>;
   // Where the record lives (US-09): in Settings, and for a guest (a record on this
   // device only) also at the foot of My health, so the sign-in prompt stays in the
