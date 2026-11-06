@@ -50,10 +50,11 @@ async function resolveBackend(): Promise<{ resolved: ResolvedBackend; refused?: 
 
   // Returning from a Dropbox OAuth redirect?
   let resumed: DropboxAdapter | null = null;
+  let refused: string | undefined;
   try {
     resumed = await DropboxAdapter.completeRedirect(dropboxConfig());
   } catch (error) {
-    reportConnectFailure(error, 'dropbox');
+    refused = reportConnectFailure(error, 'dropbox');
   }
   if (resumed) {
     await liftLocalInto(resumed, 'dropbox');
@@ -65,12 +66,10 @@ async function resolveBackend(): Promise<{ resolved: ResolvedBackend; refused?: 
   // Returning from a Google Drive OAuth redirect? (Each completeRedirect only
   // claims a ?code that its own PKCE session entry initiated.)
   let gdResumed: GoogleDriveAdapter | null = null;
-  let refused: string | undefined;
   try {
     gdResumed = await GoogleDriveAdapter.completeRedirect(googleDriveConfig());
   } catch (error) {
-    refused = connectRefusal(error) ?? undefined;
-    if (!refused) reportConnectFailure(error, 'google-drive');
+    refused = connectRefusal(error) ?? reportConnectFailure(error, 'google-drive');
   }
   if (gdResumed) {
     await liftLocalInto(gdResumed, 'google-drive');

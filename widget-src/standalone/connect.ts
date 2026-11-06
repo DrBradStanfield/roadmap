@@ -148,12 +148,15 @@ export async function liftLocalInto(adapter: StorageAdapter, backend: Backend): 
 
 /** An OAuth return whose code exchange failed (US-09 AC6c): a fixed console
  *  line and the strict envelope with closed-list tags. The provider's reply
- *  can echo what was sent, so neither its text nor the error goes out. */
-export function reportConnectFailure(error: unknown, backend: 'dropbox' | 'google-drive'): void {
+ *  can echo what was sent, so neither its text nor the error goes out. The
+ *  return value is the fixed line the page shows (US-09 AC1a): before, the
+ *  page opened as if nothing had been tried. */
+export function reportConnectFailure(error: unknown, backend: 'dropbox' | 'google-drive'): string {
   console.warn(`${PROVIDER_LABELS[backend]} connect failed`);
   Sentry.captureException(recordFailure(error, 'Cloud connect failed'), {
     tags: { area: 'cloud-connect', backend, ...failureTags(error) },
   });
+  return `${PROVIDER_LABELS[backend]} did not connect, so nothing changed. Please try again.`;
 }
 
 /**
