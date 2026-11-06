@@ -159,7 +159,8 @@ export class DropboxAdapter implements StorageAdapter {
     if (!res.ok) {
       throw new StorageError(`Dropbox token exchange failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
     }
-    const json = tokenReply(await res.json(), true);
+    // A body that is not JSON (a wifi sign-in page) is an incomplete reply too.
+    const json = tokenReply(await res.json().catch(() => null), true);
     saveTokens({
       accessToken: json.access_token,
       refreshToken: json.refresh_token,
@@ -332,8 +333,9 @@ export class DropboxAdapter implements StorageAdapter {
       this.dropIfGrantMoved(startedFrom);
       throw new StorageError(`Dropbox token refresh failed (${res.status}) — please reconnect.`, undefined, undefined, res.status);
     }
-    const json = tokenReply(await res.json(), false);
+    const reply: unknown = await res.json().catch(() => null);
     this.dropIfGrantMoved(startedFrom);
+    const json = tokenReply(reply, false);
     this.tokens = {
       ...this.tokens,
       accessToken: json.access_token,
