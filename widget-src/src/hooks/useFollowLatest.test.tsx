@@ -88,6 +88,39 @@ describe('US-15 AC55: useFollowLatest', () => {
     expect(second.scrollTop).toBe(50);
   });
 
+  it('a list that mounts with nothing else changed is read when it mounts (the bubble\'s History, then Back)', () => {
+    const ref = { current: box(1000, 0) as HTMLElement | null }; // the first list, scrolled to its top
+    const { result, rerender } = renderHook(({ n }) => useFollowLatest(ref, 'c1', M[n], []), { initialProps: { n: 0 } });
+    act(() => result.current.onScroll());
+    let height = 300; // the list mounted by Back: everything fits, so it never scrolls
+    let top = 0;
+    const el = document.createElement('div');
+    Object.defineProperty(el, 'scrollHeight', { get: () => height });
+    Object.defineProperty(el, 'clientHeight', { get: () => 400 });
+    Object.defineProperty(el, 'scrollTop', { get: () => top, set: (v: number) => { top = Math.max(0, Math.min(v, height - 400)); } });
+    ref.current = el;
+    rerender({ n: 0 }); // same messages and changes: only the element is new
+    height = 1200; // a pasted report lands
+    rerender({ n: 1 });
+    expect(top).toBe(800);
+  });
+
+  it('a list that mounts 100px or more above its bottom is read as not at the latest, and is left in place', () => {
+    const ref = { current: box(500, 100) as HTMLElement | null }; // the first list, at its bottom
+    const { rerender } = renderHook(({ n }) => useFollowLatest(ref, 'c1', M[n], []), { initialProps: { n: 0 } });
+    let height = 500; // mounted at its top: 500 - 0 - 400 = 100
+    let top = 0;
+    const el = document.createElement('div');
+    Object.defineProperty(el, 'scrollHeight', { get: () => height });
+    Object.defineProperty(el, 'clientHeight', { get: () => 400 });
+    Object.defineProperty(el, 'scrollTop', { get: () => top, set: (v: number) => { top = Math.max(0, Math.min(v, height - 400)); } });
+    ref.current = el;
+    rerender({ n: 0 });
+    height = 450; // shorter now, 50px from the bottom: a reading taken only now would follow
+    rerender({ n: 1 });
+    expect(top).toBe(0);
+  });
+
   it('a list that never scrolled (everything fits) is followed when a long message lands', () => {
     let height = 300; // shorter than the box: a browser fires no scroll event
     let top = 0;

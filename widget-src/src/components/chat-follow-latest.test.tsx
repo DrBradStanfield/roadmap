@@ -203,6 +203,37 @@ describe('US-15 AC55: another conversation in the same list is read afresh', () 
     expect(distanceFromBottom(box)).toBeGreaterThan(100);
   });
 
+  it('the bubble: a short conversation, History, then Back, then a pasted report is followed, with no scroll ever made', async () => {
+    const { container } = render(<ChatSection isLoggedIn={false} startExpanded />);
+    await screen.findByText(/Synthetic turn 7/);
+    await act(async () => {
+      sync.handler!({ instanceId: 'other-tab', type: 'state', ts: 1, payload: {
+        conversations: [], activeConversationId: 'C', messages: [turn('c0', 'user', 'Synthetic short C')], isLoading: false, error: null,
+      } });
+    });
+    await screen.findByText('Synthetic short C');
+    await act(async () => { fireEvent.click(screen.getByText('History')); });
+    await act(async () => { fireEvent.click(screen.getByText('Back')); }); // a new list element, nothing else changed
+    await act(async () => {
+      fireEvent.change(container.querySelector('textarea')!, { target: { value: PASTED } });
+      fireEvent.click(screen.getByLabelText('Send'));
+    });
+    const box = container.querySelector('.chat-messages')!;
+    expect(box.scrollHeight).toBeGreaterThan(box.clientHeight + 100);
+    expect(distanceFromBottom(box)).toBe(0);
+  });
+
+  it('the bubble: a long conversation, History, then Back, opens at its top and is not carried down by the next question, as before', async () => {
+    const { container } = render(<ChatSection isLoggedIn={false} startExpanded />);
+    await screen.findByText(/Synthetic turn 7/);
+    await act(async () => { fireEvent.click(screen.getByText('History')); });
+    await act(async () => { fireEvent.click(screen.getByText('Back')); });
+    const box = container.querySelector('.chat-messages')!;
+    expect(distanceFromBottom(box)).toBeGreaterThanOrEqual(100); // remounted at its top
+    await sendShort(container);
+    expect(box.scrollTop).toBe(0);
+  });
+
   it('the panel: a pasted report as the first message of a new chat is followed, with no scroll ever made', async () => {
     const { container, box } = await openPanel();
     await act(async () => { fireEvent.click(screen.getByText('+ New Chat')); });
