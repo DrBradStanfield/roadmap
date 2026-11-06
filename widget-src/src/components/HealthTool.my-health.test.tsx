@@ -302,7 +302,7 @@ describe('US-62 AC24: a guest\'s storage card, at the foot and in Settings', () 
 });
 
 describe('US-62 AC24: Settings behind the person button', () => {
-  it('holds About you, units, the record and Delete All My Data; Done closes them and the focus returns to the button', async () => {
+  it('holds About you, units, the record and Delete all my data; Done closes them and the focus returns to the button', async () => {
     const view = await show(RECORDS['urgent results, both cascades, a supplement']);
     const person = view.getByRole('button', { name: 'Settings' });
     expect(view.container.querySelector('.about-card')).toBeNull(); // not on the page
@@ -311,7 +311,7 @@ describe('US-62 AC24: Settings behind the person button', () => {
     expect(within(sheet).getByRole('heading', { name: 'Settings' })).toBe(document.activeElement);
     expect(within(sheet).getByRole('heading', { name: /About you/ })).toBeTruthy();
     expect(within(sheet).getByRole('button', { name: /Switch units/ })).toBeTruthy();
-    expect(within(sheet).getByRole('button', { name: 'Delete All My Data' })).toBeTruthy();
+    expect(within(sheet).getByRole('button', { name: 'Delete all my data' })).toBeTruthy();
     expect(view.container.querySelector('.health-input-panel')!.className).toContain('md-page-open');
     fireEvent.click(within(sheet).getByRole('button', { name: 'Done' }));
     expect(view.container.querySelector('.mh-settings')).toBeNull();

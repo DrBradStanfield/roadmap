@@ -3,7 +3,7 @@
  * US-11 AC2g: after an erase, the chat is never handed the list the page
  * fetched ahead of time for the erased record. HealthTool lists the
  * conversations once the four answers hold (US-62 AC13), so the floating chat
- * opens with them; the list is the record's. After Delete All My Data and a new
+ * opens with them; the list is the record's. After Delete all my data and a new
  * onboarding, the floating chat must not open with the erased record's
  * conversation titles, and a list asked for before the erase that answers after
  * it must not be used either. The old list may stay in the page's memory,

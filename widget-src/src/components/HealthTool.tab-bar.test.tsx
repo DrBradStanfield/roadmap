@@ -206,28 +206,19 @@ describe('US-20 AC6: the bottom tab bar', () => {
   });
 });
 
-describe('US-20 AC7: the top bar', () => {
-  // US-62 AC24: the person button beside it.
-  it('on a phone the storage and person buttons sit above the panels, seen from every tab', async () => {
+// US-20 AC7 as amended by US-62 AC24 (design review 2026-11-06): no band of its own;
+// the storage and person buttons sit on My health's title line.
+describe('US-20 AC7: Sign in on My health\'s title line', () => {
+  it('on a phone the storage and person buttons share the title row; no top bar', async () => {
     const view = await renderPhone(<button type="button">Sign in</button>);
     const signIn = view.getByRole('button', { name: 'Sign in' });
-    expect(signIn.parentElement?.className).toBe('hr-top-bar');
-    expect(signIn.closest('[role="tabpanel"]')).toBeNull();
-    expect(view.getByRole('button', { name: 'Settings' }).parentElement).toBe(signIn.parentElement);
-    for (const name of ['My health', 'Chat']) {
-      fireEvent.click(within(view.getByRole('tablist')).getByRole('tab', { name }));
-      expect(signIn.closest('[hidden]')).toBeNull();
-    }
-    expect(view.getAllByRole('button', { name: 'Sign in' })).toHaveLength(1); // not in the input header too
-    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8').replace(/\s+/g, ' ');
-    // The cards' 10px gutter, and the header's layout, so a long reconnect label wraps.
-    expect(css).toContain('.hr-top-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; padding: 8px 10px 0; font-size: 12px; }');
-  });
-
-  it('without a storage button, the top bar holds the person button alone', async () => {
-    const view = await renderPhone();
-    const bar = view.container.querySelector('.hr-top-bar')!;
-    expect([...bar.children].map((b) => b.getAttribute('aria-label'))).toEqual(['Settings']);
+    const header = signIn.closest('.mh-header')!;
+    expect(header.querySelector('.mh-title')?.textContent).toBe('My health');
+    expect(within(header as HTMLElement).getByRole('button', { name: 'Settings' })).toBeTruthy();
+    expect(view.container.querySelector('.hr-top-bar')).toBeNull();
+    expect(view.getAllByRole('button', { name: 'Sign in' })).toHaveLength(1);
+    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
+    expect(css).not.toContain('.hr-top-bar {');
   });
 });
 

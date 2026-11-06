@@ -125,7 +125,8 @@ function planCard(container: HTMLElement, title: string): string | undefined {
 /** The opening sentence of one of the form's sections, once it is on the page. */
 function sectionIntro(container: HTMLElement, section: string): Promise<string> {
   return waitFor(() => {
-    const title = Array.from(container.querySelectorAll('.health-section-title'))
+    // A medicine group's plain label under its topic (US-62 AC20, design review 2026-11-06).
+    const title = Array.from(container.querySelectorAll('.health-section-title, .mh-group-label'))
       .find((t) => t.textContent === section);
     if (!title) throw new Error('the section is not on the page');
     return title.parentElement!.querySelector('.health-section-desc')!.textContent!;

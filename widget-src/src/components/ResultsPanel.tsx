@@ -142,7 +142,15 @@ function UsProductBlockView({ block }: { block: UsProductBlock }) {
   );
 }
 
-function SuggestionCard({ suggestion, highlighted, fadingOut, alcoholQuestion, usBlock }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; alcoholQuestion?: AlcoholQuestion; usBlock?: UsProductBlock }) {
+/** My health's card head (US-62 AC18, design review 2026-11-06): no category icon or chip; the
+ *  status alone, in words and one restrained colour, only where there is one. */
+const STATUS_WORDS: Partial<Record<Suggestion['priority'], string>> = { urgent: 'Urgent', attention: 'Next step' };
+function CalmStatus({ priority }: { priority: Suggestion['priority'] }) {
+  const words = STATUS_WORDS[priority];
+  return words ? <span className={`mh-status mh-status--${priority}`}>{words}</span> : null;
+}
+
+function SuggestionCard({ suggestion, highlighted, fadingOut, alcoholQuestion, usBlock, calm }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; alcoholQuestion?: AlcoholQuestion; usBlock?: UsProductBlock; calm?: boolean }) {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const hasEvidence = suggestionHasEvidence(suggestion);
   const isSupplementCard = suggestion.category === 'supplements';
@@ -154,8 +162,15 @@ function SuggestionCard({ suggestion, highlighted, fadingOut, alcoholQuestion, u
   const toggleEvidence = hasEvidence ? () => setEvidenceOpen(o => !o) : undefined;
 
   return (
-    <div className={`suggestion-card ${priorityColors[suggestion.priority]}${isSupplementCard ? ' supplement-card' : ''}${isSkinCard ? ' skin-card' : ''}${highlightClass}${hasEvidence ? ' suggestion-card-clickable' : ''}`}>
-      {!isSpecialCard && (
+    <div className={`suggestion-card ${priorityColors[suggestion.priority]}${isSupplementCard ? ' supplement-card' : ''}${isSkinCard ? ' skin-card' : ''}${highlightClass}${hasEvidence ? ' suggestion-card-clickable' : ''}${calm ? ' suggestion-card--calm' : ''}`}>
+      {calm ? (
+        (STATUS_WORDS[suggestion.priority] || alcoholDismiss(suggestion, alcoholQuestion)) && (
+          <div className="suggestion-header">
+            <CalmStatus priority={suggestion.priority}/>
+            {alcoholDismiss(suggestion, alcoholQuestion)}
+          </div>
+        )
+      ) : !isSpecialCard && (
         <div className="suggestion-header">
           <span className="suggestion-header-lead">
             <CategoryIcon category={suggestion.category}/>
@@ -221,11 +236,12 @@ function GroupedSubsection({ suggestion, highlighted, fadingOut, alcoholQuestion
   );
 }
 
-function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, alcoholQuestion }: { card: Pick<PlanCard, 'category' | 'priority' | 'suggestions'>; highlightedIds?: Set<string>; fadingOutIds?: Set<string>; alcoholQuestion?: AlcoholQuestion }) {
+function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, alcoholQuestion, calm }: { card: Pick<PlanCard, 'category' | 'priority' | 'suggestions'>; highlightedIds?: Set<string>; fadingOutIds?: Set<string>; alcoholQuestion?: AlcoholQuestion; calm?: boolean }) {
   const { suggestions, category, priority: highestPriority } = card;
 
   return (
-    <div className={`suggestion-card grouped-card ${priorityColors[highestPriority]}`}>
+    <div className={`suggestion-card grouped-card ${priorityColors[highestPriority]}${calm ? ' suggestion-card--calm' : ''}`}>
+      {calm ? STATUS_WORDS[highestPriority] && <div className="suggestion-header"><CalmStatus priority={highestPriority}/></div> : (
       <div className="suggestion-header">
         <span className="suggestion-header-lead">
           <CategoryIcon category={category}/>
@@ -235,6 +251,7 @@ function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, alcoholQues
           </span>
         </span>
       </div>
+      )}
       <div className="grouped-subsections">
         {suggestions.map((s) => (
           <GroupedSubsection key={s.id} suggestion={s} highlighted={highlightedIds?.has(s.id)} fadingOut={fadingOutIds?.has(s.id)} alcoholQuestion={alcoholQuestion} />
@@ -547,8 +564,8 @@ export function PlanCardList({ cards, plan }: { cards: ReadonlyArray<TopicCard<U
         return (
           <div key={id} id={id} tabIndex={-1} className="mh-card">
             {card.suggestions.length > 1
-              ? <GroupedSuggestionCard card={card} highlightedIds={highlighted} fadingOutIds={fadingOut} alcoholQuestion={plan.alcoholQuestion} />
-              : <SuggestionCard suggestion={s} highlighted={highlighted.has(s.id)} fadingOut={fadingOut.has(s.id)} alcoholQuestion={plan.alcoholQuestion} usBlock={s.usProduct} />}
+              ? <GroupedSuggestionCard card={card} highlightedIds={highlighted} fadingOutIds={fadingOut} alcoholQuestion={plan.alcoholQuestion} calm />
+              : <SuggestionCard suggestion={s} highlighted={highlighted.has(s.id)} fadingOut={fadingOut.has(s.id)} alcoholQuestion={plan.alcoholQuestion} usBlock={s.usProduct} calm />}
           </div>
         );
       })}

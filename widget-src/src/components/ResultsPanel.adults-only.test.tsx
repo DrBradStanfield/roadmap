@@ -86,7 +86,8 @@ describe('US-07 AC6: with no birth year, one card in place of the medicines', ()
     expect(titles).not.toContain('Consider a GLP-1 medication');
     const card = Array.from(container.querySelectorAll('.suggestion-title')).find((t) => t.textContent === 'Add your birth year')!;
     expect(card.parentElement?.querySelector('.suggestion-desc')?.textContent).toBe('Medicine suggestions need your age. Add your birth year to see them.');
-    expect(container.querySelector('.suggestion-badge.suggestion-info')?.textContent).toBeTruthy();
+    // An info card says no status on My health (US-62 AC18): no badge, no status word.
+    expect(card.closest('.suggestion-card')!.querySelector('.mh-status, .suggestion-badge')).toBeNull();
   });
 });
 

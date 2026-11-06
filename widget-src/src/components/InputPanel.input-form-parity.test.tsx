@@ -65,11 +65,12 @@ function expectParity(container: HTMLElement, sections: FormSection[]) {
   const cards = [...container.querySelectorAll('.section-card')];
   for (const section of sections) {
     // Cancer screening's card has no title of its own: My health's topic heading names it (US-62 AC17).
-    const card = cards.find(c => c.querySelector('h3.health-section-title')?.textContent === section.title
+    // A group's plain label under its topic (US-62 AC20) or a card's own title.
+    const card = cards.find(c => c.querySelector('h3.health-section-title, h4.mh-group-label')?.textContent === section.title
       || (section.id === 'cancer-screening' && c.querySelector('.health-section-desc')?.textContent?.trim() === section.intro));
     expect(card, section.title).toBeDefined();
     expect(card!.querySelector('.health-section-desc')!.textContent!.trim()).toBe(section.intro);
-    expect(texts(card!, 'h4')).toEqual(section.groups.filter(g => g.title).map(g => g.title));
+    expect(texts(card!, 'h4:not(.mh-group-label)')).toEqual(section.groups.filter(g => g.title).map(g => g.title));
     expect(texts(card!, '.screening-notice, .screening-age-message').map(t => t!.trim())).toEqual(section.groups.flatMap(g => g.notes));
     const fields = section.groups.flatMap(g => g.fields);
     // A dose select sits beside its drug under the drug's one label.
@@ -180,7 +181,7 @@ describe('US-25 AC8, US-06 — the web medication cards are medicationForm', () 
 it('the cholesterol medicines intro ends with the medicines sentence on the web', () => {
   const ldl: LipidMarker = { kind: 'ldl', label: 'LDL-c', value: 3.5, target: 2.6, elevated: true };
   const container = renderPanel({ sex: 'male', inputs: { ldlC: 3.5 }, basis: { age: 56, lipidMarker: ldl, weightMedTrigger: { on: false, reasons: [] } } });
-  const card = [...container.querySelectorAll('.section-card')].find(c => c.querySelector('h3')?.textContent === 'Cholesterol Medications');
+  const card = [...container.querySelectorAll('.section-card')].find(c => c.querySelector('.mh-group-label')?.textContent === 'Cholesterol Medications');
   const intro = card!.querySelector('.health-section-desc')!.textContent!.trim();
   expect(intro.endsWith(`. ${LIPID_MEDS_IN_STEPS}`)).toBe(true);
   expect(intro).not.toMatch(/oats|walnuts|psyllium/i);

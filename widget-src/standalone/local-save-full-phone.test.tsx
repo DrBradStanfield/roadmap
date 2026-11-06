@@ -83,7 +83,7 @@ afterEach(async () => {
   vi.restoreAllMocks(); vi.unstubAllGlobals();
 });
 
-describe('US-01 AC5 on a phone: the alert is in the top bar while the guest is on the Input tab', () => {
+describe('US-01 AC5 on a phone: the alert is on the My health title line while the guest is on that tab', () => {
   it('shows and is in the accessibility tree once, outside every hidden tab', async () => {
     const view = render(
       <HealthTool
@@ -111,7 +111,7 @@ describe('US-01 AC5 on a phone: the alert is in the top bar while the guest is o
     const alerts = [...view.container.querySelectorAll('[role="alert"]')];
     expect(alerts).toHaveLength(1);
     expect(alerts[0].textContent).toContain(FULL_LINE);
-    expect(alerts[0].closest('.hr-top-bar')).not.toBeNull();
+    expect(alerts[0].closest('.mh-header')).not.toBeNull(); // the storage button sits on My health's title line (US-62 AC24)
     expect(alerts[0].closest('[hidden]')).toBeNull();
   });
 });

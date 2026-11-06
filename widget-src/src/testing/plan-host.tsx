@@ -1,7 +1,7 @@
 // Test support: the plan's parts as My health draws them (US-62 phase 5),
 // without the rest of the page, for the suites that test the plan alone: the
 // real usePlanView, its cards by topic, the tiles, the foot, and Settings' plan
-// parts (reminders, the record, Delete All My Data) as HealthTool passes them.
+// parts (reminders, the record, Delete all my data) as HealthTool passes them.
 // Imported by tests only.
 import type { ReactNode } from 'react';
 import type { HealthResults, StatTile } from '@roadmap/health-core';
@@ -42,7 +42,7 @@ export function PlanHost({ results, isValid, tiles = [], showEmailCapture, formS
         {syncControl?.({ hasData: planned, attention: plan.attention })}
         {planned && onDeleteData && (
           <button className="delete-data-link" disabled={isDeleting}
-                  onClick={async () => { if (await onDeleteData()) plan.onErased(); }}>Delete All My Data</button>
+                  onClick={async () => { if (await onDeleteData()) plan.onErased(); }}>Delete all my data</button>
         )}
       </div>
       {plan.report}

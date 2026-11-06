@@ -1,6 +1,6 @@
 // The settings behind the person button (US-62 AC24), the iPhone's sheet
 // (MyDataView.swift settingsList): About you, units, reminders, where the
-// record lives and Delete All My Data. It holds the parts; their logic stays
+// record lives and Delete all my data. It holds the parts; their logic stays
 // where it was. Drawn in My health's place, as a value page is (US-62 AC10),
 // so it stays inside the widget's Clarity mask, its erase lock and its styles
 // (the widget root is transformed, so a fixed overlay would not cover the screen).

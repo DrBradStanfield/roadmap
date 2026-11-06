@@ -153,9 +153,9 @@ export type PlanBasis = Pick<HealthResults, 'age' | 'bmi' | 'idealBodyWeight' | 
 
 
 interface InputPanelProps {
-  /** US-09 AC30: the storage button, on the title line on desktop (a phone's sits in the top bar). */
+  /** US-09 AC30: the storage button, on My health's title line (US-62 AC24). */
   storageBar?: React.ReactNode;
-  /** The person button, on the title line on desktop (US-62 AC24). */
+  /** The person button, on the title line (US-62 AC24). */
   personButton?: React.ReactNode;
   /** The plan's cards by topic, the banner and the foot (usePlanView). */
   plan: PlanView;
@@ -168,7 +168,7 @@ interface InputPanelProps {
   /** The settings show in the page's place (US-62 AC24). */
   settingsOpen: boolean;
   onSettingsClose: () => void;
-  /** Settings' parts after About you and units: reminders, the record, Delete All My Data. */
+  /** Settings' parts after About you and units: reminders, the record, Delete all my data. */
   settingsParts?: React.ReactNode;
   /** A guest's storage card, at the foot too while Settings are shut (one picker on the page). */
   footStorage?: React.ReactNode;
@@ -1262,7 +1262,7 @@ export function InputPanel({
       <section className="health-section">
         <div className="hr-section-card-header">
           <h3 className="health-section-title">
-            <SectionIcon section="aboutYou"/>{aboutYouLow ? 'About you' : 'Starting Info'}
+            <SectionIcon section="aboutYou"/>{aboutYouLow ? 'About you' : 'Starting info'}
           </h3>
           <div className="basic-info-units">
             <span className="basic-info-units-label">Units</span>
@@ -1611,7 +1611,7 @@ export function InputPanel({
             return (
               <div className="section-card">
                 <section className="health-section">
-                  <h3 className="health-section-title"><SectionIcon section="medications"/>{MEDICATION_TEXT.lipidTitle}</h3>
+                  <h4 className="mh-group-label">{MEDICATION_TEXT.lipidTitle}</h4>
                   <p className="health-section-desc">{neutral}</p>
                   {statinDropdown}
                   {ezetimibeDropdown}
@@ -1633,7 +1633,7 @@ export function InputPanel({
           return (
             <div className="section-card">
             <section className="health-section medication-cascade">
-              <h3 className="health-section-title"><SectionIcon section="medications"/>{MEDICATION_TEXT.lipidTitle}</h3>
+              <h4 className="mh-group-label">{MEDICATION_TEXT.lipidTitle}</h4>
               <p className="health-section-desc">
                 {/* It recommends only while the plan shows a step's card: with every
                     step answered the marker stays elevated and the plan shows none. */}
@@ -1791,7 +1791,7 @@ export function InputPanel({
           return (
             <div className="section-card">
               <section className="health-section">
-                <h3 className="health-section-title"><SectionIcon section="medications"/>{MEDICATION_TEXT.weightTitle}</h3>
+                <h4 className="mh-group-label">{MEDICATION_TEXT.weightTitle}</h4>
                 <p className="health-section-desc">{neutral}</p>
                 {glp1Dropdown}
                 {sglt2iDropdown}
@@ -1810,7 +1810,7 @@ export function InputPanel({
         return (
           <div className="section-card">
           <section className="health-section medication-cascade">
-            <h3 className="health-section-title"><SectionIcon section="medications"/>{MEDICATION_TEXT.weightTitle}</h3>
+            <h4 className="mh-group-label">{MEDICATION_TEXT.weightTitle}</h4>
             <p className="health-section-desc">
               {/* It recommends only while the plan shows a step's card: with every
                   step answered the trigger stays on and the plan shows none. */}
@@ -2244,7 +2244,7 @@ export function InputPanel({
         return (
           <div className="section-card">
           <section className="health-section screening-cascade">
-            <h3 className="health-section-title"><SectionIcon section="screening"/>{SCREENING_TEXT.boneTitle}</h3>
+            <h4 className="mh-group-label">{SCREENING_TEXT.boneTitle}</h4>
             <p className="health-section-desc">
               {SCREENING_TEXT.boneIntro}
             </p>
@@ -2618,7 +2618,12 @@ export function InputPanel({
         </div>
         {plan.urgent && (
           <button type="button" className="mh-banner" onClick={toUrgent}>
-            <span aria-hidden="true">⚠️ </span>Needs attention: {plan.urgent.title}
+            <svg className="mh-banner-icon" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false">
+              <circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" strokeWidth="1.8"/>
+              <path d="M10 5.5v5.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+              <circle cx="10" cy="14.2" r="1.1" fill="currentColor"/>
+            </svg>
+            Needs attention: {plan.urgent.title}
           </button>
         )}
         {shownTopics.map(([, , node]) => node)}

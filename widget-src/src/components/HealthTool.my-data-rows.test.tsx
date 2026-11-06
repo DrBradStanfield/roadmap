@@ -176,15 +176,17 @@ describe('US-62 AC15: the iPhone\'s symbols', () => {
       expect(symbol.getAttribute('aria-hidden')).toBe('true');
       expect(symbol.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
     }
-    const squares = await waitFor(() => {
-      const found = Array.from(view.container.querySelectorAll<HTMLElement>('.suggestion-card .category-icon'));
+    // Design review 2026-11-06 (US-62 AC18): My health's cards are one calm style, no category
+    // square or chip; a status shows only as its word and dot.
+    const cards = await waitFor(() => {
+      const found = Array.from(view.container.querySelectorAll<HTMLElement>('.mh-sections .suggestion-card'));
       expect(found.length).toBeGreaterThan(0);
       return found;
     });
-    for (const square of squares) {
-      expect(square.getAttribute('aria-hidden')).toBe('true');
-      expect(square.querySelector('svg')).not.toBeNull();
-      expect(square.textContent).toBe('');
+    for (const card of cards) {
+      expect(card.className).toContain('suggestion-card--calm');
+      expect(card.querySelector('.category-icon, .suggestion-badge')).toBeNull();
+      expect(card.textContent).not.toMatch(/⚠️/);
     }
   });
 });
@@ -350,7 +352,7 @@ describe('US-62 AC11: All results as a table', () => {
 describe('US-62 AC12, AC24: About you in Settings on a phone', () => {
   const sectionOrder = (view: ReturnType<typeof render>) =>
     [...view.container.querySelectorAll('.health-input-panel h3')].map(h => h.textContent!.replace('▸', '').trim())
-      .filter(t => ['Blood tests', 'Supplements', 'About you', 'Starting Info'].includes(t));
+      .filter(t => ['Blood tests', 'Supplements', 'About you', 'Starting info'].includes(t));
 
   it('with the onboarding done, About you follows the iPhone: in Settings, not on the page', async () => {
     await seed();
@@ -364,7 +366,7 @@ describe('US-62 AC12, AC24: About you in Settings on a phone', () => {
     await seed({ birthYear: 1975, birthMonth: 5 });
     const view = render(<HealthTool />);
     await waitFor(() => expect(view.container.querySelector('.health-section-title')).not.toBeNull());
-    expect(sectionOrder(view)[0]).toBe('Starting Info');
+    expect(sectionOrder(view)[0]).toBe('Starting info');
     expect(sectionOrder(view)).not.toContain('About you');
   });
 });

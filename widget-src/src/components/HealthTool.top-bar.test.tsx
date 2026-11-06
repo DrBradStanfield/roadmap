@@ -52,9 +52,8 @@ afterEach(async () => {
 describe.each([['desktop', false], ['phone', true]] as const)('on %s', (_, isPhone) => {
   beforeEach(() => { phone = isPhone; });
 
-  // US-62 AC16, AC24: My health's title line holds the storage and person buttons on
-  // desktop; on a phone they sit in the top bar instead.
-  it('US-09 AC30: the My health title line holds the storage button on desktop, the top bar on a phone; no Supercharge there', async () => {
+  // US-62 AC16, AC24: My health's title line holds the storage and person buttons, phone and desktop.
+  it('US-09 AC30: the My health title line holds the storage and person buttons; no Supercharge there', async () => {
     const view = render(<HealthTool storageBar={<button type="button">Sign in</button>} />);
     const header = await waitFor(() => {
       const el = view.container.querySelector('.health-input-panel > .mh-header');
@@ -62,12 +61,10 @@ describe.each([['desktop', false], ['phone', true]] as const)('on %s', (_, isPho
       return el!;
     });
     expect(header.querySelector('.mh-title')?.textContent).toBe('My health');
-    const top = view.container.querySelector('.hr-top-bar');
-    const holder = isPhone ? top! : header.querySelector('.mh-header-actions')!;
+    const holder = header.querySelector('.mh-header-actions')!;
     expect(holder.querySelector('button')?.textContent).toBe('Sign in');
     expect(holder.querySelector('button[aria-label="Settings"]')).not.toBeNull();
-    if (isPhone) expect(header.querySelector('.mh-header-actions')).toBeNull();
-    else expect(top).toBeNull();
+    expect(view.container.querySelector('.hr-top-bar')).toBeNull();
     expect(view.getAllByRole('button', { name: 'Sign in' })).toHaveLength(1);
     expect(header.textContent).not.toContain('Supercharge');
   });

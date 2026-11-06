@@ -212,7 +212,7 @@ describe('US-62 AC13: the weight saves when its field is left (B10)', () => {
 describe('US-62 AC12, AC13 (Brad 2026-11-02): boxes while typing, rows after', () => {
   const sectionOrder = (view: RenderResult) =>
     [...view.container.querySelectorAll('.health-input-panel h3')].map(h => h.textContent!.replace('\u25B8', '').trim())
-      .filter(t => ['Vitals', 'Blood tests', 'Supplements', 'About you', 'Starting Info'].includes(t));
+      .filter(t => ['Vitals', 'Blood tests', 'Supplements', 'About you', 'Starting info'].includes(t));
   const aboutRows = (view: RenderResult) => [...view.container.querySelectorAll('.about-row')]
     .map(r => [r.querySelector('.about-row-label')!.textContent, r.querySelector('.about-row-value, .md-row-add')!.textContent]);
 
@@ -231,7 +231,7 @@ describe('US-62 AC12, AC13 (Brad 2026-11-02): boxes while typing, rows after', (
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
     birthWithoutJump(view, '6', '1985'); // no jump to the email box: the focus stays in the card
     await waitFor(() => expect(fullForm(view)).toBe(true));
-    expect(sectionOrder(view)[0]).toBe('Starting Info');
+    expect(sectionOrder(view)[0]).toBe('Starting info');
     expect(q(view, '#weightKg')).toBeTruthy(); // typed here, it stays beside the height for the visit
     expect(q(view, '.about-row')).toBeNull();
     await waitFor(async () => expect((await recordOnDisk()).profile.birthYear).toBe(1985), { timeout: 2000 });

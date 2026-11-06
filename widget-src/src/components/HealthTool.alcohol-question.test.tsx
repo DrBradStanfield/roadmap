@@ -145,7 +145,7 @@ it('US-60 AC3 (Brad 2026-11-01): on a phone with sex and height in, the "I still
   await waitFor(() => openSettings(view.container)); // About you sits in Settings (US-62 AC24)
   const titles = [...view.container.querySelectorAll('.health-section-title')].map((h) => h.textContent!.replace('\u25B8', '').trim());
   expect(titles).toContain('About you');
-  expect(titles).not.toContain('Starting Info');
+  expect(titles).not.toContain('Starting info');
   await dismiss(view.container, 'Do you still drink alcohol?');
   fireEvent.click(within(dialog()!).getByText('I still drink'));
   expect(dialog()!.textContent).toBe(`${still('About you')}OK`);

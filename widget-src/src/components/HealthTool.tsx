@@ -1483,7 +1483,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   });
 
   // Settings (US-62 AC24): the person button opens them in My health's place.
-  // On a phone the button sits in the top bar, so a Chat tab press opens My health first.
+  // Settings open in My health's place, so a press from elsewhere shows that tab first.
   const [settingsOpen, setSettingsOpen] = useState(false);
   const personRef = useRef<HTMLButtonElement>(null);
   const toggleSettings = useCallback(() => {
@@ -1513,7 +1513,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
             onClick={async () => { if (await handleDeleteData()) { plan.onErased(); closeSettings(); } }}
             disabled={isDeleting}
           >
-            {isDeleting ? 'Deleting...' : 'Delete All My Data'}
+            {isDeleting ? 'Deleting...' : 'Delete all my data'}
           </button>
         </div>
       )}
@@ -1521,9 +1521,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   );
 
   const inputPanelProps = {
-    // On a phone the storage and person buttons sit in the top bar, above every tab.
-    storageBar: isMobile ? undefined : storageBar,
-    personButton: isMobile ? undefined : personButton,
+    // On My health's title line, phone and desktop: no band of its own (design review 2026-11-06).
+    storageBar,
+    personButton,
     plan,
     tiles,
     series,
@@ -1617,7 +1617,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       {unreadableLine && <p className="hr-unreadable-note no-print" role="status">{unreadableLine}</p>}
       {isMobile ? (
         <>
-          <div className="hr-top-bar">{storageBar}{personButton}</div>
           {panel('health', <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps} /></fieldset>)}
           {panel('chat', (
             <div className="health-tool-chat">
@@ -1720,7 +1719,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
           onClick={() => setFloatingChatOpen(true)}
           aria-label="Open chat"
         >
-          <span className="chat-fab-icon">💬</span>
+          <svg className="chat-fab-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+            <path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-4 3v-3H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+          </svg>
           <span className="chat-fab-label">Ask about your health</span>
         </button>,
         document.body,

@@ -131,18 +131,6 @@ input[type="number"] {
     margin-right: 10px;
   }
 
-  /* US-20 AC6: the top bar holds the storage and person buttons above every
-     tab, with the cards' 10px gutter. */
-  .hr-top-bar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
-    padding: 8px 10px 0;
-    font-size: 12px;
-  }
-
   /* The phone's panels; only the active one shows (the others are [hidden]). */
   .hr-tabpanel {
     padding-top: 16px;
@@ -3587,8 +3575,7 @@ input[type="number"] {
 }
 
 .chat-fab-icon {
-  font-size: 20px;
-  line-height: 1;
+  flex: 0 0 auto;
 }
 
 .chat-fab-label {
@@ -3691,9 +3678,9 @@ input[type="number"] {
   gap: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--color-primary, #2563eb);
+  color: var(--color-brand-text);
   background: none;
-  border: 1px solid var(--color-border, #d1d9e6);
+  border: 1px solid var(--color-gray-border);
   border-radius: 6px;
   padding: 4px 10px;
   cursor: pointer;
@@ -3921,7 +3908,7 @@ input[type="number"] {
 /* ─── 3-column layout (≥1200px viewport) ─────────────────────── */
 @media (min-width: 1200px) {
   .health-tool-content {
-    grid-template-columns: minmax(0, 960px) minmax(340px, 480px);
+    grid-template-columns: minmax(0, 1000px) minmax(340px, 420px);
   }
 }
 
@@ -5828,10 +5815,6 @@ input[type="number"] {
     margin-left: 10px;
     margin-right: 10px;
   }
-  .hr-top-bar .mh-person-btn {
-    width: 44px;
-    height: 44px;
-  }
 }
 /* The PDF's copy of the plan stays in the page, never on screen (getReportHtml shows its clone). */
 .health-results-panel.hr-report[hidden] {
@@ -5849,7 +5832,7 @@ input[type="number"] {
 }
 /* Brad 2026-11-06: every control on My health is a 44px target on a phone. */
 @media (max-width: 768px) {
-  .hr-top-bar .action-btn-small,
+  .mh-header .action-btn-small,
   .suggestion-dismiss,
   .md-foot-btn,
   .md-back,
@@ -5877,7 +5860,7 @@ input[type="number"] {
 @media (min-width: 769px) {
   .mh-sections {
     display: grid;
-    grid-template-columns: 200px minmax(0, 720px);
+    grid-template-columns: 200px minmax(0, 760px);
     column-gap: 40px;
     align-items: start;
   }
@@ -5958,4 +5941,274 @@ input[type="number"] {
     position: absolute;
     inset: -13px -6px;
   }
+}
+
+/* ─── Design review 2026-11-06 (Brad: "make it beautiful"): the iPhone's calm ───
+   One neutral card for every suggestion on My health; red and amber only for a
+   status. All scoped under My health, so the PDF's copy keeps its look. */
+.mh-topics .suggestion-card.suggestion-card--calm,
+.mh-topics .suggestion-card.suggestion-card--calm:hover {
+  background: #fff;
+  border: 0;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  padding: 16px 18px;
+  transform: none;
+  animation: none;
+}
+.mh-topics .suggestion-card--calm .suggestion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 6px;
+  min-height: 0;
+}
+.mh-topics .suggestion-card--calm .suggestion-title,
+.mh-topics .suggestion-card--calm .suggestion-title a,
+.mh-topics .suggestion-card--calm .suggestion-body:hover .suggestion-title {
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0 0 4px;
+}
+.mh-topics .suggestion-card--calm .suggestion-desc {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+.mh-topics .suggestion-card--calm .evidence-toggle {
+  color: var(--color-brand-text);
+}
+.mh-topics .suggestion-card--calm .guideline-tag {
+  background: #f2f4f5;
+  border-color: transparent;
+  color: var(--color-text-secondary);
+}
+.mh-topics .suggestion-card--calm .suggestion-subsection {
+  border: 0;
+  border-top: 1px solid #eceef0;
+  border-radius: 0;
+  background: none;
+  padding: 12px 0 0;
+  margin: 12px 0 0;
+}
+.mh-topics .suggestion-card--calm .grouped-subsections > .suggestion-subsection:first-child {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+/* The one status mark: a word with a dot, in the status colour. */
+.mh-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.mh-status::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.mh-status--urgent { color: var(--color-grade-bad-text); }
+.mh-status--attention { color: var(--color-grade-warn-text); }
+.mh-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mh-banner-icon {
+  flex: 0 0 auto;
+}
+
+/* Medicines: a plain group under the section's own title, not a card of its own kind. */
+.mh-group-label {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.01em;
+}
+.mh-topics .medication-cascade .health-section-desc,
+.mh-topics .screening-cascade .health-section-desc {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0 0 12px;
+}
+/* A medicine's or a screening's suggestion line, calm: a quiet fill, no coloured bar. */
+.mh-row-suggestion,
+.mh-row-suggestion.suggestion-urgent,
+.mh-row-suggestion.suggestion-info {
+  margin: 8px 0 16px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: #f4f6f7;
+}
+.mh-row-suggestion.suggestion-urgent .mh-row-suggestion-text::before,
+.mh-row-suggestion.suggestion-attention .mh-row-suggestion-text::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin: 0 8px 1px 0;
+  border-radius: 50%;
+  background: var(--color-grade-warn-text);
+}
+.mh-row-suggestion.suggestion-urgent .mh-row-suggestion-text::before {
+  background: var(--color-grade-bad-text);
+}
+.mh-info-btn > span,
+.mh-row-suggestion.suggestion-urgent .mh-info-btn > span,
+.mh-row-suggestion.suggestion-info .mh-info-btn > span {
+  background: none;
+  border: 1.5px solid var(--color-brand-text);
+  color: var(--color-brand-text);
+  font: 600 12px/1 inherit;
+  font-style: normal;
+}
+/* Callouts keep one 16px gap below them (design review: the screening notice touched its question). */
+.mh-topics .screening-notice,
+.mh-topics .screening-age-message {
+  margin: 0 0 16px;
+}
+
+/* Rows: a fixed sparkline track and a fixed value column, so trends line up whatever the unit. */
+.mh-topics .md-row,
+.md-page .md-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px 104px;
+  column-gap: 12px;
+  min-height: 60px;
+}
+.mh-topics .md-row-reading {
+  width: 104px;
+  min-width: 0;
+}
+
+/* "All results as a table": the list's last row, left-aligned, no void under it. */
+.mh-topics .md-foot {
+  justify-content: flex-start;
+  padding: 0;
+  border-top: 1px solid #eceef0;
+}
+.mh-topics .md-foot .md-foot-btn {
+  width: 100%;
+  min-height: 48px;
+  text-align: left;
+}
+
+/* Add blood test: one clean grid, full-width select, one light border per input. */
+.mh-add-test .alr-add-form {
+  margin: 4px 0 8px;
+  padding: 12px;
+  border: 0;
+  border-radius: 10px;
+  background: #f4f6f7;
+}
+.mh-add-test .alr-add-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.mh-add-test .alr-add-select,
+.mh-add-test .alr-add-name {
+  grid-column: 1 / -1;
+}
+.mh-add-test .alr-add-select,
+.mh-add-test .alr-add-input,
+.mh-add-test .alr-add-value,
+.mh-add-test .alr-add-unit,
+.mh-add-test .alr-add-name,
+.mh-add-test .alr-add-date {
+  width: 100%;
+  border: 1px solid #dde1e4;
+  box-shadow: none;
+}
+.mh-add-test .alr-add-save {
+  background: var(--color-brand-text);
+  border-color: var(--color-brand-text);
+}
+.mh-add-test .alr-add-save:disabled {
+  opacity: 1;
+  background: #e4e7ea;
+  border-color: #e4e7ea;
+  color: #4a535c; /* 7:1 on its fill */
+}
+
+/* Settings: one heading level; group labels plain; the storage card's question in plain text. */
+.mh-settings .about-card .health-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+.mh-settings .about-card .section-icon {
+  display: none;
+}
+.mh-settings .hr-sync .hr-sync-btn,
+.mh-foot-storage .hr-sync .hr-sync-btn {
+  background: none;
+  border: 0;
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 600;
+  text-align: left;
+  padding: 0;
+  min-height: 44px;
+  width: auto;
+}
+.mh-settings .hr-sync,
+.mh-foot-storage .hr-sync {
+  background: #fff;
+  border: 0;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+@media (max-width: 768px) {
+  .mh-foot-storage {
+    margin: 0 10px;
+  }
+}
+
+/* The placeholder tiles before a plan: grey, not a status colour. */
+.stat-card--awaiting .stat-status {
+  color: var(--color-text-secondary);
+  background: #f2f4f5;
+}
+
+/* Desktop: the chat column only as tall as it needs, held in view, with its own scroll. */
+@media (min-width: 769px) {
+  .health-tool-content {
+    align-items: start;
+  }
+  .health-tool-chat {
+    align-self: start;
+    max-height: calc(100vh - 48px);
+    overflow: hidden;
+  }
+  .mh-header {
+    min-height: 28px;
+  }
+}
+/* The title row on a phone holds Sign in and the person button: no band of its own. */
+@media (max-width: 768px) {
+  .mh-header {
+    margin: 0 10px;
+    gap: 8px;
+  }
+  .mh-header-actions {
+    gap: 4px;
+  }
+}
+/* One ink for My health's section symbols (design review 2026-11-06): the accent, not a tint each. */
+.mh-topic-head .section-icon,
+.mh-nav .section-icon {
+  color: var(--color-brand-text) !important;
 }
