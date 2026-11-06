@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { generateSuggestions, weightMedicationTrigger, lipidMarkerFor, joinWithAnd } from './suggestions';
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { screeningForm } from './input-form';
-import { LIPID_TREATMENT_TARGETS, NON_HDL_THRESHOLDS, type UnitSystem } from './units';
+import { HBA1C_THRESHOLDS, LIPID_TREATMENT_TARGETS, NON_HDL_THRESHOLDS, type UnitSystem } from './units';
 import type { HealthInputs, HealthResults, MedicationInputs, SuggestionInputs, ScreeningInputs } from './types';
 import {
   canIncreaseGlp1Dose, shouldSuggestGlp1Switch, canIncreaseDose, shouldSuggestSwitch, getCurrentPotency, gradedDose,
@@ -2141,6 +2141,7 @@ describe('generateSuggestions', () => {
       reasons: string[];
     }
     const HBA1C = 'prediabetic HbA1c';
+    const HBA1C_DIABETIC = 'diabetic-range HbA1c';
     const TG = 'elevated triglycerides';
     const BP = 'elevated blood pressure';
     const APOB = 'elevated ApoB';
@@ -2189,11 +2190,11 @@ describe('generateSuggestions', () => {
       { name: 'BMI 28.5, unknown waist, no marker', weightKg: 90.3, on: true, reasons: [] },
       { name: 'BMI 28.5, healthy waist, no marker', weightKg: 90.3, waistCm: 83.7, on: false, reasons: [] },
       { name: "BMI 28.6, WHtR 0.47, no marker (Brad's ruling 1)", weightKg: 90.6, waistCm: 83.7, on: false, reasons: [] },
-      { name: 'BMI 28.6, WHtR 0.47, HbA1c, TG and BP raised (group 2)', weightKg: 90.6, waistCm: 83.7, hba1c: 48, triglycerides: 2, systolicBp: 140, diastolicBp: 90, on: true, reasons: [HBA1C, TG, BP] },
+      { name: 'BMI 28.6, WHtR 0.47, HbA1c, TG and BP raised (group 2)', weightKg: 90.6, waistCm: 83.7, hba1c: 48, triglycerides: 2, systolicBp: 140, diastolicBp: 90, on: true, reasons: [HBA1C_DIABETIC, TG, BP] },
       { name: 'BMI 29.9, WHtR 0.52', weightKg: 94.7, waistCm: 92.6, on: true, reasons: [WAIST] },
       { name: 'BMI 30.0, WHtR 0.40', weightKg: 95.1, waistCm: 71.2, on: true, reasons: [] },
       { name: 'BMI 30.5, healthy waist, no marker', weightKg: 96.6, waistCm: 83.7, on: true, reasons: [] },
-      { name: 'BMI 35.0 with every marker raised', weightKg: 111, waistCm: 106.8, hba1c: 48, triglycerides: 2, systolicBp: 140, diastolicBp: 90, apoB: 1.5, on: true, reasons: [HBA1C, TG, BP, APOB, WAIST] },
+      { name: 'BMI 35.0 with every marker raised', weightKg: 111, waistCm: 106.8, hba1c: 48, triglycerides: 2, systolicBp: 140, diastolicBp: 90, apoB: 1.5, on: true, reasons: [HBA1C_DIABETIC, TG, BP, APOB, WAIST] },
     ];
     const inputsOf = ({ name: _n, on: _o, reasons: _r, ...values }: Row): HealthInputs => ({ heightCm: 178, sex: 'male', birthYear: 1980, ...values });
 
@@ -2231,6 +2232,10 @@ describe('generateSuggestions', () => {
       { name: 'no reason', bmi: 30.5, inputs: {}, text: `With a BMI of 30.5${TAIL}` },
       { name: 'a whole-number BMI prints as the tile shows it', bmi: 31, inputs: {}, text: `With a BMI of 31${TAIL}` },
       { name: 'one reason', bmi: 26, whr: 0.46, inputs: { hba1c: 40 }, text: `With a BMI of 26 and prediabetic HbA1c${TAIL}` },
+      // Brad 2026-11-06: a diabetic-range HbA1c is named as such, at the urgent card's line.
+      { name: 'a diabetic-range HbA1c', bmi: 26, whr: 0.46, inputs: { hba1c: 50 }, text: `With a BMI of 26 and diabetic-range HbA1c${TAIL}` },
+      { name: 'HbA1c at the diabetic line', bmi: 26, whr: 0.46, inputs: { hba1c: HBA1C_THRESHOLDS.diabetes }, text: `With a BMI of 26 and diabetic-range HbA1c${TAIL}` },
+      { name: 'HbA1c just under the diabetic line', bmi: 26, whr: 0.46, inputs: { hba1c: 47.4 }, text: `With a BMI of 26 and prediabetic HbA1c${TAIL}` },
       {
         name: 'three reasons',
         bmi: 26,
