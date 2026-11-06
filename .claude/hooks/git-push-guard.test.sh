@@ -175,11 +175,56 @@ t "$S/b" "gh pr create --body \"\$(cat <<'EOF'${NL})\"; git push $FF; echo \"${N
 t "$S/b" "gh pr create --body \"\$(cat <<'EOF'${NL}1) git push \`git push $FF\`${NL}EOF${NL})\"" DENY
 t "$S/b" "git commit -m \"plain text with 'quotes'\" && git push" allow
 t "$S/b" "git commit -m 'single \$(git push $FF) quoted' && git push" allow
-t "$S/b" "git commit -m \$'ansi it\\'s \$(git push $FF)' && git push" allow
+t "$S/b" "git commit -m \$'ansi it\\'s \$(git push $FF)' && git push" DENY
+t "$S/b" "git commit -m \$'a\\' ; git push $FF origin main ; #'" DENY
+t "$S/b" "git commit -m \$'line\\nnext \$(git push $FF)' && git push" allow
 t "$S/b" "git commit -m \"Fix \$HOME docs\" && git push" allow
 t "$S/b" "git commit -F - <<'EOF'${NL}Plain message (US-64).${NL}EOF${NL}git push" allow
 t "$S/b" "gh pr create --body \"\$(cat <<'EOF'${NL}Refuses git push $FF, \`code\` and \"quotes\".${NL}EOF${NL})\"" allow
 t "$S/b" "gh pr create --body \"\$(cat <<'EOF'${NL}Summary (US-64): it's fine.${NL}EOF${NL})\"" allow
+# PR 930 review (US-64 AC23): escapes are read in pairs, so "x\\" then a newline still ends the word.
+t "$S/b" "bash -c 'echo x\\\\${NL}git push $FF origin main'" DENY
+t "$S/b" "bash -c \"echo x\\\\\\\\${NL}git push $FF origin main\"" DENY
+t "$S/b" "bash <<'EOF'${NL}echo x\\\\${NL}git push $FF origin main${NL}EOF" DENY
+t "$S/b" "bash <<'EOF'${NL}echo x\\\\${NL}git push $FF origin main" DENY
+t "$S/b" "echo x\\\\${NL}git push $FF origin main${NL}echo \"unclosed" DENY
+t "$S/b" "bash -c 'echo x\\\\${NL}gh pr merge 5 --squash'" DENY
+# An unquoted-delimiter body expands $(, ${ and backticks even inside its quotes; a quoted one does not.
+t "$S/b" "cat <<EOF${NL}git commit -m '\$(git push $FF origin main)'${NL}EOF" DENY
+t "$S/b" "cat <<EOF${NL}gh pr create --body '\$(gh pr merge 5 --squash)'${NL}EOF" DENY
+t "$S/b" "bash <<EOF${NL}git commit -m \$'ansi it\\'s \$(git push $FF)' && git push${NL}EOF" DENY
+t "$S/b" "bash <<-EOF${NL}${TAB}git commit -m \$'ansi it\\'s \$(git push $FF)' && git push${NL}${TAB}EOF" DENY
+t "$S/b" "cat <<EOF${NL}x='\`git push $FF\`'${NL}EOF" DENY
+t "$S/b" "cat <<EOF${NL}x='\${X:-\$(git push $FF)}'${NL}EOF" DENY
+t "$S/b" "cat <<'EOF'${NL}git commit -m '\$(git push $FF origin main)'${NL}EOF" allow
+t "$S/b" "cat <<EOF${NL}it's \\\$(not run) fine${NL}EOF${NL}git push" allow
+# A backtick inside backticks is written \`; its escape layer is read before the inside is parsed.
+t "$S/b" "echo \`echo \\\`git push $FF origin main\\\` \`" DENY
+t "$S/b" "echo \"\`echo \\\`git push $FF\\\`\`\"" DENY
+# A # that starts a word starts a comment, so the next line is a command; inside a word it is text.
+t "$S/b" "git commit -m #\"${NL}git push $FF origin main${NL}\"" DENY
+t "$S/b" "git commit -m #'${NL}git push $FF origin main${NL}'" DENY
+t "$S/b" "gh pr create --body #\"${NL}gh pr merge 5 --squash${NL}\"" DENY
+t "$S/b" "git commit -m #\"${NL}git push $FF origin main${NL}#\"" DENY
+t "$S/b" "gi\\${NL}t push $FF origin main" DENY
+t "$S/b" "echo a#b && git push $FF" DENY
+t "$S/b" "echo \$(true)#; git push $FF" DENY
+t "$S/b" "echo \`true\`#; git push $FF" DENY
+t "$S/b" "git push # it's fine" allow
+# ANSI-C and locale quotes are decoded as bash does (\$'\\x67it' is git).
+t "$S/b" "\$'\\x67it' push $FF origin main" DENY
+t "$S/b" "g\$''it push $FF origin main" DENY
+t "$S/b" "\$\"git\" push $FF origin main" DENY
+t "$S/b" "bash -c \"\$'\\x67it' \$'\\x70ush' \$'\\x2df'\" # push" DENY
+# A cd inside a nested shell, backtick or heredoc does not move the outer command, so beside a push it is refused.
+t "$S/b" "bash -c 'cd ../a && git push'" DENY
+t "$S/b" "sh -c 'cd ../a'; git push" allow
+# A $(...) inside double quotes is parsed afresh: its own quotes, and its \\ kept (corpus rerun, 2026-11-06).
+t "$S/b" "echo \"\$(bash <<< \"git push $FF\")\"" DENY
+t "$S/b" "echo \"\$(bash -c 'echo x\\\\${NL}git push $FF origin main')\"" DENY
+t "$S/b" "echo \"\$(echo \"a b\" | wc -w)\" && git push" allow
+t "$S/b" "sh -c 'cd ../a && git pull'; git push" DENY
+t "$S/b" "echo \`cd ../a && git pull\`; git push" DENY
 # On main or a detached HEAD, a refspec onto main must push main itself (adversary R4).
 t "$S/b" "git push origin claude/x:main" DENY
 t "$S/b" "git push origin HEAD~1:refs/heads/main" DENY
