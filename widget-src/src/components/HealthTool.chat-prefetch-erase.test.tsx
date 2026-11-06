@@ -3,7 +3,7 @@
  * US-11 AC2g: after an erase, the chat is never handed the list the page
  * fetched ahead of time for the erased record. HealthTool lists the
  * conversations once the four answers hold (US-62 AC13), so the floating chat
- * opens with them; the list is the record's. After Delete All My Data and a new
+ * opens with them; the list is the record's. After Delete all my data and a new
  * onboarding, the floating chat must not open with the erased record's
  * conversation titles, and a list asked for before the erase that answers after
  * it must not be used either. The old list may stay in the page's memory,
@@ -48,6 +48,7 @@ vi.mock('./ChatSection', () => ({
   },
 }));
 import { HealthTool } from './HealthTool';
+import { deleteButton } from '../testing/settings';
 
 const TODAY = localDay(new Date());
 const conversations = (...titles: string[]): ChatListResult => ({
@@ -101,7 +102,7 @@ function type(input: Element | null, value: string) {
 const leave = (input: Element | null) => act(() => { (input as HTMLElement).blur(); });
 
 async function erase(view: RenderResult) {
-  fireEvent.click(view.getByText('Delete All My Data'));
+  fireEvent.click(deleteButton(view.container)); // in Settings (US-62 AC24)
   await waitFor(() => expect(fab()).toBeNull()); // the record is empty: the chat waits again
 }
 /** The onboarding's four answers again, on the erased record. */

@@ -9,6 +9,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import { InputPanel } from './InputPanel';
+import { myHealth } from '../testing/my-health-props';
 import { openAboutYou } from '../testing/health-tool-harness';
 
 vi.mock('../lib/server-api', async importOriginal => ({ ...await importOriginal<typeof import('../lib/server-api')>(), trackProductEvent: vi.fn() }));
@@ -26,6 +27,7 @@ const renderPanel = () => {
   const onScreeningChange = vi.fn();
   const scheduleLongitudinalSave = vi.fn();
   const props = {
+    ...myHealth({ settingsOpen: true }), // About you, low, sits in Settings (US-62 AC24)
     inputs, effectiveInputs: inputs, onChange, errors: {}, unitSystem: 'si' as const, onUnitSystemChange: vi.fn(),
     unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
     labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],

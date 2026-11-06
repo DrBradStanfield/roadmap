@@ -7,6 +7,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import { InputPanel } from './InputPanel';
+import { myHealth } from '../testing/my-health-props';
 
 vi.mock('../lib/server-api', async importOriginal => ({ ...await importOriginal<typeof import('../lib/server-api')>(), trackProductEvent: vi.fn() }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -16,6 +17,7 @@ vi.stubGlobal('matchMedia', (q: string) => ({ matches: !q.includes('max-width'),
 
 const inputs = { sex: 'male' as const, heightCm: 180, birthYear: 1960, birthMonth: 1 };
 const props = (aboutYouLow: boolean) => ({
+  ...myHealth({ settingsOpen: true }), // About you, low, sits in Settings (US-62 AC24)
   inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si' as const, onUnitSystemChange: vi.fn(),
   unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
   labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],

@@ -5,7 +5,7 @@
  * and Enter or Space opens and closes them as a click does.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
 import { calculateHealthResults, statTiles, type HealthInputs } from '@roadmap/health-core';
 
 vi.mock('../lib/roadmap-data', () => ({
@@ -15,7 +15,7 @@ vi.mock('../lib/server-api', () => ({ trackABConversion: vi.fn(), trackProductEv
 vi.mock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: false }));
 vi.mock('../lib/assistant-config', () => ({ getSkipEmailGate: () => false }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
-import { ResultsPanel } from './ResultsPanel';
+import { PlanHost as ResultsPanel } from '../testing/plan-host';
 
 afterEach(cleanup);
 
@@ -113,13 +113,33 @@ describe('US-07 AC16: a snapshot tile with evidence from the keyboard', () => {
 });
 
 describe('US-07 AC16: the printed plan keeps them', () => {
+  // The PDF's copy of the plan is drawn only while Save as PDF copies it (US-62 AC26).
   it('the PDF snapshot, which drops buttons, still holds the tiles and the toggles', async () => {
-    const { getReportHtml } = await vi.importActual<typeof import('../lib/roadmap-data')>('../lib/roadmap-data');
-    plan();
-    const report = await getReportHtml();
-    expect(report.success).toBe(true);
-    const printed = new DOMParser().parseFromString(report.html!, 'text/html');
+    const { getReportHtml: real } = await vi.importActual<typeof import('../lib/roadmap-data')>('../lib/roadmap-data');
+    const { getReportHtml } = await import('../lib/roadmap-data');
+    let html = '';
+    vi.mocked(getReportHtml).mockImplementation(real);
+    vi.stubGlobal('open', () => ({ document: { write: (h: string) => { html = h; }, close() {} }, print() {} }));
+    const view = plan();
+    expect(view.container.querySelector('.health-results-panel')).toBeNull(); // not drawn on screen
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await vi.waitFor(() => expect(html).not.toBe(''));
+    vi.unstubAllGlobals();
+    expect(view.container.querySelector('.health-results-panel')).toBeNull();
+    const printed = new DOMParser().parseFromString(html, 'text/html');
     expect(Array.from(printed.querySelectorAll('.stat-label')).map((l) => l.textContent)).toContain('LDL Cholesterol');
     expect(printed.querySelectorAll('.evidence-toggle').length).toBeGreaterThan(1);
   });
 });
+
+// US-62 AC28, review re-check: which reasons are open is the screen's and its PDF's,
+// and an erase forgets it with the record.
+it('Delete all my data closes every opened reason', async () => {
+  const results = calculateHealthResults(inputs)!;
+  const view = render(<ResultsPanel results={results} isValid tiles={statTiles(results, { unitSystem: 'si' })} onDeleteData={async () => true}/>);
+  fireEvent.click(view.getAllByRole('button', { name: /Why this suggestion\?/ })[0]);
+  expect(view.container.querySelectorAll('.evidence-content')).toHaveLength(1);
+  fireEvent.click(view.getByRole('button', { name: 'Delete all my data' }));
+  await waitFor(() => expect(view.container.querySelectorAll('.evidence-content')).toHaveLength(0));
+});
+

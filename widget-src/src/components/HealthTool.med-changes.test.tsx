@@ -35,6 +35,7 @@ vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 
 import { HealthTool } from './HealthTool';
+import { deleteButton } from '../testing/settings';
 
 useHealthToolLifecycle();
 
@@ -524,7 +525,7 @@ describe('US-16 AC2 / US-09: erasing the data clears the pending chat Undo', () 
     vi.stubGlobal('confirm', () => true);
     vi.stubGlobal('alert', () => {});
     fireEvent.click(await waitFor(() => {
-      const link = Array.from(document.querySelectorAll('button, a')).find((e) => e.textContent?.trim() === 'Delete All My Data');
+      const link = deleteButton();
       expect(link).toBeTruthy();
       return link!;
     }));

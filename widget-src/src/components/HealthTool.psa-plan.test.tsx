@@ -27,6 +27,7 @@ vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 
 import { HealthTool } from './HealthTool';
+import { planTitles } from '../testing/plan-on-page';
 
 useHealthToolLifecycle();
 
@@ -47,7 +48,8 @@ const TODAY = localDay(new Date());
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const NEXT_DUE = `Next PSA test due ${MONTHS[Number(TODAY.slice(5, 7)) - 1]} ${Number(TODAY.slice(0, 4)) + 1}.`;
 
-const titles = (root: HTMLElement) => [...root.querySelectorAll('.suggestion-title')].map(t => t.textContent);
+// A screening suggestion sits on its test's row, a line with its title behind the info button (US-62 AC20).
+const titles = (root: HTMLElement) => planTitles(root);
 
 describe('the web plan reads the saved PSA measurement (US-06 AC14)', () => {
   it('a saved PSA of 6.5 shows "Elevated PSA", and no "up to date" beside it (US-06 AC17, Brad 2026-11-03)', async () => {

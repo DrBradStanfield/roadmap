@@ -1,5 +1,5 @@
 /**
- * US-62 AC15: the iPhone's colour on the web. Each My data section's title
+ * US-62 AC15: the iPhone's colour on the web. Each My health section's title
  * carries a tinted symbol (ios/HealthRoadmap/MyData/SectionTitle.swift), and
  * each plan card leads with its category's symbol on a tinted rounded square
  * (ios/HealthRoadmap/Plan/PlanCardView.swift, CategoryIcon). Same meanings and
@@ -9,14 +9,14 @@
  */
 import type { CSSProperties, ReactNode } from 'react';
 
-type IconName = 'person' | 'heart' | 'drop' | 'pills' | 'stethoscope' | 'leaf' | 'folder'
-  | 'fork' | 'run' | 'moon' | 'sun' | 'sparkles';
+type IconName = 'person' | 'heart' | 'drop' | 'pills' | 'stethoscope' | 'leaf'
+  | 'fork' | 'run' | 'moon' | 'sun' | 'sparkles' | 'scale' | 'bed' | 'ellipsis';
 
 /** Apple's system colours (light appearance), as the iPhone tints them. */
 const TINTS = {
   red: [255, 59, 48], orange: [255, 149, 0], yellow: [255, 204, 0], green: [52, 199, 89],
   mint: [0, 199, 190], teal: [48, 176, 199], blue: [0, 122, 255], indigo: [88, 86, 214],
-  purple: [175, 82, 222], pink: [255, 45, 85], gray: [142, 142, 147],
+  purple: [175, 82, 222], pink: [255, 45, 85], gray: [142, 142, 147], cyan: [50, 173, 230],
 } as const;
 type Tint = keyof typeof TINTS;
 
@@ -29,13 +29,29 @@ const SHAPES: Record<IconName, ReactNode> = {
   pills: <g transform="rotate(-45 12 12)"><path d="M12 8.5H7a3.5 3.5 0 0 0 0 7h5Z"/><path d="M12 8.5h5a3.5 3.5 0 0 1 0 7h-5Z" opacity="0.55"/></g>,
   stethoscope: <g {...line}><path d="M5 3v5a4 4 0 0 0 8 0V3"/><path d="M9 12v2.5a5 5 0 0 0 10 0V12"/><circle cx="19" cy="10" r="2"/></g>,
   leaf: <g><path d="M20 3.5C11 3.5 5 7.5 5 14c0 2.2.8 4 1.8 5.2C14.5 20 20.5 14 20 3.5Z"/><path {...line} d="M4 21c3-5 6-8 10-11"/></g>,
-  folder: <path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2h8.5A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5Z"/>,
   fork: <g {...line}><path d="M7 3v5a2 2 0 0 0 4 0V3M9 10v11"/><path d="M17 21V3c-2.2 1.8-3 4.6-3 8h3"/></g>,
   run: <g><circle cx="15" cy="4.5" r="2.2"/><path {...line} d="M7 9.5l4-2 3 2 2.5 3H19M14 9.5l-2.5 5 3 2.5-1.5 4.5M11.5 14.5L9 18H5"/></g>,
   moon: <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/>,
   sun: <g><circle cx="12" cy="12" r="4.5"/><path {...line} d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g>,
+  scale: <g><path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/><path fill="#fff" d="M8 9.5a4 4 0 0 1 8 0Z"/></g>,
+  bed: <g><path d="M3 6v13M21 19v-5a3 3 0 0 0-3-3h-7v5" {...line}/><path {...line} d="M3 16h18"/><circle cx="7" cy="12" r="2"/></g>,
+  ellipsis: <path fillRule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20ZM7 10.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm5 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm5 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z"/>,
   sparkles: <g><path d="M10 3l1.8 5.2L17 10l-5.2 1.8L10 17l-1.8-5.2L3 10l5.2-1.8Z"/><path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9Z"/></g>,
 };
+
+/** A symbol on its own, in the current colour: the person button's, for one (US-62 AC24). */
+export function Glyph({ name, size }: { name: IconName; size: number }) {
+  return <Icon name={name} size={size}/>;
+}
+
+/** The chat's speech bubbles, one drawing for the Chat tab and the floating chat button. Stroked
+ *  in the current colour by its <svg> (bubble.left.and.text.bubble.right). */
+export const CHAT_BUBBLES = (
+  <>
+    <path d="M4 5h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H9l-3 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/>
+    <path d="M16 9h4a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1v3l-3-3h-3a2 2 0 0 1-2-1.5"/>
+  </>
+);
 
 function Icon({ name, size }: { name: IconName; size: number }) {
   return (
@@ -47,15 +63,20 @@ function Icon({ name, size }: { name: IconName; size: number }) {
 
 const rgb = (tint: Tint, alpha = 1) => `rgba(${TINTS[tint].join(', ')}, ${alpha})`;
 
-/** The My data sections, as SectionTitle.swift names and tints them. */
+/** The My health sections, as SectionTitle.swift and TopicPlan.swift name and tint them. */
 const SECTIONS = {
   aboutYou: ['person', 'orange'],
+  weight: ['scale', 'purple'],
+  sleep: ['bed', 'cyan'],
+  fitness: ['run', 'orange'],
+  bloodPressure: ['heart', 'red'],
+  cholesterol: ['drop', 'red'],
+  skin: ['sun', 'orange'],
+  other: ['ellipsis', 'gray'],
   vitals: ['heart', 'red'],
   bloodTests: ['drop', 'blue'],
-  medications: ['pills', 'teal'],
   screening: ['stethoscope', 'indigo'],
   supplements: ['leaf', 'green'],
-  record: ['folder', 'gray'],
 } as const satisfies Record<string, readonly [IconName, Tint]>;
 export type SectionKey = keyof typeof SECTIONS;
 

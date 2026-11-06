@@ -29,7 +29,8 @@ vi.mock('../lib/server-api', () => ({ trackABConversion: mocks.trackABConversion
 vi.mock('../lib/build-flags', () => ({ get SHOPIFY_SURFACE() { return mocks.shopify.value; } }));
 vi.mock('../lib/assistant-config', () => ({ getSkipEmailGate: () => mocks.skip.value }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
-import { ResultsPanel, REMINDER_SIGNUP_DONE } from './ResultsPanel';
+import { REMINDER_SIGNUP_DONE } from './ResultsPanel';
+import { PlanHost as ResultsPanel } from '../testing/plan-host';
 
 const results = calculateHealthResults({ heightCm: 175, sex: 'male' });
 

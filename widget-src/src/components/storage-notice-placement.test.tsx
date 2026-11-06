@@ -21,6 +21,7 @@ vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('min-width'), 
 
 import { GuestEmailCapture } from './ResultsPanel';
 import { InputPanel } from './InputPanel';
+import { MY_HEALTH_PROPS } from '../testing/my-health-props';
 
 afterEach(cleanup);
 
@@ -42,6 +43,7 @@ describe('US-09 AC5 — one storage line, in the plan\'s storage card', () => {
   it('Starting Info has no storage sentence once a value is in', () => {
     const inputs = { sex: 'male' as const, heightCm: 180, weightKg: 80 };
     const props = {
+      ...MY_HEALTH_PROPS,
       inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si' as const, onUnitSystemChange: vi.fn(),
       unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
       labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],

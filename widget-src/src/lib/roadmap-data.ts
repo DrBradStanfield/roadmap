@@ -19,7 +19,7 @@ import {
   resolveLabCatalogEntry,
 } from '@roadmap/health-core';
 import { MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
-import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
+import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
@@ -187,6 +187,10 @@ export async function loadLabValues(): Promise<ApiLabValue[] | null> {
 export function loadLabValuesSync(): ApiLabValue[] | null {
   return store ? store.loadLabValues() : null;
 }
+/** My health's worked-out series (US-62 AC21), over the screen's profile; none before the store opens. */
+export function loadDerivedSeries(shown: Parameters<RoadmapStore['loadDerivedSeries']>[0]): DerivedSeries {
+  return store ? store.loadDerivedSeries(shown) : { whtr: [], egfr: [] };
+}
 
 // --- writes ---
 // `erase`: the erase the page showed when the write was asked for (US-16
@@ -342,11 +346,13 @@ export async function deleteUserData(): Promise<{ success: boolean; error?: stri
 // Shopify surface).
 // ---------------------------------------------------------------------------
 
-/** The rendered plan panel, cloned with interactive chrome stripped. */
+/** The plan as its PDF prints it (My health keeps it hidden, ResultsPanel's
+ *  PlanReport), cloned and shown, with interactive chrome stripped. */
 function clonePlanPanel(): HTMLElement | null {
   const panel = document.querySelector('.health-results-panel');
   if (!panel) return null;
   const clone = panel.cloneNode(true) as HTMLElement;
+  clone.hidden = false;
   // Strip interactive chrome + the sync-status box (meaningless on paper/email).
   clone.querySelectorAll('.no-print, .hr-sync, button, input, select, textarea').forEach((el) => el.remove());
   return clone;

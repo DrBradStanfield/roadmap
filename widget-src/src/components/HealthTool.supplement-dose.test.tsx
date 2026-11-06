@@ -22,6 +22,7 @@ vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 
 import { HealthTool } from './HealthTool';
+import { deleteButton } from '../testing/settings';
 
 useHealthToolLifecycle();
 
@@ -248,7 +249,7 @@ describe('US-11: supplement dose draft erase lifecycle', () => {
         vi.stubGlobal('confirm', () => true);
         const alert = vi.fn();
         vi.stubGlobal('alert', alert);
-        fireEvent.click(view.getByText('Delete All My Data'));
+        fireEvent.click(deleteButton());
         await waitFor(() => expect(alert).toHaveBeenCalled());
       } else {
         await remoteErase(adapter);
@@ -295,7 +296,7 @@ describe('US-11: supplement dose draft erase lifecycle', () => {
       const alert = vi.fn();
       vi.stubGlobal('confirm', () => true);
       vi.stubGlobal('alert', alert);
-      fireEvent.click(view.getByText('Delete All My Data'));
+      fireEvent.click(deleteButton());
       await waitFor(() => expect(alert).toHaveBeenCalledWith(ERASE_UNREACHABLE));
       failure.mockRestore();
       expect(cleared).not.toHaveBeenCalled();
