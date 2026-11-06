@@ -186,9 +186,10 @@ export const ERASE_DONE_CHAT_PENDING =
   'Your health record is deleted. Your chat history could not be reached just now; ' +
   'it is erased on your next chat.' + ERASE_DONE_TAIL;
 
-// The cloud chat history could not even be opened (US-11 AC2c): no tombstone
-// exists in this page, so nothing goes up on the next chat, and the failure may
-// be lasting (a newer schema, an unreadable file). Say where it still is.
+// The cloud chat history could not be read (US-11 AC2c), so the stored file
+// still holds its conversations, and the failure may be lasting (a newer
+// schema, an unreadable file). Say where it still is. If this page had it
+// open, its copy is tombstoned all the same (AC2g), so a hand delete lasts.
 export const ERASE_DONE_CHAT_UNREAD =
   'Your health record is deleted. Your chat history could not be read, so any chats you saved ' +
   'are still in your cloud folder, in chat-history.json.' + ERASE_DONE_TAIL;
@@ -257,6 +258,12 @@ const ONBOARDING_FIELDS: ReadonlyArray<keyof HealthInputs> = ['heightCm', 'weigh
 
 const sameRows = (a: ApiMeasurement[], b: ApiMeasurement[]) =>
   a.length === b.length && a.every((r, i) => r.id === b[i].id && r.value === b[i].value && r.recordedAt === b[i].recordedAt);
+
+/** The chat list fetched ahead of time, and the record (`epoch`) it was listed for. */
+type ChatPrefetch = { epoch: number; data: ChatPrefetchData };
+/** That list, only for the record shown: an erase starts it again (US-11 AC2g). */
+const prefetchFor = (prefetch: ChatPrefetch | null, epoch: number): ChatPrefetchData | null =>
+  (prefetch?.epoch === epoch ? prefetch.data : null);
 
 export function HealthTool({ syncControl, remindersSection, storageBar }: {
   syncControl?: (ctx: { hasData: boolean; attention: boolean }) => ReactNode;
@@ -341,7 +348,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const isFirstSaveRef = useRef(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [floatingChatOpen, setFloatingChatOpen] = useState(false);
-  const [chatPrefetch, setChatPrefetch] = useState<ChatPrefetchData | null>(null);
+  const [chatPrefetch, setChatPrefetch] = useState<ChatPrefetch | null>(null);
 
   // Clean up debounce timers on unmount to prevent stale API calls
   useEffect(() => {
@@ -612,18 +619,19 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   stageRef.current = formStage;
 
   // Pre-fetch chat conversations in background once the chat unmutes,
-  // so messages are ready instantly when the user clicks the chat bubble
+  // so messages are ready instantly when the user clicks the chat bubble.
+  // The list is this record's: an erase starts it again, and a list asked for
+  // before the erase is never handed to the chat after it (US-11 AC2g).
   useEffect(() => {
-    if (reached < 4 || chatPrefetch) return;
+    if (reached < 4 || prefetchFor(chatPrefetch, epoch)) return;
     listConversations().then((result) => {
       if (!result) return;
       setChatPrefetch({
-        conversations: result.conversations,
-        messages: [],
-        activeConversationId: null,
+        epoch,
+        data: { conversations: result.conversations, messages: [], activeConversationId: null },
       });
     });
-  }, [reached, chatPrefetch]);
+  }, [reached, epoch, chatPrefetch]);
 
   // Save any unsaved profile/demographic fields (height, sex, birthYear, birthMonth, unitSystem).
   // Returns true if saved or nothing to save; false on failure.
@@ -1522,7 +1530,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const chatSectionProps = {
     isLoggedIn: true,
     guestInputs: readChatContext,
-    prefetchedData: chatPrefetch,
+    prefetchedData: prefetchFor(chatPrefetch, epoch),
     onProposeEdit: handleProposeEdit,
   };
 
