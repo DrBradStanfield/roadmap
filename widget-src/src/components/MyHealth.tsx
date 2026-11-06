@@ -37,7 +37,7 @@ export interface FormSlots {
   planReady: boolean;
   pageOpen: boolean;
   renderPage: (tiles: StatTile[]) => ReactNode;
-  rows: { ctx: RowContext; open: (s: ValueSubject) => void; vitals: ApiMeasurement[]; blood: ApiMeasurement[]; labs: ApiLabValue[]; vitalsAsRows: boolean; withoutWeight: boolean };
+  rows: { ctx: RowContext; open: (s: ValueSubject, from?: Element) => void; vitals: ApiMeasurement[]; blood: ApiMeasurement[]; labs: ApiLabValue[]; vitalsAsRows: boolean; withoutWeight: boolean };
   legacyVitals: ReactNode;
   vitalsCue: ReactNode;
   bloodCue: ReactNode;
@@ -89,7 +89,7 @@ interface TopicParts { rows?: ReactNode; after?: ReactNode; action?: ReactNode; 
 const PILLS: readonly TopicId[] = ['bloodTests', 'cholesterol', 'supplements'];
 const titleOf = (id: TopicId) => TOPICS.find(t => t.topic === id)!.title;
 
-const RowsCard = memo(function RowsCard({ rows, onOpen, extra }: { rows: Array<RowModel | null>; onOpen: (s: ValueSubject) => void; extra?: ReactNode }) {
+const RowsCard = memo(function RowsCard({ rows, onOpen, extra }: { rows: Array<RowModel | null>; onOpen: (s: ValueSubject, from?: Element) => void; extra?: ReactNode }) {
   return (
     <div className="section-card mh-rows-card">
       <MetricRows rows={rows.filter((r): r is RowModel => r !== null)} onOpen={onOpen}/>
@@ -103,7 +103,7 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
   // The form's row opener changes every render; the rows take a stable one, so memo'd rows stay put.
   const openRef = useRef(form.rows.open);
   openRef.current = form.rows.open;
-  const onOpen = useCallback((s: ValueSubject) => openRef.current(s), []);
+  const onOpen = useCallback((s: ValueSubject, from?: Element) => openRef.current(s, from), []);
 
   const { ctx, vitals, blood, labs: labValues, vitalsAsRows, withoutWeight } = form.rows;
   // Rows (US-62 AC21), worked out only when their data changes (one long page, 40+ labs).

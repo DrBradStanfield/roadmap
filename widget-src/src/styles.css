@@ -943,6 +943,14 @@ input[type="number"] {
   cursor: pointer;
 }
 .suggestion-dismiss:hover { color: var(--color-text-heading); }
+/* 44px to press on every width (live test 2026-11-06: 21px on desktop). */
+.suggestion-dismiss {
+  min-height: 44px;
+}
+.health-tool .supplement-remove {
+  min-width: 44px;
+  min-height: 44px;
+}
 .upload-modal.alcohol-dialog {
   max-width: 360px;
   padding: 20px;
@@ -3048,7 +3056,7 @@ input[type="number"] {
 
 .chat-empty p {
   font-size: 14px;
-  color: var(--color-gray-light);
+  color: var(--color-text-secondary); /* 4.5:1 on white; #888 was 3.5:1 */
   line-height: 1.6;
   max-width: 280px;
 }
@@ -3848,11 +3856,10 @@ input[type="number"] {
   justify-content: space-between;
   gap: 12px;
   padding: 0 4px;
-  margin-bottom: 12px;
-  /* All three headers one height, the height of the tallest thing any holds
-     (column 1's Sign in pill, the plan's Save as PDF), so every column's first
-     card starts on one line. */
-  min-height: 28px;
+  /* The chat column's header is My health's title line, 44px, its card the column's 8px gap below,
+     so the chat card's top lines up with the banner's or the first card's (design review 2026-11-06). */
+  margin-bottom: 0;
+  min-height: 44px;
 }
 .hr-col-title {
   font-size: 12px;
@@ -3967,10 +3974,12 @@ input[type="number"] {
   }
   /* A fixed height: the messages scroll inside, so the chat's auto-scroll
      works and the composer stays on screen. */
+  /* The screen less the theme's sticky header (measured on the switch, HealthTool), the tab bar
+     (51px) and the card's 12px foot gap: no void, nothing of the page below under the bar. */
   .hr-tabpanel .health-tool-chat .chat-embed {
     flex: none;
-    height: calc(100vh - 150px - env(safe-area-inset-bottom, 0px));
-    height: calc(100svh - 150px - env(safe-area-inset-bottom, 0px));
+    height: calc(100vh - var(--hr-sticky-top, 0px) - 63px - env(safe-area-inset-bottom, 0px));
+    height: calc(100svh - var(--hr-sticky-top, 0px) - 63px - env(safe-area-inset-bottom, 0px));
     min-height: 300px;
   }
 
@@ -5488,6 +5497,18 @@ input[type="number"] {
   min-width: 96px;
   justify-content: flex-end;
 }
+/* The value on the card's right edge with its unit, no grid divider (design review 2026-11-06). */
+.md-history-row .bt-cell-value {
+  flex: 0 0 auto;
+  align-items: flex-end;
+  padding-right: 0;
+  border-left: 0;
+}
+.md-history-row .alr-cell-unit {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
 .md-history-bp {
   display: flex;
   align-items: center;
@@ -5790,9 +5811,8 @@ input[type="number"] {
 .mh-topics .screening-age-message {
   margin: 0 0 16px;
 }
-/* The quiet fill: a suggestion on its question (AC20), and the add form (AC22). */
-.mh-row-suggestion,
-.mh-add-test .alr-add-form {
+/* The quiet fill: a suggestion on its question (AC20). */
+.mh-row-suggestion {
   border: 0;
   border-radius: 10px;
   background: var(--bt-ink-50);
@@ -5897,9 +5917,12 @@ input[type="number"] {
   text-align: left;
   color: var(--color-brand-text);
 }
+/* On the card's own ground, no box in the box (design review 2026-11-06). */
 .mh-add-test .alr-add-form {
   margin: 4px 0 8px;
-  padding: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
 }
 .mh-add-test .alr-add-fields {
   display: grid;
@@ -5928,10 +5951,8 @@ input[type="number"] {
   border-color: var(--color-brand-text);
 }
 .mh-add-test .alr-add-save:disabled {
-  opacity: 1;
-  background: var(--bt-ink-100);
-  border-color: var(--bt-ink-100);
-  color: var(--bt-ink-500); /* 5:1 on its fill */
+  opacity: 0.45; /* still the teal button, waiting for a value */
+  color: #fff;
 }
 
 /* Settings (AC24): one heading level, plain group labels, the storage question in plain text. */
@@ -6008,8 +6029,56 @@ input[type="number"] {
   font-weight: 600;
   text-align: left;
 }
-.md-page-tiles {
+/* The latest value leads the page, large, as the iPhone's metric page (design review 2026-11-06). */
+.md-page-latest {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  margin: 4px 0 6px;
+}
+.md-page-latest-value {
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+.md-page-latest-unit {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+}
+.md-page-latest-day {
+  flex-basis: 100%;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+/* The tiles on a page: one row of plain stats, parted by a hairline, not boxes in a grid. */
+.md-page .md-page-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
   margin: 8px 0 4px;
+}
+.md-page .md-page-tiles .stat-card,
+.md-page .md-page-tiles .stat-card:hover {
+  flex: 1 1 0;
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+  padding: 8px 12px;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  transform: none;
+  border-left: 1px solid var(--bt-ink-100);
+}
+.md-page .md-page-tiles .stat-card:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.md-page .md-page-tiles .stat-card-open {
+  flex-basis: 100%;
 }
 .md-page-link {
   display: block;
@@ -6038,7 +6107,7 @@ input[type="number"] {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 14px;
   border-radius: 10px;
   color: var(--color-text-secondary);
@@ -6075,10 +6144,10 @@ input[type="number"] {
   .health-tool .mh-nav-link { transition: none; }
 }
 
-/* The placeholder tiles before a plan: grey, not a status colour. */
+/* The placeholder tiles before a plan: grey words, not a status colour, and no box. */
 .stat-card--awaiting .stat-status {
   color: var(--color-text-secondary);
-  background: var(--bt-ink-50);
+  background: none;
 }
 
 @media (min-width: 769px) {
@@ -6128,19 +6197,18 @@ input[type="number"] {
     margin-left: 10px;
     margin-right: 10px;
   }
-  .suggestion-dismiss,
   .md-foot-btn,
   .md-back,
   .feedback-btn {
     min-height: 44px;
   }
-  .supplement-remove {
-    min-width: 44px;
-    min-height: 44px;
-  }
-  /* A unit pill is small to read but 44px to press. */
+  /* A unit pill is small to read but 44px to press; on a phone it names the system alone,
+     so "Starting info" never wraps beside it. */
   .health-tool .unit-toggle-pill {
     position: relative;
+  }
+  .unit-pill-detail {
+    display: none;
   }
   .health-tool .unit-toggle-pill::after {
     content: '';

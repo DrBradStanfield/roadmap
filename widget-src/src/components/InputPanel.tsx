@@ -97,6 +97,7 @@ import { type RowContext, type ValueSubject } from './MyDataRows';
 import { ValuePage } from './ValuePage';
 import { AddLabTest } from './AddLabTest';
 import type { FormSlots, Placement } from './MyHealth';
+import { scrollToTop } from '../lib/reveal';
 
 /** The history-state key a phone value page's entry carries (US-62 AC10). */
 const VALUE_PAGE_STATE = 'hrValuePage';
@@ -379,19 +380,23 @@ export function InputPanel({
   const pageDirty = useRef(false);
   const onPageEntry = () => !!window.history.state?.[VALUE_PAGE_STATE];
   const mayLeave = () => !pageDirty.current || window.confirm(LEAVE_UNSAVED);
-  const openPage = (subject: ValueSubject) => {
-    cameFrom.current = { el: document.activeElement, y: window.scrollY };
+  // `from` is the row pressed: WebKit does not focus a button on a tap, so the active element is stale.
+  const openPage = (subject: ValueSubject, from?: Element) => {
+    cameFrom.current = { el: from ?? document.activeElement, y: window.scrollY };
     setSeenReveal(revealCell);
     setValuePage(subject);
     if (!onPageEntry()) window.history.pushState({ ...window.history.state, [VALUE_PAGE_STATE]: true }, '');
-    window.scrollTo?.(0, panelTop());
+    scrollToTop(panelRef.current);
   };
   const finishClose = () => {
     pageDirty.current = false;
     setValuePage(null);
     requestAnimationFrame(() => {
-      window.scrollTo?.(0, cameFrom.current.y);
-      if (cameFrom.current.el instanceof HTMLElement) cameFrom.current.el.focus({ preventScroll: true });
+      const { el, y } = cameFrom.current;
+      if (el instanceof HTMLElement && el.isConnected) {
+        el.scrollIntoView({ block: 'center' });
+        el.focus({ preventScroll: true });
+      } else window.scrollTo?.(0, y);
     });
   };
   const closePage = () => {
@@ -459,7 +464,6 @@ export function InputPanel({
   );
   const showTable = (open: boolean) => { setSeenReveal(revealCell); setTableOpen(open); };
   const panelRef = useRef<HTMLDivElement>(null);
-  const panelTop = () => (panelRef.current ? panelRef.current.getBoundingClientRect().top + window.scrollY - 60 : window.scrollY);
   // A grid mounted hidden never scrolled to its newest column: do it on showing.
   useEffect(() => {
     if (!tableShown) return;
@@ -1233,7 +1237,7 @@ export function InputPanel({
       title={`Switch to ${unitSystem === 'si' ? 'US (in, lbs, mg/dL)' : 'Metric (cm, kg, mmol/L)'}`}
       aria-label={`Switch units. Current: ${unitSystem === 'si' ? 'Metric' : 'US'}`}
     >
-      {unitSystem === 'si' ? 'Metric (kg, cm, mmol/L)' : 'US (in, lbs, mg/dL)'}
+      {unitSystem === 'si' ? 'Metric' : 'US'}<span className="unit-pill-detail">{unitSystem === 'si' ? ' (kg, cm, mmol/L)' : ' (in, lbs, mg/dL)'}</span>
     </button>
   );
 
@@ -1268,7 +1272,7 @@ export function InputPanel({
           )}
           {!fullForm && (
             <p className="field-hint-attention field-hint-attention--centered">
-              {formStage === 1 ? 'Enter your height and weight — then more fields will appear.' : 'Fill in the above — then more fields will appear.'}
+              {formStage === 1 ? 'Enter your height and weight, then more fields will appear.' : 'Fill in the above, then more fields will appear.'}
             </p>
           )}
         </div>

@@ -38,7 +38,7 @@ function turn(toPhone: boolean) {
     for (const h of [...heard]) h.listener({ matches: h.q.includes('max-width') ? phone : !phone });
   });
 }
-const scrollTo = vi.fn((_x: number, y: number) => { scrollY = y; });
+const scrollTo = vi.fn((x: number | ScrollToOptions, y?: number) => { scrollY = typeof x === 'object' ? x.top! : y!; });
 
 beforeEach(async () => {
   phone = true;
@@ -135,22 +135,23 @@ describe('US-20 AC6: the bottom tab bar', () => {
     expect(panelOf(view, chat).hidden).toBe(false);
   });
 
-  it('each tab keeps its own scroll position; a first visit opens at the widget\'s top', async () => {
+  // Instant, not the theme's smooth scroll: a smooth restore slid from the top for a second (live test 2026-11-06).
+  const at = (top: number) => ({ top, behavior: 'instant' });
+  it('each tab keeps its own scroll position, restored at once; a first visit opens at its panel\'s top', async () => {
     const view = await renderPhone();
-    const root = view.container.querySelector<HTMLElement>('.health-tool')!;
-    let widgetTop = -300; // the widget's top, relative to the viewport
-    vi.spyOn(root, 'getBoundingClientRect').mockImplementation(() => ({ top: widgetTop } as DOMRect));
     const [health, chat] = within(view.getByRole('tablist')).getAllByRole('tab');
+    let chatTop = 250; // the chat panel's top, relative to the viewport, under the page's title block
+    vi.spyOn(panelOf(view, chat), 'getBoundingClientRect').mockImplementation(() => ({ top: chatTop } as DOMRect));
 
     scrollY = 900; // down My health
-    fireEvent.click(chat); // never visited: to the widget's top
-    expect(scrollTo).toHaveBeenLastCalledWith(0, 600);
+    fireEvent.click(chat); // never visited: its panel fills the screen, from its top (design review 2026-11-06)
+    expect(scrollTo).toHaveBeenLastCalledWith(at(1150));
 
-    scrollY = 1500; widgetTop = -900; // down the chat
+    scrollY = 1500; chatTop = -350; // down the chat
     fireEvent.click(health);
-    expect(scrollTo).toHaveBeenLastCalledWith(0, 900);
+    expect(scrollTo).toHaveBeenLastCalledWith(at(900));
     fireEvent.click(chat);
-    expect(scrollTo).toHaveBeenLastCalledWith(0, 1500);
+    expect(scrollTo).toHaveBeenLastCalledWith(at(1500));
   });
 
   it('the bar lives inside the widget, sticky, opaque, never fixed; the old fixed plan button is gone', async () => {
@@ -177,11 +178,11 @@ describe('US-20 AC6: the bottom tab bar', () => {
     const view = await renderPhone();
     const tabs = within(view.getByRole('tablist'));
     fireEvent.click(tabs.getByRole('tab', { name: 'Chat' }));
-    const box = view.getByPlaceholderText('Ask a follow-up…') as HTMLTextAreaElement;
+    const box = view.getByPlaceholderText('Ask a question') as HTMLTextAreaElement;
     fireEvent.change(box, { target: { value: 'What about my LDL?' } });
     fireEvent.click(tabs.getByRole('tab', { name: 'My health' }));
     fireEvent.click(tabs.getByRole('tab', { name: 'Chat' }));
-    expect(view.getByPlaceholderText('Ask a follow-up…')).toBe(box);
+    expect(view.getByPlaceholderText('Ask a question')).toBe(box);
     expect(box.value).toBe('What about my LDL?');
   });
 

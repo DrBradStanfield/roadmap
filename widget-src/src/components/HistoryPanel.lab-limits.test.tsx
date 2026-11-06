@@ -64,7 +64,7 @@ it('US-12 AC20: a value page lists a limit with its symbol and charts it hollow,
   const view = render(<ValuePage tiles={[]} onOpen={() => {}} subject={{ kind: 'core', metric: 'ldl' }} history={[ldl('l1', 2.8, '2026-06-01'), ldl('l2', 1.5, '2026-07-01', '<')]}
     labValues={[]} ctx={{ grading: { sex: 'male' }, plan: null, unitOf: () => 'si' }} onSave={vi.fn()} onClose={() => {}} dirtyRef={{ current: false }}/>);
   const shown = [...view.container.querySelectorAll('.md-history .bt-value-num')].map(n => n.textContent);
-  expect(shown).toEqual(['< 1.5', '2.8']);
+  expect(shown).toEqual(['< 1.5mmol/L', '2.8mmol/L']); // each with its unit (design review 2026-11-06)
   await waitFor(() => expect(charts.length).toBeGreaterThan(0), { timeout: 10_000 });
   const [line, limits] = charts.at(-1).data.datasets;
   expect(line.data.map((p: { y: number }) => p.y)).toEqual([2.8]);
@@ -80,7 +80,7 @@ it('US-12 AC21: on the value page, a limit\'s colour and note always agree, bloo
   // Weight "> 90" against a 70 kg ideal: certainly red, so no "cannot grade"; "> 70" is open: no colour, the note.
   const weights = page({ kind: 'core', metric: 'weight' }, [vital('w1', 'weight', 90, '2026-07-01', '>'), vital('w2', 'weight', 70, '2026-08-01', '>')]);
   const cells = [...weights.container.querySelectorAll('.md-history .bt-cell-value')];
-  expect(cells.map(c => [c.querySelector('.bt-value-num')?.textContent, c.getAttribute('title')])).toEqual([['> 70.0', LIMIT_NOT_GRADED], ['> 90.0', null]]);
+  expect(cells.map(c => [c.querySelector('.bt-value-num')?.textContent, c.getAttribute('title')])).toEqual([['> 70.0kg', LIMIT_NOT_GRADED], ['> 90.0kg', null]]);
   cleanup();
   // Blood pressure "< 125/78": open, so no colour and the note; "< 110/< 70" certainly on target.
   const bp = page({ kind: 'bp' }, [vital('s1', 'systolic_bp', 125, '2026-08-01', '<'), vital('d1', 'diastolic_bp', 78, '2026-08-01'),

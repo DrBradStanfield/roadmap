@@ -118,12 +118,18 @@
 .hr-modal::backdrop { background: rgba(28, 43, 51, 0.45); }
 .hr-modal--wide { max-width: 960px; }
 .hr-modal-inner { position: relative; padding: 24px 24px 20px; }
-.hr-modal h2 { font-size: 19px; margin: 0 32px 6px 0; }
+.hr-modal h2 { font-size: 19px; margin: 0 48px 6px 0; }
 .hr-modal-sub { font-size: 13.5px; color: #5a6b73; margin: 0 0 14px; }
-.hr-modal-close {
-  position: absolute; top: 10px; right: 12px; background: none; border: 0;
-  font-size: 24px; line-height: 1; color: #5a6b73; cursor: pointer; padding: 4px;
+/* A round, borderless 44px button 16px in from the corner, clear of the scrollbar; the theme's
+   button border never reaches it (design review 2026-11-06). The ring shows for the keyboard only. */
+.hr-modal .hr-modal-close {
+  position: absolute; top: 12px; right: 16px; display: flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; background: none; box-shadow: none;
+  font-size: 24px; line-height: 1; color: #5a6b73; cursor: pointer;
 }
+.hr-modal .hr-modal-close:hover { background: rgba(0, 0, 0, 0.05); }
+.hr-modal .hr-modal-close:focus { outline: none; }
+.hr-modal .hr-modal-close:focus-visible { outline: 2px solid var(--color-brand-text); outline-offset: 0; }
 .hr-modal-back {
   background: none; border: 0; color: var(--color-brand-text); font-size: 13px; cursor: pointer;
   padding: 0; margin-bottom: 10px;

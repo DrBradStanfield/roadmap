@@ -120,11 +120,27 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
   // Correct on a pressure fills the Add form with its day: a pressure is one reading, corrected whole.
   const [correcting, setCorrecting] = useState<DayReading | null>(null);
 
+  // The page leads with the latest value, the iPhone's metric page (design review 2026-11-06).
+  const unitOfPoint = (id: string) => (lab?.mixedUnits ? lab.points.find(p => p.id === id)?.unit : lab?.unit);
+  const shownUnit = (r: DayReading) => (subject.kind === 'bp' ? 'mmHg' : metric ? cellLabel(metric, unit) : unitOfPoint(r.id));
+  const latest = readings[0];
+  const latestText = latest && (subject.kind === 'bp' ? pressureText(latest)
+    : metric ? savedCellText(metric, latest.value, unit, latest.comparator) : savedLabText(latest.value, latest.comparator));
+  // The ideal weight tile says the weight page's target: the line would say it twice.
+  const targetShown = target?.bare && !pageTiles.some(t => t.key === 'ibw');
+  const pointer = window.matchMedia?.('(pointer: fine)').matches ? 'Click' : 'Tap';
+
   return (
     <section className="md-page" aria-labelledby={titleId}>
-      <button type="button" className="md-back" onClick={onClose}>‹ My health</button>
+      <button type="button" className="md-back" onClick={onClose}>‹ Back</button>
       <h3 id={titleId} ref={titleRef} tabIndex={-1} className="health-section-title md-page-title">{label}</h3>
-      {target && target.bare && <p className="md-page-target">{target.full}</p>}
+      {latest && (
+        <p className="md-page-latest">
+          <span className="md-page-latest-value">{latestText}</span> <span className="md-page-latest-unit">{shownUnit(latest)}</span>
+          <span className="md-page-latest-day">{formatShortDate(latest.day)}</span>
+        </p>
+      )}
+      {targetShown && <p className="md-page-target">{target.full}</p>}
       {pageTiles.length > 0 && <div className="stats-grid md-page-tiles">{pageTiles.map(tile => <PlanTile key={tile.key} tile={tile}/>)}</div>}
       {pageKey === 'creatinine' && labEgfrHeld && (
         <button type="button" className="md-foot-btn md-page-link" onClick={() => onOpen({ kind: 'lab', seriesKey: LAB_EGFR })}>Lab eGFR results</button>
@@ -164,14 +180,14 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
               ) : metric ? (
                 <CoreValue metric={metric} unit={unit} reading={r} ctx={ctx} onCorrect={onCorrect} say={say}/>
               ) : (
-                <ValueCell value={r.value} comparator={r.comparator} unit={lab?.mixedUnits ? lab.points.find(p => p.id === r.id)?.unit : undefined}
+                <ValueCell value={r.value} comparator={r.comparator} unit={unitOfPoint(r.id)}
                            rowId={r.id} status={null} pinned={false} onCorrect={onCorrect} say={say}/>
               )}
             </li>
           ))}
         </ul>
       )}
-      {metric && <p className="md-page-hint">Tap a value to correct it.</p>}
+      {metric && <p className="md-page-hint">{pointer} a value to correct it.</p>}
       {subject.kind !== 'lab' && <p className="md-page-hint">To change units, use Settings or All results as a table.</p>}
       {messages}
     </section>
@@ -184,7 +200,7 @@ function CoreValue({ metric, unit, reading, ctx, onCorrect, say }: {
   metric: MetricType; unit: CellUnit; reading: DayReading; ctx: RowContext; onCorrect?: CorrectFn; say: (m: string) => void;
 }) {
   const status = valueStatus(metric, reading.value, ctx, reading.comparator);
-  return <ValueCell metric={metric} display={unit} grading={ctx.grading} value={reading.value} comparator={reading.comparator} rowId={reading.id}
+  return <ValueCell metric={metric} display={unit} unit={cellLabel(metric, unit)} grading={ctx.grading} value={reading.value} comparator={reading.comparator} rowId={reading.id}
                     status={status} ungraded={limitUngraded(metric, status, ctx, reading)} pinned={false} onCorrect={onCorrect} say={say}/>;
 }
 

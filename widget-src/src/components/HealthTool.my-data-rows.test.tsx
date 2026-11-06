@@ -204,7 +204,7 @@ describe('US-62 AC10: the value page', () => {
       expect.stringContaining('3.4'), expect.stringContaining('2.9'),
     ]);
     await waitFor(() => expect(page.querySelector('canvas')).not.toBeNull());
-    fireEvent.click(within(page).getByRole('button', { name: '‹ My health' }));
+    fireEvent.click(within(page).getByRole('button', { name: '‹ Back' }));
     await waitFor(() => expect(view.container.querySelector('.md-page')).toBeNull());
     expect(view.container.querySelector('.health-input-panel')!.className).not.toContain('md-page-open');
   });
@@ -218,7 +218,7 @@ describe('US-62 AC10: the value page', () => {
     await waitFor(() => expect(page.querySelector('canvas')).not.toBeNull());
     expect(within(page).getAllByRole('heading', { name: 'LDL Cholesterol' })).toHaveLength(1);
     expect(within(page).getByRole('img', { name: 'LDL Cholesterol chart' })).toBeTruthy();
-    fireEvent.click(within(page).getByRole('button', { name: '‹ My health' }));
+    fireEvent.click(within(page).getByRole('button', { name: '‹ Back' }));
     fireEvent.click(await waitFor(() => row(view, 'Blood Pressure')));
     page = view.container.querySelector<HTMLElement>('.md-page')!;
     await waitFor(() => expect(page.querySelectorAll('canvas')).toHaveLength(2));
@@ -513,7 +513,7 @@ describe('US-62 AC10 review fixes: the back gesture', () => {
     act(() => { history.back(); });
     await waitFor(() => expect(view.container.querySelector('.md-page')).toBeNull());
     fireEvent.click(row(view, 'HbA1c'));
-    fireEvent.click(within(page(view)).getByRole('button', { name: '‹ My health' }));
+    fireEvent.click(within(page(view)).getByRole('button', { name: '‹ Back' }));
     await waitFor(() => expect(view.container.querySelector('.md-page')).toBeNull());
     expect(history.state?.hrValuePage).toBeFalsy();
   });
@@ -530,7 +530,7 @@ describe('US-62 AC10 review fixes: the back gesture', () => {
     expect((within(page(view)).getByLabelText(/Value/) as HTMLInputElement).value).toBe('2.2');
     await waitFor(() => expect(history.state?.hrValuePage).toBe(true));
     confirm.mockReturnValue(true);
-    fireEvent.click(within(page(view)).getByRole('button', { name: '‹ My health' }));
+    fireEvent.click(within(page(view)).getByRole('button', { name: '‹ Back' }));
     await waitFor(() => expect(view.container.querySelector('.md-page')).toBeNull());
   });
 });
