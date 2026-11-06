@@ -961,7 +961,7 @@ On when either holds:
 So: BMI >= 30 is always on; 28 < BMI < 30 is on unless the waist is healthy and no marker is raised; 25 <= BMI <= 28 needs a marker; BMI < 25 is always off. BMI is the rounded value the tile shows.
 
 Raised markers, each named in the card in the plan's words:
-- HbA1c >= 38.8 mmol/mol (prediabetic) → "prediabetic HbA1c"
+- HbA1c >= 38.8 mmol/mol (prediabetic) → "prediabetic HbA1c"; at or above the diabetic line, 47.5 mmol/mol (6.5%), the urgent card's, → "diabetic-range HbA1c" (Brad 2026-11-06)
 - Triglycerides 150 mg/dL (about 1.7 mmol/L) or more → "elevated triglycerides"
 - Raised blood pressure: systolic >= 130 OR diastolic >= 80, either half on its own (section 3) → "elevated blood pressure"
 - The plan's lipid marker (ApoB, else non-HDL, else LDL: `lipidMarkerFor`) at or above its risk-enhancing line → "elevated ApoB", "elevated non-HDL cholesterol" or "elevated LDL cholesterol":

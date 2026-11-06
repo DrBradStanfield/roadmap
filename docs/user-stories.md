@@ -159,7 +159,7 @@ As a user, I record what I actually take (real drug + dose, or none/not-tolerate
   - from 25 with any raised marker, even when the waist is healthy. Under 25 it stays off.
 
   The raised markers are:
-  - HbA1c 38.8 mmol/mol (5.7%) or more;
+  - HbA1c 38.8 mmol/mol (5.7%) or more, named "prediabetic HbA1c"; from the urgent card's diabetic line, 47.5 mmol/mol (6.5%), named "diabetic-range HbA1c" (Brad 2026-11-06: "prediabetic" under a "diabetic range" card contradicted it; `suggestions.test.ts`, the line and just under it);
   - triglycerides 150 mg/dL (about 1.7 mmol/L) or more;
   - stage 1 blood pressure (systolic 130 or more, or diastolic 80 or more: the blood-pressure card's own test);
   - waist-to-height 0.5 or more;
