@@ -25,7 +25,7 @@ describe('US-20: WebKit deployment gate', () => {
 describe('US-20 AC6: WebKit tab bar gate', () => {
   const valid = {
     insideWidget: true, position: 'sticky', background: 'rgb(248, 248, 250)', backdropFilter: 'none', visible: true, top: 761, bottom: 812, viewportHeight: 812,
-    oldPlanButton: false, tabs: ['My health', 'Chat'], shownAfterChatTap: ['Chat'],
+    oldPlanButton: false, tabs: ['My health', 'Chat'], shownAfterChatTap: ['Chat'], chatCardBottom: 749, barTopOnChat: 761,
   };
   it('accepts a sticky, opaque bar inside the widget, on screen, that switches panels', () => {
     expect(() => assertTabBar(valid)).not.toThrow();
@@ -35,6 +35,7 @@ describe('US-20 AC6: WebKit tab bar gate', () => {
       { insideWidget: false }, { position: 'fixed' }, { background: 'rgba(248, 248, 250, 0.94)' }, { background: 'rgba(0, 0, 0, 0)' },
       { backdropFilter: 'blur(12px)' }, { visible: false }, { bottom: 900 }, { top: -10 },
       { oldPlanButton: true }, { tabs: ['My data', 'My plan', 'Chat'] }, { shownAfterChatTap: ['My health', 'Chat'] },
+      { chatCardBottom: 766 },
     ]) {
       expect(() => assertTabBar({ ...valid, ...change })).toThrow();
     }

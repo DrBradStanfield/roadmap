@@ -78,6 +78,8 @@ export function assertTabBar(data) {
   assert(data.visible && data.bottom <= data.viewportHeight + 1 && data.top >= 0, 'tab bar not on screen with the widget');
   assert.deepEqual(data.tabs, ['My health', 'Chat'], 'tab labels changed');
   assert.deepEqual(data.shownAfterChatTap, ['Chat'], 'Chat did not show its panel alone');
+  // Live test 2026-11-06: the chat card ran 3-5px under the bar.
+  assert(data.chatCardBottom <= data.barTopOnChat + 0.5, `chat card ends under the tab bar (${data.chatCardBottom} > ${data.barTopOnChat})`);
 }
 
 // Passed directly to Playwright's evaluate; keep this function self-contained.
@@ -270,6 +272,11 @@ async function inspect(browser, deviceName, viewport) {
       const tabBar = await bar.evaluate(collectTabBar);
       await bar.getByRole('tab', { name: 'Chat' }).tap();
       tabBar.shownAfterChatTap = await bar.evaluate(shownPanels);
+      await page.waitForTimeout(400);
+      Object.assign(tabBar, await page.evaluate(() => ({
+        chatCardBottom: document.querySelector('.hr-tabpanel:not([hidden]) .chat-embed').getBoundingClientRect().bottom,
+        barTopOnChat: document.querySelector('.hr-tabbar').getBoundingClientRect().top,
+      })));
       assertTabBar(tabBar);
       console.log(`${deviceName}: tab bar verified`, JSON.stringify(tabBar));
     }

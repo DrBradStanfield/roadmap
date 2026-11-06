@@ -154,6 +154,22 @@ describe('US-20 AC6: the bottom tab bar', () => {
     expect(scrollTo).toHaveBeenLastCalledWith(at(1500));
   });
 
+  // Live test 2026-11-06: the card ended 3-5px under the bar, sized from the header plus a constant.
+  it('the chat card is sized from its own measured top and the bar\'s height, so it ends at the bar', async () => {
+    const view = await renderPhone();
+    const [, chat] = within(view.getByRole('tablist')).getAllByRole('tab');
+    const panel = panelOf(view, chat);
+    vi.spyOn(panel, 'getBoundingClientRect').mockImplementation(() => ({ top: 250 } as DOMRect));
+    vi.spyOn(panel.querySelector('.chat-embed')!, 'getBoundingClientRect').mockImplementation(() => ({ top: 267 } as DOMRect));
+    vi.spyOn(view.container.querySelector('.hr-tabbar')!, 'getBoundingClientRect').mockImplementation(() => ({ height: 51 } as DOMRect));
+    fireEvent.click(chat);
+    const root = view.container.querySelector<HTMLElement>('.health-tool')!;
+    expect(root.style.getPropertyValue('--hr-chat-top')).toBe('17px'); // no theme header here: the card's own inset
+    expect(root.style.getPropertyValue('--hr-tabbar-h')).toBe('51px');
+    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
+    expect(css).toMatch(/height: calc\(100svh - var\(--hr-chat-top, 0px\) - var\(--hr-tabbar-h, 51px\) - 12px\)/);
+  });
+
   it('the bar lives inside the widget, sticky, opaque, never fixed; the old fixed plan button is gone', async () => {
     const view = await renderPhone();
     expect(view.getByRole('tablist').closest('.health-tool')).not.toBeNull();

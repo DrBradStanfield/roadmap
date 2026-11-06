@@ -3974,12 +3974,13 @@ input[type="number"] {
   }
   /* A fixed height: the messages scroll inside, so the chat's auto-scroll
      works and the composer stays on screen. */
-  /* The screen less the theme's sticky header (measured on the switch, HealthTool), the tab bar
-     (51px) and the card's 12px foot gap: no void, nothing of the page below under the bar. */
+  /* The screen below the card's own top (the theme's sticky header and the card's inset in its
+     panel, measured on the switch in HealthTool) less the tab bar and a 12px gap above it, the
+     cards' rhythm: no void, and the card never runs under the bar (live test 2026-11-06). */
   .hr-tabpanel .health-tool-chat .chat-embed {
     flex: none;
-    height: calc(100vh - var(--hr-sticky-top, 0px) - 63px - env(safe-area-inset-bottom, 0px));
-    height: calc(100svh - var(--hr-sticky-top, 0px) - 63px - env(safe-area-inset-bottom, 0px));
+    height: calc(100vh - var(--hr-chat-top, 0px) - var(--hr-tabbar-h, 51px) - 12px);
+    height: calc(100svh - var(--hr-chat-top, 0px) - var(--hr-tabbar-h, 51px) - 12px);
     min-height: 300px;
   }
 
