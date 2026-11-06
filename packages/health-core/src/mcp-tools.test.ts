@@ -1291,6 +1291,9 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       'ldl140 is read as one word',
       'my ldl3.2 went in the wrong row',
       'igf1 200 is missing',
+      'a1c7.2 is wrong',
+      'my a1c7.2 shows',
+      'hba1c7.2 shows',
     ]) {
       expect(reportFeedback({ ...GOOD, detail }, NOW), detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
     }

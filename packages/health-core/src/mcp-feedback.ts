@@ -44,8 +44,8 @@ const METRIC_WORDS = new Set([...metricNameWords(2), 'vit', 'a1c', 'bmi', 'heigh
 
 /** Words as the guard reads them; a number keeps its decimal ("3.2", "hba1c"). */
 const FEEDBACK_WORD = /[a-z0-9]+(?:[.,]\d+)?/g;
-/** A number typed straight after a word ("ldl140"). */
-const GLUED_NUMBER = /^([a-z]+)(\d+(?:[.,]\d+)?)$/;
+/** A number typed straight after a word ("ldl140", "a1c7.2"); the word ends in a letter. */
+const GLUED_NUMBER = /^([a-z][a-z0-9]*[a-z])(\d+(?:[.,]\d+)?)$/;
 
 /**
  * The words of `text`, with a number glued after a name split off as its value
