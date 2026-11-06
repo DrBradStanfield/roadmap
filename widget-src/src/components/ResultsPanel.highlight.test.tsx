@@ -5,6 +5,7 @@
  * the priority's colour; the page's real stylesheet decides what shows.
  */
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { afterEach, beforeAll, expect, it, vi } from 'vitest';
 import { act, cleanup, render } from '@testing-library/react';
 import { calculateHealthResults, statTiles, type HealthInputs } from '@roadmap/health-core';
@@ -22,7 +23,7 @@ import { RowSuggestions } from './ResultsPanel';
 const TEAL = 'rgba(0, 163, 139, 0.08)';
 beforeAll(() => {
   const style = document.createElement('style');
-  style.textContent = readFileSync('src/styles.css', 'utf8');
+  style.textContent = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
   document.head.appendChild(style);
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
