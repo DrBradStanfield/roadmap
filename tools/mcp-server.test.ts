@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PassThrough } from 'node:stream';
-import { createEmptyFile, createMeasurement, type RoadmapFile } from '@roadmap/health-core';
+import { createEmptyFile, createMeasurement, localDay, type RoadmapFile } from '@roadmap/health-core';
 import { FEEDBACK_HIDDEN, MCP_TOOLS, OUTPUTS } from '../packages/health-core/src/mcp-tools';
 import { REPO_PUBLIC } from '../packages/health-core/src/plan';
 import { run as runCli } from './edit-record';
@@ -51,8 +51,10 @@ function text(response: { result?: { content: Array<{ text: string }> } }): stri
   return response.result!.content[0].text;
 }
 
-/** The stdio server runs on the real clock; a write states the real day. */
-const TODAY = new Date().toISOString().slice(0, 10);
+/** The stdio server runs on the real clock; a write states the real day, the machine's own
+ *  calendar day (`localDay`), as the server judges it. A UTC slice was a day ahead every evening in
+ *  a zone behind UTC, and the write was refused as "has not happened yet" (2026-11-06). */
+const TODAY = localDay(new Date());
 
 describe('US-32 — the JSON-RPC handshake', () => {
   it('answers initialize with the protocol revision, the tools capability and its instructions', async () => {

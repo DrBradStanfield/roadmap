@@ -45,6 +45,8 @@ export default defineConfig({
     // checkout ran them in threads and quietly failed. Forks for everything removes the
     // trap, is faster here, and `poolMatchGlobs` is gone in vitest 3.
     pool: 'forks',
+    // A fixed language for every test, so a runner in a US time zone does not switch the widget to US units.
+    setupFiles: ['./tests/setup-locale.ts'],
     // Vitest 4 fails a synchronous test that overruns testTimeout; 1.6 let it
     // finish. Several exhaustive sweeps (units, medication-cascades) and the
     // spawnSync-driven codex-review suites take 5-45 s when the full suite loads
