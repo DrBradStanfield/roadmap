@@ -383,7 +383,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         if (stayed) { finalConvId = result.conversationId; setActiveConversationId(finalConvId); }
         finalConversations = [{
           id: result.conversationId,
-          title: trimmed.slice(0, 80),
+          title: cutText(trimmed, 80), // never half an emoji (US-15 AC26b)
           updatedAt: new Date().toISOString(),
           createdAt: new Date().toISOString(),
         }, ...convsNow.filter(c => c.id !== currentConvId)];

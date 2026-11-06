@@ -18,6 +18,7 @@ import {
   migrateChatHistoryFile,
   type ChatFileConversation,
   type ChatFileMessage,
+  cutText,
   type ChatHistoryFile,
 } from './chat-history';
 import type { RecordHost, SyncStorage } from './record-host';
@@ -206,7 +207,7 @@ export class ChatSession {
     } else {
       this.file.conversations.push({
         id: opts.conversationId,
-        title: opts.isNew ? opts.userText.slice(0, 80) : 'Chat',
+        title: opts.isNew ? cutText(opts.userText, 80) : 'Chat', // never half an emoji (US-15 AC26b)
         createdAt: now,
         updatedAt: now,
         messages,
