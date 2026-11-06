@@ -301,7 +301,14 @@ async function inspect(browser, deviceName, viewport) {
     const hba1c = page.locator('.md-row', { has: page.locator('.md-row-label', { hasText: /^HbA1c$/ }) }).first();
     await (deviceName ? hba1c.tap() : hba1c.click());
     await page.locator('.md-page-title').waitFor({ state: 'visible' });
-    await page.waitForTimeout(600);
+    // Measured once the page has stopped moving (a slow CI runner, a theme's smooth scrolling):
+    // its Back link's top the same for 300ms, or 4s gone. A page that settles in the wrong place still fails.
+    await page.waitForFunction(() => {
+      const top = Math.round(document.querySelector('.md-page:not(.mh-settings) .md-back').getBoundingClientRect().top);
+      const w = window.__vpSettle ??= { top, since: performance.now() };
+      if (w.top !== top) { w.top = top; w.since = performance.now(); }
+      return performance.now() - w.since >= 300;
+    }, undefined, { timeout: 4000, polling: 50 }).catch(() => {});
     const valuePage = await page.evaluate(collectValuePage);
     assertValuePage(valuePage);
     console.log(`${deviceName ?? `desktop ${viewport.width}`}: value page verified`, JSON.stringify(valuePage));

@@ -14,11 +14,13 @@ export function stickyTop(): number {
   return Math.max(0, Math.round(bottom));
 }
 
-/** Scroll an element to the top of the viewport, clear of the theme's sticky header, 12px below it. */
+/** Scroll an element to the top of the viewport, clear of the theme's sticky header, 12px below it.
+ *  Not smooth means at once: 'auto' would take the theme's `scroll-behavior: smooth`, which on
+ *  drstanfield.com slid a value page in from 7000px away for up to a second. */
 export function scrollToTop(el: HTMLElement | null | undefined, smooth = false): void {
   if (!el) return;
   el.style.scrollMarginTop = `${stickyTop() + 12}px`;
-  el.scrollIntoView?.({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+  el.scrollIntoView?.({ behavior: smooth ? 'smooth' : 'instant', block: 'start' });
 }
 
 /** Scroll an element into view and move the focus to it, without a second jump:
@@ -26,6 +28,6 @@ export function scrollToTop(el: HTMLElement | null | undefined, smooth = false):
  *  never under the theme's sticky header. */
 export function revealAndFocus(el: HTMLElement | null | undefined, block: ScrollLogicalPosition, smooth = true): void {
   if (el) el.style.scrollMarginTop = `${stickyTop() + 12}px`;
-  el?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block });
+  el?.scrollIntoView({ behavior: smooth ? 'smooth' : 'instant', block });
   el?.focus({ preventScroll: true });
 }

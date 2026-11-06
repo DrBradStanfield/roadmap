@@ -392,9 +392,9 @@ export function InputPanel({
     requestAnimationFrame(() => {
       const { el, y } = cameFrom.current;
       if (el instanceof HTMLElement && el.isConnected) {
-        el.scrollIntoView({ block: 'center' });
+        el.scrollIntoView({ behavior: 'instant', block: 'center' });
         el.focus({ preventScroll: true });
-      } else window.scrollTo?.(0, y);
+      } else window.scrollTo?.({ top: y, behavior: 'instant' });
     });
   };
   const closePage = () => {
