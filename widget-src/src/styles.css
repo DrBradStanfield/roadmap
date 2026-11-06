@@ -5822,6 +5822,25 @@ input[type="number"] {
   margin: 0 0 4px;
   font-weight: 600;
 }
+/* A new or changed suggestion (US-07 AC3): one soft teal glow on its card or row, whatever
+   its priority; then it fades back to the card's own fill. */
+.suggestion-card.suggestion-card--calm.suggestion-highlight,
+.suggestion-card--calm .suggestion-highlight,
+.mh-row-suggestion.suggestion-highlight {
+  background-color: rgba(0, 163, 139, 0.08);
+  animation: highlight-fade-in 0.5s ease backwards;
+}
+.suggestion-card.suggestion-card--calm.suggestion-fade-out { background-color: #fff; }
+.suggestion-card--calm .suggestion-fade-out { background-color: transparent; }
+.mh-row-suggestion.suggestion-fade-out { background-color: var(--bt-ink-50); }
+.suggestion-card.suggestion-card--calm.suggestion-fade-out,
+.suggestion-card--calm .suggestion-fade-out,
+.mh-row-suggestion.suggestion-fade-out {
+  animation: mh-glow-out 0.5s ease !important;
+}
+@keyframes mh-glow-out {
+  from { background-color: rgba(0, 163, 139, 0.08); }
+}
 
 /* "All results as a table": the list's last row, left-aligned (AC22). */
 .mh-topics .md-foot {

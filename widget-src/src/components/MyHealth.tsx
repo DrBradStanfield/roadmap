@@ -131,11 +131,11 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
   const place: Placement = {
     on: (...keys) => {
       const suggestions = keys.flatMap(key => placedMedicines.get(key) ?? []);
-      return suggestions.length > 0 && <RowSuggestions suggestions={suggestions}/>;
+      return suggestions.length > 0 && <RowSuggestions suggestions={suggestions} highlights={plan.highlights}/>;
     },
     in: group => {
       const suggestions = placedScreenings.get(group) ?? [];
-      return suggestions.length > 0 && <RowSuggestions suggestions={suggestions} describes/>;
+      return suggestions.length > 0 && <RowSuggestions suggestions={suggestions} highlights={plan.highlights} describes/>;
     },
     noteShown: (group, note) => !(placedScreenings.get(group) ?? []).some(s => s.description.includes(note)),
   };

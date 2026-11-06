@@ -532,6 +532,9 @@ export interface PlanView {
 }
 
 interface Highlights { highlighted: Set<string>; fadingOut: Set<string> }
+/** A suggestion's glow classes (US-07 AC3). */
+const highlightClass = (id: string, { highlighted, fadingOut }: Highlights) =>
+  fadingOut.has(id) ? ' suggestion-highlight suggestion-fade-out' : highlighted.has(id) ? ' suggestion-highlight' : '';
 const NO_HIGHLIGHTS: Set<string> = new Set();
 
 /** New or changed suggestions glow for 3s, then fade, once the plan has settled (3s after mount). */
@@ -613,16 +616,16 @@ export function PlanCardList({ cards, plan }: { cards: ReadonlyArray<TopicCard<U
  * a screening's text (`describes`); the info button opens the rest (the text, or
  * the title) and the evidence. Coloured by priority, so an urgent one reads as one here too.
  */
-export function RowSuggestions({ suggestions, describes = false }: { suggestions: readonly Suggestion[]; describes?: boolean }) {
-  return <>{suggestions.map(s => <RowSuggestion key={s.id} suggestion={s} describes={describes}/>)}</>;
+export function RowSuggestions({ suggestions, highlights, describes = false }: { suggestions: readonly Suggestion[]; highlights: Highlights; describes?: boolean }) {
+  return <>{suggestions.map(s => <RowSuggestion key={s.id} suggestion={s} describes={describes} glow={highlightClass(s.id, highlights)}/>)}</>;
 }
 
-function RowSuggestion({ suggestion, describes }: { suggestion: Suggestion; describes: boolean }) {
+function RowSuggestion({ suggestion, describes, glow }: { suggestion: Suggestion; describes: boolean; glow: string }) {
   const [open, setOpen] = useState(false);
   const [evidenceOpen, toggleEvidence] = useOpenEvidence(suggestion.id);
   const detailId = useId();
   return (
-    <div className={`mh-row-suggestion ${priorityColors[suggestion.priority]}`}>
+    <div className={`mh-row-suggestion ${priorityColors[suggestion.priority]}${glow}`}>
       <div className="mh-row-suggestion-line">
         <span className="mh-row-suggestion-text">{describes ? suggestion.description : suggestion.title}</span>
         <button type="button" className="mh-info-btn" aria-expanded={open} aria-controls={detailId}
