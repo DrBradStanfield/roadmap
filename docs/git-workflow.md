@@ -45,7 +45,8 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    the push guard refuses any other form (Brad 2026-11-01): the sha must be 7-40 hex, each option once, no
    `-d`/`--delete-branch` (it deletes with no merged check, so that stays Brad's), and no merge or write to main through `gh api`. It is a
    policy guard, not a complete one: a gh alias, another tool or the web UI is invisible to it. Nothing on
-   GitHub enforces the reviews, so you do.
+   GitHub enforces the reviews, so you do. Before merging, file a `review-note` issue for every finding
+   left open, or a draft private security advisory for a security or privacy one (docs/review-format.md).
    **The merge gate is CI green on the PR's head** (US-64 AC9, Brad 2026-11-04). CI tested the PR merged with
    main as main stood at the PR's last push, which is what a local `test:all` tested too, so a full local run
    is never a gate: while working, run only the tests your change touches (`npx vitest related <changed files>
