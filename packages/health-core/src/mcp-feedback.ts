@@ -35,11 +35,29 @@ const VALUE_WITH_UNIT = new RegExp(
   'i',
 );
 
-/** Every word a metric or catalogued test is known by; 2 over-refuses on purpose. */
-const METRIC_WORDS = new Set([...metricNameWords(2), 'vit']); // "vit" typed for vitamin (US-73 AC8)
+/**
+ * Every word a metric or catalogued test is known by; 2 over-refuses on purpose.
+ * "vit" is typed for vitamin (US-73 AC8); "a1c", "bmi" and "height" are how a
+ * person writes values no name in either list spells (US-32 AC9a).
+ */
+const METRIC_WORDS = new Set([...metricNameWords(2), 'vit', 'a1c', 'bmi', 'height']);
 
 /** Words as the guard reads them; a number keeps its decimal ("3.2", "hba1c"). */
 const FEEDBACK_WORD = /[a-z0-9]+(?:[.,]\d+)?/g;
+/** A number typed straight after a word ("ldl140", "a1c7.2"); the word ends in a letter. */
+const GLUED_NUMBER = /^([a-z][a-z0-9]*[a-z])(\d+(?:[.,]\d+)?)$/;
+
+/**
+ * The words of `text`, with a number glued after a name split off as its value
+ * ("ldl140" is "ldl 140", US-32 AC9a). A name that ends in digits stays whole
+ * ("igf1", "b12"), and so does a word that is no name ("tab2").
+ */
+function feedbackWords(text: string): string[] {
+  return (foldLpa(text).match(FEEDBACK_WORD) ?? []).flatMap((word) => {
+    const glued = GLUED_NUMBER.exec(word);
+    return glued && !METRIC_WORDS.has(word) && METRIC_WORDS.has(glued[1]) ? [glued[1], glued[2]] : [word];
+  });
+}
 /** A number and nothing else — what a metric name next to it turns into a value. */
 const BARE_NUMBER = /^\d+(?:[.,]\d+)?$/;
 /** How many words from a metric name a number still reads as that metric's value. */
@@ -51,13 +69,13 @@ const METRIC_DISTANCE = 3;
  * factor 1 was 200" the generic words inside it cannot carry the value out of
  * reach of "insulin", and the 1 inside it is the name, not a value.
  */
-const METRIC_PHRASES = [...new Set(LAB_CATALOG.flatMap((entry) => [entry.label, ...entry.aliases]).map(foldLpa))]
+const METRIC_PHRASES = [...new Set([...LAB_CATALOG.flatMap((entry) => [entry.label, ...entry.aliases]), 'blood pressure'].map(foldLpa))]
   .map((name) => name.match(FEEDBACK_WORD) ?? [])
   .filter((phrase) => phrase.length > 1);
 
 /** "My LDL is 3.2" — a bare number a few words from a name this record knows. */
 function valueNearMetric(text: string): string | null {
-  const words = foldLpa(text).match(FEEDBACK_WORD) ?? [];
+  const words = feedbackWords(text);
   // Where a name sits: one word, or a whole phrase from its first word to its last.
   const names: Array<[number, number]> = [];
   for (const [i, word] of words.entries()) {
