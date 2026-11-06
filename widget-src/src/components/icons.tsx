@@ -1,5 +1,5 @@
 /**
- * US-62 AC15: the iPhone's colour on the web. Each My data section's title
+ * US-62 AC15: the iPhone's colour on the web. Each My health section's title
  * carries a tinted symbol (ios/HealthRoadmap/MyData/SectionTitle.swift), and
  * each plan card leads with its category's symbol on a tinted rounded square
  * (ios/HealthRoadmap/Plan/PlanCardView.swift, CategoryIcon). Same meanings and
@@ -10,13 +10,13 @@
 import type { CSSProperties, ReactNode } from 'react';
 
 type IconName = 'person' | 'heart' | 'drop' | 'pills' | 'stethoscope' | 'leaf' | 'folder'
-  | 'fork' | 'run' | 'moon' | 'sun' | 'sparkles';
+  | 'fork' | 'run' | 'moon' | 'sun' | 'sparkles' | 'scale' | 'bed' | 'ellipsis';
 
 /** Apple's system colours (light appearance), as the iPhone tints them. */
 const TINTS = {
   red: [255, 59, 48], orange: [255, 149, 0], yellow: [255, 204, 0], green: [52, 199, 89],
   mint: [0, 199, 190], teal: [48, 176, 199], blue: [0, 122, 255], indigo: [88, 86, 214],
-  purple: [175, 82, 222], pink: [255, 45, 85], gray: [142, 142, 147],
+  purple: [175, 82, 222], pink: [255, 45, 85], gray: [142, 142, 147], cyan: [50, 173, 230],
 } as const;
 type Tint = keyof typeof TINTS;
 
@@ -34,6 +34,9 @@ const SHAPES: Record<IconName, ReactNode> = {
   run: <g><circle cx="15" cy="4.5" r="2.2"/><path {...line} d="M7 9.5l4-2 3 2 2.5 3H19M14 9.5l-2.5 5 3 2.5-1.5 4.5M11.5 14.5L9 18H5"/></g>,
   moon: <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/>,
   sun: <g><circle cx="12" cy="12" r="4.5"/><path {...line} d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g>,
+  scale: <g><path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/><path fill="#fff" d="M8 9.5a4 4 0 0 1 8 0Z"/></g>,
+  bed: <g><path d="M3 6v13M21 19v-5a3 3 0 0 0-3-3h-7v5" {...line}/><path {...line} d="M3 16h18"/><circle cx="7" cy="12" r="2"/></g>,
+  ellipsis: <path fillRule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20ZM7 10.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm5 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm5 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z"/>,
   sparkles: <g><path d="M10 3l1.8 5.2L17 10l-5.2 1.8L10 17l-1.8-5.2L3 10l5.2-1.8Z"/><path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9Z"/></g>,
 };
 
@@ -47,9 +50,16 @@ function Icon({ name, size }: { name: IconName; size: number }) {
 
 const rgb = (tint: Tint, alpha = 1) => `rgba(${TINTS[tint].join(', ')}, ${alpha})`;
 
-/** The My data sections, as SectionTitle.swift names and tints them. */
+/** The My health sections, as SectionTitle.swift and TopicPlan.swift name and tint them. */
 const SECTIONS = {
   aboutYou: ['person', 'orange'],
+  weight: ['scale', 'purple'],
+  sleep: ['bed', 'cyan'],
+  fitness: ['run', 'orange'],
+  bloodPressure: ['heart', 'red'],
+  cholesterol: ['drop', 'red'],
+  skin: ['sun', 'orange'],
+  other: ['ellipsis', 'gray'],
   vitals: ['heart', 'red'],
   bloodTests: ['drop', 'blue'],
   medications: ['pills', 'teal'],

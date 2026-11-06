@@ -29,7 +29,8 @@ vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 vi.mock('./InputPanel', () => ({ InputPanel: (props: Record<string, unknown>) => { seen.panel = props; return null; } }));
 vi.mock('./ResultsPanel', async (importOriginal) => {
   const real = await importOriginal<typeof import('./ResultsPanel')>();
-  return { ResultsPanel: (props: { results: HealthResults | null }) => { seen.results = props.results; return <real.ResultsPanel {...(props as Parameters<typeof real.ResultsPanel>[0])} />; } };
+  // The plan My health draws (US-62 phase 5): what usePlanView is given.
+  return { ...real, usePlanView: (options: Parameters<typeof real.usePlanView>[0]) => { seen.results = options.results; return real.usePlanView(options); } };
 });
 
 import { HealthTool } from './HealthTool';
@@ -45,8 +46,9 @@ async function seed(creatinine: Array<[value: number, day: string]>, lab: [value
   await flushRoadmapStore();
 }
 
-const eGFRTile = (container: HTMLElement) => Array.from(container.querySelectorAll('.stat-card'))
-  .find((c) => c.querySelector('.stat-label')?.textContent === 'eGFR')?.querySelector('.stat-value')?.textContent;
+// The eGFR tile the plan hands My health (on the creatinine page since US-62 AC26).
+const eGFRTile = (_container: HTMLElement) => (seen.panel?.tiles as Array<{ label: string; value: string }> | undefined)
+  ?.find((t) => t.label === 'eGFR')?.value;
 const chatEGFR = () => JSON.parse(buildChatContextJson(seen.chat!()!)!).derivedValues.eGFR;
 
 useHealthToolLifecycle();

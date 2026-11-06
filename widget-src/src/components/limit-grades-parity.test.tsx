@@ -10,7 +10,7 @@ import { LIMIT_NOT_GRADED, calculateHealthResults, knownMinorOf, type ApiMeasure
 import type { RoadmapFile } from '../../../packages/health-core/src/roadmap-file';
 import { applyEdit, myData, newRecord } from '../../../ios/engine/my-data';
 import { currentValueRows } from '../../../packages/health-core/src/blood-tests';
-import { BloodTestRows, VitalsRows, type RowContext } from './MyDataRows';
+import { BLOOD_ROWS, MetricRows, coreRow, pressureRow, type RowContext } from './MyDataRows';
 
 afterEach(cleanup);
 
@@ -62,7 +62,9 @@ function both(person: Person, values: Array<[string, number, Comparator | undefi
   // What the store hands the rows: vitals and core blood tests as measurements (US-66 AC7).
   const history = currentValueRows(file) as unknown as ApiMeasurement[];
   const ctx = webContext(person);
-  const view = render(<><VitalsRows history={history} ctx={ctx} onOpen={() => {}}/><BloodTestRows history={history} labValues={[]} ctx={ctx} onOpen={() => {}}/></>);
+  // My health's rows for each value (US-62 AC21).
+  const rows = [coreRow('weight', history, ctx), coreRow('waist', history, ctx), pressureRow(history, ctx), ...BLOOD_ROWS.map(m => coreRow(m, history, ctx))];
+  const view = render(<MetricRows rows={rows} onOpen={() => {}}/>);
   const row = [...view.container.querySelectorAll('.md-row')].find((r) => r.querySelector('.md-row-label')?.textContent === label)!;
   const webGrade = /md-status-(\w+)/.exec(row.querySelector('.md-row-latest')!.className)![1];
   const webNote = row.querySelector('.hr-sr-only')!.textContent!.includes(LIMIT_NOT_GRADED);

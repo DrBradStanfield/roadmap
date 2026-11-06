@@ -14,6 +14,7 @@ import {
   type ApiMedication, type ApiScreening, type FormSection, type HealthInputs, type LipidMarker,
 } from '@roadmap/health-core';
 import { InputPanel, type PlanBasis } from './InputPanel';
+import { MY_HEALTH_PROPS } from '../testing/my-health-props';
 
 vi.mock('../lib/server-api', async importOriginal => ({ ...await importOriginal<typeof import('../lib/server-api')>(), trackProductEvent: vi.fn() }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -40,6 +41,7 @@ const medicationRows = (m: [string, string, number?][] = []): ApiMedication[] =>
 function renderPanel(state: State): HTMLElement {
   const inputs = { sex: state.sex, heightCm: 178, birthYear: 1970, birthMonth: 1, ...state.inputs };
   const props = {
+    ...MY_HEALTH_PROPS,
     inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si', onUnitSystemChange: vi.fn(),
     unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
     labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(),
@@ -62,7 +64,9 @@ const texts = (root: Element, selector: string) => [...root.querySelectorAll(sel
 function expectParity(container: HTMLElement, sections: FormSection[]) {
   const cards = [...container.querySelectorAll('.section-card')];
   for (const section of sections) {
-    const card = cards.find(c => c.querySelector('h3.health-section-title')?.textContent === section.title);
+    // Cancer screening's card has no title of its own: My health's topic heading names it (US-62 AC17).
+    const card = cards.find(c => c.querySelector('h3.health-section-title')?.textContent === section.title
+      || (section.id === 'cancer-screening' && c.querySelector('.health-section-desc')?.textContent?.trim() === section.intro));
     expect(card, section.title).toBeDefined();
     expect(card!.querySelector('.health-section-desc')!.textContent!.trim()).toBe(section.intro);
     expect(texts(card!, 'h4')).toEqual(section.groups.filter(g => g.title).map(g => g.title));

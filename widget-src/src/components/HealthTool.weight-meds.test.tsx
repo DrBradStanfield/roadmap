@@ -39,6 +39,8 @@ vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 
 import { HealthTool } from './HealthTool';
 import { openAboutYou, showTables } from '../testing/health-tool-harness';
+import { bmiOnRow, planTitles, suggestionText } from '../testing/plan-on-page';
+import { openSettings } from '../testing/settings';
 
 const NEUTRAL = 'Are you currently taking any weight or diabetes medications? Recording these helps track your health over time.';
 const recommends = (bmi: string, reasons?: string) => (reasons
@@ -102,23 +104,22 @@ async function guestWith(r: GuestRecord): Promise<RenderResult> {
   return render(<HealthTool />);
 }
 
-/** The BMI on the plan, once the plan has read the record. */
+/** The BMI on the plan, once the plan has read the record: its tile under the
+ *  onboarding, else the weight row's target line (US-62 AC21, AC25). */
 const bmiTile = (container: HTMLElement) => Array.from(container.querySelectorAll('.stat-card'))
-  .find((c) => c.querySelector('.stat-label')?.textContent === 'BMI')?.querySelector('.stat-value')?.textContent;
+  .find((c) => c.querySelector('.stat-label')?.textContent === 'BMI')?.querySelector('.stat-value')?.textContent ?? bmiOnRow(container);
 
-/** The plan's "Consider a GLP-1 medication" card text, if the plan has one. */
+/** The plan's "Consider a GLP-1 medication" text, if the plan has it: a card, or on its question (US-62 AC20). */
 function planGlp1(container: HTMLElement): string | undefined {
-  const title = Array.from(container.querySelectorAll('.suggestion-title'))
-    .find((t) => t.textContent === 'Consider a GLP-1 medication');
-  return title?.parentElement?.querySelector('.suggestion-desc')?.textContent ?? undefined;
+  return suggestionText(container, 'Consider a GLP-1 medication');
 }
 
-/** A plan card whose title is, or (for `weight-med`) is any weight-medication step. */
-function planCard(container: HTMLElement, title: string): Element | undefined {
+/** Whether the plan holds a suggestion whose title is, or (for `weight-med`) is any weight-medication step. */
+function planCard(container: HTMLElement, title: string): string | undefined {
   const steps = ['Consider a GLP-1 medication', 'Add your GLP-1 dose', 'Consider increasing GLP-1 dose', 'Consider switching to Tirzepatide',
     'Consider adding an SGLT2 inhibitor', 'Consider adding Metformin'];
   const titles = title === 'weight-med' ? steps : [title];
-  return Array.from(container.querySelectorAll('.suggestion-title')).find((t) => titles.includes(t.textContent ?? ''));
+  return planTitles(container).find((t) => titles.includes(t));
 }
 
 /** The opening sentence of one of the form's sections, once it is on the page. */
@@ -362,7 +363,7 @@ describe('US-06 AC5: the form recommends a cholesterol medication only when the 
     const view = await guestWith({ sex: 'male', weight: 80, lipids: { ldl: 3 } });
     await waitFor(() => expect(planCard(view.container, 'Consider starting a statin')).toBeDefined());
     const sentence = 'Your LDL-c is 3.0 mmol/L; the treatment target is below 1.4 mmol/L.';
-    expect(planCard(view.container, 'Consider starting a statin')!.parentElement!.querySelector('.suggestion-desc')!.textContent)
+    expect(suggestionText(view.container, 'Consider starting a statin'))
       .toMatch(new RegExp(`^${sentence.replace(/\./g, '\\.')} `));
     expect(await cholesterolIntro(view.container)).toMatch(new RegExp(`^${sentence.replace(/\./g, '\\.')} `));
   });
@@ -373,7 +374,7 @@ describe('US-06 AC5: the form recommends a cholesterol medication only when the 
       meds: [['statin', 'rosuvastatin', 40], ['ezetimibe', 'ezetimibe', 10], ['bempedoic_acid', 'bempedoic_acid', 180], ['pcsk9i', 'pcsk9i', 140]],
     });
     await waitFor(() => expect(bmiTile(view.container)).toBe('25.2'));
-    expect(Array.from(view.container.querySelectorAll('.suggestion-title')).map((t) => t.textContent)
+    expect(planTitles(view.container)
       .filter((t) => /statin|Ezetimibe|bempedoic|PCSK9/.test(t ?? ''))).toEqual([]);
     expect(await cholesterolIntro(view.container)).toBe(CHOLESTEROL_NEUTRAL);
   });
@@ -431,18 +432,24 @@ describe('US-06 AC5: the form\'s age-based targets and sections follow the plan\
       .filter((c) => c !== 'bt-status-none')).toEqual([]);
   });
 
-  it('born June 1899: the plan sets the year aside, so the summary states no age', async () => {
+  // The plan's age sits on About you's Birth row since US-62 AC24 (About you's collapsed summary went).
+  it('born June 1899: the plan sets the year aside, so the Birth row states no age', async () => {
     const view = await guestWith({ sex: 'male', birthYear: 1899, birthMonth: 6, weight: 80 });
     await waitFor(() => expect(bmiTile(view.container)).toBe('25.2'));
-    expect(view.container.querySelector('.prefill-summary')?.textContent).toBe('Male · 178 cm tall · Born Jun 1899');
+    openSettings(view.container);
+    // The year shows as given, as its row or its open field; no age is said anywhere.
+    expect(view.container.querySelector('#about-birth .about-row-value')?.textContent
+      ?? view.container.querySelector<HTMLInputElement>('#birthYear')?.value).toMatch(/1899/);
+    expect(view.container.textContent).not.toContain('(Age');
   });
 
-  it('born December 1981: the summary states the plan\'s age', async () => {
+  it('born December 1981: the Birth row states the plan\'s age', async () => {
     const view = await guestWith({ sex: 'male', birthYear: 1981, birthMonth: 12, weight: 80 });
     await waitFor(() => expect(bmiTile(view.container)).toBe('25.2'));
     const now = new Date();
     const age = now.getFullYear() - 1981 - (now.getMonth() + 1 < 12 ? 1 : 0);
-    expect(view.container.querySelector('.prefill-summary')?.textContent).toBe(`Male · 178 cm tall · Born Dec 1981 (Age ${age})`);
+    openSettings(view.container); // About you sits in Settings once the record is complete (US-62 AC24)
+    expect(view.container.querySelector('#about-birth .about-row-value')?.textContent).toBe(`December 1981 (Age ${age})`);
   });
 
   it('a birth year the plan sets aside as invalid gives the form no age: no screening or bone density sections', async () => {
@@ -469,8 +476,11 @@ describe('US-06 AC5: the vitals matrix takes its weight and waist targets from t
   it("with a plan, the weight target is the plan's ideal body weight and the waist target the plan's own waist line", async () => {
     const view = await guestWith({ sex: 'male', weight: 80, waist: 85 });
     await waitFor(() => expect(bmiTile(view.container)).toBe('25.2'));
-    const ibw = Array.from(view.container.querySelectorAll('.stat-card'))
+    // The ideal body weight's tile sits on the weight row's page (US-62 AC26).
+    fireEvent.click([...view.container.querySelectorAll('.md-row')].find(r => r.querySelector('.md-row-label')?.textContent === 'Weight')!);
+    const ibw = Array.from(view.container.querySelectorAll('.md-page .stat-card'))
       .find((c) => c.querySelector('.stat-label')?.textContent === 'Ideal Body Weight')?.querySelector('.stat-value')?.textContent;
+    fireEvent.click(view.getByRole('button', { name: '‹ My health' }));
     expect(await matrixTarget(view.container, 'Weight')).toBe(`Target: ${ibw}`);
     // At 178 cm the plan's ratio rounds to 0.50 from 88.11 cm: 88 cm is
     // healthy and 89 cm elevated, so the label is the first elevated value.

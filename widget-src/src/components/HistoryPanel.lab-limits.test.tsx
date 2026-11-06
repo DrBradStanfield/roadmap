@@ -61,7 +61,7 @@ it('US-12 AC20: a core and a lab limit plot hollow, off the line, and read with 
 it('US-12 AC20: a value page lists a limit with its symbol and charts it hollow, off the line', async () => {
   const ldl = (id: string, value: number, day: string, comparator?: '<') =>
     ({ id, metricType: 'ldl', value, recordedAt: `${day}T00:00:00.000Z`, createdAt: day, source: 'lab_import', ...(comparator ? { comparator } : {}) }) as any;
-  const view = render(<ValuePage subject={{ kind: 'core', metric: 'ldl' }} history={[ldl('l1', 2.8, '2026-06-01'), ldl('l2', 1.5, '2026-07-01', '<')]}
+  const view = render(<ValuePage tiles={[]} onOpen={() => {}} subject={{ kind: 'core', metric: 'ldl' }} history={[ldl('l1', 2.8, '2026-06-01'), ldl('l2', 1.5, '2026-07-01', '<')]}
     labValues={[]} ctx={{ grading: { sex: 'male' }, plan: null, unitOf: () => 'si' }} onSave={vi.fn()} onClose={() => {}} dirtyRef={{ current: false }}/>);
   const shown = [...view.container.querySelectorAll('.md-history .bt-value-num')].map(n => n.textContent);
   expect(shown).toEqual(['< 1.5', '2.8']);
@@ -75,7 +75,7 @@ it('US-12 AC21: on the value page, a limit\'s colour and note always agree, bloo
   const vital = (id: string, metricType: string, value: number, day: string, comparator?: '<' | '>') =>
     ({ id, metricType, value, recordedAt: `${day}T00:00:00.000Z`, createdAt: day, source: 'lab_import', ...(comparator ? { comparator } : {}) }) as any;
   const ctx = { grading: { sex: 'male' as const }, plan: { age: 50, idealBodyWeight: 70, heightCm: 180 }, unitOf: () => 'si' as const };
-  const page = (subject: any, history: any[]) => render(<ValuePage subject={subject} history={history} labValues={[]} ctx={ctx}
+  const page = (subject: any, history: any[]) => render(<ValuePage tiles={[]} onOpen={() => {}} subject={subject} history={history} labValues={[]} ctx={ctx}
     onSave={vi.fn()} onClose={() => {}} dirtyRef={{ current: false }}/>);
   // Weight "> 90" against a 70 kg ideal: certainly red, so no "cannot grade"; "> 70" is open: no colour, the note.
   const weights = page({ kind: 'core', metric: 'weight' }, [vital('w1', 'weight', 90, '2026-07-01', '>'), vital('w2', 'weight', 70, '2026-08-01', '>')]);

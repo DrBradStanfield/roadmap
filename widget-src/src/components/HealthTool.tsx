@@ -26,6 +26,8 @@ import {
   computeFormStage,
   opensFullForm,
   statTiles,
+  medicationForm,
+  screeningForm,
   FIELD_METRIC_MAP,
   METRIC_TO_FIELD,
   localDay,
@@ -63,7 +65,8 @@ import type { MoveTestApi } from './MoveTestPanel';
 import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';
 import type { ApiSupplement, ApiLabValue, LatestMeasurementsResult } from '../lib/api-types';
 import { InputPanel, type PlanBasis } from './InputPanel';
-import { ResultsPanel } from './ResultsPanel';
+import { usePlanView } from './ResultsPanel';
+import { PersonButton } from './SettingsSheet';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
 import { ChatEmbed } from './ChatEmbed';
 import { listConversations } from '../lib/chat-api';
@@ -99,6 +102,7 @@ import {
   loadAllHistorySync,
   loadLabValues,
   loadLabValuesSync,
+  loadDerivedSeries,
   saveChangedMeasurements,
   addMeasurement,
   correctValue,
@@ -1027,7 +1031,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const isMobile = useIsMobile();
   const isWideDesktop = useIsWideDesktop(1200);
   const floatingChat = !isMobile && !isWideDesktop && reached === 4;
-  const [activeTab, setActiveTab] = useState<TabId>('input');
+  const [activeTab, setActiveTab] = useState<TabId>('health');
   const tabIds = useId();
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -1037,40 +1041,39 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     trackProductEvent('tool_opened', { device: isMobile ? 'phone' : 'desktop' });
   }, []); // at mount only
 
-  // US-62 AC5: `results_viewed` once the plan is on screen, not when it mounts
-  // (all three phone panels mount). On a phone, the My plan tab is active. On
-  // desktop, the plan column's top is in the upper three quarters of the
-  // viewport (a margin, not a ratio: a tall plan never reaches 25% visible).
-  // Once per tab by the throttle.
+  // US-62 AC5: `results_viewed` once the plan's cards are on screen, not when
+  // they mount. They show with My health's topics, once the onboarding is done
+  // (`fullForm`, US-62 AC25). On a phone, the My health tab is active. On
+  // desktop, the topics' top is in the upper three quarters of the viewport
+  // (a margin, not a ratio: a tall page never reaches 25% visible). Once per
+  // tab by the throttle.
   const hasSuggestions = (results?.suggestions?.length ?? 0) > 0;
-  const planColumnRef = useRef<HTMLDivElement>(null);
+  const sectionsRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!hasSuggestions) return;
+    if (!hasSuggestions || !fullForm) return;
     if (isMobile) {
-      if (activeTab === 'plan') trackProductEvent('results_viewed');
+      if (activeTab === 'health') trackProductEvent('results_viewed');
       return;
     }
-    const el = planColumnRef.current;
+    const el = sectionsRef.current;
     if (!el) return;
     return observeVisibility(el, (visible) => {
       if (visible) trackProductEvent('results_viewed');
     }, { rootMargin: '0px 0px -25% 0px' });
-  }, [hasSuggestions, isMobile, activeTab]);
+  }, [hasSuggestions, isMobile, activeTab, fullForm]);
 
-  // The plan's tiles, once: ResultsPanel shows them; the phone's tab dot reads their keys.
+  // The plan's tiles, once: under the onboarding, and on their rows' pages (US-62 AC25, AC26).
   const sex = isSex(inputs.sex) ? inputs.sex : undefined;
   const tiles = useMemo(
     () => (results ? statTiles(results, { unitSystem, unitOverrides: metricUnitOverrides, sex }) : []),
     [results, unitSystem, metricUnitOverrides, sex],
   );
-  // US-62 AC13: on a phone, a dot on My plan when a tile appears that the
-  // person has not seen there. What My plan last showed is what was seen; a
-  // new record (an erase) starts it again.
-  const seenTiles = useRef<{ epoch: number; keys: string[] } | null>(null);
-  if (hasApiResponse && (seenTiles.current?.epoch !== epoch || activeTab === 'plan')) {
-    seenTiles.current = { epoch, keys: tiles.map(t => t.key) };
-  }
-  const planDot = hasApiResponse && activeTab !== 'plan' && tiles.some(t => !seenTiles.current?.keys.includes(t.key));
+  // My health's worked-out rows (US-62 AC21), read again as the record's rows or profile change.
+  const series = useMemo(() => loadDerivedSeries(), [history, labValueHistory, inputs.heightCm, inputs.sex, inputs.birthYear, inputs.birthMonth]);
+  // The day and source of the plan's eGFR, for its row (the plan's own pick, withLabEgfr).
+  const egfrFromLab = !!(results?.eGFRFromLab || results?.limits?.labEgfr);
+  const egfrDay = egfrFromLab ? planInputs.labEgfrDate : results?.eGFR !== undefined ? planInputs.creatinineDay ?? localDay(new Date()) : undefined;
+  const egfrCurrent = egfrDay ? { day: egfrDay, source: egfrFromLab ? 'lab' as const : 'calculated' as const } : null;
 
   // US-20 AC6: each tab keeps its own scroll position. The page scrolls, not
   // the panel, so leaving a tab records the page's offset and coming back
@@ -1390,7 +1393,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     // on a phone the form's tab opens, so they SEE it and its Save button
     // (they were on the chat tab). Mirror handleAutoFocusEmail.
     if (editedField) {
-      if (isMobileRef.current) selectTab('input');
+      if (isMobileRef.current) selectTab('health');
       setRevealCell({ field: editedField, grid: inGrid });
     }
   }, [applyFieldEdit, applyMedicationEdit, unitSystem, eraseUnshown, selectTab]);
@@ -1407,15 +1410,16 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
 
   // Says whether it acted, so a caller spends its once-only jump only then.
   // The jump to the email box once the last onboarding answer is in (US-62
-  // AC13). A weight jumps on a phone to My plan (US-22). A birth year
-  // (`stayOnTab`, Brad 2026-11-02) never changes tab: where the box is not on
-  // screen (a phone, an email already given) it only leaves the field, so
-  // About you moves low (US-62 AC12).
+  // AC13). The box sits at the foot of My health (US-62 AC25); a weight on a
+  // phone goes there after the page has opened (US-22). A birth year
+  // (`stayOnTab`, Brad 2026-11-02) never moves: where the box is not reached
+  // that way (a phone, an email already given) it only leaves the field, so
+  // About you goes to Settings (US-62 AC12).
   const handleAutoFocusEmail = useCallback((stayOnTab = false): boolean => {
     // Only when the answer was the last one: a first weight is step 1.
     if (stageRef.current !== 4) return false;
     if (emailCaptureActive && isMobile && !stayOnTab) {
-      selectTab('plan');
+      selectTab('health');
       setTimeout(() => document.getElementById('guestEmail')?.focus(), 400);
       return true;
     }
@@ -1432,9 +1436,86 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     [history, labValueHistory, documentHistory],
   );
 
+  // The form's medicine and screening questions, as health-core builds them
+  // (the InputPanel parity test pins the two together): a suggestion sits on
+  // the question that asks it (US-62 AC20).
+  const forms = useMemo(() => {
+    const e = effectiveInputs;
+    return {
+      medications: medicationForm(medicationsToInputs(medications), {
+        lipidMarker: planBasis?.lipidMarker ?? null,
+        weightMedTrigger: planBasis?.weightMedTrigger ?? { on: false, reasons: [] },
+        bmi: planBasis?.bmi,
+        hasLipidInput: e.apoB !== undefined || e.ldlC !== undefined || e.totalCholesterol !== undefined || e.hdlC !== undefined,
+        hasWeightInput: e.hba1c !== undefined || e.triglycerides !== undefined || (e.weightKg !== undefined && e.heightCm !== undefined),
+        unitFor: (metric) => unitOverrides[METRIC_TO_FIELD[metric]] ?? unitSystem,
+      }),
+      screenings: screeningForm(planBasis?.age, inputs.sex, screeningsToInputs(screenings)),
+    };
+  }, [effectiveInputs, medications, screenings, planBasis, inputs.sex, unitOverrides, unitSystem]);
+
+  const plan = usePlanView({
+    results,
+    isValid,
+    tiles,
+    forms,
+    hasUnsavedLongitudinal: hasApiResponse && LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined),
+    onSaveLongitudinal: handleSaveLongitudinal,
+    showEmailCapture: emailCaptureActive,
+    formStage: reached,
+    // US-60 AC3: the Dismiss asks the unanswered and drinkers; a non-drinker has no card.
+    // The "I still drink" line names About you, as Settings' heading does, once
+    // About you sits there (aboutYouLow), the only time its rows hold the Alcohol row;
+    // before that no row shows, so the line names none (US-60 AC4).
+    alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer, aboutYouRow: aboutYouLow },
+  });
+
+  // Settings (US-62 AC24): the person button opens them in My health's place.
+  // On a phone the button sits in the top bar, so a Chat tab press opens My health first.
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const personRef = useRef<HTMLButtonElement>(null);
+  const toggleSettings = useCallback(() => {
+    selectTab('health');
+    setSettingsOpen(open => !open);
+  }, [selectTab]);
+  const closeSettings = useCallback(() => {
+    setSettingsOpen(false);
+    requestAnimationFrame(() => personRef.current?.focus());
+  }, []);
+  const personButton = <PersonButton onClick={toggleSettings} buttonRef={personRef} open={settingsOpen}/>;
+  const planned = isValid && !!results;
+  const settingsParts = (
+    <>
+      {/* US-07 AC6: no reminders for a known minor, who is never enrolled and must see no mailing-list box. */}
+      {planned && !results.knownMinor && remindersSection}
+      {/* Where the record lives (US-09). Hidden for new users until they have entered real data. */}
+      {syncControl?.({ hasData: planned, attention: plan.attention })}
+      {planned && (
+        <div className="delete-data-section">
+          <button
+            className="delete-data-link"
+            onClick={async () => { if (await handleDeleteData()) { plan.onErased(); closeSettings(); } }}
+            disabled={isDeleting}
+          >
+            {isDeleting ? 'Deleting...' : 'Delete All My Data'}
+          </button>
+        </div>
+      )}
+    </>
+  );
+
   const inputPanelProps = {
-    // On a phone the storage button sits in the top bar, above every tab.
+    // On a phone the storage and person buttons sit in the top bar, above every tab.
     storageBar: isMobile ? undefined : storageBar,
+    personButton: isMobile ? undefined : personButton,
+    plan,
+    tiles,
+    series,
+    egfrCurrent,
+    settingsOpen,
+    onSettingsClose: closeSettings,
+    settingsParts,
+    sectionsRef,
     inputs,
     effectiveInputs,
     onChange: handleInputChange,
@@ -1475,7 +1556,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     formStage,
     reached,
     fullForm,
-    wasDone: opened === 4,
     aboutYouLow,
     onProfileLeft: handleProfileLeft,
     setShowUploadModal,
@@ -1488,25 +1568,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     onAutoFocusEmail: handleAutoFocusEmail,
     // On a phone a chat edit opens the grids, so the filled cell shows (US-62 AC11).
     revealCell,
-  };
-
-  const resultsPanelProps = {
-    results,
-    syncControl,
-    remindersSection,
-    isValid,
-    hasUnsavedLongitudinal: hasApiResponse && LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined),
-    onSaveLongitudinal: handleSaveLongitudinal,
-    onDeleteData: handleDeleteData,
-    isDeleting,
-    tiles,
-    showEmailCapture: emailCaptureActive,
-    formStage: reached,
-    // US-60 AC3: the Dismiss asks the unanswered and drinkers; a non-drinker has no card.
-    // The "I still drink" line names About you, as InputPanel's heading does, once
-    // About you sits low (aboutYouLow), the only time its rows hold the Alcohol row;
-    // before that no row shows, so the line names none (US-60 AC4).
-    alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer, aboutYouRow: aboutYouLow },
   };
 
   // The chat reads its context as each message is sent (useChatState), through
@@ -1526,9 +1587,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     onProposeEdit: handleProposeEdit,
   };
 
-  // US-20 AC6: on a phone, three panels and a bottom tab bar. All three stay
-  // mounted (the form's drafts and the chat's conversation survive a switch);
-  // only the active one shows.
+  // US-62 AC16: on a phone, two panels, My health and Chat, and a bottom tab bar.
+  // Both stay mounted (the form's drafts and the chat's conversation survive a
+  // switch); only the active one shows.
   const panel = (tab: TabId, children: ReactNode) => (
     <div className="hr-tabpanel" role="tabpanel" id={panelDomId(tabIds, tab)} aria-labelledby={tabDomId(tabIds, tab)} hidden={activeTab !== tab}>
       {children}
@@ -1539,13 +1600,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       {unreadableLine && <p className="hr-unreadable-note no-print" role="status">{unreadableLine}</p>}
       {isMobile ? (
         <>
-          {storageBar && <div className="hr-top-bar">{storageBar}</div>}
-          {panel('input', <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps} /></fieldset>)}
-          {panel('plan', (
-            <div className="health-tool-right">
-              <ResultsPanel {...resultsPanelProps} />
-            </div>
-          ))}
+          <div className="hr-top-bar">{storageBar}{personButton}</div>
+          {panel('health', <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps} /></fieldset>)}
           {panel('chat', (
             <div className="health-tool-chat">
               <ChatEmbed
@@ -1556,15 +1612,13 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
               />
             </div>
           ))}
-          <BottomTabBar activeTab={activeTab} onTabChange={selectTab} idPrefix={tabIds} dot={planDot ? 'plan' : null} />
+          <BottomTabBar activeTab={activeTab} onTabChange={selectTab} idPrefix={tabIds} />
         </>
       ) : (
         <div className="health-tool-content">
-          <div className="health-tool-left">
+          {/* US-62 AC16: one My health column, centred; the chat column beside it from 1200px. */}
+          <div className="health-tool-main">
             <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps} /></fieldset>
-          </div>
-          <div className="health-tool-right" ref={planColumnRef}>
-            <ResultsPanel {...resultsPanelProps} />
           </div>
           {isWideDesktop && (
             <div className="health-tool-chat">

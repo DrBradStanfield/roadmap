@@ -1,6 +1,8 @@
-import { SectionIcon } from './icons';
-import { Fragment, useState, useEffect, useLayoutEffect, useRef, type MutableRefObject, type ReactNode } from 'react';
-import { ColumnHeader } from './ColumnHeader';
+// My health (US-62 phase 5): the iPhone's one tab of numbers and plan, by topic.
+// The onboarding's form, then the topics with their rows, questions and the
+// plan's cards, then the foot; the settings behind the person button.
+import { SectionIcon, type SectionKey } from './icons';
+import { Fragment, useState, useEffect, useLayoutEffect, useRef, type MutableRefObject, type ReactNode, type RefObject } from 'react';
 import { InfoTooltip } from './InfoTooltip';
 import { DocumentLightbox } from './DocumentLightbox';
 import { DOCUMENT_TYPE_LABELS, formatDocumentDate } from '../lib/document-format';
@@ -16,7 +18,7 @@ import { DRAFTS_CLEARED_EVENT, loadFromLocalStorage } from '../lib/storage';
 const interceptHistory = (metric: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
   if (openHistoryLightbox(metric)) e.preventDefault();
 };
-import type { FormStage, HealthInputs, HealthResults, ScreeningInputs, WeightMedicationTrigger, LipidMarker } from '@roadmap/health-core';
+import type { FormStage, HealthInputs, HealthResults, ScreeningInputs, StatTile, TopicId, WeightMedicationTrigger, LipidMarker } from '@roadmap/health-core';
 import {
   type UnitSystem,
   fromCanonicalValue,
@@ -40,7 +42,6 @@ import {
   PCSK9I_OPTIONS,
   BEMPEDOIC_ACID_OPTIONS,
   SUPPLEMENT_OPTIONS,
-  FEATURED_SUPPLEMENTS,
   cmToFeetInches,
   feetInchesToCm,
   formatHeightDisplay,
@@ -93,8 +94,13 @@ import { StartingInfoVitals, type VitalsPrefillFn } from './StartingInfoVitals';
 import { CommitTickButton } from './CommitTickButton';
 import { ALCOHOL_OPTIONS } from './AlcoholQuestion';
 import { useLpaUnit } from '../lib/lpa-unit';
-import { BloodTestRows, VitalsRows, type RowContext, type ValueSubject } from './MyDataRows';
+import { BLOOD_ROWS, MetricRows, TopicHeading, coreRow, egfrRow, labRows, nonHdlRow, pressureRow, weightRow, whtrRow, type RowContext, type RowModel, type ValueSubject } from './MyDataRows';
 import { ValuePage } from './ValuePage';
+import { AddLabTest } from './AddLabTest';
+import { PlanCardList, PlanEmptyPreview, QuickStats, RowSuggestions, type PlanView } from './ResultsPanel';
+import { SettingsSheet } from './SettingsSheet';
+import { SectionNav } from './SectionNav';
+import type { DerivedSeries } from '../storage/roadmap-store';
 
 /** The history-state key a phone value page's entry carries (US-62 AC10). */
 const VALUE_PAGE_STATE = 'hrValuePage';
@@ -147,8 +153,25 @@ export type PlanBasis = Pick<HealthResults, 'age' | 'bmi' | 'idealBodyWeight' | 
 
 
 interface InputPanelProps {
-  /** US-09 AC30: the Sign in button, in the header on desktop and on a phone. */
+  /** US-09 AC30: the storage button, on the title line on desktop (a phone's sits in the top bar). */
   storageBar?: React.ReactNode;
+  /** The person button, on the title line on desktop (US-62 AC24). */
+  personButton?: React.ReactNode;
+  /** The plan's cards by topic, the banner and the foot (usePlanView). */
+  plan: PlanView;
+  /** The plan's tiles: under the onboarding, and on their rows' pages (US-62 AC25, AC26). */
+  tiles: StatTile[];
+  /** The worked-out rows' series: waist-to-height and eGFR (US-62 AC21). */
+  series: DerivedSeries;
+  /** The day and source of the plan's eGFR, for its row; null without one. */
+  egfrCurrent: { day: string; source: 'lab' | 'calculated' } | null;
+  /** The settings show in the page's place (US-62 AC24). */
+  settingsOpen: boolean;
+  onSettingsClose: () => void;
+  /** Settings' parts after About you and units: reminders, the record, Delete All My Data. */
+  settingsParts?: React.ReactNode;
+  /** The topics' container, once shown: `results_viewed` watches it (US-62 AC5). */
+  sectionsRef?: RefObject<HTMLDivElement>;
   inputs: Partial<HealthInputs>;
   /** What the plan reads: the form, the drafts that stand in over it, and
    *  the record's latest values under both. The medication cascades follow it. */
@@ -218,8 +241,6 @@ interface InputPanelProps {
   reached: FormStage;
   /** The whole form shows: the onboarding was done, or the record holds more than its answers. */
   fullForm: boolean;
-  /** The record was complete when it was first shown (a returning user): About you may collapse. */
-  wasDone: boolean;
   /** About you is its own card of rows at the column's foot (US-62 AC12): a
    *  returning user's, or once the onboarding's answers are in and left. */
   aboutYouLow: boolean;
@@ -267,7 +288,7 @@ function useAutoAdvance(): (opts: { ambiguous: boolean; advance: () => void }) =
 }
 
 export function InputPanel({
-  storageBar, inputs, effectiveInputs, onChange: updateField, errors: allErrors, unitSystem, onUnitSystemChange,
+  storageBar, personButton, plan, tiles, series, egfrCurrent, settingsOpen, onSettingsClose, settingsParts, sectionsRef, inputs, effectiveInputs, onChange: updateField, errors: allErrors, unitSystem, onUnitSystemChange,
   unitOverrides, onToggleFieldUnit,
   previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
   onCorrectValue, moveTest, onDraftValue,
@@ -277,11 +298,10 @@ export function InputPanel({
   scheduleLongitudinalSave, flushLongitudinalSave,
   isSavingLongitudinal, fieldsSaved, hasApiResponse,
   bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
-  formStage, reached, fullForm, wasDone, aboutYouLow, onProfileLeft,
+  formStage, reached, fullForm, aboutYouLow, onProfileLeft,
   setShowUploadModal, planBasis, grading,
   healthDocuments, onDocumentDeleted, onAutoFocusEmail, revealCell = null,
 }: InputPanelProps) {
-  const [prefillExpanded, setPrefillExpanded] = useState(false);
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
   // Number boxes holding text the browser could not read ("175,500" gives "" with
   // validity.badInput): not a clear, so nothing is written or saved (US-02 AC7).
@@ -356,11 +376,6 @@ export function InputPanel({
     const metric = FIELD_METRIC_MAP[field];
     return !!metric && hasUnitChoice(metric);
   };
-  // Collapse only for a record complete when first shown and complete now
-  // (an answer cleared elsewhere opens it). No auto-collapse on a first
-  // visit, nor mid-onboarding.
-  const canCollapse = wasDone && formStage === 4;
-  const [collapsed, setCollapsed] = useState(wasDone);
 
   // ── My data, phone and desktop (US-62 AC8-AC12) ──
   // Rows replace the grids, which stay mounted but hidden: their drafts, the
@@ -557,31 +572,6 @@ export function InputPanel({
   const birthShown = fullForm || reached >= 3;
   const yearShown = useRef(false);
   yearShown.current = birthShown && (yearShown.current || !!(inputs.birthMonth || inputs.birthYear));
-  const [collapseAnimating, setCollapseAnimating] = useState(false);
-  const hasMountedRef = useRef(false);
-
-  useEffect(() => {
-    if (!hasMountedRef.current) {
-      hasMountedRef.current = true;
-      return; // Skip animation on mount — returning users start collapsed via useState
-    }
-    if (!canCollapse) {
-      setCollapsed(false);
-      setCollapseAnimating(false);
-      return;
-    }
-    if (!prefillExpanded) {
-      setCollapseAnimating(true);
-      const timer = setTimeout(() => {
-        setCollapsed(true);
-        setCollapseAnimating(false);
-      }, 400);
-      return () => clearTimeout(timer);
-    } else {
-      setCollapsed(false);
-      setCollapseAnimating(false);
-    }
-  }, [prefillExpanded, canCollapse]);
 
   // Feet/inches state for US height input
   const [heightFeet, setHeightFeet] = useState<string>('');
@@ -1202,7 +1192,8 @@ export function InputPanel({
         value: inputs.sex === 'male' ? 'Male' : inputs.sex === 'female' ? 'Female' : null,
         missing: !inputs.sex || !!allErrors.sex },
       { key: 'birth', label: 'Birth', editor: renderBirthInfo,
-        value: inputs.birthYear ? [month, inputs.birthYear].filter(Boolean).join(' ') : null,
+        // The plan's age beside it, as the old collapsed summary said it (US-06 AC5): none when the plan sets the year aside.
+        value: inputs.birthYear ? `${[month, inputs.birthYear].filter(Boolean).join(' ')}${planBasis?.age !== undefined ? ` (Age ${planBasis.age})` : ''}` : null,
         missing: !inputs.birthYear || !!allErrors.birthMonth || !!allErrors.birthYear },
       // US-60 AC4: unanswered is an answer here, so it never opens itself.
       { key: 'alcohol', label: 'Alcohol', editor: renderAlcohol, missing: false,
@@ -1249,51 +1240,35 @@ export function InputPanel({
     );
   };
 
+  // data-unit-control="all": a press here closes every open saved-value editor
+  // unsaved (US-05 AC2, US-04 AC1).
+  const unitPill = (
+    <button
+      type="button"
+      className="unit-toggle-pill"
+      data-unit-control="all"
+      onClick={() => onUnitSystemChange(unitSystem === 'si' ? 'conventional' : 'si')}
+      title={`Switch to ${unitSystem === 'si' ? 'US (in, lbs, mg/dL)' : 'Metric (cm, kg, mmol/L)'}`}
+      aria-label={`Switch units. Current: ${unitSystem === 'si' ? 'Metric' : 'US'}`}
+    >
+      {unitSystem === 'si' ? 'Metric (kg, cm, mmol/L)' : 'US (in, lbs, mg/dL)'}
+    </button>
+  );
+
   const renderProfile = () => (
     <>
       <section className="health-section">
         <div className="hr-section-card-header">
-          <h3
-            className={`health-section-title${canCollapse ? ' health-section-title--collapsible' : ''}`}
-            onClick={canCollapse ? () => setPrefillExpanded(!prefillExpanded) : undefined}
-          >
+          <h3 className="health-section-title">
             <SectionIcon section="aboutYou"/>{aboutYouLow ? 'About you' : 'Starting Info'}
-            {canCollapse && (
-              <span className={`collapse-chevron${prefillExpanded ? ' expanded' : ''}`}>{'\u25B8'}</span>
-            )}
           </h3>
           <div className="basic-info-units">
             <span className="basic-info-units-label">Units</span>
-            {/* data-unit-control="all": a press here closes every open
-                saved-value editor unsaved (US-05 AC2, US-04 AC1). */}
-            <button
-              type="button"
-              className="unit-toggle-pill"
-              data-unit-control="all"
-              onClick={() => onUnitSystemChange(unitSystem === 'si' ? 'conventional' : 'si')}
-              title={`Switch to ${unitSystem === 'si' ? 'US (in, lbs, mg/dL)' : 'Metric (cm, kg, mmol/L)'}`}
-              aria-label={`Switch units. Current: ${unitSystem === 'si' ? 'Metric' : 'US'}`}
-            >
-              {unitSystem === 'si' ? 'Metric (kg, cm, mmol/L)' : 'US (in, lbs, mg/dL)'}
-            </button>
+            {unitPill}
           </div>
         </div>
 
-        <div className={`prefill-summary-wrapper${collapsed && !prefillExpanded ? ' visible' : ''}`}>
-          <p className="prefill-summary" onClick={() => setPrefillExpanded(true)}>
-            {[
-              inputs.sex === 'male' ? 'Male' : inputs.sex === 'female' ? 'Female' : null,
-              inputs.heightCm != null && !Number.isNaN(Number(inputs.heightCm))
-                ? `${formatHeightDisplay(Number(inputs.heightCm), unitSystem)} tall`
-                : null,
-              inputs.birthYear
-                ? `Born ${inputs.birthMonth ? `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][inputs.birthMonth - 1]} ` : ''}${inputs.birthYear}${planBasis?.age !== undefined ? ` (Age ${planBasis.age})` : ''}`
-                : null,
-            ].filter(Boolean).join(' · ')}
-          </p>
-        </div>
-
-        <div className={`prefill-fields-wrapper${collapseAnimating && !prefillExpanded ? ' collapsing' : ''}${collapsed && !prefillExpanded ? ' collapsed' : ''}`}>
+        <div className="prefill-fields-wrapper">
           {/* The onboarding, one question at a time (US-62 AC13): height and
               weight, then sex, then the birth date. Each answer saves. Every
               slot keeps its place as the form opens, so a field being typed
@@ -1441,24 +1416,6 @@ export function InputPanel({
     );
   };
 
-  const renderVitals = () => {
-    // Rows for any saved vitals, the mirror's or the record's (a new device),
-    // unless the plain fields saved one this visit: those stay, so nothing
-    // moves under someone typing.
-    const rows = vitalsViewMode === 'matrix' || vitalsAsRows || (vitalsHistory.length > 0 && fieldsSaved === 0);
-    if (!rows) return renderVitalsLegacy();
-    return (
-      <>
-        {!tableShown && <VitalsRows history={vitalsHistory} ctx={rowCtx} onOpen={openPage} withoutWeight={weightInProfile}/>}
-        {unsavedCue(draftedVitals)}
-        <div className="md-table" hidden={!tableShown}>
-          <button type="button" className="md-back md-table-back" onClick={() => showTable(false)}>‹ Show as rows</button>
-          {renderVitalsMatrix()}
-        </div>
-      </>
-    );
-  };
-
   const renderBirthInfo = () => (
     <>
       <div className="health-field-group">
@@ -1551,10 +1508,8 @@ export function InputPanel({
     for (const [k, v] of screeningWrites(scr, key, value)) onScreeningChange(k, v);
   };
 
-  const renderMedications = () => (
-    <>
-      {/* Cholesterol Medications Section — cascade when the plan's lipid marker is elevated (US-06 AC5), flat when any lipid entered */}
-      {(() => {
+  // Cholesterol medications: a cascade when the plan's lipid marker is elevated (US-06 AC5), flat when any lipid is entered.
+  const renderLipidMedications = () => (() => {
           const { apoB: effectiveApoB, ldlC: effectiveLdl, totalCholesterol: effectiveTotalChol, hdlC: effectiveHdl } = effectiveInputs;
           const lipidMarker = planBasis?.lipidMarker;
 
@@ -1601,6 +1556,7 @@ export function InputPanel({
                   </select>
                 )}
               </div>
+              {placedOn('statin', 'statin_dose')}
             </div>
           );
 
@@ -1614,6 +1570,7 @@ export function InputPanel({
               >
                 {optionElements(optionsShowing(EZETIMIBE_OPTIONS, medInputs.ezetimibe || 'not_yet'))}
               </select>
+              {placedOn('ezetimibe')}
             </div>
           );
 
@@ -1627,6 +1584,7 @@ export function InputPanel({
               >
                 {optionElements(optionsShowing(PCSK9I_OPTIONS, medInputs.pcsk9i || 'not_yet'))}
               </select>
+              {placedOn('pcsk9i')}
             </div>
           );
 
@@ -1640,6 +1598,7 @@ export function InputPanel({
               >
                 {optionElements(optionsShowing(BEMPEDOIC_ACID_OPTIONS, medInputs.bempedoicAcid || 'not_yet'))}
               </select>
+              {placedOn('bempedoic_acid')}
             </div>
           );
 
@@ -1712,6 +1671,7 @@ export function InputPanel({
                   >
                     {optionElements(optionsShowing(escalationOptions(step), medInputs.statinEscalation || 'not_yet'))}
                   </select>
+                  {placedOn('statin_escalation')}
                 </div>
               )}
 
@@ -1724,10 +1684,10 @@ export function InputPanel({
             </section>
             </div>
           );
-        })()}
+        })();
 
-      {/* Weight & Diabetes Medications Section — recommends only when the plan's trigger is on (US-06 AC5) */}
-      {(() => {
+  // Weight and diabetes medications: they recommend only when the plan's trigger is on (US-06 AC5).
+  const renderWeightMedications = () => (() => {
         const {
           weightKg: effectiveWeight, heightCm: effectiveHeight,
           hba1c: effectiveHba1c, triglycerides: effectiveTrigs,
@@ -1777,6 +1737,7 @@ export function InputPanel({
                 </select>
               )}
             </div>
+            {placedOn('glp1', 'glp1_dose')}
           </div>
         );
 
@@ -1802,6 +1763,7 @@ export function InputPanel({
                 </select>
               )}
             </div>
+            {placedOn('sglt2i', 'sglt2i_dose')}
           </div>
         );
 
@@ -1816,6 +1778,7 @@ export function InputPanel({
             >
               {optionElements(optionsShowing(METFORMIN_OPTIONS, medInputs.metformin || 'none'))}
             </select>
+            {placedOn('metformin')}
           </div>
         );
 
@@ -1871,6 +1834,7 @@ export function InputPanel({
                 >
                   {optionElements(optionsShowing(escalationOptions(step), medInputs.glp1Escalation || 'not_yet'))}
                 </select>
+                {placedOn('glp1_escalation')}
               </div>
             )}
 
@@ -1888,14 +1852,10 @@ export function InputPanel({
           </section>
           </div>
         );
-      })()}
-    </>
-  );
+      })();
 
-  const renderScreening = () => (
-    <>
-      {/* Cancer Screening Section — shown when birth year is available */}
-      {(() => {
+  // Cancer screening: shown when the plan has an age.
+  const renderScreening = () => (() => {
         // The plan's age, from the validated birth year (January when no month)
         const age = planBasis?.age;
         if (age === undefined) return null;
@@ -1954,7 +1914,6 @@ export function InputPanel({
         return (
           <div className="section-card">
           <section className="health-section screening-cascade">
-            <h3 className="health-section-title"><SectionIcon section="screening"/>{SCREENING_TEXT.title}</h3>
             <p className="health-section-desc">
               {SCREENING_TEXT.intro}
             </p>
@@ -1963,6 +1922,7 @@ export function InputPanel({
             {age >= 35 && age <= 85 && (
               <div className="screening-group">
                 <h4>Colorectal</h4>
+                {placedIn('colorectal')}
                 {age < 45 && (
                   <div className="screening-notice">
                     {SCREENING_TEXT.colorectalEarly}
@@ -2001,9 +1961,12 @@ export function InputPanel({
             {sex === 'female' && age >= 40 && (
               <div className="screening-group">
                 <h4>Breast</h4>
-                <p className="screening-age-message">
-                  {SCREENING_TEXT.breastByAge(age)}
-                </p>
+                {placedIn('breast')}
+                {noteShown('breast', SCREENING_TEXT.breastByAge(age)) && (
+                  <p className="screening-age-message">
+                    {SCREENING_TEXT.breastByAge(age)}
+                  </p>
+                )}
 
                 <div className="health-field">
                   <label htmlFor="breast-frequency">{SCREENING_LABELS.frequency}</label>
@@ -2029,6 +1992,7 @@ export function InputPanel({
             {sex === 'female' && age >= 25 && (
               <div className="screening-group">
                 <h4>Cervical</h4>
+                {placedIn('cervical')}
                 {age <= 65 ? (
                   <>
                     <div className="health-field">
@@ -2061,6 +2025,7 @@ export function InputPanel({
             {lungGroupShown(age, scr) && (
               <div className="screening-group">
                 <h4>Lung</h4>
+                {placedIn('lung')}
 
                 <div className="health-field">
                   <label htmlFor="lung-smoking-history">{SCREENING_LABELS.smokingHistory}</label>
@@ -2123,9 +2088,12 @@ export function InputPanel({
             {sex === 'male' && age >= 45 && (
               <div className="screening-group">
                 <h4>Prostate</h4>
-                <p className="screening-age-message">
-                  {SCREENING_TEXT.prostateByAge(age)}
-                </p>
+                {placedIn('prostate')}
+                {noteShown('prostate', SCREENING_TEXT.prostateByAge(age)) && (
+                  <p className="screening-age-message">
+                    {SCREENING_TEXT.prostateByAge(age)}
+                  </p>
+                )}
 
                 <div className="health-field">
                   <label htmlFor="prostate-discussion">{SCREENING_LABELS.prostateDiscussion}</label>
@@ -2228,6 +2196,7 @@ export function InputPanel({
             {sex === 'female' && age >= 45 && (
               <div className="screening-group">
                 <h4>Endometrial</h4>
+                {placedIn('endometrial')}
 
                 <div className="health-field">
                   <label htmlFor="endometrial-discussion">{SCREENING_LABELS.endometrialDiscussion}</label>
@@ -2255,13 +2224,9 @@ export function InputPanel({
           </section>
           </div>
         );
-      })()}
-    </>
-  );
+      })();
 
-  const renderBoneDensity = () => (
-    <>
-      {(() => {
+  const renderBoneDensity = () => (() => {
         const age = planBasis?.age;
         if (age === undefined) return null;
 
@@ -2292,6 +2257,7 @@ export function InputPanel({
                 >
                   {optionElements(SCREENING_OPTIONS.dexa_screening)}
                 </select>
+                {placedIn('dexa')}
               </div>
 
               {dexaScreening === 'dexa_scan' && (
@@ -2337,9 +2303,7 @@ export function InputPanel({
           </section>
           </div>
         );
-      })()}
-    </>
-  );
+      })();
 
   // ── Supplements section (logged-in only) ��─
   const [supplementSearch, setSupplementSearch] = useState('');
@@ -2392,26 +2356,7 @@ export function InputPanel({
 
     return (
       <div className="section-card">
-        <section className="health-section">
-          <h3 className="health-section-title"><SectionIcon section="supplements"/>{SUPPLEMENT_TEXT.title}</h3>
-          <p className="health-section-desc">{SUPPLEMENT_TEXT.intro}</p>
-
-          {/* Featured supplement chips */}
-          <div className="supplement-chips">
-            {FEATURED_SUPPLEMENTS.filter(
-              f => !activeSupplements.some(s => s.supplementKey === f.key),
-            ).map(f => (
-              <button
-                key={f.key}
-                type="button"
-                className="supplement-chip"
-                onClick={() => addSupplement(f.key, f.name, f.defaultDose, f.defaultUnit)}
-              >
-                + {f.name}
-              </button>
-            ))}
-          </div>
-
+        <section className="health-section" aria-label={SUPPLEMENT_TEXT.title}>
           {/* Active supplements list */}
           {activeSupplements.map(s => (
             <Fragment key={s.supplementKey}>
@@ -2518,59 +2463,201 @@ export function InputPanel({
     </div>
   );
 
-  // ── Render all sections with progressive disclosure (both mobile and desktop) ──
-  return (
-    <div ref={panelRef} className={`health-input-panel${pageShown ? ' md-page-open' : ''}`}>
-      <ColumnHeader step={1} title="Your information" meta={storageBar} actions={!!storageBar} />
-      {pageShown && (
-        <ValuePage key={JSON.stringify(pageShown)} subject={pageShown} history={[...vitalsHistory, ...bloodTestHistory]} labValues={labValues}
-                   ctx={rowCtx} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} dirtyRef={pageDirty}/>
-      )}
-      {panelMessages}
-      {/* One keyed list, so About you's card is moved, not remade, when it
-          goes low (US-62 AC12). Card 1 is the profile: the onboarding's
-          questions until answered (US-62 AC13); the vitals are their own card
-          once the whole form shows. */}
-      {[
-        !aboutYouLow && aboutCard,
-        fullForm && (
-          <div key="vitals" ref={vitalsRef} className="section-card stage-reveal"
-               onBlurCapture={aboutYouLow && !vitalsLeft ? e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setVitalsLeft(true); } : undefined}>
-            {renderVitals()}
-          </div>
+  // ── My health (US-62 AC17-AC23): one page by topic, the plan's cards in their topics ──
+  const topicOf = (id: TopicId) => plan.layout.sections.find(section => section.topic === id);
+  const placedMedicines = new Map(plan.layout.medicines.map(m => [m.key, m.suggestions]));
+  const placedScreenings = new Map(plan.layout.screenings.map(g => [g.group, g.suggestions]));
+  /** The plan's suggestions on a medicine question (one control may answer two keys: a drug and its dose). */
+  function placedOn(...keys: string[]) {
+    const suggestions = keys.flatMap(key => placedMedicines.get(key) ?? []);
+    return suggestions.length > 0 && <RowSuggestions suggestions={suggestions}/>;
+  }
+  /** The plan's suggestions on a screening test, their text as the line. */
+  function placedIn(group: string) {
+    const suggestions = placedScreenings.get(group) ?? [];
+    return suggestions.length > 0 && <RowSuggestions suggestions={suggestions} describes/>;
+  }
+  /** A group's note, unless a suggestion in the group already says it (prostate's). */
+  function noteShown(group: string, note: string) {
+    return !(placedScreenings.get(group) ?? []).some(s => s.description.includes(note));
+  }
+  const tileOf = (key: string) => tiles.find(t => t.key === key);
+  const cardsOf = (id: TopicId, urgent: boolean) => (topicOf(id)?.cards ?? []).filter(card => (card.priority === 'urgent') === urgent);
+  /** A topic: its heading, its urgent cards over its rows, its rows, its other cards, then what follows (its medicines). */
+  const topicSection = (id: TopicId, title: string, icon: SectionKey, parts: { rows?: ReactNode; after?: ReactNode; action?: ReactNode; always?: boolean; sectionRef?: React.RefObject<HTMLElement> } = {}) => {
+    const urgent = cardsOf(id, true);
+    const cards = cardsOf(id, false);
+    const ownershipLine = topicOf(id)?.ownershipLine;
+    if (!parts.always && !parts.rows && !parts.after && urgent.length + cards.length === 0) return null;
+    return (
+      <section key={id} className="mh-topic" data-topic={id} aria-labelledby={`mh-topic-${id}`} ref={parts.sectionRef}>
+        <TopicHeading title={title} icon={icon} id={`mh-topic-${id}`} action={parts.action}/>
+        {urgent.length > 0 && <PlanCardList cards={urgent} plan={plan}/>}
+        {parts.rows}
+        {cards.length > 0 && <PlanCardList cards={cards} plan={plan}/>}
+        {ownershipLine && <p className="us-ownership no-print">{ownershipLine}</p>}
+        {parts.after}
+      </section>
+    );
+  };
+  const rowsCard = (rows: Array<RowModel | null>, extra?: ReactNode) => (
+    <div className="section-card mh-rows-card">
+      <MetricRows rows={rows.filter((r): r is RowModel => r !== null)} onOpen={openPage}/>
+      {extra}
+    </div>
+  );
+
+  // Rows (US-62 AC21). With the vitals still plain fields (a first visit, before the
+  // onboarding's card is left) the fields stand in for the vitals' rows.
+  const vitalsRows = vitalsViewMode === 'matrix' || vitalsAsRows || (vitalsHistory.length > 0 && fieldsSaved === 0);
+  const waist = coreRow('waist', vitalsHistory, rowCtx);
+  const firstRow = whtrRow(series.whtr, tileOf('whtr')) ?? waist;
+  const creatinine = coreRow('creatinine', bloodTestHistory, rowCtx);
+  const labs = labRows(labValues);
+  const labEgfrKey = labs.some(r => r.subject.kind === 'lab' && r.subject.seriesKey === 'egfr') ? 'egfr' : null;
+  const egfr = egfrRow(series.egfr, tileOf('egfr'), egfrCurrent, labEgfrKey);
+  // The lab's own eGFR row leaves Blood tests while the eGFR row stands for it (US-73 AC7).
+  const bloodLabs = egfr ? labs.filter(r => !(r.subject.kind === 'lab' && r.subject.seriesKey === 'egfr')) : labs;
+  const lipidRows = (['apob', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'lpa'] as const).flatMap(m => {
+    const row = coreRow(m, bloodTestHistory, rowCtx);
+    return m === 'hdl' ? [row, nonHdlRow(tileOf('nonHdl'), coreRow('total_cholesterol', bloodTestHistory, rowCtx))] : [row];
+  });
+  const bloodRows = BLOOD_ROWS.flatMap(m => (m === 'creatinine' ? [creatinine, egfr] : [coreRow(m, bloodTestHistory, rowCtx)]));
+
+  const jump = (id: TopicId) => {
+    const heading = document.getElementById(`mh-topic-${id}`);
+    heading?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    heading?.focus({ preventScroll: true });
+  };
+  const toUrgent = () => {
+    const card = plan.urgent && document.getElementById(plan.urgent.cardId);
+    card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card?.focus({ preventScroll: true });
+  };
+
+  // The topics in Brad's order, each with its title, null when it holds nothing.
+  const topics: Array<[TopicId, string, ReactNode]> = !fullForm ? [] : [
+    ['weight', 'Weight & diabetes', topicSection('weight', 'Weight & diabetes', 'weight', {
+        rows: (
+          <>
+            {!vitalsRows && (
+              <div ref={vitalsRef} className="section-card stage-reveal"
+                   onBlurCapture={aboutYouLow && !vitalsLeft ? e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setVitalsLeft(true); } : undefined}>
+                {renderVitalsLegacy()}
+              </div>
+            )}
+            {rowsCard([vitalsRows ? firstRow : null, vitalsRows && !weightInProfile ? weightRow(vitalsHistory, rowCtx, tileOf('bmi')) : null,
+              coreRow('hba1c', bloodTestHistory, rowCtx)], unsavedCue(draftedVitals))}
+          </>
         ),
-        /* Blood Tests (the whole form). `section-card--bt` zeros the card's
-           inner padding so the timeline matrix sits flush against the card
-           edges (column-fit math expects no inner padding). Rows, with the
-           grids one tap away (US-62 AC11). */
-        fullForm && (
-          <div key="bt" className="section-card section-card--bt stage-reveal">
+        after: renderWeightMedications(),
+      })],
+    ['sleep', 'Sleep', topicSection('sleep', 'Sleep', 'sleep')],
+    ['fitness', 'Fitness', topicSection('fitness', 'Fitness', 'fitness')],
+    ['bloodPressure', 'Blood pressure', topicSection('bloodPressure', 'Blood pressure', 'bloodPressure', {
+      rows: rowsCard([vitalsRows ? pressureRow(vitalsHistory, rowCtx) : null, creatinine, egfr]),
+    })],
+    ['cholesterol', 'Cholesterol', topicSection('cholesterol', 'Cholesterol', 'cholesterol', { rows: rowsCard(lipidRows), after: renderLipidMedications() })],
+    ['screening', 'Cancer screening', (() => {
+      const screening = renderScreening();
+      const bone = renderBoneDensity();
+      return topicSection('screening', 'Cancer screening', 'screening', { rows: (screening || bone) ? <>{screening}{bone}</> : undefined });
+    })()],
+    ['skin', 'Skin', topicSection('skin', 'Skin', 'skin')],
+    ['bloodTests', 'Blood tests', topicSection('bloodTests', 'Blood tests', 'bloodTests', {
+        always: true,
+        action: setShowUploadModal && (
+          <button type="button" className="mh-head-icon-btn" aria-label="Upload lab results" title="Upload lab results" onClick={() => setShowUploadModal(true)}>
+            <span aria-hidden="true">+</span>
+          </button>
+        ),
+        rows: (
+          <div className="section-card section-card--bt mh-rows-card">
             {!tableShown && (
-              <BloodTestRows history={bloodTestHistory} labValues={labValues} ctx={rowCtx} onOpen={openPage}
-                             action={setShowUploadModal && <button type="button" className="md-foot-btn md-head-btn" onClick={() => setShowUploadModal(true)}>Upload lab results</button>}>
+              <div className="md-section">
+                <MetricRows rows={[...bloodRows.filter((r): r is RowModel => r !== null), ...bloodLabs]} onOpen={openPage}/>
                 {unsavedCue(draftedBlood)}
+                {onLabValueAdded && (
+                  <div className="mh-add-test">
+                    <AddLabTest onAdded={onLabValueAdded} labValues={labValues} coreValues={bloodTestHistory} onCorrect={onCorrectValue}/>
+                  </div>
+                )}
                 <div className="md-foot">
                   <button type="button" className="md-foot-btn" onClick={() => showTable(true)}>All results as a table</button>
                 </div>
-              </BloodTestRows>
+              </div>
             )}
+            {/* The grids stay mounted, hidden under the rows: their drafts, the chat's
+                prefill (US-16 AC2) and the save before an upload keep working (US-62 AC11). */}
             <div className="md-table" hidden={!tableShown}>
               <button type="button" className="md-back md-table-back" onClick={() => showTable(false)}>‹ Show as rows</button>
+              {vitalsRows && renderVitalsMatrix()}
               {renderBloodTests()}
               {move.panel}
               <AdditionalLabRows labValues={labValues} coreValues={bloodTestHistory} onAdded={onLabValueAdded} onCorrect={onCorrectValue} move={move.headers}/>
             </div>
           </div>
         ),
-        fullForm && <Fragment key="meds">{renderMedications()}</Fragment>,
-        fullForm && <Fragment key="screening">{renderScreening()}</Fragment>,
-        fullForm && <Fragment key="bone">{renderBoneDensity()}</Fragment>,
-        fullForm && <Fragment key="supplements">{renderSupplements()}</Fragment>,
-        aboutYouLow && aboutCard,
-      ]}
+      })],
+    ['supplements', 'Supplements', topicSection('supplements', 'Supplements', 'supplements', { always: true, after: renderSupplements(), sectionRef: plan.supplementsRef })],
+    ['other', 'Other', topicSection('other', 'Other', 'other')],
+  ];
+  const shownTopics = topics.filter(([, , node]) => node !== null);
+
+  // Desktop: the section list beside the topics (US-62 AC27); a phone: the three pills under the title.
+  const sections = fullForm && (
+    <div className="mh-sections" ref={sectionsRef}>
+      <SectionNav topics={shownTopics.map(([id, title]) => ({ id, title, urgent: cardsOf(id, true).length > 0 }))} onJump={id => jump(id as TopicId)}/>
+      <div className="mh-topics">
+        <div className="mh-pills no-print">
+          {([['bloodTests', 'Blood tests'], ['cholesterol', 'Cholesterol'], ['supplements', 'Supplements']] as const).map(([id, label]) => (
+            <button key={id} type="button" className="mh-pill" onClick={() => jump(id)}>{label}</button>
+          ))}
+        </div>
+        {plan.urgent && (
+          <button type="button" className="mh-banner" onClick={toUrgent}>
+            <span aria-hidden="true">⚠️ </span>Needs attention: {plan.urgent.title}
+          </button>
+        )}
+        {shownTopics.map(([, , node]) => node)}
+      </div>
+    </div>
+  );
+
+  return (
+    <div ref={panelRef} className={`health-input-panel mh-page${pageShown || settingsOpen ? ' md-page-open' : ''}`}>
+      <div className="mh-header">
+        <h2 className="mh-title">My health</h2>
+        {(personButton || storageBar) && <div className="mh-header-actions">{storageBar}{personButton}</div>}
+      </div>
+      {settingsOpen && (
+        <SettingsSheet onClose={onSettingsClose}>
+          {aboutYouLow ? aboutCard : (
+            <div className="section-card">
+              <div className="basic-info-units">
+                <span className="basic-info-units-label">Units</span>
+                {unitPill}
+              </div>
+            </div>
+          )}
+          {settingsParts}
+        </SettingsSheet>
+      )}
+      {pageShown && !settingsOpen && (
+        <ValuePage key={JSON.stringify(pageShown)} subject={pageShown} history={[...vitalsHistory, ...bloodTestHistory]} labValues={labValues}
+                   ctx={rowCtx} tiles={tiles} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} onOpen={openPage} dirtyRef={pageDirty}/>
+      )}
+      {panelMessages}
+      {/* The onboarding, as before, until About you goes low (US-62 AC25); then About you sits in Settings. */}
+      {!aboutYouLow && aboutCard}
+      {/* Under the onboarding, the plan's tiles as they come (US-62 AC13, AC25); with no plan yet, what it will look like. */}
+      {!planBasis ? <PlanEmptyPreview/> : !aboutYouLow && <QuickStats tiles={tiles}/>}
+      {sections}
       {healthDocuments && healthDocuments.length > 0 && (
         <HealthRecordsSection documents={healthDocuments} onDeleted={onDocumentDeleted} />
       )}
+      {plan.foot}
+      {plan.report}
     </div>
   );
 }

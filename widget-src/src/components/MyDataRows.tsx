@@ -1,12 +1,15 @@
-// The phone's My data rows (US-62 AC8), the iPhone's layout (ValueRow.swift):
+// My health's rows (US-62 AC8, AC21), the iPhone's layout (ValueRow.swift):
 // the name with "target · date" under it, the recent trend, and the latest
 // value with the previous one in brackets over its unit. A tap opens the
-// value's page (ValuePage). Desktop keeps the grids.
+// value's page (ValuePage). Phone and desktop alike.
 
-import { useId, useMemo } from 'react';
+import { useId } from 'react';
 import {
   type ApiMeasurement,
   type CellUnit,
+  type EgfrPoint,
+  type StatTile,
+  type WhtrPoint,
   type Comparator,
   type GradeStatus,
   type Grading,
@@ -25,6 +28,7 @@ import {
   rowTarget,
   valueStatus,
   LIMIT_NOT_GRADED,
+  WHTR_TARGET,
 } from '@roadmap/health-core';
 import { savedCellText, trendGeometry } from '../lib/blood-test-cell';
 import { monthYear, pressureReadings, readingsOf, type DayReading } from '../lib/my-data-rows';
@@ -60,7 +64,9 @@ export const pressureText = (r: DayReading) => `${halfText(r.value, r.comparator
 /** One half: a whole number, or a limit with its symbol, rounded away from its band ("< 125"). */
 const halfText = (v: number, comparator?: Comparator) => (comparator ? limitText(v, 0, comparator) : String(Math.round(v)));
 
-interface RowModel {
+export interface RowModel {
+  /** The row's own key where its subject is another's page (waist-to-height opens the waist's). */
+  key?: string;
   subject: ValueSubject;
   label: string;
   target: string | null;
@@ -85,7 +91,7 @@ function trendOf(readings: DayReading[]): Pick<RowModel, 'trend' | 'trendLimits'
   return { trend: recent.map(r => r.value), trendLimits: recent.map(r => !!r.comparator) };
 }
 
-function coreRow(metric: MetricType, history: ApiMeasurement[], ctx: RowContext): RowModel {
+export function coreRow(metric: MetricType, history: ApiMeasurement[], ctx: RowContext): RowModel {
   const unit = ctx.unitOf(metric);
   const readings = readingsOf(history, metric);
   const [latest, previous] = readings;
@@ -106,7 +112,7 @@ function coreRow(metric: MetricType, history: ApiMeasurement[], ctx: RowContext)
   };
 }
 
-function pressureRow(history: ApiMeasurement[], ctx: RowContext): RowModel {
+export function pressureRow(history: ApiMeasurement[], ctx: RowContext): RowModel {
   const readings = pressureReadings(history);
   const [latest, previous] = readings;
   const status = latest ? pressureStatus(latest, ctx) : null;
@@ -127,7 +133,7 @@ function pressureRow(history: ApiMeasurement[], ctx: RowContext): RowModel {
 }
 
 /** The lab tests beyond the core ones, one row per series, as the grid groups them (health-core's `labSeriesRows`). */
-function labRows(labValues: ApiLabValue[]): RowModel[] {
+export function labRows(labValues: ApiLabValue[]): RowModel[] {
   return labSeriesRows(labValues).map(({ seriesKey, label, target, latest, previous, unit, trend, trendLimits }): RowModel => ({
     subject: { kind: 'lab', seriesKey }, label, target, day: latest.day, latest: latest.value, previous, unit,
     trend, ...(trendLimits && { trendLimits }), tint: LAB_TINT, status: null, graded: '',
@@ -168,7 +174,7 @@ function MetricRow({ row, onOpen }: { row: RowModel; onOpen: (subject: ValueSubj
   const meta = [row.target, row.day && monthYear(row.day)].filter(Boolean).join(' · ');
   return (
     <li>
-      <button type="button" className="md-row" onClick={() => onOpen(row.subject)}>
+      <button type="button" className="md-row" onClick={() => onOpen(row.subject)} data-row={row.key ?? subjectKey(row.subject)}>
         <span className="md-row-name">
           <span className="md-row-label">{row.label}</span>
           {meta && <span className="md-row-meta">{meta}</span>}
@@ -191,32 +197,77 @@ function MetricRow({ row, onOpen }: { row: RowModel; onOpen: (subject: ValueSubj
   );
 }
 
-function RowSection({ title, icon, action, rows, onOpen, children }: { title: string; icon: SectionKey; action?: React.ReactNode; rows: RowModel[]; onOpen: (s: ValueSubject) => void; children?: React.ReactNode }) {
+const subjectKey = (s: ValueSubject) => (s.kind === 'lab' ? `lab:${s.seriesKey}` : s.kind === 'bp' ? 'bp' : s.metric);
+
+/** A list of rows, the iPhone's ValueRow list. */
+export function MetricRows({ rows, onOpen }: { rows: RowModel[]; onOpen: (s: ValueSubject) => void }) {
+  if (rows.length === 0) return null;
   return (
-    <section className="md-section" aria-label={title}>
-      {/* The title, and on its right the section's own action (Upload lab results, Brad 2026-11-02). */}
-      <div className="md-section-head">
-        <h3 className="health-section-title md-section-title"><SectionIcon section={icon}/>{title}</h3>
-        {action}
-      </div>
-      <ul className="md-rows">
-        {rows.map(row => <MetricRow key={row.subject.kind === 'lab' ? row.subject.seriesKey : row.subject.kind === 'bp' ? 'bp' : row.subject.metric} row={row} onOpen={onOpen}/>)}
-      </ul>
-      {children}
-    </section>
+    <ul className="md-rows">
+      {rows.map(row => <MetricRow key={row.key ?? subjectKey(row.subject)} row={row} onOpen={onOpen}/>)}
+    </ul>
   );
 }
 
-export function VitalsRows({ history, ctx, onOpen, withoutWeight }: { history: ApiMeasurement[]; ctx: RowContext; onOpen: (s: ValueSubject) => void; withoutWeight?: boolean }) {
-  // The weight asked beside the height shows there alone (US-62 AC13).
-  const rows = [...(withoutWeight ? [] : [coreRow('weight', history, ctx)]), coreRow('waist', history, ctx), pressureRow(history, ctx)];
-  return <RowSection title="Vitals" icon="vitals" rows={rows} onOpen={onOpen}/>;
+/** A My health section (US-62 AC17): its title with its tinted symbol, the title line's
+ *  own action on its right (Blood tests' upload), then what the section holds. */
+export function TopicHeading({ title, icon, id, action }: { title: string; icon: SectionKey; id: string; action?: React.ReactNode }) {
+  return (
+    <div className="md-section-head mh-topic-head">
+      <h3 className="health-section-title md-section-title" id={id} tabIndex={-1}><SectionIcon section={icon}/>{title}</h3>
+      {action}
+    </div>
+  );
 }
 
-export function BloodTestRows({ history, labValues, ctx, onOpen, action, children }: {
-  history: ApiMeasurement[]; labValues: ApiLabValue[]; ctx: RowContext; onOpen: (s: ValueSubject) => void; action?: React.ReactNode; children?: React.ReactNode;
-}) {
-  const labs = useMemo(() => labRows(labValues), [labValues]);
-  const rows = [...BLOOD_ROWS.map(m => coreRow(m, history, ctx)), ...labs];
-  return <RowSection title="Blood tests" icon="bloodTests" action={action} rows={rows} onOpen={onOpen}>{children}</RowSection>;
+/** A plan tile's status as a row's grade: amber for attention, red for urgent (TopicPlan.swift PlanTiles.grade). */
+const tileGrade = (tile: StatTile | undefined): GradeStatus =>
+  tile?.status?.tone === 'urgent' ? 'bad' : tile?.status?.tone === 'attention' ? 'warn' : null;
+
+/** Waist-to-height (US-62 AC21): health-core's series (waist over the current height), its
+ *  target "Normal <0.5", graded by the plan's tile; it opens the waist page. None without a ratio. */
+export function whtrRow(series: WhtrPoint[], tile: StatTile | undefined): RowModel | null {
+  const [latest, previous] = series;
+  if (!latest) return null;
+  return {
+    key: 'whtr', subject: { kind: 'core', metric: 'waist' }, label: 'Waist-to-height', target: WHTR_TARGET,
+    day: latest.day, latest: latest.ratio.toFixed(2), previous: previous ? previous.ratio.toFixed(2) : null, unit: '',
+    trend: recentTrend(series).map(p => p.ratio), tint: TINT.waist, status: tileGrade(tile), graded: 'waist',
+  };
+}
+
+/** Weight, its target line the plan's BMI ("BMI 27.4"), else its own (US-62 AC21). */
+export function weightRow(history: ApiMeasurement[], ctx: RowContext, bmi: StatTile | undefined): RowModel {
+  const row = coreRow('weight', history, ctx);
+  return bmi ? { ...row, target: `${bmi.label} ${bmi.value}` } : row;
+}
+
+/** Non-HDL when the plan works it out (its lipid marker's tile): it opens total cholesterol's page. */
+export function nonHdlRow(tile: StatTile | undefined, total: RowModel): RowModel | null {
+  if (!tile) return null;
+  return {
+    key: 'nonHdl', subject: total.subject, label: tile.label, target: tile.status?.label ?? null, day: total.day,
+    latest: tile.value, previous: null, unit: tile.unit, trend: [], tint: TINT.total_cholesterol, status: tileGrade(tile), graded: '',
+  };
+}
+
+/**
+ * The one eGFR row (US-62 AC21, US-73 AC7): the plan's current eGFR, its tile's value
+ * and status, on the day and from the source the plan used; the series gives only the
+ * previous value and the trend. It opens the page of its source: the lab eGFR's, or
+ * creatinine's. None without the plan's eGFR.
+ */
+export function egfrRow(series: EgfrPoint[], tile: StatTile | undefined, current: { day: string; source: 'lab' | 'calculated' } | null, labSeriesKey: string | null): RowModel | null {
+  if (!tile || !current) return null;
+  const at = series.find(p => p.day === current.day && p.source === current.source);
+  const older = series.filter(p => p.day < current.day);
+  const lab = current.source === 'lab';
+  return {
+    key: 'egfr',
+    subject: lab && labSeriesKey ? { kind: 'lab', seriesKey: labSeriesKey } : { kind: 'core', metric: 'creatinine' },
+    label: 'eGFR', target: [tile.status?.label, lab ? 'Lab result' : 'Calculated'].filter(Boolean).join(' · '),
+    day: current.day, latest: tile.value, previous: older[0] ? String(older[0].value) : null, unit: tile.unit,
+    trend: [...(at ? [at] : []), ...older].slice(0, 7).map(p => p.value).reverse(),
+    tint: TINT.creatinine, status: tileGrade(tile), graded: '',
+  };
 }

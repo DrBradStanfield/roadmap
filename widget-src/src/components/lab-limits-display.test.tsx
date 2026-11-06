@@ -11,7 +11,7 @@ import { cleanup, fireEvent, render } from '@testing-library/react';
 import { LIMIT_NOT_GRADED, type ApiMeasurement } from '@roadmap/health-core';
 import { BloodTestTimeline } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
-import { BloodTestRows, type RowContext } from './MyDataRows';
+import { BLOOD_ROWS, MetricRows, coreRow, type RowContext } from './MyDataRows';
 import { NumericInputCell } from './NumericInputCell';
 import type { ApiLabValue } from '../lib/api-types';
 
@@ -93,7 +93,7 @@ describe('US-12 AC20: the phone rows', () => {
 
   it('shows the latest and previous limit with their symbols, ungraded when undecided', () => {
     const rows = [row('l2', 'ldl', 1.5, '2026-07-01', '<'), row('l1', 'ldl', 2.8, '2026-06-01')];
-    const view = render(<BloodTestRows history={rows} labValues={[]} ctx={ctx} onOpen={() => {}}/>);
+    const view = render(<MetricRows rows={BLOOD_ROWS.map(m => coreRow(m, rows, ctx))} onOpen={() => {}}/>);
     const ldl = rowNamed(view.container, 'LDL Cholesterol');
     const latest = ldl.querySelector('.md-row-latest')!;
     expect(latest.textContent).toBe('< 1.5');
@@ -105,7 +105,7 @@ describe('US-12 AC20: the phone rows', () => {
     const today = new Date();
     const day = (ago: number) => new Date(today.getTime() - ago * 86_400_000).toISOString().slice(0, 10);
     const rows = [row('a0', 'lpa', 40, day(3)), row('a1', 'lpa', 10, day(1), '<')];
-    const view = render(<BloodTestRows history={rows} labValues={[]} ctx={ctx} onOpen={() => {}}/>);
+    const view = render(<MetricRows rows={BLOOD_ROWS.map(m => coreRow(m, rows, ctx))} onOpen={() => {}}/>);
     const lpa = rowNamed(view.container, 'Lp(a)');
     expect(lpa.querySelector('.md-row-latest')!.textContent).toBe('< 10');
     expect(lpa.querySelector('.md-row-latest')!.className).toContain('md-status-ok');

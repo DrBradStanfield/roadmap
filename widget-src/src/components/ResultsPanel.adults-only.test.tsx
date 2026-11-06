@@ -18,7 +18,7 @@ vi.mock('../lib/roadmap-data', () => ({
 }));
 vi.mock('../lib/server-api', () => ({ trackABConversion: vi.fn(), trackProductEvent: vi.fn() }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
-import { ResultsPanel } from './ResultsPanel';
+import { PlanHost as ResultsPanel } from '../testing/plan-host';
 
 afterEach(cleanup);
 
@@ -32,9 +32,9 @@ describe('US-07 AC6: a plan holding only the adults-only card', () => {
     expect(cards).toHaveLength(1);
     expect(cards[0].querySelector('.suggestion-title')?.textContent).toBe('This plan is built for adults');
     expect(cards[0].querySelector('.suggestion-desc')?.textContent).toContain('aged 18 and over');
-    expect(container.querySelectorAll('.suggestions-group')).toHaveLength(1);
+    expect(container.querySelectorAll('[data-topic]')).toHaveLength(1); // one My health topic (US-62 AC17)
     expect(container.querySelector('.plan-empty-preview')).toBeNull();
-    expect(container.querySelector('.skin-group, .supplements-group')).toBeNull();
+    expect(container.querySelector('[data-topic="skin"], [data-topic="supplements"]')).toBeNull();
     // The record is untouched: the measured tiles still render.
     expect(Array.from(container.querySelectorAll('.stat-label')).map((l) => l.textContent)).toContain('BMI');
   });

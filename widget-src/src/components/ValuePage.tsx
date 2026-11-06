@@ -1,4 +1,4 @@
-// A value's page on a phone (US-62 AC10), opened from its My data row: the
+// A value's page (US-62 AC10), opened from its My health row: the
 // chart, the full history, Add and Correct. Built on what exists: the chart
 // is the history panel's (lazy, as the lightbox loads it), each saved value
 // is the grids' saved-value editor (ValueCell), a core Add goes through the
@@ -10,6 +10,7 @@ import {
   type ApiMeasurement,
   type CellUnit,
   type MetricType,
+  type StatTile,
   METRIC_LABELS,
   PRESSURE_ORDER,
   cellFromSI,
@@ -35,6 +36,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { ValueCell, saveErrorText, useLiveRegion } from './BloodTestTimeline';
 import { AddLabTest } from './AddLabTest';
 import { pressureText, tintOf, type RowContext, type ValueSubject } from './MyDataRows';
+import { PlanTile } from './ResultsPanel';
 import type { ApiLabValue } from '../lib/api-types';
 
 // The chart library loads with the chart, never with the form (as the history lightbox loads it).
@@ -51,16 +53,27 @@ interface ValuePageProps {
   history: ApiMeasurement[];
   labValues: ApiLabValue[];
   ctx: RowContext;
+  /** The plan's tiles: each one's explainer shows on its row's page (US-62 AC26). */
+  tiles: StatTile[];
   /** The grids' save: one task per cell, refused slots answered (matrix-save). */
   onSave: (tasks: SaveTask[], erase?: string) => Promise<Refused>;
   onCorrect?: CorrectFn;
   onLabAdded?: () => void;
   onClose: () => void;
+  /** Opens another value's page: creatinine's and the lab eGFR's link to each other (US-73 AC7). */
+  onOpen: (subject: ValueSubject) => void;
   /** Set while the Add form holds unsaved typing, so leaving can ask first. */
   dirtyRef: MutableRefObject<boolean>;
 }
 
-export function ValuePage({ subject, history, labValues, ctx, onSave, onCorrect, onLabAdded, onClose, dirtyRef }: ValuePageProps) {
+/** Each tile's explainer on its row's page, by the page's subject (US-62 AC26; TopicPlan.swift
+ *  PlanTiles.pages): protein follows weight, as its target does; non-HDL is total cholesterol less HDL. */
+const TILE_PAGES: Record<string, string[]> = {
+  weight: ['bmi', 'ibw', 'protein'], waist: ['whtr'], hba1c: ['hba1c'], creatinine: ['egfr'], 'lab:egfr': ['egfr'],
+  apob: ['apoB'], ldl: ['ldl'], total_cholesterol: ['nonHdl'], lpa: ['lpa'],
+};
+
+export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onCorrect, onLabAdded, onClose, onOpen, dirtyRef }: ValuePageProps) {
   const titleId = useId();
   const titleRef = useRef<HTMLHeadingElement>(null);
   // The page opens with its title focused, so a screen reader starts here.
@@ -72,6 +85,10 @@ export function ValuePage({ subject, history, labValues, ctx, onSave, onCorrect,
     : undefined;
   const metric = subject.kind === 'core' ? subject.metric : null;
   const unit = metric ? ctx.unitOf(metric) : 'si';
+  const pageKey = subject.kind === 'lab' ? `lab:${subject.seriesKey}` : subject.kind === 'bp' ? 'bp' : subject.metric;
+  const pageTiles = (TILE_PAGES[pageKey] ?? []).flatMap(key => tiles.filter(t => t.key === key));
+  // A lab eGFR can always be reached and corrected, whichever eGFR the row shows (US-73 AC7).
+  const labEgfrHeld = groupLabValues(labValues).some(g => g.series.some(s => s.seriesKey === 'egfr'));
   const label = subject.kind === 'bp' ? 'Blood Pressure' : metric ? METRIC_LABELS[metric] ?? metric : lab?.label ?? '';
   const latestLab = lab && labValues.find(v => v.id === lab.points[lab.points.length - 1].id);
   const target = subject.kind === 'bp' ? rowTarget('blood_pressure', 'si', ctx.grading, ctx.plan)
@@ -102,9 +119,16 @@ export function ValuePage({ subject, history, labValues, ctx, onSave, onCorrect,
 
   return (
     <section className="md-page" aria-labelledby={titleId}>
-      <button type="button" className="md-back" onClick={onClose}>‹ My data</button>
+      <button type="button" className="md-back" onClick={onClose}>‹ My health</button>
       <h3 id={titleId} ref={titleRef} tabIndex={-1} className="health-section-title md-page-title">{label}</h3>
       {target && target.bare && <p className="md-page-target">{target.full}</p>}
+      {pageTiles.length > 0 && <div className="stats-grid md-page-tiles">{pageTiles.map(tile => <PlanTile key={tile.key} tile={tile}/>)}</div>}
+      {pageKey === 'creatinine' && labEgfrHeld && (
+        <button type="button" className="md-foot-btn md-page-link" onClick={() => onOpen({ kind: 'lab', seriesKey: 'egfr' })}>Lab eGFR results</button>
+      )}
+      {pageKey === 'lab:egfr' && (
+        <button type="button" className="md-foot-btn md-page-link" onClick={() => onOpen({ kind: 'core', metric: 'creatinine' })}>Creatinine</button>
+      )}
 
       {readings.length > 0 && (
         <ErrorBoundary>
@@ -145,7 +169,7 @@ export function ValuePage({ subject, history, labValues, ctx, onSave, onCorrect,
         </ul>
       )}
       {metric && <p className="md-page-hint">Tap a value to correct it.</p>}
-      {subject.kind !== 'lab' && <p className="md-page-hint">To change units, use About you or All results as a table.</p>}
+      {subject.kind !== 'lab' && <p className="md-page-hint">To change units, use Settings or All results as a table.</p>}
       {messages}
     </section>
   );

@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 /**
  * The two jumps between phone tabs that the page makes itself (US-20 AC6):
- * US-16 AC2 — a chat edit lands on My data, with the filled cell scrolled into
+ * US-16 AC2 — a chat edit lands on My health, with the filled cell scrolled into
  * view and focused, not wherever the tab was last left.
- * US-22 — a weight typed on My data jumps to My plan's email box.
+ * US-22 — a weight typed on My health jumps to the email box at its foot.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
@@ -56,7 +56,7 @@ afterEach(async () => {
 
 const tab = (view: ReturnType<typeof render>, name: string) => within(view.getByRole('tablist')).getByRole('tab', { name });
 
-describe('US-16 AC2 on a phone: a chat edit lands on My data, on the cell it filled', () => {
+describe('US-16 AC2 on a phone: a chat edit lands on My health, on the cell it filled', () => {
   it('a chat edit closes an open value page that held typed input, and says it was not saved (US-62 AC11)', async () => {
     await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
     await addMeasurement('weight', 82, '2026-09-01');
@@ -92,14 +92,14 @@ describe('US-16 AC2 on a phone: a chat edit lands on My data, on the cell it fil
     act(() => chat.proposeEdit!([{ kind: 'field', field: 'waistCm', displayValue: 90, unitSystem: 'si', date: null }]));
 
     await waitFor(() => expect(view.container.querySelector('.md-page')).toBeNull());
-    if (phone) expect(tab(view, 'My data').getAttribute('aria-selected')).toBe('true');
+    if (phone) expect(tab(view, 'My health').getAttribute('aria-selected')).toBe('true');
     const waist = view.container.querySelector<HTMLInputElement>('#waistCm')!;
     expect(waist.value).toBe('90');
     expect(waist.closest('[hidden]')).toBeNull();
     expect([...view.container.querySelectorAll<HTMLElement>('.md-table')].every(t => t.hidden)).toBe(true);
   });
 
-  it('a blood test: My data shows, and the matrix cell holding the value is in view and focused', async () => {
+  it('a blood test: My health shows, and the matrix cell holding the value is in view and focused', async () => {
     await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
     await addMeasurement('weight', 82, '2026-09-01');
     await flushRoadmapStore();
@@ -113,7 +113,7 @@ describe('US-16 AC2 on a phone: a chat edit lands on My data, on the cell it fil
 
     await waitFor(() => expect(document.activeElement?.classList.contains('bt-input-active')).toBe(true));
     const cell = document.activeElement as HTMLInputElement;
-    expect(tab(view, 'My data').getAttribute('aria-selected')).toBe('true');
+    expect(tab(view, 'My health').getAttribute('aria-selected')).toBe('true');
     expect(cell.value).toBe('3.2');
     expect(cell.closest('[role="tabpanel"]')?.hasAttribute('hidden')).toBe(false);
     // US-62 AC11: the grids sit hidden under the phone's rows; the chat edit opens them.
@@ -169,7 +169,7 @@ describe('US-16 AC2 on a phone: a chat edit lands on My data, on the cell it fil
     act(() => chat.proposeEdit!([{ kind: 'field', field: 'weightKg', displayValue: 82, unitSystem: 'si', date: null }]));
 
     await waitFor(() => expect(document.activeElement?.id).toBe('weightKg'));
-    expect(tab(view, 'My data').getAttribute('aria-selected')).toBe('true');
+    expect(tab(view, 'My health').getAttribute('aria-selected')).toBe('true');
     expect(scrolledIntoView).toContain(document.activeElement);
   });
 
@@ -185,8 +185,8 @@ describe('US-16 AC2 on a phone: a chat edit lands on My data, on the cell it fil
   });
 });
 
-describe('US-22 on a phone: a typed weight jumps to My plan\'s email box', () => {
-  it('My plan shows and the email box takes focus', async () => {
+describe('US-22 on a phone: a typed weight jumps to the email box at the foot of My health (US-62 AC25)', () => {
+  it('My health shows and the email box takes focus', async () => {
     await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
     await flushRoadmapStore();
     const view = render(<HealthTool />);
@@ -197,7 +197,7 @@ describe('US-22 on a phone: a typed weight jumps to My plan\'s email box', () =>
     });
     fireEvent.change(weight, { target: { value: '182' } });
 
-    await waitFor(() => expect(tab(view, 'My plan').getAttribute('aria-selected')).toBe('true'));
+    await waitFor(() => expect(tab(view, 'My health').getAttribute('aria-selected')).toBe('true'));
     await waitFor(() => expect(document.activeElement?.id).toBe('guestEmail'), { timeout: 2000 });
     expect(document.activeElement?.closest('[role="tabpanel"]')?.hasAttribute('hidden')).toBe(false);
   });

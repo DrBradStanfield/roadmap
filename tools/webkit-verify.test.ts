@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assertDesktopColumns, assertMatrixLayout, assertPhoneCardGaps, assertRows, assertTabBar } from './webkit-verify.mjs';
+import { assertDesktopLayout, assertMatrixLayout, assertPhoneLayout, assertRows, assertTabBar } from './webkit-verify.mjs';
 
 describe('US-20: WebKit deployment gate', () => {
   const values = ['35', '36', '2.4'].map(text => ({ text, width: 72, height: 40, numberWidth: 20, numberHeight: 18, visible: true, boxSizing: 'border-box' }));
@@ -25,7 +25,7 @@ describe('US-20: WebKit deployment gate', () => {
 describe('US-20 AC6: WebKit tab bar gate', () => {
   const valid = {
     insideWidget: true, position: 'sticky', background: 'rgb(248, 248, 250)', backdropFilter: 'none', visible: true, top: 761, bottom: 812, viewportHeight: 812,
-    oldPlanButton: false, tabs: ['My data', 'My plan', 'Chat'], shownAfterPlanTap: ['My plan'],
+    oldPlanButton: false, tabs: ['My health', 'Chat'], shownAfterChatTap: ['Chat'],
   };
   it('accepts a sticky, opaque bar inside the widget, on screen, that switches panels', () => {
     expect(() => assertTabBar(valid)).not.toThrow();
@@ -34,7 +34,7 @@ describe('US-20 AC6: WebKit tab bar gate', () => {
     for (const change of [
       { insideWidget: false }, { position: 'fixed' }, { background: 'rgba(248, 248, 250, 0.94)' }, { background: 'rgba(0, 0, 0, 0)' },
       { backdropFilter: 'blur(12px)' }, { visible: false }, { bottom: 900 }, { top: -10 },
-      { oldPlanButton: true }, { tabs: ['Input', 'Plan', 'Chat'] }, { shownAfterPlanTap: ['My data', 'My plan'] },
+      { oldPlanButton: true }, { tabs: ['My data', 'My plan', 'Chat'] }, { shownAfterChatTap: ['My health', 'Chat'] },
     ]) {
       expect(() => assertTabBar({ ...valid, ...change })).toThrow();
     }
@@ -55,42 +55,45 @@ describe('US-62 AC8: WebKit rows gate', () => {
   });
 });
 
-describe('US-62 AC14: WebKit desktop columns gate', () => {
+describe('US-62 AC16, AC27: WebKit desktop gate', () => {
   const valid = {
-    heads: [28, 28, 28], firstCardTops: [322.4, 322.4, 322.4], headerInScroller: false, scrolled: 4900,
-    headerTopBefore: 274, headerTopAfter: 274, bodyWidthBefore: 433, bodyWidthAfter: 433, sectionGaps: [20, 20, 20],
+    viewportWidth: 1440, viewportHeight: 900, documentWidth: 1440, scrolled: 1154,
+    nav: { links: 9, position: 'sticky', topAfter: 24, right: 244, current: 1 }, topicsLeft: 284, pillsShown: false,
     select: { appearance: 'none', paddingRight: 36, backgroundImage: 'url("data:image/svg+xml,…")' }, unitSelect: { paddingRight: 20 },
     chatColumn: true, floatingChat: false,
   };
-  it('passes aligned columns, a still header, a steady body, even gaps and drawn chevrons', () => {
-    expect(() => assertDesktopColumns(valid)).not.toThrow();
+  it('passes a sticky section list beside the topics, one current, no pills, drawn chevrons', () => {
+    expect(() => assertDesktopLayout(valid)).not.toThrow();
   });
-  it('fails each regression Brad reported', () => {
+  it('fails each regression', () => {
     for (const [change, message] of [
-      [{ heads: [25, 20, 38] }, 'headers differ'],
-      [{ firstCardTops: [319, 314, 314] }, 'do not line up'],
-      [{ headerInScroller: true }, 'inside its scroller'],
+      [{ documentWidth: 1500 }, 'overflows'],
+      [{ nav: null }, 'section list missing'],
+      [{ nav: { ...valid.nav, position: 'static' } }, 'not sticky'],
       [{ scrolled: 0 }, 'did not scroll'],
-      [{ headerTopAfter: 120 }, 'header moved'],
-      [{ bodyWidthAfter: 413 }, 'narrowed'],
-      [{ sectionGaps: [8, 20, 45] }, 'gaps differ'],
+      [{ nav: { ...valid.nav, topAfter: -400 } }, 'left the screen'],
+      [{ nav: { ...valid.nav, current: 0 } }, 'one current'],
+      [{ nav: { ...valid.nav, right: 300 } }, 'overlaps'],
+      [{ pillsShown: true }, 'pills show'],
       [{ select: { ...valid.select, appearance: 'auto' } }, 'native arrow'],
       [{ select: { ...valid.select, paddingRight: 12 } }, 'no room'],
       [{ select: { ...valid.select, backgroundImage: 'none' } }, 'lost its chevron'],
       [{ unitSelect: { paddingRight: 36 } }, 'clips its text'],
       [{ floatingChat: true }, 'beside the chat column'],
     ] as const) {
-      expect(() => assertDesktopColumns({ ...valid, ...change })).toThrow(message);
+      expect(() => assertDesktopLayout({ ...valid, ...change })).toThrow(message);
     }
   });
 });
 
-describe('US-62 AC14: WebKit phone card gaps gate', () => {
-  it('passes one gap across My data and the plan', () => {
-    expect(() => assertPhoneCardGaps({ myData: [16, 16], plan: [16, 16, 16] })).not.toThrow();
+describe('US-62 AC14, AC17: WebKit phone gate', () => {
+  it('passes one gap between sections, the pills on one row, 44px controls', () => {
+    expect(() => assertPhoneLayout({ gaps: [16, 16, 16], pillRows: 1, smallTargets: [] })).not.toThrow();
   });
-  it('fails the 8px cards beside the 20px plan Brad reported, and a missing tab', () => {
-    expect(() => assertPhoneCardGaps({ myData: [8, 8], plan: [20, 20] })).toThrow('gaps differ');
-    expect(() => assertPhoneCardGaps({ myData: [], plan: [16] })).toThrow('missing');
+  it('fails uneven gaps, missing sections, wrapped pills and a small control', () => {
+    expect(() => assertPhoneLayout({ gaps: [8, 16], pillRows: 1, smallTargets: [] })).toThrow('gaps differ');
+    expect(() => assertPhoneLayout({ gaps: [16], pillRows: 1, smallTargets: [] })).toThrow('missing');
+    expect(() => assertPhoneLayout({ gaps: [16, 16], pillRows: 2, smallTargets: [] })).toThrow('wrap');
+    expect(() => assertPhoneLayout({ gaps: [16, 16], pillRows: 1, smallTargets: ['Dismiss 20px'] })).toThrow('44px');
   });
 });
