@@ -477,9 +477,10 @@ describe('US-62 live fixes (2026-11-06): jumps clear the theme\'s sticky header;
     fireEvent.click(view.container.querySelector('.mh-banner')!);
     expect((scrolled.at(-1) as HTMLElement).style.scrollMarginTop).toBe('72px');
     fireEvent.click(rowNamed(view, '[data-topic="weight"]', 'Weight')!);
-    const panel = view.container.querySelector<HTMLElement>('.health-input-panel')!;
-    expect(scrolled.at(-1)).toBe(panel);
-    expect(panel.style.scrollMarginTop).toBe('72px');
+    // The page's own top (its Back link) lands 12px under the header (design re-check 2026-11-06).
+    const valuePage = view.container.querySelector<HTMLElement>('.md-page:not(.mh-settings)')!;
+    expect(scrolled.at(-1)).toBe(valuePage);
+    expect(valuePage.style.scrollMarginTop).toBe('72px');
     off();
     fireEvent.click(view.getByRole('button', { name: '‹ Back' }));
     fireEvent.click(view.getByRole('button', { name: 'Supplements' }));

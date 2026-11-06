@@ -1107,11 +1107,16 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     if (!scrollOnSwitch.current) return;
     scrollOnSwitch.current = false;
     const saved = scrollByTab.current[activeTab];
-    // A first visit opens at the tab's panel, just under the theme's sticky header; the chat's
-    // panel is sized to the screen left below it (styles.css, --hr-sticky-top).
+    // A first visit opens at the tab's panel, just under the theme's sticky header. The chat's
+    // card is sized to the screen left between its own top (the header, then the card's measured
+    // inset in its panel) and the tab bar (styles.css, --hr-chat-top, --hr-tabbar-h).
     const sticky = stickyTop();
-    rootRef.current?.style.setProperty('--hr-sticky-top', `${sticky}px`);
-    const top = (document.getElementById(panelDomId(tabIds, activeTab))?.getBoundingClientRect().top ?? 0) - sticky;
+    const panel = document.getElementById(panelDomId(tabIds, activeTab));
+    const card = panel?.querySelector('.chat-embed');
+    const inset = panel && card ? card.getBoundingClientRect().top - panel.getBoundingClientRect().top : 0;
+    rootRef.current?.style.setProperty('--hr-chat-top', `${Math.round(sticky + inset)}px`);
+    rootRef.current?.style.setProperty('--hr-tabbar-h', `${Math.round(rootRef.current.querySelector('.hr-tabbar')?.getBoundingClientRect().height ?? 51)}px`);
+    const top = (panel?.getBoundingClientRect().top ?? 0) - sticky;
     // At once: the theme's smooth scrolling would slide the page from the top.
     if (saved !== undefined) window.scrollTo({ top: saved, behavior: 'instant' });
     else if (top !== 0) window.scrollTo({ top: window.scrollY + top, behavior: 'instant' });

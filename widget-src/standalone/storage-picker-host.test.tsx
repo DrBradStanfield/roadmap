@@ -78,3 +78,19 @@ it('US-09 AC30: the title line\'s Dropbox button opens the picker with Settings 
   await waitFor(() => expect(picker()).not.toBeNull());
   expect(document.querySelectorAll('dialog.hr-modal')).toHaveLength(1);
 });
+
+// Design re-check 2026-11-06: opened by a tap, the picker drew a heavy focus ring on its ×.
+// The first focus goes to its title (no ring), and Tab still reaches every control.
+it('the picker opens with the focus on its title, not on its × button', async () => {
+  const view = render(
+    <HealthTool
+      storageBar={<StorageBar backend="dropbox" />}
+      syncControl={({ hasData, attention }) => <SyncControl backend="dropbox" hasData={hasData} attention={attention} />}
+    />,
+  );
+  const header = await waitFor(() => { const el = view.container.querySelector('.mh-header'); expect(el).not.toBeNull(); return el!; });
+  fireEvent.click([...header.querySelectorAll('button')].find(b => b.textContent?.includes('Dropbox'))!);
+  await waitFor(() => expect(picker()).not.toBeNull());
+  await waitFor(() => expect(document.activeElement).toBe(picker()!.querySelector('h2')));
+});
+

@@ -78,6 +78,47 @@ export function assertTabBar(data) {
   assert(data.visible && data.bottom <= data.viewportHeight + 1 && data.top >= 0, 'tab bar not on screen with the widget');
   assert.deepEqual(data.tabs, ['My health', 'Chat'], 'tab labels changed');
   assert.deepEqual(data.shownAfterChatTap, ['Chat'], 'Chat did not show its panel alone');
+  // Live test 2026-11-06: the chat card ran 3-5px under the bar.
+  assert(data.chatCardBottom <= data.barTopOnChat + 0.5, `chat card ends under the tab bar (${data.chatCardBottom} > ${data.barTopOnChat})`);
+}
+
+// Design re-check 2026-11-06: a value page's top clears the theme's header, its tile words are
+// 13px or more and never wrap mid-label, and each history value sits on its date's baseline,
+// the date the quieter of the two.
+export function assertValuePage(data) {
+  assert(data.backTop >= data.headerBottom, `the page's Back link sits under the theme's header (${data.backTop} < ${data.headerBottom})`);
+  assert(data.tileFonts.length > 0 && data.tileFonts.every(f => f >= 13), `tile text under 13px (${data.tileFonts})`);
+  assert(data.wrappedLabels.length === 0, `tile labels wrap: ${data.wrappedLabels}`);
+  assert(data.baselines.length > 0 && data.baselines.every(d => Math.abs(d) <= 2), `history value and date off one baseline (${data.baselines})`);
+  assert(data.dayFont < data.valueFont, `the date is not quieter than the value (${data.dayFont} vs ${data.valueFont})`);
+}
+
+// Passed directly to Playwright's evaluate; keep this function self-contained.
+export function collectValuePage() {
+  const page = document.querySelector('.md-page:not(.mh-settings)');
+  let headerBottom = 0;
+  for (const hit of document.elementsFromPoint(innerWidth / 2, 1)) {
+    for (let el = hit; el && el !== document.body && !el.matches('.health-tool'); el = el.parentElement) {
+      const p = getComputedStyle(el).position;
+      if (p === 'fixed' || p === 'sticky') { headerBottom = Math.max(headerBottom, el.getBoundingClientRect().bottom); break; }
+    }
+  }
+  const tileText = [...page.querySelectorAll('.md-page-tiles .stat-card > span:not(.stat-value)')];
+  const lineOf = (el) => parseFloat(getComputedStyle(el).lineHeight) || parseFloat(getComputedStyle(el).fontSize) * 1.3;
+  // A baseline: an inline-block of no height, put at the start of the element's text.
+  const baseline = (el) => { const probe = document.createElement('span'); probe.style.cssText = 'display:inline-block;width:0;height:0'; el.prepend(probe); const y = probe.getBoundingClientRect().top; probe.remove(); return y; };
+  const rows = [...page.querySelectorAll('.md-history-row')];
+  const num = (row) => row.querySelector('.bt-value-num, .md-history-value');
+  return {
+    headerBottom: Math.round(headerBottom),
+    backTop: Math.round(page.querySelector('.md-back').getBoundingClientRect().top),
+    tileFonts: tileText.map(el => parseFloat(getComputedStyle(el).fontSize)),
+    wrappedLabels: page.querySelectorAll('.md-page-tiles .stat-label').length === 0 ? [] : [...page.querySelectorAll('.md-page-tiles .stat-label')]
+      .filter(el => el.getBoundingClientRect().height > lineOf(el) * 1.5).map(el => el.textContent),
+    baselines: rows.map(r => Math.round(baseline(num(r)) - baseline(r.querySelector('.md-history-day')))),
+    dayFont: rows[0] ? parseFloat(getComputedStyle(rows[0].querySelector('.md-history-day')).fontSize) : 0,
+    valueFont: rows[0] ? parseFloat(getComputedStyle(num(rows[0])).fontSize) : 0,
+  };
 }
 
 // Passed directly to Playwright's evaluate; keep this function self-contained.
@@ -256,6 +297,17 @@ async function inspect(browser, deviceName, viewport) {
       assertDesktopLayout(layout);
       console.log(`desktop ${viewport.width}: My health verified`, JSON.stringify(layout));
     }
+    // A value page: HbA1c's, with its tile and two values.
+    const hba1c = page.locator('.md-row', { has: page.locator('.md-row-label', { hasText: /^HbA1c$/ }) }).first();
+    await (deviceName ? hba1c.tap() : hba1c.click());
+    await page.locator('.md-page-title').waitFor({ state: 'visible' });
+    await page.waitForTimeout(600);
+    const valuePage = await page.evaluate(collectValuePage);
+    assertValuePage(valuePage);
+    console.log(`${deviceName ?? `desktop ${viewport.width}`}: value page verified`, JSON.stringify(valuePage));
+    const back = page.locator('.md-page .md-back').first();
+    await (deviceName ? back.tap() : back.click());
+    await page.locator('.md-page:not(.mh-settings)').waitFor({ state: 'detached' });
     const tableButton = page.getByRole('button', { name: 'All results as a table' });
     await (deviceName ? tableButton.tap() : tableButton.click());
     const matrix = page.locator('.bt-timeline').first();
@@ -270,6 +322,11 @@ async function inspect(browser, deviceName, viewport) {
       const tabBar = await bar.evaluate(collectTabBar);
       await bar.getByRole('tab', { name: 'Chat' }).tap();
       tabBar.shownAfterChatTap = await bar.evaluate(shownPanels);
+      await page.waitForTimeout(400);
+      Object.assign(tabBar, await page.evaluate(() => ({
+        chatCardBottom: document.querySelector('.hr-tabpanel:not([hidden]) .chat-embed').getBoundingClientRect().bottom,
+        barTopOnChat: document.querySelector('.hr-tabbar').getBoundingClientRect().top,
+      })));
       assertTabBar(tabBar);
       console.log(`${deviceName}: tab bar verified`, JSON.stringify(tabBar));
     }

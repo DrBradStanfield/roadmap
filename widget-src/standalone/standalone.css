@@ -119,6 +119,7 @@
 .hr-modal--wide { max-width: 960px; }
 .hr-modal-inner { position: relative; padding: 24px 24px 20px; }
 .hr-modal h2 { font-size: 19px; margin: 0 48px 6px 0; }
+.hr-modal h2:focus { outline: none; }
 .hr-modal-sub { font-size: 13.5px; color: #5a6b73; margin: 0 0 14px; }
 /* A round, borderless 44px button 16px in from the corner, clear of the scrollbar; the theme's
    button border never reaches it (design review 2026-11-06). The ring shows for the keyboard only. */

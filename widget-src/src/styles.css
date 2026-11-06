@@ -642,6 +642,11 @@ input[type="number"] {
   gap: 12px;
 }
 
+/* A lone tile (the onboarding's BMI) spans the row: no void beside it (design re-check 2026-11-06). */
+.stats-grid > .stat-card:only-child {
+  grid-column: 1 / -1;
+}
+
 /* Two tiles a row on a phone. After the base rule, or the base rule wins. A
    long title ("Ideal Body Weight") wraps rather than spill at 320px. */
 @media (max-width: 768px) {
@@ -3974,12 +3979,13 @@ input[type="number"] {
   }
   /* A fixed height: the messages scroll inside, so the chat's auto-scroll
      works and the composer stays on screen. */
-  /* The screen less the theme's sticky header (measured on the switch, HealthTool), the tab bar
-     (51px) and the card's 12px foot gap: no void, nothing of the page below under the bar. */
+  /* The screen below the card's own top (the theme's sticky header and the card's inset in its
+     panel, measured on the switch in HealthTool) less the tab bar and a 12px gap above it, the
+     cards' rhythm: no void, and the card never runs under the bar (live test 2026-11-06). */
   .hr-tabpanel .health-tool-chat .chat-embed {
     flex: none;
-    height: calc(100vh - var(--hr-sticky-top, 0px) - 63px - env(safe-area-inset-bottom, 0px));
-    height: calc(100svh - var(--hr-sticky-top, 0px) - 63px - env(safe-area-inset-bottom, 0px));
+    height: calc(100vh - var(--hr-chat-top, 0px) - var(--hr-tabbar-h, 51px) - 12px);
+    height: calc(100svh - var(--hr-chat-top, 0px) - var(--hr-tabbar-h, 51px) - 12px);
     min-height: 300px;
   }
 
@@ -5482,14 +5488,16 @@ input[type="number"] {
 }
 .md-history-row {
   display: flex;
-  align-items: center;
+  /* The value on its date's baseline (design re-check 2026-11-06). */
+  align-items: baseline;
+  padding: 10px 0;
   justify-content: space-between;
   gap: 8px;
   min-height: 44px;
   border-top: 1px solid var(--bt-ink-100, #eceef0);
 }
 .md-history-day {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-text-secondary);
 }
 .md-history-row .bt-cell-value,
@@ -6079,6 +6087,26 @@ input[type="number"] {
 }
 .md-page .md-page-tiles .stat-card-open {
   flex-basis: 100%;
+}
+/* Tile words 13px or more, on one line each (design re-check 2026-11-06). */
+.md-page .md-page-tiles .stat-card > span:not(.stat-value) {
+  font-size: 13px;
+}
+.md-page .md-page-tiles .stat-label {
+  white-space: nowrap;
+}
+/* A phone: two tiles a row, so "Ideal Body Weight" never breaks mid-label. */
+@media (max-width: 768px) {
+  .md-page .md-page-tiles {
+    row-gap: 8px;
+  }
+  .md-page .md-page-tiles .stat-card {
+    flex: 0 0 50%;
+  }
+  .md-page .md-page-tiles .stat-card:nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
+  }
 }
 .md-page-link {
   display: block;

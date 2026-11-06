@@ -18,7 +18,7 @@ export function stickyTop(): number {
 export function scrollToTop(el: HTMLElement | null | undefined, smooth = false): void {
   if (!el) return;
   el.style.scrollMarginTop = `${stickyTop() + 12}px`;
-  el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+  el.scrollIntoView?.({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
 }
 
 /** Scroll an element into view and move the focus to it, without a second jump:
