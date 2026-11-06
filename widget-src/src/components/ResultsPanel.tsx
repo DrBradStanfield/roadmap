@@ -503,6 +503,8 @@ export interface PlanView {
   alcoholQuestion?: AlcoholQuestion;
   /** The first urgent card in topic order, for the banner (US-62 AC19). */
   urgent: { title: string; cardId: string } | null;
+  /** Each card's DOM id: its place on the page, never what it found (US-09 AC7d). */
+  cardIds: ReadonlyMap<TopicCard<UsSuggestion>, string>;
   /** US-61 AC8: on the Supplements section, so its products count once it is on screen. */
   supplementsRef: React.RefObject<HTMLElement>;
   /** The foot: the PDF box and email, Save as PDF, the disclaimer, feedback, Supercharge, privacy. */
@@ -517,9 +519,6 @@ export interface PlanView {
 
 interface Highlights { highlighted: Set<string>; fadingOut: Set<string> }
 const NO_HIGHLIGHTS: Set<string> = new Set();
-
-/** A card's DOM id on My health: the banner scrolls to it (US-62 AC19). */
-export const cardDomId = (card: { suggestions: Array<{ id: string }> }) => `hr-card-${card.suggestions.map(s => s.id).join('--')}`;
 
 /** New or changed suggestions glow for 3s, then fade, once the plan has settled (3s after mount). */
 function useHighlights(suggestions: Suggestion[] | undefined): Highlights {
@@ -581,7 +580,7 @@ export function PlanCardList({ cards, plan }: { cards: ReadonlyArray<TopicCard<U
   return (
     <>
       {cards.map((card) => {
-        const id = cardDomId(card);
+        const id = plan.cardIds.get(card)!;
         const s = card.suggestions[0];
         return (
           <div key={id} id={id} tabIndex={-1} className="mh-card">
@@ -609,7 +608,7 @@ function RowSuggestion({ suggestion, describes }: { suggestion: Suggestion; desc
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const detailId = useId();
   return (
-    <div className={`mh-row-suggestion ${priorityColors[suggestion.priority]}`} data-suggestion={suggestion.id}>
+    <div className={`mh-row-suggestion ${priorityColors[suggestion.priority]}`}>
       <div className="mh-row-suggestion-line">
         <span className="mh-row-suggestion-text">{describes ? suggestion.description : suggestion.title}</span>
         <button type="button" className="mh-info-btn" aria-expanded={open} aria-controls={detailId}
@@ -784,14 +783,16 @@ export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitud
   const topics = useMemo(() => new Map(layout.sections.map(({ topic, cards, ownershipLine }) => [topic, {
     urgent: cards.filter(c => c.priority === 'urgent'), others: cards.filter(c => c.priority !== 'urgent'), ownershipLine,
   }])), [layout]);
+  // A card's DOM id is its place on the page: Sentry's click paths keep ids (US-09 AC7d).
+  const cardIds = useMemo(() => new Map(layout.sections.flatMap(s => s.cards).map((card, i) => [card, `mh-card-${i}`])), [layout]);
   // The banner names the first urgent card in topic order (US-62 AC19).
   const urgent = useMemo(() => {
     for (const section of layout.sections) {
       const card = section.cards.find(c => c.priority === 'urgent');
-      if (card) return { title: (card.suggestions.find(s => s.priority === 'urgent') ?? card.suggestions[0]).title, cardId: cardDomId(card) };
+      if (card) return { title: (card.suggestions.find(s => s.priority === 'urgent') ?? card.suggestions[0]).title, cardId: cardIds.get(card)! };
     }
     return null;
-  }, [layout]);
+  }, [layout, cardIds]);
 
   // US-61 AC8: once the Supplements section is on screen, one count per product
   // (trackProductEvent keeps one per product per tab session).
@@ -826,7 +827,7 @@ export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitud
               printStatus={printStatus} pdfBlocked={pdfBlocked} onPrint={handlePrint} onCapturePrint={() => printReport('capture')}/>
   );
 
-  return { layout, topics, planned, highlights, alcoholQuestion, urgent, supplementsRef, foot, attention, onErased: () => setPdfOpened(false), report };
+  return { layout, topics, planned, highlights, alcoholQuestion, urgent, cardIds, supplementsRef, foot, attention, onErased: () => setPdfOpened(false), report };
 }
 
 /** My health's foot (US-62 AC26): the email box and Save as PDF, the disclaimer, feedback, Supercharge and

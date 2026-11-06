@@ -93,10 +93,20 @@ async function show(record: () => Promise<void>): Promise<RenderResult> {
 }
 
 const topics = (view: RenderResult) => [...view.container.querySelectorAll<HTMLElement>('.mh-topic')].map(t => t.dataset.topic);
-/** Each suggestion id drawn as a card (a card's DOM id names its suggestions), and on a row. */
+/** The plan's suggestion with this title; the page names none by id (US-09 AC7d). */
+function titled(title: string) {
+  const found = planSeen.suggestions.filter(s => s.title === title);
+  expect(found, title).toHaveLength(1);
+  return found[0];
+}
+/** The suggestions a card draws, by their titles. */
+const cardSuggestions = (card: Element) => [...card.querySelectorAll('.suggestion-title')].map(t => titled(t.textContent!));
+/** The suggestion a row draws, by its info button's name. */
+const rowSuggestion = (row: Element) => titled(row.querySelector('.mh-info-btn')!.getAttribute('aria-label')!.replace(/^About: /, ''));
+/** Each suggestion id drawn as a card, and on a row. */
 function drawn(view: RenderResult) {
-  const cards = [...view.container.querySelectorAll('.mh-sections .mh-card')].flatMap(c => c.id.replace(/^hr-card-/, '').split('--'));
-  const rows = [...view.container.querySelectorAll<HTMLElement>('.mh-sections .mh-row-suggestion')].map(r => r.dataset.suggestion!);
+  const cards = [...view.container.querySelectorAll('.mh-sections .mh-card')].flatMap(c => cardSuggestions(c).map(s => s.id));
+  const rows = [...view.container.querySelectorAll('.mh-sections .mh-row-suggestion')].map(r => rowSuggestion(r).id);
   return { cards, rows };
 }
 const count = (list: string[], id: string) => list.filter(x => x === id).length;
@@ -141,10 +151,9 @@ describe('US-62 AC18: every suggestion drawn exactly once', () => {
   it('within a section: urgent, then attention, then info; the urgent card first', async () => {
     const view = await show(RECORDS['urgent results, both cascades, a supplement']);
     const rank = { urgent: 0, attention: 1, info: 2 } as const;
-    const priority = new Map(planSeen.suggestions.map(s => [s.id, s.priority]));
     for (const section of view.container.querySelectorAll('.mh-topic')) {
       const levels = [...section.querySelectorAll(':scope > .mh-card')]
-        .map(c => Math.min(...c.id.replace(/^hr-card-/, '').split('--').map(id => rank[priority.get(id)!])));
+        .map(c => Math.min(...cardSuggestions(c).map(s => rank[s.priority])));
       expect(levels, (section as HTMLElement).dataset.topic).toEqual([...levels].sort((a, b) => a - b));
     }
   });
@@ -153,7 +162,7 @@ describe('US-62 AC18: every suggestion drawn exactly once', () => {
     const view = await show(RECORDS['urgent results, both cascades, a supplement']);
     const placed = view.container.querySelector<HTMLElement>('.medication-cascade .mh-row-suggestion');
     expect(placed).not.toBeNull();
-    const s = planSeen.suggestions.find(x => x.id === placed!.dataset.suggestion)!;
+    const s = rowSuggestion(placed!);
     expect(s.category).toBe('medication');
     expect(placed!.querySelector('.mh-row-suggestion-text')!.textContent).toBe(s.title);
     expect(placed!.querySelector('.suggestion-desc')).toBeNull();
@@ -169,7 +178,7 @@ describe('US-62 AC18: every suggestion drawn exactly once', () => {
     const lines = [...prostate.querySelectorAll<HTMLElement>('.mh-row-suggestion')];
     expect(lines.length).toBeGreaterThan(0);
     for (const line of lines) {
-      const s = planSeen.suggestions.find(x => x.id === line.dataset.suggestion)!;
+      const s = rowSuggestion(line);
       expect(line.querySelector('.mh-row-suggestion-text')!.textContent).toBe(s.description);
     }
     const note = prostate.querySelectorAll('.screening-age-message');
