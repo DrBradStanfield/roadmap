@@ -63,12 +63,14 @@ finish() { # $1 = worktree path, $2 = 1 to unlock a locked worktree; prints one 
   # difference, not a loss.
   while IFS= read -r -d '' f; do
     # Finder junk is never worth keeping a worktree for; a dependency install is never copied (reinstall in main);
-    # build and cache output (.gitignore) is rebuilt, and both checkouts usually hold a different copy (the iOS
-    # engine bundle too). .claude/ (settings, hooks) never flows back: a worktree's settings.local.json must not
+    # build and cache output (.gitignore) is rebuilt, and both checkouts usually hold a different copy (so are the
+    # iOS engine bundle, its sidecar and the parity fixtures: ios/scripts/build-engine.mjs's gitignored output; a
+    # tracked file never reaches this list, `git status` above refuses its edits). .claude/ (settings, hooks) never flows back: a worktree's settings.local.json must not
     # reach the main checkout; those files are listed, not copied, and go with the worktree.
     case "/$f" in */.claude/*) skipped+=("$f"); continue;; esac
     case "/$f" in */.DS_Store|*/._*|*/node_modules/*|*/dist/*|*/dist-pages/*|*/_site/*|*/build/*|*/.cache/*|\
-      */.react-router/*|*/.vite/*|*/.stryker-tmp*|*/reports/mutation/*|*.map|/ios/HealthRoadmap/Engine/health-engine.js) continue;; esac
+      */.react-router/*|*/.vite/*|*/.stryker-tmp*|*/reports/mutation/*|*.map|\
+      /ios/HealthRoadmap/Engine/health-engine.js|/ios/HealthRoadmap/Engine/health-engine.json|/ios/HealthRoadmapTests/Fixtures/*) continue;; esac
     if [ -L "$WT/$f" ]; then
       case "$(readlink "$WT/$f")" in "$MAIN/$f"|"$CLONES/$f") continue;; esac
     fi

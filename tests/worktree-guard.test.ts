@@ -59,8 +59,8 @@ const denied = (o: unknown) => (o as { hookSpecificOutput?: { permissionDecision
 const stop = (cwd: string, extra: NodeJS.ProcessEnv = {}, active = false, guard = GUARD) =>
   hook({ hook_event_name: 'Stop', cwd, stop_hook_active: active }, extra, guard);
 
-function newWorktree(name: string) {
-  const r = spawnSync('sh', [NEW, name], { cwd: MAIN, encoding: 'utf8', env: ENV });
+function newWorktree(name: string, extra: NodeJS.ProcessEnv = {}) {
+  const r = spawnSync('sh', [NEW, name], { cwd: MAIN, encoding: 'utf8', env: { ...ENV, ...extra } });
   return { ...r, path: r.stdout.trim() };
 }
 const done = (name: string, extra: NodeJS.ProcessEnv = {}) =>
@@ -74,8 +74,10 @@ beforeAll(() => {
   writeFileSync(join(BIN, 'gh'), '#!/bin/sh\n[ -n "$GH_FAIL" ] && exit 1\n'
     + 'case "$*" in *length*) echo "${GH_COUNT:-0}";; *) echo "${GH_STATE:-}";; esac\n');
   chmodSync(join(BIN, 'gh'), 0o755);
-  // cp passes through to the real one, unless CP_FAIL asks it to fail (a disk or OS with no clone support).
-  writeFileSync(join(BIN, 'cp'), `#!/bin/sh\n[ -n "$CP_FAIL" ] && exit 1\nexec ${spawnSync('sh', ['-c', 'command -v cp'], { encoding: 'utf8' }).stdout.trim()} "$@"\n`);
+  // cp passes through to the real one, unless CP_FAIL asks it to fail (a disk or OS with no clone support), or
+  // CP_FAIL_ON names a path in its arguments (one package folder's clone fails, the others work).
+  writeFileSync(join(BIN, 'cp'), `#!/bin/sh\n[ -n "$CP_FAIL" ] && exit 1\n`
+    + `case "$*" in *"\${CP_FAIL_ON:-//none//}"*) exit 1;; esac\nexec ${spawnSync('sh', ['-c', 'command -v cp'], { encoding: 'utf8' }).stdout.trim()} "$@"\n`);
   chmodSync(join(BIN, 'cp'), 0o755);
   ENV = {
     ...process.env,
@@ -92,7 +94,8 @@ beforeAll(() => {
   MAIN = join(S, 'main');
   sh(S, 'git init -q --bare -b main remote.git && git clone -q remote.git main 2>/dev/null');
   // `node_modules` with no trailing slash, as the real .gitignore: it matches the link too.
-  writeFileSync(join(MAIN, '.gitignore'), 'node_modules\ntmp/\n.claude/*\n*.log\nios/HealthRoadmap/Engine/health-engine.js\n');
+  writeFileSync(join(MAIN, '.gitignore'), 'node_modules\ntmp/\n.claude/*\n*.log\nios/HealthRoadmap/Engine/health-engine.js\n'
+    + 'ios/HealthRoadmap/Engine/health-engine.json\nios/HealthRoadmapTests/Fixtures/\n'); // as ios/.gitignore
   writeFileSync(join(MAIN, 'tracked.txt'), 'one\n');
   mkdirSync(join(MAIN, 'widget-src'));
   writeFileSync(join(MAIN, 'widget-src/a.ts'), 'x\n');
@@ -202,6 +205,7 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
   });
   it('replaces an old link into the main checkout (the link only) and leaves any other link alone (US-64 AC3)', () => {
     const w = newWorktree('oldlink').path;
+    for (const d of ['node_modules', 'widget-src/node_modules']) rmSync(join(w, d)); // the link worktree-new made
     symlinkSync(join(MAIN, 'node_modules'), join(w, 'node_modules'));
     symlinkSync(join(S, 'elsewhere'), join(w, 'widget-src/node_modules'));
     expect(bash(w, 'ls')).toBeNull();
@@ -255,11 +259,17 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
     writeFileSync(join(WT, 'tmp/result.txt'), 'made in the worktree\n');
     writeFileSync(join(WT, '.claude/settings.local.json'), '{}\n'); // gitignored, but never copied back
     writeFileSync(join(WT, 'run.log'), 'a log\n'); // copied back, not dropped (review R8)
-    // The iOS engine bundle is rebuilt in each checkout, so a different copy never keeps the worktree.
+    // ios/scripts/build-engine.mjs rebuilds the engine bundle, its sidecar and the parity fixtures in each
+    // checkout, so a different copy never keeps the worktree, and none is copied back (US-64 AC21).
+    const GENERATED = ['ios/HealthRoadmap/Engine/health-engine.js', 'ios/HealthRoadmap/Engine/health-engine.json',
+      'ios/HealthRoadmapTests/Fixtures/minor.utc.golden.json', 'ios/HealthRoadmapTests/Fixtures/minor.record.json'];
     for (const [dir, body] of [[WT, 'worktree build'], [MAIN, 'main build']]) {
-      mkdirSync(join(dir, 'ios/HealthRoadmap/Engine'), { recursive: true });
-      writeFileSync(join(dir, 'ios/HealthRoadmap/Engine/health-engine.js'), body);
+      for (const f of GENERATED) {
+        mkdirSync(dirname(join(dir, f)), { recursive: true });
+        writeFileSync(join(dir, f), body);
+      }
     }
+    writeFileSync(join(WT, 'ios/HealthRoadmapTests/Fixtures/only-here.auckland.golden.json'), 'worktree build');
     const clones = cacheDir(WT);
     expect(existsSync(clones)).toBe(true);
     sh(MAIN, 'git pull -q --ff-only && git merge -q --no-edit origin/claude/feat && git push -q origin main');
@@ -270,7 +280,8 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
     expect(existsSync(join(MAIN, '.claude/settings.local.json'))).toBe(false);
     expect(r.stdout).toMatch(/not copied back[\s\S]*\.claude\/settings\.local\.json/);
     expect(readFileSync(join(MAIN, 'run.log'), 'utf8')).toBe('a log\n');
-    expect(readFileSync(join(MAIN, 'ios/HealthRoadmap/Engine/health-engine.js'), 'utf8')).toBe('main build');
+    for (const f of GENERATED) expect(readFileSync(join(MAIN, f), 'utf8')).toBe('main build');
+    expect(existsSync(join(MAIN, 'ios/HealthRoadmapTests/Fixtures/only-here.auckland.golden.json'))).toBe(false);
     expect(existsSync(join(MAIN, 'node_modules/pkg'))).toBe(true); // the worktree's link went, never the folder
     expect(existsSync(clones)).toBe(false); // its clones are deleted too
     expect(readlinkSync(join(MAIN, 'abs-link'))).toBe(join(MAIN, 'tracked.txt'));
@@ -347,6 +358,18 @@ describe('package clones: new worktrees, failures, races and orphans (US-64 AC3,
     expect(readlinkSync(join(fake, 'node_modules'))).toBe(join(MAIN, 'node_modules'));
     rmSync(fake, { recursive: true });
   });
+  it('worktree-new links the packages itself, so a subagent using the worktree by path has them (US-64 AC21)', () => {
+    const w = newWorktree('born').path; // no Bash hook ever fires with this cwd
+    for (const d of ['node_modules', 'widget-src/node_modules']) {
+      expect(readlinkSync(join(w, d))).toBe(join(cacheDir(w), d));
+      expect(existsSync(join(w, d, 'pkg'))).toBe(true);
+    }
+    expect(sh(w, 'git status --porcelain')).toBe('');
+    const clones = cacheDir(w);
+    expect(done('born').status).toBe(0); // worktree-done still removes the links and the clones
+    expect(existsSync(clones)).toBe(false);
+    expect(existsSync(join(MAIN, 'node_modules/pkg'))).toBe(true);
+  });
   it('worktree-new deletes a clone left by an earlier worktree at the same path', () => {
     let w = newWorktree('reuse').path;
     expect(bash(w, 'ls')).toBeNull();
@@ -356,11 +379,29 @@ describe('package clones: new worktrees, failures, races and orphans (US-64 AC3,
     expect(existsSync(join(cacheDir(w), 'node_modules/stale'))).toBe(false);
   });
   it('a failed clone answers cleanly, links nothing and leaves no temp folder', () => {
-    const w = newWorktree('noclone').path;
+    const w = newWorktree('noclone', { CP_FAIL: '1' }).path;
+    expect(newWorktree('noclone2', { CP_FAIL: '1' }).stderr).toMatch(/no package links yet/);
     expect(hook({ hook_event_name: 'PreToolUse', tool_name: 'Bash', cwd: w, tool_input: { command: 'ls' } },
       { CP_FAIL: '1' })).toBeNull();
     expect(() => lstatSync(join(w, 'node_modules'))).toThrow();
     expect(readdirSync(cacheDir(w)).filter((f) => f.includes('.tmp-'))).toEqual([]);
+  });
+  it('the note names each package folder left without a link, not only the root one (US-64 AC21, review R4)', () => {
+    const r = newWorktree('halfclone', { CP_FAIL_ON: 'widget-src/node_modules' });
+    expect(r.status).toBe(0);
+    expect(readlinkSync(join(r.path, 'node_modules'))).toBe(join(cacheDir(r.path), 'node_modules'));
+    expect(r.stderr).toMatch(/no package links yet for widget-src\/node_modules;/);
+    expect(r.stderr).not.toMatch(/for node_modules|packages\/health-core/); // linked, or absent in the main checkout
+  });
+  it('a guard that fails while linking still leaves the path printed and the run a success (US-64 AC21, review R3)', () => {
+    const good = readFileSync(GUARD, 'utf8');
+    writeFileSync(GUARD, 'process.exit(3);\n'); // fails, or is killed, after `git worktree add`
+    let r;
+    try { r = newWorktree('guardfail'); } finally { writeFileSync(GUARD, good); }
+    expect(r.status).toBe(0);
+    expect(r.path).toBe(join(MAIN, '.claude/worktrees/guardfail'));
+    expect(existsSync(join(r.path, 'tracked.txt'))).toBe(true);
+    expect(r.stderr).toMatch(/no package links yet for node_modules widget-src\/node_modules;/);
   });
   it('three hooks at once leave one whole clone, one link per folder and no temp folders', async () => {
     for (let i = 0; i < 40; i++) {
@@ -368,6 +409,8 @@ describe('package clones: new worktrees, failures, races and orphans (US-64 AC3,
       for (let j = 0; j < 50; j++) writeFileSync(join(MAIN, 'node_modules', `p${i}`, `f${j}.js`), `${i}-${j}\n`);
     }
     const wt = newWorktree('race').path;
+    for (const d of ['node_modules', 'widget-src/node_modules']) rmSync(join(wt, d)); // start with no links
+    rmSync(cacheDir(wt), { recursive: true });
     const payload = JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Bash', cwd: wt, tool_input: { command: 'ls' } });
     const run = () => new Promise<number>((resolve) => {
       const c = spawn('node', [GUARD], { env: ENV, stdio: ['pipe', 'ignore', 'ignore'] });
@@ -399,4 +442,39 @@ describe('package clones: new worktrees, failures, races and orphans (US-64 AC3,
     expect(existsSync(join(live, '.owner'))).toBe(true);
     expect(existsSync(join(MAIN, 'node_modules/pkg'))).toBe(true);
   }, 60_000);
+});
+
+describe('SessionStart names merged worktrees ready to remove (US-64 AC21)', () => {
+  // Commit, push and merge a worktree's own change, as a finished session leaves it.
+  const mergeIn = (w: string, name: string) => {
+    writeFileSync(join(w, `${name}.txt`), 'x\n');
+    sh(w, `git add ${name}.txt && git commit -q -m ${name} && git push -q -u origin claude/${name}`);
+    sh(MAIN, `git pull -q --ff-only && git merge -q --no-ff --no-edit origin/claude/${name} && git push -q origin main`);
+  };
+  // As worktree-done.sh's last-used test reads it: the worktree's git dir index and HEAD.
+  const ageGitDir = (w: string) => {
+    const old = new Date(Date.now() - 2 * 86_400_000);
+    for (const f of ['index', 'HEAD']) utimesSync(join(gitDirOf(w), f), old, old);
+  };
+  it('lists a clean worktree whose branch was merged with the worktree-done line, and not a fresh one', () => {
+    const fresh = newWorktree('nudge-fresh').path; // no commits of its own: a live session may just have started
+    const w = newWorktree('nudge-merged').path;
+    mergeIn(w, 'nudge-merged');
+    sh(w, 'git status -s'); // settle the index, so the hook's own status leaves its mtime alone
+    ageGitDir(w);
+    sh(fresh, 'git fetch -q origin');
+    const ctx = hook({ hook_event_name: 'SessionStart', cwd: MAIN }).hookSpecificOutput.additionalContext as string;
+    expect(ctx).toMatch(/- \.claude\/worktrees\/nudge-merged \[claude\/nudge-merged\]: merged; if no session still uses it, bash tools\/worktree-done\.sh nudge-merged/);
+    expect(ctx).not.toMatch(/nudge-fresh/);
+    expect(done('nudge-merged').stdout).toMatch(/^done/m); // the line it prints does finish it
+    expect(done('nudge-fresh').status).toBe(0);
+  });
+  it('a merged worktree used in the last day is marked in use, with no removal command (review R1)', () => {
+    const w = newWorktree('nudge-live').path; // merged, but its session may still be deploying or verifying
+    mergeIn(w, 'nudge-live');
+    const ctx = hook({ hook_event_name: 'SessionStart', cwd: MAIN }).hookSpecificOutput.additionalContext as string;
+    expect(ctx).toMatch(/- \.claude\/worktrees\/nudge-live \[claude\/nudge-live\]: merged, in use \(changed in the last day\); leave it/);
+    expect(ctx).not.toMatch(/worktree-done\.sh nudge-live/);
+    expect(done('nudge-live').status).toBe(0);
+  });
 });

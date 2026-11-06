@@ -8,6 +8,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createEmptyFile } from '@roadmap/health-core';
 
+type Core = typeof import('@roadmap/health-core');
+
 vi.mock('../src/lib/sentry', () => ({ initSentry: vi.fn(), Sentry: { captureException: vi.fn(), captureMessage: vi.fn() } }));
 vi.mock('../src/lib/server-api', async (importOriginal) => ({ ...(await importOriginal<object>()), trackProductEvent: vi.fn() }));
 
@@ -69,6 +71,8 @@ describe('US-65 AC7: an on-device record the app refuses at load is explained, n
     expect(panel).not.toBeNull();
     expect(panel!.querySelector('h3')?.textContent).toBe('Your saved record could not be opened');
     expect(panel!.querySelector('p')?.textContent).toContain(message);
+    // A refusal is not fixed by a reload, so the panel does not suggest one.
+    expect(panel!.textContent).not.toContain('Reload the page');
     const report = panel!.querySelector('a');
     expect(report?.textContent).toBe('Report this issue');
     expect(report?.getAttribute('href')).toBe('mailto:brad@drstanfield.com?subject=Health%20Roadmap%20Bug%20Report');
@@ -110,6 +114,32 @@ describe('US-65 AC7: an on-device record the app refuses at load is explained, n
     expect(vi.mocked(fetch)).toHaveBeenCalled(); // the cloud was tried first
     await vi.waitFor(() => expect(rejections).toHaveLength(1));
     expect((rejections[0] as Error).name).toBe('SchemaTooNewError');
+  });
+
+  it.each([
+    ['a version mismatch', (core: Core) => new core.ConflictError('expected version 3, but local is 4'), 'expected version 3, but local is 4'],
+    ['a full device store', (core: Core) => new core.StorageError('Could not save on this device (local storage may be full).'), 'local storage may be full'],
+  ])('%s at load is a storage failure, not a refusal: a neutral heading and a reload line', async (_label, failure, message) => {
+    // The record itself may be fine, so the page must not say it is broken.
+    // Built from the page's own copy of health-core (resetModules gives it a fresh one), so its class checks hold.
+    let error: Error | undefined;
+    vi.doMock('../src/lib/roadmap-data', async (importOriginal) => ({
+      ...(await importOriginal<object>()),
+      initRoadmapStore: async () => { throw (error = failure(await import('@roadmap/health-core'))); },
+    }));
+    try {
+      await import('./app');
+      const root = document.getElementById('health-tool-root')!;
+      await vi.waitFor(() => expect(root.textContent).toContain(message), { timeout: 5000 });
+      const panel = root.querySelector('.health-tool-error[role="alert"]')!;
+      expect(panel.querySelector('h3')?.textContent).toBe('Your saved record did not load');
+      expect([...panel.querySelectorAll('p')].map(p => p.textContent)).toEqual([error!.message, 'Reload the page to try again.', 'Report this issue']);
+      expect(panel.querySelector('a')?.getAttribute('href')).toBe('mailto:brad@drstanfield.com?subject=Health%20Roadmap%20Bug%20Report');
+      await vi.waitFor(() => expect(rejections).toHaveLength(1));
+      expect(rejections[0]).toBe(error);
+    } finally {
+      vi.doUnmock('../src/lib/roadmap-data');
+    }
   });
 
   it('a startup error that is not a storage failure shows no panel and still rejects', async () => {

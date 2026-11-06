@@ -162,8 +162,8 @@ function secretShapes(diff) {
 }
 
 /**
- * Package clones, so reviewers spawned from the main checkout can run tests here: the worktree hook makes them
- * only when a session first runs a command inside, so feed it that event (its linkPackages does the work). Always
+ * Package clones, so reviewers spawned from the main checkout can run tests here: worktree-new.sh makes them, but a
+ * worktree made another way, or whose clone failed, has none, so feed the hook its event (linkPackages). Always
  * the MAIN checkout's hook: the batch tree's copy is contributor code until it lands. Its own folder list.
  */
 const PACKAGE_DIRS = ['node_modules', 'widget-src/node_modules', 'packages/health-core/node_modules'];
@@ -255,7 +255,12 @@ function main() {
 
     let mergeErr = null;
     try {
-      git('merge', '--no-ff', '--no-edit', '-m', msg, sha);
+      // The merge runs `git stash create`, which reads the index unrefreshed. In a new worktree macOS is still
+      // tagging files (com.apple.provenance), which bumps only their ctime, so that check saw changes its own
+      // refresh then did not, and it failed: "fatal: stash failed" (US-64 AC20). Ignoring ctime is safe here: the
+      // clean-tree check above trusts ctime (an edit that kept its mtime, as `touch -r` or `cp -p` can, still
+      // shows), and after it only git writes the tree.
+      git('-c', 'core.trustctime=false', 'merge', '--no-ff', '--no-edit', '-m', msg, sha);
     } catch (err) {
       mergeErr = String(err.stderr || err.message).trim();
     }

@@ -104,3 +104,19 @@ describe('US-09 AC13h: the Dropbox token refresh has a deadline', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
+
+// US-09 AC1a (2026-11-06, review of PR 917): the OAuth code exchange is
+// awaited before the page draws, so it has a deadline too. Before, a bare
+// fetch with no bound left the loading skeleton up for good.
+describe('US-09 AC1a: the Dropbox code exchange has a deadline', () => {
+  it('an exchange that never answers fails at 10 seconds and keeps nothing', async () => {
+    local.clear();
+    vi.stubGlobal('sessionStorage', { getItem: () => JSON.stringify({ verifier: 'v', state: 's' }), setItem: () => {}, removeItem: () => {} });
+    vi.stubGlobal('window', { location: { search: '?code=c&state=s' }, history: { replaceState: vi.fn() } });
+    provider(() => 'stall');
+    const failure = await failureAt(DropboxAdapter.completeRedirect(CONFIG), 10_000);
+    expect(failure).toBeInstanceOf(StorageError);
+    expect((failure as Error).message).toBe('Dropbox did not answer');
+    expect(local.has(TOKEN_KEY)).toBe(false);
+  });
+});
