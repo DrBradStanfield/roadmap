@@ -175,7 +175,10 @@ export function weightMedicationTrigger(inputs: HealthInputs, results: HealthRes
   const { bmi, waistToHeightRatio: whr } = results;
   if (bmi === undefined || bmi < 25) return { on: false, reasons: [] };
   const reasons: string[] = [];
-  if (inputs.hba1c !== undefined && inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) reasons.push('prediabetic HbA1c');
+  // A diabetic-range HbA1c is named as such, matching its urgent card (Brad 2026-11-06, US-06 AC6).
+  if (inputs.hba1c !== undefined && inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) {
+    reasons.push(inputs.hba1c >= HBA1C_THRESHOLDS.diabetes ? 'diabetic-range HbA1c' : 'prediabetic HbA1c');
+  }
   if (inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline) reasons.push('elevated triglycerides');
   if (isBpRaised(inputs.systolicBp, inputs.diastolicBp)) reasons.push('elevated blood pressure');
   const lipid = lipidMarkerFor(inputs, results);
