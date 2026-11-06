@@ -284,6 +284,23 @@ describe('US-62 AC22, AC23: Blood tests and Supplements', () => {
   });
 });
 
+describe('US-62 AC24: a guest\'s storage card, at the foot and in Settings', () => {
+  it('shows at the foot of My health for a record on this device; in Settings when they open, one at a time', async () => {
+    await RECORDS['a known minor']();
+    await flushRoadmapStore();
+    const storage = ({ hasData }: { hasData: boolean }) => <div className="hr-sync">Where do you want to keep your health record? {String(hasData)}</div>;
+    const view = render(<HealthTool syncControl={storage}/>);
+    await waitFor(() => expect(view.container.querySelector('.mh-sections')).not.toBeNull());
+    const cards = () => [...view.container.querySelectorAll('.hr-sync')];
+    expect(cards()).toHaveLength(1);
+    expect(cards()[0].closest('.mh-foot-storage')).not.toBeNull();
+    expect(view.container.querySelector('.mh-sections')!.compareDocumentPosition(cards()[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    openSettings(view.container);
+    expect(cards()).toHaveLength(1); // one picker on the page
+    expect(cards()[0].closest('.mh-settings')).not.toBeNull();
+  });
+});
+
 describe('US-62 AC24: Settings behind the person button', () => {
   it('holds About you, units, the record and Delete All My Data; Done closes them and the focus returns to the button', async () => {
     const view = await show(RECORDS['urgent results, both cascades, a supplement']);

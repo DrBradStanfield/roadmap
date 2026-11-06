@@ -170,6 +170,8 @@ interface InputPanelProps {
   onSettingsClose: () => void;
   /** Settings' parts after About you and units: reminders, the record, Delete All My Data. */
   settingsParts?: React.ReactNode;
+  /** A guest's storage card, at the foot too while Settings are shut (one picker on the page). */
+  footStorage?: React.ReactNode;
   /** The topics' container, once shown: `results_viewed` watches it (US-62 AC5). */
   sectionsRef?: RefObject<HTMLDivElement>;
   inputs: Partial<HealthInputs>;
@@ -256,8 +258,8 @@ interface InputPanelProps {
   grading: Grading;
   healthDocuments?: ApiDocument[];
   onDocumentDeleted?: (docId: string) => void;
-  /** Says whether it jumped: only as the last answer (US-62 AC13). */
-  onAutoFocusEmail?: (stayOnTab?: boolean) => boolean;
+  /** The last onboarding answer is in: land at My health's top. Says whether it did (US-62 AC13, AC25). */
+  onOnboardingDone?: (fromBirth?: boolean) => boolean;
   /** A chat edit that filled a grid cell (US-16 AC2): the table opens so the
    *  filled cell shows, phone and desktop. Each new edit is a new object. */
   revealCell?: { field: string; grid: boolean } | null;
@@ -288,7 +290,7 @@ function useAutoAdvance(): (opts: { ambiguous: boolean; advance: () => void }) =
 }
 
 export function InputPanel({
-  storageBar, personButton, plan, tiles, series, egfrCurrent, settingsOpen, onSettingsClose, settingsParts, sectionsRef, inputs, effectiveInputs, onChange: updateField, errors: allErrors, unitSystem, onUnitSystemChange,
+  storageBar, personButton, plan, tiles, series, egfrCurrent, settingsOpen, onSettingsClose, settingsParts, footStorage, sectionsRef, inputs, effectiveInputs, onChange: updateField, errors: allErrors, unitSystem, onUnitSystemChange,
   unitOverrides, onToggleFieldUnit,
   previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
   onCorrectValue, moveTest, onDraftValue,
@@ -300,7 +302,7 @@ export function InputPanel({
   bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
   formStage, reached, fullForm, aboutYouLow, onProfileLeft,
   setShowUploadModal, planBasis, grading,
-  healthDocuments, onDocumentDeleted, onAutoFocusEmail, revealCell = null,
+  healthDocuments, onDocumentDeleted, onOnboardingDone, revealCell = null,
 }: InputPanelProps) {
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
   // Number boxes holding text the browser could not read ("175,500" gives "" with
@@ -312,13 +314,13 @@ export function InputPanel({
     setUnreadable(prev => ({ ...prev, [field]: bad }));
     return !bad;
   };
-  const hasAutoFocusedEmail = useRef(false);
+  const hasLandedOnMyHealth = useRef(false);
   // The birth year's jump (Brad 2026-11-02): once per record, as the weight's is once.
   const yearJumped = useRef(false);
   // One auto-advance instance per TARGET, so a new keystroke on any source
   // field cancels a pending advance to that target.
   const advanceToWeight = useAutoAdvance();
-  const advanceToEmail = useAutoAdvance();
+  const advanceToMyHealth = useAutoAdvance();
   const advanceToDiastolic = useAutoAdvance();
   const focusById = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.focus());
   // Shared keydown combos: numeric-only guard (US-02 AC4) + Enter-to-save.
@@ -827,12 +829,12 @@ export function InputPanel({
                 return;
               }
               updateField(field, parseAndConvert(field, raw), fieldUnit(field));
-              if (field === 'weightKg' && !hasAutoFocusedEmail.current && onAutoFocusEmail) {
+              if (field === 'weightKg' && !hasLandedOnMyHealth.current && onOnboardingDone) {
                 const weightNum = parseLocalisedNumber(raw);
                 if (weightNum !== undefined && /^\d{2,3}$/.test(raw) && weightNum >= r.min && weightNum <= r.max) {
-                  advanceToEmail({
+                  advanceToMyHealth({
                     ambiguous: /^\d{2}$/.test(raw) && weightNum * 10 <= r.max,
-                    advance: () => requestAnimationFrame(() => { if (onAutoFocusEmail()) hasAutoFocusedEmail.current = true; }),
+                    advance: () => requestAnimationFrame(() => { if (onOnboardingDone()) hasLandedOnMyHealth.current = true; }),
                   });
                 }
               }
@@ -1306,7 +1308,7 @@ export function InputPanel({
         formStage={formStage}
         plan={planBasis}
         knownMinor={knownMinor}
-        onAutoFocusEmail={onAutoFocusEmail}
+        onOnboardingDone={onOnboardingDone}
         withoutWeight={weightInProfile}
         unitOverrides={unitOverrides}
         onToggleFieldUnit={onToggleFieldUnit}
@@ -1453,13 +1455,13 @@ export function InputPanel({
                 typeIn('birthYear', e.target.value);
                 updateField('birthYear', num);
                 // Brad 2026-11-02: a complete year in range, the month set, is the
-                // last answer: on to the email box, or out of the card, so About
+                // last answer: on to My health's top, out of the card, so About
                 // you moves without waiting for a blur. "199" never does, nor a
                 // returning user's edit in About you's Birth row (Codex R3).
                 const years = identityFieldRange('birthYear')!;
-                if (onAutoFocusEmail && !yearJumped.current && !aboutYouLow && reached < 4 && inputs.birthMonth && num !== undefined && /^\d{4}$/.test(e.target.value) && num >= years.min && num <= years.max) {
+                if (onOnboardingDone && !yearJumped.current && !aboutYouLow && reached < 4 && inputs.birthMonth && num !== undefined && /^\d{4}$/.test(e.target.value) && num >= years.min && num <= years.max) {
                   yearJumped.current = true;
-                  requestAnimationFrame(() => onAutoFocusEmail(true));
+                  requestAnimationFrame(() => onOnboardingDone(true));
                 }
               }}
               onBlur={rangeWait.settle}
@@ -2627,7 +2629,7 @@ export function InputPanel({
   return (
     <div ref={panelRef} className={`health-input-panel mh-page${pageShown || settingsOpen ? ' md-page-open' : ''}`}>
       <div className="mh-header">
-        <h2 className="mh-title">My health</h2>
+        <h2 className="mh-title" tabIndex={-1}>My health</h2>
         {(personButton || storageBar) && <div className="mh-header-actions">{storageBar}{personButton}</div>}
       </div>
       {settingsOpen && (
@@ -2656,6 +2658,7 @@ export function InputPanel({
       {healthDocuments && healthDocuments.length > 0 && (
         <HealthRecordsSection documents={healthDocuments} onDeleted={onDocumentDeleted} />
       )}
+      {!settingsOpen && footStorage && <div className="mh-foot-storage">{footStorage}</div>}
       {plan.foot}
       {plan.report}
     </div>

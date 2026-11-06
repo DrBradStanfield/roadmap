@@ -1404,7 +1404,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     }
     // Hand-off: the grid holding the pre-filled cell shows (US-62 AC11), and
     // on a phone the form's tab opens, so they SEE it and its Save button
-    // (they were on the chat tab). Mirror handleAutoFocusEmail.
+    // (they were on the chat tab). Mirror landOnMyHealth.
     if (editedField) {
       if (isMobileRef.current) selectTab('health');
       setRevealCell({ field: editedField, grid: inGrid });
@@ -1422,25 +1422,24 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const emailCaptureActive = SHOPIFY_SURFACE;
 
   // Says whether it acted, so a caller spends its once-only jump only then.
-  // The jump to the email box once the last onboarding answer is in (US-62
-  // AC13). The box sits at the foot of My health (US-62 AC25); a weight on a
-  // phone goes there after the page has opened (US-22). A birth year
-  // (`stayOnTab`, Brad 2026-11-02) never moves: where the box is not reached
-  // that way (a phone, an email already given) it only leaves the field, so
-  // About you goes to Settings (US-62 AC12).
-  const handleAutoFocusEmail = useCallback((stayOnTab = false): boolean => {
+  // Once the last onboarding answer is in (US-62 AC13), the person lands at the
+  // top of My health, its title, where the topics now start (US-62 AC25,
+  // orchestrator 2026-11-06); the email box stays at the foot. Leaving the
+  // field also lets About you go to Settings (US-62 AC12). A weight lands only
+  // where it used to jump to the email box (the Shopify build, US-22), so the
+  // Pages build never takes the focus from a value being typed; the birth year
+  // (`fromBirth`, Brad 2026-11-02) lands on both.
+  const landOnMyHealth = useCallback((fromBirth = false): boolean => {
     // Only when the answer was the last one: a first weight is step 1.
-    if (stageRef.current !== 4) return false;
-    if (emailCaptureActive && isMobile && !stayOnTab) {
-      selectTab('health');
-      setTimeout(() => document.getElementById('guestEmail')?.focus(), 400);
-      return true;
-    }
-    const email = emailCaptureActive && !isMobile ? document.getElementById('guestEmail') : null;
-    if (email) { email.focus(); return true; }
-    if (stayOnTab) (document.activeElement as HTMLElement | null)?.blur();
-    return stayOnTab;
-  }, [emailCaptureActive, isMobile, selectTab]);
+    if (stageRef.current !== 4 || (!emailCaptureActive && !fromBirth)) return false;
+    selectTab('health');
+    requestAnimationFrame(() => {
+      const title = rootRef.current?.querySelector<HTMLElement>('.mh-title');
+      title?.scrollIntoView({ block: 'start' });
+      title?.focus({ preventScroll: true });
+    });
+    return true;
+  }, [emailCaptureActive, selectTab]);
 
   // Memoised so the UploadModal's matrix doesn't rebuild on unrelated
   // HealthTool re-renders (typing, mobile-tab switches, etc.).
@@ -1497,12 +1496,16 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   }, []);
   const personButton = <PersonButton onClick={toggleSettings} buttonRef={personRef} open={settingsOpen}/>;
   const planned = isValid && !!results;
+  // Where the record lives (US-09): in Settings, and for a guest (a record on this
+  // device only) also at the foot of My health, so the sign-in prompt stays in the
+  // page's flow (orchestrator 2026-11-06). Drawn in one place at a time: one picker.
+  const storageCard = syncControl?.({ hasData: planned, attention: plan.attention });
   const settingsParts = (
     <>
       {/* US-07 AC6: no reminders for a known minor, who is never enrolled and must see no mailing-list box. */}
       {planned && !results.knownMinor && remindersSection}
       {/* Where the record lives (US-09). Hidden for new users until they have entered real data. */}
-      {syncControl?.({ hasData: planned, attention: plan.attention })}
+      {storageCard}
       {planned && (
         <div className="delete-data-section">
           <button
@@ -1528,6 +1531,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     settingsOpen,
     onSettingsClose: closeSettings,
     settingsParts,
+    footStorage: getBackendKind() === 'local' ? storageCard : undefined,
     sectionsRef,
     inputs,
     effectiveInputs,
@@ -1578,7 +1582,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     onDocumentDeleted: (docId: string) => {
       setDocumentHistory(prev => prev.filter(d => d.id !== docId));
     },
-    onAutoFocusEmail: handleAutoFocusEmail,
+    onOnboardingDone: landOnMyHealth,
     // On a phone a chat edit opens the grids, so the filled cell shows (US-62 AC11).
     revealCell,
   };

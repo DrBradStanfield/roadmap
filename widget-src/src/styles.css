@@ -3866,22 +3866,9 @@ input[type="number"] {
   /* One line: a wrapped title would make its header taller than the others. */
   white-space: nowrap;
 }
-/* Narrow three-column widths: tighter tracking keeps the plan's title on one line. */
+/* 1200 to 1439px: tighter tracking keeps the chat column's title on one line. */
 @media (min-width: 1200px) and (max-width: 1439px) {
   .hr-col-title { letter-spacing: 0.4px; }
-}
-.hr-col-step {
-  display: inline-flex;
-  width: 20px;
-  height: 20px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: #e6f4f1;
-  color: var(--color-brand-text);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0;
 }
 .hr-col-meta {
   font-size: 12px;
@@ -3904,10 +3891,6 @@ input[type="number"] {
 }
 
 .hr-col-header--muted .hr-col-title {
-  color: #b8bfc5;
-}
-.hr-col-header--muted .hr-col-step {
-  background: #eef0f2;
   color: #b8bfc5;
 }
 

@@ -185,8 +185,8 @@ describe('US-16 AC2 on a phone: a chat edit lands on My health, on the cell it f
   });
 });
 
-describe('US-22 on a phone: a typed weight jumps to the email box at the foot of My health (US-62 AC25)', () => {
-  it('My health shows and the email box takes focus', async () => {
+describe('US-22 on a phone: a typed weight, the last answer, lands at the top of My health (US-62 AC25)', () => {
+  it('My health shows, its title takes the focus and is scrolled to; the email box stays at the foot', async () => {
     await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
     await flushRoadmapStore();
     const view = render(<HealthTool />);
@@ -198,7 +198,10 @@ describe('US-22 on a phone: a typed weight jumps to the email box at the foot of
     fireEvent.change(weight, { target: { value: '182' } });
 
     await waitFor(() => expect(tab(view, 'My health').getAttribute('aria-selected')).toBe('true'));
-    await waitFor(() => expect(document.activeElement?.id).toBe('guestEmail'), { timeout: 2000 });
-    expect(document.activeElement?.closest('[role="tabpanel"]')?.hasAttribute('hidden')).toBe(false);
+    const title = view.container.querySelector('.mh-title')!;
+    await waitFor(() => expect(document.activeElement).toBe(title), { timeout: 2000 });
+    expect(scrolledIntoView).toContain(title);
+    expect(title.closest('[role="tabpanel"]')?.hasAttribute('hidden')).toBe(false);
+    expect(view.container.querySelector('#guestEmail')!.closest('.mh-foot')).not.toBeNull();
   });
 });

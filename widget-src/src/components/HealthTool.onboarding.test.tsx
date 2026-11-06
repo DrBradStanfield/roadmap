@@ -593,7 +593,8 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
       return input as HTMLInputElement;
     });
     type(cell, '170');
-    await waitFor(() => expect(document.activeElement?.id).toBe('guestEmail'));
+    // The last answer lands at My health's title (US-62 AC25), not the email box.
+    await waitFor(() => expect(document.activeElement?.classList.contains('mh-title')).toBe(true));
   });
 });
 
@@ -755,7 +756,7 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
   /** About you has left the page for Settings: the topics show and its card is gone. */
   const aboutLow = (view: RenderResult) => (q(view, '.about-card') ? null : q(view, '.mh-sections'));
 
-  it.each([['desktop', false], ['phone', true]])('on %s: "199" moves nothing; "1990" jumps on (desktop: the email box; phone: out of the field, still on My health) and About you goes, as rows, to Settings', async (_, onPhone) => {
+  it.each([['desktop', false], ['phone', true]])('on %s: "199" moves nothing; "1990" lands at My health\'s title and About you goes, as rows, to Settings', async (_, onPhone) => {
     phone = onPhone;
     const view = await open();
     await measurements(view);
@@ -771,12 +772,9 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
 
     type(year, '1990'); // complete, in range, the month set: the last answer
     await waitFor(() => expect(aboutLow(view)).toBeTruthy());
-    if (onPhone) {
-      expect(document.activeElement).toBe(document.body);
-      expect(view.getByRole('tab', { name: 'My health' }).getAttribute('aria-selected')).toBe('true');
-    } else {
-      expect(document.activeElement?.id).toBe('guestEmail');
-    }
+    // Phone and desktop land at My health's title (US-62 AC25).
+    await waitFor(() => expect(document.activeElement?.classList.contains('mh-title')).toBe(true));
+    if (onPhone) expect(view.getByRole('tab', { name: 'My health' }).getAttribute('aria-selected')).toBe('true');
     expect(weightPlaces(view)).toHaveLength(1); // the weight joins the vitals, shown once
     // The returning layout: the vitals as rows in their topics, the grids hidden but mounted.
     const labels = (topic: string) => Array.from(view.container.querySelectorAll(`[data-topic="${topic}"] .md-row-label`)).map((l) => l.textContent);
