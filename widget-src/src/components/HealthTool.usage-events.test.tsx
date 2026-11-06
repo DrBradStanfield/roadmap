@@ -109,10 +109,13 @@ describe('US-62 AC4: tool_opened', () => {
 // US-62 AC5 as amended by phase 5: the plan's cards are on screen when My health's
 // topics show (the onboarding done, or the whole form open) on the tab that holds them.
 describe('US-62 AC5: results_viewed when the plan is on screen', () => {
-  it('on a phone: once while My health is active with its topics shown; never again in the tab', async () => {
+  it('on a phone: not at mount; once when My health\'s topics come on screen; never again in the tab', async () => {
     phone = true;
     const view = await renderPlan();
-    await waitFor(() => expect(named('results_viewed')).toHaveLength(1));
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect(named('results_viewed')).toHaveLength(0); // the topics sit below the tiles: not yet seen
+    scrollIntoViewport('.mh-sections');
+    expect(named('results_viewed')).toHaveLength(1);
     expect(named('results_viewed')[0].metadata).toBeUndefined(); // the name alone, as before
 
     fireEvent.click(view.getByRole('tab', { name: 'Chat' }));

@@ -1059,18 +1059,13 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
 
   // US-62 AC5: `results_viewed` once the plan's cards are on screen, not when
   // they mount. They show with My health's topics, once the onboarding is done
-  // (`fullForm`, US-62 AC25). On a phone, the My health tab is active. On
-  // desktop, the topics' top is in the upper three quarters of the viewport
-  // (a margin, not a ratio: a tall page never reaches 25% visible). Once per
-  // tab by the throttle.
+  // (`fullForm`, US-62 AC25), on a phone only on the My health tab. The topics'
+  // top must be in the upper three quarters of the viewport (a margin, not a
+  // ratio: a tall page never reaches 25% visible). Once per tab by the throttle.
   const hasSuggestions = (results?.suggestions?.length ?? 0) > 0;
   const sectionsRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!hasSuggestions || !fullForm) return;
-    if (isMobile) {
-      if (activeTab === 'health') trackProductEvent('results_viewed');
-      return;
-    }
+    if (!hasSuggestions || !fullForm || (isMobile && activeTab !== 'health')) return;
     const el = sectionsRef.current;
     if (!el) return;
     return observeVisibility(el, (visible) => {
