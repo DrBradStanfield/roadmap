@@ -29,8 +29,9 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    main checkout's `node_modules`, `widget-src/node_modules` and `packages/health-core/node_modules` (kept in
    `~/Library/Caches/claude-worktree-packages/`, outside the repo, and linked in), so tools find their packages,
    and `npm ci` or `rm -rf node_modules/` there touches only the clone, never the main checkout (a direct link let
-   it wipe them, 2026-11-01). The first command in a new worktree takes about 10 s; a deleted clone comes back on
-   the next command; the clone's workspace links (`@roadmap/health-core`, `health-tool-widget`) point at the
+   it wipe them, 2026-11-01). `worktree-new.sh` makes them before it prints the path (about 15 s), so a subagent
+   that works in the worktree by absolute path from the main checkout, where the hook never fires for it, has them
+   too (US-64 AC21); a deleted clone comes back on the next command run inside; the clone's workspace links (`@roadmap/health-core`, `health-tool-widget`) point at the
    worktree's own folders; cleanup deletes the clones. Other gitignored inputs (`.env`,
    `health-roadmap.json`, exports) are not in a worktree: read them from the main checkout by absolute path, and
    write new outputs in the worktree (cleanup copies them back). Bash writes (`sed -i`, `>`, `cp`) into the main
@@ -71,12 +72,16 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
 6. **Finish**: ExitWorktree (`keep`), then from the main checkout `git pull --ff-only` and
    `bash tools/worktree-done.sh <name>`. It refuses unless everything is pushed and merged (or the PR is closed),
    copies the worktree's own gitignored outputs back into the main checkout, logs included (never the package
-   links or build and cache output, the iOS engine bundle among them; `.claude/` files are listed, not copied,
+   links or build and cache output, among them what `ios/scripts/build-engine.mjs` writes: the engine bundle, its
+   `health-engine.json` sidecar and `ios/HealthRoadmapTests/Fixtures/`, all gitignored, so an iOS build never keeps
+   a worktree; a tracked change always does; `.claude/` files are listed, not copied,
    and go with the worktree; it never overwrites: a differing file keeps the worktree for you to resolve),
    removes the package links (only those paths, never another link), the worktree, its package clones and its
    local branch.
    `bash tools/worktree-done.sh --all` does the same for every unlocked worktree under `.claude/worktrees/` not
-   used in the last day, skipping the rest.
+   used in the last day, skipping the rest. Every session start lists each merged worktree still on disk with the
+   exact `bash tools/worktree-done.sh <name>` line (US-64 AC21; 56 had piled up by 2026-11-06): run it when no
+   session is still in that worktree.
 
 **One owner per PR.** Whoever opens a PR merges or closes it (with a note on where the work went), or names
 it in the final message as still open and why.
@@ -150,7 +155,7 @@ deploy, repeated for every PR after each conflict. A batch pays one 3 min CI run
 | Main-checkout edit block | `.claude/hooks/worktree-guard.cjs` (PreToolUse Edit/Write/NotebookEdit) | Denies edits to the main checkout's tracked or new files whatever the session's cwd (symlink- and case-proof; the hook finds the main checkout from its own place); untracked gitignored outputs are allowed, never under `.claude/`; Bash writes are not covered |
 | Package clones | same script (PreToolUse Bash, SessionStart) | In a worktree under `.claude/worktrees/`, links each `node_modules` folder to the worktree's own clone outside the repo; replaces an old link into the main checkout (the link only); SessionStart deletes clones whose worktree is gone. `node .claude/hooks/worktree-guard.cjs --pkg-cache-dir <worktree>` prints a worktree's clone folder |
 | Turn-end landing check | same script (Stop) | Blocks once while the worktree has uncommitted, unpushed, or un-PR'd work; fails open if `gh` is missing |
-| Session-start audit | same script (SessionStart) | Lists local worktrees with unlanded work and uncommitted files in the main checkout |
+| Session-start audit | same script (SessionStart) | Lists local worktrees with unlanded work and uncommitted files in the main checkout, then merged worktrees not yet removed, each with its `worktree-done` line, or marked in use (no line) when changed in the last day |
 | Push guard | `.claude/hooks/git-push-guard.cjs` | No force pushes or deletes, except `git push origin --delete claude/<name>` once that branch's tip on origin is already in `origin/main` (checked live, fails closed; Brad 2026-11-02), and any other delete is Brad's; a `claude/` branch never pushes to `main` (that is the PR's job); a push to `main` is refused while `origin/main` is ahead; `gh pr merge` only as `--merge --match-head-commit <sha>` |
 | Merge permissions | `.claude/settings.json` `permissions` | Allows the one merge form, denies `--admin`/`--squash`/`--rebase`/`--auto` (without the allow rule, auto mode blocks every merge) |
 | Stranded-branch watch | `.github/workflows/stranded-branch-watch.yml` | Issue for a branch with unmerged commits, no PR, idle 20h+ |
@@ -219,6 +224,12 @@ Tests: `tests/worktree-guard.test.ts`, `tests/git-push-guard.test.ts` (runs `.cl
   (`bash tools/...`) is fine.
 - The push guard refuses a Bash command naming `git` and `push` that it cannot tokenize (an unbalanced quote,
   as in a heredoc with an apostrophe). Put such text in a file instead.
+- **"fatal: stash failed" on the first merge in a worktree made seconds ago** (US-64 AC20): macOS tags each new
+  file (`com.apple.provenance`) a second or two after git writes it, which changes its ctime, and `git merge`'s
+  internal `git stash create` trips on that. `merge-batch.mjs` merges with `core.trustctime=false`. That is safe
+  only because its `git status` check, which does trust ctime, refuses an unclean tree first, and only git writes
+  the tree after it: an edit can keep its mtime (`touch -r`, `cp -p`, `rsync -t`). By hand, run `git status`
+  first, then `git -c core.trustctime=false merge ...`, or rerun once the tagging is done.
 - Hooks load from the session's settings at start; a hook change applies to new sessions.
 - A full local `npm run test:all` is never a merge gate (CI is, step 4); run it only when you want the whole
   suite on this Mac. It takes a machine-wide lock so one full local run happens at a time (US-71). It lives at
