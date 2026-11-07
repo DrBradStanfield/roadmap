@@ -16,6 +16,7 @@ import {
 } from '../lib/roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { isSyncPending } from '../storage';
+import { BACKEND_KEY } from '../storage/web-record-host';
 import { DropboxAdapter } from '../storage/dropbox';
 import { GoogleDriveAdapter } from '../storage/drive';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
@@ -197,7 +198,9 @@ describe('US-06 AC13: a cloud page keeps a change its stalled save had not lande
     await addMeasurement('weight', 101.4, '2026-09-01');
     await saveMedication('glp1', 'semaglutide_injection', 1, 'mg');
     await flushRoadmapStore();
-    await initRoadmapStore(stalled());
+    const page = stalled();
+    localStorage.setItem(BACKEND_KEY, page.id); // the page's cloud, as connect.ts remembers it
+    await initRoadmapStore(page);
     const view = render(<HealthTool />);
     await waitFor(() => expect(view.container.querySelector('#glp1-dose')).not.toBeNull());
     return view;

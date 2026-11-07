@@ -34,8 +34,9 @@ export interface DeviceMirror {
   writesStopped(): boolean;
   /** True while this browser still uses this cloud, so the device copy is
    *  still its mirror: false once another tab has switched to "This device"
-   *  or another cloud (US-09 AC2). Absent: never known, so an erase taken in
-   *  removes no device copy (US-06 AC13). */
+   *  or another cloud (US-09 AC2), and then a page going away writes nothing
+   *  there. Absent: never known, so an erase taken in removes no device copy,
+   *  and a page going away still writes it (US-06 AC13). */
   stillChosen?(): boolean;
   /** Remove the device copy and what sits beside it, after an erase has
    *  reached the cloud (US-11). */

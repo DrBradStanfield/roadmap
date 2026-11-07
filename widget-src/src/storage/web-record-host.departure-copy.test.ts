@@ -8,7 +8,7 @@
  * AC13), and a cloud tab left open after another tab moved this browser to
  * "This device" never removes the record that tab now runs on (US-09 AC2).
  */
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   ConflictError, MemoryAdapter, MemoryCloud, RecordSession, ROADMAP_FILE_NAME, copyCloudDown, createMeasurement,
   type RecordHost, type RoadmapFile, type WriteResult,
@@ -17,6 +17,8 @@ import { LocalStorageAdapter } from './local-storage-adapter';
 import { BACKEND_KEY, isSyncPending, webRecordHost } from './web-record-host';
 
 afterEach(() => localStorage.clear());
+// A cloud page runs with its backend remembered (connect.ts); MemoryAdapter's id is 'memory'.
+beforeEach(() => localStorage.setItem(BACKEND_KEY, 'memory'));
 
 /** A cloud whose save never answers: the tab closes before it lands. */
 class StalledCloud extends MemoryAdapter {
@@ -119,6 +121,17 @@ describe('a cloud tab left open after another tab moved this browser to "This de
     expect(ids(tabA.file)).toEqual(['base']);
   });
 
+  it('and an edit and a departure after it took in an erase from another device (Brad R1)', async () => {
+    const { cloud, tabB } = await switchedAway();
+    expect((await (await RecordSession.open(phoneHost(cloud))).erase()).success).toBe(true);
+    expect(await tabB.refreshFromRemote()).toBe(true);
+    add(tabB, 'late', 81);
+    tabB.flushSync(); // tab B closes
+    const tabA = await RecordSession.open(webRecordHost(new LocalStorageAdapter()));
+    expect(ids(tabA.file)).toEqual(['base']);
+    expect(isSyncPending()).toBe(false);
+  });
+
   it('and an erase it takes in after it last wrote that record itself', async () => {
     const { cloud, tabB } = await switchedAway();
     add(tabB, 'late', 81);
@@ -149,8 +162,35 @@ describe('an erase taken in from another device, on the cloud this browser still
   });
 });
 
+describe('an erase taken in at a load, on the cloud this browser still uses (US-06 AC13, Brad R2)', () => {
+  it('removes the copy a hidden tab left once its save landed, so an offline start does not show the erased record', async () => {
+    const cloud = new MemoryCloud();
+    const laptop = await RecordSession.open(webRecordHost(new MemoryAdapter(cloud)));
+    add(laptop, 'dose', 1.7);
+    laptop.flushSync(); // hidden inside the debounce
+    await laptop.flush(); // its save lands; the laptop then closes
+    expect(ids(deviceCopy())).toEqual(['dose']);
+    expect((await (await RecordSession.open(phoneHost(cloud))).erase()).success).toBe(true);
+    const later = await RecordSession.open(webRecordHost(new MemoryAdapter(cloud)));
+    expect(ids(later.file)).toEqual([]);
+    expect(deviceCopy()).toBeNull();
+    expect(isSyncPending()).toBe(false);
+    const offline = await RecordSession.open(webRecordHost(new LocalStorageAdapter()), { cloudUnreachable: true });
+    expect(ids(offline.file)).toEqual([]);
+  });
+
+  it('keeps the copy once another tab moved this browser to "This device" (US-09 AC2)', async () => {
+    const { cloud } = await switchedAway();
+    expect((await (await RecordSession.open(phoneHost(cloud))).erase()).success).toBe(true);
+    await RecordSession.open(webRecordHost(new MemoryAdapter(cloud))); // a stale cloud page loads
+    const tabA = await RecordSession.open(webRecordHost(new LocalStorageAdapter()));
+    expect(ids(tabA.file)).toEqual(['base']);
+  });
+});
+
 describe('LocalStorageAdapter.removeSync', () => {
   it('removes the record and its revision only at the revision it was read at', () => {
+    localStorage.removeItem(BACKEND_KEY); // only the record's own keys here
     const device = new LocalStorageAdapter();
     const first = device.writeSync(ROADMAP_FILE_NAME, { schemaVersion: 1 }, null).version;
     const second = device.writeSync(ROADMAP_FILE_NAME, { schemaVersion: 1, other: true }, first).version;
