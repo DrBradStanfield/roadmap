@@ -514,16 +514,19 @@ describe('git push guard, as .claude/settings.json runs it', () => {
       `echo \${x:- #}; ${PATCH_MAIN}`,
       'true ${x:- #} && gh pr merge 5 --admin',
       'echo ${x// #/}; git push origin HEAD:main',
+      'echo }; echo ${x:- #}; git push origin HEAD:main',
       // R2: `x2>` is the word x2 and a stdout redirect, and `>&2run.sh` writes the file 2run.sh (main refuses these).
       "echo 'git push --force origin main #' x2>run.sh; bash run.sh",
       "echo 'git push --force origin main #' >&2run.sh; bash 2run.sh",
       // R3: ANSI-C quoting in a nested command name; also when the command does not parse.
       `bash -c "g\\$'it' push --force origin main"`,
       `bash -c "g\\$'it' push --force origin main" '`,
+      'bash -c "g\\$\\"it\\" push --force origin main"',
       // Note (b): the gh or git word that runs need not be the first or a doubled one.
       `env -u gh gh ${PATCH_MAIN.slice(3)}`,
       `sudo -u gh gh ${PATCH_MAIN.slice(3)}`,
       'find . -name git -exec git push --force origin main \\;',
+      `find . -name gh -exec gh ${PATCH_MAIN.slice(3)} \\;`,
       // Note (c): a method override header makes an explicit GET a write.
       `gh api -X GET -H 'X-HTTP-Method-Override: PATCH' repos/o/r/git/refs/heads/main -f sha=abc`,
     ]) {
@@ -534,8 +537,9 @@ describe('git push guard, as .claude/settings.json runs it', () => {
     }
     for (const cmd of [
       // A comment after a closed ${...} is still a comment, and stderr or /dev/null redirects still keep echo data.
-      "echo ${HOME} # it's a note",
+      'echo $HOME ${HOME}; gh api repos/o/r/pulls/1 # PR\'s head',
       "echo 'git push --force origin main' 2>err.log",
+      "2>err.log ls; echo 'git push --force origin main'",
       "echo 'git push --force origin main' >&2",
       "echo 'git push --force origin main' > /dev/null; ls",
       // An explicit GET with other headers is a read; a find that runs no gh or git is not checked.
@@ -549,6 +553,15 @@ describe('git push guard, as .claude/settings.json runs it', () => {
     ]) {
       expect(runHook(scratch, cmd).stdout, cmd).toBe('');
     }
+    // A cd moves the guard once, even into a folder named git: there a bare push from claude/x with upstream main is
+    // refused.
+    const repo = join(scratch, 'git');
+    for (const args of [['init', '-q', '-b', 'claude/x', repo], ['-C', repo, 'commit', '-q', '--allow-empty', '-m', 'one'],
+      ['-C', repo, 'config', 'branch.claude/x.merge', 'refs/heads/main']]) {
+      expect(spawnSync('git', args, { env: GIT_ENV }).status).toBe(0);
+    }
+    expect(JSON.parse(runHook(scratch, 'cd git && git push').stdout).hookSpecificOutput.permissionDecision).toBe('deny');
+    rmSync(repo, { recursive: true, force: true });
     // Note (a): a heredoc body the guard cannot read (here a " inside "$(...)", which bash allows) is still refused,
     // now with a way forward that the guard allows.
     const body = runHook(scratch, `gh pr create --title t --body "$(cat <<'EOF'\nBrad said "it's fine" to the gh api change.\nEOF\n)"`);

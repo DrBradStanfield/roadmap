@@ -439,7 +439,7 @@ function readApi(seg, gh) {
   api.args = x.args;
   api.unknown = x.unknown || unknownArgs(x.args, dyn, api);
   // A method override header (X-HTTP-Method-Override) may turn an explicit GET into a write: count it as one.
-  if (x.args.some((t) => /method-override|x-http-method/i.test(t))) api.method = 'POST';
+  if (x.args.some((t) => /method-override/i.test(t))) api.method = 'POST';
   api.ends = api.positional.map((e, k) => pathOf(e, api.posDyn[k]));
   if (splitsBefore(dyn, api.posAt[0] ?? dyn.length)) api.ends.push('$');
   return api;
@@ -513,11 +513,11 @@ let here = cwd; // follows `cd` through the command
 let configChanged = false;
 const synced = new Set(); // repos an earlier git pull/merge in this same command synced
 // Any gh or git word may be the one that runs (`env -u gh gh api`, `find -exec git push`), so each one after the first
-// is checked as a command start too (not in data or a cd).
+// is checked as a command start too (not in a cd, which must move `here` once).
 const starts = [];
 for (const seg of segs) {
   starts.push([seg, 0]);
-  if (seg[0] === 'cd' || seg[0] === 'pushd' || isData(seg)) continue;
+  if (seg[0] === 'cd' || seg[0] === 'pushd') continue;
   for (let k = 1; k < seg.length; k++) if (isCmd(seg[k], 'gh') || isCmd(seg[k], 'git')) starts.push([seg, k]);
 }
 for (const [seg, from] of starts) {
