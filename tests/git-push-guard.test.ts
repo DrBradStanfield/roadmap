@@ -538,8 +538,11 @@ describe('git push guard, as .claude/settings.json runs it', () => {
     for (const cmd of [
       // A comment after a closed ${...} is still a comment, and stderr or /dev/null redirects still keep echo data.
       'echo $HOME ${HOME}; gh api repos/o/r/pulls/1 # PR\'s head',
+      'ls *{; gh api repos/o/r/pulls/1 # PR\'s head',
       "echo 'git push --force origin main' 2>err.log",
       "2>err.log ls; echo 'git push --force origin main'",
+      "true;2>err.log ls; echo 'git push --force origin main'",
+      "echo 'git push --force origin main' >        /dev/null; ls",
       "echo 'git push --force origin main' >&2",
       "echo 'git push --force origin main' > /dev/null; ls",
       // An explicit GET with other headers is a read; a find that runs no gh or git is not checked.
@@ -566,6 +569,8 @@ describe('git push guard, as .claude/settings.json runs it', () => {
     // now with a way forward that the guard allows.
     const body = runHook(scratch, `gh pr create --title t --body "$(cat <<'EOF'\nBrad said "it's fine" to the gh api change.\nEOF\n)"`);
     expect(JSON.parse(body.stdout).hookSpecificOutput.permissionDecisionReason).toMatch(/Write tool.*--body-file.*git commit -F/);
+    const msg = runHook(scratch, `git commit -m "$(cat <<'EOF'\nSaid "don't push" here.\nEOF\n)"`);
+    expect(JSON.parse(msg.stdout).hookSpecificOutput.permissionDecisionReason).toMatch(/git push on its own line.*Write tool.*git commit -F/);
   });
 
   // US-64 AC5, round 4 (adversary at ac0e6655, B10): a guard that crashed exited 1, which Claude Code reads as "go

@@ -339,7 +339,7 @@ const READERS = /^(head|tail|wc|sort|uniq|cut|grep|egrep|fgrep|rg|less|more|cat|
 // Redirections are read by word: `2>` is stderr, but in `x2>` the 2 belongs to the word x2 and `>` is stdout; `>&2` and
 // `> /dev/null` are not stdout to a file, `>&2run.sh` is.
 const fdBefore = (c, i) => '23456789'.includes(c[i - 1]) && (i < 2 || /[\s;&|()]/.test(c[i - 2]));
-const NOT_A_FILE = />(&[0-9]|\s{0,6}\/dev\/null)(?![^\s;&|()<>])/y;
+const NOT_A_FILE = />(&[0-9]|[ \t]*\/dev\/null)(?![^\s;&|()<>])/y;
 const stdoutRedirect = (c, i) => { NOT_A_FILE.lastIndex = i; return !fdBefore(c, i) && !NOT_A_FILE.test(c); };
 function outputStaysData(c) {
   if (/\$\(|`|[<>]\(/.test(c) || [...c.matchAll(/>/g)].some((m) => stdoutRedirect(c, m.index))) return false;
