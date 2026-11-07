@@ -647,7 +647,8 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
   // mirror path writes through lib/storage's safe helpers, which no-op silently
   // when localStorage is missing, so these tests must provide one.
   beforeEach(() => {
-    const backing = new Map<string, string>();
+    // The page's cloud, remembered as connect.ts does (a moved-off tab writes no device copy, US-06 AC13).
+    const backing = new Map<string, string>([['health_roadmap_backend', 'memory']]);
     const store = {
       getItem: (k: string) => (backing.has(k) ? backing.get(k)! : null),
       setItem: (k: string, v: string) => void backing.set(k, v),
@@ -1194,7 +1195,8 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
 // stored record before anything irreversible, and refuses when it cannot read.
 describe('RoadmapStore.deleteUserData lists the rows it removes (US-09 AC23)', () => {
   beforeEach(() => {
-    const backing = new Map<string, string>();
+    // The page's cloud, remembered as connect.ts does (a moved-off tab writes no device copy, US-06 AC13).
+    const backing = new Map<string, string>([['health_roadmap_backend', 'memory']]);
     const store = {
       getItem: (k: string) => (backing.has(k) ? backing.get(k)! : null),
       setItem: (k: string, v: string) => void backing.set(k, v),

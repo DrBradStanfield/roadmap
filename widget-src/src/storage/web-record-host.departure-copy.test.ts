@@ -71,6 +71,15 @@ describe('a save that holds the device copy (US-09 AC13)', () => {
   });
 });
 
+/** A cloud whose saves fail once `failing` is set (a grant another tab dropped, a dead network). */
+class FailingCloud extends MemoryAdapter {
+  failing = false;
+  async write(...args: Parameters<MemoryAdapter['write']>): Promise<WriteResult> {
+    if (this.failing) throw new Error('network down');
+    return super.write(...args);
+  }
+}
+
 /** Another device's cloud page: its erase touches nothing in this browser. */
 function phoneHost(cloud: MemoryCloud): RecordHost {
   const host = webRecordHost(new MemoryAdapter(cloud));
@@ -88,10 +97,11 @@ function phoneHost(cloud: MemoryCloud): RecordHost {
 
 /** Tab B on the cloud saves 'base'; tab A then picks "This device": the cloud
  *  is copied down, forgotten, and tab A reloads on the device. */
-async function switchedAway(): Promise<{ cloud: MemoryCloud; tabB: RecordSession }> {
+async function switchedAway(): Promise<{ cloud: MemoryCloud; tabB: RecordSession; adapterB: FailingCloud }> {
   const cloud = new MemoryCloud();
   localStorage.setItem(BACKEND_KEY, 'memory');
-  const tabB = await RecordSession.open(webRecordHost(new MemoryAdapter(cloud)));
+  const adapterB = new FailingCloud(cloud);
+  const tabB = await RecordSession.open(webRecordHost(adapterB));
   add(tabB, 'base', 80);
   await tabB.flush();
   const leaving = webRecordHost(new MemoryAdapter(cloud));
@@ -100,7 +110,7 @@ async function switchedAway(): Promise<{ cloud: MemoryCloud; tabB: RecordSession
   localStorage.removeItem(BACKEND_KEY);
   const tabA = await RecordSession.open(webRecordHost(new LocalStorageAdapter()));
   expect(ids(tabA.file)).toEqual(['base']);
-  return { cloud, tabB };
+  return { cloud, tabB, adapterB };
 }
 
 describe('a cloud tab left open after another tab moved this browser to "This device" (US-09 AC2)', () => {
@@ -132,6 +142,41 @@ describe('a cloud tab left open after another tab moved this browser to "This de
     expect(isSyncPending()).toBe(false);
   });
 
+  it("and an edit whose cloud save fails after it took in an erase from another device (US-06 AC13)", async () => {
+    const { cloud, tabB, adapterB } = await switchedAway();
+    expect((await (await RecordSession.open(phoneHost(cloud))).erase()).success).toBe(true);
+    expect(await tabB.refreshFromRemote()).toBe(true);
+    adapterB.failing = true; // e.g. the grant tab A dropped at the switch
+    add(tabB, 'late', 81);
+    await expect(tabB.flush()).rejects.toThrow();
+    const tabA = await RecordSession.open(webRecordHost(new LocalStorageAdapter()));
+    expect(ids(tabA.file)).toEqual(['base']);
+    expect(isSyncPending()).toBe(false);
+  });
+
+  it("and Brad R1's edit and hide when the hide's own cloud save fails (US-06 AC13)", async () => {
+    const { cloud, tabB, adapterB } = await switchedAway();
+    expect((await (await RecordSession.open(phoneHost(cloud))).erase()).success).toBe(true);
+    expect(await tabB.refreshFromRemote()).toBe(true);
+    adapterB.failing = true;
+    add(tabB, 'late', 81);
+    tabB.flushSync(); // hidden: the page stays alive and its save fails
+    await new Promise((r) => setTimeout(r, 20));
+    const tabA = await RecordSession.open(webRecordHost(new LocalStorageAdapter()));
+    expect(ids(tabA.file)).toEqual(['base']);
+    expect(isSyncPending()).toBe(false);
+  });
+
+  it("keeps its failed save's change in memory only, so it is lost when it closes even with no erase (US-06 AC13 trade-off)", async () => {
+    const { tabB, adapterB } = await switchedAway();
+    adapterB.failing = true;
+    add(tabB, 'late', 81);
+    await expect(tabB.flush()).rejects.toThrow();
+    expect(ids(tabB.file)).toEqual(['base', 'late']);
+    const tabA = await RecordSession.open(webRecordHost(new LocalStorageAdapter()));
+    expect(ids(tabA.file)).toEqual(['base']);
+  });
+
   it('and an erase it takes in after it last wrote that record itself', async () => {
     const { cloud, tabB } = await switchedAway();
     add(tabB, 'late', 81);
@@ -141,6 +186,27 @@ describe('a cloud tab left open after another tab moved this browser to "This de
     expect(await tabB.refreshFromRemote()).toBe(true);
     const tabA = await RecordSession.open(webRecordHost(new LocalStorageAdapter()));
     expect(ids(tabA.file)).toContain('base');
+  });
+});
+
+describe('a cloud tab left open while another tab switches this browser to another provider (US-06 AC13)', () => {
+  it('writes no device copy, on a departure or a failed save, once that provider is remembered', async () => {
+    const adapter = new FailingCloud(new MemoryCloud());
+    const tab = await RecordSession.open(webRecordHost(adapter));
+    localStorage.setItem(BACKEND_KEY, 'dropbox'); // the other tab's Dropbox connect returned
+    add(tab, 'late', 81);
+    tab.flushSync(); // hidden
+    adapter.failing = true;
+    await expect(tab.flush()).rejects.toThrow();
+    expect(deviceCopy()).toBeNull();
+    expect(isSyncPending()).toBe(false);
+  });
+
+  it('still writes it before that connect returns, while the old cloud is remembered (stated limit)', async () => {
+    const tab = await RecordSession.open(webRecordHost(new StalledCloud(new MemoryCloud())));
+    add(tab, 'late', 81);
+    tab.flushSync(); // the other tab is on the new provider's sign-in page
+    expect(ids(deviceCopy())).toEqual(['late']);
   });
 });
 

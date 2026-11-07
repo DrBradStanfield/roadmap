@@ -741,8 +741,10 @@ export class RecordSession {
       // Most persist() call sites are fire-and-forget (`void this.persist()`),
       // so returning false (not rethrowing) keeps them from re-creating an
       // unhandled rejection; awaited callers (flush) check the result.
+      // Not once another tab moved this browser off this cloud: the device
+      // file is then that tab's record (US-06 AC13, Brad R1).
       const mirror = this.host.tier === 'cloud' ? this.host.mirror : null;
-      if (mirror && !mirror.writesStopped()) {
+      if (mirror && !mirror.writesStopped() && mirror.stillChosen?.() !== false) {
         mirror.pending.set();
         // Deliberately the merged transfer primitive, NOT a plain overwrite: the
         // device file may hold guest-era data this session never loaded (no
