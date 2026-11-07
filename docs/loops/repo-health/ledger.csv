@@ -184,7 +184,7 @@ ref,kind,origin,opened_utc,loop_replied_utc,brad_replied_utc,status,note
 #497,pr,external,2026-11-01T06:46Z,,2026-11-02T02:41:57Z,closed,new: US-30 AC8: a newline in a lab name or unit cannot forge a line of the text report; merged by Brad
 #498,pr,external,2026-11-01T06:52Z,,2026-11-02T07:24:08Z,closed,new: US-36 AC7a: file_results tells the assistant to send every part of a long report before the first commit; merged by Brad
 #499,pr,external,2026-11-01T06:58Z,,2026-11-03T00:26:12Z,closed,new: US-12 AC11a: a core row naming no core metric is never silently dropped; merged by Brad
-#503,issue,external,2026-11-01T14:28Z,,,escalated,"new: Reminder cooldown: per screening, or per screening group?; Brad-only surface or spec call; open, no maintainer reply"
+#503,issue,external,2026-11-01T14:28Z,,,escalated,"new: Reminder cooldown: per screening, or per screening group?; Brad-only surface or spec call; open, Brad-account comments 11-04 and 11-06 (read as session-written, W45 review R6)"
 #504,issue,external,2026-11-01T14:28Z,,,escalated,"new: YouTube follow-up turns: the follow-up instructions do not say the emergency rule (Step 0) still applies; clinical content, Brad decides; open, no maintainer reply"
 #505,issue,external,2026-11-01T14:28Z,,,triaged,"new: Reminder email says 'Stop them with one click' but the link opens a confirm page; open, no maintainer reply"
 #506,pr,external,2026-11-01T14:48Z,,2026-11-02T02:54:10Z,closed,new: US-63 AC12: the health bot ignores an excluded channel's threads too; merged by Brad
@@ -238,9 +238,9 @@ ref,kind,origin,opened_utc,loop_replied_utc,brad_replied_utc,status,note
 #800,pr,external,2026-11-03T09:52Z,,2026-11-04T01:36:06Z,closed,"new: US-38 AC6: guide lists render as lists, not as one paragraph of dashes; merged by Brad"
 #801,issue,external,2026-11-03T11:35Z,,,escalated,"new: Colorectal screening: the guide says repeat FIT every 2 years, the plan and its reminder say every year; clinical content, Brad decides; open, no maintainer reply"
 #802,issue,external,2026-11-03T11:35Z,,,escalated,"new: Cholesterol section: the testosterone clause cites a statin and Alzheimer study; clinical content, Brad decides; open, no maintainer reply"
-#803,issue,external,2026-11-03T11:35Z,,,escalated,"new: Engine release: a deploy run waiting for approval and the queued runs cancelled behind it; Brad-only surface or spec call; open, no maintainer reply"
+#803,issue,external,2026-11-03T11:35Z,,,escalated,"new: Engine release: a deploy run waiting for approval and the queued runs cancelled behind it; Brad-only surface or spec call; open, Brad-account comments 11-04 and 11-06 (read as session-written, W45 review R6)"
 #804,pr,external,2026-11-03T14:36Z,,2026-11-04T05:20:46Z,closed,"new: US-46 AC15: auto-ship dispatches pages.yml after the merge, and the deploy's Pages smoke waits for that commit; merged by Brad"
-#805,pr,external,2026-11-03T14:47Z,,2026-11-04T05:20:44Z,escalated,"new: US-64 AC5: the push guard sees gh api writes to main; Brad-only surface or spec call; open, no maintainer reply"
+#805,pr,external,2026-11-03T14:47Z,,2026-11-04T05:20:44Z,escalated,"new: US-64 AC5: the push guard sees gh api writes to main; Brad-only surface or spec call; open, Brad-account comments 11-04 and 11-06 (read as session-written, W45 review R6)"
 #806,issue,external,2026-11-03T15:07Z,,,triaged,"new: docs/about-page-copy.html still says an account stores your health data; the record is now a file in your own ; open, no maintainer reply"
 #808,pr,external,2026-11-03T20:19Z,,2026-11-04T05:51:30Z,closed,new: US-32 AC57: a read labels the text it carries from the user's files; merged by Brad
 #866,pr,external,2026-11-05T11:07Z,,2026-11-06T00:05:51Z,closed,new: US-15 AC7d: a ghost profile that cannot be written leaves no ghost auth user; merged by Brad
@@ -259,4 +259,4 @@ ref,kind,origin,opened_utc,loop_replied_utc,brad_replied_utc,status,note
 #944,pr,external,2026-11-06T03:40Z,,,triaged,"new: US-09 AC37: the Google Drive code exchange gives up after 10 seconds; open, no maintainer reply"
 #945,pr,external,2026-11-06T03:40Z,,,triaged,"new: US-09 AC38: on the iPhone, a full Dropbox says the Dropbox is full; open, no maintainer reply"
 #947,pr,external,2026-11-06T03:56Z,,,triaged,"new: US-09 AC39: a Dropbox document upload gives up after 5 minutes; open, no maintainer reply"
-#954,pr,external,2026-11-06T14:28Z,,,escalated,"new: US-32 AC9a: report_feedback guard also refuses common spellings of a metric name next to a number; Brad-only surface or spec call; open, no maintainer reply"
+#954,pr,external,2026-11-06T14:28Z,,,escalated,"new: US-32 AC9a: report_feedback guard also refuses common spellings of a metric name next to a number; Brad-only surface or spec call; open, Brad-account comments 11-04 and 11-06 (read as session-written, W45 review R6)"
