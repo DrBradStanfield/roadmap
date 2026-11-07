@@ -819,6 +819,7 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
     class StalledAdapter extends MemoryAdapter {
       async write(): Promise<WriteResult> { return new Promise<WriteResult>(() => {}); }
     }
+    localStorage.setItem('health_roadmap_backend', 'memory'); // the page's cloud, as connect.ts remembers it
     const store = await RoadmapStore.create(new StalledAdapter(cloud));
     const row = insertedRow(store.addMeasurement('weight', 80, '2024-06-01T00:00:00.000Z'));
     store.flushSync(); // the tab closes; its cloud save never answers
