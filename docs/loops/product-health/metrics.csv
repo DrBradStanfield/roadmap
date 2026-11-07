@@ -497,3 +497,7 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W45,clarity_roadmap_visits_3d,154,155,-1,clarity,"drstanfield 3,945 sessions/3d, bot 14.1%, script errors 2.56%; /pages/roadmap rank 3; microvitamin 2,049, bot 28.6%, script errors 1.95%"
 2026-W45,feedback_organic,0,3,-100,gmail+supabase+github,"0 feedback_submissions, 0 form emails, 0 replies to our mail, 0 from-connector"
 2026-W45,ci_main_red,3,33,-91,github,10-31T22:12Z and 22:36Z app-routes 429 vs 401 flake; 11-05T21:33Z signing-key-guard release-folder test; green at f5e82cf 11-07T17:15Z
+2026-W45,mutation_score_calculations,92.2,93.2,-1,stryker,"vs baseline 02ae5f5 (prior column = baseline %); 333 killed, 28 open (baseline 21); 9 NEW survivors, mostly abdc3c1 (US-12 AC20); W44 93.2"
+2026-W45,mutation_score_suggestions,86.5,81.2,7,stryker,"1562 killed, 243 open (baseline 311); 40 NEW survivors, mostly abdc3c1 marker keys and message templates; W44 81.6"
+2026-W45,mutation_score_units,93.2,90.1,3,stryker,"426 killed, 31 open (baseline 37); 3 NEW: getDisplayRange 441 (W44's equivalent, moved), WHTR_TARGET 714 (9dc14005), formatGradedReading 754 (98dca42c); W44 90.9"
+2026-W45,mutation_score_merge,90.5,87.7,3,stryker,"619 killed, 65 open (baseline 82); 8 NEW: rootIdOf/rootBeforeMoveOf regexes (PR #551), mergeFiles 777 (b971926f), mergeSlotted 285 (key shift); W44 88.9"

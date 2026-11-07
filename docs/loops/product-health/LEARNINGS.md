@@ -165,9 +165,8 @@ duplicates.
   cause is one of three bundles that night. Check the suspect commit's deploy
   time against the last row before naming it (W40 review R2). Confirmed again W45: the US-62
   redesign dropped `guide_opened`'s `header` emit (40 → 9) and redefined `results_viewed` twice.
-- **2026-10-18 [feedback]** Replies to our emails are a feedback channel the form search misses:
-  W40's Drive complaint (Klaviyo follow-up) and W42's urine-creatinine report (plan-ready email, a
-  clinical-pipeline defect, unread for hours) both came that way. Search those replies every run.
+- **2026-10-18 [feedback]** Replies to our emails are feedback the form search misses: W40's Drive
+  complaint and W42's urine-creatinine defect both came that way. Search them every run.
 - **2026-10-18 [instrumentation]** `upload_started`/`upload_saved` fire once per TAB
   (server-api.ts:164-171); only `upload_outcome` (live 10-13) counts runs. Unit refusals with no
   nearby start/save are a tab's later runs (W41's "untraced path"); started vs saved hides those runs.
@@ -186,6 +185,7 @@ duplicates.
   default. Two workers' parallel `npm ci` in one checkout left node_modules broken ("stryker: not
   found"), and as root the US-31 AC8 unwritable-folder test passes its write, so Stryker's dry run
   aborts. Run it alone, as a non-root user, in a copy of the checkout; start it first (~1 h).
+  W45: that user cannot read the proxy CA; copy it and pass the proxy env, or npm ci fails.
 - **2026-10-31 [fleet]** A loop's ledger can silently skip a range: repo-health's had no rows from
   #263 on, so W44's pass logged 98 items at once and the median fell for a batch-merge reason.
   Check the last ledgered ref against the newest external item before computing a median.
