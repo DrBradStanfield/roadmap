@@ -56,10 +56,10 @@ flowchart TD
    record in, so a web user never types their details twice.
 2. **Apple Health.** The only page before Apple's sheet: "Use your Apple Health data",
    six tiles (sex, birth date, height, weight, waist, blood pressure) ticking in, a quiet
-   line under them naming US-56's five ("It also shows your heart rate, sleep, VO2 max and
+   line under them naming US-56's four ("It also shows your resting heart rate, sleep, VO2 max and
    steps here, never in your record."; "never kept" until 2026-10-27, US-56 AC2), one line
    ("So you type less."; since 2026-10-27 it names the six, "Your sex, birth date, height,
-   weight, waist and blood pressure go only into your record", since US-56's five are kept
+   weight, waist and blood pressure go only into your record", since US-56's four are kept
    on the phone too) on where they go and that added values are saved back.
    Just above **Connect Apple Health**, the last thing read before the tap, a small callout
    in the accent green (not red, which read as something wrong; Brad 2026-10-25) gives
@@ -67,8 +67,8 @@ flowchart TD
    (Version-neutral since 2026-10-26: iOS 27's sheet says "Select All", older ones "Turn On All".)
    No switch of ours:
    Apple's sheet cannot be pre-switched. **Not now** goes on. Either way the next screens
-   come next. **One sheet (Brad 2026-10-26):** it also asks to read US-56's five (heart
-   rate, resting heart rate, sleep, VO2 max, steps), so Apple asks once.
+   come next. **One sheet (Brad 2026-10-26):** it also asks to read US-56's four (resting
+   heart rate, sleep, VO2 max, steps; heart rate dropped, US-73, 2026-11-05), so Apple asks once.
    **Health's answers are not asked again (US-54 AC3b, Brad 2026-10-26):** each question
    Apple Health answered (sex, birth month and year, height, a weight from the last year)
    is skipped; sex and birth are saved at once, height and weight came in with the
@@ -171,6 +171,12 @@ Health, and see my plan, without facing the full form.
 After the last question the person lands on My plan, and a three-tip tour starts. It uses
 Apple's TipKit, shows each tip once and can be skipped. Brad: "This tour mustn't go on and
 on", so each tip is one line. The story and its ACs are US-57.
+
+**Since US-73 (2026-11-05)** the tour runs on My health, with Brad's new words for tips 1
+and 2: (1) on the waist-to-height row, "Your numbers, grouped by topic. Tap any row for its
+history and what it means."; (2) on the first Weight & diabetes card, "Each step comes
+with the reason and the evidence. Tap a card to read it."; (3) unchanged, on the Blood
+tests heading. The list below is the 2026-10-25 tour, kept for its reasons.
 
 1. **The snapshot**, one tip for the whole row of tiles: "A snapshot of your health. Tap
    any tile to learn more." Every tile opens its "what it is" line, for good.

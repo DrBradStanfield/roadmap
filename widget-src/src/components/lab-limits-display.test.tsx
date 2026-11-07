@@ -11,7 +11,7 @@ import { cleanup, fireEvent, render } from '@testing-library/react';
 import { LIMIT_NOT_GRADED, type ApiMeasurement } from '@roadmap/health-core';
 import { BloodTestTimeline } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
-import { BloodTestRows, type RowContext } from './MyDataRows';
+import { BLOOD_ROWS, MetricRows, coreRow, pressureRow, type RowContext } from './MyDataRows';
 import { NumericInputCell } from './NumericInputCell';
 import type { ApiLabValue } from '../lib/api-types';
 
@@ -93,7 +93,7 @@ describe('US-12 AC20: the phone rows', () => {
 
   it('shows the latest and previous limit with their symbols, ungraded when undecided', () => {
     const rows = [row('l2', 'ldl', 1.5, '2026-07-01', '<'), row('l1', 'ldl', 2.8, '2026-06-01')];
-    const view = render(<BloodTestRows history={rows} labValues={[]} ctx={ctx} onOpen={() => {}}/>);
+    const view = render(<MetricRows rows={BLOOD_ROWS.map(m => coreRow(m, rows, ctx))} onOpen={() => {}}/>);
     const ldl = rowNamed(view.container, 'LDL Cholesterol');
     const latest = ldl.querySelector('.md-row-latest')!;
     expect(latest.textContent).toBe('< 1.5');
@@ -105,7 +105,7 @@ describe('US-12 AC20: the phone rows', () => {
     const today = new Date();
     const day = (ago: number) => new Date(today.getTime() - ago * 86_400_000).toISOString().slice(0, 10);
     const rows = [row('a0', 'lpa', 40, day(3)), row('a1', 'lpa', 10, day(1), '<')];
-    const view = render(<BloodTestRows history={rows} labValues={[]} ctx={ctx} onOpen={() => {}}/>);
+    const view = render(<MetricRows rows={BLOOD_ROWS.map(m => coreRow(m, rows, ctx))} onOpen={() => {}}/>);
     const lpa = rowNamed(view.container, 'Lp(a)');
     expect(lpa.querySelector('.md-row-latest')!.textContent).toBe('< 10');
     expect(lpa.querySelector('.md-row-latest')!.className).toContain('md-status-ok');
@@ -115,6 +115,40 @@ describe('US-12 AC20: the phone rows', () => {
     // One exact day: no line is drawn through the limit, and the exact day is a filled dot.
     expect(lpa.querySelectorAll('.md-row-trend path')).toHaveLength(0);
     expect([...lpa.querySelectorAll('.md-row-trend circle')].map(c => c.getAttribute('fill'))).toEqual(['#B2598C', 'none']);
+  });
+});
+
+describe('US-12 AC20a: the phone blood pressure row', () => {
+  const ctx: RowContext = { grading: { sex: 'male' }, plan: null, unitOf: () => 'si' };
+  const day = (ago: number) => new Date(Date.now() - ago * 86_400_000).toISOString().slice(0, 10);
+  /** Three days of pairs, the middle one with the given limits, and the BP row's trend dots' fills. */
+  function bpDots(limits: { sys?: '<' | '>'; dia?: '<' | '>' }) {
+    const rows = [
+      row('s1', 'systolic_bp', 128, day(5)), row('d1', 'diastolic_bp', 82, day(5)),
+      row('s2', 'systolic_bp', 125, day(3), limits.sys), row('d2', 'diastolic_bp', 78, day(3), limits.dia),
+      row('s3', 'systolic_bp', 122, day(1)), row('d3', 'diastolic_bp', 79, day(1)),
+    ];
+    const view = render(<MetricRows rows={[pressureRow(rows, ctx)]} onOpen={() => {}}/>);
+    const bp = [...view.container.querySelectorAll('.md-row')]
+      .find(r => r.querySelector('.md-row-label')?.textContent === 'Blood Pressure') as HTMLElement;
+    return {
+      hollow: bp.querySelectorAll('circle.md-trend-limit').length,
+      fills: [...bp.querySelectorAll('.md-row-trend circle')].map(c => c.getAttribute('fill')),
+    };
+  }
+
+  it('draws a day whose systolic was printed as a limit hollow, as the desktop trend does', () => {
+    expect(bpDots({ sys: '<' }).hollow).toBe(1);
+  });
+
+  it('draws a day whose diastolic alone was printed as a limit hollow too', () => {
+    expect(bpDots({ dia: '>' }).hollow).toBe(1);
+  });
+
+  it('draws no hollow point when neither half was a limit', () => {
+    const { hollow, fills } = bpDots({});
+    expect(hollow).toBe(0);
+    expect(fills).not.toContain('none');
   });
 });
 

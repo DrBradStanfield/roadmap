@@ -392,7 +392,7 @@ export function BloodTestTimeline({
     })));
     settle(ready.map(c => {
       const status = refusedSlots.get(slotOf(c.date, c.metric));
-      return [[c.column, c.metric], status && SAVE_ERRORS[status]];
+      return [[c.column, c.metric], status && saveErrorText(status)];
     }));
     if (refusedSlots.size === 0) setActiveCell(null);
   };
@@ -656,7 +656,7 @@ function LpaChecks({ rows, unitSystem, onCorrect, waiting }: {
       }
       if (status !== 'ok') {
         focusFrom.current = { root, index };
-        setErrors(e => ({ ...e, [row.id]: SAVE_ERRORS[status] }));
+        setErrors(e => ({ ...e, [row.id]: saveErrorText(status) }));
         return;
       }
     }
@@ -792,11 +792,13 @@ const UNIT_CHANGED = 'The unit changed, so your edit was not saved. Type it agai
 const UNIT_FIRST = 'Not saved: choose the unit first, then type the value.';
 
 /** What a refused correction says, wherever one is made. */
-export const SAVE_ERRORS: Record<Exclude<CorrectStatus, 'ok'>, string> = {
+export const SAVE_ERRORS: Record<Exclude<Extract<CorrectStatus, string>, 'ok'>, string> = {
   changed: 'This value changed on another device, so your edit was not saved.',
   invalid: 'That value is outside the range this record takes.',
   error: 'Could not save. Check your connection and try again.',
 };
+/** A refusal's words: the engine's own when it gave them (US-21 AC26). */
+export const saveErrorText = (status: Exclude<CorrectStatus, 'ok'>) => typeof status === 'string' ? SAVE_ERRORS[status] : status.refused;
 
 // The saved-value editor, one for every matrix: the blood tests, the vitals
 // (StartingInfoVitals) and the additional lab rows. Click a value to correct
@@ -972,7 +974,7 @@ export function ValueCell({
     // A value replaced meanwhile closes the editor, and the cell says the
     // edit went; any other failure keeps it open for a retry.
     if (status === 'ok' || status === 'changed') cancel();
-    if (status !== 'ok') setSaveError(SAVE_ERRORS[status]);
+    if (status !== 'ok') setSaveError(saveErrorText(status));
   };
 
   if (typed !== null) {

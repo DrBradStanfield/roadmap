@@ -124,7 +124,7 @@ export function foldLegacyCoreRows(rows: FileLabValue[]): FileLabValue[] {
 }
 
 /** A row with no status reads as active (US-65 AC1), as `latestActivePerMetric` reads it. */
-const isActive = (row: { status?: string }) => row.status === undefined || row.status === 'active';
+export const isActive = (row: { status?: string }) => row.status === undefined || row.status === 'active';
 
 /**
  * The core values every reader counts (US-66 AC7): active core rows in their

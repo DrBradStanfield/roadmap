@@ -24,10 +24,12 @@ import {
   dropboxUploadDocument,
   dropboxWrite,
   DROPBOX_TOKEN_URL,
+  fetchOrFail,
   ROADMAP_FILE_NAME,
   sleepUntilAborted,
   catchUpAfterFailure,
   StorageError,
+  timeoutDeadline,
   type ReadResult,
   type StorageAdapter,
   type WriteResult,
@@ -149,15 +151,19 @@ export class DropboxAdapter implements StorageAdapter {
       redirect_uri: config.redirectUri,
       code_verifier: claimed.verifier,
     });
-    const res = await fetch(TOKEN_URL, {
+    // Bounded (US-09 AC1a): the page waits on this before it draws anything,
+    // so a network that never answers would leave the loading skeleton for good.
+    const res = await fetchOrFail('Dropbox', TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
+      timeoutMs: 10_000,
     });
     if (!res.ok) {
       throw new StorageError(`Dropbox token exchange failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
     }
-    const json = tokenReply(await res.json(), true);
+    // A body that is not JSON (a wifi sign-in page) is an incomplete reply too.
+    const json = tokenReply(await res.json().catch(() => null), true);
     saveTokens({
       accessToken: json.access_token,
       refreshToken: json.refresh_token,
@@ -290,8 +296,13 @@ export class DropboxAdapter implements StorageAdapter {
    * caller retries next visit) — a Dropbox account always has an email.
    */
   async accountEmail(): Promise<string> {
-    const res = await this.rpc(ACCOUNT_URL, null, AbortSignal.timeout(10_000), true);
-    const account = (await res.json()) as { email?: string; email_verified?: boolean };
+    const deadline = timeoutDeadline(10_000);
+    let account: { email?: string; email_verified?: boolean };
+    try {
+      account = (await (await this.rpc(ACCOUNT_URL, null, deadline.signal, true)).json()) as typeof account;
+    } finally {
+      deadline.clear();
+    }
     if (!account.email || account.email_verified !== true) throw new StorageError('Dropbox has not verified this account\'s email.');
     return account.email.toLowerCase();
   }
@@ -311,17 +322,23 @@ export class DropboxAdapter implements StorageAdapter {
       refresh_token: startedFrom,
       client_id: this.config.clientId,
     });
-    const res = await fetch(TOKEN_URL, {
+    // Bounded like Drive's refresh (US-09 AC13h): every read and save waits on it.
+    const res = await fetchOrFail('Dropbox', TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
+      timeoutMs: 5000,
+    }).catch((error: unknown) => {
+      this.dropIfGrantMoved(startedFrom);
+      throw error;
     });
     if (!res.ok) {
       this.dropIfGrantMoved(startedFrom);
       throw new StorageError(`Dropbox token refresh failed (${res.status}) — please reconnect.`, undefined, undefined, res.status);
     }
-    const json = tokenReply(await res.json(), false);
+    const reply: unknown = await res.json().catch(() => null);
     this.dropIfGrantMoved(startedFrom);
+    const json = tokenReply(reply, false);
     this.tokens = {
       ...this.tokens,
       accessToken: json.access_token,

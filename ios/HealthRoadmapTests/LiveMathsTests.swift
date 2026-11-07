@@ -25,12 +25,12 @@ final class LiveMathsTests: XCTestCase {
     }
 
     func testEachMetricHasOneUnitAndApplesRounding_AC6() {
-        XCTAssertEqual(LiveMetric.heartRate.text(71.6), "72")
+        XCTAssertEqual(LiveMetric.restingHeartRate.text(57.6), "58")
         XCTAssertEqual(LiveMetric.vo2Max.text(38.44), 38.4.formatted(.number.precision(.fractionLength(1))))
         XCTAssertEqual(LiveMetric.steps.text(8432.4), 8432.formatted(.number.grouping(.automatic)))
-        XCTAssertEqual(LiveMetric.allCases.map(\.unit), ["bpm", "bpm", "", "mL/kg/min", "steps"])
-        XCTAssertEqual(LiveMetric.vitals, [.heartRate, .restingHeartRate, .sleep])
-        XCTAssertEqual(LiveMetric.fitness, [.vo2Max, .steps])
+        XCTAssertEqual(LiveMetric.allCases.map(\.unit), ["bpm", "", "mL/kg/min", "steps"])
+        XCTAssertEqual(HealthTopic.sleep.liveMetrics, [.sleep])
+        XCTAssertEqual(HealthTopic.fitness.liveMetrics, [.vo2Max, .restingHeartRate, .steps], "no heart rate card (Brad, round 4)")
     }
 
     // MARK: Buckets and headlines
@@ -40,13 +40,11 @@ final class LiveMathsTests: XCTestCase {
         let monday = try at("2026-10-19T00:00:00Z")
         let days: [LivePoint] = (0..<9).map { (index: Int) -> LivePoint in
             let n = Double(index)
-            return LivePoint(start: monday.addingTimeInterval(n * 86_400), value: 1000 * (n + 1), low: 50 + n, high: 120 + n)
+            return LivePoint(start: monday.addingTimeInterval(n * 86_400), value: 1000 * (n + 1))
         }
         let weeks = LiveMaths.bucket(days, by: .weekOfYear, calendar: calendar)
         XCTAssertEqual(weeks.count, 2)
         XCTAssertEqual(weeks[0].value, 4000, "a week's bar is the daily average")
-        XCTAssertEqual(weeks[0].low, 50, "heart rate: the week's lowest")
-        XCTAssertEqual(weeks[0].high, 126, "and highest")
         XCTAssertEqual(weeks[1].value, 8500)
         XCTAssertEqual(LiveMaths.bucket(days, by: .day, calendar: calendar), days, "days stay days")
         let months = LiveMaths.bucket(days, by: .month, calendar: calendar)
@@ -54,17 +52,15 @@ final class LiveMathsTests: XCTestCase {
         XCTAssertEqual(months[0].value, 5000)
     }
 
-    func testTheHeadlineIsATotalAnAverageOrARange_AC7() {
+    func testTheHeadlineIsATotalOrAnAverage_AC7() {
         let day = Date(timeIntervalSince1970: 0)
         let hours = [LivePoint(start: day, value: 300), LivePoint(start: day.addingTimeInterval(3600), value: 700)]
         XCTAssertEqual(LiveMaths.headline(.steps, range: .day, points: hours), .init(title: "Total", parts: [.init(number: 1000.formatted(.number.grouping(.automatic)), unit: "steps")]))
         XCTAssertEqual(LiveMaths.headline(.steps, range: .week, points: hours).title, "Average")
         XCTAssertEqual(LiveMaths.headline(.steps, range: .week, points: hours).parts.map(\.number), ["500"])
-        let heart = [LivePoint(start: day, value: 70, low: 52, high: 140), LivePoint(start: day, value: 80, low: 60, high: 150)]
-        XCTAssertEqual(LiveMaths.headline(.heartRate, range: .week, points: heart), .init(title: "Range", parts: [.init(number: "52–150", unit: "bpm")]))
         XCTAssertEqual(LiveMaths.headline(.restingHeartRate, range: .month, points: [LivePoint(start: day, value: 57), LivePoint(start: day, value: 60)]).parts.map(\.number), ["59"])
         XCTAssertEqual(LiveMaths.headline(.vo2Max, range: .year, points: []), .init(title: "Average"), "nothing in view: None")
-        XCTAssertEqual(LiveMaths.headline(.heartRate, range: .day, points: []).parts, [])
+        XCTAssertEqual(LiveMaths.headline(.restingHeartRate, range: .day, points: []).parts, [])
     }
 
     // MARK: Cards
@@ -72,7 +68,7 @@ final class LiveMathsTests: XCTestCase {
     func testACardShowsTheNewestDayAndAWeekOfTrend_AC6() throws {
         let start = try at("2026-10-01T00:00:00Z")
         let days = (0..<10).map { LivePoint(start: start.addingTimeInterval(Double($0) * 86_400), value: Double(60 + $0)) }
-            + [LivePoint(start: start.addingTimeInterval(20 * 86_400), value: nil, low: 1, high: 2)]
+            + [LivePoint(start: start.addingTimeInterval(20 * 86_400), value: nil)]
         // Long after the last day, so the trend is the last seven readings (AC14).
         let (later, utc) = (try at("2026-12-01T00:00:00Z"), try calendar("UTC"))
         let card = try XCTUnwrap(LiveMaths.card(days: days.shuffled(), today: later, calendar: utc))
@@ -80,8 +76,6 @@ final class LiveMathsTests: XCTestCase {
         XCTAssertEqual(card.date, start.addingTimeInterval(9 * 86_400))
         XCTAssertEqual(card.trend, [63, 64, 65, 66, 67, 68, 69], "the last seven days, oldest first")
         XCTAssertNil(LiveMaths.card(days: [], today: later, calendar: utc), "no data: no card")
-        let heart = try XCTUnwrap(LiveMaths.card(days: days, latest: (value: 74, date: start), today: later, calendar: utc))
-        XCTAssertEqual(heart.value, 74, "heart rate's card is its newest sample")
     }
 
     /// AC14 (Brad 2026-10-25, as Apple Health): the last 30 days' readings, today and the 29
@@ -315,13 +309,10 @@ final class LiveMathsTests: XCTestCase {
         let calendar = try calendar("UTC")
         let now = try at("2026-10-25T12:00:00Z")
         let today = calendar.startOfDay(for: now)
-        let days = (0..<30).map { LivePoint(start: today.addingTimeInterval(Double(-$0) * 86_400), value: 60, low: 50, high: 120) }.reversed()
+        let days = (0..<30).map { LivePoint(start: today.addingTimeInterval(Double(-$0) * 86_400), value: 60) }.reversed()
         let geometry = LiveChartGeometry(range: .week, now: now, calendar: calendar, first: days.first?.start)
         let steps = LiveChartDescriptor(metric: .steps, points: Array(days), geometry: geometry, from: geometry.windowStart).makeChartDescriptor()
         XCTAssertEqual(steps.series.map(\.dataPoints.count), [7], "a week in view, not 30 days")
-        let heart = LiveChartDescriptor(metric: .heartRate, points: Array(days), geometry: geometry, from: geometry.windowStart).makeChartDescriptor()
-        XCTAssertEqual(heart.series.map(\.name), ["Lowest", "Highest"])
-        XCTAssertEqual(heart.series.map(\.dataPoints.count), [7, 7])
         let sleep = LiveMaths.nights((0..<30).map { back in
             let wake = today.addingTimeInterval(Double(-back) * 86_400 + 6 * 3600)
             return SleepSegment(stage: .core, start: wake.addingTimeInterval(-7 * 3600), end: wake, source: "watch")
@@ -410,8 +401,8 @@ final class LiveMathsTests: XCTestCase {
 
     /// The aggregation drives each metric's statistics, headline, mark and card rule.
     func testEachMetricsAggregation() {
-        XCTAssertEqual(LiveMetric.allCases.map(\.aggregation), [.range, .mean, .sum, .mean, .sum])
-        XCTAssertEqual(LiveMetric.allCases.map(\.opening), [.day, .week, .day, .sixMonths, .day])
+        XCTAssertEqual(LiveMetric.allCases.map(\.aggregation), [.mean, .sum, .mean, .sum])
+        XCTAssertEqual(LiveMetric.allCases.map(\.opening), [.week, .day, .sixMonths, .day])
     }
 
     func testCoveredCountsOverlapsOnce() {

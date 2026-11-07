@@ -186,10 +186,11 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'fiber': {
-    reason: 'Dietary fibre lowers cardiovascular risk through multiple mechanisms: reducing cholesterol absorption, improving blood sugar control, and supporting a healthy gut microbiome. A Cochrane review found that higher fibre intake significantly reduces cardiovascular events.',
+    reason: 'Dietary fibre may lower cardiovascular risk through several mechanisms: reducing cholesterol absorption, improving blood sugar control, and supporting a healthy gut microbiome. Large cohort studies link the highest fibre intakes with roughly 15–30% lower rates of heart disease, stroke and death than the lowest, and trials show fibre lowers cholesterol and blood pressure.',
     guidelines: [],
     references: [
-      { label: 'Hartley 2016 – Dietary fibre & cardiovascular disease (Cochrane Review)', url: 'https://doi.org/10.1002/14651858.CD011472.pub2' },
+      { label: 'Reynolds 2019 – Carbohydrate quality & human health (Lancet meta-analyses)', url: 'https://doi.org/10.1016/S0140-6736(18)31809-9' },
+      { label: 'Hartley 2016 – Fibre may lower cholesterol and diastolic blood pressure (Cochrane Review)', url: 'https://doi.org/10.1002/14651858.CD011472.pub2' },
     ],
   },
 
@@ -525,10 +526,11 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'screening-lung': {
-    reason: 'The USPSTF recommends annual low-dose CT screening for adults aged 50–80 with a smoking history of ≥20 pack-years (current or former smokers). Low-dose CT can detect lung cancer at an early, treatable stage, significantly reducing lung cancer mortality.',
-    guidelines: ['USPSTF 2021'],
+    reason: 'The American Cancer Society (2023) recommends annual low-dose CT screening for adults aged 50–80 who smoke or used to smoke and have a smoking history of 20 pack-years or more, however long ago they quit. The USPSTF (2021) also limits it to people who quit within the past 15 years; this plan follows the ACS because it does not ask when you quit. Low-dose CT can detect lung cancer at an early, treatable stage, significantly reducing lung cancer mortality. If a scan finds something that needs follow-up, the plan keeps that follow-up until it is done, even past age 80 or below 20 pack-years: finishing it is part of diagnosis, not routine screening.',
+    guidelines: ['ACS 2023', 'USPSTF 2021'],
     references: [
       ...REFS_SCREENING_ACS,
+      { label: 'Wolf 2023 – Screening for lung cancer: 2023 guideline update from the American Cancer Society (CA Cancer J Clin)', url: 'https://doi.org/10.3322/caac.21811' },
       { label: 'USPSTF – Lung Cancer Screening Recommendation', url: 'https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/lung-cancer-screening' },
     ],
   },
@@ -733,11 +735,6 @@ export const GUIDE_REFERENCES: SuggestionReference[] = [
   { label: 'Paluch 2022 – Daily steps & all-cause mortality: meta-analysis of 15 international cohorts (Lancet Public Health)', url: 'https://doi.org/10.1016/S2468-2667(21)00302-9' },
   { label: 'Watson 2015 – Recommended amount of sleep for a healthy adult: AASM and SRS consensus (J Clin Sleep Med)', url: 'https://doi.org/10.5664/jcsm.4758' },
   { label: 'Milanović 2015 – Interval versus continuous training for VO2 max: meta-analysis (Sports Med)', url: 'https://doi.org/10.1007/s40279-015-0365-0' },
-  // The heart rate guide's safety lines (Brad 2026-11-01). DOIs checked against PubMed on 2026-11-01.
-  { label: 'Gulati 2021 – AHA/ACC guideline for the evaluation and diagnosis of chest pain (Circulation)', url: 'https://doi.org/10.1161/CIR.0000000000001029' },
-  { label: 'NHS 2024 – Arrhythmia: when to call 999 or go to A&E (NHS website)', url: 'https://www.nhs.uk/conditions/arrhythmia/' },
-  { label: 'Kusumoto 2019 – 2018 ACC/AHA/HRS guideline on bradycardia and cardiac conduction delay (Circulation)', url: 'https://doi.org/10.1161/CIR.0000000000000628' },
-  { label: 'Apple 2026 – Monitor your heart rate with Apple Watch (Apple Support; how the watch measures)', url: 'https://support.apple.com/en-us/120277' },
   { label: 'Apple 2026 – HealthKit documentation: restingHeartRate (Apple Developer; how the estimate is made)', url: 'https://developer.apple.com/documentation/healthkit/hkquantitytypeidentifier/restingheartrate' },
   { label: 'Apple 2025 – Estimating Sleep Stages from Apple Watch (white paper; how the watch measures)', url: 'https://www.apple.com/health/pdf/Estimating_Sleep_Stages_from_Apple_Watch_Oct_2025.pdf' },
   { label: 'Apple 2026 – Track your cardio fitness levels (Apple Support; what feeds the estimate)', url: 'https://support.apple.com/en-us/108790' },

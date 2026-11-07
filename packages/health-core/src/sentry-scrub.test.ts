@@ -434,6 +434,26 @@ describe('scrubText', () => {
   });
 });
 
+describe('a typed short name (US-09 AC7, US-73 AC8)', () => {
+  // "vit" is a name since US-09 AC7g. A first try at it swallowed the next name's digits ("Vit. B12
+  // 300", "Vit D pending, B12 300") and left the value (US-73 review round 3); a name's gap now
+  // stops where another name starts.
+  it('a value after "B12" is scrubbed however "vit" is written before it', () => {
+    for (const text of ['Vit. B12 300', 'vit. b12 300', 'Vit  B12 300', 'vit.b12 300', 'vit-b12 300', 'vit_b12 300', 'vit:b12 300', 'vit\tb12 300', 'vit b12 300', 'vitamin b12 300', 'Vit D pending, B12 300']) {
+      expect(scrubText(text), text).not.toContain('300');
+    }
+    expect(scrubText('vitals ok')).toBe('vitals ok');
+  });
+
+  it('US-09 AC7g — "Vit D 45" is scrubbed, and words that hold "vit" are not names', () => {
+    expect(scrubText('Vit D 45')).toBe('Vit D [value]');
+    expect(scrubText('vit. d 45')).toBe('vit. d [value]');
+    expect(scrubText('Vit B12 300')).toBe('Vit B12 [value]');
+    expect(scrubText('multivit 2 daily')).toBe('multivit 2 daily');
+    expect(scrubText('vital signs 3 of 4')).toBe('vital signs 3 of 4');
+  });
+});
+
 describe('scrubEventText', () => {
   const AUDIT = 'My LDL is 3.2 mmol/L and I have diabetes';
 

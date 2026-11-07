@@ -30,7 +30,7 @@ const results = calculateHealthResults({ heightCm: 175, sex: 'male' });
 async function renderPlan(shopify: boolean) {
   vi.resetModules();
   vi.doMock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: shopify, LOCAL_FIRST: true }));
-  const { ResultsPanel } = await import('./ResultsPanel');
+  const { PlanHost: ResultsPanel } = await import('../testing/plan-host');
   return render(<ResultsPanel results={results} isValid tiles={results ? statTiles(results, { unitSystem: 'si' }) : []} formStage={2} />);
 }
 

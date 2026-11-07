@@ -54,8 +54,8 @@ export const US_SUPPLEMENT_DESCRIPTIONS: Readonly<Partial<Record<UsProductCardId
   'supplement-lutein-zeaxanthin': LUTEIN_PIGMENT,
 };
 
-/** Dietary advice for elevated lipids — shared between suggestion card and InputPanel medication cascade */
-export const LIPID_DIET_ADVICE = 'Specific foods can lower LDL cholesterol: oats, walnuts, almonds, ground flaxseed, edamame, and replacing butter with extra-virgin olive oil. If you don\'t have IBS or IBD, beans, lentils, chickpeas, and mixed vegetables are also great options. Psyllium husk is a soluble fibre that is well-tolerated even with IBS or IBD; discuss with your doctor whether it fits your routine.';
+/** Dietary advice for elevated lipids: the lipid-diet card's text. */
+const LIPID_DIET_ADVICE = 'Specific foods can lower LDL cholesterol: oats, walnuts, almonds, ground flaxseed, edamame, and replacing butter with extra-virgin olive oil. If you don\'t have IBS or IBD, beans, lentils, chickpeas, and mixed vegetables are also great options. Psyllium husk is a soluble fibre that is well-tolerated even with IBS or IBD; discuss with your doctor whether it fits your routine.';
 
 /** Format a metric value with its display unit, e.g. "5.7%", "39 mmol/mol" or a limit's "< 39 mmol/mol" (US-12 AC20). */
 function fmtMetric(metricType: MetricType, value: number, us: UnitSystem, comparator?: Comparator): string {
@@ -128,6 +128,9 @@ export function lipidTargetSentence(marker: LipidMarker, unitFor: (metric: Metri
   return `Your ${marker.label} is ${fmtMarkerValue(marker, u)}; the treatment target is below ${fmtLipidTarget(metric, marker.target, u)}.`;
 }
 
+/** The form's cholesterol intro says it after lipidTargetSentence (US-73 AC6, Brad 2026-11-05). */
+export const LIPID_MEDS_IN_STEPS = 'In addition to a great diet, cholesterol-lowering medications can also be added in steps.';
+
 /** Join a list the way the plan writes it: "a, b and c". */
 export function joinWithAnd(items: string[]): string {
   return items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
@@ -172,7 +175,10 @@ export function weightMedicationTrigger(inputs: HealthInputs, results: HealthRes
   const { bmi, waistToHeightRatio: whr } = results;
   if (bmi === undefined || bmi < 25) return { on: false, reasons: [] };
   const reasons: string[] = [];
-  if (inputs.hba1c !== undefined && inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) reasons.push('prediabetic HbA1c');
+  // A diabetic-range HbA1c is named as such, matching its urgent card (Brad 2026-11-06, US-06 AC6).
+  if (inputs.hba1c !== undefined && inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) {
+    reasons.push(inputs.hba1c >= HBA1C_THRESHOLDS.diabetes ? 'diabetic-range HbA1c' : 'prediabetic HbA1c');
+  }
   if (inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline) reasons.push('elevated triglycerides');
   if (isBpRaised(inputs.systolicBp, inputs.diastolicBp)) reasons.push('elevated blood pressure');
   const lipid = lipidMarkerFor(inputs, results);
@@ -311,21 +317,19 @@ export function generateSuggestions(
   }
 
   // Whether any atherogenic marker is at or above its on-treatment target, the
-  // marker's own test (used for lipid-diet and fiber suppression, US-07 AC5)
+  // marker's own test (used for lipid-diet, US-07 AC5)
   const hasElevatedLipids = atOrAboveTarget(inputs.apoB, LIPID_TREATMENT_TARGETS.apobGl)
     || atOrAboveTarget(results.nonHdlCholesterol, LIPID_TREATMENT_TARGETS.nonHdlMmol)
     || atOrAboveTarget(inputs.ldlC, LIPID_TREATMENT_TARGETS.ldlMmol);
 
-  // Fiber — show when lipid-diet is not active (lipid-diet covers fiber advice more specifically)
-  if (!hasElevatedLipids) {
-    suggestions.push({
-      id: 'fiber',
-      category: 'nutrition',
-      priority: 'info',
-      title: 'Maximize fiber intake',
-      description: 'Aim for 25-35g of fiber daily from whole grains, fruits, and vegetables. Increase gradually to avoid discomfort. If you have IBS or IBD, discuss appropriate fiber levels with your doctor.',
-    });
-  }
+  // Fiber — shown to everyone, lipid-diet or not (Brad 2026-11-05)
+  suggestions.push({
+    id: 'fiber',
+    category: 'nutrition',
+    priority: 'info',
+    title: 'Maximize fiber intake',
+    description: 'Aim for 25-35g of fiber daily from whole grains, fruits, and vegetables. Increase gradually to avoid discomfort. If you have IBS or IBD, discuss appropriate fiber levels with your doctor.',
+  });
 
   // High-potassium diet — only when eGFR ≥ 45 (safe kidney function), from an eGFR no newer
   // creatinine has outdated (US-07 AC8): potassium advice errs on the cautious side.
@@ -962,10 +966,16 @@ export function generateSuggestions(
       }
     }
 
-    // Lung (age 50-80, smokers with 20+ pack-years — USPSTF 2021)
-    if (age >= 50 && age <= 80 &&
-        (screenings.lungSmokingHistory === 'former_smoker' || screenings.lungSmokingHistory === 'current_smoker') &&
-        screenings.lungPackYears !== undefined && screenings.lungPackYears >= LUNG_PACK_YEARS) {
+    // Lung (age 50-80, smokers with 20+ pack-years — ACS 2023). Below 20 or past 80, an abnormal CT
+    // keeps its follow-up card until the follow-up is completed (US-07 AC1f, AC1g; Brad 2026-11-03).
+    const lungSmoker = age >= 50 &&
+        (screenings.lungSmokingHistory === 'former_smoker' || screenings.lungSmokingHistory === 'current_smoker');
+    if (lungSmoker && (age > 80 || screenings.lungPackYears === undefined || screenings.lungPackYears < LUNG_PACK_YEARS)) {
+      const followup = screenings.lungScreening && screenings.lungScreening !== 'not_yet_started' && screenings.lungLastDate
+        && screenings.lungResult === 'abnormal' && screenings.lungFollowupStatus !== 'completed'
+        && screeningFollowup('lung', screenings.lungScreening, screenings.lungResult, screenings.lungFollowupStatus, screenings.lungFollowupDate);
+      if (followup) suggestions.push(followup);
+    } else if (lungSmoker) {
       if (!screenings.lungScreening || screenings.lungScreening === 'not_yet_started') {
         suggestions.push({
           id: 'screening-lung',

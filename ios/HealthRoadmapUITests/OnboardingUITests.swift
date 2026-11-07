@@ -1,7 +1,7 @@
 import XCTest
 
 /// US-54 on screen: a fresh install goes from the welcome screen through the four
-/// questions to My plan. Run it on a fresh install (uninstall first): it writes the
+/// questions to My health. Run it on a fresh install (uninstall first): it writes the
 /// answers into the app's record, so never on a phone holding a real record.
 final class OnboardingUITests: XCTestCase {
     override func setUp() {
@@ -138,7 +138,7 @@ final class OnboardingUITests: XCTestCase {
 
         // The plan, not the form, and the flow does not come back (AC7).
         XCTAssertFalse(app.buttons["onboarding.continue"].waitForExistence(timeout: 2))
-        XCTAssertTrue(app.tabBars.buttons["My plan"].isSelected)
+        XCTAssertTrue(app.tabBars.buttons["My health"].isSelected)
         XCTAssertFalse(app.staticTexts[Self.tourLines[0]].waitForExistence(timeout: 2), "--ui-testing hides the tour (US-57 AC10)")
         snap(app, "7 plan")
         app.terminate()
@@ -147,42 +147,39 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertFalse(again.buttons["onboarding.continue"].exists)
     }
 
-    /// US-25 AC26 (Brad 2026-11-03): My plan has no title bar; "Your health snapshots" heads
-    /// the tiles and scrolls away with them, as the Next Steps heading does. The tab keeps its name.
+    /// US-73 AC1 (US-25 AC26): My health has no title bar; its title and the Weight & diabetes
+    /// heading scroll away with the page.
     @MainActor
-    func testThePlanHeadsItsSnapshotsAndHasNoTitleBar_US25_AC26() throws {
+    func testMyHealthHasNoTitleBarAndItsHeadingsScroll_US73_AC1() throws {
         let app = launch()
         try answerUpToWeight(app)
         answerWeight(app)
 
-        XCTAssertTrue(app.tabBars.buttons["My plan"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.tabBars.buttons["My plan"].isSelected, "the tab still says My plan")
-        let heading = app.staticTexts["Your health snapshots"]
-        XCTAssertTrue(heading.waitForExistence(timeout: 10), "the snapshots heading")
-        XCTAssertFalse(app.navigationBars.firstMatch.exists, "no title bar over the plan")
-        let tile = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Ideal Body Weight'")).firstMatch
-        XCTAssertTrue(tile.exists, "a tile")
-        XCTAssertLessThanOrEqual(heading.frame.maxY, tile.frame.minY, "the heading sits above the tiles")
-        snap(app, "plan heading top")
+        XCTAssertTrue(app.tabBars.buttons["My health"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.tabBars.buttons["My health"].isSelected, "onboarding ends on My health")
+        let heading = app.staticTexts["Weight & diabetes"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 10), "the first section's heading")
+        XCTAssertFalse(app.navigationBars.firstMatch.exists, "no title bar")
+        XCTAssertTrue(app.buttons["Settings"].exists, "the person button")
+        snap(app, "my health top")
 
-        // It scrolls with the plan, as the section headings do.
         let top = heading.frame.minY
         app.swipeUp()
         XCTAssertTrue(!heading.isHittable || heading.frame.minY < top - 40, "the heading scrolled away")
-        snap(app, "plan heading scrolled")
+        snap(app, "my health scrolled")
     }
 
     /// US-57's three tips, word for word (Brad 2026-10-25).
     static let tourLines = [
-        "A snapshot of your health. Tap any tile to learn more.",
-        "Start here. Each step comes with the reason and the evidence.",
+        "Your numbers, grouped by topic. Tap any row for its history and what it means.",
+        "Each step comes with the reason and the evidence. Tap a card to read it.",
         "The more data you add, the more personal your plan. You can upload lab reports to fill these in for you.",
     ]
 
-    /// US-57: after onboarding, the three tips in order, one at a time, each with "Skip
-    /// tour", its counter and "Next"; tip 2's "Next" opens My data at Blood tests, where
-    /// tip 3's "Done" ends the tour for good; a tile explains itself (AC1-AC7; Brad
-    /// 2026-10-25, review R5).
+    /// US-57 (US-73 AC11): after onboarding, the three tips in order on My health, one at a
+    /// time, each with "Skip tour", its counter and "Next"; tip 3 brings Blood tests into view
+    /// and its "Done" ends the tour for good; a tile's explainer lives on its row's page
+    /// (AC1-AC7; Brad 2026-10-25, review R5; US-73 AC9).
     @MainActor
     func testTheTourWalksItsThreeTips_US57() throws {
         let app = launch(tips: true)
@@ -192,7 +189,7 @@ final class OnboardingUITests: XCTestCase {
         let snapshot = app.staticTexts[Self.tourLines[0]]
         let foundation = app.staticTexts[Self.tourLines[1]]
         let bloodTests = app.staticTexts[Self.tourLines[2]]
-        XCTAssertTrue(snapshot.waitForExistence(timeout: 10), "tip 1 shows on My plan after onboarding")
+        XCTAssertTrue(snapshot.waitForExistence(timeout: 10), "tip 1 shows on My health after onboarding")
         XCTAssertFalse(foundation.exists, "one tip at a time")
         XCTAssertTrue(app.buttons["Skip tour"].exists, "the tour can be skipped")
         XCTAssertTrue(app.staticTexts["Tip 1 of 3"].exists, "VoiceOver reads the counter in words")
@@ -208,13 +205,12 @@ final class OnboardingUITests: XCTestCase {
 
         XCTAssertTrue(foundation.waitForExistence(timeout: 10), "tip 2 follows tip 1")
         XCTAssertTrue(app.staticTexts["Tip 2 of 3"].exists)
-        XCTAssertTrue(app.tabBars.buttons["My plan"].isSelected, "tip 2 is on My plan")
         snap(app, "tour 2 foundation")
         tapNext(app)
 
-        // Tip 2's Next crosses to My data and brings Blood tests into view: no swipe here.
-        XCTAssertTrue(bloodTests.waitForExistence(timeout: 10), "tip 3 shows at Blood tests on My data")
-        XCTAssertTrue(app.tabBars.buttons["My data"].isSelected, "Next opened My data")
+        // Tip 3 brings Blood tests into view: no swipe here.
+        XCTAssertTrue(bloodTests.waitForExistence(timeout: 10), "tip 3 shows at Blood tests")
+        XCTAssertTrue(app.tabBars.buttons["My health"].isSelected, "the whole tour is on My health")
         XCTAssertTrue(app.staticTexts["Tip 3 of 3"].exists)
         XCTAssertTrue(app.buttons["Add a lab report"].exists, "tip 3 keeps its lab upload")
         snap(app, "tour 3 blood tests")
@@ -225,27 +221,27 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["Add medical records"].waitForExistence(timeout: 2), "Done opens nothing")
 
         // Back at the Blood tests header, on screen: the tour has ended (review R5).
-        app.tabBars.buttons["My plan"].tap()
-        app.tabBars.buttons["My data"].tap()
-        XCTAssertTrue(scrollTo(app.staticTexts["Blood tests"], in: app), "the header tip 3 anchors to is on screen")
+        app.tabBars.buttons["Chat"].tap()
+        app.tabBars.buttons["My health"].tap()
+        XCTAssertTrue(scrollTo(app.staticTexts["Blood tests"].firstMatch, in: app), "the header tip 3 anchors to is on screen")
         XCTAssertFalse(bloodTests.waitForExistence(timeout: 3), "tip 3 never shows again")
 
-        // Every tile explains itself, for good (AC5).
-        app.tabBars.buttons["My plan"].tap()
-        let tile = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Ideal Body Weight'")).firstMatch
-        // Clear of the clock: with no title bar a tile half under it still reads as hittable (US-25 AC26).
-        for _ in 0..<4 where !tile.isHittable || tile.frame.minY < 100 { app.swipeDown() }
-        tile.tap()
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'A healthy weight for your height and sex'")).firstMatch.waitForExistence(timeout: 5),
-                      "the tile's what-it-is")
+        // A tile's explainer is on its row's page, for good (US-57 AC5, US-73 AC9).
+        for _ in 0..<12 where !app.staticTexts["Weight & diabetes"].isHittable { app.swipeDown() }
+        let weight = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Weight,'")).firstMatch
+        XCTAssertTrue(weight.waitForExistence(timeout: 5), "the weight row")
+        weight.tap()
+        let explainer = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'A healthy weight for your height and sex'")).firstMatch
+        for _ in 0..<6 where !explainer.exists { app.swipeUp() }
+        XCTAssertTrue(explainer.waitForExistence(timeout: 5), "ideal weight's what-it-is, on the weight page")
         snap(app, "tour tile explainer")
-        app.buttons["Done"].tap()
+        app.navigationBars.buttons.firstMatch.tap()
         XCTAssertFalse(snapshot.waitForExistence(timeout: 2), "tip 1 never shows again")
     }
 
     /// A tap outside a tip only dismisses it and counts as closed, so the tour moves on
-    /// without switching tabs (review R2a); tip 3 then waits for My data, which brings it
-    /// into view, and its action opens the lab upload and ends the tour (AC2, AC7).
+    /// without switching tabs (review R2a); tip 3 brings Blood tests into view, and its
+    /// action opens the lab upload and ends the tour (AC2, AC7).
     @MainActor
     func testATapOutsideMovesOnAndTipThreeOpensTheLabUpload_US57() throws {
         let app = launch(tips: true)
@@ -258,22 +254,20 @@ final class OnboardingUITests: XCTestCase {
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8)).tap()
         XCTAssertTrue(snapshot.waitForNonExistence(timeout: 5))
         XCTAssertTrue(foundation.waitForExistence(timeout: 10), "a tap outside tip 1 moves on to tip 2")
+        // Above any popover; the list scrolls to its top, then tip 3 brings Blood tests back into view.
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08)).tap()
         XCTAssertTrue(foundation.waitForNonExistence(timeout: 5))
-        XCTAssertTrue(app.tabBars.buttons["My plan"].isSelected, "a tap outside never switches tabs")
-        app.swipeDown()
-        XCTAssertFalse(foundation.waitForExistence(timeout: 3), "tip 2 does not come back: the tour moved on")
-
-        app.tabBars.buttons["My data"].tap()
-        XCTAssertTrue(bloodTests.waitForExistence(timeout: 10), "tip 3 shows once My data opens, scrolled into view")
+        XCTAssertTrue(app.tabBars.buttons["My health"].isSelected, "a tap outside never switches tabs")
+        XCTAssertTrue(bloodTests.waitForExistence(timeout: 10), "tip 3 shows, scrolled into view")
+        XCTAssertFalse(foundation.exists, "tip 2 does not come back: the tour moved on")
         app.buttons["Add a lab report"].tap()
         XCTAssertTrue(app.staticTexts["Add medical records"].waitForExistence(timeout: 5), "the action opens the lab upload")
         snap(app, "tour lab upload")
         app.buttons["Close"].firstMatch.tap()
         XCTAssertTrue(app.staticTexts["Add medical records"].waitForNonExistence(timeout: 5))
-        app.tabBars.buttons["My plan"].tap()
-        app.tabBars.buttons["My data"].tap()
-        XCTAssertTrue(scrollTo(app.staticTexts["Blood tests"], in: app))
+        app.tabBars.buttons["Chat"].tap()
+        app.tabBars.buttons["My health"].tap()
+        XCTAssertTrue(scrollTo(app.staticTexts["Blood tests"].firstMatch, in: app))
         XCTAssertFalse(bloodTests.waitForExistence(timeout: 3), "the upload ended the tour: tip 3 never shows again")
     }
 
@@ -287,10 +281,9 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertTrue(snapshot.waitForExistence(timeout: 10))
         app.buttons["Skip tour"].tap()
         XCTAssertTrue(snapshot.waitForNonExistence(timeout: 5))
-        XCTAssertTrue(scrollTo(app.staticTexts["Foundation"], in: app), "the Foundation section, where tip 2 anchors, is on screen")
+        XCTAssertTrue(app.staticTexts["Weight & diabetes"].exists, "Weight & diabetes, where tip 2 anchors, is on screen")
         XCTAssertFalse(app.staticTexts[Self.tourLines[1]].waitForExistence(timeout: 3), "no tip 2")
-        app.tabBars.buttons["My data"].tap()
-        XCTAssertTrue(scrollTo(app.staticTexts["Blood tests"], in: app), "the Blood tests header is on screen")
+        XCTAssertTrue(scrollTo(app.staticTexts["Blood tests"].firstMatch, in: app), "the Blood tests header is on screen")
         XCTAssertFalse(app.staticTexts[Self.tourLines[2]].waitForExistence(timeout: 3), "no tip 3")
     }
 
@@ -324,10 +317,10 @@ final class OnboardingUITests: XCTestCase {
         let app = launch()
         try answerUpToWeight(app)
         answerWeight(app)
-        XCTAssertTrue(app.tabBars.buttons["My plan"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.tabBars.buttons["My health"].waitForExistence(timeout: 10))
         let prompt = app.staticTexts["Back up your record"]
         XCTAssertFalse(prompt.waitForExistence(timeout: 3), "onboarding's answers are not the person's saves")
-        app.tabBars.buttons["My data"].tap()
+        openSettings(app)
         // About you's sex switch (a segmented control); a bare "Male" query matched an
         // element that took no tap, so only the first of three edits landed.
         let sex = app.segmentedControls.containing(.button, identifier: "Male").firstMatch
@@ -338,12 +331,16 @@ final class OnboardingUITests: XCTestCase {
         pick(female, in: sex)
         XCTAssertFalse(prompt.waitForExistence(timeout: 3), "two saves are not enough")
         pick(male, in: sex)
-        XCTAssertTrue(prompt.waitForExistence(timeout: 8), "the third own save offers the cloud copy")
+        XCTAssertFalse(prompt.waitForExistence(timeout: 3), "never over the settings sheet")
+        app.buttons["Done"].firstMatch.tap()
+        XCTAssertTrue(prompt.waitForExistence(timeout: 8), "the third own save offers the cloud copy once Settings closes")
         snap(app, "cloud prompt")
         app.buttons["backup.notNow"].tap()
         XCTAssertTrue(prompt.waitForNonExistence(timeout: 5))
+        openSettings(app)
         pick(female, in: sex)
-        app.tabBars.buttons["My plan"].tap()
+        app.buttons["Done"].firstMatch.tap()
+        app.tabBars.buttons["Chat"].tap()
         XCTAssertFalse(prompt.waitForExistence(timeout: 4), "once only")
     }
 
@@ -369,6 +366,15 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [shown], timeout: 5), .completed, "\(segment.label) shows as picked")
     }
 
+    /// Opens the settings sheet behind My health's person button (US-73 AC1).
+    @MainActor
+    private func openSettings(_ app: XCUIApplication) {
+        let settings = app.buttons["Settings"].firstMatch
+        for _ in 0..<12 where !settings.isHittable { app.swipeDown() }
+        settings.tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5), "the settings sheet")
+    }
+
     /// Scrolls the screen until `element` can be tapped.
     @MainActor
     private func scrollTo(_ element: XCUIElement, in app: XCUIApplication) -> Bool {
@@ -385,23 +391,22 @@ final class OnboardingUITests: XCTestCase {
         next.tap()
     }
 
-    /// The plan follows an edit made on My data while it was hidden (US-25 AC6): it
-    /// plans again on return, and never shows the older plan.
+    /// The plan follows an edit made in Settings (US-25 AC6): My health plans again and never
+    /// shows the older plan.
     @MainActor
-    func testThePlanFollowsAnEditMadeOnMyData_US25_AC6() throws {
+    func testThePlanFollowsAnEditMadeInSettings_US25_AC6() throws {
         let app = launch()
         try answerUpToWeight(app)
         answerWeight(app)
-        let cervical = app.staticTexts["Start cervical cancer screening"]
-        XCTAssertTrue(cervical.waitForExistence(timeout: 10), "a woman's plan offers cervical screening")
-        app.tabBars.buttons["My data"].tap()
+        let cervical = app.staticTexts["Cervical"]
+        XCTAssertTrue(scrollTo(cervical, in: app), "a woman's plan asks about cervical screening")
+        openSettings(app)
         let male = app.buttons["Male"].firstMatch
-        var tries = 0
-        while !male.isHittable && tries < 15 { app.swipeUp(); tries += 1 }
+        XCTAssertTrue(male.waitForExistence(timeout: 5))
         male.tap()
-        app.tabBars.buttons["My plan"].tap()
-        XCTAssertTrue(app.staticTexts["Next Steps"].waitForExistence(timeout: 10) || app.staticTexts["Foundation"].waitForExistence(timeout: 5))
-        XCTAssertFalse(cervical.exists, "the plan was worked out again for a man")
+        app.buttons["Done"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["Cancer screening"].waitForExistence(timeout: 10) || app.staticTexts["Weight & diabetes"].waitForExistence(timeout: 5))
+        XCTAssertFalse(cervical.waitForExistence(timeout: 3), "the plan was worked out again for a man")
         snap(app, "8 plan after edit")
     }
 
@@ -415,7 +420,7 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertGreaterThan(start.frame.height, 70, "the largest text size is applied")
         try answerUpToWeight(app, reachable: true, shots: "large ")
         answerWeight(app, reachable: true)
-        XCTAssertTrue(app.tabBars.buttons["My plan"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.tabBars.buttons["My health"].waitForExistence(timeout: 10))
     }
 
     /// The unit switches are for entry only (AC6): a typed height converts, weight still
@@ -450,12 +455,12 @@ final class OnboardingUITests: XCTestCase {
         weightUnits.buttons[metricRecord ? "lb" : "kg"].tap()
         weight.typeText(metricRecord ? "154" : "70")
         app.buttons["onboarding.continue"].tap()
-        XCTAssertTrue(app.tabBars.buttons["My plan"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.tabBars.buttons["My health"].waitForExistence(timeout: 10))
 
-        app.tabBars.buttons["My data"].tap()
-        // The weight card reads as one combined label ("Weight, …, 69.9, kg"), so match the number.
+        // The weight row reads as one combined label ("Weight, …, 69.9, kg"), so match the number.
         let saved = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", metricRecord ? "69.9" : "154")).firstMatch
         XCTAssertTrue(saved.waitForExistence(timeout: 10), "the weight is saved as the right weight, in the record's units")
+        openSettings(app)
         let us = app.buttons["US"]
         var tries = 0
         while !us.isHittable && tries < 15 { app.swipeUp(); tries += 1 }
@@ -475,8 +480,9 @@ final class OnboardingUITests: XCTestCase {
         return seen.map { $0.replacingOccurrences(of: "UIA.Health.Read.", with: "").replacingOccurrences(of: ".SwitchCell.Switch", with: "") }.sorted()
     }
 
-    /// Everything the app reads, in one sheet (US-54 AC3, US-56 AC4, Brad 2026-10-26).
-    private let everything = ["BloodPressure", "CardioFitness", "DateofBirth", "HeartRate", "Height", "RestingHeartRate", "Sex", "Sleep", "Steps", "WaistCircumference", "Weight"]
+    /// Everything the app reads, in one sheet (US-54 AC3, US-56 AC4, Brad 2026-10-26); no heart
+    /// rate since its card went (US-73).
+    private let everything = ["BloodPressure", "CardioFitness", "DateofBirth", "Height", "RestingHeartRate", "Sex", "Sleep", "Steps", "WaistCircumference", "Weight"]
 
     /// "Connect Apple Health" shows Apple's Health sheet once, asking for everything the app
     /// reads: onboarding's record types and US-56's five (AC3, US-56 AC4). The sheet runs in
@@ -493,7 +499,7 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertTrue(allow.waitForExistence(timeout: 5))
         XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Next, Apple asks for access. Turn everything on, then tap Allow.")).firstMatch.exists,
                       "the hint above the button says what Apple's sheet asks (Brad 2026-10-25)")
-        XCTAssertTrue(app.staticTexts["It also shows your heart rate, sleep, VO2 max and steps here, never in your record."].exists,
+        XCTAssertTrue(app.staticTexts["It also shows your resting heart rate, sleep, VO2 max and steps here, never in your record."].exists,
                       "the page names US-56's five too (adversary R5)")
         snap(app, "health hint")
         allow.tap()
@@ -504,18 +510,18 @@ final class OnboardingUITests: XCTestCase {
     }
 
     /// US-56 AC4, AC5 (2026-10-26): no access card and no second way in. After onboarding's
-    /// "Not now", Vitals shows no Turn On row; My data's own "Connect Apple Health" row runs
+    /// "Not now", My health shows no Turn On row; Settings' own "Connect Apple Health" row runs
     /// the same one request, for everything.
     @MainActor
     func testAfterNotNowMyDataConnectAsksForEverythingInOneSheet_US56_AC4_AC5() throws {
         let app = launch()
         try answerUpToWeight(app)
         answerWeight(app)
-        XCTAssertTrue(app.tabBars.buttons["My data"].waitForExistence(timeout: 10))
-        app.tabBars.buttons["My data"].tap()
-        let connect = app.buttons["Connect Apple Health"]
-        XCTAssertTrue(scrollTo(connect, in: app), "My data's Apple Health row")
+        XCTAssertTrue(app.tabBars.buttons["My health"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.buttons["Turn On"].exists, "no Turn On row while not connected")
+        openSettings(app)
+        let connect = app.buttons["Connect Apple Health"]
+        XCTAssertTrue(scrollTo(connect, in: app), "Settings' Apple Health row")
         XCTAssertFalse(app.buttons["Show from Apple Health"].exists, "no access card")
         snap(app, "us56 my data connect")
         connect.tap()
@@ -534,9 +540,10 @@ final class OnboardingUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "-welcomed", "YES", "-onboarded", "YES"]
         app.launch()
-        XCTAssertTrue(app.tabBars.buttons["My data"].waitForExistence(timeout: 60))
+        XCTAssertTrue(app.tabBars.buttons["My health"].waitForExistence(timeout: 60))
+        openSettings(app)
         let connect = app.buttons["Connect Apple Health"]
-        XCTAssertTrue(scrollTo(connect, in: app), "My data's Apple Health row")
+        XCTAssertTrue(scrollTo(connect, in: app), "Settings' Apple Health row")
         let sheet = XCUIApplication(bundleIdentifier: "com.apple.HealthPrivacyService")
         let all = sheet.cells["UIA.Health.AuthSheet.AllCategoryButton"]
         // Under load a tap during the scroll's last frames is lost: tap again until the sheet shows.
@@ -553,15 +560,16 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertTrue(ok.waitForExistence(timeout: 30), "Apple's note after Don't Allow")
         tap(ok, in: sheet)
         app.activate()
+        app.buttons["Done"].firstMatch.tap()
 
-        // The row is in Vitals, at the top; the list draws only the rows near the screen.
+        // The row is under Fitness; the list draws only the rows near the screen.
         let open = app.buttons["Open Settings"]
-        for _ in 0..<12 where !open.waitForExistence(timeout: 5) { app.swipeDown() }
+        for _ in 0..<12 where !open.waitForExistence(timeout: 5) { app.swipeUp() }
         XCTAssertTrue(open.waitForExistence(timeout: 30), "the row says Open Settings")
         XCTAssertFalse(app.buttons["Reconnect"].exists, "never Reconnect")
         // iOS 18 moved Health under Settings › Apps; the app runs from iOS 17.
         let apps = (Int(UIDevice.current.systemVersion.split(separator: ".").first ?? "") ?? 0) >= 18 ? "Apps › " : ""
-        let line = "Heart rate, sleep, VO2 max and steps can show here from Apple Health. The Apple Health settings for this app are in Settings › \(apps)Health › Data Access & Devices › Health Roadmap."
+        let line = "Resting heart rate, sleep, VO2 max and steps can show here from Apple Health. The Apple Health settings for this app are in Settings › \(apps)Health › Data Access & Devices › Health Roadmap."
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label == %@", line)).firstMatch.exists,
                       "the row's words and where Apple Health's settings are, read as one")
         snap(app, "us56 open settings row")
@@ -587,7 +595,7 @@ final class OnboardingUITests: XCTestCase {
         let app = launch()
         try answerUpToWeight(app)
         answerWeight(app)
-        app.tabBars.buttons["My data"].tap()
+        openSettings(app)
         // Units other than the region's: the erase keeps them, and so must the questions (Codex R1).
         // The Units row sits low in About you, so scroll to it first.
         let delete = app.buttons["Delete all my data"]
@@ -620,7 +628,7 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertEqual(app.textFields["onboarding.feet"].exists, us, us ? "US units kept" : "metric kept")
     }
 
-    /// Quitting at the weight question resumes there, not on My data (AC7).
+    /// Quitting at the weight question resumes there, not on My health (AC7).
     @MainActor
     func testQuittingAtWeightResumesThere_AC7() throws {
         let app = launch()

@@ -559,8 +559,8 @@ describe('US-32 — get_plan', () => {
     const ids = JSON.parse(ok(getPlan(file, NOW)).text).suggestions.map((s: { id: string }) => s.id);
     // protein-target, exercise and sleep rest on no measurement at all; the
     // screening, skin and supplement cards follow from sex and age; fiber shows
-    // whenever lipids are not elevated, absent included. Every other card needs
-    // a value, so an assistant reading a thin plan knows the difference.
+    // on every plan (Brad 2026-11-05). Every other card needs a value, so an
+    // assistant reading a thin plan knows the difference.
     expect(ids).toEqual(expect.arrayContaining(['protein-target', 'exercise', 'sleep', 'fiber']));
     expect(ids).not.toContain('lipid-diet');
   });
@@ -818,6 +818,15 @@ describe('US-32 — correct_value', () => {
     const again = correctValueTool(first.file!, { id: 'm1', newValue: 2.2 }, NOW);
     expect(again.status).toBe('rejected');
     expect(again.text).toContain('entered-in-error');
+  });
+
+  // US-21 AC26 (review round 1): an agent's correction is checked as the apps' add is.
+  it('refuses a catalogued lab value past its plausible range, and writes nothing', () => {
+    const slip = correctValueTool(base(), { id: 'l1', newValue: 600000, unit: 'ng/mL' }, NOW);
+    expect(slip.status).toBe('rejected');
+    expect(slip.text).toContain('600,000 ng/mL is 600,000 µg/L. Ferritin above 500,000 µg/L is almost certainly a typing or unit mistake');
+    expect((slip as { file?: RoadmapFile }).file).toBeUndefined();
+    expect(ok(correctValueTool(base(), { id: 'l1', newValue: 250 }, NOW)).file).toBeDefined();
   });
 });
 
@@ -1248,6 +1257,8 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
     }
     // The title is guarded too, not just the detail.
     expect(reportFeedback({ ...GOOD, title: 'ferritin 210 ng/mL rejected' }, NOW).status).toBe('rejected');
+    // A short name with no unit: "Vit" is how people type vitamin (US-73 AC8).
+    expect(reportFeedback({ ...GOOD, detail: 'Vit D 45' }, NOW)).toMatchObject({ status: 'rejected', reason: 'health-value' });
   });
 
   it('refuses a bare number beside a name this record knows — the unit is not what makes it a value', () => {

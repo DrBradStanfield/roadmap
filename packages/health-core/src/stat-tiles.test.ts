@@ -104,7 +104,7 @@ describe('eGFR, Lp(a) and HbA1c tiles', () => {
     [75, 'Normal', 'normal'], [65, 'Low Normal', 'info'], [50, 'Mildly to Moderately Decreased', 'attention'],
     [35, 'Moderately to Severely Decreased', 'attention'], [20, 'Severely Decreased', 'urgent'], [10, 'Kidney Failure', 'urgent'],
   ])('eGFR %s is %s', (eGFR, label, tone) => {
-    expect(tile({ eGFR }, 'egfr')).toMatchObject({ label: 'eGFR', value: String(eGFR), unit: 'mL/min', status: { label, tone } });
+    expect(tile({ eGFR }, 'egfr')).toMatchObject({ label: 'eGFR', value: String(eGFR), unit: 'mL/min/1.73m²', status: { label, tone } });
   });
 
   it.each([[60.4, '60', 'Normal', 'normal'], [100, '100', 'Borderline', 'info'], [130, '130', 'Elevated', 'attention']])('Lp(a) %s', (lpa, value, label, tone) => {
@@ -187,6 +187,6 @@ describe('statTileText', () => {
     expect(statTileText(t.bmi)).toBe('22');
     expect(statTileText(t.ibw)).toBe('70.5 kg');
     expect(statTileText(t.protein)).toBe('85g/day');
-    expect(statTileText(t.egfr)).toBe('80 mL/min');
+    expect(statTileText(t.egfr)).toBe('80 mL/min/1.73m²');
   });
 });

@@ -60,7 +60,6 @@ export {
   isScreeningEligible,
   // Supplement options
   SUPPLEMENT_OPTIONS,
-  FEATURED_SUPPLEMENTS,
   // Database encoding helpers
   SEX_DB,
   UNIT_SYSTEM_DB,
@@ -93,10 +92,10 @@ export {
 } from './calculations';
 
 // Suggestions
-export { generateSuggestions, REDUCE_ALCOHOL_ID, LIPID_DIET_ADVICE, lipidMarkerFor, lipidTargetSentence, medicinesShown, weightMedicationTrigger, weightMedIntro } from './suggestions';
+export { generateSuggestions, REDUCE_ALCOHOL_ID, LIPID_MEDS_IN_STEPS, lipidMarkerFor, lipidTargetSentence, medicinesShown, weightMedicationTrigger, weightMedIntro } from './suggestions';
 export type { LipidMarker, WeightMedicationTrigger } from './suggestions';
 export { weightCascade, lipidCascade } from './medication-cascades';
-export { planSections, type PlanSection, type PlanCard, type PlanSectionKey } from './plan-sections';
+export { planSections, topicSections, TOPICS, type PlanSection, type PlanCard, type PlanSectionKey, type TopicCard, type TopicId, type TopicLayout, type TopicSection } from './plan-sections';
 
 // Validation
 export {
@@ -214,6 +213,7 @@ export {
   LPA_THRESHOLDS,
   waistToHeightRatio,
   isWaistToHeightElevated,
+  WHTR_TARGET,
   elevatedWaistFromCm,
   bpTargetFor,
   formatTargetLine,
@@ -265,7 +265,7 @@ export type { RefHint, SexedRefHint } from './reference-hints';
 export { REFERENCE_HINTS, refLineFor } from './reference-hints';
 export { type Grading, type RowTarget, type RowTargetPlan, type RowSubject, TARGET_NEEDS_HEIGHT, TARGET_NEEDS_SEX, healthyWaistBelow, rowTarget } from './row-target';
 export { type GradeStatus, type GradeContext, statusOf, bpStatus, valueStatus, pressureStatus, type PressureReading, gradeWords, savedStatus, limitUngraded } from './row-grade';
-export { type CellUnit, isLpaUnit, recordLpaUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel, cellRange, cellNumber, limitCellText } from './cell-unit';
+export { type CellUnit, isLpaUnit, recordLpaUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel, cellRange, cellNumber, labRangeMessage, limitCellText, rangeMessage } from './cell-unit';
 
 // Sentry PII/PHI scrubbing
 export {
@@ -442,6 +442,7 @@ export {
   fetchOrFail,
   jsonBody,
   sleepUntilAborted,
+  timeoutDeadline,
   catchUpAfterFailure,
   type StorageAdapter,
   type StorageBackendId,
@@ -494,12 +495,12 @@ export { IMPORT_LIMITS } from './import-hints';
 export {
   MEDICATION_TEXT, SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, SUPPLEMENT_TEXT, SUPPLEMENT_DOSE_UNITS,
   optionsShowing, escalationOptions, doseOptions, medicationForm, medicationWrites, screeningForm, screeningWrites,
-  screeningMonths, readScreening, followupName, followupDateLabel, anyScreeningEligible, dexaEligible, customSupplementAdd, customSupplementMatch,
+  screeningMonths, readScreening, followupName, followupDateLabel, anyScreeningEligible, dexaEligible, lungGroupShown, lungScreeningAsked, customSupplementAdd, customSupplementMatch,
   type FormOption, type FormField, type FormGroup, type FormSection, type MedicationBasis,
 } from './input-form';
 
 // US-07 AC7: the lab's printed eGFR, when it is the plan's.
-export { labEgfrFrom, labEgfrOf, withLabEgfr, type LabEgfr } from './plan';
+export { egfrSeries, labEgfrFrom, labEgfrOf, whtrSeries, withLabEgfr, type EgfrPoint, type LabEgfr, type WhtrPoint } from './plan';
 // US-07 AC11: the one strip of refused inputs every plan caller shares.
 export { planInputsFrom } from './plan';
 

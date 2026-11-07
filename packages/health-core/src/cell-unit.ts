@@ -73,3 +73,24 @@ export function cellRange(metric: MetricType, unit: CellUnit): ValidationRange {
   const range = UNIT_DEFS[metric].validationRange.si; // Lp(a)'s canonical unit is its SI one
   return { ...range, min: cellFromSI(metric, range.min, unit), max: cellFromSI(metric, range.max, unit) };
 }
+
+/** The words for a number past one end of the metric's range, in `display` units: the web's
+ *  matrix and lab add, and the iPhone's add by name (US-66 AC6). */
+export function rangeMessage(metric: MetricType, display: CellUnit, fault: 'above' | 'below'): string {
+  const range = cellRange(metric, display);
+  const unit = cellLabel(metric, display);
+  return fault === 'below' ? `${range.minExclusive ? 'Must be above' : 'Min'} ${range.min} ${unit}` : `Max ${range.max} ${unit}`;
+}
+
+/** `rangeMessage` for a value typed in a printed unit (a lab add by name): the range in that
+ *  unit, Lp(a)'s own when it is one of its three (mg/L reads "Max 3000 mg/L", not mg/dL's).
+ *  Null when the metric does not take the unit. */
+export function labRangeMessage(metric: MetricType, typedUnit: string, fault: 'above' | 'below'): string | null {
+  const alias = lookupUnit(metric, typedUnit);
+  if (!alias) return null;
+  const same = (unit: LpaUnit) => {
+    const own = lookupUnit(metric, unit);
+    return own?.system === alias.system && (own.scale ?? 1) === (alias.scale ?? 1);
+  };
+  return rangeMessage(metric, (metric === 'lpa' && LPA_UNITS.find(same)) || alias.system, fault);
+}

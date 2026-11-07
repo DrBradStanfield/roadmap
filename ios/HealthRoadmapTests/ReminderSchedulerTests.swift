@@ -12,6 +12,8 @@ final class ReminderSchedulerTests: XCTestCase {
     private var folder: URL!
     private var engineOutput: PhoneReminders!
     private var engineFails = false
+    /// What the scheduler passed the engine as kept first-seen days, call by call.
+    private var sentFirstSeen: [[String: String]] = []
 
     override func tearDown() async throws {
         try? FileManager.default.removeItem(at: folder)
@@ -23,10 +25,12 @@ final class ReminderSchedulerTests: XCTestCase {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         engineOutput = reminders(epoch: 0, days: ["2027-01-15", "2027-03-01"])
         engineFails = false
+        sentFirstSeen = []
     }
 
     private func scheduler() -> ReminderScheduler {
-        ReminderScheduler(center: center, folder: folder) { [unowned self] in
+        ReminderScheduler(center: center, folder: folder) { [unowned self] firstSeen in
+            sentFirstSeen.append(firstSeen)
             if engineFails { throw HealthEngine.EngineError.callFailed("unreadable") }
             return engineOutput
         }
@@ -227,6 +231,70 @@ final class ReminderSchedulerTests: XCTestCase {
         XCTAssertEqual(out.upcoming.map(\.category), ["annual_checkin"])
         XCTAssertEqual(out.upcoming.first?.dueAt, "2027-10-21")
         XCTAssertEqual(out.notifications.first?.id, "reminder.2027-10-21")
+    }
+
+    /// US-17 AC15: the day the phone first saw each follow-up reminder is kept beside
+    /// the opt-in and sent back, so the engine fires it that morning and then every
+    /// 90 days from it. Kept only on the phone; cleared while nothing is scheduled.
+    private var firstSeenKept: Bool {
+        FileManager.default.fileExists(atPath: folder.appending(path: "reminders-first-seen").path(percentEncoded: false))
+    }
+
+    /// US-17 AC15: kept across a relaunch and sent back to the engine.
+    func testFollowUpFirstSeenDaysAreKeptOnThePhoneAndSentBack() async {
+        engineOutput.firstSeen = ["screening_colorectal:organize": "2026-11-05"]
+        _ = await scheduler().optIn()
+        let relaunched = scheduler()
+        engineOutput.firstSeen = nil // an engine before them: what is kept stays as it is
+        await relaunched.refresh()
+        XCTAssertEqual(sentFirstSeen.last, ["screening_colorectal:organize": "2026-11-05"])
+        XCTAssertTrue(firstSeenKept)
+    }
+
+    /// US-17 AC15: turning reminders off clears them.
+    func testFirstSeenDaysClearWhenNothingIsScheduled() async {
+        engineOutput.firstSeen = ["screening_colorectal:organize": "2026-11-05"]
+        let scheduler = scheduler()
+        _ = await scheduler.optIn()
+        await scheduler.optOut()
+        await scheduler.refresh()
+        XCTAssertEqual(sentFirstSeen.last, [:], "turned back on, a follow-up fires once more on its first morning")
+        XCTAssertFalse(firstSeenKept)
+    }
+
+    /// US-17 AC15: turned off while the record cannot be read, they still clear, so turned on
+    /// again a follow-up fires on its first morning (Codex R1).
+    func testFirstSeenDaysClearOnOptOutEvenWhenTheEngineFails() async {
+        engineOutput.firstSeen = ["screening_colorectal:organize": "2026-11-05"]
+        let scheduler = scheduler()
+        _ = await scheduler.optIn()
+        XCTAssertTrue(firstSeenKept)
+        engineFails = true
+        await scheduler.optOut()
+        XCTAssertFalse(firstSeenKept)
+        engineFails = false
+        _ = await scheduler.optIn()
+        XCTAssertEqual(sentFirstSeen.last, [:], "nothing kept: the engine starts the follow-up on its first morning")
+    }
+
+    /// US-17 AC15: an erase ends the opt-in, and the first-seen days go with it.
+    func testAnEraseRemovesTheFirstSeenDays() async {
+        engineOutput.firstSeen = ["screening_colorectal:organize": "2026-11-05"]
+        let scheduler = scheduler()
+        _ = await scheduler.optIn()
+        XCTAssertTrue(firstSeenKept)
+        engineOutput = reminders(epoch: 1, days: ["2027-01-15"])
+        await scheduler.refresh()
+        XCTAssertFalse(firstSeenKept)
+    }
+
+    /// US-17 AC15: the real engine answers first-seen days when the app sends them.
+    func testTheEngineAnswersFirstSeenDaysWhenAsked() throws {
+        let engine = try HealthEngine()
+        let now = try Date("2026-10-21T08:00:00.000Z", strategy: .iso8601)
+        let record = try engine.blocking { [now] in try $0.newRecord(now: now, deviceId: "test", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "UTC")!) }
+        let out = try engine.blocking { [now] in try $0.reminders(recordJSON: record, now: now, deviceId: "test", firstSeen: [:]) }
+        XCTAssertEqual(out.firstSeen, [:], "no follow-up in a new record")
     }
 
     private func request(_ id: String) -> UNNotificationRequest {

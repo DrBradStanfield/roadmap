@@ -5,8 +5,8 @@
 // schema. Swift renders what comes out and sends answers back; it decides
 // nothing clinical.
 import { CORE_BLOOD_UNITS, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { isCoreRow } from '../../packages/health-core/src/blood-tests';
-import { computePlan, derivePlanInputs, type Plan } from '../../packages/health-core/src/plan';
+import { isActive, isCoreRow } from '../../packages/health-core/src/blood-tests';
+import { computePlan, derivePlanInputs, egfrSeries, whtrSeries, type Plan } from '../../packages/health-core/src/plan';
 import {
   SUPPLEMENT_DOSE_UNITS, SUPPLEMENT_TEXT, medicationForm, medicationWrites, screeningForm,
   screeningMonths, screeningWrites, type FormField, type FormSection,
@@ -19,7 +19,7 @@ import { localDay } from '../../packages/health-core/src/merge';
 import { METRIC_LABELS, METRIC_TO_FIELD } from '../../packages/health-core/src/mappings';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { isVersionMarker } from '../../packages/health-core/src/health-records-import';
-import type { MetricType } from '../../packages/health-core/src/units';
+import { WHTR_TARGET, type MetricType } from '../../packages/health-core/src/units';
 import { BLOOD_PRESSURE, pressureHistory } from './blood-pressure';
 import { cellUnitFor, systemFor, type UnitChoices } from './unit-choices';
 import type { EditOutcome } from './my-data';
@@ -37,8 +37,10 @@ export interface SupplementRow {
   name: string;
   dose: number | null;
   unit: string | null;
-  /** YYYY-MM-DD */
+  /** YYYY-MM-DD, the phone's own day (US-73 AC10b) */
   startedDay: string;
+  /** A stopped one's latest stop, YYYY-MM-DD on the phone; null when active or no stop is recorded. */
+  stoppedDay: string | null;
 }
 
 export interface SupplementsView {
@@ -86,6 +88,8 @@ export interface HistoryRow {
   unit?: string;
   /** A lab test's exact value, unrounded, for the chart (`value` is for reading). */
   number?: number;
+  /** An eGFR row's: the lab printed it, or the app worked it out from that day's creatinine (US-73 AC7). */
+  source?: 'lab' | 'calculated';
 }
 
 export interface MetricHistory {
@@ -98,6 +102,11 @@ export interface MetricHistory {
   /** A lab test reported in more than one unit: why the page draws no chart, in the web's words
    *  (`mixedUnitsNote`, US-21 AC3a). Absent otherwise. */
   unitsNote?: string;
+  /** A worked-out series' target, as a row prints it under the name: waist-to-height's "Normal <0.5". */
+  target?: string;
+  /** The eGFR series only: the day and source of the eGFR the plan uses now, which a lab limit
+   *  (no point in the series) can be. Absent when the plan has none. */
+  plan?: { day: string; source: 'lab' | 'calculated' };
 }
 
 /** One recorded medication change on a metric page. */
@@ -154,12 +163,22 @@ function basisOf(file: RoadmapFile, choices: UnitChoices, plan: Plan | null) {
  * shapes (hand edits, other writers), so each field is read defensively:
  * one odd row must never lock the tab.
  */
-function supplementRow(row: RoadmapFile['supplements'][number]): SupplementRow {
+function supplementRow(row: RoadmapFile['supplements'][number], history: RoadmapFile['supplementHistory']): SupplementRow {
   const text = (value: unknown) => (typeof value === 'string' ? value : null);
+  // An instant shows on the phone's own day (US-73 AC10b); a bare day, or text that is no date, as stored.
+  const day = (value: unknown) => {
+    const stored = text(value) ?? '';
+    return stored.length > 10 && !Number.isNaN(Date.parse(stored)) ? localDay(stored) : stored.slice(0, 10);
+  };
+  const changes = (type: string) => history.filter((h) => h.supplementKey === row.supplementKey && h.changeType === type).map((h) => text(h.updatedAt) ?? '').sort();
+  const stops = changes('stopped');
+  // One taken again after a stop is "Since" that day, not its first start (Brad 2026-11-06).
+  const restart = row.status === 'active' && stops.length > 0 ? changes('started').filter((at) => at > stops.at(-1)!).at(-1) : undefined;
   return {
     key: row.supplementKey, name: row.supplementName,
     dose: typeof row.doseValue === 'number' && Number.isFinite(row.doseValue) ? row.doseValue : null,
-    unit: text(row.doseUnit), startedDay: (text(row.startedAt) ?? '').slice(0, 10),
+    unit: text(row.doseUnit), startedDay: day(restart ?? row.startedAt),
+    stoppedDay: row.status === 'stopped' && stops.length > 0 ? day(stops.at(-1)) : null,
   };
 }
 
@@ -214,8 +233,8 @@ function buildForms(file: RoadmapFile, now: string, basis: Basis): FormsView {
           : 'No screening questions apply at your age and sex yet.',
     supplements: {
       intro: SUPPLEMENT_TEXT.intro,
-      active: listable(file, 'active').map(supplementRow),
-      stopped: listable(file, 'stopped').sort((a, b) => String(b.updatedAt ?? '').localeCompare(String(a.updatedAt ?? ''))).map(supplementRow),
+      active: listable(file, 'active').map((s) => supplementRow(s, file.supplementHistory)),
+      stopped: listable(file, 'stopped').sort((a, b) => String(b.updatedAt ?? '').localeCompare(String(a.updatedAt ?? ''))).map((s) => supplementRow(s, file.supplementHistory)),
       choices: featuredFirst.filter((o) => !taking.has(o.key)).map((o) => ({
         key: o.key, name: o.name, featured: o.category === 'featured', dose: o.defaultDose ?? null, unit: o.defaultUnit ?? null,
       })),
@@ -337,7 +356,7 @@ export function labHistory(file: RoadmapFile, seriesKey: string): MetricHistory 
         id: row.id,
         value: savedLabText(row.value, comparator),
         day: row.recordedAt.slice(0, 10),
-        status: row.status,
+        status: shownStatus(row),
         current: false,
         correction: !!row.correctsId,
         unit: unitOf(row),
@@ -349,12 +368,44 @@ export function labHistory(file: RoadmapFile, seriesKey: string): MetricHistory 
   };
 }
 
+/**
+ * A worked-out series (US-73 AC7), one row a day, newest first, in a history's shape: `egfr`, the
+ * lab's eGFR or ours from the core creatinine (health-core egfrSeries), each row saying which; or
+ * `whtr`, each day's waist over the current height (health-core whtrSeries). Read only: a row's
+ * id is the series' own (`egfr:<row id>`), so no correction can reach the creatinine or waist
+ * behind it; those are corrected on their own pages.
+ */
+export function derivedHistory(file: RoadmapFile, series: 'egfr' | 'whtr', now: string): MetricHistory {
+  const row = (id: string, day: string, value: number, text: string, i: number) => ({
+    id: `${series}:${id}`, value: text, day, status: 'active' as const, current: i === 0, correction: false, number: value,
+  });
+  if (series === 'egfr') {
+    const entry = resolveLabCatalogEntry('egfr')!;
+    // The plan's own pick (withLabEgfr): the lab's, a limit included, or ours from the creatinine.
+    const plan = planOf(file, now, {});
+    const fromLab = !!(plan?.results.eGFRFromLab || plan?.results.limits?.labEgfr);
+    const day = fromLab ? plan?.inputs.labEgfrDate : plan?.results.eGFR !== undefined ? plan?.inputs.creatinineDay : undefined;
+    return {
+      metric: 'egfr', label: entry.label, unit: entry.unit, excluded: false, markers: [],
+      rows: egfrSeries(file, new Date(now)).map((p, i) => ({ ...row(p.id, p.day, p.value, String(p.value), i), source: p.source })),
+      ...(day ? { plan: { day, source: fromLab ? 'lab' as const : 'calculated' as const } } : null),
+    };
+  }
+  return {
+    metric: 'whtr', label: 'Waist-to-height', unit: '', excluded: false, markers: [], target: WHTR_TARGET,
+    rows: whtrSeries(file).map((p, i) => row(p.id, p.day, p.ratio, p.ratio.toFixed(2), i)),
+  };
+}
+
 /** A metric's or a lab test's rows as a history lists them: newest day first; within a day,
  *  newest written first, the active row above the ones it replaced. */
-function newestFirst(a: { recordedAt: string; createdAt?: string | null; status: string }, b: { recordedAt: string; createdAt?: string | null; status: string }): number {
+function newestFirst(a: { recordedAt: string; createdAt?: string | null; status?: string }, b: { recordedAt: string; createdAt?: string | null; status?: string }): number {
   return b.recordedAt.slice(0, 10).localeCompare(a.recordedAt.slice(0, 10)) || String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? ''))
-    || Number(b.status === 'active') - Number(a.status === 'active');
+    || Number(isActive(b)) - Number(isActive(a));
 }
+
+/** A row's status as a page shows it: a legacy row with none is active (c71d283c). */
+const shownStatus = (row: { status?: string }): HistoryRow['status'] => (isActive(row) ? 'active' : 'entered-in-error');
 
 /** A stored value printed as a limit the shared rule leaves ungraded (`limitUngraded`). */
 export function ungradedLimit(metric: MetricType, row: { value: number; comparator?: unknown }, ctx: GradeContext): boolean {
@@ -389,7 +440,7 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
       .map((row) => ({ ...row, metricType: metric })),
   ].filter((row) => !isVersionMarker(row));
   // The plan's own pick of the current value.
-  const current = latestActivePerMetric(rows.filter((row) => row.status === 'active'))[0];
+  const current = latestActivePerMetric(rows.filter(isActive))[0];
   return {
     metric,
     excluded: excludedFields.includes(METRIC_TO_FIELD[metric]),
@@ -403,12 +454,12 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
         id: row.id,
         value: rowText(metric as MetricType, row, shown),
         day: row.recordedAt.slice(0, 10),
-        status: row.status,
+        status: shownStatus(row),
         current: row.id === current?.id,
         // A legacy row may lack the key: only a named row is a correction.
         correction: !!row.correctsId,
         ...(isComparator(row.comparator) ? { bound: cellFromSI(metric as MetricType, row.value, shown) } : null),
-        ...(row.status === 'active' && ungradedLimit(metric as MetricType, row, ctx) ? { note: LIMIT_NOT_GRADED } : null),
+        ...(isActive(row) && ungradedLimit(metric as MetricType, row, ctx) ? { note: LIMIT_NOT_GRADED } : null),
       })),
   };
 }

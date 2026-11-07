@@ -171,10 +171,18 @@ someone's medical history, or lose their data at the next device sync.
    `inputs.labEgfr` (mL/min/1.73m²) and `inputs.labEgfrDate` (YYYY-MM-DD) are set only
    when the plan's eGFR is the lab's printed one (US-07 AC7): the latest active lab `egfr`
    row, used when it is from the creatinine's day or later, or when no eGFR can be
-   calculated (no birth year, no sex, or a creatinine the plan excludes). `inputs.labEgfrOutdated`
+   calculated (no birth year, no sex, a creatinine taken by a known minor, or a creatinine the
+   plan excludes). `inputs.labEgfrOutdated`
    is `true` when a creatinine newer than that lab eGFR exists but the plan cannot use it
-   yet (no sex or no birth year): the lab eGFR still shows and still sets the protein
-   target, but the plan gives no potassium advice from it (US-07 AC8). All three are
+   (no sex, no birth year, or taken by a known minor): the lab eGFR still shows and still sets the protein
+   target, but the plan gives no potassium advice from it (US-07 AC8). `inputs.creatinineDay`
+   (YYYY-MM-DD) is the day of the creatinine the plan read: a calculated eGFR uses the age
+   on that day, and there is none when they were a known minor on that day (US-07 AC7). So when
+   the only creatinine was taken as a minor, and there is no lab eGFR, `profile.eGFR` is `null`
+   with no field saying why: compare `inputs.creatinineDay` with `inputs.birthYear` (and
+   `inputs.birthMonth`; with none, a minor until the year `birthYear + 19` begins), and tell the
+   person the plan works out no eGFR from a test taken before 18 (with no birth month, from a
+   test taken when they may have been under 18). All four are
    derived, never stored: write lab values, not these fields.
    One exception to "converted": LDL and ApoB, the lipids with a target line, print on
    the side of their line the plan grades them (US-07 AC5). A value within one display
@@ -291,8 +299,8 @@ Validate your result against the schema before you write it back.
 - **A thin plan is not a clean bill of health.** On a record holding no measurement at
   all, `get_plan` still returns `protein-target` (when sex is known), `exercise` and `sleep` — they rest on
   no value whatever — plus the screening, skin and supplement cards, which follow from
-  sex and age alone, and `fiber`, which shows whenever lipids are NOT elevated, absent
-  lipids included: read it as "no lipid card", never as "lipids fine". Every other
+  sex and age alone, and `fiber`, which shows on every plan (Brad 2026-11-05), so it
+  says nothing about the lipids: a lipid card's absence is not "lipids fine". Every other
   suggestion is conditional on a measurement the record holds, and `missingInputs`
   names the ones whose absence removed content.
 - **The plan is built for adults** (US-07 AC6, 2026-10-14). When the birth year (and
@@ -368,6 +376,10 @@ the hosted server they take two calls: a proposal with a `confirm` receipt, then
 call with it after your yes, carrying your words as `approval`, quoted. An import's
 `commit` carries `approval` the same way. The server holds those words for one request
 and never stores or logs them (the mechanism and its limits: docs/mcp-architecture.md §3).
+`correct_value` refuses a catalogued lab test corrected past its plausible range
+(`LAB_PLAUSIBLE_RANGES`, US-21 AC26: glucose 5.5 mg/dL is 0.31 mmol/L) as a typing or unit
+slip, on every path: ask the user to check the number and its unit. `add_lab_values` does
+not check it yet.
 Every tool declares an `outputSchema` and answers with `structuredContent` beside the
 text: the same answer typed, so a row id is read, not parsed out of a sentence. A refusal
 carries none, it is an error result.

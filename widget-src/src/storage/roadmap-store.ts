@@ -74,9 +74,12 @@ import {
   type RoadmapFile,
   type RoadmapProfile,
 } from '@roadmap/health-core';
-import { bloodTableReport, inputRangeFault, isAlcoholAnswer, isCoreRow, isReadableRow, readableView, ROADMAP_DOC, ROADMAP_FILE_NAME, type FileLabValue, type FileMeasurement } from '@roadmap/health-core';
+import { bloodTableReport, egfrSeries, inputRangeFault, isAlcoholAnswer, isCoreRow, isReadableRow, readableView, ROADMAP_DOC, ROADMAP_FILE_NAME, whtrSeries, type EgfrPoint, type FileLabValue, type FileMeasurement, type WhtrPoint } from '@roadmap/health-core';
+
+/** The worked-out series My health's rows read (US-62 AC21). */
+export interface DerivedSeries { whtr: WhtrPoint[]; egfr: EgfrPoint[] }
 import { currentValueRows } from '@roadmap/health-core/blood-tests';
-import { type EraseResult, type EraseSteps, type RecordHost, type StorageAdapter } from '@roadmap/health-core';
+import { saveRecordInto, type EraseResult, type EraseSteps, type RecordHost, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { webRecordHost } from './web-record-host';
 import { Sentry } from '../lib/sentry';
@@ -161,12 +164,14 @@ export type AddMeasurementResult =
 /** How a correction ended. `changed`: the value named is not there any
  *  more, or another row has replaced it (another device, a connector).
  *  `invalid`: the record does not take that number (outside the metric's
- *  range). `error`: no record is open. */
-export type CorrectStatus = 'ok' | 'changed' | 'invalid' | 'error';
+ *  range). `refused`: a lab value past its plausible range, in the engine's
+ *  words, which the page shows as the iPhone and MCP do (US-21 AC26).
+ *  `error`: no record is open. */
+export type CorrectStatus = 'ok' | 'changed' | 'invalid' | 'error' | { refused: string };
 /** How a blood test move ended (US-04 AC5), as a correction does. `changed`:
  *  the test on that day is not what the page showed. `invalid` carries the
  *  record's refusal, for the page to say. */
-export type MoveOutcome = { status: Exclude<CorrectStatus, 'invalid'> } | { status: 'invalid'; refusal: MoveRejection };
+export type MoveOutcome = { status: Exclude<Extract<CorrectStatus, string>, 'invalid'> } | { status: 'invalid'; refusal: MoveRejection };
 /** A birth month in the future that a save refused (US-54 AC5b): the pair judged. */
 export interface BirthRefusal { birthYear: number; birthMonth: number | undefined }
 /** A profile save: refused by the erase, or saved with any birth month it refused. */
@@ -376,6 +381,14 @@ export class RoadmapStore {
     return activeOnly(this.view.labValues).filter((row) => !isCoreRow(row)) as ApiLabValue[];
   }
 
+  /** My health's worked-out rows (US-62 AC21), the iPhone's series: each day's
+   *  waist over the current height, and each day's eGFR, lab or calculated. The
+   *  profile is the screen's (`shown`): an answer typed is read before its save lands. */
+  loadDerivedSeries(shown: Partial<Pick<RoadmapFile['profile'], 'heightCm' | 'sex' | 'birthYear' | 'birthMonth'>>, now = new Date()): DerivedSeries {
+    const file = { ...this.view, profile: { ...this.view.profile, ...shown } };
+    return { whtr: whtrSeries(file), egfr: egfrSeries(file, now) };
+  }
+
   /** Non-tombstoned documents — the ONE place the deleted-filter invariant lives. */
   private liveDocuments(): FileDocument[] {
     return this.view.documents.filter((d) => !d.deleted);
@@ -405,7 +418,10 @@ export class RoadmapStore {
   correctValue(id: string, newValue: number, erase?: string): CorrectStatus {
     if (this.refuses(erase)) return 'error';
     const result = correctRecordValue(this.file, { id, newValue, now: new Date().toISOString() });
-    if (!result.ok) return result.reason === 'not-found' || result.reason === 'not-active' ? 'changed' : 'invalid';
+    if (!result.ok) {
+      if (result.reason === 'not-found' || result.reason === 'not-active') return 'changed';
+      return result.reason === 'invalid-value' ? { refused: result.message } : 'invalid';
+    }
     this.session.edit(() => result.file, erase);
     return 'ok';
   }
@@ -616,6 +632,16 @@ export class RoadmapStore {
   /** Force-persist any pending changes (call before navigation). */
   flush(): Promise<void> {
     return this.session.flush();
+  }
+
+  /** Leaving this cloud (US-09 AC2g): merge the working copy, saved or still
+   *  waiting to save, into this device's copy, which the new connect lifts.
+   *  A cloud session saves to the device only when a save fails, so after a
+   *  failed connect the page's later saves reach the old cloud alone. */
+  async copyToDevice(): Promise<void> {
+    if (this.host.tier !== 'cloud') return;
+    const ctx = { deviceId: this.host.deviceId(), now: new Date(this.host.clock.now()).toISOString() };
+    await saveRecordInto(this.host.mirror.adapter, this.file, ctx);
   }
 
   /** Re-read the record and merge what came back (US-34); see the session. */

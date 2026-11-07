@@ -27,7 +27,12 @@ export interface DatedMeasurement {
   value: number;
   /** A lab result printed as a limit: `value` is its bound, not the result (US-12 AC20). */
   comparator?: Comparator;
+  /** An unsaved creatinine the client's plan read (US-07 AC7): the server takes its day, then drops it. */
+  draft?: true;
 }
+
+/** A client's draft point (US-07 AC7): the marker counts only as `draft: true`; anything else is a saved point. */
+export const isDraftPoint = (p: unknown): boolean => !!p && typeof p === 'object' && (p as { draft?: unknown }).draft === true;
 
 /** Per-metric chronological series — the LAST entry is the most recent. */
 export type MeasurementHistoryMap = Record<string, DatedMeasurement[]>;
@@ -141,6 +146,12 @@ function beats(
   return a.id > b.id;
 }
 
+/** A series' newest point (the last: a series runs oldest first), or none when it is printed as a limit (US-12 AC20). */
+export function newestExactPoint(series: DatedMeasurement[] | undefined): DatedMeasurement | undefined {
+  const newest = series?.[series.length - 1];
+  return newest && !newest.comparator ? newest : undefined;
+}
+
 /**
  * The most recent dated reading per HealthInputs field (via METRIC_TO_FIELD).
  * Metrics with no field mapping are skipped. Callers merge this over their
@@ -152,8 +163,8 @@ export function latestFromHistory(
   const out: Partial<Record<keyof HealthInputs, number>> = {};
   for (const [metric, series] of Object.entries(history)) {
     const field = METRIC_TO_FIELD[metric];
-    // A newest point printed as a limit is no exact value to report (US-12 AC20).
-    if (field && series.length > 0 && !series[series.length - 1].comparator) out[field] = series[series.length - 1].value;
+    const newest = newestExactPoint(series);
+    if (field && newest) out[field] = newest.value;
   }
   return out;
 }

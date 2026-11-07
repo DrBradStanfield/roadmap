@@ -90,7 +90,7 @@ afterEach(async () => {
 
 async function renderPlan() {
   const view = render(<HealthTool />);
-  await waitFor(() => expect(view.container.querySelector('.health-results-panel .suggestion-title')).not.toBeNull());
+  await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
   return view;
 }
 
@@ -106,48 +106,61 @@ describe('US-62 AC4: tool_opened', () => {
   });
 });
 
+// US-62 AC5 as amended by phase 5: the plan's cards are on screen when My health's
+// topics show (the onboarding done, or the whole form open) on the tab that holds them.
 describe('US-62 AC5: results_viewed when the plan is on screen', () => {
-  it('on a phone: not while My data is active, then once on switching to My plan', async () => {
+  it('on a phone: not at mount; once when My health\'s topics come on screen; never again in the tab', async () => {
     phone = true;
     const view = await renderPlan();
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
-    expect(named('results_viewed')).toHaveLength(0); // all three panels are mounted, the plan is not seen
-
-    fireEvent.click(view.getByRole('tab', { name: 'My plan' }));
-    await waitFor(() => expect(named('results_viewed')).toHaveLength(1));
+    expect(named('results_viewed')).toHaveLength(0); // the topics sit below the tiles: not yet seen
+    scrollIntoViewport('.mh-sections');
+    expect(named('results_viewed')).toHaveLength(1);
     expect(named('results_viewed')[0].metadata).toBeUndefined(); // the name alone, as before
 
-    fireEvent.click(view.getByRole('tab', { name: 'My data' }));
-    fireEvent.click(view.getByRole('tab', { name: 'My plan' }));
+    fireEvent.click(view.getByRole('tab', { name: 'Chat' }));
+    fireEvent.click(view.getByRole('tab', { name: 'My health' }));
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
     expect(named('results_viewed')).toHaveLength(1); // once per tab
   });
 
-  it('on desktop: not at mount, then once when the plan column enters the viewport', async () => {
+  it('on a phone: not while the onboarding alone shows, though the plan has suggestions', async () => {
+    phone = true;
+    localStorage.clear(); sessionStorage.clear();
+    await initRoadmapStore(new LocalStorageAdapter());
+    await saveChangedMeasurements({ sex: 'female', heightCm: 165, unitSystem: 'si', weightKg: 64 }, {}); // no birth date yet
+    await flushRoadmapStore();
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(view.container.querySelector('.quick-stats .stat-card')).not.toBeNull());
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect(view.container.querySelector('.mh-sections')).toBeNull();
+    expect(named('results_viewed')).toHaveLength(0);
+  });
+
+  it('on desktop: not at mount, then once when the topics enter the viewport', async () => {
     phone = false;
     await renderPlan();
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
     expect(named('results_viewed')).toHaveLength(0);
 
-    scrollIntoViewport('.health-tool-right');
+    scrollIntoViewport('.mh-sections');
     expect(named('results_viewed')).toHaveLength(1);
     expect(named('results_viewed')[0].metadata).toBeUndefined();
 
-    scrollIntoViewport('.health-tool-right');
+    scrollIntoViewport('.mh-sections');
     expect(named('results_viewed')).toHaveLength(1);
   });
 
-  it('with no suggestions, nothing is sent even with the plan on screen', async () => {
+  it('with no suggestions, nothing is sent', async () => {
     phone = false;
     localStorage.clear(); sessionStorage.clear();
     await initRoadmapStore(new LocalStorageAdapter());
     const view = render(<HealthTool />);
-    await waitFor(() => expect(view.container.querySelector('.health-tool-right')).not.toBeNull());
+    await waitFor(() => expect(view.container.querySelector('.health-tool-main')).not.toBeNull());
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
     // Only the preview plan shows: no real suggestions yet.
-    expect(view.container.querySelector('.health-tool-right')?.textContent).toContain('Real suggestions appear once you fill in your details.');
-    const column = observers.filter((o) => o.el.matches('.health-tool-right'));
-    act(() => { for (const o of column) o.cb([{ isIntersecting: true, target: o.el } as IntersectionObserverEntry], {} as IntersectionObserver); });
+    expect(view.container.querySelector('.health-tool-main')?.textContent).toContain('Real suggestions appear once you fill in your details.');
+    expect(observers.filter((o) => o.el.matches('.mh-sections'))).toEqual([]);
     expect(named('results_viewed')).toHaveLength(0);
   });
 });
@@ -157,8 +170,8 @@ describe('US-62: the Pages build sends no events', () => {
     surface.shopify = false;
     phone = isPhone;
     const view = await renderPlan();
-    if (isPhone) fireEvent.click(view.getByRole('tab', { name: 'My plan' }));
-    else scrollIntoViewport('.health-tool-right');
+    if (!isPhone) scrollIntoViewport('.mh-sections');
+    expect(view.container.querySelector('.mh-sections')).not.toBeNull();
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
     expect(sent).toEqual([]);
   });

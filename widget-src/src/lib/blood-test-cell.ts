@@ -6,7 +6,7 @@ import {
   commaQuestion,
   parseLocalisedNumber,
   rangeFault,
-  cellLabel,
+  rangeMessage,
   cellRange,
   cellToSI,
   limitCellText,
@@ -178,13 +178,6 @@ export function validateTypedValue(
   // of a bare "Max 22.6".
   const fault = rangeFault(range, n);
   return { error: fault ? rangeMessage(metric, display, fault) : null, range };
-}
-
-/** The words for a number past one end of the metric's range, in `display` units. */
-export function rangeMessage(metric: MetricType, display: CellUnit, fault: 'above' | 'below'): string {
-  const range = cellRange(metric, display);
-  const unit = cellLabel(metric, display);
-  return fault === 'below' ? `${range.minExclusive ? 'Must be above' : 'Min'} ${range.min} ${unit}` : `Max ${range.max} ${unit}`;
 }
 
 /** Live status from a typed display value (parsed + canonicalised). */

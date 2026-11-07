@@ -34,9 +34,16 @@ describe('engine signing key guard (US-25 AC18)', () => {
     expect(found.map(([file]) => file)).toEqual([]);
   });
 
-  it('the release folder holds only manifests, signatures and bundles', () => {
-    const stray = tracked.filter((file) => file.startsWith('ios/engine-release/') && !/^ios\/engine-release\/bridge-[0-9a-f]{16}\/(manifest\.json|manifest\.sig|[0-9a-f]{64}\.js)$/.test(file));
+  // The CI signer (engine-release.yml) also writes `built-from`: the commit the bundle was built from.
+  it('the release folder holds only manifests, signatures, bundles and their built-from commit', () => {
+    const stray = tracked.filter((file) => file.startsWith('ios/engine-release/') && !/^ios\/engine-release\/bridge-[0-9a-f]{16}\/(manifest\.json|manifest\.sig|[0-9a-f]{64}\.js|built-from)$/.test(file));
     expect(stray).toEqual([]);
+  });
+
+  it('a built-from file holds only a commit id, so nothing else can ride in it', () => {
+    for (const file of tracked.filter((f) => /^ios\/engine-release\/bridge-[0-9a-f]{16}\/built-from$/.test(f))) {
+      expect(readFileSync(join(repo, file), 'utf8'), file).toMatch(/^[0-9a-f]{40}\n?$/);
+    }
   });
 
   it.skipIf(!keyFiles.some((file) => existsSync(file)))('the file-held keys on this Mac are in no tracked file', () => {

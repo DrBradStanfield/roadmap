@@ -15,7 +15,9 @@
 # same record, light mode: ios/build/app-store-assets/device/chat-iphone.mov (or video/chat.mov
 # or .mp4). When one is there the preview ends on it under "Ask about your results": the tap on
 # a starter question, then, the wait for the answer cut, the answer arriving. Without one the
-# preview ends on the plan's evidence. Run --compose-only after dropping a new clip.
+# preview ends on the plan's evidence. Run --compose-only after dropping a new clip. The clip's
+# tab bar becomes the app's own from app-store-shots.sh's Chat tab capture, when one is there
+# (run that first: the clip was filmed before My health).
 set -eu
 cd "$(dirname "$0")/.."
 OUT=build/app-store-assets/video
@@ -94,7 +96,12 @@ fi
 swiftc -O scripts/app-store-video-compose.swift -o "$SCRATCH/compose"
 CHAT=
 for c in build/app-store-assets/device/chat-iphone.mov "$OUT/chat.mov" "$OUT/chat.mp4"; do [ -f "$c" ] && CHAT=$c; done
-"$SCRATCH/compose" preview "$WORK/raw.mp4" "$WORK/marks.txt" "$OUT/app-preview-886x1920.mp4" ${CHAT:+"$CHAT"}
+TAB_BAR="build/app-store-shots/5 chat tab bar.png"
+if [ -n "$CHAT" ] && [ -f "$TAB_BAR" ]; then
+  "$SCRATCH/compose" preview "$WORK/raw.mp4" "$WORK/marks.txt" "$OUT/app-preview-886x1920.mp4" "$CHAT" "$TAB_BAR"
+else
+  "$SCRATCH/compose" preview "$WORK/raw.mp4" "$WORK/marks.txt" "$OUT/app-preview-886x1920.mp4" ${CHAT:+"$CHAT"}
+fi
 [ -n "$CHAT" ] && "$SCRATCH/compose" preview "$WORK/raw.mp4" "$WORK/marks.txt" "$OUT/app-preview-no-chat-886x1920.mp4"
 "$SCRATCH/compose" header "$WORK/raw.mp4" "$WORK/marks.txt" "$OUT"
 ls -l "$OUT"

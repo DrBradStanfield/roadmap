@@ -224,6 +224,26 @@
           ]
         },
         {
+          "id": "fiber",
+          "category": "nutrition",
+          "priority": "info",
+          "title": "Maximize fiber intake",
+          "description": "Aim for 25-35g of fiber daily from whole grains, fruits, and vegetables. Increase gradually to avoid discomfort. If you have IBS or IBD, discuss appropriate fiber levels with your doctor.",
+          "ingredients": [],
+          "reason": "Dietary fibre may lower cardiovascular risk through several mechanisms: reducing cholesterol absorption, improving blood sugar control, and supporting a healthy gut microbiome. Large cohort studies link the highest fibre intakes with roughly 15–30% lower rates of heart disease, stroke and death than the lowest, and trials show fibre lowers cholesterol and blood pressure.",
+          "guidelines": [],
+          "references": [
+            {
+              "label": "Reynolds 2019 – Carbohydrate quality & human health (Lancet meta-analyses)",
+              "url": "https://doi.org/10.1016/S0140-6736(18)31809-9"
+            },
+            {
+              "label": "Hartley 2016 – Fibre may lower cholesterol and diastolic blood pressure (Cochrane Review)",
+              "url": "https://doi.org/10.1002/14651858.CD011472.pub2"
+            }
+          ]
+        },
+        {
           "id": "lipid-diet",
           "category": "nutrition",
           "priority": "info",
@@ -997,6 +1017,26 @@
           ]
         },
         {
+          "id": "fiber",
+          "category": "nutrition",
+          "priority": "info",
+          "title": "Maximize fiber intake",
+          "description": "Aim for 25-35g of fiber daily from whole grains, fruits, and vegetables. Increase gradually to avoid discomfort. If you have IBS or IBD, discuss appropriate fiber levels with your doctor.",
+          "ingredients": [],
+          "reason": "Dietary fibre may lower cardiovascular risk through several mechanisms: reducing cholesterol absorption, improving blood sugar control, and supporting a healthy gut microbiome. Large cohort studies link the highest fibre intakes with roughly 15–30% lower rates of heart disease, stroke and death than the lowest, and trials show fibre lowers cholesterol and blood pressure.",
+          "guidelines": [],
+          "references": [
+            {
+              "label": "Reynolds 2019 – Carbohydrate quality & human health (Lancet meta-analyses)",
+              "url": "https://doi.org/10.1016/S0140-6736(18)31809-9"
+            },
+            {
+              "label": "Hartley 2016 – Fibre may lower cholesterol and diastolic blood pressure (Cochrane Review)",
+              "url": "https://doi.org/10.1002/14651858.CD011472.pub2"
+            }
+          ]
+        },
+        {
           "id": "lipid-diet",
           "category": "nutrition",
           "priority": "info",
@@ -1074,7 +1114,7 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider a GLP-1 medication",
-          "description": "With a BMI of 25.2 and prediabetic HbA1c and elevated blood pressure, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.",
+          "description": "With a BMI of 25.2 and diabetic-range HbA1c and elevated blood pressure, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.",
           "ingredients": [],
           "reason": "GLP-1 receptor agonists like tirzepatide and semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. Tirzepatide is preferred due to its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
           "guidelines": [],
@@ -1770,6 +1810,26 @@
           ]
         },
         {
+          "id": "fiber",
+          "category": "nutrition",
+          "priority": "info",
+          "title": "Maximize fiber intake",
+          "description": "Aim for 25-35g of fiber daily from whole grains, fruits, and vegetables. Increase gradually to avoid discomfort. If you have IBS or IBD, discuss appropriate fiber levels with your doctor.",
+          "ingredients": [],
+          "reason": "Dietary fibre may lower cardiovascular risk through several mechanisms: reducing cholesterol absorption, improving blood sugar control, and supporting a healthy gut microbiome. Large cohort studies link the highest fibre intakes with roughly 15–30% lower rates of heart disease, stroke and death than the lowest, and trials show fibre lowers cholesterol and blood pressure.",
+          "guidelines": [],
+          "references": [
+            {
+              "label": "Reynolds 2019 – Carbohydrate quality & human health (Lancet meta-analyses)",
+              "url": "https://doi.org/10.1016/S0140-6736(18)31809-9"
+            },
+            {
+              "label": "Hartley 2016 – Fibre may lower cholesterol and diastolic blood pressure (Cochrane Review)",
+              "url": "https://doi.org/10.1002/14651858.CD011472.pub2"
+            }
+          ]
+        },
+        {
           "id": "lipid-diet",
           "category": "nutrition",
           "priority": "info",
@@ -1847,7 +1907,7 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider a GLP-1 medication",
-          "description": "With a BMI of 25.2 and prediabetic HbA1c and elevated blood pressure, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.",
+          "description": "With a BMI of 25.2 and diabetic-range HbA1c and elevated blood pressure, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.",
           "ingredients": [],
           "reason": "GLP-1 receptor agonists like tirzepatide and semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. Tirzepatide is preferred due to its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
           "guidelines": [],
@@ -2687,6 +2747,26 @@
           ]
         },
         {
+          "id": "fiber",
+          "category": "nutrition",
+          "priority": "info",
+          "title": "Maximize fiber intake",
+          "description": "Aim for 25-35g of fiber daily from whole grains, fruits, and vegetables. Increase gradually to avoid discomfort. If you have IBS or IBD, discuss appropriate fiber levels with your doctor.",
+          "ingredients": [],
+          "reason": "Dietary fibre may lower cardiovascular risk through several mechanisms: reducing cholesterol absorption, improving blood sugar control, and supporting a healthy gut microbiome. Large cohort studies link the highest fibre intakes with roughly 15–30% lower rates of heart disease, stroke and death than the lowest, and trials show fibre lowers cholesterol and blood pressure.",
+          "guidelines": [],
+          "references": [
+            {
+              "label": "Reynolds 2019 – Carbohydrate quality & human health (Lancet meta-analyses)",
+              "url": "https://doi.org/10.1016/S0140-6736(18)31809-9"
+            },
+            {
+              "label": "Hartley 2016 – Fibre may lower cholesterol and diastolic blood pressure (Cochrane Review)",
+              "url": "https://doi.org/10.1002/14651858.CD011472.pub2"
+            }
+          ]
+        },
+        {
           "id": "lipid-diet",
           "category": "nutrition",
           "priority": "info",
@@ -3277,7 +3357,8 @@
         "birthYear": 1965,
         "birthMonth": 3,
         "unitSystem": "conventional",
-        "heightCm": 180
+        "heightCm": 180,
+        "creatinineDay": "2026-03-01"
       },
       "missingInputs": [],
       "currentValues": [
@@ -3499,6 +3580,26 @@
             {
               "label": "Whelton 2017 – ACC/AHA Blood Pressure Guideline (Hypertension)",
               "url": "https://doi.org/10.1161/HYP.0000000000000065"
+            }
+          ]
+        },
+        {
+          "id": "fiber",
+          "category": "nutrition",
+          "priority": "info",
+          "title": "Maximize fiber intake",
+          "description": "Aim for 25-35g of fiber daily from whole grains, fruits, and vegetables. Increase gradually to avoid discomfort. If you have IBS or IBD, discuss appropriate fiber levels with your doctor.",
+          "ingredients": [],
+          "reason": "Dietary fibre may lower cardiovascular risk through several mechanisms: reducing cholesterol absorption, improving blood sugar control, and supporting a healthy gut microbiome. Large cohort studies link the highest fibre intakes with roughly 15–30% lower rates of heart disease, stroke and death than the lowest, and trials show fibre lowers cholesterol and blood pressure.",
+          "guidelines": [],
+          "references": [
+            {
+              "label": "Reynolds 2019 – Carbohydrate quality & human health (Lancet meta-analyses)",
+              "url": "https://doi.org/10.1016/S0140-6736(18)31809-9"
+            },
+            {
+              "label": "Hartley 2016 – Fibre may lower cholesterol and diastolic blood pressure (Cochrane Review)",
+              "url": "https://doi.org/10.1002/14651858.CD011472.pub2"
             }
           ]
         },

@@ -8,13 +8,12 @@
 // number reads as the matrix says it.
 
 import { useEffect, useState, type MutableRefObject } from 'react';
-import { canonicalToReported, commaQuestion, displayLabUnit, LAB_CATALOG, LAB_GROUPS, localDay, parseLocalisedNumber, reportedToCanonical, resolveLabCatalogEntry, savedLabText, slotKey, type ApiMeasurement, type Comparator } from '@roadmap/health-core';
+import { canonicalToReported, commaQuestion, displayLabUnit, LAB_CATALOG, LAB_GROUPS, labRangeMessage, localDay, parseLocalisedNumber, resolveLabCatalogEntry, savedLabText, slotKey, type ApiMeasurement, type Comparator } from '@roadmap/health-core';
 import { bloodTestKeyOf, coreStored } from '@roadmap/health-core/blood-tests';
 import { UnitChip } from './UnitChip';
-import { SAVE_ERRORS } from './BloodTestTimeline';
+import { SAVE_ERRORS, saveErrorText } from './BloodTestTimeline';
 import { addLabValue } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
-import { rangeMessage } from '../lib/blood-test-cell';
 import type { CorrectFn } from '../lib/matrix-save';
 import type { ApiLabValue } from '../lib/api-types';
 
@@ -64,7 +63,8 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
   }
 
   const entry = LAB_CATALOG.find(e => e.key === testKey);
-  // A catalogued test has no input range, so "1,050" is always asked about (US-02 AC7).
+  // A catalogued test has no input range, only the record's typing-mistake bounds checked on save
+  // (US-21 AC26), so "1,050" is always asked about (US-02 AC7).
   const value = parseLocalisedNumber(valueStr);
   const question = commaQuestion(valueStr);
   const metricName = entry ? entry.key : otherName(testKey, customName);
@@ -116,7 +116,7 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
     const status = await onCorrect!(there.id, stored!);
     setSaving(false);
     if (status === 'ok') close();
-    else setNotice(SAVE_ERRORS[status]);
+    else setNotice(saveErrorText(status));
   };
 
   const save = async () => {
@@ -129,7 +129,8 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
     try {
       // health-core's one lab add (US-25 AC25): it files the test, refuses a unit the catalogue does
       // not take in the upload summary's words (US-21 AC15), and names a held value on that day.
-      const result = await addLabValue({ metricName, unit, value: value!, day: date });
+      // A value page adds to its own series, whatever its name or unit (US-25 AC25).
+      const result = await addLabValue({ metricName, unit, value: value!, day: date, ...(preset ? { existingSeries: true } : null) });
       if (!result) {
         setNotice('Could not save — please try again.');
       } else if (result.ok) {
@@ -138,8 +139,7 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
         onAdded();
       } else if (result.bound) {
         // A core value out of range reads as the matrix says it, in the unit typed (US-66 AC6).
-        const system = core && reportedToCanonical(core, value!, unit)?.system;
-        setNotice(system ? rangeMessage(core, system, result.bound) : SAVE_ERRORS.invalid);
+        setNotice((core && labRangeMessage(core, unit, result.bound)) || SAVE_ERRORS.invalid);
       } else {
         setNotice(result.message);
         // A held value in the same unit holding another number: offer to replace it (US-21 AC13).

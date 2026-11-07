@@ -174,6 +174,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     try {
       localStorage.setItem(fileKey(fileName), written);
     } catch (error) {
+      noteRecordSave(fileName, false);
       throw new StorageError(FULL, undefined, error);
     }
     try {
@@ -186,8 +187,10 @@ export class LocalStorageAdapter implements StorageAdapter {
       // removing a key cannot hit the quota, and every tab then re-reads.
       const restored = safeGetItem(fileKey(fileName)) === written && restoreItem(fileKey(fileName), previous);
       if (!restored) safeRemoveItem(versionKey(fileName));
+      noteRecordSave(fileName, safeGetItem(fileKey(fileName)) === written);
       throw new StorageError(FULL, restored ? undefined : 'This change may have been stored. Read the record again before trying it a second time.', error);
     }
+    noteRecordSave(fileName, true);
     return { version: next };
   }
 
@@ -241,6 +244,24 @@ export class LocalStorageAdapter implements StorageAdapter {
 }
 
 const FULL = 'Could not save on this device (local storage may be full).';
+
+/** US-01 AC5: the last write of the record on this device was refused and
+ *  left none of its change stored. Set and cleared here, at the write, the
+ *  one place that knows; the guest's status line listens for the event. */
+export const LOCAL_SAVE_EVENT = 'hr:local-save-changed';
+let saveRefused = false;
+export function localSaveRefused(): boolean {
+  return saveRefused;
+}
+function noteRecordSave(fileName: string, stored: boolean): void {
+  if (fileName !== ROADMAP_FILE_NAME || saveRefused === !stored) return;
+  saveRefused = !stored;
+  try {
+    window.dispatchEvent(new Event(LOCAL_SAVE_EVENT));
+  } catch {
+    /* non-browser environment */
+  }
+}
 
 /** Put a key back as it was (`null`: absent). False when the write refuses. */
 function restoreItem(key: string, value: string | null): boolean {
