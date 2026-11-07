@@ -8324,5 +8324,37 @@
     ],
     "category": "condition-guides",
     "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Negative for osteoarthritis: the collagen entry, not the guide."
+  },
+  {
+    "query": "so what do you make of my renin level?",
+    "expected": [],
+    "category": "own-data-analysis",
+    "source": "chat-health-2026-W45",
+    "notes": "2026-W45 chat-health: widget turn, paraphrased. Interpretation of an own result, so rule 7 routes when an entry covers it, but no entry names renin (the high-blood-pressure guide does not mention it). Production empty (router v5); replay empty 3/3. A follow-up pasting the value got the high-blood-pressure guide 3/3 on replay but empty in production. Content gap (content-backlog.csv); revisit expected if an entry is built."
+  },
+  {
+    "query": "Is silkworm extract (Bombyx mori) any good for erectile dysfunction?",
+    "expected": [],
+    "category": "supplement",
+    "source": "chat-health-2026-W45",
+    "notes": "2026-W45 chat-health: storefront turn, paraphrased (the user first misspelt the name). No entry names it; production empty (router v5), replay empty 3/3 with context. Content gap (content-backlog.csv). The ED entries (citrulline, arginine, ginseng) are theme neighbours, not a match by the named-topic rule."
+  },
+  {
+    "query": "how's it all looking for me?",
+    "expected": [
+      "diet",
+      "exercise",
+      "sleep"
+    ],
+    "category": "lifestyle",
+    "source": "chat-health-2026-W45",
+    "notes": "2026-W45 chat-health: widget turn, paraphrased. An own-data interpretation ask: rule 7 routes the guidelines. Production empty (router v5); replay empty 3/3, and 'are my numbers ok?' empty 3/3. KNOWN-FAIL shape since W41, seventh week (siblings: 'can you analyze my data', 'how would you rate my overall health')."
+  },
+  {
+    "query": "hi, what are the hard capsule shells made of?",
+    "category": "classifier-product",
+    "source": "chat-health-2026-W45",
+    "expected_classification": "PRODUCT",
+    "notes": "2026-W45 chat-health: storefront first turn, paraphrased. A Dr Stanfield product ingredient question. Production ROUTE (router empty); replay PRODUCT 3/3, so production's ROUTE may be one draw."
   }
 ]
