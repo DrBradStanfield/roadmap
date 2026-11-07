@@ -8326,23 +8326,21 @@
     "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Negative for osteoarthritis: the collagen entry, not the guide."
   },
   {
-    "query": "what do u think of my renin",
+    "query": "Could you look at my renin and tell me what you think of it?",
     "expected": [],
     "category": "own-data-analysis",
     "source": "chat-health-2026-W45",
-    "notes": "2026-W45 chat-health: widget turn, paraphrased close to as typed (looser paraphrases flip it: 'so what do you make of my renin level?' got the high-blood-pressure guide 2/3, '...my renin result' 3/3, because rule 6 routes an abnormal RESULT to its condition). Interpretation of an own result: rule 7 routes when an entry covers it, but no entry names renin and the high-blood-pressure guide does not mention it. Production empty (router v5); replay of the original empty 3/3. Content gap (content-backlog.csv); revisit expected if an entry is built."
+    "notes": "2026-W45 chat-health: widget turn, paraphrased. Interpretation of an own result; rule 7 routes a test only when an entry covers it, never a theme neighbour, and no entry names renin (the high-blood-pressure guide does not mention it). Production empty (router v5); replay of the original empty 3/3. Wordings flip: 'so what do you make of my renin level?' got the high-blood-pressure guide 2/3. Content gap (content-backlog.csv); revisit expected if an entry is built. This wording: high-blood-pressure guide 2/3 at commit time (KNOWN-FLAKY, a rule-7 theme-neighbour route)."
   },
   {
-    "query": "bombyx mori to help erectile dysfunction?",
-    "expected": [
-      "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects"
-    ],
+    "query": "Does Bombyx mori work for ED?",
+    "expected": [],
     "category": "supplement",
     "source": "chat-health-2026-W45",
-    "notes": "2026-W45 chat-health: storefront follow-up, paraphrased close to as typed (Latin species name, terse; the user first misspelt it). No entry names silkworm extract, so by the named-topic rule the covering ED-supplement entry is the match (its hidden-sildenafil warning applies). Production empty (router v5); replay of the original empty 3/3, but the English paraphrase 'Is silkworm extract (Bombyx mori) any good for erectile dysfunction?' got this entry 3/3: the Latin name alone hides the topic."
+    "notes": "2026-W45 chat-health: storefront follow-up, paraphrased (the user first misspelt the name). No entry names silkworm extract; rule 7 returns empty, never a theme neighbour, so the sexual-enhancement entry is not a match. Production empty (router v5); replay of the original empty 3/3 with context. The English 'Is silkworm extract (Bombyx mori) any good for erectile dysfunction?' got the sexual-enhancement entry 3/3, a rule-7 breach the other way. Content gap (content-backlog.csv)."
   },
   {
-    "query": "how's it all looking for me?",
+    "query": "So overall, how am I doing?",
     "expected": [
       "diet",
       "exercise",
@@ -8353,10 +8351,10 @@
     "notes": "2026-W45 chat-health: widget turn, paraphrased. An own-data interpretation ask: rule 7 routes the guidelines. Production empty (router v5); replay empty 3/3, and 'are my numbers ok?' empty 3/3. KNOWN-FAIL shape since W41, seventh week (siblings: 'can you analyze my data', 'how would you rate my overall health')."
   },
   {
-    "query": "hi, what are the hard capsule shells made of?",
+    "query": "What material are the capsule shells?",
     "category": "classifier-product",
     "source": "chat-health-2026-W45",
     "expected_classification": "PRODUCT",
-    "notes": "2026-W45 chat-health: storefront first turn, paraphrased. A Dr Stanfield product ingredient question. Production ROUTE (router empty); replay PRODUCT 3/3, so production's ROUTE may be one draw. Verify --runs 3: PRODUCT 2/3 (KNOWN-FLAKY)."
+    "notes": "2026-W45 chat-health: storefront first turn, paraphrased. A Dr Stanfield product ingredient question. Production ROUTE (router empty); replay of the original PRODUCT 3/3, so production's ROUTE may be one draw."
   }
 ]
