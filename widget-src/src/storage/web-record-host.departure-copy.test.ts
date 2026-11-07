@@ -11,7 +11,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   ConflictError, MemoryAdapter, MemoryCloud, RecordSession, ROADMAP_FILE_NAME, copyCloudDown, createMeasurement,
-  type RecordHost, type RoadmapFile, type WriteResult,
+  liftDeviceCopy, type RecordHost, type RoadmapFile, type WriteResult,
 } from '@roadmap/health-core';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { BACKEND_KEY, isSyncPending, webRecordHost } from './web-record-host';
@@ -207,6 +207,75 @@ describe('a cloud tab left open while another tab switches this browser to anoth
     add(tab, 'late', 81);
     tab.flushSync(); // the other tab is on the new provider's sign-in page
     expect(ids(deviceCopy())).toEqual(['late']);
+  });
+
+  /** The provider the other tab switches to: another id; its writes can be held back. */
+  class NewProvider extends MemoryAdapter {
+    gate: Promise<void> | null = null;
+    constructor(cloud: MemoryCloud) {
+      super(cloud);
+      Object.defineProperty(this, 'id', { value: 'dropbox' });
+    }
+    async write(...args: Parameters<MemoryAdapter['write']>): Promise<WriteResult> {
+      if (this.gate) await this.gate;
+      return super.write(...args);
+    }
+  }
+  const cloudIds = async (cloud: MemoryCloud) => ids((await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile | null);
+
+  /** Tab B on the old cloud holds 'base'; tab A picks another provider: the old cloud is copied down and the
+   *  sign-in redirect starts, so the old cloud is still remembered. */
+  async function switchStarted(): Promise<RecordSession> {
+    const old = new MemoryCloud();
+    const tabB = await RecordSession.open(webRecordHost(new StalledCloud(old)));
+    const seed = await RecordSession.open(webRecordHost(new MemoryAdapter(old)));
+    add(seed, 'base', 80);
+    await seed.flush();
+    expect(await tabB.refreshFromRemote()).toBe(true);
+    const leaving = webRecordHost(new MemoryAdapter(old));
+    if (leaving.tier !== 'cloud') throw new Error('cloud host expected');
+    await copyCloudDown(leaving);
+    return tabB;
+  }
+
+  it("carries a write made during the sign-in redirect into the new cloud through the connect's lift (US-06 AC13)", async () => {
+    const tabB = await switchStarted();
+    add(tabB, 'late', 81);
+    tabB.flushSync(); // tab B goes away during the redirect
+    expect(ids(deviceCopy())).toEqual(['base', 'late']);
+    // The sign-in returns (app.tsx): the device copy is lifted into the new provider, then it is remembered.
+    const fresh = new MemoryCloud();
+    const lifting = webRecordHost(new NewProvider(fresh));
+    if (lifting.tier !== 'cloud') throw new Error('cloud host expected');
+    expect(await liftDeviceCopy(lifting)).toBe('lifted');
+    expect(await cloudIds(fresh)).toEqual(['base', 'late']);
+    localStorage.setItem(BACKEND_KEY, 'dropbox');
+    const first = await RecordSession.open(webRecordHost(new NewProvider(fresh)));
+    expect(ids(first.file)).toEqual(['base', 'late']);
+  });
+
+  it("sends a write that lands while the lift runs to the new cloud at its first load, through the marker (US-06 AC13)", async () => {
+    const tabB = await switchStarted();
+    const fresh = new MemoryCloud();
+    const adapter = new NewProvider(fresh);
+    let release!: () => void;
+    adapter.gate = new Promise<void>((resolve) => { release = resolve; });
+    const host = webRecordHost(adapter);
+    if (host.tier !== 'cloud') throw new Error('cloud host expected');
+    const lifting = liftDeviceCopy(host); // has read the device copy, its write is held
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    add(tabB, 'late', 81);
+    tabB.flushSync(); // tab B goes away while the lift runs
+    release();
+    expect(await lifting).toBe('lifted');
+    expect(await cloudIds(fresh)).toEqual(['base']);
+    expect(isSyncPending()).toBe(true);
+    localStorage.setItem(BACKEND_KEY, 'dropbox');
+    const first = await RecordSession.open(webRecordHost(new NewProvider(fresh)));
+    expect(ids(first.file)).toEqual(['base', 'late']);
+    await first.flush();
+    expect(await cloudIds(fresh)).toEqual(['base', 'late']);
+    expect(isSyncPending()).toBe(false);
   });
 });
 
