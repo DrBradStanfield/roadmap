@@ -80,7 +80,7 @@ function endWord(t) {
 const addText = (t, text) => { t.word = (t.word ?? '') + text; };
 // Characters with no meaning in the current quoting, taken as one run (linear, and fast on a long heredoc). Returns
 // the index of the run's last character, or -1 when s[i] is special.
-const RUNS = { "'": /[^']+/y, '"': /[^"\\$`]+/y, '`': /[^`\\]+/y, '': /[^\s"'\\;&|()$`*[{<#]+/y };
+const RUNS = { "'": /[^']+/y, '"': /[^"\\$`]+/y, '`': /[^`\\]+/y, '': /[^\s"'\\;&|()$`*[{}<#]+/y };
 function plainRun(t, s, i) {
   const re = RUNS[t.q];
   re.lastIndex = i;
@@ -115,7 +115,12 @@ function opener(t, s, i) {
   if (/["'`]/.test(ch)) { openQuote(t, ch); return i; }
   if (ch === '\\' && i + 1 < s.length) return escaped(t, s, i);
   if (/^\$["']/.test(s.slice(i, i + 2))) return dollarQuote(t, s, i);
-  return ch === '#' && t.word === null && t.top ? lineEnd(s, i) : -1;
+  return ch === '#' && t.word === null && t.top && !t.brace ? lineEnd(s, i) : -1;
+}
+// `${...}` is one expansion, spaces included, so a `#` inside it starts no comment (`${x:- #}`). Unquoted only.
+function braceDepth(t, s, i) {
+  if (s[i] === '$' && s[i + 1] === '{') t.brace++;
+  else if (s[i] === '}' && t.brace > 0) t.brace--;
 }
 const lineEnd = (s, i) => (s.indexOf('\n', i) + 1 || s.length + 1) - 2;
 // `$"..."` is a locale string (plain double quotes here); `$'...'` is ANSI-C text, decoded as bash decodes it.
@@ -180,7 +185,7 @@ function unquoted(t, s, i) {
   const ch = s[i];
   if (/\s/.test(ch) && ch !== '\n') endWord(t);
   else if (';&|()\n'.includes(ch)) return separator(t, s, i);
-  else { heredocOp(t, s, i); addText(t, ch); t.dyn |= charDyn(s, i, '', t); }
+  else { heredocOp(t, s, i); braceDepth(t, s, i); addText(t, ch); t.dyn |= charDyn(s, i, '', t); }
   return i;
 }
 function separator(t, s, i) {
@@ -192,7 +197,7 @@ function separator(t, s, i) {
 // Shell-ish tokenizer: words with quotes removed; ; & | ( ) and newlines become separators. Each segment's `dyn`
 // holds the run-time bits of each word. `top`: the command itself (comments are read only there).
 function segments(s, outer = 0, top = false) {
-  const t = { segs: [newSeg()], word: null, dyn: 0, q: '', outer, top, pending: [], next: {} };
+  const t = { segs: [newSeg()], word: null, dyn: 0, q: '', outer, top, pending: [], next: {}, brace: 0 };
   for (let i = 0; i < s.length; i++) {
     const r = plainRun(t, s, i);
     i = r >= 0 ? r : t.q ? quoted(t, s, i) : unquoted(t, s, i);
@@ -208,14 +213,14 @@ const expand = (d) => d.replace(/^~(?=\/|$)/, process.env.HOME || '~');
 // The word that runs `name`: its first appearance that is not followed by itself (`xargs -I gh gh api ...` runs the
 // second one). zsh runs `=gh` as gh.
 const isCmd = (t, name) => t === name || t === `=${name}` || String(t).endsWith(`/${name}`);
-function cmdAt(seg, name) {
-  for (let k = 0; k < seg.length; k++) if (isCmd(seg[k], name) && !isCmd(seg[k + 1], name)) return k;
+function cmdAt(seg, name, from = 0) {
+  for (let k = from; k < seg.length; k++) if (isCmd(seg[k], name) && !isCmd(seg[k + 1], name)) return k;
   return -1;
 }
 // The git subcommand, its args, the repo dir it acts on (from base, every -C composed,
 // --git-dir) and its inline config (-c k=v; --config-env k=ENV recorded as "k=?").
-function gitCall(seg, base) {
-  const at = cmdAt(seg, 'git');
+function gitCall(seg, base, from = 0) {
+  const at = cmdAt(seg, 'git', from);
   if (at < 0) return null;
   const c = { dir: base, cfg: [] };
   let i = at + 1;
@@ -261,7 +266,9 @@ function messageOpts(seg) {
 // A quoted string that may hold a guarded command: `git` or `gh` with push, pull, merge, api or sync, read with its own
 // quotes and backslashes dropped (`g''h a''pi` is `gh api` to the inner shell).
 const plain = (t) => t.replace(/['"\\]/g, '');
-const mayHoldCommand = (t) => /\s/.test(t) && /\b(git|gh)\b/.test(plain(t)) && /\b(push|pull|merge|api|sync)\b/.test(plain(t));
+// Any `$'...'` or `$"..."` in `lit` (the text outside backtick bodies) is read too: its decoding may spell the command
+// (`g$'it' push`).
+const mayHoldCommand = (t, lit = t) => /\s/.test(t) && (/\$['"]/.test(lit) || (/\b(git|gh)\b/.test(plain(t)) && /\b(push|pull|merge|api|sync)\b/.test(plain(t))));
 // Every simple command, recursing into each quoted string that may hold one (`bash -lc 'gh api ...'`,
 // `python -c`, `node -e`, `watch`, `ssh host '...'`, a here-string, a heredoc body), except message values (above)
 // and data (below). Segments are added to `out` one at a time (a spread of a huge list overflows the stack). A string
@@ -321,7 +328,7 @@ function wordCommands(t, d, depth, out) {
   const parts = d & EXPANDS ? t.split('`') : [t];
   const bodies = parts.filter((_, j) => j % 2);
   const text = parts.map((x, j) => (j % 2 ? '$' : x)).join('');
-  if (mayHoldCommand(text)) bodies.push(text.replace(/^([^\s<]*<<<|[A-Za-z_]\w*=)/, ''));
+  if (mayHoldCommand(text, parts.filter((_, j) => j % 2 === 0).join('\n'))) bodies.push(text.replace(/^([^\s<]*<<<|[A-Za-z_]\w*=)/, ''));
   return bodies.every((body) => depth < 3 && !body.startsWith('$') && allSegments(body, depth + 1, d, out) !== null);
 }
 
@@ -329,7 +336,11 @@ function wordCommands(t, d, depth, out) {
 // substitution (`$(...)`, a backtick, `<(...)`), no stdout redirect (a file a later command might run; stderr and
 // /dev/null are fine) and every pipe feeding a reader.
 const READERS = /^(head|tail|wc|sort|uniq|cut|grep|egrep|fgrep|rg|less|more|cat|nl|column)$/;
-const stdoutRedirect = (c, i) => !'23456789'.includes(c[i - 1]) && !/^>(&[0-9]|\s*\/dev\/null)/.test(c.slice(i, i + 16));
+// Redirections are read by word: `2>` is stderr, but in `x2>` the 2 belongs to the word x2 and `>` is stdout; `>&2` and
+// `> /dev/null` are not stdout to a file, `>&2run.sh` is.
+const fdBefore = (c, i) => '23456789'.includes(c[i - 1]) && (i < 2 || /[\s;&|()]/.test(c[i - 2]));
+const NOT_A_FILE = />(&[0-9]|\s{0,6}\/dev\/null)(?![^\s;&|()<>])/y;
+const stdoutRedirect = (c, i) => { NOT_A_FILE.lastIndex = i; return !fdBefore(c, i) && !NOT_A_FILE.test(c); };
 function outputStaysData(c) {
   if (/\$\(|`|[<>]\(/.test(c) || [...c.matchAll(/>/g)].some((m) => stdoutRedirect(c, m.index))) return false;
   return [...c.matchAll(/\|&?\s*([^\s|;&()<>]*)/g)].every((m) => READERS.test(m[1].replace(/^.*\//, '')));
@@ -427,6 +438,8 @@ function readApi(seg, gh) {
   const api = apiArgs(x.args, dyn);
   api.args = x.args;
   api.unknown = x.unknown || unknownArgs(x.args, dyn, api);
+  // A method override header (X-HTTP-Method-Override) may turn an explicit GET into a write: count it as one.
+  if (x.args.some((t) => /method-override|x-http-method/i.test(t))) api.method = 'POST';
   api.ends = api.positional.map((e, k) => pathOf(e, api.posDyn[k]));
   if (splitsBefore(dyn, api.posAt[0] ?? dyn.length)) api.ends.push('$');
   return api;
@@ -488,21 +501,32 @@ dataOk = outputStaysData(cmd);
 const segs = allSegments(cmd);
 if (segs === null) {
   const why = 'Push guard could not parse this command (unbalanced quotes, or quoted commands nested more than 3 deep).';
-  if (wordThen(plain(cmd), /\bgit\b/, /\bpush\b/)) deny(`${why} Run the git push on its own line.`);
-  if (wordThen(plain(cmd), /\bgh\b/, /\b(api|sync)\b/)) deny(`${why} Run the gh api or gh repo sync call on its own line.`);
+  const text = 'For a PR body or commit message (a " inside "$(cat <<\'EOF\' ...)" is a common cause), write the text to a '
+    + 'file with the Write tool and pass it with --body-file <file> (gh) or git commit -F <file>.';
+  const words = plain(cmd.replace(/\$(?=['"])/g, '')); // `$'it'` read as `'it'`
+  if (wordThen(words, /\bgit\b/, /\bpush\b/)) deny(`${why} Run the git push on its own line. ${text}`);
+  if (wordThen(words, /\bgh\b/, /\b(api|sync)\b/)) deny(`${why} Run the gh api or gh repo sync call on its own line. ${text}`);
   process.exit(0);
 }
 
 let here = cwd; // follows `cd` through the command
 let configChanged = false;
 const synced = new Set(); // repos an earlier git pull/merge in this same command synced
+// Any gh or git word may be the one that runs (`env -u gh gh api`, `find -exec git push`), so each one after the first
+// is checked as a command start too (not in data or a cd).
+const starts = [];
 for (const seg of segs) {
+  starts.push([seg, 0]);
+  if (seg[0] === 'cd' || seg[0] === 'pushd' || isData(seg)) continue;
+  for (let k = 1; k < seg.length; k++) if (isCmd(seg[k], 'gh') || isCmd(seg[k], 'git')) starts.push([seg, k]);
+}
+for (const [seg, from] of starts) {
   msLeft();
   if (seg[0] === 'cd' || seg[0] === 'pushd') { here = path.resolve(here, expand(seg[1] || process.env.HOME || '~')); continue; }
   // A PR merges only as a merge commit of the exact head that was reviewed (docs/git-workflow.md step 4; Brad
   // 2026-11-01): `gh pr merge <n> --merge --match-head-commit <sha>`, never --admin/--squash/--rebase/--auto.
   if (isData(seg)) continue;
-  const gh = cmdAt(seg, 'gh');
+  const gh = cmdAt(seg, 'gh', from);
   if (gh >= 0 && forcedSync(seg, gh)) deny('Refused `gh repo sync --force`: it hard-resets the branch (main by default) and can drop commits. Sync without --force.');
   if (gh >= 0 && seg[gh + 1] === 'pr' && seg[gh + 2] === 'merge') {
     // Flags only: the value of -b/--body, -t/--subject, -F/--body-file, -A/--author-email, -R/--repo is data, so
@@ -538,7 +562,7 @@ for (const seg of segs) {
         + 'never through `gh api`, and never write main through it (docs/git-workflow.md step 4).');
     }
   }
-  const g = gitCall(seg, here);
+  const g = gitCall(seg, here, from);
   if (!g) continue;
   const dir = g.dir;
   if (g.sub === 'pull' || g.sub === 'merge') { synced.add(dir); continue; }

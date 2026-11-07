@@ -505,6 +505,56 @@ describe('git push guard, as .claude/settings.json runs it', () => {
     }
   });
 
+  // US-64 AC5, round 5: the bypasses Brad's group review #909 found at 821315cb, each as he wrote it.
+  it('reads ${...}, redirections, nested ANSI-C names and every gh or git word as bash does (US-64 AC5)', () => {
+    const PATCH_MAIN = 'gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc';
+    for (const cmd of [
+      // R1: the space in ${x:- #} is inside the expansion, so that # starts no comment (main refuses these).
+      'echo ${x:- #}; git push origin HEAD:main',
+      `echo \${x:- #}; ${PATCH_MAIN}`,
+      'true ${x:- #} && gh pr merge 5 --admin',
+      'echo ${x// #/}; git push origin HEAD:main',
+      // R2: `x2>` is the word x2 and a stdout redirect, and `>&2run.sh` writes the file 2run.sh (main refuses these).
+      "echo 'git push --force origin main #' x2>run.sh; bash run.sh",
+      "echo 'git push --force origin main #' >&2run.sh; bash 2run.sh",
+      // R3: ANSI-C quoting in a nested command name; also when the command does not parse.
+      `bash -c "g\\$'it' push --force origin main"`,
+      `bash -c "g\\$'it' push --force origin main" '`,
+      // Note (b): the gh or git word that runs need not be the first or a doubled one.
+      `env -u gh gh ${PATCH_MAIN.slice(3)}`,
+      `sudo -u gh gh ${PATCH_MAIN.slice(3)}`,
+      'find . -name git -exec git push --force origin main \\;',
+      // Note (c): a method override header makes an explicit GET a write.
+      `gh api -X GET -H 'X-HTTP-Method-Override: PATCH' repos/o/r/git/refs/heads/main -f sha=abc`,
+    ]) {
+      const r = runHook(scratch, cmd);
+      expect(r.stderr, cmd).toBe('');
+      expect(r.stdout, cmd).not.toBe('');
+      expect(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision, cmd).toBe('deny');
+    }
+    for (const cmd of [
+      // A comment after a closed ${...} is still a comment, and stderr or /dev/null redirects still keep echo data.
+      "echo ${HOME} # it's a note",
+      "echo 'git push --force origin main' 2>err.log",
+      "echo 'git push --force origin main' >&2",
+      "echo 'git push --force origin main' > /dev/null; ls",
+      // An explicit GET with other headers is a read; a find that runs no gh or git is not checked.
+      "gh api -X GET -H 'Accept: application/vnd.github+json' repos/o/r/git/refs/heads/main",
+      "find . -name '*.md' -exec grep -l git {} +",
+      // Note (a)'s way forward: the body in a file.
+      'gh pr create --title t --body-file notes.md',
+      'git commit -F msg.txt',
+      // A backtick body then an apostrophe is not a $'...' (the R3 rule looks only outside backtick bodies).
+      `gh pr create --title t --body "$(cat <<'EOF'\nIt's (a) fix: \`x\`'s sync note\nEOF\n)"`,
+    ]) {
+      expect(runHook(scratch, cmd).stdout, cmd).toBe('');
+    }
+    // Note (a): a heredoc body the guard cannot read (here a " inside "$(...)", which bash allows) is still refused,
+    // now with a way forward that the guard allows.
+    const body = runHook(scratch, `gh pr create --title t --body "$(cat <<'EOF'\nBrad said "it's fine" to the gh api change.\nEOF\n)"`);
+    expect(JSON.parse(body.stdout).hookSpecificOutput.permissionDecisionReason).toMatch(/Write tool.*--body-file.*git commit -F/);
+  });
+
   // US-64 AC5, round 4 (adversary at ac0e6655, B10): a guard that crashed exited 1, which Claude Code reads as "go
   // ahead", and a guard still running at Claude Code's hook timeout lets the call through. Every error now refuses,
   // the guard refuses once its own 60 s budget is spent, and settings.json blocks the call if the hook fails anyway.
