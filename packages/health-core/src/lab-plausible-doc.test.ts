@@ -16,7 +16,7 @@ const DOC_PATH = join(dirname(fileURLToPath(import.meta.url)), '../../../health_
 /** `key | canonical | min | max`, one per key (a row may name two keys). */
 function documentedRows(): string[] {
   const md = readFileSync(DOC_PATH, 'utf8');
-  const section = md.split('**A typed value past its plausible range is refused**')[1];
+  const section = md.split('**A value past its plausible range is refused**')[1];
   expect(section, 'the §2 bullet must exist').toBeTruthy();
   const lines = section.split('\n').map((l) => l.trim());
   const start = lines.findIndex((l) => l.startsWith('| key |'));

@@ -617,6 +617,13 @@ describe('US-30 AC7 — a plan from numbers, with no record file', () => {
     rmSync(fileDir, { recursive: true, force: true });
   });
 
+  it('US-21 AC26: refuses a blood test past its plausible range, as edit-record does, computing nothing', async () => {
+    const result = await captureRun(['--from-values', spec([{ test: 'Glucose', value: 5.5, unit: 'mg/dL', date: '2026-08-20' }])]);
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('values[0]: 5.5 mg/dL is 0.31 mmol/L. Glucose below 0.5 mmol/L is almost certainly a typing or unit mistake');
+    expect(result.stdout).toBe('');
+  });
+
   it("converts a conventional unit by edit-record's rules (LDL 123.8 mg/dL is 3.2 mmol/L)", async () => {
     const mg = await captureRun(['--from-values', spec([{ metric: 'ldl', value: 123.8, unit: 'mg/dL' }]), '--json']);
     const si = await captureRun(['--from-values', spec([{ metric: 'ldl', value: 3.2, unit: 'mmol/L' }]), '--json']);

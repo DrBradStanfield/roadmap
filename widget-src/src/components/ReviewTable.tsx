@@ -15,6 +15,7 @@ import {
   resolveLabCatalogEntry,
   canonicalLabRow,
   labCountFault,
+  labPlausibleBound,
   sameLabQuantity,
   slotState,
   validDay,
@@ -1549,17 +1550,19 @@ const MatrixCellView = memo(function MatrixCellView({
   let refusedText: string | null = null;
   if (cell.kind === 'additional') {
     // What Save stores for a catalogued test printed in another unit: the write's
-    // own canonicalLabRow on the number as it now reads, so a row the write
-    // refuses (a count off its range's scale) previews nothing (US-21 AC18).
-    // A row past its test's ceiling says the line Save would refuse it with,
-    // never the impossible number (US-21 AC21).
+    // own canonicalLabRow on the quantity Save takes (`valueSI`: the extracted
+    // number while untouched, the typed one once edited) (US-21 AC18). A row the
+    // write refuses says the line Save would refuse it with, never the impossible
+    // number (US-21 AC21), in the write's order (`toStoredLab`): a count or ceiling
+    // fault first (US-21 AC15), then the plausible range (US-21 AC26).
     const entry = resolveLabCatalogEntry(cell.lab.name);
-    const typed = entry ? readNumericCell(editedValue) : undefined;
-    const printed = typed === undefined ? null
-      : { value: typed, unit: cell.lab.unit, referenceLow: cell.referenceLow, referenceHigh: cell.referenceHigh };
+    const printed = entry && valueSI !== undefined
+      ? { value: valueSI, unit: cell.lab.unit, referenceLow: cell.referenceLow, referenceHigh: cell.referenceHigh } : null;
     const row = entry && printed ? canonicalLabRow(entry, printed) : null;
-    if (row && row.factor !== 1) storedText = `${row.stored.value} ${row.stored.unit}`;
-    else if (!alreadySaved && entry && printed && labCountFault(entry, printed) === 'ceiling') refusedText = labUnitRefusalLine(entry.key, cell.lab.unit, 'ceiling');
+    const fault = entry && printed && !row ? labCountFault(entry, printed) : null;
+    const bound = entry && printed && row ? labPlausibleBound(entry, printed.value, printed.unit) : null;
+    if (fault || bound) { if (!alreadySaved) refusedText = labUnitRefusalLine(entry!.key, cell.lab.unit, fault ?? 'implausible', bound ?? undefined); }
+    else if (row && row.factor !== 1) storedText = `${row.stored.value} ${row.stored.unit}`;
   }
   const label = `${rowName(row)} value from ${columnWords}`;
   const newUnitShown = showUnit(cell.displayUnit);

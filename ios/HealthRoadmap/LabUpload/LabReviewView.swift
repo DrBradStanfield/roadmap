@@ -249,7 +249,7 @@ struct LabReviewView: View {
     static func describe(_ summary: LabSaveSummary) -> String {
         var parts = ["\(summary.saved) value\(summary.saved == 1 ? "" : "s") saved to your record."]
         if summary.skipped > 0 { parts.append("\(summary.skipped) left as they were: that day already had a value.") }
-        for refused in summary.refused { parts.append("Not saved, \(refused.label): \(refused.message)") }
+        for refused in summary.refused { parts.append(refused.line ?? "Not saved, \(refused.label): \(refused.message)") }
         return parts.joined(separator: "\n")
     }
 }
