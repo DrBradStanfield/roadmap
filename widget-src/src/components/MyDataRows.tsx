@@ -186,28 +186,54 @@ const TREND_WIDTH = 56;
 type TrendBand = { top: number; height: number };
 /** The band between the title's cap height (`capTop`) and the date line's baseline, capped at
  *  0.8 x the width and centred there, so a title wrapped at large text never draws a tall spike
- *  (US-62 AC8a). The iPhone's twin is ValueRow.trendBand. */
-export function trendBand(capTop: number, baseline: number, width = TREND_WIDTH): TrendBand {
+ *  (US-62 AC8a). None while the two are not yet a band wider than the line's 2px padding each
+ *  side (a measurement still settling): the trend then fills its box. The iPhone's twin is
+ *  ValueRow.trendBand. */
+export function trendBand(capTop: number, baseline: number, width = TREND_WIDTH): TrendBand | undefined {
+  if (!(baseline - capTop > 4)) return undefined;
   const height = Math.min(baseline - capTop, 0.8 * width);
   return { top: capTop + (baseline - capTop - height) / 2, height };
+}
+
+let pen: CanvasRenderingContext2D | null | undefined;
+/** Where `text`'s words are inked, in viewport px: its first line's cap height and its last
+ *  line's baseline, read from the text's line boxes and its font's metrics. Nothing is added to
+ *  the text, so nothing can wrap onto a line of its own. Null where the browser cannot say. */
+function inkOf(text: Element): { capTop: number; baseline: number } | null {
+  const range = document.createRange();
+  range.selectNodeContents(text);
+  const lines = [...(range.getClientRects?.() ?? [])].filter(line => line.width > 0);
+  if (!lines.length) return null;
+  pen ??= document.createElement('canvas').getContext('2d');
+  if (!pen) return null;
+  const font = getComputedStyle(text);
+  pen.font = `${font.fontStyle} ${font.fontWeight} ${font.fontSize} ${font.fontFamily}`;
+  const { fontBoundingBoxDescent: descent, actualBoundingBoxAscent: cap } = pen.measureText('H');
+  return { capTop: lines[0].bottom - descent - cap, baseline: lines[lines.length - 1].bottom - descent };
 }
 
 /** One row. Screen readers hear "81, previous 74": brackets alone say nothing out loud. */
 const MetricRow = memo(function MetricRow({ row, onOpen }: { row: RowModel; onOpen: (subject: ValueSubject, from?: Element) => void }) {
   const meta = [row.target, row.day && monthYear(row.day)].filter(Boolean).join(' · ');
   // The trend is as tall as the name block and drawn over its ink, the title's cap height to the
-  // date line's baseline, as the iPhone's row (US-62 AC8a). The .md-row-ink marks sit on those lines.
+  // date line's baseline, as the iPhone's row (US-62 AC8a).
   const name = useRef<HTMLSpanElement>(null);
-  const [fit, setFit] = useState<{ width: number; height: number; band: TrendBand }>();
+  const [fit, setFit] = useState<{ width: number; height: number; band?: TrendBand }>();
+  const measured = useRef<string>();
   useLayoutEffect(() => {
     const block = name.current;
     if (!block || typeof ResizeObserver === 'undefined') return;
     const measure = () => {
       const box = block.getBoundingClientRect();
-      const cap = block.querySelector('.md-row-label > .md-row-ink')?.getBoundingClientRect();
-      const base = block.querySelector('.md-row-meta > .md-row-ink')?.getBoundingClientRect();
+      const label = block.querySelector('.md-row-label'), meta = block.querySelector('.md-row-meta');
+      const top = label && inkOf(label), bottom = meta && inkOf(meta);
       const width = block.parentElement?.querySelector('.md-row-trend')?.getBoundingClientRect().width || TREND_WIDTH; // the CSS column's
-      setFit(box.height ? { width, height: box.height, band: trendBand(cap ? cap.top - box.top : 0, base ? base.bottom - box.top : box.height, width) } : undefined);
+      const band = top && bottom ? trendBand(top.capTop - box.top, bottom.baseline - box.top, width) : undefined;
+      const next = box.height ? { width, height: box.height, band } : undefined;
+      const key = JSON.stringify(next);
+      if (key === measured.current) return; // the same measurement renders nothing
+      measured.current = key;
+      setFit(next);
     };
     measure();
     const watch = new ResizeObserver(measure);
@@ -218,8 +244,8 @@ const MetricRow = memo(function MetricRow({ row, onOpen }: { row: RowModel; onOp
     <li>
       <button type="button" className="md-row" onClick={e => onOpen(row.subject, e.currentTarget)} data-row={row.key ?? subjectKey(row.subject)}>
         <span className="md-row-name" ref={name}>
-          <span className="md-row-label"><span className="md-row-ink"/>{row.label}</span>
-          {meta && <span className="md-row-meta">{meta}<span className="md-row-ink"/></span>}
+          <span className="md-row-label">{row.label}</span>
+          {meta && <span className="md-row-meta">{meta}</span>}
         </span>
         <RowTrend points={row.trend} limits={row.trendLimits} tint={row.tint} width={fit?.width} height={fit?.height} band={fit?.band}/>
         <span className="md-row-reading">

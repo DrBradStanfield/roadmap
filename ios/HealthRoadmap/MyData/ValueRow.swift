@@ -89,7 +89,7 @@ struct ValueRow: View {
             Spacer(minLength: 0)
             HStack(alignment: stacked ? .center : .firstTextBaseline, spacing: 12) {
                 Sparkline(points: trend, tint: tint, size: Self.trendSize(width: trendWidth, nameHeight: name.height > 0 ? name.height : nil, textSize: textSize),
-                          band: stacked && name.height > 0 ? Self.trendBand(capTop: name.firstBaseline - Self.capHeight(textSize), baseline: name.lastBaseline, width: trendWidth) : nil)
+                          band: stacked ? Self.trendBand(capTop: name.firstBaseline - Self.capHeight(textSize), baseline: name.lastBaseline, width: trendWidth) : nil)
                     .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 2 }
                 ZStack(alignment: .trailing) {
                     if stacked, let column {
@@ -190,8 +190,11 @@ extension ValueRow {
 
     /// Where in that box the line is drawn: the title's cap height to the date line's baseline,
     /// capped at 0.8 x the width and centred there, so a title wrapped at large text never draws a
-    /// tall spike. The web's twin is MyDataRows.tsx `trendBand`.
-    nonisolated static func trendBand(capTop: CGFloat, baseline: CGFloat, width: CGFloat) -> ClosedRange<CGFloat> {
+    /// tall spike. None while the two are not yet a band wider than the line's 2 pt padding each
+    /// side, as the baselines arrive one at a time: the trend then fills its box. The web's twin is
+    /// MyDataRows.tsx `trendBand`.
+    nonisolated static func trendBand(capTop: CGFloat, baseline: CGFloat, width: CGFloat) -> ClosedRange<CGFloat>? {
+        guard baseline - capTop > 4 else { return nil }
         let height = min(baseline - capTop, 0.8 * width)
         let top = capTop + (baseline - capTop - height) / 2
         return top...top + height

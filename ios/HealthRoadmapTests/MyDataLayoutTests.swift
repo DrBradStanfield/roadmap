@@ -394,12 +394,17 @@ final class MyDataLayoutTests: XCTestCase {
     }
 
     /// US-62 AC8a: the band a row's trend is drawn over is its ink, capped at 0.8 x its width and
-    /// centred, the web's `trendBand`.
-    func testARowsTrendBandIsCappedAndCentred_US62_AC8a() {
+    /// centred, the web's `trendBand`. While the baselines arrive one at a time it can be no band
+    /// at all (the last above the first), and then there is none: a backwards range would trap.
+    func testARowsTrendBandIsCappedAndCentred_US62_AC8a() throws {
         XCTAssertEqual(ValueRow.trendBand(capTop: 5, baseline: 32, width: 56), 5...32)
-        let capped = ValueRow.trendBand(capTop: 5, baseline: 85, width: 56)
+        let capped = try XCTUnwrap(ValueRow.trendBand(capTop: 5, baseline: 85, width: 56))
         XCTAssertEqual(capped.upperBound - capped.lowerBound, 44.8, accuracy: 1e-9)
         XCTAssertEqual((capped.lowerBound + capped.upperBound) / 2, 45, accuracy: 1e-9, "centred on the ink")
+        XCTAssertNil(ValueRow.trendBand(capTop: 30, baseline: 10, width: 56), "the last baseline not yet read")
+        XCTAssertNil(ValueRow.trendBand(capTop: 17 - 12, baseline: 0, width: 56), "only the first baseline read")
+        XCTAssertNil(ValueRow.trendBand(capTop: 5, baseline: 9, width: 56), "no room inside the padding")
+        XCTAssertNil(ValueRow.trendBand(capTop: 5, baseline: .nan, width: 56))
     }
 
     /// US-12 AC21: a value printed as a limit the rule leaves ungraded says the web's note where its

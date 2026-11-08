@@ -5284,7 +5284,6 @@ input[type="number"] {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 1 1 auto;
   min-width: 0;
 }
 .md-row-label {
@@ -5298,7 +5297,6 @@ input[type="number"] {
 }
 .md-row-trend {
   display: block;
-  flex: 0 0 56px;
   width: 56px;
 }
 /* Below 390px the trend keeps its old 44px, so a target and its date stay on one line
@@ -5308,16 +5306,8 @@ input[type="number"] {
     grid-template-columns: minmax(0, 1fr) 44px 104px;
   }
   .md-row-trend {
-    flex-basis: 44px;
     width: 44px;
   }
-}
-/* A zero-width mark from the baseline up to the cap height: the row measures its trend's ink band by it (US-62 AC8a). */
-.md-row-ink {
-  display: inline-block;
-  width: 0;
-  height: 0.7em;
-  height: 1cap;
 }
 .md-row-reading {
   display: flex;
