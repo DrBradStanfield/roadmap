@@ -36,6 +36,8 @@ beforeEach(() => {
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe.each(providers)('%s record save that never answers (US-09 AC13d)', (backend, make) => {
+  // The page's cloud, remembered as connect.ts does (a moved-off tab writes no device copy, US-06 AC13).
+  beforeEach(() => localStorage.setItem('health_roadmap_backend', backend));
   /** Reads answer at once; the stalled request hangs until its signal aborts,
    *  as a browser fetch does. With no signal it hangs for good. */
   function stall(stalled: (url: string, init: RequestInit) => boolean) {

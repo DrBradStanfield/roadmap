@@ -135,13 +135,14 @@ export async function dropboxDownload(accessToken: string, ref: string, signal?:
 /**
  * Store one uploaded document at its folder-relative `ref`, overwriting
  * whatever is there (refs are collision-suffixed by buildDocumentRef). The
- * browser adapter and an opted-in DropboxAdapter both call this. Bare `fetch`,
- * not `request`: a 10 MB original on a slow uplink outlives `fetchOrFail`'s
- * 30-second bound, and the browser's failures keep the class they always had.
+ * browser adapter and an opted-in DropboxAdapter both call this. A 10 MB
+ * original on a slow uplink outlives the 30-second default, so it gets the
+ * 5 minutes every other document upload has (US-09 AC39, AC13e).
  */
 export async function dropboxUploadDocument(accessToken: string, ref: string, bytes: Blob | Uint8Array<ArrayBuffer>): Promise<void> {
   const arg = { path: `/${ref}`, mode: { '.tag': 'overwrite' }, autorename: false, mute: true };
-  const res = await fetch(UPLOAD_URL, {
+  const res = await request(UPLOAD_URL, {
+    timeoutMs: 300_000,
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,

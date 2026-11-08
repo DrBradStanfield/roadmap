@@ -37,6 +37,7 @@ import {
   driveFindFolder,
   driveUpdateIfVersion,
   driveUploadDocument,
+  fetchOrFail,
   readDriveRecord,
   splitDocumentRef,
   DRIVE_API,
@@ -345,8 +346,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
     // No Content-Type header: a string body defaults to text/plain, keeping the
     // POST a CORS "simple request" (no preflight — remix-serve can't answer
-    // OPTIONS). The endpoint parses JSON regardless of content type.
-    const res = await fetch(config.exchangeUrl, {
+    // OPTIONS). The endpoint parses JSON regardless of content type. Bounded
+    // (US-09 AC37), as Dropbox's is: the page waits on this before it draws.
+    const res = await fetchOrFail('Google Drive', config.exchangeUrl, {
       method: 'POST',
       body: JSON.stringify({
         grantType: 'code',
@@ -354,6 +356,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
         codeVerifier: claimed.verifier,
         redirectUri: config.redirectUri,
       }),
+      timeoutMs: 10_000,
     });
     if (!res.ok) {
       throw new StorageError(`Google Drive connect failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
@@ -674,17 +677,19 @@ export class GoogleDriveAdapter implements StorageAdapter {
   /**
    * Self-heal the folder's display name after a brand rename — covers folders
    * whose id was cached before the rename (the find/create paths can't see
-   * them). At most one PATCH per device per rename; cosmetic, never blocks.
+   * them). Marked done once Drive accepts one PATCH per device per rename;
+   * cosmetic, never blocks.
    */
   private async ensureFolderName(folderId: string, knownName?: string): Promise<void> {
     if (this.stored?.folderName === FOLDER_NAME) return;
     try {
       if (knownName !== FOLDER_NAME) {
-        await fetch(`${DRIVE_API}/files/${folderId}`, {
+        const res = await fetch(`${DRIVE_API}/files/${folderId}`, {
           method: 'PATCH',
           headers: { ...(await this.authHeaders()), 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: FOLDER_NAME }),
         });
+        if (!res.ok) return; // refused: not done, so tried again (US-09 AC40)
       }
       this.stored = { ...(this.stored ?? {}), folderName: FOLDER_NAME };
       setJson(CONFIG_KEY, this.stored);
