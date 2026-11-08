@@ -1,7 +1,7 @@
-<!-- generated — never edit; source hash sha256:0c7e3b05aae469053d98a43faa801b68d1efab67abdcbaa6e092a0f6a64f883e -->
+<!-- generated — never edit; source hash sha256:b76a9b815c4628ef00eb372d3373c4241ca83cbfa47191339ea34d214e8e7375 -->
 <!-- Built by claude_business tools/sync-shared-docs.mjs from docs/customer-service/answer-bank.md. Edit the master there and rerun the sync. -->
 
-Approved answers to questions customers have asked by email (81 entries), written in the first person. Each entry gives the question, then the answer.
+Approved answers to questions customers have asked by email (73 entries), written in the first person. Each entry gives the question, then the answer.
 
 ### Can the glycine or glycinate mineral forms in MicroVitamin cause reactions in someone sensitive to glycine or who reacted badly to magnesium glycinate?
 
@@ -256,31 +256,6 @@ tolerable limit of 4,000IU, even with sun exposure
 What do you think?
 Looking forward to your reply
 
-### Third-party testing found more vitamin D than the label; is that safe?
-
-This is due to the overages that we include to make sure that we hit the
-label claims
-
-The upper tolerable limit set by the NIH is 100 mcg (4,000IU), so
-MicroVitamin is well below that
-https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/#h36
-
-Please let me know if you have any other questions
-
-### Is the vitamin D dose too low for someone living far north, or with a low blood test?
-
-MicroVitamin doses Vitamin D slightly higher than the RDA, and the RDA
-assumes zero sunlight exposure.
-
-There's no current standard about what vitamin D level to target either.
-See here:
-https://jamanetwork.com/journals/jama/article-abstract/2833140
-
-The Endocrine Society for example does not recommend routine vitamin D
-blood tests
-
-Let me know what you think of the above
-
 ### Should the vitamin K2 be avoided, given concerns about arterial calcification?
 
 This video of mine regarding the latest Vitamin K2 RCT might be of interest
@@ -288,17 +263,6 @@ to you:
 https://youtu.be/jtvFe_cibS8
 
 Let me know what you think
-
-### How much leucine is in the capsules, and is it enough for muscle?
-
-Product facts here vary by market: confirm them in PRODUCTS for the user's country.
-
-Yes, there's very little L-Leucine in the capsules and it's primarily used
-as a flow agent.
-The best way to get enough Leucine is via a good diet that has around 1.2g
-of protein per kg of ideal bodyweight per day
-
-Please let me know if you have any other questions
 
 ### The Sleep supplement kept me awake; what should I do?
 
@@ -491,13 +455,6 @@ If you already take an eye supplement, please show your ophthalmologist both lab
 
 Please let me know if you have any other questions
 
-### Why doesn't MicroVitamin match the AREDS2 formula (asked by someone with AMD)?
-
-MicroVitamin is a general multivitamin designed to fill nutritional gaps, not an eye supplement, so it isn't built to match the AREDS2 formula
-If you have AMD, the choice of eye supplement is one to make with your ophthalmologist
-
-Please let me know if you have any other questions
-
 ### Does MicroVitamin raise testosterone?
 
 MicroVitamin hasn't been tested in a clinical trial for testosterone, so I can't say that it raises it
@@ -616,20 +573,6 @@ The NIH supplement fact sheets are a great resource if you'd like to read more
 
 Please let me know if you have any other questions
 
-### What do you think of this diet trial (keto, Mediterranean, low-fat)?
-
-With diet trials, I always check whether the diets differed in protein or calories, as that can explain the results
-Overall, I'd focus on what the clinical guidelines and randomized controlled trials suggest
-
-What do you think?
-
-### A social-media post says Alzheimer's disease might be solved
-
-These posts often go viral before the research is confirmed
-It'll be interesting to see whether larger human trials back it up
-
-Hope you are well
-
 ### Is MicroVitamin safe during pregnancy or while trying to conceive?
 
 The label advises against taking MicroVitamin during pregnancy or breastfeeding
@@ -637,14 +580,6 @@ Prenatal supplements are made for the different needs of pregnancy, including mo
 So best to discuss a prenatal supplement with your doctor or midwife
 
 Please let me know if you have any other questions
-
-### My doctor suggested a higher dose of folic acid; is that covered by MicroVitamin?
-
-It's best for me not to interfere with your relationship with your doctor
-MicroVitamin uses the bioactive form of folate, methylfolate, and the amount is on your label
-Please show the label to your doctor so they can work out the right total dose for you
-
-Please let me know if you need anything further from me
 
 ### My creatinine (or eGFR) changed after starting creatine; is that a concern?
 
@@ -682,15 +617,6 @@ Current guidelines don't recommend routine ApoE4 testing
 My own view is that it may be simpler to treat everyone's heart risk factors well, rather than segmenting people by ApoE4
 
 What do you think?
-
-### Should DNA results be combined with blood tests to personalise advice?
-
-It's a tricky one
-I only want to focus on blood results that might potentially change management
-
-Changing diet, supplements, etc based on a person's DNA is an interesting area, but it needs further research still
-
-Please let me know if you have any other questions
 
 ### Atypical diabetes (a mix of type 1 and type 2 features)
 
