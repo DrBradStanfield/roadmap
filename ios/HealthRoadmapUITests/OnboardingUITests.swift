@@ -49,8 +49,8 @@ final class OnboardingUITests: XCTestCase {
         return XCTWaiter.wait(for: [shown], timeout: 5) == .completed
     }
 
-    /// Welcome, Apple Health ("Not now"), then sex and birth, leaving the height screen
-    /// up. With `reachable`, every button tapped must be on screen (AC8).
+    /// Welcome, Apple Health (Continue, then Don't Allow in Apple's sheet), then sex and birth,
+    /// leaving the height screen up. With `reachable`, every button tapped must be on screen (AC8).
     @MainActor
     private func answerUpToHeight(_ app: XCUIApplication, reachable: Bool = false, shots prefix: String = "") throws {
         let start = app.buttons["welcome.start"]
@@ -60,12 +60,8 @@ final class OnboardingUITests: XCTestCase {
         snap(app, prefix + "1 welcome")
         press(start, "Get started", reachable)
 
-        // Apple Health: go on without it, so no system sheet is needed.
-        let notNow = app.buttons["onboarding.notNow"]
-        XCTAssertTrue(notNow.waitForExistence(timeout: 5))
         snap(app, prefix + "2 apple health")
-        if reachable { XCTAssertTrue(app.buttons["onboarding.allow"].isHittable, "Allow is reachable") }
-        press(notNow, "Not now", reachable)
+        continueDecliningHealth(app, reachable: reachable)
 
         // Sex: a tap is the answer and moves on, so there is no Continue (AC4).
         let female = app.buttons["onboarding.female"]
@@ -128,6 +124,32 @@ final class OnboardingUITests: XCTestCase {
     private func press(_ button: XCUIElement, _ what: String, _ reachable: Bool) {
         if reachable { XCTAssertTrue(button.isHittable, "\(what) is reachable") }
         button.tap()
+    }
+
+    /// The Apple Health page's one button, Continue, then Don't Allow in Apple's sheet, as a
+    /// person who does not want to share does (US-54 AC3, App Review 5.1.1(iv)). iOS shows the
+    /// sheet once per install: on a later run Continue goes straight on.
+    @MainActor
+    private func continueDecliningHealth(_ app: XCUIApplication, reachable: Bool = false) {
+        let next = app.buttons["onboarding.allow"]
+        XCTAssertTrue(next.waitForExistence(timeout: 5), "the Apple Health page")
+        XCTAssertEqual(next.label, "Continue", "the button before Apple's sheet says Continue (5.1.1(iv))")
+        XCTAssertFalse(app.buttons["Not now"].exists, "no way past the page without Apple's sheet")
+        press(next, "Continue", reachable)
+        let sheet = XCUIApplication(bundleIdentifier: "com.apple.HealthPrivacyService")
+        // Under load the sheet has taken over 10 seconds to show.
+        guard sheet.cells["UIA.Health.AuthSheet.AllCategoryButton"].waitForExistence(timeout: 40) else { return }
+        // On iOS 27.2 Don't Allow ends the long sheet, and asking whether it is hittable throws
+        // ("Activation point invalid"): scroll until its frame is on screen, then tap that point.
+        let dontAllow = sheet.buttons["UIA.Health.DoNotAllow.Button"].exists
+            ? sheet.buttons["UIA.Health.DoNotAllow.Button"].firstMatch : sheet.buttons["Don’t Allow"].firstMatch
+        let screen = sheet.windows.firstMatch.frame
+        for _ in 0..<12 where !(dontAllow.exists && screen.contains(dontAllow.frame) && !dontAllow.frame.isEmpty) { sheet.swipeUp() }
+        tap(dontAllow, in: sheet)
+        // Apple then says access can be turned on later; its OK closes the sheet.
+        let ok = sheet.buttons["OK"].firstMatch
+        if ok.waitForExistence(timeout: 30) { tap(ok, in: sheet) }
+        app.activate()
     }
 
     @MainActor
@@ -484,7 +506,7 @@ final class OnboardingUITests: XCTestCase {
     /// rate since its card went (US-73).
     private let everything = ["BloodPressure", "CardioFitness", "DateofBirth", "Height", "RestingHeartRate", "Sex", "Sleep", "Steps", "WaistCircumference", "Weight"]
 
-    /// "Connect Apple Health" shows Apple's Health sheet once, asking for everything the app
+    /// The Apple Health page's Continue shows Apple's Health sheet once, asking for everything the app
     /// reads: onboarding's record types and US-56's five (AC3, US-56 AC4). The sheet runs in
     /// Apple's own process; Allow is checked by hand. On iOS 27 the sheet goes on with its own
     /// Continue and a choice of how much history to share. Don't Allow is tapped at its screen
@@ -501,6 +523,8 @@ final class OnboardingUITests: XCTestCase {
                       "the hint above the button says what Apple's sheet asks (Brad 2026-10-25)")
         XCTAssertTrue(app.staticTexts["It also shows your resting heart rate, sleep, VO2 max and steps here, never in your record."].exists,
                       "the page names US-56's five too (adversary R5)")
+        XCTAssertEqual(allow.label, "Continue", "the button before Apple's sheet says Continue (5.1.1(iv))")
+        XCTAssertFalse(app.buttons["Not now"].exists, "no way past the page without Apple's sheet")
         snap(app, "health hint")
         allow.tap()
         let sheet = XCUIApplication(bundleIdentifier: "com.apple.HealthPrivacyService")
@@ -509,15 +533,17 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertEqual(readSwitches(sheet), everything, "one sheet: the record's types and the five live ones")
     }
 
-    /// US-56 AC4, AC5 (2026-10-26): no access card and no second way in. After onboarding's
-    /// "Not now", My health shows no Turn On row; Settings' own "Connect Apple Health" row runs
-    /// the same one request, for everything.
+    /// US-56 AC4, AC5 (2026-10-26): no access card and no second way in. A person past
+    /// onboarding who never connected (an "I already use Health Roadmap" run asks no Health
+    /// page; an older build had "Not now") sees no Turn On row on My health; Settings' own
+    /// "Connect Apple Health" row runs the same one request, for everything. Run it on a fresh
+    /// install: once answered, iOS never shows the sheet again.
     @MainActor
-    func testAfterNotNowMyDataConnectAsksForEverythingInOneSheet_US56_AC4_AC5() throws {
-        let app = launch()
-        try answerUpToWeight(app)
-        answerWeight(app)
-        XCTAssertTrue(app.tabBars.buttons["My health"].waitForExistence(timeout: 10))
+    func testUnconnectedMyDataConnectAsksForEverythingInOneSheet_US56_AC4_AC5() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "-welcomed", "YES", "-onboarded", "YES"]
+        app.launch()
+        XCTAssertTrue(app.tabBars.buttons["My health"].waitForExistence(timeout: 60))
         XCTAssertFalse(app.buttons["Turn On"].exists, "no Turn On row while not connected")
         openSettings(app)
         let connect = app.buttons["Connect Apple Health"]
@@ -614,12 +640,13 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertTrue(app.alerts.buttons["OK"].waitForExistence(timeout: 10))
         app.alerts.buttons["OK"].tap()
 
-        XCTAssertTrue(app.buttons["onboarding.notNow"].waitForExistence(timeout: 10), "the questions again")
+        XCTAssertTrue(app.buttons["onboarding.allow"].waitForExistence(timeout: 10), "the questions again")
         XCTAssertFalse(app.buttons["welcome.start"].exists, "not the welcome screen")
         snap(app, "after delete")
 
         // On to height, which shows the kept units: feet and inches, or one centimetre box.
-        app.buttons["onboarding.notNow"].tap()
+        continueDecliningHealth(app)
+        XCTAssertTrue(app.buttons["onboarding.female"].waitForExistence(timeout: 10))
         app.buttons["onboarding.female"].tap()
         XCTAssertTrue(app.pickerWheels.element(boundBy: 1).waitForExistence(timeout: 5))
         app.pickerWheels.element(boundBy: 1).adjust(toPickerWheelValue: "1980")

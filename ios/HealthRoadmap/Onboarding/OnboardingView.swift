@@ -97,8 +97,7 @@ struct OnboardingView: View {
     @ViewBuilder private func page(_ step: OnboardingStep) -> some View {
         switch step {
         case .health:
-            Self.healthPage(connecting: connecting, allow: { Task { await allowHealth() } },
-                            notNow: { healthAsked = true; advance(from: .health) })
+            Self.healthPage(connecting: connecting, allow: { Task { await allowHealth() } })
         case .sex:
             // A tap is the answer: it saves and moves on, so the step has no Continue (Brad 2026-10-23).
             OnboardingPage(symbol: "person.fill", tint: .accentColor, title: "What is your sex?",
@@ -183,7 +182,9 @@ struct OnboardingView: View {
     }
 
     /// The Apple Health page (AC3), built here so TextSizeLayoutTests lays out the real one.
-    static func healthPage(connecting: Bool, allow: @escaping () -> Void, notNow: @escaping () -> Void) -> some View {
+    /// One button, Continue, and Apple's sheet always follows (App Review 5.1.1(iv), 2026-11-09):
+    /// a person who does not want to share says so in Apple's sheet.
+    static func healthPage(connecting: Bool, allow: @escaping () -> Void) -> some View {
         OnboardingPage(symbol: "heart.fill", tint: .pink, title: "Use your Apple Health data",
              detail: "So you type less. Your sex, birth date, height, weight, waist and blood pressure go only into your record, on this iPhone or in your own cloud. Values you add here are saved back to Apple Health.",
              progress: nil, spread: true) {
@@ -196,9 +197,7 @@ struct OnboardingView: View {
             }
         } actions: {
             AppleAsksNext()
-            primary(connecting ? "Connecting…" : "Connect Apple Health", id: "onboarding.allow", action: allow)
-                .disabled(connecting)
-            secondary("Not now", id: "onboarding.notNow", action: notNow)
+            primary(connecting ? "Connecting…" : "Continue", id: "onboarding.allow", action: allow)
                 .disabled(connecting)
         }
     }
@@ -310,12 +309,6 @@ struct OnboardingView: View {
     private static func primary(_ title: String, id: String, action: @escaping () -> Void) -> some View {
         Button(title, action: action)
             .buttonStyle(.accent)
-            .accessibilityIdentifier(id)
-    }
-
-    private static func secondary(_ title: String, id: String, action: @escaping () -> Void) -> some View {
-        Button(title, action: action)
-            .padding(.top, 4)
             .accessibilityIdentifier(id)
     }
 
