@@ -2,14 +2,14 @@ import SwiftUI
 import UIKit
 
 /// The Reminders section of My data (US-25 AC12): one switch, then what is due and
-/// when. Turning it on explains first, then asks iOS's permission. The web twin
+/// when. Turning it on asks iOS's permission at once, with no message of ours first
+/// (App Review 5.1.1(iv), Brad 2026-11-09). The web twin
 /// is the email-reminders control in widget-src (ResultsPanel's remindersSection);
 /// the web has no per-category switches since its v1 settings went, so neither
 /// does the app. Any per-category choice already in the record is honoured by
 /// the engine's schedule.
 struct RemindersSection: View {
     @Environment(ReminderScheduler.self) private var scheduler
-    @State private var explaining = false
     @State private var refused = false
 
     var body: some View {
@@ -17,7 +17,7 @@ struct RemindersSection: View {
             Toggle("Remind me when something is due", isOn: Binding(
                 get: { scheduler.optedIn },
                 set: { on in
-                    if on { explaining = true } else { Task { await scheduler.optOut() } }
+                    Task { if on { await ask() } else { await scheduler.optOut() } }
                 }
             ))
             if scheduler.optedIn {
@@ -40,12 +40,6 @@ struct RemindersSection: View {
             SectionTitle.reminders()
         } footer: {
             Text("Worked out on this iPhone from your record, with nothing sent anywhere. The lock screen says only that a check-up is due, never which one.")
-        }
-        .alert("Turn on reminders?", isPresented: $explaining) {
-            Button("Continue") { Task { await ask() } }
-            Button("Not now", role: .cancel) {}
-        } message: {
-            Text("This iPhone will notify you when a check-up, screening or blood test in your plan is due. iOS will ask if notifications are allowed.")
         }
         .alert("Notifications are off", isPresented: $refused) {
             Button("Open Settings") { openSettings() }
