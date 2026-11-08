@@ -31,7 +31,7 @@
  * writer can only edit safely with the lamport discipline this does not take on.
  */
 import {
-  canonicalLabRow, canonicalLabValue, correctionOffScale, type CountFault, displayLabUnit, foldName, labCountFault, type LabCatalogEntry, LAB_PLAUSIBLE_RANGES,
+  canonicalLabRow, canonicalLabValue, correctionOffScale, type CountFault, displayLabUnit, foldName, labCountFault, type LabCatalogEntry, LAB_PLAUSIBLE_RANGES, labPlausibleBound,
   labSlotKey, looseFold, labUnitRefusal, normalizeLabUnit, resolveLabCatalogEntry, type StoredLabRow,
 } from './lab-catalog';
 import { bloodTestKeyOf, coreStored, createCoreRow, isActive, isBloodTestKey, isCoreRow, labRowSlot } from './blood-tests';
@@ -40,7 +40,7 @@ import { resolveCoreMetricName } from './lab-extraction';
 import { dayOf, latestStamp, localDay, rootIdOf } from './merge';
 import { isCalendarDay, isClinicalDay } from './measurement-history';
 import { CORE_BLOOD_UNITS, createLabValue, createMeasurement, recordSchemaVersion, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
-import { canonicalToReported, rangeFault, reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
+import { canonicalToReported, reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
 import { comparatorOf, type Comparator } from './lab-limits';
 import { formatLabValue, labNumberText, labUnitRefusalLine, savedLabText } from './lab-series';
 import { withEffectiveComparator } from './readable-rows';
@@ -517,10 +517,10 @@ const BLOOD_PRESSURE_NAMES = new Set(['blood pressure', 'bp', 'blood pressure sy
  *  passed, each as the matrix prints it, thousands separated. The words a person who typed it
  *  reads, without the closing full stop (a refusal's own, as every `EditRejection` message). */
 function labPlausibleFault(entry: LabCatalogEntry, typed: number, unit: string): { message: string; bound: 'above' | 'below' } | null {
-  const converted = canonicalLabValue(entry, typed, unit);
-  const range = converted && LAB_PLAUSIBLE_RANGES[entry.key];
-  const fault = range && rangeFault(range, converted.value);
+  const fault = labPlausibleBound(entry, typed, unit);
   if (!fault) return null;
+  const converted = canonicalLabValue(entry, typed, unit)!;
+  const range = LAB_PLAUSIBLE_RANGES[entry.key];
   const typedUnit = normalizeLabUnit(unit);
   const conversion = typedUnit.toLowerCase() === entry.unit.toLowerCase() ? '' : `${labNumberText(typed)} ${typedUnit} is ${labNumberText(converted.value)} ${entry.unit}. `;
   return { message: `${conversion}${entry.label} ${fault} ${labNumberText(fault === 'below' ? range.min : range.max)} ${entry.unit} is almost certainly a typing or unit mistake: check the number and its unit`, bound: fault };
@@ -564,7 +564,7 @@ export function addLabValue(file: RoadmapFile, request: AddLabValueRequest, now:
   const result = bulkAppendValues(file, [{ kind: 'lab', metricName, value: request.value, unit, recordedAt: `${day}T00:00:00.000Z`, source: 'manual' }], now);
   if (result.saved.length) return { ok: true, file: result.file, row: result.saved[0] as FileLabValue };
   const [refused] = result.refused;
-  if (refused) return { ok: false, reason: 'unknown-unit', message: labUnitRefusalLine(refused.key, refused.unit, refused.fault), refused };
+  if (refused) return { ok: false, reason: 'unknown-unit', message: labUnitRefusalLine(refused.key, refused.unit, refused.fault, refused.bound), refused };
   // A core test's name writes its core row (US-66 AC6): a number out of its range, or a held core day.
   const [range] = result.measurementRefusals;
   if (range) return { ok: false, reason: 'invalid-value', message: range.message, ...(range.bound ? { bound: range.bound } : null) };

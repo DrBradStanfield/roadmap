@@ -15,6 +15,7 @@ import {
   resolveLabCatalogEntry,
   canonicalLabRow,
   labCountFault,
+  labPlausibleBound,
   sameLabQuantity,
   slotState,
   validDay,
@@ -1551,14 +1552,16 @@ const MatrixCellView = memo(function MatrixCellView({
     // What Save stores for a catalogued test printed in another unit: the write's
     // own canonicalLabRow on the number as it now reads, so a row the write
     // refuses (a count off its range's scale) previews nothing (US-21 AC18).
-    // A row past its test's ceiling says the line Save would refuse it with,
-    // never the impossible number (US-21 AC21).
+    // A row past its test's ceiling, or its plausible range (US-21 AC26), says the line
+    // Save would refuse it with, never the impossible number (US-21 AC21).
     const entry = resolveLabCatalogEntry(cell.lab.name);
     const typed = entry ? readNumericCell(editedValue) : undefined;
     const printed = typed === undefined ? null
       : { value: typed, unit: cell.lab.unit, referenceLow: cell.referenceLow, referenceHigh: cell.referenceHigh };
     const row = entry && printed ? canonicalLabRow(entry, printed) : null;
-    if (row && row.factor !== 1) storedText = `${row.stored.value} ${row.stored.unit}`;
+    const bound = entry && printed ? labPlausibleBound(entry, printed.value, printed.unit) : null;
+    if (bound) { if (!alreadySaved) refusedText = labUnitRefusalLine(entry!.key, cell.lab.unit, 'implausible', bound); }
+    else if (row && row.factor !== 1) storedText = `${row.stored.value} ${row.stored.unit}`;
     else if (!alreadySaved && entry && printed && labCountFault(entry, printed) === 'ceiling') refusedText = labUnitRefusalLine(entry.key, cell.lab.unit, 'ceiling');
   }
   const label = `${rowName(row)} value from ${columnWords}`;

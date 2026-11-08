@@ -8,7 +8,7 @@ import { METRIC_LABELS } from '../../packages/health-core/src/mappings';
 import { documentView, pendingRowsFor } from '../../packages/health-core/src/document-save';
 import { unreadLines, type AdditionalLabValue, type DocumentResult, type ExtractedValue, type RefusedLabValue, type UnreadLabValue } from '../../packages/health-core/src/lab-extraction';
 import { labTestLabel } from '../../packages/health-core/src/lab-catalog';
-import { labPlausibleNote, labValueLabel } from '../../packages/health-core/src/lab-series';
+import { labPlausibleNote, labUnitRefusalLine, labValueLabel } from '../../packages/health-core/src/lab-series';
 import { isReadableRow } from '../../packages/health-core/src/readable-rows';
 import { comparatorOf, withComparator } from '../../packages/health-core/src/lab-limits';
 
@@ -174,8 +174,9 @@ export interface LabSaveSummary {
   saved: number;
   /** The day already held a value: left as it was (the web's "Replace" is not in the app yet). */
   skipped: number;
-  /** Refused by the record's rules: a lab unit the catalogue does not take, or a value out of range. */
-  refused: Array<{ label: string; message: string }>;
+  /** Refused by the record's rules: a lab unit the catalogue does not take, or a value out of range.
+   *  `line`: the whole sentence to show as it is, for a value past its plausible range (US-21 AC26). */
+  refused: Array<{ label: string; message: string; line?: string }>;
 }
 
 /** What saving would do, in counts and the engine's own words. The record is not changed. */
@@ -185,10 +186,12 @@ export function labSaveSummary(file: RoadmapFile, rows: BulkRow[], now: string):
     saved: result.saved.length,
     skipped: result.skippedDuplicates,
     refused: [
-      // Past its plausible range (US-21 AC26): the web's upload words, after the test's label.
+      // Past its plausible range (US-21 AC26): the web's upload line, shown whole (it says "not saved" itself).
       ...result.refused.map((r) => {
         const implausible = r.fault === 'implausible' ? labPlausibleNote(r.key, r.bound) : undefined;
-        return implausible ? { label: labValueLabel(r.key), message: implausible } : { label: r.key, message: r.message };
+        return implausible
+          ? { label: labValueLabel(r.key), message: implausible, line: labUnitRefusalLine(r.key, r.unit, r.fault, r.bound) }
+          : { label: r.key, message: r.message };
       }),
       ...result.measurementRefusals.map((r) => ({ label: METRIC_LABELS[r.metricType] ?? r.metricType, message: r.message })),
     ],

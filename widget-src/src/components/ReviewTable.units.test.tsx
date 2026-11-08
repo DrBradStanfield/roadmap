@@ -92,6 +92,21 @@ describe('US-21 AC21: a row past its test\'s ceiling says so in the review, befo
   });
 });
 
+// US-21 AC26 (Codex R1, 2026-11-09): the review never previews a stored value Save would refuse.
+describe('US-21 AC26: a value past its plausible range is flagged in the review, before Save', () => {
+  const line = 'Glucose: a value above 150 mmol/L is almost certainly a misread number or unit, so it was not saved. Check the report.';
+
+  it('glucose 3,000 mg/dL shows the upload line and no converted value; an edit back inside the bound clears it', () => {
+    const { container, getByRole } = renderReview(lab('Glucose', 3000, 'mg/dL'));
+    expect(container.querySelector('.bt-cell-refused')?.textContent).toBe(line);
+    expect(getByRole('textbox', { name: 'Glucose value from 10 Mar 2026', description: line })).toBeTruthy();
+    expect(container.querySelector('.bt-cell-si')).toBeNull();
+    fireEvent.change(container.querySelector<HTMLInputElement>('.bt-cell-review input')!, { target: { value: '99' } });
+    expect(container.querySelector('.bt-cell-refused')).toBeNull();
+    expect(container.querySelector('.bt-cell-si')?.textContent).toMatch(/^→ 5\.\d+ mmol\/L$/);
+  });
+});
+
 describe('US-21 AC1: a catalogued row is named by the catalogue\'s label, as the blood-test matrix names it', () => {
   it('ft4 reads "Free T4" and urine_acr "Urine ACR", not a title-cased key', () => {
     const { container } = renderReview([{

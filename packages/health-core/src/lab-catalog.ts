@@ -26,7 +26,7 @@
  */
 
 import { METRIC_LABELS } from './mappings';
-import { UNIT_DEFS, type ValidationRange } from './units';
+import { rangeFault, UNIT_DEFS, type ValidationRange } from './units';
 
 export type LabGroupId =
   | 'renal'
@@ -358,6 +358,15 @@ export const LAB_PLAUSIBLE_RANGES: Readonly<Record<string, ValidationRange>> = {
   ferritin: { min: 0, max: 500000 }, // haemophagocytic syndromes can pass 100,000 µg/L
   iron: { min: 0, max: 1000 }, // iron poisoning can pass 180 µmol/L (1,000 µg/dL)
 };
+
+/** The end of its plausible range a value passes once stored in its test's canonical unit (US-21
+ *  AC26), or null inside it, with no bound, or in a unit the test does not take. The one check the
+ *  write (`toStoredLab`) and the web's review preview share. */
+export function labPlausibleBound(entry: LabCatalogEntry, value: number, unit: string): 'above' | 'below' | null {
+  const converted = canonicalLabValue(entry, value, unit);
+  const range = converted && LAB_PLAUSIBLE_RANGES[entry.key];
+  return range ? rangeFault(range, converted.value) : null;
+}
 
 const SUPERSCRIPT_DIGITS: Record<string, string> = {
   '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
