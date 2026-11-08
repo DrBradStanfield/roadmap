@@ -848,6 +848,53 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     await expect(engine.cloudRefresh()).rejects.toThrow(`"kind":"${kind}"`);
   });
 
+  // US-09 AC38: health-core reads a 409 path/insufficient_space upload as
+  // StorageError('Dropbox is full', status 409) (US-09 AC35); the phone names it
+  // as a full store, as it does Drive's quota. Other 409 refusals stay unreachable.
+  it.each([
+    ['path/insufficient_space/...', 'storage-full'],
+    ['path/disallowed_name/...', 'unreachable'],
+  ])('US-09 AC38: a Dropbox save refused with 409 %s is %s', async (summary, kind) => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine, state } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const real = dropbox.answer.bind(dropbox);
+    dropbox.answer = (url, headers, body) => url.endsWith('/files/upload')
+      ? { status: 409, headers: {}, body: JSON.stringify({ error_summary: summary }) }
+      : real(url, headers, body);
+    engine.cloudEdit(add('2026-10-10'), erase, 'si', NOW);
+    expect(await engine.cloudFlush()).toBe('failed');
+    const failed = state.events.filter(([event]) => event === 'failed').at(-1)!;
+    expect(JSON.parse(failed[1])).toMatchObject({ kind });
+    expect(state.pending).toBe(true);
+  });
+
+  it('US-09 AC38: a full Dropbox after an earlier write may have landed is still storage-full', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const other = await recordWith(['2026-09-01'], 'web');
+    const { engine, state } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const real = dropbox.answer.bind(dropbox);
+    let uploads = 0;
+    // The first upload lands, then another device overwrites it before the
+    // read-back (a lost update, retried); the retry finds the Dropbox full.
+    dropbox.answer = (url, headers, body) => {
+      if (!url.endsWith('/files/upload')) return real(url, headers, body);
+      uploads += 1;
+      if (uploads > 1) return { status: 409, headers: {}, body: JSON.stringify({ error_summary: 'path/insufficient_space/..' }) };
+      const landed = real(url, headers, body);
+      dropbox.put(other);
+      return landed;
+    };
+    engine.cloudEdit(add('2026-10-10'), erase, 'si', NOW);
+    expect(await engine.cloudFlush()).toBe('failed');
+    expect(uploads).toBe(2);
+    const failed = state.events.filter(([event]) => event === 'failed').at(-1)!;
+    expect(JSON.parse(failed[1])).toMatchObject({ kind: 'storage-full' });
+  });
+
 });
 
 // US-25 AC16 (US-11 on the iPhone): "Delete all my data" with a cloud open.
