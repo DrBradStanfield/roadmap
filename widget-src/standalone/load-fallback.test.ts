@@ -89,7 +89,8 @@ describe('startOnBackend (US-09 AC13)', () => {
 
 describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
   beforeEach(() => {
-    const backing = new Map<string, string>();
+    // The page's cloud, remembered as connect.ts does (a moved-off tab writes no device copy, US-06 AC13).
+    const backing = new Map<string, string>([['health_roadmap_backend', 'memory']]);
     vi.stubGlobal('localStorage', {
       getItem: (k: string) => (backing.has(k) ? backing.get(k)! : null),
       setItem: (k: string, v: string) => void backing.set(k, v),

@@ -2,9 +2,12 @@
 #
 # Fires on same-repo PRs from claude/* branches: a FRESH-context Claude reviews
 # the diff adversarially with a correctness-only mandate and posts its verdict
-# as a comment. ADVISORY ONLY: the deploy gate counts only HUMAN owner/
-# collaborator approvals on the final commit (deploy.yml), so this review
-# informs Brad's approval and never substitutes for it.
+# as a comment. It is not advisory: auto-ship.yml merges a claude/* PR on this
+# reviewer's APPROVE verdict for the head sha, a green 'test' check and its
+# 30-minute veto window, unless the PR carries the 'hold' label, among other
+# checks (author and same-repo gates, re-verify after the wait; see
+# auto-ship.yml). deploy.yml has
+# no approval check; its gate is a dispatch from main.
 #
 # Security posture (US-40 AC16, re-audited 2026-11-04 against the pinned SHA):
 # the reviewer reads untrusted content (agent-authored diffs quoting user
@@ -22,7 +25,7 @@
 #   --disallowedTools removes Bash (so every Bash(git ...) rule and the push
 #     wrapper), Edit, MultiEdit, Write, NotebookEdit, both file_ops tools,
 #     WebFetch and WebSearch, and reading .git/** (the token) and /proc/**
-#     (the process environment, which holds ANTHROPIC_API_KEY and the tokens).
+#     (the process environment, which holds CLAUDE_CODE_OAUTH_TOKEN and the job tokens).
 #   --allowedTools adds nothing tag mode lacks: Read, Grep, Glob and the
 #     verdict comment tool, its only write channel.
 # What is left: read-only file and CI tools, and one public comment. The
@@ -32,14 +35,14 @@
 # Brad and the reviewer itself, so a stranger's comment cannot steer it.
 # Residual (no input at this SHA covers it): review bodies and inline review
 # comments are NOT filtered by actor and still reach the prompt. The prompt
-# tells the reviewer to treat all PR text as data; the verdict stays advisory
-# and auto-ship checks its own facts (sha pin, CI, commit authors). Never set
+# tells the reviewer to treat all PR text as data; auto-ship acts on an APPROVE
+# verdict and checks its own facts (sha pin, CI, commit authors). Never set
 # allowed_non_write_users: it changes how the action stores the token.
 # tests/claude-review-boundary.test.ts computes the effective tool policy from
 # a fixture of tag mode's list at this SHA: re-check it when the pin moves.
 #
-# Uses ANTHROPIC_API_KEY (metered; keep a spend cap on this key at
-# console.anthropic.com). Editing this file is Brad-only (constitution
+# Uses CLAUDE_CODE_OAUTH_TOKEN (repo secret; Claude subscription login, not a
+# metered API key). Editing this file is Brad-only (constitution
 # Guardrails).
 
 name: Claude Review
@@ -65,7 +68,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      # SHA-pinned like flyctl in deploy.yml: this job holds ANTHROPIC_API_KEY and
+      # SHA-pinned like flyctl in deploy.yml: this job holds CLAUDE_CODE_OAUTH_TOKEN and
       # write tokens, and a moved tag would run new code with them. This SHA is
       # the commit tag v1 (= v1.0.265) pointed to on 2026-10-30.
       - uses: anthropics/claude-code-action@6d5ae526d25ce88daa2200be073e1a373167f064 # v1 / v1.0.265
