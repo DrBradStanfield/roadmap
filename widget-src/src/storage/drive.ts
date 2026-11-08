@@ -674,17 +674,19 @@ export class GoogleDriveAdapter implements StorageAdapter {
   /**
    * Self-heal the folder's display name after a brand rename — covers folders
    * whose id was cached before the rename (the find/create paths can't see
-   * them). At most one PATCH per device per rename; cosmetic, never blocks.
+   * them). Marked done once Drive accepts one PATCH per device per rename;
+   * cosmetic, never blocks.
    */
   private async ensureFolderName(folderId: string, knownName?: string): Promise<void> {
     if (this.stored?.folderName === FOLDER_NAME) return;
     try {
       if (knownName !== FOLDER_NAME) {
-        await fetch(`${DRIVE_API}/files/${folderId}`, {
+        const res = await fetch(`${DRIVE_API}/files/${folderId}`, {
           method: 'PATCH',
           headers: { ...(await this.authHeaders()), 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: FOLDER_NAME }),
         });
+        if (!res.ok) return; // refused: not done, so tried again (US-09 AC40)
       }
       this.stored = { ...(this.stored ?? {}), folderName: FOLDER_NAME };
       setJson(CONFIG_KEY, this.stored);
