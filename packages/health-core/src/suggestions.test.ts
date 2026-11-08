@@ -4,8 +4,9 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generateSuggestions, weightMedicationTrigger, lipidMarkerFor, joinWithAnd } from './suggestions';
 import { SUGGESTION_EVIDENCE } from './evidence';
-import { LIPID_TREATMENT_TARGETS, NON_HDL_THRESHOLDS, type UnitSystem } from './units';
-import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
+import { screeningForm } from './input-form';
+import { HBA1C_THRESHOLDS, LIPID_TREATMENT_TARGETS, NON_HDL_THRESHOLDS, type UnitSystem } from './units';
+import type { HealthInputs, HealthResults, MedicationInputs, SuggestionInputs, ScreeningInputs } from './types';
 import {
   canIncreaseGlp1Dose, shouldSuggestGlp1Switch, canIncreaseDose, shouldSuggestSwitch, getCurrentPotency, gradedDose,
   GLP1_DRUGS, STATIN_DRUGS,
@@ -386,8 +387,16 @@ describe('generateSuggestions', () => {
       expect(bpSuggestions.length).toBe(0);
     });
 
-    it('does not generate suggestion for BP 126/80 (diastolic 80 is not elevated)', () => {
-      const { inputs, results } = createTestData({ systolicBp: 126, diastolicBp: 80 }, { age: 55 });
+    it('US-07 AC1c: 115/80 gets the stage 1 card (stage 1 diastolic starts at 80, ACC/AHA 2017)', () => {
+      const { inputs, results } = createTestData({ systolicBp: 115, diastolicBp: 80 }, { age: 55 });
+      const suggestions = generateSuggestions(inputs, results);
+
+      expect(suggestions.filter(s => s.id.startsWith('bp-')).map(s => s.id)).toEqual(['bp-stage1']);
+      expect(suggestions.find(s => s.id === 'bp-stage1')?.description).toContain('Your BP of 115/80 mmHg indicates stage 1 hypertension.');
+    });
+
+    it('does not generate suggestion for BP 126/79 (diastolic below 80)', () => {
+      const { inputs, results } = createTestData({ systolicBp: 126, diastolicBp: 79 }, { age: 55 });
       const suggestions = generateSuggestions(inputs, results);
 
       const bpSuggestions = suggestions.filter(s => s.id.startsWith('bp-'));
@@ -769,10 +778,10 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'fiber')?.category).toBe('nutrition');
     });
 
-    it('suppresses fiber suggestion when lipid-diet is active', () => {
+    it('keeps the fiber suggestion when lipid-diet is active (Brad 2026-11-05)', () => {
       const { inputs, results } = createTestData({ ldlC: 4.0 }); // above borderline (3.36)
       const suggestions = generateSuggestions(inputs, results);
-      expect(suggestions.find(s => s.id === 'fiber')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'fiber')).toBeDefined();
       expect(suggestions.find(s => s.id === 'lipid-diet')).toBeDefined();
     });
 
@@ -848,11 +857,11 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'fiber')).toBeDefined();
     });
 
-    it('shows lipid-diet and hides fiber at LDL 2.0, above the 1.4 optimal line (US-07 AC5)', () => {
+    it('shows lipid-diet, and fiber still, at LDL 2.0, above the 1.4 optimal line (US-07 AC5)', () => {
       const { inputs, results } = createTestData({ ldlC: 2.0 });
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'lipid-diet')).toBeDefined();
-      expect(suggestions.find(s => s.id === 'fiber')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'fiber')).toBeDefined();
     });
 
     it.each([
@@ -964,38 +973,87 @@ describe('generateSuggestions', () => {
     });
   });
 
-  describe('Measure waist circumference suggestion', () => {
-    it('shows when BMI 25-29.9 and no waist data', () => {
-      const { inputs, results } = createTestData({}, { bmi: 26 });
-      const suggestions = generateSuggestions(inputs, results);
-      const waistSuggestion = suggestions.find(s => s.id === 'measure-waist');
-      expect(waistSuggestion).toBeDefined();
-      expect(waistSuggestion?.priority).toBe('attention');
-      expect(waistSuggestion?.description).toContain('waist');
+  describe('Measure waist circumference suggestion (US-07 AC11)', () => {
+    const waistCard = (bmi?: number, waistToHeightRatio?: number) => {
+      const { inputs, results } = createTestData({}, { bmi, waistToHeightRatio });
+      return generateSuggestions(inputs, results).find(s => s.id === 'measure-waist');
+    };
+
+    it('shows at BMI 22, 27 and 33 with no waist, and with no weight yet (Brad 2026-11-02)', () => {
+      for (const bmi of [22, 27, 33, undefined]) {
+        const card = waistCard(bmi);
+        expect(card, `BMI ${bmi}`).toBeDefined();
+        expect(card?.priority).toBe('attention');
+        expect(card?.description).toContain('half your height');
+      }
     });
 
-    it('does not show when BMI 25-29.9 and waist data is present (healthy)', () => {
-      const { inputs, results } = createTestData({}, { bmi: 26, waistToHeightRatio: 0.45 });
-      const suggestions = generateSuggestions(inputs, results);
-      expect(suggestions.find(s => s.id === 'measure-waist')).toBeUndefined();
+    it('is absent once a waist is on record, healthy or elevated, at any BMI', () => {
+      for (const bmi of [22, 27, 33, undefined]) {
+        expect(waistCard(bmi, 0.45), `BMI ${bmi} healthy`).toBeUndefined();
+        expect(waistCard(bmi, 0.55), `BMI ${bmi} elevated`).toBeUndefined();
+      }
     });
 
-    it('does not show when BMI 25-29.9 and waist data is present (elevated)', () => {
-      const { inputs, results } = createTestData({}, { bmi: 26, waistToHeightRatio: 0.55 });
-      const suggestions = generateSuggestions(inputs, results);
-      expect(suggestions.find(s => s.id === 'measure-waist')).toBeUndefined();
+    it('says the same approved text at every BMI, and with no weight (Brad 2026-11-02)', () => {
+      const text = 'Fat around the middle raises heart and metabolic risk, even at a healthy weight. Aim for a waist under half your height. Add your waist measurement.';
+      for (const bmi of [22, 27, 33, 40, undefined]) {
+        expect(waistCard(bmi)?.title, `BMI ${bmi}`).toBe('Measure your waist circumference');
+        expect(waistCard(bmi)?.description, `BMI ${bmi}`).toBe(text);
+      }
+      // Its "why", approved by Brad 2026-11-02, with its tags and reference kept.
+      expect(waistCard(22)?.reason).toBe('Fat around the middle is linked to heart and metabolic risk. Waist-to-height ratio can flag risk that a healthy BMI misses; the AACE 2025 and NICE guidelines suggest keeping it under 0.5.');
+      expect(waistCard(22)?.guidelines).toEqual(['AACE 2025', 'NICE']);
+      expect(waistCard(22)?.references?.map(r => r.url)).toEqual(['https://doi.org/10.1111/j.1467-789X.2011.00952.x']);
     });
 
-    it('does not show when BMI < 25', () => {
-      const { inputs, results } = createTestData({}, { bmi: 23 });
-      const suggestions = generateSuggestions(inputs, results);
-      expect(suggestions.find(s => s.id === 'measure-waist')).toBeUndefined();
+    it('comes first in engine order, before blood pressure and screenings', () => {
+      const { inputs, results } = createTestData({}, { bmi: 22, age: 50 });
+      const suggestions = generateSuggestions(inputs, results, 'si', {}, { colorectalMethod: 'not_yet_started' });
+      expect(suggestions.some(s => s.id.startsWith('screening-colorectal'))).toBe(true);
+      expect(suggestions.map(s => s.id).slice(0, 2)).toEqual(['measure-waist', 'measure-bp']);
+    });
+  });
+
+  describe('Measure blood pressure suggestion (US-07 AC11)', () => {
+    const bpCard = (overrides: Partial<SuggestionInputs>, resultOverrides: Partial<HealthResults> = {}) => {
+      const { inputs, results } = createTestData({}, resultOverrides);
+      return generateSuggestions({ ...inputs, ...overrides }, results).find(s => s.id === 'measure-bp');
+    };
+
+    it('shows with no blood pressure on record, at attention, with the approved text and one target for every age', () => {
+      const card = bpCard({});
+      expect(card).toBeDefined();
+      expect(card?.priority).toBe('attention');
+      expect(card?.category).toBe('blood_pressure');
+      expect(card?.title).toBe('Measure your blood pressure');
+      expect(card?.description).toBe('High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. Aim for below 120/80 (130/80 if you\'re frail).');
+      // Brad 2026-11-02: one target sentence at every age, frailty named; this card does not read the age rule.
+      for (const age of [40, 70, undefined]) expect(bpCard({}, { age })?.description, `age ${age}`).toContain("Aim for below 120/80 (130/80 if you're frail).");
+      // Its evidence reuses the plan's blood pressure references.
+      expect(card?.references?.map(r => r.url)).toContain('https://doi.org/10.1161/HYP.0000000000000065');
+      expect(card?.reason).toContain('no symptoms');
+      // Brad 2026-11-02: the reason's target has no age either.
+      expect(card?.reason).toContain("This plan aims for <120/80 mmHg, as some doctors do, based on the SPRINT and ESPRIT trials, or <130/80 mmHg if you're frail.");
+      expect(card?.reason).not.toMatch(/65/);
     });
 
-    it('does not show when BMI >= 30', () => {
-      const { inputs, results } = createTestData({}, { bmi: 31 });
-      const suggestions = generateSuggestions(inputs, results);
-      expect(suggestions.find(s => s.id === 'measure-waist')).toBeUndefined();
+    it('asks to check a reading the plan left out as swapped, with the approved text (Brad 2026-11-02)', () => {
+      const card = bpCard({ pressureOrder: true });
+      expect(card?.title).toBe('Check your blood pressure reading');
+      expect(card?.description).toBe('Your last reading looks swapped: the top number (systolic) should be higher than the bottom (diastolic). Check it and add it again.');
+      expect(card?.priority).toBe('attention');
+      expect(card?.reason).toContain('no symptoms');
+    });
+
+    it('is absent with a reading on record, normal or raised', () => {
+      expect(bpCard({ systolicBp: 115, diastolicBp: 75 })).toBeUndefined();
+      expect(bpCard({ systolicBp: 135, diastolicBp: 85 })).toBeUndefined();
+    });
+
+    it('comes first in engine order when the waist is on record', () => {
+      const { inputs, results } = createTestData({}, { bmi: 27, waistToHeightRatio: 0.45 });
+      expect(generateSuggestions(inputs, results)[0].id).toBe('measure-bp');
     });
   });
 
@@ -1364,16 +1422,16 @@ describe('generateSuggestions', () => {
     });
 
     // Lung
-    it('suggests lung screening for smoker 50+ with 15+ pack-years (USPSTF 2021)', () => {
+    it('suggests lung screening for smoker 50+ with 20+ pack-years (ACS 2023)', () => {
       const { inputs, results } = createTestData({ birthYear: 1970, birthMonth: 1 }, { age: 56 });
       const scr: ScreeningInputs = { lungSmokingHistory: 'current_smoker', lungPackYears: 25 };
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
       expect(suggestions.find(s => s.id === 'screening-lung')).toBeDefined();
     });
 
-    it('suggests lung screening at exactly 15 pack-years (boundary)', () => {
+    it('suggests lung screening at exactly 20 pack-years (boundary)', () => {
       const { inputs, results } = createTestData({ birthYear: 1970, birthMonth: 1 }, { age: 56 });
-      const scr: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 15 };
+      const scr: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 20 };
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
       expect(suggestions.find(s => s.id === 'screening-lung')).toBeDefined();
     });
@@ -1385,11 +1443,73 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'screening-lung')).toBeUndefined();
     });
 
-    it('does not suggest lung screening for smoker with <15 pack-years', () => {
+    it('does not suggest lung screening for smoker with <20 pack-years', () => {
       const { inputs, results } = createTestData({ birthYear: 1970, birthMonth: 1 }, { age: 56 });
-      const scr: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 14 };
+      const scr: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 19 };
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
       expect(suggestions.find(s => s.id === 'screening-lung')).toBeUndefined();
+    });
+
+    it('US-07 AC1d (#285): 17 pack-years gets no lung card, as the form asks no lung question below 20', () => {
+      const { inputs, results } = createTestData({ birthYear: 1966, birthMonth: 1 }, { age: 60 });
+      const scr: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 17 };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-lung')).toBeUndefined();
+      expect(screeningForm(60, 'male', scr).flatMap((s) => s.groups.flatMap((g) => g.fields.map((f) => ('key' in f ? f.key : ''))))).not.toContain('lung_screening');
+    });
+
+    it('US-07 AC1f: an abnormal lung CT keeps its follow-up card when pack-years drop below 20 (Brad 2026-11-03)', () => {
+      const { inputs, results } = createTestData({ birthYear: 1966, birthMonth: 1 }, { age: 60 });
+      const abnormal: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 15, lungScreening: 'annual_ldct', lungLastDate: '2025-01', lungResult: 'abnormal' };
+      const lung = (scr: ScreeningInputs) => generateSuggestions(inputs, results, 'si', undefined, scr).filter(s => s.id.startsWith('screening-lung'));
+      const followup = lung(abnormal);
+      expect(followup.map(s => s.id)).toEqual(['screening-lung-followup']);
+      expect(followup[0].priority).toBe('urgent');
+      expect(lung({ ...abnormal, lungFollowupStatus: 'scheduled' }).map(s => s.title)).toEqual(['Lung follow-up scheduled']);
+      // Below 20 with a normal result: no start, overdue or up-to-date card.
+      expect(lung({ ...abnormal, lungResult: 'normal' })).toEqual([]);
+      expect(lung({ ...abnormal, lungScreening: 'not_yet_started' })).toEqual([]);
+      // A completed follow-up with no date has no card below 20 (no routine fallback).
+      expect(lung({ ...abnormal, lungFollowupStatus: 'completed' })).toEqual([]);
+      // Review of commit 5, R1: a dated completed follow-up ends it below 20 too (no "resume annual LDCT" card);
+      // at 25 pack-years the post-follow-up card still shows.
+      const done: ScreeningInputs = { ...abnormal, lungFollowupStatus: 'completed', lungFollowupDate: '2025-04' };
+      expect(lung(done)).toEqual([]);
+      expect(lung({ ...done, lungPackYears: 25 }).map(s => s.id)).toEqual(['screening-lung-followup']);
+      expect(lung({ ...abnormal, lungLastDate: undefined, lungFollowupStatus: 'completed', lungFollowupDate: '2025-03' })).toEqual([]);
+    });
+
+    it('US-07 AC1g: past 80, an abnormal lung CT keeps its follow-up card; routine screening stops (Brad 2026-11-03)', () => {
+      const { inputs, results } = createTestData({ birthYear: 1945, birthMonth: 1 }, { age: 81 });
+      const abnormal: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 25, lungScreening: 'annual_ldct', lungLastDate: '2025-01', lungResult: 'abnormal', lungFollowupStatus: 'not_organized' };
+      const lung = (scr: ScreeningInputs) => generateSuggestions(inputs, results, 'si', undefined, scr).filter(s => s.id.startsWith('screening-lung'));
+      expect(lung(abnormal).map(s => [s.id, s.priority])).toEqual([['screening-lung-followup', 'urgent']]);
+      expect(lung({ ...abnormal, lungResult: 'normal', lungFollowupStatus: undefined })).toEqual([]);
+      expect(lung({ ...abnormal, lungScreening: undefined, lungLastDate: undefined, lungResult: undefined, lungFollowupStatus: undefined })).toEqual([]);
+      // Review of commit 5, R1: at 82 a completed follow-up ends it, no "resume annual LDCT" card.
+      const { inputs: i82, results: r82 } = createTestData({ birthYear: 1944, birthMonth: 1 }, { age: 82 });
+      expect(generateSuggestions(i82, r82, 'si', undefined, { ...abnormal, lungFollowupStatus: 'completed', lungFollowupDate: '2025-04' })
+        .filter(s => s.id.startsWith('screening-lung'))).toEqual([]);
+    });
+
+    it('US-07 AC1e: no quit window, as ACS 2023 (Brad 2026-11-03): the plan and the roadmap text screen former smokers however long ago they quit', () => {
+      const { inputs, results } = createTestData({ birthYear: 1950, birthMonth: 1 }, { age: 76 });
+      const scr: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 20 };
+      expect(generateSuggestions(inputs, results, 'si', undefined, scr).find(s => s.id === 'screening-lung')).toBeDefined();
+      const root = join(dirname(fileURLToPath(import.meta.url)), '../../..');
+      const html = readFileSync(join(root, 'roadmap_text.html'), 'utf8');
+      const lung = html.slice(html.indexOf('Lung Cancer:'), html.indexOf('Prostate Cancer:'));
+      expect(lung).toContain('Have a smoking history of 20 pack-years or more, whether they still smoke or have quit.');
+      const ev = SUGGESTION_EVIDENCE['screening-lung'];
+      expect(ev.reason).toContain('however long ago they quit');
+      expect(ev.reason).toContain('the plan keeps that follow-up until it is done, even past age 80 or below 20 pack-years');
+      expect(lung).toContain('If an earlier scan found something that needs follow-up, finish that follow-up with your doctor.');
+      expect(ev.guidelines).toEqual(['ACS 2023', 'USPSTF 2021']);
+      expect(ev.references.map(r => r.url)).toContain('https://doi.org/10.3322/caac.21811');
+      expect(lung).not.toMatch(/15 years/);
+      expect(html).toContain('November 2026: Lung cancer screening now follows the American Cancer Society');
+      expect(lung).toContain('After Age 80:');
+      expect(readFileSync(join(root, 'health_roadmap_algorithm.md'), 'utf8')).toMatch(/does not ask when someone quit[^\n]*American Cancer Society/);
     });
 
     // Prostate
@@ -1726,7 +1846,7 @@ describe('generateSuggestions', () => {
 
   describe('Weight & diabetes medication cascade', () => {
     // Trigger (US-06 AC6): BMI >= 25 with a raised marker (HbA1c prediabetic, trigs >= 150,
-    // BP >= 130 systolic or > 80 diastolic, the plan's lipid marker at its risk-enhancing
+    // BP >= 130 systolic or >= 80 diastolic, the plan's lipid marker at its risk-enhancing
     // line, WHtR >= 0.5), or an elevated BMI category with BMI > 28
     it('shows GLP-1 suggestion when BMI > 25 AND HbA1c prediabetic', () => {
       const { inputs, results } = createTestData(
@@ -2021,6 +2141,7 @@ describe('generateSuggestions', () => {
       reasons: string[];
     }
     const HBA1C = 'prediabetic HbA1c';
+    const HBA1C_DIABETIC = 'diabetic-range HbA1c';
     const TG = 'elevated triglycerides';
     const BP = 'elevated blood pressure';
     const APOB = 'elevated ApoB';
@@ -2037,12 +2158,14 @@ describe('generateSuggestions', () => {
       { name: 'BMI 25.0, healthy waist (WHtR 0.47), HbA1c 40', weightKg: 79.1, waistCm: 83.7, hba1c: 40, on: true, reasons: [HBA1C] },
       { name: 'BMI 26.0, healthy waist (WHtR 0.46), BP 135/85 (group 2)', weightKg: 82.4, waistCm: 81.9, systolicBp: 135, diastolicBp: 85, on: true, reasons: [BP] },
       { name: 'BMI 26.0, healthy waist, BP 125/85 only', weightKg: 82.4, waistCm: 81.9, systolicBp: 125, diastolicBp: 85, on: true, reasons: [BP] },
-      { name: 'BMI 26.0, healthy waist, BP 129/80', weightKg: 82.4, waistCm: 81.9, systolicBp: 129, diastolicBp: 80, on: false, reasons: [] },
+      { name: 'BMI 26.0, healthy waist, BP 129/80', weightKg: 82.4, waistCm: 81.9, systolicBp: 129, diastolicBp: 80, on: true, reasons: [BP] },
+      { name: 'BMI 26.0, healthy waist, BP 129/79', weightKg: 82.4, waistCm: 81.9, systolicBp: 129, diastolicBp: 79, on: false, reasons: [] },
       { name: 'BMI 26.0, healthy waist, BP 129/81', weightKg: 82.4, waistCm: 81.9, systolicBp: 129, diastolicBp: 81, on: true, reasons: [BP] },
       { name: 'BMI 26.0, healthy waist, systolic 135 with no diastolic (either half counts)', weightKg: 82.4, waistCm: 81.9, systolicBp: 135, on: true, reasons: [BP] },
       { name: 'BMI 26.0, healthy waist, systolic 129 with no diastolic', weightKg: 82.4, waistCm: 81.9, systolicBp: 129, on: false, reasons: [] },
       { name: 'BMI 26.0, healthy waist, diastolic 85 with no systolic (either half counts)', weightKg: 82.4, waistCm: 81.9, diastolicBp: 85, on: true, reasons: [BP] },
-      { name: 'BMI 26.0, healthy waist, diastolic 80 with no systolic', weightKg: 82.4, waistCm: 81.9, diastolicBp: 80, on: false, reasons: [] },
+      { name: 'BMI 26.0, healthy waist, diastolic 80 with no systolic (US-07 AC1c)', weightKg: 82.4, waistCm: 81.9, diastolicBp: 80, on: true, reasons: [BP] },
+      { name: 'BMI 26.0, healthy waist, diastolic 79 with no systolic', weightKg: 82.4, waistCm: 81.9, diastolicBp: 79, on: false, reasons: [] },
       { name: 'BMI 26.0, healthy waist, LDL 4.2 alone', weightKg: 82.4, waistCm: 81.9, ldlC: 4.2, on: true, reasons: [LDL] },
       { name: 'BMI 26.0, healthy waist, LDL 4.0 alone', weightKg: 82.4, waistCm: 81.9, ldlC: 4.0, on: false, reasons: [] },
       { name: 'BMI 26.0, healthy waist, LDL 160 mg/dL', weightKg: 82.4, waistCm: 81.9, ldlC: ldl(160), on: true, reasons: [LDL] },
@@ -2067,11 +2190,11 @@ describe('generateSuggestions', () => {
       { name: 'BMI 28.5, unknown waist, no marker', weightKg: 90.3, on: true, reasons: [] },
       { name: 'BMI 28.5, healthy waist, no marker', weightKg: 90.3, waistCm: 83.7, on: false, reasons: [] },
       { name: "BMI 28.6, WHtR 0.47, no marker (Brad's ruling 1)", weightKg: 90.6, waistCm: 83.7, on: false, reasons: [] },
-      { name: 'BMI 28.6, WHtR 0.47, HbA1c, TG and BP raised (group 2)', weightKg: 90.6, waistCm: 83.7, hba1c: 48, triglycerides: 2, systolicBp: 140, diastolicBp: 90, on: true, reasons: [HBA1C, TG, BP] },
+      { name: 'BMI 28.6, WHtR 0.47, HbA1c, TG and BP raised (group 2)', weightKg: 90.6, waistCm: 83.7, hba1c: 48, triglycerides: 2, systolicBp: 140, diastolicBp: 90, on: true, reasons: [HBA1C_DIABETIC, TG, BP] },
       { name: 'BMI 29.9, WHtR 0.52', weightKg: 94.7, waistCm: 92.6, on: true, reasons: [WAIST] },
       { name: 'BMI 30.0, WHtR 0.40', weightKg: 95.1, waistCm: 71.2, on: true, reasons: [] },
       { name: 'BMI 30.5, healthy waist, no marker', weightKg: 96.6, waistCm: 83.7, on: true, reasons: [] },
-      { name: 'BMI 35.0 with every marker raised', weightKg: 111, waistCm: 106.8, hba1c: 48, triglycerides: 2, systolicBp: 140, diastolicBp: 90, apoB: 1.5, on: true, reasons: [HBA1C, TG, BP, APOB, WAIST] },
+      { name: 'BMI 35.0 with every marker raised', weightKg: 111, waistCm: 106.8, hba1c: 48, triglycerides: 2, systolicBp: 140, diastolicBp: 90, apoB: 1.5, on: true, reasons: [HBA1C_DIABETIC, TG, BP, APOB, WAIST] },
     ];
     const inputsOf = ({ name: _n, on: _o, reasons: _r, ...values }: Row): HealthInputs => ({ heightCm: 178, sex: 'male', birthYear: 1980, ...values });
 
@@ -2109,6 +2232,10 @@ describe('generateSuggestions', () => {
       { name: 'no reason', bmi: 30.5, inputs: {}, text: `With a BMI of 30.5${TAIL}` },
       { name: 'a whole-number BMI prints as the tile shows it', bmi: 31, inputs: {}, text: `With a BMI of 31${TAIL}` },
       { name: 'one reason', bmi: 26, whr: 0.46, inputs: { hba1c: 40 }, text: `With a BMI of 26 and prediabetic HbA1c${TAIL}` },
+      // Brad 2026-11-06: a diabetic-range HbA1c is named as such, at the urgent card's line.
+      { name: 'a diabetic-range HbA1c', bmi: 26, whr: 0.46, inputs: { hba1c: 50 }, text: `With a BMI of 26 and diabetic-range HbA1c${TAIL}` },
+      { name: 'HbA1c at the diabetic line', bmi: 26, whr: 0.46, inputs: { hba1c: HBA1C_THRESHOLDS.diabetes }, text: `With a BMI of 26 and diabetic-range HbA1c${TAIL}` },
+      { name: 'HbA1c just under the diabetic line', bmi: 26, whr: 0.46, inputs: { hba1c: 47.4 }, text: `With a BMI of 26 and prediabetic HbA1c${TAIL}` },
       {
         name: 'three reasons',
         bmi: 26,
@@ -3018,19 +3145,21 @@ describe('Evidence attachment', () => {
   // on good omega-3 levels (VITACOG), but FACIT found the reverse (van Soest 2021);
   // the omega-3 card carries the WHO 2026 note, and the reason drops the unhedged
   // "important role in cognitive protection".
-  it('US-07 AC1: creatine card attributes the memory view to Dr Stanfield; reviews are mixed', () => {
+  it('US-07 AC1: creatine card calls memory an interesting signal; reviews are mixed (Brad 2026-11-02)', () => {
     const { inputs, results } = createTestData({}, { bmi: 22 });
     const creatine = generateSuggestions(inputs, results, 'si').find(s => s.id === 'supplement-creatine')!;
 
-    expect(creatine.description).toContain('Dr Stanfield considers the memory evidence clear and consistent');
-    expect(creatine.description).toContain('formal reviews are more mixed, with the clearest benefit in older adults');
+    expect(creatine.description).toContain('There is also an interesting signal that it may help memory, another possible benefit');
+    expect(creatine.description).toContain('formal reviews are mixed, with the clearest benefit in older adults');
+    expect(creatine.description).not.toContain('clear and consistent');
     expect(creatine.description).not.toMatch(/consistently find/i);
     expect(creatine.description).not.toMatch(/emerging evidence/i);
     expect(creatine.description).not.toMatch(/women/i);
     expect(creatine.description).not.toContain('—');
 
     const reason = SUGGESTION_EVIDENCE['supplement-creatine'].reason;
-    expect(reason).toContain('his judgement, not a trial finding');
+    expect(reason).toContain('an interesting signal that creatine may help memory, another possible benefit. Formal reviews are mixed.');
+    expect(reason).not.toContain('clear and consistent');
     expect(reason).toContain('A systematic review (Avgerinos 2018)');
     expect(reason).toContain('no clear overall memory benefit except in older adults');
     expect(reason).toContain('no effect on overall cognition or executive function');
@@ -3066,6 +3195,42 @@ describe('Evidence attachment', () => {
     const sleepGuide = readFileSync(join(root, 'docs/guideline/sleep.md'), 'utf8');
     expect(sleepGuide).toContain('taken 3 to 4 hours before sleep');
     expect(sleepGuide).toContain('Brad\'s cut-off is 3 to 4 hours after waking');
+  });
+
+  it('US-61 AC9: the page\'s Supplements section covers every supplement card, with no fiber disease claim (Brad 2026-11-02)', () => {
+    const root = join(dirname(fileURLToPath(import.meta.url)), '../../..');
+    const html = readFileSync(join(root, 'roadmap_text.html'), 'utf8');
+    const section = html.slice(html.indexOf('<h2 id="supplements">'), html.indexOf('<h3>Supplements/Medications Worth Watching'));
+    const watching = html.slice(html.indexOf('<h3>Supplements/Medications Worth Watching'), html.indexOf('<h3>Supplements Not Included Here'));
+    // Every supplement card has its entry, under the dose Brad takes.
+    for (const heading of ['Creatine Monohydrate 5g', 'Omega-3 1g', 'Low-dose Multivitamin', 'Lutein 10mg &amp; Zeaxanthin 2mg',
+      'Trimethylglycine 500mg', 'Collagen Peptides 10g', 'Hyaluronic Acid 200mg', 'Acacia Fiber 5g', 'Sleep support']) {
+      expect(section, heading).toContain(heading);
+    }
+    // Fiber is a gap in intake, never a cholesterol or blood pressure claim.
+    expect(section).not.toContain('Psyllium');
+    expect(section).toContain('about 95% of adults and children fall short.[139]');
+    expect(section).not.toMatch(/fib(?:er|re)[^<]*(?:cholesterol|blood pressure)/i);
+    // AREDS framing (Brad): never "did not significantly slow progression".
+    expect(section).toContain('In AREDS2, 10 mg of lutein and 2 mg of zeaxanthin worked as well as beta-carotene in that formula.');
+    expect(section).toContain('lutein and zeaxanthin did not.[138, 144]');
+    expect(section).not.toMatch(/did not significantly/i);
+    // TMG: the card's words, and the Alzheimer's link as an open question.
+    expect(section).toContain('Small trials suggest it may improve strength and power.[64-66]');
+    expect(section).toContain('promising but not conclusive, and more research is needed. Those trials did not test TMG.[63]');
+    expect(section).not.toContain('findings are inconsistent');
+    // Sleep lists the card's three ingredients, each with its trials.
+    expect(section).toContain('low-dose melatonin, glycine and magnesium glycinate');
+    expect(section).toContain('[140, 141]');
+    expect(section).toContain('[143]');
+    // GlyNAC is watched, not suggested.
+    expect(section).not.toContain('GlyNAC');
+    expect(watching).toContain('GlyNAC');
+    // The page names no product (AC9), anywhere.
+    expect(html).not.toMatch(/microvitamin|sleep by dr brad/i);
+    // Brad's current medicines (2026-11-02), each off-label one labelled so.
+    for (const heading of ['Rosuvastatin 5mg + Ezetimibe 10mg', 'Tirzepatide 2.5mg weekly', 'Empagliflozin 6.25mg daily']) expect(section).toContain(heading);
+    expect(section.match(/off-label and against current guidelines/g)).toHaveLength(2);
   });
 
   it('US-07 AC1: omega-3 card and reason give VITACOG and the reverse FACIT finding, and the WHO 2026 note', () => {
@@ -3179,7 +3344,7 @@ describe('non-HDL is compared unrounded and rounded only for display (US-07 AC5,
     const results = planOf(total, hdlC);
     expect(ids(results).includes('med-statin')).toBe(above);
     expect(ids(results).includes('lipid-diet')).toBe(above);
-    expect(ids(results).includes('fiber')).toBe(!above);
+    expect(ids(results).includes('fiber')).toBe(true);
   });
 
   it.each([

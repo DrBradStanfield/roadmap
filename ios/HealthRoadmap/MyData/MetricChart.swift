@@ -8,17 +8,28 @@ struct ChartPoint: Identifiable {
     let date: Date
     let value: Double
     let series: String
+    /// A lab result printed as a limit (US-12 AC20): plotted at its bound, hollow, and left
+    /// out of the line. `label` is the engine's "< 2.0", what VoiceOver reads for it.
+    var limit = false
+    var label: String? = nil
 
-    /// A history's active values, ready to plot. Numbers are the engine's own text, in the user's units.
+    /// A history's active values, ready to plot. Numbers are the engine's own text, in the user's
+    /// units; a limit's is its `bound`, as its text "< 2.0" is no number.
     static func points(_ history: MetricHistory) -> [ChartPoint] {
-        history.rows.filter(\.isActive).flatMap { row -> [ChartPoint] in
+        // Units that vary between reports draw no line: one would compare unlike numbers (US-21 AC3a).
+        guard history.unitsNote == nil else { return [] }
+        return history.rows.filter(\.isActive).flatMap { row -> [ChartPoint] in
             guard let date = DayText.date(row.day) else { return [] }
             if history.metric == MyData.bloodPressure {
                 return [("Systolic", row.systolic), ("Diastolic", row.diastolic)].compactMap { series, text in
                     text.flatMap(Double.init).map { ChartPoint(id: row.id + series, date: date, value: $0, series: series) }
                 }
             }
-            return Double(row.value).map { [ChartPoint(id: row.id, date: date, value: $0, series: history.label)] } ?? []
+            if let bound = row.bound {
+                return [ChartPoint(id: row.id, date: date, value: bound, series: history.label, limit: true, label: row.value)]
+            }
+            // A lab value's own number, unrounded: its text may round 0.001 to "0" (review R5).
+            return (row.number ?? Double(row.value)).map { [ChartPoint(id: row.id, date: date, value: $0, series: history.label)] } ?? []
         }
     }
 }
@@ -103,6 +114,9 @@ struct MetricChart: View {
         palette[metric] ?? [.accentColor]
     }
 
+    /// Every lab test beyond the core ones shares one slate, the web's (MyDataRows.tsx LAB_TINT), as PSA's.
+    nonisolated static var labTint: Color { palette["psa"]![0] }
+
     /// Hand-chosen pairs, light then dark, 0xRRGGBB: each reads as a line on its card (3:1,
     /// MyDataLayoutTests) and is calmer in dark mode (Brad 2026-10-23). Built once.
     nonisolated static let palette: [String: [Color]] = [
@@ -120,24 +134,31 @@ struct MetricChart: View {
         "psa": [Color(light: 0x6680A6, dark: 0x738195)],
         "height": [Color(light: 0x8E8E93, dark: 0x828284)],
         // US-56, read live from Apple Health (AppleHealthMetrics/): heart red, sleep teal, activity orange.
-        "heart_rate": [Color(light: 0xE5244B, dark: 0xEC7F92)],
         "resting_heart_rate": [Color(light: 0xA8323E, dark: 0xC98C93)],
         "sleep": [Color(light: 0x0E8A86, dark: 0x5EC2BC)],
         "vo2_max": [Color(light: 0xB35C00, dark: 0xE0A46A)],
         "steps": [Color(light: 0xD9480F, dark: 0xF0985E)],
     ]
 
+    /// An exact value's dot, and a limit's hollow ring at its bound (US-12 AC20).
+    nonisolated static let valueSymbol = AnyChartSymbolShape(BasicChartSymbolShape.circle)
+    nonisolated static let limitSymbol = AnyChartSymbolShape(BasicChartSymbolShape.circle.strokeBorder(lineWidth: 2))
+
     /// The web's indigo for a recorded medication change (#6366f1), lifted in dark mode.
     nonisolated static let markerColor = Color(light: 0x6366F1, dark: 0x818CF8)
 
     var body: some View {
         Chart {
-            ForEach(chart.points) { point in
+            // A limit is no exact value: the line runs through the exact ones only (US-12 AC20).
+            ForEach(chart.points.filter { !$0.limit }) { point in
                 LineMark(x: .value("Day", point.date, unit: .day), y: .value(chart.history.unit, point.value))
                     .foregroundStyle(by: .value("Reading", point.series))
                     .interpolationMethod(.linear)
+            }
+            ForEach(chart.points) { point in
                 PointMark(x: .value("Day", point.date, unit: .day), y: .value(chart.history.unit, point.value))
                     .foregroundStyle(by: .value("Reading", point.series))
+                    .symbol(point.limit ? Self.limitSymbol : Self.valueSymbol)
                     .symbolSize(point.date == selected ? 90 : 30)
             }
             // The web's medication pins (HistoryPanel.tsx): read by VoiceOver from the list below the chart.
@@ -260,7 +281,8 @@ private struct MetricChartDescriptor: AXChartDescriptorRepresentable {
         }
         let series = names.map { name in
             AXDataSeriesDescriptor(name: name, isContinuous: true, dataPoints: points.filter { $0.series == name }.map {
-                AXDataPoint(x: $0.date.timeIntervalSince1970, y: $0.value)
+                // A limit reads as printed, "< 2.0", never as its bound alone (US-12 AC20).
+                AXDataPoint(x: $0.date.timeIntervalSince1970, y: $0.value, additionalValues: [], label: $0.label)
             })
         }
         return AXChartDescriptor(title: title, summary: nil, xAxis: xAxis, yAxis: yAxis, additionalAxes: [], series: series)

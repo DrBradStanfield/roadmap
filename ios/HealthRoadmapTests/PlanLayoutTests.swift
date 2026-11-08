@@ -21,8 +21,8 @@ final class PlanLayoutTests: XCTestCase {
 
     /// Adversary R4: the engine's clock counts whole milliseconds, so a fast plan reads 0.
     func testTheFooterSaysUnderOneMillisecondForZero() {
-        XCTAssertEqual(PlanView.workedOut(ms: 0), "Worked out on this iPhone in under 1 ms.")
-        XCTAssertEqual(PlanView.workedOut(ms: 3), "Worked out on this iPhone in 3 ms.")
+        XCTAssertEqual(PlanText.workedOut(ms: 0), "Worked out on this iPhone in under 1 ms.")
+        XCTAssertEqual(PlanText.workedOut(ms: 3), "Worked out on this iPhone in 3 ms.")
     }
 
     func testSampleRecordMatchesTheWebLayout() throws {
@@ -30,16 +30,16 @@ final class PlanLayoutTests: XCTestCase {
         let layout = sections.map { section in (section.title, section.cards.map { $0.suggestions.map(\.id) }) }
 
         XCTAssertEqual(layout.map(\.0), ["Next Steps", "Foundation", "Skin Health", "Supplements"])
-        // US-57 AC6: tour tip 2 anchors on the Foundation section's first card.
-        XCTAssertEqual(sections.map(\.isFoundation), [false, true, false, false])
+        // US-07 AC11: the waist prompt leads Next Steps.
         XCTAssertEqual(layout[0].1, [
+            ["measure-waist"],
             ["screening-colorectal", "screening-cervical"],
             ["weight-med-glp1", "med-ezetimibe"],
             ["bp-stage1"],
-            ["measure-waist"],
         ])
         XCTAssertEqual(layout[1].1, [
-            ["protein-target", "low-salt", "lipid-diet"],
+            // PR 859 (Brad 2026-11-05): fibre for everyone, after salt.
+            ["protein-target", "low-salt", "fiber", "lipid-diet"],
             ["exercise"],
             ["sleep"],
             ["screening-breast"],
@@ -74,7 +74,7 @@ final class PlanLayoutTests: XCTestCase {
         let tiles = try view(units: #"{"hba1c":"conventional"}"#).tiles
 
         XCTAssertEqual(tiles.map(\.key), ["bmi", "ibw", "protein", "ldl", "hba1c"])
-        XCTAssertEqual(tiles.map(\.label), ["BMI", "Ideal Body Weight (IBW)", "Protein Target", "LDL Cholesterol", "HbA1c"])
+        XCTAssertEqual(tiles.map(\.label), ["BMI", "Ideal Body Weight", "Protein Target", "LDL Cholesterol", "HbA1c"])
         XCTAssertNil(tiles[0].status, "BMI 25-29.9 with no waist has no label, as on the web")
         XCTAssertEqual(tiles[3].status?.label, "Borderline")
         XCTAssertEqual(tiles[3].status?.tone, "info")

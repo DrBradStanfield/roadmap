@@ -20,7 +20,7 @@ struct ChatClient: Sendable {
     static let contextKeys: Set<String> = [
         "heightCm", "weightKg", "waistCm", "sex", "birthYear", "birthMonth",
         "hba1c", "ldlC", "totalCholesterol", "hdlC", "triglycerides", "apoB", "creatinine", "psa", "lpa",
-        "systolicBp", "diastolicBp", "labEgfr", "labEgfrDate", "unitSystem", "alcohol",
+        "systolicBp", "diastolicBp", "labEgfr", "labEgfrDate", "labEgfrOutdated", "limits", "unitSystem", "alcohol",
         "medications", "screenings", "measurementHistory",
     ]
 
@@ -46,6 +46,8 @@ struct ChatClient: Sendable {
             "history": turns,
             "guestInputs": context,
             "stream": true,
+            // The app applies the chat's form edits (US-67 AC1): only then does the server offer its edit tools.
+            "edits": 1,
         ])
     }
 

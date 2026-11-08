@@ -11,6 +11,7 @@ import {
   clearLocalNamedFiles,
   latchOnOtherTabsLogOff,
   localEraseGeneration,
+  noteOtherTabsLogOffWhileLoading,
   roadmapLocalWritesStopped,
   stopRoadmapLocalWrites,
 } from './local-storage-adapter';
@@ -28,6 +29,10 @@ import { failureTags, recordFailure, storageCauseClass, storageFailureClass } fr
  * functions below write it — the key is exported for tests alone.
  */
 export const PENDING_MIRROR_KEY = 'health_roadmap_pending_cloud_sync';
+
+/** The backend this browser uses, as the standalone picker remembers it
+ *  (standalone/connect.ts); absent on the device tier. */
+export const BACKEND_KEY = 'health_roadmap_backend';
 
 /** Fired on every marker flip; the sync-status UI listens (same convention as
  *  the standalone hr:* events). Dispatch is best-effort — absent in tests. */
@@ -137,13 +142,19 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     return { ...base, tier: 'device', sync: store, clearNamedFiles: clearLocalNamedFiles, eraseFence: localEraseGeneration };
   }
   const device = new LocalStorageAdapter();
+  // Note a log-off from another page from now, not only once the first cloud
+  // read returns: its signal is set and removed at once, so a tab still
+  // loading would miss it (US-09 AC2h). opened() latches on the note.
+  noteOtherTabsLogOffWhileLoading();
   return {
     ...base,
     tier: 'cloud',
     mirror: {
       adapter: device,
+      sync: device,
       pending: { get: isSyncPending, set: markSyncPending, clear: clearSyncPending },
       writesStopped: roadmapLocalWritesStopped,
+      stillChosen: () => safeGetItem(BACKEND_KEY) === store.id,
       wipe: () => device.disconnect(),
       opened: latchOnOtherTabsLogOff,
     },

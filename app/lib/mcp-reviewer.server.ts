@@ -1,12 +1,15 @@
 /**
- * OpenAI's and Anthropic's app reviewers sign in on our own consent page (US-32 AC38, AC49): the
- * reviewer SECRETS, and who may see the form. What a reviewer grant means once
- * minted is `mcp-grants.server.ts`'s.
+ * Anthropic's connector reviewer signs in on our own consent page (US-32 AC38,
+ * AC49): the reviewer SECRETS, and who may see the form. What a reviewer grant
+ * means once minted is `mcp-grants.server.ts`'s.
  *
  * The one password login on this auth server, and the one provider credential
  * held server-side, both for an invented account: Brad's recorded exception
- * (docs/mcp-architecture.md). Twice the reviewer stopped at a Dropbox or Google
- * login that challenged them with an emailed code, which OpenAI forbids. Plan:
+ * (docs/mcp-architecture.md). Built for OpenAI's review, whose reviewer twice
+ * stopped at a Dropbox or Google login that emailed a code. OpenAI's review
+ * ended 2026-10-29 and will not be resubmitted (Brad 2026-11-02), so the box
+ * now serves Anthropic's review only. After Anthropic's verdict the whole
+ * reviewer sign-in is deleted (Brad 2026-10-29). Plan:
  * docs/reviews/2026-10-01-chatgpt-reviewer-signin-plan.md.
  *
  * Off unless all three secrets are set and well formed, so between reviews the
@@ -14,40 +17,32 @@
  * username, a password or the token.
  */
 import crypto from 'node:crypto';
-import { KNOWN_CLIENTS, type McpClientLabel } from './mcp-clients.server';
+import { KNOWN_CLIENTS } from './mcp-clients.server';
 import type { McpProvider } from './mcp-providers.server';
 import { createQuotaCounter } from './rate-limiter';
 
 /**
- * The only clients that see the form, and whose review it is: the pinned
- * ChatGPT and Codex entries, since OpenAI tests "ChatGPT and Codex surfaces",
- * and the pinned Claude and Claude Code entries for Anthropic's connector
- * directory (US-32 AC49). Matched by exact id (a Map key), never a lookalike or
- * a DCR client: chatgpt.com echoes any query string into a CIMD document, so
- * `…client.json?x=1` resolves as a client named "ChatGPT".
+ * The only clients that see the form: the pinned Claude and Claude Code
+ * entries, for Anthropic's connector directory. Matched by exact id (a Map
+ * key), never a lookalike or a DCR client. ChatGPT and Codex stay supported
+ * connectors but never see the box.
  */
-const REVIEWS: Partial<Record<McpClientLabel, 'OpenAI' | 'Anthropic'>> = { chatgpt: 'OpenAI', codex: 'OpenAI', claude: 'Anthropic', claude_code: 'Anthropic' };
+const REVIEWED = new Set(['claude', 'claude_code']);
 
 /**
- * Which vendors' reviews are pending: `MCP_REVIEWER_VENDORS`, a comma list of
- * `openai` and/or `anthropic` (US-32 AC49). Unset means `openai`, AC38's
- * behaviour. Any other word turns every box off: a typo fails closed, so
- * real users of the other vendor never see a box that is not for them.
+ * Is Anthropic's review pending? `MCP_REVIEWER_VENDORS` is a comma list whose
+ * only word is `anthropic`. Unset is no box. Any other word, `openai`
+ * included, turns every box off: a typo fails closed.
  */
-function pendingReviews(): Set<string> {
-  const words = (process.env.MCP_REVIEWER_VENDORS ?? 'openai').split(',').map((word) => word.trim());
-  return words.every((word) => word === 'openai' || word === 'anthropic') ? new Set(words) : new Set();
+function reviewPending(): boolean {
+  const words = (process.env.MCP_REVIEWER_VENDORS ?? '').split(',').map((word) => word.trim());
+  return words.every((word) => word === 'anthropic');
 }
 
-/** Whose review this client's box is for, while that review is pending; undefined is no box and no sign-in. */
-export function reviewerReview(clientId: string): 'OpenAI' | 'Anthropic' | undefined {
-  const client = KNOWN_CLIENTS.get(clientId);
-  const review = client && REVIEWS[client.label];
-  return review && pendingReviews().has(review.toLowerCase()) ? review : undefined;
-}
-
+/** The exact pinned client, while its review is pending; undefined is no box and no sign-in. */
 export function reviewerClient(clientId: string) {
-  return reviewerReview(clientId) ? KNOWN_CLIENTS.get(clientId) : undefined;
+  const client = KNOWN_CLIENTS.get(clientId);
+  return client && REVIEWED.has(client.label) && reviewPending() ? client : undefined;
 }
 
 /** A noise brake, not a defence: the password is a ~130-bit random secret. Failures only, 20 per IP per 15 minutes, per machine. */

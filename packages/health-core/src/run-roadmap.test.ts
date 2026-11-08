@@ -3,13 +3,14 @@
  * stated in the chat, and returns exactly buildChatContextJson's output. The
  * one-round loop is shared by every chat transport.
  */
+import { createHash } from 'node:crypto';
 import { describe, it, expect, vi } from 'vitest';
 import { buildChatContextJson } from './chat-context';
 import { reportedToCanonical } from './units';
 import { EDITABLE_FIELDS, PROPOSE_FIELD_EDIT_TOOL } from './chat-edits';
 import {
   runRoadmap, roadmapResultText, roadmapToolResults, withRoadmapRound,
-  RUN_ROADMAP_MAX_VALUES, RUN_ROADMAP_TOOL, CHAT_TOOLS, chatToolsFor,
+  RUN_ROADMAP_MAX_VALUES, RUN_ROADMAP_TOOL, CHAT_TOOLS, chatToolsFor, UNIT_SUSPECT,
 } from './run-roadmap';
 
 const PROFILE = {
@@ -103,7 +104,7 @@ describe('US-15 AC33: runRoadmap overlays stated values and returns the plan cod
     expect(none.contextJson).toBeNull();
     const text = JSON.parse(roadmapResultText(none));
     expect(text.roadmap).toBeNull();
-    expect(text.note).toMatch(/sex and height/);
+    expect(text.note).toMatch(/needs at least the user's height/);
 
     const run = runRoadmap(null, { values, sex: 'female', height: { value: 165, unit: 'cm' }, age: new Date().getFullYear() - 1970 });
     expect(run.applied).toEqual(['ldlC', 'hba1c', 'systolicBp', 'diastolicBp', 'sex', 'heightCm', 'age']);
@@ -388,7 +389,7 @@ describe('US-15 AC33: one run_roadmap per turn (S1) and honest stubs (S5)', () =
     const first = JSON.parse(round.results[0].content);
     expect(first.roadmap.latestValues).not.toHaveProperty('weightKg'); // past the cap: out of the run (R2)
     expect(first.rejected.filter((r: { field: string }) => r.field === 'values')).toHaveLength(1);
-    expect(round.counts.applied).toBe(0);
+    expect(round.counts!.applied).toBe(0);
   });
 
   it('values and profile split over two calls are one run', () => {
@@ -856,11 +857,11 @@ describe('US-15 AC33: the protein target is withheld only when the run loses kid
     }
   });
 
-  it('no sex or height: no plan, and no protein reason (US-15 AC36 sends the values, but run_roadmap still answers no plan)', () => {
+  it('no height: no plan, and no protein reason (US-15 AC36 sends the values, but run_roadmap still answers no plan)', () => {
     const r = runRoadmap({}, { values: [val('creatinine', 90, 'µmol/L'), val('ldlC', 4.1, 'mmol/L')] });
     expect(r.contextJson).toBeNull();
     expect(r.rejected).toEqual([]);
-    expect(JSON.parse(roadmapResultText(r)).note).toMatch(/sex and height/);
+    expect(JSON.parse(roadmapResultText(r)).note).toMatch(/needs at least the user's height/);
   });
 
   it('a saved creatinine but no saved age, nothing stated about kidneys: the card shows as the saved plan does', () => {
@@ -885,5 +886,239 @@ describe('US-15 AC33: a stated age is rounded down, never refused for not being 
     expect(byYear.knownMinor).toBe(true);
     expect(profile(18.2)).not.toHaveProperty('knownMinor');
     expect(profile(18.2).age).toBe(18);
+  });
+});
+
+// US-07 AC8 (adversary S1 on PR 402): a saved creatinine newer than the lab eGFR, with no sex,
+// leaves the lab eGFR marked outdated, so no potassium advice. A stated sex lets the creatinine
+// compete: the lab eGFR and its mark go together, and the calculated eGFR opens the advice.
+describe('US-07 AC8: a stated sex clears the outdated lab eGFR mark', () => {
+  const NOW = new Date('2026-09-01T12:00:00.000Z');
+  const flagged = {
+    unitSystem: 'si', medications: [], screenings: [],
+    heightCm: 165, birthYear: 1960, birthMonth: 1, creatinine: 80,
+    labEgfr: 52, labEgfrDate: '2026-06-01', labEgfrOutdated: true,
+    measurementHistory: { creatinine: [{ date: '2026-08-01', value: 80 }] },
+  };
+  const ids = (json: string | null) => ctx(json).currentSuggestions.map((s: { id: string }) => s.id);
+
+  it('no sex: the lab eGFR stands, with no potassium card', () => {
+    const out = runRoadmap(flagged, {}, NOW);
+    expect(ctx(out.contextJson).derivedValues.eGFR).toBe(52);
+    expect(ids(out.contextJson)).not.toContain('high-potassium');
+  });
+
+  it('a stated sex: the calculated eGFR, and the potassium card', () => {
+    const out = runRoadmap(flagged, { sex: 'female' }, NOW);
+    // Creatinine 80 µmol/L at 66, female (CKD-EPI 2021): 70.
+    expect(ctx(out.contextJson).derivedValues.eGFR).toBe(70);
+    expect(ids(out.contextJson)).toContain('high-potassium');
+  });
+});
+
+// US-67 AC3: the iPhone app shows a value in a Save banner, not a form cell, so its
+// tools and stubs say so; the web's are byte-identical to what shipped before.
+describe('US-67 AC3: the app\'s words for the form tools', () => {
+  const use = (id: string, name: string, input: unknown) => ({ type: 'tool_use', id, name, input });
+  const said = [{ role: 'user' as const, content: 'my LDL is 3.4 mmol/L' }];
+  const desc = (tools: ReadonlyArray<{ name: string; description: string }>, name: string) => tools.find(t => t.name === name)!.description;
+
+  // The pin moved once on purpose (US-67 AC2, Brad 2026-11-02): propose_field_edit asks about
+  // a value that looks implausible for its unit. It moved again with US-16 AC3 (Brad 2026-11-02):
+  // propose_medication_edit lists each key's own answers (a drug key: "or another drug's generic name"). It moved
+  // again with US-67 N3 (Brad 2026-11-03, "Option 1"): propose_medication_edit never promises an Undo. Any other move is a cache-prefix change to explain.
+  it('US-67 AC3: the web\'s tools are byte-identical to the pinned ones (prompt cache prefix)', () => {
+    const sha = (x: unknown) => createHash('sha256').update(JSON.stringify(x)).digest('hex');
+    expect(sha(CHAT_TOOLS)).toBe('4aae24cf50a6a2c76838f122aafba985eafdc60244c26e907c9b79632e322e1c');
+    expect(chatToolsFor(said)).toBe(CHAT_TOOLS);
+    expect(chatToolsFor(said, true, false)).toBe(CHAT_TOOLS);
+  });
+
+  it('US-67 AC3: the app gets the same four tools and schemas, with banner words and no pre-filled cell', () => {
+    const app = chatToolsFor(said, true, true);
+    expect(app.map(t => t.name)).toEqual(CHAT_TOOLS.map(t => t.name));
+    expect(app.map(t => t.input_schema)).toEqual(CHAT_TOOLS.map(t => t.input_schema));
+    expect(desc(app, 'propose_field_edit')).toMatch(/banner/);
+    expect(desc(app, 'propose_field_edit')).toMatch(/never that it is saved/);
+    expect(desc(app, 'propose_field_edit')).not.toMatch(/pre-fill/i);
+    expect(desc(app, 'propose_profile_edit')).toMatch(/confirms it in the app/);
+    expect(desc(app, 'propose_profile_edit')).not.toMatch(/roadmap tool/);
+    // A medication saves at once with Undo on both (Brad: copy the web).
+    expect(desc(app, 'propose_medication_edit')).toBe(desc(CHAT_TOOLS, 'propose_medication_edit'));
+    expect(chatToolsFor([{ role: 'user', content: 'hello' }], true, true).map(t => t.name))
+      .toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit']);
+    expect(chatToolsFor(said, false, true).map(t => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
+  });
+
+  it('US-67 AC3: beside run_roadmap the app\'s stubs say shown to review and Save, never pre-filled', () => {
+    const blocks = [
+      use('r', 'run_roadmap', { values: [] }),
+      use('ok', 'propose_field_edit', val('ldlC', 3.4, 'mmol/L')),
+      use('med', 'propose_medication_edit', { medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' }),
+      use('profile', 'propose_profile_edit', { sex: 'male' }),
+      use('bad', 'propose_field_edit', val('ldlC', 3.4, 'mmol')),
+    ];
+    const byId = (app: boolean) => Object.fromEntries(roadmapToolResults(blocks, PROFILE, undefined, app)!.results.map(r => [r.tool_use_id, r.content]));
+    const app = byId(true);
+    expect(app.ok).toBe('Shown to the user to review and Save; nothing is saved until they press Save.');
+    expect(app.med).toBe('Saved to the user\'s medications at once.');
+    // US-67 N3: neither stub teaches the model an Undo the banner may not offer.
+    expect(byId(false).med).toBe('Sent to the user\'s form; medications save at once.');
+    expect(app.profile).toBe('Shown to the user to confirm; nothing is saved until they press Save.');
+    expect(app.bad).toMatch(/^Not applied/);
+    expect(JSON.stringify([app.ok, app.med, app.profile, app.bad])).not.toMatch(/pre-filled|Pre-filled|form/);
+    expect(byId(false).ok).toBe('Pre-filled for the user to review and Save.');
+  });
+
+  it('US-67 AC3: withRoadmapRound passes the app flag to its stubs', async () => {
+    const first = { contentBlocks: [use('r', 'run_roadmap', { values: [] }), use('ok', 'propose_field_edit', val('ldlC', 3.4, 'mmol/L'))] };
+    const send = vi.fn().mockResolvedValueOnce(first).mockResolvedValueOnce({ contentBlocks: [{ type: 'text' }] });
+    await withRoadmapRound(said, send, PROFILE, undefined, undefined, true);
+    const results = send.mock.calls[1][0].messages.at(-1).content;
+    expect(results[1].content).toBe('Shown to the user to review and Save; nothing is saved until they press Save.');
+  });
+});
+
+// US-67 AC2, US-16: a proposed value that reads as the wrong unit (run_roadmap's own
+// unit-swap test) is never proposed; the model gets a second call to ask instead.
+describe('US-67 AC2: a value that looks like the wrong unit is asked about, not proposed', () => {
+  const use = (id: string, name: string, input: unknown) => ({ type: 'tool_use', id, name, input });
+  const said = [{ role: 'user' as const, content: 'my LDL is 3.4 mg/dL and I started atorvastatin 20 mg' }];
+  const reply = (...contentBlocks: object[]) => ({ contentBlocks, text: '' });
+  const asked = reply({ type: 'text', text: 'Is that 3.4 mmol/L or mg/dL?' });
+  const statin = use('m', 'propose_medication_edit', { medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' });
+
+  it.each([false, true])('US-67 AC2: LDL 3.4 mg/dL gets a second call whose tool_result says not saved, and no edit (app %s)', async (app) => {
+    const send = vi.fn().mockResolvedValueOnce(reply(use('v', 'propose_field_edit', val('ldlC', 3.4, 'mg/dL')))).mockResolvedValueOnce(asked);
+    const onRound = vi.fn();
+    const turn = await withRoadmapRound(said, send, PROFILE, onRound, undefined, app);
+    expect(send).toHaveBeenCalledTimes(2);
+    const second = send.mock.calls[1][0];
+    expect(second.tool_choice).toEqual({ type: 'none' });
+    expect(second.messages.at(-1).content).toEqual([{ type: 'tool_result', tool_use_id: 'v', content: UNIT_SUSPECT }]);
+    expect(UNIT_SUSPECT).toBe('Not saved: this value looks like it may be in a different unit. Ask the user to confirm the value and its unit. If they confirm it as stated, tell them to enter it in their record themselves, and do not propose it again.');
+    expect(turn.final).toBe(asked);
+    expect(turn.proposedEdits).toEqual([]);
+    expect(turn.counts).toBeNull();
+    expect(onRound).not.toHaveBeenCalled();
+  });
+
+  it.each([[130, 'mg/dL'], [3.4, 'mmol/L']])('US-67 AC2: LDL %s %s is proposed with no second call', async (value, unit) => {
+    const first = reply(use('v', 'propose_field_edit', val('ldlC', value, unit)));
+    const send = vi.fn().mockResolvedValueOnce(first);
+    const turn = await withRoadmapRound(said, send, PROFILE, undefined, undefined, true);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(turn.final).toBe(first);
+    expect(turn.proposedEdits).toMatchObject([{ kind: 'field', field: 'ldlC', displayValue: value }]);
+  });
+
+  it('US-67 AC2: HbA1c 6.1 mmol/mol is asked about too (the SI band)', async () => {
+    const send = vi.fn().mockResolvedValueOnce(reply(use('v', 'propose_field_edit', val('hba1c', 6.1, 'mmol/mol')))).mockResolvedValueOnce(asked);
+    expect((await withRoadmapRound(said, send, PROFILE)).proposedEdits).toEqual([]);
+    expect(send).toHaveBeenCalledTimes(2);
+  });
+
+  it('US-16: beside a medication edit the suspect value is dropped and the medication still proposed', async () => {
+    const send = vi.fn().mockResolvedValueOnce(reply(use('v', 'propose_field_edit', val('ldlC', 3.4, 'mg/dL')), statin)).mockResolvedValueOnce(asked);
+    const turn = await withRoadmapRound(said, send, PROFILE);
+    const results = send.mock.calls[1][0].messages.at(-1).content;
+    expect(results.map((r: { content: string }) => r.content)).toEqual([UNIT_SUSPECT, 'Sent to the user\'s form; medications save at once.']);
+    expect(turn.proposedEdits).toEqual([{ kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' }]);
+  });
+
+  it('US-67 AC2: a suspect value beside run_roadmap is one round, not two', async () => {
+    const send = vi.fn()
+      .mockResolvedValueOnce(reply(use('r', 'run_roadmap', { values: [val('ldlC', 3.4, 'mg/dL')] }), use('v', 'propose_field_edit', val('ldlC', 3.4, 'mg/dL'))))
+      .mockResolvedValueOnce(asked);
+    const onRound = vi.fn();
+    const turn = await withRoadmapRound(said, send, PROFILE, onRound);
+    expect(send).toHaveBeenCalledTimes(2);
+    const results = send.mock.calls[1][0].messages.at(-1).content;
+    expect(results[0].content).toMatch(/^\{"applied"/);
+    expect(results[1].content).toBe(UNIT_SUSPECT);
+    expect(onRound).toHaveBeenCalledOnce();
+    expect(turn.proposedEdits).toEqual([]);
+  });
+});
+
+// US-16 AC3: a medication answer its question does not offer is never saved
+// silently: the model gets a second call whose tool_result tells it to ask.
+describe('US-16 AC3: a medication answer the question does not offer is asked about, not saved', () => {
+  const use = (id: string, name: string, input: unknown) => ({ type: 'tool_use', id, name, input });
+  const said = [{ role: 'user' as const, content: "I'm on atorvastatin, not ezetimibe" }];
+  const reply = (...contentBlocks: object[]) => ({ contentBlocks, text: '' });
+  const asked = reply({ type: 'text', text: 'Which applies for ezetimibe?' });
+  const ASK = 'Not saved: "atorvastatin" is not an answer to the ezetimibe question. Ask the user which of these applies, then propose it again ' +
+    "with that answer: 'not_yet' (Haven't tried yet), 'yes' (Yes), 'no' (No), 'not_tolerated' (Not tolerated).";
+
+  it.each([false, true])('US-16 AC3: a lone misfit gets a second call whose tool_result asks, and no edit (app %s)', async (app) => {
+    const send = vi.fn().mockResolvedValueOnce(reply(use('m', 'propose_medication_edit', { medicationKey: 'ezetimibe', drugName: 'atorvastatin' }))).mockResolvedValueOnce(asked);
+    const turn = await withRoadmapRound(said, send, PROFILE, undefined, undefined, app);
+    expect(send).toHaveBeenCalledTimes(2);
+    const second = send.mock.calls[1][0];
+    expect(second.tool_choice).toEqual({ type: 'none' });
+    expect(second.messages.at(-1).content).toEqual([{ type: 'tool_result', tool_use_id: 'm', content: ASK }]);
+    expect(turn.final).toBe(asked);
+    expect(turn.proposedEdits).toEqual([]);
+  });
+
+  it('US-16 AC3: beside a fitting medication edit, the fitting one is saved as its own value and the misfit asked', async () => {
+    const send = vi.fn().mockResolvedValueOnce(reply(
+      use('s', 'propose_medication_edit', { medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' }),
+      use('e', 'propose_medication_edit', { medicationKey: 'ezetimibe', drugName: 'atorvastatin' }),
+      use('p', 'propose_medication_edit', { medicationKey: 'pcsk9i', drugName: 'none' }),
+    )).mockResolvedValueOnce(asked);
+    const turn = await withRoadmapRound(said, send, PROFILE);
+    const results = send.mock.calls[1][0].messages.at(-1).content.map((r: { content: string }) => r.content);
+    const SENT = 'Sent to the user\'s form; medications save at once.';
+    expect(results).toEqual([SENT, ASK, SENT]);
+    expect(turn.proposedEdits).toEqual([
+      { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' },
+      { kind: 'medication', medicationKey: 'pcsk9i', drugName: 'no', doseValue: null, doseUnit: null },
+    ]);
+  });
+
+  it('US-16 AC3: a mapped answer alone ("not taking" ezetimibe) is saved as no with no second call', async () => {
+    const first = reply(use('m', 'propose_medication_edit', { medicationKey: 'ezetimibe', drugName: 'none' }));
+    const send = vi.fn().mockResolvedValueOnce(first);
+    const turn = await withRoadmapRound(said, send, PROFILE);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(turn.proposedEdits).toEqual([{ kind: 'medication', medicationKey: 'ezetimibe', drugName: 'no', doseValue: null, doseUnit: null }]);
+  });
+
+  it.each(['not yet', 'not_yet ', 'none '])('US-16 AC3 R1: a GLP-1 "%s" is saved as none with no second call', async (drugName) => {
+    const send = vi.fn().mockResolvedValueOnce(reply(use('m', 'propose_medication_edit', { medicationKey: 'glp1', drugName })));
+    const turn = await withRoadmapRound(said, send, PROFILE);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(turn.proposedEdits).toEqual([{ kind: 'medication', medicationKey: 'glp1', drugName: 'none', doseValue: null, doseUnit: null }]);
+    expect(turn.refused).toBe(0);
+  });
+
+  it.each(['not taking', 'stopped', 'N/A', '   '])('US-16 AC3 R1: a statin "%s" is asked about in a second call, and counted as refused', async (drugName) => {
+    const send = vi.fn().mockResolvedValueOnce(reply(use('m', 'propose_medication_edit', { medicationKey: 'statin', drugName }))).mockResolvedValueOnce(asked);
+    const turn = await withRoadmapRound(said, send, PROFILE);
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(send.mock.calls[1][0].messages.at(-1).content[0].content).toMatch(/^Not saved: .* is not an answer to the statin question\. Ask the user which of these applies/);
+    expect(turn.proposedEdits).toEqual([]);
+    expect(turn.refused).toBe(1);
+  });
+
+  it('US-16 AC3 (Codex R2): an empty answer is asked about in a second call and counted as refused', async () => {
+    const send = vi.fn().mockResolvedValueOnce(reply(use('m', 'propose_medication_edit', { medicationKey: 'statin', drugName: '' }))).mockResolvedValueOnce(asked);
+    const turn = await withRoadmapRound(said, send, PROFILE);
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(turn.refused).toBe(1);
+    expect(turn.proposedEdits).toEqual([]);
+  });
+
+  it('US-16 AC3: a misfit beside run_roadmap is asked in the same one round', async () => {
+    const send = vi.fn()
+      .mockResolvedValueOnce(reply(use('r', 'run_roadmap', { values: [val('ldlC', 3.4, 'mmol/L')] }), use('m', 'propose_medication_edit', { medicationKey: 'ezetimibe', drugName: 'atorvastatin' })))
+      .mockResolvedValueOnce(asked);
+    const turn = await withRoadmapRound(said, send, PROFILE);
+    expect(send).toHaveBeenCalledTimes(2);
+    const results = send.mock.calls[1][0].messages.at(-1).content;
+    expect(results[1].content).toBe(ASK);
+    expect(turn.proposedEdits).toEqual([]);
   });
 });

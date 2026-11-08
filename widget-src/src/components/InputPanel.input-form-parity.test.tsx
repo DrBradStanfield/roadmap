@@ -10,10 +10,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from '@testing-library/react';
 import {
-  medicationForm, medicationsToInputs, screeningForm, screeningsToInputs,
+  LIPID_MEDS_IN_STEPS, medicationForm, medicationsToInputs, screeningForm, screeningsToInputs,
   type ApiMedication, type ApiScreening, type FormSection, type HealthInputs, type LipidMarker,
 } from '@roadmap/health-core';
 import { InputPanel, type PlanBasis } from './InputPanel';
+import { MY_HEALTH_PROPS } from '../testing/my-health-props';
 
 vi.mock('../lib/server-api', async importOriginal => ({ ...await importOriginal<typeof import('../lib/server-api')>(), trackProductEvent: vi.fn() }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -40,6 +41,7 @@ const medicationRows = (m: [string, string, number?][] = []): ApiMedication[] =>
 function renderPanel(state: State): HTMLElement {
   const inputs = { sex: state.sex, heightCm: 178, birthYear: 1970, birthMonth: 1, ...state.inputs };
   const props = {
+    ...MY_HEALTH_PROPS,
     inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si', onUnitSystemChange: vi.fn(),
     unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
     labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(),
@@ -47,7 +49,7 @@ function renderPanel(state: State): HTMLElement {
     screenings: screeningRows(state.screenings), onScreeningChange: vi.fn(),
     supplements: [], onSupplementChange: vi.fn(), onSupplementDelete: vi.fn(),
     scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false, fieldsSaved: 0,
-    hasApiResponse: false, formStage: 3 as const, planBasis: state.basis, grading: {},
+    hasApiResponse: false, formStage: 4 as const, reached: 4 as const, fullForm: true, wasDone: true, aboutYouLow: true, planBasis: state.basis, grading: {},
   };
   return render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />).container;
 }
@@ -62,10 +64,13 @@ const texts = (root: Element, selector: string) => [...root.querySelectorAll(sel
 function expectParity(container: HTMLElement, sections: FormSection[]) {
   const cards = [...container.querySelectorAll('.section-card')];
   for (const section of sections) {
-    const card = cards.find(c => c.querySelector('h3.health-section-title')?.textContent === section.title);
+    // Cancer screening's card has no title of its own: My health's topic heading names it (US-62 AC17).
+    // A group's plain label under its topic (US-62 AC20) or a card's own title.
+    const card = cards.find(c => c.querySelector('h3.health-section-title, h4.mh-group-label')?.textContent === section.title
+      || (section.id === 'cancer-screening' && c.querySelector('.health-section-desc')?.textContent?.trim() === section.intro));
     expect(card, section.title).toBeDefined();
     expect(card!.querySelector('.health-section-desc')!.textContent!.trim()).toBe(section.intro);
-    expect(texts(card!, 'h4')).toEqual(section.groups.filter(g => g.title).map(g => g.title));
+    expect(texts(card!, 'h4:not(.mh-group-label)')).toEqual(section.groups.filter(g => g.title).map(g => g.title));
     expect(texts(card!, '.screening-notice, .screening-age-message').map(t => t!.trim())).toEqual(section.groups.flatMap(g => g.notes));
     const fields = section.groups.flatMap(g => g.fields);
     // A dose select sits beside its drug under the drug's one label.
@@ -92,6 +97,15 @@ describe('US-25 AC8, US-06 — the web screening cards are screeningForm', () =>
     ['man of 60, former smoker, 25 pack-years, annual LDCT', 60, 'male', {
       lung_smoking_history: 'former_smoker', lung_pack_years: '25', lung_screening: 'annual_ldct',
     }],
+    ['US-07 AC1f: man of 60, 15 pack-years, abnormal LDCT recorded', 60, 'male', {
+      lung_smoking_history: 'former_smoker', lung_pack_years: '15', lung_screening: 'annual_ldct', lung_last_date: '2025-01', lung_result: 'abnormal',
+    }],
+    ['US-07 AC1g: man of 81, abnormal LDCT recorded', 81, 'male', {
+      lung_smoking_history: 'former_smoker', lung_pack_years: '25', lung_screening: 'annual_ldct', lung_last_date: '2025-01', lung_result: 'abnormal',
+    }],
+    ['US-07 AC1g: man of 81, normal LDCT recorded', 81, 'male', {
+      lung_smoking_history: 'former_smoker', lung_pack_years: '25', lung_screening: 'annual_ldct', lung_last_date: '2025-01', lung_result: 'normal',
+    }],
     ['man of 55 who will screen', 55, 'male', { prostate_discussion: 'will_screen' }],
     ['man of 72, DEXA osteoporosis', 72, 'male', {
       dexa_screening: 'dexa_scan', dexa_last_date: '2024-06', dexa_result: 'osteoporosis', dexa_followup_status: 'completed',
@@ -102,6 +116,30 @@ describe('US-25 AC8, US-06 — the web screening cards are screeningForm', () =>
     const sections = screeningForm(age, sex, screeningsToInputs(screeningRows(screenings)));
     expect(sections.length).toBeGreaterThan(0);
     expectParity(container, sections);
+  });
+
+  it('US-07 AC1g: at 81 the web shows an abnormal LDCT\'s follow-up, keeps the group for any LDCT answer, and none without one', () => {
+    const lung = { lung_smoking_history: 'former_smoker', lung_pack_years: '25', lung_screening: 'annual_ldct', lung_last_date: '2025-01' };
+    expect(renderPanel({ sex: 'male', basis: { age: 81 }, screenings: { ...lung, lung_result: 'abnormal' } }).querySelector('#lung-followup-status')).not.toBeNull();
+    cleanup();
+    // Review of commit 5, R2: a stored LDCT answer keeps the group past 80, so the result can be put back.
+    expect(renderPanel({ sex: 'male', basis: { age: 81 }, screenings: { ...lung, lung_result: 'normal' } }).querySelector('#lung-result')).not.toBeNull();
+    cleanup();
+    expect(renderPanel({ sex: 'male', basis: { age: 81 }, screenings: { lung_smoking_history: 'former_smoker', lung_pack_years: '25' } }).querySelector('#lung-smoking-history')).toBeNull();
+  });
+
+  it('US-07 AC1f: below 20 pack-years the web still shows a recorded abnormal LDCT\'s follow-up', () => {
+    const container = renderPanel({ sex: 'male', basis: { age: 60 }, screenings: {
+      lung_smoking_history: 'former_smoker', lung_pack_years: '15', lung_screening: 'annual_ldct', lung_last_date: '2025-01', lung_result: 'abnormal',
+    } });
+    expect(container.querySelector('#lung-followup-status')).not.toBeNull();
+    cleanup();
+    const none = renderPanel({ sex: 'male', basis: { age: 60 }, screenings: { lung_smoking_history: 'former_smoker', lung_pack_years: '15' } });
+    expect(none.querySelector('#lung-screening')).toBeNull();
+    cleanup();
+    // Review R4: after "Not yet started" the question stays, so LDCT can be picked again.
+    const notYet = renderPanel({ sex: 'male', basis: { age: 60 }, screenings: { lung_smoking_history: 'former_smoker', lung_pack_years: '15', lung_screening: 'not_yet_started' } });
+    expect(notYet.querySelector('#lung-screening')).not.toBeNull();
   });
 });
 
@@ -137,6 +175,16 @@ describe('US-25 AC8, US-06 — the web medication cards are medicationForm', () 
     expect(sections.length).toBeGreaterThan(0);
     expectParity(container, sections);
   });
+});
+
+// US-73 AC6: the web card says Brad's medicines sentence, no food list (Brad 2026-11-05).
+it('the cholesterol medicines intro ends with the medicines sentence on the web', () => {
+  const ldl: LipidMarker = { kind: 'ldl', label: 'LDL-c', value: 3.5, target: 2.6, elevated: true };
+  const container = renderPanel({ sex: 'male', inputs: { ldlC: 3.5 }, basis: { age: 56, lipidMarker: ldl, weightMedTrigger: { on: false, reasons: [] } } });
+  const card = [...container.querySelectorAll('.section-card')].find(c => c.querySelector('.mh-group-label')?.textContent === 'Cholesterol Medications');
+  const intro = card!.querySelector('.health-section-desc')!.textContent!.trim();
+  expect(intro.endsWith(`. ${LIPID_MEDS_IN_STEPS}`)).toBe(true);
+  expect(intro).not.toMatch(/oats|walnuts|psyllium/i);
 });
 
 // US-62 AC12: the phone layout shows the same cards.

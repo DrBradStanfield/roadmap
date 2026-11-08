@@ -6,7 +6,7 @@
  */
 import { mergeErasedRows, pickNewerOptional, rowRootIds, stampInstant } from './merge';
 import { migrateFile } from './migrate';
-import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from './roadmap-file';
+import { recordSchemaVersion, type RoadmapFile } from './roadmap-file';
 import type { SyncContext } from './sync-manager';
 
 export interface EraseInputs {
@@ -71,8 +71,9 @@ export function buildErasedFile({ stored, own, device, ctx }: EraseInputs): Road
   const erasedAt = new Date(Math.max(now, ...floor) + 1).toISOString();
 
   const file = migrateFile(null, ctx);
-  file.schemaVersion = CURRENT_SCHEMA_VERSION;
   file.erasedRows = erasedRows;
+  // The list's version, not the core rows' (US-66 AC15): an erased file holds none.
+  file.schemaVersion = recordSchemaVersion(file);
   file.meta.eraseEpoch = eraseEpoch;
   file.meta.erasedAt = erasedAt;
   if (priorProvider) {

@@ -36,9 +36,37 @@ struct PlanCardView: View {
     }
 }
 
-/// "Do you drink alcohol?" (US-60): called at Dismiss's tap, it records the screen then
-/// and returns the save for the answer. Web twin: widget-src/src/components/AlcoholQuestion.tsx.
-typealias AlcoholQuestion = @MainActor () -> (MyData.Alcohol) -> Void
+/// The reduce-alcohol card's question (US-60 AC3). Unanswered, it asks "Do you drink
+/// alcohol?"; a drinker is asked "Do you still drink alcohol?"; a non-drinker has no card,
+/// so no question. `ask`, called at Dismiss's tap, records the screen then and returns the
+/// save for the answer. Web twin: widget-src/src/components/AlcoholQuestion.tsx.
+struct AlcoholQuestion {
+    let drinks: Bool
+    let ask: @MainActor () -> (MyData.Alcohol) -> Void
+
+    /// Nil for a non-drinker (Brad 2026-11-01: a drinker can still say they've stopped).
+    init?(answered: MyData.Alcohol?, ask: @escaping @MainActor () -> (MyData.Alcohol) -> Void) {
+        guard answered != .noDrinking else { return nil }
+        drinks = answered == .drinks
+        self.ask = ask
+    }
+
+    /// What a choice does: save an answer, or explain why the card stays ("I still drink").
+    enum Action: Equatable { case save(MyData.Alcohol), explain }
+
+    var title: String { drinks ? "Do you still drink alcohol?" : "Do you drink alcohol?" }
+    var message: String {
+        drinks ? "Tell us if this has changed."
+            : "Your answer is kept in your record, so your plan follows it on every device. You can change it in Settings, under About you."
+    }
+    var hint: String { drinks ? "Asks whether you still drink alcohol" : "Asks whether you drink alcohol" }
+    /// The dialog's buttons; "I still drink" saves nothing.
+    var choices: [(label: String, action: Action)] {
+        drinks ? [("I've stopped", .save(.noDrinking)), ("I still drink", .explain)] : MyData.Alcohol.allCases.map { ($0.label, .save($0)) }
+    }
+    /// Shown after "I still drink".
+    static let stillDrinks = "This stays on your plan because the advice applies to anyone who drinks. You can change your answer in About you."
+}
 
 /// A suggestion's title and two lines; a tap opens everything the web shows:
 /// the full text, ingredients, guideline tags, the reason and the references.
@@ -50,6 +78,8 @@ private struct SuggestionRow: View {
     @State private var expanded = false
     /// The open question's save, so its dialog's arrow points at this Dismiss.
     @State private var answer: ((MyData.Alcohol) -> Void)?
+    /// "I still drink"'s line, shown in an alert once the dialog closes.
+    @State private var stillDrinks: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -91,17 +121,25 @@ private struct SuggestionRow: View {
             }
 
             if let dismiss {
-                Button("Dismiss") { answer = dismiss() }
+                Button("Dismiss") { answer = dismiss.ask() }
                     .font(.subheadline.weight(.medium))
                     .buttonStyle(.bordered)
                     .controlSize(.small)
-                    .confirmationDialog("Do you drink alcohol?", isPresented: Binding(get: { answer != nil }, set: { if !$0 { answer = nil } }), titleVisibility: .visible, presenting: answer) { save in
-                        ForEach(MyData.Alcohol.allCases, id: \.self) { choice in Button(choice.label) { save(choice) } }
+                    .confirmationDialog(dismiss.title, isPresented: Binding(get: { answer != nil }, set: { if !$0 { answer = nil } }), titleVisibility: .visible, presenting: answer) { save in
+                        ForEach(dismiss.choices, id: \.label) { choice in
+                            Button(choice.label) {
+                                switch choice.action {
+                                case .save(let answer): save(answer)
+                                case .explain: stillDrinks = AlcoholQuestion.stillDrinks
+                                }
+                            }
+                        }
                     } message: { _ in
-                        Text("Your answer is kept in your record, so your plan follows it on every device. You can change it in My data, under About you.")
+                        Text(dismiss.message)
                     }
+                    .messageAlert("", $stillDrinks)
                     .padding(.leading, showsIcon ? 54 : 0)
-                    .accessibilityHint("Asks whether you drink alcohol")
+                    .accessibilityHint(dismiss.hint)
                     .accessibilityIdentifier("plan.dismissAlcohol")
             }
 
@@ -123,22 +161,19 @@ private struct SuggestionRow: View {
 /// inset under the card's text, its link opening the product page in the browser, as every
 /// link in the plan does.
 private struct USProductBlock: View {
-    let block: USProducts.Block
+    let block: USProduct
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(block.name)
-                .font(.subheadline.weight(.semibold))
             Text(block.line)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            Link(destination: block.url) {
-                Label(block.url.host() ?? block.name, systemImage: "arrow.up.right.square")
-                    .font(.footnote.weight(.medium))
-            }
-            .accessibilityLabel("\(block.name) on \(block.url.host() ?? "its website")")
-            .accessibilityHint("Opens in your browser")
+            // The web's wording, "MicroVitamin+ ↗" (Brad 2026-11-01).
+            Link("\(block.name) ↗", destination: block.url)
+                .font(.footnote.weight(.medium))
+                .accessibilityLabel(block.name)
+                .accessibilityHint("Opens in your browser")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
@@ -149,7 +184,7 @@ private struct USProductBlock: View {
 }
 
 /// The parts of a suggestion behind the tap. Links open in the browser.
-private struct SuggestionDetails: View {
+struct SuggestionDetails: View {
     let suggestion: Suggestion
 
     var body: some View {

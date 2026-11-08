@@ -15,7 +15,7 @@
  * and specific is the point — but never carry results, values, or reasoning.
  */
 import type { ScreeningInputs } from './types';
-import { getPostFollowupDueDate, getScreeningNextDueDate } from './types';
+import { getPostFollowupDueDate, getScreeningNextDueDate, isSex, LUNG_PACK_YEARS, SCREENING_FOLLOWUP_INFO } from './types';
 import type {
   MeasurementDates,
   MedicationRecord,
@@ -32,9 +32,10 @@ import {
 } from './reminders';
 import { knownMinorOf } from './calculations';
 import { dayOf, localDay } from './merge';
-import { ISO_DATE, isCalendarDay } from './measurement-history';
+import { ISO_DATE, isCalendarDay, newestUsablePsa } from './measurement-history';
 import type { RoadmapFile } from './roadmap-file';
-import { screeningsToInputs } from './mappings';
+import { currentValueRows } from './blood-tests';
+import { screeningsToInputs, withPsaMeasurement } from './mappings';
 import { fileScreeningRows } from './file-inputs';
 
 // ===== Types =====
@@ -100,6 +101,36 @@ function earliest(...dates: Array<Date | null>): Date | null {
   return min;
 }
 
+/** US-17 AC15: a scheduled follow-up's check-in, months after the last screening. */
+const FOLLOWUP_CHECKIN_MONTHS = 3;
+
+/** Which follow-up an abnormal result's card shows: to organize, or scheduled (a check-in). */
+export type FollowupKind = 'organize' | 'checkin';
+
+function followupKindOf(result: string | undefined, status: string | undefined, lastDate: string | undefined): FollowupKind | null {
+  if (result !== 'abnormal' || !lastDate) return null;
+  if (!status || status === 'not_organized') return 'organize';
+  return status === 'scheduled' ? 'checkin' : null;
+}
+
+/**
+ * The reminder an abnormal result's follow-up card asks for (US-17 AC15, Brad
+ * 2026-11-05): organize (no status, or not_organized) is due at the last
+ * screening's month, which has passed, so the next email carries it; scheduled
+ * gets a check-in 3 months after the last screening, even once that has passed.
+ * Neither reads today: the phone counts its 90-day repeats from the due day, and
+ * a date that moved with the clock would move them. Completed, or no last date
+ * (no card), is null: the routine and post-follow-up dates decide. Callers take
+ * the earliest, so it is never later than the routine date.
+ */
+function followupDueDate(result: string | undefined, status: string | undefined, lastDate: string | undefined): Date | null {
+  const kind = followupKindOf(result, status, lastDate);
+  if (!kind) return null;
+  const [year, month] = lastDate!.split('-').map(Number);
+  if (!year || !month) return null;
+  return new Date(year, month - 1 + (kind === 'organize' ? 0 : FOLLOWUP_CHECKIN_MONTHS));
+}
+
 // ===== Per-category next-due computation (eligibility rules mirror v1) =====
 
 function screeningSchedule(
@@ -120,6 +151,7 @@ function screeningSchedule(
     push('screening_colorectal', label, earliest(
       getScreeningNextDueDate(s.colorectalLastDate, s.colorectalMethod),
       getPostFollowupDueDate('colorectal', s.colorectalMethod, s.colorectalResult, s.colorectalFollowupStatus, s.colorectalFollowupDate),
+      followupDueDate(s.colorectalResult, s.colorectalFollowupStatus, s.colorectalLastDate),
     ));
   }
 
@@ -128,6 +160,7 @@ function screeningSchedule(
     push('screening_breast', 'Mammogram', earliest(
       getScreeningNextDueDate(s.breastLastDate, s.breastFrequency),
       getPostFollowupDueDate('breast', s.breastFrequency, s.breastResult, s.breastFollowupStatus, s.breastFollowupDate),
+      followupDueDate(s.breastResult, s.breastFollowupStatus, s.breastLastDate),
     ));
   }
 
@@ -136,19 +169,24 @@ function screeningSchedule(
     push('screening_cervical', 'Cervical screening', earliest(
       getScreeningNextDueDate(s.cervicalLastDate, s.cervicalMethod),
       getPostFollowupDueDate('cervical', s.cervicalMethod, s.cervicalResult, s.cervicalFollowupStatus, s.cervicalFollowupDate),
+      followupDueDate(s.cervicalResult, s.cervicalFollowupStatus, s.cervicalLastDate),
     ));
   }
 
-  // Lung (age 50-80, smoker with 15+ pack-years — USPSTF 2021)
+  // Lung (age 50-80, smoker with 20+ pack-years — ACS 2023). Below 20 or past 80, an abnormal CT
+  // keeps its reminder exactly while the plan shows its follow-up card (US-07 AC1f, AC1g): a last
+  // date, until the follow-up is completed.
+  const lungFollowupCard = s.lungResult === 'abnormal' && !!s.lungLastDate && s.lungFollowupStatus !== 'completed';
   if (
-    age >= 50 && age <= 80 &&
+    age >= 50 &&
     (s.lungSmokingHistory === 'former_smoker' || s.lungSmokingHistory === 'current_smoker') &&
-    s.lungPackYears !== undefined && s.lungPackYears >= 15 &&
+    ((age <= 80 && s.lungPackYears !== undefined && s.lungPackYears >= LUNG_PACK_YEARS) || lungFollowupCard) &&
     s.lungScreening && s.lungScreening !== 'not_yet_started'
   ) {
     push('screening_lung', 'Lung screening (low-dose CT)', earliest(
       getScreeningNextDueDate(s.lungLastDate, s.lungScreening),
       getPostFollowupDueDate('lung', s.lungScreening, s.lungResult, s.lungFollowupStatus, s.lungFollowupDate),
+      followupDueDate(s.lungResult, s.lungFollowupStatus, s.lungLastDate),
     ));
   }
 
@@ -168,7 +206,10 @@ function screeningSchedule(
       const hasCompletedFollowup = s.dexaFollowupStatus === 'completed' && s.dexaFollowupDate;
       due = hasCompletedFollowup
         ? getPostFollowupDueDate('dexa', 'dexa_scan', 'abnormal', s.dexaFollowupStatus, s.dexaFollowupDate)
-        : getScreeningNextDueDate(s.dexaLastDate, 'dexa_scan');
+        : earliest(
+          getScreeningNextDueDate(s.dexaLastDate, 'dexa_scan'),
+          followupDueDate('abnormal', s.dexaFollowupStatus, s.dexaLastDate),
+        );
     } else {
       due = getScreeningNextDueDate(s.dexaLastDate, s.dexaResult === 'osteopenia' ? 'dexa_osteopenia' : 'dexa_normal');
     }
@@ -240,7 +281,7 @@ export function computeNextDueDates(
  * per-category reminder preferences.
  *
  * Never returns an empty schedule (US-23 AC6, Brad 2026-08-14): when nothing
- * is due within the next 12 months — including the missing-demographics case,
+ * is due within the next 12 months — including the no-birth-year case,
  * where no eligibility rule can run at all — the schedule is floored with one
  * "Annual health check-in" item 12 months out. A colonoscopy-every-10-years
  * user must not get a decade of silence; every enrolled person gets at least
@@ -272,14 +313,16 @@ export function computeReminderSchedule(file: RoadmapFile, now: Date): ReminderS
 }
 
 function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleItem[] {
-  const { sex, birthYear, birthMonth } = file.profile;
-  if (!sex || !birthYear) return []; // no demographics → no eligibility rules can run
+  const { birthYear, birthMonth } = file.profile;
+  if (!birthYear) return []; // no age → no eligibility rules can run
+  // No sex (or one that is not male or female) drops only the sexed screenings (US-07 AC8).
+  const sex = isSex(file.profile.sex) ? file.profile.sex : undefined;
   let age = now.getUTCFullYear() - birthYear;
   if (birthMonth && now.getUTCMonth() + 1 < birthMonth) age -= 1;
 
   const measurementDates: MeasurementDates = {};
-  for (const m of file.measurements) {
-    if (m.status !== 'active') continue;
+  // Vitals from `measurements`, blood tests from their core rows (US-66 AC7).
+  for (const m of currentValueRows(file)) {
     // No usable clinical date → drop the row, as buildMeasurementHistory does.
     // Coercing is worse than dropping: '2026-13-45' has the ISO shape, wins
     // `day > prev`, and produces dueAt 'NaN-NaN-NaN' — which the server's
@@ -299,8 +342,39 @@ function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleIte
 
   // The screenings the plan reads (US-06/US-15 AC11): a date that is not a
   // real calendar date, or a "last done" date after this month, is dropped.
-  const screenings = screeningsToInputs(fileScreeningRows(file.screenings));
-  return computeNextDueDates({ sex, age }, screenings, measurementDates, medications);
+  // The PSA reminder dates from the newest saved PSA, as the plan's card does (US-06 AC14).
+  return computeNextDueDates({ sex, age }, fileScreenings(file, now), measurementDates, medications);
+}
+
+function fileScreenings(file: RoadmapFile, now: Date): ScreeningInputs {
+  return withPsaMeasurement(screeningsToInputs(fileScreeningRows(file.screenings)),
+    newestUsablePsa(currentValueRows(file), now));
+}
+
+/**
+ * Which screening reminders are a follow-up (US-17 AC15), and the card's name for
+ * it (SCREENING_FOLLOWUP_INFO, keyed as the card keys it), for the iPhone's own
+ * list and notification days only (US-25 AC12): the phone holds the record, so
+ * it may say so. Never part of the pushed schedule, whose label + date is all
+ * the server learns.
+ */
+export function followupKinds(file: RoadmapFile, now: Date): Partial<Record<ReminderCategory, { kind: FollowupKind; name: string }>> {
+  const s = fileScreenings(file, now);
+  const kinds: Partial<Record<ReminderCategory, { kind: FollowupKind; name: string }>> = {};
+  const rows: Array<[string, string | undefined, string | undefined, string | undefined, string | undefined]> = [
+    ['colorectal', s.colorectalMethod, s.colorectalResult, s.colorectalFollowupStatus, s.colorectalLastDate],
+    ['breast', s.breastFrequency, s.breastResult, s.breastFollowupStatus, s.breastLastDate],
+    ['cervical', s.cervicalMethod, s.cervicalResult, s.cervicalFollowupStatus, s.cervicalLastDate],
+    ['lung', s.lungScreening, s.lungResult, s.lungFollowupStatus, s.lungLastDate],
+    ['dexa', 'dexa_scan', s.dexaResult === 'osteoporosis' ? 'abnormal' : undefined, s.dexaFollowupStatus, s.dexaLastDate],
+  ];
+  for (const [type, method, result, status, lastDate] of rows) {
+    const kind = followupKindOf(result, status, lastDate);
+    // The card's lookup and fallback (suggestions.ts screeningFollowup).
+    const info = SCREENING_FOLLOWUP_INFO[method ? `${type}_${method}` : `${type}_other`];
+    if (kind) kinds[`screening_${type}` as ReminderCategory] = { kind, name: info?.followupName ?? 'follow-up' };
+  }
+  return kinds;
 }
 
 function disabledCategories(file: RoadmapFile): Set<string> {

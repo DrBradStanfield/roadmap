@@ -1,13 +1,12 @@
 # Production deploy — the ONLY sanctioned headless path to Shopify + Fly.
 #
 # Part of the Tier 3 "ship" pipeline (docs/loops/deploy-pipeline-proposal.md):
-# author agent opens a PR -> independent reviewer approves -> merge (with the
-# `ship` label) fires this workflow. All deploy credentials live ONLY in GitHub
-# Actions secrets — no agent environment ever holds them (confused-deputy
-# defense; see the proposal doc).
+# author agent opens a PR -> independent reviewer approves -> auto-ship merges
+# and dispatches this workflow on main. All deploy credentials live ONLY in the
+# 'production' environment — no agent environment ever holds them
+# (confused-deputy defense; see the proposal doc).
 #
-# Also manually runnable (workflow_dispatch) so Brad's build sessions can use
-# the same deterministic path instead of deploying from the Mac.
+# Brad's build sessions dispatch it the same way instead of deploying from the Mac.
 #
 # Secrets required:
 #   FLY_DEPLOY_TOKEN_PROD   app-scoped deploy token for health-tool-app
@@ -32,8 +31,17 @@ on:
         type: choice
         options: [all, fly-only, shopify-only]
         default: all
-  pull_request:
-    types: [closed]
+      pages_sha:
+        # auto-ship passes the commit it merged (US-46 AC15): main may have
+        # moved on by the time pages-smoke runs, and then the tip's own Pages
+        # run is waited on too. Empty = main's tip only.
+        description: "Commit whose Pages run the Pages smoke waits for (empty = main's tip)"
+        type: string
+        default: ""
+# No pull_request trigger (GHSA-v69g-jc5m-3993, 2026-11-02): auto-ship and
+# people deploy by dispatching on main. The labelled-merge path it replaced was
+# unused. This file alone cannot keep the secrets on main (a branch runs its own
+# copy): the 'production' environment's deployment-branch rule, main only, does.
 
 # One deploy at a time; later runs queue rather than interleave.
 concurrency:
@@ -42,56 +50,17 @@ concurrency:
 
 jobs:
   gate:
-    # PR path: only merged same-repo PRs labeled `ship` (fork PRs get no
-    # secrets and would fail confusingly — security audit LOW-9).
-    # Dispatch path: a human clicked, or auto-ship.yml dispatched after its
-    # own reviewer + 30-min veto gate.
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.pull_request.merged == true &&
-       github.event.pull_request.head.repo.full_name == github.repository &&
-       contains(github.event.pull_request.labels.*.name, 'ship'))
+    # Dispatch only, from main: a human clicked, or auto-ship.yml dispatched
+    # after its own reviewer + 30-min veto gate. The environment's main-only
+    # branch rule refuses any other ref too; this stops it before the notice.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       issues: write # veto-window notification issue
-      pull-requests: read
     outputs:
       notify_issue: ${{ steps.notify.outputs.issue }}
     steps:
-      - name: Verify a HUMAN approving review on the FINAL commit + green checks
-        if: github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR: ${{ github.event.pull_request.number }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -euo pipefail
-          # Security audit HIGH-1: an approval only counts if it is (a) on the
-          # exact final commit (no stale approvals), (b) from a non-bot (the
-          # claude-review bot's opinion is advisory, never the gate), and
-          # (c) from the OWNER or a COLLABORATOR (no sockpuppet approvals on
-          # a public repo).
-          approvals=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/reviews" \
-            | jq --arg sha "$HEAD_SHA" '[.[] | select(
-                .state=="APPROVED" and .commit_id==$sha and .user.type!="Bot"
-                and (.author_association=="OWNER" or .author_association=="COLLABORATOR")
-              )] | length')
-          echo "Human approving reviews on ${HEAD_SHA}: ${approvals}"
-          if [ "${approvals}" -lt 1 ]; then
-            echo "::error::No human (owner/collaborator) approval on the final commit of PR #${PR} — refusing to deploy."
-            exit 1
-          fi
-          # The named 'test' check must have succeeded (an empty check list is
-          # a failure, not a pass — audit LOW-7), and nothing may have failed.
-          checks=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs")
-          bad=$(echo "$checks" | jq '[.check_runs[] | select(.conclusion != null and (.conclusion | IN("success","neutral","skipped")) | not)] | length')
-          ok=$(echo "$checks" | jq '[.check_runs[] | select(.name=="test" and .conclusion=="success")] | length')
-          if [ "${bad}" -gt 0 ] || [ "${ok}" -lt 1 ]; then
-            echo "::error::PR #${PR}: required 'test' check not green (successful-test=${ok}, non-green=${bad})."
-            exit 1
-          fi
-
       # Zero-click autonomy relies on a VISIBLE veto window: this issue is
       # Brad's native-email notification that a deploy is pending. The
       # 'production' environment has had no wait timer or reviewer since
@@ -155,33 +124,97 @@ jobs:
   pages-smoke:
     needs: gate
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # pages.yml now waits for CI on main before building (US-64 AC9), so the
+    # wait below allows 25 min: CI (~3-4) plus the Pages build, with queue room.
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      actions: read # the Pages run lookups
+      issues: write # the missing-run comment on the gate's issue (US-46 AC16)
     steps:
       - uses: actions/checkout@v5
         with:
           ref: main
+          persist-credentials: false # keeps the token out of .git/config (it is still in the runner's memory)
       - name: Wait for the Pages deploy of this commit (if one was triggered)
         env:
           GH_TOKEN: ${{ github.token }}
+          PAGES_SHA: ${{ inputs.pages_sha }}
+          NOTIFY_ISSUE: ${{ needs.gate.outputs.notify_issue }}
         run: |
           set -euo pipefail
-          SHA=$(git rev-parse HEAD)
-          run_id=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/pages.yml/runs?head_sha=${SHA}" \
-            --jq '.workflow_runs[0].id // empty')
-          if [ -z "${run_id}" ]; then
-            echo "No pages.yml run for ${SHA} (server-only change) — smoking the existing Pages site."
-            exit 0
-          fi
-          for i in $(seq 1 60); do
-            status=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" --jq '.status')
-            conclusion=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" --jq '.conclusion // ""')
-            if [ "${status}" = "completed" ]; then
-              [ "${conclusion}" = "success" ] || { echo "::error::Pages deploy failed (${conclusion})"; exit 1; }
-              echo "Pages deploy succeeded."; exit 0
+          # US-46 AC15: auto-ship names the commit it merged and has just
+          # dispatched its Pages run, which takes a few seconds to list, so look
+          # for up to 2 minutes. A push's own Pages run lists at once: one look.
+          # The deploy job ships main's tip, so when main has moved on past the
+          # named commit, the tip's own Pages run is waited on too (one look).
+          HEAD_SHA=$(git rev-parse HEAD)
+          SHA="${PAGES_SHA:-${HEAD_SHA}}"
+          [[ "${SHA}" =~ ^[0-9a-f]{40}$ ]] \
+            || { echo "::error::pages_sha must be a full 40-character commit sha."; exit 1; }
+          # find_run SHA LOOKS: run_id = the newest pages.yml run for SHA, or empty.
+          find_run() {
+            for i in $(seq 1 "$2"); do
+              run_id=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/pages.yml/runs?head_sha=$1" \
+                --jq '.workflow_runs[0].id // empty')
+              [ -n "${run_id}" ] || [ "${i}" -eq "$2" ] || { sleep 10; continue; }
+              break
+            done
+          }
+          # newer_run ID: run_id = the newest pages.yml run on main if it is newer than run ID, or empty.
+          newer_run() {
+            for i in $(seq 1 12); do
+              run_id=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/pages.yml/runs?branch=main&per_page=1" \
+                --jq ".workflow_runs[0] | select(.id > $1) | .id")
+              [ -n "${run_id}" ] || [ "${i}" -eq 12 ] || { sleep 10; continue; }
+              break
+            done
+          }
+          # wait_run ID: up to 25 minutes for the run to finish; fails the step unless it succeeded.
+          # US-46 AC16: pages.yml's concurrency cancels a pending run when a newer one queues, and
+          # every Pages run builds main's tip, so a cancelled run hands over to a newer run on main.
+          wait_run() {
+            for i in $(seq 1 150); do
+              status=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/$1" --jq '.status')
+              conclusion=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/$1" --jq '.conclusion // ""')
+              if [ "${status}" = "completed" ]; then
+                if [ "${conclusion}" = "cancelled" ]; then
+                  newer_run "$1"
+                  if [ -n "${run_id}" ]; then
+                    echo "Pages run $1 was cancelled; newer Pages run ${run_id} on main replaced it: waiting for that one."
+                    wait_run "${run_id}"; return 0
+                  fi
+                fi
+                [ "${conclusion}" = "success" ] || { echo "::error::Pages deploy failed (${conclusion})"; exit 1; }
+                echo "Pages deploy succeeded."; return 0
+              fi
+              sleep 10
+            done
+            echo "::error::Timed out waiting for the Pages deploy."; exit 1
+          }
+          tries=1; [ -z "${PAGES_SHA:-}" ] || tries=12
+          find_run "${SHA}" "${tries}"
+          if [ -n "${run_id}" ]; then
+            wait_run "${run_id}"
+          elif [ -n "${PAGES_SHA:-}" ]; then
+            echo "::warning::No pages.yml run for ${SHA} after 12 looks (about 2 minutes) — smoking the existing Pages site."
+            # A ::warning:: reaches no one: say it on the deploy's notification issue (US-46 AC16).
+            if [ -n "${NOTIFY_ISSUE:-}" ]; then
+              gh issue comment "${NOTIFY_ISSUE}" -R "${GITHUB_REPOSITORY}" --body "@DrBradStanfield, the Pages smoke found no pages.yml run for \`${SHA}\` after 12 looks (about 2 minutes); this alone does not stop the deploy. If main has moved on and its tip has a Pages run, the deploy waits for that run and stops unless it (or a newer run that replaces it) succeeds. Otherwise it smokes the Pages site as it stands, which may not hold this commit yet. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+                || echo "::warning::Could not comment on the deploy notification issue #${NOTIFY_ISSUE}."
             fi
-            sleep 10
-          done
-          echo "::error::Timed out waiting for the Pages deploy."; exit 1
+          else
+            echo "No pages.yml run for ${SHA} (server-only change) — smoking the existing Pages site."
+          fi
+          if [ "${HEAD_SHA}" != "${SHA}" ]; then
+            find_run "${HEAD_SHA}" 1
+            if [ -n "${run_id}" ]; then
+              echo "main has moved on to ${HEAD_SHA}, which the deploy ships: waiting for its Pages run too."
+              wait_run "${run_id}"
+            else
+              echo "main has moved on to ${HEAD_SHA}; no pages.yml run for it (server-only change)."
+            fi
+          fi
       - uses: actions/setup-node@v5
         with:
           node-version: 22
@@ -228,14 +261,6 @@ jobs:
         with:
           ref: main # always deploy main tip — never a PR snapshot
 
-      - name: Assert main tip IS the gated merge commit (PR path — audit MED-5)
-        if: github.event_name == 'pull_request'
-        env:
-          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
-        run: |
-          [ "$(git rev-parse HEAD)" = "$MERGE_SHA" ] || {
-            echo "::error::main moved past the gated commit — re-ship or dispatch deliberately."; exit 1; }
-
       - name: Guard — products.md must be a real file (not a symlink)
         run: |
           if [ -L docs/products.md ]; then
@@ -279,17 +304,17 @@ jobs:
 
       # ---------- Shopify (both apps, same assets) ----------
       - name: Pin Shopify CLI
-        if: github.event_name == 'pull_request' || inputs.surfaces != 'fly-only'
+        if: inputs.surfaces != 'fly-only'
         run: npm i -g @shopify/cli@4.9.4
 
       - name: Deploy Shopify extensions — prod app (microvitamin)
-        if: github.event_name == 'pull_request' || inputs.surfaces != 'fly-only'
+        if: inputs.surfaces != 'fly-only'
         env:
           SHOPIFY_CLI_PARTNERS_TOKEN: ${{ secrets.SHOPIFY_CLI_PARTNERS_TOKEN_PROD }}
         run: shopify app deploy --allow-updates --config shopify.app.toml
 
       - name: Deploy Shopify extensions — edu app (drstanfield)
-        if: github.event_name == 'pull_request' || inputs.surfaces != 'fly-only'
+        if: inputs.surfaces != 'fly-only'
         env:
           SHOPIFY_CLI_PARTNERS_TOKEN: ${{ secrets.SHOPIFY_CLI_PARTNERS_TOKEN_EDU }}
         run: shopify app deploy --allow-updates --config shopify.app.edu.toml
@@ -298,10 +323,10 @@ jobs:
       # SHA-pinned (audit MED-4): @master on a secret-bearing job is a supply-
       # chain hole. This SHA = tag v1/1.6.
       - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # v1 / 1.6
-        if: github.event_name == 'pull_request' || inputs.surfaces != 'shopify-only'
+        if: inputs.surfaces != 'shopify-only'
 
       - name: Fly deploy — health-tool-app (commerce)
-        if: github.event_name == 'pull_request' || inputs.surfaces != 'shopify-only'
+        if: inputs.surfaces != 'shopify-only'
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_TOKEN_PROD }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -311,7 +336,7 @@ jobs:
             --build-secret sentry_auth_token="$SENTRY_AUTH_TOKEN"
 
       - name: Fly deploy — health-tool-edu (education)
-        if: github.event_name == 'pull_request' || inputs.surfaces != 'shopify-only'
+        if: inputs.surfaces != 'shopify-only'
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_TOKEN_EDU }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -321,7 +346,7 @@ jobs:
             --build-secret sentry_auth_token="$SENTRY_AUTH_TOKEN"
 
       - name: Health gates
-        if: github.event_name == 'pull_request' || inputs.surfaces != 'shopify-only'
+        if: inputs.surfaces != 'shopify-only'
         env:
           FLY_TOKEN_PROD: ${{ secrets.FLY_DEPLOY_TOKEN_PROD }}
           FLY_TOKEN_EDU: ${{ secrets.FLY_DEPLOY_TOKEN_EDU }}

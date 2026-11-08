@@ -3,7 +3,7 @@
 // Only extraction, archive bytes and telemetry are synthetic boundaries.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
+import { createEmptyFile, ROADMAP_FILE_NAME, toOldShape, type RoadmapFile } from '@roadmap/health-core';
 import { UploadModal } from './UploadModal';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { flushRoadmapStore, initRoadmapStore } from '../lib/roadmap-data';
@@ -35,7 +35,9 @@ afterEach(async () => { cleanup(); await flushRoadmapStore(); });
 
 async function disk() {
   await flushRoadmapStore();
-  return (await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)).body as RoadmapFile;
+  // A record nothing was saved to is never written (US-10 AC5a): read it as empty.
+  const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
+  return (body ?? createEmptyFile({ deviceId: 'test', now: new Date().toISOString() })) as RoadmapFile;
 }
 
 async function review() {
@@ -60,7 +62,7 @@ describe('US-02 AC4 / AC7: ranged comma readings reach the persisted record', ()
     fireEvent.click(button);
     await screen.findByRole('button', { name: 'Done' });
     const file = await disk();
-    expect(file.measurements.map(r => [r.metricType, r.value])).toEqual([['creatinine', 1234]]);
+    expect(toOldShape(file).measurements.map(r => [r.metricType, r.value])).toEqual([['creatinine', 1234]]);
     expect(file.labValues.map(r => [r.metricName, r.value])).toContainEqual(['Base excess', -2]);
   });
 
@@ -96,7 +98,7 @@ describe('US-02 AC4: reviewed numeric text reaches the actual record unchanged',
     await screen.findByRole('button', { name: 'Done' });
     const file = await disk();
     expect(file.labValues.map(r => [r.metricName, r.value])).toEqual(expect.arrayContaining([['Base excess', -2], ['Synthetic test', 4]]));
-    expect(file.measurements.map(r => [r.metricType, r.value])).toContainEqual(['ldl', 3.2]);
+    expect(toOldShape(file).measurements.map(r => [r.metricType, r.value])).toContainEqual(['ldl', 3.2]);
   });
 
   it.each(['paste', 'drop'] as const)('refuses multiline %s, then saves select-all correction as 5.2, not 5.22', async method => {

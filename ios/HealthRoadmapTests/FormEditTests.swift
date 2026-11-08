@@ -80,6 +80,25 @@ final class FormEditTests: XCTestCase {
         XCTAssertEqual(data.supplements.stopped.first?.dose, 500)
     }
 
+    /// US-73 AC10b (break-test 2026-11-06): a stopped row says the phone's day it stopped, never
+    /// "Since" its start; an active one says since when, on the phone's day.
+    func testAStoppedSupplementSaysTheDayItStopped_US73_AC10b() throws {
+        let engine = try HealthEngine()
+        var record = try engine.blocking { [now] in try $0.newRecord(now: now, deviceId: "test", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!) }
+        record = try saved(engine, .form(.customSupplement(name: "Lion's Mane")), record)
+        let today = DayText.iso(now)
+        var data = try engine.blocking { [now] in try $0.myData(recordJSON: record, now: now, deviceId: "test") }
+        let active = try XCTUnwrap(data.supplements.active.first)
+        XCTAssertEqual(active.dayLine(stopped: false), "Since \(DayText.short(today))")
+        record = try saved(engine, .form(.supplement(key: "custom_lion_s_mane", name: "Lion's Mane", dose: nil, unit: nil, stopped: true)), record)
+        data = try engine.blocking { [now] in try $0.myData(recordJSON: record, now: now, deviceId: "test") }
+        let stopped = try XCTUnwrap(data.supplements.stopped.first)
+        XCTAssertEqual(stopped.stoppedDay, today)
+        XCTAssertEqual(stopped.dayLine(stopped: true), "Stopped \(DayText.short(today))")
+        let noStopDay = SupplementsView.Row(key: "k", name: "n", dose: nil, unit: nil, startedDay: today, stoppedDay: nil)
+        XCTAssertEqual(noStopDay.dayLine(stopped: true), "Stopped", "an engine before stoppedDay, or no stop recorded")
+    }
+
     /// Adversary R1: a dose past Int's range (the schema has no upper bound) must print, not trap on every launch.
     func testAHugeDoseOrNumberPrintsWithoutTrapping() {
         XCTAssertEqual(SupplementSheet.doseText(5), "5")
@@ -142,5 +161,39 @@ final class FormEditTests: XCTestCase {
         XCTAssertEqual(bad.rows.map(\.value), ["3.4"])
         // A day the app cannot read draws no rule.
         XCTAssertEqual(ChartData(try decode(#","markers":[{"id":"a","day":"soon","label":"L"}]"#)).markers, [])
+    }
+
+    /// US-12 AC20: an LDL printed "< 2" on a lab report is saved as a limit. My data and the
+    /// history say it with its symbol, the card's trend leaves it out, and the chart plots it at
+    /// its bound, hollow, out of the line. The plan cannot grade "< 2" against 1.4, so it says so.
+    func testALabLimitReadsAsPrintedAndPlotsHollowAtItsBound_US12AC20() throws {
+        let engine = try HealthEngine()
+        var record = try saved(engine, .add(metric: "ldl", value: 3.1, day: "2026-09-01"), try man60(engine))
+        record = try saved(engine, .add(metric: "ldl", value: 2.9, day: "2026-09-15"), record)
+        let extraction = #"{"classification":"lab_report","reportDate":"2026-10-01","values":[{"metric":"ldl","valueSI":2,"displayValue":2,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high","comparator":"<"}]}"#
+        record = try saved(engine, .labImport(extractionJSON: extraction, refs: ["v0"], reportDay: "2026-10-01"), record)
+
+        let ldl = try XCTUnwrap(engine.blocking { [now] in try $0.myData(recordJSON: record, now: now, deviceId: "test") }.bloodTests.first { $0.metric == "ldl" })
+        XCTAssertEqual(ldl.latest?.value, "< 2.0")
+        XCTAssertEqual(ldl.trend, [3.1, 2.9], "a limit is no point on the card's trend")
+
+        let history = try engine.blocking { [now] in try $0.history(recordJSON: record, metric: "ldl", now: now, deviceId: "test") }
+        XCTAssertEqual(history.rows.map(\.value), ["< 2.0", "2.9", "3.1"])
+        XCTAssertEqual(history.rows.map(\.bound), [2, nil, nil])
+        XCTAssertEqual(history.rows.first?.note, "Printed as a limit, so the plan cannot grade it against its cutoff.")
+
+        let points = ChartData(history).points
+        XCTAssertEqual(points.map(\.value), [2, 2.9, 3.1], "the limit is plotted at its bound")
+        XCTAssertEqual(points.map(\.limit), [true, false, false])
+        XCTAssertEqual(points.first?.label, "< 2.0", "VoiceOver reads it as printed")
+    }
+
+    /// US-12 AC20: an older engine sends no bound, so a limit's text is no number: the point is
+    /// left off the chart, never plotted as an exact value, and the page still draws.
+    func testALimitFromAnOlderEngineIsLeftOffTheChart_US12AC20() throws {
+        let json = #"{"metric":"ldl","label":"LDL","unit":"mmol/L","excluded":false,"rows":[{"id":"l","value":"< 2.0","day":"2026-10-01","status":"active","current":true,"correction":false},{"id":"e","value":"2.9","day":"2026-09-15","status":"active","current":false,"correction":false}]}"#
+        let history = try JSONDecoder().decode(MetricHistory.self, from: Data(json.utf8))
+        XCTAssertEqual(ChartData(history).points.map(\.id), ["e"])
+        XCTAssertNil(history.rows.first?.note)
     }
 }

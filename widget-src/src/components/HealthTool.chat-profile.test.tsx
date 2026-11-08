@@ -11,11 +11,12 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, fireEvent, waitFor, act, type RenderResult } from '@testing-library/react';
-import { parseProposedEdit, ROADMAP_FILE_NAME, CURRENT_SCHEMA_VERSION, MemoryAdapter, MemoryCloud, migrateFile, rowRootIds, type ProposedEdit, type RoadmapFile, type StorageAdapter } from '@roadmap/health-core';
+import { createEmptyFile, parseProposedEdit, ROADMAP_FILE_NAME, CURRENT_SCHEMA_VERSION, MemoryAdapter, MemoryCloud, migrateFile, rowRootIds, type ProposedEdit, type RoadmapFile, type StorageAdapter } from '@roadmap/health-core';
 import { ERASE_UNREACHABLE, REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveDocuments, bulkSaveLabValues, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
+import { openAboutYou } from '../testing/health-tool-harness';
 import { BT_TIMELINE_DRAFT_KEY, MIRROR_CHANGED_EVENT, MIRROR_KEY } from '../lib/storage';
 
 const chat = vi.hoisted(() => ({
@@ -52,17 +53,21 @@ vi.mock('./UploadModal', () => ({ UploadModal: ({ onComplete, history }: { onCom
 } }));
 
 import { ERASE_DONE_CHAT_UNREAD, HealthTool, WRITE_REFUSED } from './HealthTool';
+import { deleteButton } from '../testing/settings';
 
 /** The guest's record as this browser holds it, after every pending save. */
 async function recordOnDisk(): Promise<RoadmapFile> {
   await act(async () => { await flushRoadmapStore(); });
-  return (await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)).body as RoadmapFile;
+  // A record nothing was saved to is never written (US-10 AC5a): read it as empty.
+  const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
+  return (body ?? createEmptyFile({ deviceId: 'test', now: new Date().toISOString() })) as RoadmapFile;
 }
 const wait = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
 const banner = () => document.body.querySelector('.chat-profile-proposal[role="status"]') as HTMLElement | null;
 /** The plan computed: the empty preview ("Real suggestions appear once you fill in your details") is gone. */
+// A plan on My health: its tiles under the onboarding, or its cards in the topics (US-62 AC25).
 const planShown = (view: RenderResult) =>
-  !view.container.querySelector('.plan-empty-preview') && !!view.container.querySelector('.health-results-panel .stat-card');
+  !view.container.querySelector('.plan-empty-preview') && !!view.container.querySelector('.quick-stats .stat-card, .mh-sections .suggestion-card');
 
 /** A guest with a saved weight and no sex or height (unless given): no plan yet. */
 async function guestWithoutProfile(saved: { sex?: 'male' | 'female'; heightCm?: number } = {}, adapter: StorageAdapter = new LocalStorageAdapter()): Promise<RenderResult> {
@@ -72,6 +77,7 @@ async function guestWithoutProfile(saved: { sex?: 'male' | 'female'; heightCm?: 
   const view = render(<HealthTool />);
   await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
   await wait(600);
+  openAboutYou(view.container); // a complete record's About you is rows (US-62 AC12)
   return view;
 }
 /** The chat's reply: the tool block the model sent, through the real parser. */
@@ -214,7 +220,7 @@ describe('US-16 AC2: the proposal banner, after review', () => {
 
   it('never names a field that already holds the value, even after the form changes under the banner', async () => {
     localStorage.setItem('health_roadmap_unit_system', 'si');
-    const view = await guestWithoutProfile({ sex: 'female' });
+    const view = await guestWithoutProfile({ sex: 'female', heightCm: 170 }); // sex shows once height and weight are in (US-62 AC13)
     reply({ sex: 'male', height: { value: 178, unit: 'cm' } });
     expect(banner()!.textContent).toContain('Male (replaces Female)');
     // The user picks Male in the form: their own entry outranks the proposal, which goes.
@@ -222,7 +228,7 @@ describe('US-16 AC2: the proposal banner, after review', () => {
     expect(banner()).toBeNull();
     await wait(1500);
     expect((await recordOnDisk()).profile.sex).toBe('male');
-    expect((await recordOnDisk()).profile).not.toHaveProperty('heightCm');
+    expect((await recordOnDisk()).profile.heightCm).toBe(170);
   });
 
   it('a height typed in the form clears the proposal', async () => {
@@ -237,12 +243,12 @@ describe('US-16 AC2: the proposal banner, after review', () => {
   it('US-16 AC2 / US-09: erasing the data clears the pending profile proposal', async () => {
     localStorage.setItem('health_roadmap_unit_system', 'si');
     // A saved profile, so the plan shows and with it the delete link.
-    const view = await guestWithoutProfile({ sex: 'female', heightCm: 175 });
+    await guestWithoutProfile({ sex: 'female', heightCm: 175 });
     reply({ sex: 'male', height: { value: 178, unit: 'cm' } });
     expect(banner()).not.toBeNull();
     vi.stubGlobal('confirm', () => true);
     vi.stubGlobal('alert', () => {});
-    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    fireEvent.click(await waitFor(() => deleteButton()));
     await waitFor(() => expect(banner()).toBeNull());
     await wait(1500);
     const profile = (await recordOnDisk()).profile;
@@ -382,10 +388,10 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
   });
 
   it('keeps a proposal made after this tab\'s own erase through an unchanged refresh', async () => {
-    const view = await guestWithoutProfile({ sex: 'male', heightCm: 175 });
+    await guestWithoutProfile({ sex: 'male', heightCm: 175 });
     vi.stubGlobal('confirm', () => true);
     vi.stubGlobal('alert', () => {});
-    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    fireEvent.click(await waitFor(() => deleteButton()));
     await wait(1500);
     chatProposes({ sex: 'female' });
     expect(banner()).not.toBeNull();
@@ -454,7 +460,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
 
   it('US-11 AC2c: an erase whose chat history cannot be opened says where it still is', async () => {
     const cloud = new MemoryCloud();
-    const view = await cloudGuest(cloud, { sex: 'male', heightCm: 175 });
+    await cloudGuest(cloud, { sex: 'male', heightCm: 175 });
     const read = MemoryAdapter.prototype.read;
     vi.spyOn(MemoryAdapter.prototype, 'read').mockImplementation(function (this: MemoryAdapter, fileName, signal) {
       if (fileName === 'chat-history.json') return Promise.reject(new Error('chat cloud unreachable'));
@@ -463,7 +469,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     const alert = vi.fn();
     vi.stubGlobal('confirm', () => true);
     vi.stubGlobal('alert', alert);
-    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    fireEvent.click(await waitFor(() => deleteButton()));
     await waitFor(() => expect(alert).toHaveBeenCalledOnce());
     expect(alert.mock.calls[0][0]).toBe(ERASE_DONE_CHAT_UNREAD);
   });
@@ -485,7 +491,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     const alert = vi.fn();
     vi.stubGlobal('confirm', () => true);
     vi.stubGlobal('alert', alert);
-    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    fireEvent.click(await waitFor(() => deleteButton()));
     await waitFor(() => expect(alert).toHaveBeenCalledWith(ERASE_UNREACHABLE));
     await wait(100);
     expect(view.container.querySelector<HTMLInputElement>('#heightCm')?.value).toBe('175');
@@ -567,10 +573,10 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     expect(supplementsShown(view)).toEqual(['Omega-3']);
     vi.stubGlobal('confirm', () => true);
     vi.stubGlobal('alert', () => {});
-    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    fireEvent.click(await waitFor(() => deleteButton()));
     await wait(1500);
     await startAgain();
-    expect(view.container.querySelector('.supplement-chips')).not.toBeNull();
+    expect(view.container.querySelector('.supplement-add')).not.toBeNull();
     expect(supplementsShown(view)).toEqual([]);
   });
 
@@ -580,7 +586,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     await otherDeviceErases(cloud);
     await refreshThisTab();
     await startAgain();
-    expect(view.container.querySelector('.supplement-chips')).not.toBeNull();
+    expect(view.container.querySelector('.supplement-add')).not.toBeNull();
     expect(supplementsShown(view)).toEqual([]);
   });
 
@@ -622,7 +628,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     const alert = vi.fn();
     vi.stubGlobal('confirm', () => true);
     vi.stubGlobal('alert', alert);
-    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    fireEvent.click(await waitFor(() => deleteButton()));
     await waitFor(() => expect(alert).toHaveBeenCalledWith(ERASE_UNREACHABLE));
     await wait(600);
     expect(JSON.stringify(chat.context!())).toBe(contextBefore);
@@ -631,7 +637,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
   });
 
   it('US-11: a successful erase clears the lab rows and documents the upload view holds', async () => {
-    const view = await guestWithoutProfile({ sex: 'male', heightCm: 175 });
+    await guestWithoutProfile({ sex: 'male', heightCm: 175 });
     await act(async () => {
       await bulkSaveLabValues([{ metricName: 'Ferritin', value: 75, unit: 'µg/L', recordedAt: '2026-09-01' }]);
       await bulkSaveDocuments([{
@@ -644,7 +650,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     expect(JSON.stringify(reload.history)).toContain('Ferritin');
     vi.stubGlobal('confirm', () => true);
     vi.stubGlobal('alert', () => {});
-    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    fireEvent.click(await waitFor(() => deleteButton()));
     await wait(1500);
     expect(reload.history).toEqual({ measurements: [], labValues: [], documents: [] });
   });
@@ -685,6 +691,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     const view = render(<HealthTool />);
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
     await wait(600);
+    openAboutYou(view.container);
     return view;
   }
   const cloudMedications = async (cloud: MemoryCloud) =>
@@ -695,12 +702,12 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
   it('a chat reply during this tab\'s erase applies nothing and makes no Undo, so no pre-erase medication is written back', async () => {
     const cloud = new MemoryCloud();
     const adapter = new HeldCloud(cloud);
-    const view = await cloudGuestOnStatin(adapter);
+    await cloudGuestOnStatin(adapter);
     const erase = adapter.hold();
     const alert = vi.fn();
     vi.stubGlobal('confirm', () => true);
     vi.stubGlobal('alert', alert);
-    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    fireEvent.click(await waitFor(() => deleteButton()));
     await erase.reached;
     act(() => chat.proposeEdit!([atorvastatin, parseProposedEdit('propose_profile_edit', { sex: 'female' })!]));
     const undo = undoButton();
@@ -728,7 +735,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     vi.stubGlobal('confirm', () => true);
     vi.stubGlobal('alert', alert);
     fireEvent.change(view.container.querySelector('#heightCm')!, { target: { value: '191' } });
-    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    fireEvent.click(await waitFor(() => deleteButton()));
     await erase.reached;
     await wait(800); // the profile timer fires while the erase writes
     erase.release();
@@ -746,7 +753,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     const alert = vi.fn();
     vi.stubGlobal('confirm', () => true);
     vi.stubGlobal('alert', alert);
-    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    fireEvent.click(await waitFor(() => deleteButton()));
     await erase.reached;
     fireEvent.change(view.container.querySelector('#heightCm')!, { target: { value: '191' } });
     await wait(1500);
@@ -769,7 +776,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     const alert = vi.fn();
     vi.stubGlobal('confirm', () => true);
     vi.stubGlobal('alert', alert);
-    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    fireEvent.click(await waitFor(() => deleteButton()));
     await erase.reached;
     erase.release();
     await waitFor(() => expect(alert).toHaveBeenCalled());
@@ -824,7 +831,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
   it('after an erase whose write failed, a matrix draft the chat filled in is gone from the device and the screen', async () => {
     const cloud = new MemoryCloud();
     const adapter = new HeldCloud(cloud);
-    const view = await cloudGuestOnStatin(adapter);
+    await cloudGuestOnStatin(adapter);
     act(() => chat.proposeEdit!([{ kind: 'field', field: 'ldlC', displayValue: 3.2, unitSystem: 'si', date: null }]));
     await wait(600);
     expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY) ?? '').toContain('3.2');
@@ -832,7 +839,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     const alert = vi.fn();
     vi.stubGlobal('confirm', () => true);
     vi.stubGlobal('alert', alert);
-    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    fireEvent.click(await waitFor(() => deleteButton()));
     await erase.reached;
     erase.release();
     await waitFor(() => expect(alert).toHaveBeenCalled());
@@ -845,13 +852,13 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
   it('a medication save scheduled before this tab\'s erase does not land in the erased record', async () => {
     const cloud = new MemoryCloud();
     const adapter = new HeldCloud(cloud);
-    const view = await cloudGuestOnStatin(adapter);
+    await cloudGuestOnStatin(adapter);
     const erase = adapter.hold();
     const alert = vi.fn();
     vi.stubGlobal('confirm', () => true);
     vi.stubGlobal('alert', alert);
     act(() => chat.proposeEdit!([atorvastatin])); // its save waits 300 ms
-    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    fireEvent.click(await waitFor(() => deleteButton()));
     await erase.reached;
     await wait(600); // the save's timer fires while the erase is still writing
     erase.release();
@@ -881,7 +888,7 @@ describe('US-11 AC3b / AC8: an erase whose device cleanup fails still clears the
     const alert = vi.fn();
     vi.stubGlobal('confirm', () => true);
     vi.stubGlobal('alert', alert);
-    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    fireEvent.click(await waitFor(() => deleteButton()));
     await waitFor(() => expect(alert).toHaveBeenCalledOnce());
     window.removeEventListener(MIRROR_CHANGED_EVENT, embedNotified);
     expect(localStorage.getItem(MIRROR_KEY) ?? '').not.toContain('180');

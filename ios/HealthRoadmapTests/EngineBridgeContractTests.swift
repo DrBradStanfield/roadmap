@@ -19,7 +19,10 @@ final class EngineBridgeContractTests: XCTestCase {
     /// Both-way additions that keep the bridge id (D14), never hashed.
     private struct Additions: Decodable {
         let doors: [String: Door]
+        /// Whole doors left out of the hash (2026-11-05): reached only through `optionalCall`.
+        let optionalDoors: [String: OptionalDoor]
         struct Door: Decodable { let optionalArgs: [String]? }
+        struct OptionalDoor: Decodable { let args: [String] }
     }
 
     private func contractBytes() throws -> Data {
@@ -54,6 +57,39 @@ final class EngineBridgeContractTests: XCTestCase {
             XCTAssertEqual(try engine.blocking { try $0.evaluate("HealthEngine.\(name).length").toInt32() }, Int32(arity), name)
         }
         XCTAssertTrue(Set(extra.doors.keys).isSubset(of: contract.doors.keys))
+    }
+
+    /// An optional door keeps the bridge id: an old app never calls it, and a new app reaches it
+    /// only through `optionalCall`, which reads a missing door as the feature unavailable. A new
+    /// app normally runs an engine at least as new as its bundled one (anti-rollback), but safety
+    /// rests on the nil, not on that. So: never in the contract or the self-test's list, in the
+    /// bundled engine with its arity, and called from the app only through `optionalCall`.
+    func testAnOptionalDoorIsOutsideTheContractAndCalledOnlyThroughTheGuard() throws {
+        let contract = try JSONDecoder().decode(Contract.self, from: contractBytes())
+        let optional = try additions().optionalDoors
+        XCTAssertFalse(optional.isEmpty)
+        let engine = try HealthEngine()
+        let app = ios.appending(path: "HealthRoadmap")
+        let sources = try XCTUnwrap(FileManager.default.enumerator(at: app, includingPropertiesForKeys: nil)).compactMap { $0 as? URL }
+            .filter { $0.pathExtension == "swift" }.map { try String(contentsOf: $0, encoding: .utf8) }
+        for (name, door) in optional {
+            XCTAssertNil(contract.doors[name], name)
+            XCTAssertFalse(EngineRelease.doors.contains(name), name)
+            XCTAssertEqual(try engine.blocking { try $0.evaluate("HealthEngine.\(name).length").toInt32() }, Int32(door.args.count), name)
+            let calls = sources.flatMap { $0.components(separatedBy: "\n") }.filter { $0.contains("\"\(name)\"") }
+            XCTAssertFalse(calls.isEmpty, name)
+            for line in calls { XCTAssertTrue(line.contains("optionalCall(\"\(name)\""), "\(name) called outside optionalCall: \(line)") }
+        }
+    }
+
+    /// US-73 AC8: the search answers through the guard; a door the engine lacks is nil, not a crash.
+    func testTheGuardReadsAMissingDoorAsUnavailable() throws {
+        let engine = try HealthEngine()
+        XCTAssertNil(try engine.blocking { try $0.optionalCall("noSuchOptionalDoor", []) })
+        let matches = try XCTUnwrap(engine.blocking { try $0.labSearch("ferr") })
+        XCTAssertEqual(matches.first, LabSearchMatch(name: "Ferritin", key: "ferritin", kind: "catalogue", units: matches.first?.units ?? []))
+        XCTAssertEqual(matches.first?.units.first, "µg/L")
+        XCTAssertTrue(matches.first?.units.contains("ng/mL") ?? false)
     }
 
     func testCloudSyncHandlesEveryContractEvent() throws {

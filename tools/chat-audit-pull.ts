@@ -35,6 +35,9 @@ import path from 'path';
 
 /** The user saw a substituted line: a fallback, or a refusal (US-15 AC14: `is_fallback` false, `failure_mode` 'refusal'). */
 const servedFallback = (m: { is_fallback: boolean | null; failure_mode: string | null }) => m.is_fallback === true || m.failure_mode === 'refusal';
+/** The badge for a substituted line. On YouTube nobody saw it: the bot posts nothing on a failed turn (US-15 AC52). */
+const fallbackLabel = (m: { platform: string; failure_mode: string | null }) =>
+  `${m.failure_mode === 'refusal' ? 'REFUSAL' : 'FALLBACK'}${m.platform === 'youtube' ? ' · not posted' : ''}`;
 
 const args = process.argv.slice(2);
 function getArg(flag: string, defaultValue: string): string {
@@ -117,30 +120,40 @@ interface RoutingEvent {
 // Pull data
 // ---------------------------------------------------------------------------
 
-async function pullMessages(): Promise<Message[]> {
+/**
+ * Every row of the window, page by page (US-15 AC54). PostgREST answers one
+ * request with at most its max-rows (1000 on Supabase) and a 200, so a single
+ * request lost the newest rows without a word. Pages run until one comes back
+ * empty, which holds whatever the cap is. `id` breaks ties: rows written in one
+ * transaction share `created_at`, and tied rows have no fixed order from one
+ * request to the next, so a page boundary could skip one row and repeat another.
+ */
+async function pullAll<T>(table: string, query: string, what: string): Promise<T[]> {
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  const rows: T[] = [];
+  for (;;) {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/${table}?${query}&created_at=gte.${since}&order=created_at.asc,id.asc&offset=${rows.length}`,
+      {
+        headers: {
+          'apikey': SUPABASE_SERVICE_KEY!,
+          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        },
+      }
+    );
+    if (!res.ok) {
+      throw new Error(`Failed to pull ${what}: ${res.status} ${await res.text()}`);
+    }
+    const page = await res.json() as T[];
+    if (page.length === 0) return rows;
+    rows.push(...page);
+  }
+}
 
+async function pullMessages(): Promise<Message[]> {
   // Use PostgREST join syntax. is_fallback is nullable to tolerate rows
   // from before the 2026-05-15 column-add migration.
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/chat_messages?` +
-    `select=id,created_at,role,content,model,input_tokens,output_tokens,discord_message_id,is_fallback,failure_mode,error_detail,` +
-    `chat_conversations!inner(id,platform,external_id)` +
-    `&created_at=gte.${since}` +
-    `&order=created_at.asc`,
-    {
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY!,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      },
-    }
-  );
-
-  if (!res.ok) {
-    throw new Error(`Failed to pull messages: ${res.status} ${await res.text()}`);
-  }
-
-  const raw = await res.json() as Array<{
+  const raw = await pullAll<{
     id: string;
     created_at: string;
     role: string;
@@ -158,7 +171,12 @@ async function pullMessages(): Promise<Message[]> {
     error_detail: string | null;
     user_id: string;
     chat_conversations: { id: string; platform: string; external_id: string | null };
-  }>;
+  }>(
+    'chat_messages',
+    'select=id,created_at,role,content,model,input_tokens,output_tokens,discord_message_id,is_fallback,failure_mode,error_detail,' +
+    'chat_conversations!inner(id,platform,external_id)',
+    'messages',
+  );
 
   return raw.map(r => ({
     message_id: r.id,
@@ -180,26 +198,11 @@ async function pullMessages(): Promise<Message[]> {
 }
 
 async function pullRouting(): Promise<RoutingEvent[]> {
-  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/chat_match_events?` +
-    `select=created_at,message_id,conversation_id,user_id,message,router_context,is_fallback,failure_mode,matched_handles,router_latency_ms,router_cache_hit,router_error,router_raw,classification,router_skipped` +
-    `&created_at=gte.${since}` +
-    `&order=created_at.asc`,
-    {
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY!,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      },
-    }
+  return pullAll<RoutingEvent>(
+    'chat_match_events',
+    'select=created_at,message_id,conversation_id,user_id,message,router_context,is_fallback,failure_mode,matched_handles,router_latency_ms,router_cache_hit,router_error,router_raw,classification,router_skipped',
+    'routing',
   );
-
-  if (!res.ok) {
-    throw new Error(`Failed to pull routing: ${res.status} ${await res.text()}`);
-  }
-
-  return res.json() as Promise<RoutingEvent[]>;
 }
 
 /** What purged text reads as in both renderers. Mirrors PURGED_TEXT in
@@ -289,7 +292,7 @@ function renderConversations(messages: Message[], routingById: Map<string, Routi
       const isFallback = msg.role === 'assistant' && servedFallback(msg);
       const role = msg.role === 'user'
         ? '**User**'
-        : isFallback ? `**Assistant** · ⚠️ ${msg.failure_mode === 'refusal' ? 'REFUSAL' : 'FALLBACK'}` : '**Assistant**';
+        : isFallback ? `**Assistant** · ⚠️ ${fallbackLabel(msg)}` : '**Assistant**';
 
       // Truncate very long responses for readability
       const content = msg.content.length > 2000
@@ -505,7 +508,7 @@ function renderHtml(messages: Message[], routingById: Map<string, RoutingEvent>)
       const r = routingById.get(m.message_id);
       return r && r.router_error;
     });
-    // Routing rows too: a YouTube refusal writes no assistant row, only its match event.
+    // Routing rows too: before US-15 AC52 (2026-11-03) a YouTube fallback or refusal wrote no assistant row, only its match event.
     const hasFallback = msgs.some(servedFallback) || routing.some(r => r.conversation_id === convId && servedFallback(r));
     const hasRouterSkipped = msgs.some(m => {
       const r = routingById.get(m.message_id);
@@ -547,7 +550,7 @@ function renderHtml(messages: Message[], routingById: Map<string, RoutingEvent>)
       }
 
       const fallbackBadge = isFallback
-        ? `<span class="fallback-badge" title="Main LLM failed, returned empty or declined — this is the substituted line">${msg.failure_mode === 'refusal' ? 'REFUSAL' : 'FALLBACK'}</span>`
+        ? `<span class="fallback-badge" title="Main LLM failed, returned empty or declined — this is the substituted line${msg.platform === 'youtube' ? ', never posted on YouTube' : ''}">${fallbackLabel(msg)}</span>`
         : '';
 
       // Surface the captured cause so the reason is visible in the audit email

@@ -9,23 +9,25 @@
 import '../src/styles.css';
 import './standalone.css';
 import React from 'react';
+import { registerPageDeparture } from './page-departure';
 import { createRoot } from 'react-dom/client';
 import { HealthTool } from '../src/components/HealthTool';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { initSentry } from '../src/lib/sentry';
-import { initRoadmapStore, flushRoadmapStoreSync, setPreEraseHook } from '../src/lib/roadmap-data';
+import { initRoadmapStore, setPreEraseHook } from '../src/lib/roadmap-data';
 import { resolveAssistantName, setAssistantName, resolveSkipEmailGate, setSkipEmailGate } from '../src/lib/assistant-config';
 import { resolveMarketCountry, setMarketCountry } from '../src/lib/market-country';
 import { autoEnrolReminders, cancelRemindersForErase, pushReminderSchedule } from './reminders';
 import { RemindersEnrolledNotice } from './reminders-control';
 import { DropboxAdapter, GoogleDriveAdapter } from '../src/storage';
+import { noteOtherTabsLogOffWhileLoading } from '../src/storage/local-storage-adapter';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
 import { StorageBar, SyncControl, RemindersSection } from './sync-control';
 import { ConnectRefusedNotice } from './connect-refused';
 import { EmailLandingNotice, emailLandingApplies, takeEmailFlag } from './email-landing';
-import { StorageNoticeContext } from '../src/lib/storage-notice';
 import { HistoryLightboxHost } from './history-lightbox';
+import { showLoadFailure } from './load-failure';
 import {
   connectRefusal,
   liftLocalInto,
@@ -48,10 +50,11 @@ async function resolveBackend(): Promise<{ resolved: ResolvedBackend; refused?: 
 
   // Returning from a Dropbox OAuth redirect?
   let resumed: DropboxAdapter | null = null;
+  let refused: string | undefined;
   try {
     resumed = await DropboxAdapter.completeRedirect(dropboxConfig());
   } catch (error) {
-    reportConnectFailure(error, 'dropbox');
+    refused = reportConnectFailure(error, 'dropbox');
   }
   if (resumed) {
     await liftLocalInto(resumed, 'dropbox');
@@ -63,12 +66,10 @@ async function resolveBackend(): Promise<{ resolved: ResolvedBackend; refused?: 
   // Returning from a Google Drive OAuth redirect? (Each completeRedirect only
   // claims a ?code that its own PKCE session entry initiated.)
   let gdResumed: GoogleDriveAdapter | null = null;
-  let refused: string | undefined;
   try {
     gdResumed = await GoogleDriveAdapter.completeRedirect(googleDriveConfig());
   } catch (error) {
-    refused = connectRefusal(error) ?? undefined;
-    if (!refused) reportConnectFailure(error, 'google-drive');
+    refused = connectRefusal(error) ?? reportConnectFailure(error, 'google-drive');
   }
   if (gdResumed) {
     await liftLocalInto(gdResumed, 'google-drive');
@@ -82,10 +83,15 @@ async function resolveBackend(): Promise<{ resolved: ResolvedBackend; refused?: 
 
 async function main() {
   initSentry();
+  // Before the first await (US-09 AC2h): another tab's log-off signal is set
+  // and removed at once, so note one heard during the OAuth code exchange or
+  // a Drive token refresh too. A cloud load that succeeds latches on it; a
+  // page that ends on the device copy never does.
+  noteOtherTabsLogOffWhileLoading();
   // Before the first await (US-22 AC13): an OAuth return rewrites the URL.
   const fromEmail = takeEmailFlag();
   const { resolved, refused } = await resolveBackend();
-  const { backend, reconnect } = await startOnBackend(resolved, initRoadmapStore);
+  const { backend, reconnect } = await startOnBackend(resolved, initRoadmapStore).catch(showLoadFailure);
   const state = storageState(backend, reconnect);
   const emailLanding = await emailLandingApplies(fromEmail, state);
   // "Delete all my data" must also delete the reminder row on Brad's server,
@@ -115,13 +121,11 @@ async function main() {
         <RemindersEnrolledNotice backend={backend} />
         {refused && <ConnectRefusedNotice message={refused} />}
         {emailLanding && <EmailLandingNotice />}
-        <StorageNoticeContext.Provider value={state === 'guest'}>
-          <HealthTool
-            syncControl={({ hasData, attention }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} attention={attention} />}
-            remindersSection={<RemindersSection backend={backend} />}
-            storageBar={<StorageBar backend={backend} reconnect={reconnect} />}
-          />
-        </StorageNoticeContext.Provider>
+        <HealthTool
+          syncControl={({ hasData, attention }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} attention={attention} />}
+          remindersSection={<RemindersSection backend={backend} />}
+          storageBar={<StorageBar backend={backend} reconnect={reconnect} />}
+        />
         <HistoryLightboxHost />
       </ErrorBoundary>
     </React.StrictMode>,
@@ -129,17 +133,7 @@ async function main() {
 
   // Persist before the tab goes away — visibilitychange(hidden) is the reliable
   // mobile signal; beforeunload covers desktop. Both call the synchronous flush.
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') {
-      flushRoadmapStoreSync();
-      // Session-end snapshot of the reminder schedule (keepalive survives the
-      // tab going away). No-op unless opted in.
-      void pushReminderSchedule(backend, true);
-    }
-  });
-  window.addEventListener('beforeunload', () => {
-    flushRoadmapStoreSync();
-  });
+  registerPageDeparture(() => { void pushReminderSchedule(backend, true); });
 
   // Keep the server's reminder schedule tracking the user's data (§10): one
   // push per visit — it also discovers email-link unsubscribes (404 → the

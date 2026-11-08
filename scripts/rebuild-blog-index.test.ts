@@ -41,3 +41,18 @@ describe('rebuild-blog-index topic-master keys (US-50 AC2)', () => {
     expect(entry(['reviewed: "20 October 2026"']).reviewed).toBeUndefined();
   });
 });
+
+// US-70 AC1/AC7: a condition guide's entry carries kind and reviewed; thresholds stay in the file.
+describe('rebuild-blog-index condition guides (US-70)', () => {
+  it('carries kind: condition and reviewed on a guideline, and leaves thresholds out', () => {
+    const e = entry(['type: "guideline"', 'kind: "condition"', 'reviewed: "2026-11-02"', 'thresholds: [{"ref":"BP_THRESHOLDS.crisisSys","value":180}]']);
+    expect(e.kind).toBe('condition');
+    expect(e.reviewed).toBe('2026-11-02');
+    expect(e).not.toHaveProperty('thresholds');
+  });
+
+  it('leaves kind out on a non-guideline or any other value', () => {
+    expect(entry(['type: "reference"', 'kind: "condition"'])).not.toHaveProperty('kind');
+    expect(entry(['type: "guideline"', 'kind: "habit"'])).not.toHaveProperty('kind');
+  });
+});

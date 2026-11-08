@@ -6,7 +6,11 @@ import type { FileMeasurement, RoadmapFile } from '../../packages/health-core/sr
 import { appendMeasurement, correctValue, findActiveInSlot, resolveRecordedAt, slotKey } from '../../packages/health-core/src/record-edits';
 import { PRESSURE_ORDER, pressureInverted } from '../../packages/health-core/src/validation';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
+import { isActive } from '../../packages/health-core/src/blood-tests';
 import { formatDisplayValue } from '../../packages/health-core/src/units';
+import { formatValue } from '../../packages/health-core/src/lab-limits';
+import { comparatorOf } from '../../packages/health-core/src/lab-limits';
+import type { PressureReading } from '../../packages/health-core/src/row-grade';
 import type { HistoryRow, MetricHistory } from './my-data-forms';
 
 /** The phone's name for the pair; no row carries it. */
@@ -90,7 +94,7 @@ function sameIds(seen: unknown, held: string[]): boolean {
  * it) shows over the pair as it stood but never changes it, so a lost write
  * cannot leak into the pair later writes build on. A half not yet written is a dash.
  */
-export function pressureHistory(file: RoadmapFile, excludedFields: readonly string[]): Omit<MetricHistory, 'markers'> {
+export function pressureHistory(file: RoadmapFile, excludedFields: readonly string[], shown?: Map<string, PressureReading>): Omit<MetricHistory, 'markers'> {
   const rows = file.measurements.filter((row) => (HALVES as readonly string[]).includes(row.metricType));
   const current = new Set(latestActivePerMetric(rows).map((row) => row.id));
   // One pass each, not one per day: a filter per day was quadratic, 17 s for ten years
@@ -103,25 +107,25 @@ export function pressureHistory(file: RoadmapFile, excludedFields: readonly stri
     if (onDay) onDay.push(row);
     else byDay.set(day, [row]);
     const slot = slotKey('measurement', row.metricType, row.recordedAt);
-    if (row.status === 'active' && !firstActive.has(slot)) firstActive.set(slot, row);
+    if (isActive(row) && !firstActive.has(slot)) firstActive.set(slot, row);
   }
   const pairs: HistoryRow[] = [];
   for (const day of [...byDay.keys()].sort().reverse()) {
     const onDay = byDay.get(day)!;
     const named = new Set(onDay.map((row) => row.correctsId));
-    const lost = (row: FileMeasurement) => row.status !== 'active' && !named.has(row.id);
+    const lost = (row: FileMeasurement) => !isActive(row) && !named.has(row.id);
     let state: Partial<Record<string, FileMeasurement>> = {};
     let stateAt = -1;
     const snapshots: Array<{ id: string; sys?: FileMeasurement; dia?: FileMeasurement; rows: FileMeasurement[] }> = [];
     for (const write of writes(onDay)) {
-      const shown = { ...state, ...Object.fromEntries(write.map((row) => [row.metricType, row])) };
+      const afterWrite = { ...state, ...Object.fromEntries(write.map((row) => [row.metricType, row])) };
       const before = snapshots.at(-1);
-      const same = before && before.sys?.value === shown.systolic_bp?.value && before.dia?.value === shown.diastolic_bp?.value;
+      const same = before && before.sys?.value === afterWrite.systolic_bp?.value && before.dia?.value === afterWrite.diastolic_bp?.value;
       // Nothing new: the same values again, written only by rows now set aside.
-      if (same && write.every((row) => row.status !== 'active')) continue;
-      snapshots.push({ id: write.map((row) => row.id).join('+'), sys: shown.systolic_bp, dia: shown.diastolic_bp, rows: write });
+      if (same && write.every((row) => !isActive(row))) continue;
+      snapshots.push({ id: write.map((row) => row.id).join('+'), sys: afterWrite.systolic_bp, dia: afterWrite.diastolic_bp, rows: write });
       if (!write.every(lost)) {
-        state = shown;
+        state = afterWrite;
         stateAt = snapshots.length - 1;
       }
     }
@@ -131,6 +135,11 @@ export function pressureHistory(file: RoadmapFile, excludedFields: readonly stri
     const shownRow = (index: number): HistoryRow => {
       const now = held.length > 0 && index === stateAt;
       const snapshot = snapshots[index];
+      // `shown`: each active pair's stored halves, so My data grades the pair it shows (adversary R1).
+      // Both halves present, each with its limit if it was printed as one (US-12 AC20).
+      if (now && snapshot.sys && snapshot.dia) {
+        shown?.set(`${day}:${snapshot.id}`, { value: snapshot.sys.value, ...comparatorOf(snapshot.sys), dia: { value: snapshot.dia.value, ...comparatorOf(snapshot.dia) } });
+      }
       return {
         ...pair(snapshot.sys, snapshot.dia, now ? 'active' : 'entered-in-error', now && held.some((row) => current.has(row.id))),
         id: `${day}:${snapshot.id}`, day, correction: snapshot.rows.some((row) => !!row.correctsId),
@@ -182,5 +191,7 @@ function pair(sys: FileMeasurement | undefined, dia: FileMeasurement | undefined
   Omit<HistoryRow, 'id' | 'day' | 'correction'> {
   const systolic = sys ? formatDisplayValue('systolic_bp', sys.value, 'si') : null;
   const diastolic = dia ? formatDisplayValue('diastolic_bp', dia.value, 'si') : null;
-  return { value: `${systolic ?? '–'}/${diastolic ?? '–'}`, systolic, diastolic, status, current: isCurrent };
+  // The pair as read: a half printed as a limit with its symbol, "< 125/78" (US-12 AC20).
+  const shown = (row: FileMeasurement | undefined, metric: 'systolic_bp' | 'diastolic_bp') => row ? formatValue(metric, row.value, 'si', comparatorOf(row).comparator) : '–';
+  return { value: `${shown(sys, 'systolic_bp')}/${shown(dia, 'diastolic_bp')}`, systolic, diastolic, status, current: isCurrent };
 }

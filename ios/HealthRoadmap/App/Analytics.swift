@@ -60,13 +60,21 @@ final class Analytics {
         case tourStarted = "Tour started"
         case tourTipClosed1 = "Tour tip closed 1", tourTipClosed2 = "Tour tip closed 2", tourTipClosed3 = "Tour tip closed 3"
         case tourSkipped1 = "Tour skipped 1", tourSkipped2 = "Tour skipped 2", tourSkipped3 = "Tour skipped 3"
-        case tileExplainerOpened = "Tile explainer opened"
         case cloudPromptShown = "Cloud prompt shown", cloudPromptBackUp = "Cloud prompt back up", cloudPromptNotNow = "Cloud prompt not now"
         /// A metric page's About section shown, or a medicine's guide opened from its info
         /// button (US-58); never which one.
         case guideSeen = "Guide seen", guideOpened = "Guide opened"
         /// "Do you drink alcohol?" answered from the plan card's Dismiss (US-60); never the answer.
         case alcoholAnswered = "Alcohol answered"
+        /// A chat reply showed an edit banner; a chat edit was written (US-67 AC6). Never a
+        /// value or a field's name.
+        case chatEditProposed = "Chat edit proposed", chatEditSaved = "Chat edit saved"
+        /// US-72: Health showed its lab results sheet (HealthKit said it was needed), and a
+        /// batch of lab results landed at least one row. Never a value, a test's name or a count.
+        case healthRecordsAsked = "Health Records asked", healthRecordsImported = "Health Records imported"
+        /// US-73: one of My health's jump pills tapped, and a save from the Add blood test sheet.
+        /// Never which pill, which test or a value.
+        case jumpPillTapped = "Jump pill tapped", bloodTestAdded = "Blood test added"
 
         /// A tour tip closed (its Next or Done, a tap outside it, leaving it, its action, or no anchor) or skipped.
         static func tip(_ step: TourStep, skipped: Bool) -> Event? {
@@ -84,7 +92,7 @@ final class Analytics {
 
     /// The only screen names Clarity ever gets.
     enum Screen: String {
-        case welcome = "Welcome", onboarding = "Onboarding", myData = "My data", plan = "My plan", chat = "Chat"
+        case welcome = "Welcome", onboarding = "Onboarding", myHealth = "My health", chat = "Chat"
         /// A US-56 metric page: the screen only, never which metric or a value.
         case appleHealthMetric = "Apple Health metric"
     }

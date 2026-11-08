@@ -6,7 +6,8 @@
  * terminal. The CLI keeps reading the file and rendering text and HTML;
  * `renderJson` is the agent-facing shape, and both surfaces return it.
  */
-import { calculateHealthResults, missingPlanInputs } from './calculations';
+import { currentValueRows, isActive, isCoreRow } from './blood-tests';
+import { ageOnDay, calculateEGFR, calculateHealthResults, isKnownMinorOnDay, knownMinorOf, missingPlanInputs } from './calculations';
 import { fileProfileToApi, fileScreeningRows } from './file-inputs';
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
 import {
@@ -16,16 +17,21 @@ import {
   measurementsToInputs,
   medicationsToInputs,
   screeningsToInputs,
+  withPsaMeasurement,
   type ApiMeasurement,
 } from './mappings';
-import { latestActivePerMetric } from './measurement-history';
+import { latestActivePerMetric, newestUsablePsa } from './measurement-history';
 import { cmpStr, dayOf, localDay } from './merge';
 import { refLineFor } from './reference-hints';
 import { computeReminderSchedule, type ReminderScheduleItem } from './reminder-schedule';
 import { BASE_SCHEMA_VERSION, type FileLabValue, type RoadmapFile } from './roadmap-file';
-import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
 import {
-  UNIT_DEFS, formatDisplayValue, formatGradedValue, getDisplayLabel, type MetricType, type UnitSystem,
+  LIMIT_NOT_GRADED, comparatorOf, egfrAsPrinted, formatValue, limitOf, limitSIText, withComparator, withoutLimit, withRowValue,
+  type Comparator, type InputLimit, type LimitField,
+} from './lab-limits';
+import type { CreatinineDay, HealthInputs, HealthResults, MedicationInputs, ScreeningInputs, SuggestionInputs } from './types';
+import {
+  UNIT_DEFS, formatGradedReading, formatGradedValue, getDisplayLabel, unitSystemOf, waistToHeightRatio, type MetricType, type UnitSystem,
 } from './units';
 import { getValidationErrors, PRESSURE_ORDER, sanitizeInputs, validateHealthInputs } from './validation';
 
@@ -59,7 +65,11 @@ export const PLAN_INSTRUCTION =
   '("may support", "evidence suggests") is calibrated — never upgrade it into a recommendation — and every ' +
   'reference stays attached to the suggestion it belongs to. This is educational, not medical advice: say so, and ' +
   'tell the user to take it to their doctor. When the plan holds only the `adults-only` card, do not grade the ' +
-  'person’s values against adult targets and do not suggest medicines; point them to their doctor.';
+  'person’s values against adult targets and do not suggest medicines; point them to their doctor. When ' +
+  '`profile.needsSex` is not empty, the record has no sex: those parts are missing, not normal. Do not work them out ' +
+  'yourself; tell the user they need their sex, and ask for it. A value with a `comparator` ("> 60", "< 5") is a lab ' +
+  'limit, not the number: say it as printed, never as an exact value, and when `inputs.limits` marks it `graded: false` ' +
+  'the plan could not grade it against its cutoff.';
 
 /** A failure the user can act on: one plain line plus a hint, never a stack. */
 export class PlanError extends Error {
@@ -94,7 +104,7 @@ export function oneLine(text: string): string {
 // ---------------------------------------------------------------------------
 
 export interface PlanInputs {
-  inputs: Partial<HealthInputs>;
+  inputs: Partial<HealthInputs> & CreatinineDay;
   unitSystem: UnitSystem;
   medications: MedicationInputs;
   screenings: ScreeningInputs;
@@ -114,7 +124,8 @@ export interface PlanInputs {
  * localStorage, never in the record, so the CLI renders in `profile.unitSystem`.
  */
 export function derivePlanInputs(file: RoadmapFile, now = new Date()): PlanInputs {
-  const active = file.measurements.filter((m) => m.status === 'active') as ApiMeasurement[];
+  // Vitals from `measurements`, blood tests from their core rows (US-66 AC7).
+  const active = currentValueRows(file) as ApiMeasurement[];
   const currentRows = latestActivePerMetric(active);
   const creatinine = currentRows.find((r) => r.metricType === 'creatinine');
   return {
@@ -122,7 +133,7 @@ export function derivePlanInputs(file: RoadmapFile, now = new Date()): PlanInput
       measurementsToInputs(currentRows, fileProfileToApi(file.profile)),
       creatinine ? dayOf(creatinine.recordedAt) : null, labEgfrOf(file.labValues), localDay(now),
     ),
-    unitSystem: file.profile.unitSystem ?? 'si',
+    unitSystem: unitSystemOf(file.profile),
     medications: medicationsToInputs(file.medications),
     screenings: screeningsToInputs(fileScreeningRows(file.screenings)),
     currentRows,
@@ -130,21 +141,95 @@ export function derivePlanInputs(file: RoadmapFile, now = new Date()): PlanInput
 }
 
 /** A lab row as `labEgfrOf` reads it: the file's rows and the widget's both fit. */
-type LabRowLike = Pick<FileLabValue, 'id' | 'metricName' | 'value' | 'unit' | 'recordedAt'> & { createdAt?: string; status?: string };
+type LabRowLike = Pick<FileLabValue, 'id' | 'metricName' | 'value' | 'unit' | 'recordedAt'> & { createdAt?: string; status?: string; comparator?: Comparator };
 
-/** The lab's printed creatinine eGFR and its day: one candidate for the plan's eGFR (US-07 AC7). */
-export type LabEgfr = Required<Pick<HealthInputs, 'labEgfr' | 'labEgfrDate'>>;
+/**
+ * The lab's printed creatinine eGFR and its day: one candidate for the plan's
+ * eGFR (US-07 AC7). One printed as a limit carries it (US-12 AC20), and holds
+ * `labEgfr` only when the limit decides: the representative, never shown.
+ */
+export type LabEgfr = Pick<HealthInputs, 'labEgfr'> & Required<Pick<HealthInputs, 'labEgfrDate'>> & { labEgfrLimit?: InputLimit };
 
 /**
  * US-07 AC7: the latest active lab `egfr` row (the creatinine eGFR: never
  * cystatin C or combined), in the catalogue's unit and the schema's range;
- * null when there is none.
+ * null when there is none. A limit is graded by US-12 AC20's rule; one that
+ * does not decide is still the latest eGFR, never passed over for an older one.
  */
 export function labEgfrOf(labValues: readonly LabRowLike[]): LabEgfr | null {
-  const rows = labValues.filter((l) => labSlotKey(l.metricName) === 'egfr'
-    && l.unit === resolveLabCatalogEntry(l.metricName)?.unit && 'labEgfr' in sanitizeInputs({ labEgfr: l.value }));
-  const lab = latestActivePerMetric(rows.map((l) => ({ ...l, metricType: 'egfr' })))[0];
-  return lab ? { labEgfr: lab.value, labEgfrDate: dayOf(lab.recordedAt) } : null;
+  const lab = latestActivePerMetric(labValues.filter(isLabEgfrRow).map((l) => ({ ...l, metricType: 'egfr' })))[0];
+  return lab ? labEgfrFrom(lab.value, dayOf(lab.recordedAt), lab.comparator) : null;
+}
+
+/** A lab's creatinine eGFR the plan reads: in the catalogue's unit and the schema's range. */
+function isLabEgfrRow(l: LabRowLike): boolean {
+  return labSlotKey(l.metricName) === 'egfr' && l.unit === resolveLabCatalogEntry(l.metricName)?.unit && 'labEgfr' in sanitizeInputs({ labEgfr: l.value });
+}
+
+/** One day of the eGFR history: the lab's printed number, or ours from that day's creatinine. */
+export interface EgfrPoint { id: string; day: string; value: number; source: 'lab' | 'calculated' }
+
+/**
+ * Every day's eGFR, newest first (US-73 AC7, US-07 AC7 and AC8). A day's lab
+ * eGFR (labEgfrOf's rows) wins it, as withLabEgfr lets it win the plan's day.
+ * Else the core creatinine's (never a kept-apart row, which may be urine,
+ * US-12 AC11), calculated as the plan does, with the age on that day: only
+ * with a sex and a birth year, and never by the plan's minor gate: a known
+ * minor today (`now`) or on the creatinine's day, over the birth info the plan
+ * keeps. A value printed as a limit gives no point (US-12 AC20); a lab limit
+ * holds its day, so no number is worked out under it. A row with no status is
+ * active (US-65 AC1).
+ */
+export function egfrSeries(file: Pick<RoadmapFile, 'measurements' | 'labValues' | 'profile'>, now = new Date()): EgfrPoint[] {
+  const days = new Map<string, EgfrPoint | null>();
+  for (const l of file.labValues) {
+    const day = dayOf(l.recordedAt);
+    if (!isActive(l) || isCoreRow(l) || !isLabEgfrRow(l) || days.has(day)) continue;
+    days.set(day, comparatorOf(l).comparator ? null : { id: l.id, day, value: Math.round(l.value), source: 'lab' });
+  }
+  const { sex, birthYear, birthMonth } = sanitizeInputs({
+    sex: file.profile.sex ?? undefined, birthYear: file.profile.birthYear ?? undefined, birthMonth: file.profile.birthMonth ?? undefined,
+  });
+  const minorToday = knownMinorOf({ birthYear, birthMonth }, now);
+  for (const row of currentValueRows(file)) {
+    const day = dayOf(row.recordedAt);
+    if (row.metricType !== 'creatinine' || days.has(day)) continue;
+    const { creatinine } = sanitizeInputs({ creatinine: row.value });
+    // calculateHealthResults's gate exactly (US-07 AC7).
+    const adult = birthYear !== undefined && !minorToday && !isKnownMinorOnDay(birthYear, birthMonth, day);
+    days.set(day, !comparatorOf(row).comparator && creatinine !== undefined && sex && adult
+      ? { id: row.id, day, value: Math.round(calculateEGFR(creatinine, ageOnDay(birthYear, birthMonth, day), sex)), source: 'calculated' }
+      : null);
+  }
+  return [...days.values()].filter((p): p is EgfrPoint => p !== null).sort((a, b) => b.day.localeCompare(a.day));
+}
+
+/** One day of the waist-to-height history. */
+export interface WhtrPoint { id: string; day: string; ratio: number }
+
+/**
+ * Every day's waist over the CURRENT height (the record holds one), to two
+ * places, newest first (US-73 AC7): past ratios move if the height is edited.
+ * The day's newest active waist decides it; one printed as a limit holds its
+ * day with no ratio, as a lab eGFR limit does (US-12 AC20). None without a height.
+ */
+export function whtrSeries(file: Pick<RoadmapFile, 'measurements' | 'labValues' | 'profile'>): WhtrPoint[] {
+  const height = file.profile.heightCm;
+  if (typeof height !== 'number' || height <= 0) return [];
+  const days = new Map<string, WhtrPoint | null>();
+  const waists = currentValueRows(file).filter((m) => m.metricType === 'waist').sort((a, b) => b.recordedAt.localeCompare(a.recordedAt));
+  for (const waist of waists) {
+    const day = dayOf(waist.recordedAt);
+    if (!days.has(day)) days.set(day, comparatorOf(waist).comparator ? null : { id: waist.id, day, ratio: waistToHeightRatio(waist.value, height) });
+  }
+  return [...days.values()].filter((p): p is WhtrPoint => p !== null);
+}
+
+/** A lab eGFR candidate from its printed number, day and code: a limit graded by
+ *  US-12 AC20's rule, the record's row and the widget's cached copy alike. */
+export function labEgfrFrom(value: number, labEgfrDate: string, comparator?: Comparator): LabEgfr {
+  const { labEgfr, limits } = withRowValue<Partial<HealthInputs>>({}, 'labEgfr', value, comparator);
+  return { ...(labEgfr === undefined ? {} : { labEgfr }), labEgfrDate, ...(limits?.labEgfr ? { labEgfrLimit: limits.labEgfr } : {}) };
 }
 
 /**
@@ -152,19 +237,38 @@ export function labEgfrOf(labValues: readonly LabRowLike[]): LabEgfr | null {
  * it is the plan's eGFR, and cleared when it is not. The candidates are `lab`
  * (labEgfrOf) and the eGFR calculated from the creatinine the inputs hold,
  * dated `creatinineDay`. Only an eGFR the plan can calculate competes: a
- * creatinine the schema keeps, and a birth year. The newer by day wins; on
+ * creatinine the schema keeps, a birth year, a sex (AC8) and no known minor on
+ * the creatinine's day (isKnownMinor's rule). The newer by day wins; on
  * the same day the lab's does, since ours may come from a misread creatinine.
  * A creatinine with no date (typed, not yet saved: `null`) is `today`'s, the
- * day it would be saved with.
+ * day it would be saved with. A newer creatinine the plan cannot calculate
+ * from (no sex, no birth year, or taken by a known minor on its day) keeps the
+ * lab's, with `labEgfrOutdated` (AC8).
+ * The day itself goes on as `creatinineDay`, for the age the eGFR is worked out at,
+ * `today` for a typed one: the chat sends it, so the server never guesses it.
  */
 export function withLabEgfr<T extends Partial<HealthInputs>>(
   inputs: T, creatinineDay: string | null, lab: LabEgfr | null, today: string,
-): T {
-  const { labEgfr: _value, labEgfrDate: _day, ...rest } = inputs;
-  if (!lab) return rest as T;
-  const usable = sanitizeInputs({ creatinine: inputs.creatinine, birthYear: inputs.birthYear });
-  const crDay = usable.creatinine === undefined || usable.birthYear === undefined ? null : creatinineDay ?? today;
-  return crDay !== null && crDay > lab.labEgfrDate ? rest as T : { ...rest, ...lab } as T;
+): T & CreatinineDay {
+  const { labEgfr: _value, labEgfrDate: _day, labEgfrOutdated: _outdated, creatinineDay: _was, limits, ...rest } = inputs as T & CreatinineDay;
+  const others = withoutLimit(limits, 'labEgfr');
+  const kept = others.limits ?? {};
+  const usable = sanitizeInputs({ creatinine: inputs.creatinine, birthYear: inputs.birthYear, birthMonth: inputs.birthMonth, sex: inputs.sex });
+  // A creatinine printed as a limit is held, but no eGFR is worked out from it (US-12 AC20).
+  const day = creatinineDay ?? today;
+  const newer = !!lab && (usable.creatinine !== undefined || !!kept.creatinine) && day > lab.labEgfrDate;
+  // US-07 AC7: none from a creatinine taken by a known minor, so that one cannot outrank the lab's.
+  const adult = usable.birthYear !== undefined && !isKnownMinorOnDay(usable.birthYear, usable.birthMonth, day);
+  const ours = !lab || (newer && !kept.creatinine && adult && usable.sex !== undefined);
+  // AC8: a newer creatinine the plan cannot read yet, or one printed as a limit, leaves the lab eGFR standing, marked outdated.
+  // US-12 AC20: a limit that does not decide stands too, with no number; the
+  // plan then has no eGFR, and never works one out from an older creatinine.
+  const { labEgfrLimit, ...value } = lab ?? {};
+  const out = ours ? { ...rest, ...others } : {
+    ...rest, ...value, ...(newer ? { labEgfrOutdated: true } : {}),
+    ...(labEgfrLimit ? { limits: { ...kept, labEgfr: labEgfrLimit } } : others),
+  };
+  return { ...out, ...(creatinineDay || inputs.creatinine !== undefined ? { creatinineDay: day } : {}) } as T & CreatinineDay;
 }
 
 export interface PlanLab {
@@ -175,11 +279,13 @@ export interface PlanLab {
   value: number;
   unit: string;
   date: string;
+  /** Printed as a limit: `value` is its bound (US-12 AC20). */
+  comparator?: Comparator;
 }
 
-/** Latest active row per lab test, named and unit-labelled from the catalogue. */
+/** Latest active row per lab test, named and unit-labelled from the catalogue. A core value is a current value, never listed here (US-66 AC8). */
 function derivePlanLabs(file: RoadmapFile): PlanLab[] {
-  const active = file.labValues.filter((l) => l.status === 'active');
+  const active = file.labValues.filter((l) => isActive(l) && !isCoreRow(l));
   const rows = latestActivePerMetric(active.map((l) => ({ ...l, metricType: labSlotKey(l.metricName) }))) as FileLabValue[];
   return rows
     .map((l) => {
@@ -191,6 +297,7 @@ function derivePlanLabs(file: RoadmapFile): PlanLab[] {
         value: l.value,
         unit: displayLabUnit(l.unit, entry),
         date: String(l.recordedAt ?? '').slice(0, 10),
+        ...comparatorOf(l),
       };
     })
     .sort((a, b) => cmpStr(a.label, b.label));
@@ -213,6 +320,26 @@ export interface Plan extends PlanInputs {
 export const PRESSURE_EXCLUDED = 'the top number is not above the bottom one, so the plan ignores this day’s blood pressure';
 
 /**
+ * What the plan computes from (US-07 AC11): the inputs with every field
+ * validation refused left out, so the rest still plans. A pair left out as
+ * swapped is marked `pressureOrder`, which turns the blood pressure prompt
+ * into "check your reading". Null when the height itself is refused: no plan.
+ * The plan, the web form and the iPhone all strip through this one rule.
+ */
+export function planInputsFrom(inputs: Partial<HealthInputs>, validation: ReturnType<typeof validateHealthInputs>): SuggestionInputs | null {
+  const issues = validation.errors?.issues ?? [];
+  const invalid = new Set(issues.map((i) => String(i.path[0])));
+  if (invalid.has('heightCm')) return null;
+  const stripped: Record<string, unknown> = { ...inputs };
+  let limits = inputs.limits;
+  // A field left out goes with its limit (US-12 AC20): an inverted pressure printed as a limit too.
+  for (const field of invalid) { stripped[field] = undefined; limits = withoutLimit(limits, field).limits; }
+  if (limits) stripped.limits = limits; else delete stripped.limits;
+  if (issues.some((i) => i.message === PRESSURE_ORDER)) stripped.pressureOrder = true;
+  return stripped as unknown as SuggestionInputs;
+}
+
+/**
  * The whole plan. Invalid fields are stripped before calculating (the widget
  * does the same), so one bad number costs its own suggestion, not the report.
  * `unitOverrides`: per-metric display units, the web's per-field toggles (US-05), so a
@@ -220,37 +347,33 @@ export const PRESSURE_EXCLUDED = 'the top number is not above the bottom one, so
  */
 export function computePlan(file: RoadmapFile, now = new Date(), unitOverrides?: Partial<Record<MetricType, UnitSystem>>): Plan {
   const derived = derivePlanInputs(file, now);
-  let inputs = derived.inputs;
-  let excluded: string[] = [];
   const day = (metric: string) => {
     const row = derived.currentRows.find((r) => r.metricType === metric);
     return row ? dayOf(row.recordedAt) : null;
   };
 
-  const validation = validateHealthInputs(inputs, { systolicBp: day('systolic_bp'), diastolicBp: day('diastolic_bp') }, now);
-  if (!validation.success && validation.errors) {
-    const invalid = new Set(validation.errors.issues.map((i) => String(i.path[0])));
-    if (invalid.has('heightCm') || invalid.has('sex')) {
-      throw new PlanError(
-        `This record has no usable height and sex (${Object.values(getValidationErrors(validation.errors)).join('; ')})`,
-        'The plan needs both. Ask the user for their height, and whether the plan should be computed for male or ' +
-          'female, and set them on the record — with `update_profile` if you have it, otherwise in the app — then ' +
-          'run this again.',
-      );
-    }
-    const stripped = { ...inputs } as Record<string, unknown>;
-    for (const field of invalid) stripped[field] = undefined;
-    inputs = stripped as Partial<HealthInputs>;
-    excluded = [...invalid];
+  const validation = validateHealthInputs(derived.inputs, { systolicBp: day('systolic_bp'), diastolicBp: day('diastolic_bp') }, now);
+  // Sex is not required (US-07 AC8): a bad one is stripped like any field, and `needsSex` says what it costs.
+  const planInputs = planInputsFrom(derived.inputs, validation);
+  if (!planInputs) {
+    throw new PlanError(
+      `This record has no usable height (${getValidationErrors(validation.errors!).heightCm})`,
+      'The plan needs it. Ask the user for their height and set it on the record — with `update_profile` if you ' +
+        'have it, otherwise in the app — then run this again.',
+    );
   }
+  const { pressureOrder, ...inputs } = planInputs;
   return {
     ...derived,
     inputs,
-    excluded,
-    ...(validation.errors?.issues.some((i) => i.message === PRESSURE_ORDER) ? { pressureOrder: true } : {}),
+    excluded: [...new Set(validation.errors?.issues.map((i) => String(i.path[0])) ?? [])],
+    ...(pressureOrder ? { pressureOrder } : {}),
     generatedAt: now.toISOString(),
     today: localDay(now),
-    results: calculateHealthResults(inputs as HealthInputs, derived.unitSystem, derived.medications, derived.screenings, unitOverrides, now),
+    // US-06 AC14: the prostate cards read the newest usable saved PSA; `screenings` above stays the record's answers.
+    results: calculateHealthResults(planInputs, derived.unitSystem, derived.medications,
+      withPsaMeasurement(derived.screenings, newestUsablePsa(currentValueRows(file) as ApiMeasurement[], now)),
+      unitOverrides, now),
     due: computeReminderSchedule(file, now),
     labs: derivePlanLabs(file),
   };
@@ -260,8 +383,14 @@ export function computePlan(file: RoadmapFile, now = new Date(), unitOverrides?:
 // Shared shaping — the rows every renderer prints
 // ---------------------------------------------------------------------------
 
-/** A printed row: current value or lab. `excluded` marks a value the plan ignored; `excludedReason` says why when it is not out of range. */
-export type DisplayRow = { id: string; label: string; value: unknown; unit: string; date: string; excluded?: boolean; excludedReason?: string };
+/** A printed row: current value or lab. `excluded` marks a value the plan ignored; `excludedReason` says why when it is not out of range.
+ *  `comparator` marks a lab limit, whose `value` already prints its symbol; `notGraded` says the plan could not grade it (US-12 AC20). */
+export type DisplayRow = { id: string; label: string; value: unknown; unit: string; date: string; excluded?: boolean; excludedReason?: string; comparator?: Comparator; notGraded?: string };
+
+/** A display row's value as printed: a lab limit with its symbol ("> 45"), whichever list it came from (US-12 AC20). */
+export function shownValue(row: DisplayRow): string {
+  return typeof row.value === 'number' && row.comparator ? withComparator(String(row.value), row.comparator) : String(row.value);
+}
 
 /**
  * Current values as displayed: row id, label, converted value, unit, clinical
@@ -276,15 +405,20 @@ export function currentValues(plan: Plan) {
     .filter((row) => row.metricType in UNIT_DEFS)
     .map((row) => {
       const metric = row.metricType as MetricType;
-      // A lipid with a "<X" line prints on the side the cards grade it (US-07 AC5).
+      // A lipid with a "<X" line prints on the side the cards grade it (US-07 AC5), HbA1c and Lp(a) on the side of their grade lines (AC15).
       const line = refLineFor(metric);
+      const limit = limitOf(plan.inputs, METRIC_TO_FIELD[row.metricType]);
       return {
         id: row.id,
         metric: row.metricType,
         label: METRIC_LABELS[row.metricType] ?? row.metricType,
-        value: line === undefined
-          ? formatDisplayValue(metric, row.value, plan.unitSystem)
+        value: row.comparator
+          ? formatValue(metric, row.value, plan.unitSystem, row.comparator)
+          : line === undefined
+          ? formatGradedReading(metric, row.value, plan.unitSystem)
           : formatGradedValue(metric, row.value, plan.unitSystem, line),
+        ...comparatorOf(row),
+        ...(limit && !limit.graded ? { notGraded: LIMIT_NOT_GRADED } : {}),
         unit: getDisplayLabel(metric, plan.unitSystem),
         date: String(row.recordedAt ?? '').slice(0, 10),
         excluded: excluded.has(METRIC_TO_FIELD[row.metricType]) || undefined,
@@ -302,6 +436,27 @@ export function dueSplit(plan: Plan): { overdue: ReminderScheduleItem[]; upcomin
   };
 }
 
+/**
+ * US-07 AC8, US-32: what a plan without sex leaves out. `planPayload` lists it
+ * as `profile.needsSex` when the record has no sex, so an agent knows these parts are
+ * missing, not clear, and asks for sex rather than working them out itself.
+ */
+export const NEEDS_SEX: readonly string[] = [
+  'profile.idealBodyWeightKg and profile.proteinTargetG (null) and the protein-target suggestion',
+  'profile.eGFR when it would be calculated from creatinine (a lab-printed eGFR still shows, but with a newer creatinine it opens no potassium advice)',
+  'the low-HDL suggestion: its line differs by sex',
+  'the sex-specific screening suggestions and reminders: breast, cervical, prostate, endometrial and bone density',
+];
+
+/** The inputs as an agent reads them: a field read from a limit holds the
+ *  limit as printed ("> 1.5", SI), never the representative the plan graded
+ *  it with; an ungraded one is there too. `limits` says which (US-12 AC20). */
+function limitedInputs(inputs: Partial<HealthInputs>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...inputs };
+  for (const [field, limit] of Object.entries(inputs.limits ?? {})) out[field] = limitSIText(field as LimitField, limit);
+  return out;
+}
+
 /** The agent-facing shape. Field names are stable; add, never rename. */
 export function planPayload(plan: Plan) {
   const { overdue, upcoming } = dueSplit(plan);
@@ -315,17 +470,20 @@ export function planPayload(plan: Plan) {
     unitSystem: plan.unitSystem,
     units: FIELD_UNITS,
     profile: {
-      sex: plan.inputs.sex,
+      sex: plan.inputs.sex ?? null,
       age: plan.results.age ?? null,
       heightCm: plan.results.heightCm,
       bmi: plan.results.bmi ?? null,
       bmiCategory: adult?.bmiCategory ?? null,
       waistToHeightRatio: plan.results.waistToHeightRatio ?? null,
-      eGFR: adult?.eGFR ?? null,
+      // A lab eGFR printed as a limit is said as printed, never as the plan's representative (US-12 AC20).
+      eGFR: egfrAsPrinted(plan.inputs, adult) ?? null,
       idealBodyWeightKg: adult?.idealBodyWeight ?? null,
       proteinTargetG: adult?.proteinTarget ?? null,
+      // Inside `profile`, a free-form object, so tools/list stays frozen (US-35 AC13).
+      needsSex: plan.inputs.sex ? [] : NEEDS_SEX,
     },
-    inputs: plan.inputs,
+    inputs: limitedInputs(plan.inputs),
     missingInputs: missingPlanInputs(plan.inputs),
     currentValues: currentValues(plan),
     labValues: plan.labs,

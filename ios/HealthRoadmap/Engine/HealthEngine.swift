@@ -118,17 +118,24 @@ actor HealthEngine {
     func screen(recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> Drawn {
         let json = try call("screenJson", [recordJSON, now.formatted(Self.iso), deviceId, units, storefrontIsUS])
         let answer = try JSONDecoder().decode(Drawn.Answer.self, from: Data(json.utf8))
-        return Drawn(myData: answer.myData, plan: answer.plan.state)
+        return Drawn(myData: answer.myData, plan: answer.plan.state, topics: answer.plan.topics, movedRecord: answer.movedRecord)
     }
 
     /// One record as the screens show it: My data and the plan, from the same engine call.
     struct Drawn: Sendable {
         let myData: MyData
         let plan: PlanState
+        /// The plan's cards by topic for My health (US-73 AC3, `plan.topics`); nil when the engine
+        /// could not lay them out, and the tab then draws every card under Other.
+        let topics: TopicLayout?
+        /// The record as text when reading it moved its blood tests into one table (US-66 AC14):
+        /// opening the phone's file writes it once. nil when nothing moved, and from an engine before it.
+        let movedRecord: String?
 
         fileprivate struct Answer: Decodable {
             let myData: MyData
             let plan: Plan
+            let movedRecord: String?
         }
 
         /// `{sections, tiles, ms}`, or `{error, planError}` when the record cannot be planned.
@@ -139,9 +146,11 @@ actor HealthEngine {
             let ms: Double
             let error: String?
             let planError: Bool
-            /// US-61's blocks; one Swift cannot read shows none, never a broken plan.
-            let usProducts: USProducts?
-            enum CodingKeys: CodingKey { case sections, tiles, ms, error, planError, usProducts }
+            /// US-61's sections ready to draw, with the blocks; ones Swift cannot read show none, never a broken plan.
+            let usProducts: [PlanSection]?
+            /// Read leniently: a layout Swift cannot read leaves the cards under Other, never a broken plan.
+            let topics: TopicLayout?
+            enum CodingKeys: CodingKey { case sections, tiles, ms, error, planError, usProducts, topics }
             /// Sections decode strictly: sections Swift cannot read fail the plan, never My data.
             /// A tile Swift cannot read leaves no tiles, never a blank plan.
             init(from decoder: Decoder) throws {
@@ -149,7 +158,8 @@ actor HealthEngine {
                 tiles = (try? c.decode([StatTile].self, forKey: .tiles)) ?? []
                 ms = (try? c.decodeIfPresent(Double.self, forKey: .ms)) ?? 0
                 planError = (try? c.decodeIfPresent(Bool.self, forKey: .planError)) == true
-                usProducts = (try? c.decodeIfPresent(USProducts.self, forKey: .usProducts)) ?? nil
+                usProducts = (try? c.decodeIfPresent([PlanSection].self, forKey: .usProducts)) ?? nil
+                topics = (try? c.decodeIfPresent(TopicLayout.self, forKey: .topics)) ?? nil
                 do {
                     (sections, error) = (try c.decodeIfPresent([PlanSection].self, forKey: .sections), try c.decodeIfPresent(String.self, forKey: .error))
                 } catch {
@@ -158,7 +168,7 @@ actor HealthEngine {
             }
 
             var state: PlanState {
-                if let sections { return .planned(tiles: tiles, sections: usProducts?.applied(to: sections) ?? sections, ms: ms) }
+                if let sections { return .planned(tiles: tiles, sections: usProducts ?? sections, ms: ms) }
                 if planError { return .needsDetails }
                 return .failed(EngineError.callFailed(error ?? "no plan").localizedDescription)
             }
@@ -181,6 +191,14 @@ actor HealthEngine {
         try call("newRecordJson", [now.formatted(Self.iso), deviceId, Self.languageAndRegion(locale), timeZone.identifier])
     }
 
+    /// The units health-core's `detectUnitSystem` gives a region and time zone ("si" or
+    /// "conventional"), the web's first-visit rule (US-05 AC5): the units of a first-launch record.
+    func regionUnits(locale: Locale = .current, timeZone: TimeZone = .current) throws -> String? {
+        let record = try newRecord(now: .now, deviceId: "region", locale: locale, timeZone: timeZone)
+        let file = try JSONSerialization.jsonObject(with: Data(record.utf8)) as? [String: Any]
+        return (file?["profile"] as? [String: Any])?["unitSystem"] as? String
+    }
+
     /// Applies one edit with health-core's own write rules. The record passed in is not changed.
     func apply(_ edit: RecordEdit, to recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> EditOutcome {
         let editJSON = String(decoding: try JSONEncoder().encode(edit), as: UTF8.self)
@@ -195,9 +213,28 @@ actor HealthEngine {
     }
 
     /// Every value recorded for one metric, newest first, corrections included (US-25 AC9).
-    func history(recordJSON: String, metric: String, now: Date, deviceId: String, units: String = "{}") throws -> MetricHistory {
-        let json = try call("historyJson", [recordJSON, metric, now.formatted(Self.iso), deviceId, units])
+    /// `series` "lab": `metric` is a lab test's series key, its page's history (US-25 AC25).
+    func history(recordJSON: String, metric: String, now: Date, deviceId: String, units: String = "{}", series: String? = nil) throws -> MetricHistory {
+        let json = try call("historyJson", [recordJSON, metric, now.formatted(Self.iso), deviceId, units] + (series.map { [$0] } ?? []))
         return try JSONDecoder().decode(MetricHistory.self, from: Data(json.utf8))
+    }
+
+    /// The core and catalogue blood tests a typed name finds, best first (US-73 AC8,
+    /// `labSearchJson`); nil from an engine without that door: no search.
+    func labSearch(_ text: String) throws -> [LabSearchMatch]? {
+        guard let json = try optionalCall("labSearchJson", [text]) else { return nil }
+        return try JSONDecoder().decode([LabSearchMatch].self, from: Data(json.utf8))
+    }
+
+    /// Calls an optional door (bridge-optional.json `optionalDoors`, D3): one the hashed contract
+    /// leaves out, so the bridge id stays. A door the engine lacks answers nil, the feature
+    /// unavailable, never a crash. The app normally runs an engine at least as new as its bundled
+    /// one, so the nil is insurance, not the expected path; but safety rests on it, not on that.
+    /// The app's only way to an optional door (EngineBridgeContractTests).
+    func optionalCall(_ name: String, _ arguments: [Any]) throws -> String? {
+        checkJSThread()
+        guard let function = exports.objectForKeyedSubscript(name), !function.isUndefined else { return nil }
+        return try call(name, arguments)
     }
 
     /// A typed value in the other units, by health-core's factors (`convertJson`): onboarding's

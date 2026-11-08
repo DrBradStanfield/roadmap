@@ -3,7 +3,7 @@ import UIKit
 import XCTest
 @testable import HealthRoadmap
 
-/// US-58 AC7 (Brad 2026-10-31): each Apple Health page (heart rate, resting heart rate, sleep,
+/// US-58 AC7 (Brad 2026-10-31): each Apple Health page (resting heart rate, sleep,
 /// VO2 max, steps) ends with its "About" guide, the same `GuideSections` a record metric's
 /// page shows. Each page is drawn for real on a fake Health store, with the guide the engine
 /// serves under the metric's `guideKey`, then drawn again without it: the guide must add its

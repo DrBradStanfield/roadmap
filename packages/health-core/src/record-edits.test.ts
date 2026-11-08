@@ -7,6 +7,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { appendLabValue, appendMeasurement, correctValue } from './record-edits';
+import { createCoreRow } from './blood-tests';
 import { createEmptyFile, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { mergeFiles } from './merge';
 import { UNIT_DEFS, type MetricType } from './units';
@@ -19,8 +20,9 @@ const NOW = '2026-09-01T09:00:00Z';
 function base(): RoadmapFile {
   const file = createEmptyFile(CTX);
   Object.assign(file.profile, { sex: 'male', birthYear: 1971, heightCm: 178, unitSystem: 'si' });
-  file.measurements.push(createMeasurement({
-    id: 'm1', metricType: 'ldl', value: 3.4, recordedAt: '2026-07-14',
+  // An LDL, stored as every blood test is: a core row in labValues (US-66 AC1).
+  file.labValues.push(createCoreRow({
+    id: 'm1', metric: 'ldl', value: 3.4, recordedAt: '2026-07-14',
     createdAt: '2026-07-14T08:00:00Z', source: 'lab_import',
   }));
   file.labValues.push({
@@ -30,6 +32,9 @@ function base(): RoadmapFile {
   });
   return file;
 }
+
+/** The active core rows: the blood tests the plan reads (US-66). */
+const coreRows = (file: RoadmapFile) => file.labValues.filter((r) => r.core);
 
 /** The success branch, or a failed expectation naming why it was rejected. */
 function ok<T>(result: { ok: true; file: RoadmapFile; row: T } | { ok: false; message: string }) {
@@ -48,9 +53,9 @@ describe('US-31 AC1 — pure functions: the input file is never mutated', () => 
 
     expect(JSON.stringify(file)).toBe(before);
     expect(added.file).not.toBe(file);
-    expect(lab.file.measurements.length).toBe(3);
+    expect(coreRows(lab.file).length).toBe(3);
     // The corrected row on the ORIGINAL is untouched — the flip happened on a copy.
-    expect(file.measurements[0].status).toBe('active');
+    expect(file.labValues[0].status).toBe('active');
   });
 });
 
@@ -66,12 +71,12 @@ describe('US-31 AC2 — one active row per (metric, day) slot', () => {
 
   it('slots on the calendar day, so the same metric on another day is fine', () => {
     const result = ok(appendMeasurement(base(), { metricType: 'ldl', value: 2.1, recordedAt: '2026-08-14', now: NOW }));
-    expect(result.file.measurements.filter((m) => m.status === 'active').length).toBe(2);
+    expect(coreRows(result.file).filter((m) => m.status === 'active').length).toBe(2);
   });
 
   it('an entered-in-error row does not hold its slot', () => {
     const file = base();
-    file.measurements[0] = { ...file.measurements[0], status: 'entered-in-error' };
+    file.labValues[0] = { ...file.labValues[0], status: 'entered-in-error' };
     const result = ok(appendMeasurement(file, { metricType: 'ldl', value: 2.1, recordedAt: '2026-07-14', now: NOW }));
     expect(result.row.value).toBe(2.1);
   });
@@ -95,7 +100,7 @@ describe('US-31 AC2 — one active row per (metric, day) slot', () => {
 describe('US-31 AC3 — a correction appends and keeps the original date', () => {
   it('appends a correcting measurement and flips the old row (one-way)', () => {
     const result = ok(correctValue(base(), { id: 'm1', newValue: 2.1, now: NOW }));
-    const old = result.file.measurements.find((m) => m.id === 'm1')!;
+    const old = result.file.labValues.find((m) => m.id === 'm1')!;
     const row = result.row as FileMeasurement;
 
     expect(old.status).toBe('entered-in-error');
@@ -183,10 +188,9 @@ describe('US-31 AC5 — catalogue keys (agent-access rule 10)', () => {
     expect((result.row as FileLabValue).metricName).toBe('unobtainium');
   });
 
-  it('refuses a core metric — those belong in measurements', () => {
-    const result = appendLabValue(base(), { metricName: 'ldl', value: 2.1, unit: 'mmol/L', now: NOW });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.reason).toBe('core-metric');
+  it('files a core metric as its core row (US-66 AC6; it was refused before)', () => {
+    const result = ok(appendLabValue(base(), { metricName: 'ldl', value: 2.1, unit: 'mmol/L', now: NOW }));
+    expect(result.row).toMatchObject({ metricName: 'ldl', unit: 'mmol/L', value: 2.1, core: true });
   });
 });
 
@@ -208,7 +212,7 @@ describe('US-31 AC6 — clocks (agent-access rule 6)', () => {
     file.meta.updatedAt = '2026-07-01T00:00:00Z'; // a stale anchor
     const result = ok(appendMeasurement(file, { metricType: 'hdl', value: 1.2, now: NOW }));
     const reloaded = migrateFile(JSON.parse(JSON.stringify(result.file)), CTX);
-    expect(reloaded.measurements.find((m) => m.id === result.row.id)!.createdAt).toBe(NOW);
+    expect(reloaded.labValues.find((m) => m.id === result.row.id)!.createdAt).toBe(NOW);
   });
 
   it('defaults recordedAt to the day of the write and refuses a future date', () => {
@@ -249,9 +253,11 @@ describe('US-31 AC9 — the edited file is already canonical', () => {
     const b = ok(appendMeasurement(start, { metricType: 'weight', value: 92.4, now: NOW })).file;
 
     const merged = mergeFiles(a, b, CTX);
-    const active = merged.measurements.filter((m) => m.status === 'active');
-    expect(active.map((m) => m.metricType).sort()).toEqual(['hdl', 'ldl', 'weight']);
+    const active = [...merged.measurements.map((m) => ({ ...m, metric: m.metricType })), ...coreRows(merged).map((m) => ({ ...m, metric: m.metricName }))]
+      .filter((m) => m.status === 'active');
+    expect(active.map((m) => m.metric).sort()).toEqual(['hdl', 'ldl', 'weight']);
     expect(mergeFiles(b, a, CTX).measurements.length).toBe(merged.measurements.length);
+    expect(mergeFiles(b, a, CTX).labValues.length).toBe(merged.labValues.length);
   });
 
   it('two devices editing the SAME slot converge on one active row, losing neither', () => {
@@ -260,11 +266,11 @@ describe('US-31 AC9 — the edited file is already canonical', () => {
     const b = ok(appendMeasurement(start, { metricType: 'hdl', value: 1.3, now: '2026-09-01T10:00:00Z' })).file;
 
     const merged = mergeFiles(a, b, CTX);
-    const hdl = merged.measurements.filter((m) => m.metricType === 'hdl');
+    const hdl = merged.labValues.filter((m) => m.metricName === 'hdl');
     expect(hdl.length).toBe(2);
     expect(hdl.filter((m) => m.status === 'active').length).toBe(1);
-    expect(mergeFiles(b, a, CTX).measurements.filter((m) => m.status === 'active').map((m) => m.id).sort())
-      .toEqual(merged.measurements.filter((m) => m.status === 'active').map((m) => m.id).sort());
+    expect(mergeFiles(b, a, CTX).labValues.filter((m) => m.status === 'active').map((m) => m.id).sort())
+      .toEqual(merged.labValues.filter((m) => m.status === 'active').map((m) => m.id).sort());
   });
 });
 
@@ -333,22 +339,25 @@ describe('US-31 AC5 — a core metric is a core metric in any spelling (F2)', ()
     expect(result.message).not.toContain('write it as a measurement');
   });
 
-  it.each([['LDL-C', 'ldl'], ['lDl-c', 'ldl'], ['A1C', 'hba1c'], ['Apo B', 'apob'], ['hemoglobin_a1c', 'hba1c'], ['Serum Creatinine', 'creatinine']])('refuses a recognized core alias %s and names the metric, without changing the record', (name, metric) => {
+  // US-66 AC6: a recognized core alias was refused ("write it as a measurement"); it now files the core row.
+  it.each([
+    ['LDL-C', 'ldl', 3, 'mmol/L'], ['lDl-c', 'ldl', 3, 'mmol/L'], ['A1C', 'hba1c', 5.5, '%'], ['Apo B', 'apob', 1, 'g/L'],
+    ['hemoglobin_a1c', 'hba1c', 40, 'mmol/mol'], ['Serum Creatinine', 'creatinine', 80, 'umol/L'],
+  ] as const)('files a recognized core alias %s as the core %s row, without changing the record', (name, metric, value, unit) => {
     const file = base();
     const before = JSON.stringify(file);
-    const result = appendLabValue(file, { metricName: name, value: 1, unit: 'mmol/L', now: NOW });
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.reason).toBe('core-metric');
-      expect(result.message).toBe(`"${name}" is the core metric ${metric} — write it as a measurement, in SI units`);
-    }
+    const result = ok(appendLabValue(file, { metricName: name, value, unit, now: NOW }));
+    expect(result.row).toMatchObject({ metricName: metric, core: true });
     expect(JSON.stringify(file)).toBe(before);
   });
 
-  it.each(['LDL', 'HbA1c', 'Weight', 'LDL cholesterol', 'Lp(a)'])('refuses --test %s', (name) => {
-    const result = appendLabValue(base(), { metricName: name, value: 1, unit: 'mmol/L', now: NOW });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.reason).toBe('core-metric');
+  it('refuses --test Weight: a vital, not a blood test', () => {
+    const result = appendLabValue(base(), { metricName: 'Weight', value: 1, unit: 'mmol/L', now: NOW });
+    expect(result).toMatchObject({ ok: false, reason: 'core-metric', message: '"Weight" is the core metric weight — write it as a measurement, in SI units' });
+  });
+
+  it.each(['LDL', 'HbA1c', 'LDL cholesterol', 'Lp(a)'])('refuses --test %s in a unit the test does not take', (name) => {
+    expect(appendLabValue(base(), { metricName: name, value: 1, unit: 'kg', now: NOW })).toMatchObject({ ok: false, reason: 'unknown-unit' });
   });
 
   it('slots mixed-case spellings of one uncatalogued test together', () => {
@@ -371,7 +380,8 @@ describe('US-31 AC6 — the file clock only moves forward (F3)', () => {
     expect(result.row.createdAt).toBe(behind); // the ROW keeps the writer's clock
     // The anchor did not move back, so no other row's createdAt is rewound.
     const reloaded = migrateFile(JSON.parse(JSON.stringify(result.file)), CTX);
-    expect(reloaded.measurements.map((m) => m.createdAt)).toEqual(result.file.measurements.map((m) => m.createdAt));
+    expect(reloaded.labValues.map((m) => m.createdAt)).toEqual(result.file.labValues.map((m) => m.createdAt));
+    expect(reloaded.labValues.map((m) => m.createdAt)).toContain('2026-07-14T08:00:00Z');
   });
 });
 
@@ -413,8 +423,8 @@ describe('US-31 AC5 \u2014 unit labels resolve through the shared resolver (unit
 
   it('a correction takes the same spellings', () => {
     const file = base();
-    file.measurements.push(createMeasurement({
-      id: 'c1', metricType: 'creatinine', value: 88, recordedAt: '2026-08-20',
+    file.labValues.push(createCoreRow({
+      id: 'c1', metric: 'creatinine', value: 88, recordedAt: '2026-08-20',
       createdAt: '2026-08-20T08:00:00Z', source: 'manual',
     }));
     expect(ok(correctValue(file, { id: 'c1', newValue: 95, unit: 'umol/L', now: NOW })).row.value).toBe(95);
@@ -475,7 +485,7 @@ describe('US-35 AC6 — one slot rule for the website and the connector', () => 
     expect(findActiveInSlot(base(), 'measurement', 'ldl', '2026-07-15')).toBeUndefined();
     expect(findActiveInSlot(base(), 'lab', 'Ferritin', '2026-07-14T09:00:00Z')?.id).toBe('l1');
     const flipped = base();
-    flipped.measurements[0].status = 'entered-in-error';
+    flipped.labValues[0].status = 'entered-in-error';
     expect(findActiveInSlot(flipped, 'measurement', 'ldl', '2026-07-14')).toBeUndefined();
   });
 
@@ -503,23 +513,41 @@ describe('US-35 AC6 — one slot rule for the website and the connector', () => 
   });
 
   it('spells the slot once: a metric on a day, a lab by catalogue key, and the index of every active row agrees', () => {
-    expect(slotKey('measurement', 'ldl', '2026-07-14T09:00:00Z')).toBe('m:ldl@2026-07-14');
+    // US-66 AC1: a blood test's slot is the merge's own `core:` key; a vital keeps `m:`.
+    expect(slotKey('measurement', 'ldl', '2026-07-14T09:00:00Z')).toBe('core:ldl@2026-07-14');
+    expect(slotKey('measurement', 'weight', '2026-07-14T09:00:00Z')).toBe('m:weight@2026-07-14');
     expect(slotKey('lab', 'Ferritin', '2026-07-14')).toBe(slotKey('lab', 'ferritin', '2026-07-14T23:59:59Z'));
     expect(slotKey('lab', 'ferritin', '2026-07-14')).not.toBe(slotKey('measurement', 'ferritin', '2026-07-14'));
     const index = slotIndex(base());
     expect(index.get(slotKey('measurement', 'ldl', '2026-07-14'))?.id).toBe('m1');
     expect(index.get(slotKey('lab', 'FERRITIN', '2026-07-14'))?.id).toBe('l1');
-    expect([...index.keys()].sort()).toEqual(['l:ferritin@2026-07-14', 'm:ldl@2026-07-14']);
+    expect([...index.keys()].sort()).toEqual(['core:ldl@2026-07-14', 'lab:ferritin@2026-07-14']);
     const flipped = base();
-    flipped.measurements[0].status = 'entered-in-error';
-    expect(slotIndex(flipped).has('m:ldl@2026-07-14')).toBe(false);
+    flipped.labValues[0].status = 'entered-in-error';
+    expect(slotIndex(flipped).has('core:ldl@2026-07-14')).toBe(false);
     // `findActiveInSlot` is the same lookup, one at a time.
-    expect(findActiveInSlot(base(), 'lab', 'FERRITIN', '2026-07-14')).toEqual(index.get('l:ferritin@2026-07-14'));
+    expect(findActiveInSlot(base(), 'lab', 'FERRITIN', '2026-07-14')).toEqual(index.get('lab:ferritin@2026-07-14'));
   });
 });
 
 describe('US-35 AC8 — bulkAppendValues is the review table’s save, as one pure rule', () => {
   const day = '2026-08-01';
+
+  // c71d283c: a legacy row with no status is active: it takes its slot, and a correction may name it.
+  it('US-35 AC8 — a legacy row with no status takes its slot, and a correctsId on it supersedes it', () => {
+    const typed = ok(appendLabValue(base(), { metricName: 'tsh', value: 1.2, unit: 'mIU/L', recordedAt: day, now: NOW, source: 'manual' }));
+    const { status: _s, ...legacy } = typed.file.labValues.at(-1)!;
+    const file = { ...typed.file, labValues: [...typed.file.labValues.slice(0, -1), legacy as FileLabValue] };
+    const row = { kind: 'lab' as const, metricName: 'tsh', value: 2.4, unit: 'mIU/L', recordedAt: day, source: 'lab_import' as const };
+    const taken = bulkAppendValues(file, [row], NOW);
+    expect(taken.saved).toEqual([]);
+    expect(taken.skippedDuplicates).toBe(1);
+    const fixed = bulkAppendValues(file, [{ ...row, correctsId: legacy.id }], NOW);
+    expect(fixed.skippedDuplicates).toBe(0);
+    expect(fixed.file.labValues.filter((l) => l.metricName === 'tsh').map((l) => [l.value, l.status, l.correctsId])).toEqual([
+      [1.2, 'entered-in-error', null], [2.4, 'active', legacy.id],
+    ]);
+  });
 
   it('US-35 AC17 — refuses an invalid core correction without tombstoning the old row', () => {
     const file = base();
@@ -595,7 +623,7 @@ describe('US-35 AC8 — bulkAppendValues is the review table’s save, as one pu
     ], NOW);
     expect(result.measurementRefusals).toMatchObject([{ index: 0, reason: 'invalid-value' }]);
     expect(result.saved).toMatchObject([{ value: 3, correctsId: 'm1', recordedAt: '2026-07-14' }]);
-    expect(result.file.measurements.find(row => row.id === 'm1')?.status).toBe('entered-in-error');
+    expect(result.file.labValues.find(row => row.id === 'm1')?.status).toBe('entered-in-error');
     expect(result.skippedDuplicates).toBe(0);
     expect(file).toEqual(before);
   });
@@ -612,8 +640,8 @@ describe('US-35 AC8 — bulkAppendValues is the review table’s save, as one pu
     expect(JSON.stringify(file)).toBe(before);
     expect(result.saved.map((r) => r.source)).toEqual(['lab_import', 'lab_import']);
     expect(result.skippedDuplicates).toBe(2);
-    expect(result.file.measurements).toHaveLength(2);
-    expect(result.file.labValues).toHaveLength(2);
+    expect(result.file.measurements).toHaveLength(0);
+    expect(result.file.labValues).toHaveLength(4);
     expect(result.file.meta.updatedAt).toBe(NOW);
   });
 
@@ -643,12 +671,12 @@ describe('US-35 AC8 — bulkAppendValues is the review table’s save, as one pu
     ], NOW);
     expect(result.saved).toHaveLength(2);
     expect(result.skippedDuplicates).toBe(1);
-    const m = result.file.measurements;
+    const m = result.file.labValues;
     expect(m.find((r) => r.id === 'm1')!.status).toBe('entered-in-error');
     const fresh = m.find((r) => r.correctsId === 'm1')!;
     expect(fresh.value).toBe(3.0);
     expect(fresh.recordedAt).toBe('2026-07-14');
-    expect(m.filter((r) => r.status === 'active' && r.metricType === 'ldl')).toHaveLength(1);
+    expect(m.filter((r) => r.status === 'active' && r.metricName === 'ldl')).toHaveLength(1);
     const l = result.file.labValues;
     expect(l.find((r) => r.id === 'l1')!.status).toBe('entered-in-error');
     expect(l.find((r) => r.correctsId === 'l1')!.value).toBe(190);
@@ -661,7 +689,7 @@ describe('US-35 AC8 — bulkAppendValues is the review table’s save, as one pu
     expect(wrongSlot.saved).toHaveLength(0);
     expect(wrongSlot.skippedDuplicates).toBe(1);
     const flipped = base();
-    flipped.measurements[0].status = 'entered-in-error';
+    flipped.labValues[0].status = 'entered-in-error';
     const inactive = bulkAppendValues(flipped, [
       { kind: 'measurement', metricType: 'ldl', value: 3.0, recordedAt: '2026-07-14', source: 'lab_import', correctsId: 'm1' },
     ], NOW);
@@ -669,10 +697,12 @@ describe('US-35 AC8 — bulkAppendValues is the review table’s save, as one pu
   });
 
   it('a correctsId of the other kind is skipped, never resolved against the wrong list (US-35 AC8)', () => {
-    // m1 is measurements[0]; a lab row naming it must not flip labValues[0].
-    const crossed = bulkAppendValues(base(), [
-      { kind: 'lab', metricName: 'ferritin', value: 190, unit: 'ug/L', recordedAt: '2026-07-14', source: 'lab_import', correctsId: 'm1' },
-      { kind: 'measurement', metricType: 'ldl', value: 3.0, recordedAt: '2026-07-14', source: 'lab_import', correctsId: 'l1' },
+    // w0 is measurements[0]; a lab row naming it must not flip labValues[0].
+    const file = base();
+    file.measurements.push(createMeasurement({ id: 'w0', metricType: 'weight', value: 80, recordedAt: '2026-07-14', createdAt: '2026-07-14T08:00:00Z' }));
+    const crossed = bulkAppendValues(file, [
+      { kind: 'lab', metricName: 'ferritin', value: 190, unit: 'ug/L', recordedAt: '2026-07-14', source: 'lab_import', correctsId: 'w0' },
+      { kind: 'measurement', metricType: 'weight', value: 81, recordedAt: '2026-07-14', source: 'lab_import', correctsId: 'l1' },
     ], NOW);
     expect(crossed.saved).toHaveLength(0);
     expect(crossed.skippedDuplicates).toBe(2);
@@ -949,7 +979,7 @@ describe('US-03 AC7 — the record refuses 0 for lipids and ApoB, and takes it f
     const file = base();
     const result = correctValue(file, { id: 'm1', newValue: 0, now: NOW });
     expect(result).toMatchObject({ ok: false, reason: 'out-of-range', message: 'LDL-c must be above 0 (got 0)' });
-    expect(file.measurements.find(m => m.id === 'm1')?.status).toBe('active');
+    expect(file.labValues.find(m => m.id === 'm1')?.status).toBe('active');
   });
 
   it('an upload save (bulkAppendValues) refuses LDL 0 below the range and saves PSA and Lp(a) 0', () => {
@@ -961,7 +991,7 @@ describe('US-03 AC7 — the record refuses 0 for lipids and ApoB, and takes it f
     expect(result.measurementRefusals).toEqual([
       { index: 0, metricType: 'ldl', reason: 'out-of-range', message: 'LDL-c must be above 0', bound: 'below' },
     ]);
-    expect(result.saved.map(row => ['metricType' in row && row.metricType, row.value])).toEqual([['psa', 0], ['lpa', 0]]);
+    expect(result.saved.map(row => ['metricName' in row && row.metricName, row.value])).toEqual([['psa', 0], ['lpa', 0]]);
   });
 
   it('a tiny positive LDL still saves', () => {

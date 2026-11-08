@@ -207,6 +207,26 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertNotNil(store.correctionHint(for: value.id, metric: "weight", unit: fresh.unit, on: store.screen))
     }
 
+    /// US-25 AC25 (review R2): a lab correction's hint is the tapped row's value, in that row's own
+    /// unit, and none in another: the older zinc row at 12 µmol/L in a series now reported in µg/dL.
+    func testALabCorrectionHintIsInTheRowsOwnUnit_US25_AC25() async throws {
+        let engine = try HealthEngine()
+        let now = Date()
+        let fresh = try engine.blocking { [now] in try $0.newRecord(now: now, deviceId: "test", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!) }
+        var record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(fresh.utf8)) as? [String: Any])
+        let lab = { (id: String, value: Double, unit: String, day: String) -> [String: Any] in
+            ["id": id, "metricName": "zinc_custom", "value": value, "unit": unit, "referenceLow": NSNull(), "referenceHigh": NSNull(),
+             "recordedAt": "\(day)T00:00:00.000Z", "createdAt": "\(day)T09:00:00.000Z", "source": "lab_import", "status": "active", "correctsId": NSNull()]
+        }
+        record["labValues"] = [lab("z1", 12, "µmol/L", "2026-08-01"), lab("z2", 80, "µg/dL", "2026-09-01")]
+        try JSONSerialization.data(withJSONObject: record).write(to: file)
+        let store = try store()
+        _ = await store.chart(for: "zinc custom", series: "lab")
+        XCTAssertEqual(store.correctionHint(for: "z1", metric: "zinc custom", series: "lab", unit: "µmol/L", on: store.screen), "12")
+        XCTAssertNil(store.correctionHint(for: "z1", metric: "zinc custom", series: "lab", unit: "µg/dL", on: store.screen), "never in another unit")
+        XCTAssertNil(store.correctionHint(for: "z1", metric: "zinc custom", unit: "µmol/L", on: store.screen), "nor from a core history of that name")
+    }
+
     /// Re-check N2: the revision moves only when the record or the per-test units change,
     /// so a page keyed on it never asks the engine again for nothing.
     func testTheRevisionMovesOnlyOnAChange() async throws {
@@ -254,11 +274,12 @@ final class RecordStoreTests: XCTestCase {
         guard case .planned = store.plan else { return XCTFail("the edit's one call planned the new record") }
 
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
-        window.rootViewController = UIHostingController(rootView: PlanView(store: store, showMyData: {}))
+        window.rootViewController = UIHostingController(rootView: MyHealthHost.view(store: store, engine: engine))
         window.makeKeyAndVisible()
         try await Task.sleep(for: .milliseconds(300))
         window.isHidden = true
-        XCTAssertEqual(try doors(), "", "the Plan tab draws the stored plan and asks the engine nothing")
+        // Only its two worked-out rows' series (US-73 AC7): no plan of its own.
+        XCTAssertEqual(try doors().split(separator: " ").filter { $0 != "historyJson" }, [], "My health draws the stored plan and plans nothing itself")
     }
 
     /// Codex R1, adversary R1: the plan reads the date (ages, screening due dates), so a return
@@ -298,20 +319,6 @@ final class RecordStoreTests: XCTestCase {
     private func suggestionIds(_ plan: PlanState?) -> [String] {
         guard case .planned(_, let sections, _) = plan else { return [] }
         return sections.flatMap(\.cards).flatMap(\.suggestions).map(\.id)
-    }
-
-    /// Adversary R3: a record that cannot be read shows its problem on the Plan tab, as
-    /// My data does, never "Your plan needs a few details". Read from the screen's body:
-    /// unit tests have no accessibility tree to search.
-    func testThePlanTabShowsWhyARecordCannotBeOpened() throws {
-        try Data("not a record".utf8).write(to: file)
-        let store = try store()
-        let problem = try XCTUnwrap(store.problem)
-        var shown = ""
-        dump(PlanView(store: store, showMyData: {}).body, to: &shown)
-        XCTAssertTrue(shown.contains("Your record could not be opened"), shown)
-        XCTAssertTrue(shown.contains(String(reflecting: problem)), shown) // dump quotes and escapes it
-        XCTAssertFalse(shown.contains("needs a few details"), shown)
     }
 
     func testTheRecordIsKeptOutOfBackups() throws {
@@ -499,7 +506,7 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(lpaHistory?.unit, "mg/L")
         XCTAssertEqual(lpaHistory?.rows.first?.value, "500")
         let record = try JSONSerialization.jsonObject(with: Data(store.recordJSON.utf8)) as? [String: Any]
-        let lpa = (record?["measurements"] as? [[String: Any]])?.first { $0["metricType"] as? String == "lpa" }
+        let lpa = (record?["labValues"] as? [[String: Any]])?.first { $0["core"] as? Bool == true && $0["metricName"] as? String == "lpa" }
         XCTAssertEqual(try XCTUnwrap(lpa?["value"] as? Double), 125, accuracy: 1e-9, "500 mg/L is 125 nmol/L")
         // Choosing it again writes nothing.
         let before = try Data(contentsOf: file)
@@ -514,7 +521,7 @@ final class RecordStoreTests: XCTestCase {
         let store = try store()
         let row = try XCTUnwrap(store.myData?.bloodTests.first { $0.metric == "lpa" })
         var seen = store.screen // the entry sheet opens, showing the default unit
-        let sheet = ValueEntrySheet(title: row.label, unit: row.unit, current: nil, asksForDay: true) { _, _ in .saved }
+        let sheet = ValueEntrySheet(title: row.label, unit: row.unit, current: nil, asksForDay: true) { _, _ in .saved() }
             .lpaUnits(store, row) { seen = seen.showing(lpaUnit: $0) }
         let choose = try XCTUnwrap(sheet.chooseUnit)
         let refusal = await choose("mg/L")
@@ -522,7 +529,7 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(seen.lpaUnit, "mg/L")
         await XCTAssertSaved(await store.apply(.add(metric: "lpa", value: 500, day: "2026-10-20"), as: seen))
         let record = try JSONSerialization.jsonObject(with: Data(store.recordJSON.utf8)) as? [String: Any]
-        let lpa = (record?["measurements"] as? [[String: Any]])?.first { $0["metricType"] as? String == "lpa" }
+        let lpa = (record?["labValues"] as? [[String: Any]])?.first { $0["core"] as? Bool == true && $0["metricName"] as? String == "lpa" }
         XCTAssertEqual(try XCTUnwrap(lpa?["value"] as? Double), 125, accuracy: 1e-9, "500 mg/L is 125 nmol/L")
     }
 

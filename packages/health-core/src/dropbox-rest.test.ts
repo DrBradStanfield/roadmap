@@ -7,7 +7,9 @@
  */
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { ConflictError, fetchOrFail, ROADMAP_FILE_NAME, StorageError } from './adapter';
-import { describeStorageFailure } from './sync-manager';
+import { describeStorageFailure, SyncManager } from './sync-manager';
+import { ROADMAP_DOC } from './roadmap-doc';
+import { createEmptyFile } from './roadmap-file';
 import { dropboxApiArg, dropboxWrite, DropboxAdapter } from './dropbox-rest';
 
 afterEach(() => {
@@ -21,14 +23,15 @@ describe('a network outage is the adapter’s failure, not an unknown one (US-32
 
     // Thunks, not promises: built eagerly, the second one rejects before the
     // loop reaches it and Node calls that an unhandled rejection.
-    for (const attempt of [
-      () => adapter.read(ROADMAP_FILE_NAME),
-      () => adapter.write(ROADMAP_FILE_NAME, { a: 1 }, 'rev1'),
-    ]) {
+    // A write that went out may have landed, so its hint says so (US-09 AC13f).
+    for (const [attempt, hint] of [
+      [() => adapter.read(ROADMAP_FILE_NAME), 'Try once more'],
+      [() => adapter.write(ROADMAP_FILE_NAME, { a: 1 }, 'rev1'), 'may have landed'],
+    ] as const) {
       const failure = await attempt().catch((error: unknown) => error);
       expect(failure).toBeInstanceOf(StorageError);
       expect((failure as StorageError).message).toBe('Dropbox did not answer');
-      expect((failure as StorageError).hint).toContain('Try once more');
+      expect((failure as StorageError).hint).toContain(hint);
     }
   });
 });
@@ -93,13 +96,15 @@ describe('a provider that never answers is bounded, not eternal (US-32 AC17)', (
 });
 
 describe('a runtime without `AbortSignal.timeout` still saves (US-32 AC17)', () => {
-  it('runs the call unbounded rather than throwing a TypeError', async () => {
+  it('runs the call with the bound on the global timer rather than throwing a TypeError', async () => {
     // Safari 14/15 has no `AbortSignal.timeout`, and the widget's build target
     // ships untranspiled to it. Called unguarded, every Drive/Dropbox read and
     // save there died on a bare TypeError before `fetch` was ever reached.
+    // Since US-09 AC13g (review of #788) the call is bounded there too, on the
+    // global timer, instead of running unbounded.
     vi.stubGlobal('AbortSignal', {});
     vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init?: RequestInit) => {
-      expect(init?.signal).toBeUndefined();
+      expect(init?.signal?.aborted).toBe(false);
       return new Response('{"ok":true}', { status: 200 });
     }));
     const res = await fetchOrFail('Dropbox', 'https://example.test/x');
@@ -153,6 +158,97 @@ describe('a rev-conditional write refuses to re-create a deleted record (US-32 A
     // tell the user their provider is down.
     expect(failure).not.toBeInstanceOf(StorageError);
     expect(describeStorageFailure(failure, 'The record in Dropbox').hint).toContain('Read the record again');
+  });
+});
+
+describe('US-09 AC35: a 409 from Dropbox is a conflict only when the file moved', () => {
+  const refuse = (body: string) => {
+    let uploads = 0;
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (String(url).endsWith('/files/upload')) {
+        uploads++;
+        return new Response(body, { status: 409 });
+      }
+      const stored = JSON.stringify(createEmptyFile({ deviceId: 'device-a', now: '2026-01-01T00:00:00Z' }));
+      return new Response(stored, { status: 200, headers: { 'dropbox-api-result': JSON.stringify({ rev: 'rev1' }) } });
+    }));
+    return { uploads: () => uploads };
+  };
+  const write = () => new DropboxAdapter('token').write(ROADMAP_FILE_NAME, { a: 1 }, 'rev1').catch((error: unknown) => error);
+  const summary = (s: string) => JSON.stringify({ error_summary: s, error: {} });
+
+  it('a full Dropbox is a StorageError that says so, not a conflict', async () => {
+    refuse(summary('path/insufficient_space/..'));
+    const failure = await write();
+    expect(failure).toBeInstanceOf(StorageError);
+    expect(failure).not.toBeInstanceOf(ConflictError);
+    expect((failure as StorageError).status).toBe(409);
+    expect(describeStorageFailure(failure, 'The record in Dropbox')).toEqual({
+      message: 'Dropbox is full',
+      hint: 'Nothing was written. Free up space in Dropbox, then try again.',
+    });
+  });
+
+  it('a save to a full Dropbox uploads once and is not called a conflict storm', async () => {
+    const box = refuse(summary('path/insufficient_space/...'));
+    const sync = new SyncManager(new DropboxAdapter('token'), 'device-a', ROADMAP_DOC, { now: () => '2026-01-02T00:00:00Z' });
+    const failure = await sync.save(createEmptyFile({ deviceId: 'device-a', now: '2026-01-01T00:00:00Z' })).then(() => null, (e: unknown) => e);
+    expect(failure).toBeInstanceOf(StorageError);
+    expect((failure as Error).message).toBe('Dropbox is full');
+    expect(box.uploads()).toBe(1);
+  });
+
+  it('a full Dropbox after an earlier attempt that may have landed never says nothing was written', async () => {
+    // Upload 1 lands, but the re-read shows an older record (a lost update), so the save
+    // re-merges and uploads again, and that upload finds the Dropbox full.
+    let uploads = 0;
+    const stale = JSON.stringify(createEmptyFile({ deviceId: 'device-b', now: '2026-01-01T00:00:00Z' }));
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (String(url).endsWith('/files/upload')) {
+        uploads++;
+        return uploads === 1
+          ? new Response(JSON.stringify({ rev: 'rev2' }), { status: 200 })
+          : new Response(summary('path/insufficient_space/..'), { status: 409 });
+      }
+      return new Response(stale, { status: 200, headers: { 'dropbox-api-result': JSON.stringify({ rev: 'rev1' }) } });
+    }));
+    const sync = new SyncManager(new DropboxAdapter('token'), 'device-a', ROADMAP_DOC, { now: () => '2026-01-02T00:00:00Z' });
+    const local = createEmptyFile({ deviceId: 'device-a', now: '2026-01-01T00:00:00Z' });
+    local.meta.lamport = 50;
+    const failure = await sync.save(local).then(() => null, (e: unknown) => e);
+    expect(uploads).toBe(2);
+    const said = describeStorageFailure(failure, 'The record in Dropbox');
+    expect(said.message).toBe('Dropbox is full');
+    expect(`${said.message} ${said.hint}`).not.toMatch(/nothing was written/i);
+    expect(said.hint).toMatch(/may or may not have landed/);
+  });
+
+  it('another refusal (a disallowed name) is a StorageError with its 409, and is not retried', async () => {
+    refuse(summary('path/disallowed_name/'));
+    const failure = await write();
+    expect(failure).toBeInstanceOf(StorageError);
+    expect(failure).not.toBeInstanceOf(ConflictError);
+    expect((failure as StorageError).status).toBe(409);
+    expect((failure as StorageError).message).toContain('path/disallowed_name');
+  });
+
+  it('a write that raced ours (too_many_write_operations) is still a conflict, so it is retried', async () => {
+    refuse(summary('path/too_many_write_operations/..'));
+    expect(await write()).toBeInstanceOf(ConflictError);
+  });
+
+  it('a body that is not a Dropbox error keeps the old reading: a conflict', async () => {
+    for (const body of ['', 'not json', '{"error":{}}', 'null', '{"error_summary":7}']) {
+      refuse(body);
+      expect(await write()).toBeInstanceOf(ConflictError);
+    }
+  });
+
+  it('a summary that only looks like a conflict is not one', async () => {
+    for (const s of ['path/conflicting_reason/..', 'properties/path/conflict/..']) {
+      refuse(summary(s));
+      expect(await write()).not.toBeInstanceOf(ConflictError);
+    }
   });
 });
 

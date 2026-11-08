@@ -29,7 +29,8 @@
 // else before References; one before the first live heading goes after the
 // table of contents. Each such fallback is logged; an ambiguous match still fails.
 //
-// Commerce product callouts ("From the MicroVitamin range" cards) are NOT
+// Commerce product callouts ("From the MicroVitamin range" cards; "Also on
+// microvitamin.com" for Potassium Fiber Drink, which is not in that range) are NOT
 // carried: their live text holds old product claims. A commerce build takes
 // --callouts <json>, the card text Brad approved, as a list of
 // { handle, heading: [parent heading..., heading], text, linkText, product }.
@@ -53,12 +54,14 @@ import { pathToFileURL } from 'node:url';
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-// drstanfield.com product handle -> microvitamin.com product handle.
-const COMMERCE_PRODUCTS = { microvitamin: 'microvitamin', 'microvitamin-powder': 'microvitamin-plus', 'microvitamin-plus': 'microvitamin-plus', sleep: 'sleep' };
+// drstanfield.com product handle -> microvitamin.com product handle. Its values are the products a card may link.
+const COMMERCE_PRODUCTS = { microvitamin: 'microvitamin', 'microvitamin-powder': 'microvitamin-plus', 'microvitamin-plus': 'microvitamin-plus', sleep: 'sleep', 'potassium-fiber-drink': 'potassium-fiber-drink' };
 
 const MARKERS = { 'roadmap-embed': ['edu'], 'cta-roadmap': ['edu'], 'cta-pf': ['edu', 'commerce'] };
 const CALLOUT_EYEBROW = 'From the MicroVitamin range';
-const CALLOUT_TEXT = /from\s*the\s*microvitamin\s*range/gi;
+// Potassium Fiber Drink is sold on microvitamin.com but is not part of the MicroVitamin range (Brad 2026-11-02).
+const OTHER_EYEBROW = { 'potassium-fiber-drink': 'Also on microvitamin.com' };
+const CALLOUT_TEXT = /from\s*the\s*microvitamin\s*range|also\s*on\s*microvitamin\.com/gi;
 
 /** Split a master into its frontmatter fields and its body. */
 export function splitMaster(md) {
@@ -303,7 +306,7 @@ export function renderCallout({ text, linkText, product }) {
   if (!Object.values(COMMERCE_PRODUCTS).includes(product)) throw new Error(`approved callout names an unknown product "${product}"`);
   if (typeof text !== 'string' || !text.trim() || typeof linkText !== 'string' || !linkText.trim()) throw new Error('an approved callout needs text and linkText');
   return `<div style="border:1px solid #dde7e3;border-left:4px solid #0a6b57;background:#f0f7f4;border-radius:8px;padding:16px 18px;margin:22px 0;">
-<p style="margin:0 0 6px;font-weight:700;">${CALLOUT_EYEBROW}</p>
+<p style="margin:0 0 6px;font-weight:700;">${OTHER_EYEBROW[product] ?? CALLOUT_EYEBROW}</p>
 <p style="margin:0;">${esc(text)} <a href="/products/${product}" target="_blank" rel="noopener">${esc(linkText)}</a></p>
 </div>`;
 }
@@ -410,15 +413,19 @@ const SENTENCE_END = /[.!?](?:\*\*?|\))?\s+/g;
 // Pointers to the dropped sections, and unlinked product sentences, go too, so the
 // sentences left still read: "(see the Current view above)", "; Brad's view is in the Current view.",
 // a whole sentence naming it or "Brad's view above", and "...exclude vitamin E from MicroVitamin, his ... formulation."
-// A "Disclosure:" sentence stays: it tells the reader about Brad's interest.
+// A "Disclosure:" sentence stays: it tells the reader about Brad's interest. A sentence naming MicroVitamin or Sleep by
+// Dr Brad and saying "third-party tested" goes, disclosure or not: a US-only claim (docs/products.md; Brad 2026-11-02).
 const VIEW = String.raw`Brad['\u2019]s (?:own )?view`;
 const POINTER_PAREN = new RegExp(String.raw`\s*\((?:see\s+)?(?:the\s+)?(?:Current view|${VIEW})(?:\s+(?:above|below))?\)`, 'g');
 // Inside a sentence a "." is fine when no space follows it (27.5 mg, 1.004).
 const IN = String.raw`(?:[^.!?]|[.!?](?!\s|$))*`;
 const POINTER_CLAUSE = new RegExp(String.raw`;\s*(?:[^;.!?]|[.!?](?!\s|$))*\bCurrent view\b(?:[^;.!?]|[.!?](?!\s|$))*([.!?])(?=\s|$)`, 'g');
-const DROP_SENTENCE = new RegExp(String.raw`(^|[.!?]\s+)(?!Disclosure:)${IN}(?:\b(?:Current view|MicroVitamin)\b|${VIEW} (?:above|below)\b)${IN}[.!?](?=\s|$)`, 'g');
+// The boundary reads the previous sentence's end by lookbehind, never consuming it, so the next sentence can match too.
+const DROP_SENTENCE = new RegExp(String.raw`(?:^|(?<=[.!?])\s+(?!\s))(?!Disclosure:)${IN}(?:\b(?:Current view|MicroVitamin)\b|${VIEW} (?:above|below)\b)${IN}[.!?](?=\s|$)`, 'g');
+const US_ONLY = new RegExp(String.raw`(?:^|(?<=[.!?])\s+(?!\s))${IN}\bthird(?:-|\s+)party\s+tested\b${IN}[.!?](?=\s|$)`, 'gi');
 const dropPointers = (text) =>
-  text.replace(POINTER_PAREN, '').replace(POINTER_CLAUSE, '$1').replace(DROP_SENTENCE, (m, pre) => pre.trimEnd());
+  text.replace(POINTER_PAREN, '').replace(POINTER_CLAUSE, '$1').replace(DROP_SENTENCE, '')
+    .replace(US_ONLY, (m) => (/\bMicroVitamin\b|\bSleep\s+by\s+Dr\s+Brad\b/.test(m) ? '' : m));
 
 // A caveat that limits the evidence for a claim survives the product drop when it names no product and does not lean
 // on the dropped sentence before it: "AREDS2 was not a prevention trial in people without AMD." stays;

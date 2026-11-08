@@ -34,7 +34,7 @@ function vitalsDraftCell(label: string, backfill = false) {
   function Page() {
     const [overrides, setOverrides] = useState<Record<string, UnitSystem>>({});
     return <StartingInfoVitals vitalsHistory={history} unitSystem="si"
-      onSave={onSave} onDraftValue={() => {}} formStage={3} plan={null}
+      onSave={onSave} onDraftValue={() => {}} formStage={4} plan={null}
       unitOverrides={overrides}
       onToggleFieldUnit={field => setOverrides(o => ({
         ...o, [field]: o[field] === 'conventional' ? 'si' : 'conventional',

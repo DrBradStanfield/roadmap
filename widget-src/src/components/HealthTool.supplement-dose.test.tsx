@@ -22,11 +22,12 @@ vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 
 import { HealthTool } from './HealthTool';
+import { deleteButton } from '../testing/settings';
 
 useHealthToolLifecycle();
 
 async function page(initial: number | null = null) {
-  await seedGuest({ sex: 'male', heightCm: 178, birthYear: 1980 }, [['weight', 80]]);
+  await seedGuest({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, [['weight', 80]]);
   await saveSupplement('custom_test_supplement', 'Test supplement', initial, null);
   await flushRoadmapStore();
   const view = render(<HealthTool />);
@@ -194,7 +195,7 @@ describe('US-11: supplement dose draft erase lifecycle', () => {
     const adapter = new MemoryAdapter(cloud);
     await initRoadmapStore(adapter);
     const store = await created.mock.results[0].value;
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980 }, {});
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
     await addMeasurement('weight', 80, '2026-09-01');
     await saveSupplement('custom_test_supplement', 'Test supplement', 25, null);
     await flushRoadmapStore();
@@ -214,10 +215,10 @@ describe('US-11: supplement dose draft erase lifecycle', () => {
       supplementKey: 'custom_test_supplement', supplementName: 'Test supplement',
       doseValue: value, doseUnit: 'mg', status: 'active',
     }, now).file;
-    // A new saved weight reopens stage 3 after erase; without it progressive
-    // disclosure correctly hides every supplement, including the new row.
+    // A new saved blood test reopens the whole form after erase (US-62 AC13);
+    // without it the onboarding correctly hides every supplement, including the new row.
     if (changed.measurements.length === 0) changed.measurements.push({
-      id: 'post-erase-weight', metricType: 'weight', value: 80, recordedAt: '2026-09-02',
+      id: 'post-erase-ldl', metricType: 'ldl', value: 3, recordedAt: '2026-09-02',
       createdAt: now, source: 'manual', status: 'active', correctsId: null, externalId: null,
     });
     await adapter.write(ROADMAP_FILE_NAME, changed, version);
@@ -248,7 +249,7 @@ describe('US-11: supplement dose draft erase lifecycle', () => {
         vi.stubGlobal('confirm', () => true);
         const alert = vi.fn();
         vi.stubGlobal('alert', alert);
-        fireEvent.click(view.getByText('Delete All My Data'));
+        fireEvent.click(deleteButton());
         await waitFor(() => expect(alert).toHaveBeenCalled());
       } else {
         await remoteErase(adapter);
@@ -295,7 +296,7 @@ describe('US-11: supplement dose draft erase lifecycle', () => {
       const alert = vi.fn();
       vi.stubGlobal('confirm', () => true);
       vi.stubGlobal('alert', alert);
-      fireEvent.click(view.getByText('Delete All My Data'));
+      fireEvent.click(deleteButton());
       await waitFor(() => expect(alert).toHaveBeenCalledWith(ERASE_UNREACHABLE));
       failure.mockRestore();
       expect(cleared).not.toHaveBeenCalled();

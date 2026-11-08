@@ -3,10 +3,12 @@ import SwiftUI
 /// A sheet's save, with the engine off the main thread (US-25 AC21): `saving` is set
 /// as the button is tapped, so the sheet's Save, Cancel and swipe-down can wait until
 /// the edit lands. A sheet closes only on a save; otherwise the engine's words show.
-/// An edit made outside a sheet shows them in `refusalAlert`.
+/// An edit made outside a sheet shows them in `refusalAlert`. A tap while a save is under
+/// way does nothing (US-25 AC21d): a button is disabled only once the sheet redraws.
 @MainActor
 enum SheetSave {
     static func run(_ saving: Binding<Bool>, _ save: @escaping () async -> RecordStore.ApplyResult, then finish: @escaping (RecordStore.ApplyResult) -> Void) {
+        guard !saving.wrappedValue else { return }
         saving.wrappedValue = true
         Task {
             let result = await save()

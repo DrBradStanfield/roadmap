@@ -17,9 +17,10 @@ const contract = JSON.parse(readFileSync(join(__dirname, 'bridge-contract.json')
 // Both-way additions that keep the bridge id (D14): never hashed.
 const optional = JSON.parse(readFileSync(join(__dirname, 'bridge-optional.json'), 'utf8')) as {
   doors: Record<string, { optionalArgs?: string[]; optionalReturns?: string }>;
+  optionalDoors: Record<string, { args: string[]; returns: string }>;
 };
 const optionalArgs = (name: string) => optional.doors[name]?.optionalArgs ?? [];
-const arity = (name: string) => contract.doors[name].args.length + optionalArgs(name).length;
+const arity = (name: string) => (optional.optionalDoors[name]?.args.length ?? contract.doors[name].args.length + optionalArgs(name).length);
 
 /** A door's parameter names, in order, read from entry.ts's signature. */
 function parameters(name: string): string[] {
@@ -33,6 +34,10 @@ function parameters(name: string): string[] {
 const NOW = '2026-10-21T08:00:00.000Z';
 const SAMPLE_ARGS: Record<string, unknown[]> = {
   screenJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'), NOW, 'phone', '{}'],
+  chatEditsJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'),
+    JSON.stringify([{ kind: 'field', field: 'ldlC', displayValue: 3.4, unitSystem: 'si', date: '2026-10-01' }]), NOW, 'phone', '2026-10-21', '{}'],
+  historyJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'), 'ldl', NOW, 'phone', '{}'],
+  remindersJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'), NOW, 'phone'],
 };
 /** A door's answer with its timing fields (`ms`) left out, which differ call to call. */
 const untimed = (text: string) => JSON.stringify(JSON.parse(text, (key, value) => (key === 'ms' ? undefined : value)));
@@ -46,16 +51,61 @@ function members(file: string, name: string): string[] {
 }
 
 describe('bridge contract (US-25 AC18)', () => {
-  it('every door the engine exports is in the contract, with its arity', () => {
+  it('every door the engine exports is in the contract or is an optional door, never both, with its arity', () => {
     const doors = Object.entries(entry).filter(([, v]) => typeof v === 'function');
-    expect(doors.map(([k]) => k).sort()).toEqual(Object.keys(contract.doors).sort());
+    const listed = [...Object.keys(contract.doors), ...Object.keys(optional.optionalDoors)];
+    expect(doors.map(([k]) => k).sort()).toEqual(listed.sort());
+    expect(new Set(listed).size, 'a door in both').toBe(listed.length);
     for (const [name, fn] of doors) expect((fn as (...a: unknown[]) => unknown).length, name).toBe(arity(name));
   });
 
+  // 2026-11-05 (orchestrator): an optional door keeps the bridge id. An old app never calls it; a
+  // new app reaches it only through optionalCall, whose nil for a missing door is the safety.
+  it('an optional door names its arguments in entry.ts, says what it answers, and is nowhere in the contract', () => {
+    for (const [name, door] of Object.entries(optional.optionalDoors)) {
+      expect(parameters(name), name).toEqual(door.args);
+      expect(door.returns, name).toBeTruthy();
+      expect(readFileSync(join(__dirname, 'bridge-contract.json'), 'utf8'), name).not.toContain(name);
+    }
+  });
+
+  // Append-only: a shipped app decodes each optional door's answer. A door or a field may be added
+  // here; none is ever renamed, retyped or dropped, and a door's arguments never change.
+  const FROZEN_OPTIONAL_DOORS: Record<string, { args: string[]; call: unknown[]; shape: unknown }> = {
+    labSearchJson: { args: ['text'], call: ['ferr'], shape: [{ name: 'string', key: 'string', kind: 'string', units: ['string'] }] },
+  };
+  /** Where `answer` drops or retypes what `frozen` holds: [] when it holds at least the frozen shape. */
+  function shapeFaults(frozen: unknown, answer: unknown, at = '$'): string[] {
+    if (typeof frozen === 'string') return typeof answer === frozen ? [] : [`${at}: ${typeof answer}, not ${frozen}`];
+    if (Array.isArray(frozen)) {
+      if (!Array.isArray(answer) || !answer.length) return [`${at}: no array to check`];
+      return answer.flatMap((item, i) => shapeFaults(frozen[0], item, `${at}[${i}]`));
+    }
+    if (typeof answer !== 'object' || answer === null) return [`${at}: not an object`];
+    return Object.entries(frozen as Record<string, unknown>).flatMap(([key, inner]) =>
+      key in answer ? shapeFaults(inner, (answer as Record<string, unknown>)[key], `${at}.${key}`) : [`${at}.${key}: missing`]);
+  }
+
+  it('every optional door is frozen, its arguments as they shipped and its answer holding the frozen shape', () => {
+    expect(Object.keys(optional.optionalDoors).sort()).toEqual(Object.keys(FROZEN_OPTIONAL_DOORS).sort());
+    for (const [name, frozen] of Object.entries(FROZEN_OPTIONAL_DOORS)) {
+      expect(optional.optionalDoors[name].args, name).toEqual(frozen.args);
+      const door = (entry as unknown as Record<string, (...a: unknown[]) => string>)[name];
+      expect(shapeFaults(frozen.shape, JSON.parse(door(...frozen.call))), name).toEqual([]);
+    }
+  });
+
+  it('the frozen-shape check catches a dropped or retyped field', () => {
+    const shape = [{ name: 'string', units: ['string'] }];
+    expect(shapeFaults(shape, [{ name: 'Ferritin', units: ['µg/L'], extra: 1 }])).toEqual([]);
+    expect(shapeFaults(shape, [{ units: ['µg/L'] }])).toEqual(['$[0].name: missing']);
+    expect(shapeFaults(shape, [{ name: 'Ferritin', units: [1] }])).toEqual(['$[0].units[0]: number, not string']);
+  });
+
   // US-61 / D14: an optional trailing argument or return field keeps the bridge id, so
-  // over-the-air engines still reach builds 3 and 4 (bridge 2d467ff50c66c42d).
+  // over-the-air engines keep reaching the builds that serve it.
   it('optional additions name only contract doors, add only arguments and returns, and never repeat a contract arg', () => {
-    expect(Object.keys(optional).sort()).toEqual(['about', 'doors']);
+    expect(Object.keys(optional).sort()).toEqual(['about', 'doors', 'optionalDoors']);
     for (const [name, door] of Object.entries(optional.doors)) {
       expect(contract.doors[name], name).toBeDefined();
       expect(Object.keys(door).every((k) => k === 'optionalArgs' || k === 'optionalReturns'), name).toBe(true);
@@ -85,14 +135,29 @@ describe('bridge contract (US-25 AC18)', () => {
     }
   });
 
-  // The id builds 3 and 4 carry. A real bridge change (anything an older app cannot do
-  // without) moves the id and updates this literal; bridge-optional.json is never a way
-  // around that, only for additions that work both ways (D3, D14).
-  it('the contract keeps the bridge id builds 3 and 4 carry (US-61 adds isUS and usProducts as optional)', () => {
+  // The id the app serves (EngineRelease.bridge). A real bridge change (anything an older
+  // app cannot do without) moves the id and updates this literal; bridge-optional.json is
+  // never a way around that, only for additions that work both ways (D3, D14). Moved
+  // 2026-11-01 (Brad: still in beta, no downloads): US-07 AC8's labEgfrOutdated plus
+  // US-61's optional isUS and usProducts; builds 3 and 4 no longer take OTA engines. Moved
+  // 2026-11-02: US-12 AC20's limits in the chat context; build 5 no longer takes OTA engines.
+  // Moved 2026-11-02 again: US-67's chatEditsJson door, a door an older app cannot serve.
+  // Moved again 2026-11-02 for US-72 (D10): the healthRecords edit kind is named in the
+  // contract, so an app that sends it never runs an older engine without the case.
+  // Moved 2026-11-03: the two merged (US-67's door and the healthRecords edit).
+  it('the contract hashes to exactly the bridge id the app serves (40fc97db4ca12547)', () => {
     const bytes = readFileSync(join(__dirname, 'bridge-contract.json'));
-    expect(createHash('sha256').update(bytes).digest('hex').slice(0, 16)).toBe('2d467ff50c66c42d');
+    expect(createHash('sha256').update(bytes).digest('hex').slice(0, 16)).toBe('40fc97db4ca12547');
     expect(contract.doors.screenJson.args).toEqual(['recordJson', 'nowIso', 'deviceId', 'unitsJson']);
     expect(optional.doors.screenJson.optionalArgs).toEqual(['isUS']);
+  });
+
+  // US-72 (D10): an engine without the healthRecords case would throw on it, so the
+  // edit kind and its answer are in the contract, not an optional addition.
+  it('names the healthRecords edit and its counts in applyEditJson and cloudEdit', () => {
+    expect(contract.doors.applyEditJson.returns).toContain("healthRecords {kind:'healthRecords', records:[{sourceId, resourceType, fhirVersion, json}]}");
+    expect(contract.doors.applyEditJson.returns).toContain('{added, corrected, withdrawn, alreadyInRecord, notRead}');
+    expect(contract.doors.cloudEdit.returns).toContain('healthRecords');
   });
 
   it('every value the engine exports is in the contract', () => {

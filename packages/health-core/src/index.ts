@@ -1,6 +1,7 @@
 // Types
 export type {
   HealthInputs,
+  SuggestionInputs,
   HealthResults,
   Suggestion,
   SuggestionReference,
@@ -55,14 +56,16 @@ export {
   POST_FOLLOWUP_INTERVALS,
   SCREENING_FOLLOWUP_INFO,
   SCREENING_MIN_AGE,
+  LUNG_PACK_YEARS,
   isScreeningEligible,
   // Supplement options
   SUPPLEMENT_OPTIONS,
-  FEATURED_SUPPLEMENTS,
   // Database encoding helpers
   SEX_DB,
   UNIT_SYSTEM_DB,
   encodeSex,
+  isSex,
+  SEXES,
   decodeSex,
   encodeUnitSystem,
   decodeUnitSystem,
@@ -89,10 +92,10 @@ export {
 } from './calculations';
 
 // Suggestions
-export { generateSuggestions, REDUCE_ALCOHOL_ID, LIPID_DIET_ADVICE, lipidMarkerFor, lipidTargetSentence, medicinesShown, weightMedicationTrigger, weightMedIntro } from './suggestions';
+export { generateSuggestions, REDUCE_ALCOHOL_ID, LIPID_MEDS_IN_STEPS, lipidMarkerFor, lipidTargetSentence, medicinesShown, weightMedicationTrigger, weightMedIntro } from './suggestions';
 export type { LipidMarker, WeightMedicationTrigger } from './suggestions';
 export { weightCascade, lipidCascade } from './medication-cascades';
-export { planSections, type PlanSection, type PlanCard, type PlanSectionKey } from './plan-sections';
+export { planSections, topicSections, TOPICS, type PlanSection, type PlanCard, type PlanSectionKey, type TopicCard, type TopicId, type TopicLayout, type TopicSection } from './plan-sections';
 
 // Validation
 export {
@@ -100,6 +103,8 @@ export {
   healthInputSchema,
   PRESSURE_ORDER,
   pressureInverted,
+  birthInFuture,
+  birthRefusedMessage,
   sanitizeInputs,
   excludedInputFields,
   measurementSchema,
@@ -108,6 +113,8 @@ export {
   getValidationErrors,
   convertValidationErrorsToUnits,
   validateInputValue,
+  identityFieldRange,
+  inputRangeFault,
   isBirthYearClearlyInvalid,
   type MetricTypeValue,
   type ValidatedHealthInputs,
@@ -157,9 +164,13 @@ export {
   type ApiProfile,
   type ApiMedication,
   medicationsToInputs,
+  withPsaMeasurement,
   type ApiScreening,
   screeningsToInputs,
   computeFormStage,
+  opensFullForm,
+  type FormStage,
+  type RecordHoldings,
 } from './mappings';
 
 // Reminders
@@ -189,6 +200,8 @@ export {
   HBA1C_THRESHOLDS,
   LDL_THRESHOLDS,
   HDL_THRESHOLDS,
+  HDL_GRID_BANDS,
+  CREATININE_GRID_BANDS,
   TRIGLYCERIDES_THRESHOLDS,
   TOTAL_CHOLESTEROL_THRESHOLDS,
   NON_HDL_THRESHOLDS,
@@ -200,6 +213,7 @@ export {
   LPA_THRESHOLDS,
   waistToHeightRatio,
   isWaistToHeightElevated,
+  WHTR_TARGET,
   elevatedWaistFromCm,
   bpTargetFor,
   formatTargetLine,
@@ -232,6 +246,9 @@ export {
   PROPOSE_MEDICATION_EDIT_TOOL,
   toolOnlyAck,
   parseProposedEdit,
+  chatMedicationChange,
+  unsavedProfile,
+  type ChatMedicationRow,
   type EditableField,
   type ProposedEdit,
   type ProposedFieldEdit,
@@ -246,8 +263,9 @@ export { STAT_CARD_EVIDENCE, getIbwEvidence, getProteinEvidence, getBmiEvidence 
 // Reference-range hints (blood-test matrix + legacy form labels)
 export type { RefHint, SexedRefHint } from './reference-hints';
 export { REFERENCE_HINTS, refLineFor } from './reference-hints';
-export { type Grading, type RowTarget, type RowTargetPlan, type RowSubject, TARGET_NEEDS_PROFILE, healthyWaistBelow, rowTarget } from './row-target';
-export { type CellUnit, isLpaUnit, recordLpaUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel, cellRange } from './cell-unit';
+export { type Grading, type RowTarget, type RowTargetPlan, type RowSubject, TARGET_NEEDS_HEIGHT, TARGET_NEEDS_SEX, healthyWaistBelow, rowTarget } from './row-target';
+export { type GradeStatus, type GradeContext, statusOf, bpStatus, valueStatus, pressureStatus, type PressureReading, gradeWords, savedStatus, limitUngraded } from './row-grade';
+export { type CellUnit, isLpaUnit, recordLpaUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel, cellRange, cellNumber, labRangeMessage, limitCellText, rangeMessage } from './cell-unit';
 
 // Sentry PII/PHI scrubbing
 export {
@@ -263,6 +281,7 @@ export {
 // Local-first storage spine (v2) — the RoadmapFile schema + merge/migrate logic.
 // Browser-coupled cloud adapters live in widget-src/src/storage/, not here.
 export {
+  CORE_BLOOD_UNITS,
   CURRENT_SCHEMA_VERSION,
   createEmptyFile,
   createMeasurement,
@@ -281,6 +300,7 @@ export {
   type SyncStamp,
   type HistoryChangeType,
 } from './roadmap-file';
+export { bloodTableReport, bloodTestRows, createCoreRow, isCoreRow, labRowSlot, toOldShape } from './blood-tests';
 export { fileProfileToApi, fileScreeningRows, screeningFieldName } from './file-inputs';
 export { mergeFiles, rowRootIds, dayOf, localDay, type MergeOptions } from './merge';
 export { buildErasedFile, type EraseInputs } from './erase';
@@ -299,6 +319,7 @@ export { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertS
 export { isTakingDrug } from './history-change';
 export { recordedTime, medicationAnnotations, medicationChanges, type ChartAnnotation, type MedicationChange } from './medication-annotations';
 export { migrateFile, SchemaTooNewError, RecordShapeError } from './migrate';
+export { isReadableRow, readableView, unreadableNote } from './readable-rows';
 
 // v2 reminder schedule (client-computed; the server is a dumb scheduler — §10)
 export {
@@ -340,6 +361,7 @@ export {
   isCalendarDay,
   isClinicalDay,
   latestActivePerMetric,
+  newestUsablePsa,
   latestFromHistory,
   HISTORY_CAP_PER_METRIC,
   type DatedMeasurement,
@@ -348,7 +370,7 @@ export {
 
 // The chat's plan context: what a client sends, and the sanitizing builder
 // both chats read it through (US-15 AC11)
-export { chatContextOf, buildChatContextJson, MINOR_CHAT_RULE, NO_PLAN_CHAT_RULE, type ChatContextPayload } from './chat-context';
+export { chatContextOf, buildChatContextJson, MINOR_CHAT_RULE, NO_PLAN_CHAT_RULE, NO_SEX_CHAT_RULE, LIMIT_CHAT_RULE, type ChatContextPayload } from './chat-context';
 
 // US-15 AC33: run the plan code on values stated in the chat; the one-round tool loop every chat shares
 export { chatToolsFor, withRoadmapRound, type ChatTurnMessage } from './run-roadmap';
@@ -372,6 +394,25 @@ export {
   type LabGroup,
   type LabGroupId,
 } from './lab-catalog';
+
+// US-21 lab tests beyond the core 8, grouped into series (the web's tables and rows, the iPhone's rows)
+export {
+  groupLabValues,
+  labValueLabel,
+  labUnitRefusalLine,
+  mixedUnitsNote,
+  formatLabValue,
+  savedLabText,
+  labSeriesRows,
+  type LabSeriesRow,
+  type LabRowsGroupId,
+  type LabRowsIcon,
+  type LabSeriesPoint,
+  type LabSeries,
+  type LabValueGroup,
+  type LabValueRow,
+} from './lab-series';
+export { trendWindow, recentTrend } from './recent-trend';
 
 // chat-history.json — chat conversations synced to the user's own cloud (Phase 6)
 export {
@@ -401,6 +442,8 @@ export {
   fetchOrFail,
   jsonBody,
   sleepUntilAborted,
+  timeoutDeadline,
+  catchUpAfterFailure,
   type StorageAdapter,
   type StorageBackendId,
   type DocumentAccess,
@@ -446,18 +489,27 @@ export {
 } from './drive-rest';
 
 // US-35: the slot rule and the bulk save the website and the connector share.
-export { bulkAppendValues, correctValue, moveBloodTest, placeMeasurement, planBloodTestMove, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type MeasurementRefusal, type MoveClash, type MoveKeep, type MovePlan, type MoveRejection, type MoveResult, type SlotState } from './record-edits';
-export { fileNameLine, inflateCapped, isImportableEntryName, zipMemberName, UNDATED_PREVIOUS, type RefusedLabValue } from './lab-extraction';
+export { addLabValue, type AddLabValueRequest, type AddLabValueResult, bulkAppendValues, correctValue, moveBloodTest, placeMeasurement, planBloodTestMove, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type MeasurementRefusal, type MoveClash, type MoveKeep, type MovePlan, type MoveRejection, type MoveResult, type SlotState } from './record-edits';
+export { fileNameLine, inflateCapped, isImportableEntryName, zipMemberName, unreadLines, uploadLimitSignal, LIMIT_TEST_WORDS, UNDATED_PREVIOUS, type RefusedLabValue, type UnreadLabValue } from './lab-extraction';
 export { IMPORT_LIMITS } from './import-hints';
 export {
   MEDICATION_TEXT, SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, SUPPLEMENT_TEXT, SUPPLEMENT_DOSE_UNITS,
   optionsShowing, escalationOptions, doseOptions, medicationForm, medicationWrites, screeningForm, screeningWrites,
-  screeningMonths, readScreening, followupName, followupDateLabel, anyScreeningEligible, dexaEligible, customSupplementAdd, customSupplementMatch,
+  screeningMonths, readScreening, followupName, followupDateLabel, anyScreeningEligible, dexaEligible, lungGroupShown, lungScreeningAsked, customSupplementAdd, customSupplementMatch,
   type FormOption, type FormField, type FormGroup, type FormSection, type MedicationBasis,
 } from './input-form';
 
 // US-07 AC7: the lab's printed eGFR, when it is the plan's.
-export { labEgfrOf, withLabEgfr, type LabEgfr } from './plan';
+export { egfrSeries, labEgfrFrom, labEgfrOf, whtrSeries, withLabEgfr, type EgfrPoint, type LabEgfr, type WhtrPoint } from './plan';
+// US-07 AC11: the one strip of refused inputs every plan caller shares.
+export { planInputsFrom } from './plan';
 
 // US-25 AC22: the plan's summary tiles, the web's Quick Stats and the phone's My plan tiles.
 export { statTiles, statTileText, type StatTile, type StatTileOptions, type StatTileStatus, type StatTone } from './stat-tiles';
+export {
+  LIMIT_NOT_GRADED, comparatorOf, comparatorSymbol, formatGradedOrLimit, formatValue, isComparator, isLimitField, limitLabelValue, limitRepresentative,
+  limitText, withComparator, type Comparator, type InputLimit, type InputLimits, type LimitField,
+} from './lab-limits';
+
+// US-72: lab results from Apple Health Records, read from their FHIR JSON.
+export { HEALTH_RECORDS_LOINC, importHealthRecords, type ClinicalRecordInput, type HealthRecordsCounts } from './health-records-import';

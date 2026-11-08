@@ -98,8 +98,14 @@ export class PhoneCloudAdapter implements StorageAdapter {
   }
   async disconnect(): Promise<void> {}
 
-  read(fileName: string, signal?: AbortSignal): Promise<ReadResult> {
-    return this.run((cloud) => cloud.read(fileName, signal));
+  /** The record as the newest read found it, the session's open read included:
+   *  what an open compares its moved record with (US-66 AC14). */
+  lastRecord: unknown = null;
+
+  async read(fileName: string, signal?: AbortSignal): Promise<ReadResult> {
+    const result = await this.run((cloud) => cloud.read(fileName, signal));
+    if (fileName === ROADMAP_FILE_NAME) this.lastRecord = result.body;
+    return result;
   }
 
   async write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
@@ -212,7 +218,7 @@ export class PhoneFileAdapter implements StorageAdapter {
   }
 }
 
-/** What went wrong, as one word Swift turns into plain words (SyncStatus.swift). */
+/** What went wrong, as one word Swift turns into plain words (SyncProblem.swift). */
 function failureKind(error: unknown): 'sign-in' | 'too-new' | 'storage-full' | 'unreachable' {
   if (error instanceof SignInError) return 'sign-in';
   if (error instanceof StorageError && error.status === 401) return 'sign-in';
@@ -224,8 +230,16 @@ function failureKind(error: unknown): 'sign-in' | 'too-new' | 'storage-full' | '
     if (/storagequotaexceeded/i.test(error.message)) return 'storage-full';
     return 'sign-in';
   }
+  if (dropboxFull(error)) return 'storage-full';
   if (error instanceof SchemaTooNewError) return 'too-new';
   return 'unreachable';
+}
+
+/** health-core's full Dropbox (dropbox-rest.ts, US-09 AC35/AC38): its only
+ *  StorageError with these words, which the save keeps when it rewraps the
+ *  error after an earlier write may have landed. */
+function dropboxFull(error: unknown): boolean {
+  return error instanceof StorageError && error.message === 'Dropbox is full';
 }
 
 /** A cloud failure as the JSON Swift reads: its kind, and health-core's words for it. */

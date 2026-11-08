@@ -110,6 +110,22 @@ describe('importDeviceSamples: one value a day, the latest reading', () => {
     });
   });
 
+  // c71d283c: a legacy row with no status holds its day, so an import never lands a second active row.
+  it('a legacy row with no status holds its day: a typed one is kept, its own is replaced as a correction', () => {
+    const strip = (file: RoadmapFile): RoadmapFile => ({ ...file, measurements: file.measurements.map(({ status: _s, ...row }) => row as RoadmapFile['measurements'][number]) });
+    const typed = appendMeasurement(empty(), { metricType: 'weight', value: 79, recordedAt: '2026-10-21', now: NOW });
+    if (!typed.ok) throw new Error('setup');
+    const kept = run(strip(typed.file), [sample({ externalId: 'hk-pm', value: 81, measuredAt: '2026-10-21T20:00:00+13:00' })], LATER);
+    expect(kept.skipped.held).toBe(1);
+    expect(kept.file.measurements).toHaveLength(1);
+    const morning = strip(run(empty(), [sample({ externalId: 'hk-am', value: 80, measuredAt: '2026-10-21T07:00:00+13:00' })]).file);
+    const { file, replaced } = run(morning, [sample({ externalId: 'hk-pm', value: 81, measuredAt: '2026-10-21T20:00:00+13:00' })], LATER);
+    expect(replaced).toBe(1);
+    expect(file.measurements.map((row) => [row.externalId, row.status, row.correctsId ?? null])).toEqual([
+      ['hk-am', 'entered-in-error', null], ['hk-pm', 'active', morning.measurements[0].id],
+    ]);
+  });
+
   it('skips a reading measured earlier than the one holding the day, whatever order they arrive in', () => {
     const am = sample({ externalId: 'hk-am', value: 80, measuredAt: '2026-10-21T07:00:00+13:00' });
     const pm = sample({ externalId: 'hk-pm', value: 81, measuredAt: '2026-10-21T20:00:00+13:00' });
@@ -151,6 +167,15 @@ describe('importDeviceSamples: a reading\'s own day and time', () => {
   it('keys the slot on the day where the reading was taken', () => {
     const { file } = run(empty(), [sample({ externalId: 'hk-1', measuredAt: '2026-10-20T22:00:00-07:00' })]);
     expect(file.measurements[0].recordedAt.slice(0, 10)).toBe('2026-10-20');
+  });
+});
+
+describe('importDeviceSamples: vitals only (US-66, one blood-test table)', () => {
+  it('refuses a blood test sample: measurements hold vitals, and a blood test lives in labValues', () => {
+    const result = run(empty(), [sample({ externalId: 'hk-ldl', metricType: 'ldl', value: 2.5 })]);
+    expect(result.file.measurements).toEqual([]);
+    expect(result.file.labValues).toEqual([]);
+    expect(result.skipped.invalid).toBe(1);
   });
 });
 

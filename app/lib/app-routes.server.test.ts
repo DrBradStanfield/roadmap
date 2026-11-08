@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   audit: vi.fn(),
   getChatCompletion: vi.fn(),
   extract: vi.fn(),
+  event: vi.fn(),
   rootPem: '',
 }));
 vi.mock('../shopify.server', () => ({ authenticate: { public: { appProxy: vi.fn() } } }));
@@ -37,6 +38,10 @@ vi.mock('./chat-router.server', async (original) => ({
   routeQuery: vi.fn(async () => ({ handles: ['apob'], latencyMs: 0, cacheHit: false, usage: { inputTokens: 0, cacheReadTokens: 0 } })),
   reportRouterFailure: vi.fn(),
 }));
+vi.mock('./product-events.server', async (original) => ({
+  ...await original<typeof import('./product-events.server')>(),
+  recordServerEvent: mocks.event,
+}));
 vi.mock('./chat-classifier.server', () => ({ classifyMessage: async () => ({ routerSkipped: false, classification: 'ROUTE', latencyMs: 0 }), shouldFireRouter: () => true }));
 vi.mock('./anthropic.server', async (original) => ({
   ...await original<typeof import('./anthropic.server')>(),
@@ -57,6 +62,8 @@ import { machineFiles } from './rate-limiter';
 const APP_ID = 'TEAM123456.com.drstanfield.healthroadmap';
 const device = fakeDevice(APP_ID);
 mocks.rootPem = device.rootPem;
+/** A second phone behind the same IP (its row is put in the store directly). */
+const other = fakeDevice(APP_ID);
 const BASE = 'https://health-tool-edu.fly.dev';
 const saved = { ...process.env };
 
@@ -99,13 +106,14 @@ async function registered() {
   return res;
 }
 
-function signed(path: string, body: object, o: { counter?: number; tamper?: boolean; ip?: string } = {}) {
+function signed(path: string, body: object, o: { counter?: number; tamper?: boolean; ip?: string; by?: typeof device; keyId?: string } = {}) {
   const raw = Buffer.from(JSON.stringify(body));
   const c = o.counter ?? ++counter;
-  const assertion = device.assert(requestClientData('POST', path, raw), c, APP_ID);
+  const by = o.by ?? device;
+  const assertion = by.assert(requestClientData('POST', path, raw), c, APP_ID);
   return new Request(`${BASE}${path}`, {
     method: 'POST',
-    headers: { 'x-app-attest-key': device.keyId, 'x-app-attest-assertion': assertion, 'fly-client-ip': o.ip ?? '203.0.113.9' },
+    headers: { 'x-app-attest-key': o.keyId ?? by.keyId, 'x-app-attest-assertion': assertion, 'fly-client-ip': o.ip ?? '203.0.113.9' },
     body: o.tamper ? Buffer.from(JSON.stringify({ ...body, message: 'other' })) : raw,
   });
 }
@@ -120,7 +128,7 @@ beforeEach(async () => {
   Object.assign(process.env, { APP_ATTEST_TEAM_ID: 'TEAM123456', SHOPIFY_API_SECRET: 'test-secret' });
   delete process.env.APP_ATTEST_DEV_BYPASS;
   delete process.env.CHAT_SURFACE;
-  for (const c of [appLimits.failures, appLimits.register, appLimits.challenges, appLimits.ip.chat, appLimits.ip.lab, appLimits.machine.chat, appLimits.machine.lab, appLimits.dev.chat, appLimits.dev.lab, machineFiles]) c.reset();
+  for (const c of [appLimits.failures, appLimits.keyFailures, appLimits.register, appLimits.registered, appLimits.challenges, appLimits.ip.chat, appLimits.ip.lab, appLimits.machine.chat, appLimits.machine.lab, appLimits.dev.chat, appLimits.dev.lab, machineFiles]) c.reset();
   store = memoryStore();
   counter = 0;
   mocks.getChatCompletion.mockReset().mockImplementation(async (_s: unknown, _m: unknown, _edits: boolean, onEvent?: (e: unknown) => void) => {
@@ -136,6 +144,7 @@ beforeEach(async () => {
   mocks.from.mockReset();
   mocks.guest.mockReset();
   mocks.audit.mockReset();
+  mocks.event.mockReset();
   vi.spyOn(console, 'log').mockImplementation(() => {});
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
@@ -237,9 +246,9 @@ describe('US-52 AC1/AC2: the gate', () => {
     expect(mocks.getChatCompletion).toHaveBeenCalledTimes(1);
   });
 
-  it('stops reading after an IP\'s refused requests run out', async () => {
+  it('stops reading after an IP\'s unverified refusals reach the 200 backstop (US-52 AC4a, AC4c)', async () => {
     await registered();
-    for (let i = 0; i < 50; i++) await appChat(signed('/api/app/v1/chat', chatBody, { tamper: true }), store);
+    for (let i = 0; i < 200; i++) expect((await appChat(signed('/api/app/v1/chat', chatBody, { tamper: true }), store)).status).toBe(401);
     const req = signed('/api/app/v1/chat', chatBody);
     const res = await appChat(req, store);
     expect(res.status).toBe(429);
@@ -247,29 +256,29 @@ describe('US-52 AC1/AC2: the gate', () => {
     expect(mocks.getChatCompletion).not.toHaveBeenCalled();
   });
 
-  it('reserves the failure budget before reading: 200 parallel forged requests read at most 50 bodies (US-52 AC4a)', async () => {
+  it('reserves the failure budget before reading: 400 parallel forged requests read at most 200 bodies (US-52 AC4a)', async () => {
     await registered();
-    const reqs = Array.from({ length: 200 }, () => signed('/api/app/v1/lab-import', chatBody, { tamper: true }));
+    const reqs = Array.from({ length: 400 }, () => signed('/api/app/v1/lab-import', chatBody, { tamper: true }));
     const res = await Promise.all(reqs.map((r) => appLabImport(r, store)));
-    expect(reqs.filter((r) => r.bodyUsed).length).toBe(50);
-    expect(res.filter((r) => r.status === 401).length).toBe(50);
-    expect(res.filter((r) => r.status === 429).length).toBe(150);
+    expect(reqs.filter((r) => r.bodyUsed).length).toBe(200);
+    expect(res.filter((r) => r.status === 401).length).toBe(200);
+    expect(res.filter((r) => r.status === 429).length).toBe(200);
     expect(mocks.extract).not.toHaveBeenCalled();
   });
 
-  it('reserves the failure budget before the key read: 200 parallel unknown keys make at most 50 reads (US-52 AC4a)', async () => {
+  it('reserves the failure budget before the key read: 400 parallel unknown keys make at most 200 reads (US-52 AC4a)', async () => {
     let reads = 0;
     const get = store.get.bind(store);
     store.get = async (keyId: string) => { reads++; return get(keyId); };
-    const res = await Promise.all(Array.from({ length: 200 }, () => appChat(signed('/api/app/v1/chat', chatBody), store)));
-    expect(reads).toBe(50);
-    expect(res.filter((r) => r.status === 429).length).toBe(150);
+    const res = await Promise.all(Array.from({ length: 400 }, () => appChat(signed('/api/app/v1/chat', chatBody), store)));
+    expect(reads).toBe(200);
+    expect(res.filter((r) => r.status === 429).length).toBe(200);
   });
 
   it('hands the reservation back for a request that passes, so good requests never spend the budget (US-52 AC4a)', async () => {
     await registered();
     for (let i = 0; i < 60; i++) expect((await appChat(signed('/api/app/v1/chat', chatBody), store)).status).toBe(200);
-    expect(appLimits.failures.remaining(ipBucket('203.0.113.9'))).toBe(50);
+    expect(appLimits.failures.remaining(ipBucket('203.0.113.9'))).toBe(200);
   });
 
   it('a refund from a request pending across the window never reopens the next window (US-52 AC4a, Codex round 2 C1)', async () => {
@@ -284,7 +293,7 @@ describe('US-52 AC1/AC2: the gate', () => {
     const now = vi.spyOn(Date, 'now').mockReturnValue(start + 24 * 60 * 60_000 + 60_000);
     try {
       store.get = get;
-      for (let i = 0; i < 50; i++) expect((await appChat(signed('/api/app/v1/chat', chatBody, { tamper: true }), store)).status).toBe(401);
+      for (let i = 0; i < 200; i++) expect((await appChat(signed('/api/app/v1/chat', chatBody, { tamper: true }), store)).status).toBe(401);
       release();
       expect((await pending).status).toBe(200);
       expect((await appChat(signed('/api/app/v1/chat', chatBody, { tamper: true }), store)).status).toBe(429);
@@ -296,7 +305,8 @@ describe('US-52 AC1/AC2: the gate', () => {
   it('charges an oversized body to the failure budget, still a 413 (Codex re-check R2)', async () => {
     await registered();
     const big = { message: 'x'.repeat(2 * 1024 * 1024 + 10) };
-    for (let i = 0; i < 50; i++) expect((await appChat(signed('/api/app/v1/chat', big), store)).status).toBe(413);
+    appLimits.failures.take(ipBucket('203.0.113.9'), 199);
+    expect((await appChat(signed('/api/app/v1/chat', big), store)).status).toBe(413);
     let reads = 0;
     const get = store.get.bind(store);
     store.get = async (keyId: string) => { reads++; return get(keyId); };
@@ -316,7 +326,7 @@ describe('US-52 AC1/AC2: the gate', () => {
       body: new ReadableStream({ pull(c) { c.error(new Error('connection reset')); } }),
     } as RequestInit);
     for (let i = 0; i < 60; i++) expect((await appChat(broken(), store)).status).toBe(400);
-    expect(appLimits.failures.remaining(ipBucket('203.0.113.9'))).toBe(50);
+    expect(appLimits.failures.remaining(ipBucket('203.0.113.9'))).toBe(200);
   });
 
   it('answers 503, never a pass, with no team id, a store outage or on the brand surface', async () => {
@@ -329,7 +339,7 @@ describe('US-52 AC1/AC2: the gate', () => {
     expect(down.status).toBe(503);
     expect((await down.json()).reason).toBe('unavailable');
     // An outage is not abuse: its reservation is handed back (US-52 AC4a).
-    expect(appLimits.failures.remaining(ipBucket('203.0.113.9'))).toBe(50);
+    expect(appLimits.failures.remaining(ipBucket('203.0.113.9'))).toBe(200);
     store.fail = false;
     process.env.CHAT_SURFACE = 'brand';
     expect((await appChat(signed('/api/app/v1/chat', chatBody), store)).status).toBe(503);
@@ -367,7 +377,7 @@ describe('US-52 AC4: limits', () => {
     expect(over.status).toBe(429);
     expect(mocks.getChatCompletion).toHaveBeenCalledTimes(60);
     // A key at its cap is not abuse: the failure budget is untouched (US-52 AC4a).
-    expect(appLimits.failures.remaining(ipBucket('203.0.113.9'))).toBe(50);
+    expect(appLimits.failures.remaining(ipBucket('203.0.113.9'))).toBe(200);
   });
 
   it('charges a development key the flag no longer allows to the failure budget (R10, US-52 AC4a)', async () => {
@@ -375,7 +385,7 @@ describe('US-52 AC4: limits', () => {
     for (const row of store.rows.values()) row.environment = 'development';
     const res = await appChat(signed('/api/app/v1/chat', chatBody), store);
     expect(res.status).toBe(401);
-    expect(appLimits.failures.remaining(ipBucket('203.0.113.9'))).toBe(49);
+    expect(appLimits.failures.remaining(ipBucket('203.0.113.9'))).toBe(199);
   });
 
   it('a request the IP or machine limit refuses spends no key use, but its counter is spent (US-52 AC4b)', async () => {
@@ -422,6 +432,125 @@ describe('US-52 AC4: limits', () => {
   });
 });
 
+describe('US-52 AC4c: a verified key\'s failures are its own', () => {
+  const IP = '203.0.113.9';
+  const addOther = () => store.rows.set(other.keyId, {
+    publicKey: crypto.createPublicKey(other.privateKey).export({ type: 'spki', format: 'pem' }).toString(),
+    environment: 'production', count: 0, uses: { chat: 0, lab: 0 },
+  });
+
+  it('a key\'s own failures lock only that key; another key on the same IP still works (US-52 AC4c)', async () => {
+    await registered();
+    addOther();
+    expect((await appChat(signed('/api/app/v1/chat', { ...chatBody, stream: false }, { counter: 5 }), store)).status).toBe(200);
+    for (let i = 0; i < 20; i++) expect((await (await appChat(signed('/api/app/v1/chat', chatBody, { counter: 5 }), store)).json()).reason).toBe('stale_counter');
+    // Its 20 failures handed the IP's units back.
+    expect(appLimits.failures.remaining(ipBucket(IP))).toBe(200);
+    // Locked, its next request is the over-limit 429 with no key read and no body read, and it
+    // hands the IP's unit back, so a retry loop cannot burn the neighbours' backstop. A forged request naming it gets the same.
+    let reads = 0;
+    const get = store.get.bind(store);
+    store.get = async (keyId: string) => { reads++; return get(keyId); };
+    const lockedReq = signed('/api/app/v1/chat', chatBody, { counter: 6 });
+    const locked = await appChat(lockedReq, store);
+    expect(locked.status).toBe(429);
+    expect((await locked.json()).reason).toBe('limit');
+    const forgedReq = signed('/api/app/v1/chat', chatBody, { by: other, keyId: device.keyId });
+    expect((await appChat(forgedReq, store)).status).toBe(429);
+    expect(reads).toBe(0);
+    expect(lockedReq.bodyUsed).toBe(false);
+    expect(forgedReq.bodyUsed).toBe(false);
+    expect(appLimits.failures.remaining(ipBucket(IP))).toBe(200);
+    // The neighbour behind the same IP is untouched.
+    expect((await appChat(signed('/api/app/v1/chat', { ...chatBody, stream: false }, { counter: 1, by: other }), store)).status).toBe(200);
+    // The locked key's refusal reserved no shared unit: only the two passes spent one.
+    expect(appLimits.ip.chat.remaining(ipBucket(IP))).toBe(198);
+  });
+
+  it('forged requests naming a victim\'s keyId never touch the victim\'s key budget (US-52 AC4c)', async () => {
+    await registered();
+    // Signed by another key, sent under the victim's key id: the signature fails first.
+    for (let i = 0; i < 30; i++) {
+      const res = await appChat(signed('/api/app/v1/chat', chatBody, { by: other, keyId: device.keyId }), store);
+      expect((await res.json()).reason).toBe('bad_signature');
+    }
+    expect(appLimits.keyFailures.remaining(device.keyId)).toBe(20);
+    expect(appLimits.failures.remaining(ipBucket(IP))).toBe(170);
+    expect((await appChat(signed('/api/app/v1/chat', { ...chatBody, stream: false }, { ip: '198.51.100.40' }), store)).status).toBe(200);
+  });
+});
+
+describe('US-52 AC4c: the key\'s unit and a burst', () => {
+  const IP = '203.0.113.9';
+
+  it('hands the key\'s unit back on a limit and on a store outage at the key step (US-52 AC4c)', async () => {
+    await registered();
+    store.rows.get(device.keyId)!.uses.chat = 60;
+    for (let i = 0; i < 25; i++) expect((await appChat(signed('/api/app/v1/chat', chatBody), store)).status).toBe(429);
+    expect(appLimits.keyFailures.remaining(device.keyId)).toBe(20);
+    store.use = async () => { throw new Error('down'); };
+    for (let i = 0; i < 25; i++) expect((await appChat(signed('/api/app/v1/chat', chatBody), store)).status).toBe(503);
+    expect(appLimits.keyFailures.remaining(device.keyId)).toBe(20);
+  });
+
+  it('a parallel burst of one key\'s stale replays charges exactly 20; the rest get 429 and hold no shared or IP unit (US-52 AC4c)', async () => {
+    await registered();
+    expect((await appChat(signed('/api/app/v1/chat', { ...chatBody, stream: false }, { counter: 5 }), store)).status).toBe(200);
+    const res = await Promise.all(Array.from({ length: 50 }, () => appChat(signed('/api/app/v1/chat', chatBody, { counter: 5 }), store)));
+    const reasons = await Promise.all(res.map(async (r) => `${r.status} ${(await r.json()).reason}`));
+    expect(reasons.filter((r) => r === '401 stale_counter').length).toBe(20);
+    expect(reasons.filter((r) => r === '429 limit').length).toBe(30);
+    expect(appLimits.keyFailures.remaining(device.keyId)).toBe(0);
+    expect(appLimits.failures.remaining(ipBucket(IP))).toBe(200);
+    // Only the one good turn holds a shared unit.
+    expect(appLimits.ip.chat.remaining(ipBucket(IP))).toBe(199);
+    expect(appLimits.machine.chat.remaining('machine')).toBe(appLimits.machine.chat.remaining('nobody') - 1);
+  });
+});
+
+describe('US-52 AC1b: only failing registrations spend the IP\'s attempts', () => {
+  const IP = '198.51.100.50';
+  const fresh = async () => (await appChallenge(new Request(`${BASE}/api/app/v1/attest/challenge`, { method: 'POST' })).json()).challenge as string;
+  const good = async () => {
+    const challenge = await fresh();
+    return register(new Request(`${BASE}/api/app/v1/attest/register`, {
+      method: 'POST', headers: { 'fly-client-ip': IP },
+      body: JSON.stringify({ keyId: device.keyId, attestation: device.attest(challenge).toString('base64'), challenge }),
+    }), store);
+  };
+  const bad = () => register(new Request(`${BASE}/api/app/v1/attest/register`, { method: 'POST', headers: { 'fly-client-ip': IP }, body: '{}' }), store);
+
+  it('successful registrations from one IP pass the old 10 (US-52 AC1b)', async () => {
+    for (let i = 0; i < 12; i++) {
+      store.rows.clear();
+      expect((await good()).status).toBe(200);
+    }
+    expect(appLimits.register.remaining(ipBucket(IP))).toBe(10);
+  });
+
+  it('failing attempts still stop at 10, successes in between spending none (US-52 AC1b)', async () => {
+    for (let i = 0; i < 3; i++) { store.rows.clear(); expect((await good()).status).toBe(200); }
+    for (let i = 0; i < 10; i++) expect((await bad()).status).toBe(401);
+    expect((await bad()).status).toBe(429);
+    store.rows.clear();
+    expect((await good()).status).toBe(429);
+  });
+
+  it('a store outage spends no registration attempt (US-52 AC1b)', async () => {
+    store.fail = true;
+    for (let i = 0; i < 12; i++) expect((await good()).status).toBe(503);
+    expect(appLimits.register.remaining(ipBucket(IP))).toBe(10);
+    expect(appLimits.registered.remaining(ipBucket(IP))).toBe(50);
+  });
+
+  it('a success past the success cap is refused and stores nothing (US-52 AC1b)', async () => {
+    appLimits.registered.take(ipBucket(IP), 50);
+    expect((await good()).status).toBe(429);
+    expect(store.rows.size).toBe(0);
+    expect(appLimits.register.remaining(ipBucket(IP))).toBe(9);
+  });
+});
+
 describe('US-52 AC5: the chat turn', () => {
   it('runs the widget pipeline and streams, storing nothing', async () => {
     await registered();
@@ -440,6 +569,42 @@ describe('US-52 AC5: the chat turn', () => {
     expect(mocks.guest).not.toHaveBeenCalled();
     expect(mocks.from).not.toHaveBeenCalled();
     expect(mocks.audit).not.toHaveBeenCalled();
+  });
+});
+
+describe('US-67 AC1: the app asks for the form tools with edits: 1', () => {
+  const proposal = { kind: 'field', field: 'ldlC', displayValue: 3.4, unitSystem: 'si', date: null };
+
+  it('US-67 AC1: edits 1 gets the form tools, the profile tool, the app words and its own inputs, storing nothing', async () => {
+    await registered();
+    mocks.getChatCompletion.mockImplementation(async () => ({
+      content: '', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0 }, isFallback: false,
+      stopReason: 'end_turn', proposedEdits: [proposal], roadmapRun: { applied: 1, rejected: 0 },
+    }));
+    const out = await lines(await appChat(signed('/api/app/v1/chat', { ...chatBody, edits: 1 }), store));
+    expect(out.at(-1)).toMatchObject({ type: 'done', success: true, proposedEdits: [proposal] });
+    const [, , canApplyEdits, , opts] = mocks.getChatCompletion.mock.calls[0];
+    expect(canApplyEdits).toBe(true);
+    expect(opts).toEqual({ subscriptionTool: false, guestInputs: chatBody.guestInputs, profileEdits: true, app: true });
+    // D9: no guest session, no row, no audit, and no run_roadmap usage row (product_events).
+    expect(mocks.guest).not.toHaveBeenCalled();
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.audit).not.toHaveBeenCalled();
+    expect(mocks.event).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['no edits', {}],
+    ['edits true', { edits: true }],
+    ['edits "1"', { edits: '1' }],
+    ['edits 2', { edits: 2 }],
+    ['the widget\'s flags', { canApplyEdits: true, canApplyProfileEdits: true }],
+  ])('US-67 AC1: an app with %s gets no form tools', async (_name, flags) => {
+    await registered();
+    await lines(await appChat(signed('/api/app/v1/chat', { ...chatBody, ...flags }), store));
+    const [, , canApplyEdits, , opts] = mocks.getChatCompletion.mock.calls[0];
+    expect(canApplyEdits).toBe(false);
+    expect(opts).toBeUndefined();
   });
 });
 
@@ -469,6 +634,72 @@ describe('US-52 AC7: lab import', () => {
     machineFiles.take('machine', machineFiles.remaining('machine'));
     expect((await appLabImport(signed('/api/app/v1/lab-import', body), store)).status).toBe(429);
     expect(mocks.extract).not.toHaveBeenCalled();
+  });
+});
+
+describe('US-52 AC4d: the lab upload\'s limits, all or nothing', () => {
+  const body = { pages: [{ type: 'text', content: 'LDL 3.1 mmol/L' }], unitSystem: 'si', ownDates: true, refusedRows: true };
+  const IP = ipBucket('203.0.113.9');
+  const counts = () => ({
+    keyUses: store.rows.get(device.keyId)!.uses.lab,
+    ip: appLimits.ip.lab.remaining(IP),
+    machine: appLimits.machine.lab.remaining('machine'),
+    files: machineFiles.remaining('machine'),
+    failures: appLimits.failures.remaining(IP),
+    keyFailures: appLimits.keyFailures.remaining(device.keyId),
+  });
+
+  it('a file-cap refusal leaves every other counter where it was; the counter still advances (US-52 AC4d)', async () => {
+    await registered();
+    machineFiles.take('machine', machineFiles.remaining('machine'));
+    const before = counts();
+    const res = await appLabImport(signed('/api/app/v1/lab-import', body, { counter: 5 }), store);
+    expect(res.status).toBe(429);
+    expect((await res.json()).reason).toBe('limit');
+    expect(counts()).toEqual(before);
+    expect(store.rows.get(device.keyId)!.count).toBe(5);
+    expect(mocks.extract).not.toHaveBeenCalled();
+  });
+
+  it('a success charges each counter exactly once (US-52 AC4d)', async () => {
+    await registered();
+    const before = counts();
+    expect((await appLabImport(signed('/api/app/v1/lab-import', body), store)).status).toBe(200);
+    expect(counts()).toEqual({
+      ...before,
+      keyUses: before.keyUses + 1, ip: before.ip - 1, machine: before.machine - 1, files: before.files - 1,
+    });
+    expect(mocks.extract).toHaveBeenCalledTimes(1);
+  });
+
+  it('a request the key refuses spends no file unit (US-52 AC4d)', async () => {
+    await registered();
+    store.rows.get(device.keyId)!.uses.lab = 30;
+    const before = counts();
+    expect((await appLabImport(signed('/api/app/v1/lab-import', body), store)).status).toBe(429);
+    expect(counts()).toEqual(before);
+  });
+
+  it('a store outage and a stale counter hand the file unit back (US-52 AC4d)', async () => {
+    await registered();
+    const files = machineFiles.remaining('machine');
+    const use = store.use;
+    store.use = async () => { throw new Error('down'); };
+    expect((await appLabImport(signed('/api/app/v1/lab-import', body, { counter: 5 }), store)).status).toBe(503);
+    expect(machineFiles.remaining('machine')).toBe(files);
+    store.use = use;
+    store.rows.get(device.keyId)!.count = 9;
+    const stale = await appLabImport(signed('/api/app/v1/lab-import', body, { counter: 9 }), store);
+    expect((await stale.json()).reason).toBe('stale_counter');
+    expect(machineFiles.remaining('machine')).toBe(files);
+    expect(mocks.extract).not.toHaveBeenCalled();
+  });
+
+  it('a chat success spends no file unit (US-52 AC4d)', async () => {
+    await registered();
+    const files = machineFiles.remaining('machine');
+    expect((await appChat(signed('/api/app/v1/chat', { ...chatBody, stream: false }), store)).status).toBe(200);
+    expect(machineFiles.remaining('machine')).toBe(files);
   });
 });
 

@@ -274,8 +274,9 @@ describe('US-21 AC14 — normalizeLabUnit folds gm/dL, Unit or Units, and cmm', 
 
   it('US-21 AC14 — folds each spelling, any case, as a whole token', () => {
     expect(normalizeLabUnit('gm/dL')).toBe('g/dL');
-    expect(normalizeLabUnit('gm/dl')).toBe('g/dl');
-    expect(normalizeLabUnit('GM/DL')).toBe('g/DL');
+    // The litre's case folds too (amended 2026-11-04): a decilitre is dL however it is printed.
+    expect(normalizeLabUnit('gm/dl')).toBe('g/dL');
+    expect(normalizeLabUnit('GM/DL')).toBe('g/dL');
     expect(normalizeLabUnit('Gm/dL')).toBe('g/dL');
     expect(normalizeLabUnit('Units/L')).toBe('U/L');
     expect(normalizeLabUnit('units/l')).toBe('U/L');
@@ -1163,9 +1164,8 @@ describe('US-21 AC19/AC20 — review round: osmolality and reverse T3 spellings,
   });
 
   // What a printed BUN in mg/dL does today, by the name it arrives under. The
-  // assistant routes store the printed name; the website's extractor names a
-  // urea row `urea` (the prompt is unchanged until the #166 benchmark), so a
-  // website BUN in mg/dL is still refused there.
+  // assistant routes store the printed name, and since US-07 AC10 the website
+  // files by it too; a row named only `urea` is still refused in mg/dL.
   it.each([
     ['BUN', 5.355], ['Urea Nitrogen', 5.355], ['Blood Urea Nitrogen (BUN)', 5.355], ['blood_urea_nitrogen', 5.355],
     ['Urea (BUN)', null], ['urea', null],
@@ -1243,5 +1243,50 @@ describe('US-21 AC21 — a per-test ceiling refuses a mislabelled prefix', () =>
     expect(message).toContain('the printed unit is probably wrong (nmol/L vs pmol/L)');
     expect(message).toContain('do not re-send it in another unit on your own');
     expect(message).not.toContain('312');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US-21 AC24 (Brad 2026-11-04): mU/L and µU/mL are mIU/L; mU/mL is mIU/mL, which is IU/L.
+// TSH refused µU/mL, prolactin refused both, and LH, FSH and hCG refused mU/mL. Insulin
+// already took them all. Factor 1 each: a spelling, never a conversion.
+// ---------------------------------------------------------------------------
+describe('US-21 AC24 — the short "U" spellings of mIU/L and mIU/mL', () => {
+  const entryOf = (name: string) => resolveLabCatalogEntry(name)!;
+
+  it.each([
+    ['tsh', 'µU/mL', 'mIU/L'], ['tsh', 'uU/mL', 'mIU/L'], ['tsh', 'μU/mL', 'mIU/L'], ['tsh', 'mU/L', 'mIU/L'],
+    ['prolactin', 'mU/L', 'mIU/L'], ['prolactin', 'µU/mL', 'mIU/L'], ['prolactin', 'uU/ml', 'mIU/L'],
+    ['lh', 'mU/mL', 'IU/L'], ['fsh', 'mU/mL', 'IU/L'], ['hcg', 'mU/mL', 'IU/L'],
+  ])('%s in %s is stored unchanged in %s', (key, unit, canonical) => {
+    expect(canonicalLabValue(entryOf(key), 2.5, unit)).toEqual({ value: 2.5, unit: canonical, factor: 1 });
+    expect(displayLabUnit(unit, entryOf(key))).toBe(canonical);
+  });
+
+  it('prolactin in ng/mL stays refused (assay-dependent)', () => {
+    expect(canonicalLabValue(entryOf('prolactin'), 10, 'ng/mL')).toBeNull();
+  });
+});
+
+// US-21 AC14 (amended 2026-11-04, Brad): dL, mL and µL fold to one case, so an uncatalogued test
+// reported in mg/dL and mg/dl reads as one unit. Only the litre token folds: G/L stays giga.
+describe('US-21 AC14 — normalizeLabUnit folds the case of dL, mL and µL', () => {
+  it('folds each volume token, any case, as a whole token', () => {
+    expect(normalizeLabUnit('mg/dl')).toBe('mg/dL');
+    expect(normalizeLabUnit('mg/DL')).toBe('mg/dL');
+    expect(normalizeLabUnit('pg/ML')).toBe('pg/mL');
+    expect(normalizeLabUnit('ng/ml')).toBe('ng/mL');
+    expect(normalizeLabUnit('ml/min/1.73m2')).toBe('mL/min/1.73m²');
+    expect(normalizeLabUnit('µl')).toBe('µL');
+  });
+
+  it('leaves G/L, g/L and other units as they were', () => {
+    expect(normalizeLabUnit('G/L')).toBe('G/L');
+    expect(normalizeLabUnit('g/L')).toBe('g/L');
+    expect(normalizeLabUnit('mmol/mol')).toBe('mmol/mol');
+    expect(normalizeLabUnit('dlx')).toBe('dlx');
+    // Greek capital Mu (U+039C) is not a micro sign: case-insensitive matching must not fold it.
+    expect(normalizeLabUnit('\u039CL')).toBe('\u039CL');
+    expect(normalizeLabUnit('mg/\u039Cl')).toBe('mg/\u039Cl');
   });
 });

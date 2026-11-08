@@ -25,6 +25,8 @@ let audits: Array<Record<string, any>>;
 let lookupError: boolean;
 let competingInsert: boolean;
 let auditInsertFails: boolean;
+let upsertFails: Record<string, unknown> | null;
+let auditError: Record<string, unknown>;
 let recordPaid: typeof import('./supabase.server').recordUnprovenPaidOrder;
 let counter = 0;
 let mapUser: typeof import('./supabase.server').getOrCreateSupabaseUser;
@@ -32,7 +34,7 @@ let webhookUser: typeof import('./supabase.server').getUserIdByCustomerId;
 const addAuth = (id: string, customer: string | null, extra: Partial<AuthUser> = {}) =>
   authUsers.set(id, { id, email, app_metadata: customer ? { provider: 'email', shopify_customer_id: customer } : { provider: 'email' }, ...extra });
 beforeEach(async () => {
-  vi.resetModules(); profiles = []; writes = []; audits = []; authUsers = new Map(); lookupError = false; competingInsert = false; auditInsertFails = false;
+  vi.resetModules(); profiles = []; writes = []; audits = []; authUsers = new Map(); lookupError = false; competingInsert = false; auditInsertFails = false; upsertFails = null; auditError = { message: 'down' };
   ({ getOrCreateSupabaseUser: mapUser, getUserIdByCustomerId: webhookUser, recordUnprovenPaidOrder: recordPaid } = await import('./supabase.server'));
   state.warn.mockReset();
   state.create.mockReset().mockResolvedValue({ data: null, error: { message: 'already registered' } });
@@ -53,11 +55,12 @@ beforeEach(async () => {
     q.update = (row: Record<string, any>) => { payload = row; update = true; return q; };
     q.insert = (row: Record<string, any>) => {
       if (table === 'audit_logs' && !auditInsertFails) audits.push(row);
-      return { then: (resolve: any) => resolve({ error: table === 'audit_logs' && auditInsertFails ? { message: 'down' } : null }) };
+      return { then: (resolve: any) => resolve({ error: table === 'audit_logs' && auditInsertFails ? auditError : null }) };
     };
     q.then = (resolve: any, reject: any) => Promise.resolve().then(() => {
       if (table === 'audit_logs') return { data: audits.filter(a => filters.every(([k,v]) => a[k] === v)), error: null };
       if (table !== 'profiles') return { data: null, error: null };
+      if (payload && upsertFails && !update) return { data: null, error: upsertFails };
       if (payload) {
         writes.push(payload);
         const row = profiles.find(p => update ? filters.every(([k,v]) => p[k] === v) : p.id === payload!.id);
@@ -144,6 +147,17 @@ describe('Shopify principal reuse', () => {
     expect(await mapUser(customer, email)).toBe('new');
     expect(state.create).toHaveBeenCalledWith(expect.objectContaining({ app_metadata: { shopify_customer_id: customer } }));
     expect(profiles[0]).toMatchObject({ id: 'new', shopify_customer_id: customer });
+  });
+
+  // US-15 AC50: the audit row outlives the profile's link,
+  // so it must not carry the Shopify customer id itself.
+  it('writes a USER_CREATED audit row that holds no Shopify customer id', async () => {
+    const customer = identity(); state.create.mockResolvedValueOnce({ data: { user: { id: 'new' } }, error: null });
+    expect(await mapUser(customer, email)).toBe('new');
+    const created = audits.filter((a) => a.action === 'USER_CREATED');
+    expect(created).toHaveLength(1);
+    expect(created[0]).toMatchObject({ user_id: 'new', resource_type: 'user', resource_id: 'new', metadata: null });
+    expect(JSON.stringify(audits)).not.toContain(customer);
   });
   it('does not overwrite a conflicting profile inserted after the precheck', async () => {
     competingInsert = true;
@@ -264,5 +278,27 @@ describe('recordUnprovenPaidOrder', () => {
   it('reports failure when the row cannot be stored, so the webhook can ask for a retry', async () => {
     auditInsertFails = true;
     expect(await recordPaid('legacy', order)).toBe(false);
+  });
+});
+
+// US-15 AC7e: a Postgres error's message, details and hint can echo an id, an
+// email or a Shopify customer id, so these logs carry only its code and status.
+describe('identity failure logs', () => {
+  it('a failed profile write logs its code, never its message, details or hint', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const customer = identity(); state.create.mockResolvedValueOnce({ data: { user: { id: 'new' } }, error: null });
+    upsertFails = { code: '23505', message: 'duplicate key value violates unique constraint', details: `Key (shopify_customer_id)=(${customer}) already exists.`, hint: `synthetic hint ${email}` };
+    await expect(mapUser(customer, email)).rejects.toThrow('Failed to create profile');
+    expect(error.mock.calls).toEqual([['Failed to create profile:', { code: '23505' }]]);
+    error.mockRestore();
+  });
+  it('a failed audit write logs its code, never its message', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    auditInsertFails = true; auditError = { code: '22P02', message: 'invalid input syntax for type uuid: "synthetic-id-7"' };
+    state.create.mockResolvedValueOnce({ data: { user: { id: 'new' } }, error: null });
+    expect(await mapUser(identity(), email)).toBe('new'); // its USER_CREATED audit row fails
+    await vi.waitFor(() => expect(error).toHaveBeenCalled());
+    expect(error.mock.calls).toEqual([['Audit log failed:', { code: '22P02' }]]);
+    error.mockRestore();
   });
 });

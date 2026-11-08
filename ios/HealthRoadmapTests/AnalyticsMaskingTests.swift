@@ -26,11 +26,11 @@ final class AnalyticsMaskingTests: XCTestCase {
     func testScreenNamesAreFixedWords_AC19() {
         let sdk = FakeSDK()
         let analytics = Analytics(sdk: sdk, projectId: "abc", testing: false)
-        analytics.screen(.plan)
+        analytics.screen(.chat)
         XCTAssertEqual(sdk.calls, [], "nothing before Clarity starts")
         analytics.start(in: UIWindow())
-        analytics.screen(.myData)
-        XCTAssertEqual(sdk.calls.last, "screen My data")
+        analytics.screen(.myHealth)
+        XCTAssertEqual(sdk.calls.last, "screen My health")
     }
 
     /// US-57's usage signal (D9, Brad 2026-10-25): exactly these fixed words, no value and no
@@ -40,18 +40,20 @@ final class AnalyticsMaskingTests: XCTestCase {
             "Tour started",
             "Tour tip closed 1", "Tour tip closed 2", "Tour tip closed 3",
             "Tour skipped 1", "Tour skipped 2", "Tour skipped 3",
-            "Tile explainer opened",
             "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now",
             "Guide seen", "Guide opened", // US-58's usage signal: no metric or medicine name
             "Alcohol answered", // US-60's usage signal: never the answer
+            "Chat edit proposed", "Chat edit saved", // US-67 AC6: never a value or field name
+            "Health Records asked", "Health Records imported", // US-72 AC13: never a value, a test's name or a count
+            "Jump pill tapped", "Blood test added", // US-73's usage signal: never which pill, test or value
         ])
         let sdk = FakeSDK()
         let analytics = Analytics(sdk: sdk, projectId: "abc", testing: false)
         analytics.event(.tourStarted)
         XCTAssertEqual(sdk.calls, [], "nothing before Clarity starts")
         analytics.start(in: UIWindow())
-        analytics.event(.tileExplainerOpened)
-        XCTAssertEqual(sdk.calls.last, "event Tile explainer opened")
+        analytics.event(.tourStarted)
+        XCTAssertEqual(sdk.calls.last, "event Tour started")
     }
 
     func testEachTourTipHasItsOwnClosedAndSkippedWords_US57() {

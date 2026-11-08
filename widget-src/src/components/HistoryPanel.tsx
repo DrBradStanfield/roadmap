@@ -11,6 +11,7 @@ import {
   METRIC_LABELS,
   medicationAnnotations,
   type ChartAnnotation,
+  formatValue,
 } from '@roadmap/health-core';
 import {
   Chart,
@@ -30,6 +31,7 @@ import type { ApiLabValue, ApiMedicationHistory } from '../lib/api-types';
 import { loadUnitPreference } from '../lib/storage';
 import { groupLabHistory } from '../lib/lab-rows';
 import { chartTimestamp, formatShortDate } from '../lib/constants';
+import { mixedUnitsNote, savedLabText } from '@roadmap/health-core';
 
 // Register only what we need
 Chart.register(LineController, LineElement, PointElement, LinearScale, TimeScale, Tooltip, Filler, annotationPlugin);
@@ -88,16 +90,24 @@ function showSelectedEvent(labels: Record<string, { display: boolean }>, selecte
   if (selectedId) chart?.update('none');
 }
 
-// Generic time-series line chart — used for both core metrics and additional lab values
+/** A chart point. `limit`: the value was printed as a limit, and this is how
+ *  it reads ("> 1.55"); `y` is its bound (US-12 AC20). */
+export interface ChartPoint { x: number; y: number; limit?: string }
+
+// Generic time-series line chart — used for both core metrics and additional lab values.
+// A limit is a hollow dot at its bound, left out of the line (US-12 AC20).
 export function TimeSeriesChart({
   title,
+  showTitle = true,
   data,
   unit,
   color,
   annotations,
 }: {
   title: string;
-  data: Array<{ x: number; y: number }>;
+  /** False where a heading above already names the chart (the value page, US-62 AC14). */
+  showTitle?: boolean;
+  data: ChartPoint[];
   unit: string;
   color: string;
   annotations?: ChartAnnotation[];
@@ -114,6 +124,7 @@ export function TimeSeriesChart({
     if (!canvasRef.current || data.length === 0) return;
 
     const sorted = [...data].sort((a, b) => a.x - b.x);
+    const limits = sorted.filter(point => point.limit);
 
     const DAY = 86400000;
     const dates = [...sorted.map(point => point.x), ...(annotations ?? []).map(a => a.date)];
@@ -131,7 +142,7 @@ export function TimeSeriesChart({
       type: 'line',
       data: {
         datasets: [{
-          data: sorted,
+          data: limits.length ? sorted.filter(point => !point.limit) : sorted,
           borderColor: color,
           backgroundColor: color + '1a',
           pointBackgroundColor: color,
@@ -140,7 +151,18 @@ export function TimeSeriesChart({
           borderWidth: 2,
           tension: 0.3,
           fill: true,
-        }],
+        }, ...(limits.length ? [{
+          data: limits,
+          showLine: false,
+          borderColor: color,
+          backgroundColor: 'transparent',
+          pointBackgroundColor: 'transparent',
+          pointBorderColor: color,
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 7,
+          fill: false,
+        }] : [])],
       },
       options: {
         responsive: true,
@@ -154,7 +176,7 @@ export function TimeSeriesChart({
                 if (x == null) return '';
                 return formatShortDate(x);
               },
-              label: (item) => `${+Number(item.parsed.y).toPrecision(10)} ${unit}`,
+              label: (item) => `${(item.raw as ChartPoint).limit ?? +Number(item.parsed.y).toPrecision(10)} ${unit}`,
             },
           },
           annotation: annotations && annotations.length > 0 ? {
@@ -211,9 +233,9 @@ export function TimeSeriesChart({
 
   return (
     <div className="metric-chart-container">
-      <h3>{title}</h3>
+      {showTitle && <h3>{title}</h3>}
       <div className="metric-chart-canvas-wrap">
-        <canvas ref={canvasRef} />
+        <canvas ref={canvasRef} {...(!showTitle && { role: 'img', 'aria-label': `${title} chart` })} />
       </div>
       {annotations && annotations.length > 0 && (
         <ol className="metric-chart-events" aria-label={`${title} recorded medication changes`}>
@@ -242,7 +264,7 @@ export function MixedUnitsNote({ label, units }: { label: string; units: string[
   return (
     <div className="metric-chart-container">
       <h3>{label}</h3>
-      <p className="history-note">Units vary between reports ({units.map((u) => u || 'no unit').join(', ')}), so this test is not charted.</p>
+      <p className="history-note">{mixedUnitsNote(units)}</p>
     </div>
   );
 }
@@ -330,10 +352,15 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
 
   // Each chart's points, built once per load: a fresh array every render would
   // rebuild every chart on any tick (US-06 AC4a).
-  const chartData = useMemo(() => Object.fromEntries(metricTypes.map((mt) => [mt, grouped[mt].map((m) => ({
-    x: chartTimestamp(m.recordedAt),
-    y: toDisplayValue(mt, m.value, unitSystem),
-  }))])), [grouped, metricTypes, unitSystem]);
+  const chartData = useMemo(() => Object.fromEntries(metricTypes.map((mt) => {
+    const metric = FIELD_METRIC_MAP[METRIC_TO_FIELD[mt] ?? ''];
+    // A core limit's point reads "> 1.55" (US-12 AC20).
+    return [mt, grouped[mt].map((m): ChartPoint => ({
+      x: chartTimestamp(m.recordedAt),
+      y: toDisplayValue(mt, m.value, unitSystem),
+      ...(m.comparator && metric ? { limit: formatValue(metric, m.value, unitSystem, m.comparator) } : {}),
+    }))];
+  })), [grouped, metricTypes, unitSystem]);
 
   // One series per lab slot key, so spelling variants share a chart (US-10).
   const { labSeries, labMetricNames, labColorMap } = useMemo(() => {
@@ -344,9 +371,10 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
     });
     return { labSeries: series, labMetricNames: keys, labColorMap: colors };
   }, [labVals]);
-  const labChartData = useMemo(() => Object.fromEntries(labMetricNames.map((name) => [name, labSeries[name].rows.map((v) => ({
+  const labChartData = useMemo(() => Object.fromEntries(labMetricNames.map((name) => [name, labSeries[name].rows.map((v): ChartPoint => ({
     x: chartTimestamp(v.recordedAt),
     y: v.value,
+    ...(v.comparator ? { limit: savedLabText(v.value, v.comparator) } : {}),
   }))])), [labSeries, labMetricNames]);
 
   return (

@@ -51,7 +51,7 @@ struct MetricDetailView: View {
 
     var body: some View {
         List {
-            if let chart = store.shownChart(for: row.metric), !chart.history.rows.isEmpty {
+            if let chart = store.shownChart(for: row.metric, series: row.series), !chart.history.rows.isEmpty {
                 chartSection(chart)
                 Section {
                     NavigationLink("Show All Data") {
@@ -70,8 +70,33 @@ struct MetricDetailView: View {
                     .disabled(store.unitSwitches > 0)
                 }
             }
+            // eGFR's two histories, each a link from the other's page, so a lab eGFR is always
+            // reachable for correction (US-73 AC7, US-25 AC9).
+            if let other = Self.otherEgfr(row, in: store.myData) {
+                Section {
+                    NavigationLink(other.title) { MetricDetailView(store: store, row: other.row, saved: saved) }
+                }
+            }
+            // The plan tiles' explainers on their row's page (US-73 AC9, `PlanTiles.pages`): the
+            // value, its status, what it is and the evidence, as the plan's tiles opened them.
+            let tiles = PlanTiles(store.plan)
+            ForEach(PlanTiles.pages[row.id, default: []].compactMap { tiles[$0] }) { tile in
+                Section {
+                    LabeledContent {
+                        Text("\(tile.value) \(tile.unit)").font(.body.weight(.semibold)).monospacedDigit()
+                    } label: {
+                        Text(tile.label)
+                        if let status = tile.status { Text(status.label) }
+                    }
+                    Text(tile.about)
+                    if let evidence = tile.evidence {
+                        EvidenceDetails(reason: evidence.reason, guidelines: evidence.guidelines, references: evidence.references,
+                                        heading: "The evidence")
+                    }
+                }
+            }
             // Apple Health's About section, then its sources (US-58 AC4).
-            if let guide = store.myData?.guides?[row.metric] {
+            if let guide = Self.guide(for: row, in: store.myData?.guides) {
                 GuideSections(guide: guide)
             }
         }
@@ -79,7 +104,7 @@ struct MetricDetailView: View {
         // main thread, again whenever the record or its units move.
         .task(id: store.revision) {
             let revision = store.revision
-            _ = await store.chart(for: row.metric)
+            _ = await store.chart(for: row.metric, series: row.series)
             if !Task.isCancelled { readRevision = revision }
         }
         .metricPageList(title: row.label)
@@ -103,11 +128,46 @@ struct MetricDetailView: View {
         !hasReadings || read
     }
 
-    /// This metric's row in My data now, so a units switch shows at once.
+    /// This metric's row in My data now, so a units switch shows at once; a lab test's too (US-25 AC25).
     static func live(_ row: MyData.Row, in store: RecordStore) -> MyData.Row? {
-        guard let data = store.myData else { return nil }
-        return data.vitals.first { $0.metric == row.metric } ?? data.bloodTests.first { $0.metric == row.metric }
-            ?? (data.psa.metric == row.metric ? data.psa : nil)
+        store.myData.flatMap { live(row, in: $0) }
+    }
+
+    /// This metric's row in `data`.
+    static func live(_ row: MyData.Row, in data: MyData) -> MyData.Row? {
+        // By id: a lab test named like a core metric is its own row ("lab:weight").
+        return data.vitals.first { $0.id == row.id } ?? data.bloodTests.first { $0.id == row.id }
+            ?? (data.psa.id == row.id ? data.psa : nil) ?? data.labTests?.first { $0.id == row.id }
+    }
+
+    /// The other eGFR history, when it exists: creatinine's page links to the lab's eGFR results,
+    /// the lab eGFR's page to creatinine (US-73 AC7).
+    static func otherEgfr(_ row: MyData.Row, in data: MyData?) -> (title: String, row: MyData.Row)? {
+        guard let data else { return nil }
+        if row.metric == "creatinine", row.series == nil, let lab = data.labTests?.first(where: HealthPage.isLabEgfr) {
+            return ("Lab eGFR results", lab)
+        }
+        if HealthPage.isLabEgfr(row), let creatinine = data.bloodTests.first(where: { $0.metric == "creatinine" }), creatinine.latest != nil {
+            return ("Creatinine", creatinine)
+        }
+        return nil
+    }
+
+    /// Why a page with values draws no line: units that vary between reports, as the web says it
+    /// (HistoryPanel.tsx MixedUnitsNote), or no value to draw yet.
+    nonisolated static func noChart(_ history: MetricHistory) -> String {
+        history.unitsNote ?? "No values to draw yet."
+    }
+
+    /// The unit a correction is typed and hinted in: Lp(a)'s screen unit; a lab row's own, in
+    /// which its correction is stored (US-25 AC25, review R2); else the row's.
+    nonisolated static func correctionUnit(_ value: MetricHistory.Row, shown: MyData.Row, lpaUnit: String?) -> String {
+        shown.series == nil ? lpaUnit ?? value.unit ?? shown.unit : value.unit ?? shown.unit
+    }
+
+    /// A core metric's "About" guide (US-58); none for a lab test, whatever its name (review N1).
+    static func guide(for row: MyData.Row, in guides: MetricGuides?) -> MetricGuide? {
+        row.series == nil ? guides?[row.metric] : nil
     }
 
     // MARK: Chart
@@ -119,8 +179,8 @@ struct MetricDetailView: View {
                 if let newest = chart.last {
                     rangedChart(chart, newest: newest, latest: latest)
                 } else {
-                    headline(latest, unit: chart.history.unit)
-                    Text("No values to draw yet.").font(.subheadline).foregroundStyle(.secondary)
+                    headline(latest, unit: latest?.unit ?? chart.history.unit)
+                    Text(Self.noChart(chart.history)).font(.subheadline).foregroundStyle(.secondary)
                 }
             }
             .padding(.vertical, 6)
@@ -181,7 +241,7 @@ struct MetricDetailView: View {
                 }
             }
             .disabled(store.unitSwitches > 0)
-        } else if row.metric == "lpa", let unit = store.myData?.lpaUnit {
+        } else if let unit = store.lpaUnit(for: row) {
             Picker("Unit", selection: Binding(get: { unit }, set: { unit in
                 let choosing = store.chooseLpaUnit(unit) // holds entry now, in the tap
                 Task { lpaRefusal = await choosing.value }
@@ -215,9 +275,9 @@ private struct AllDataView: View {
     var body: some View {
         // The rows last read; a tap waits until they are read for the record as it is now
         // (adversary R2), so a correction never opens on an older unit's value.
-        let current = store.shownHistory(for: row.metric) != nil
+        let current = store.shownHistory(for: row.metric, series: row.series) != nil
         List {
-            if let history = store.shownChart(for: row.metric)?.history {
+            if let history = store.shownChart(for: row.metric, series: row.series)?.history {
                 Section {
                     ForEach(history.rows) { value in
                         if value.isActive {
@@ -240,7 +300,7 @@ private struct AllDataView: View {
         .navigationTitle("All Recorded Data")
         .navigationBarTitleDisplayMode(.inline)
         // Joins the page beneath's read of the same revision: one engine call.
-        .task(id: store.revision) { _ = await store.chart(for: row.metric) }
+        .task(id: store.revision) { _ = await store.chart(for: row.metric, series: row.series) }
         .editingSheet($editing, store: store, saved: saved)
     }
 }
@@ -274,19 +334,19 @@ private struct EditingSheet: View {
         switch editing {
         case .add(let shown, let seen):
             MetricEntrySheet(store: store, row: shown, seen: seen, saved: saved)
-        case .correct(let value, let shown, let seen) where shown.metric == MyData.bloodPressure:
+        case .correct(let value, let shown, let seen) where shown.series == nil && shown.metric == MyData.bloodPressure:
             BloodPressureSheet(store: store, correcting: value, seen: seen, saved: saved)
         case .correct(let value, let shown, let seen):
             // The value and unit as the sheet's screen shows them: Lp(a)'s unit can change in
             // the sheet, and the hint waits for a history read in it (the page beneath reads
             // the history again when it does; adversary R2).
-            let unit = store.lpaUnit(for: shown) == nil ? shown.unit : seen.lpaUnit
-            let now = store.correctionHint(for: value.id, metric: shown.metric, unit: unit, on: seen)
+            let unit = MetricDetailView.correctionUnit(value, shown: shown, lpaUnit: store.lpaUnit(for: shown) == nil ? nil : seen.lpaUnit)
+            let now = store.correctionHint(for: value.id, metric: shown.metric, series: shown.series, unit: unit, on: seen)
             ValueEntrySheet(title: "Correct \(DayText.short(value.day))", unit: unit, current: now, asksForDay: false) { number, _ in
-                saved(await store.apply(.correct(id: value.id, value: number), as: seen))
+                saved(await store.apply(shown.series == "lab" ? .labCorrect(id: value.id, value: number) : .correct(id: value.id, value: number), as: seen))
             }
             .lpaUnits(store, shown) { reopen(.correct(value, shown, seen.showing(lpaUnit: $0))) }
-            .reads(in: store.inputRange(for: shown.metric, in: store.lpaUnit(for: shown) == nil ? nil : unit))
+            .reads(in: store.inputRange(for: shown, in: store.lpaUnit(for: shown) == nil ? nil : unit))
         }
     }
 }
@@ -307,6 +367,8 @@ private struct HistoryRow: View {
                     Text("Entered in error").font(.caption).foregroundStyle(.secondary)
                 } else if row.current && excluded {
                     Text("Not used: outside the range your plan accepts").font(.caption).foregroundStyle(.orange)
+                } else if let note = row.note {
+                    Text(note).font(.caption).foregroundStyle(.secondary)
                 } else if row.current {
                     Text("Used in your plan").font(.caption).foregroundStyle(.tint)
                 } else if row.correction {
@@ -320,11 +382,16 @@ private struct HistoryRow: View {
                     .monospacedDigit()
                     .strikethrough(!row.isActive)
                     .foregroundStyle(row.isActive ? .primary : .secondary)
-                Text(unit).font(.subheadline).foregroundStyle(.secondary)
+                Text(shownUnit).font(.subheadline).foregroundStyle(.secondary)
             }
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(row.isActive ? "\(row.value) \(unit), \(DayText.short(row.day))" : "Entered in error: \(row.value) \(unit), \(DayText.short(row.day))")
+        .accessibilityLabel(row.isActive ? "\(row.value) \(shownUnit), \(DayText.short(row.day))" : "Entered in error: \(row.value) \(shownUnit), \(DayText.short(row.day))")
+    }
+
+    /// The row's own unit in a lab series reported in more than one, else the page's.
+    private var shownUnit: String {
+        row.unit ?? unit
     }
 }

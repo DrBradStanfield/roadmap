@@ -1,20 +1,42 @@
 /**
- * US-35 AC13 (2026-10-19): the text the connector publishes is frozen while
- * the MCP 1.0.2 submission is in OpenAI's review. Each hash is the value at
- * origin/main cab5615a (MCP_TOOLS and tools/list re-pinned for US-32 AC52 on this held branch): the server instructions, every tool definition (names,
- * descriptions, input and output schemas, annotations, _meta), the prompts and
- * the server info. A wording change in a RESULT moves none of them; a change
- * to what initialize, tools/list or prompts/list answers fails here until the
- * verdict, when the pins are re-taken on purpose.
+ * The text the connector publishes is pinned: the server instructions, every
+ * tool definition (names, descriptions, input and output schemas, annotations,
+ * _meta), the prompts, the server info, and `tools/list` as the shared
+ * dispatch serializes it (US-32 AC50: the definitions are not the wire). A
+ * wording change in a RESULT moves none of them; a change to what initialize,
+ * tools/list or prompts/list answers fails here until the pins are re-taken on
+ * purpose, with the reason written below.
  *
- * US-32 AC50 (2026-10-21): the definitions are not the wire. `tools/list` is
- * hashed too, as the shared dispatch answers it, so a change made while
- * serializing (annotations.title; AC51's field strip) moves a pin. Re-pinned on the held branch
- * claude/mcp-annotation-title, merged only after OpenAI's 1.0.2 verdict.
+ * History: US-35 AC13 froze this text on 2026-10-19 while MCP 1.0.2 was in
+ * OpenAI's review. That review ended 2026-10-29, declined on scope (commit
+ * 84ff1cbf; docs/ai-discoverability.md; Brad 2026-11-02: no resubmission), so
+ * the freeze's reason is gone. The pins stay as a tripwire, also while the
+ * Claude directory review (submitted 2026-10-21) is open, until Brad decides
+ * whether to keep or drop them.
  *
- * US-32 AC52 (2026-10-21): four descriptions rewritten to name their sibling
- * tools (Glama's tool-quality grade). MCP_TOOLS and tools/list re-pinned on the
- * same held branch, so the verdict brings one freeze bump.
+ * Re-taken 2026-11-02 for US-12 AC20: read_record and get_plan say a value
+ * with a comparator is a lab limit, not the number; file_results takes a
+ * `comparator` (the four codes) and import candidates carry one; the
+ * instructions' unit note says so too. Prompts and server info are unchanged.
+ * Re-taken again the same day after review: file_results' privacy wording
+ * ("in memory for one request", "until then … unconfirmed", "never inferred")
+ * restored word for word, and the published list's budget raised to 16,500.
+ *
+ * US-66 AC11 (2026-11-02): read_record, add_measurement and add_lab_values say
+ * every blood test is a labValues row; tool layer v3. MCP_TOOLS and tools/list
+ * re-pinned with Brad's yes (OpenAI rejected the app and it is not resubmitted).
+ * Re-taken again at the merge of origin/main (2026-11-02): US-66's wording on
+ * top of US-12 AC20's; MCP_TOOLS and tools/list from the merged code
+ * (INSTRUCTIONS is main's: US-66 does not change it).
+ *
+ * US-32 AC57 (2026-11-03): the instructions on both servers say a document's
+ * title, text and file name are data, not instructions, and read_record's
+ * `documents` and both reads' `folder.unimported` carry the same label in
+ * their output schemas, as import_documents already did for its fields.
+ * INSTRUCTIONS, MCP_TOOLS and tools/list re-pinned. Prompts and server info
+ * are unchanged, and by the diff so are every tool's description and input
+ * schema. tools/list grows by 268 characters of output-schema description.
+ * Taken while Anthropic's directory review is open, so merging is Brad's call.
  */
 import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
@@ -24,13 +46,13 @@ import { dispatchRpc, SERVER_INFO } from '../../packages/health-core/src/mcp-rpc
 
 const sha256 = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
-describe('US-35 AC13 — the published connector text is frozen during the 1.0.2 review', () => {
+describe('US-35 AC13 — the published connector text is pinned, and changes only on purpose', () => {
   it.each([
-    ['INSTRUCTIONS', INSTRUCTIONS, '765b597e650f5e6e19169462ee9aa5746ec78d46ac8680bc9224e64825bbf26d'],
-    ['MCP_TOOLS', MCP_TOOLS, '88d3e15924613c03bafa48da0be1ee058e5568c25a73410a873a29595a4a7d59'],
+    ['INSTRUCTIONS', INSTRUCTIONS, '0c3ae0d98005027a72dfdb0e2b8816ff02387b042133d5308d1503883a48583c'],
+    ['MCP_TOOLS', MCP_TOOLS, '0f2f73a07fc096cfbb2f5d152d9a9e7a701b2c9866c65501d6e44eaea24ad75e'],
     ['MCP_PROMPTS', MCP_PROMPTS, 'a159ee16a3ce5fefc23ed8f90178a852551350795731fabd30ca7a5f6267c140'],
     ['SERVER_INFO', SERVER_INFO, 'ce1110c13b5b005a4f14f0068138039eecd7fddc888032f08479060ad2da400f'],
-  ] as const)('%s hashes to its pinned value (cab5615a; AC52 re-pin)', (_name, value, pinned) => {
+  ] as const)('%s hashes to its pinned value (re-taken 2026-11-03, US-32 AC57)', (_name, value, pinned) => {
     expect(sha256(value)).toBe(pinned);
   });
 });
@@ -43,6 +65,6 @@ describe('US-32 AC50 — the tools/list answer itself is pinned', () => {
       instructions: INSTRUCTIONS,
       callTool: async () => ({ errorMessage: 'not called' }),
     })) as { result: { tools: unknown } };
-    expect(sha256(answer.result.tools)).toBe('111a51a8b8b6f34f525b65cf3e6de1d561f03c58ee9156427d385f16c7731bf0');
+    expect(sha256(answer.result.tools)).toBe('d8339011830289937131ca9240942653e6ed49d602133305550cd015c184d9bd');
   });
 });

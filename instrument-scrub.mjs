@@ -40,6 +40,8 @@ export const SENSITIVE_EXACT_KEYS = new Set([
   'waisttoheightratio', 'waist_to_height_ratio',
   'nonhdlcholesterol', 'non_hdl_cholesterol',
   'egfr',
+  // A lab result printed as a limit (US-12 AC20): its bound, its code, and the plan's limits.
+  'labegfr', 'labegfrlimit', 'limits', 'limit', 'bound', 'comparator',
   // Medications
   'drugname', 'drug_name',
   'dosevalue', 'dose_value',
@@ -169,8 +171,12 @@ export function scrubBreadcrumbData(data) {
 export const SCRUB_UNITS = [
   '%', 'IU/L', 'IU/mL', 'L/L', 'U/L', 'U/mL', 'cm', 'fL', 'g/L', 'in', 'kU/L', 'kg', 'lbs', 'mIU/L',
   'mL/min/1.73m²', 'mOsm/kg', 'mg/L', 'mg/L FEU', 'mg/dL', 'mg/mmol', 'mm/hr', 'mmHg', 'mmol/L', 'mmol/mol',
-  'ng/L', 'ng/mL', 'nmol/L', 'pg', 'pmol/L', 'µg/L', 'µmol/L', '×10¹²/L', '×10⁹/L', 'mm Hg', 'umol/L',
-  'micromol/L', 'ug/L', 'lb', 'mcg', 'µg', 'mg', 'g', 'IU', 'mL', 'ml', 'units', '"',
+  'ng/L', 'ng/mL', 'nmol/L', 'pg', 'pmol/L', 'µg/L', 'µmol/L', '×10¹²/L', '×10⁹/L', 'meq/l', 'mg/g',
+  'mg/g creat', 'mg/g creatinine', 'mg/mg', 'ml/min/1.73 m²', 'ml/min/1.73', 'mmol/kg', 'mosmol/kg', 'g/dl',
+  '×10⁶/µl', 'm/µl', 'million/µl', 't/l', '×10³/µl', 'k/µl', 'thou/µl', 'thousand/µl', 'cells/µl', 'mg/l (feu)',
+  'µg/ml feu', 'µg/ml (feu)', 'ng/ml feu', 'ng/ml (feu)', 'µg/l feu', 'µg/l (feu)', 'µiu/ml', 'mu/l',
+  'µu/ml', 'microiu/ml', 'mciu/ml', 'ng/dl', 'pg/ml', 'kiu/l', 'µg/dl', 'miu/ml', 'mu/ml', 'mm/h', 'mm Hg',
+  'micromol/L', 'lb', 'mcg', 'µg', 'mg', 'g', 'IU', 'mL', 'units', '"',
 ];
 
 export const SCRUB_METRIC_WORDS = [
@@ -181,12 +187,12 @@ export const SCRUB_METRIC_WORDS = [
   'chloride', 'chol', 'cholesterol', 'chorionic', 'citrullinated', 'ckd', 'co2', 'cobalamin', 'concentration',
   'copper', 'corticotropin', 'cortisol', 'cpk', 'creatine', 'creatinine', 'crp', 'ctni', 'ctnt', 'cyclic',
   'cys', 'cystatin', 'dehydroepiandrosterone', 'dehydrogenase', 'dhea', 'dheas', 'dht', 'diastolic',
-  'dihydrotestosterone', 'dimer', 'eag', 'egfr', 'egfrcr', 'egfrcys', 'eos', 'eosinophil', 'eosinophils',
-  'epi', 'erythrocyte', 'erythrocytes', 'esr', 'estradiol', 'estrone', 'fasting', 'fbg', 'ferritin',
-  'fibrinogen', 'filtration', 'folate', 'folic', 'follicle', 'fpg', 'fructosamine', 'fsh', 'ft3', 'ft4',
-  'gamma', 'gfr', 'ggt', 'ggtp', 'globulin', 'glomerular', 'glucose', 'glutamyl', 'gonadotropin', 'grans',
-  'granulocyte', 'granulocytes', 'haematocrit', 'haemoglobin', 'hba1c', 'hcg', 'hco3', 'hct', 'hdl',
-  'hematocrit', 'hemoglobin', 'hgb', 'hgh', 'holotc', 'holotranscobalamin', 'homocysteine', 'hscrp', 'hydroxy',
+  'dihydrotestosterone', 'dimer', 'eag', 'egfr', 'egfrcr', 'egfrcys', 'eos', 'eosinophil', 'eosinophils', 'epi',
+  'erythrocyte', 'erythrocytes', 'esr', 'estradiol', 'estrone', 'fasting', 'fbg', 'ferritin', 'fibrinogen',
+  'filtration', 'folate', 'folic', 'follicle', 'fpg', 'fructosamine', 'fsh', 'ft3', 'ft4', 'gamma', 'gfr',
+  'ggt', 'ggtp', 'globulin', 'glomerular', 'glucose', 'glutamyl', 'gonadotropin', 'grans', 'granulocyte',
+  'granulocytes', 'haematocrit', 'haemoglobin', 'hba1c', 'hcg', 'hco3', 'hct', 'hdl', 'hematocrit',
+  'hemoglobin', 'hgb', 'hgh', 'holotc', 'holotranscobalamin', 'homocysteine', 'hscrp', 'hydroxy',
   'hydroxyprogesterone', 'hydroxyvitamin', 'iga', 'ige', 'igf', 'igf1', 'immunoglobulin', 'insulin', 'iron',
   'kinase', 'lactate', 'lactic', 'ldh', 'ldl', 'leucocytes', 'leukocytes', 'lipase', 'llerian', 'lpa',
   'luteinising', 'luteinizing', 'lymphocyte', 'lymphocytes', 'lymphs', 'magnesium', 'mch', 'mchc', 'mcv',
@@ -200,8 +206,8 @@ export const SCRUB_METRIC_WORDS = [
   'systolic', 't3u', 'testosterone', 'tgab', 'thiamin', 'thiamine', 'thyroglobulin', 'thyroid', 'thyrotropin',
   'thyroxine', 'tibc', 'tni', 'tnt', 'tocopherol', 'tpo', 'tpoab', 'trab', 'transferase', 'transferrin',
   'transglutaminase', 'triglycerides', 'triiodothyronine', 'troponin', 'tsat', 'tsh', 'ttg', 'uibc', 'upcr',
-  'urate', 'urea', 'uric', 'urinary', 'urine', 'vitamin', 'vldl', 'waist', 'wbc', 'weight', 'zinc', 'na',
-  'na+', 'k', 'k+', 'cl', 'cl-', 'total co2', 'carbon dioxide, total', 'carbon dioxide', 'blood urea nitrogen',
+  'urate', 'urea', 'uric', 'urinary', 'urine', 'vitamin', 'vldl', 'waist', 'wbc', 'weight', 'zinc', 'na', 'na+',
+  'k', 'k+', 'cl', 'cl-', 'total co2', 'carbon dioxide, total', 'carbon dioxide', 'blood urea nitrogen',
   'urea nitrogen', 'urea nitrogen (bun)', 'blood urea nitrogen (bun)', 'urea (bun)', 'uric acid', 'urine_acr',
   'urine acr', 'albumin creatinine ratio', 'microalbumin ratio', 'urine_creatinine', 'urine creatinine',
   'creatinine urine', 'urinary creatinine', 'creatinine (urine)', 'urine_pcr', 'urine pcr',
@@ -214,17 +220,17 @@ export const SCRUB_METRIC_WORDS = [
   'gamma gt', 'gamma-glutamyl transferase', 'γ-gt', 'gamma gt (ggt)', 'alkaline phosphatase', 'alk phos',
   'alk. phosphatase', 'bilirubin_total', 'bilirubin (total)', 'total bilirubin', 'bilirubin, total',
   'bilirubin_direct', 'bilirubin (direct)', 'direct bilirubin', 'conjugated bilirubin', 'bilirubin, direct',
-  'lactate dehydrogenase', 'ld', 'total_protein', 'total protein', 'protein total', 'protein',
-  'protein, total', 'globulin, total', 'bilirubin_indirect', 'bilirubin (indirect)', 'indirect bilirubin',
+  'lactate dehydrogenase', 'ld', 'total_protein', 'total protein', 'protein total', 'protein', 'protein, total',
+  'globulin, total', 'bilirubin_indirect', 'bilirubin (indirect)', 'indirect bilirubin',
   'unconjugated bilirubin', 'bilirubin, indirect', 'serum lipase', 'serum amylase', 'hb', 'haemoglobin (hb)',
   'packed cell volume', 'haematocrit (hct)', 'red blood cells', 'red blood cell count', 'red cell count',
-  'white blood cells', 'white blood cell count', 'white cell count', 'total white cell count',
-  'platelet count', 'neutrophil count', 'neutrophils (absolute)', 'absolute neutrophils', 'neutrophils abs',
-  'lymphocyte count', 'lymphocytes (absolute)', 'absolute lymphocytes', 'lymphocytes abs', 'lymphs (absolute)',
-  'monocyte count', 'monocytes (absolute)', 'absolute monocytes', 'monocytes abs', 'monocytes(absolute)',
-  'eosinophil count', 'eosinophils (absolute)', 'absolute eosinophils', 'eosinophils abs', 'eos (absolute)',
-  'basophil count', 'basophils (absolute)', 'absolute basophils', 'basophils abs', 'baso (absolute)',
-  'mean cell volume', 'mean corpuscular volume', 'mean cell haemoglobin', 'mean corpuscular hemoglobin',
+  'white blood cells', 'white blood cell count', 'white cell count', 'total white cell count', 'platelet count',
+  'neutrophil count', 'neutrophils (absolute)', 'absolute neutrophils', 'neutrophils abs', 'lymphocyte count',
+  'lymphocytes (absolute)', 'absolute lymphocytes', 'lymphocytes abs', 'lymphs (absolute)', 'monocyte count',
+  'monocytes (absolute)', 'absolute monocytes', 'monocytes abs', 'monocytes(absolute)', 'eosinophil count',
+  'eosinophils (absolute)', 'absolute eosinophils', 'eosinophils abs', 'eos (absolute)', 'basophil count',
+  'basophils (absolute)', 'absolute basophils', 'basophils abs', 'baso (absolute)', 'mean cell volume',
+  'mean corpuscular volume', 'mean cell haemoglobin', 'mean corpuscular hemoglobin',
   'mean cell haemoglobin concentration', 'mean corpuscular hemoglobin concentration',
   'red cell distribution width', 'rdw-cv', 'rdw cv', 'rdw_sd', 'rdw-sd', 'mean platelet volume',
   'immature_granulocytes', 'immature granulocytes', 'immature granulocyte count', 'immature grans (abs)',
@@ -242,8 +248,12 @@ export const SCRUB_METRIC_WORDS = [
   'testosterone, free', 'free_testosterone_calculated', 'free testosterone (calculated)',
   'calculated free testosterone', 'calculated free t', 'sex hormone binding globulin',
   'shbg (sex hormone binding globulin)', 'e2', 'cortisol_am', 'cortisol (morning)', 'am cortisol',
-  'cortisol, am', 'psa_free', 'psa (free)', 'free psa', 'psa, free', 'lh', 'luteinising hormone',
-  'luteinizing hormone', 'follicle stimulating hormone', 'dhea_s', 'dhea-s', 'dhea sulphate', 'dhea sulfate',
+  'cortisol, am', 'cortisol (am)', 'morning cortisol', 'cortisol, morning', 'cortisol morning',
+  'cortisol_random', 'cortisol (random)', 'random cortisol', 'cortisol, random', 'cortisol_pm', 'cortisol (pm)',
+  'pm cortisol', 'cortisol, pm', 'evening cortisol', 'cortisol, evening', 'cortisol (evening)',
+  'cortisol evening', 'midnight cortisol', 'cortisol, midnight', 'cortisol (midnight)', 'cortisol midnight',
+  'psa_free', 'psa (free)', 'free psa', 'psa, free', 'lh', 'luteinising hormone', 'luteinizing hormone',
+  'follicle stimulating hormone', 'dhea_s', 'dhea-s', 'dhea sulphate', 'dhea sulfate',
   'dehydroepiandrosterone sulfate', 'dehydroepiandrosterone sulphate', 'igf-1', 'igf 1',
   'insulin-like growth factor 1', 'somatomedin c', 'parathyroid hormone', 'intact pth', 'pth intact',
   'pth, intact', 'anti-mullerian hormone', 'anti-müllerian hormone', 'anti mullerian hormone',
@@ -251,57 +261,86 @@ export const SCRUB_METRIC_WORDS = [
   'psa (% free)', '% free psa', 'percent free psa', 'free psa %', 'psa % free', 'e1', 'oh_progesterone_17',
   '17-oh progesterone', '17-hydroxyprogesterone', '17 hydroxyprogesterone', '17-ohp',
   'adrenocorticotropic hormone', 'gh', 'growth hormone', 'human growth hormone', 'beta hcg', 'beta-hcg',
-  'b-hcg', 'human chorionic gonadotropin', 'total hcg', 'vitamin_d', 'vitamin d (25-oh)',
-  '25-hydroxyvitamin d', '25-oh vitamin d', 'vitamin d3', '25(oh)d', 'vitamin d, 25-hydroxy',
-  '25-hydroxy vitamin d', '25 oh vitamin d', 'vitamin d (25 oh)', 'vitamin_b12', 'vitamin b12',
-  'vitamin b12 (cobalamin)', 'b12_active', 'active b12', 'folic acid', 'serum folate', 'folate, serum',
-  'ferritin (serum)', 'serum iron', 'iron, total', 'total iron binding capacity', 'iron binding capacity',
-  'transferrin_sat', 'transferrin saturation', 'iron saturation', 'transferrin saturation %', 'mg',
-  'calcium_corrected', 'calcium (corrected)', 'corrected calcium', 'adjusted calcium', 'calcium_total',
-  'calcium (total)', 'total calcium', 'serum calcium', 'ca', 'inorganic phosphate', 'red_cell_folate',
-  'red cell folate', 'rbc folate', 'erythrocyte folate', 'red blood cell folate', 'calcium_ionised',
-  'calcium (ionised)', 'ionised calcium', 'ionized calcium', 'free calcium', 'ca++', 'calcium, ionized',
-  'calcium, ionised', 'unsaturated iron binding capacity', 'soluble transferrin receptor', 'serum copper',
-  'omega3_index', 'omega-3 index', 'omega 3 index', 'vitamin_a', 'vitamin a', 'vitamin_e', 'vitamin e',
-  'alpha-tocopherol', 'alpha tocopherol', 'vitamin_c', 'vitamin c', 'ascorbic acid', 'vitamin_b6',
-  'vitamin b6', 'pyridoxal 5-phosphate', "pyridoxal 5'-phosphate", 'pyridoxal phosphate', 'vitamin_b1',
-  'vitamin b1', 'methylmalonic acid', 'c-reactive protein', 'hs-crp', 'hs crp', 'high sensitivity crp',
-  'crp, high sensitivity', 'cardiac crp', 'c reactive protein', 'erythrocyte sedimentation rate', 'sed rate',
-  'sedimentation rate', 'ige (total)', 'total ige', 'immunoglobulin e', 'serum ige', 'rf', 'rheumatoid factor',
-  'anti_ccp', 'anti-ccp', 'ccp antibodies', 'anti-cyclic citrullinated peptide',
-  'cyclic citrullinated peptide antibodies', 'total_iga', 'iga (total)', 'total iga', 'immunoglobulin a',
-  'serum iga', 'ttg_iga', 'ttg-iga', 'tissue transglutaminase iga', 'anti-ttg iga',
-  'tissue transglutaminase antibody iga', 'fasting glucose', 'fasting plasma glucose', 'plasma glucose',
-  'glucose fasting', 'blood glucose', 'glucose, fasting', 'glucose_random', 'glucose (random)',
-  'random glucose', 'glucose random', 'non-fasting glucose', 'fasting insulin', 'serum insulin',
-  'apolipoprotein a1', 'apolipoprotein a-i', 'apo a1', 'apo a-1', 'apoa-1', 'apoa-i', 'total homocysteine',
-  'plasma homocysteine', 'ck', 'creatine kinase', 'creatine phosphokinase', 'nt_probnp', 'nt-probnp',
-  'nt pro bnp', 'n-terminal pro-bnp', 'n-terminal pro b-type natriuretic peptide',
+  'b-hcg', 'human chorionic gonadotropin', 'total hcg', 'vitamin_d', 'vitamin d (25-oh)', '25-hydroxyvitamin d',
+  '25-oh vitamin d', 'vitamin d3', '25(oh)d', 'vitamin d, 25-hydroxy', '25-hydroxy vitamin d',
+  '25 oh vitamin d', 'vitamin d (25 oh)', 'vitamin_b12', 'vitamin b12', 'vitamin b12 (cobalamin)', 'b12_active',
+  'active b12', 'folic acid', 'serum folate', 'folate, serum', 'ferritin (serum)', 'serum iron', 'iron, total',
+  'total iron binding capacity', 'iron binding capacity', 'transferrin_sat', 'transferrin saturation',
+  'iron saturation', 'transferrin saturation %', 'mg', 'calcium_corrected', 'calcium (corrected)',
+  'corrected calcium', 'adjusted calcium', 'calcium_total', 'calcium (total)', 'total calcium', 'serum calcium',
+  'ca', 'inorganic phosphate', 'red_cell_folate', 'red cell folate', 'rbc folate', 'erythrocyte folate',
+  'red blood cell folate', 'calcium_ionised', 'calcium (ionised)', 'ionised calcium', 'ionized calcium',
+  'free calcium', 'ca++', 'calcium, ionized', 'calcium, ionised', 'unsaturated iron binding capacity',
+  'soluble transferrin receptor', 'serum copper', 'omega3_index', 'omega-3 index', 'omega 3 index', 'vitamin_a',
+  'vitamin a', 'vitamin_e', 'vitamin e', 'alpha-tocopherol', 'alpha tocopherol', 'vitamin_c', 'vitamin c',
+  'ascorbic acid', 'vitamin_b6', 'vitamin b6', 'pyridoxal 5-phosphate', "pyridoxal 5'-phosphate",
+  'pyridoxal phosphate', 'vitamin_b1', 'vitamin b1', 'methylmalonic acid', 'c-reactive protein', 'hs-crp',
+  'hs crp', 'high sensitivity crp', 'crp, high sensitivity', 'cardiac crp', 'c reactive protein',
+  'erythrocyte sedimentation rate', 'sed rate', 'sedimentation rate', 'ige (total)', 'total ige',
+  'immunoglobulin e', 'serum ige', 'rf', 'rheumatoid factor', 'anti_ccp', 'anti-ccp', 'ccp antibodies',
+  'anti-cyclic citrullinated peptide', 'cyclic citrullinated peptide antibodies', 'total_iga', 'iga (total)',
+  'total iga', 'immunoglobulin a', 'serum iga', 'ttg_iga', 'ttg-iga', 'tissue transglutaminase iga',
+  'anti-ttg iga', 'tissue transglutaminase antibody iga', 'fasting glucose', 'fasting plasma glucose',
+  'plasma glucose', 'glucose fasting', 'blood glucose', 'glucose, fasting', 'glucose_random',
+  'glucose (random)', 'random glucose', 'glucose random', 'non-fasting glucose', 'fasting insulin',
+  'serum insulin', 'apolipoprotein a1', 'apolipoprotein a-i', 'apo a1', 'apo a-1', 'apoa-1', 'apoa-i',
+  'total homocysteine', 'plasma homocysteine', 'ck', 'creatine kinase', 'creatine phosphokinase', 'nt_probnp',
+  'nt-probnp', 'nt pro bnp', 'n-terminal pro-bnp', 'n-terminal pro b-type natriuretic peptide',
   'b-type natriuretic peptide', 'brain natriuretic peptide', 'troponin_t', 'troponin t', 'hs troponin t',
   'hs-troponin t', 'high sensitivity troponin t', 'hs-tnt', 'hs-ctnt', 'troponin_i', 'troponin i',
   'hs troponin i', 'hs-troponin i', 'high sensitivity troponin i', 'hs-tni', 'hs-ctni', 'c_peptide',
   'c-peptide', 'estimated average glucose', 'vldl cholesterol', 'vldl-c', 'vldl chol', 'lactic acid',
-  'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height',
+  'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height', 'vit',
 ];
 
 const NUMBER = '\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?';
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const alternation = (words) =>
-  [...words].sort((a, b) => b.length - a.length).map(escapeRe).join('|');
+const alternation = (words, pattern = escapeRe) =>
+  words.map(pattern).sort((a, b) => b.length - a.length).join('|');
+
+// The spellings normalizeLabUnit folds into part of a listed unit, as regex
+// (mirror of sentry-scrub.ts, US-09 AC7e).
+const NORMALISER_SPELLINGS = {
+  '×10': '(?:[x×]\\s*)?10\\s*(?:(?:e|\\^|\\*{1,2})\\s*\\d+|(?:\\^|\\*{1,2})?\\(\\s*\\d+\\s*\\)|[⁰¹²³⁴⁵⁶⁷⁸⁹]+)',
+  '/µl': '/(?:(?:[µμu]|mc)l|mm[3³]|cmm|cumm|cu[ .]mm|c\\.mm)',
+  'µ': '(?:[µμu]|mc)',
+  'm²': 'm(?:²|\\^?2)',
+  u: '(?:u|units?)',
+  g: 'gm?',
+};
+const unitPattern = (unit) => escapeRe(unit.toLowerCase())
+  .replace(/×10[⁰¹²³⁴⁵⁶⁷⁸⁹]+|\/µl|µ|m²|^u(?=\/)|^g(?=\/dl)/g,
+    (part) => NORMALISER_SPELLINGS[part.startsWith('×') ? '×10' : part]);
 
 const INCH_UNIT = '(?:in(?=\\s*(?:[^A-Za-z0-9\\s]|$))|")';
 const PLAIN_UNITS = SCRUB_UNITS.filter(u => u !== 'in' && u !== '"');
+/** Every listed unit in every spelling the normaliser folds into it, as one
+ *  regex alternation (the chat-question archive check uses it too, US-15 AC44a). */
+export const SCRUB_UNIT_PATTERN = alternation(PLAIN_UNITS, unitPattern);
 
-const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+// Bounded parts keep it linear on a long run; a lookbehind would refuse the
+// second of two adjacent addresses (US-09 AC7f).
+const EMAIL_RE = /[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}/g;
 const UNIT_VALUE_RE = new RegExp(
-  `\\b${NUMBER}\\s*(?:(?:${alternation(PLAIN_UNITS)})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
+  `\\b${NUMBER}\\s*(?:(?:${SCRUB_UNIT_PATTERN})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
 // A name starts where no letter or digit runs into it and ends where no letter
 // does: digits straight after a name are its value. A number inside a word
-// (the 1 of "A1c") is never the value (mirror of sentry-scrub.ts).
+// (the 1 of "A1c") is never the value. A name is never a value: the gap stops
+// where another name starts, and a number glued to a letter with another number
+// after it, across the same gap a name takes ("T4 15", "T4 <15"), takes that number too (mirror of sentry-scrub.ts, US-09 AC7g).
+const METRIC_NAME = `(?<![a-z0-9])(?:${alternation(SCRUB_METRIC_WORDS)})(?![a-z])`;
+/** What may stand between a name and its value: up to 20 characters, no digit, no other name. */
+const NAME_GAP = `(?:(?!${METRIC_NAME})[^\\d\\n]){0,20}?`;
 const METRIC_THEN_VALUE_RE = new RegExp(
-  `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])([^\\d\\n]{0,20}?)(?!(?<=[a-z])\\d+(?:[.,]\\d+)?[a-z])(${NUMBER})`, 'gi');
+  `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])(${NAME_GAP})(?!(?<=[a-z])\\d+(?:[.,]\\d+)?[a-z]|${METRIC_NAME})((?<=[a-z]-?)${NUMBER}(?:[ \\t:=]+|${NAME_GAP})(?!${METRIC_NAME})${NUMBER}|${NUMBER})`, 'gi');
+// Name edges, not \b: "Lp(a)" ends and "γ-GT" starts with no word character,
+// so \b never matched there. A name starts where no letter or digit runs into
+// it, or at its own first character when that is a symbol ("xγ-GT"), and ends
+// the same way ("lp(a)s"), so nothing \b scrubbed is lost. A value starts at
+// the head of its digit run, never inside it: same matches, linear on a long
+// run (US-09 AC7f).
 const VALUE_THEN_METRIC_RE = new RegExp(
-  `(${NUMBER})([^\\d\\n]{0,20}?)\\b(${alternation(SCRUB_METRIC_WORDS)})\\b`, 'gi');
+  `(?<!\\d)(${NUMBER})([^\\d\\n]{0,20}?)(?:(?<![a-z0-9])|(?![a-z0-9]))(${alternation(SCRUB_METRIC_WORDS)})(?:(?<![a-z0-9])|(?![a-z0-9]))`, 'gi');
 
 export function scrubText(text) {
   return text

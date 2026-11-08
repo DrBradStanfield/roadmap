@@ -46,7 +46,7 @@ final class Launch {
         #endif
         // TipKit before any view asks for a tip (US-57 AC10).
         TourSetup.configure()
-        // Before launch finishes, so a tap that starts the app still reaches My plan.
+        // Before launch finishes, so a tap that starts the app still reaches My health.
         let reminderTaps = ReminderTaps()
         UNUserNotificationCenter.current().delegate = reminderTaps
         #if DEBUG
@@ -85,7 +85,7 @@ private func follow(_ phase: ScenePhase, _ parts: AppParts) {
     switch phase {
     case .active:
         Task { await parts.sync.foreground() }
-        Task { await parts.health.refresh() }
+        Task { await parts.health.foreground() }
         Task { await parts.updater?.checkIfDue() }
         Task { await parts.store.follow(storefrontIsUS: await AppStoreCountry.current()) }
     case .background:
@@ -138,7 +138,7 @@ struct AppParts {
     let live: LiveHealth = {
         let calendar = Calendar.autoupdatingCurrent
         #if DEBUG
-        if DemoRecord.isOn { return LiveHealth(store: NoLiveHealth(), calendar: calendar) }
+        if DemoRecord.isOn, !DemoRecord.keepsLiveHealth { return LiveHealth(store: NoLiveHealth(), calendar: calendar) }
         #endif
         return LiveHealth(store: LiveHealthKitStore(calendar: calendar), calendar: calendar, kept: try? LiveHealth.keptFile())
     }()
@@ -176,8 +176,8 @@ struct AppParts {
         #endif
         sync = CloudSync(engine: engine, store: store, oauth: oauth)
         let (engine, store) = (engine, store)
-        reminders = ReminderScheduler(center: center, folder: folder) {
-            try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
+        reminders = ReminderScheduler(center: center, folder: folder) { firstSeen in
+            try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId, firstSeen: firstSeen)
         }
         let sync = self.sync
         health = AppleHealthSync(store: store, engine: engine, client: client, live: live) { await sync.syncNow() }
@@ -209,9 +209,9 @@ private struct LaunchFiles: Sendable {
     }
 }
 
-/// What shows while the parts are built (about 100 ms on an iPhone 15 Pro Max): My data's
+/// What shows while the parts are built (about 100 ms on an iPhone 15 Pro Max): My health's
 /// plain background, also the system launch screen's colour (`LaunchBackground`), so
-/// nothing changes on screen until My data appears (US-25 AC21b, Brad 2026-10-26).
+/// nothing changes on screen until My health appears (US-25 AC21b, Brad 2026-10-26).
 struct LaunchView: View {
     var body: some View {
         Color(.systemGroupedBackground)

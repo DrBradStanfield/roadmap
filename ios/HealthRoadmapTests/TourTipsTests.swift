@@ -53,10 +53,10 @@ final class TourTipsTests: XCTestCase {
         XCTAssertEqual(TourStep.allCases.filter(\.isTip), [.snapshot, .foundation, .bloodTests])
         XCTAssertEqual([SnapshotTip.step, FoundationTip.step, BloodTestsTip.step], [.snapshot, .foundation, .bloodTests],
                        "each tip carries its own step")
-        XCTAssertEqual([SnapshotTip.tab, FoundationTip.tab, BloodTestsTip.tab], [.plan, .plan, .data],
-                       "and its own tab: a hidden tab's tip never shows over another")
-        XCTAssertEqual(SnapshotTip.line, "A snapshot of your health. Tap any tile to learn more.")
-        XCTAssertEqual(FoundationTip.line, "Start here. Each step comes with the reason and the evidence.")
+        XCTAssertEqual([SnapshotTip.tab, FoundationTip.tab, BloodTestsTip.tab], [.health, .health, .health],
+                       "all on My health (US-73 AC11): a tip never shows over Chat")
+        XCTAssertEqual(SnapshotTip.line, "Your numbers, grouped by topic. Tap any row for its history and what it means.")
+        XCTAssertEqual(FoundationTip.line, "Each step comes with the reason and the evidence. Tap a card to read it.")
         XCTAssertEqual(BloodTestsTip.line, "The more data you add, the more personal your plan. You can upload lab reports to fill these in for you.")
         XCTAssertNil(SnapshotTip().message, "one line: the title alone")
         XCTAssertNil(FoundationTip().message)

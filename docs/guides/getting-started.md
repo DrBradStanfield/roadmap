@@ -2,7 +2,7 @@
 title: "An open-source health record you can connect to your AI"
 description: "The code is public and MIT licensed. Your record is one file in your own cloud, so the website, the command line and an AI with file access can all read it."
 slug: "ai-health-record"
-updated: "2026-10-22"
+updated: "2026-11-02"
 stories: ["US-29", "US-30", "US-31", "US-32", "US-38"]
 ---
 
@@ -28,7 +28,7 @@ An AI on your own computer opens the file directly, with no server of ours in be
 
 [diagram:tools]
 
-There are nine tools, and none of them deletes anything from your record. An AI reads your record with `read_record` and works out your plan with `get_plan`, the same plan the website shows, with the reason and the citations behind each suggestion. It files one value with `add_measurement`, or a whole lab panel in one call with `add_lab_values`. It fixes a value that went in wrong with `correct_value`. It changes the four facts your plan is worked out from with `update_profile`: your sex, birth year, birth month and height. On a connected Dropbox it reads the lab files sitting in your folder with `import_documents`, and it files the values it read out of a file you dropped into the chat with `file_results`. When a tool refuses something you reasonably expected, it can report that as a public issue on the project's GitHub with `report_feedback`. It shows you the report and files it only after you say yes. The report carries its description of the problem, and the tool refuses a value, an email, a phone number or a file name, though it cannot spot a diagnosis written in prose. There is no tenth tool that deletes.
+There are nine tools for your record, and none of them deletes anything from your record. An AI reads your record with `read_record` and works out your plan with `get_plan`, the same plan the website shows, with the reason and the citations behind each suggestion. It files one value with `add_measurement`, or a whole lab panel in one call with `add_lab_values`. It fixes a value that went in wrong with `correct_value`. It changes the four facts your plan is worked out from with `update_profile`: your sex, birth year, birth month and height. On a connected Dropbox it reads the lab files sitting in your folder with `import_documents`, and it files the values it read out of a file you dropped into the chat with `file_results`. When a tool refuses something you reasonably expected, it can report that as a public issue on the project's GitHub with `report_feedback`. It shows you the report and files it only after you say yes. The report carries its description of the problem, and the tool refuses a value, an email, a phone number or a file name, though it cannot spot a diagnosis written in prose. No tool deletes a reading or your record. When the connector has them switched on, two more tools, `search_knowledge` and `get_article`, read Dr Brad's public articles. They never touch your record.
 
 ## Why nothing is ever deleted
 
@@ -79,7 +79,7 @@ Four steps, on any Claude plan. Nothing to install and no special mode to turn o
 
 ## Connect ChatGPT on the web
 
-Five steps, on a paid ChatGPT plan, on the web. There is one extra step compared with Claude: developer mode. OpenAI keeps custom connectors behind it until an app is published through their review, and ours is not published yet. Developer mode is a setting on your own account, not a change to how ChatGPT answers you.
+Five steps, on a paid ChatGPT plan, on the web. There is one extra step compared with Claude: developer mode. OpenAI keeps custom connectors behind it unless an app is listed in ChatGPT, and OpenAI does not list health apps at present. Developer mode is a setting on your own account, not a change to how ChatGPT answers you.
 
 1. Turn developer mode on. Open Settings, then Security, and switch Developer mode on.
 

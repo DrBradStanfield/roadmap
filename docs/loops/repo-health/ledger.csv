@@ -145,3 +145,118 @@ ref,kind,origin,opened_utc,loop_replied_utc,brad_replied_utc,status,note
 #429,issue,external,2026-10-31T19:44Z,,,triaged,"new feature ask: decision on splitting the largest source files (one PR per piece, behaviour unchanged); open, no maintainer reply; logged in feature-backlog"
 #430,pr,external,2026-10-31T20:44Z,,,triaged,"new: plan PSA cards and yearly PSA reminder read saved PSA measurement (plan.ts, reminder-schedule.ts); open, no maintainer reply"
 #222,pr,external,2026-10-22T01:29Z,,2026-10-22T02:38:34Z,closed,update: merged by Brad 2026-10-27T02:45Z after hold (first response 10-22 recorded earlier)
+#422,pr,external,2026-10-31T16:13Z,,2026-11-02T07:06:49Z,closed,update: closed by Brad with comment 2026-11-02T07:06Z (first human response)
+#423,pr,external,2026-10-31T16:22Z,,2026-11-02T02:54:10Z,closed,update: merged by Brad 2026-11-02T02:54Z (first human response)
+#424,pr,external,2026-10-31T16:30Z,,2026-11-02T02:41:57Z,closed,update: merged by Brad 2026-11-02T02:41Z (first human response)
+#425,pr,external,2026-10-31T16:38Z,,2026-11-04T01:36:06Z,closed,update: merged by Brad 2026-11-04T01:36Z (first human response)
+#427,pr,external,2026-10-31T18:34Z,,2026-11-02T20:20:58Z,closed,update: merged by Brad 2026-11-02T20:20Z (first human response)
+#428,pr,external,2026-10-31T19:07Z,,2026-11-02T02:41:57Z,closed,update: merged by Brad 2026-11-02T02:41Z (first human response)
+#430,pr,external,2026-10-31T20:44Z,,2026-11-03T00:53:12Z,closed,update: merged by Brad 2026-11-03T00:53Z (first human response)
+#431,pr,external,2026-10-31T21:31Z,,2026-11-04T02:03:16Z,closed,"new: US-11 AC2e: a chat erase tombstones every stored conversation, not only the ones this page loaded; merged by Brad"
+#432,pr,external,2026-10-31T21:58Z,,2026-11-03T00:53:12Z,closed,"new: US-06 AC15: a PSA typed in the prostate section is saved, dated by the month picked beside it; merged by Brad"
+#433,pr,external,2026-10-31T22:07Z,,2026-11-02T06:25:56Z,closed,new: US-25 AC12: iPhone reminders show on their day when the phone uses a non-Gregorian calendar; merged by Brad
+#434,pr,external,2026-10-31T22:17Z,,2026-11-02T02:54:10Z,closed,new: US-28 AC3: a reminder pass that fails after the lock no longer cancels the day; merged by Brad
+#435,pr,external,2026-10-31T22:26Z,,2026-11-02T02:41:57Z,closed,new: US-17 AC1b: the 90-day tombstone sweep no longer stops at 1000 old rows; merged by Brad
+#436,pr,external,2026-10-31T22:35Z,,2026-11-02T02:54:10Z,closed,new: US-17 AC1c: the dashboard counts live reminder opt-ins only; merged by Brad
+#438,pr,external,2026-10-31T22:53Z,,2026-11-02T06:25:57Z,closed,new: US-25 AC11e/AC11h: a token refresh that finishes after Disconnect no longer puts the tokens back; merged by Brad
+#439,pr,external,2026-10-31T23:11Z,,2026-11-03T01:04:24Z,closed,new: US-15 AC37a: YouTube rows get router_version only when the router ran; merged by Brad
+#440,pr,external,2026-10-31T23:27Z,,2026-11-02T02:41:58Z,closed,"new: US-32, US-22 AC3, US-12 AC18: one constant-time compare for five secret checks (deduplication); merged by Brad"
+#444,pr,external,2026-11-01T00:47Z,,2026-11-02T02:41:57Z,closed,new: US-09 AC23 + US-10 AC6/AC8 tests: pin 18 merge.ts rules no test checked; merged by Brad
+#446,pr,external,2026-11-01T00:55Z,,2026-11-02T02:41:57Z,closed,new: US-07 AC7 + US-11 tests: pin 14 device-storage rules no test checked; merged by Brad
+#447,pr,external,2026-11-01T01:01Z,,2026-11-04T01:33:21Z,closed,new: US-10 AC4a: tests pin the sync loop's merge order and failure wording that no test checked (tests only); merged by Brad
+#450,pr,external,2026-11-01T01:07Z,,2026-11-02T01:17:54Z,closed,"new: US-07 AC5: tests pin the graded-value cap, default unit detection and isKnownMinor's year step that no test ch; merged by Brad"
+#469,pr,external,2026-11-01T05:02Z,,2026-11-02T05:38:57Z,closed,new: US-29 AC4b: a lab row with no test name no longer makes the record unreadable; closed by Brad
+#470,issue,external,2026-11-01T05:08Z,,,escalated,"new: Screening: an abnormal result still waiting for follow-up disappears from the plan at the end of the age range; clinical content, Brad decides; open, no maintainer reply"
+#471,issue,external,2026-11-01T05:08Z,,,escalated,"new: Screening: after a positive FIT and a completed colonoscopy, the plan says next screening in 3 years but the r; clinical content, Brad decides; open, no maintainer reply"
+#472,issue,external,2026-11-01T05:08Z,,,escalated,"new: Screening: a follow-up marked 'completed' with no date falls back to the routine interval, which for HPV and c; clinical content, Brad decides; open, no maintainer reply"
+#473,issue,external,2026-11-01T05:08Z,,2026-11-01T21:43:42Z,closed,new: SGLT2 inhibitor card: 'proven cardiovascular and kidney protection' is shown to people the trials did not stud; closed by Brad
+#474,issue,external,2026-11-01T05:08Z,,2026-11-01T21:43:43Z,closed,"new: eGFR labels: the tile and card use their own band names but cite KDIGO, whose names differ; closed by Brad"
+#475,issue,external,2026-11-01T05:08Z,,2026-11-01T21:43:32Z,closed,new: Ideal body weight card: says Peterson 'accounts for both sex and height' unlike Devine; it is the other way ro; closed by Brad
+#476,issue,external,2026-11-01T05:08Z,,2026-11-01T21:43:45Z,closed,new: Lab catalogue: a report row printed just 'Cortisol' is filed as 'Cortisol (morning)'; closed by Brad
+#477,pr,external,2026-11-01T05:11Z,,2026-11-02T02:41:57Z,closed,"new: US-14 AC6: a long document title is cut on a whole character, so a Drive original under it can be opened again; merged by Brad"
+#478,pr,external,2026-11-01T05:52Z,,2026-11-02T22:12:26Z,closed,new: US-05 AC5: a first browser visit from a US territory defaults to US units; merged by Brad
+#480,pr,external,2026-11-01T06:01Z,,2026-11-02T02:41:57Z,closed,new: US-16 AC2b: a tool-only reply mixing a profile edit asks for the profile Save too; merged by Brad
+#482,pr,external,2026-11-01T06:09Z,,2026-11-04T02:07:41Z,closed,new: US-11 AC2f: deleting a conversation again after a failed save writes the tombstone; merged by Brad
+#484,pr,external,2026-11-01T06:17Z,,2026-11-02T07:41:53Z,closed,new: US-16 AC3: a chat medication edit is applied only when its answer is one the question offers; closed by Brad
+#486,pr,external,2026-11-01T06:24Z,,2026-11-02T02:41:57Z,closed,new: US-09 AC13f: a Dropbox save that gets no answer says the change may have landed; merged by Brad
+#488,pr,external,2026-11-01T06:32Z,,2026-11-02T20:06:59Z,closed,"new: US-35 AC7a: a report that would overflow the receipt waits for the next call, and no value is cut unsaid; merged by Brad"
+#494,pr,external,2026-11-01T06:39Z,,2026-11-02T02:54:10Z,closed,"new: US-32 AC55: an MCP notification gets no reply, whatever its method; merged by Brad"
+#497,pr,external,2026-11-01T06:46Z,,2026-11-02T02:41:57Z,closed,new: US-30 AC8: a newline in a lab name or unit cannot forge a line of the text report; merged by Brad
+#498,pr,external,2026-11-01T06:52Z,,2026-11-02T07:24:08Z,closed,new: US-36 AC7a: file_results tells the assistant to send every part of a long report before the first commit; merged by Brad
+#499,pr,external,2026-11-01T06:58Z,,2026-11-03T00:26:12Z,closed,new: US-12 AC11a: a core row naming no core metric is never silently dropped; merged by Brad
+#503,issue,external,2026-11-01T14:28Z,,,escalated,"new: Reminder cooldown: per screening, or per screening group?; Brad-only surface or spec call; open, Brad-account comments 11-04 and 11-06 (read as session-written, W45 review R6)"
+#504,issue,external,2026-11-01T14:28Z,,,escalated,"new: YouTube follow-up turns: the follow-up instructions do not say the emergency rule (Step 0) still applies; clinical content, Brad decides; open, no maintainer reply"
+#505,issue,external,2026-11-01T14:28Z,,,triaged,"new: Reminder email says 'Stop them with one click' but the link opens a confirm page; open, no maintainer reply"
+#506,pr,external,2026-11-01T14:48Z,,2026-11-02T02:54:10Z,closed,new: US-63 AC12: the health bot ignores an excluded channel's threads too; merged by Brad
+#507,pr,external,2026-11-01T14:57Z,,2026-11-02T02:41:57Z,closed,new: US-10 AC4a: the hosted connector says a change may have landed when the provider refuses the token after the u; merged by Brad
+#508,pr,external,2026-11-01T15:34Z,,2026-11-02T02:54:10Z,closed,new: Archive scrub: an age placeholder must name that age's own decade (US-15 AC44b); merged by Brad
+#509,pr,external,2026-11-01T15:41Z,,2026-11-02T02:54:10Z,closed,"new: Chat router: a made-up, repeated or overlong handle no longer pushes out or voids the known ones (US-15 AC28a); merged by Brad"
+#510,pr,external,2026-11-01T15:47Z,,2026-11-02T07:06:47Z,closed,new: US-15 AC49: a short crisis follow-up on YouTube reaches the answer model; closed by Brad
+#511,pr,external,2026-11-01T16:26Z,,2026-11-02T07:37:10Z,closed,new: Archive scrub: a date placeholder covers only a day and a month (US-15 AC44d); merged by Brad
+#512,pr,external,2026-11-01T16:33Z,,2026-11-02T02:54:10Z,closed,"new: Archive scrub: a name, place or job placeholder covers only capitalised words (US-15 AC44c); merged by Brad"
+#513,pr,external,2026-11-01T16:40Z,,2026-11-04T05:18:42Z,closed,"new: US-27 AC4: the per-video reply cap counts every posted reply, past 1000; merged by Brad"
+#605,issue,external,2026-11-02T01:52Z,,,triaged,"new: Website upload: an iPhone HEIC photo dropped in Chrome or Edge is called 'not a PDF, photo or .docx file'; open, no maintainer reply"
+#691,pr,external,2026-11-02T09:53Z,,2026-11-04T01:51:57Z,closed,new: US-12 AC5a: Cancel stops a Pages batch upload sending files to Anthropic; merged by Brad
+#692,pr,external,2026-11-02T10:11Z,,2026-11-04T01:51:57Z,closed,new: US-15 AC47a: a Pages chat follow-up keeps its conversation without a history file; merged by Brad
+#693,pr,external,2026-11-02T10:28Z,,2026-11-04T01:51:57Z,closed,new: US-09 AC16a: the chat opens where the browser refuses a BroadcastChannel; merged by Brad
+#694,pr,external,2026-11-02T10:48Z,,2026-11-04T05:18:42Z,closed,new: US-17 AC14: a reminder counts as sent only when Resend returns an id; merged by Brad
+#695,pr,external,2026-11-02T11:06Z,,,withdrawn,"new: closed by its author, no maintainer action"
+#696,pr,external,2026-11-02T11:22Z,,,withdrawn,"new: closed by its author, no maintainer action"
+#697,issue,external,2026-11-02T11:56Z,,,triaged,"new: Website upload: a PDF page with a typed header over a scanned result is read as text only, and the scan is nev; open, no maintainer reply"
+#698,pr,external,2026-11-02T13:25Z,,2026-11-04T01:33:21Z,closed,"new: US-12 AC22: a scanned PDF page is drawn no larger than 2,000 px on its long side; merged by Brad"
+#699,pr,external,2026-11-02T13:36Z,,2026-11-04T05:18:42Z,closed,new: US-09 AC25a: scopes_update without a current scope list answers 200 and keeps the stored scope; merged by Brad
+#700,pr,external,2026-11-02T13:46Z,,2026-11-04T01:33:21Z,closed,new: US-12 AC7a: each uploaded PDF releases its pdf.js worker once read; merged by Brad
+#701,pr,external,2026-11-02T13:55Z,,2026-11-04T01:33:21Z,closed,"new: US-02 AC4: a pasted '5 ½' is refused, not saved as 5; merged by Brad"
+#702,issue,external,2026-11-02T15:36Z,,,triaged,"new: Blood-test table: a chat value with a date moves every value already typed in the New column to that date; open, no maintainer reply"
+#703,issue,external,2026-11-02T15:36Z,,,triaged,"new: 'View original file' can do nothing at all when the browser blocks the new tab; open, no maintainer reply"
+#704,pr,external,2026-11-02T15:52Z,,2026-11-04T01:33:21Z,closed,new: US-21 AC2: 'Choose a test…' after an Other test saves nothing; merged by Brad
+#705,pr,external,2026-11-02T16:01Z,,2026-11-04T01:36:06Z,closed,"new: US-60 AC3a: the alcohol dialog keeps the keyboard focus, and gives it back to Dismiss; merged by Brad"
+#706,pr,external,2026-11-02T16:53Z,,2026-11-04T01:36:06Z,closed,"new: US-15 AC26a: Enter that commits Japanese, Chinese or Korean input does not send the chat question; merged by Brad"
+#707,pr,external,2026-11-02T17:04Z,,2026-11-04T01:36:06Z,closed,"new: US-15 AC46a: + New Chat in the chat bubble's History shows the new chat, not the list; merged by Brad"
+#708,pr,external,2026-11-02T17:48Z,,2026-11-04T01:36:06Z,closed,new: US-02 AC10: the blood pressure tooltip's link works from the keyboard; merged by Brad
+#728,pr,external,2026-11-02T20:27Z,,2026-11-04T01:33:21Z,closed,new: US-12 AC6b: a re-ticked 'Already saved' document keeps its tick through a reload; merged by Brad
+#732,pr,external,2026-11-02T20:50Z,,2026-11-04T01:33:21Z,closed,new: US-04 AC5b: a move waits for typed text on the day it moves to; merged by Brad
+#740,pr,external,2026-11-02T21:47Z,,2026-11-04T01:33:21Z,closed,new: US-18 AC7: the email box sends once per press; merged by Brad
+#743,pr,external,2026-11-02T21:58Z,,2026-11-04T02:03:18Z,closed,"new: US-11 AC2g: after Delete All My Data, the floating chat no longer opens with the erased conversations; merged by Brad"
+#745,pr,external,2026-11-02T22:08Z,,2026-11-04T01:33:21Z,closed,new: US-02 AC11: typing 5 ft 10 in no longer saves 5 ft 1 in; merged by Brad
+#746,pr,external,2026-11-02T22:17Z,,2026-11-04T01:33:21Z,closed,"new: US-06 AC16: a screening date picker shows the date the record holds, not an old pick; merged by Brad"
+#751,pr,external,2026-11-02T22:51Z,,2026-11-04T01:36:06Z,closed,new: US-07 AC16: a card's evidence opens from the keyboard; merged by Brad
+#769,pr,external,2026-11-03T01:15Z,,2026-11-04T01:51:57Z,closed,new: US-09 AC30a: a Google script that failed to load is fetched again on the next tap; merged by Brad
+#770,issue,external,2026-11-03T01:19Z,,,triaged,"new: About you, collapsed: Tab walks through four invisible buttons, and a keyboard cannot open it; open, no maintainer reply"
+#771,issue,external,2026-11-03T01:19Z,,,triaged,"new: My plan: the orange 'attention' text is 2.3:1 to 2.6:1, below the 4.5:1 the redesign requires; open, no maintainer reply"
+#780,pr,external,2026-11-03T02:38Z,,2026-11-04T01:36:06Z,closed,new: US-14 AC7: a saved document opens on screen; merged by Brad
+#784,pr,external,2026-11-03T02:57Z,,2026-11-04T02:07:00Z,closed,new: US-15 AC53: the blog chat bubble shows on a phone; merged by Brad
+#788,pr,external,2026-11-03T03:58Z,,2026-11-04T05:23:05Z,closed,new: US-09 AC13g: Drive refresh and account-email reads work on Safari 14/15; merged by Brad
+#789,pr,external,2026-11-03T04:08Z,,2026-11-04T05:26:21Z,closed,new: US-34 AC1a: a Drive change made while the watch was down is still shown; merged by Brad
+#791,pr,external,2026-11-03T04:46Z,,2026-11-04T05:26:21Z,closed,new: US-34 AC1b: a Dropbox change made while the watch was down is still shown; merged by Brad
+#792,issue,external,2026-11-03T04:49Z,,,triaged,"new: Email reminders: what reaches Dr Brad's server is said only after the person turns them on; open, no maintainer reply"
+#793,pr,external,2026-11-03T05:42Z,,2026-11-04T01:36:06Z,closed,new: US-09 AC34: the storage picker and the history lightbox give the focus back when they close; merged by Brad
+#794,pr,external,2026-11-03T05:51Z,,2026-11-04T05:23:07Z,closed,new: US-09 AC2g: a switch whose new connect failed can be tried again on the same page; merged by Brad
+#797,issue,external,2026-11-03T08:11Z,,,triaged,"new: edit-record correct --expect refuses the core value that get-plan shows; open, no maintainer reply"
+#798,pr,external,2026-11-03T09:11Z,,2026-11-04T05:51:29Z,closed,new: US-32 AC56: the record tools run when started through a symlink; merged by Brad
+#799,pr,external,2026-11-03T09:41Z,,2026-11-04T05:18:42Z,closed,"new: US-15 AC54: the chat audit reads every row in its window, not the first 1000; merged by Brad"
+#800,pr,external,2026-11-03T09:52Z,,2026-11-04T01:36:06Z,closed,"new: US-38 AC6: guide lists render as lists, not as one paragraph of dashes; merged by Brad"
+#801,issue,external,2026-11-03T11:35Z,,,escalated,"new: Colorectal screening: the guide says repeat FIT every 2 years, the plan and its reminder say every year; clinical content, Brad decides; open, no maintainer reply"
+#802,issue,external,2026-11-03T11:35Z,,,escalated,"new: Cholesterol section: the testosterone clause cites a statin and Alzheimer study; clinical content, Brad decides; open, no maintainer reply"
+#803,issue,external,2026-11-03T11:35Z,,,escalated,"new: Engine release: a deploy run waiting for approval and the queued runs cancelled behind it; Brad-only surface or spec call; open, Brad-account comments 11-04 and 11-06 (read as session-written, W45 review R6)"
+#804,pr,external,2026-11-03T14:36Z,,2026-11-04T05:20:46Z,closed,"new: US-46 AC15: auto-ship dispatches pages.yml after the merge, and the deploy's Pages smoke waits for that commit; merged by Brad"
+#805,pr,external,2026-11-03T14:47Z,,2026-11-04T05:20:44Z,escalated,"new: US-64 AC5: the push guard sees gh api writes to main; Brad-only surface or spec call; open, Brad-account comments 11-04 and 11-06 (read as session-written, W45 review R6)"
+#806,issue,external,2026-11-03T15:07Z,,,triaged,"new: docs/about-page-copy.html still says an account stores your health data; the record is now a file in your own ; open, no maintainer reply"
+#808,pr,external,2026-11-03T20:19Z,,2026-11-04T05:51:30Z,closed,new: US-32 AC57: a read labels the text it carries from the user's files; merged by Brad
+#866,pr,external,2026-11-05T11:07Z,,2026-11-06T00:05:51Z,closed,new: US-15 AC7d: a ghost profile that cannot be written leaves no ghost auth user; merged by Brad
+#867,pr,external,2026-11-05T11:08Z,,2026-11-06T00:05:43Z,closed,"new: US-09 AC35: a save to a full Dropbox is not retried as a conflict, and says the Dropbox is full; merged by Brad"
+#868,pr,external,2026-11-05T11:10Z,,2026-11-06T00:05:38Z,closed,new: US-15 AC26b: a new chat's title is never cut through an emoji; merged by Brad
+#869,pr,external,2026-11-05T11:12Z,,2026-11-06T00:05:47Z,closed,new: US-12 AC20a: the phone blood pressure row draws a limit day hollow; merged by Brad
+#870,pr,external,2026-11-05T11:20Z,,2026-11-05T23:58:25Z,triaged,"new: US-15 AC55: both web chats follow a long new message when the reader is at the bottom; open, Brad-account comment on thread"
+#873,pr,external,2026-11-05T13:15Z,,2026-11-06T00:06:01Z,closed,new: US-46 AC16: Pages smoke follows a replaced Pages run and tells Brad about a missing one; auto-ship re-reads th; merged by Brad
+#874,pr,external,2026-11-05T14:52Z,,2026-11-06T00:05:57Z,closed,new: US-01 AC5: a guest save refused by a full browser storage is said on screen; merged by Brad
+#875,pr,external,2026-11-05T14:52Z,,2026-11-06T00:05:47Z,closed,"new: US-65 AC7: a device record the web refuses at load is named on the page, not a stuck skeleton; merged by Brad"
+#876,pr,external,2026-11-05T14:52Z,,2026-11-06T00:05:56Z,closed,new: US-05 AC6: a stored unit toggle that is not a plain object of units is ignored; merged by Brad
+#877,pr,external,2026-11-05T14:52Z,,2026-11-06T00:05:47Z,closed,new: US-06 AC19: a double click on a featured supplement chip adds only that chip; merged by Brad
+#878,pr,external,2026-11-05T17:18Z,,2026-11-06T00:05:51Z,closed,new: US-09 AC36: the server's Supabase clients start no token-refresh timer; merged by Brad
+#933,issue,external,2026-11-06T01:39Z,,,escalated,"new: health_roadmap_algorithm.md vs the engine: four questions where the doc is silent or out of date (no code bugs; clinical content, Brad decides; open, no maintainer reply"
+#942,pr,external,2026-11-06T03:27Z,,,triaged,"new: US-09 AC40: the Drive folder rename is marked done only when Drive accepted it; open, no maintainer reply"
+#944,pr,external,2026-11-06T03:40Z,,,triaged,"new: US-09 AC37: the Google Drive code exchange gives up after 10 seconds; open, no maintainer reply"
+#945,pr,external,2026-11-06T03:40Z,,,triaged,"new: US-09 AC38: on the iPhone, a full Dropbox says the Dropbox is full; open, no maintainer reply"
+#947,pr,external,2026-11-06T03:56Z,,,triaged,"new: US-09 AC39: a Dropbox document upload gives up after 5 minutes; open, no maintainer reply"
+#954,pr,external,2026-11-06T14:28Z,,,escalated,"new: US-32 AC9a: report_feedback guard also refuses common spellings of a metric name next to a number; Brad-only surface or spec call; open, Brad-account comments 11-04 and 11-06 (read as session-written, W45 review R6)"

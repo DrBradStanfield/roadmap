@@ -29,29 +29,29 @@ async function inFlight() {
   const store = await ChatHistoryStore.create(adapter);
   const first = store.recordExchange({ conversationId: 'c1', isNew: true, userText: 'my ldl is 3.2', assistantText: 'ok' });
   await new Promise((resolve) => setTimeout(resolve, 0)); // the first save has written, and waits
-  // A second exchange saves and answers meanwhile: the working copy is now
-  // that save's result, so the delete below lands on objects the first save
-  // never held.
-  await store.recordExchange({ conversationId: 'c2', isNew: true, userText: 'and my blood pressure', assistantText: 'ok' });
-  return { adapter, store, first };
+  // A second exchange is made meanwhile. This session's saves run one at a
+  // time (US-11 AC2e), so its save waits behind the first.
+  const second = store.recordExchange({ conversationId: 'c2', isNew: true, userText: 'and my blood pressure', assistantText: 'ok' });
+  return { adapter, store, first, second };
 }
 
 describe('a chat save in flight never undoes a delete made meanwhile (US-11 AC2b)', () => {
   it('deleteConversation', async () => {
-    const { adapter, store, first } = await inFlight();
-    await store.deleteConversation('c1');
+    const { adapter, store, first, second } = await inFlight();
+    const deleting = store.deleteConversation('c1');
     expect(store.listConversations().map((c) => c.id)).toEqual(['c2']);
     adapter.release();
-    await first;
+    await Promise.all([first, second, deleting]);
     expect(store.listConversations().map((c) => c.id)).toEqual(['c2']);
     expect(store.getMessages('c1')).toEqual([]);
   });
 
   it('eraseAll', async () => {
-    const { adapter, store, first } = await inFlight();
-    await store.eraseAll();
+    const { adapter, store, first, second } = await inFlight();
+    const erasing = store.eraseAll();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     adapter.release();
-    await first;
+    await Promise.all([first, second, erasing]);
     expect(store.listConversations()).toEqual([]);
   });
 });

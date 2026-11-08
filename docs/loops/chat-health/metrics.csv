@@ -197,3 +197,36 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W44,yt_reply_gt90w_count_7d,0,1,-100,chat_messages,"0/36 raw (max 86), 0 stripped (max 83); >5 sentences 1 (URLs removed keeping punctuation); any sentence >25 words 3/36 (max 30). The data worker's splitter ate full stops with the URLs and read 29/36"
 2026-W44,harness_full_pass,250,250,0,tools/test-chatbot-matching.ts,"full router suite --runs 3, 271 fixtures (W43 268), 92.3%, 'variance' (fail rate) 7.7%, claude-sonnet-5-5 thinking off, 0 API errors, $4.57, HEAD bea9c5a, index 293 entries; 21 fails: 10 symptom fixtures expecting [] get a treatment entry (same 10 as W43), 3 own-data asks ∅, 8 others"
 2026-W44,harness_classifier_pass,23,17,35,tools/test-classifier.ts,"--runs 1, claude-haiku-5-5, 25 fixtures, $0.0005; fails 'female' (known) and calcium-score meta (KNOWN-FLAKY). After this run's fixtures (27), --runs 3: 24/27 ($0.0016; fails 'female', calcium-score KNOWN-FLAKY, the book-spam fixture); both new fixtures pass 3/3. Single draws read 25/28 and 24/28 (reviewer) at 28 fixtures"
+2026-W45,lint_unresolved_marker,87,87,0,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_uncited_reference,20,20,0,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_uncited_list,39,39,0,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_doi_shape,1,1,0,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_pmid_shape,1,1,0,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_id_mismatch,1,1,0,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_link_dead,14,14,0,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_grokipedia,4,4,0,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_dose_mismatch,10,10,0,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_product_rise,4,4,0,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_guide_shape,0,,,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_topic_no_master,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_master_front,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_master_gate,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_master_doi,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_master_key_points,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_master_stale,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_source_stale,42,0,,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_master_places,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_master_overlap,69,69,0,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_grokipedia_only_sentences,55,55,0,tools/knowledge-lint.ts,weekly lint
+2026-W45,lint_due_entries,214,205,4,tools/knowledge-lint.ts,weekly lint
+2026-W45,empty_handle_turns,55,19,189,chat_match_events,"window 2026-10-31T22:25Z → 11-07T22:25Z; split youtube 39 / shopify 13 / widget 3 / discord 0; 0 error rows; total events 321 = 126 skipped + 195 ran (v4 5 ran to 11-02T01:14Z, v5 190 from 08:45Z); rise is YouTube volume after the per-video cap rose 10→30 on 11-03 (YouTube ran 165 vs W44 42 non-error; empty rate 24% both weeks); W44 re-measured 316 / 19 = published"
+2026-W45,classifier_catchable_share_pct,3.6,16,-78,manual categorisation + replay,"2/55 by the prompt: capsule-shell material PRODUCT 3/3, country follow-up PRODUCT 2/3 (production ROUTE). By intent 12/55: + 9 storefront product asks naming no product and 1 YouTube formulation suggestion, ROUTE 3/3 each on replay (classifier gets user turns only, never the surface). Classifier skipped 126 upstream (GREETING 73 / SPAM 35 / PRODUCT 13 / MEASUREMENT 3 / ACCOUNT 2)"
+2026-W45,routing_miss_share_pct,1.8,5.3,-66,manual categorisation + replay,"1/55: widget own-data interpretation ask (rule 7 routes the guidelines; ∅ 3/3; W41 KNOWN-FAIL shape, seventh week). Others non-miss: YouTube oblique 36 (18 replied, 18 SKIP), off-topic 1, router sample 1 (biological age; replay routes 2/3, possible 1-in-3 miss), renin content gap 2, silkworm-for-ED content gap 2 (rule 7: never a theme neighbour; ∅ 3/3), plus the catchable and unnamed-product rows. Fixtures: router +3, classifier +1 (file entries 626 → 630)"
+2026-W45,router_errors_7d,0,212,-100,chat_match_events,"0 router errors; fallbacks 1 (shopify 11-05T19:36Z, api-error, 'No text in Anthropic response'; chat_messages is_fallback 1, same row)"
+2026-W45,router_latency_median_ms,1709,1548,10,chat_match_events,"n=195 ran (no error rows); v5 1705.5 (n=190), v4 1789 (n=5)"
+2026-W45,router_latency_p90_ms,2245,2050,10,chat_match_events,nearest-rank n=195; v5 2245; no timeouts
+2026-W45,router_cache_hit_rate_pct,78.5,60,31,chat_match_events,"153/195; hit gaps ≤300 s 61, 300–3,600 s 85, >3,600 s 7, first 0 (previous ran row, any platform); hit median 1701 vs miss 1722 ms"
+2026-W45,yt_reply_median_words,73,71.5,2,chat_messages,"n=126 replies excluding 46 SKIP_NO_REPLY and 0 failed rows; 0 AI tags; all claude-sonnet-5-5"
+2026-W45,yt_reply_gt90w_count_7d,7,0,,chat_messages,"7/126 (max 138; five over 110), spread 11-03 to 11-07; >5 sentences 16; any sentence >25 words 25 (max 34); recounted by the orchestrator with URL-safe splitting, same counts; proposal 1"
+2026-W45,harness_full_pass,289,250,16,tools/test-chatbot-matching.ts,"first v5 arm: 289/308 (93.8%), 'variance' (fail rate) 6.2% (gate 5%), --runs 3, claude-sonnet-5-5 thinking off, 0 API errors, $5.43, HEAD 59b8fa0, router view 302 entries; not comparable with W44 250/271 (36 condition-guide fixtures joined, all pass). 19 fails: 8 symptom fixtures expecting [] get a treatment entry, 4 stale since the guides (eGFR-40 → kidney-health, LDL-cause ×2 and ApoB estimate → high-cholesterol), 3 own-data asks ∅, 4 others"
+2026-W45,harness_classifier_pass,30,23,30,tools/test-classifier.ts,"--runs 1, claude-haiku-5-5, 32 fixtures, $0.0007; fails 'female' (known), book-spam (known). After this run's fixture (33), final wording --runs 3: 30/33 ($0.0021; + calcium-score KNOWN-FLAKY; new capsule-shell PRODUCT 3/3)"

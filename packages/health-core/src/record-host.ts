@@ -15,22 +15,36 @@ export interface SyncStorage {
   writeSync(fileName: string, body: object, expectedVersion: string | null): WriteResult;
   /** The file's stored revision; null when there is none. */
   revision(fileName: string): string | null;
+  /** Remove the file, only at `expectedVersion` (ConflictError otherwise), so
+   *  another page's write since stays (US-06 AC13). */
+  removeSync?(fileName: string, expectedVersion: string | null): void;
 }
 
 /** On a cloud: the copy on this device that holds a save the cloud refused,
  *  and the marker that says it is there (US-09 AC4). */
 export interface DeviceMirror {
   adapter: StorageAdapter;
+  /** The device copy's synchronous path, when it has one (localStorage on the
+   *  web): a page going away writes its unsaved changes there at once, since
+   *  it cannot wait for the cloud save (US-06 AC13). */
+  sync?: SyncStorage;
   pending: { get(): boolean; set(): void; clear(): void };
   /** True once this device has logged off: no write may recreate the record
    *  here (US-09 AC2c). */
   writesStopped(): boolean;
+  /** True while this browser still uses this cloud, so the device copy is
+   *  still its mirror: false once another tab has switched to "This device"
+   *  or another cloud (US-09 AC2), and then a page going away writes nothing
+   *  there. Absent: never known, so an erase taken in removes no device copy,
+   *  and a page going away still writes it (US-06 AC13). */
+  stillChosen?(): boolean;
   /** Remove the device copy and what sits beside it, after an erase has
    *  reached the cloud (US-11). */
   wipe(): Promise<void>;
   /** The cloud record has loaded: from now on this device's log-off, made in
-   *  another page, stops writes here too (US-09 AC2c). Not before: a load
-   *  that fails falls back to the device, whose copy is then its only store. */
+   *  another page, stops writes here too (US-09 AC2c), and so does one heard
+   *  while it loaded (AC2h). Not before: a load that fails falls back to the
+   *  device, whose copy is then its only store. */
   opened(): void;
 }
 

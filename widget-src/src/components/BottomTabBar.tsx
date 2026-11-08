@@ -1,26 +1,20 @@
 import type { KeyboardEvent, ReactNode } from 'react';
+import { CHAT_BUBBLES } from './icons';
 
-export type TabId = 'input' | 'plan' | 'chat';
+export type TabId = 'health' | 'chat';
 
-/** The iPhone app's three tabs (RootView.swift), in its order and words. */
+/** The iPhone app's two tabs (RootView.swift, US-73 AC1), in its order and words (US-62 AC16). */
 const TABS: Array<{ id: TabId; label: string; icon: ReactNode }> = [
   {
-    id: 'input',
-    label: 'My data',
-    // list.bullet.clipboard
-    icon: <><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4" /></>,
-  },
-  {
-    id: 'plan',
-    label: 'My plan',
+    id: 'health',
+    label: 'My health',
     // heart.text.square
     icon: <><rect x="3" y="3" width="18" height="18" rx="4" /><path d="M12 11.5c-1.6-2.2-4.5-1-3.6 1.2.6 1.4 3.6 3.3 3.6 3.3s3-1.9 3.6-3.3c.9-2.2-2-3.4-3.6-1.2zM7 7h10" /></>,
   },
   {
     id: 'chat',
     label: 'Chat',
-    // bubble.left.and.text.bubble.right
-    icon: <><path d="M4 5h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H9l-3 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" /><path d="M16 9h4a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1v3l-3-3h-3a2 2 0 0 1-2-1.5" /></>,
+    icon: CHAT_BUBBLES,
   },
 ];
 

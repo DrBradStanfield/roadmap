@@ -11,7 +11,7 @@ import { PRESSURE_ORDER } from './validation';
 import { importDeviceSamples } from './device-import';
 import { calculateHealthResults } from './calculations';
 import { mergeFiles } from './merge';
-import { computePlan } from './plan';
+import { computePlan, planInputsFrom } from './plan';
 import { validateHealthInputs } from './validation';
 import type { HealthInputs } from './types';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
@@ -143,8 +143,12 @@ describe('US-02 AC8: the plan reads an inverted blood pressure as none (review R
       Object.assign(file.profile, { sex: 'male', birthYear: 1971, heightCm: 178, unitSystem: 'si' });
       return computePlan(file, new Date(NOW));
     };
-    expect(bpCards(planOf(160, 100).results)).not.toEqual([]);
-    expect(bpCards(planOf(80, 120).results)).toEqual([]);
+    expect(bpCards(planOf(160, 100).results)).toEqual(['bp-stage2']);
+    // US-07 AC11: the plan asks to check the swapped reading; no tier card shows.
+    const swapped = planOf(80, 120).results;
+    expect(bpCards(swapped)).toEqual(['measure-bp']);
+    expect(swapped.suggestions.find((s) => s.id === 'measure-bp')?.title).toBe('Check your blood pressure reading');
+    expect(swapped.suggestions[1].id).toBe('measure-bp'); // second, after measure-waist (no waist here)
   });
 
   it('validation names the rule on both halves, so every surface leaves both out', () => {
@@ -167,7 +171,31 @@ describe('US-02 AC8: the plan reads an inverted blood pressure as none (review R
     expect(plan.inputs.systolicBp).toBeUndefined();
     expect(plan.inputs.diastolicBp).toBeUndefined();
     expect(plan.excluded).toEqual(expect.arrayContaining(['systolicBp', 'diastolicBp']));
-    expect(bpCards(plan.results)).toEqual([]);
+    expect(bpCards(plan.results)).toEqual(['measure-bp']);
+    expect(plan.results.suggestions.find((s) => s.id === 'measure-bp')?.title).toBe('Check your blood pressure reading');
   });
 });
 
+
+describe('US-07 AC11: planInputsFrom, the one strip every plan caller shares', () => {
+  const base = { heightCm: 178, sex: 'male', birthYear: 1971, weightKg: 80 } as HealthInputs;
+  const from = (inputs: Partial<HealthInputs>) => planInputsFrom(inputs, validateHealthInputs(inputs));
+
+  it('passes valid inputs through unchanged, with no pressureOrder', () => {
+    expect(from({ ...base, systolicBp: 120, diastolicBp: 80 })).toEqual({ ...base, systolicBp: 120, diastolicBp: 80 });
+  });
+
+  it('strips a swapped pair and marks it; strips any other invalid field without the mark', () => {
+    const swapped = from({ ...base, systolicBp: 80, diastolicBp: 120 });
+    expect(swapped).toMatchObject({ ...base, pressureOrder: true });
+    expect(swapped?.systolicBp).toBeUndefined();
+    expect(swapped?.diastolicBp).toBeUndefined();
+    const badWeight = from({ ...base, weightKg: 5 });
+    expect(badWeight?.weightKg).toBeUndefined();
+    expect(badWeight?.pressureOrder).toBeUndefined();
+  });
+
+  it('gives no plan without a valid height', () => {
+    expect(from({ ...base, heightCm: 10 })).toBeNull();
+  });
+});

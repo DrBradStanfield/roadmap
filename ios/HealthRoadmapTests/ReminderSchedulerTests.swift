@@ -12,6 +12,8 @@ final class ReminderSchedulerTests: XCTestCase {
     private var folder: URL!
     private var engineOutput: PhoneReminders!
     private var engineFails = false
+    /// What the scheduler passed the engine as kept first-seen days, call by call.
+    private var sentFirstSeen: [[String: String]] = []
 
     override func tearDown() async throws {
         try? FileManager.default.removeItem(at: folder)
@@ -23,10 +25,12 @@ final class ReminderSchedulerTests: XCTestCase {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         engineOutput = reminders(epoch: 0, days: ["2027-01-15", "2027-03-01"])
         engineFails = false
+        sentFirstSeen = []
     }
 
     private func scheduler() -> ReminderScheduler {
-        ReminderScheduler(center: center, folder: folder) { [unowned self] in
+        ReminderScheduler(center: center, folder: folder) { [unowned self] firstSeen in
+            sentFirstSeen.append(firstSeen)
             if engineFails { throw HealthEngine.EngineError.callFailed("unreadable") }
             return engineOutput
         }
@@ -169,7 +173,53 @@ final class ReminderSchedulerTests: XCTestCase {
         XCTAssertEqual(request.content.body, "A check-up is due. Open the app to see which.")
         let trigger = try XCTUnwrap(request.trigger as? UNCalendarNotificationTrigger)
         XCTAssertFalse(trigger.repeats)
-        XCTAssertEqual(trigger.dateComponents, DateComponents(year: 2027, month: 3, day: 1, hour: 9))
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = .autoupdatingCurrent
+        XCTAssertEqual(trigger.dateComponents, DateComponents(calendar: gregorian, year: 2027, month: 3, day: 1, hour: 9))
+    }
+
+    /// US-25 AC12: a reminder shows on its day at 9:00 whatever calendar the phone is set to.
+    /// The engine's days are Gregorian; a trigger without a calendar is read in the phone's,
+    /// so a Buddhist phone was asked for 1556 (never fired) and a Japanese one for 4117.
+    func testTheReminderShowsOnItsDayWhateverCalendarThePhoneUses() throws {
+        let request = ReminderScheduler.request(for: .init(id: "reminder.2099-03-01", fireDay: "2099-03-01", categories: ["screening_colorectal"]))
+        let trigger = try XCTUnwrap(request.trigger as? UNCalendarNotificationTrigger)
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = .current
+        let nineOnTheDay = try XCTUnwrap(gregorian.date(from: DateComponents(year: 2099, month: 3, day: 1, hour: 9)))
+        // iOS reads a trigger's components in their own calendar, or in the phone's when they carry none.
+        for identifier in [Calendar.Identifier.buddhist, .japanese, .islamicUmmAlQura, .persian, .hebrew] {
+            var phone = Calendar(identifier: identifier)
+            phone.timeZone = .current
+            XCTAssertEqual((trigger.dateComponents.calendar ?? phone).date(from: trigger.dateComponents), nineOnTheDay, "\(identifier)")
+        }
+        XCTAssertNil(trigger.dateComponents.timeZone, "9:00 on the phone's clock, wherever the phone is")
+        XCTAssertEqual(trigger.nextTriggerDate(), nineOnTheDay)
+    }
+
+    /// US-25 AC12: 9:00 stays 9:00 on the phone's clock after the phone changes time zone. iOS keeps the trigger
+    /// (archived) and reads it later, so a calendar holding the zone it was built in fired at 9:00 in that old zone.
+    func testTheReminderStaysAtNineOnThePhonesClockAfterAZoneChange() throws {
+        let saved = ProcessInfo.processInfo.environment["TZ"]
+        defer {
+            if let saved { setenv("TZ", saved, 1) } else { unsetenv("TZ") }
+            NSTimeZone.resetSystemTimeZone()
+        }
+        // The phone's own zone moves, as when it travels (NSTimeZone.default would leave the phone's zone alone).
+        func movePhone(to zone: String) {
+            setenv("TZ", zone, 1)
+            NSTimeZone.resetSystemTimeZone()
+        }
+        movePhone(to: "America/New_York")
+        let request = ReminderScheduler.request(for: .init(id: "reminder.2099-03-01", fireDay: "2099-03-01", categories: ["screening_colorectal"]))
+        let archived = try NSKeyedArchiver.archivedData(withRootObject: try XCTUnwrap(request.trigger), requiringSecureCoding: true)
+        movePhone(to: "Pacific/Auckland")
+        let auckland = try XCTUnwrap(TimeZone(identifier: "Pacific/Auckland"))
+        XCTAssertEqual(TimeZone.current, auckland)
+        let trigger = try XCTUnwrap(NSKeyedUnarchiver.unarchivedObject(ofClass: UNCalendarNotificationTrigger.self, from: archived))
+        var there = Calendar(identifier: .gregorian)
+        there.timeZone = auckland
+        XCTAssertEqual(trigger.nextTriggerDate(), there.date(from: DateComponents(year: 2099, month: 3, day: 1, hour: 9)))
     }
 
     func testTheEngineGivesTheAnnualFloorForANewRecord() throws {
@@ -181,6 +231,70 @@ final class ReminderSchedulerTests: XCTestCase {
         XCTAssertEqual(out.upcoming.map(\.category), ["annual_checkin"])
         XCTAssertEqual(out.upcoming.first?.dueAt, "2027-10-21")
         XCTAssertEqual(out.notifications.first?.id, "reminder.2027-10-21")
+    }
+
+    /// US-17 AC15: the day the phone first saw each follow-up reminder is kept beside
+    /// the opt-in and sent back, so the engine fires it that morning and then every
+    /// 90 days from it. Kept only on the phone; cleared while nothing is scheduled.
+    private var firstSeenKept: Bool {
+        FileManager.default.fileExists(atPath: folder.appending(path: "reminders-first-seen").path(percentEncoded: false))
+    }
+
+    /// US-17 AC15: kept across a relaunch and sent back to the engine.
+    func testFollowUpFirstSeenDaysAreKeptOnThePhoneAndSentBack() async {
+        engineOutput.firstSeen = ["screening_colorectal:organize": "2026-11-05"]
+        _ = await scheduler().optIn()
+        let relaunched = scheduler()
+        engineOutput.firstSeen = nil // an engine before them: what is kept stays as it is
+        await relaunched.refresh()
+        XCTAssertEqual(sentFirstSeen.last, ["screening_colorectal:organize": "2026-11-05"])
+        XCTAssertTrue(firstSeenKept)
+    }
+
+    /// US-17 AC15: turning reminders off clears them.
+    func testFirstSeenDaysClearWhenNothingIsScheduled() async {
+        engineOutput.firstSeen = ["screening_colorectal:organize": "2026-11-05"]
+        let scheduler = scheduler()
+        _ = await scheduler.optIn()
+        await scheduler.optOut()
+        await scheduler.refresh()
+        XCTAssertEqual(sentFirstSeen.last, [:], "turned back on, a follow-up fires once more on its first morning")
+        XCTAssertFalse(firstSeenKept)
+    }
+
+    /// US-17 AC15: turned off while the record cannot be read, they still clear, so turned on
+    /// again a follow-up fires on its first morning (Codex R1).
+    func testFirstSeenDaysClearOnOptOutEvenWhenTheEngineFails() async {
+        engineOutput.firstSeen = ["screening_colorectal:organize": "2026-11-05"]
+        let scheduler = scheduler()
+        _ = await scheduler.optIn()
+        XCTAssertTrue(firstSeenKept)
+        engineFails = true
+        await scheduler.optOut()
+        XCTAssertFalse(firstSeenKept)
+        engineFails = false
+        _ = await scheduler.optIn()
+        XCTAssertEqual(sentFirstSeen.last, [:], "nothing kept: the engine starts the follow-up on its first morning")
+    }
+
+    /// US-17 AC15: an erase ends the opt-in, and the first-seen days go with it.
+    func testAnEraseRemovesTheFirstSeenDays() async {
+        engineOutput.firstSeen = ["screening_colorectal:organize": "2026-11-05"]
+        let scheduler = scheduler()
+        _ = await scheduler.optIn()
+        XCTAssertTrue(firstSeenKept)
+        engineOutput = reminders(epoch: 1, days: ["2027-01-15"])
+        await scheduler.refresh()
+        XCTAssertFalse(firstSeenKept)
+    }
+
+    /// US-17 AC15: the real engine answers first-seen days when the app sends them.
+    func testTheEngineAnswersFirstSeenDaysWhenAsked() throws {
+        let engine = try HealthEngine()
+        let now = try Date("2026-10-21T08:00:00.000Z", strategy: .iso8601)
+        let record = try engine.blocking { [now] in try $0.newRecord(now: now, deviceId: "test", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "UTC")!) }
+        let out = try engine.blocking { [now] in try $0.reminders(recordJSON: record, now: now, deviceId: "test", firstSeen: [:]) }
+        XCTAssertEqual(out.firstSeen, [:], "no follow-up in a new record")
     }
 
     private func request(_ id: String) -> UNNotificationRequest {

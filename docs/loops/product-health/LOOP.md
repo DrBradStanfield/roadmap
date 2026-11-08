@@ -20,7 +20,7 @@ unacted for a quarter, say so in the retro and propose the fleet review.
    sections against last week's report: a story that vanished is a CRITICAL
    finding (2026-09-01: 17 stories lost to a truncated read written back
    whole, invisible for 4 days). The build gate
-   (`scripts/build-user-stories-html.ts`) refuses such a source in CI now.
+   (`scripts/build-user-stories-html.ts --check-against`) refuses such a source in CI now.
 2. The two most recent reports here + `LEARNINGS.md` + `metrics.csv`.
 3. `docs/usage-audit-2026-08.md` §6 — the baseline backlog.
 4. The week's sibling-loop reports (`docs/loops/*/` files changed in the last
@@ -129,11 +129,6 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   posted), escalations and security handling. Its schedule and report file do
   not apply. Log in its `ledger.csv`, `metrics.csv` and `feature-backlog.csv`;
   the report gets one line, and drafted replies for Brad go in it verbatim.
-- **OpenAI app review status** (Gmail MCP; the portal needs a login):
-  search for a verdict on submission `C-jVtw19jIhBb8` ("Health by Dr Brad"
-  v1.0.2, receipt 2026-10-13T23:55Z; v1.0.1 rejected 2026-09-30, v1.0.0
-  2026-09-15). If it has moved (approved or rejected), lead the report with it
-  as Brad's next action (#60 is closed as superseded).
 - **Newer-Sonnet check** (audit `claude_business docs/roadmap-chat/chat-audit-2026-09-29.md` §4.3, US-15
   AC18). Run `npx tsx tools/check-newer-model.ts` (needs
   `ANTHROPIC_TEST_API_KEY`). Exit 0 = nothing newer; 1 = a named gap. On exit
@@ -168,8 +163,8 @@ append rows to metrics.csv) · New errors · New feedback · Proposed backlog
 
 ## Write scope (beyond the default `docs/loops/product-health/**`)
 - Usage-evidence lines ONLY in `docs/user-stories.md` (never ACs or test
-  status — those belong to build sessions), then regenerate:
-  `npx tsx scripts/build-user-stories-html.ts`.
+  status — those belong to build sessions). Never commit the .html: Pages
+  builds it (US-64 AC11).
 - `docs/loops/repo-health/{ledger,metrics,feature-backlog}.csv`, and comments
   or spam closes on external issues and PRs, for the inbound pass only.
 

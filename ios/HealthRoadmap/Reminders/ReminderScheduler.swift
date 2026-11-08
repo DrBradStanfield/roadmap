@@ -39,15 +39,19 @@ final class ReminderScheduler {
 
     private let center: NotificationScheduling
     private let optInFile: URL
-    private let compute: @MainActor () async throws -> PhoneReminders
+    /// US-17 AC15: the engine's first-seen day per follow-up reminder, beside the opt-in.
+    /// Never sent anywhere; kept only while reminders are scheduled.
+    private let firstSeenFile: URL
+    private let compute: @MainActor (_ firstSeen: [String: String]) async throws -> PhoneReminders
     /// Refreshes run one after another, so two never interleave their removes and adds.
     private var last: Task<Void, Never>?
 
     /// `folder` is the record's (RecordStore.appFolder), left out of backups.
-    init(center: NotificationScheduling, folder: URL, compute: @escaping @MainActor () async throws -> PhoneReminders) {
+    init(center: NotificationScheduling, folder: URL, compute: @escaping @MainActor (_ firstSeen: [String: String]) async throws -> PhoneReminders) {
         self.center = center
         self.compute = compute
         optInFile = folder.appending(path: "reminders-opt-in")
+        firstSeenFile = folder.appending(path: "reminders-first-seen")
         optedInEpoch = (try? String(contentsOf: optInFile, encoding: .utf8)).flatMap { Int($0) }
     }
 
@@ -57,6 +61,15 @@ final class ReminderScheduler {
         } else {
             try? FileManager.default.removeItem(at: optInFile)
         }
+    }
+
+    private func firstSeen() -> [String: String] {
+        (try? Data(contentsOf: firstSeenFile)).flatMap { try? JSONDecoder().decode([String: String].self, from: $0) } ?? [:]
+    }
+
+    private func keepFirstSeen(_ seen: [String: String]) {
+        if seen.isEmpty { try? FileManager.default.removeItem(at: firstSeenFile) }
+        else if let data = try? JSONEncoder().encode(seen) { try? data.write(to: firstSeenFile, options: .atomic) }
     }
 
     /// Recomputes and reschedules.
@@ -70,7 +83,7 @@ final class ReminderScheduler {
     /// Asks iOS for permission, and on a yes turns reminders on under the record's current epoch.
     func optIn() async -> Bool {
         let granted = (try? await center.requestPermission()) ?? false
-        if granted, let epoch = (try? await compute())?.eraseEpoch { optedInEpoch = epoch }
+        if granted, let epoch = (try? await compute(firstSeen()))?.eraseEpoch { optedInEpoch = epoch }
         await refresh()
         return optedIn
     }
@@ -81,12 +94,15 @@ final class ReminderScheduler {
     }
 
     private func reschedule() async {
-        let next = try? await compute()
+        let next = try? await compute(firstSeen())
         reminders = next
         // An erase since the opt-in ends it. A failed read is not an erase: it only
         // cancels this round, and the next good read schedules again.
         if let epoch = optedInEpoch, let next, epoch != next.eraseEpoch { optedInEpoch = nil }
         permission = await center.permission()
+        // Off, refused or erased: the first-seen days go whatever the engine answered (or if it
+        // failed), so turning reminders on again fires each follow-up on its first morning.
+        if !optedIn || permission != .allowed { keepFirstSeen([:]) } else if let seen = next?.firstSeen { keepFirstSeen(seen) }
 
         let ours = await center.pendingIdentifiers().filter { $0.hasPrefix(Self.prefix) }
         center.removePending(ours)
@@ -104,7 +120,14 @@ final class ReminderScheduler {
         content.body = "A check-up is due. Open the app to see which."
         content.sound = .default
         let parts = notification.fireDay.split(separator: "-").compactMap { Int($0) }
-        let day = DateComponents(year: parts.first, month: parts.dropFirst().first, day: parts.dropFirst(2).first, hour: hour)
+        // The engine's day is Gregorian. Without a calendar iOS reads it in the phone's,
+        // so a Buddhist phone never fired and a Japanese one fired 2000 years late (as DayText).
+        // A calendar keeps the zone it was made in after the phone moves; following the
+        // phone's zone keeps 9:00 on the phone's clock.
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = .autoupdatingCurrent
+        let day = DateComponents(calendar: gregorian, year: parts.first, month: parts.dropFirst().first,
+                                 day: parts.dropFirst(2).first, hour: hour)
         let trigger = UNCalendarNotificationTrigger(dateMatching: day, repeats: false)
         return UNNotificationRequest(identifier: notification.id, content: content, trigger: trigger)
     }

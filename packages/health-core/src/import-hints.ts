@@ -13,6 +13,8 @@ export const IMPORT_LIMITS = {
   fileMb: 5,
   /** One ZIP as downloaded, MB. */
   zipMb: 20,
+  /** Entries one ZIP may list, folders and ignored files included (US-35 AC5b). */
+  zipEntries: 1000,
   /** Files one connection may read in a day. */
   filesPerDay: 30,
   /** What the website's own upload takes (`UploadModal.tsx` derives its cap from this) — named so the user hears the difference. */
@@ -35,9 +37,9 @@ const FILE_DATES_SHAPE = 'fileDates: [{ "file": "<name as listed>", "date": "YYY
 
 /**
  * The reasons tools/list names. The extraction stops (`too_long`, `refused`,
- * US-15 AC34) have sentences below but are not named there: the tool text is
- * frozen while the MCP 1.0.2 submission is in review (2026-10-19).
- * TODO(after the 1.0.2 verdict): add `too_long` and `refused` to this list,
+ * US-15 AC34) have sentences below but are not named there: the tool text was
+ * frozen for OpenAI's MCP 1.0.2 review (2026-10-19), which ended 2026-10-29.
+ * TODO (unblocked since that verdict): add `too_long` and `refused` to this list,
  * drop `| ExtractionStopCode` below, and point the AC13 test in
  * mcp-tools.test.ts back at this list alone (then re-take the pins in
  * app/lib/mcp-freeze.test.ts, since the published `reason` text moves).
@@ -69,7 +71,9 @@ const FILE_HINTS: Record<ImportFileReason, string> = {
   unreadable:
     'The file could not be read as a document. A clearer scan or the original PDF usually works; the website’s upload is another route.',
   too_many:
-    'A ZIP is read twenty files at a time and this entry was past the twentieth. Split the ZIP and import the rest.',
+    'One call opens at most twenty files inside ZIPs, and a ZIP listing more than ' +
+    `${IMPORT_LIMITS.zipEntries.toLocaleString('en-US')} entries (folders and ignored files included) is not opened at all. ` +
+    'A ZIP named in `remaining` can be asked for again by name once this batch is committed; any other ZIP has to be split to import the rest.',
   // The same request stops the same way again (US-15 AC34), so neither invites a retry of this file.
   too_long:
     'This file is too long to read in one go. Upload it on drstanfield.com/pages/roadmap, which reads longer reports, or split it into smaller files and import those.',

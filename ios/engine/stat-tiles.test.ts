@@ -36,11 +36,11 @@ describe('statTiles (US-25 AC22)', () => {
     // BMI 25-29.9 with no waist: no label, the plan asks for the waist instead.
     expect(t.bmi).toMatchObject({ label: 'BMI', value: '25.2', unit: '' });
     expect(t.bmi.status).toBeUndefined();
-    expect(t.ibw).toMatchObject({ label: 'Ideal Body Weight (IBW)', value: '60.0', unit: 'kg', status: { label: 'for 165 cm height' } });
+    expect(t.ibw).toMatchObject({ label: 'Ideal Body Weight', value: '60.0', unit: 'kg', status: { label: 'for 165 cm height' } });
     // A fact, not a grade: no tone, so the app draws it gray (Brad 2026-10-31).
     expect(t.ibw.status?.tone).toBeUndefined();
     expect(t.ibw.evidence).toEqual(getIbwEvidence('female'));
-    expect(t.protein).toMatchObject({ label: 'Protein Target', value: '72', unit: 'g/day', status: { label: '1.2g per kg IBW' } });
+    expect(t.protein).toMatchObject({ label: 'Protein Target', value: '72', unit: 'g/day', status: { label: '1.2 g/kg ideal weight' } });
     expect(t.protein.status?.tone).toBeUndefined();
     expect(t.ldl).toMatchObject({ label: 'LDL Cholesterol', value: '3.6', unit: 'mmol/L', status: { label: 'Borderline', tone: 'info' } });
     expect(t.ldl.evidence).toEqual(STAT_CARD_EVIDENCE['ldl']);
@@ -57,7 +57,7 @@ describe('statTiles (US-25 AC22)', () => {
 
   it('shows eGFR from creatinine, the non-HDL tile from total cholesterol, and Lp(a)', () => {
     const t = byKey(statTiles(recordOf((r) => { add(r, 'creatinine', 70); add(r, 'total_cholesterol', 6); add(r, 'lpa', 130); })));
-    expect(t.egfr).toMatchObject({ label: 'eGFR', unit: 'mL/min', status: { tone: 'normal' } });
+    expect(t.egfr).toMatchObject({ label: 'eGFR', unit: 'mL/min/1.73m²', status: { tone: 'normal' } });
     expect(t.nonHdl).toMatchObject({ label: 'Non-HDL Cholesterol', unit: 'mmol/L' });
     expect(t.ldl).toBeUndefined();
     expect(t.lpa).toMatchObject({ label: 'Lp(a)', value: '130', unit: 'nmol/L', status: { label: 'Elevated', tone: 'attention' } });
@@ -101,7 +101,8 @@ describe('statTiles (US-25 AC22)', () => {
       expect(JSON.parse(screenJson(record, NOW, 'phone', units)).plan).toEqual({
         sections: JSON.parse(sectionsJson(plan)),
         tiles: JSON.parse(JSON.stringify(tiles)),
-        usProducts: { blocks: [], ownershipLine: null },
+        // US-73: the same cards by topic, as my-health.test.ts checks.
+        topics: expect.any(Object),
         ms: expect.any(Number),
       });
     }

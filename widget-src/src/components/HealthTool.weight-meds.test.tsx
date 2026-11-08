@@ -16,6 +16,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, waitFor, fireEvent, type RenderResult } from '@testing-library/react';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
+import { ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
 import {
   addMeasurement,
   flushRoadmapStore,
@@ -37,6 +38,9 @@ vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 
 import { HealthTool } from './HealthTool';
+import { openAboutYou, showTables } from '../testing/health-tool-harness';
+import { bmiOnRow, planTitles, suggestionText } from '../testing/plan-on-page';
+import { openSettings } from '../testing/settings';
 
 const NEUTRAL = 'Are you currently taking any weight or diabetes medications? Recording these helps track your health over time.';
 const recommends = (bmi: string, reasons?: string) => (reasons
@@ -64,15 +68,17 @@ interface GuestRecord {
 }
 
 /** A guest whose record holds these values, and the page showing it. Born
- *  1980 unless the record says otherwise: medicine cards need a known adult
- *  age (US-07 AC6). `birthYear: undefined` is a guest with no birth year. */
+ *  January 1980 unless the record says otherwise: medicine cards need a known
+ *  adult age (US-07 AC6), and the whole form a birth month and year (US-62
+ *  AC13). `birthYear: undefined` is a guest with no birth year. */
 async function guestWith(r: GuestRecord): Promise<RenderResult> {
   const day = '2026-09-01';
   const birthYear = 'birthYear' in r ? r.birthYear : 1980;
+  if (!('birthYear' in r) && !r.birthMonth) r = { ...r, birthMonth: 1 };
   await initRoadmapStore(new LocalStorageAdapter());
   await saveChangedMeasurements({
     ...(r.sex ? { sex: r.sex } : {}), ...(birthYear ? { birthYear } : {}),
-    ...(r.birthMonth ? { birthMonth: r.birthMonth } : {}), heightCm: r.height ?? 178,
+    ...(r.birthMonth ? { birthMonth: r.birthMonth } : {}), ...(r.height === 0 ? {} : { heightCm: r.height ?? 178 }),
   }, {});
   await addMeasurement('weight', r.weight, day);
   if (r.waist) await addMeasurement('waist', r.waist, day);
@@ -87,32 +93,40 @@ async function guestWith(r: GuestRecord): Promise<RenderResult> {
   if (r.lipids?.ldl) await addMeasurement('ldl', r.lipids.ldl, day);
   for (const [key, drug, dose] of r.meds ?? []) await saveMedication(key, drug, dose ?? null, dose ? 'mg' : null);
   await flushRoadmapStore();
+  // The store refuses a birth year out of range (US-02 AC5); a record holding
+  // one (an older app's, another writer's) is written as it would arrive.
+  if (birthYear && birthYear < 1900) {
+    const adapter = new LocalStorageAdapter();
+    const { body, version } = adapter.readSync(ROADMAP_FILE_NAME) as { body: RoadmapFile; version: string | null };
+    adapter.writeSync(ROADMAP_FILE_NAME, { ...body, profile: { ...body.profile, birthYear } }, version);
+    await initRoadmapStore(new LocalStorageAdapter());
+  }
   return render(<HealthTool />);
 }
 
-/** The BMI on the plan, once the plan has read the record. */
+/** The BMI on the plan, once the plan has read the record: its tile under the
+ *  onboarding, else the weight row's target line (US-62 AC21, AC25). */
 const bmiTile = (container: HTMLElement) => Array.from(container.querySelectorAll('.stat-card'))
-  .find((c) => c.querySelector('.stat-label')?.textContent === 'BMI')?.querySelector('.stat-value')?.textContent;
+  .find((c) => c.querySelector('.stat-label')?.textContent === 'BMI')?.querySelector('.stat-value')?.textContent ?? bmiOnRow(container);
 
-/** The plan's "Consider a GLP-1 medication" card text, if the plan has one. */
+/** The plan's "Consider a GLP-1 medication" text, if the plan has it: a card, or on its question (US-62 AC20). */
 function planGlp1(container: HTMLElement): string | undefined {
-  const title = Array.from(container.querySelectorAll('.suggestion-title'))
-    .find((t) => t.textContent === 'Consider a GLP-1 medication');
-  return title?.parentElement?.querySelector('.suggestion-desc')?.textContent ?? undefined;
+  return suggestionText(container, 'Consider a GLP-1 medication');
 }
 
-/** A plan card whose title is, or (for `weight-med`) is any weight-medication step. */
-function planCard(container: HTMLElement, title: string): Element | undefined {
+/** Whether the plan holds a suggestion whose title is, or (for `weight-med`) is any weight-medication step. */
+function planCard(container: HTMLElement, title: string): string | undefined {
   const steps = ['Consider a GLP-1 medication', 'Add your GLP-1 dose', 'Consider increasing GLP-1 dose', 'Consider switching to Tirzepatide',
     'Consider adding an SGLT2 inhibitor', 'Consider adding Metformin'];
   const titles = title === 'weight-med' ? steps : [title];
-  return Array.from(container.querySelectorAll('.suggestion-title')).find((t) => titles.includes(t.textContent ?? ''));
+  return planTitles(container).find((t) => titles.includes(t));
 }
 
 /** The opening sentence of one of the form's sections, once it is on the page. */
 function sectionIntro(container: HTMLElement, section: string): Promise<string> {
   return waitFor(() => {
-    const title = Array.from(container.querySelectorAll('.health-section-title'))
+    // A medicine group's plain label under its topic (US-62 AC20, design review 2026-11-06).
+    const title = Array.from(container.querySelectorAll('.health-section-title, .mh-group-label'))
       .find((t) => t.textContent === section);
     if (!title) throw new Error('the section is not on the page');
     return title.parentElement!.querySelector('.health-section-desc')!.textContent!;
@@ -144,6 +158,13 @@ afterEach(async () => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
+
+/** The vitals' Blood Pressure row (US-62 AC8). */
+const pressureRow = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll('.md-row')).find((r) => r.querySelector('.md-row-label')?.textContent === 'Blood Pressure');
+/** Every blood-pressure target on the form: the row's, the plain field's and the grid's. */
+const bpTargets = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll('.md-row-meta, .field-hint, .bt-ref-label')).map((h) => h.textContent).filter((t) => t?.includes('/80'));
 
 describe('US-06 AC5: the form recommends a weight medication only when the plan does', () => {
   it("Brad's ruling: BMI 28.6 with a healthy waist and no raised marker is neutral, as the plan is silent", async () => {
@@ -211,8 +232,10 @@ describe('US-06 AC5: the form recommends a weight medication only when the plan 
     expect(await weightMedsIntro(view.container)).toBe(recommends('26', 'elevated waist-to-height ratio'));
   });
 
-  it('before there is a plan (no sex yet), the section is neutral', async () => {
-    const view = await guestWith({ weight: 95 }); // BMI 30.0
+  it('before there is a plan (no height yet), the section is neutral', async () => {
+    // A saved blood test opens the whole form before the onboarding is done (US-62 AC13);
+    // the HbA1c shows the section, flat, with no plan to recommend from.
+    const view = await guestWith({ sex: 'male', height: 0, weight: 95, hba1c: 40, lipids: { ldl: 2 } });
     expect(await weightMedsIntro(view.container)).toBe(NEUTRAL);
   });
 
@@ -341,7 +364,7 @@ describe('US-06 AC5: the form recommends a cholesterol medication only when the 
     const view = await guestWith({ sex: 'male', weight: 80, lipids: { ldl: 3 } });
     await waitFor(() => expect(planCard(view.container, 'Consider starting a statin')).toBeDefined());
     const sentence = 'Your LDL-c is 3.0 mmol/L; the treatment target is below 1.4 mmol/L.';
-    expect(planCard(view.container, 'Consider starting a statin')!.parentElement!.querySelector('.suggestion-desc')!.textContent)
+    expect(suggestionText(view.container, 'Consider starting a statin'))
       .toMatch(new RegExp(`^${sentence.replace(/\./g, '\\.')} `));
     expect(await cholesterolIntro(view.container)).toMatch(new RegExp(`^${sentence.replace(/\./g, '\\.')} `));
   });
@@ -352,22 +375,24 @@ describe('US-06 AC5: the form recommends a cholesterol medication only when the 
       meds: [['statin', 'rosuvastatin', 40], ['ezetimibe', 'ezetimibe', 10], ['bempedoic_acid', 'bempedoic_acid', 180], ['pcsk9i', 'pcsk9i', 140]],
     });
     await waitFor(() => expect(bmiTile(view.container)).toBe('25.2'));
-    expect(Array.from(view.container.querySelectorAll('.suggestion-title')).map((t) => t.textContent)
+    expect(planTitles(view.container)
       .filter((t) => /statin|Ezetimibe|bempedoic|PCSK9/.test(t ?? ''))).toEqual([]);
     expect(await cholesterolIntro(view.container)).toBe(CHOLESTEROL_NEUTRAL);
   });
 });
 
 describe('US-06 AC5: the form\'s age-based targets and sections follow the plan\'s age', () => {
-  /** The form's blood-pressure target hint. */
+  /** The form's blood-pressure target hint: the vitals grid's, under "All results as a table" (US-62 AC11). */
   const bpHint = (container: HTMLElement) => waitFor(() => {
-    const hint = Array.from(container.querySelectorAll('.field-hint')).find((h) => h.textContent?.startsWith('Target: <1'));
+    showTables(container);
+    const hint = Array.from(container.querySelectorAll('.field-hint, .bt-ref-label')).find((h) => h.textContent?.startsWith('Target: <1'));
     if (!hint) throw new Error('no BP target on the page');
     return hint.textContent;
   });
 
   it('born 1958 with no month and BP 135/85: the plan and the form both say <130/80', async () => {
-    const view = await guestWith({ sex: 'male', birthYear: 1958, weight: 80, bp: [135, 85] });
+    // No birth month: the onboarding is not done, and a saved blood test opens the whole form (US-62 AC13).
+    const view = await guestWith({ sex: 'male', birthYear: 1958, weight: 80, bp: [135, 85], lipids: { ldl: 2 } });
     await waitFor(() => expect(Array.from(view.container.querySelectorAll('.suggestion-desc'))
       .some((d) => d.textContent?.includes('Target is <130/80'))).toBe(true));
     expect(await bpHint(view.container)).toBe('Target: <130/80 mmHg');
@@ -376,7 +401,7 @@ describe('US-06 AC5: the form\'s age-based targets and sections follow the plan\
   it('the returning-user vitals matrix reads the plan\'s age too: an invalid birth year gives <120/80', async () => {
     // A saved weight in the legacy mirror opens the matrix at mount.
     localStorage.setItem('health_roadmap_data', SAVED_WEIGHT_MIRROR);
-    const view = await guestWith({ sex: 'male', birthYear: 1899, weight: 80, bp: [135, 85] });
+    const view = await guestWith({ sex: 'male', birthYear: 1899, weight: 80, bp: [135, 85], lipids: { ldl: 2 } }); // the blood test opens the whole form
     await waitFor(() => expect(Array.from(view.container.querySelectorAll('.suggestion-desc'))
       .some((d) => d.textContent?.includes('Target is <120/80'))).toBe(true));
     const matrixBpTarget = await waitFor(() => {
@@ -389,41 +414,47 @@ describe('US-06 AC5: the form\'s age-based targets and sections follow the plan\
 
   // Codex R1 (2026-09-28): with no plan, blood pressure stays neutral, like weight and waist.
   it('with no plan (no height), the form states no blood-pressure target', async () => {
-    const view = await guestWith({ sex: 'male', height: 0, weight: 80, bp: [135, 85] });
-    await waitFor(() => expect(Array.from(view.container.querySelectorAll('.collapsed-field-value'))
-      .some((v) => v.textContent?.includes('135/85'))).toBe(true));
-    expect(Array.from(view.container.querySelectorAll('.field-hint')).map((h) => h.textContent)
-      .filter((t) => t?.includes('/80 mmHg'))).toEqual([]);
+    const view = await guestWith({ sex: 'male', height: 0, weight: 80, bp: [135, 85], lipids: { ldl: 2 } }); // the blood test opens the whole form
+    await waitFor(() => expect(pressureRow(view.container)?.querySelector('.md-row-value')?.textContent).toContain('135/85'));
+    expect(bpTargets(view.container)).toEqual([]);
   });
 
   it('a returning user who clears their height: the matrix states no BP target and colours no BP status', async () => {
     localStorage.setItem('health_roadmap_data', SAVED_WEIGHT_MIRROR);
-    const view = await guestWith({ sex: 'male', birthYear: 1970, weight: 80, bp: [135, 85] });
+    const view = await guestWith({ sex: 'male', birthYear: 1970, birthMonth: 1, weight: 80, bp: [135, 85] });
     const bpRow = () => Array.from(view.container.querySelectorAll('.bt-row')).find((r) => r.textContent?.includes('Blood Pressure'));
     await waitFor(() => expect(bpRow()?.querySelector('.bt-ref-label')?.textContent).toBe('Target: <120/80 mmHg'));
     expect(Array.from(bpRow()!.querySelectorAll('.bt-status-tick')).map((t) => t.className)).toContain('bt-status-tick bt-status-bad');
+    openAboutYou(view.container);
     fireEvent.change(view.container.querySelector('#heightCm')!, { target: { value: '' } });
-    await waitFor(() => expect(bpRow()?.querySelector('.bt-ref-label')?.textContent).toBe('Set sex + height to see target'));
+    // The form stays open while the height is retyped (US-62 AC13).
+    await waitFor(() => expect(bpRow()?.querySelector('.bt-ref-label')?.textContent).toBe('Set height to see target'));
     expect(Array.from(bpRow()!.querySelectorAll('.bt-status-tick')).map((t) => t.className.replace('bt-status-tick ', ''))
       .filter((c) => c !== 'bt-status-none')).toEqual([]);
   });
 
-  it('born June 1899: the plan sets the year aside, so the summary states no age', async () => {
+  // The plan's age sits on About you's Birth row since US-62 AC24 (About you's collapsed summary went).
+  it('born June 1899: the plan sets the year aside, so the Birth row states no age', async () => {
     const view = await guestWith({ sex: 'male', birthYear: 1899, birthMonth: 6, weight: 80 });
     await waitFor(() => expect(bmiTile(view.container)).toBe('25.2'));
-    expect(view.container.querySelector('.prefill-summary')?.textContent).toBe('Male · 178 cm tall · Born Jun 1899');
+    openSettings(view.container);
+    // The year shows as given, as its row or its open field; no age is said anywhere.
+    expect(view.container.querySelector('#about-birth .about-row-value')?.textContent
+      ?? view.container.querySelector<HTMLInputElement>('#birthYear')?.value).toMatch(/1899/);
+    expect(view.container.textContent).not.toContain('(Age');
   });
 
-  it('born December 1981: the summary states the plan\'s age', async () => {
+  it('born December 1981: the Birth row states the plan\'s age', async () => {
     const view = await guestWith({ sex: 'male', birthYear: 1981, birthMonth: 12, weight: 80 });
     await waitFor(() => expect(bmiTile(view.container)).toBe('25.2'));
     const now = new Date();
     const age = now.getFullYear() - 1981 - (now.getMonth() + 1 < 12 ? 1 : 0);
-    expect(view.container.querySelector('.prefill-summary')?.textContent).toBe(`Male · 178 cm tall · Born Dec 1981 (Age ${age})`);
+    openSettings(view.container); // About you sits in Settings once the record is complete (US-62 AC24)
+    expect(view.container.querySelector('#about-birth .about-row-value')?.textContent).toBe(`December 1981 (Age ${age})`);
   });
 
   it('a birth year the plan sets aside as invalid gives the form no age: no screening or bone density sections', async () => {
-    const view = await guestWith({ sex: 'male', birthYear: 1899, weight: 80 }); // before the 1900 bound
+    const view = await guestWith({ sex: 'male', birthYear: 1899, weight: 80, lipids: { ldl: 2 } }); // before the 1900 bound; the blood test opens the whole form
     await waitFor(() => expect(bmiTile(view.container)).toBe('25.2'));
     await weightMedsIntro(view.container); // the medication sections are on the page
     const titles = Array.from(view.container.querySelectorAll('.health-section-title')).map((t) => t.textContent);
@@ -446,8 +477,11 @@ describe('US-06 AC5: the vitals matrix takes its weight and waist targets from t
   it("with a plan, the weight target is the plan's ideal body weight and the waist target the plan's own waist line", async () => {
     const view = await guestWith({ sex: 'male', weight: 80, waist: 85 });
     await waitFor(() => expect(bmiTile(view.container)).toBe('25.2'));
-    const ibw = Array.from(view.container.querySelectorAll('.stat-card'))
-      .find((c) => c.querySelector('.stat-label')?.textContent === 'Ideal Body Weight (IBW)')?.querySelector('.stat-value')?.textContent;
+    // The ideal body weight's tile sits on the weight row's page (US-62 AC26).
+    fireEvent.click([...view.container.querySelectorAll('.md-row')].find(r => r.querySelector('.md-row-label')?.textContent === 'Weight')!);
+    const ibw = Array.from(view.container.querySelectorAll('.md-page .stat-card'))
+      .find((c) => c.querySelector('.stat-label')?.textContent === 'Ideal Body Weight')?.querySelector('.stat-value')?.textContent;
+    fireEvent.click(view.getByRole('button', { name: '‹ Back' }));
     expect(await matrixTarget(view.container, 'Weight')).toBe(`Target: ${ibw}`);
     // At 178 cm the plan's ratio rounds to 0.50 from 88.11 cm: 88 cm is
     // healthy and 89 cm elevated, so the label is the first elevated value.
@@ -476,9 +510,9 @@ describe('US-06 AC5: the vitals matrix takes its weight and waist targets from t
   });
 
   it('a height the plan sets aside as invalid gives the matrix no weight or waist target', async () => {
-    const view = await guestWith({ sex: 'male', height: 260, weight: 80, waist: 85 }); // above the 250 cm bound
-    expect(await matrixTarget(view.container, 'Weight')).toBe('Set sex + height to see target');
-    expect(await matrixTarget(view.container, 'Waist Circumference')).toBe('Set sex + height to see target');
+    const view = await guestWith({ sex: 'male', height: 260, weight: 80, waist: 85, lipids: { ldl: 2 } }); // above the 250 cm bound; the blood test opens the whole form
+    expect(await matrixTarget(view.container, 'Weight')).toBe('Set height to see target');
+    expect(await matrixTarget(view.container, 'Waist Circumference')).toBe('Set height to see target');
   });
 });
 
@@ -576,21 +610,22 @@ describe('US-07 AC6: the form withholds its medicine wording when the plan does'
       expect(view.container.textContent).not.toMatch(/Target: <\d+\/80/);
     });
 
-    // Codex R1 (2026-10-14): with no plan (no height, no sex, or a height the
-    // plan sets aside) the blood-test matrix still shows, and the gate must
-    // hold there too: it reads the birth year, not whether a plan exists.
+    // Codex R1 (2026-10-14): with no plan (no height, or a height the plan
+    // sets aside) the blood-test matrix still shows, and the gate must hold
+    // there too: it reads the birth year, not whether a plan exists. With no
+    // sex there is a plan now (US-07 AC8), and the gate holds the same.
     it.each([
-      ['no height', { height: 0 }],
-      ['no sex', { sex: undefined }],
-      ['an invalid height', { height: 260 }],
-    ] as const)('with %s, a saved LDL shows with no hint and no colour', async (_, gap) => {
+      ['no height', { height: 0 }, true],
+      ['no sex', { sex: undefined }, false],
+      ['an invalid height', { height: 260 }, true],
+    ] as const)('with %s, a saved LDL shows with no hint and no colour', async (_, gap, noPlan) => {
       const view = await guestWith({ ...MINOR, ...gap });
       const ldl = await waitFor(() => {
         const r = view.container.querySelector('.bt-row[data-metric="ldl"]');
         if (!r?.querySelector('.bt-value-num')) throw new Error('no LDL value on the page');
         return r;
       });
-      expect(view.container.querySelector('.plan-empty-preview')).not.toBeNull(); // no plan
+      expect(!!view.container.querySelector('.plan-empty-preview')).toBe(noPlan);
       expect(ldl.querySelector('.bt-ref-label')).toBeNull();
       expect(colours(ldl)).toEqual([]);
     });
@@ -598,10 +633,8 @@ describe('US-07 AC6: the form withholds its medicine wording when the plan does'
     it('the first-visit form: the blood pressure is shown with no target', async () => {
       const view = await guestWith(MINOR);
       await waitFor(() => expect(planCard(view.container, 'This plan is built for adults')).toBeDefined());
-      await waitFor(() => expect(Array.from(view.container.querySelectorAll('.collapsed-field-value'))
-        .some((v) => v.textContent?.includes('150/95'))).toBe(true));
-      expect(Array.from(view.container.querySelectorAll('.field-hint')).map((h) => h.textContent)
-        .filter((t) => t?.includes('/80 mmHg'))).toEqual([]);
+      await waitFor(() => expect(pressureRow(view.container)?.querySelector('.md-row-value')?.textContent).toContain('150/95'));
+      expect(bpTargets(view.container)).toEqual([]);
     });
   });
 

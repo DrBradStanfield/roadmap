@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type React from 'react';
-import { formatDisplayValue, fromCanonicalValue, parseLocalisedNumber, toCanonicalValue } from '@roadmap/health-core';
-import { formatLabValue, previewStatus, readTypedValue, sameAsSaved, statusOf, validateTypedValue } from './blood-test-cell';
+import { formatDisplayValue, formatLabValue, fromCanonicalValue, parseLocalisedNumber, statusOf, toCanonicalValue } from '@roadmap/health-core';
+import { previewStatus, readTypedValue, sameAsSaved, validateTypedValue } from './blood-test-cell';
 
 // ---------------------------------------------------------------------------
 // Bug: user typed a value in the Lp(a) text box, hit Enter, the value
@@ -235,7 +235,30 @@ describe('statusOf — a value out of range (US-03 AC7)', () => {
   });
 
   it('an in-range value is still graded, and PSA 0 (in range) still is', () => {
-    expect([statusOf('ldl', 1.0, {}), statusOf('hdl', 0.5, {}), statusOf('psa', 0, {})]).toEqual(['ok', 'bad', 'ok']);
+    expect([statusOf('ldl', 1.0, {}), statusOf('hdl', 0.5, { sex: 'male' }), statusOf('psa', 0, {})]).toEqual(['ok', 'bad', 'ok']);
+  });
+});
+
+// US-62 AC13 (adversary N1 on PR 402): with no sex on record the grid grades
+// no HDL and no creatinine, and assumes no sex. The creatinine ceiling used
+// to fall back to the male 110, so a woman's 100 read green.
+describe('statusOf — no sex grades nothing sex-dependent (US-62 AC13)', () => {
+  it('HDL and creatinine have no status without sex', () => {
+    for (const [metric, value] of [['hdl', 0.5], ['hdl', 1.1], ['hdl', 2.0], ['creatinine', 60], ['creatinine', 100], ['creatinine', 200]] as const) {
+      expect(statusOf(metric, value, {}), `${metric} ${value}`).toBeNull();
+      expect(previewStatus(metric, String(value), 'si', {}), `${metric} ${value}`).toBeNull();
+    }
+  });
+
+  it('with sex, each is graded on its own line', () => {
+    expect([60, 90, 91, 116, 117].map((v) => statusOf('creatinine', v, { sex: 'female' }))).toEqual(['ok', 'ok', 'warn', 'warn', 'bad']);
+    expect([100, 110, 111, 142, 143].map((v) => statusOf('creatinine', v, { sex: 'male' }))).toEqual(['ok', 'ok', 'warn', 'warn', 'bad']);
+    expect([1.0, 1.04, 1.28, 1.3].map((v) => statusOf('hdl', v, { sex: 'female' }))).toEqual(['bad', 'warn', 'warn', 'ok']);
+    expect([1.0, 1.04, 1.3].map((v) => statusOf('hdl', v, { sex: 'male' }))).toEqual(['bad', 'ok', 'ok']);
+  });
+
+  it('the unsexed tests are still graded without sex', () => {
+    expect([statusOf('hba1c', 50, {}), statusOf('ldl', 4.2, {}), statusOf('triglycerides', 1.0, {})]).toEqual(['bad', 'bad', 'ok']);
   });
 });
 
@@ -296,5 +319,24 @@ describe('US-03 AC7 — validateTypedValue refuses 0 for lipids and ApoB, takes 
     expect(validateTypedValue('ldl', '0.2', 'si').error).toBeNull();
     expect(validateTypedValue('psa', '0', 'si').error).toBeNull();
     expect(validateTypedValue('lpa', '0', 'si').error).toBeNull();
+  });
+});
+
+import { mayStillFit } from './blood-test-cell';
+
+describe('mayStillFit: a range error waits while more digits could fix it (US-02 AC9)', () => {
+  it.each([
+    ['19', 50, 250, true],   // height, on the way to 190
+    ['1', 50, 250, true],
+    ['9', 20, 300, true],    // weight 90
+    ['6', 60, 250, true],    // systolic 60 to 69
+    ['3', 40, 200, false],   // waist: 30s too small, 300s too big
+    ['5', 60, 250, false],   // systolic: no 50s, and 500 is over
+    ['300', 50, 250, false], // too big already
+    ['0', 50, 250, false],
+    ['19.', 50, 250, false], // a decimal point: no more whole digits
+    ['', 50, 250, false],
+  ])('%s in %s to %s: %s', (typed, min, max, expected) => {
+    expect(mayStillFit(typed, min, max)).toBe(expected);
   });
 });

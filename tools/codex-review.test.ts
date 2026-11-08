@@ -1621,7 +1621,7 @@ describe('US-40 AC13 — --include copies a pinned, read-only source folder from
     // A copy of the wrapper in its own git checkout, with that policy committed; another repo is under review.
     const home = realpathSync(mkdtempSync(join(tmpdir(), 'cr-include-home-'))); // node reports the wrapper's own path resolved
     mkdirSync(join(home, 'tools'));
-    for (const m of ['codex-review.mjs', 'codex-review-include.mjs', 'codex-review-names.mjs', 'codex-review-links.mjs', 'codex-review-includes.json']) writeFileSync(join(home, 'tools', m), readFileSync(resolve(__dirname, m)));
+    for (const m of ['codex-review.mjs', 'codex-review-include.mjs', 'codex-review-names.mjs', 'codex-review-links.mjs', 'secret-rules.mjs', 'codex-review-includes.json']) writeFileSync(join(home, 'tools', m), readFileSync(resolve(__dirname, m)));
     const copy = join(home, 'tools', 'codex-review.mjs'), policyFile = join(home, 'tools', 'codex-review-includes.json');
     const dir = changed(), raw = rawDir({ 'f.md': 'x\n' });
     const go = (env: NodeJS.ProcessEnv = childEnv()) => spawnSync('node', [copy, '--codex', fake({ output: CLEAN }).bin, '--include', raw, '--out', outJson], { cwd: dir, encoding: 'utf8', env, timeout: 120_000 });
@@ -2040,7 +2040,7 @@ describe('US-40 AC15 — --subject reviews exact files, never whatever else the 
     /** A copy of the wrapper inside `repo`, so its own repo (HOME_REPO) is that temp repo, as the real one is in production. */
     const install = (repo: string) => {
       mkdirSync(join(repo, 'tools'), { recursive: true });
-      for (const m of readdirSync(__dirname).filter((n) => /^codex-review(-[a-z]+)?\.mjs$/.test(n))) writeFileSync(join(repo, 'tools', m), readFileSync(join(__dirname, m)));
+      for (const m of readdirSync(__dirname).filter((n) => /^(?:codex-review(-[a-z]+)?|secret-rules)\.mjs$/.test(n))) writeFileSync(join(repo, 'tools', m), readFileSync(join(__dirname, m)));
       return join(repo, 'tools', 'codex-review.mjs');
     };
     const dir = scriptRepo(), wrapper = install(dir);
@@ -2256,6 +2256,59 @@ describe('US-40 AC15 — --subject reviews exact files, never whatever else the 
     expect(readFileSync(join(h.to, 'REVIEW_PATCH.diff'), 'utf8')).not.toMatch(/comments-|objection-intel/);
     expect(rg.r.stderr).toContain('withheld 2 private-data path(s)');
     expect(rg.report().private_withheld).toBe(2);
+  });
+  it('--range A..B reviews only what B added since it left A: a base that moved on is diffed from the merge base, so its new commits never read as reverted (2026-11-06)', () => {
+    const dir = realpathSync(freshRepo());
+    const trunk = sh(dir, 'git symbolic-ref --short HEAD').trim();
+    const fork = sh(dir, 'git rev-parse HEAD').trim();
+    sh(dir, 'git checkout -q -b feat && printf "branch work\\n" > b.txt && git add b.txt && git commit -q -m branch-work');
+    sh(dir, `git checkout -q ${trunk} && printf "landed on trunk later\\n" > a.txt && git commit -q -am trunk-moved && git checkout -q feat`);
+    const g = grab();
+    const rg = run(dir, ['--range', `${trunk}..feat`], { during: g.during });
+    expect(rg.r.status).toBe(0);
+    const patch = readFileSync(join(g.to, 'REVIEW_PATCH.diff'), 'utf8');
+    expect(patch).toContain('b.txt');
+    expect(patch).not.toContain('a.txt');
+    expect(patch).not.toContain('landed on trunk later');
+    expect(rg.report().base).toBe(fork);
+    expect(rg.report().files).toBe(1);
+    expect(rg.r.stderr).toContain(`merge base ${fork.slice(0, 12)}`);
+  });
+  it('--range takes the contract from A, not the merge base: a rule changed after the branch was cut still binds it (US-40 AC2, AC17)', () => {
+    const dir = realpathSync(freshRepo());
+    const trunk = sh(dir, 'git symbolic-ref --short HEAD').trim();
+    sh(dir, 'git checkout -q -b feat && printf "branch work\\n" > b.txt && git add b.txt && git commit -q -m branch-work');
+    sh(dir, `git checkout -q ${trunk} && printf "NEWER CONTRACT: added after the fork.\\n" > docs/review-format.md && git commit -q -am contract && git checkout -q feat`);
+    const g = grab();
+    const rg = run(dir, ['--range', `${trunk}..feat`], { during: g.during });
+    expect(rg.r.status).toBe(0);
+    expect(readFileSync(join(g.to, 'base-review-format.md'), 'utf8')).toBe('NEWER CONTRACT: added after the fork.\n');
+    expect(readFileSync(join(g.to, 'REVIEW_PATCH.diff'), 'utf8')).not.toContain('review-format');
+  });
+  it('--range scans the credential files of A too, since the contract and CLAUDE.md from A reach the reviewer (US-40 AC11, AC17)', () => {
+    const dir = realpathSync(freshRepo());
+    const trunk = sh(dir, 'git symbolic-ref --short HEAD').trim();
+    sh(dir, 'git checkout -q -b feat && printf "branch work\\n" > b.txt && git add b.txt && git commit -q -m branch-work');
+    sh(dir, `git checkout -q ${trunk} && printf "DB_PASSWORD=SECRETVAL-RANGE-A-ONLY-0017\\n" > .env && printf "rules SECRETVAL-RANGE-A-ONLY-0017\\n" > CLAUDE.md && git add .env CLAUDE.md && git commit -q -m a-only && git checkout -q feat`);
+    const r = run(dir, ['--range', `${trunk}..feat`]);
+    expect([r.r.status, r.r.stdout.includes('E_SECRET_VALUE')]).toEqual([3, true]);
+  });
+  it('--range with no work of its own, no shared history, or a malformed spelling never exits as a pass (US-40 AC17)', () => {
+    const dir = realpathSync(freshRepo());
+    sh(dir, 'printf "two\\n" > a.txt && git commit -q -am two');
+    const behind = run(dir, ['--range', 'HEAD..HEAD~1']);
+    expect([behind.r.status, behind.r.stdout.includes('E_RANGE_EMPTY')]).toEqual([3, true]);
+    const same = run(dir, ['--range', 'HEAD..HEAD']);
+    expect([same.r.status, same.r.stdout.includes('E_RANGE_EMPTY')]).toEqual([3, true]);
+    const tipSha = sh(dir, 'git rev-parse HEAD').trim();
+    sh(dir, 'git checkout -q --orphan other && git rm -rqf . && printf "x\\n" > x.txt && git add x.txt && git commit -q -m other');
+    const unrelated = run(dir, ['--range', `other..${tipSha}`]);
+    expect([unrelated.r.status, unrelated.r.stdout.includes('E_RANGE_NO_BASE')]).toEqual([3, true]);
+    for (const spelling of ['a....b', '..HEAD', 'HEAD..HEAD..HEAD', 'no-such-ref..HEAD']) {
+      const bad = run(dir, ['--range', spelling]);
+      expect([spelling, bad.r.status]).toEqual([spelling, 1]);
+      expect(bad.r.stderr).toContain('--range');
+    }
   });
   it('privacy: the shipped deny list names its patterns and matches no file tracked in this repo (it must never swallow code or ledgers)', () => {
     expect(SHIPPED_POLICY.privateDeny).toEqual(['**/comments-*', '**/competitor-*-comments.*', '**/objection-intel*', '**/research/channel/index.md', '**/*judgeme*.csv', '**/chatbot_*/messages*', '**/chatbot_*/conversations*']);

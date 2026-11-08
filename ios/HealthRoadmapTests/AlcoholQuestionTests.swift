@@ -67,9 +67,9 @@ final class AlcoholQuestionTests: XCTestCase {
         let other = try suggestion("trig-nutrition")
         var asked = 0
         let card = PlanCard(category: "nutrition", priority: "attention", suggestions: [other, alcohol])
-        let view = PlanCardView(card: card, askAboutAlcohol: { asked += 1; return { _ in } })
+        let view = PlanCardView(card: card, askAboutAlcohol: AlcoholQuestion(answered: nil) { asked += 1; return { _ in } })
         XCTAssertNil(view.dismiss(for: other))
-        _ = try XCTUnwrap(view.dismiss(for: alcohol))()
+        _ = try XCTUnwrap(view.dismiss(for: alcohol)).ask()
         XCTAssertEqual(asked, 1)
         for id in ["statin-consider", "trig-very-high", "weight-loss", "reduce-alcohol-x"] {
             XCTAssertNil(view.dismiss(for: try suggestion(id)), id)
@@ -78,7 +78,7 @@ final class AlcoholQuestionTests: XCTestCase {
     }
 
     /// Only the card holding reduce-alcohol is handed the question; the rest get nil, so
-    /// they stay comparable. Once answered (nil), no card is.
+    /// they stay comparable. A drinker's card is handed it too (Brad 2026-11-01).
     @MainActor
     func testOnlyTheReduceAlcoholCardIsHandedTheQuestion_US60() throws {
         func card(_ ids: String...) throws -> PlanCard {
@@ -86,12 +86,35 @@ final class AlcoholQuestionTests: XCTestCase {
             return PlanCard(category: "nutrition", priority: "attention", suggestions: suggestions)
         }
         var asked = 0
-        let list = PlanList(tiles: [], sections: [], planMs: 0, showMyData: {}, askAboutAlcohol: { asked += 1; return { _ in } })
-        _ = try XCTUnwrap(list.asksAboutAlcohol(try card("trig-nutrition", "reduce-alcohol")))()
+        let question = AlcoholQuestion(answered: nil) { asked += 1; return { _ in } }
+        _ = try XCTUnwrap(try card("trig-nutrition", "reduce-alcohol").asking(question)).ask()
         XCTAssertEqual(asked, 1)
-        XCTAssertNil(list.asksAboutAlcohol(try card("trig-nutrition", "weight-loss")))
-        let answered = PlanList(tiles: [], sections: [], planMs: 0, showMyData: {}, askAboutAlcohol: nil)
-        XCTAssertNil(answered.asksAboutAlcohol(try card("reduce-alcohol")), "answered: no Dismiss")
+        XCTAssertNil(try card("trig-nutrition", "weight-loss").asking(question))
+        let drinker = AlcoholQuestion(answered: .drinks) { asked += 1; return { _ in } }
+        _ = try XCTUnwrap(try card("reduce-alcohol").asking(drinker), "a drinker's card gets the question").ask()
+        XCTAssertEqual(asked, 2)
+        let none = AlcoholQuestion(answered: .noDrinking) { { _ in } }
+        XCTAssertNil(try card("reduce-alcohol").asking(none), "a non-drinker: no Dismiss")
+    }
+
+    /// The right prompt per answer (US-60 AC3, Brad 2026-11-01): unanswered asks whether
+    /// they drink; a drinker is asked whether they still do, "I still drink" saving nothing.
+    @MainActor
+    func testEachAnswerGetsItsOwnPrompt_US60() throws {
+        let unanswered = try XCTUnwrap(AlcoholQuestion(answered: nil) { { _ in } })
+        XCTAssertEqual(unanswered.title, "Do you drink alcohol?")
+        XCTAssertEqual(unanswered.choices.map(\.label), ["I don't drink", "I drink"])
+        XCTAssertEqual(unanswered.choices.map(\.action), [.save(.noDrinking), .save(.drinks)])
+        XCTAssertEqual(unanswered.message, "Your answer is kept in your record, so your plan follows it on every device. You can change it in Settings, under About you.")
+        XCTAssertEqual(unanswered.hint, "Asks whether you drink alcohol")
+        let drinker = try XCTUnwrap(AlcoholQuestion(answered: .drinks) { { _ in } })
+        XCTAssertEqual(drinker.title, "Do you still drink alcohol?")
+        XCTAssertEqual(drinker.choices.map(\.label), ["I've stopped", "I still drink"])
+        XCTAssertEqual(drinker.choices.map(\.action), [.save(.noDrinking), .explain], "I've stopped saves 'none'; I still drink saves nothing")
+        XCTAssertEqual(drinker.message, "Tell us if this has changed.")
+        XCTAssertEqual(drinker.hint, "Asks whether you still drink alcohol")
+        XCTAssertEqual(AlcoholQuestion.stillDrinks, "This stays on your plan because the advice applies to anyone who drinks. You can change your answer in About you.")
+        XCTAssertNil(AlcoholQuestion(answered: .noDrinking) { { _ in } }, "a non-drinker has no card to dismiss")
     }
 
     func testTheAlcoholFieldDecodesLeniently_US60() throws {
