@@ -44,14 +44,16 @@ actor AppAttestClient {
 
     private let session: URLSession
     private let service: any AttestService
-    /// The key this launch registered, if any (US-52 AC1c).
+    private let keys: KeyStore
+    /// The key this launch registered, if any, used before the Keychain (US-52 AC1c).
     private var registered: String?
     private var busy = false
     private var waiters: [CheckedContinuation<Void, Never>] = []
 
-    init(session: URLSession = URLSession(configuration: .ephemeral), service: any AttestService = AppleAttest()) {
+    init(session: URLSession = URLSession(configuration: .ephemeral), service: any AttestService = AppleAttest(), keys: KeyStore = KeyStore()) {
         self.session = session
         self.service = service
+        self.keys = keys
     }
 
     /// POSTs `body` to `path` and returns the open response once its headers have
@@ -73,7 +75,7 @@ actor AppAttestClient {
             if (200..<300).contains(http.statusCode) { return (bytes, http) }
             let answer = try await Self.errorAnswer(bytes)
             if http.statusCode == 401, attempt == 0, ["unknown_key", "stale_counter"].contains(answer.reason) {
-                if answer.reason == "unknown_key" { Keychain.delete() }
+                if answer.reason == "unknown_key" { keys.delete(); registered = nil }
                 continue
             }
             throw Failure.server(status: http.statusCode, message: answer.error ?? "The server could not answer just now. Please try again later.")
@@ -103,13 +105,14 @@ actor AppAttestClient {
     /// new key, once a launch (US-52 AC1c). The Keychain id outlives a delete and reinstall
     /// but the key does not, and iOS may report that with more than one error code, not
     /// only `invalidKey`: so any failure of the stored key makes a new one. A key this
-    /// launch registered is never replaced: a 20-report ZIP must not spend 20 registrations.
+    /// launch registered is used first, even when the Keychain did not keep it, and never
+    /// replaced: a 20-report ZIP must not spend 20 registrations.
     private func assertion(_ clientDataHash: Data) async throws -> (String, Data) {
-        if let stored = Keychain.read() {
-            if stored == registered { return (stored, try await device("assert") { try await service.generateAssertion(stored, clientDataHash: clientDataHash) }) }
+        if let registered { return (registered, try await device("assert") { try await service.generateAssertion(registered, clientDataHash: clientDataHash) }) }
+        if let stored = keys.read() {
             do { return (stored, try await service.generateAssertion(stored, clientDataHash: clientDataHash)) } catch {
                 try Task.checkCancellation()
-                Keychain.delete()
+                keys.delete()
             }
         }
         let keyId = try await registerKey()
@@ -146,7 +149,7 @@ actor AppAttestClient {
             let answer = try? JSONDecoder().decode(ErrorAnswer.self, from: data)
             throw Failure.server(status: (response as? HTTPURLResponse)?.statusCode ?? 0, message: answer?.error ?? "The app could not be registered with the server.")
         }
-        Keychain.save(keyId)
+        keys.save(keyId)
         registered = keyId
         return keyId
     }
@@ -214,6 +217,13 @@ struct AppleAttest: AttestService {
     func generateKey() async throws -> String { try await DCAppAttestService.shared.generateKey() }
     func attestKey(_ keyId: String, clientDataHash: Data) async throws -> Data { try await DCAppAttestService.shared.attestKey(keyId, clientDataHash: clientDataHash) }
     func generateAssertion(_ keyId: String, clientDataHash: Data) async throws -> Data { try await DCAppAttestService.shared.generateAssertion(keyId, clientDataHash: clientDataHash) }
+}
+
+/// Where the client keeps the key id: the Keychain, or a test's stand-in (US-52 AC1c).
+struct KeyStore: Sendable {
+    var read: @Sendable () -> String? = Keychain.read
+    var save: @Sendable (String) -> Void = Keychain.save
+    var delete: @Sendable () -> Void = Keychain.delete
 }
 
 /// The App Attest key id in the Keychain: this device only, readable after first unlock.

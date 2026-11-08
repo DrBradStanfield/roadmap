@@ -112,4 +112,18 @@ final class AppAttestReinstallTests: XCTestCase {
         XCTAssertEqual(paths.filter { $0 == "/api/app/v1/attest/register" }.count, 1)
         XCTAssertEqual(Keychain.read(), "fresh-key-1")
     }
+
+    /// The key this launch registered is used even when the Keychain did not keep it,
+    /// so a failed Keychain write never costs a registration per report (Codex re-check).
+    func testAKeyTheKeychainDidNotKeepIsStillUsedForTheLaunch_US52_AC1c() async throws {
+        let fake = FakeAttest(staleCode: .invalidInput)
+        let keys = KeyStore(read: Keychain.read, save: { _ in }, delete: Keychain.delete)
+        let client = LabUploadClient(attest: AppAttestClient(session: StubHTTP.session(), service: fake, keys: keys))
+        for _ in 0..<2 { _ = try await client.extract(report, unitSystem: "si") }
+        XCTAssertEqual(fake.made, 1, "one key for the launch")
+        XCTAssertEqual(paths.filter { $0 == "/api/app/v1/attest/register" }.count, 1)
+        XCTAssertEqual(paths.filter { $0 == "/api/app/v1/lab-import" }.count, 2, "both reports went")
+        XCTAssertEqual(labKey, "fresh-key-1")
+        XCTAssertNil(Keychain.read(), "the write failed, as the test meant")
+    }
 }
