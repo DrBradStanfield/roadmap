@@ -134,7 +134,7 @@ Deploy (`gh workflow run deploy.yml`) once CI is green and the required reviews 
 batch of merges), then reports each deploy (sha, result, live checks) to Brad.
 **Commit before any deploy** — `fly deploy` ships the working tree. `.env`
 has every variable; the list and per-Fly-app secrets: docs/deploy-runbook.md
-§ Environment variables. Secret names: docs/deploy-runbook.md § GitHub Actions.
+§ Environment variables. Secret names: docs/deploy-runbook.md § Environment variables (GitHub Actions).
 
 ## CRITICAL: Security Rules
 

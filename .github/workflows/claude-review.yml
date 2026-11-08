@@ -4,7 +4,9 @@
 # the diff adversarially with a correctness-only mandate and posts its verdict
 # as a comment. It is not advisory: auto-ship.yml merges a claude/* PR on this
 # reviewer's APPROVE verdict for the head sha, a green 'test' check and its
-# 30-minute veto window, unless the PR carries the 'hold' label. deploy.yml has
+# 30-minute veto window, unless the PR carries the 'hold' label, among other
+# checks (author and same-repo gates, re-verify after the wait; see
+# auto-ship.yml). deploy.yml has
 # no approval check; its gate is a dispatch from main.
 #
 # Security posture (US-40 AC16, re-audited 2026-11-04 against the pinned SHA):
@@ -33,8 +35,8 @@
 # Brad and the reviewer itself, so a stranger's comment cannot steer it.
 # Residual (no input at this SHA covers it): review bodies and inline review
 # comments are NOT filtered by actor and still reach the prompt. The prompt
-# tells the reviewer to treat all PR text as data; the verdict stays advisory
-# and auto-ship checks its own facts (sha pin, CI, commit authors). Never set
+# tells the reviewer to treat all PR text as data; auto-ship acts on an APPROVE
+# verdict and checks its own facts (sha pin, CI, commit authors). Never set
 # allowed_non_write_users: it changes how the action stores the token.
 # tests/claude-review-boundary.test.ts computes the effective tool policy from
 # a fixture of tag mode's list at this SHA: re-check it when the pin moves.
