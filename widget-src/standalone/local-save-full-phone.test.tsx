@@ -3,7 +3,7 @@
  * US-01 AC5 on a phone (768px or narrower): a measurement is added through the
  * store's addMeasurement while the Input tab is open (the default) and the
  * plan's tab is hidden. No form field is typed into. The alert must be on the
- * open tab: in the top bar above every tab, not in the hidden plan.
+ * open tab: atop My health (US-62 AC34), not in the hidden Account tab beside the storage button.
  * The whole widget is mounted as standalone/app.tsx mounts it (the top bar's
  * StorageBar and the plan's SyncControl), on the real store and device
  * adapter. The storage is a uniform byte budget, as in
@@ -28,7 +28,7 @@ vi.mock('./reminders', () => ({ remindersSupported: () => false }));
 vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 
 import { HealthTool } from '../src/components/HealthTool';
-import { StorageBar, SyncControl } from './sync-control';
+import { LocalSaveAlert, StorageBar, SyncControl } from './sync-control';
 import { RoadmapStore } from '../src/storage/roadmap-store';
 import { LocalStorageAdapter } from '../src/storage/local-storage-adapter';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../src/lib/roadmap-data';
@@ -88,6 +88,7 @@ describe('US-01 AC5 on a phone: the alert is on the My health title line while t
     const view = render(
       <HealthTool
         storageBar={<StorageBar backend="local" />}
+        saveAlert={<LocalSaveAlert backend="local" />}
         syncControl={({ hasData, attention }) => <SyncControl backend="local" hasData={hasData} attention={attention} />}
       />,
     );
@@ -111,7 +112,8 @@ describe('US-01 AC5 on a phone: the alert is on the My health title line while t
     const alerts = [...view.container.querySelectorAll('[role="alert"]')];
     expect(alerts).toHaveLength(1);
     expect(alerts[0].textContent).toContain(FULL_LINE);
-    expect(alerts[0].closest('.mh-header')).not.toBeNull(); // the storage button sits on My health's title line (US-62 AC24)
+    // Atop My health, though the storage button sits in the Account tab (US-62 AC34).
+    expect(alerts[0].closest('.mh-header')).not.toBeNull();
     expect(alerts[0].closest('[hidden]')).toBeNull();
   });
 });

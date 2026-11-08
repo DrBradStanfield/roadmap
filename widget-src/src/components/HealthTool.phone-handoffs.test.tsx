@@ -111,7 +111,8 @@ describe('US-16 AC2 on a phone: a chat edit lands on My health, on the cell it f
     const view = render(<HealthTool />);
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
     await waitFor(() => expect(view.container.querySelector('#waistCm')).not.toBeNull());
-    fireEvent.click(view.getByRole('button', { name: 'Settings' }));
+    // A phone's Settings are its Account tab (US-62 AC34).
+    fireEvent.click(phone ? tab(view, 'Account') : view.getByRole('button', { name: 'Settings' }));
     expect(view.container.querySelector('.mh-settings')).not.toBeNull();
     if (phone) fireEvent.click(tab(view, 'Chat'));
 

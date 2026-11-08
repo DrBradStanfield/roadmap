@@ -42,7 +42,7 @@ vi.mock('./ChatSection', () => ({
   ChatSection: ({ muted }: { muted?: boolean }) => { floating.muted.push(!!muted); return <div className="floating-chat-panel"/>; },
 }));
 import { HealthTool } from './HealthTool';
-import { deleteButton, openSettings } from '../testing/settings';
+import { closeSettings, deleteButton, openSettings } from '../testing/settings';
 
 const TODAY = localDay(new Date());
 const WHY_SEX = 'Used to calculate ideal body weight, kidney function, and screening programs.';
@@ -913,7 +913,7 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
     const about = q(view, '.mh-settings .md-about-you')!;
     expect(Array.from(about.querySelectorAll('.about-row-label')).map((l) => l.textContent)).toEqual(['Height', 'Sex', 'Birth', 'Alcohol']);
     expect(about.querySelector('h3')?.textContent).toContain('About you');
-    fireEvent.click(view.getByRole('button', { name: 'Done' }));
+    closeSettings(view.container);
     fireEvent.click(Array.from(view.container.querySelectorAll('[data-topic="weight"] .md-row')).find((r) => r.textContent?.startsWith('Waist'))!);
     await waitFor(() => expect(within(q(view, '.md-page') as HTMLElement).getByRole('heading', { name: 'Waist' })).toBeTruthy());
   });

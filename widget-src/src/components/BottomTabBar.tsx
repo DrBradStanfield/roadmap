@@ -1,9 +1,10 @@
 import type { KeyboardEvent, ReactNode } from 'react';
 import { CHAT_BUBBLES } from './icons';
 
-export type TabId = 'health' | 'chat';
+export type TabId = 'health' | 'chat' | 'account';
 
-/** The iPhone app's two tabs (RootView.swift, US-73 AC1), in its order and words (US-62 AC16). */
+/** The iPhone app's two tabs (RootView.swift, US-73 AC1), in its order and words (US-62 AC16), then
+ *  Account: the web's settings and sign-in, which the iPhone keeps in its navigation bar (US-62 AC34). */
 const TABS: Array<{ id: TabId; label: string; icon: ReactNode }> = [
   {
     id: 'health',
@@ -15,6 +16,12 @@ const TABS: Array<{ id: TabId; label: string; icon: ReactNode }> = [
     id: 'chat',
     label: 'Chat',
     icon: CHAT_BUBBLES,
+  },
+  {
+    id: 'account',
+    label: 'Account',
+    // person.crop.circle
+    icon: <><circle cx="12" cy="12" r="9" /><circle cx="12" cy="10" r="3" /><path d="M6.3 18.4c1.3-1.9 3.3-3 5.7-3s4.4 1.1 5.7 3" /></>,
   },
 ];
 

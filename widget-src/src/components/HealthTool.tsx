@@ -304,11 +304,14 @@ type ChatPrefetch = { epoch: number; data: ChatPrefetchData };
 const prefetchFor = (prefetch: ChatPrefetch | null, epoch: number): ChatPrefetchData | null =>
   (prefetch?.epoch === epoch ? prefetch.data : null);
 
-export function HealthTool({ syncControl, remindersSection, storageBar }: {
+export function HealthTool({ syncControl, remindersSection, storageBar, saveAlert }: {
   syncControl?: (ctx: { hasData: boolean; attention: boolean }) => ReactNode;
   remindersSection?: ReactNode;
   /** US-09 AC30: the Sign in button, in the input column's header. */
   storageBar?: ReactNode;
+  /** US-01 AC5: "Could not save on this device", atop My health on a phone, where the
+   *  storage button (which says it on desktop) is in the Account tab (US-62 AC34). */
+  saveAlert?: ReactNode;
 } = {}) {
   // The store is ready before render, so returning users see their saved prefill immediately.
   const [inputs, setInputs] = useState<Partial<HealthInputs>>(getInitialInputsSync);
@@ -1533,16 +1536,17 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer, aboutYouRow: aboutYouLow },
   });
 
-  // Settings open in My health's place, so a press from elsewhere shows that tab first.
+  // Desktop: Settings open in My health's place, behind the person button. A phone: they are
+  // the Account tab (US-62 AC34), so leaving them (an erase) lands on My health's title.
   const personRef = useRef<HTMLButtonElement>(null);
-  const toggleSettings = useCallback(() => {
-    selectTab('health');
-    setSettingsOpen(open => !open);
-  }, [selectTab]);
+  const [accountHost, setAccountHost] = useState<HTMLFieldSetElement | null>(null);
+  const settingsShown = isMobile ? activeTab === 'account' : settingsOpen;
+  const toggleSettings = useCallback(() => setSettingsOpen(open => !open), []);
   const closeSettings = useCallback(() => {
     setSettingsOpen(false);
-    requestAnimationFrame(() => personRef.current?.focus());
-  }, []);
+    if (isMobileRef.current) selectTab('health');
+    requestAnimationFrame(() => (isMobileRef.current ? rootRef.current?.querySelector<HTMLElement>('.mh-title') : personRef.current)?.focus());
+  }, [selectTab]);
   // Back closes Settings, as it closes a value page (US-62 AC24).
   useEffect(() => {
     if (!settingsOpen) return;
@@ -1557,11 +1561,13 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
 
   const myHealthProps = {
     plan, tiles, series, egfrCurrent, sectionsRef, setShowUploadModal,
-    // On My health's title line, phone and desktop: no band of its own (design review 2026-11-06).
+    // On My health's title line on desktop; on a phone, on the Account tab's (US-62 AC34).
     storageBar,
     personButton,
-    settingsOpen,
+    saveAlert,
+    settingsOpen: settingsShown,
     onSettingsClose: closeSettings,
+    settingsHost: isMobile ? accountHost : undefined,
     // US-07 AC6: no reminders for a known minor, who is never enrolled and must see no mailing-list box.
     reminders: plan.planned && !results?.knownMinor ? remindersSection : null,
     storageCard,
@@ -1647,9 +1653,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     onProposeEdit: handleProposeEdit,
   };
 
-  // US-62 AC16: on a phone, two panels, My health and Chat, and a bottom tab bar.
-  // Both stay mounted (the form's drafts and the chat's conversation survive a
-  // switch); only the active one shows.
+  // US-62 AC16, AC34: on a phone, three panels, My health, Chat and Account, and a bottom tab
+  // bar. My health and Chat stay mounted (the form's drafts and the chat's conversation survive
+  // a switch); only the active one shows. Account holds Settings, drawn by My health while the
+  // tab shows, inside the erase lock.
   const panel = (tab: TabId, children: ReactNode) => (
     <div className="hr-tabpanel" role="tabpanel" id={panelDomId(tabIds, tab)} aria-labelledby={tabDomId(tabIds, tab)} hidden={activeTab !== tab}>
       {children}
@@ -1671,6 +1678,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
               />
             </div>
           ))}
+          {panel('account', <fieldset className="health-form-lock mh-account" disabled={isDeleting} ref={setAccountHost}/>)}
           <BottomTabBar activeTab={activeTab} onTabChange={selectTab} idPrefix={tabIds} />
         </>
       ) : (

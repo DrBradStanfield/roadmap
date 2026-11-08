@@ -168,9 +168,11 @@ describe('US-62 AC15: the iPhone\'s symbols', () => {
     await seed();
     const view = await renderTool();
     const panel = view.container.querySelector<HTMLElement>('.health-input-panel')!;
-    openSettings(view.container); // About you sits in Settings (US-62 AC24)
-    for (const [title, icon] of [['Weight & diabetes', 'scale'], ['Blood pressure', 'heart'], ['Cholesterol', 'drop'], ['Blood tests', 'drop'], ['Supplements', 'leaf'], [/^About you/, 'person']] as const) {
-      const heading = within(panel).getByRole('heading', { name: title }); // the symbol adds nothing to the name
+    const symbols = [['Weight & diabetes', 'scale'], ['Blood pressure', 'heart'], ['Cholesterol', 'drop'], ['Blood tests', 'drop'], ['Supplements', 'leaf'], [/^About you/, 'person']] as const;
+    for (const [title, icon] of symbols) {
+      // About you sits in Settings (US-62 AC24), a phone's Account tab (AC34): opened for it alone.
+      if (icon === 'person') openSettings(view.container);
+      const heading = within(icon === 'person' ? view.container.querySelector<HTMLElement>('.mh-settings')! : panel).getByRole('heading', { name: title }); // the symbol adds nothing to the name
       const symbol = heading.querySelector<HTMLElement>('.section-icon')!;
       expect(symbol.dataset.icon).toBe(icon);
       expect(symbol.getAttribute('aria-hidden')).toBe('true');

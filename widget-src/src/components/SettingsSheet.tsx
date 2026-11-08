@@ -19,22 +19,25 @@ export function PersonButton({ onClick, buttonRef, open }: { onClick: () => void
 /**
  * The settings, in the page's place: its title takes the focus on opening; Done,
  * or Escape inside it with no other dialog open, closes it, and the focus goes
- * back to the person button.
+ * back to the person button. On a phone they are the Account tab's panel
+ * (US-62 AC34): no `onClose`, so no Done, no Escape and no focus taken from the
+ * tab; `action` (Sign in, or where the record lives) sits on the title's line.
  */
-export function SettingsSheet({ onClose, children }: { onClose: () => void; children: ReactNode }) {
+export function SettingsSheet({ onClose, action, children }: { onClose?: () => void; action?: ReactNode; children: ReactNode }) {
   const titleId = useId();
   const titleRef = useRef<HTMLHeadingElement>(null);
-  useEffect(() => { titleRef.current?.focus(); }, []);
+  const sheet = !!onClose;
+  useEffect(() => { if (sheet) titleRef.current?.focus(); }, [sheet]);
   // Another dialog's Escape is its own: the picker's (a native dialog, a portal from
   // inside the sheet) and the alcohol question's (a div, aria-modal).
   const onKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && !document.querySelector('dialog[open], [aria-modal="true"]')) onClose();
+    if (onClose && e.key === 'Escape' && !document.querySelector('dialog[open], [aria-modal="true"]')) onClose();
   };
   return (
     <section className="md-page mh-settings" aria-labelledby={titleId} onKeyDown={onKeyDown}>
       <div className="mh-settings-head">
-        <h2 className="health-section-title mh-settings-title" id={titleId} tabIndex={-1} ref={titleRef}>Settings</h2>
-        <button type="button" className="md-back mh-settings-done" onClick={onClose}>Done</button>
+        <h2 className="health-section-title mh-settings-title" id={titleId} tabIndex={-1} ref={titleRef}>{sheet ? 'Settings' : 'Account'}</h2>
+        {onClose ? <button type="button" className="md-back mh-settings-done" onClick={onClose}>Done</button> : action && <div className="mh-header-actions">{action}</div>}
       </div>
       {children}
     </section>

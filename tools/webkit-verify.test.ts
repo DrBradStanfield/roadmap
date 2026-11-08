@@ -25,7 +25,8 @@ describe('US-20: WebKit deployment gate', () => {
 describe('US-20 AC6: WebKit tab bar gate', () => {
   const valid = {
     insideWidget: true, position: 'sticky', background: 'rgb(248, 248, 250)', backdropFilter: 'none', visible: true, top: 761, bottom: 812, viewportHeight: 812,
-    oldPlanButton: false, tabs: ['My health', 'Chat'], shownAfterChatTap: ['Chat'], chatCardBottom: 749, barTopOnChat: 761,
+    oldPlanButton: false, tabs: ['My health', 'Chat', 'Account'], shownAfterChatTap: ['Chat'], chatCardBottom: 749, barTopOnChat: 761,
+    shownAfterAccountTap: ['Account'], accountTitle: 'Account', accountActionHeights: [44], accountActionBorders: [0],
   };
   it('accepts a sticky, opaque bar inside the widget, on screen, that switches panels', () => {
     expect(() => assertTabBar(valid)).not.toThrow();
@@ -34,8 +35,11 @@ describe('US-20 AC6: WebKit tab bar gate', () => {
     for (const change of [
       { insideWidget: false }, { position: 'fixed' }, { background: 'rgba(248, 248, 250, 0.94)' }, { background: 'rgba(0, 0, 0, 0)' },
       { backdropFilter: 'blur(12px)' }, { visible: false }, { bottom: 900 }, { top: -10 },
-      { oldPlanButton: true }, { tabs: ['My data', 'My plan', 'Chat'] }, { shownAfterChatTap: ['My health', 'Chat'] },
+      { oldPlanButton: true }, { tabs: ['My data', 'My plan', 'Chat'] }, { tabs: ['My health', 'Chat'] }, { shownAfterChatTap: ['My health', 'Chat'] },
       { chatCardBottom: 766 },
+      // US-62 AC34: the Account tab shows its panel alone, titled, with a quiet 44px Sign in.
+      { shownAfterAccountTap: ['My health', 'Account'] }, { accountTitle: null }, { accountActionHeights: [] },
+      { accountActionHeights: [36] }, { accountActionBorders: [1] },
     ]) {
       expect(() => assertTabBar({ ...valid, ...change })).toThrow();
     }
@@ -90,8 +94,8 @@ describe('US-62 AC16, AC27: WebKit desktop gate', () => {
 });
 
 describe('US-62 AC14, AC17: WebKit phone gate', () => {
-  const header = { height: 44, actionBorders: [0, 0], actionHeights: [44, 44], centreOffset: 1 };
-  it('passes one gap between sections, the pills on one row, 44px controls, a compact title line', () => {
+  const header = { height: 0, controls: 0 };
+  it('passes one gap between sections, the pills on one row, 44px controls, no header row', () => {
     expect(() => assertPhoneLayout({ gaps: [16, 16, 16], pillRows: 1, smallTargets: [], header })).not.toThrow();
   });
   it('fails uneven gaps, missing sections, wrapped pills and a small control', () => {
@@ -100,14 +104,12 @@ describe('US-62 AC14, AC17: WebKit phone gate', () => {
     expect(() => assertPhoneLayout({ gaps: [16, 16], pillRows: 2, smallTargets: [], header })).toThrow('wrap');
     expect(() => assertPhoneLayout({ gaps: [16, 16], pillRows: 1, smallTargets: ['Dismiss 20px'], header })).toThrow('44px');
   });
-  // US-62 AC28 (Brad 2026-11-06: "the login row ... takes up a whole row by itself"):
-  // Sign in and the person button are quiet controls on the title's line.
-  it('fails a heavy title line: a boxed Sign in, a tall row, a small target, an off-centre control', () => {
+  // US-62 AC28 (Brad 2026-11-06: "the login row ... takes up a whole row by itself"), then
+  // AC34 (option A, Brad 2026-11-09): the row is gone; Sign in and Settings are in the Account tab.
+  it('fails a header row on My health, or a control on its title line', () => {
     const gate = (h: Partial<typeof header>) => () => assertPhoneLayout({ gaps: [16, 16], pillRows: 1, smallTargets: [], header: { ...header, ...h } });
-    expect(gate({ actionBorders: [1, 0] })).toThrow('boxed');
-    expect(gate({ height: 90 })).toThrow('title line');
-    expect(gate({ actionHeights: [44, 40] })).toThrow('44px');
-    expect(gate({ centreOffset: 9 })).toThrow('centred');
+    expect(gate({ height: 44 })).toThrow('header row');
+    expect(gate({ controls: 2 })).toThrow('title line');
   });
 });
 

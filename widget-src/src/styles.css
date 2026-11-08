@@ -3993,6 +3993,13 @@ input[type="number"] {
     min-height: 300px;
   }
 
+  /* US-62 AC34: the Account panel fills the same screen, so a short Settings never leaves
+     the tab bar floating mid-screen (its top is the theme's header: no card inset). */
+  .hr-tabpanel .mh-account {
+    min-height: calc(100vh - var(--hr-chat-top, 0px) - var(--hr-tabbar-h, 51px) - 32px);
+    min-height: calc(100svh - var(--hr-chat-top, 0px) - var(--hr-tabbar-h, 51px) - 32px);
+  }
+
   .chat-embed .chat-header-sub {
     display: none;
   }
@@ -5576,10 +5583,11 @@ input[type="number"] {
   min-width: 0;
   font-size: 12px;
 }
-/* Sign in, or where the record lives: quiet teal text on the title's line, the iPhone's
-   toolbar button, not a box (Brad 2026-11-06). A long label shortens; the title never wraps. */
-.mh-header .action-btn-small,
-.mh-header .action-btn-small:hover {
+/* Sign in, or where the record lives: quiet teal text on the title's line (My health's on
+   desktop, Account's on a phone), the iPhone's toolbar button, not a box (Brad 2026-11-06).
+   A long label shortens; the title never wraps. */
+.mh-header-actions .action-btn-small,
+.mh-header-actions .action-btn-small:hover {
   min-height: 44px;
   max-width: 14em;
   padding: 0 8px;
@@ -5591,10 +5599,10 @@ input[type="number"] {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.mh-header .action-btn-small:hover {
+.mh-header-actions .action-btn-small:hover {
   text-decoration: underline;
 }
-.mh-header .action-btn-small:focus-visible {
+.mh-header-actions .action-btn-small:focus-visible {
   outline: 2px solid var(--color-brand-text);
   outline-offset: -2px;
   border-radius: 8px;
@@ -6025,7 +6033,7 @@ input[type="number"] {
 }
 .mh-settings > .section-card {
   margin: 12px 0 0;
-  padding: 0;
+  padding: 0 !important; /* beats a phone card's forced 12px: one content edge in Settings and Account (US-62 AC34) */
   box-shadow: none;
 }
 .mh-settings .delete-data-section {
@@ -6245,21 +6253,13 @@ input[type="number"] {
   }
 }
 
-/* A phone: the cards' 10px gutter; the title row holds Sign in and the person button (no band
-   of its own); every control a 44px target (Brad 2026-11-06). */
+/* A phone: the cards' 10px gutter; every control a 44px target (Brad 2026-11-06). */
 @media (max-width: 768px) {
+  /* Option A (Brad 2026-11-09, US-62 AC34): Sign in and Settings live in the Account tab, and
+     the tab bar names the screen, so My health draws no header row at all. The title stays for
+     screen readers and as the focus a landing or a dismissed card moves to. */
   .mh-header {
-    margin: 0 10px;
-    gap: 8px;
-  }
-  .mh-header-actions {
-    gap: 4px;
-  }
-  /* Option B (Brad 2026-11-09): the tab bar names the screen, so a phone draws no title. Sign in
-     and the person button sit right on one 44px row; the title stays for screen readers and as
-     the focus a landing or a dismissed card moves to. */
-  .mh-header {
-    justify-content: flex-end;
+    display: contents;
   }
   .mh-title {
     position: absolute;

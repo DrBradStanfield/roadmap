@@ -60,6 +60,13 @@ function useLocalSaveRefused(backend: Backend): boolean {
   return refused;
 }
 
+/** US-01 AC5: said while this device refuses the record's saves. Beside the storage button,
+ *  and on a phone also atop My health, since the button sits in the Account tab (US-62 AC34). */
+export function LocalSaveAlert({ backend }: { backend: Backend }) {
+  const localRefused = useLocalSaveRefused(backend);
+  return localRefused ? <span className="hr-sync-error" role="alert">{LOCAL_SAVE_REFUSED}</span> : null;
+}
+
 /** US-09 AC30: the top bar's label, from the real storage state (storageState's
  *  three, plus pending sync), so it never claims what is not true. A reconnect
  *  session runs on 'local', so it is asked first. */
@@ -112,7 +119,6 @@ function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
  *  state opens the one picker, which SyncControl hosts (AC13). */
 export function StorageBar({ backend, reconnect }: { backend: Backend; reconnect?: Exclude<Backend, 'local'> }) {
   const pendingSync = usePendingSync(backend);
-  const localRefused = useLocalSaveRefused(backend);
   const { busy, error, reconnectNow } = useReconnect(reconnect);
   return (
     <>
@@ -126,8 +132,8 @@ export function StorageBar({ backend, reconnect }: { backend: Backend; reconnect
         {busy ? 'Reconnecting…' : storageBarLabel(backend, reconnect, pendingSync)}
       </button>
       {error && <span className="hr-sync-error" role="alert">{error}</span>}
-      {/* US-01 AC5: here, not in the plan, so a phone shows it above every tab. */}
-      {localRefused && <span className="hr-sync-error" role="alert">{LOCAL_SAVE_REFUSED}</span>}
+      {/* US-01 AC5: here, not in the plan, beside the button that says where the record lives. */}
+      <LocalSaveAlert backend={backend} />
     </>
   );
 }
