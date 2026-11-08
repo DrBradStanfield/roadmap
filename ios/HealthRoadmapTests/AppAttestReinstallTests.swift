@@ -35,7 +35,10 @@ final class AppAttestReinstallTests: XCTestCase {
     private var paths: [String] = []
     private var labKey: String?
 
-    override func setUp() {
+    override func setUp() { reset() }
+
+    /// A stale id planted and the server stubbed, before each run.
+    private func reset() {
         Keychain.save("key-from-the-last-install")
         paths = []
         labKey = nil
@@ -60,7 +63,7 @@ final class AppAttestReinstallTests: XCTestCase {
     /// Each code a stale key has been seen to raise, not only `invalidKey`.
     func testAStaleKeyFromTheLastInstallIsReplacedOnceAndTheReportGoes_US52_AC1c() async throws {
         for code in [DCError.Code.invalidKey, .invalidInput, .unknownSystemFailure] {
-            setUp()
+            reset()
             let fake = FakeAttest(staleCode: code)
             let client = LabUploadClient(attest: AppAttestClient(session: StubHTTP.session(), service: fake))
             _ = try await client.extract(report, unitSystem: "si")
@@ -72,7 +75,7 @@ final class AppAttestReinstallTests: XCTestCase {
     }
 
     /// A new key that cannot sign either is not retried again, and the words name App Attest.
-    func testAKeyThatStillCannotSignStopsAfterOneNewKeyAndSaysWhere_US52_AC1c() async {
+    @MainActor func testAKeyThatStillCannotSignStopsAfterOneNewKeyAndSaysWhere_US52_AC1c() async {
         let fake = FakeAttest(staleCode: .invalidInput, freshKeysFail: true)
         let client = LabUploadClient(attest: AppAttestClient(session: StubHTTP.session(), service: fake))
         do {
@@ -85,5 +88,9 @@ final class AppAttestReinstallTests: XCTestCase {
             XCTAssertEqual(LabUploadSheet.words(for: error), words)
             XCTAssertEqual(ChatTranscript.words(for: error), words, "chat uses the same client")
         }
+        // The words say "Please try again", so the review offers Try again.
+        let failed = await LabUploadSheet.extractEach([report], extract: { _ in throw AppAttestClient.Failure.device(stage: "assert", code: "3") }, progress: { _, _ in })
+        XCTAssertEqual(failed?.first?.failure, "This iPhone could not prove the app is genuine, so nothing was sent. Please try again. (App Attest assert 3)")
+        XCTAssertNotNil(failed?.first?.retry, "an App Attest failure may mend, so Try again shows")
     }
 }
