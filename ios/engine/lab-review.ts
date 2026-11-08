@@ -8,6 +8,7 @@ import { METRIC_LABELS } from '../../packages/health-core/src/mappings';
 import { documentView, pendingRowsFor } from '../../packages/health-core/src/document-save';
 import { unreadLines, type AdditionalLabValue, type DocumentResult, type ExtractedValue, type RefusedLabValue, type UnreadLabValue } from '../../packages/health-core/src/lab-extraction';
 import { labTestLabel } from '../../packages/health-core/src/lab-catalog';
+import { labPlausibleNote, labValueLabel } from '../../packages/health-core/src/lab-series';
 import { isReadableRow } from '../../packages/health-core/src/readable-rows';
 import { comparatorOf, withComparator } from '../../packages/health-core/src/lab-limits';
 
@@ -184,7 +185,11 @@ export function labSaveSummary(file: RoadmapFile, rows: BulkRow[], now: string):
     saved: result.saved.length,
     skipped: result.skippedDuplicates,
     refused: [
-      ...result.refused.map((r) => ({ label: r.key, message: r.message })),
+      // Past its plausible range (US-21 AC26): the web's upload words, after the test's label.
+      ...result.refused.map((r) => {
+        const implausible = r.fault === 'implausible' ? labPlausibleNote(r.key, r.bound) : undefined;
+        return implausible ? { label: labValueLabel(r.key), message: implausible } : { label: r.key, message: r.message };
+      }),
       ...result.measurementRefusals.map((r) => ({ label: METRIC_LABELS[r.metricType] ?? r.metricType, message: r.message })),
     ],
   };

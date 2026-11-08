@@ -26,11 +26,8 @@ export function labValueLabel(metricName: string): string {
  */
 export function labUnitRefusalLine(key: string, unit: string, fault?: CountFault, bound?: 'above' | 'below'): string {
   const entry = resolveLabCatalogEntry(key);
-  // Past its plausible range (US-21 AC26): the end it passed, never the number.
-  const range = fault === 'implausible' && entry && bound ? LAB_PLAUSIBLE_RANGES[entry.key] : undefined;
-  if (entry && range) {
-    return `${entry.label}: a value ${bound} ${labNumberText(bound === 'above' ? range.max : range.min)} ${entry.unit} is almost certainly a misread number or unit, so it was not saved. Check the report.`;
-  }
+  const implausible = fault === 'implausible' ? labPlausibleNote(key, bound) : undefined;
+  if (entry && implausible) return `${entry.label}: ${implausible}`;
   const note = labUnitRefusalNote(entry, unit, fault);
   if (fault === 'scale') return `${labValueLabel(key)}: ${note}.`;
   if (fault === 'ceiling') return `${note}.`;
@@ -41,6 +38,15 @@ export function labUnitRefusalLine(key: string, unit: string, fault?: CountFault
       ? `${labValueLabel(key)}: no unit was printed, so it was not saved.${takes}`
       : `${labValueLabel(key)}: unit not recognised (${unit}). It was not saved.${takes}`;
   return note ? `${lead} ${note}.` : lead;
+}
+
+/** Why an uploaded value past its plausible range was refused (US-21 AC26), after its test's label:
+ *  the end it passed, never the number. Undefined for a test without that bound. */
+export function labPlausibleNote(key: string, bound?: 'above' | 'below'): string | undefined {
+  const entry = resolveLabCatalogEntry(key);
+  const range = entry && bound ? LAB_PLAUSIBLE_RANGES[entry.key] : undefined;
+  if (!entry || !range) return undefined;
+  return `a value ${bound} ${labNumberText(bound === 'above' ? range.max : range.min)} ${entry.unit} is almost certainly a misread number or unit, so it was not saved. Check the report.`;
 }
 
 /** Why a lab test's history draws no line: its reports used more than one unit (US-21 AC3a).

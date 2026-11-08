@@ -163,7 +163,8 @@ describe('US-52 AC8: the lab review and the write', () => {
     const file = record();
     const summary = JSON.parse(labSaveSummaryJson(JSON.stringify(file), JSON.stringify(slip), JSON.stringify(['a0', 'a1']), '2026-10-01', NOW, DEVICE));
     expect(summary.summary.saved).toBe(1);
-    expect(summary.summary.refused).toEqual([{ label: 'glucose', message: expect.stringMatching(/Glucose above 150 mmol\/L is almost certainly a typing or unit mistake/) }]);
+    // The web's upload line, its label once (LabReviewView shows "Not saved, <label>: <message>").
+    expect(summary.summary.refused).toEqual([{ label: 'Glucose', message: 'a value above 150 mmol/L is almost certainly a misread number or unit, so it was not saved. Check the report.' }]);
     const out = applyEdit(file, { kind: 'labImport', extractionJson: JSON.stringify(slip), refs: ['a0', 'a1'], reportDay: '2026-10-01' }, NOW);
     if (!out.ok) throw new Error(out.message);
     expect(out.file.labValues.map((l) => l.metricName)).toEqual(['Ferritin']);

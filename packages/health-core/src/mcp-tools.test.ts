@@ -826,6 +826,9 @@ describe('US-32 — correct_value', () => {
     expect(slip.status).toBe('rejected');
     expect(slip.text).toContain('600,000 ng/mL is 600,000 µg/L. Ferritin above 500,000 µg/L is almost certainly a typing or unit mistake');
     expect((slip as { file?: RoadmapFile }).file).toBeUndefined();
+    // One full stop before "Nothing was written", not two (US-21 AC26, 2026-11-09).
+    expect(slip.text).toContain('check the number and its unit. Nothing was written.');
+    expect(slip.text).not.toContain('..');
     expect(ok(correctValueTool(base(), { id: 'l1', newValue: 250 }, NOW)).file).toBeDefined();
   });
 });

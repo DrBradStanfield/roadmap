@@ -335,7 +335,7 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
  * no real result passes, so a value typed past one is a slip of the number or the unit (glucose
  * 5.5 with mg/dL picked is 0.31 mmol/L). Not reference ranges and not grading. Checked on every
  * write door (`toStoredLab`), so a typed add, a correction, an agent's add, an upload and a Health
- * Records result all refuse it (Brad 2026-11-09); a min of 0 checks the top end alone. Every bound approved by Brad 2026-11-06.
+ * Records result all refuse it (Brad 2026-11-09); a min of 0 refuses only a negative value and otherwise checks the top end. Every bound approved by Brad 2026-11-06.
  */
 export const LAB_PLAUSIBLE_RANGES: Readonly<Record<string, ValidationRange>> = {
   glucose: { min: 0.5, max: 150 }, // 9–2,700 mg/dL; the max clears a survived hyperosmolar 2,656 mg/dL (147 mmol/L) cited in review; the min is Brad's (2026-11-06: "people would be dead at 0.5 mmol/L")
