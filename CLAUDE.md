@@ -115,7 +115,7 @@ units, mappings, evidence, merge, roadmap-file, + tests) · `widget-src/src/`
 ```bash
 npm run build:shopify-prod   # live v2 widget bundle + upload bundle
 npm run build:widget         # side bundles only (upload, site-chat, chatbot)
-npm test                     # health-core only
+npm test                     # check:symlinks + health-core + app/lib (server) tests
 npm run test:all             # EVERYTHING (CI runs it in 6 shards; never a local merge gate)
 npx vitest related <files> --run   # just the tests your change touches
 node scripts/build-guide-html.mjs docs/guides/<g>.md   # publishable guide HTML
@@ -134,7 +134,7 @@ Deploy (`gh workflow run deploy.yml`) once CI is green and the required reviews 
 batch of merges), then reports each deploy (sha, result, live checks) to Brad.
 **Commit before any deploy** — `fly deploy` ships the working tree. `.env`
 has every variable; the list and per-Fly-app secrets: docs/deploy-runbook.md
-§ Environment variables. ANTHROPIC_API_KEY (spend-capped) is the only repo secret.
+§ Environment variables. Secret names: docs/deploy-runbook.md § Environment variables (GitHub Actions).
 
 ## CRITICAL: Security Rules
 

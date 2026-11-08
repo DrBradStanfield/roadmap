@@ -19,7 +19,7 @@ import {
   type StorageAdapter,
 } from '../src/storage';
 import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
-import { webRecordHost } from '../src/storage/web-record-host';
+import { BACKEND_KEY, webRecordHost } from '../src/storage/web-record-host';
 import { dropboxConfig } from './dropbox-config';
 import { clearAutoEnrolBlock } from './reminders';
 import { googleDriveConfig } from './google-config';
@@ -32,7 +32,8 @@ import { Sentry } from '../src/lib/sentry';
 /** Which backend the app is currently using (a UI-level subset of StorageBackendId). */
 export type Backend = 'dropbox' | 'google-drive' | 'github' | 'self-host' | 'local';
 
-export const BACKEND_KEY = 'health_roadmap_backend';
+// Kept beside the web host, which reads it too (US-06 AC13).
+export { BACKEND_KEY };
 
 export interface ResolvedBackend {
   adapter: StorageAdapter;
