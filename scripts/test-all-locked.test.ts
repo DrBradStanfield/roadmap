@@ -276,3 +276,22 @@ ${body}`, { mode: 0o755 });
     expect(findVitest(sub)).toBe(path.join(proj, 'node_modules', '.bin', 'vitest'));
   });
 });
+
+describe('every local vitest run is capped, targeted ones too (US-71 AC5)', () => {
+  const repo = path.resolve(__dirname, '..');
+  const readCap = (config: string, env: Record<string, string>) => {
+    const code = `const m = await import(${JSON.stringify(path.join(repo, config))}); const c = m.default.test ? m.default : m.default.default; console.log(JSON.stringify(c.test.maxWorkers ?? null));`;
+    const r = spawnSync(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', code], {
+      cwd: repo, encoding: 'utf8', env: { ...process.env, CI: '', TEST_ALL_MAX_WORKERS: '', ...env },
+    });
+    expect(r.status, r.stderr).toBe(0);
+    return JSON.parse(r.stdout.trim().split('\n').pop()!);
+  };
+  for (const config of ['vitest.config.ts', 'packages/health-core/vitest.config.ts']) {
+    it(`${config}: test:all's cap locally, the override honoured, none in CI`, () => {
+      expect(readCap(config, {})).toBe(Math.max(2, Math.floor(os.cpus().length / 4)));
+      expect(readCap(config, { TEST_ALL_MAX_WORKERS: '3' })).toBe(3);
+      expect(readCap(config, { CI: 'true' })).toBeNull();
+    }, 60_000);
+  }
+});

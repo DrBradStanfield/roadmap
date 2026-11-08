@@ -1,5 +1,6 @@
 import { defineConfig } from "vitest/config";
 import { realpathSync } from "node:fs";
+import { inCI, workerCap } from "./scripts/test-workers.mjs";
 
 // Root vitest config for the server (`app/`) + workspace test runs.
 //
@@ -45,6 +46,9 @@ export default defineConfig({
     // checkout ran them in threads and quietly failed. Forks for everything removes the
     // trap, is faster here, and `poolMatchGlobs` is gone in vitest 3.
     pool: 'forks',
+    // US-71 AC5: every local run, targeted ones included, takes test:all's cap (max(2, cpus/4), TEST_ALL_MAX_WORKERS), so
+    // sessions testing at once cannot each fork a worker per core. A --maxWorkers flag still wins; CI is unchanged.
+    maxWorkers: inCI() ? undefined : Number(workerCap()),
     // A fixed language for every test, so a runner in a US time zone does not switch the widget to US units.
     setupFiles: ['./tests/setup-locale.ts'],
     // Vitest 4 fails a synchronous test that overruns testTimeout; 1.6 let it
