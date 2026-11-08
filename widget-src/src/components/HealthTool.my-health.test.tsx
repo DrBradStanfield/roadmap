@@ -9,6 +9,7 @@ import { act, render, waitFor, fireEvent, within, type RenderResult } from '@tes
 import type { Suggestion } from '@roadmap/health-core';
 import {
   addMeasurement,
+  bulkSaveDocuments,
   bulkSaveLabValues,
   flushRoadmapStore,
   saveMedication,
@@ -573,5 +574,46 @@ describe('US-62 AC27: the desktop section list', () => {
     fireEvent.click(cholesterol);
     expect(scrolled.at(-1)).toBe(view.container.querySelector('#mh-topic-cholesterol'));
     expect(cholesterol.getAttribute('aria-current')).toBe('location');
+  });
+
+  // US-62 AC33 (Brad 2026-11-09): Documents in the desktop list, only when the area shows; never on a phone.
+  const withLetter = async () => {
+    await RECORDS['urgent results, both cascades, a supplement']();
+    await bulkSaveDocuments([{ documentType: 'clinic_letter', title: 'Clinic letter', documentDate: '2026-09-01', contentMd: 'A letter.', metadata: {}, sourceFileName: 'letter.pdf' }]);
+  };
+  const navTitles = (view: RenderResult) => [...view.container.querySelectorAll('.mh-nav .mh-nav-title')].map(t => t.textContent);
+
+  it('AC33: with a letter on record, "Documents" ends the list and jumps to the documents area', async () => {
+    const scrolled: Element[] = [];
+    Element.prototype.scrollIntoView = function (this: Element) { scrolled.push(this); };
+    const view = await show(withLetter);
+    const area = await waitFor(() => { const h = view.container.querySelector<HTMLElement>('#mh-topic-documents'); expect(h).not.toBeNull(); return h!; });
+    expect(area.textContent).toBe('Documents');
+    expect(navTitles(view).at(-1)).toBe('Documents');
+    const link = within(view.getByRole('navigation', { name: 'My health sections' })).getByRole('link', { name: 'Documents' });
+    expect(link.getAttribute('href')).toBe('#mh-topic-documents');
+    fireEvent.click(link);
+    expect(scrolled.at(-1)).toBe(area);
+    expect(document.activeElement).toBe(area);
+    // The pills stay the three (no room on a phone).
+    expect([...view.container.querySelectorAll('.mh-pill')].map(p => p.textContent)).toEqual(['Blood tests', 'Cholesterol', 'Supplements']);
+  });
+
+  it('AC33: with no documents (a blood-test report alone is not one), no entry and no area', async () => {
+    const view = await show(async () => {
+      await RECORDS['urgent results, both cascades, a supplement']();
+      await bulkSaveDocuments([{ documentType: 'pathology_report', title: 'Labs', documentDate: '2026-09-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'labs.pdf' }]);
+    });
+    expect(navTitles(view).length).toBeGreaterThan(0);
+    expect(navTitles(view)).not.toContain('Documents');
+    expect(view.container.querySelector('#mh-topic-documents')).toBeNull();
+  });
+
+  it('AC33: on a phone the list is not drawn, so no Documents entry; the area still shows', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {} }));
+    const view = await show(withLetter);
+    await waitFor(() => expect(view.container.querySelector('#mh-topic-documents')).not.toBeNull());
+    expect(view.queryByRole('navigation', { name: 'My health sections' })).toBeNull();
+    expect(view.queryByRole('link', { name: 'Documents' })).toBeNull();
   });
 });

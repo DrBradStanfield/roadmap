@@ -611,8 +611,8 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
       return input as HTMLInputElement;
     });
     type(cell, '170');
-    // The last answer lands at My health's title (US-62 AC25), not the email box.
-    await waitFor(() => expect(document.activeElement?.classList.contains('mh-title')).toBe(true));
+    // The last answer lands on "Your plan is ready." (US-62 AC31), not the email box.
+    await waitFor(() => expect(document.activeElement?.classList.contains('mh-ready-title')).toBe(true));
   });
 });
 
@@ -769,12 +769,65 @@ describe('US-02 AC9: a range error waits while the number is still being typed',
 });
 
 // Since US-62 AC24 "low" is Settings: the card leaves the page for the sheet behind the person button.
+describe('US-62 AC31: "Your plan is ready." after the onboarding', () => {
+  const BODY = 'Each section below shows where you stand and one next step to discuss with your doctor. Add more numbers, like blood pressure or blood tests, and the suggestions get more specific.';
+  async function finish(view: RenderResult) {
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    birth(view);
+  }
+
+  it('shows in Starting info\'s place with the focus on its heading, no scroll, and Got it hides it for good', async () => {
+    const scrolled: Element[] = [];
+    vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(function (this: Element) { scrolled.push(this); });
+    const view = await open();
+    await finish(view);
+    const heading = await waitFor(() => view.getByRole('heading', { name: 'Your plan is ready.' }));
+    await waitFor(() => expect(document.activeElement).toBe(heading));
+    const card = heading.closest('.mh-ready') as HTMLElement;
+    expect(card.textContent).toContain(BODY);
+    await waitFor(() => expect(q(view, '.about-card')).toBeNull()); // Starting info has gone
+    // The card is first in the page after the header, where Starting info stood.
+    expect(card.compareDocumentPosition(q(view, '.mh-sections')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(scrolled.some((el) => el.classList.contains('mh-title') || el.closest('.mh-topic'))).toBe(false); // no jump
+    await waitFor(() => expect(named('plan_ready_shown')).toHaveLength(1));
+    expect(named('plan_ready_shown')[0].metadata).toBeUndefined();
+    expect(localStorage.getItem('hr_plan_ready_seen')).toBeNull();
+
+    fireEvent.click(within(card).getByRole('button', { name: 'Got it' }));
+    expect(q(view, '.mh-ready')).toBeNull();
+    expect(localStorage.getItem('hr_plan_ready_seen')).toBe('1');
+    expect(document.activeElement?.classList.contains('mh-title')).toBe(true); // the focus is not lost
+    await waitFor(() => expect(named('plan_ready_dismissed')).toHaveLength(1));
+    expect(named('plan_ready_dismissed')[0].metadata).toBeUndefined();
+  });
+
+  it('a browser that pressed Got it before never sees it: the last answer lands on the title', async () => {
+    localStorage.setItem('hr_plan_ready_seen', '1');
+    const view = await open();
+    await finish(view);
+    await waitFor(() => expect(document.activeElement?.classList.contains('mh-title')).toBe(true));
+    expect(q(view, '.mh-ready')).toBeNull();
+    expect(named('plan_ready_shown')).toEqual([]);
+  });
+
+  it('a returning user with all four answers never sees it', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await addMeasurement('weight', 70, TODAY);
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(q(view, '.mh-sections')).toBeTruthy());
+    expect(q(view, '.mh-ready')).toBeNull();
+    expect(named('plan_ready_shown')).toEqual([]);
+  });
+});
+
 describe('US-62 AC12: About you goes low once the onboarding is done and its card is left', () => {
   const cards = (view: RenderResult) => Array.from(view.container.querySelectorAll('.health-input-panel > .section-card'));
   /** About you has left the page for Settings: the topics show and its card is gone. */
   const aboutLow = (view: RenderResult) => (q(view, '.about-card') ? null : q(view, '.mh-sections'));
 
-  it.each([['desktop', false], ['phone', true]])('on %s: "199" moves nothing; "1990" lands at My health\'s title and About you goes, as rows, to Settings', async (_, onPhone) => {
+  it.each([['desktop', false], ['phone', true]])('on %s: "199" moves nothing; "1990" lands on "Your plan is ready." and About you goes, as rows, to Settings', async (_, onPhone) => {
     phone = onPhone;
     const view = await open();
     await measurements(view);
@@ -790,8 +843,8 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
 
     type(year, '1990'); // complete, in range, the month set: the last answer
     await waitFor(() => expect(aboutLow(view)).toBeTruthy());
-    // Phone and desktop land at My health's title (US-62 AC25).
-    await waitFor(() => expect(document.activeElement?.classList.contains('mh-title')).toBe(true));
+    // Phone and desktop land on "Your plan is ready." in Starting info's place (US-62 AC31).
+    await waitFor(() => expect(document.activeElement?.classList.contains('mh-ready-title')).toBe(true));
     if (onPhone) expect(view.getByRole('tab', { name: 'My health' }).getAttribute('aria-selected')).toBe('true');
     expect(weightPlaces(view)).toHaveLength(1); // the weight joins the vitals, shown once
     // The returning layout: the vitals as rows in their topics, the grids hidden but mounted.

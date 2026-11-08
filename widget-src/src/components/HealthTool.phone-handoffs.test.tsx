@@ -211,7 +211,9 @@ describe('US-16 AC2 on a phone: a chat edit lands on My health, on the cell it f
 });
 
 describe('US-22 on a phone: a typed weight, the last answer, lands at the top of My health (US-62 AC25)', () => {
-  it('My health shows, its title takes the focus and is scrolled to; the email box stays at the foot', async () => {
+  it('My health shows, its title takes the focus and is scrolled to; the email box sits above the pills', async () => {
+    // A browser that already pressed "Your plan is ready."'s Got it (US-62 AC31): no card, so the title landing.
+    localStorage.setItem('hr_plan_ready_seen', '1');
     await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
     await flushRoadmapStore();
     const view = render(<HealthTool />);

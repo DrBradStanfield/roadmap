@@ -22,4 +22,17 @@ describe('US-62 AC30: My health styles', () => {
     expect(rows).toMatch(/padding-top:\s*4px\s*!important/);
     expect(rows).toMatch(/padding-bottom:\s*4px\s*!important/);
   });
+
+  it('AC32: a phone draws no title, still there for screen readers, and right-aligns the row; desktop keeps it', () => {
+    const phone = css.slice(css.lastIndexOf('@media (max-width: 768px)'));
+    const title = /\.mh-title\s*\{([^}]*)\}/.exec(phone)![1];
+    expect(title).toMatch(/position:\s*absolute/);
+    expect(title).toMatch(/clip:\s*rect\(0,\s*0,\s*0,\s*0\)/);
+    expect(title).not.toMatch(/display:\s*none/); // still read, still focusable
+    expect(/\.mh-header\s*\{[^}]*justify-content:\s*flex-end/.test(phone)).toBe(true);
+    // The base rule (desktop) draws it.
+    const base = blocks(/^\s*\.mh-title\s*$/)[0]; // the first, outside any media query
+    expect(base).toMatch(/font-size:\s*28px/);
+    expect(base).not.toMatch(/clip:/);
+  });
 });

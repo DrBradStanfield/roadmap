@@ -2613,6 +2613,10 @@ input[type="number"] {
   margin-bottom: 16px;
   min-width: 0;
 }
+/* In My health's topics, the column's gap spaces it (US-62 AC33). */
+.mh-topics > .health-records-section {
+  margin-bottom: 0;
+}
 
 .health-records-list {
   display: flex;
@@ -5629,6 +5633,40 @@ input[type="number"] {
   gap: 16px;
   min-width: 0;
 }
+/* "Your plan is ready." (US-62 AC31): one calm card, its Got it the accent's text button. */
+.mh-ready-title {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.mh-ready-title:focus {
+  outline: none;
+}
+.mh-ready-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+}
+.mh-ready-btn,
+.mh-ready-btn:hover {
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-brand-text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.mh-ready-btn:focus-visible {
+  outline: 2px solid var(--color-brand-text);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
 /* Three pills of one width under the title, a phone's only; they scroll with the page (US-62 AC17). */
 .mh-pills {
   display: grid;
@@ -6217,10 +6255,24 @@ input[type="number"] {
   .mh-header-actions {
     gap: 4px;
   }
+  /* Option B (Brad 2026-11-09): the tab bar names the screen, so a phone draws no title. Sign in
+     and the person button sit right on one 44px row; the title stays for screen readers and as
+     the focus a landing or a dismissed card moves to. */
+  .mh-header {
+    justify-content: flex-end;
+  }
   .mh-title {
-    font-size: 30px;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
   }
   .mh-pdf,
+  .mh-page > .mh-ready,
+  .mh-topics > .health-records-section,
   .mh-pills,
   .mh-banner,
   .mh-topic-head,

@@ -1,7 +1,7 @@
 // My health's section list on desktop (US-62 AC27, Brad 2026-11-06): the
 // sections the page holds, in order, sticky beside them; the one being read
 // is marked (aria-current), and a red dot marks one holding an urgent card.
-// Hidden on a phone, where the three jump pills stay (iPhone parity).
+// Not drawn on a phone, where the three jump pills stay (iPhone parity; no room for more, US-62 AC33).
 import { useEffect, useState } from 'react';
 import { observeVisibility } from '../lib/observe-visibility';
 import { useIsMobile } from '../lib/useIsMobile';
@@ -43,6 +43,7 @@ export function SectionNav({ topics, onJump }: { topics: NavTopic[]; onJump: (id
     });
     return () => { for (const stop of stops) stop(); };
   }, [key, isMobile]);
+  if (isMobile) return null;
   return (
     <nav className="mh-nav no-print" aria-label="My health sections">
       <ul className="mh-nav-list">
