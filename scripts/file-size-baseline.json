@@ -2,7 +2,6 @@
   "limit": 500,
   "exempt": {
     "packages/health-core/src/evidence.ts": "data table: reasons, guideline tags and DOIs per suggestion id (3 functions, the rest literal)",
-    "packages/health-core/src/lab-catalog.ts": "data table: the stable-id lab test registry (mostly object literals)",
     "packages/health-core/src/mcp-tool-catalogue.ts": "data table: the published MCP tool and prompt text (mostly literals)"
   },
   "files": {
@@ -26,6 +25,7 @@
     "widget-src/src/components/StartingInfoVitals.tsx": 825,
     "packages/health-core/src/units.ts": 819,
     "tools/knowledge-lint.ts": 811,
+    "packages/health-core/src/lab-catalog.ts": 800,
     "ios/HealthRoadmap/MyData/RecordStore.swift": 798,
     "widget-src/src/storage/drive.ts": 785,
     "packages/health-core/src/record-session.ts": 783,
@@ -56,6 +56,7 @@
     "packages/health-core/src/plan.ts": 518,
     "packages/health-core/src/index.ts": 515,
     "app/lib/mcp-clients.server.ts": 508,
-    "packages/health-core/src/run-roadmap.ts": 505
+    "packages/health-core/src/run-roadmap.ts": 505,
+    "instrument-scrub.mjs": 503
   }
 }

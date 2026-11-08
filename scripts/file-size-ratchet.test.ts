@@ -4,6 +4,9 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { LIMIT, REGEN_CMD, ROOT, lineCount, overLimit, readBaseline } from './file-size-baseline.mjs';
 
+// Data tables only. A new exemption is a change to this list.
+const ALLOWED_EXEMPT = ['packages/health-core/src/evidence.ts', 'packages/health-core/src/mcp-tool-catalogue.ts'];
+
 const baseline: { exempt: Record<string, string>; files: Record<string, number> } = readBaseline();
 const now: Record<string, number> = overLimit(baseline.exempt);
 
@@ -36,10 +39,11 @@ describe('file-size ratchet (US-64 AC23)', () => {
     expect([...stale, ...loose], [...stale, ...loose].join('\n')).toEqual([]);
   });
 
-  it('every exempt file exists and gives a reason', () => {
+  it('every exempt file is on the fixed list, exists and gives a reason', () => {
     for (const [f, why] of Object.entries(baseline.exempt)) {
+      expect(ALLOWED_EXEMPT, `${f} is exempt but not on ALLOWED_EXEMPT in this test: adding an exemption means editing the list here, where review sees it`).toContain(f);
       expect(existsSync(join(ROOT, f)), `${f} is exempt but missing: delete the entry`).toBe(true);
-      expect(why.length).toBeGreaterThan(10);
+      expect(typeof why === 'string' && why.length > 10, `${f}: the exempt entry needs a one-line reason`).toBe(true);
     }
   });
 });

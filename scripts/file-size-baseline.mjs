@@ -13,9 +13,9 @@ export const BASELINE_PATH = join(ROOT, 'scripts/file-size-baseline.json');
 export const REGEN_CMD = 'node scripts/file-size-baseline.mjs --write';
 
 const CODE = /\.(ts|tsx|js|mjs|cjs|swift)$/;
-const ROOTS = /^(app|widget-src\/src|widget-src\/standalone|packages\/health-core\/src|ios|tools|scripts|\.claude\/hooks)\//;
+const ROOTS = /^((app|widget-src\/src|widget-src\/standalone|packages\/health-core\/src|ios|tools|scripts|\.claude\/hooks)\/|[^/]+$)/;
 const NOT_PROD =
-  /^ios\/engine-release\/|\.(test|spec)\.|\.golden\.|\.d\.ts$|(^|\/)(tests?|__tests__|fixtures?|dist|build|generated)\/|[A-Za-z]Tests?\//;
+  /^(ios\/engine-release|extensions\/health-tool-widget\/assets)\/|\.(test|spec)\.|\.golden\.|\.config\.(ts|mjs)$|\.d\.ts$|(^|\/)(tests?|__tests__|fixtures?|dist|build|generated)\/|[A-Za-z]Tests?\//;
 
 export const lineCount = (file) => {
   const buf = readFileSync(join(ROOT, file));
@@ -23,9 +23,6 @@ export const lineCount = (file) => {
   for (const b of buf) if (b === 10) n++;
   return n + (buf.length && buf[buf.length - 1] !== 10 ? 1 : 0);
 };
-
-const isGenerated = (file) =>
-  /generated|do not edit/i.test(readFileSync(join(ROOT, file), 'utf8').split('\n', 5).join('\n'));
 
 export function readBaseline() {
   return JSON.parse(readFileSync(BASELINE_PATH, 'utf8'));
@@ -36,7 +33,6 @@ export function productionFiles() {
   const out = execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, maxBuffer: 1 << 26 }).toString().split('\0');
   return out
     .filter((f) => f && CODE.test(f) && ROOTS.test(f) && !NOT_PROD.test(f) && existsSync(join(ROOT, f)))
-    .filter((f) => !isGenerated(f))
     .map((f) => [f, lineCount(f)]);
 }
 
