@@ -423,6 +423,9 @@ final class FakeHealthStore: HealthStoreClient {
     var supportsHealthRecords = false
     /// Whether HealthKit still has lab results to ask about: the request then shows their sheet.
     var recordsNotYetAsked = true
+    /// HealthKit keeps saying a request is needed after the sheet (no Health Records account,
+    /// or the sheet closed without a choice): the bug US-72 AC1's ask-once fixes.
+    var recordsStayDue = false
     var pendingRecords: [HealthRecord] = []
     private(set) var recordReads = 0
     /// The anchor each lab results read started from.
@@ -435,14 +438,14 @@ final class FakeHealthStore: HealthStoreClient {
         authorized = true
         requests += 1
         let asked = supportsHealthRecords && recordsNotYetAsked
-        if supportsHealthRecords { recordsNotYetAsked = false }
+        if supportsHealthRecords { recordsNotYetAsked = recordsStayDue }
         return asked
     }
 
     func requestLabResults() async throws -> Bool {
         guard recordsNotYetAsked else { return false }
         labRequests += 1
-        recordsNotYetAsked = false
+        recordsNotYetAsked = recordsStayDue
         return true
     }
 

@@ -104,7 +104,10 @@ final class AppleHealthSync {
         guard client.isAvailable else { return }
         do {
             // Health showed its lab results sheet because HealthKit said one was needed (AC13).
-            if try await client.requestAuthorization() { analytics?.event(.healthRecordsAsked) }
+            if try await client.requestAuthorization() {
+                memory.labResultsAsked = .now
+                analytics?.event(.healthRecordsAsked)
+            }
         } catch {
             status = .failed(error.localizedDescription)
             return
@@ -117,13 +120,18 @@ final class AppleHealthSync {
     }
 
     /// Coming on screen (the app's `follow`), never from a background wake, where no sheet
-    /// can show: a person who connected before lab results were asked for, or who chose
-    /// "Ask Before Sharing", gets Health's lab results sheet when HealthKit says one is
-    /// needed (US-72 AC1, AC13). Then the refresh, which imports what they allowed.
+    /// can show: a person who connected before lab results were asked for gets Health's lab
+    /// results sheet when HealthKit says one is needed (US-72 AC1, AC13), once. HealthKit
+    /// keeps saying so for a person with no Health Records account, or who closed the sheet,
+    /// so the first sheet shown is remembered and never shown again by itself.
+    /// Then the refresh, which imports what they allowed.
     func foreground() async {
-        if memory.connected, client.isAvailable, client.supportsHealthRecords, !asking {
+        if memory.connected, memory.labResultsAsked == nil, client.isAvailable, client.supportsHealthRecords, !asking {
             asking = true
-            if (try? await client.requestLabResults()) == true { analytics?.event(.healthRecordsAsked) }
+            if (try? await client.requestLabResults()) == true {
+                memory.labResultsAsked = .now
+                analytics?.event(.healthRecordsAsked)
+            }
             asking = false
         }
         await refresh()

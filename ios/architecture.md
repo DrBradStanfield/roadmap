@@ -805,11 +805,17 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
 - **Asked only where it works:** `HKHealthStore.supportsHealthRecords()` true adds
   `labResultRecord` to the read set of the one request (D12's one step; Health shows it on
   its own sheet). Elsewhere nothing asks and no read runs.
-- **Asked again on coming forward (review 2026-11-02):** a person who connected before this
-  build, or who chose "Ask Before Sharing", is never shown the sheet by the one request.
+- **Asked once on coming forward (review 2026-11-02; once only since 2026-11-09):** a person
+  who connected before this build is never shown the sheet by the one request.
   `AppleHealthSync.foreground` (the app's `follow`, never a background wake, where no sheet
   can show) asks for lab results alone when Apple Health is connected, `supportsHealthRecords`
-  and `statusForAuthorizationRequest` says `.shouldRequest`, then refreshes.
+  and `statusForAuthorizationRequest` says `.shouldRequest`, then refreshes. It asks at most
+  once per phone: a TestFlight tester with no Health Records account was asked on every open,
+  because HealthKit stays at `.shouldRequest` when there is no account or the sheet is closed
+  without a choice. `HealthSyncMemory.labResultsAsked` holds the date the lab results sheet was
+  first shown (by connect or by coming forward); once set, coming forward never asks.
+  "Ask Before Sharing" people therefore get no automatic ask for later results; a deliberate
+  connect (the live cards' Turn On, once connected) still shows Apple's sheet. No screen of ours comes before it (guideline 5.1.1).
 - **Rules version:** `HealthSyncMemory.labResultsRulesVersion` (2 since 2026-11-02: results
   dated by `issued`, the MDRD eGFR and the import winning a conflict), stored beside the anchor.
   Bump it when the engine starts reading results it used to refuse (a new code or unit): a
