@@ -387,6 +387,7 @@ export {
   resolveLabCatalogEntry,
   canonicalLabRow,
   labCountFault,
+  labPlausibleBound,
   labSlotKey,
   normalizeLabUnit,
   displayLabUnit,

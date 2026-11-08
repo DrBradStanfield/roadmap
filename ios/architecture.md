@@ -809,11 +809,22 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
 - **Asked only where it works:** `HKHealthStore.supportsHealthRecords()` true adds
   `labResultRecord` to the read set of the one request (D12's one step; Health shows it on
   its own sheet). Elsewhere nothing asks and no read runs.
-- **Asked again on coming forward (review 2026-11-02):** a person who connected before this
-  build, or who chose "Ask Before Sharing", is never shown the sheet by the one request.
+- **Asked once on coming forward (review 2026-11-02; once only since 2026-11-09):** a person
+  who connected before this build is never shown the sheet by the one request.
   `AppleHealthSync.foreground` (the app's `follow`, never a background wake, where no sheet
   can show) asks for lab results alone when Apple Health is connected, `supportsHealthRecords`
-  and `statusForAuthorizationRequest` says `.shouldRequest`, then refreshes.
+  and `statusForAuthorizationRequest` says `.shouldRequest`, then refreshes. It asks at most
+  once per phone: a TestFlight tester with no Health Records account was asked on every open,
+  because HealthKit stays at `.shouldRequest` when there is no account or the sheet is closed
+  without a choice. `HealthSyncMemory.labResultsAsked` holds the date the lab results sheet was
+  last shown (by connect, by coming forward or by Settings' row); once set, coming forward
+  never asks. Someone upgrading from an earlier build has no date yet, so they may see the
+  sheet once more on their first open after the update. "Ask Before Sharing" people get no
+  automatic ask for later results. Settings' "Share new lab results" row (US-72 AC14, shown
+  when connected and `supportsHealthRecords`) can still show Apple's sheet when HealthKit
+  says one is needed, then refreshes. A deliberate connect can still show it too, but once
+  connected the live cards' Turn On shows only while the live types are due. No screen of
+  ours comes before the sheet (guideline 5.1.1).
 - **Rules version:** `HealthSyncMemory.labResultsRulesVersion` (2 since 2026-11-02: results
   dated by `issued`, the MDRD eGFR and the import winning a conflict), stored beside the anchor.
   Bump it when the engine starts reading results it used to refuse (a new code or unit): a
@@ -1261,6 +1272,11 @@ log a closed reason word, never the key id or IP.
 - Apple's service unavailable at attest time: "try again later"; no fallback.
 - Key lost (app reinstalled: the Keychain id survives, the key does not) or unknown to the
   server (401 `unknown_key`): the app drops the id, attests a new key, and retries once.
+  A lost key may fail its assertion with more than one error code, not only `invalidKey`,
+  so any failure of the stored key counts as lost, once a launch: a key the launch
+  registered is used first, Keychain or not, and never replaced on the phone; it keeps
+  failing until a relaunch. A 401 `unknown_key` still re-registers once per request
+  (US-52 AC1c, 2026-11-09: Brad's reinstalled phone). A failed App Attest call names its step and code on screen ("App Attest assert 3").
 - Counter stale (401 `stale_counter`): one retry with a fresh assertion.
 - Key store down, or `APP_ATTEST_TEAM_ID` unset: 503. Never open.
 - Over a limit: 429 with a plain message; no model call.

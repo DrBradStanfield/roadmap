@@ -255,6 +255,15 @@ describe('US-72 AC3: the day', () => {
     expect(file.labValues[0].recordedAt).toBe('2026-10-21T00:00:00.000Z');
   });
 
+  it('US-21 AC26 (Brad 2026-11-09): a result past its plausible range is skipped and counted in notRead, as a core value out of range is', () => {
+    const { file, counts } = run(empty(), [
+      rec(lab('2276-4', 600000, 'ng/mL')),
+      rec(lab('3016-3', 2.3, 'm[IU]/L')),
+    ]);
+    expect(counts).toMatchObject({ added: 1, notRead: 1 });
+    expect(file.labValues.map((m) => m.metricName)).toEqual(['tsh']);
+  });
+
   it('AC3: a result later than now does not land; five minutes of clock skew is not later', () => {
     const { counts } = run(empty(), [
       rec(obs(R4_LDL, { effectiveDateTime: '2026-11-02T08:30:00Z' })),

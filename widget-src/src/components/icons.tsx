@@ -61,6 +61,12 @@ function Icon({ name, size }: { name: IconName; size: number }) {
   );
 }
 
+/** Apple's increased-contrast variants, for the four hues under 3:1 on the page's grey
+ *  (#f2f2f7): same hue, as iOS draws them with Increase Contrast on (Brad 2026-11-09). */
+const ACCESSIBLE: Partial<Record<Tint, readonly [number, number, number]>> = {
+  orange: [201, 52, 0], green: [36, 138, 61], cyan: [0, 113, 164], gray: [108, 108, 112],
+};
+
 const rgb = (tint: Tint, alpha = 1) => `rgba(${TINTS[tint].join(', ')}, ${alpha})`;
 
 /** The My health sections, as SectionTitle.swift and TopicPlan.swift name and tint them. */
@@ -80,10 +86,11 @@ const SECTIONS = {
 } as const satisfies Record<string, readonly [IconName, Tint]>;
 export type SectionKey = keyof typeof SECTIONS;
 
-/** A section title's tinted symbol, before its words. */
+/** A section title's tinted symbol, before its words: the iPhone's hue, at least 3:1 on white and grey. */
 export function SectionIcon({ section }: { section: SectionKey }) {
   const [name, tint] = SECTIONS[section];
-  return <span className="section-icon" data-icon={name} aria-hidden="true" style={{ color: rgb(tint) }}><Icon name={name} size={20}/></span>;
+  const color = `rgb(${(ACCESSIBLE[tint] ?? TINTS[tint]).join(', ')})`;
+  return <span className="section-icon" data-icon={name} aria-hidden="true" style={{ color }}><Icon name={name} size={20}/></span>;
 }
 
 /** The plan's categories, as CategoryIcon.style(for:) maps them; anything else, sparkles. */

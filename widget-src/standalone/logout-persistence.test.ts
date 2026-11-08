@@ -76,6 +76,8 @@ beforeEach(async () => {
   storage = await import('../src/storage/roadmap-store');
   local = await import('../src/storage/local-storage-adapter');
   localStorage.setItem(UNRELATED_KEY, 'keep');
+  // The page's cloud, remembered as connect.ts does (a moved-off tab writes no device copy, US-06 AC13).
+  localStorage.setItem('health_roadmap_backend', 'memory');
 });
 
 afterEach(() => {

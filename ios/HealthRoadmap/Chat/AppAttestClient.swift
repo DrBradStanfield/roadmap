@@ -18,10 +18,14 @@ actor AppAttestClient {
         case notSupported
         case server(status: Int, message: String)
         case badResponse
+        /// An App Attest call on the phone failed: which one (`key`, `attest`, `assert`) and
+        /// its error code, so a report says where it broke without the error's own text (US-52 AC1c).
+        case device(stage: String, code: String)
 
         var errorDescription: String? {
             switch self {
             case .notSupported: "Chat and lab upload need a device that can prove the app is genuine (Apple App Attest). This device cannot."
+            case .device(let stage, let code): "This iPhone could not prove the app is genuine, so nothing was sent. Please try again. (App Attest \(stage) \(code))"
             case .server(_, let message): message
             case .badResponse: "The server's answer could not be read."
             }
@@ -39,11 +43,17 @@ actor AppAttestClient {
     }
 
     private let session: URLSession
+    private let service: any AttestService
+    private let keys: KeyStore
+    /// The key this launch registered, if any, used before the Keychain (US-52 AC1c).
+    private var registered: String?
     private var busy = false
     private var waiters: [CheckedContinuation<Void, Never>] = []
 
-    init(session: URLSession = URLSession(configuration: .ephemeral)) {
+    init(session: URLSession = URLSession(configuration: .ephemeral), service: any AttestService = AppleAttest(), keys: KeyStore = KeyStore()) {
         self.session = session
+        self.service = service
+        self.keys = keys
     }
 
     /// POSTs `body` to `path` and returns the open response once its headers have
@@ -65,7 +75,7 @@ actor AppAttestClient {
             if (200..<300).contains(http.statusCode) { return (bytes, http) }
             let answer = try await Self.errorAnswer(bytes)
             if http.statusCode == 401, attempt == 0, ["unknown_key", "stale_counter"].contains(answer.reason) {
-                if answer.reason == "unknown_key" { Keychain.delete() }
+                if answer.reason == "unknown_key" { keys.delete(); registered = nil }
                 continue
             }
             throw Failure.server(status: http.statusCode, message: answer.error ?? "The server could not answer just now. Please try again later.")
@@ -78,25 +88,44 @@ actor AppAttestClient {
     private func sign(_ request: inout URLRequest, path: String, body: Data) async throws {
         #if DEBUG && targetEnvironment(simulator)
         // The simulator has no App Attest. A local server with the bypass on
-        // accepts this header; production refuses it (US-52 AC3).
-        request.setValue(Self.simulatorId(), forHTTPHeaderField: "X-App-Attest-Dev")
-        #else
-        let service = DCAppAttestService.shared
-        guard service.isSupported else { throw Failure.notSupported }
-        let clientDataHash = Data(SHA256.hash(data: Self.clientData(path: path, body: body)))
-        var keyId = try await ensureKey()
-        let assertion: Data
-        do {
-            assertion = try await service.generateAssertion(keyId, clientDataHash: clientDataHash)
-        } catch let error as DCError where error.code == .invalidKey {
-            // The key is gone (the app was reinstalled; the Keychain id outlived it).
-            Keychain.delete()
-            keyId = try await ensureKey()
-            assertion = try await service.generateAssertion(keyId, clientDataHash: clientDataHash)
+        // accepts this header; production refuses it (US-52 AC3). A test's
+        // stand-in service takes the device path below.
+        if service is AppleAttest {
+            request.setValue(Self.simulatorId(), forHTTPHeaderField: "X-App-Attest-Dev")
+            return
         }
+        #endif
+        guard service.isSupported else { throw Failure.notSupported }
+        let (keyId, assertion) = try await assertion(Data(SHA256.hash(data: Self.clientData(path: path, body: body))))
         request.setValue(keyId, forHTTPHeaderField: "X-App-Attest-Key")
         request.setValue(assertion.base64EncodedString(), forHTTPHeaderField: "X-App-Attest-Assertion")
-        #endif
+    }
+
+    /// An assertion from the stored key or, when there is none or it cannot sign, from a
+    /// new key, once a launch (US-52 AC1c). The Keychain id outlives a delete and reinstall
+    /// but the key does not, and iOS may report that with more than one error code, not
+    /// only `invalidKey`: so any failure of the stored key makes a new one. A key this
+    /// launch registered is used first, even when the Keychain did not keep it, and never
+    /// replaced: a 20-report ZIP must not spend 20 registrations.
+    private func assertion(_ clientDataHash: Data) async throws -> (String, Data) {
+        if let registered { return (registered, try await device("assert") { try await service.generateAssertion(registered, clientDataHash: clientDataHash) }) }
+        if let stored = keys.read() {
+            do { return (stored, try await service.generateAssertion(stored, clientDataHash: clientDataHash)) } catch {
+                try Task.checkCancellation()
+                keys.delete()
+            }
+        }
+        let keyId = try await registerKey()
+        return (keyId, try await device("assert") { try await service.generateAssertion(keyId, clientDataHash: clientDataHash) })
+    }
+
+    /// One App Attest call; its failure becomes `.device`, named by stage and code (US-52 AC1c).
+    private func device<T: Sendable>(_ stage: String, _ call: () async throws -> T) async throws -> T {
+        do { return try await call() } catch {
+            try Task.checkCancellation()
+            let error = error as NSError
+            throw Failure.device(stage: stage, code: error.domain == DCErrorDomain ? "\(error.code)" : "\(error.domain) \(error.code)")
+        }
     }
 
     /// What the app signs for one request (D8): method, path, and the hex SHA-256 of the raw body.
@@ -105,13 +134,11 @@ actor AppAttestClient {
         return Data("POST\n\(path)\n\(bodyHash)".utf8)
     }
 
-    /// The stored key id, or a new key attested and registered with the server.
-    private func ensureKey() async throws -> String {
-        if let keyId = Keychain.read() { return keyId }
-        let service = DCAppAttestService.shared
-        let keyId = try await service.generateKey()
+    /// A new key, attested and registered with the server, then stored.
+    private func registerKey() async throws -> String {
+        let keyId = try await device("key") { try await service.generateKey() }
         let challenge = try await challenge()
-        let attestation = try await service.attestKey(keyId, clientDataHash: Data(SHA256.hash(data: Data(challenge.utf8))))
+        let attestation = try await device("attest") { try await service.attestKey(keyId, clientDataHash: Data(SHA256.hash(data: Data(challenge.utf8)))) }
         let body = try JSONSerialization.data(withJSONObject: ["keyId": keyId, "attestation": attestation.base64EncodedString(), "challenge": challenge])
         var request = URLRequest(url: ServerConfig.baseURL.appending(path: "/api/app/v1/attest/register"))
         request.httpMethod = "POST"
@@ -122,7 +149,8 @@ actor AppAttestClient {
             let answer = try? JSONDecoder().decode(ErrorAnswer.self, from: data)
             throw Failure.server(status: (response as? HTTPURLResponse)?.statusCode ?? 0, message: answer?.error ?? "The app could not be registered with the server.")
         }
-        Keychain.save(keyId)
+        keys.save(keyId)
+        registered = keyId
         return keyId
     }
 
@@ -175,8 +203,32 @@ actor AppAttestClient {
     }
 }
 
+/// The parts of `DCAppAttestService` the client uses, so a test can stand in for it (US-52 AC1c).
+protocol AttestService: Sendable {
+    var isSupported: Bool { get }
+    func generateKey() async throws -> String
+    func attestKey(_ keyId: String, clientDataHash: Data) async throws -> Data
+    func generateAssertion(_ keyId: String, clientDataHash: Data) async throws -> Data
+}
+
+/// Apple's App Attest.
+struct AppleAttest: AttestService {
+    var isSupported: Bool { DCAppAttestService.shared.isSupported }
+    func generateKey() async throws -> String { try await DCAppAttestService.shared.generateKey() }
+    func attestKey(_ keyId: String, clientDataHash: Data) async throws -> Data { try await DCAppAttestService.shared.attestKey(keyId, clientDataHash: clientDataHash) }
+    func generateAssertion(_ keyId: String, clientDataHash: Data) async throws -> Data { try await DCAppAttestService.shared.generateAssertion(keyId, clientDataHash: clientDataHash) }
+}
+
+/// Where the client keeps the key id: the Keychain, or a test's stand-in (US-52 AC1c).
+struct KeyStore: Sendable {
+    var read: @Sendable () -> String? = Keychain.read
+    var save: @Sendable (String) -> Void = Keychain.save
+    var delete: @Sendable () -> Void = Keychain.delete
+}
+
 /// The App Attest key id in the Keychain: this device only, readable after first unlock.
-private enum Keychain {
+/// Not private: the reinstall test plants a stale id (US-52 AC1c).
+enum Keychain {
     private static var query: [String: Any] { [
         kSecClass as String: kSecClassGenericPassword,
         kSecAttrService as String: "com.drstanfield.healthroadmap.appattest",
