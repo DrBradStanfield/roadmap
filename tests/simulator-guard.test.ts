@@ -27,6 +27,14 @@ describe('US-71 AC6 rule 1: xcodebuild test needs -parallel-testing-enabled NO',
     'cd ios && xcodebuild test -scheme App | tee log',
     'xcodebuild -scheme App \\\n  test',
     'xcodebuild test -parallel-testing-enabled YES',
+    'ALLOW_EXTRA_SIMULATOR=1 FOO=bar xcodebuild test -scheme App',
+    'env DEVELOPER_DIR=/x timeout 1200 xcodebuild test -scheme App',
+    'xcrun xcodebuild test -scheme App',
+    // the flag must be on the same xcodebuild (review F2/R1)
+    'xcodebuild test -scheme A # -parallel-testing-enabled NO',
+    'xcodebuild test -scheme A && echo -parallel-testing-enabled NO',
+    'xcodebuild test -scheme A -parallel-testing-enabled NO; xcodebuild test -scheme B',
+    'xcodebuild test -scheme A "-parallel-testing-enabled NO"',
   ])('denies %s', (cmd) => {
     const reason = decide(cmd, never);
     expect(reason).toContain('-parallel-testing-enabled NO');
@@ -41,6 +49,16 @@ describe('US-71 AC6 rule 1: xcodebuild test needs -parallel-testing-enabled NO',
     'pgrep -fl xcodebuild',
     'npm test && xcodebuild build -scheme App',
     'grep xcodebuild test.log',
+    'xcodebuild test -scheme App -parallel-testing-enabled "NO"',
+    "(cd ios; perl -e 'alarm shift; exec @ARGV' 1200 xcodebuild -scheme App test -parallel-testing-enabled NO) | tail",
+    // text, not commands (review F1/R2)
+    'git commit -m "Run xcodebuild test with the flag"',
+    'git commit -F - <<EOF\nworkers run xcodebuild test -scheme App\nEOF',
+    "git commit -F - <<'EOF'\nworkers run xcodebuild test\nEOF\ngit log",
+    'gh pr create --body "denies xcodebuild test without flag"',
+    'grep -rn "xcodebuild test " docs/',
+    'echo xcodebuild test',
+    'cat > notes.md <<EOF\nnever run xcodebuild test without it\nEOF',
   ])('allows %s', (cmd) => {
     expect(decide(cmd, never)).toBeNull();
   });
@@ -56,6 +74,11 @@ describe(`US-71 AC6 rule 2: no new simulator once ${MAX_BOOTED_SIMULATORS} are b
     expect(reason).toContain('iPhone SE (BBBB-2222)');
     expect(reason).toContain('-destination id=<udid>');
     expect(reason).toContain('xcrun simctl shutdown <udid>');
+  });
+
+  it.each(['git commit -m "guard simctl boot"', 'echo xcrun simctl boot X', 'grep -n "simctl create" ios/scripts/*.sh',
+    'cat <<EOF\nxcrun simctl clone A B\nEOF'])('treats %s as text, never asking simctl', (cmd) => {
+    expect(decide(cmd, never)).toBeNull();
   });
 
   it('allows a boot with one booted or none', () => {
