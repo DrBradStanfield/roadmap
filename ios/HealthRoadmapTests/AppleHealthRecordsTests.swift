@@ -100,10 +100,10 @@ final class AppleHealthRecordsTests: XCTestCase {
         XCTAssertFalse(HealthKitClient.requested.read.contains(HealthKitClient.labResults), "added only when supportsHealthRecords")
     }
 
-    // MARK: AC1, AC13: asked again on coming forward
+    // MARK: AC1, AC13: asked once on coming forward
 
-    /// Connected before this build, or "Ask Before Sharing": coming on screen asks for lab
-    /// results once when HealthKit says a request is needed, then imports.
+    /// Connected before this build: coming on screen asks for lab results once when
+    /// HealthKit says a request is needed, then imports.
     func testAnAlreadyConnectedPersonIsAskedOnceOnForeground_US72_AC1_AC13() async throws {
         memory.connected = true
         let health = FakeHealthStore()
@@ -117,7 +117,41 @@ final class AppleHealthRecordsTests: XCTestCase {
         XCTAssertEqual(try rows(store).count, 1)
 
         await sync.foreground()
-        XCTAssertEqual(health.labRequests, 1, "HealthKit says no request is needed now")
+        XCTAssertEqual(health.labRequests, 1, "asked once")
+    }
+
+    /// Austin's report (TestFlight 2026-11-09): with no Health Records account, or after
+    /// closing the sheet, HealthKit keeps saying a request is needed. Coming on screen
+    /// asks once, ever: not on the next return, not after a relaunch.
+    func testAPersonHealthKitKeepsAskingAboutIsAskedOnlyOnce_US72_AC1() async throws {
+        memory.connected = true
+        let health = FakeHealthStore()
+        health.supportsHealthRecords = true
+        health.recordsStayDue = true
+        let (_, sync, sdk) = try parts(health)
+        await sync.foreground()
+        await sync.foreground()
+        XCTAssertEqual(health.labRequests, 1)
+        XCTAssertEqual(sdk.events, ["Health Records asked"])
+        XCTAssertNotNil(memory.labResultsAsked)
+
+        let (_, relaunched, _) = try parts(health)
+        await relaunched.foreground()
+        XCTAssertEqual(health.labRequests, 1, "remembered across launches")
+    }
+
+    /// Connect showed the lab results sheet already: coming on screen never asks again,
+    /// even while HealthKit still says a request is needed.
+    func testConnectingCountsAsTheOneAsk_US72_AC1() async throws {
+        let health = FakeHealthStore()
+        health.supportsHealthRecords = true
+        health.recordsStayDue = true
+        let (_, sync, sdk) = try parts(health)
+        await sync.connect()
+        await sync.foreground()
+        XCTAssertEqual(health.requests, 1)
+        XCTAssertEqual(health.labRequests, 0)
+        XCTAssertEqual(sdk.events.filter { $0 == "Health Records asked" }.count, 1)
     }
 
     func testForegroundAsksNothingWhereRecordsDoNotWorkOrHealthIsNotConnected_US72_AC1() async throws {
@@ -146,6 +180,85 @@ final class AppleHealthRecordsTests: XCTestCase {
         await sync.foreground()
         XCTAssertEqual(health.labRequests, 0)
         XCTAssertFalse(sdk.events.contains("Health Records asked"))
+        XCTAssertNil(memory.labResultsAsked, "no sheet showed, so nothing is remembered")
+
+        health.recordsNotYetAsked = true
+        await sync.foreground()
+        XCTAssertEqual(health.labRequests, 1, "a later need still gets its one ask")
+    }
+
+    /// A request that fails shows no sheet: nothing is remembered and the next return asks.
+    func testAFailedRequestIsNotTheOneAsk_US72_AC1() async throws {
+        memory.connected = true
+        let health = FakeHealthStore()
+        health.supportsHealthRecords = true
+        health.labRequestError = HealthStoreError.locked
+        let (_, sync, sdk) = try parts(health)
+        await sync.foreground()
+        XCTAssertNil(memory.labResultsAsked)
+        XCTAssertFalse(sdk.events.contains("Health Records asked"))
+
+        health.labRequestError = nil
+        await sync.foreground()
+        XCTAssertEqual(health.labRequests, 1)
+        XCTAssertNotNil(memory.labResultsAsked)
+    }
+
+    // MARK: AC14: Settings' "Share new lab results" row
+
+    /// "Ask Before Sharing" with new results: after the one automatic ask, a tap on the row
+    /// shows Health's sheet again, counts the ask and imports what was shared.
+    func testTheRowAsksAgainAndImports_US72_AC14() async throws {
+        memory.connected = true
+        let health = FakeHealthStore()
+        health.supportsHealthRecords = true
+        let (store, sync, sdk) = try parts(health)
+        await sync.foreground()
+        XCTAssertEqual(health.labRequests, 1)
+        await sync.refresh()
+        XCTAssertTrue(sync.offersLabResults)
+
+        health.recordsNotYetAsked = true
+        await sync.foreground()
+        XCTAssertEqual(health.labRequests, 1, "coming forward has had its one ask")
+        XCTAssertTrue(try rows(store).isEmpty)
+        health.pendingRecords = [Self.hba1c()]
+        await sync.shareNewLabResults()
+        XCTAssertEqual(health.labRequests, 2)
+        XCTAssertEqual(sdk.events, ["Health Records asked", "Health Records asked", "Health Records imported"])
+        XCTAssertEqual(try rows(store).count, 1)
+    }
+
+    /// Nothing for HealthKit to ask about: the tap shows nothing, counts nothing, reads nothing.
+    func testTheRowDoesNothingWhenNoRequestIsNeeded_US72_AC14() async throws {
+        memory.connected = true
+        let health = FakeHealthStore()
+        health.supportsHealthRecords = true
+        health.recordsNotYetAsked = false
+        let (_, sync, sdk) = try parts(health)
+        await sync.refresh()
+        let reads = health.recordReads
+        await sync.shareNewLabResults()
+        XCTAssertEqual(health.labRequests, 0)
+        XCTAssertEqual(health.recordReads, reads)
+        XCTAssertFalse(sdk.events.contains("Health Records asked"))
+        XCTAssertNil(memory.labResultsAsked)
+    }
+
+    /// Offered only when connected where Health Records works.
+    func testTheRowIsOfferedOnlyWhenConnectedWhereRecordsWork_US72_AC14() async throws {
+        let health = FakeHealthStore()
+        health.supportsHealthRecords = true
+        let (_, notConnected, _) = try parts(health)
+        XCTAssertFalse(notConnected.offersLabResults)
+
+        memory.connected = true
+        let unsupported = FakeHealthStore()
+        let (_, elsewhere, _) = try parts(unsupported)
+        await elsewhere.refresh()
+        XCTAssertFalse(elsewhere.offersLabResults)
+        await elsewhere.shareNewLabResults()
+        XCTAssertEqual(unsupported.labRequests, 0)
     }
 
     /// A background wake (an observer delivery) imports, and never asks: no sheet can show.
