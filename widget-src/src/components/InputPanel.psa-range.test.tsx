@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import { UNIT_DEFS } from '@roadmap/health-core';
 import { InputPanel } from './InputPanel';
+import { MY_HEALTH_PROPS } from '../testing/my-health-props';
 
 vi.mock('../lib/server-api', async importOriginal => ({ ...await importOriginal<typeof import('../lib/server-api')>(), trackProductEvent: vi.fn() }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -22,6 +23,7 @@ describe('US-35 AC17 — the PSA input takes the unit table range', () => {
     const inputs = { sex: 'male' as const, heightCm: 180, birthYear: 1960, birthMonth: 1, psa };
     const onChange = vi.fn();
     const props = {
+    ...MY_HEALTH_PROPS,
       inputs, effectiveInputs: inputs, onChange, errors: {}, unitSystem, onUnitSystemChange: vi.fn(),
       // The page's blood-test history holds every saved row, the newest among them.
       unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements, bloodTestHistory: previousMeasurements, vitalsHistory: [],
@@ -71,6 +73,7 @@ it('on a phone too, the PSA input keeps the unit table range', () => {
   phone = true;
   const inputs = { sex: 'male' as const, heightCm: 180, birthYear: 1960, birthMonth: 1 };
   const props = {
+    ...MY_HEALTH_PROPS,
     inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si', onUnitSystemChange: vi.fn(),
     unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
     labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],

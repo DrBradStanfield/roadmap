@@ -322,7 +322,7 @@ let recordCopy = null;
 let symlinks = [];
 let linksMaterialised = [], linksRefused = [];
 let keep = has("--keep");
-let work = null, snapshotId = "(not built)", instructionEdits = [], files = [], secretFiles = [], label = "(not built)", base = "", included = [], includeRoots = [], subjects = [], context = [], excludedUncommitted = null, contextUncommitted = []; // declared here: an early stop reports them
+let work = null, snapshotId = "(not built)", instructionEdits = [], files = [], secretFiles = [], label = "(not built)", base = "", contractRev = "", included = [], includeRoots = [], subjects = [], context = [], excludedUncommitted = null, contextUncommitted = []; // declared here: an early stop reports them
 /** Every private-data path withheld this run (base tree, the change, --context: US-40 AC15), counted on stderr, in the prompt and the report. */
 const privateWithheld = new Set();
 let purge = false; // a work dir that may hold a credential is never kept
@@ -721,9 +721,19 @@ if (SUBJECT_MODE) {
   messages = git(["log", "--format=--- %H%n%B", `${base}..${sha}`]);
   label = `commit ${sha.slice(0, 12)}`;
 } else if (has("--range")) {
-  const [a, b] = opt("--range").split("..");
-  base = git(["rev-parse", a]).trim();
-  const head = git(["rev-parse", b || "HEAD"]).trim();
+  // The diff is B's own work, as `git diff A...B` shows it: from the merge base, so a base branch that moved on after B
+  // left it (main took another PR) is not reviewed as B reverting that PR (US-40 AC17, 2026-11-06). The contract and
+  // CLAUDE.md still come from A itself (AC2): a branch cut before a rule changed is reviewed under the rule as it is now.
+  const parts = opt("--range").split(/\.{2,3}/);
+  if (parts.length !== 2 || !parts[0] || /^\./.test(parts[1])) usage(`--range takes A..B or A...B, got ${JSON.stringify(opt("--range"))}`);
+  const [a, b] = parts;
+  const rev = (r) => { try { return git(["rev-parse", "--verify", `${r}^{commit}`]).trim(); } catch { usage(`--range: ${JSON.stringify(r)} is not a commit`); } };
+  const from = rev(a);
+  const head = rev(b || "HEAD");
+  try { base = git(["merge-base", from, head]).trim(); } catch { finish(incomplete(`E_RANGE_NO_BASE: ${a} and ${b || "HEAD"} share no history, so there is no branch work to review`), "0.0"); }
+  if (base === head) finish(incomplete(`E_RANGE_EMPTY: ${b || "HEAD"} is already in ${a}, so the range holds no work of its own`), "0.0");
+  if (base !== from) console.error(`codex-review: ${a} has commits ${b || "HEAD"} lacks; diffing from the merge base ${base.slice(0, 12)}, contract from ${a}`);
+  contractRev = from;
   ({ patch, files, secretFiles, privateFiles } = committed(base, head));
   tip = head;
   messages = git(["log", "--format=--- %H%n%B", `${base}..${head}`]);
@@ -939,7 +949,7 @@ function collectCredentialValues(root = ROOT, name = null, extra = []) {
   const blobs = new Map(), texts = [], unreadable = [];
   const LINK = "120000"; // a symlink's blob is its target's path; the target is read from disk below
   const blobsOf = (rev) => { for (const e of nul(g(["ls-tree", "-r", "-z", "--full-tree", rev]))) { const t = e.indexOf("\t"); const [mode, type, sha] = e.slice(0, t).split(" "); if (type === "blob" && mode !== LINK && isSecretPath(e.slice(t + 1))) blobs.set(sha, tag(e.slice(t + 1))); } };
-  for (const rev of new Set(name ? [g(["rev-parse", "HEAD"]).trim()] : [base, g(["rev-parse", "HEAD"]).trim(), tip].filter(Boolean))) blobsOf(rev);
+  for (const rev of new Set(name ? [g(["rev-parse", "HEAD"]).trim()] : [base, g(["rev-parse", "HEAD"]).trim(), tip, contractRev].filter(Boolean))) blobsOf(rev);
   // Every credential blob any commit in the range added or removed: a file that lived only mid-range is known too. A merge is
   // diffed against each parent, so a blob a merge resolution added or dropped is known as well.
   if (tip && !name) {
@@ -1256,7 +1266,7 @@ if (baseContract === null) { finish(incomplete("E_NO_CONTRACT: docs/review-forma
 const contractPath = artifact("base-review-format.md", baseContract);
 const baseClaude = showAtBase("CLAUDE.md");
 if (baseClaude) writeFileSync(join(baseDir, "CLAUDE.md"), baseClaude, { flag: "wx" });
-function showAtBase(path) { try { return git(["show", `${base}:${path}`]); } catch { return null; } }
+function showAtBase(path) { try { return git(["show", `${contractRev || base}:${path}`]); } catch { return null; } }
 /** Every path under dir (files, directories, links) whose own name is a credential name, relative to dir. */
 function secretsUnder(dir) {
   const found = [];

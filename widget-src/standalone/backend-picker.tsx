@@ -185,7 +185,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
 
         {step === 'list' && (
           <>
-            <h2>{PLAN_STORAGE_CTA}</h2>
+            <h2 tabIndex={-1} data-initial-focus>{PLAN_STORAGE_CTA}</h2>
             {current === 'local' && <p className="hr-modal-sub">{PICKER_GUEST_LEAD}</p>}
             <p className="hr-modal-sub">{PLAN_STORAGE_NOTICE}</p>
             {OPTIONS.map((o, i) => (

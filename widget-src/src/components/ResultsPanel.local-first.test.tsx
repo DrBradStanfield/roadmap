@@ -15,7 +15,7 @@ vi.mock('../lib/roadmap-data', () => mocks);
 vi.mock('../lib/server-api', () => ({ trackABConversion: mocks.trackABConversion, trackProductEvent: vi.fn() }));
 vi.mock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: true }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
-import { ResultsPanel } from './ResultsPanel';
+import { PlanHost as ResultsPanel } from '../testing/plan-host';
 
 const results = calculateHealthResults({ heightCm: 175, sex: 'male' });
 

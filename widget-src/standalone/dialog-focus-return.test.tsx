@@ -114,7 +114,8 @@ describe('US-09 AC34: the storage picker gives the focus back to the button that
     const provider = screen.getByRole('button', { name: 'Dropbox' });
     act(() => { provider.focus(); });
     act(() => { fireEvent.click(provider); });
-    expect(document.activeElement).toBe(closeButton());
+    // The first focus is the picker's title (design re-check 2026-11-06), inside the dialog.
+    expect(document.activeElement).toBe(dialog()!.querySelector('h2'));
     act(() => { fireEvent.click(closeButton()); });
     expect(dialog()).toBeNull();
     expect(document.activeElement).toBe(provider);
@@ -125,8 +126,9 @@ describe('US-09 AC34: the storage picker gives the focus back to the button that
     const provider = screen.getByRole('button', { name: 'Dropbox' });
     act(() => { provider.focus(); });
     act(() => { fireEvent.click(provider); });
-    // Choosing GitHub swaps the list for its form: the picker re-renders with
-    // the focus on its ×, which must not become the element to give it back to.
+    // Choosing GitHub swaps the list for its form: the picker re-renders, and
+    // nothing inside it may become the element to give the focus back to.
+    act(() => { closeButton().focus(); });
     act(() => { fireEvent.click(screen.getByText('GitHub')); });
     expect(screen.getByText('Connect GitHub', { selector: 'h2' })).toBeTruthy();
     expect(document.activeElement).toBe(closeButton());
@@ -140,7 +142,7 @@ describe('US-09 AC34: the storage picker gives the focus back to the button that
     const provider = screen.getByRole('button', { name: 'Dropbox' });
     act(() => { provider.focus(); });
     act(() => { fireEvent.click(provider); });
-    expect(document.activeElement).toBe(closeButton());
+    expect(document.activeElement).toBe(dialog()!.querySelector('h2'));
     act(() => { fireEvent(dialog()!, new Event('cancel', { cancelable: true })); });
     expect(dialog()).toBeNull();
     expect(document.activeElement).toBe(provider);

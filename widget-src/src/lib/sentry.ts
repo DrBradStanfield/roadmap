@@ -12,8 +12,9 @@ type PathElement = { tagName?: unknown; id?: unknown; className?: unknown; paren
 
 /** Classes that say what an element shows: a result's status (the grids'
  *  and the phone rows' and value pages', US-62 AC8), a suggestion's
- *  priority, a document's type, a lab group (US-09 AC7d). */
-const VALUE_CLASS = /^(bt-status-|md-status-|status-|suggestion-(info|attention|urgent)|review-doc-type--|health-record-type--|alr-group-icon--)/;
+ *  priority, a document's type, a lab group, My health's status words, urgent
+ *  banner and urgent nav dot (US-09 AC7d). */
+const VALUE_CLASS = /^(bt-status-|md-status-|mh-status-|mh-banner|mh-nav-dot|status-|suggestion-(info|attention|urgent)|review-doc-type--|health-record-type--|alr-group-icon--)/;
 
 /** The SDK's element path (up to five levels, outermost first) with tag, #id and .classes only. */
 function elementPath(target: unknown): string | undefined {

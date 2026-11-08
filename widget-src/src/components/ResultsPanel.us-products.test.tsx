@@ -37,7 +37,7 @@ vi.mock('@roadmap/health-core/us-products', async (original) => {
   const real = await original<typeof import('@roadmap/health-core/us-products')>();
   return { ...real, usProductSections: (...args: Parameters<typeof real.usProductSections>) => (mocks.overlay.value ?? real.usProductSections)(...args) };
 });
-import { ResultsPanel } from './ResultsPanel';
+import { PlanHost as ResultsPanel } from '../testing/plan-host';
 
 const YEAR = new Date().getFullYear();
 const adult = calculateHealthResults({ heightCm: 175, sex: 'male', weightKg: 80, birthYear: YEAR - 55 });
@@ -54,7 +54,7 @@ function show(results = adult) {
 }
 function cardById(container: HTMLElement, id: string): HTMLElement {
   const title = adult.suggestions.find((s) => s.id === id)!.title;
-  const card = Array.from(container.querySelectorAll<HTMLElement>('.supplements-group .suggestion-card'))
+  const card = Array.from(container.querySelectorAll<HTMLElement>('[data-topic="supplements"] .suggestion-card'))
     .find((c) => c.querySelector('.suggestion-title')?.textContent === title);
   if (!card) throw new Error(`no card for ${id}`);
   return card;
@@ -201,9 +201,10 @@ describe('US-61 AC7: one ownership line', () => {
     const lines = container.querySelectorAll('.us-ownership');
     expect(lines).toHaveLength(1);
     expect(lines[0].textContent).toBe(US_OWNERSHIP_LINE);
-    const group = container.querySelector('.supplements-group')!;
+    // My health's Supplements section (US-62 AC23): the line after its last card.
+    const group = container.querySelector('[data-topic="supplements"]')!;
     expect(group.lastElementChild).toBe(lines[0]);
-    expect(lines[0].previousElementSibling?.classList.contains('suggestion-card')).toBe(true);
+    expect(lines[0].previousElementSibling?.querySelector('.suggestion-card')).not.toBeNull();
   });
 
   it('the blocks and the line are never printed, on paper or in the PDF clone', () => {
@@ -215,7 +216,9 @@ describe('US-61 AC7: one ownership line', () => {
 });
 
 describe('US-61: placement is us-products.ts\'s alone', () => {
-  it('draws the block and the line wherever usProductSections puts them, and nowhere else', () => {
+  // The block goes wherever usProductSections puts it; topicSections (shared with the iPhone)
+  // always draws the ownership line under the Supplements cards (US-62 AC18).
+  it('draws the block wherever usProductSections puts it, and nowhere else; the line under Supplements', () => {
     // A stand-in that puts the block on the first Foundation card and the line under that section.
     mocks.overlay.value = (sections) => (sections as UsPlanSection[]).map((section) => section.key !== 'info' ? section : {
       ...section,
@@ -228,11 +231,11 @@ describe('US-61: placement is us-products.ts\'s alone', () => {
     const { container } = show();
     const blocks = container.querySelectorAll('.us-product');
     expect(blocks).toHaveLength(1);
-    expect(blocks[0].closest('.suggestions-group')?.querySelector('.suggestions-group-title')?.classList.contains('info')).toBe(true);
+    expect(blocks[0].closest('[data-topic]')?.getAttribute('data-topic')).not.toBe('supplements');
     expect(blocks[0].closest('.suggestion-card')?.querySelector('.suggestion-desc')?.textContent).toBe('Stand-in text.');
-    expect(container.querySelector('.supplements-group .us-product')).toBeNull();
+    expect(container.querySelector('[data-topic="supplements"] .us-product')).toBeNull();
     expect(Array.from(container.querySelectorAll('.us-ownership')).map((l) => l.textContent)).toEqual(['Owner line.']);
-    expect(container.querySelector('.supplements-group .us-ownership')).toBeNull();
+    expect(container.querySelector('[data-topic="supplements"] .us-ownership')).not.toBeNull();
   });
 });
 

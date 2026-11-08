@@ -38,7 +38,7 @@ function turn(toPhone: boolean) {
     for (const h of [...heard]) h.listener({ matches: h.q.includes('max-width') ? phone : !phone });
   });
 }
-const scrollTo = vi.fn((_x: number, y: number) => { scrollY = y; });
+const scrollTo = vi.fn((x: number | ScrollToOptions, y?: number) => { scrollY = typeof x === 'object' ? x.top! : y!; });
 
 beforeEach(async () => {
   phone = true;
@@ -75,90 +75,99 @@ afterEach(async () => {
 
 async function renderPhone(storageBar?: React.ReactNode) {
   const view = render(<HealthTool storageBar={storageBar} />);
-  await waitFor(() => expect(view.container.querySelector('.health-results-panel .suggestion-title')).not.toBeNull());
+  await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
   return view;
 }
 const panelOf = (view: ReturnType<typeof render>, tab: HTMLElement) =>
   view.container.querySelector<HTMLElement>(`[id="${tab.getAttribute('aria-controls')}"]`)!;
 
 describe('US-20 AC6: the bottom tab bar', () => {
-  it('three tabs, in the iPhone\'s words; each controls one panel and only the active panel shows', async () => {
+  // US-62 AC16: two tabs, My health and Chat; the plan's cards sit in My health's topics.
+  it('two tabs, in the iPhone\'s words; each controls one panel and only the active panel shows', async () => {
     const view = await renderPhone();
     const bar = view.getByRole('tablist');
     const tabs = within(bar).getAllByRole('tab');
-    expect(tabs.map((t) => t.textContent)).toEqual(['My data', 'My plan', 'Chat']);
+    expect(tabs.map((t) => t.textContent)).toEqual(['My health', 'Chat']);
     for (const tab of tabs) {
       const panel = panelOf(view, tab);
       expect(panel.getAttribute('role')).toBe('tabpanel');
       expect(panel.getAttribute('aria-labelledby')).toBe(tab.id);
     }
-    const [data, plan, chat] = tabs;
-    expect(panelOf(view, data).querySelector('.health-input-panel')).not.toBeNull();
-    expect(panelOf(view, plan).querySelector('.health-results-panel')).not.toBeNull();
+    const [health, chat] = tabs;
+    expect(panelOf(view, health).querySelector('.health-input-panel .mh-sections .suggestion-card')).not.toBeNull();
     expect(panelOf(view, chat).querySelector('.chat-embed')).not.toBeNull();
 
     const shown = () => tabs.filter((t) => !panelOf(view, t).hidden).map((t) => t.textContent);
     const selected = () => tabs.filter((t) => t.getAttribute('aria-selected') === 'true').map((t) => t.textContent);
-    expect(shown()).toEqual(['My data']);
-    expect(selected()).toEqual(['My data']);
-
-    fireEvent.click(plan);
-    expect(shown()).toEqual(['My plan']);
-    expect(selected()).toEqual(['My plan']);
-    expect(plan.className).toContain('hr-tab--active');
+    expect(shown()).toEqual(['My health']);
+    expect(selected()).toEqual(['My health']);
 
     fireEvent.click(chat);
     expect(shown()).toEqual(['Chat']);
     expect(selected()).toEqual(['Chat']);
+    expect(chat.className).toContain('hr-tab--active');
+
+    fireEvent.click(health);
+    expect(shown()).toEqual(['My health']);
   });
 
   it('arrow keys move along the tabs and wrap; Home and End jump; focus follows; one tab stop', async () => {
     const view = await renderPhone();
     const bar = view.getByRole('tablist');
-    const [data, plan, chat] = within(bar).getAllByRole('tab');
-    expect([data, plan, chat].map((t) => t.tabIndex)).toEqual([0, -1, -1]);
+    const [health, chat] = within(bar).getAllByRole('tab');
+    expect([health, chat].map((t) => t.tabIndex)).toEqual([0, -1]);
 
-    fireEvent.keyDown(data, { key: 'ArrowRight' });
-    expect(plan.getAttribute('aria-selected')).toBe('true');
-    expect(document.activeElement).toBe(plan);
-    expect([data, plan, chat].map((t) => t.tabIndex)).toEqual([-1, 0, -1]);
+    fireEvent.keyDown(health, { key: 'ArrowRight' });
+    expect(chat.getAttribute('aria-selected')).toBe('true');
+    expect(document.activeElement).toBe(chat);
+    expect([health, chat].map((t) => t.tabIndex)).toEqual([-1, 0]);
 
-    fireEvent.keyDown(plan, { key: 'ArrowRight' });
     fireEvent.keyDown(chat, { key: 'ArrowRight' }); // wraps
-    expect(data.getAttribute('aria-selected')).toBe('true');
-    expect(document.activeElement).toBe(data);
+    expect(health.getAttribute('aria-selected')).toBe('true');
+    expect(document.activeElement).toBe(health);
 
-    fireEvent.keyDown(data, { key: 'ArrowLeft' }); // wraps back
+    fireEvent.keyDown(health, { key: 'ArrowLeft' }); // wraps back
     expect(chat.getAttribute('aria-selected')).toBe('true');
     fireEvent.keyDown(chat, { key: 'Home' });
-    expect(data.getAttribute('aria-selected')).toBe('true');
-    fireEvent.keyDown(data, { key: 'End' });
+    expect(health.getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(health, { key: 'End' });
     expect(chat.getAttribute('aria-selected')).toBe('true');
     expect(panelOf(view, chat).hidden).toBe(false);
   });
 
-  it('each tab keeps its own scroll position; a first visit opens at the widget\'s top', async () => {
+  // Instant, not the theme's smooth scroll: a smooth restore slid from the top for a second (live test 2026-11-06).
+  const at = (top: number) => ({ top, behavior: 'instant' });
+  it('each tab keeps its own scroll position, restored at once; a first visit opens at its panel\'s top', async () => {
     const view = await renderPhone();
+    const [health, chat] = within(view.getByRole('tablist')).getAllByRole('tab');
+    let chatTop = 250; // the chat panel's top, relative to the viewport, under the page's title block
+    vi.spyOn(panelOf(view, chat), 'getBoundingClientRect').mockImplementation(() => ({ top: chatTop } as DOMRect));
+
+    scrollY = 900; // down My health
+    fireEvent.click(chat); // never visited: its panel fills the screen, from its top (design review 2026-11-06)
+    expect(scrollTo).toHaveBeenLastCalledWith(at(1150));
+
+    scrollY = 1500; chatTop = -350; // down the chat
+    fireEvent.click(health);
+    expect(scrollTo).toHaveBeenLastCalledWith(at(900));
+    fireEvent.click(chat);
+    expect(scrollTo).toHaveBeenLastCalledWith(at(1500));
+  });
+
+  // Live test 2026-11-06: the card ended 3-5px under the bar, sized from the header plus a constant.
+  it('the chat card is sized from its own measured top and the bar\'s height, so it ends at the bar', async () => {
+    const view = await renderPhone();
+    const [, chat] = within(view.getByRole('tablist')).getAllByRole('tab');
+    const panel = panelOf(view, chat);
+    vi.spyOn(panel, 'getBoundingClientRect').mockImplementation(() => ({ top: 250 } as DOMRect));
+    vi.spyOn(panel.querySelector('.chat-embed')!, 'getBoundingClientRect').mockImplementation(() => ({ top: 267 } as DOMRect));
+    vi.spyOn(view.container.querySelector('.hr-tabbar')!, 'getBoundingClientRect').mockImplementation(() => ({ height: 51 } as DOMRect));
+    fireEvent.click(chat);
     const root = view.container.querySelector<HTMLElement>('.health-tool')!;
-    let widgetTop = -300; // the widget's top, relative to the viewport
-    vi.spyOn(root, 'getBoundingClientRect').mockImplementation(() => ({ top: widgetTop } as DOMRect));
-    const [data, plan] = within(view.getByRole('tablist')).getAllByRole('tab');
-
-    scrollY = 900; // down the form
-    fireEvent.click(plan); // never visited: to the widget's top
-    expect(scrollTo).toHaveBeenLastCalledWith(0, 600);
-
-    scrollY = 1500; widgetTop = -900; // down the plan
-    fireEvent.click(data);
-    expect(scrollTo).toHaveBeenLastCalledWith(0, 900);
-    fireEvent.click(plan);
-    expect(scrollTo).toHaveBeenLastCalledWith(0, 1500);
-
-    // The widget's top on screen: a first visit leaves the page where it is.
-    scrollTo.mockClear();
-    widgetTop = 40;
-    fireEvent.click(within(view.getByRole('tablist')).getByRole('tab', { name: 'Chat' }));
-    expect(scrollTo).not.toHaveBeenCalled();
+    expect(root.style.getPropertyValue('--hr-chat-top')).toBe('17px'); // no theme header here: the card's own inset
+    expect(root.style.getPropertyValue('--hr-tabbar-h')).toBe('51px');
+    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
+    expect(css).toMatch(/height: calc\(100svh - var\(--hr-chat-top, 0px\) - var\(--hr-tabbar-h, 51px\) - 12px\)/);
   });
 
   it('the bar lives inside the widget, sticky, opaque, never fixed; the old fixed plan button is gone', async () => {
@@ -185,25 +194,24 @@ describe('US-20 AC6: the bottom tab bar', () => {
     const view = await renderPhone();
     const tabs = within(view.getByRole('tablist'));
     fireEvent.click(tabs.getByRole('tab', { name: 'Chat' }));
-    const box = view.getByPlaceholderText('Ask a follow-up…') as HTMLTextAreaElement;
+    const box = view.getByPlaceholderText('Ask a question') as HTMLTextAreaElement;
     fireEvent.change(box, { target: { value: 'What about my LDL?' } });
-    fireEvent.click(tabs.getByRole('tab', { name: 'My data' }));
+    fireEvent.click(tabs.getByRole('tab', { name: 'My health' }));
     fireEvent.click(tabs.getByRole('tab', { name: 'Chat' }));
-    expect(view.getByPlaceholderText('Ask a follow-up…')).toBe(box);
+    expect(view.getByPlaceholderText('Ask a question')).toBe(box);
     expect(box.value).toBe('What about my LDL?');
   });
 
   it('US-20 AC2: crossing the breakpoint mid-session never crashes, and the tab survives', async () => {
     const view = await renderPhone();
-    fireEvent.click(within(view.getByRole('tablist')).getByRole('tab', { name: 'My plan' }));
-    turn(false); // widened past 768px: the desktop columns
+    fireEvent.click(within(view.getByRole('tablist')).getByRole('tab', { name: 'Chat' }));
+    turn(false); // widened past 768px: the desktop column
     expect(view.queryByRole('tablist')).toBeNull();
-    expect(view.container.querySelector('.health-tool-content .health-results-panel')).not.toBeNull();
+    expect(view.container.querySelector('.health-tool-content .health-tool-main .mh-sections')).not.toBeNull();
     turn(true); // and back
-    const plan = within(view.getByRole('tablist')).getByRole('tab', { name: 'My plan' });
-    expect(plan.getAttribute('aria-selected')).toBe('true');
-    expect(panelOf(view, plan).hidden).toBe(false);
-    expect(panelOf(view, plan).querySelector('.health-results-panel')).not.toBeNull();
+    const chat = within(view.getByRole('tablist')).getByRole('tab', { name: 'Chat' });
+    expect(chat.getAttribute('aria-selected')).toBe('true');
+    expect(panelOf(view, chat).hidden).toBe(false);
   });
 
   it('desktop has no tab bar and no tab panels', async () => {
@@ -215,25 +223,19 @@ describe('US-20 AC6: the bottom tab bar', () => {
   });
 });
 
-describe('US-20 AC7: the top bar', () => {
-  it('on a phone the storage button sits above the panels, seen from every tab', async () => {
+// US-20 AC7 as amended by US-62 AC24 (design review 2026-11-06): no band of its own;
+// the storage and person buttons sit on My health's title line.
+describe('US-20 AC7: Sign in on My health\'s title line', () => {
+  it('on a phone the storage and person buttons share the title row; no top bar', async () => {
     const view = await renderPhone(<button type="button">Sign in</button>);
     const signIn = view.getByRole('button', { name: 'Sign in' });
-    expect(signIn.parentElement?.className).toBe('hr-top-bar');
-    expect(signIn.closest('[role="tabpanel"]')).toBeNull();
-    for (const name of ['My data', 'My plan', 'Chat']) {
-      fireEvent.click(within(view.getByRole('tablist')).getByRole('tab', { name }));
-      expect(signIn.closest('[hidden]')).toBeNull();
-    }
-    expect(view.getAllByRole('button', { name: 'Sign in' })).toHaveLength(1); // not in the input header too
-    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8').replace(/\s+/g, ' ');
-    // The cards' 10px gutter, and the header's layout, so a long reconnect label wraps.
-    expect(css).toContain('.hr-top-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; padding: 8px 10px 0; font-size: 12px; }');
-  });
-
-  it('without a storage button, no top bar', async () => {
-    const view = await renderPhone();
+    const header = signIn.closest('.mh-header')!;
+    expect(header.querySelector('.mh-title')?.textContent).toBe('My health');
+    expect(within(header as HTMLElement).getByRole('button', { name: 'Settings' })).toBeTruthy();
     expect(view.container.querySelector('.hr-top-bar')).toBeNull();
+    expect(view.getAllByRole('button', { name: 'Sign in' })).toHaveLength(1);
+    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
+    expect(css).not.toContain('.hr-top-bar {');
   });
 });
 
