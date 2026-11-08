@@ -18,6 +18,7 @@ import { chatEditsPreview } from './chat-edits';
 import { readUnitChoices } from './unit-choices';
 import { phoneReminders } from './reminders';
 import { installShim, type Natives } from './shim';
+import { originalOf } from './cloud';
 
 // The web APIs the cloud adapters need, over Swift's natives (shim.ts). Absent
 // in Node, where the parity goldens run the bundle with nothing but ECMAScript.
@@ -186,6 +187,12 @@ export function historyJson(recordJson: string, metric: string, nowIso: string, 
  *  contract, so an app reaches it only through HealthEngine.optionalCall. */
 export function labSearchJson(text: string): string {
   return JSON.stringify(labSearch(text));
+}
+
+/** A listed document's original from the person's cloud, as bytes (cloud.ts originalOf, US-73 AC12):
+ *  the document page's "View original". An optional door, like labSearchJson. */
+export function documentOriginal(id: string): Promise<ArrayBuffer> {
+  return originalOf(id);
 }
 // Chat and lab upload (US-52): app-doors.ts.
 export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson, chatDeleteJson, settledJson, labReviewJson, labSaveSummaryJson } from './app-doors';

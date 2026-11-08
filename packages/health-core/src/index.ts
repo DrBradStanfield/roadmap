@@ -334,6 +334,7 @@ export {
 export {
   buildDocumentRef,
   DOCUMENT_FOLDERS,
+  DOCUMENT_TYPE_LABELS,
   extensionOf,
   LAB_ARCHIVE_TITLE,
   sanitizeTitle,

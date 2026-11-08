@@ -35,6 +35,7 @@ import {
   cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, getDisplayLabel, LPA_UNITS, toCanonicalValue, UNIT_DEFS,
   type LpaUnit, type MetricType, type UnitSystem,
 } from '../../packages/health-core/src/units';
+import { documentShelf, type DocumentShelf } from './documents';
 import { applyPressure, BLOOD_PRESSURE, pressureHistory, type PressureEdit } from './blood-pressure';
 import { applyChatEdit, type ChatEdit } from './chat-edits';
 import { cellUnitFor, lpaUnitOf, SWITCHABLE, unitsOf, type UnitChoices } from './unit-choices';
@@ -112,6 +113,8 @@ export interface MyData {
   /** Each metric's input range (`cellRange`) by unit: "si", "conventional", and Lp(a)'s own
    *  three. What a typed "1,234" is read against (US-02 AC7); input bounds, not targets. */
   inputRanges: Record<string, Record<string, { min: number; max: number }>>;
+  /** The letters and scan results My health lists at its foot (US-73 AC12, documents.ts). */
+  documents: DocumentShelf;
 }
 
 /** Every change the tab can ask for. Numbers are in the user's units. */
@@ -315,6 +318,7 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
     inputRanges: Object.fromEntries((Object.keys(UNIT_DEFS) as MetricType[]).map((metric) => [metric, Object.fromEntries(
       [...(['si', 'conventional'] as const), ...(metric === 'lpa' ? LPA_UNITS : [])].map((unit) => [unit, cellRange(metric, unit)]),
     )])),
+    documents: documentShelf(file),
     ...formsOf(file, now, choices, plan),
   };
 }

@@ -62,6 +62,8 @@ class FakeDropbox {
       this.documents.set(arg.path, body!);
       return { status: 200, headers: {}, body: '{}' };
     }
+    // An original the app filed, read back for My health's document page (US-73 AC12).
+    if (url.endsWith('/files/download') && this.documents.has(arg.path)) return { status: 200, headers: {}, body: this.documents.get(arg.path)! };
     expect(['/health-roadmap.json', '/chat-history.json']).toContain(arg.path);
     const slot = arg.path === '/chat-history.json' ? 'chat' : 'file';
     const now = this[slot];
@@ -99,6 +101,7 @@ interface Engine {
   cloudClose(copyDown: boolean): Promise<string>;
   cloudErase(historyText: string | null, now: string, keepChat?: (text: string) => string): Promise<string>;
   documentSave(record: string, extraction: string, choice: string, original: ArrayBuffer | null, erase: string, now: string, device: string): Promise<string>;
+  documentOriginal(id: string): Promise<ArrayBuffer>;
 }
 
 const opened: Engine[] = [];
@@ -1216,6 +1219,21 @@ describe('documents from "Add medical records" (US-52 AC13d)', () => {
     // An empty title keeps the model's, as the web's `docTitles[fi] || title`; a future day is unknown.
     const plain = JSON.parse(await engine.documentSave(record, letter, choice({ title: '', documentDate: '2099-01-01' }), null, '', NOW, 'ios-1')) as Answer;
     expect((JSON.parse(plain.record) as RoadmapFile).documents[0]).toMatchObject({ title: 'Cardiology follow-up', date: null });
+  });
+
+  it('US-73 AC12: a listed document\'s original reads back from the cloud by its id; none for a text-only row, an unknown id or no cloud', async () => {
+    const { engine, erase } = await opened();
+    const answer = JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1')) as Answer;
+    const [row] = (JSON.parse(answer.record) as RoadmapFile).documents;
+    const original = await engine.documentOriginal(row.id);
+    expect(Buffer.from(new Uint8Array(original)).toString('utf8')).toBe('%PDF letter');
+    await expect(engine.documentOriginal('no-such-id')).rejects.toThrow('no original');
+    const textOnly = JSON.parse(await engine.documentSave('', letter, choice({ sourceFileName: 'Typed.pdf' }, 'typed'), null, erase, NOW, 'ios-1')) as Answer;
+    const typed = (JSON.parse(textOnly.record) as RoadmapFile).documents.find((d) => d.sourceFileName === 'Typed.pdf')!;
+    expect(typed.fileRef).toBe('');
+    await expect(engine.documentOriginal(typed.id)).rejects.toThrow('no original');
+    await engine.cloudClose(false);
+    await expect(engine.documentOriginal(row.id)).rejects.toThrow('not open');
   });
 
   it('refuses a document save for a lab report, and a cloud save with no session open', async () => {

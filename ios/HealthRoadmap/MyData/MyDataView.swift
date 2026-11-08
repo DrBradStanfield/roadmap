@@ -184,6 +184,10 @@ struct MyDataView: View {
                 SupplementsSection(store: store, supplements: data.supplements, saved: saved)
             })
             if !page[.other].isEmpty { topicSection(.other, page) }
+            if let documents = data.documents?.value {
+                documentSection(.scanResults(), anchor: "documents.scans", documents.scans, showsType: false)
+                documentSection(.documents(), anchor: "documents.others", documents.others, showsType: true)
+            }
             Section {
             } footer: {
                 VStack(spacing: 12) {
@@ -319,11 +323,16 @@ struct MyDataView: View {
     /// sizes a one-word title shrinks to one line and any controls go under it, so no word
     /// breaks ("Supplem-ents", TextSizeLayoutTests, US-25 AC26).
     private func heading(_ topic: HealthTopic, @ViewBuilder controls: () -> some View = { EmptyView() }) -> some View {
+        heading(topic.title, anchor: topic.anchor, controls: controls)
+    }
+
+    /// A heading in a topic's style that is no topic: Documents (US-73 AC12).
+    private func heading(_ sectionTitle: SectionTitle, anchor: String, @ViewBuilder controls: () -> some View = { EmptyView() }) -> some View {
         Section {
-            let title = topic.title
+            let title = sectionTitle
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(Color(.label))
-                .lineLimit(topic.title.title.contains(" ") ? nil : 1)
+                .lineLimit(sectionTitle.title.contains(" ") ? nil : 1)
                 .minimumScaleFactor(0.7)
                 .accessibilityAddTraits(.isHeader)
             let buttons = HStack(spacing: 14) { controls() }
@@ -335,9 +344,9 @@ struct MyDataView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 20, leading: 4, bottom: 0, trailing: 4))
-            .id(topic.anchor)
+            .id(anchor)
             // Tour tip 3 (US-57 AC7) on Blood tests; its action is the lab upload.
-            if topic == .bloodTests, bloodTestsTipReady { row.tourTip(BloodTestsTip(), action: { addingLabs = true }) } else { row }
+            if anchor == HealthTopic.bloodTests.anchor, bloodTestsTipReady { row.tourTip(BloodTestsTip(), action: { addingLabs = true }) } else { row }
         }
         .listSectionSpacing(.compact)
     }
@@ -355,6 +364,21 @@ struct MyDataView: View {
         rows()
         cardSection(page[topic].cards, page: page, footer: footer)
         after()
+    }
+
+    /// The letters or the scan results at the foot of the page, as the web lists them (US-73 AC12,
+    /// HealthRecordsSection): a heading, then a row each, newest first; a row opens its page.
+    @ViewBuilder
+    private func documentSection(_ title: SectionTitle, anchor: String, _ documents: [MyData.Document], showsType: Bool) -> some View {
+        if !documents.isEmpty {
+            heading(title, anchor: anchor)
+            Section {
+                ForEach(documents) { document in
+                    NavigationLink { DocumentPage(store: store, document: document) } label: { DocumentRow(document: document, showsType: showsType) }
+                }
+            }
+            .listSectionSpacing(.compact)
+        }
     }
 
     /// Sleep or Fitness: the Apple Health cards between the topic's urgent and other cards. The

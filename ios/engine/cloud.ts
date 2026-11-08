@@ -377,6 +377,20 @@ async function saveOneDocument(
   return answer(JSON.stringify(at.session.file));
 }
 
+/**
+ * A listed document's original, read from the person's cloud for My health's
+ * document page (US-73 AC12; the web's "View original file", US-14). By the
+ * document's id, so only a file the record names is read. Rejects when no cloud
+ * is open, the record names no original for it, or the cloud cannot give it.
+ */
+export async function originalOf(id: string): Promise<ArrayBuffer> {
+  const at = open;
+  if (!at) throw new Error(NOT_OPEN);
+  const doc = at.session.file.documents.find((d) => d.id === id && !d.deleted);
+  if (!doc?.fileRef) throw new Error('This document has no original in your cloud.');
+  return (await at.host.store.readDocument(doc.fileRef)).arrayBuffer();
+}
+
 /** `file` with the plan's rows committed. The commit writes in place (it pushes rows
  *  and flags `deleted`, documents only), so it runs on a copy of the documents: the
  *  file given is a read record or the session's, both shared (my-data.ts readRecord). */

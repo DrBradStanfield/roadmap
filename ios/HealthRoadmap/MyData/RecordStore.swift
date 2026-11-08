@@ -591,6 +591,20 @@ final class RecordStore {
         }
     }
 
+    /// A listed document's original (US-73 AC12), as the web's "View original file" reads it: from
+    /// the cloud the record is in, by the document's id. On the phone alone there is no cloud to read.
+    enum Original: Equatable {
+        case file(Data)
+        case noCloud
+        case failed
+    }
+
+    func original(of id: String) async -> Original {
+        guard cloudErase != nil else { return .noCloud }
+        guard let data = try? await engine.documentOriginal(id: id), !data.isEmpty else { return .failed }
+        return .file(data)
+    }
+
     /// A document save's record, onto the phone's file: written only over the record the
     /// save began from (`before`), never over an edit made while it ran. False when refused.
     /// Runs inside a chained change (saveDocument); never chain it, or it waits on itself.
