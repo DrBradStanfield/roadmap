@@ -37,6 +37,7 @@ import {
   driveFindFolder,
   driveUpdateIfVersion,
   driveUploadDocument,
+  fetchOrFail,
   readDriveRecord,
   splitDocumentRef,
   DRIVE_API,
@@ -345,8 +346,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
     // No Content-Type header: a string body defaults to text/plain, keeping the
     // POST a CORS "simple request" (no preflight — remix-serve can't answer
-    // OPTIONS). The endpoint parses JSON regardless of content type.
-    const res = await fetch(config.exchangeUrl, {
+    // OPTIONS). The endpoint parses JSON regardless of content type. Bounded
+    // (US-09 AC37), as Dropbox's is: the page waits on this before it draws.
+    const res = await fetchOrFail('Google Drive', config.exchangeUrl, {
       method: 'POST',
       body: JSON.stringify({
         grantType: 'code',
@@ -354,6 +356,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
         codeVerifier: claimed.verifier,
         redirectUri: config.redirectUri,
       }),
+      timeoutMs: 10_000,
     });
     if (!res.ok) {
       throw new StorageError(`Google Drive connect failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
