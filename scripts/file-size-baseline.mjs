@@ -15,7 +15,7 @@ export const REGEN_CMD = 'node scripts/file-size-baseline.mjs --write';
 const CODE = /\.(ts|tsx|js|mjs|cjs|swift)$/;
 const ROOTS = /^((app|widget-src\/src|widget-src\/standalone|packages\/health-core\/src|ios|tools|scripts|\.claude\/hooks)\/|[^/]+$)/;
 const NOT_PROD =
-  /^(ios\/engine-release|extensions\/health-tool-widget\/assets)\/|\.(test|spec)\.|\.golden\.|\.config\.(ts|mjs)$|\.d\.ts$|(^|\/)(tests?|__tests__|fixtures?|dist|build|generated)\/|[A-Za-z]Tests?\//;
+  /^(ios\/engine-release|extensions\/health-tool-widget\/assets)\/|\.(test|spec)\.|\.golden\.|^[^/]+\.config\.[cm]?[jt]s$|\.d\.ts$|(^|\/)(tests?|__tests__|fixtures?|dist|build|generated)\/|[A-Za-z]Tests?\//;
 
 export const lineCount = (file) => {
   const buf = readFileSync(join(ROOT, file));
