@@ -28,7 +28,8 @@ function bootedSimulators() {
 function scan(cmd) {
   const segs = [[]];
   let word = null, wq = false, state = 'normal', quoted = '', heredocs = [], i = 0;
-  // wq: some part of the word was quoted or escaped. Bash never reads such a word as VAR=value (setsEscapeHatch).
+  // wq: part of the word before its first '=' was quoted or escaped. Bash never reads such a word as VAR=value
+  // (setsEscapeHatch); a quoted value after the '=' (FOO="bar") is still an assignment.
   const endWord = () => {
     if (word !== null) { const seg = segs[segs.length - 1]; if (wq) (seg.quoted ||= new Set()).add(seg.length); seg.push(word); }
     word = null; wq = false;
@@ -40,14 +41,14 @@ function scan(cmd) {
     if (state === 'single' || state === 'double') {
       if (state === 'double' && ch === '\\' && i + 1 < cmd.length) { quoted += cmd[i + 1]; i += 2; continue; }
       if (ch === (state === 'single' ? "'" : '"')) {
+        if (!(word || '').includes('=')) wq = true;
         word = (word || '') + (/^[\w.:\/@+-]*$/.test(quoted) ? quoted : 'QUOTED');
-        wq = true;
         state = 'normal';
       } else quoted += ch;
       i++; continue;
     }
     if (ch === '\\' && cmd[i + 1] === '\n') { i += 2; continue; }
-    if (ch === '\\' && i + 1 < cmd.length) { word = (word || '') + cmd[i + 1]; wq = true; i += 2; continue; }
+    if (ch === '\\' && i + 1 < cmd.length) { if (!(word || '').includes('=')) wq = true; word = (word || '') + cmd[i + 1]; i += 2; continue; }
     if (ch === "'" || ch === '"') { state = ch === "'" ? 'single' : 'double'; quoted = ''; i++; continue; }
     if (ch === '#' && word === null) { state = 'comment'; i++; continue; }
     if (ch === '<' && cmd[i + 1] === '<' && cmd[i + 2] !== '<') {
