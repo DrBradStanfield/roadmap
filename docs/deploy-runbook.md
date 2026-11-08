@@ -313,7 +313,11 @@ Moved out of CLAUDE.md 2026-09-24 (entropy pass). `.env` has all of them.
   (both apps share the Fly organisation's private network). The code also
   requires `CHAT_SURFACE=brand`.
 - **GitHub Actions**: deploy secrets live ONLY in the gated `production`
-  environment; ANTHROPIC_API_KEY (spend-capped) is the only repo secret.
+  environment. Other secrets the workflows name (`secrets.` in
+  .github/workflows): CLAUDE_CODE_OAUTH_TOKEN (claude-review.yml),
+  ENGINE_SIGNING_KEY (engine-release.yml, `engine-signing` environment) and
+  SENTRY_AUTH_TOKEN (deploy.yml). A tamper response rotates all of them and
+  the `production` environment secrets.
 
 ## Hosted MCP (health-tool-edu)
 

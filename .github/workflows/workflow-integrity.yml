@@ -25,8 +25,9 @@
 #   product-health loop's weekly git-log review runs with the same identity.
 #
 # Residual (documented, accepted): a same-push-triggered malicious run may
-# execute for a few seconds before cancellation. Only the spend-capped
-# ANTHROPIC_API_KEY exists at repo level, but the 'production' environment has
+# execute for a few seconds before cancellation. Other secrets named in the
+# workflows (CLAUDE_CODE_OAUTH_TOKEN, ENGINE_SIGNING_KEY, SENTRY_AUTH_TOKEN)
+# may sit at repo level too, and the 'production' environment has
 # had no wait timer or required reviewer since 2026-09-02 (deploy.yml), so a
 # run that names that environment can read the deploy secrets (Fly, Shopify,
 # Sentry) in those seconds. That is why the playbook below revokes them.
@@ -100,7 +101,7 @@ jobs:
           Files: ${files}
           Commit: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}
           Playbook if it was not you: (1) disable the changed workflows in the Actions tab; (2) git revert on main;
-          (3) revoke the 'production' environment secrets, rotate ANTHROPIC_API_KEY."
+          (3) revoke the 'production' environment secrets, rotate every repo secret (CLAUDE_CODE_OAUTH_TOKEN, ENGINE_SIGNING_KEY, SENTRY_AUTH_TOKEN, the Fly and Shopify tokens)."
               exit 0
             fi
             # 1) Disable every workflow file this push added or modified.
@@ -126,7 +127,7 @@ jobs:
 
           Commit: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}
           Playbook: (1) review the diff; (2) if malicious: git revert on main,
-          revoke the 'production' environment secrets, rotate ANTHROPIC_API_KEY;
+          revoke the 'production' environment secrets, rotate every repo secret (CLAUDE_CODE_OAUTH_TOKEN, ENGINE_SIGNING_KEY, SENTRY_AUTH_TOKEN, the Fly and Shopify tokens);
           (3) re-enable legitimate workflows via Actions tab."
             exit 0
           fi

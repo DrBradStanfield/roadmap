@@ -20,7 +20,7 @@ searches the knowledge base:
 - **`search-knowledge.ts`**: the CLI that searches Dr Brad's articles,
   references and guidelines (`search-knowledge "<query>"`) and
   prints one entry (`--article <handle>`, the get-article command). Lexical,
-  offline, no model; the tool writes the query nowhere. No MCP tool yet (US-41).
+  offline, no model; the tool writes the query nowhere. No stdio MCP tool; the hosted connector has one (US-41).
   `search-knowledge-eval.ts` measures its recall over the router fixtures.
 
 All three CLIs are documented in
