@@ -333,6 +333,7 @@ export {
 // v2 document paths — the organised-archive scheme (folders + date-first names)
 export {
   buildDocumentRef,
+  byNewestDocument,
   DOCUMENT_FOLDERS,
   DOCUMENT_TYPE_LABELS,
   extensionOf,

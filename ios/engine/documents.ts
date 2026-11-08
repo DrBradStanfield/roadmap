@@ -2,9 +2,9 @@
 // results in the record, as the iPhone lists them. Web twin: MyHealth.tsx
 // HealthRecordsSection, with its rules: live rows only, never a lab report's
 // archive row (its values are the record), scan results apart from the rest.
-import { DOCUMENT_TYPE_LABELS } from '../../packages/health-core/src/document-path';
-import { documentView, isLabArchiveDocument } from '../../packages/health-core/src/document-save';
-import type { FileDocument, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { byNewestDocument, DOCUMENT_TYPE_LABELS } from '../../packages/health-core/src/document-path';
+import { documentView, isLabArchiveDocument, type DocumentView } from '../../packages/health-core/src/document-save';
+import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 
 /** One document as its row and its page show it. */
 export interface ShownDocument {
@@ -21,7 +21,7 @@ export interface ShownDocument {
   original: { name: string; mimeType: string } | null;
 }
 
-/** Scan results, then letters and every other document, each newest first; an undated one last. */
+/** Scan results, then letters and every other document, each in health-core's order (`byNewestDocument`). */
 export interface DocumentShelf {
   scans: ShownDocument[];
   others: ShownDocument[];
@@ -29,25 +29,22 @@ export interface DocumentShelf {
 
 export function documentShelf(file: RoadmapFile): DocumentShelf {
   const live = file.documents
-    .filter((d) => !d.deleted && !isLabArchiveDocument(documentView(d)))
-    .sort(newestFirst);
-  const scan = (d: FileDocument) => d.type === 'scan_result';
+    .filter((d) => !d.deleted)
+    .map((d) => ({ ...documentView(d), mimeType: d.mimeType }))
+    .filter((d) => !isLabArchiveDocument(d))
+    .sort(byNewestDocument);
+  const scan = (d: { documentType: string }) => d.documentType === 'scan_result';
   return { scans: live.filter(scan).map(shownDocument), others: live.filter((d) => !scan(d)).map(shownDocument) };
 }
 
-function newestFirst(a: FileDocument, b: FileDocument): number {
-  if (a.date !== b.date) return a.date === null ? 1 : b.date === null ? -1 : b.date.localeCompare(a.date);
-  return (b.addedAt ?? '').localeCompare(a.addedAt ?? '');
-}
-
-function shownDocument(d: FileDocument): ShownDocument {
+function shownDocument(d: DocumentView & { mimeType: string }): ShownDocument {
   return {
     id: d.id,
     title: d.title,
-    typeLabel: DOCUMENT_TYPE_LABELS[d.type] ?? d.type,
-    day: d.date,
-    content: d.extractedText,
-    sourceFileName: d.sourceFileName ?? null,
+    typeLabel: DOCUMENT_TYPE_LABELS[d.documentType] ?? d.documentType,
+    day: d.documentDate,
+    content: d.contentMd,
+    sourceFileName: d.sourceFileName,
     original: d.fileRef ? { name: d.fileRef.split('/').pop() || d.fileRef, mimeType: d.mimeType } : null,
   };
 }

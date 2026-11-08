@@ -1868,7 +1868,8 @@ read Apple Health in their own view, so a live refresh never rebuilds the list.
 
 **Documents at the foot (2026-11-09, US-73 AC12, the web's `HealthRecordsSection`).** The letters
 and scan results the app files are listed after the sections: "Scan results", then "Documents",
-newest first. The engine builds the list (`engine/documents.ts` `documentShelf`, `myData.documents`):
+newest first by health-core's `byNewestDocument`, the web's order too (Brad 2026-11-09). The engine
+builds the list (`engine/documents.ts` `documentShelf`, `myData.documents`):
 live rows only, never a lab archive row (health-core `isLabArchiveDocument`), with the web's kind
 labels, now health-core's `DOCUMENT_TYPE_LABELS`. A row pushes `DocumentPage`: the markdown drawn as
 SwiftUI text by `DocumentText` (no web view; links lose their target, since the words come from an

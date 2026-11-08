@@ -7,6 +7,8 @@
 import { memo, useCallback, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { isLabArchiveDocument, TOPICS, type ApiMeasurement, type StatTile, type TopicId } from '@roadmap/health-core';
 import { DocumentLightbox } from './DocumentLightbox';
+// Newest first, the iPhone's order too (Brad 2026-11-09, US-14 AC8).
+import { byNewestDocument } from '@roadmap/health-core';
 import { DOCUMENT_TYPE_LABELS, formatDocumentDate } from '../lib/document-format';
 import type { ApiDocument, ApiLabValue } from '../lib/api-types';
 import { revealAndFocus } from '../lib/reveal';
@@ -283,7 +285,7 @@ function HealthRecordsSection({ documents, onDeleted }: { documents: ApiDocument
         <section className="health-records-section">
           <h3 className="results-section-title">Scan Results</h3>
           <div className="health-records-list">
-            {scanResults.map(doc => (
+            {[...scanResults].sort(byNewestDocument).map(doc => (
               <button
                 key={doc.id}
                 className="health-record-item"
@@ -301,7 +303,7 @@ function HealthRecordsSection({ documents, onDeleted }: { documents: ApiDocument
         <section className="health-records-section">
           <h3 className="results-section-title">Documents</h3>
           <div className="health-records-list">
-            {otherDocs.map(doc => (
+            {[...otherDocs].sort(byNewestDocument).map(doc => (
               <button
                 key={doc.id}
                 className="health-record-item"

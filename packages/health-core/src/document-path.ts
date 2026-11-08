@@ -44,6 +44,23 @@ export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   other: 'Document',
 };
 
+/**
+ * The Documents list's order, on the web and the iPhone (Brad 2026-11-09; US-14 AC8,
+ * US-73 AC12): the newest document date first, an undated one last, and on one date
+ * the later filed first. A comparator for `sort` on a copy.
+ */
+export function byNewestDocument(
+  a: { documentDate: string | null; createdAt?: string | null },
+  b: { documentDate: string | null; createdAt?: string | null },
+): number {
+  if (a.documentDate !== b.documentDate) {
+    if (a.documentDate === null) return 1;
+    if (b.documentDate === null) return -1;
+    return b.documentDate.localeCompare(a.documentDate);
+  }
+  return (b.createdAt ?? '').localeCompare(a.createdAt ?? '');
+}
+
 /** Longest file name we'll generate (excluding folder), extension included. */
 const MAX_NAME_LENGTH = 80;
 
