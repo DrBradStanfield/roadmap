@@ -105,6 +105,21 @@ describe('US-21 AC26: a value past its plausible range is flagged in the review,
     expect(container.querySelector('.bt-cell-refused')).toBeNull();
     expect(container.querySelector('.bt-cell-si')?.textContent).toMatch(/^→ 5\.\d+ mmol\/L$/);
   });
+
+  it('an untouched negative extraction (ferritin -1 µg/L) is flagged, judged on the number Save takes (Codex, 2026-11-09)', () => {
+    const { container } = renderReview(lab('Ferritin', -1, 'µg/L'));
+    expect(container.querySelector('.bt-cell-refused')?.textContent)
+      .toBe('Ferritin: a value below 0 µg/L is almost certainly a misread number or unit, so it was not saved. Check the report.');
+  });
+
+  it('a count off its range\'s scale shows the scale note, as Save does, before any plausible-range line (adversary N1)', () => {
+    const { container } = renderReview([{
+      fileName: 'labs.pdf', reportDate: DAY, values: [],
+      additionalValues: [{ name: 'Platelets', value: 15000000, unit: 'cells/µL', referenceLow: 150, referenceHigh: 400 }],
+    }]);
+    expect(container.querySelector('.bt-cell-refused')?.textContent).toBe('Platelets: the value and its printed range are on different scales, so the row was not stored.');
+    expect(container.querySelector('.bt-cell-si')).toBeNull();
+  });
 });
 
 describe('US-21 AC1: a catalogued row is named by the catalogue\'s label, as the blood-test matrix names it', () => {
