@@ -60,7 +60,8 @@ final class AppAttestReinstallTests: XCTestCase {
 
     private let report = LabFileReader.Document(name: "Report", pages: [], truncated: false)
 
-    /// Each code a stale key has been seen to raise, not only `invalidKey`.
+    /// Possible codes for a stale key, not only `invalidKey`. Which one a reinstalled
+    /// phone gives is not known yet; the on-screen suffix will tell.
     func testAStaleKeyFromTheLastInstallIsReplacedOnceAndTheReportGoes_US52_AC1c() async throws {
         for code in [DCError.Code.invalidKey, .invalidInput, .unknownSystemFailure] {
             reset()
@@ -92,5 +93,23 @@ final class AppAttestReinstallTests: XCTestCase {
         let failed = await LabUploadSheet.extractEach([report], extract: { _ in throw AppAttestClient.Failure.device(stage: "assert", code: "3") }, progress: { _, _ in })
         XCTAssertEqual(failed?.first?.failure, "This iPhone could not prove the app is genuine, so nothing was sent. Please try again. (App Attest assert 3)")
         XCTAssertNotNil(failed?.first?.retry, "an App Attest failure may mend, so Try again shows")
+    }
+
+    /// Once a launch, not once a request: the key this launch registered is never
+    /// replaced, so a many-report ZIP spends one registration (adversary R1, AC1b's cap).
+    func testAKeyThisLaunchRegisteredIsNotReplacedOnTheNextRequest_US52_AC1c() async {
+        let fake = FakeAttest(staleCode: .invalidInput, freshKeysFail: true)
+        let client = LabUploadClient(attest: AppAttestClient(session: StubHTTP.session(), service: fake))
+        for _ in 0..<2 {
+            do {
+                _ = try await client.extract(report, unitSystem: "si")
+                XCTFail("the assertion fails")
+            } catch {
+                guard case AppAttestClient.Failure.device(stage: "assert", code: "3") = error else { return XCTFail("\(error)") }
+            }
+        }
+        XCTAssertEqual(fake.made, 1, "one key for the launch")
+        XCTAssertEqual(paths.filter { $0 == "/api/app/v1/attest/register" }.count, 1)
+        XCTAssertEqual(Keychain.read(), "fresh-key-1")
     }
 }

@@ -44,6 +44,8 @@ actor AppAttestClient {
 
     private let session: URLSession
     private let service: any AttestService
+    /// The key this launch registered, if any (US-52 AC1c).
+    private var registered: String?
     private var busy = false
     private var waiters: [CheckedContinuation<Void, Never>] = []
 
@@ -98,11 +100,13 @@ actor AppAttestClient {
     }
 
     /// An assertion from the stored key or, when there is none or it cannot sign, from a
-    /// new key, once (US-52 AC1c). The Keychain id outlives a delete and reinstall but the
-    /// key does not, and iOS reports that with more than one error code, not only
-    /// `invalidKey`: so any failure of the stored key makes a new one.
+    /// new key, once a launch (US-52 AC1c). The Keychain id outlives a delete and reinstall
+    /// but the key does not, and iOS may report that with more than one error code, not
+    /// only `invalidKey`: so any failure of the stored key makes a new one. A key this
+    /// launch registered is never replaced: a 20-report ZIP must not spend 20 registrations.
     private func assertion(_ clientDataHash: Data) async throws -> (String, Data) {
         if let stored = Keychain.read() {
+            if stored == registered { return (stored, try await device("assert") { try await service.generateAssertion(stored, clientDataHash: clientDataHash) }) }
             do { return (stored, try await service.generateAssertion(stored, clientDataHash: clientDataHash)) } catch {
                 try Task.checkCancellation()
                 Keychain.delete()
@@ -143,6 +147,7 @@ actor AppAttestClient {
             throw Failure.server(status: (response as? HTTPURLResponse)?.statusCode ?? 0, message: answer?.error ?? "The app could not be registered with the server.")
         }
         Keychain.save(keyId)
+        registered = keyId
         return keyId
     }
 

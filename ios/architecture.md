@@ -1257,9 +1257,9 @@ log a closed reason word, never the key id or IP.
 - Apple's service unavailable at attest time: "try again later"; no fallback.
 - Key lost (app reinstalled: the Keychain id survives, the key does not) or unknown to the
   server (401 `unknown_key`): the app drops the id, attests a new key, and retries once.
-  A lost key fails its assertion with more than one error code, not only `invalidKey`, so
-  any failure of the stored key counts as lost (US-52 AC1c, 2026-11-09: Brad's reinstalled
-  phone). A failed App Attest call names its step and code on screen ("App Attest assert 3").
+  A lost key may fail its assertion with more than one error code, not only `invalidKey`,
+  so any failure of the stored key counts as lost, once a launch: a key the launch
+  registered is never replaced (US-52 AC1c, 2026-11-09: Brad's reinstalled phone). A failed App Attest call names its step and code on screen ("App Attest assert 3").
 - Counter stale (401 `stale_counter`): one retry with a fresh assertion.
 - Key store down, or `APP_ATTEST_TEAM_ID` unset: 503. Never open.
 - Over a limit: 429 with a plain message; no model call.
