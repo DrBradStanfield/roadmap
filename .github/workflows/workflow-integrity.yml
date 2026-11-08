@@ -30,8 +30,8 @@
 # no workflow uses but is still set). It can read an environment's secrets only
 # in a job that names that environment and passes its branch rules. The
 # 'production' environment has had no wait timer or required reviewer since
-# 2026-09-02 (deploy.yml), so a job naming it reads the Fly, Shopify and Sentry
-# secrets; 'engine-signing' holds ENGINE_SIGNING_KEY. That is why the playbook
+# 2026-09-02 (deploy.yml), so a job naming it can read the deploy secrets (Fly,
+# Shopify, Sentry); 'engine-signing' holds ENGINE_SIGNING_KEY. That is why the playbook
 # below rotates all of them.
 #
 # Editing this file is Brad-only (constitution Guardrails).
