@@ -230,6 +230,63 @@ final class TextSizeLayoutTests: XCTestCase {
         }
     }
 
+    /// US-62 AC8a (Brad 2026-11-09): a My health row's trend spans its label block, its top on the
+    /// title's top and its bottom on the date line's bottom, at the default size and the largest
+    /// before the row stacks; it never makes the row taller than that block. Read from the drawn
+    /// pixels: the trend's red line against the words' grey and black ink.
+    func testARowsTrendSpansItsTitleAndDateLine_US62_AC8a() throws {
+        for category in [UIContentSizeCategory.large, .extraExtraExtraLarge] {
+            let row = ValueRow(label: "Waist-to-height", value: "0.53", unit: "", day: "2025-02-01",
+                               target: "Normal <0.5", previous: "0.50", trend: [1, 3, 2], tint: .red)
+            let height = try measure(row.frame(width: 362), at: category).height
+            let drawn = try inkAndRed(row.frame(width: 362), at: category)
+            let red = try XCTUnwrap(drawn.red, "\(category.rawValue): the trend is drawn")
+            let ink = try XCTUnwrap(drawn.ink, "\(category.rawValue): the words are drawn")
+            XCTAssertLessThanOrEqual(red.lowerBound, ink.lowerBound + 1, "\(category.rawValue): the trend reaches the title's top (\(red) vs words \(ink))")
+            XCTAssertGreaterThanOrEqual(red.upperBound, ink.upperBound - 1, "\(category.rawValue): the trend reaches the date line's bottom (\(red) vs words \(ink))")
+            XCTAssertLessThanOrEqual(red.upperBound, height + 0.5, "\(category.rawValue): the trend stays inside the row")
+        }
+    }
+
+    /// The rows (in points) holding `view`'s words (grey or black) and its red, drawn in light mode
+    /// at the window's top left at `category`.
+    private func inkAndRed(_ view: some View, at category: UIContentSizeCategory) throws -> (ink: ClosedRange<CGFloat>?, red: ClosedRange<CGFloat>?) {
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(origin: .zero, size: CGSize(width: phone.width, height: 300))
+        window.overrideUserInterfaceStyle = .light
+        window.traitOverrides.preferredContentSizeCategory = category
+        let host = UIHostingController(rootView: view.fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).background(.white))
+        host.safeAreaRegions = []
+        window.rootViewController = host
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true }
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5)) // the label block is measured after the first layout
+        // Eight bits a channel: on a wide-colour screen the default is 16-bit extended range.
+        let format = UIGraphicsImageRendererFormat(for: window.traitCollection)
+        format.preferredRange = .standard
+        let image = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { _ in
+            window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        }
+        let cg = try XCTUnwrap(image.cgImage)
+        XCTAssertEqual(cg.bitsPerComponent, 8, "read as one byte a channel")
+        let bytes = try XCTUnwrap(CFDataGetBytePtr(cg.dataProvider?.data))
+        let (stride, step) = (cg.bytesPerRow, cg.bitsPerPixel / 8)
+        let r = cg.bitmapInfo.contains(.byteOrder32Little) ? 2 : 0 // BGRA or RGBA
+        var ink: ClosedRange<Int>?, red: ClosedRange<Int>?
+        let widen = { (range: ClosedRange<Int>?, y: Int) in range.map { min($0.lowerBound, y)...max($0.upperBound, y) } ?? y...y }
+        for y in 0..<cg.height {
+            for x in 0..<cg.width {
+                let p = (0..<3).map { Int(bytes[y * stride + x * step + $0]) }
+                let (rr, g, b) = (p[r], p[1], p[2 - r])
+                if rr - max(g, b) > 80 { red = widen(red, y) } else if max(rr, g, b) - min(rr, g, b) < 30, rr < 200 { ink = widen(ink, y) }
+            }
+        }
+        let points = { (range: ClosedRange<Int>?) in range.map { CGFloat($0.lowerBound) / image.scale...CGFloat($0.upperBound + 1) / image.scale } }
+        return (points(ink), points(red))
+    }
+
     /// The height `view` takes when offered `room`: more than `room` means it runs off screen.
     private func taken(by view: some View, in room: CGSize, at category: UIContentSizeCategory) throws -> CGSize {
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)

@@ -37,6 +37,8 @@ struct ValueRow: View {
     @Environment(\.dynamicTypeSize) private var textSize
     /// A compact row's trend, growing a little with the text.
     @ScaledMetric(relativeTo: .body) private var trendWidth = 44.0
+    /// The label block's height, the title's top to the date line's bottom: the trend's (US-62 AC8a).
+    @State private var nameHeight: CGFloat?
     /// Counts the value's own changes: a new value in the same unit, not a units switch (review R3).
     @State private var bounces = 0
     @State private var shownUnit: String?
@@ -79,9 +81,10 @@ struct ValueRow: View {
                     .font(.caption).foregroundStyle(.secondary)
                 }
             }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { nameHeight = $0 }
             Spacer(minLength: 0)
             HStack(alignment: stacked ? .center : .firstTextBaseline, spacing: 12) {
-                Sparkline(points: trend, tint: tint, size: stacked ? CGSize(width: trendWidth, height: trendWidth * 18 / 44) : CGSize(width: 44, height: 18))
+                Sparkline(points: trend, tint: tint, size: Self.trendSize(width: trendWidth, nameHeight: nameHeight, textSize: textSize))
                     .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 2 }
                 ZStack(alignment: .trailing) {
                     if stacked, let column {
@@ -172,6 +175,15 @@ struct ValueRow: View {
 }
 
 extension ValueRow {
+    /// A compact row's trend (US-62 AC8a, Brad 2026-11-09): as tall as the label block beside it,
+    /// its top on the title's top and its bottom on the date line's bottom, as the web's row draws
+    /// it. Before that block is measured, the old 44 by 18 shape. At accessibility sizes, where the
+    /// row stacks, it stays small beside the value.
+    nonisolated static func trendSize(width: CGFloat, nameHeight: CGFloat?, textSize: DynamicTypeSize) -> CGSize {
+        if textSize.isAccessibilitySize { return CGSize(width: 44, height: 18) }
+        return CGSize(width: width, height: nameHeight ?? width * 18 / 44)
+    }
+
     /// A grade's colour, the web's row colours (styles.css `.md-status-warn` amber #b45309,
     /// `.md-status-bad` red #b91c1c) in the app's status tones: amber is `info` (the tiles'
     /// Borderline and Above optimal), red is `urgent` (#B91C1C, the web's own). Nil: plain.

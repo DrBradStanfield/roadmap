@@ -3,7 +3,7 @@
 // value with the previous one in brackets over its unit. A tap opens the
 // value's page (ValuePage). Phone and desktop alike.
 
-import { memo, useId } from 'react';
+import { memo, useId, useLayoutEffect, useRef, useState } from 'react';
 import {
   type ApiMeasurement,
   type CellUnit,
@@ -180,14 +180,26 @@ export function RowTrend({ points, limits, tint, width = 44, height = 18 }: { po
 /** One row. Screen readers hear "81, previous 74": brackets alone say nothing out loud. */
 const MetricRow = memo(function MetricRow({ row, onOpen }: { row: RowModel; onOpen: (subject: ValueSubject, from?: Element) => void }) {
   const meta = [row.target, row.day && monthYear(row.day)].filter(Boolean).join(' · ');
+  // The trend spans the name block, the title's top to the date line's bottom, as the iPhone's row (US-62 AC8a).
+  const name = useRef<HTMLSpanElement>(null);
+  const [nameHeight, setNameHeight] = useState<number>();
+  useLayoutEffect(() => {
+    const block = name.current;
+    if (!block || typeof ResizeObserver === 'undefined') return;
+    const fit = () => setNameHeight(block.getBoundingClientRect().height || undefined);
+    fit();
+    const watch = new ResizeObserver(fit);
+    watch.observe(block);
+    return () => watch.disconnect();
+  }, []);
   return (
     <li>
       <button type="button" className="md-row" onClick={e => onOpen(row.subject, e.currentTarget)} data-row={row.key ?? subjectKey(row.subject)}>
-        <span className="md-row-name">
+        <span className="md-row-name" ref={name}>
           <span className="md-row-label">{row.label}</span>
           {meta && <span className="md-row-meta">{meta}</span>}
         </span>
-        <RowTrend points={row.trend} limits={row.trendLimits} tint={row.tint}/>
+        <RowTrend points={row.trend} limits={row.trendLimits} tint={row.tint} height={nameHeight}/>
         <span className="md-row-reading">
           {row.latest ? (
             <>
