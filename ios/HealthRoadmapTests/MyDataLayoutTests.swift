@@ -372,6 +372,36 @@ final class MyDataLayoutTests: XCTestCase {
         }
     }
 
+    /// US-62 AC8a (Brad 2026-11-09): a trend's vertical range is at least ±5% of the latest value,
+    /// so 0.57 to 0.58 draws nearly flat while a real change fills the line. The same cases as
+    /// health-core's trend-range.test.ts, which tests the web's `trendRange`.
+    func testATrendsRangeIsAtLeastFivePercentEachWay_US62_AC8a() {
+        let fill = { (points: [Double]) in
+            let (low, high) = Sparkline.range(points)
+            return (points.max()! - points.min()!) / (high - low)
+        }
+        let waist = Sparkline.range([0.57, 0.58])
+        XCTAssertEqual(waist.high - waist.low, 0.058, accuracy: 1e-9, "±5% of 0.58")
+        XCTAssertEqual((waist.low + waist.high) / 2, 0.575, accuracy: 1e-9, "about the points' middle")
+        XCTAssertLessThan(fill([0.57, 0.58]), 0.2, "a tiny change draws nearly flat")
+        XCTAssertTrue(Sparkline.range([100, 92, 85]) == (85, 100), "a real change keeps its full height")
+        XCTAssertEqual(fill([100, 92, 85]), 1)
+        let a1c = Sparkline.range([42, 41]), rising = Sparkline.range([41, 42])
+        XCTAssertEqual(a1c.high - a1c.low, 4.1, accuracy: 1e-9, "read from the latest point")
+        XCTAssertEqual(rising.high - rising.low, 4.2, accuracy: 1e-9)
+        XCTAssertTrue(Sparkline.range([5, 5, 5]) == (4.75, 5.25), "equal points across the middle")
+        XCTAssertTrue(Sparkline.range([0, 0]) == (-0.5, 0.5), "all zeros over a span of one")
+    }
+
+    /// US-62 AC8a: the band a row's trend is drawn over is its ink, capped at 0.8 x its width and
+    /// centred, the web's `trendBand`.
+    func testARowsTrendBandIsCappedAndCentred_US62_AC8a() {
+        XCTAssertEqual(ValueRow.trendBand(capTop: 5, baseline: 32, width: 56), 5...32)
+        let capped = ValueRow.trendBand(capTop: 5, baseline: 85, width: 56)
+        XCTAssertEqual(capped.upperBound - capped.lowerBound, 44.8, accuracy: 1e-9)
+        XCTAssertEqual((capped.lowerBound + capped.upperBound) / 2, 45, accuracy: 1e-9, "centred on the ink")
+    }
+
     /// US-12 AC21: a value printed as a limit the rule leaves ungraded says the web's note where its
     /// grade would be; an older engine sends none.
     @MainActor

@@ -152,20 +152,22 @@ export function labRows(labValues: ApiLabValue[]): RowModel[] {
  *  `Sparkline`): the metric's colour, a fading fill under it and a dot on the
  *  newest day. Nothing for fewer than two days. A day printed as a limit
  *  (`limits[i]`) is a hollow dot at its bound, off the line (US-12 AC20). */
-export function RowTrend({ points, limits, tint, width = 44, height = 18 }: { points: number[]; limits?: boolean[]; tint: string; width?: number; height?: number }) {
+export function RowTrend({ points, limits, tint, width = TREND_WIDTH, height = 18, band }: { points: number[]; limits?: boolean[]; tint: string; width?: number; height?: number; band?: TrendBand }) {
   const fill = `md-fill${useId().replace(/:/g, '')}`; // one gradient per row
   if (points.length < 2) return <span className="md-row-trend" aria-hidden="true">{' '}</span>;
-  const { coords, exact, line, area } = trendGeometry(points, limits, width, height, height);
+  const { top = 0, height: drawn = height } = band ?? {};
+  const { coords, exact, line, area } = trendGeometry(points, limits, width, drawn, drawn);
   const [lastX, lastY] = coords[coords.length - 1];
   const lastLimit = !!limits?.[coords.length - 1];
   return (
     <svg className="md-row-trend" width={width} height={height} aria-hidden="true" focusable="false">
       <defs>
         <linearGradient id={fill} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={tint} stopOpacity="0.25"/>
+          <stop offset="0" stopColor={tint} stopOpacity="0.125"/>
           <stop offset="1" stopColor={tint} stopOpacity="0"/>
         </linearGradient>
       </defs>
+      <g transform={`translate(0,${top})`}>
       {area && <path d={area} fill={`url(#${fill})`}/>}
       {area && <path d={line} fill="none" stroke={tint} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>}
       {exact.length === 1 && exact[0] !== coords[coords.length - 1] && <circle cx={exact[0][0]} cy={exact[0][1]} r="1.75" fill={tint}/>}
@@ -173,22 +175,42 @@ export function RowTrend({ points, limits, tint, width = 44, height = 18 }: { po
         <circle key={i} className="md-trend-limit" cx={x} cy={y} r="1.75" fill="none" stroke={tint} strokeWidth="1"/>
       ))}
       <circle className={lastLimit ? 'md-trend-limit' : undefined} cx={lastX} cy={lastY} r="2" fill={lastLimit ? 'none' : tint} stroke={lastLimit ? tint : undefined} strokeWidth={lastLimit ? 1 : undefined}/>
+      </g>
     </svg>
   );
+}
+
+/** A row trend's width, the iPhone's too (ValueRow.swift `trendWidth`); 44 below 390px wide (styles.css). */
+const TREND_WIDTH = 56;
+/** Where a row's trend is drawn inside its box: from `top`, `height` tall. */
+type TrendBand = { top: number; height: number };
+/** The band between the title's cap height (`capTop`) and the date line's baseline, capped at
+ *  0.8 x the width and centred there, so a title wrapped at large text never draws a tall spike
+ *  (US-62 AC8a). The iPhone's twin is ValueRow.trendBand. */
+export function trendBand(capTop: number, baseline: number, width = TREND_WIDTH): TrendBand {
+  const height = Math.min(baseline - capTop, 0.8 * width);
+  return { top: capTop + (baseline - capTop - height) / 2, height };
 }
 
 /** One row. Screen readers hear "81, previous 74": brackets alone say nothing out loud. */
 const MetricRow = memo(function MetricRow({ row, onOpen }: { row: RowModel; onOpen: (subject: ValueSubject, from?: Element) => void }) {
   const meta = [row.target, row.day && monthYear(row.day)].filter(Boolean).join(' · ');
-  // The trend spans the name block, the title's top to the date line's bottom, as the iPhone's row (US-62 AC8a).
+  // The trend is as tall as the name block and drawn over its ink, the title's cap height to the
+  // date line's baseline, as the iPhone's row (US-62 AC8a). The .md-row-ink marks sit on those lines.
   const name = useRef<HTMLSpanElement>(null);
-  const [nameHeight, setNameHeight] = useState<number>();
+  const [fit, setFit] = useState<{ width: number; height: number; band: TrendBand }>();
   useLayoutEffect(() => {
     const block = name.current;
     if (!block || typeof ResizeObserver === 'undefined') return;
-    const fit = () => setNameHeight(block.getBoundingClientRect().height || undefined);
-    fit();
-    const watch = new ResizeObserver(fit);
+    const measure = () => {
+      const box = block.getBoundingClientRect();
+      const cap = block.querySelector('.md-row-label > .md-row-ink')?.getBoundingClientRect();
+      const base = block.querySelector('.md-row-meta > .md-row-ink')?.getBoundingClientRect();
+      const width = block.parentElement?.querySelector('.md-row-trend')?.getBoundingClientRect().width || TREND_WIDTH; // the CSS column's
+      setFit(box.height ? { width, height: box.height, band: trendBand(cap ? cap.top - box.top : 0, base ? base.bottom - box.top : box.height, width) } : undefined);
+    };
+    measure();
+    const watch = new ResizeObserver(measure);
     watch.observe(block);
     return () => watch.disconnect();
   }, []);
@@ -196,10 +218,10 @@ const MetricRow = memo(function MetricRow({ row, onOpen }: { row: RowModel; onOp
     <li>
       <button type="button" className="md-row" onClick={e => onOpen(row.subject, e.currentTarget)} data-row={row.key ?? subjectKey(row.subject)}>
         <span className="md-row-name" ref={name}>
-          <span className="md-row-label">{row.label}</span>
-          {meta && <span className="md-row-meta">{meta}</span>}
+          <span className="md-row-label"><span className="md-row-ink"/>{row.label}</span>
+          {meta && <span className="md-row-meta">{meta}<span className="md-row-ink"/></span>}
         </span>
-        <RowTrend points={row.trend} limits={row.trendLimits} tint={row.tint} height={nameHeight}/>
+        <RowTrend points={row.trend} limits={row.trendLimits} tint={row.tint} width={fit?.width} height={fit?.height} band={fit?.band}/>
         <span className="md-row-reading">
           {row.latest ? (
             <>

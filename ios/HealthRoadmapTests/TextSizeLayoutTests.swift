@@ -230,27 +230,32 @@ final class TextSizeLayoutTests: XCTestCase {
         }
     }
 
-    /// US-62 AC8a (Brad 2026-11-09): a My health row's trend spans its label block, its top on the
-    /// title's top and its bottom on the date line's bottom, at the default size and the largest
-    /// before the row stacks; it never makes the row taller than that block. Read from the drawn
-    /// pixels: the trend's red line against the words' grey and black ink.
-    func testARowsTrendSpansItsTitleAndDateLine_US62_AC8a() throws {
+    /// US-62 AC8a (Brad 2026-11-09): a My health row's trend is drawn over its label block's ink,
+    /// the title's cap height to the date line's baseline, its end dot never past either; at the
+    /// largest size before the row stacks, where the title wraps, it is capped at 0.8 x its width
+    /// and centred on that ink. Read from the drawn pixels: the trend's red line against the
+    /// words' grey and black ink.
+    func testARowsTrendIsDrawnOverItsTitleAndDateLine_US62_AC8a() throws {
         for category in [UIContentSizeCategory.large, .extraExtraExtraLarge] {
             let row = ValueRow(label: "Waist-to-height", value: "0.53", unit: "", day: "2025-02-01",
                                target: "Normal <0.5", previous: "0.50", trend: [1, 3, 2], tint: .red)
-            let height = try measure(row.frame(width: 362), at: category).height
             let drawn = try inkAndRed(row.frame(width: 362), at: category)
             let red = try XCTUnwrap(drawn.red, "\(category.rawValue): the trend is drawn")
             let ink = try XCTUnwrap(drawn.ink, "\(category.rawValue): the words are drawn")
-            XCTAssertLessThanOrEqual(red.lowerBound, ink.lowerBound + 1, "\(category.rawValue): the trend reaches the title's top (\(red) vs words \(ink))")
-            XCTAssertGreaterThanOrEqual(red.upperBound, ink.upperBound - 1, "\(category.rawValue): the trend reaches the date line's bottom (\(red) vs words \(ink))")
-            XCTAssertLessThanOrEqual(red.upperBound, height + 0.5, "\(category.rawValue): the trend stays inside the row")
+            let redWidth = try XCTUnwrap(drawn.redWidth)
+            let (span, inkSpan) = (red.upperBound - red.lowerBound, ink.upperBound - ink.lowerBound)
+            let say = "\(category.rawValue): trend \(red), words \(ink)"
+            XCTAssertGreaterThanOrEqual(red.lowerBound, ink.lowerBound - 0.5, "\(say): nothing above the title's top")
+            XCTAssertLessThanOrEqual(red.upperBound, ink.upperBound + 0.5, "\(say): nothing below the date line")
+            XCTAssertEqual((red.lowerBound + red.upperBound) / 2, (ink.lowerBound + ink.upperBound) / 2, accuracy: 2, "\(say): centred on the words")
+            XCTAssertLessThanOrEqual(span, 0.8 * redWidth + 3, "\(say): never taller than 0.8 x its width")
+            if category == .large { XCTAssertGreaterThanOrEqual(span, inkSpan - 5, "\(say): it spans the title and date line") }
         }
     }
 
-    /// The rows (in points) holding `view`'s words (grey or black) and its red, drawn in light mode
-    /// at the window's top left at `category`.
-    private func inkAndRed(_ view: some View, at category: UIContentSizeCategory) throws -> (ink: ClosedRange<CGFloat>?, red: ClosedRange<CGFloat>?) {
+    /// The rows (in points) holding `view`'s words (grey or black) and its red, and the red's
+    /// width, drawn in light mode at the window's top left at `category`.
+    private func inkAndRed(_ view: some View, at category: UIContentSizeCategory) throws -> (ink: ClosedRange<CGFloat>?, red: ClosedRange<CGFloat>?, redWidth: CGFloat?) {
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
         let window = UIWindow(windowScene: scene)
         window.frame = CGRect(origin: .zero, size: CGSize(width: phone.width, height: 300))
@@ -274,17 +279,17 @@ final class TextSizeLayoutTests: XCTestCase {
         let bytes = try XCTUnwrap(CFDataGetBytePtr(cg.dataProvider?.data))
         let (stride, step) = (cg.bytesPerRow, cg.bitsPerPixel / 8)
         let r = cg.bitmapInfo.contains(.byteOrder32Little) ? 2 : 0 // BGRA or RGBA
-        var ink: ClosedRange<Int>?, red: ClosedRange<Int>?
-        let widen = { (range: ClosedRange<Int>?, y: Int) in range.map { min($0.lowerBound, y)...max($0.upperBound, y) } ?? y...y }
+        var ink: ClosedRange<Int>?, red: ClosedRange<Int>?, redX: ClosedRange<Int>?
+        let widen = { (range: ClosedRange<Int>?, at: Int) in range.map { min($0.lowerBound, at)...max($0.upperBound, at) } ?? at...at }
         for y in 0..<cg.height {
             for x in 0..<cg.width {
                 let p = (0..<3).map { Int(bytes[y * stride + x * step + $0]) }
                 let (rr, g, b) = (p[r], p[1], p[2 - r])
-                if rr - max(g, b) > 80 { red = widen(red, y) } else if max(rr, g, b) - min(rr, g, b) < 30, rr < 200 { ink = widen(ink, y) }
+                if rr - max(g, b) > 80 { (red, redX) = (widen(red, y), widen(redX, x)) } else if max(rr, g, b) - min(rr, g, b) < 30, rr < 200 { ink = widen(ink, y) }
             }
         }
         let points = { (range: ClosedRange<Int>?) in range.map { CGFloat($0.lowerBound) / image.scale...CGFloat($0.upperBound + 1) / image.scale } }
-        return (points(ink), points(red))
+        return (points(ink), points(red), points(redX).map { $0.upperBound - $0.lowerBound })
     }
 
     /// The height `view` takes when offered `room`: more than `room` means it runs off screen.

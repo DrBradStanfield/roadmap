@@ -11,6 +11,7 @@ import {
   cellToSI,
   limitCellText,
   statusOf,
+  trendRange,
   type CellUnit,
   type MetricType,
   type ValidationRange,
@@ -71,10 +72,11 @@ export function bpSysAdvance(typed: string): BpAdvance {
  * point's spot in a `width` x `height` box (2px padding), the line through the
  * exact points only, and the area under it down to `baseline`. A point printed
  * as a limit (`limits[i]`) keeps its spot, to be drawn hollow, and stays off
- * the line (US-12 AC20). Needs two points or more.
+ * the line (US-12 AC20). Needs two points or more. The vertical range is at
+ * least ±5% of the latest point (`trendRange`, US-62 AC8a).
  */
 export function trendGeometry(points: number[], limits: boolean[] | undefined, width: number, height: number, baseline: number) {
-  const low = Math.min(...points), span = Math.max(...points) - low || 1;
+  const { low, high } = trendRange(points), span = high - low;
   const pad = 2;
   const coords = points.map((v, i) => [
     pad + (i / (points.length - 1)) * (width - pad * 2),

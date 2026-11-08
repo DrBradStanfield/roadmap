@@ -412,7 +412,7 @@ export {
   type LabValueGroup,
   type LabValueRow,
 } from './lab-series';
-export { trendWindow, recentTrend } from './recent-trend';
+export { trendWindow, recentTrend, trendRange } from './recent-trend';
 
 // chat-history.json — chat conversations synced to the user's own cloud (Phase 6)
 export {
