@@ -7,7 +7,7 @@
  * Read-only: no editing, no unit conversion — values render as-reported
  * (see decisions in docs/user-stories.md § US-21).
  */
-import { LAB_GROUPS, labSlotKey, labUnitRefusalNote, labUnitTaken, resolveLabCatalogEntry, displayLabUnit, type CountFault, type LabGroup, type LabGroupId } from './lab-catalog';
+import { LAB_GROUPS, LAB_PLAUSIBLE_RANGES, labSlotKey, labUnitRefusalNote, labUnitTaken, resolveLabCatalogEntry, displayLabUnit, type CountFault, type LabGroup, type LabGroupId } from './lab-catalog';
 import { trendWindow } from './recent-trend';
 import { rowTarget } from './row-target';
 import { comparatorOf, limitText, type Comparator } from './lab-limits';
@@ -24,8 +24,13 @@ export function labValueLabel(metricName: string): string {
  * refused, and a note on what to look for instead, where there is one (US-21 AC15). Never the store's
  * message, which is the copy an assistant reads.
  */
-export function labUnitRefusalLine(key: string, unit: string, fault?: CountFault): string {
+export function labUnitRefusalLine(key: string, unit: string, fault?: CountFault, bound?: 'above' | 'below'): string {
   const entry = resolveLabCatalogEntry(key);
+  // Past its plausible range (US-21 AC26): the end it passed, never the number.
+  const range = fault === 'implausible' && entry && bound ? LAB_PLAUSIBLE_RANGES[entry.key] : undefined;
+  if (entry && range) {
+    return `${entry.label}: a value ${bound} ${labNumberText(bound === 'above' ? range.max : range.min)} ${entry.unit} is almost certainly a misread number or unit, so it was not saved. Check the report.`;
+  }
   const note = labUnitRefusalNote(entry, unit, fault);
   if (fault === 'scale') return `${labValueLabel(key)}: ${note}.`;
   if (fault === 'ceiling') return `${note}.`;
@@ -55,6 +60,11 @@ export function formatLabValue(v: number): string {
   if (size < 1e-20) return String(Number(v.toPrecision(2)));
   // toFixed, not String: String(4e-7) prints exponent notation.
   return v.toFixed(1 - Math.floor(Math.log10(size))).replace(/0+$/, '');
+}
+
+/** A number as the matrix prints it, thousands separated ("2,500"), for a refusal's words (US-21 AC26). */
+export function labNumberText(v: number): string {
+  return Number(formatLabValue(v)).toLocaleString('en-US', { maximumFractionDigits: 20 });
 }
 
 /** A saved lab value as shown: a limit with its symbol and its bound as

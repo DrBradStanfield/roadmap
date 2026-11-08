@@ -856,8 +856,8 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   // AC15). Shown on the done screen and, beside the retry message, in review
   // (US-12 AC6): a refusal is settled the moment the save answers.
   const refusalLines = <>
-    {[...new Map(refusedLabUnits.map(r => [`${r.key}|${r.unit}`, r])).values()].map(r => (
-      <p key={`${r.key}|${r.unit}`} className="upload-done-skipped">{labUnitRefusalLine(r.key, r.unit, r.fault)}</p>
+    {[...new Map(refusedLabUnits.map(r => [`${r.key}|${r.unit}|${r.bound ?? ''}`, r])).values()].map(r => (
+      <p key={`${r.key}|${r.unit}|${r.bound ?? ''}`} className="upload-done-skipped">{labUnitRefusalLine(r.key, r.unit, r.fault, r.bound)}</p>
     ))}
     {[...new Set(refusedMeasurements.map(r => measurementRefusalLine(r, r.metricType === 'lpa' ? lpaUnit : metricUnitOverrides?.[r.metricType as MetricType] ?? unitSystem)))].map(line => (
       <p key={line} className="upload-done-skipped">{line}</p>

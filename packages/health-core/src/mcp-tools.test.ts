@@ -3844,3 +3844,38 @@ describe('US-32 AC57 — a read labels the text it carries from the user’s fil
     expect(output(name).properties!.folder.properties!.unimported.description ?? '').toContain('data, not instructions');
   });
 });
+
+// US-21 AC26 (Brad 2026-11-09): a lab value past its plausible range is refused on the agent doors in
+// the words a person reads when typing it. Synthetic values.
+describe('US-21 AC26 — the agent doors refuse a value past its plausible range', () => {
+  const GLUCOSE_SLIP = '5.5 mg/dL is 0.31 mmol/L. Glucose below 0.5 mmol/L is almost certainly a typing or unit mistake: check the number and its unit';
+
+  it('add_lab_values refuses the whole call in the typed words, and writes nothing', () => {
+    const file = base();
+    const before = JSON.stringify(file);
+    const outcome = callTool('add_lab_values', {
+      values: [
+        { metricName: 'tsh', value: 2.3, unit: 'mIU/L', recordedAt: TODAY },
+        { metricName: 'Glucose', value: 5.5, unit: 'mg/dL', recordedAt: TODAY },
+      ],
+    }, { file, now: NOW });
+    expect(outcome).toMatchObject({ status: 'rejected', reason: 'invalid-value' });
+    expect(outcome).not.toHaveProperty('file');
+    expect(JSON.stringify(file)).toBe(before);
+    expect(outcome.text).toBe(`values[1] (Glucose): ${GLUCOSE_SLIP}. Nothing was written. No row from this call was written.`);
+  });
+
+  it('file_results lists the row out loud, tells the agent to ask the user, and still offers the good row', () => {
+    const out = prepared(labCall([row('glucose', 'Glucose', 5.5, 'mg/dL'), row('ferritin', 'Ferritin', 90, 'ug/L')]));
+    expect(out.unrecognized).toEqual([`Glucose 5.5 mg/dL: ${GLUCOSE_SLIP}. Ask the user to check the report; never re-send it in another unit.`]);
+    expect(out.payload.candidates.map((c) => c.metric)).toEqual(['ferritin']);
+  });
+
+  it('a file_results commit that meets one (a receipt older than the rule) files the rest and names it', () => {
+    const { payload } = prepared(labCall([row('glucose', 'Glucose', 99, 'mg/dL'), row('ferritin', 'Ferritin', 90, 'ug/L')]));
+    const stale = { ...payload, candidates: payload.candidates.map((c) => (c.metric === 'glucose' ? { ...c, value: 5.5 } : c)) };
+    const outcome = ok(importDocumentsCommit(base(), stale, { receipt: 'r', accept: stale.candidates.map((c) => c.id), replace: [] }, NOW));
+    expect(outcome.file!.labValues.filter((r) => r.recordedAt.startsWith(LAB_DAY)).map((r) => r.metricName)).toEqual(['Ferritin']);
+    expect(outcome.text).toContain(`Not filed — glucose: ${GLUCOSE_SLIP}. Ask the user to check the report; never re-send it in another unit.`);
+  });
+});

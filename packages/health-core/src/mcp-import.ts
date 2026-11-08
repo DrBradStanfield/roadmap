@@ -555,7 +555,7 @@ export function prepareImport(
           recordedAt: own, now: ctx.now, latestDay,
         });
         if (check && !check.ok && check.reason !== 'slot-occupied') {
-          unrecognized.push(`${oneLine(value.name).slice(0, MAX_NAME_LENGTH)}: ${oneLine(check.message)}`);
+          unrecognized.push(`${oneLine(value.name).slice(0, MAX_NAME_LENGTH)}: ${oneLine(check.message)}${check.bound ? `. ${ASK_NOT_RESEND}` : ''}`);
           continue;
         }
         const metric = labSlotKey(value.name);
@@ -637,6 +637,9 @@ export function prepareImport(
 // ---------------------------------------------------------------------------
 
 const describeName = (resolved: ResolvedName): string => (resolved?.kind === 'core' ? resolved.metric : resolved?.kind === 'lab' ? resolved.key : 'nothing this record knows');
+
+/** A lab value past its plausible range (US-21 AC26) is the person's to check, never the agent's to re-unit. */
+const ASK_NOT_RESEND = 'Ask the user to check the report; never re-send it in another unit.';
 
 /**
  * The rows the assistant read, checked the way `add_measurement` and
@@ -753,7 +756,7 @@ export function fileResultsBundle(request: FileResultsSource, file: RoadmapFile,
         recordedAt: day, now: ctx.now, latestDay: ctx.latestDay,
       });
       if (!check.ok && check.reason !== 'slot-occupied') {
-        refuse(`${oneLine(check.message)}.`);
+        refuse(`${oneLine(check.message)}.${check.bound ? ` ${ASK_NOT_RESEND}` : ''}`);
         continue;
       }
       additionalValues.push({
@@ -902,7 +905,7 @@ export function importDocumentsCommit(
   const lines = [
     describe('Filed', applied.saved),
     ...(unknownSpellings.length ? [`Not filed — ${listed(unknownSpellings)}. Tell the user, and offer to add these with the unit the catalogue takes.`] : []),
-    ...(refusedNumbers.length ? [`Not filed — ${listed(refusedNumbers)}.`] : []),
+    ...(refusedNumbers.length ? [`Not filed — ${listed(refusedNumbers)}.${refusedNumbers.some((r) => r.bound) ? ` ${ASK_NOT_RESEND}` : ''}`] : []),
     ...docs.map((d) => `Filed document “${oneLine(d.title)}” (${d.type}${d.date ? `, ${d.date}` : ''}) from ${oneLine(d.sourceFileName ?? '')}`),
     `${written.measurements + written.labValues} value(s) added, ${written.corrections} replaced, ${docs.length} document(s) filed. ` +
       'If another device wrote the same day at the same moment, the newer row wins and the other stays in history.',

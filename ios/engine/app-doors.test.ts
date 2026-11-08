@@ -156,6 +156,19 @@ describe('US-52 AC8: the lab review and the write', () => {
     expect(file.measurements).toEqual([]);
   });
 
+  // US-21 AC26 (Brad 2026-11-09): an uploaded value past its plausible range is refused like a typed
+  // one; the review names it as not saved, with the end it passed, and the save writes the rest.
+  it('US-21 AC26: refuses a value past its plausible range, naming its bound, and saves the rest', () => {
+    const slip = { ...extraction, additionalValues: [{ name: 'Glucose', value: 3000, unit: 'mg/dL' }, { name: 'Ferritin', value: 85, unit: 'µg/L' }] };
+    const file = record();
+    const summary = JSON.parse(labSaveSummaryJson(JSON.stringify(file), JSON.stringify(slip), JSON.stringify(['a0', 'a1']), '2026-10-01', NOW, DEVICE));
+    expect(summary.summary.saved).toBe(1);
+    expect(summary.summary.refused).toEqual([{ label: 'glucose', message: expect.stringMatching(/Glucose above 150 mmol\/L is almost certainly a typing or unit mistake/) }]);
+    const out = applyEdit(file, { kind: 'labImport', extractionJson: JSON.stringify(slip), refs: ['a0', 'a1'], reportDay: '2026-10-01' }, NOW);
+    if (!out.ok) throw new Error(out.message);
+    expect(out.file.labValues.map((l) => l.metricName)).toEqual(['Ferritin']);
+  });
+
   it('refuses a future or missing report day, and a ref not in the report', () => {
     const file = JSON.stringify(record());
     const refuse = (refs: string[], day: string) => JSON.parse(labSaveSummaryJson(file, JSON.stringify(extraction), JSON.stringify(refs), day, NOW, DEVICE));
