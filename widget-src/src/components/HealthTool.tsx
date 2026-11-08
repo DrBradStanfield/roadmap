@@ -291,6 +291,9 @@ function useReachedStage(stage: FormStage, holdings: RecordHoldings): { reached:
 /** The same rows, value for value: a re-read that changed nothing keeps the old array. */
 /** The onboarding's answers (US-62 AC13): only an edit to one of them counts as a step. */
 const ONBOARDING_FIELDS: ReadonlyArray<keyof HealthInputs> = ['heightCm', 'weightKg', 'sex', 'birthMonth', 'birthYear'];
+/** US-62 AC31: this browser has pressed "Your plan is ready."'s Got it. A UI flag only, never in the record. */
+const PLAN_READY_SEEN_KEY = 'hr_plan_ready_seen';
+const planReadySeen = (): boolean => { try { return localStorage.getItem(PLAN_READY_SEEN_KEY) === '1'; } catch { return false; } };
 
 const sameRows = (a: ApiMeasurement[], b: ApiMeasurement[]) =>
   a.length === b.length && a.every((r, i) => r.id === b[i].id && r.value === b[i].value && r.recordedAt === b[i].recordedAt);
@@ -626,6 +629,15 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     if ((e.target as HTMLElement).closest?.('.bt-vitals-card [data-metric="weight"]')) markAnswered();
   }, [markAnswered]);
   const countedTo = useRef<{ epoch: number; stage: number } | null>(null);
+  // US-62 AC31: "Your plan is ready." for the record whose onboarding ended in this tab.
+  const [planReadyFor, setPlanReadyFor] = useState<number | null>(null);
+  const dismissPlanReady = useCallback(() => {
+    trackProductEvent('plan_ready_dismissed');
+    try { localStorage.setItem(PLAN_READY_SEEN_KEY, '1'); } catch { /* private mode: gone for this visit only */ }
+    setPlanReadyFor(null);
+    // The focus stays on the page, not lost with the button.
+    rootRef.current?.querySelector<HTMLElement>('.mh-title')?.focus({ preventScroll: true });
+  }, []);
   useEffect(() => {
     const from = countedTo.current?.epoch === epoch ? countedTo.current.stage : reached;
     countedTo.current = { epoch, stage: reached };
@@ -633,7 +645,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     answeredHere.current = false;
     // The step that was asked is the one answered; later steps a record already held were not (stage 1 asks the measurements, 2 sex, 3 the birth date).
     trackProductEvent('onboarding_step', { step: ONBOARDING_STEPS[from - 1] });
-    if (reached === 4) trackProductEvent('onboarding_done');
+    if (reached === 4) {
+      trackProductEvent('onboarding_done');
+      if (!planReadySeen()) setPlanReadyFor(epoch); // US-62 AC31: this onboarding, this tab
+    }
   });
   // US-62 AC12: About you goes low for a record complete when first shown, and
   // once the four answers hold and the focus leaves its card (this record:
@@ -1458,9 +1473,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const emailCaptureActive = SHOPIFY_SURFACE;
 
   // Says whether it acted, so a caller spends its once-only jump only then.
-  // Once the last onboarding answer is in (US-62 AC13), the person lands at the
-  // top of My health, its title, where the topics now start (US-62 AC25,
-  // orchestrator 2026-11-06); the email box stays at the foot. Leaving the
+  // Once the last onboarding answer is in (US-62 AC13), the focus moves to the
+  // "Your plan is ready." card, with no jump (US-62 AC31); with no card, the person
+  // lands at the top of My health, its title (US-62 AC25, orchestrator 2026-11-06). Leaving the
   // field also lets About you go to Settings (US-62 AC12). A weight lands only
   // where it used to jump to the email box (the Shopify build, US-22), so the
   // Pages build never takes the focus from a value being typed; the birth year
@@ -1470,7 +1485,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     if (stageRef.current !== 4 || (!emailCaptureActive && !fromBirth)) return false;
     selectTab('health');
     requestAnimationFrame(() => {
-      revealAndFocus(rootRef.current?.querySelector<HTMLElement>('.mh-title'), 'start', false);
+      const ready = rootRef.current?.querySelector<HTMLElement>('.mh-ready-title');
+      if (ready) ready.focus({ preventScroll: true });
+      else revealAndFocus(rootRef.current?.querySelector<HTMLElement>('.mh-title'), 'start', false);
     });
     return true;
   }, [emailCaptureActive, selectTab]);
@@ -1551,6 +1568,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     onDelete: async () => { if (await handleDeleteData()) { plan.onErased(); closeSettings(); } },
     isDeleting,
     storageAtFoot: getBackendKind() === 'local',
+    onPlanReadyDismiss: planReadyFor === epoch ? dismissPlanReady : undefined,
     healthDocuments: documentHistory,
     onDocumentDeleted: (docId: string) => {
       setDocumentHistory(prev => prev.filter(d => d.id !== docId));
