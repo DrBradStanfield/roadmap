@@ -106,6 +106,62 @@ describe(`US-71 AC6 rule 2: no new simulator once ${MAX_BOOTED_SIMULATORS} are b
   });
 });
 
+describe('US-71 AC6 scanner: comments, heredocs and quotes (Codex re-check R1/R2)', () => {
+  it.each([
+    "# don't overload this Mac\nxcodebuild test -scheme App\n# it's already busy",
+    "xcodebuild test -scheme App # it's busy",
+    "# it's\n# don't\nxcodebuild test -scheme App",
+    "xcodebuild test -scheme App\n# don't",
+    'a#b; xcodebuild test -scheme App',
+    'echo "it\'s # not a comment"; xcodebuild test -scheme App',
+    'echo "say \\"hi\\" # still quoted"; xcodebuild test -scheme App',
+    "git commit -F - <<'COMMIT-MSG'\ntext\nCOMMIT-MSG\nxcodebuild test -scheme App",
+  ])('denies the xcodebuild in %j', (cmd) => {
+    expect(decide(cmd, never)).toContain('-parallel-testing-enabled NO');
+  });
+
+  it.each([
+    "# don't overload this Mac\nxcrun simctl boot X\n# it's already busy",
+    "xcrun simctl boot X # it's busy",
+    "# it's\nxcrun simctl boot X",
+    "cat <<\\EOF\nbody\nEOF\nxcrun simctl boot X",
+  ])('applies the cap to the simctl boot in %j', (cmd) => {
+    expect(decide(cmd, two)).toContain('already booted');
+  });
+
+  it.each([
+    "git commit -F - <<'COMMIT-MSG'\nxcodebuild test\nCOMMIT-MSG",
+    'cat <<"END-1"\nxcodebuild test\nxcrun simctl boot X\nEND-1',
+    'cat <<\\EOF\nxcodebuild test\nEOF',
+    'cat <<-EOF\n\txcodebuild test\n\tEOF',
+    'cat <<END_1 | tee x\nxcodebuild test\nEND_1',
+    "echo 'a # b' xcodebuild test",
+    'echo "x \\" xcodebuild test"',
+    "# xcodebuild test\nls",
+    "# it's\nls # don't\n# xcrun simctl boot X",
+    '# ALLOW_EXTRA_SIMULATOR=1 note\nls',
+  ])('allows %j', (cmd) => {
+    expect(decide(cmd, never)).toBeNull();
+  });
+
+  it('a comment cannot carry the escape hatch', () => {
+    expect(decide('xcrun simctl boot X # ALLOW_EXTRA_SIMULATOR=1', two)).toContain('already booted');
+    expect(decide('export ALLOW_EXTRA_SIMULATOR=1; xcrun simctl boot X', never)).toBeNull();
+  });
+
+  it.each([
+    'echo "unterminated; xcodebuild test -scheme App',
+    "echo 'unterminated\nxcodebuild test -scheme App",
+    'cat <<EOF\nxcodebuild test -scheme App',
+  ])('a malformed command is also checked raw, so it denies: %j', (cmd) => {
+    expect(decide(cmd, never)).toContain('-parallel-testing-enabled NO');
+  });
+
+  it('a malformed command never skips the cap', () => {
+    expect(decide('cat <<EOF\nxcrun simctl boot X', two)).toContain('already booted');
+  });
+});
+
 describe('US-71 AC6 wiring: the hook runs as settings.json calls it', () => {
   const settings = JSON.parse(readFileSync(join(ROOT, '.claude/settings.json'), 'utf8'));
   const command: string = settings.hooks.PreToolUse.find((h: { matcher: string }) => h.matcher === 'Bash')

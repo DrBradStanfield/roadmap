@@ -4,8 +4,9 @@
 //      (parallel testing clones simulators and fills the disk).
 //   2. Denies `simctl boot|create|clone` while MAX_BOOTED_SIMULATORS are already booted, unless the
 //      command sets ALLOW_EXTRA_SIMULATOR=1. Fails open when the booted check errors or times out.
-// A best-effort warning layer, no bash parser (PRs 805/930): the tool must be the command word of its segment
-// (after VAR=1, env, timeout N, perl -e '...' N or xcrun); quoted text, heredocs and comments never count.
+// A best-effort warning layer, not a bash parser (PRs 805/930): one scan drops comments, heredoc bodies and
+// quoted text, and the tool must be the command word of its segment (after VAR=1, env, timeout N,
+// perl -e '...' N or xcrun). A malformed command is also checked as raw text, so it can only be denied.
 // Commands run by a script (ios/scripts/*.sh) are not seen.
 const { execFileSync } = require('child_process');
 
@@ -21,38 +22,86 @@ function bootedSimulators() {
   } catch { return null; }
 }
 
-// Each segment's tool (xcodebuild or simctl) and its arguments, with heredoc bodies, quoted text and comments
-// gone, so `git commit -m "xcodebuild test"` is not a command. A quoted plain word ("NO") keeps its text.
-function invocations(cmd) {
-  const plain = cmd.replace(/\\\n/g, ' ')
-    .replace(/<<-?[\t ]*(['"]?)(\w+)\1([^\n]*)\n(?:[\s\S]*?\n)?[\t ]*\2[\t ]*(?=\n|$)/g, ' $3')
-    .replace(/'([^']*)'|"((?:\\.|[^"\\])*)"/g, (_, s, d) => {
-      const text = s !== undefined ? s : d;
-      return /^[\w.=:\/@+-]*$/.test(text) ? text : 'QUOTED';
-    })
-    .replace(/(^|\s)#[^\n]*/g, '$1');
-  const found = [];
-  for (const seg of plain.split(/&&|\|\||[;&|\n()]/)) {
-    const w = seg.trim().split(/\s+/);
-    let i = 0;
-    // Prefixes: VAR=1, env, timeout [-flags] N, perl [-e code] N, xcrun.
-    for (;;) {
-      if (/^\w+=/.test(w[i]) || w[i] === 'env' || w[i] === 'xcrun') i++;
-      else if (w[i] === 'timeout' || w[i] === 'perl') {
-        i++;
-        while (w[i] && w[i].startsWith('-')) i += w[i] === '-e' ? 2 : 1;
-        if (/^\d+[smh]?$/.test(w[i] || '')) i++;
-      } else break;
+// One left-to-right pass over the command: segments of words, split on unquoted && || ; & | newline ( ).
+// Comments and heredoc bodies vanish; a quoted string becomes QUOTED unless it is a plain word ("NO").
+// `clean` is false when the scan ends inside a quote or heredoc.
+function scan(cmd) {
+  const segs = [[]];
+  let word = null, state = 'normal', quoted = '', heredocs = [], i = 0;
+  const endWord = () => { if (word !== null) segs[segs.length - 1].push(word); word = null; };
+  const endSeg = () => { endWord(); segs.push([]); };
+  while (i < cmd.length) {
+    const ch = cmd[i];
+    if (state === 'comment') { if (ch === '\n') state = 'normal'; else { i++; continue; } }
+    if (state === 'single' || state === 'double') {
+      if (state === 'double' && ch === '\\' && i + 1 < cmd.length) { quoted += cmd[i + 1]; i += 2; continue; }
+      if (ch === (state === 'single' ? "'" : '"')) {
+        word = (word || '') + (/^[\w.=:\/@+-]*$/.test(quoted) ? quoted : 'QUOTED');
+        state = 'normal';
+      } else quoted += ch;
+      i++; continue;
     }
-    const tool = (w[i] || '').split('/').pop();
-    if (tool === 'xcodebuild' || tool === 'simctl') found.push({ tool, args: w.slice(i + 1) });
+    if (ch === '\\' && cmd[i + 1] === '\n') { i += 2; continue; }
+    if (ch === '\\' && i + 1 < cmd.length) { word = (word || '') + cmd[i + 1]; i += 2; continue; }
+    if (ch === "'" || ch === '"') { state = ch === "'" ? 'single' : 'double'; quoted = ''; i++; continue; }
+    if (ch === '#' && word === null) { state = 'comment'; i++; continue; }
+    if (ch === '<' && cmd[i + 1] === '<' && cmd[i + 2] !== '<') {
+      endWord();
+      i += 2;
+      const strip = cmd[i] === '-';
+      if (strip) i++;
+      while (cmd[i] === ' ' || cmd[i] === '\t') i++;
+      let delim = '';
+      while (i < cmd.length && !/[\s;&|()<>]/.test(cmd[i])) delim += cmd[i++];
+      heredocs.push({ delim: delim.replace(/['"\\]/g, ''), strip });
+      continue;
+    }
+    if (ch === '\n') {
+      endSeg();
+      i++;
+      for (const { delim, strip } of heredocs) {
+        for (;;) {
+          if (i >= cmd.length) return { segs, clean: false };
+          const nl = cmd.indexOf('\n', i), end = nl < 0 ? cmd.length : nl;
+          const line = cmd.slice(i, end);
+          i = end + 1;
+          if ((strip ? line.replace(/^\t+/, '') : line) === delim) break;
+        }
+      }
+      heredocs = [];
+      continue;
+    }
+    if (ch === ' ' || ch === '\t') endWord();
+    else if (';&|()'.includes(ch)) endSeg();
+    else word = (word || '') + ch;
+    i++;
   }
-  return found;
+  endWord();
+  return { segs, clean: (state === 'normal' || state === 'comment') && heredocs.length === 0 };
+}
+
+// Each segment's tool (xcodebuild or simctl) and its arguments, after the prefixes VAR=1, env,
+// timeout [-flags] N, perl [-flags -e code] N and xcrun.
+function invocation(w) {
+  let i = 0;
+  for (;;) {
+    if (/^\w+=/.test(w[i]) || w[i] === 'env' || w[i] === 'xcrun') i++;
+    else if (w[i] === 'timeout' || w[i] === 'perl') {
+      i++;
+      while (w[i] && w[i].startsWith('-')) i += w[i] === '-e' ? 2 : 1;
+      if (/^\d+[smh]?$/.test(w[i] || '')) i++;
+    } else break;
+  }
+  const tool = (w[i] || '').split('/').pop();
+  return tool === 'xcodebuild' || tool === 'simctl' ? { tool, args: w.slice(i + 1) } : null;
 }
 
 // The deny reason for a command, or null to allow. `lookup` returns the booted list or null.
+// A malformed command (unterminated quote or heredoc) is also checked as raw text, so it can only be denied.
 function decide(cmd, lookup = bootedSimulators) {
-  const calls = invocations(cmd);
+  const { segs, clean } = scan(cmd);
+  const words = clean ? segs : segs.concat(cmd.split(/&&|\|\||[;&|\n()]/).map((s) => s.trim().split(/\s+/)));
+  const calls = words.map(invocation).filter(Boolean);
   for (const { tool, args } of calls) {
     if (tool !== 'xcodebuild' || !args.some((a) => a === 'test' || a === 'test-without-building')) continue;
     const flagged = args.some((a, j) => a === '-parallel-testing-enabled' && args[j + 1] === 'NO');
@@ -64,7 +113,7 @@ function decide(cmd, lookup = bootedSimulators) {
   }
   const boots = calls.filter((c) => c.tool === 'simctl' && ['boot', 'create', 'clone'].includes(c.args[0]));
   if (!boots.length) return null;
-  if (/\bALLOW_EXTRA_SIMULATOR=1\b/.test(cmd)) return null;
+  if (segs.some((s) => s.includes('ALLOW_EXTRA_SIMULATOR=1'))) return null;
   const booted = lookup();
   if (!booted || booted.length < MAX_BOOTED_SIMULATORS) return null;
   const list = booted.map((d) => `${d.name} (${d.udid})`).join(', ');
