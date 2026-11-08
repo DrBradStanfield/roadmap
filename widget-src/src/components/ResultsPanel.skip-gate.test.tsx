@@ -309,20 +309,20 @@ describe('US-18 AC6 — a refused print window is never silent', () => {
 });
 
 describe('US-44 AC6 — Save as PDF shows on a phone', () => {
-  // US-62 AC26: it sits in My health's foot, in the page's flow on phone and desktop alike,
-  // so no column header has to keep it visible.
-  it('Save as PDF sits in the foot, captured or gate skipped', () => {
+  // US-62 AC26, AC30d: it sits in My health's PDF box, in the page's flow on phone and desktop
+  // alike, so no column header has to keep it visible.
+  it('Save as PDF sits in the PDF box, captured or gate skipped', () => {
     const view = showPlan();
-    expect(view.getByRole('button', { name: 'Save as PDF' }).closest('.mh-foot')).not.toBeNull();
+    expect(view.getByRole('button', { name: 'Save as PDF' }).closest('.mh-pdf')).not.toBeNull();
   });
 
-  it('gated and not yet captured, no Save as PDF until the capture, then it shows in the foot', async () => {
+  it('gated and not yet captured, no Save as PDF until the capture, then it shows in the PDF box', async () => {
     mocks.skip.value = false;
     const view = showPlan();
     expect(view.queryByRole('button', { name: 'Save as PDF' })).toBeNull();
     fireEvent.change(view.container.querySelector('#guestEmail')!, { target: { value: 'reader@example.com' } });
     fireEvent.click(view.getAllByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })[0]);
-    await waitFor(() => expect(view.getByRole('button', { name: 'Save as PDF' }).closest('.mh-foot')).not.toBeNull());
+    await waitFor(() => expect(view.getByRole('button', { name: 'Save as PDF' }).closest('.mh-pdf')).not.toBeNull());
   });
 
   // The chat column's header still hides on a phone; the plan header's actions rule went with the plan column.
