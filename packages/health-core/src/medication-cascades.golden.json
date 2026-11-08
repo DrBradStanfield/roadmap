@@ -1,5 +1,5 @@
 {
- "source": "2c280df5 + US-06 AC20, statin intolerance: PCSK9 inhibitor, ezetimibe, bempedoic acid; interim fallback without a PCSK9 inhibitor (2026-11-02)",
+ "source": "2c280df5 + US-06 AC20, statin intolerance: PCSK9 inhibitor, ezetimibe, bempedoic acid; a declined or not-tolerated PCSK9 inhibitor or ezetimibe moves on (2026-11-02, 2026-11-09)",
  "fields": {
   "weight": [
    "glp1",
@@ -2156,7 +2156,7 @@
   },
   "lipid": {
    "rows": 78890,
-   "sha256": "9da056a5ec3855ebcf6f9da472bff6839f30f416691a8e52b3b487c6c5b92cae"
+   "sha256": "f7f0e63a6c94bb3968f4aeb23d3d6f1c9a0f28b09821856fd4e3f71207ac216d"
   }
  }
 }

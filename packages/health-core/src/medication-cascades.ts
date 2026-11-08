@@ -96,14 +96,16 @@ export interface LipidCascade {
 
 /** An answer that moves the cascade on: anything recorded but "no" or "not yet". */
 const answered = (value: string | undefined) => !!value && value !== 'no' && value !== 'not_yet';
+/** With the statin not tolerated, 'no' moves on too: the person has declined or stopped the drug. */
+const settled = (value: string | undefined) => !!value && value !== 'not_yet';
 
 /**
  * On a statin: statin → ezetimibe → the statin's dose if not recorded, a higher dose or a stronger
  * statin → PCSK9 inhibitor. Statin not tolerated (US-06 AC20, Brad 2026-11-02): PCSK9 inhibitor
  * first, since ezetimibe has little evidence as a sole agent, then ezetimibe → bempedoic acid. Once
  * the PCSK9 inhibitor is answered any way but "not yet" (taken, 'no' or not tolerated), the plan
- * moves on to ezetimibe; the fallback without a PCSK9 inhibitor is an interim default Brad is asked
- * to confirm.
+ * moves on to ezetimibe, and ezetimibe answered the same way moves on to bempedoic acid (Brad
+ * 2026-11-09).
  */
 export function lipidCascade(meds: MedicationInputs): LipidCascade {
   const statin = meds.statin;
@@ -111,8 +113,7 @@ export function lipidCascade(meds: MedicationInputs): LipidCascade {
   // A legacy value such as 'tier_1' is not a known statin, so the statin step stays open.
   const onStatin = listed(STATIN_DRUGS, statinDrug);
   const intolerant = statinDrug === 'not_tolerated';
-  // With the statin not tolerated, 'no' moves on too: the person has declined or stopped it.
-  const pcsk9iAnswered = !!meds.pcsk9i && meds.pcsk9i !== 'not_yet';
+  const pcsk9iAnswered = settled(meds.pcsk9i);
   const ezetimibeAnswered = answered(meds.ezetimibe);
 
   const dose = statin?.dose ?? null;
@@ -126,14 +127,14 @@ export function lipidCascade(meds: MedicationInputs): LipidCascade {
 
   const ezetimibeReached = onStatin || (intolerant && pcsk9iAnswered);
   const pcsk9iReached = intolerant || (onStatin && ezetimibeAnswered && !escalating && !doseMissing);
-  const bempedoicAcidReached = intolerant && pcsk9iAnswered && ezetimibeAnswered;
+  const bempedoicAcidReached = intolerant && pcsk9iAnswered && settled(meds.ezetimibe);
   const b = meds.bempedoicAcid;
 
   const suggest: LipidStep[] = [];
   if (!onStatin && !intolerant) suggest.push('statin');
   else if (intolerant) {
     if (!pcsk9iAnswered) suggest.push('pcsk9i');
-    else if (!ezetimibeAnswered) suggest.push('ezetimibe');
+    else if (!settled(meds.ezetimibe)) suggest.push('ezetimibe');
     else if (bempedoicAcidReached && (!b || b === 'not_yet' || b === 'none')) suggest.push('bempedoic-acid');
   } else if (!ezetimibeAnswered) suggest.push('ezetimibe');
   else if (escalating) suggest.push(escalation === 'increase' ? 'statin-increase' : 'statin-switch');

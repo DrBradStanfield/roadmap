@@ -305,9 +305,12 @@ export function generateSuggestions(
     });
   }
 
-  // Low salt — above the age-dependent BP target. The salt substitute line is left out
-  // with an eGFR below 45, or one a newer creatinine has outdated (the potassium card's
-  // caution): damaged kidneys may not clear the extra potassium (US-07 AC13).
+  // Potassium advice needs a current eGFR of 45 or more: the high-potassium card and the
+  // salt substitute line both read this (US-07 AC8, AC13). Damaged kidneys may not clear
+  // the extra potassium.
+  const potassiumSafe = results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildlyDecreased && !inputs.labEgfrOutdated;
+
+  // Low salt — above the age-dependent BP target; the salt substitute line only when potassiumSafe.
   if (inputs.systolicBp !== undefined && inputs.systolicBp > bpTargetFor(results.age)) {
     suggestions.push({
       id: 'low-salt',
@@ -315,7 +318,7 @@ export function generateSuggestions(
       priority: 'info',
       title: 'Reduce sodium intake',
       description: 'Aim for less than 1,500mg of sodium daily. Most excess sodium comes from processed foods. Reducing sodium can help lower blood pressure.'
-        + (isCkd || inputs.labEgfrOutdated ? '' : ' A potassium-enriched salt substitute can also help cut sodium, but not if you have kidney disease or diabetes, have been told to limit potassium, or take a potassium-sparing diuretic, a potassium supplement, an ACE inhibitor or an ARB, unless your doctor agrees.'),
+        + (potassiumSafe ? ' A potassium-enriched salt substitute can also help cut sodium, but not if you are pregnant, have kidney disease or diabetes, have been told to limit potassium, or take a potassium-sparing diuretic, a potassium supplement, an ACE inhibitor or an ARB, unless your doctor agrees.' : ''),
     });
   }
 
@@ -336,7 +339,6 @@ export function generateSuggestions(
 
   // High-potassium diet — only when eGFR ≥ 45 (safe kidney function), from an eGFR no newer
   // creatinine has outdated (US-07 AC8): potassium advice errs on the cautious side.
-  const potassiumSafe = results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildlyDecreased && !inputs.labEgfrOutdated;
   if (potassiumSafe) {
     suggestions.push({
       id: 'high-potassium',
@@ -752,7 +754,7 @@ export function generateSuggestions(
         category: 'blood_pressure',
         priority: 'urgent',
         title: 'Hypertensive crisis',
-        description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg is dangerously high. If you have no symptoms, rest and recheck it after 5 minutes; if it is still ${BP_THRESHOLDS.crisisSys}/${BP_THRESHOLDS.crisisDia} or higher (either number), call your doctor. If you have chest pain, shortness of breath, back pain, numbness or weakness, a change in vision, difficulty speaking or a sudden severe headache, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).`,
+        description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg is dangerously high. If you have no symptoms, rest and recheck it after 5 minutes; if it is still ${BP_THRESHOLDS.crisisSys}/${BP_THRESHOLDS.crisisDia} or higher (either number), call your doctor. If you have chest, back or belly pain, shortness of breath, numbness or weakness, a change in vision, difficulty speaking or a sudden severe headache, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).`,
       });
     } else if (sys >= BP_THRESHOLDS.stage2Sys || dia >= BP_THRESHOLDS.stage2Dia) {
       suggestions.push({
@@ -781,17 +783,19 @@ export function generateSuggestions(
     const statinDrug = medications.statin?.drug ?? '';
     const statinDoses = STATIN_DRUGS[statinDrug]?.doses;
     const switchesAtTop = !!statinDoses && shouldSuggestSwitch(statinDrug, statinDoses[statinDoses.length - 1]);
-    // Statins are not used in pregnancy (US-07 AC14): the start card says not to start one, and every
-    // card for someone already on a statin says to talk to the doctor about stopping first.
-    const onStatinPregnancy = 'Statins are not used in pregnancy: if you are planning a pregnancy, talk to your doctor about stopping first.';
+    // Statins and pregnancy (US-07 AC14): the start card says not to start one, and every card for
+    // someone already on a statin says when to stop (FDA, NICE NG238 1.5.10).
+    const onStatinPregnancy = 'If you become pregnant, most people should stop their statin: talk to your doctor. If you are planning a pregnancy, NICE advises stopping 3 months before trying to conceive.';
+    // The US labels: bempedoic acid is to be stopped in pregnancy; ezetimibe and the PCSK9 inhibitors lack data.
+    const pregnancyUnstudied = 'Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.';
     const stepCards: Record<LipidStep, [title: string, text: string]> = {
-      statin: ['Consider starting a statin', "Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Statins are not used in pregnancy: don't start one if you are pregnant or planning a pregnancy."],
-      ezetimibe: ['Consider adding Ezetimibe', 'Discuss adding Ezetimibe 10mg with your doctor.'],
-      'bempedoic-acid': ['Consider adding bempedoic acid', 'Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor.'],
+      statin: ['Consider starting a statin', "Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Don't start a statin if you are pregnant or planning a pregnancy."],
+      ezetimibe: ['Consider adding Ezetimibe', `Discuss adding Ezetimibe 10mg with your doctor. ${pregnancyUnstudied}`],
+      'bempedoic-acid': ['Consider adding bempedoic acid', 'Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor. Not recommended in pregnancy; talk to your doctor if you are pregnant or planning to be.'],
       'statin-dose': ['Add your statin dose', `${doseCardText('statin', switchesAtTop ? 'a more potent statin' : null)} ${onStatinPregnancy}`],
       'statin-increase': ['Consider increasing statin dose', `Discuss increasing your statin dose with your doctor. ${onStatinPregnancy}`],
       'statin-switch': ['Consider switching to a more potent statin', `You're at or near the maximum dose of ${statinDrug.charAt(0).toUpperCase() + statinDrug.slice(1)}. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor. ${onStatinPregnancy}`],
-      pcsk9i: ['Consider a PCSK9 inhibitor', 'Discuss a PCSK9 inhibitor with your doctor.'],
+      pcsk9i: ['Consider a PCSK9 inhibitor', `Discuss a PCSK9 inhibitor with your doctor. ${pregnancyUnstudied}`],
     };
     // On a statin: statin → ezetimibe → the statin's dose if not recorded, a step up or a PCSK9 inhibitor.
     // Statin not tolerated: PCSK9 inhibitor → ezetimibe → bempedoic acid (US-06 AC20).

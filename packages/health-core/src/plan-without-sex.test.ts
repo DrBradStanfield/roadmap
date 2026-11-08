@@ -131,8 +131,9 @@ describe('US-07 AC8: potassium advice needs an eGFR no newer creatinine has outd
     expect(substitute(r)).toBe(false);
   });
 
-  it('no eGFR at all, nothing outdated: the line shows (US-07 AC13)', () => {
-    expect(substitute(plan({ heightCm: 170, birthYear: 1960, ...bp }))).toBe(true);
+  // Brad 2026-11-09: the line needs a current eGFR of 45 or more, as the potassium card does.
+  it('no eGFR at all: the line is left out (US-07 AC13)', () => {
+    expect(substitute(plan({ heightCm: 170, birthYear: 1960, ...bp }))).toBe(false);
   });
 
   it('a current lab eGFR of 70: the line shows (US-07 AC13)', () => {

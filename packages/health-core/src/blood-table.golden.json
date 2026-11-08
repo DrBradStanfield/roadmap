@@ -36,11 +36,11 @@
       },
       "inputs": {
         "diastolicBp": 82,
+        "systolicBp": 128,
+        "weightKg": 68.5,
         "hba1c": 38,
         "hdlC": 1.4,
         "ldlC": 3.6,
-        "systolicBp": 128,
-        "weightKg": 68.5,
         "sex": "female",
         "birthYear": 1984,
         "birthMonth": 6,
@@ -199,7 +199,7 @@
           "title": "Reduce sodium intake",
           "description": "Aim for less than 1,500mg of sodium daily. Most excess sodium comes from processed foods. Reducing sodium can help lower blood pressure.",
           "ingredients": [],
-          "reason": "Excess sodium raises blood pressure by increasing fluid retention. The ACC/AHA guidelines recommend an ideal sodium intake of less than 1,500mg per day for most adults. Meta-analyses confirm that reducing sodium intake produces meaningful blood pressure reductions, with greater benefit in those who already have elevated blood pressure.",
+          "reason": "Excess sodium raises blood pressure by increasing fluid retention. The ACC/AHA guidelines recommend an ideal sodium intake of less than 1,500mg per day for most adults. Meta-analyses confirm that reducing sodium intake produces meaningful blood pressure reductions, with greater benefit in those who already have elevated blood pressure.\n\nA potassium-enriched salt substitute (75% sodium chloride, 25% potassium chloride) lowered stroke, major cardiovascular events and death in the SSaSS trial, in people in rural China with a past stroke or older adults with high blood pressure. The 2025 AHA/ACC guideline says these substitutes can be useful, except in kidney disease or with medicines that reduce potassium excretion. NICE advises against them for people with diabetes and pregnant women too. So the plan says not to use one if you are pregnant, have kidney disease or diabetes, have been told to limit potassium, or take a potassium-sparing diuretic, a potassium supplement, an ACE inhibitor or an ARB, unless your doctor agrees, and shows the suggestion only with a current eGFR of 45 or more. NICE also advises against them for older people.",
           "guidelines": [
             "ISH/ESH 2023",
             "ACC/AHA 2017"
@@ -220,6 +220,18 @@
             {
               "label": "Whelton 2017 – ACC/AHA Blood Pressure Guideline (Hypertension)",
               "url": "https://doi.org/10.1161/HYP.0000000000000065"
+            },
+            {
+              "label": "Neal 2021 – Salt substitution and cardiovascular events: SSaSS trial (NEJM)",
+              "url": "https://doi.org/10.1056/NEJMoa2105675"
+            },
+            {
+              "label": "Gulati 2025 – 2025 AHA/ACC High Blood Pressure Guideline-at-a-Glance (JACC)",
+              "url": "https://doi.org/10.1016/j.jacc.2025.07.010"
+            },
+            {
+              "label": "NICE NG136 – Hypertension in adults: diagnosis and management",
+              "url": "https://www.nice.org.uk/guidance/ng136/chapter/Recommendations"
             }
           ]
         },
@@ -399,9 +411,9 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider adding Ezetimibe",
-          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor.",
+          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.",
           "ingredients": [],
-          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.",
+          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests a PCSK9 inhibitor first, because the outcome evidence for ezetimibe on its own is limited, and ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
             "ACC/AHA 2026",
             "ESC/EAS 2019"
@@ -418,6 +430,10 @@
             {
               "label": "Leosdottir 2025 – Early vs late ezetimibe initiation (JACC)",
               "url": "https://doi.org/10.1016/j.jacc.2025.02.007"
+            },
+            {
+              "label": "FDA label – Zetia (ezetimibe), 8.1 Pregnancy: insufficient data to evaluate risk (DailyMed)",
+              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=174e45e0-45bb-48b7-9e60-8f6cfc1d22bb"
             }
           ]
         },
@@ -829,10 +845,10 @@
       },
       "inputs": {
         "diastolicBp": 82,
-        "hdlC": 1.4,
-        "ldlC": 3.6,
         "systolicBp": 128,
         "weightKg": 68.5,
+        "hdlC": 1.4,
+        "ldlC": 3.6,
         "hba1c": 60,
         "sex": "female",
         "birthYear": 1984,
@@ -992,7 +1008,7 @@
           "title": "Reduce sodium intake",
           "description": "Aim for less than 1,500mg of sodium daily. Most excess sodium comes from processed foods. Reducing sodium can help lower blood pressure.",
           "ingredients": [],
-          "reason": "Excess sodium raises blood pressure by increasing fluid retention. The ACC/AHA guidelines recommend an ideal sodium intake of less than 1,500mg per day for most adults. Meta-analyses confirm that reducing sodium intake produces meaningful blood pressure reductions, with greater benefit in those who already have elevated blood pressure.",
+          "reason": "Excess sodium raises blood pressure by increasing fluid retention. The ACC/AHA guidelines recommend an ideal sodium intake of less than 1,500mg per day for most adults. Meta-analyses confirm that reducing sodium intake produces meaningful blood pressure reductions, with greater benefit in those who already have elevated blood pressure.\n\nA potassium-enriched salt substitute (75% sodium chloride, 25% potassium chloride) lowered stroke, major cardiovascular events and death in the SSaSS trial, in people in rural China with a past stroke or older adults with high blood pressure. The 2025 AHA/ACC guideline says these substitutes can be useful, except in kidney disease or with medicines that reduce potassium excretion. NICE advises against them for people with diabetes and pregnant women too. So the plan says not to use one if you are pregnant, have kidney disease or diabetes, have been told to limit potassium, or take a potassium-sparing diuretic, a potassium supplement, an ACE inhibitor or an ARB, unless your doctor agrees, and shows the suggestion only with a current eGFR of 45 or more. NICE also advises against them for older people.",
           "guidelines": [
             "ISH/ESH 2023",
             "ACC/AHA 2017"
@@ -1013,6 +1029,18 @@
             {
               "label": "Whelton 2017 – ACC/AHA Blood Pressure Guideline (Hypertension)",
               "url": "https://doi.org/10.1161/HYP.0000000000000065"
+            },
+            {
+              "label": "Neal 2021 – Salt substitution and cardiovascular events: SSaSS trial (NEJM)",
+              "url": "https://doi.org/10.1056/NEJMoa2105675"
+            },
+            {
+              "label": "Gulati 2025 – 2025 AHA/ACC High Blood Pressure Guideline-at-a-Glance (JACC)",
+              "url": "https://doi.org/10.1016/j.jacc.2025.07.010"
+            },
+            {
+              "label": "NICE NG136 – Hypertension in adults: diagnosis and management",
+              "url": "https://www.nice.org.uk/guidance/ng136/chapter/Recommendations"
             }
           ]
         },
@@ -1192,9 +1220,9 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider adding Ezetimibe",
-          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor.",
+          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.",
           "ingredients": [],
-          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.",
+          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests a PCSK9 inhibitor first, because the outcome evidence for ezetimibe on its own is limited, and ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
             "ACC/AHA 2026",
             "ESC/EAS 2019"
@@ -1211,6 +1239,10 @@
             {
               "label": "Leosdottir 2025 – Early vs late ezetimibe initiation (JACC)",
               "url": "https://doi.org/10.1016/j.jacc.2025.02.007"
+            },
+            {
+              "label": "FDA label – Zetia (ezetimibe), 8.1 Pregnancy: insufficient data to evaluate risk (DailyMed)",
+              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=174e45e0-45bb-48b7-9e60-8f6cfc1d22bb"
             }
           ]
         },
@@ -1622,10 +1654,10 @@
       },
       "inputs": {
         "diastolicBp": 82,
-        "hdlC": 1.4,
-        "ldlC": 3.6,
         "systolicBp": 128,
         "weightKg": 68.5,
+        "hdlC": 1.4,
+        "ldlC": 3.6,
         "hba1c": 60,
         "sex": "female",
         "birthYear": 1984,
@@ -1785,7 +1817,7 @@
           "title": "Reduce sodium intake",
           "description": "Aim for less than 1,500mg of sodium daily. Most excess sodium comes from processed foods. Reducing sodium can help lower blood pressure.",
           "ingredients": [],
-          "reason": "Excess sodium raises blood pressure by increasing fluid retention. The ACC/AHA guidelines recommend an ideal sodium intake of less than 1,500mg per day for most adults. Meta-analyses confirm that reducing sodium intake produces meaningful blood pressure reductions, with greater benefit in those who already have elevated blood pressure.",
+          "reason": "Excess sodium raises blood pressure by increasing fluid retention. The ACC/AHA guidelines recommend an ideal sodium intake of less than 1,500mg per day for most adults. Meta-analyses confirm that reducing sodium intake produces meaningful blood pressure reductions, with greater benefit in those who already have elevated blood pressure.\n\nA potassium-enriched salt substitute (75% sodium chloride, 25% potassium chloride) lowered stroke, major cardiovascular events and death in the SSaSS trial, in people in rural China with a past stroke or older adults with high blood pressure. The 2025 AHA/ACC guideline says these substitutes can be useful, except in kidney disease or with medicines that reduce potassium excretion. NICE advises against them for people with diabetes and pregnant women too. So the plan says not to use one if you are pregnant, have kidney disease or diabetes, have been told to limit potassium, or take a potassium-sparing diuretic, a potassium supplement, an ACE inhibitor or an ARB, unless your doctor agrees, and shows the suggestion only with a current eGFR of 45 or more. NICE also advises against them for older people.",
           "guidelines": [
             "ISH/ESH 2023",
             "ACC/AHA 2017"
@@ -1806,6 +1838,18 @@
             {
               "label": "Whelton 2017 – ACC/AHA Blood Pressure Guideline (Hypertension)",
               "url": "https://doi.org/10.1161/HYP.0000000000000065"
+            },
+            {
+              "label": "Neal 2021 – Salt substitution and cardiovascular events: SSaSS trial (NEJM)",
+              "url": "https://doi.org/10.1056/NEJMoa2105675"
+            },
+            {
+              "label": "Gulati 2025 – 2025 AHA/ACC High Blood Pressure Guideline-at-a-Glance (JACC)",
+              "url": "https://doi.org/10.1016/j.jacc.2025.07.010"
+            },
+            {
+              "label": "NICE NG136 – Hypertension in adults: diagnosis and management",
+              "url": "https://www.nice.org.uk/guidance/ng136/chapter/Recommendations"
             }
           ]
         },
@@ -1985,9 +2029,9 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider adding Ezetimibe",
-          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor.",
+          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.",
           "ingredients": [],
-          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.",
+          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests a PCSK9 inhibitor first, because the outcome evidence for ezetimibe on its own is limited, and ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
             "ACC/AHA 2026",
             "ESC/EAS 2019"
@@ -2004,6 +2048,10 @@
             {
               "label": "Leosdottir 2025 – Early vs late ezetimibe initiation (JACC)",
               "url": "https://doi.org/10.1016/j.jacc.2025.02.007"
+            },
+            {
+              "label": "FDA label – Zetia (ezetimibe), 8.1 Pregnancy: insufficient data to evaluate risk (DailyMed)",
+              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=174e45e0-45bb-48b7-9e60-8f6cfc1d22bb"
             }
           ]
         },
@@ -2415,11 +2463,11 @@
       },
       "inputs": {
         "diastolicBp": 82,
+        "systolicBp": 128,
+        "weightKg": 68.5,
         "hba1c": 38,
         "hdlC": 1.4,
         "ldlC": 3.6,
-        "systolicBp": 128,
-        "weightKg": 68.5,
         "sex": "female",
         "birthYear": 2012,
         "birthMonth": 6,
@@ -2561,10 +2609,10 @@
       },
       "inputs": {
         "diastolicBp": 82,
+        "weightKg": 68.5,
         "hba1c": 38,
         "hdlC": 1.4,
         "ldlC": 3.6,
-        "weightKg": 68.5,
         "sex": "female",
         "birthYear": 1984,
         "birthMonth": 6,
@@ -2886,9 +2934,9 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider adding Ezetimibe",
-          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor.",
+          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.",
           "ingredients": [],
-          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.",
+          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests a PCSK9 inhibitor first, because the outcome evidence for ezetimibe on its own is limited, and ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
             "ACC/AHA 2026",
             "ESC/EAS 2019"
@@ -2905,6 +2953,10 @@
             {
               "label": "Leosdottir 2025 – Early vs late ezetimibe initiation (JACC)",
               "url": "https://doi.org/10.1016/j.jacc.2025.02.007"
+            },
+            {
+              "label": "FDA label – Zetia (ezetimibe), 8.1 Pregnancy: insufficient data to evaluate risk (DailyMed)",
+              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=174e45e0-45bb-48b7-9e60-8f6cfc1d22bb"
             }
           ]
         },
@@ -3557,9 +3609,9 @@
           "category": "nutrition",
           "priority": "info",
           "title": "Reduce sodium intake",
-          "description": "Aim for less than 1,500mg of sodium daily. Most excess sodium comes from processed foods. Reducing sodium can help lower blood pressure.",
+          "description": "Aim for less than 1,500mg of sodium daily. Most excess sodium comes from processed foods. Reducing sodium can help lower blood pressure. A potassium-enriched salt substitute can also help cut sodium, but not if you are pregnant, have kidney disease or diabetes, have been told to limit potassium, or take a potassium-sparing diuretic, a potassium supplement, an ACE inhibitor or an ARB, unless your doctor agrees.",
           "ingredients": [],
-          "reason": "Excess sodium raises blood pressure by increasing fluid retention. The ACC/AHA guidelines recommend an ideal sodium intake of less than 1,500mg per day for most adults. Meta-analyses confirm that reducing sodium intake produces meaningful blood pressure reductions, with greater benefit in those who already have elevated blood pressure.",
+          "reason": "Excess sodium raises blood pressure by increasing fluid retention. The ACC/AHA guidelines recommend an ideal sodium intake of less than 1,500mg per day for most adults. Meta-analyses confirm that reducing sodium intake produces meaningful blood pressure reductions, with greater benefit in those who already have elevated blood pressure.\n\nA potassium-enriched salt substitute (75% sodium chloride, 25% potassium chloride) lowered stroke, major cardiovascular events and death in the SSaSS trial, in people in rural China with a past stroke or older adults with high blood pressure. The 2025 AHA/ACC guideline says these substitutes can be useful, except in kidney disease or with medicines that reduce potassium excretion. NICE advises against them for people with diabetes and pregnant women too. So the plan says not to use one if you are pregnant, have kidney disease or diabetes, have been told to limit potassium, or take a potassium-sparing diuretic, a potassium supplement, an ACE inhibitor or an ARB, unless your doctor agrees, and shows the suggestion only with a current eGFR of 45 or more. NICE also advises against them for older people.",
           "guidelines": [
             "ISH/ESH 2023",
             "ACC/AHA 2017"
@@ -3580,6 +3632,18 @@
             {
               "label": "Whelton 2017 – ACC/AHA Blood Pressure Guideline (Hypertension)",
               "url": "https://doi.org/10.1161/HYP.0000000000000065"
+            },
+            {
+              "label": "Neal 2021 – Salt substitution and cardiovascular events: SSaSS trial (NEJM)",
+              "url": "https://doi.org/10.1056/NEJMoa2105675"
+            },
+            {
+              "label": "Gulati 2025 – 2025 AHA/ACC High Blood Pressure Guideline-at-a-Glance (JACC)",
+              "url": "https://doi.org/10.1016/j.jacc.2025.07.010"
+            },
+            {
+              "label": "NICE NG136 – Hypertension in adults: diagnosis and management",
+              "url": "https://www.nice.org.uk/guidance/ng136/chapter/Recommendations"
             }
           ]
         },
@@ -3857,9 +3921,9 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider adding Ezetimibe",
-          "description": "Your ApoB is 120 mg/dL; the treatment target is below 50 mg/dL. Discuss adding Ezetimibe 10mg with your doctor.",
+          "description": "Your ApoB is 120 mg/dL; the treatment target is below 50 mg/dL. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.",
           "ingredients": [],
-          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.",
+          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests a PCSK9 inhibitor first, because the outcome evidence for ezetimibe on its own is limited, and ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
             "ACC/AHA 2026",
             "ESC/EAS 2019"
@@ -3876,6 +3940,10 @@
             {
               "label": "Leosdottir 2025 – Early vs late ezetimibe initiation (JACC)",
               "url": "https://doi.org/10.1016/j.jacc.2025.02.007"
+            },
+            {
+              "label": "FDA label – Zetia (ezetimibe), 8.1 Pregnancy: insufficient data to evaluate risk (DailyMed)",
+              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=174e45e0-45bb-48b7-9e60-8f6cfc1d22bb"
             }
           ]
         },
