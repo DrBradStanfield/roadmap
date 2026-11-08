@@ -250,13 +250,14 @@ struct LabUploadSheet: View {
                                          original: document.original))
             } catch {
                 // Try again only for a failure that may mend: the network (a timeout, no
-                // connection, a dropped one) or the server's own trouble (5xx). A refused
+                // connection, a dropped one), the phone's App Attest (US-52 AC1c) or the
+                // server's own trouble (5xx). A refused
                 // attestation (401), a file too large (413), one the AI declined (422) and the
                 // daily limit (429) fail the same way again (review R5).
                 let (failure, mends): (String, Bool) = switch error {
                 case AppAttestClient.Failure.server(status: 422, message: _): ("The AI could not read this file.", false)
                 case AppAttestClient.Failure.server(status: let status, message: _): (words(for: error), status >= 500)
-                case is URLError: (words(for: error), true)
+                case is URLError, AppAttestClient.Failure.device: (words(for: error), true)
                 default: (words(for: error), false)
                 }
                 results.append(LabResult(name: document.name, truncated: false, extractionJSON: nil, failure: failure, retry: mends ? document : nil))
