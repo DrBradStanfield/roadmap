@@ -26,6 +26,11 @@
           },
           {
             "type": "command",
+            "command": "input=$(cat); case \"$input\" in *xcodebuild*|*simctl*) printf '%s' \"$input\" | node \"$CLAUDE_PROJECT_DIR/.claude/hooks/simulator-guard.cjs\";; esac",
+            "timeout": 10
+          },
+          {
+            "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/worktree-guard.cjs\"",
             "timeout": 300
           }

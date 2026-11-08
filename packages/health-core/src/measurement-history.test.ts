@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildMeasurementHistory,
+  compareReadings,
   latestActivePerMetric,
   latestFromHistory,
+  newestUsablePsa,
   HISTORY_CAP_PER_METRIC,
   isCalendarDay,
 } from './measurement-history';
@@ -117,6 +119,53 @@ describe('latestActivePerMetric (US-07 AC4)', () => {
     expect(latestActivePerMetric([row('a', 'ldl', '2026-08-10', { status: 'entered-in-error' })])).toEqual([]);
   });
 
+  // US-07 AC4, Brad 2026-11-09 ("fine, do it"): day first, then time. Each reading counts on
+  // its own stored day (the first 10 characters of recordedAt); within a day the later instant wins.
+  it('a later stored day wins: Tokyo 06:00+09:00 on Nov 2 beats London 22:00+00:00 on Nov 1', () => {
+    const london = row('london', 'weight', '2026-11-01T22:00:00.000+00:00', { value: 80 });
+    const tokyo = row('tokyo', 'weight', '2026-11-02T06:00:00.000+09:00', { value: 81 });
+    expect(latestActivePerMetric([london, tokyo])).toEqual([tokyo]);
+    expect(latestActivePerMetric([tokyo, london])).toEqual([tokyo]);
+  });
+
+  it('within one day, the later instant wins, not the later text', () => {
+    const seoul = row('seoul', 'weight', '2026-11-01T10:00:00+09:00'); // 01:00Z
+    const london = row('london', 'weight', '2026-11-01T05:00:00+00:00'); // 05:00Z
+    expect(latestActivePerMetric([seoul, london])).toEqual([london]);
+    expect(latestActivePerMetric([london, seoul])).toEqual([london]);
+  });
+
+  it('treats Z and +00:00 spellings of one instant as a tie, so createdAt then id decide', () => {
+    const z = row('z', 'weight', '2026-11-01T22:00:00.000Z', { createdAt: '2026-11-01T22:00:02Z' });
+    const plus = row('plus', 'weight', '2026-11-01T22:00:00.000+00:00', { createdAt: '2026-11-01T22:00:01Z' });
+    expect(latestActivePerMetric([plus, z])).toEqual([z]);
+    expect(latestActivePerMetric([z, plus])).toEqual([z]);
+    const za = row('za', 'weight', '2026-11-01T22:00:00.000Z');
+    const pa = row('pa', 'weight', '2026-11-01T22:00:00.000+00:00');
+    expect(latestActivePerMetric([za, pa])).toEqual([za]);
+    expect(latestActivePerMetric([pa, za])).toEqual([za]);
+  });
+
+  it('ranks a same-day stamp that does not parse below every one that does', () => {
+    const bad = row('bad', 'weight', '2026-11-01Tjunk');
+    const good = row('good', 'weight', '2026-11-01T10:00:00Z');
+    expect(latestActivePerMetric([good, bad])).toEqual([good]);
+    expect(latestActivePerMetric([bad, good])).toEqual([good]);
+    // Two that do not parse compare by text.
+    const junkA = row('a', 'weight', '2026-11-01Taaa');
+    const junkB = row('b', 'weight', '2026-11-01Tbbb');
+    expect(latestActivePerMetric([junkB, junkA])).toEqual([junkB]);
+  });
+
+  it('is a total order: the review three-stamp cycle has one winner in every input order', () => {
+    const a = row('A', 'weight', '2026-11-02T06:00:00+09:00');
+    const c = row('C', 'weight', '2026-11-01T22:00:00Z');
+    const b = row('B', 'weight', '2026-11-01t22:00:00 UTC'); // does not parse
+    const orders = [[a, b, c], [a, c, b], [b, a, c], [b, c, a], [c, a, b], [c, b, a]];
+    for (const o of orders) expect(latestActivePerMetric(o).map((r) => r.id)).toEqual(['A']);
+    for (const o of orders) expect([...o].sort(compareReadings).map((r) => r.id)).toEqual(['B', 'C', 'A']);
+  });
+
   it('tiebreaks equal recordedAt on createdAt, then on id', () => {
     const byCreated = latestActivePerMetric([
       row('a', 'ldl', '2026-08-10', { value: 3.5, createdAt: '2026-08-10T08:00:00Z' }),
@@ -146,7 +195,7 @@ describe('latestActivePerMetric (US-07 AC4)', () => {
     ]);
     expect(out[0].id).toBe('a');
 
-    // Same day, one date-only: the datetime is the later string, so it wins.
+    // Same day, one date-only: the date-only row is that day at 00:00 UTC, so 07:00Z wins.
     const sameDay = latestActivePerMetric([
       row('a', 'ldl', '2026-08-10', { value: 3.5 }),
       row('b', 'ldl', '2026-08-10T07:00:00.000Z', { value: 1.8 }),
@@ -156,5 +205,34 @@ describe('latestActivePerMetric (US-07 AC4)', () => {
 
   it('returns an empty array for no rows', () => {
     expect(latestActivePerMetric([])).toEqual([]);
+  });
+});
+
+// US-07 AC4 + US-06 AC14: the plan (latestActivePerMetric, newestUsablePsa) and the chat
+// (buildMeasurementHistory then latestFromHistory) read the same latest value on a record
+// mixing timed and day-only rows (adversary R1, Codex R3).
+describe('plan and chat agree on the latest reading (US-07 AC4)', () => {
+  const now = new Date('2026-11-09T12:00:00Z');
+  const m = (id: string, metricType: string, value: number, recordedAt: string) => ({ id, metricType, value, recordedAt, status: 'active' });
+
+  it('PSA 6.0 on the evening of Nov 1 (-05:00) and 1.0 typed for Nov 2: both read 1.0', () => {
+    const rows = [m('timed', 'psa', 6.0, '2026-11-01T20:00:00-05:00'), m('typed', 'psa', 1.0, '2026-11-02')];
+    for (const order of [rows, [...rows].reverse()]) {
+      expect(newestUsablePsa(order, now)?.value).toBe(1.0);
+      expect(latestFromHistory(buildMeasurementHistory(order, undefined, now)).psa).toBe(1.0);
+    }
+  });
+
+  it('BP 150/95 on the evening of Nov 1 (-08:00) and 125/80 typed for Nov 2: both read 125/80', () => {
+    const rows = [
+      m('s1', 'systolic_bp', 150, '2026-11-01T17:00:00-08:00'), m('d1', 'diastolic_bp', 95, '2026-11-01T17:00:00-08:00'),
+      m('s2', 'systolic_bp', 125, '2026-11-02'), m('d2', 'diastolic_bp', 80, '2026-11-02'),
+    ];
+    for (const order of [rows, [...rows].reverse()]) {
+      const plan = Object.fromEntries(latestActivePerMetric(order).map((r) => [r.metricType, r.value]));
+      expect(plan).toEqual({ systolic_bp: 125, diastolic_bp: 80 });
+      const chat = latestFromHistory(buildMeasurementHistory(order, undefined, now));
+      expect([chat.systolicBp, chat.diastolicBp]).toEqual([125, 80]);
+    }
   });
 });
