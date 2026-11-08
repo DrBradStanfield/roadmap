@@ -137,6 +137,10 @@ export const PRODUCT_EVENT_NAMES = [
   'onboarding_step',
   'onboarding_done',
   'signin_opened',
+  // US-62 AC31: the "Your plan is ready." card showed after the onboarding, and
+  // its Got it was pressed. The names alone, never what the plan holds.
+  'plan_ready_shown',
+  'plan_ready_dismissed',
   // US-65 AC6: the record opened with entries this build could not read, so
   // the page showed the kept-unchanged line. Metadata `{ count }` only, capped
   // at 1000: never a row, a field name or a value. Once per tab session.
