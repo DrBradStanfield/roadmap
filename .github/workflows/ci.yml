@@ -53,12 +53,12 @@ jobs:
       #   - Orphaned .md files with no index entry (May 2026 aspirin orphan)
       #   - Hand-edits to index.json with fields missing from .md frontmatter
       #     (would be silently dropped on next rebuild)
-      # See docs/chat-architecture.md → Source of truth: .md frontmatter
+      # Source: scripts/rebuild-blog-index.ts (run it with `npm run rebuild-index`).
       # Placed BEFORE `npm audit` so dependency vuln noise can't mask drift bugs.
       - name: Verify blog index is in sync with .md frontmatter
         run: |
           if [ ! -f scripts/rebuild-blog-index.ts ]; then
-            echo "::error::scripts/rebuild-blog-index.ts is missing. Despite having no imports, this script is load-bearing: it is the bulk-rebuild path for docs/blog/index.json and the only way to detect orphaned .md files. See docs/chat-architecture.md → 'Source of truth: .md frontmatter' → History before recommending deletion."
+            echo "::error::scripts/rebuild-blog-index.ts is missing. Despite having no imports, this script is load-bearing: it is the bulk-rebuild path for docs/blog/index.json and the only way to detect orphaned .md files. Do not delete it; run 'npm run rebuild-index' to rebuild the index."
             exit 1
           fi
           npm run rebuild-index
