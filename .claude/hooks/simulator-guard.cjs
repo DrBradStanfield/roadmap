@@ -36,7 +36,7 @@ function scan(cmd) {
     if (state === 'single' || state === 'double') {
       if (state === 'double' && ch === '\\' && i + 1 < cmd.length) { quoted += cmd[i + 1]; i += 2; continue; }
       if (ch === (state === 'single' ? "'" : '"')) {
-        word = (word || '') + (/^[\w.=:\/@+-]*$/.test(quoted) ? quoted : 'QUOTED');
+        word = (word || '') + (/^[\w.:\/@+-]*$/.test(quoted) ? quoted : 'QUOTED');
         state = 'normal';
       } else quoted += ch;
       i++; continue;
@@ -98,6 +98,12 @@ function invocation(w) {
 
 // The deny reason for a command, or null to allow. `lookup` returns the booted list or null.
 // A malformed command (unterminated quote or heredoc) is also checked as raw text, so it can only be denied.
+function setsEscapeHatch(seg) {
+  let i = seg[0] === 'export' ? 1 : 0;
+  for (; i < seg.length && /^[A-Za-z_]\w*=/.test(seg[i]); i++) if (seg[i] === 'ALLOW_EXTRA_SIMULATOR=1') return true;
+  return false;
+}
+
 function decide(cmd, lookup = bootedSimulators) {
   const { segs, clean } = scan(cmd);
   const words = clean ? segs : segs.concat(cmd.split(/&&|\|\||[;&|\n()]/).map((s) => s.trim().split(/\s+/)));
@@ -113,7 +119,8 @@ function decide(cmd, lookup = bootedSimulators) {
   }
   const boots = calls.filter((c) => c.tool === 'simctl' && ['boot', 'create', 'clone'].includes(c.args[0]));
   if (!boots.length) return null;
-  if (segs.some((s) => s.includes('ALLOW_EXTRA_SIMULATOR=1'))) return null;
+  // The escape hatch counts only as a real, unquoted assignment: a leading VAR=value of a segment, or after `export`.
+  if (segs.some(setsEscapeHatch)) return null;
   const booted = lookup();
   if (!booted || booted.length < MAX_BOOTED_SIMULATORS) return null;
   const list = booted.map((d) => `${d.name} (${d.udid})`).join(', ');

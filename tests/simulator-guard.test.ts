@@ -150,6 +150,19 @@ describe('US-71 AC6 scanner: comments, heredocs and quotes (Codex re-check R1/R2
   });
 
   it.each([
+    'echo "ALLOW_EXTRA_SIMULATOR=1"; xcrun simctl boot CCCC',
+    "echo ALLOW_EXTRA_SIMULATOR=1; xcrun simctl boot CCCC",
+    'FOO="ALLOW_EXTRA_SIMULATOR=1" xcrun simctl boot CCCC',
+  ])('only a real leading assignment carries the escape hatch, not %j (Codex re-check R1)', (cmd) => {
+    expect(decide(cmd, two)).toContain('already booted');
+  });
+
+  it('a leading assignment among others, or after export, still carries it', () => {
+    expect(decide('FOO=1 ALLOW_EXTRA_SIMULATOR=1 xcrun simctl boot X', never)).toBeNull();
+    expect(decide('export FOO=1 ALLOW_EXTRA_SIMULATOR=1 && xcrun simctl boot X', never)).toBeNull();
+  });
+
+  it.each([
     'echo "unterminated; xcodebuild test -scheme App',
     "echo 'unterminated\nxcodebuild test -scheme App",
     'cat <<EOF\nxcodebuild test -scheme App',
