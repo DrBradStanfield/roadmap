@@ -18,7 +18,7 @@
 import { METRIC_TO_FIELD } from './mappings';
 import type { HealthInputs } from './types';
 import { comparatorOf, type Comparator } from './lab-limits';
-import { stampInstant } from './merge';
+import { cmpStr, stampInstant } from './merge';
 import { UNIT_DEFS } from './units';
 
 export interface DatedMeasurement {
@@ -68,21 +68,15 @@ export function buildMeasurementHistory(
   // A PSA the plan cannot use never takes a place under the cap, so newer
   // unusable rows cannot push out the one the chat's plan reads (US-06 AC14).
   const latestDay = latestDayOnEarth(now);
-  // Within one day, the order `latestActivePerMetric` ranks by (time, then
-  // createdAt, then id), so a day's last point is the row the plan reads (US-06 AC14).
-  const key = (r: (typeof records)[number]) => [r.recordedAt ?? '', r.createdAt ?? '', r.id ?? ''];
-  const ranked = [...records].sort((a, b) => {
-    const [x, y] = [key(a), key(b)];
-    const i = x.findIndex((v, n) => v !== y[n]);
-    return i < 0 ? 0 : x[i] < y[i] ? -1 : 1;
-  });
+  // `latestActivePerMetric`'s order (day, then time, createdAt, id), so each
+  // series runs oldest first and its last point is the row the plan reads (US-06 AC14, US-07 AC4).
+  const ranked = [...records].sort(compareReadings);
   for (const r of ranked) {
     const date = (r.recordedAt || '').slice(0, 10);
     if (!ISO_DATE.test(date) || (r.metricType === 'psa' && !usablePsa(r, latestDay))) continue;
     (out[r.metricType] ??= []).push({ date, value: r.value, ...comparatorOf(r) });
   }
   for (const k of Object.keys(out)) {
-    out[k].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
     if (out[k].length > cap) out[k] = out[k].slice(-cap);
   }
   return out;
@@ -116,10 +110,10 @@ export function newestUsablePsa<
 
 /**
  * The newest ACTIVE row per metricType — what "my current value" means wherever
- * the plan is computed (US-07 AC4). Recency is the UTC instant of `recordedAt`, not
+ * the plan is computed (US-07 AC4). Recency is `compareReadings` (day, then time), not
  * file order: a file holds every reading, ordered by insertion on one device and
  * by uuid after a merge, so a backfilled 2024 lab would otherwise outrank a 2026
- * one. `createdAt` then `id` break ties, so every device picks the same winner.
+ * one. Every device picks the same winner.
  *
  * Returns rows (callers need `id`/`recordedAt`); `measurementsToInputs` is the
  * separate rows-to-fields step.
@@ -131,33 +125,34 @@ export function latestActivePerMetric<
   for (const r of rows) {
     if (r.status !== undefined && r.status !== 'active') continue;
     const held = best.get(r.metricType);
-    if (!held || beats(r, held)) best.set(r.metricType, r);
+    if (!held || compareReadings(r, held) > 0) best.set(r.metricType, r);
   }
   return [...best.values()];
 }
 
 /**
- * -1, 0 or 1: which recorded time is later as a UTC instant (US-07 AC4, Brad
- * 2026-11-03: "whichever one comes later in UTC"). A date-only day is 00:00 UTC,
- * as `stampInstant` and merge read it. Two spellings of one instant are a tie.
- * When either does not parse, the text order decides, as it did before.
+ * -1, 0 or 1: which recorded time is later (US-07 AC4, Brad 2026-11-09: day
+ * first, then time). A reading counts on its own stored day, the first 10
+ * characters (a date-only row is that day); a later day always wins. Within a
+ * day the later instant wins (`stampInstant`; a date-only row is 00:00 UTC);
+ * one that does not parse ranks below every one that does, and two that do not
+ * parse compare by text. Two spellings of one instant tie. A total order.
  */
 export function compareRecordedAt(a: string, b: string): number {
+  const day = cmpStr(a.slice(0, 10), b.slice(0, 10));
+  if (day !== 0) return day;
   const [ta, tb] = [stampInstant(a), stampInstant(b)];
-  if (Number.isNaN(ta) || Number.isNaN(tb)) return a < b ? -1 : a > b ? 1 : 0;
+  const [na, nb] = [Number.isNaN(ta), Number.isNaN(tb)];
+  if (na || nb) return na && nb ? cmpStr(a, b) : na ? -1 : 1;
   return Math.sign(ta - tb);
 }
 
-function beats(
-  a: { id: string; recordedAt: string; createdAt?: string },
-  b: { id: string; recordedAt: string; createdAt?: string },
-): boolean {
-  const order = compareRecordedAt(a.recordedAt, b.recordedAt);
-  if (order !== 0) return order > 0;
-  const ac = a.createdAt ?? '';
-  const bc = b.createdAt ?? '';
-  if (ac !== bc) return ac > bc;
-  return a.id > b.id;
+/** The one reading order (US-07 AC4): `compareRecordedAt`, then `createdAt`, then `id`. */
+export function compareReadings(
+  a: { id?: string; recordedAt?: string | null; createdAt?: string },
+  b: { id?: string; recordedAt?: string | null; createdAt?: string },
+): number {
+  return compareRecordedAt(a.recordedAt ?? '', b.recordedAt ?? '') || cmpStr(a.createdAt ?? '', b.createdAt ?? '') || cmpStr(a.id ?? '', b.id ?? '');
 }
 
 /** A series' newest point (the last: a series runs oldest first), or none when it is printed as a limit (US-12 AC20). */

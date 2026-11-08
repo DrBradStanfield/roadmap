@@ -36,12 +36,18 @@ describe('labSeriesRows with a limit (US-12 AC20)', () => {
   });
 });
 
-// US-07 AC4, Brad 2026-11-03: the latest point is the later UTC instant, not the later text.
-describe('labSeriesRows order by instant (US-07 AC4)', () => {
-  it('puts London 22:00Z after Tokyo 06:00+09:00 (21:00Z)', () => {
-    const [row] = labSeriesRows([lab('london', 80, '2026-11-01T22:00:00.000+00:00'), lab('tokyo', 90, '2026-11-02T06:00:00.000+09:00')], NOW);
-    expect(row.latest.id).toBe('london');
-    expect(row.previous).toBe('90');
+// US-07 AC4, Brad 2026-11-09: day first, then time; equal instants fall to createdAt, then id.
+describe('labSeriesRows order: day first, then time (US-07 AC4)', () => {
+  it('puts Tokyo 06:00+09:00 on Nov 2 after London 22:00+00:00 on Nov 1', () => {
+    const [row] = labSeriesRows([lab('tokyo', 90, '2026-11-02T06:00:00.000+09:00'), lab('london', 80, '2026-11-01T22:00:00.000+00:00')], NOW);
+    expect(row.latest.id).toBe('tokyo');
+    expect(row.previous).toBe('80');
+  });
+
+  it('breaks a tie on equal instants by createdAt, whatever the input order', () => {
+    const early = lab('zz', 80, '2026-11-01T22:00:00.000Z', { createdAt: '2026-11-02T08:00:00Z' });
+    const late = lab('aa', 90, '2026-11-01T22:00:00.000+00:00', { createdAt: '2026-11-02T09:00:00Z' });
+    for (const rows of [[early, late], [late, early]]) expect(labSeriesRows(rows, NOW)[0].latest.id).toBe('aa');
   });
 });
 

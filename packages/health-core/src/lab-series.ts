@@ -11,7 +11,7 @@ import { LAB_GROUPS, labSlotKey, labUnitRefusalNote, labUnitTaken, resolveLabCat
 import { trendWindow } from './recent-trend';
 import { rowTarget } from './row-target';
 import { comparatorOf, limitText, type Comparator } from './lab-limits';
-import { compareRecordedAt } from './measurement-history';
+import { compareReadings } from './measurement-history';
 
 /** A lab test's name for display: its catalogue label, else the snake_case name title-cased. */
 export function labValueLabel(metricName: string): string {
@@ -79,6 +79,8 @@ export interface LabSeriesPoint {
   value: number;
   unit: string;
   recordedAt: string;
+  /** The write time, which breaks a tie in `recordedAt` (US-07 AC4). */
+  createdAt?: string;
   /** Printed as a limit: `value` is its bound (US-12 AC20). */
   comparator?: Comparator;
 }
@@ -94,7 +96,7 @@ export interface LabSeries {
    *  `mixedUnits` before treating this as every point's unit. */
   unit: string;
   mixedUnits: boolean;
-  /** Ascending by recordedAt's UTC instant (oldest first, newest last/right). */
+  /** Ascending by `compareReadings`: day, then time, createdAt, id (oldest first, newest last/right). */
   points: LabSeriesPoint[];
 }
 
@@ -108,7 +110,7 @@ export interface LabValueGroup {
 /** A stored lab value as the grouping reads it. The widget's rows come
  *  pre-filtered to active (RoadmapStore.loadLabValues() applies activeOnly()),
  *  so `status` is optional; a less-filtered source still drops the rest. */
-export type LabValueRow = { id: string; metricName: string; value: number; unit: string; recordedAt: string; status?: string; comparator?: unknown };
+export type LabValueRow = { id: string; metricName: string; value: number; unit: string; recordedAt: string; createdAt?: string; status?: string; comparator?: unknown };
 
 /** Group + series-ify stored lab values for read-only display. Entered-in-
  *  error rows are excluded; series are sorted oldest→newest; a series
@@ -133,7 +135,7 @@ export function groupLabValues(rows: LabValueRow[]): LabValueGroup[] {
     // write); a unit that still differs flags mixedUnits.
     // A row with no unit is one readers accept (readable-rows.ts), from another build:
     // it shows with no unit rather than throwing, so one row never blanks the screen.
-    series.points.push({ id: row.id, value: row.value, unit: displayLabUnit(row.unit ?? '', entry), recordedAt: row.recordedAt, ...comparatorOf(row) });
+    series.points.push({ id: row.id, value: row.value, unit: displayLabUnit(row.unit ?? '', entry), recordedAt: row.recordedAt, ...(row.createdAt ? { createdAt: row.createdAt } : {}), ...comparatorOf(row) });
   }
 
   const groupDefs: Array<{ id: LabRowsGroupId; label: string; icon: LabRowsIcon }> = [...LAB_GROUPS, OTHER_GROUP];
@@ -143,7 +145,7 @@ export function groupLabValues(rows: LabValueRow[]): LabValueGroup[] {
     const groupMap = seriesByGroup.get(def.id);
     if (!groupMap || groupMap.size === 0) continue;
     const series: LabSeries[] = Array.from(groupMap.entries()).map(([seriesKey, s]) => {
-      const points = [...s.points].sort((a, b) => compareRecordedAt(a.recordedAt, b.recordedAt));
+      const points = [...s.points].sort(compareReadings);
       const units = new Set(points.map(p => p.unit));
       return {
         seriesKey,
