@@ -62,8 +62,8 @@ flowchart TD
    on the phone too) on where they go and that added values are saved back.
    Just above **Continue**, the last thing read before the tap, a small callout
    in the accent green (not red, which read as something wrong; Brad 2026-10-25) gives
-   Apple's two taps: "Next, Apple asks for access. Turn everything on, then tap **Allow**."
-   (Version-neutral since 2026-10-26: iOS 27's sheet says "Select All", older ones "Turn On All".)
+   what Apple asks next: "Next, Apple asks which data to share." (Brad 2026-11-09; it named
+   Apple's two taps until then.)
    No switch of ours:
    Apple's sheet cannot be pre-switched. **Continue** is the only button, and Apple's sheet
    always follows (App Review 5.1.1(iv), 2026-11-09: it was "Connect Apple Health" with a

@@ -202,7 +202,7 @@ struct OnboardingView: View {
         }
     }
 
-    /// The last thing read before the tap: the two taps Apple's sheet asks for (AC3).
+    /// The last thing read before the tap: what Apple's sheet asks next (AC3; words Brad 2026-11-09).
     /// A hint, never a switch: no app can turn that sheet's switches on. In the accent
     /// green, not pink: red read as something wrong (Brad 2026-10-25). Primary text on the
     /// 12% wash; the icon in the accent clears 3:1 on it in both modes. Above the buttons,
@@ -545,7 +545,7 @@ struct OnboardingView: View {
     }
 
     /// Built once: the wheels redraw on every tick.
-    static let appleAsksNextWords = "Next, Apple asks for access. Turn everything on, then tap **Allow**."
+    static let appleAsksNextWords = "Next, Apple asks which data to share."
     /// The five US-56 readings, named on the Apple Health page (adversary R5).
     static let liveLine = "It also shows your resting heart rate, sleep, VO2 max and steps here, never in your record."
     private static let birthYears = DayText.birthYears(now: .now)

@@ -128,9 +128,10 @@ final class OnboardingUITests: XCTestCase {
 
     /// The Apple Health page's one button, Continue, then Don't Allow in Apple's sheet, as a
     /// person who does not want to share does (US-54 AC3, App Review 5.1.1(iv)). iOS shows the
-    /// sheet once per install: on a later run Continue goes straight on.
+    /// sheet once per install: on a later run (`answered`) Continue goes straight on. A sheet
+    /// that never shows on a first run is a failure, never a silent pass.
     @MainActor
-    private func continueDecliningHealth(_ app: XCUIApplication, reachable: Bool = false) {
+    private func continueDecliningHealth(_ app: XCUIApplication, reachable: Bool = false, answered: Bool = false) {
         let next = app.buttons["onboarding.allow"]
         XCTAssertTrue(next.waitForExistence(timeout: 5), "the Apple Health page")
         XCTAssertEqual(next.label, "Continue", "the button before Apple's sheet says Continue (5.1.1(iv))")
@@ -138,7 +139,10 @@ final class OnboardingUITests: XCTestCase {
         press(next, "Continue", reachable)
         let sheet = XCUIApplication(bundleIdentifier: "com.apple.HealthPrivacyService")
         // Under load the sheet has taken over 10 seconds to show.
-        guard sheet.cells["UIA.Health.AuthSheet.AllCategoryButton"].waitForExistence(timeout: 40) else { return }
+        if answered { return }
+        guard sheet.cells["UIA.Health.AuthSheet.AllCategoryButton"].waitForExistence(timeout: 40) else {
+            return XCTFail("Apple's Health sheet never appeared after Continue")
+        }
         // On iOS 27.2 Don't Allow ends the long sheet, and asking whether it is hittable throws
         // ("Activation point invalid"): scroll until its frame is on screen, then tap that point.
         let dontAllow = sheet.buttons["UIA.Health.DoNotAllow.Button"].exists
@@ -512,14 +516,14 @@ final class OnboardingUITests: XCTestCase {
     /// Continue and a choice of how much history to share. Don't Allow is tapped at its screen
     /// point in `testAfterDontAllowTheRowSaysOpenSettings_US56_AC5c`.
     @MainActor
-    func testAllowShowsOneSheetAskingForEverything_AC3_US56_AC4() throws {
+    func testContinueShowsOneSheetAskingForEverything_AC3_US56_AC4() throws {
         let app = launch()
         let start = app.buttons["welcome.start"]
         XCTAssertTrue(start.waitForExistence(timeout: 10))
         start.tap()
         let allow = app.buttons["onboarding.allow"]
         XCTAssertTrue(allow.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Next, Apple asks for access. Turn everything on, then tap Allow.")).firstMatch.exists,
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Next, Apple asks which data to share.")).firstMatch.exists,
                       "the hint above the button says what Apple's sheet asks (Brad 2026-10-25)")
         XCTAssertTrue(app.staticTexts["It also shows your resting heart rate, sleep, VO2 max and steps here, never in your record."].exists,
                       "the page names US-56's five too (adversary R5)")
@@ -645,7 +649,8 @@ final class OnboardingUITests: XCTestCase {
         snap(app, "after delete")
 
         // On to height, which shows the kept units: feet and inches, or one centimetre box.
-        continueDecliningHealth(app)
+        // The first run answered Apple's sheet, so iOS does not show it again.
+        continueDecliningHealth(app, answered: true)
         XCTAssertTrue(app.buttons["onboarding.female"].waitForExistence(timeout: 10))
         app.buttons["onboarding.female"].tap()
         XCTAssertTrue(app.pickerWheels.element(boundBy: 1).waitForExistence(timeout: 5))
