@@ -332,7 +332,11 @@ interface GuestEmailHook {
 }
 
 /** The capture's state and the page's gate, held by usePlanView (the storage pulse reads them). */
-interface EmailCaptureState { state: GuestEmailState; setState: (s: GuestEmailState) => void; gateSkipped: boolean }
+interface EmailCaptureState {
+  state: GuestEmailState; setState: (s: GuestEmailState) => void; gateSkipped: boolean;
+  /** The box's typing, kept here without a re-render, so the box moving (the full form opening) keeps it. */
+  draft: React.MutableRefObject<string>;
+}
 
 function useEmailCaptureState(): EmailCaptureState {
   // US-44: the page decides, once per mount. Never written to the record.
@@ -342,12 +346,14 @@ function useEmailCaptureState(): EmailCaptureState {
   const [state, setState] = useState<GuestEmailState>(
     () => (getReportEmailCaptured() ? 'captured' : gateSkipped ? 'skipped' : 'idle'),
   );
-  return { state, setState, gateSkipped };
+  const draft = useRef('');
+  return { state, setState, gateSkipped, draft };
 }
 
 /** The box's own typing, in the PDF box, so a keystroke re-renders the box alone. */
-function useGuestEmailCapture(printReport: () => Promise<void>, { state, setState, gateSkipped }: EmailCaptureState): GuestEmailHook {
-  const [email, setEmail] = useState('');
+function useGuestEmailCapture(printReport: () => Promise<void>, { state, setState, gateSkipped, draft }: EmailCaptureState): GuestEmailHook {
+  const [email, setTyped] = useState(() => draft.current);
+  const setEmail = (value: string) => { draft.current = value; setTyped(value); };
   const [emailError, setEmailError] = useState('');
   const helperText = LOCAL_FIRST_EMAIL_HELPER;
   // US-18 AC7: one send at a time. The button is disabled while sending, but

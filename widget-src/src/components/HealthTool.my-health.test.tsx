@@ -305,6 +305,34 @@ describe('US-62 AC22, AC23: Blood tests and Supplements', () => {
     // Focused inside the tap itself (US-01 AC6), so a phone opens its keyboard.
     expect(document.activeElement).toBe(within(supplements).getByPlaceholderText('Add another supplement...'));
   });
+
+  it('AC30c: the search goes back to its row when left empty, on Escape, and once a supplement is added', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    const supplements = view.container.querySelector<HTMLElement>('[data-topic="supplements"]')!;
+    const row = () => within(supplements).queryByRole('button', { name: '+ Add another supplement' });
+    const search = () => within(supplements).queryByPlaceholderText('Add another supplement...') as HTMLInputElement | null;
+    // Left empty: Tab or a tap elsewhere takes the focus out of the box.
+    fireEvent.click(row()!);
+    fireEvent.blur(search()!, { relatedTarget: document.body });
+    expect(search()).toBeNull();
+    expect(row()).not.toBeNull();
+    // Something typed stays open when left.
+    fireEvent.click(row()!);
+    fireEvent.change(search()!, { target: { value: 'Tau' } });
+    fireEvent.blur(search()!, { relatedTarget: document.body });
+    expect(search()!.value).toBe('Tau');
+    // Escape: back to the row, the focus on it.
+    fireEvent.keyDown(search()!, { key: 'Escape' });
+    expect(search()).toBeNull();
+    expect(document.activeElement).toBe(row());
+    // A supplement added: back to the row, the supplement listed.
+    fireEvent.click(row()!);
+    fireEvent.change(search()!, { target: { value: 'Taurine test' } });
+    fireEvent.click(supplements.querySelector('.supplement-custom')!);
+    expect(search()).toBeNull();
+    expect(row()).not.toBeNull();
+    expect([...supplements.querySelectorAll('.supplement-name')].map(n => n.textContent)).toContain('Taurine test');
+  });
 });
 
 describe('US-62 AC24: a guest\'s storage card, at the foot and in Settings', () => {

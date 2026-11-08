@@ -252,15 +252,6 @@ describe('the email-arrival counters', () => {
     }
   });
 
-  it('US-62 AC31: takes plan_ready_shown and plan_ready_dismissed from a browser by name alone', () => {
-    for (const eventName of ['plan_ready_shown', 'plan_ready_dismissed']) {
-      expect(parseProductEvent({ eventName, visitorId: VISITOR })).toEqual({ eventName, visitorId: VISITOR });
-      for (const metadata of [{ step: 'birth' }, { device: 'phone' }, { count: 1 }, { placement: 'header' }]) {
-        expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata })).toBeNull();
-      }
-    }
-  });
-
   it('US-61 AC8: takes the two US product events with a product word, and nothing else', () => {
     for (const eventName of ['us_product_shown', 'us_product_link_clicked']) {
       for (const product of ['microvitamin_plus', 'sleep']) {

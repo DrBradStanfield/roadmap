@@ -273,7 +273,7 @@ function useReachedStage(stage: FormStage, holdings: RecordHoldings): { reached:
 /** The onboarding's answers (US-62 AC13): only an edit to one of them counts as a step. */
 const ONBOARDING_FIELDS: ReadonlyArray<keyof HealthInputs> = ['heightCm', 'weightKg', 'sex', 'birthMonth', 'birthYear'];
 /** US-62 AC31: this browser has pressed "Your plan is ready."'s Got it. A UI flag only, never in the record. */
-export const PLAN_READY_SEEN_KEY = 'hr_plan_ready_seen';
+const PLAN_READY_SEEN_KEY = 'hr_plan_ready_seen';
 const planReadySeen = (): boolean => { try { return localStorage.getItem(PLAN_READY_SEEN_KEY) === '1'; } catch { return false; } };
 
 const sameRows = (a: ApiMeasurement[], b: ApiMeasurement[]) =>

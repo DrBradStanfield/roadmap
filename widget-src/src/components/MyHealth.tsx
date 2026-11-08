@@ -11,6 +11,7 @@ import { DOCUMENT_TYPE_LABELS, formatDocumentDate } from '../lib/document-format
 import type { ApiDocument, ApiLabValue } from '../lib/api-types';
 import { revealAndFocus, stickyTop } from '../lib/reveal';
 import { trackProductEvent } from '../lib/server-api';
+import { observeVisibility } from '../lib/observe-visibility';
 import { BLOOD_ROWS, MetricRows, TopicHeading, coreRow, egfrRow, isLabEgfr, labRows, nonHdlRow, pressureRow, weightRow, whtrRow, type RowContext, type RowModel, type ValueSubject } from './MyDataRows';
 import { PlanCardList, PlanEmptyPreview, QuickStats, RowSuggestions, type PlanView } from './ResultsPanel';
 import { SettingsSheet } from './SettingsSheet';
@@ -280,7 +281,14 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
  *  until Got it. Once Starting info has gone (`settled`), it scrolls only if it is out of view. */
 function PlanReadyCard({ onDismiss, settled }: { onDismiss: () => void; settled: boolean }) {
   const ref = useRef<HTMLElement>(null);
-  useEffect(() => { trackProductEvent('plan_ready_shown'); }, []);
+  // Counted once it is on screen: never in a hidden tab (a phone on Chat), never scrolled off.
+  useEffect(() => {
+    const card = ref.current;
+    if (!card) return;
+    let stop = () => {};
+    stop = observeVisibility(card, visible => { if (visible) { trackProductEvent('plan_ready_shown'); stop(); } });
+    return () => stop();
+  }, []);
   useEffect(() => {
     const card = ref.current;
     if (!settled || !card) return;

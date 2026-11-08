@@ -556,6 +556,8 @@ export function InputPanel({
   // question going (an erase) starts it again.
   const birthShown = fullForm || reached >= 3;
   const yearShown = useRef(false);
+  /** The birth month was last pressed by a pointer, not a key (US-01 AC6). */
+  const monthByPointer = useRef(false);
   yearShown.current = birthShown && (yearShown.current || !!(inputs.birthMonth || inputs.birthYear));
 
   // Feet/inches state for US height input
@@ -1409,9 +1411,13 @@ export function InputPanel({
           <select
             id="birthMonth"
             value={inputs.birthMonth || ''}
+            // A pick by touch or mouse moves on; a key never does. Arrowing a closed select fires
+            // change on Windows browsers, and the focus must not leave under the keys (WCAG 3.2.2).
+            onPointerDown={() => { monthByPointer.current = true; }}
+            onKeyDown={() => { monthByPointer.current = false; }}
             onChange={(e) => {
               const month = parseLocalisedNumber(e.target.value);
-              if (month === undefined || inputs.birthYear) { updateField('birthMonth', month); return; }
+              if (month === undefined || inputs.birthYear || !monthByPointer.current) { updateField('birthMonth', month); return; }
               // On to the empty year, inside the change event itself: iOS Safari opens the keyboard
               // only for a focus made in the user's own event, never one a frame later (US-01 AC6).
               flushSync(() => updateField('birthMonth', month));
@@ -2305,6 +2311,13 @@ export function InputPanel({
   const [addingSupplement, setAddingSupplement] = useState(false);
   const supplementDropdownRef = useRef<HTMLDivElement>(null);
   const supplementSearchRef = useRef<HTMLInputElement>(null);
+  const supplementAddRef = useRef<HTMLButtonElement>(null);
+  /** Back to the "+ Add another supplement" row, the focus on it when asked. */
+  const closeSupplementAdd = (refocus: boolean) => {
+    setShowSupplementDropdown(false);
+    flushSync(() => setAddingSupplement(false));
+    if (refocus) supplementAddRef.current?.focus();
+  };
 
   // An erase clears off-file drafts too, including one under a later reused key.
   useEffect(() => {
@@ -2318,12 +2331,11 @@ export function InputPanel({
     const handleClickOutside = (e: MouseEvent) => {
       if (supplementDropdownRef.current && !supplementDropdownRef.current.contains(e.target as Node)) {
         setShowSupplementDropdown(false);
-        if (!supplementSearch.trim()) setAddingSupplement(false); // nothing typed: back to the button
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showSupplementDropdown, supplementSearch]);
+  }, [showSupplementDropdown]);
 
   const renderSupplements = () => {
 
@@ -2407,7 +2419,7 @@ export function InputPanel({
           {/* Add other supplement: a row like Add a blood test, its search behind it. */}
           <div className="supplement-add mh-add-test" ref={supplementDropdownRef}>
             {!addingSupplement ? (
-              <button type="button" className="alr-add-btn" onClick={() => {
+              <button ref={supplementAddRef} type="button" className="alr-add-btn" onClick={() => {
                 // Shown and focused inside the tap itself, so a phone opens its keyboard (US-01 AC6).
                 flushSync(() => setAddingSupplement(true));
                 supplementSearchRef.current?.focus();
@@ -2417,6 +2429,11 @@ export function InputPanel({
             ) : (<>
             <input
               ref={supplementSearchRef}
+              onKeyDown={e => { if (e.key === 'Escape') { setSupplementSearch(''); closeSupplementAdd(true); } }}
+              onBlur={e => {
+                // Left empty, by Tab or a tap elsewhere: back to the row. A press in its own list keeps it.
+                if (!supplementSearch.trim() && !supplementDropdownRef.current?.contains(e.relatedTarget as Node | null)) closeSupplementAdd(false);
+              }}
               type="text"
               placeholder={SUPPLEMENT_TEXT.addPlaceholder}
               value={supplementSearch}
@@ -2428,7 +2445,8 @@ export function InputPanel({
               }}
             />
             {showSupplementDropdown && (filteredOptions.length > 0 || canAddCustomSupplement) && (
-              <div className="supplement-dropdown">
+              // A press in the list keeps the focus in the search, so its blur never closes it first.
+              <div className="supplement-dropdown" onMouseDown={e => e.preventDefault()}>
                 {filteredOptions.slice(0, 8).map(opt => (
                   <button
                     key={opt.key}

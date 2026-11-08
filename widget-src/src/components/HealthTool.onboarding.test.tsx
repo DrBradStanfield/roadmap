@@ -194,13 +194,50 @@ describe('US-62 AC13: each step reveals the next', () => {
     await nextFrame(); // the sex click's own focus move to the month (a frame later)
     const month = q(view, '#birthMonth') as HTMLSelectElement;
     act(() => { month.focus(); });
+    fireEvent.pointerDown(month); // a tap opens the picker
     fireEvent.change(month, { target: { value: '5' } });
     expect(document.activeElement).toBe(q(view, '#birthYear')); // synchronous: no await before this line
     // A year already typed: changing the month leaves the focus where it is.
     type(q(view, '#birthYear'), '197');
     act(() => { month.focus(); });
+    fireEvent.pointerDown(month);
     fireEvent.change(month, { target: { value: '6' } });
     expect(document.activeElement).toBe(month);
+  });
+
+  // Adversary R1 on PR 964 (WCAG 3.2.2): arrowing a closed select fires change on Windows browsers.
+  it('US-01 AC6: a key\'s change, with a fine pointer, keeps the focus on the month', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('min-width') || q.includes('pointer: fine'), media: q, addEventListener() {}, removeEventListener() {} }));
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    await nextFrame();
+    const month = q(view, '#birthMonth') as HTMLSelectElement;
+    act(() => { month.focus(); });
+    fireEvent.keyDown(month, { key: 'ArrowDown' });
+    fireEvent.change(month, { target: { value: '1' } });
+    expect(document.activeElement).toBe(month);
+    fireEvent.keyDown(month, { key: 'ArrowDown' });
+    fireEvent.change(month, { target: { value: '2' } });
+    expect(document.activeElement).toBe(month);
+    // A mouse press after the keys moves on again.
+    fireEvent.pointerDown(month);
+    fireEvent.change(month, { target: { value: '3' } });
+    expect(document.activeElement).toBe(q(view, '#birthYear'));
+  });
+
+  // Adversary R7 on PR 964: one PDF box, its typing kept when it moves above the pills.
+  it('US-62 AC30d: a half-typed email survives the full form opening', async () => {
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    const email = await waitFor(() => { const el = q(view, '#guestEmail') as HTMLInputElement | null; expect(el).not.toBeNull(); return el!; });
+    expect(email.closest('.mh-topics')).toBeNull(); // at the foot, before the full form
+    fireEvent.change(email, { target: { value: 'reader@exam' } });
+    birthWithoutJump(view);
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    const moved = await waitFor(() => { const el = q(view, '.mh-topics #guestEmail') as HTMLInputElement | null; expect(el).not.toBeNull(); return el!; });
+    expect(moved.value).toBe('reader@exam');
   });
 
   it('the why-texts are no longer tooltips', async () => {
@@ -790,7 +827,7 @@ describe('US-62 AC31: "Your plan is ready." after the onboarding', () => {
     // The card is first in the page after the header, where Starting info stood.
     expect(card.compareDocumentPosition(q(view, '.mh-sections')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(scrolled.some((el) => el.classList.contains('mh-title') || el.closest('.mh-topic'))).toBe(false); // no jump
-    await waitFor(() => expect(named('plan_ready_shown')).toHaveLength(1));
+    await waitFor(() => expect(named('plan_ready_shown')).toHaveLength(1)); // jsdom has no IntersectionObserver: shown at once
     expect(named('plan_ready_shown')[0].metadata).toBeUndefined();
     expect(localStorage.getItem('hr_plan_ready_seen')).toBeNull();
 
@@ -800,6 +837,25 @@ describe('US-62 AC31: "Your plan is ready." after the onboarding', () => {
     expect(document.activeElement?.classList.contains('mh-title')).toBe(true); // the focus is not lost
     await waitFor(() => expect(named('plan_ready_dismissed')).toHaveLength(1));
     expect(named('plan_ready_dismissed')[0].metadata).toBeUndefined();
+  });
+
+  it('plan_ready_shown waits until the card is on screen (adversary R2 on PR 964)', async () => {
+    const watched: Array<{ el: Element; cb: IntersectionObserverCallback }> = [];
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(private cb: IntersectionObserverCallback) {}
+      observe(el: Element) { watched.push({ el, cb: this.cb }); }
+      disconnect() {} unobserve() {} takeRecords() { return []; }
+    });
+    const view = await open();
+    await finish(view);
+    const card = await waitFor(() => { const el = q(view, '.mh-ready'); expect(el).not.toBeNull(); return el!; });
+    const mine = () => watched.filter((w) => w.el === card);
+    await waitFor(() => expect(mine().length).toBeGreaterThan(0));
+    act(() => { for (const w of mine()) w.cb([{ isIntersecting: false, target: card } as IntersectionObserverEntry], {} as IntersectionObserver); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect(named('plan_ready_shown')).toEqual([]); // hidden or off screen: not counted
+    act(() => { for (const w of mine()) w.cb([{ isIntersecting: true, target: card } as IntersectionObserverEntry], {} as IntersectionObserver); });
+    await waitFor(() => expect(named('plan_ready_shown')).toHaveLength(1));
   });
 
   it('a browser that pressed Got it before never sees it: the last answer lands on the title', async () => {

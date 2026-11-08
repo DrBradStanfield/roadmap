@@ -174,8 +174,6 @@ const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   tool_opened: ['device'], // US-62 AC1
   onboarding_step: ['step'],
   onboarding_done: [],
-  plan_ready_shown: [], // US-62 AC31: the names alone
-  plan_ready_dismissed: [],
   signin_opened: ['placement'],
   guide_opened: ['placement'],
   record_unreadable_kept: ['count'], // US-65 AC6: how many entries, nothing else
