@@ -152,6 +152,17 @@ describe('US-31 AC1/AC5 — add', () => {
     expect(read(path).measurements.length).toBe(1); // nothing written: the fixture is untouched
     rmSync(dir, { recursive: true, force: true });
   });
+
+  it('US-21 AC26: refuses a blood test past its plausible range in the typed words, writing nothing', async () => {
+    const { dir, path } = writeFixture();
+    const before = readFileSync(path, 'utf8');
+    const result = await captureRun(['add', path, '--test', 'Glucose', '--value', '5.5', '--unit', 'mg/dL', '--date', '2026-08-14']);
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('5.5 mg/dL is 0.31 mmol/L. Glucose below 0.5 mmol/L is almost certainly a typing or unit mistake: check the number and its unit');
+    expect(readFileSync(path, 'utf8')).toBe(before);
+    expect(backups(dir)).toEqual([]);
+    rmSync(dir, { recursive: true, force: true });
+  });
 });
 
 describe('US-31 AC3 — correct', () => {
@@ -390,8 +401,9 @@ describe('US-31 — adversarial review fixes', () => {
       expect(result.stderr).toContain('--value');
     }
     expect(read(path).measurements.length).toBe(1);
-    // A negative is a number like any other; the range check owns whether it is sane.
-    expect((await captureRun(['add', path, '--test', 'crp', '--value', '-0.5', '--unit', 'mg/L', '--date', '2026-08-14'])).code).toBe(0);
+    // A negative is a number like any other; the range check owns whether it is sane. GGT has no
+    // plausible range; CRP's (0 to 1,000 mg/L) now refuses a negative on this door too (US-21 AC26).
+    expect((await captureRun(['add', path, '--test', 'ggt', '--value', '-0.5', '--unit', 'U/L', '--date', '2026-08-14'])).code).toBe(0);
     rmSync(dir, { recursive: true, force: true });
   });
 

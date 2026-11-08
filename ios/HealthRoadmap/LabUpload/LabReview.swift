@@ -86,6 +86,9 @@ struct LabSaveSummary: Decodable, Equatable, Sendable {
     struct Refused: Decodable, Equatable, Sendable {
         let label: String
         let message: String
+        /// The whole sentence to show as it is (a value past its plausible range, US-21 AC26);
+        /// absent from an older engine, which the "Not saved," line covers.
+        var line: String? = nil
     }
 
     let saved: Int
