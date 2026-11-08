@@ -71,8 +71,8 @@ before deploying.
 - Skills (`.claude/`) and on-demand docs (docs/reference.md, docs/deploy-runbook.md): ≤500 lines — split by topic
   at the cap. Loop files: per [docs/loops/LOOP.md](docs/loops/LOOP.md) (always-loaded ≤200; notes ≤500;
   reports ≤150; changelogs + CSVs are history/data, cap-exempt).
-- **Docs are Markdown; Artifacts are built from them (HARD, Brad 2026-10-12, both repos):** `node tools/md-artifact.mjs
-  <file.md>`, republish to its front-matter `artifact:` URL; never hand-edit an Artifact or write a new HTML doc (all converted 2026-10-12).
+- **Production code (Brad 2026-11-09):** target 300–500 lines per file, split by what changes together; a file over 500 never grows (split it first).
+- **Docs are Markdown; Artifacts are built from them (HARD, Brad 2026-10-12, both repos):** `node tools/md-artifact.mjs <file.md>`, republish to its `artifact:` URL; never hand-edit an Artifact or write a new HTML doc.
 - Memory: 200 lines/25KB, hard-enforced. Structured records → CSV, never prose.
 
 **Code entropy — deletion-first (production code; tests/comments never count):**
