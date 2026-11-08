@@ -173,6 +173,7 @@ describe('US-06 AC1b: supplement dose autosave', () => {
     await settle();
     expect((await persisted()).supplements[0]).toMatchObject({ doseValue: 25, status: 'stopped' });
     expect(view.container.querySelector('.supplement-dose')).toBeNull();
+    fireEvent.click(view.getByRole('button', { name: '+ Add another supplement' })); // its search (US-62 AC30c)
     fireEvent.change(view.container.querySelector('.supplement-add input')!, { target: { value: 'Test supplement' } });
     fireEvent.click(view.container.querySelector('.supplement-custom')!);
     expect(dose(view.container).value).toBe('');

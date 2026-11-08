@@ -185,6 +185,24 @@ describe('US-62 AC13: each step reveals the next', () => {
     await waitFor(() => expect(fullForm(view)).toBe(true));
   });
 
+  // US-01 AC6: iOS Safari opens the keyboard only for a focus() made inside the user's own
+  // event. So the year must hold the focus when the change event returns, with no frame waited.
+  it('US-01 AC6: choosing a birth month focuses the empty birth year inside the change event itself', async () => {
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    await nextFrame(); // the sex click's own focus move to the month (a frame later)
+    const month = q(view, '#birthMonth') as HTMLSelectElement;
+    act(() => { month.focus(); });
+    fireEvent.change(month, { target: { value: '5' } });
+    expect(document.activeElement).toBe(q(view, '#birthYear')); // synchronous: no await before this line
+    // A year already typed: changing the month leaves the focus where it is.
+    type(q(view, '#birthYear'), '197');
+    act(() => { month.focus(); });
+    fireEvent.change(month, { target: { value: '6' } });
+    expect(document.activeElement).toBe(month);
+  });
+
   it('the why-texts are no longer tooltips', async () => {
     const view = await open();
     await measurements(view);

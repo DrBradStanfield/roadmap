@@ -5622,6 +5622,7 @@ input[type="number"] {
 }
 .mh-sections,
 .mh-topics,
+.mh-pdf,
 .mh-foot {
   display: flex;
   flex-direction: column;
@@ -5690,19 +5691,17 @@ input[type="number"] {
 .mh-settings-title:focus {
   outline: none;
 }
-/* One ink for the section symbols: the accent, not a tint each (AC28). */
-.mh-topic-head .section-icon {
-  color: var(--color-brand-text) !important;
-}
 .mh-card {
   scroll-margin: 80px 0;
 }
 .mh-card:focus-visible > .suggestion-card {
   box-shadow: 0 0 0 2px var(--color-brand-text);
 }
+/* The rows carry their own 8px padding, so the card adds only 4px above and below. !important
+   because a phone forces 12px on every .section-card (max-width 768px), which stacked to 20px. */
 .mh-rows-card.section-card {
-  padding-top: 4px;
-  padding-bottom: 4px;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
 }
 .mh-head-icon-btn {
   display: inline-flex;
@@ -5911,6 +5910,15 @@ input[type="number"] {
 .mh-add-test {
   border-top: 1px solid var(--bt-ink-100);
   padding: 8px 0;
+}
+/* Add another supplement, the same row (Brad 2026-11-09); the card's section pads below it,
+   and with no list above it, no line. */
+.supplement-add.mh-add-test {
+  margin-top: 0;
+  padding-bottom: 0;
+}
+.supplement-add.mh-add-test:first-child {
+  border-top: 0;
 }
 .mh-add-test .alr-add-btn,
 .mh-add-test .alr-add-btn:hover {
@@ -6212,6 +6220,7 @@ input[type="number"] {
   .mh-title {
     font-size: 30px;
   }
+  .mh-pdf,
   .mh-pills,
   .mh-banner,
   .mh-topic-head,

@@ -227,6 +227,6 @@ describe('US-22 on a phone: a typed weight, the last answer, lands at the top of
     await waitFor(() => expect(document.activeElement).toBe(title), { timeout: 2000 });
     expect(scrolledIntoView).toContain(title);
     expect(title.closest('[role="tabpanel"]')?.hasAttribute('hidden')).toBe(false);
-    expect(view.container.querySelector('#guestEmail')!.closest('.mh-foot')).not.toBeNull();
+    expect(view.container.querySelector('#guestEmail')!.closest('.mh-pdf')).not.toBeNull(); // above the pills (US-62 AC30d)
   });
 });

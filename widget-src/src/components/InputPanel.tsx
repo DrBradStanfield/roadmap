@@ -3,6 +3,7 @@
 // state. My health (MyHealth.tsx, US-62 phase 5) lays its parts out by topic,
 // through the slots this hands its `children`.
 import { SectionIcon } from './icons';
+import { flushSync } from 'react-dom';
 import { Fragment, useState, useEffect, useLayoutEffect, useMemo, useRef, type MutableRefObject, type ReactNode } from 'react';
 import { InfoTooltip } from './InfoTooltip';
 import { openHistoryLightbox } from '../lib/roadmap-data';
@@ -1408,7 +1409,14 @@ export function InputPanel({
           <select
             id="birthMonth"
             value={inputs.birthMonth || ''}
-            onChange={(e) => updateField('birthMonth', parseLocalisedNumber(e.target.value))}
+            onChange={(e) => {
+              const month = parseLocalisedNumber(e.target.value);
+              if (month === undefined || inputs.birthYear) { updateField('birthMonth', month); return; }
+              // On to the empty year, inside the change event itself: iOS Safari opens the keyboard
+              // only for a focus made in the user's own event, never one a frame later (US-01 AC6).
+              flushSync(() => updateField('birthMonth', month));
+              document.getElementById('birthYear')?.focus();
+            }}
           >
             <option value="">Month...</option>
             {MONTHS_FULL.map((m, i) => (
@@ -2293,7 +2301,10 @@ export function InputPanel({
   const [supplementSearch, setSupplementSearch] = useState('');
   const [supplementDoseDrafts, setSupplementDoseDrafts] = useState<Record<string, string | undefined>>({});
   const [showSupplementDropdown, setShowSupplementDropdown] = useState(false);
+  // "+ Add another supplement" opens the search in its place (Brad 2026-11-09, as Add a blood test).
+  const [addingSupplement, setAddingSupplement] = useState(false);
   const supplementDropdownRef = useRef<HTMLDivElement>(null);
+  const supplementSearchRef = useRef<HTMLInputElement>(null);
 
   // An erase clears off-file drafts too, including one under a later reused key.
   useEffect(() => {
@@ -2307,11 +2318,12 @@ export function InputPanel({
     const handleClickOutside = (e: MouseEvent) => {
       if (supplementDropdownRef.current && !supplementDropdownRef.current.contains(e.target as Node)) {
         setShowSupplementDropdown(false);
+        if (!supplementSearch.trim()) setAddingSupplement(false); // nothing typed: back to the button
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showSupplementDropdown]);
+  }, [showSupplementDropdown, supplementSearch]);
 
   const renderSupplements = () => {
 
@@ -2336,6 +2348,7 @@ export function InputPanel({
       onSupplementChange(key, name, defaultDose ?? null, defaultUnit ?? null);
       setSupplementSearch('');
       setShowSupplementDropdown(false);
+      setAddingSupplement(false);
     };
 
     return (
@@ -2391,9 +2404,19 @@ export function InputPanel({
             </Fragment>
           ))}
 
-          {/* Add other supplement */}
-          <div className="supplement-add" ref={supplementDropdownRef}>
+          {/* Add other supplement: a row like Add a blood test, its search behind it. */}
+          <div className="supplement-add mh-add-test" ref={supplementDropdownRef}>
+            {!addingSupplement ? (
+              <button type="button" className="alr-add-btn" onClick={() => {
+                // Shown and focused inside the tap itself, so a phone opens its keyboard (US-01 AC6).
+                flushSync(() => setAddingSupplement(true));
+                supplementSearchRef.current?.focus();
+              }}>
+                + Add another supplement
+              </button>
+            ) : (<>
             <input
+              ref={supplementSearchRef}
               type="text"
               placeholder={SUPPLEMENT_TEXT.addPlaceholder}
               value={supplementSearch}
@@ -2430,6 +2453,7 @@ export function InputPanel({
                 )}
               </div>
             )}
+            </>)}
           </div>
         </section>
       </div>

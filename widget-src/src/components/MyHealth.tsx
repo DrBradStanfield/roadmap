@@ -1,5 +1,5 @@
 // My health (US-62 phase 5): the iPhone's one tab of numbers and plan, by topic
-// (US-73). The onboarding's form first; then the pills, the banner, the topics in
+// (US-73). The onboarding's form first; then the PDF box, the pills, the banner, the topics in
 // health-core's order (TOPICS) with their rows, questions and the plan's cards,
 // the desktop section list, the documents and the foot; the settings behind the
 // person button. The form's parts come from InputPanel (`FormSlots`); the plan's
@@ -237,6 +237,8 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
         <div className="mh-sections" ref={sectionsRef}>
           <SectionNav topics={shown.map(({ id }) => ({ id, title: titleOf(id), urgent: (plan.topics.get(id)?.urgent.length ?? 0) > 0 }))} onJump={id => jump(id as TopicId)}/>
           <div className="mh-topics">
+            {/* The PDF box above the pills (Brad 2026-11-09); on desktop, atop the topics. */}
+            {plan.pdf}
             <div className="mh-pills no-print">
               {PILLS.map(id => <button key={id} type="button" className="mh-pill" onClick={() => jump(id)}>{titleOf(id)}</button>)}
             </div>
@@ -258,6 +260,7 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
         <HealthRecordsSection documents={healthDocuments} onDeleted={onDocumentDeleted} />
       )}
       {!settingsOpen && storageCard && <div className="mh-foot-storage" hidden={!storageAtFoot}>{storageCard}</div>}
+      {!form.fullForm && plan.pdf}
       {plan.foot}
       {plan.report}
     </div>

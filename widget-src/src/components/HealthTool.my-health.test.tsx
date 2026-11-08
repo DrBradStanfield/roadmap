@@ -288,8 +288,21 @@ describe('US-62 AC22, AC23: Blood tests and Supplements', () => {
     const card = section.querySelector('.mh-card');
     const mine = section.querySelector('.supplement-row');
     expect(card && mine && card.compareDocumentPosition(mine) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(within(section).getByPlaceholderText('Add another supplement...')).toBeTruthy();
     expect(view.container.querySelector('.supplement-chip')).toBeNull();
+  });
+
+  it('AC30c: "+ Add another supplement" is the same row as "+ Add a blood test", opening its search focused', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    const supplements = view.container.querySelector<HTMLElement>('[data-topic="supplements"]')!;
+    const bloodTests = view.container.querySelector<HTMLElement>('[data-topic="bloodTests"]')!;
+    const add = within(supplements).getByRole('button', { name: '+ Add another supplement' });
+    const test = within(bloodTests).getByRole('button', { name: '+ Add a blood test' });
+    expect(add.className).toBe(test.className);
+    expect(add.parentElement!.classList.contains('mh-add-test')).toBe(true);
+    expect(test.parentElement!.classList.contains('mh-add-test')).toBe(true);
+    fireEvent.click(add);
+    // Focused inside the tap itself (US-01 AC6), so a phone opens its keyboard.
+    expect(document.activeElement).toBe(within(supplements).getByPlaceholderText('Add another supplement...'));
   });
 });
 
@@ -406,6 +419,14 @@ describe('US-62 AC25, AC26: the onboarding first, the foot last', () => {
     expect(view.container.querySelector('.about-card')).not.toBeNull();
     expect(view.container.querySelector('.mh-sections')).toBeNull();
     expect(view.container.querySelector('.mh-banner')).toBeNull();
+  });
+
+  it('AC30d: the PDF box sits above the pills, out of the foot', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    const pdf = view.container.querySelector('.mh-topics > .mh-pdf')!;
+    expect(pdf.textContent).toMatch(/PDF/);
+    expect(pdf.nextElementSibling!.classList.contains('mh-pills')).toBe(true);
+    expect(view.container.querySelector('.mh-foot .mh-pdf, .mh-foot .email-capture, .mh-foot .report-actions')).toBeNull();
   });
 
   it('the foot: the disclaimer, Supercharge and the privacy link, after the topics', async () => {

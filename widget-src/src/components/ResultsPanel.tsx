@@ -345,7 +345,7 @@ function useEmailCaptureState(): EmailCaptureState {
   return { state, setState, gateSkipped };
 }
 
-/** The box's own typing, in the foot, so a keystroke re-renders the foot alone. */
+/** The box's own typing, in the PDF box, so a keystroke re-renders the box alone. */
 function useGuestEmailCapture(printReport: () => Promise<void>, { state, setState, gateSkipped }: EmailCaptureState): GuestEmailHook {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -465,7 +465,7 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
   if (state === 'captured') {
     // Already captured (this submit, or a prior visit via the persisted flag):
     // the email box is gone and nothing renders here. The ungated "Save as PDF"
-    // button sits beside it in My health's foot instead.
+    // button sits beside it in the same PDF box instead.
     return null;
   }
 
@@ -521,7 +521,9 @@ export interface PlanView {
   evidence: OpenEvidence;
   /** US-61 AC8: on the Supplements section, so its products count once it is on screen. */
   supplementsRef: React.RefObject<HTMLElement>;
-  /** The foot: the PDF box and email, Save as PDF, the disclaimer, feedback, Supercharge, privacy. */
+  /** The PDF box: the email box or Save as PDF, above the pills (Brad 2026-11-09, US-62 AC26). */
+  pdf: React.ReactNode;
+  /** The foot: the disclaimer, feedback, Supercharge, privacy. */
   foot: React.ReactNode;
   /** US-09 AC19: the guest has their PDF, so the storage card may pulse. */
   attention: boolean;
@@ -860,17 +862,18 @@ export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitud
   // mailing list). Their PDF is the gate-skipped page's Save as PDF (US-44 AC2).
   const adult = planned && !results.knownMinor;
   const report = planned && printing && <PlanReport tiles={tiles} sections={sections} alcoholQuestion={alcoholQuestion}/>;
-  const foot = (
-    <PlanFoot planned={planned} adult={adult} emailCapture={!!showEmailCapture && adult} formStage={formStage} capture={capture}
-              printStatus={printStatus} pdfBlocked={pdfBlocked} onPrint={handlePrint} onCapturePrint={() => printReport('capture')}/>
+  const pdf = (
+    <PlanPdf planned={planned} adult={adult} emailCapture={!!showEmailCapture && adult} formStage={formStage} capture={capture}
+             printStatus={printStatus} pdfBlocked={pdfBlocked} onPrint={handlePrint} onCapturePrint={() => printReport('capture')}/>
   );
+  const foot = <PlanFoot planned={planned}/>;
 
-  return { layout, topics, planned, highlights, alcoholQuestion, urgent, cardIds, evidence, supplementsRef, foot, attention, onErased: () => { setPdfOpened(false); setOpened(NO_HIGHLIGHTS); }, report };
+  return { layout, topics, planned, highlights, alcoholQuestion, urgent, cardIds, evidence, supplementsRef, pdf, foot, attention, onErased: () => { setPdfOpened(false); setOpened(NO_HIGHLIGHTS); }, report };
 }
 
-/** My health's foot (US-62 AC26): the email box and Save as PDF, the disclaimer, feedback, Supercharge and
- *  the privacy link. It owns the box's typing, so a keystroke re-renders the foot alone. */
-function PlanFoot({ planned, adult, emailCapture, formStage, capture, printStatus, pdfBlocked, onPrint, onCapturePrint }: {
+/** My health's PDF box (US-62 AC26): the email box, or Save as PDF. It owns the box's typing, so a
+ *  keystroke re-renders the box alone. Null when neither shows. */
+function PlanPdf({ planned, adult, emailCapture, formStage, capture, printStatus, pdfBlocked, onPrint, onCapturePrint }: {
   planned: boolean; adult: boolean; emailCapture: boolean; formStage?: number; capture: EmailCaptureState;
   printStatus: 'idle' | 'loading'; pdfBlocked: PdfButton | null; onPrint: (at: PdfButton) => void; onCapturePrint: () => Promise<void>;
 }) {
@@ -880,9 +883,11 @@ function PlanFoot({ planned, adult, emailCapture, formStage, capture, printStatu
   // so the ungated button shows once captured, on US-44's gate-skipped page, or
   // for a known minor.
   const ungatedPdf = planned && (!SHOPIFY_SURFACE || capture.state === 'captured' || capture.gateSkipped || !adult);
+  const box = emailCapture && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />;
+  if (!box && !ungatedPdf) return null;
   return (
-    <div className="mh-foot">
-      {emailCapture && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />}
+    <div className="mh-pdf">
+      {box}
       {ungatedPdf && (
         <div className="report-actions no-print">
           <button type="button" className="action-btn" onClick={() => onPrint('bottom')} disabled={printStatus === 'loading'} title="Save your plan as a PDF">
@@ -891,7 +896,14 @@ function PlanFoot({ planned, adult, emailCapture, formStage, capture, printStatu
           <PdfNote show={pdfBlocked === 'bottom' || pdfBlocked === 'capture'} />
         </div>
       )}
+    </div>
+  );
+}
 
+/** My health's foot (US-62 AC26): the disclaimer, feedback, Supercharge and the privacy link. */
+function PlanFoot({ planned }: { planned: boolean }) {
+  return (
+    <div className="mh-foot">
       {planned && (
         <div className="health-disclaimer">
           <strong>Disclaimer:</strong> {DISCLAIMER}
