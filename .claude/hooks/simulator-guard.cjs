@@ -27,8 +27,12 @@ function bootedSimulators() {
 // `clean` is false when the scan ends inside a quote or heredoc.
 function scan(cmd) {
   const segs = [[]];
-  let word = null, state = 'normal', quoted = '', heredocs = [], i = 0;
-  const endWord = () => { if (word !== null) segs[segs.length - 1].push(word); word = null; };
+  let word = null, wq = false, state = 'normal', quoted = '', heredocs = [], i = 0;
+  // wq: some part of the word was quoted or escaped. Bash never reads such a word as VAR=value (setsEscapeHatch).
+  const endWord = () => {
+    if (word !== null) { const seg = segs[segs.length - 1]; if (wq) (seg.quoted ||= new Set()).add(seg.length); seg.push(word); }
+    word = null; wq = false;
+  };
   const endSeg = () => { endWord(); segs.push([]); };
   while (i < cmd.length) {
     const ch = cmd[i];
@@ -37,12 +41,13 @@ function scan(cmd) {
       if (state === 'double' && ch === '\\' && i + 1 < cmd.length) { quoted += cmd[i + 1]; i += 2; continue; }
       if (ch === (state === 'single' ? "'" : '"')) {
         word = (word || '') + (/^[\w.:\/@+-]*$/.test(quoted) ? quoted : 'QUOTED');
+        wq = true;
         state = 'normal';
       } else quoted += ch;
       i++; continue;
     }
     if (ch === '\\' && cmd[i + 1] === '\n') { i += 2; continue; }
-    if (ch === '\\' && i + 1 < cmd.length) { word = (word || '') + cmd[i + 1]; i += 2; continue; }
+    if (ch === '\\' && i + 1 < cmd.length) { word = (word || '') + cmd[i + 1]; wq = true; i += 2; continue; }
     if (ch === "'" || ch === '"') { state = ch === "'" ? 'single' : 'double'; quoted = ''; i++; continue; }
     if (ch === '#' && word === null) { state = 'comment'; i++; continue; }
     if (ch === '<' && cmd[i + 1] === '<' && cmd[i + 2] !== '<') {
@@ -100,7 +105,7 @@ function invocation(w) {
 // A malformed command (unterminated quote or heredoc) is also checked as raw text, so it can only be denied.
 function setsEscapeHatch(seg) {
   let i = seg[0] === 'export' ? 1 : 0;
-  for (; i < seg.length && /^[A-Za-z_]\w*=/.test(seg[i]); i++) if (seg[i] === 'ALLOW_EXTRA_SIMULATOR=1') return true;
+  for (; i < seg.length && /^[A-Za-z_]\w*=/.test(seg[i]) && !seg.quoted?.has(i); i++) if (seg[i] === 'ALLOW_EXTRA_SIMULATOR=1') return true;
   return false;
 }
 

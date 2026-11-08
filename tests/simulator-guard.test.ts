@@ -153,6 +153,10 @@ describe('US-71 AC6 scanner: comments, heredocs and quotes (Codex re-check R1/R2
     'echo "ALLOW_EXTRA_SIMULATOR=1"; xcrun simctl boot CCCC',
     "echo ALLOW_EXTRA_SIMULATOR=1; xcrun simctl boot CCCC",
     'FOO="ALLOW_EXTRA_SIMULATOR=1" xcrun simctl boot CCCC',
+    '"ALLOW_EXTRA_SIMULATOR"=1; xcrun simctl boot CCCC',
+    "'ALLOW_EXTRA_SIMULATOR=1'; xcrun simctl boot CCCC",
+    'ALLOW_EXTRA_SIMULATOR\\=1; xcrun simctl boot CCCC',
+    'ALLOW_EXTRA_SIMULATOR="1" xcrun simctl boot CCCC',
   ])('only a real leading assignment carries the escape hatch, not %j (Codex re-check R1)', (cmd) => {
     expect(decide(cmd, two)).toContain('already booted');
   });
