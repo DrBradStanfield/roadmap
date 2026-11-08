@@ -46,7 +46,7 @@ cloud until you delete it.
 The app uses Apple Health only if you allow it. It reads weight, height, waist and blood
 pressure, and adds them to your record. It writes the weight, waist and blood pressure in
 your record to Apple Health, except readings that came from Apple Health in the first place.
-It never writes height. It does not read blood tests or Health Records.
+It never writes height. Where your iPhone supports Health Records, it also asks to read lab results your healthcare provider sent to Health. It reads lab results only, keeps the ones its plan uses (such as cholesterol, HbA1c and creatinine) in your record, and never writes to Health Records. If you use the chat, they can be part of the record summary each question carries.
 
 When you connect Apple Health during setup, it also reads your sex and your date of birth.
 It saves your sex and the month and year you were born to your record straight away,
