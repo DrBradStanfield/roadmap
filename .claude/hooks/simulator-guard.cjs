@@ -39,7 +39,8 @@ function scan(cmd) {
     const ch = cmd[i];
     if (state === 'comment') { if (ch === '\n') state = 'normal'; else { i++; continue; } }
     if (state === 'single' || state === 'double') {
-      if (state === 'double' && ch === '\\' && i + 1 < cmd.length) { quoted += cmd[i + 1]; i += 2; continue; }
+      // In double quotes bash drops a backslash only before $ ` " \ or a newline; elsewhere it stays.
+      if (state === 'double' && ch === '\\' && i + 1 < cmd.length) { const n = cmd[i + 1]; quoted += '$`"\\\n'.includes(n) ? n : '\\' + n; i += 2; continue; }
       if (ch === (state === 'single' ? "'" : '"')) {
         if (!(word || '').includes('=')) wq = true;
         word = (word || '') + (/^[\w.:\/@+-]*$/.test(quoted) ? quoted : 'QUOTED');
