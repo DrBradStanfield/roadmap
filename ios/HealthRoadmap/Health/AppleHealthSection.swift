@@ -14,6 +14,14 @@ struct AppleHealthSection: View {
                 if health.connected {
                     Label(Self.text(health.status), systemImage: "heart.text.square")
                         .foregroundStyle(.secondary)
+                    // US-72 AC14: Apple's sheet only, when HealthKit has results to ask about.
+                    if health.offersLabResults {
+                        Button {
+                            Task { await health.shareNewLabResults() }
+                        } label: {
+                            Label("Share new lab results", systemImage: "list.clipboard")
+                        }
+                    }
                 } else {
                     Button {
                         Task { await health.connect() }

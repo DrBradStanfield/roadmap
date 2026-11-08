@@ -813,9 +813,14 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   once per phone: a TestFlight tester with no Health Records account was asked on every open,
   because HealthKit stays at `.shouldRequest` when there is no account or the sheet is closed
   without a choice. `HealthSyncMemory.labResultsAsked` holds the date the lab results sheet was
-  first shown (by connect or by coming forward); once set, coming forward never asks.
-  "Ask Before Sharing" people therefore get no automatic ask for later results; a deliberate
-  connect (the live cards' Turn On, once connected) still shows Apple's sheet. No screen of ours comes before it (guideline 5.1.1).
+  last shown (by connect, by coming forward or by Settings' row); once set, coming forward
+  never asks. Someone upgrading from an earlier build has no date yet, so they may see the
+  sheet once more on their first open after the update. "Ask Before Sharing" people get no
+  automatic ask for later results. Settings' "Share new lab results" row (US-72 AC14, shown
+  when connected and `supportsHealthRecords`) can still show Apple's sheet when HealthKit
+  says one is needed, then refreshes. A deliberate connect can still show it too, but once
+  connected the live cards' Turn On shows only while the live types are due. No screen of
+  ours comes before the sheet (guideline 5.1.1).
 - **Rules version:** `HealthSyncMemory.labResultsRulesVersion` (2 since 2026-11-02: results
   dated by `issued`, the MDRD eGFR and the import winning a conflict), stored beside the anchor.
   Bump it when the engine starts reading results it used to refuse (a new code or unit): a

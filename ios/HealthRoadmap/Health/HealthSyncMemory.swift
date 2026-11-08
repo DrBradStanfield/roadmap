@@ -6,7 +6,7 @@ import Foundation
 /// - whether the person connected Apple Health (iOS never says whether reading is allowed);
 /// - one HealthKit query anchor per kind, and one for lab results (US-72), so each launch
 ///   reads only what is new, with the lab results rules version that anchor was read under;
-/// - when Health's lab results sheet was first shown, so coming on screen asks only once (US-72 AC1);
+/// - when Health's lab results sheet was last shown, so coming on screen asks only once (US-72 AC1);
 /// - the version of each value already written to Health, so it is written once.
 struct HealthSyncMemory {
     private let defaults: UserDefaults
@@ -45,8 +45,8 @@ struct HealthSyncMemory {
         nonmutating set { defaults.set(newValue, forKey: "appleHealth.labResultsRules") }
     }
 
-    /// When the app first showed Health's lab results sheet (US-72 AC1), on connect or on
-    /// coming on screen; nil: never. Once set, coming on screen never asks again.
+    /// When the app last showed Health's lab results sheet (US-72 AC1, AC14): on connect, on
+    /// coming on screen or from Settings' row; nil: never. Once set, coming on screen never asks.
     var labResultsAsked: Date? {
         get { defaults.object(forKey: "appleHealth.labResultsAsked") as? Date }
         nonmutating set { defaults.set(newValue, forKey: "appleHealth.labResultsAsked") }
