@@ -37,6 +37,7 @@ export function PlanHost({ results, isValid, tiles = [], showEmailCapture, formS
             {section.ownershipLine && <p className="us-ownership no-print">{section.ownershipLine}</p>}
           </section>
         ))}
+        {plan.pdf}
         {plan.foot}
         <div className="mh-settings">
           {planned && !results.knownMinor && remindersSection}

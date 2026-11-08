@@ -38,7 +38,9 @@ The same file, the same write path, three ways in.
    [docs/guides/connect-claude-desktop.md](docs/guides/connect-claude-desktop.md).
 3. **Hosted MCP**: `https://mcp.drstanfield.com/mcp`, live since 2026-09-02 on
    the Fly app `health-tool-edu`, over Dropbox and Google Drive. Nine tools as
-   of 2026-09-07: the hosted-only `import_documents` (US-35) reads lab files
+   of 2026-09-07 (plus `search_knowledge` and `get_article` when
+   `MCP_KNOWLEDGE_TOOLS` is `on`, a Fly secret not in tracked config; the docs
+   record it on since 2026-10-29): the hosted-only `import_documents` (US-35) reads lab files
    from the Dropbox app folder (Drive's `drive.file` scope cannot see dropped
    files), and `file_results` (US-36) takes the rows the assistant read from a
    file dropped into the chat, so the file never reaches our server. On

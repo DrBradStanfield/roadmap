@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { workerCap, inCI } from './test-workers.mjs';
 
 export function lockDir() {
   try {
@@ -90,10 +91,7 @@ export async function acquire(dir, { timeoutMs = 60 * 60_000, pollMs = 3000, log
   }
 }
 
-export const workerCap = (env = process.env, cpus = os.cpus().length) =>
-  Number(env.TEST_ALL_MAX_WORKERS) > 0 ? String(Number(env.TEST_ALL_MAX_WORKERS)) : String(Math.max(2, Math.floor(cpus / 4)));
-
-export const inCI = (env = process.env) => !!env.CI && env.CI !== 'false' && env.CI !== '0';
+export { workerCap, inCI };
 export const timeoutMinutes = (env = process.env) => (Number(env.TEST_ALL_LOCK_TIMEOUT_MIN) > 0 ? Number(env.TEST_ALL_LOCK_TIMEOUT_MIN) : 60);
 /** A targeted run names a test path or glob. A flag's value (`--reporter verbose`, `-t foo`) is not one. */
 export const isTargeted = (extra) =>

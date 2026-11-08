@@ -71,8 +71,8 @@ before deploying.
 - Skills (`.claude/`) and on-demand docs (docs/reference.md, docs/deploy-runbook.md): ≤500 lines — split by topic
   at the cap. Loop files: per [docs/loops/LOOP.md](docs/loops/LOOP.md) (always-loaded ≤200; notes ≤500;
   reports ≤150; changelogs + CSVs are history/data, cap-exempt).
-- **Docs are Markdown; Artifacts are built from them (HARD, Brad 2026-10-12, both repos):** `node tools/md-artifact.mjs
-  <file.md>`, republish to its front-matter `artifact:` URL; never hand-edit an Artifact or write a new HTML doc (all converted 2026-10-12).
+- **Production code (Brad 2026-11-09):** target 300–500 lines per file, split by what changes together; a file over 500 never grows (split it first).
+- **Docs are Markdown; Artifacts are built from them (HARD, Brad 2026-10-12, both repos):** `node tools/md-artifact.mjs <file.md>`, republish to its `artifact:` URL; never hand-edit an Artifact or write a new HTML doc.
 - Memory: 200 lines/25KB, hard-enforced. Structured records → CSV, never prose.
 
 **Code entropy — deletion-first (production code; tests/comments never count):**
@@ -115,7 +115,7 @@ units, mappings, evidence, merge, roadmap-file, + tests) · `widget-src/src/`
 ```bash
 npm run build:shopify-prod   # live v2 widget bundle + upload bundle
 npm run build:widget         # side bundles only (upload, site-chat, chatbot)
-npm test                     # health-core only
+npm test                     # check:symlinks + health-core + app/lib (server) tests
 npm run test:all             # EVERYTHING (CI runs it in 6 shards; never a local merge gate)
 npx vitest related <files> --run   # just the tests your change touches
 node scripts/build-guide-html.mjs docs/guides/<g>.md   # publishable guide HTML
@@ -134,7 +134,7 @@ Deploy (`gh workflow run deploy.yml`) once CI is green and the required reviews 
 batch of merges), then reports each deploy (sha, result, live checks) to Brad.
 **Commit before any deploy** — `fly deploy` ships the working tree. `.env`
 has every variable; the list and per-Fly-app secrets: docs/deploy-runbook.md
-§ Environment variables. ANTHROPIC_API_KEY (spend-capped) is the only repo secret.
+§ Environment variables. Secret names: docs/deploy-runbook.md § Environment variables (GitHub Actions).
 
 ## CRITICAL: Security Rules
 

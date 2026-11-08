@@ -236,16 +236,35 @@ function loadUnitOverrides(): Record<string, UnitSystem> {
   return Object.fromEntries(Object.entries(stored).filter(([, us]) => us === 'si' || us === 'conventional'));
 }
 
+/** Each key's waiting save: its timer and the save itself. */
+type ListSaves = Map<string, { timer: ReturnType<typeof setTimeout>; fire: () => void }>;
+
 /** One save per key, 300 ms after its last change: rapid dropdown changes
  *  would otherwise race. The save carries the erase the page showed when the
  *  change was made, not when the timer fires (US-16 AC2a). */
-function debounceSave(timers: Map<string, ReturnType<typeof setTimeout>>, key: string, save: (erase: string) => void, erase = getShownErase()): void {
-  const existing = timers.get(key);
-  if (existing) clearTimeout(existing);
-  timers.set(key, setTimeout(() => {
+function debounceSave(timers: ListSaves, key: string, save: (erase: string) => void, erase = getShownErase()): void {
+  clearTimeout(timers.get(key)?.timer);
+  const fire = () => {
     timers.delete(key);
     save(erase);
-  }, 300));
+  };
+  timers.set(key, { timer: setTimeout(fire, 300), fire });
+}
+
+/** Drop one key's waiting save without running it. */
+function cancelListSave(timers: ListSaves, key: string): void {
+  clearTimeout(timers.get(key)?.timer);
+  timers.delete(key);
+}
+
+/** Run every waiting list save now, as the page goes away (US-06 AC13). */
+function flushListSaves(all: ListSaves[]): void {
+  for (const timers of all) {
+    for (const { timer, fire } of [...timers.values()]) {
+      clearTimeout(timer);
+      fire();
+    }
+  }
 }
 
 /**
@@ -272,6 +291,9 @@ function useReachedStage(stage: FormStage, holdings: RecordHoldings): { reached:
 /** The same rows, value for value: a re-read that changed nothing keeps the old array. */
 /** The onboarding's answers (US-62 AC13): only an edit to one of them counts as a step. */
 const ONBOARDING_FIELDS: ReadonlyArray<keyof HealthInputs> = ['heightCm', 'weightKg', 'sex', 'birthMonth', 'birthYear'];
+/** US-62 AC31: this browser has pressed "Your plan is ready."'s Got it. A UI flag only, never in the record. */
+const PLAN_READY_SEEN_KEY = 'hr_plan_ready_seen';
+const planReadySeen = (): boolean => { try { return localStorage.getItem(PLAN_READY_SEEN_KEY) === '1'; } catch { return false; } };
 
 const sameRows = (a: ApiMeasurement[], b: ApiMeasurement[]) =>
   a.length === b.length && a.every((r, i) => r.id === b[i].id && r.value === b[i].value && r.recordedAt === b[i].recordedAt);
@@ -360,8 +382,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // these fields on the matrices' draft model.
   const typedIn = useRef<Partial<Record<keyof HealthInputs, { value: unknown; unit: UnitSystem }>>>({});
   const [isDeleting, setIsDeleting] = useState(false);
-  const medSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-  const screeningSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const medSaveTimers = useRef<ListSaves>(new Map());
+  const screeningSaveTimers = useRef<ListSaves>(new Map());
   const isFirstSaveRef = useRef(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [floatingChatOpen, setFloatingChatOpen] = useState(false);
@@ -370,8 +392,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // Clean up debounce timers on unmount to prevent stale API calls
   useEffect(() => {
     return () => {
-      for (const timer of medSaveTimers.current.values()) clearTimeout(timer);
-      for (const timer of screeningSaveTimers.current.values()) clearTimeout(timer);
+      for (const { timer } of medSaveTimers.current.values()) clearTimeout(timer);
+      for (const { timer } of screeningSaveTimers.current.values()) clearTimeout(timer);
     };
   }, []);
   // Unit system: load saved preference or auto-detect
@@ -607,6 +629,15 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     if ((e.target as HTMLElement).closest?.('.bt-vitals-card [data-metric="weight"]')) markAnswered();
   }, [markAnswered]);
   const countedTo = useRef<{ epoch: number; stage: number } | null>(null);
+  // US-62 AC31: "Your plan is ready." for the record whose onboarding ended in this tab.
+  const [planReadyFor, setPlanReadyFor] = useState<number | null>(null);
+  const dismissPlanReady = useCallback(() => {
+    trackProductEvent('plan_ready_dismissed');
+    try { localStorage.setItem(PLAN_READY_SEEN_KEY, '1'); } catch { /* private mode: gone for this visit only */ }
+    setPlanReadyFor(null);
+    // The focus stays on the page, not lost with the button.
+    rootRef.current?.querySelector<HTMLElement>('.mh-title')?.focus({ preventScroll: true });
+  }, []);
   useEffect(() => {
     const from = countedTo.current?.epoch === epoch ? countedTo.current.stage : reached;
     countedTo.current = { epoch, stage: reached };
@@ -614,7 +645,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     answeredHere.current = false;
     // The step that was asked is the one answered; later steps a record already held were not (stage 1 asks the measurements, 2 sex, 3 the birth date).
     trackProductEvent('onboarding_step', { step: ONBOARDING_STEPS[from - 1] });
-    if (reached === 4) trackProductEvent('onboarding_done');
+    if (reached === 4) {
+      trackProductEvent('onboarding_done');
+      if (!planReadySeen()) setPlanReadyFor(epoch); // US-62 AC31: this onboarding, this tab
+    }
   });
   // US-62 AC12: About you goes low for a record complete when first shown, and
   // once the four answers hold and the focus leaves its card (this record:
@@ -892,6 +926,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
         longitudinalDebounce.cancel();
         void handleSaveLongitudinalRef.current(undefined, pending.erase, true);
       }
+      // The waiting medication, screening and supplement saves, each with the
+      // erase it was made against, so the write below holds them (US-06 AC13).
+      flushListSaves([medSaveTimers.current, screeningSaveTimers.current, supSaveTimers.current]);
       flushRoadmapStoreSync();
     };
     const onUnload = () => stage(true);
@@ -1177,7 +1214,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       profileDebounce.cancel();
       // A save the form scheduled before the erase is pre-erase (US-16 AC2a).
       for (const timers of [medSaveTimers, screeningSaveTimers, supSaveTimers]) {
-        for (const timer of timers.current.values()) clearTimeout(timer);
+        for (const { timer } of timers.current.values()) clearTimeout(timer);
         timers.current.clear();
       }
       previousInputsRef.current = {};
@@ -1266,8 +1303,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       (stamp) => void saveScreening(screeningKey, value, stamp).then(afterListSave), erase);
   }, [afterListSave]);
 
-  const supSaveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
-  useEffect(() => () => { for (const t of supSaveTimers.current.values()) clearTimeout(t); }, []);
+  const supSaveTimers = useRef<ListSaves>(new Map());
+  useEffect(() => () => { for (const { timer } of supSaveTimers.current.values()) clearTimeout(timer); }, []);
 
   const handleSupplementChange = useCallback((
     supplementKey: string,
@@ -1298,8 +1335,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
 
   const handleSupplementDelete = useCallback((supplementKey: string) => {
     // A dose save still waiting would land after the stop and restart the row.
-    clearTimeout(supSaveTimers.current.get(supplementKey));
-    supSaveTimers.current.delete(supplementKey);
+    cancelListSave(supSaveTimers.current, supplementKey);
     // Keep stopped keys reserved for later additions, as they are after reload.
     setSupplements(prev => prev.map(s => s.supplementKey === supplementKey ? { ...s, status: 'stopped', updatedAt: new Date().toISOString() } : s));
     void deleteSupplementApi(supplementKey).then(saved => { if (!saved) writeRefused(); });
@@ -1437,9 +1473,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const emailCaptureActive = SHOPIFY_SURFACE;
 
   // Says whether it acted, so a caller spends its once-only jump only then.
-  // Once the last onboarding answer is in (US-62 AC13), the person lands at the
-  // top of My health, its title, where the topics now start (US-62 AC25,
-  // orchestrator 2026-11-06); the email box stays at the foot. Leaving the
+  // Once the last onboarding answer is in (US-62 AC13), the focus moves to the
+  // "Your plan is ready." card, with no jump (US-62 AC31); with no card, the person
+  // lands at the top of My health, its title (US-62 AC25, orchestrator 2026-11-06). Leaving the
   // field also lets About you go to Settings (US-62 AC12). A weight lands only
   // where it used to jump to the email box (the Shopify build, US-22), so the
   // Pages build never takes the focus from a value being typed; the birth year
@@ -1449,7 +1485,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     if (stageRef.current !== 4 || (!emailCaptureActive && !fromBirth)) return false;
     selectTab('health');
     requestAnimationFrame(() => {
-      revealAndFocus(rootRef.current?.querySelector<HTMLElement>('.mh-title'), 'start', false);
+      const ready = rootRef.current?.querySelector<HTMLElement>('.mh-ready-title');
+      if (ready) ready.focus({ preventScroll: true });
+      else revealAndFocus(rootRef.current?.querySelector<HTMLElement>('.mh-title'), 'start', false);
     });
     return true;
   }, [emailCaptureActive, selectTab]);
@@ -1530,6 +1568,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     onDelete: async () => { if (await handleDeleteData()) { plan.onErased(); closeSettings(); } },
     isDeleting,
     storageAtFoot: getBackendKind() === 'local',
+    onPlanReadyDismiss: planReadyFor === epoch ? dismissPlanReady : undefined,
     healthDocuments: documentHistory,
     onDocumentDeleted: (docId: string) => {
       setDocumentHistory(prev => prev.filter(d => d.id !== docId));

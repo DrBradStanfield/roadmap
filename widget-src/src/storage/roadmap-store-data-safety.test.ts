@@ -3,7 +3,7 @@ import { createEmptyFile, toOldShape, type RoadmapFile } from '@roadmap/health-c
 import { ERASE_UNREACHABLE, RoadmapStore, PENDING_MIRROR_KEY, markSyncPending, isSyncPending } from './roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core';
 import { LocalStorageAdapter } from './local-storage-adapter';
-import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core';
+import { ROADMAP_FILE_NAME, StorageError, type WriteResult } from '@roadmap/health-core';
 import { DRAFTS_CLEARED_EVENT } from '../lib/storage';
 
 /** The file as it landed in the (simulated) cloud after a flush. */
@@ -647,7 +647,8 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
   // mirror path writes through lib/storage's safe helpers, which no-op silently
   // when localStorage is missing, so these tests must provide one.
   beforeEach(() => {
-    const backing = new Map<string, string>();
+    // The page's cloud, remembered as connect.ts does (a moved-off tab writes no device copy, US-06 AC13).
+    const backing = new Map<string, string>([['health_roadmap_backend', 'memory']]);
     const store = {
       getItem: (k: string) => (backing.has(k) ? backing.get(k)! : null),
       setItem: (k: string, v: string) => void backing.set(k, v),
@@ -806,6 +807,24 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
     const reloaded = await RoadmapStore.create(new LocalStorageAdapter());
     const saved = reloaded.loadAllHistory().find((m) => m.id === row.id)!;
     expect(saved.createdAt).toBe(row.createdAt);
+  });
+
+  it('a cloud tab-close keeps the clock of the edit it puts on the device (US-06 AC13)', async () => {
+    const cloud = new MemoryCloud();
+    await new MemoryAdapter(cloud).write(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'dev_seed', now: new Date().toISOString() }), null);
+    const entry = cloud.files.get(ROADMAP_FILE_NAME)!;
+    const stale = JSON.parse(entry.json) as RoadmapFile;
+    stale.meta.createdAt = '2024-01-01T00:00:00.000Z';
+    stale.meta.updatedAt = '2024-01-01T00:00:00.000Z';
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(stale), version: entry.version });
+    class StalledAdapter extends MemoryAdapter {
+      async write(): Promise<WriteResult> { return new Promise<WriteResult>(() => {}); }
+    }
+    localStorage.setItem('health_roadmap_backend', 'memory'); // the page's cloud, as connect.ts remembers it
+    const store = await RoadmapStore.create(new StalledAdapter(cloud));
+    const row = insertedRow(store.addMeasurement('weight', 80, '2024-06-01T00:00:00.000Z'));
+    store.flushSync(); // the tab closes; its cloud save never answers
+    expect(readMirror()!.measurements.find((m) => m.id === row.id)!.createdAt).toBe(row.createdAt);
   });
 
   // US-10 AC5: a hide saves only what is unsaved. A save that FAILED is still
@@ -1176,7 +1195,8 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
 // stored record before anything irreversible, and refuses when it cannot read.
 describe('RoadmapStore.deleteUserData lists the rows it removes (US-09 AC23)', () => {
   beforeEach(() => {
-    const backing = new Map<string, string>();
+    // The page's cloud, remembered as connect.ts does (a moved-off tab writes no device copy, US-06 AC13).
+    const backing = new Map<string, string>([['health_roadmap_backend', 'memory']]);
     const store = {
       getItem: (k: string) => (backing.has(k) ? backing.get(k)! : null),
       setItem: (k: string, v: string) => void backing.set(k, v),
