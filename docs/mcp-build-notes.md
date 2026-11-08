@@ -190,7 +190,7 @@ widget's Sentry `/did not answer/` ignore.
 
 **`fetchOrFail`'s bound is feature-detected, and document uploads get a longer one.**
 `fetchOrFail` also runs in the browser (the widget's Drive and Dropbox adapters import it
-through the health-core barrel), where the Vite target is `modules`: Safari 14/15 (below the Safari 16.4 floor since 2026-11-09, US-09 AC37) has no
+through the health-core barrel), where the Vite target is `modules`: Safari 14/15 (below the Safari 16.4 floor since 2026-11-09, US-09 AC41) has no
 `AbortSignal.timeout` and 16–17.3 no `AbortSignal.any`, so calling either unguarded made
 the bound itself the outage and killed every read and save there. Both are now
 feature-detected; missing either, the call runs unbounded as it did before. And the flat
