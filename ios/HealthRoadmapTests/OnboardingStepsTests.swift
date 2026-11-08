@@ -55,15 +55,34 @@ final class OnboardingStepsTests: XCTestCase {
     }
 
     func testANewRecordTakesThePhonesRegionUnits_AC6() async {
-        XCTAssertEqual(OnboardingSteps.regionUnits(hasValues: false, onlyMissing: false, current: "si", system: .us), "conventional")
-        XCTAssertEqual(OnboardingSteps.regionUnits(hasValues: false, onlyMissing: false, current: "conventional", system: .metric), "si")
-        XCTAssertEqual(OnboardingSteps.regionUnits(hasValues: false, onlyMissing: false, current: "conventional", system: .uk), "si")
-        XCTAssertNil(OnboardingSteps.regionUnits(hasValues: false, onlyMissing: false, current: "si", system: .metric), "already right: nothing written")
+        XCTAssertEqual(OnboardingSteps.regionUnits(hasValues: false, onlyMissing: false, current: "si", locale: Locale(identifier: "en_US"), engine: "conventional"), "conventional")
+        XCTAssertEqual(OnboardingSteps.regionUnits(hasValues: false, onlyMissing: false, current: "conventional", locale: Locale(identifier: "fr_FR"), engine: "si"), "si")
+        XCTAssertEqual(OnboardingSteps.regionUnits(hasValues: false, onlyMissing: false, current: "conventional", locale: Locale(identifier: "en_GB"), engine: "si"), "si")
+        XCTAssertNil(OnboardingSteps.regionUnits(hasValues: false, onlyMissing: false, current: "si", locale: Locale(identifier: "fr_FR"), engine: "si"), "already right: nothing written")
+    }
+
+    /// US-05 AC5 with AC6: a phone in Puerto Rico (English or Spanish) or Myanmar starts a
+    /// new record in US units, as the web does, by the real engine's `detectUnitSystem`;
+    /// New Zealand stays metric, a US phone abroad keeps the US system, and a measurement
+    /// system chosen in Settings still wins.
+    func testATerritoryOrMyanmarPhoneStartsInUSUnitsAsOnTheWeb_AC6() throws {
+        func units(_ id: String, _ zone: String) throws -> String {
+            let locale = Locale(identifier: id)
+            let engineUnits = try engine.blocking { try $0.regionUnits(locale: locale, timeZone: TimeZone(identifier: zone)!) }
+            return OnboardingSteps.regionUnits(hasValues: false, onlyMissing: false, current: "si", locale: locale, engine: engineUnits) ?? "si"
+        }
+        XCTAssertEqual(try units("en_PR", "America/Puerto_Rico"), "conventional")
+        XCTAssertEqual(try units("es_PR", "America/Puerto_Rico"), "conventional")
+        XCTAssertEqual(try units("en_GU", "Pacific/Guam"), "conventional")
+        XCTAssertEqual(try units("my_MM", "Asia/Yangon"), "conventional", "Myanmar, as on the web")
+        XCTAssertEqual(try units("en_NZ", "Pacific/Auckland"), "si", "another region is unchanged")
+        XCTAssertEqual(try units("en_US", "Pacific/Auckland"), "conventional", "a US phone abroad keeps the US system, as before")
+        XCTAssertEqual(try units("en-US-u-ms-metric", "America/New_York"), "si", "metric chosen in Settings wins")
     }
 
     func testARecordWithValuesOrFromTheCloudKeepsItsUnits_AC6() async {
-        XCTAssertNil(OnboardingSteps.regionUnits(hasValues: true, onlyMissing: false, current: "conventional", system: .metric))
-        XCTAssertNil(OnboardingSteps.regionUnits(hasValues: false, onlyMissing: true, current: "conventional", system: .metric), "a web user's choice is never overwritten")
+        XCTAssertNil(OnboardingSteps.regionUnits(hasValues: true, onlyMissing: false, current: "conventional", locale: Locale(identifier: "fr_FR"), engine: "si"))
+        XCTAssertNil(OnboardingSteps.regionUnits(hasValues: false, onlyMissing: true, current: "conventional", locale: Locale(identifier: "fr_FR"), engine: "si"), "a web user's choice is never overwritten")
     }
 
     func testHealthSexOtherOrNotSetPreselectsNothing_AC3() {
@@ -142,6 +161,61 @@ final class OnboardingStepsTests: XCTestCase {
         await weight.switchUnits(toUS: false, recorded: nil, recordUnits: "si", convert: convert)
         XCTAssertEqual(weight.text, "99.8", "a typed weight is converted once and stays the person's")
         XCTAssertTrue(weight.edited)
+    }
+
+    /// US-54 AC6b (break-test 2026-11-06): 80 kg typed, then lb, then kg shows 80, never 79.8,
+    /// and saves 80 in either unit; a keystroke after a switch makes the shown text the answer.
+    func testATypedWeightSwitchedToLbAndBackIsWhatWasTyped_AC6b() async {
+        var weight = TypedAnswer(metric: "weight")
+        weight.text = "80"
+        weight.edited = true
+        await weight.switchUnits(toUS: true, recorded: nil, recordUnits: "si", convert: convert)
+        XCTAssertEqual(weight.text, "176")
+        let inLb = await weight.saved(recordUnits: "si", convert: convert)
+        XCTAssertEqual(inLb, 80, "shown in lb, saved as typed")
+        await weight.switchUnits(toUS: false, recorded: nil, recordUnits: "si", convert: convert)
+        XCTAssertEqual(weight.text, "80", "back in kg, as typed")
+        XCTAssertFalse(weight.us)
+        let inKg = await weight.saved(recordUnits: "si", convert: convert)
+        XCTAssertEqual(inKg, 80)
+        let onAUSRecord = await weight.saved(recordUnits: "conventional", convert: convert)
+        XCTAssertEqual(onAUSRecord ?? 0, 176.37, accuracy: 0.01, "80 kg in lb, not 176 lb")
+        // Retyped in lb: that is the answer now, and kg shows its conversion.
+        await weight.switchUnits(toUS: true, recorded: nil, recordUnits: "si", convert: convert)
+        weight.text = "180"
+        await weight.switchUnits(toUS: false, recorded: nil, recordUnits: "si", convert: convert)
+        XCTAssertEqual(weight.text, "81.6", "180 lb in kg")
+        let retyped = await weight.saved(recordUnits: "si", convert: convert)
+        XCTAssertEqual(retyped ?? 0, 81.65, accuracy: 0.01, "180 lb, whatever kg shows")
+    }
+
+    /// US-54 AC6b (adversary on ffb0586b): a height saves what was typed, in either unit. 183 cm
+    /// shown as 6 ft 0 in saves 183 cm, never 182.88; 6 ft 0 in shown as cm saves 6 ft 0 in.
+    func testATypedHeightSwitchedToFeetSavesWhatWasTyped_AC6b() async {
+        var cm = TypedAnswer(metric: "height")
+        cm.text = "183"
+        cm.edited = true
+        await cm.switchUnits(toUS: true, recorded: nil, recordUnits: "si", convert: convert)
+        XCTAssertEqual(cm.feetInches, MyData.FeetInches(feet: 6, inches: 0))
+        let fromCm = await cm.edit(recordUnits: "si", convert: convert)
+        XCTAssertEqual(fromCm, .profile(height: 183), "183 cm as typed")
+        var feet = TypedAnswer(metric: "height", us: true)
+        (feet.feet, feet.inches) = ("6", "0")
+        feet.edited = true
+        await feet.switchUnits(toUS: false, recorded: nil, recordUnits: "si", convert: convert)
+        let fromFeet = await feet.edit(recordUnits: "si", convert: convert)
+        XCTAssertEqual(fromFeet, .feetInches(feet: 6, inches: 0), "6 ft 0 in as typed")
+    }
+
+    /// US-54 AC6b (adversary on ffb0586b): 80 kg typed, shown in lb, is not 80.2 kg's repeat:
+    /// the tolerance is the typed unit's half step, 0.05 kg, not half a pound.
+    func testAWeightTypedInKgShownInLbKeepsTheKgTolerance_AC6b() async {
+        var weight = TypedAnswer(metric: "weight")
+        weight.text = "80"
+        weight.edited = true
+        await weight.switchUnits(toUS: true, recorded: 80.2, recordUnits: "si", convert: convert)
+        let repeated = await weight.repeats(80.2, recordUnits: "si", convert: convert)
+        XCTAssertFalse(repeated, "80 kg on 80.2 kg is written")
     }
 
     /// A height typed in feet and inches or centimetres is the right height, in either record's units.

@@ -11,6 +11,8 @@ import * as Sentry from '@sentry/react-router';
 import { getAuthenticatedUser, getCustomerId, checkSubscriptionFromTags, getCustomerOrders, isValidUuid } from '../lib/route-helpers.server';
 import { getClientIp } from '../lib/local-first-route.server';
 import { cappedBody } from '../lib/capped-body.server';
+import { takeWebChatTurn } from '../lib/rate-limiter';
+import { ipBucket } from '../lib/app-gate.server';
 import { authenticate } from '../shopify.server';
 import { logAudit, getProfile, updateSubscriptionPlan, createUserClient, getOrCreateGuestSession, GuestRateLimitError, type DbProfile } from '../lib/supabase.server';
 import {
@@ -24,10 +26,10 @@ import {
   getChatCompletion,
   reportChatFallback,
   generateTitle,
-  CHAT_MODEL,
   MAX_MESSAGE_LENGTH,
 } from '../lib/chat.server';
-import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget, ROUTER_VERSION } from '../lib/chat-router.server';
+import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget } from '../lib/chat-router.server';
+import { routerColumns, matchEventText, answerColumns } from '../lib/chat-persist.server';
 import { loadBlogIndex } from '../lib/blog-index.server';
 import { openArticle, preferMasters } from '../lib/router-view';
 import { MAX_HISTORY_MESSAGES, MAX_HISTORY_TURN_CHARS, cutText } from '../../packages/health-core/src/chat-history';
@@ -337,6 +339,22 @@ const APP_ATTESTED = Symbol.for('roadmap.us52.app-attested');
  *  (api.app.v1.chat.ts). It has no Shopify session and no guest session. */
 const APP_AUTH: AuthResult = { client: null, userId: 'app', customerId: null, admin: null, isGuest: true };
 
+/** The message checks, then US-15 AC45's turn cap, in that order; null when the turn may run. */
+function refuseTurn(message: unknown, request: Request, app: boolean): Response | null {
+  if (!message || typeof message !== 'string') {
+    return Response.json({ success: false, error: 'message required' }, { status: 400 });
+  }
+  if (message.length > MAX_MESSAGE_LENGTH) {
+    return Response.json({ success: false, error: `Message too long (max ${MAX_MESSAGE_LENGTH} chars)` }, { status: 400 });
+  }
+  // US-15 AC45: a web turn counts against its IP's day and the machine's,
+  // whatever session it carries. The app's turn was counted by its gate.
+  if (!app && !takeWebChatTurn(ipBucket(getClientIp(request, 'shopify')))) {
+    return Response.json({ success: false, error: 'rate_limited' }, { status: 429 });
+  }
+  return null;
+}
+
 /**
  * The send-a-message action. `app`: the iPhone app's turn (US-52 AC5), which
  * runs the widget's path (history and context in the body, no transcript stored)
@@ -408,12 +426,8 @@ async function chatAction(request: Request, app: boolean) {
     // ----- POST — send message -----
     const { message, conversationId } = body;
 
-    if (!message || typeof message !== 'string') {
-      return Response.json({ success: false, error: 'message required' }, { status: 400 });
-    }
-    if (message.length > MAX_MESSAGE_LENGTH) {
-      return Response.json({ success: false, error: `Message too long (max ${MAX_MESSAGE_LENGTH} chars)` }, { status: 400 });
-    }
+    const refused = refuseTurn(message, request, app);
+    if (refused) return refused;
 
     // Sanitize message for router (strips control chars, caps at 2000 chars)
     const sanitizedCurrent = sanitizeForRouter(message);
@@ -661,32 +675,22 @@ async function chatAction(request: Request, app: boolean) {
       // Router telemetry, one row per answered turn. On the widget it is the ONLY
       // row, trimmed to its whitelist in one place (redactForWidget).
       // The row holds question text, which may carry health details: at most its
-      // first 500 chars, as before the 8,000 cap, blanked by the 30-day purge
-      // (US-15 AC7/AC26). CLAUDE.md keeps health values out of telemetry, so it never grows.
-      const MATCH_EVENT_MESSAGE_CHARS = 500;
-      const clip = (s: string) => cutText(s, MATCH_EVENT_MESSAGE_CHARS);
+      // first 500 chars (matchEventText), blanked by the 30-day purge (US-15 AC7/AC26).
       const matchEvent = {
         message_id: assistantMessageId,
         conversation_id: activeConversationId,
         user_id: auth.userId,
-        message: clip(sanitizedCurrent),
+        message: matchEventText(sanitizedCurrent),
         router_context: {
           platform: 'shopify',
-          first: sanitizedFirst ? clip(sanitizedFirst) : null,
-          recent: sanitizedRecent.map(clip),
+          first: sanitizedFirst ? matchEventText(sanitizedFirst) : null,
+          recent: sanitizedRecent.map(matchEventText),
           // US-50 AC14 usage signal: index handles only, never user text.
           ...(routed.replaced.length ? { replaced: routed.replaced } : {}),
           ...(articles?.reduced.length ? { reduced: articles.reduced } : {}),
         },
         matched_handles: effectiveHandles,
-        router_version: routerResult ? ROUTER_VERSION : null,
-        router_latency_ms: routerResult?.latencyMs ?? null,
-        router_cache_hit: routerResult?.cacheHit ?? null,
-        router_input_tokens: routerResult?.usage.inputTokens ?? null,
-        router_cache_read_tokens: routerResult?.usage.cacheReadTokens ?? null,
-        router_output_tokens: routerResult?.usage.outputTokens ?? null,
-        router_raw: routerResult?.error && routerResult.rawJson != null ? cutText(routerResult.rawJson, 500) : null,
-        router_error: routerResult?.error ?? null,
+        ...routerColumns(routerResult),
         classification: classifierResult.classification,
         router_skipped: routerSkipped,
         is_fallback: completion.isFallback,
@@ -716,14 +720,7 @@ async function chatAction(request: Request, app: boolean) {
             user_id: auth.userId,
             role: 'assistant',
             content: completion.content,
-            input_tokens: completion.usage.inputTokens,
-            output_tokens: completion.usage.outputTokens,
-            model: CHAT_MODEL,
-            is_fallback: completion.isFallback,
-            // Persist the fallback cause so the daily audit email is self-diagnosing
-            // (previously only sent to Sentry via reportChatFallback). Null on success.
-            failure_mode: completion.failureMode ?? null,
-            error_detail: completion.errorDetail != null ? cutText(completion.errorDetail, 500) : null,
+            ...answerColumns(completion),
           })
           .then(({ error: msgError }: { error: { message: string } | null }) => {
             if (msgError) {

@@ -1,4 +1,4 @@
-/** US-68: one local `test:all` at a time, shared across worktrees. */
+/** US-71: one local `test:all` at a time, shared across worktrees. */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -17,7 +17,7 @@ const deadPid = () => {
   return r.pid as number; // exited, so no longer alive
 };
 
-describe('test:all lock (US-68 AC1)', () => {
+describe('test:all lock (US-71 AC1)', () => {
   it('acquires, then refuses a second taker while the holder lives', () => {
     expect(tryAcquire(dir)).toBe(true);
     expect(readHolder(dir).pid).toBe(process.pid);
@@ -58,7 +58,7 @@ describe('test:all lock (US-68 AC1)', () => {
   });
 });
 
-describe('worker cap and CI (US-68 AC2, AC3)', () => {
+describe('worker cap and CI (US-71 AC2, AC3)', () => {
   it('defaults to max(2, cpus/4) and honours the env override', () => {
     expect(workerCap({}, 16)).toBe('4');
     expect(workerCap({}, 4)).toBe('2');
@@ -91,7 +91,7 @@ describe('worker cap and CI (US-68 AC2, AC3)', () => {
   });
 });
 
-describe('lock holder liveness and takeover races (US-68 AC1)', () => {
+describe('lock holder liveness and takeover races (US-71 AC1)', () => {
   it('stays held while the vitest group lives though the wrapper is dead', () => {
     const grp = spawn(process.execPath, ['-e', 'setInterval(()=>{},1000)'], { detached: true, stdio: 'ignore' });
     try {
@@ -147,7 +147,7 @@ describe('lock holder liveness and takeover races (US-68 AC1)', () => {
   });
 });
 
-describe('the real script (US-68 AC1-AC3)', () => {
+describe('the real script (US-71 AC1-AC3)', () => {
   const script = path.resolve(__dirname, 'test-all-locked.mjs');
   let proj: string;
   let log: string;
@@ -275,4 +275,23 @@ ${body}`, { mode: 0o755 });
     fs.mkdirSync(sub, { recursive: true });
     expect(findVitest(sub)).toBe(path.join(proj, 'node_modules', '.bin', 'vitest'));
   });
+});
+
+describe('every local vitest run is capped, targeted ones too (US-71 AC5)', () => {
+  const repo = path.resolve(__dirname, '..');
+  const readCap = (config: string, env: Record<string, string>) => {
+    const code = `const m = await import(${JSON.stringify(path.join(repo, config))}); const c = m.default.test ? m.default : m.default.default; console.log(JSON.stringify(c.test.maxWorkers ?? null));`;
+    const r = spawnSync(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', code], {
+      cwd: repo, encoding: 'utf8', env: { ...process.env, CI: '', TEST_ALL_MAX_WORKERS: '', ...env },
+    });
+    expect(r.status, r.stderr).toBe(0);
+    return JSON.parse(r.stdout.trim().split('\n').pop()!);
+  };
+  for (const config of ['vitest.config.ts', 'packages/health-core/vitest.config.ts']) {
+    it(`${config}: test:all's cap locally, the override honoured, none in CI`, () => {
+      expect(readCap(config, {})).toBe(Math.max(2, Math.floor(os.cpus().length / 4)));
+      expect(readCap(config, { TEST_ALL_MAX_WORKERS: '3' })).toBe(3);
+      expect(readCap(config, { CI: 'true' })).toBeNull();
+    }, 60_000);
+  }
 });

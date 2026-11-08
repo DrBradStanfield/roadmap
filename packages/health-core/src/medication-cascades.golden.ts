@@ -18,7 +18,7 @@
  * that only off-list rows changed, each now reading as HEAD read it at the
  * graded dose.
  *
- * US-06 AC13 (Brad, 2026-11-02) changed it again: bempedoic acid now comes
+ * US-06 AC20 (Brad, 2026-11-02) changed it again: bempedoic acid now comes
  * last and only when the statin is not tolerated, and a statin not tolerated
  * goes to the PCSK9 inhibitor before ezetimibe (once it is answered any way
  * but "not yet", ezetimibe and bempedoic acid follow). The explicit set gained

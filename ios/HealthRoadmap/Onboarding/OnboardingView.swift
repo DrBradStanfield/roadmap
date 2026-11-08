@@ -333,7 +333,8 @@ struct OnboardingView: View {
         // A new record takes the phone's region's units (AC6); a record with values keeps its own.
         let hasValues = data.profile.sex != nil || data.profile.birthYear != nil || data.profile.height != nil
             || (data.vitals + data.bloodTests + [data.psa]).contains { $0.latest != nil }
-        if let units = OnboardingSteps.regionUnits(hasValues: hasValues, onlyMissing: ownUnits, current: data.unitSystem, system: Locale.current.measurementSystem) {
+        let engineUnits = hasValues || ownUnits ? nil : await store.regionUnits()
+        if let units = OnboardingSteps.regionUnits(hasValues: hasValues, onlyMissing: ownUnits, current: data.unitSystem, locale: .current, engine: engineUnits) {
             _ = await store.apply(.units(units))
             // Gone before the units landed: nothing to pin (onDisappear unpins only a begun run).
             guard !Task.isCancelled, step == nil else { return }
@@ -368,7 +369,7 @@ struct OnboardingView: View {
         // Health's sex and birth are taken as given (AC3b), saved by the same edits a tap or
         // Continue makes; one the engine refuses is asked. Height and weight came in with the connect.
         // One edit for both; refused, both are asked (review E3).
-        if let profile, let edit = OnboardingSteps.healthEdit(given, profile: profile), await store.apply(edit) != .saved {
+        if let profile, let edit = OnboardingSteps.healthEdit(given, profile: profile), await store.apply(edit) != .saved() {
             fromHealth.subtract([.sex, .birth])
         }
         connecting = false
@@ -424,7 +425,7 @@ struct OnboardingView: View {
             case .stay:
                 return
             case .unchanged:
-                return settle(.saved, step)
+                return settle(.saved(), step)
             case .edit(let made):
                 edit = made
             }
@@ -455,14 +456,8 @@ struct OnboardingView: View {
         // A box the person left alone saves nothing, whatever its units show (AC6). A typed
         // one that cannot be read or converted stays on its screen.
         case .height:
-            let height = answers.height
-            guard height.edited else { return .unchanged }
-            let edit: RecordEdit? = if height.us {
-                height.feetInches.map { .feetInches(feet: $0.feet, inches: $0.inches) }
-            } else {
-                await savedValue(.height).map { .profile(height: $0) }
-            }
-            return edit.map(Change.edit) ?? .stay
+            guard answers.height.edited else { return .unchanged }
+            return await answers.height.edit(recordUnits: recordUnits(.height), convert: store.convert).map(Change.edit) ?? .stay
         case .weight:
             // Health's year-old weight, left as it is, is confirmed as today's: an Apple Health
             // row in the row's own kilograms, never the rounded display, never written back (AC3b).
@@ -559,7 +554,7 @@ struct OnboardingView: View {
     /// Built once: the wheels redraw on every tick.
     static let appleAsksNextWords = "Next, Apple asks for access. Turn everything on, then tap **Allow**."
     /// The five US-56 readings, named on the Apple Health page (adversary R5).
-    static let liveLine = "It also shows your heart rate, sleep, VO2 max and steps here, never in your record."
+    static let liveLine = "It also shows your resting heart rate, sleep, VO2 max and steps here, never in your record."
     private static let birthYears = DayText.birthYears(now: .now)
 
     /// What each box takes as typed: whole feet, whole inches (centimetres and weight take `.value`).

@@ -21,7 +21,7 @@ import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 
 import { StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
 import { describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
-import { folderNudge, type GuardRefusal, isToolName, MAX_APPROVAL_LENGTH, MCP_TOOLS, OPEN_SOURCE_NOTE, SI_NOTE, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
+import { DOCUMENT_TEXT_NOTE, folderNudge, type GuardRefusal, isToolName, MAX_APPROVAL_LENGTH, MCP_TOOLS, OPEN_SOURCE_NOTE, SI_NOTE, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import { dispatchRpc, INVALID_REQUEST, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../../packages/health-core/src/mcp-rpc';
 import { importFilesBucket, isRefusalReason, MCP_KNOWLEDGE_TOOL_NAMES, MCP_TOOL_NAMES, type McpRefusalReason, type McpToolName } from '../../packages/health-core/src/product-events';
 import { KNOWN_CLIENTS, type McpClientLabel } from './mcp-clients.server';
@@ -58,7 +58,7 @@ export const INSTRUCTIONS =
   'writes nothing to the record until its commit, which needs the user’s own confirmation of what it found, quoted as approval; a file dropped into the chat ' +
   'is read by you and filed through file_results the same way. correct_value, update_profile and report_feedback are ' +
   'permanent, so here they take two calls: the first answers with a confirm receipt, and only the second, after the user’s ' +
-  'own yes and carrying their words as approval, does it.' + SI_NOTE + OPEN_SOURCE_NOTE;
+  'own yes and carrying their words as approval, does it.' + DOCUMENT_TEXT_NOTE + SI_NOTE + OPEN_SOURCE_NOTE;
 
 /**
  * A correction fixes a recent mistake. A result from three years ago is

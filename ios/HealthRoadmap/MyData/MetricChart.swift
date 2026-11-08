@@ -16,7 +16,9 @@ struct ChartPoint: Identifiable {
     /// A history's active values, ready to plot. Numbers are the engine's own text, in the user's
     /// units; a limit's is its `bound`, as its text "< 2.0" is no number.
     static func points(_ history: MetricHistory) -> [ChartPoint] {
-        history.rows.filter(\.isActive).flatMap { row -> [ChartPoint] in
+        // Units that vary between reports draw no line: one would compare unlike numbers (US-21 AC3a).
+        guard history.unitsNote == nil else { return [] }
+        return history.rows.filter(\.isActive).flatMap { row -> [ChartPoint] in
             guard let date = DayText.date(row.day) else { return [] }
             if history.metric == MyData.bloodPressure {
                 return [("Systolic", row.systolic), ("Diastolic", row.diastolic)].compactMap { series, text in
@@ -26,7 +28,8 @@ struct ChartPoint: Identifiable {
             if let bound = row.bound {
                 return [ChartPoint(id: row.id, date: date, value: bound, series: history.label, limit: true, label: row.value)]
             }
-            return Double(row.value).map { [ChartPoint(id: row.id, date: date, value: $0, series: history.label)] } ?? []
+            // A lab value's own number, unrounded: its text may round 0.001 to "0" (review R5).
+            return (row.number ?? Double(row.value)).map { [ChartPoint(id: row.id, date: date, value: $0, series: history.label)] } ?? []
         }
     }
 }
@@ -131,7 +134,6 @@ struct MetricChart: View {
         "psa": [Color(light: 0x6680A6, dark: 0x738195)],
         "height": [Color(light: 0x8E8E93, dark: 0x828284)],
         // US-56, read live from Apple Health (AppleHealthMetrics/): heart red, sleep teal, activity orange.
-        "heart_rate": [Color(light: 0xE5244B, dark: 0xEC7F92)],
         "resting_heart_rate": [Color(light: 0xA8323E, dark: 0xC98C93)],
         "sleep": [Color(light: 0x0E8A86, dark: 0x5EC2BC)],
         "vo2_max": [Color(light: 0xB35C00, dark: 0xE0A46A)],

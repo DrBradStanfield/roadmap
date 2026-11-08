@@ -7,10 +7,11 @@
  * Read-only: no editing, no unit conversion — values render as-reported
  * (see decisions in docs/user-stories.md § US-21).
  */
-import { LAB_GROUPS, labSlotKey, resolveLabCatalogEntry, displayLabUnit, type LabGroup, type LabGroupId } from './lab-catalog';
+import { LAB_GROUPS, labSlotKey, labUnitRefusalNote, labUnitTaken, resolveLabCatalogEntry, displayLabUnit, type CountFault, type LabGroup, type LabGroupId } from './lab-catalog';
 import { trendWindow } from './recent-trend';
 import { rowTarget } from './row-target';
 import { comparatorOf, limitText, type Comparator } from './lab-limits';
+import { compareReadings } from './measurement-history';
 
 /** A lab test's name for display: its catalogue label, else the snake_case name title-cased. */
 export function labValueLabel(metricName: string): string {
@@ -18,13 +19,47 @@ export function labValueLabel(metricName: string): string {
     ?? metricName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-/** A lab value as the matrix shows it: up to two decimals, no trailing zeros. */
+/**
+ * What a person reads when the record refused a lab value's unit: the unit a
+ * catalogued test is stored in, or, for a unit it does take, that the number was
+ * refused, and a note on what to look for instead, where there is one (US-21 AC15). Never the store's
+ * message, which is the copy an assistant reads.
+ */
+export function labUnitRefusalLine(key: string, unit: string, fault?: CountFault): string {
+  const entry = resolveLabCatalogEntry(key);
+  const note = labUnitRefusalNote(entry, unit, fault);
+  if (fault === 'scale') return `${labValueLabel(key)}: ${note}.`;
+  if (fault === 'ceiling') return `${note}.`;
+  const takes = entry ? ` This test takes ${entry.unit}.` : '';
+  const lead = labUnitTaken(entry, unit)
+    ? `${labValueLabel(key)}: the number was not saved.`
+    : !unit.trim()
+      ? `${labValueLabel(key)}: no unit was printed, so it was not saved.${takes}`
+      : `${labValueLabel(key)}: unit not recognised (${unit}). It was not saved.${takes}`;
+  return note ? `${lead} ${note}.` : lead;
+}
+
+/** Why a lab test's history draws no line: its reports used more than one unit (US-21 AC3a).
+ *  `units` in the order met, oldest report first; an empty one reads "no unit". */
+export function mixedUnitsNote(units: string[]): string {
+  return `Units vary between reports (${units.map((u) => u || 'no unit').join(', ')}), so this test is not charted.`;
+}
+
+/** A lab value as the matrix shows it: up to two decimals, no trailing zeros;
+ *  below 0.1, two significant figures, so a suppressed TSH of 0.004 never
+ *  prints "0" (US-21 AC25). */
 export function formatLabValue(v: number): string {
-  return String(Math.round(v * 100) / 100);
+  const size = Math.abs(v);
+  if (size >= 0.1 || size === 0 || !Number.isFinite(size)) return String(Math.round(v * 100) / 100);
+  // toFixed throws past 100 digits, and a reader takes any finite number, so
+  // an absurdly small one prints in exponent form rather than blank the table (US-65).
+  if (size < 1e-20) return String(Number(v.toPrecision(2)));
+  // toFixed, not String: String(4e-7) prints exponent notation.
+  return v.toFixed(1 - Math.floor(Math.log10(size))).replace(/0+$/, '');
 }
 
 /** A saved lab value as shown: a limit with its symbol and its bound as
- *  printed ("< 0.005"), else up to two decimals (US-12 AC20). */
+ *  printed ("< 0.005"), else `formatLabValue` (US-12 AC20, US-21 AC25). */
 export function savedLabText(v: number, comparator?: Comparator): string {
   return comparator ? limitText(v, 0, comparator) : formatLabValue(v);
 }
@@ -44,6 +79,8 @@ export interface LabSeriesPoint {
   value: number;
   unit: string;
   recordedAt: string;
+  /** The write time, which breaks a tie in `recordedAt` (US-07 AC4). */
+  createdAt?: string;
   /** Printed as a limit: `value` is its bound (US-12 AC20). */
   comparator?: Comparator;
 }
@@ -59,7 +96,7 @@ export interface LabSeries {
    *  `mixedUnits` before treating this as every point's unit. */
   unit: string;
   mixedUnits: boolean;
-  /** Ascending by recordedAt (oldest first, newest last/right). */
+  /** Ascending by `compareReadings`: day, then time, createdAt, id (oldest first, newest last/right). */
   points: LabSeriesPoint[];
 }
 
@@ -73,7 +110,7 @@ export interface LabValueGroup {
 /** A stored lab value as the grouping reads it. The widget's rows come
  *  pre-filtered to active (RoadmapStore.loadLabValues() applies activeOnly()),
  *  so `status` is optional; a less-filtered source still drops the rest. */
-export type LabValueRow = { id: string; metricName: string; value: number; unit: string; recordedAt: string; status?: string; comparator?: unknown };
+export type LabValueRow = { id: string; metricName: string; value: number; unit: string; recordedAt: string; createdAt?: string; status?: string; comparator?: unknown };
 
 /** Group + series-ify stored lab values for read-only display. Entered-in-
  *  error rows are excluded; series are sorted oldest→newest; a series
@@ -98,7 +135,7 @@ export function groupLabValues(rows: LabValueRow[]): LabValueGroup[] {
     // write); a unit that still differs flags mixedUnits.
     // A row with no unit is one readers accept (readable-rows.ts), from another build:
     // it shows with no unit rather than throwing, so one row never blanks the screen.
-    series.points.push({ id: row.id, value: row.value, unit: displayLabUnit(row.unit ?? '', entry), recordedAt: row.recordedAt, ...comparatorOf(row) });
+    series.points.push({ id: row.id, value: row.value, unit: displayLabUnit(row.unit ?? '', entry), recordedAt: row.recordedAt, ...(row.createdAt ? { createdAt: row.createdAt } : {}), ...comparatorOf(row) });
   }
 
   const groupDefs: Array<{ id: LabRowsGroupId; label: string; icon: LabRowsIcon }> = [...LAB_GROUPS, OTHER_GROUP];
@@ -108,7 +145,7 @@ export function groupLabValues(rows: LabValueRow[]): LabValueGroup[] {
     const groupMap = seriesByGroup.get(def.id);
     if (!groupMap || groupMap.size === 0) continue;
     const series: LabSeries[] = Array.from(groupMap.entries()).map(([seriesKey, s]) => {
-      const points = [...s.points].sort((a, b) => a.recordedAt.localeCompare(b.recordedAt));
+      const points = [...s.points].sort(compareReadings);
       const units = new Set(points.map(p => p.unit));
       return {
         seriesKey,

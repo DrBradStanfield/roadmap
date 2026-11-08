@@ -26,7 +26,7 @@
  */
 
 import { METRIC_LABELS } from './mappings';
-import { UNIT_DEFS } from './units';
+import { UNIT_DEFS, type ValidationRange } from './units';
 
 export type LabGroupId =
   | 'renal'
@@ -117,8 +117,8 @@ const MEQ_ALIASES = ['meq/l'];
 const FREE_TESTOSTERONE = { 'pg/ml': 3.467, 'ng/dl': 34.67, 'nmol/l': 1000 };
 /** Glucose, fasting or random: glucose 180.16 g/mol. */
 const GLUCOSE = { 'mg/dl': 0.05551 };
-/** A gonadotrophin: mIU/mL and U/L are IU/L, the same number. */
-const GONADOTROPHIN_ALIASES = ['miu/ml', 'u/l'];
+/** A gonadotrophin: mIU/mL (mU/mL printed short) and U/L are IU/L, the same number. */
+const GONADOTROPHIN_ALIASES = ['miu/ml', 'mu/ml', 'u/l'];
 /** eGFR's unit, spaced or with the body-surface area left off (LabCorp). */
 const EGFR_ALIASES = ['ml/min/1.73 m²', 'ml/min/1.73'];
 /** The five differentials in their absolute form, as US reports print them (US-21 AC20). */
@@ -216,7 +216,7 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'fibrinogen', label: 'Fibrinogen', group: 'haematology', unit: 'g/L', aliases: [], conversions: MG_DL_TO_G_L },
 
   // ── Thyroid ───────────────────────────────────────────────────────────
-  { key: 'tsh', label: 'TSH', group: 'thyroid', unit: 'mIU/L', aliases: ['thyroid stimulating hormone', 'thyrotropin', 'tsh (thyroid stimulating hormone)'], unitAliases: ['µiu/ml', 'mu/l', 'microiu/ml', 'mciu/ml'] },
+  { key: 'tsh', label: 'TSH', group: 'thyroid', unit: 'mIU/L', aliases: ['thyroid stimulating hormone', 'thyrotropin', 'tsh (thyroid stimulating hormone)'], unitAliases: ['µiu/ml', 'mu/l', 'µu/ml', 'microiu/ml', 'mciu/ml'] },
   { key: 'ft4', label: 'Free T4', group: 'thyroid', unit: 'pmol/L', aliases: ['free thyroxine', 't4 free', 'free t4', 't4, free', 'free t4 (ft4)', 'free thyroxine (ft4)'], conversions: { 'ng/dl': 12.87 } }, // thyroxine 776.87 g/mol
   { key: 'ft3', label: 'Free T3', group: 'thyroid', unit: 'pmol/L', aliases: ['free triiodothyronine', 't3 free', 'free t3', 't3, free'], conversions: { 'pg/ml': 1.536 } }, // triiodothyronine 650.97 g/mol
   { key: 'anti_tpo', label: 'Anti-TPO', group: 'thyroid', unit: 'IU/mL', aliases: ['tpo antibodies', 'thyroid peroxidase antibodies', 'anti thyroid peroxidase', 'tpoab', 'thyroid peroxidase (tpo) ab'], unitAliases: ['kiu/l', 'u/ml'] },
@@ -240,7 +240,7 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'free_testosterone_calculated', label: 'Free testosterone (calculated)', group: 'hormones', unit: 'pmol/L', aliases: ['calculated free testosterone', 'cft', 'calculated free t'], conversions: FREE_TESTOSTERONE, ceiling: 10000 },
   { key: 'shbg', label: 'SHBG', group: 'hormones', unit: 'nmol/L', aliases: ['sex hormone binding globulin', 'shbg (sex hormone binding globulin)'] },
   { key: 'estradiol', label: 'Estradiol', group: 'hormones', unit: 'pmol/L', aliases: ['oestradiol', 'e2'], conversions: { 'pg/ml': 3.671, 'ng/l': 3.671 } }, // estradiol 272.38 g/mol
-  { key: 'prolactin', label: 'Prolactin', group: 'hormones', unit: 'mIU/L', aliases: [], unitAliases: ['µiu/ml', 'microiu/ml', 'mciu/ml'] }, // ng/mL is deliberately REFUSED: the mIU factor is assay-dependent (~21.2 for the WHO 3rd IS), so converting would invent precision
+  { key: 'prolactin', label: 'Prolactin', group: 'hormones', unit: 'mIU/L', aliases: [], unitAliases: ['µiu/ml', 'mu/l', 'µu/ml', 'microiu/ml', 'mciu/ml'] }, // ng/mL is deliberately REFUSED: the mIU factor is assay-dependent (~21.2 for the WHO 3rd IS), so converting would invent precision
   // Cortisol is read against the time it was drawn. A name that prints no timing is a
   // morning cortisol, as most are (Brad 2026-11-02, issue 476); one that prints its
   // timing goes to that time's entry. Salivary and urine cortisol are not catalogued.
@@ -264,7 +264,7 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'dht', label: 'DHT', group: 'hormones', unit: 'nmol/L', aliases: ['dihydrotestosterone'], conversions: { 'ng/dl': 0.03443, 'pg/ml': 0.003443 } }, // dihydrotestosterone 290.44 g/mol
   { key: 'acth', label: 'ACTH', group: 'hormones', unit: 'pmol/L', aliases: ['adrenocorticotropic hormone', 'corticotropin'], conversions: { 'pg/ml': 0.2202, 'ng/l': 0.2202 } }, // ACTH 1-39 4541 g/mol
   { key: 'gh', label: 'Growth hormone', group: 'hormones', unit: 'µg/L', aliases: ['hgh', 'human growth hormone', 'somatotropin'], unitAliases: NG_PER_ML }, // mIU/L is assay-dependent: refused
-  { key: 'hcg', label: 'hCG', group: 'hormones', unit: 'IU/L', aliases: ['beta hcg', 'beta-hcg', 'b-hcg', 'human chorionic gonadotropin', 'total hcg'], unitAliases: ['miu/ml'] },
+  { key: 'hcg', label: 'hCG', group: 'hormones', unit: 'IU/L', aliases: ['beta hcg', 'beta-hcg', 'b-hcg', 'human chorionic gonadotropin', 'total hcg'], unitAliases: ['miu/ml', 'mu/ml'] },
 
   // ── Vitamins & minerals ───────────────────────────────────────────────
   { key: 'vitamin_d', label: 'Vitamin D (25-OH)', group: 'vitamins', unit: 'nmol/L', aliases: ['25-hydroxyvitamin d', '25-oh vitamin d', 'vitamin d3', '25(oh)d', 'vitamin d, 25-hydroxy', '25-hydroxy vitamin d', '25 oh vitamin d', 'vitamin d (25 oh)'], conversions: { 'ng/ml': 2.496, 'µg/l': 2.496 } }, // 25-OH-D 400.64 g/mol
@@ -330,6 +330,34 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'fructosamine', label: 'Fructosamine', group: 'metabolic', unit: 'µmol/L', aliases: [] },
 ];
 
+/**
+ * Typing-mistake bounds (US-21 AC26), in each test's canonical unit: wide physiologic limits that
+ * no real result passes, so a value typed past one is a slip of the number or the unit (glucose
+ * 5.5 with mg/dL picked is 0.31 mmol/L). Not reference ranges and not grading. Checked only where
+ * a person types a value (`addLabValue`, `correctValue`); a min of 0 checks the top end alone. Every bound approved by Brad 2026-11-06.
+ */
+export const LAB_PLAUSIBLE_RANGES: Readonly<Record<string, ValidationRange>> = {
+  glucose: { min: 0.5, max: 150 }, // 9–2,700 mg/dL; the max clears a survived hyperosmolar 2,656 mg/dL (147 mmol/L) cited in review; the min is Brad's (2026-11-06: "people would be dead at 0.5 mmol/L")
+  glucose_random: { min: 0.5, max: 150 }, // the same test, not fasting
+  sodium: { min: 70, max: 260 }, // survived extremes run from about 95 to 250 mmol/L
+  potassium: { min: 0.5, max: 20 }, // lows near 1 are survived; haemolysed or contaminated samples pass 10
+  urate: { min: 0, max: 6 }, // ~100 mg/dL: tumour lysis rarely passes 3 mmol/L; near 0 after rasburicase
+  alt: { min: 0, max: 50000 }, // ischaemic or toxic hepatitis can pass 10,000 U/L
+  ast: { min: 0, max: 50000 }, // as ALT, and rhabdomyolysis
+  albumin: { min: 0, max: 80 }, // dehydration stays under 60 g/L; congenital analbuminaemia reads near 0
+  haemoglobin: { min: 5, max: 300 }, // survived anaemia near 7 g/L; polycythaemia and newborns stay under 250
+  wbc: { min: 0, max: 2000 }, // hyperleukocytosis in leukaemia can pass 1,000 ×10⁹/L; 0 in aplasia
+  platelets: { min: 0, max: 10000 }, // essential thrombocythaemia rarely passes 5,000 ×10⁹/L
+  tsh: { min: 0, max: 2000 }, // clears a 1,099 mIU/L in severe primary hypothyroidism cited in review; suppressed reads near 0
+  ft4: { min: 0, max: 200 }, // thyroid storm rarely passes 100 pmol/L; myxoedema reads near 0
+  crp: { min: 0, max: 1000 }, // severe sepsis rarely passes 500 mg/L
+  vitamin_d: { min: 0, max: 2500 }, // 1000 ng/mL: past reported intoxication (hundreds of ng/mL)
+  vitamin_b12: { min: 0, max: 20000 }, // injections or myeloproliferative disease can pass 7,000 pmol/L
+  folate: { min: 0, max: 1000 }, // supplemented serum folate rarely passes 100 nmol/L
+  ferritin: { min: 0, max: 500000 }, // haemophagocytic syndromes can pass 100,000 µg/L
+  iron: { min: 0, max: 1000 }, // iron poisoning can pass 180 µmol/L (1,000 µg/dL)
+};
+
 const SUPERSCRIPT_DIGITS: Record<string, string> = {
   '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
   '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
@@ -365,6 +393,11 @@ export function normalizeLabUnit(raw: string): string {
   u = u.replace(/\b(?:ul|mcl)\b/gi, 'µL');
   // Lowercase litre after a slash; squared metre ("m2"/"m^2") in eGFR units.
   u = u.replace(/\/l\b/g, '/L');
+  // A decilitre, millilitre or microlitre in any case, as a whole token, so an
+  // uncatalogued test in mg/dL and mg/dl is one unit (US-21 AC14, 2026-11-04).
+  // Only these three: G/L is giga per litre, never g/L. No i flag: under it µ
+  // also matches Greek capital Mu, which is not a micro sign.
+  u = u.replace(/(^|[\s/])([dDmM]|µ)[lL](?=$|[\s/])/g, (_, pre: string, p: string) => `${pre}${p.toLowerCase()}L`);
   u = u.replace(/m\^?2\b/g, 'm²');
   // Three spellings of one unit (US-21 AC14), any case, only as a whole token
   // between the ends, a slash or a space: "gm/dL" is g/dL, "Unit" or "Units"
@@ -636,7 +669,7 @@ const ENTRY_BY_NAME: ReadonlyMap<string, LabCatalogEntry> = (() => {
  * moves; a stored row in a punctuated spelling now reads under its entry, as
  * `labSlotKey` resolves it (a non-SI unit is corrected on load by `migrate.ts`).
  */
-function looseFold(name: string): string {
+export function looseFold(name: string): string {
   return foldName(name).replace(/\b([ap])\.\s?m\.?(?![a-z])/g, '$1m').replace(/[-‐‑–—−(),:/]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
@@ -654,6 +687,11 @@ const ENTRY_BY_LOOSE_NAME: ReadonlyMap<string, LabCatalogEntry | null> = (() => 
   }
   return byLoose;
 })();
+
+/** Whether any catalogue name, ambiguous or not, has this loose fold: such a form never resolves to a core test (US-66 AC4). */
+export function isLooseCatalogueName(loose: string): boolean {
+  return ENTRY_BY_LOOSE_NAME.has(loose);
+}
 
 /** Resolve a report's test name (any casing/spelling) to a catalogue entry.
  *  BOTH sides are folded before comparing, so the underscore/space variance
@@ -689,7 +727,7 @@ export function labSlotKey(name: string): string {
 // Vocabularies read off the catalogue
 // ---------------------------------------------------------------------------
 // Two guards need to know what a health value looks like written down: the
-// feedback guard in `mcp-tools.ts` (a bug report must not carry a result) and
+// feedback guard in `mcp-feedback.ts` (a bug report must not carry a result) and
 // the Sentry free-text scrub. Both read the words and units off METRIC_LABELS,
 // UNIT_DEFS and the catalogue below rather than keeping a hand list, so a test
 // added tomorrow guards both for free.

@@ -37,14 +37,17 @@ import {
   driveFindFolder,
   driveUpdateIfVersion,
   driveUploadDocument,
+  fetchOrFail,
   readDriveRecord,
   splitDocumentRef,
   DRIVE_API,
   DRIVE_FOLDER_NAME,
   ROADMAP_FILE_NAME,
   sleepUntilAborted,
+  catchUpAfterFailure,
   StorageError,
   jsonBody,
+  timeoutDeadline,
   type ReadResult,
   type StorageAdapter,
   type WriteResult,
@@ -137,6 +140,34 @@ function expiry(expiresIn?: number): number {
 /** The one scope Drive access needs; `google-config.ts` builds the request from it. */
 export const DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
+type RefreshGrant = { accessToken: string; expiresIn: number; idToken?: string };
+
+/**
+ * POST a refresh grant to the stateless endpoint and read a 2xx body, both in
+ * one 5 s deadline and one catch. This runs at page load before first render:
+ * a black-holing server must fail fast into the on-device + Reconnect
+ * fallback, not hang. Null when the call or the body read failed (no answer, a
+ * body that stalls past the deadline, dies or is not JSON), which the caller
+ * treats as transient, never a rejection (review of #788). A non-2xx body is
+ * not read; a 2xx whose body is JSON `null` comes back with `json: null`.
+ */
+async function postRefreshGrant(url: string, refreshToken: string): Promise<{ status: number; json?: RefreshGrant | null } | null> {
+  const deadline = timeoutDeadline(5000);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      // No Content-Type: keep it a CORS simple request (no preflight).
+      body: JSON.stringify({ grantType: 'refresh', refreshToken }),
+      signal: deadline.signal,
+    });
+    return { status: res.status, json: res.ok ? ((await res.json()) as RefreshGrant | null) : undefined };
+  } catch {
+    return null;
+  } finally {
+    deadline.clear();
+  }
+}
+
 /**
  * Google names the approved scopes on both connect paths (the redirect URL,
  * the popup's token response), so a grant with the Drive box left unticked is
@@ -207,6 +238,9 @@ function loadGis(): Promise<void> {
       const s = document.createElement('script');
       s.src = 'https://accounts.google.com/gsi/client';
       s.async = true;
+      // A script that failed (the network was down) is taken out, so the next
+      // load asks again instead of waiting on it forever (US-09 AC30a).
+      s.onerror = () => s.remove();
       document.head.appendChild(s);
     }
     const startedAt = Date.now();
@@ -312,8 +346,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
     // No Content-Type header: a string body defaults to text/plain, keeping the
     // POST a CORS "simple request" (no preflight — remix-serve can't answer
-    // OPTIONS). The endpoint parses JSON regardless of content type.
-    const res = await fetch(config.exchangeUrl, {
+    // OPTIONS). The endpoint parses JSON regardless of content type. Bounded
+    // (US-09 AC37), as Dropbox's is: the page waits on this before it draws.
+    const res = await fetchOrFail('Google Drive', config.exchangeUrl, {
       method: 'POST',
       body: JSON.stringify({
         grantType: 'code',
@@ -321,6 +356,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
         codeVerifier: claimed.verifier,
         redirectUri: config.redirectUri,
       }),
+      timeoutMs: 10_000,
     });
     if (!res.ok) {
       throw new StorageError(`Google Drive connect failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
@@ -366,26 +402,18 @@ export class GoogleDriveAdapter implements StorageAdapter {
    * transient failure must not block auto-enrolment forever (review 2026-09-10).
    */
   private async refresh(): Promise<'ok' | 'none' | 'transient'> {
-    if (!this.tokens?.refreshToken) return 'none';
-    let res: Response;
-    try {
-      res = await fetch(this.config.exchangeUrl, {
-        method: 'POST',
-        // No Content-Type: keep it a CORS simple request (no preflight).
-        body: JSON.stringify({ grantType: 'refresh', refreshToken: this.tokens.refreshToken }),
-        // This runs at page load before first render — a black-holing server
-        // must fail fast into the on-device + Reconnect fallback, not hang.
-        signal: AbortSignal.timeout(5000),
-      });
-    } catch {
-      return 'transient'; // network/server down/timeout → caller falls back to the popup path
-    }
-    if (res.status === 400 || res.status === 401) {
+    const startedFrom = this.tokens?.refreshToken;
+    if (!startedFrom) return 'none';
+    const answer = await postRefreshGrant(this.config.exchangeUrl, startedFrom);
+    if (!answer) return 'transient'; // network/server down/timeout → caller falls back to the popup path
+    const { status, json } = answer;
+    if (status === 400 || status === 401) {
+      if (this.grantMoved(startedFrom)) return 'none';
       this.clearTokens(); // refresh token revoked/expired — stop retrying
       return 'none';
     }
-    if (!res.ok) return 'transient';
-    const json = (await res.json()) as { accessToken: string; expiresIn: number; idToken?: string };
+    if (!json) return 'transient';
+    if (this.grantMoved(startedFrom)) return 'none';
     this.lastIdToken = json.idToken ?? null;
     const accountEmail = this.lastIdToken ? decodeIdTokenEmail(this.lastIdToken) : null;
     if (accountEmail && this.stored && this.stored.accountEmail !== accountEmail) {
@@ -394,10 +422,23 @@ export class GoogleDriveAdapter implements StorageAdapter {
     }
     this.saveTokens({
       accessToken: json.accessToken,
-      refreshToken: this.tokens.refreshToken, // refresh grants don't re-issue it
+      refreshToken: startedFrom, // refresh grants don't re-issue it
       expiresAt: expiry(json.expiresIn),
     });
     return 'ok';
+  }
+
+  /**
+   * Disconnect and a sign-in elsewhere run on other adapters, so the stored
+   * grant is the only shared truth. Read after a refresh's last await: if it is
+   * no longer the grant the refresh started from, this adapter keeps nothing
+   * and leaves storage alone. A replaced grant may be another account, so it
+   * is never adopted (US-09 AC2f).
+   */
+  private grantMoved(startedFrom: string): boolean {
+    if (getJson<DriveTokens>(TOKENS_KEY)?.refreshToken === startedFrom) return false;
+    this.tokens = null;
+    return true;
   }
 
   async disconnect(): Promise<void> {
@@ -513,6 +554,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     while (!signal.aborted) {
       try {
         let token = await this.startPageToken(signal);
+        catchUpAfterFailure(retryMs, signal, onChange);
         while (!signal.aborted) {
           const url = `${DRIVE_API}/changes?pageToken=${encodeURIComponent(token)}&pageSize=100`
             + '&fields=newStartPageToken,nextPageToken,changes(fileId)';
@@ -635,17 +677,19 @@ export class GoogleDriveAdapter implements StorageAdapter {
   /**
    * Self-heal the folder's display name after a brand rename — covers folders
    * whose id was cached before the rename (the find/create paths can't see
-   * them). At most one PATCH per device per rename; cosmetic, never blocks.
+   * them). Marked done once Drive accepts one PATCH per device per rename;
+   * cosmetic, never blocks.
    */
   private async ensureFolderName(folderId: string, knownName?: string): Promise<void> {
     if (this.stored?.folderName === FOLDER_NAME) return;
     try {
       if (knownName !== FOLDER_NAME) {
-        await fetch(`${DRIVE_API}/files/${folderId}`, {
+        const res = await fetch(`${DRIVE_API}/files/${folderId}`, {
           method: 'PATCH',
           headers: { ...(await this.authHeaders()), 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: FOLDER_NAME }),
         });
+        if (!res.ok) return; // refused: not done, so tried again (US-09 AC40)
       }
       this.stored = { ...(this.stored ?? {}), folderName: FOLDER_NAME };
       setJson(CONFIG_KEY, this.stored);

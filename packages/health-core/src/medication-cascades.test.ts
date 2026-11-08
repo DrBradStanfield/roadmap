@@ -101,7 +101,7 @@ describe('US-06 AC5: lipidCascade agrees with the plan on every medication combi
         const cascade = lipidCascade(meds);
         const label = JSON.stringify(meds);
         expect(cascade.suggest, label).toEqual(steps(meds));
-        // Statin not tolerated (US-06 AC13): the PCSK9 inhibitor opens first, then, once it is
+        // Statin not tolerated (US-06 AC20): the PCSK9 inhibitor opens first, then, once it is
         // answered any way but "not yet", ezetimibe and then bempedoic acid.
         const intolerant = statin?.drug === 'not_tolerated';
         const pcsk9iAnswered = !!pcsk9i && pcsk9i !== 'not_yet';
@@ -169,7 +169,7 @@ describe('US-06 AC8: a listed GLP-1 or statin with no dose recorded asks for the
     }
   });
 
-  it.each(Object.keys(STATIN_DRUGS))('%s with no dose, ezetimibe answered: the statin dose step (no bempedoic acid on a statin, US-06 AC13)', (drug) => {
+  it.each(Object.keys(STATIN_DRUGS))('%s with no dose, ezetimibe answered: the statin dose step (no bempedoic acid on a statin, US-06 AC20)', (drug) => {
     for (const ezetimibe of ['yes', 'not_tolerated', 'ezetimibe'] as MedicationInputs['ezetimibe'][])
       for (const statinEscalation of statinAnswers) {
         const label = `${ezetimibe} ${statinEscalation}`;
@@ -283,12 +283,12 @@ describe('US-06 AC12: each UNANSWERED_OF value leaves the medication steps as no
   });
 });
 
-// US-06 AC13 (Brad, 2026-11-02): a statin not tolerated goes to the PCSK9 inhibitor first,
+// US-06 AC20 (Brad, 2026-11-02): a statin not tolerated goes to the PCSK9 inhibitor first,
 // "Ezetimibe doesn't have evidence as a sole agent"; ezetimibe and then bempedoic acid follow
 // while the marker is still above target. Bempedoic acid "would only be used if statin
 // intolerant": never on a statin. Interim default, pending Brad: a PCSK9 inhibitor declined ('no')
 // or not tolerated still moves on to ezetimibe and bempedoic acid.
-describe('US-06 AC13: statin not tolerated: PCSK9 inhibitor, then ezetimibe, then bempedoic acid', () => {
+describe('US-06 AC20: statin not tolerated: PCSK9 inhibitor, then ezetimibe, then bempedoic acid', () => {
   const intolerant = { drug: 'not_tolerated', dose: null };
 
   it('suggests the PCSK9 inhibitor first, whatever ezetimibe says, while it is unanswered or not yet tried', () => {

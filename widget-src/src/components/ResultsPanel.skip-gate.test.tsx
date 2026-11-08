@@ -32,7 +32,9 @@ vi.mock('../lib/server-api', () => ({ trackABConversion: mocks.trackABConversion
 vi.mock('../lib/build-flags', () => ({ get SHOPIFY_SURFACE() { return mocks.shopify.value; } }));
 vi.mock('../lib/assistant-config', () => ({ getSkipEmailGate: () => mocks.skip.value }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
-import { ResultsPanel, REMINDER_SIGNUP_LABEL, REMINDER_SIGNUP_DONE, GUEST_CAPTURE_BUTTON_LABEL, PDF_WINDOW_BLOCKED } from './ResultsPanel';
+import { PlanHost as ResultsPanel } from '../testing/plan-host';
+import { REMINDER_SIGNUP_LABEL, REMINDER_SIGNUP_DONE, GUEST_CAPTURE_BUTTON_LABEL, PDF_WINDOW_BLOCKED } from './ResultsPanel';
+import { deleteButton } from '../testing/settings';
 
 const results = calculateHealthResults({ heightCm: 175, sex: 'male' });
 
@@ -145,11 +147,12 @@ describe('US-44 AC3/AC4 — the optional reminders line', () => {
 });
 
 describe('US-44 AC5 — gate not skipped: today\'s behaviour', () => {
-  it('keeps the email gate: no Save as PDF, two capture boxes, no reminders label', () => {
+  // One capture box since US-62 phase 5: My health's foot (the plan's top copy went with its column).
+  it('keeps the email gate: no Save as PDF, one capture box, no reminders label', () => {
     mocks.skip.value = false;
     const view = showPlan();
     expect(view.queryByRole('button', { name: 'Save as PDF' })).toBeNull();
-    expect(view.getAllByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })).toHaveLength(2);
+    expect(view.getAllByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })).toHaveLength(1);
     expect(view.container.querySelector('#guestEmail')).toBeTruthy();
     expect(view.queryByText(REMINDER_SIGNUP_LABEL)).toBeNull();
   });
@@ -194,7 +197,7 @@ describe('US-18 AC6 — a refused print window is never silent', () => {
     expect(view.container.querySelector('#guestEmail')).toBeNull();
     const note = view.getByText(BLOCKED);
     expect(note.getAttribute('role')).toBe('status');
-    expect(note.closest('.hr-col-meta')).toBe(view.getByRole('button', { name: 'Save as PDF' }).closest('.hr-col-meta'));
+    expect(note.closest('.report-actions')).toBe(view.getByRole('button', { name: 'Save as PDF' }).closest('.report-actions'));
     expect(blockedEvents()).toEqual([['pdf_window_blocked']]);
   });
 
@@ -284,18 +287,16 @@ describe('US-18 AC6 — a refused print window is never silent', () => {
     expect(view.queryByText(BLOCKED)).toBeNull();
   });
 
-  it('Pages build: the note sits beside the Save as PDF button pressed', async () => {
+  // One Save as PDF since US-62 phase 5, in My health's foot (the plan header went with its column).
+  it('Pages build: the note sits beside the one Save as PDF button', async () => {
     mocks.shopify.value = false;
     refuseWindow();
     const view = showPlan({ showEmailCapture: false });
-    const [header, bottom] = view.getAllByRole('button', { name: 'Save as PDF' });
-    fireEvent.click(bottom);
+    const buttons = view.getAllByRole('button', { name: 'Save as PDF' });
+    expect(buttons).toHaveLength(1);
+    fireEvent.click(buttons[0]);
     await waitFor(() => expect(view.getByText(BLOCKED)).toBeTruthy());
-    expect(view.getByText(BLOCKED).closest('.report-actions')).toBe(bottom.closest('.report-actions'));
-    expect(header.closest('.hr-col-meta')!.textContent).not.toContain(BLOCKED);
-    fireEvent.click(header);
-    await waitFor(() => expect(view.getByText(BLOCKED).closest('.hr-col-meta')).toBe(header.closest('.hr-col-meta')));
-    expect(bottom.closest('.report-actions')!.textContent).not.toContain(BLOCKED);
+    expect(view.getByText(BLOCKED).closest('.report-actions')).toBe(buttons[0].closest('.report-actions'));
   });
 
   it('a window that opens shows no message and fires no event', async () => {
@@ -308,46 +309,32 @@ describe('US-18 AC6 — a refused print window is never silent', () => {
 });
 
 describe('US-44 AC6 — Save as PDF shows on a phone', () => {
-  // jsdom applies no media queries, so this pins the class on the plan header
-  // and the phone rule in styles.css that keeps that header's actions visible.
-  const planHeader = (view: ReturnType<typeof showPlan>) => view.container.querySelector('.hr-col-header')!;
-
-  it('the plan header carries the actions modifier when it holds Save as PDF', () => {
+  // US-62 AC26: it sits in My health's foot, in the page's flow on phone and desktop alike,
+  // so no column header has to keep it visible.
+  it('Save as PDF sits in the foot, captured or gate skipped', () => {
     const view = showPlan();
-    expect(planHeader(view).contains(view.getByRole('button', { name: 'Save as PDF' }))).toBe(true);
-    expect(planHeader(view).classList.contains('hr-col-header--actions')).toBe(true);
+    expect(view.getByRole('button', { name: 'Save as PDF' }).closest('.mh-foot')).not.toBeNull();
   });
 
-  it('gated and not yet captured, the header holds no action, so no modifier (no empty row on a phone)', async () => {
+  it('gated and not yet captured, no Save as PDF until the capture, then it shows in the foot', async () => {
     mocks.skip.value = false;
     const view = showPlan();
-    expect(planHeader(view).classList.contains('hr-col-header--actions')).toBe(false);
+    expect(view.queryByRole('button', { name: 'Save as PDF' })).toBeNull();
     fireEvent.change(view.container.querySelector('#guestEmail')!, { target: { value: 'reader@example.com' } });
     fireEvent.click(view.getAllByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })[0]);
-    await waitFor(() => expect(planHeader(view).classList.contains('hr-col-header--actions')).toBe(true));
+    await waitFor(() => expect(view.getByRole('button', { name: 'Save as PDF' }).closest('.mh-foot')).not.toBeNull());
   });
 
-  // The input header keeps its actions only when it holds the storage button
-  // (US-09 AC30, HealthTool.top-bar.test.tsx).
-  it('the empty-plan placeholder header stays fully hidden on a phone', () => {
-    const view = render(<ResultsPanel results={null} isValid={false} tiles={[]} />);
-    expect(planHeader(view as ReturnType<typeof showPlan>).classList.contains('hr-col-header--actions')).toBe(false);
-  });
-
-  it('styles.css: at 768px the column header hides, except the plan header\'s actions', () => {
+  // The chat column's header still hides on a phone; the plan header's actions rule went with the plan column.
+  it('styles.css: at 768px the column header hides', () => {
     const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8').replace(/\s+/g, ' ');
-    const hide = css.indexOf('.hr-col-header { display: none; }');
-    expect(hide).toBeGreaterThan(-1);
-    const block = css.slice(css.lastIndexOf('@media (max-width: 768px) {', hide), css.indexOf('}', css.indexOf('.hr-col-header--actions .hr-col-title', hide)) + 1);
-    const keep = block.indexOf('.hr-col-header--actions { display: flex;');
-    expect(keep).toBeGreaterThan(block.indexOf('.hr-col-header { display: none; }'));
-    expect(block).toContain('.hr-col-header--actions .hr-col-title { display: none; }');
+    expect(css).toContain('.hr-col-header { display: none; }');
+    expect(css).not.toContain('hr-col-header--actions');
   });
 
-  it('styles.css: on a phone the header actions keep the cards\' 10px side gutter (live 2026-11-01: Sign in sat flush on the screen edge)', () => {
+  it('styles.css: on a phone the cards keep their 10px side gutter (live 2026-11-01: Sign in sat flush on the screen edge)', () => {
     const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8').replace(/\s+/g, ' ');
     expect(css).toContain('.section-card { padding: 12px !important; margin-left: 10px; margin-right: 10px; }');
-    expect(css).toContain('.hr-col-header--actions { display: flex; justify-content: flex-end; padding: 8px 10px 0; }');
   });
 });
 
@@ -440,10 +427,10 @@ describe('US-09 AC19 — the storage button\'s attention flag', () => {
     const view = showPlan({ syncControl, onDeleteData });
     fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
     await waitFor(() => expect(attention(view)).toBe('true'));
-    fireEvent.click(view.getByRole('button', { name: 'Delete All My Data' }));
+    fireEvent.click(deleteButton());
     await waitFor(() => expect(onDeleteData).toHaveBeenCalledTimes(1));
     expect(attention(view)).toBe('true');
-    fireEvent.click(view.getByRole('button', { name: 'Delete All My Data' }));
+    fireEvent.click(deleteButton());
     await waitFor(() => expect(attention(view)).toBe('false'));
   });
 
@@ -513,24 +500,3 @@ describe('US-07 AC6 — a known minor gets Save as PDF and no email box', () => 
   });
 });
 
-describe('US-62 AC14 (Brad 2026-11-02): the plan column, top to bottom', () => {
-  it('the snapshot tiles lead, then the storage card, then the PDF box, then the suggestions; the header sits above the scroller', () => {
-    mocks.skip.value = false;
-    const syncControl = ({ hasData }: { hasData: boolean }) => (hasData ? <div className="hr-sync">Where do you want to keep your health record?</div> : null);
-    const view = showPlan({ syncControl });
-    const at = (selector: string) => {
-      const el = view.container.querySelector(selector);
-      expect(el, selector).not.toBeNull();
-      return el!;
-    };
-    const order = ['.quick-stats', '.hr-sync', '.email-capture', '.suggestions-section'].map(at);
-    for (let i = 1; i < order.length; i++) {
-      expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    }
-    // Siblings in the one body, so the column's single gap spaces them alike.
-    const body = at('.health-results-panel > .hr-col-body');
-    for (const el of order) expect(el.parentElement).toBe(body);
-    // The header is the body's sibling, outside the scroller, so it never scrolls away.
-    expect(body.contains(at('.health-results-panel > .hr-col-header'))).toBe(false);
-  });
-});

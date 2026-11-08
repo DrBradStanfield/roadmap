@@ -1,4 +1,4 @@
-<!-- generated — never edit; source hash sha256:90c8b6d69c963d51f92e8c401a844b390cc644907cd95dd5f7b662612287be0f -->
+<!-- generated — never edit; source hash sha256:0c7e3b05aae469053d98a43faa801b68d1efab67abdcbaa6e092a0f6a64f883e -->
 <!-- Built by claude_business tools/sync-shared-docs.mjs from docs/customer-service/answer-bank.md. Edit the master there and rerun the sync. -->
 
 Approved answers to questions customers have asked by email (81 entries), written in the first person. Each entry gives the question, then the answer.
@@ -305,7 +305,7 @@ Please let me know if you have any other questions
 Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 Was it only one night that you tried the Sleep supplement?
-Did you take it 3 hours before wanting to fall asleep?
+Did you take it 3 to 4 hours before wanting to fall asleep?
 
 And final question, did you try taking only 1 capsule (instead of the usual
 4), and then slowly build up to see how your body reacts to the supplement?
@@ -368,11 +368,11 @@ Good resources are consumerlab and labdoor for third-party testing
 
 Please let me know if you have any other questions
 
-### Which brand of NAC do you recommend?
+### Is resveratrol worth taking, or is there an alternative to it?
 
-Regarding NAC, I'd suggest looking at consumerlab.com and labdoor.com for a
-good brand
-Both of those websites are great
+I don't take or recommend Resveratrol
+This older video of mine on the subject might be of interest to you:
+https://youtu.be/Xn0EJQPyxkA
 
 ### Should I take coenzyme Q10?
 
@@ -431,6 +431,8 @@ Have you looked at ConsumerLab for recommendations?
 Looking forward to hearing from you
 
 ### How much calcium does a woman after menopause need, and what are good food sources?
+
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 Best to discuss with your doctor
 

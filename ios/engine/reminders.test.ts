@@ -2,13 +2,17 @@
 // due comes from health-core's computeReminderSchedule, the schedule the web
 // pushes for its emails; this file pins the phone's notification days on top.
 import { describe, expect, it } from 'vitest';
-import { phoneReminders, PHONE_REMINDER_LIMIT } from './reminders';
+import { NOTIFY_HOUR, phoneReminders, PHONE_REMINDER_LIMIT } from './reminders';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { remindersJson } from './entry';
 import { newRecord } from './my-data';
 import { computeReminderSchedule } from '../../packages/health-core/src/reminder-schedule';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { localDay } from '../../packages/health-core/src/merge';
 
-const NOW = '2026-10-21T08:00:00.000Z';
+// Phone wall-clock times, no zone: the engine reads the phone's own calendar and hour.
+const NOW = '2026-10-21T08:00:00.000';
 
 /** A 60-year-old woman with a colonoscopy, a mammogram and lipids on file. */
 function record(): RoadmapFile {
@@ -55,7 +59,7 @@ describe('phoneReminders (US-25 AC12)', () => {
 
   it('keeps a notification due today, on the phone\'s own day, so opening the app that morning does not drop it', () => {
     // A late-evening instant: in Pacific/Auckland its local day is a day past UTC's.
-    const now = new Date('2026-10-21T13:00:00.000Z');
+    const now = new Date('2026-10-21T13:00:00.000');
     const today = localDay(now);
     const yearAgo = `${Number(today.slice(0, 4)) - 1}${today.slice(4)}`;
     const file = record();
@@ -120,5 +124,108 @@ describe('phoneReminders (US-25 AC12)', () => {
     const file = record();
     file.profile = { ...file.profile, birthYear: 2015 };
     expect(phoneReminders(file, new Date(NOW))).toMatchObject({ upcoming: [], notifications: [] });
+  });
+});
+
+// US-25 AC12 with US-17 AC15: the phone has the record, so its own list can say
+// which reminders are follow-ups, and it fires a follow-up on the day it first
+// sees it. The schedule the web pushes keeps the plain label; the follow-up
+// words and the first-seen days are made and kept on the phone only.
+describe('follow-up reminders on the phone (US-17 AC15)', () => {
+  function abnormal(status?: 'not_organized' | 'scheduled' | 'completed', method = 'colonoscopy_10yr'): RoadmapFile {
+    const file = record();
+    file.screenings = {
+      ...file.screenings, colorectalMethod: method, colorectalLastDate: '2026-09', colorectalResult: 'abnormal',
+      colorectalFollowupStatus: status, colorectalFollowupDate: status === 'completed' ? '2026-10' : undefined,
+    } as RoadmapFile['screenings'];
+    return file;
+  }
+  const colonoscopy = (file: RoadmapFile, now = NOW) =>
+    phoneReminders(file, new Date(now)).upcoming.find((i) => i.category === 'screening_colorectal');
+  const fireDays = (out: ReturnType<typeof phoneReminders>) =>
+    out.notifications.filter((n) => n.categories.includes('screening_colorectal')).map((n) => n.fireDay);
+
+  it('names the card\'s follow-up in the app\'s list (drafts for Brad)', () => {
+    expect(colonoscopy(abnormal())?.label).toBe('Follow-up to organize: repeat colonoscopy');
+    expect(colonoscopy(abnormal('not_organized', 'fit_annual'))?.label).toBe('Follow-up to organize: colonoscopy');
+    expect(colonoscopy(abnormal('scheduled'))?.label).toBe('Follow-up check-in: repeat colonoscopy');
+    expect(colonoscopy(abnormal('completed'))?.label).toBe('Colonoscopy');
+    expect(colonoscopy(record())?.label).toBe('Colonoscopy');
+  });
+
+  it('pushes the plain label to the web\'s schedule, with only the date moved', () => {
+    expect(computeReminderSchedule(abnormal(), new Date(NOW)).find((i) => i.category === 'screening_colorectal'))
+      .toEqual({ category: 'screening_colorectal', group: 'screening', label: 'Colonoscopy', dueAt: '2026-09-01' });
+  });
+
+  it('without first-seen days (an app before them) answers as before: repeats from the due day', () => {
+    const out = phoneReminders(abnormal(), new Date('2026-11-05T08:00:00.000'));
+    expect(out.firstSeen).toBeUndefined();
+    expect(fireDays(out)[0]).toBe('2026-11-30'); // 2026-09-01 + 90 days
+  });
+
+  it('fires a follow-up to organize on the morning it is first seen, then every 90 days from it', () => {
+    const first = phoneReminders(abnormal(), new Date('2026-11-05T08:00:00.000'), undefined, {});
+    expect(first.firstSeen).toEqual({ 'screening_colorectal:organize': '2026-11-05' });
+    expect(fireDays(first).slice(0, 2)).toEqual(['2026-11-05', '2027-02-03']);
+    // Seen after 09:00: the next morning.
+    expect(phoneReminders(abnormal(), new Date('2026-11-05T15:00:00.000'), undefined, {}).firstSeen)
+      .toEqual({ 'screening_colorectal:organize': '2026-11-06' });
+    // Kept and passed back, the days never move.
+    for (const day of ['2026-11-06T08:00:00.000', '2026-11-07T20:00:00.000', '2027-01-10T08:00:00.000']) {
+      const later = phoneReminders(abnormal(), new Date(day), undefined, first.firstSeen);
+      expect(later.firstSeen).toEqual(first.firstSeen);
+      expect(fireDays(later)).toContain('2027-02-03');
+      expect(fireDays(later)[0] >= day.slice(0, 10)).toBe(true);
+    }
+  });
+
+  it('a lost first-seen day (reinstall) fires once more, then holds', () => {
+    const again = phoneReminders(abnormal(), new Date('2026-12-01T08:00:00.000'), undefined, {});
+    expect(fireDays(again).slice(0, 2)).toEqual(['2026-12-01', '2027-03-01']);
+    const next = phoneReminders(abnormal(), new Date('2026-12-02T08:00:00.000'), undefined, again.firstSeen);
+    expect(fireDays(next).slice(0, 1)).toEqual(['2027-03-01']);
+  });
+
+  it('drops the entry once the item is no longer a follow-up', () => {
+    const seen = { 'screening_colorectal:organize': '2026-11-05' };
+    expect(phoneReminders(abnormal('completed'), new Date(NOW), undefined, seen).firstSeen).toEqual({});
+    expect(phoneReminders(abnormal('scheduled'), new Date(NOW), undefined, seen).firstSeen)
+      .toEqual({ 'screening_colorectal:checkin': '2026-10-21' });
+  });
+
+  it('keeps the check-in day across its morning: 23:00 the day before and 07:00 on the day', () => {
+    const seen = phoneReminders(abnormal('scheduled'), new Date('2026-11-05T08:00:00.000'), undefined, {}).firstSeen;
+    const eve = phoneReminders(abnormal('scheduled'), new Date('2026-11-30T23:00:00.000'), undefined, seen);
+    const morning = phoneReminders(abnormal('scheduled'), new Date('2026-12-01T07:00:00.000'), undefined, seen);
+    expect(fireDays(eve)[0]).toBe('2026-12-01');
+    expect(fireDays(morning)).toEqual(fireDays(eve));
+  });
+
+  it('reads what the app keeps defensively: an unreadable entry counts as none kept', () => {
+    const seen = (kept: string) => JSON.parse(remindersJson(JSON.stringify(abnormal()), '2026-11-05T08:00:00.000', 'phone', kept)).firstSeen;
+    const fresh = { 'screening_colorectal:organize': '2026-11-05' };
+    expect(seen('not json')).toEqual(fresh);
+    expect(seen('[]')).toEqual(fresh);
+    expect(seen('{"screening_colorectal:organize":"2026-99-99"}')).toEqual(fresh);
+    expect(seen('{"screening_colorectal:organize":"2026-11-01"}')).toEqual({ 'screening_colorectal:organize': '2026-11-01' });
+  });
+
+  it('heals a kept first-seen day in the future (a clock that was set ahead) to this start day', () => {
+    const ahead = { 'screening_colorectal:organize': '2027-01-01' };
+    const out = phoneReminders(abnormal(), new Date('2026-11-05T08:00:00.000'), undefined, ahead);
+    expect(out.firstSeen).toEqual({ 'screening_colorectal:organize': '2026-11-05' });
+    expect(fireDays(out)[0]).toBe('2026-11-05');
+    expect(phoneReminders(abnormal(), new Date('2026-11-05T15:00:00.000'), undefined, ahead).firstSeen)
+      .toEqual({ 'screening_colorectal:organize': '2026-11-06' });
+  });
+
+  it('notifies at the same hour Swift schedules (ReminderScheduler.hour)', () => {
+    const swift = readFileSync(join(__dirname, '../HealthRoadmap/Reminders/ReminderScheduler.swift'), 'utf8');
+    expect(Number(swift.match(/static let hour = (\d+)/)?.[1])).toBe(NOTIFY_HOUR);
+  });
+
+  it('puts no words in the notifications: the lock screen\'s text is Swift\'s generic one', () => {
+    expect(JSON.stringify(phoneReminders(abnormal(), new Date(NOW), undefined, {}).notifications)).not.toContain('ollow-up');
   });
 });

@@ -57,7 +57,7 @@ describe('statTiles (US-25 AC22)', () => {
 
   it('shows eGFR from creatinine, the non-HDL tile from total cholesterol, and Lp(a)', () => {
     const t = byKey(statTiles(recordOf((r) => { add(r, 'creatinine', 70); add(r, 'total_cholesterol', 6); add(r, 'lpa', 130); })));
-    expect(t.egfr).toMatchObject({ label: 'eGFR', unit: 'mL/min', status: { tone: 'normal' } });
+    expect(t.egfr).toMatchObject({ label: 'eGFR', unit: 'mL/min/1.73m²', status: { tone: 'normal' } });
     expect(t.nonHdl).toMatchObject({ label: 'Non-HDL Cholesterol', unit: 'mmol/L' });
     expect(t.ldl).toBeUndefined();
     expect(t.lpa).toMatchObject({ label: 'Lp(a)', value: '130', unit: 'nmol/L', status: { label: 'Elevated', tone: 'attention' } });
@@ -101,6 +101,8 @@ describe('statTiles (US-25 AC22)', () => {
       expect(JSON.parse(screenJson(record, NOW, 'phone', units)).plan).toEqual({
         sections: JSON.parse(sectionsJson(plan)),
         tiles: JSON.parse(JSON.stringify(tiles)),
+        // US-73: the same cards by topic, as my-health.test.ts checks.
+        topics: expect.any(Object),
         ms: expect.any(Number),
       });
     }

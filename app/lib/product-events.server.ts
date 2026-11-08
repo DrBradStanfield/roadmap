@@ -59,6 +59,10 @@ const metadataSchema = z
     /** US-16 AC2: which profile field the chat proposed, and what the user did. Closed words, never a value. */
     field: z.enum(CHAT_PROFILE_FIELDS).optional(),
     choice: z.enum(CHAT_PROFILE_CHOICES).optional(),
+    /** US-66 AC13: what one open moved into the one blood-test table. Counts only, owned by `blood_tests_unified`. */
+    moved: z.number().int().min(0).max(1000).optional(),
+    folded: z.number().int().min(0).max(1000).optional(),
+    keptApart: z.number().int().min(0).max(1000).optional(),
     /** US-61 AC8: which US product block was seen or clicked. Never the card it sat on. */
     product: z.enum(Object.keys(US_PRODUCTS) as [UsProduct, ...UsProduct[]]).optional(),
     /** US-07 AC11: which prompted measure was saved, waist or blood pressure. Never its value. */
@@ -121,6 +125,9 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
   eligible: ['chat_question_archived'],
   kept: ['chat_question_archived'],
   skipped: ['chat_question_archived'],
+  moved: ['blood_tests_unified'],
+  folded: ['blood_tests_unified'],
+  keptApart: ['blood_tests_unified'],
   field: ['chat_profile_edit'],
   choice: ['chat_profile_edit'],
   product: ['us_product_shown', 'us_product_link_clicked'],
@@ -167,9 +174,12 @@ const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   tool_opened: ['device'], // US-62 AC1
   onboarding_step: ['step'],
   onboarding_done: [],
+  plan_ready_shown: [], // US-62 AC31: the names alone
+  plan_ready_dismissed: [],
   signin_opened: ['placement'],
   guide_opened: ['placement'],
   record_unreadable_kept: ['count'], // US-65 AC6: how many entries, nothing else
+  blood_tests_unified: ['moved', 'folded', 'keptApart'], // US-66 AC13: counts only
   measurement_added: ['measure'], // US-07 AC11: the measure alone, never the value
 };
 

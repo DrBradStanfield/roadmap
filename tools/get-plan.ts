@@ -23,8 +23,8 @@
  * gitignored and built by nobody — the package-name import would silently run
  * a stale engine on a fresh clone.
  */
-import { chmodSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
+import { chmodSync, existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import * as z from '../packages/health-core/src/zod';
 import { FileAdapter } from '../packages/health-core/src/file-adapter';
 import { FIELD_METRIC_MAP } from '../packages/health-core/src/mappings';
@@ -127,7 +127,7 @@ export function recordFromValues(raw: string, now = new Date()): RoadmapFile {
 
   for (const [i, row] of spec.values.entries()) {
     const where = `values[${i}]`;
-    if (!row.metric === !row.test) throw new PlanError(`${where}: give either metric (a core metric) or test (any other blood test)`, VALUES_SHAPE);
+    if (!row.metric === !row.test) throw new PlanError(`${where}: give either metric (a core metric) or test (a blood test by name)`, VALUES_SHAPE);
     // A metric with two unit labels (LDL mmol/L or mg/dL) never guesses; a lab
     // value with no unit is refused by appendLabValue itself.
     const metric = row.metric as MetricType;
@@ -360,7 +360,8 @@ memory by edit-record's own rules, and writes nothing. Works with --json/--html:
   age | birthYear     optional, but without one the age-based steps drop out;
                       birthYear (+ birthMonth) is exact, age may be a year off
   unitSystem          optional: si (default, mmol/L) or conventional (mg/dL)
-  metric / test       a core metric, or any other blood test
+  metric / test       a core metric, or a blood test by name; a core blood
+                      test under either is the same core value
   unit                required wherever the metric has two (ldl, hba1c, weight, …)
   date                YYYY-MM-DD, default today
 
@@ -379,7 +380,9 @@ memory by edit-record's own rules, and writes nothing. Works with --json/--html:
                  unused; excludedReason says why when it is something else
                  (a blood pressure whose top number is not above the bottom)
   labValues      latest per additional test, with its id (informational; not
-                 used to compute suggestions)
+                 used to compute suggestions). The core blood tests (ldl,
+                 hba1c, …) are stored in the record's labValues too, with
+                 core: true, but are reported in currentValues and inputs
   medications    screenings
   due            { overdue, upcoming } — label + dueAt (YYYY-MM-DD)
   suggestions    id, category, priority, title, description, ingredients,
@@ -477,6 +480,10 @@ export async function run(argv: string[]): Promise<number> {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// The CLI runs only when this is the script Node was asked to run. Node gives
+// import.meta.url as the real path and argv[1] as typed, so both are resolved:
+// through a symlinked folder a plain compare never matched (US-32 AC56).
+const entry = process.argv[1] && existsSync(process.argv[1]) ? realpathSync(process.argv[1]) : '';
+if (entry === realpathSync(fileURLToPath(import.meta.url))) {
   run(process.argv.slice(2)).then((code) => process.exit(code));
 }

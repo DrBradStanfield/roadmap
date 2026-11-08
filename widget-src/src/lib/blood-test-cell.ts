@@ -6,7 +6,7 @@ import {
   commaQuestion,
   parseLocalisedNumber,
   rangeFault,
-  cellLabel,
+  rangeMessage,
   cellRange,
   cellToSI,
   limitCellText,
@@ -128,7 +128,7 @@ const CHANGES_THE_NUMBER = [
   /[\t\p{Pd}\p{Sk}\p{Lm}\p{Pi}\p{Pf}➖]/u, // a sign or dash in any script: '－5', '˗5', 'ー5'
   /(?![↑↓])\p{Sm}/u, // a comparison or approximation: '＜5', '~5'
   /(?![0-9])\p{Nd}/u, // a non-ASCII digit: '1５'
-  /[0-9.,]\p{No}|\p{No}[0-9.,]/u, // a superscript touching a digit: '10³'
+  /(?:^|[^\p{L}])\p{No}|\p{No}[0-9.,]/u, // a superscript or fraction off a unit's letter, or touching a digit: '10³', '5 ½'
   /[0-9.,][eE]/, // exponent notation: '1e1'
 ];
 
@@ -176,11 +176,8 @@ export function validateTypedValue(
   // Include the display unit in min/max errors so a user who typed (e.g.)
   // a mg/dL number into an mmol/L field can see the unit mismatch instead
   // of a bare "Max 22.6".
-  const unit = cellLabel(metric, display);
   const fault = rangeFault(range, n);
-  if (fault === 'below') return { error: `${range.minExclusive ? 'Must be above' : 'Min'} ${range.min} ${unit}`, range };
-  if (fault === 'above') return { error: `Max ${range.max} ${unit}`, range };
-  return { error: null, range };
+  return { error: fault ? rangeMessage(metric, display, fault) : null, range };
 }
 
 /** Live status from a typed display value (parsed + canonicalised). */

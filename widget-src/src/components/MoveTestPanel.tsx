@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  METRIC_LABELS, METRIC_TO_FIELD, labValueLabel, savedLabText,
+  METRIC_LABELS, METRIC_TO_FIELD, isCoreRow, labValueLabel, savedLabText,
   type FileLabValue, type FileMeasurement, type MetricType, type MoveKeep, type MovePlan, type MoveRejection, type UnitSystem,
 } from '@roadmap/health-core';
 import { cellLabel, savedCellText, type CellUnit } from '../lib/blood-test-cell';
@@ -40,7 +40,24 @@ export const MOVE_LPA = "First answer the question about this test's Lp(a) resul
 /** "21 Feb '24", as the column headers read. */
 const shortDay = (day: string) => headerDay(day).join(' ');
 
-const nameOf = (row: Row) => ('metricType' in row ? METRIC_LABELS[row.metricType] ?? row.metricType : labValueLabel(row.metricName));
+/** Typed text or an open editor on the day the test moves to (US-04 AC5b). */
+export const moveTypedOn = (day: string) => `Save or clear the values you typed on ${shortDay(day)} first.`;
+
+/** Why the press writes nothing, or null: a column the move reads holds typed
+ *  text or an open editor, the test's own day (AC5) or the new day (AC5b), where
+ *  the moved row would fill the slot a typed value waits in. */
+function typedHold(from: string, to: string, isHeld: (day: string) => boolean): string | null {
+  if (isHeld(from)) return MOVE_TYPED;
+  return isHeld(to) ? moveTypedOn(to) : null;
+}
+
+/** The core test a row is, or null for an extra lab row: a core blood test is a flagged lab row (US-66 AC1). */
+const coreOf = (row: Row): MetricType | null => ('metricName' in row && isCoreRow(row) ? row.metricName as MetricType : null);
+
+const nameOf = (row: Row) => {
+  const metric = coreOf(row);
+  return metric ? METRIC_LABELS[metric] ?? metric : labValueLabel((row as FileLabValue).metricName);
+};
 
 function refusalText(refusal: MoveRejection): string {
   switch (refusal.reason) {
@@ -116,8 +133,8 @@ function MoveTestPanel({ from, to, api, unitSystem, unitOverrides, bloodTestHist
 
   const unitOf = (metric: MetricType): CellUnit => (metric === 'lpa' ? lpaUnit : unitOverrides?.[METRIC_TO_FIELD[metric]] ?? unitSystem);
   const valueOf = (row: Row) => {
-    if (!('metricType' in row)) return `${savedLabText(row.value, row.comparator)} ${row.unit}`;
-    const metric = row.metricType as MetricType; // a blood test row's, by the plan
+    const metric = coreOf(row);
+    if (!metric) return `${savedLabText(row.value, row.comparator)} ${(row as FileLabValue).unit}`;
     const unit = unitOf(metric);
     return `${savedCellText(metric, row.value, unit, row.comparator)} ${cellLabel(metric, unit)}`;
   };
@@ -146,13 +163,15 @@ function MoveTestPanel({ from, to, api, unitSystem, unitOverrides, bloodTestHist
   };
 
   // The Lp(a) check reads a row's createdAt, which the moved row would lose (adversary R1).
-  const lpaWaits = !refused && lpaRowsToCheck(plan.rows.filter((r): r is FileMeasurement => 'metricType' in r && r.metricType === 'lpa'), unitSystem).length > 0;
+  // A moved Lp(a) row is a core lab row; the check reads it as the measurement it was (US-66 AC9).
+  const lpaWaits = !refused && lpaRowsToCheck(plan.rows.filter(r => coreOf(r) === 'lpa').map(r => ({ ...r, metricType: 'lpa' })), unitSystem).length > 0;
   const answered = !refused && plan.clashes.every(c => answers[c.held.id]);
 
   const press = async () => {
     if (refused) return;
-    // Typed since the picker opened: nothing is written (Codex R2).
-    if (isHeld(from)) { onClose(); say(MOVE_TYPED); return; }
+    // Typed since the picker opened, or on the new day: nothing is written (Codex R2).
+    const typed = typedHold(from, plan.to, isHeld);
+    if (typed) { onClose(); say(typed); return; }
     setSaving(true);
     setError(null);
     const keep = Object.fromEntries(plan.clashes.map(c => [c.held.id, answers[c.held.id]]));

@@ -99,7 +99,7 @@ const answered = (value: string | undefined) => !!value && value !== 'no' && val
 
 /**
  * On a statin: statin → ezetimibe → the statin's dose if not recorded, a higher dose or a stronger
- * statin → PCSK9 inhibitor. Statin not tolerated (US-06 AC13, Brad 2026-11-02): PCSK9 inhibitor
+ * statin → PCSK9 inhibitor. Statin not tolerated (US-06 AC20, Brad 2026-11-02): PCSK9 inhibitor
  * first, since ezetimibe has little evidence as a sole agent, then ezetimibe → bempedoic acid. Once
  * the PCSK9 inhibitor is answered any way but "not yet" (taken, 'no' or not tolerated), the plan
  * moves on to ezetimibe; the fallback without a PCSK9 inhibitor is an interim default Brad is asked

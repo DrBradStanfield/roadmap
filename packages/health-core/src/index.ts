@@ -56,10 +56,10 @@ export {
   POST_FOLLOWUP_INTERVALS,
   SCREENING_FOLLOWUP_INFO,
   SCREENING_MIN_AGE,
+  LUNG_PACK_YEARS,
   isScreeningEligible,
   // Supplement options
   SUPPLEMENT_OPTIONS,
-  FEATURED_SUPPLEMENTS,
   // Database encoding helpers
   SEX_DB,
   UNIT_SYSTEM_DB,
@@ -92,10 +92,10 @@ export {
 } from './calculations';
 
 // Suggestions
-export { generateSuggestions, REDUCE_ALCOHOL_ID, LIPID_DIET_ADVICE, lipidMarkerFor, lipidTargetSentence, medicinesShown, weightMedicationTrigger, weightMedIntro } from './suggestions';
+export { generateSuggestions, REDUCE_ALCOHOL_ID, LIPID_MEDS_IN_STEPS, lipidMarkerFor, lipidTargetSentence, medicinesShown, weightMedicationTrigger, weightMedIntro } from './suggestions';
 export type { LipidMarker, WeightMedicationTrigger } from './suggestions';
 export { weightCascade, lipidCascade } from './medication-cascades';
-export { planSections, type PlanSection, type PlanCard, type PlanSectionKey } from './plan-sections';
+export { planSections, topicSections, TOPICS, type PlanSection, type PlanCard, type PlanSectionKey, type TopicCard, type TopicId, type TopicLayout, type TopicSection } from './plan-sections';
 
 // Validation
 export {
@@ -164,6 +164,7 @@ export {
   type ApiProfile,
   type ApiMedication,
   medicationsToInputs,
+  withPsaMeasurement,
   type ApiScreening,
   screeningsToInputs,
   computeFormStage,
@@ -212,6 +213,7 @@ export {
   LPA_THRESHOLDS,
   waistToHeightRatio,
   isWaistToHeightElevated,
+  WHTR_TARGET,
   elevatedWaistFromCm,
   bpTargetFor,
   formatTargetLine,
@@ -263,7 +265,7 @@ export type { RefHint, SexedRefHint } from './reference-hints';
 export { REFERENCE_HINTS, refLineFor } from './reference-hints';
 export { type Grading, type RowTarget, type RowTargetPlan, type RowSubject, TARGET_NEEDS_HEIGHT, TARGET_NEEDS_SEX, healthyWaistBelow, rowTarget } from './row-target';
 export { type GradeStatus, type GradeContext, statusOf, bpStatus, valueStatus, pressureStatus, type PressureReading, gradeWords, savedStatus, limitUngraded } from './row-grade';
-export { type CellUnit, isLpaUnit, recordLpaUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel, cellRange, cellNumber, limitCellText } from './cell-unit';
+export { type CellUnit, isLpaUnit, recordLpaUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel, cellRange, cellNumber, labRangeMessage, limitCellText, rangeMessage } from './cell-unit';
 
 // Sentry PII/PHI scrubbing
 export {
@@ -279,6 +281,7 @@ export {
 // Local-first storage spine (v2) — the RoadmapFile schema + merge/migrate logic.
 // Browser-coupled cloud adapters live in widget-src/src/storage/, not here.
 export {
+  CORE_BLOOD_UNITS,
   CURRENT_SCHEMA_VERSION,
   createEmptyFile,
   createMeasurement,
@@ -297,6 +300,7 @@ export {
   type SyncStamp,
   type HistoryChangeType,
 } from './roadmap-file';
+export { bloodTableReport, bloodTestRows, createCoreRow, isCoreRow, labRowSlot, toOldShape } from './blood-tests';
 export { fileProfileToApi, fileScreeningRows, screeningFieldName } from './file-inputs';
 export { mergeFiles, rowRootIds, dayOf, localDay, type MergeOptions } from './merge';
 export { buildErasedFile, type EraseInputs } from './erase';
@@ -315,7 +319,7 @@ export { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertS
 export { isTakingDrug } from './history-change';
 export { recordedTime, medicationAnnotations, medicationChanges, type ChartAnnotation, type MedicationChange } from './medication-annotations';
 export { migrateFile, SchemaTooNewError, RecordShapeError } from './migrate';
-export { readableView, unreadableNote } from './readable-rows';
+export { isReadableRow, readableView, unreadableNote } from './readable-rows';
 
 // v2 reminder schedule (client-computed; the server is a dumb scheduler — §10)
 export {
@@ -357,6 +361,7 @@ export {
   isCalendarDay,
   isClinicalDay,
   latestActivePerMetric,
+  newestUsablePsa,
   latestFromHistory,
   HISTORY_CAP_PER_METRIC,
   type DatedMeasurement,
@@ -394,6 +399,8 @@ export {
 export {
   groupLabValues,
   labValueLabel,
+  labUnitRefusalLine,
+  mixedUnitsNote,
   formatLabValue,
   savedLabText,
   labSeriesRows,
@@ -435,6 +442,8 @@ export {
   fetchOrFail,
   jsonBody,
   sleepUntilAborted,
+  timeoutDeadline,
+  catchUpAfterFailure,
   type StorageAdapter,
   type StorageBackendId,
   type DocumentAccess,
@@ -480,24 +489,27 @@ export {
 } from './drive-rest';
 
 // US-35: the slot rule and the bulk save the website and the connector share.
-export { bulkAppendValues, correctValue, moveBloodTest, placeMeasurement, planBloodTestMove, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type MeasurementRefusal, type MoveClash, type MoveKeep, type MovePlan, type MoveRejection, type MoveResult, type SlotState } from './record-edits';
+export { addLabValue, type AddLabValueRequest, type AddLabValueResult, bulkAppendValues, correctValue, moveBloodTest, placeMeasurement, planBloodTestMove, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type MeasurementRefusal, type MoveClash, type MoveKeep, type MovePlan, type MoveRejection, type MoveResult, type SlotState } from './record-edits';
 export { fileNameLine, inflateCapped, isImportableEntryName, zipMemberName, unreadLines, uploadLimitSignal, LIMIT_TEST_WORDS, UNDATED_PREVIOUS, type RefusedLabValue, type UnreadLabValue } from './lab-extraction';
 export { IMPORT_LIMITS } from './import-hints';
 export {
   MEDICATION_TEXT, SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, SUPPLEMENT_TEXT, SUPPLEMENT_DOSE_UNITS,
   optionsShowing, escalationOptions, doseOptions, medicationForm, medicationWrites, screeningForm, screeningWrites,
-  screeningMonths, readScreening, followupName, followupDateLabel, anyScreeningEligible, dexaEligible, customSupplementAdd, customSupplementMatch,
+  screeningMonths, readScreening, followupName, followupDateLabel, anyScreeningEligible, dexaEligible, lungGroupShown, lungScreeningAsked, customSupplementAdd, customSupplementMatch,
   type FormOption, type FormField, type FormGroup, type FormSection, type MedicationBasis,
 } from './input-form';
 
 // US-07 AC7: the lab's printed eGFR, when it is the plan's.
-export { labEgfrFrom, labEgfrOf, withLabEgfr, type LabEgfr } from './plan';
+export { egfrSeries, labEgfrFrom, labEgfrOf, whtrSeries, withLabEgfr, type EgfrPoint, type LabEgfr, type WhtrPoint } from './plan';
 // US-07 AC11: the one strip of refused inputs every plan caller shares.
 export { planInputsFrom } from './plan';
 
 // US-25 AC22: the plan's summary tiles, the web's Quick Stats and the phone's My plan tiles.
 export { statTiles, statTileText, type StatTile, type StatTileOptions, type StatTileStatus, type StatTone } from './stat-tiles';
 export {
-  LIMIT_NOT_GRADED, comparatorOf, comparatorSymbol, formatValue, isComparator, isLimitField, limitLabelValue, limitRepresentative,
+  LIMIT_NOT_GRADED, comparatorOf, comparatorSymbol, formatGradedOrLimit, formatValue, isComparator, isLimitField, limitLabelValue, limitRepresentative,
   limitText, withComparator, type Comparator, type InputLimit, type InputLimits, type LimitField,
 } from './lab-limits';
+
+// US-72: lab results from Apple Health Records, read from their FHIR JSON.
+export { HEALTH_RECORDS_LOINC, importHealthRecords, type ClinicalRecordInput, type HealthRecordsCounts } from './health-records-import';

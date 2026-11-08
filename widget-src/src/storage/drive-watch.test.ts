@@ -115,6 +115,100 @@ describe('US-34 AC1 — GoogleDriveAdapter.watch', () => {
     stop.abort();
   });
 
+  it('after a failure, re-reads once on the fresh page token: a change made in the gap is not lost (US-34 AC1a)', async () => {
+    // The feed read fails (the network dropped). Drive's fresh page token
+    // starts at "now", so a change another device made before it never
+    // appears in the feed: the watch has to say "look" itself, once.
+    let down = false;
+    answer = (url) => {
+      if (down) return null;
+      return url === START ? { startPageToken: 't1' } : { changes: [], newStartPageToken: 't1' };
+    };
+    const onChange = vi.fn();
+    const stop = new AbortController();
+    adapter().watch('health-roadmap.json', onChange, stop.signal);
+    await settle();
+    expect(onChange).not.toHaveBeenCalled(); // a clean start owes nothing: the store has just loaded
+
+    down = true;
+    await settle(3_000); // the next beat's read fails
+    await settle(3_000); // the first retry fails too
+    expect(onChange).not.toHaveBeenCalled(); // nothing to say while Drive cannot be asked
+    down = false;
+    await settle(6_000); // the second retry gets a fresh page token
+    expect(urls.filter((u) => u === START)).toHaveLength(3);
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    await settle(30_000); // a quiet feed afterwards: no further re-reads
+    expect(onChange).toHaveBeenCalledTimes(1);
+    stop.abort();
+  });
+
+  it('one dropped beat, then a fresh page token: exactly one re-read (US-34 AC1a)', async () => {
+    // The commonest blip: a single failed read, and the first retry works.
+    let down = false;
+    answer = (url) => {
+      if (down) return null;
+      return url === START ? { startPageToken: 't1' } : { changes: [], newStartPageToken: 't1' };
+    };
+    const onChange = vi.fn();
+    const stop = new AbortController();
+    adapter().watch('health-roadmap.json', onChange, stop.signal);
+    await settle();
+
+    down = true;
+    await settle(3_000); // the next beat's read fails
+    expect(onChange).not.toHaveBeenCalled();
+    down = false;
+    await settle(3_000); // the first retry gets a fresh page token
+    expect(urls.filter((u) => u === START)).toHaveLength(2);
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    await settle(30_000);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    stop.abort();
+  });
+
+  it('a failure, then an abort while the fresh page token is on its way: no re-read (US-34 AC1a)', async () => {
+    // The tab is hidden (the watch is aborted) after a failure, while the
+    // retry's token request is in the air. Its answer still arrives, but a
+    // watch that has been stopped owes the store nothing.
+    let down = false;
+    const stop = new AbortController();
+    answer = (url) => {
+      if (down) return null;
+      if (url !== START) return { changes: [], newStartPageToken: 't1' };
+      if (urls.filter((u) => u === START).length === 2) stop.abort(); // the retry's request
+      return { startPageToken: 't1' };
+    };
+    const onChange = vi.fn();
+    adapter().watch('health-roadmap.json', onChange, stop.signal);
+    await settle();
+
+    down = true;
+    await settle(3_000); // the next beat's read fails
+    down = false;
+    await settle(3_000); // the retry asks for a token, and the abort lands meanwhile
+    expect(urls.filter((u) => u === START)).toHaveLength(2);
+    expect(onChange).not.toHaveBeenCalled();
+    await settle(300_000);
+    expect(urls.filter((u) => u === START)).toHaveLength(2);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('a token that answers while the feed keeps failing: re-reads follow the back-off (US-34 AC1a)', async () => {
+    // Only a good changes read resets the back-off, so a working token on a
+    // failing feed re-reads at 3, 9, 21, 45 and 93 s, then once a minute.
+    answer = (url) => (url === START ? { startPageToken: 't1' } : null);
+    const onChange = vi.fn();
+    const stop = new AbortController();
+    adapter().watch('health-roadmap.json', onChange, stop.signal);
+    await settle();
+    for (let i = 0; i < 60; i++) await settle(10_000); // ten minutes
+    expect(onChange).toHaveBeenCalledTimes(13); // 5 while doubling, then 153 s, 213 s ... 573 s
+    stop.abort();
+  });
+
   it('makes no request once the signal is aborted', async () => {
     answer = (url) => (url === START ? { startPageToken: 't1' } : { changes: [], newStartPageToken: 't1' });
     const stop = new AbortController();

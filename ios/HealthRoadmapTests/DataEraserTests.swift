@@ -52,8 +52,8 @@ final class DataEraserTests: XCTestCase {
         let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
         let sync = CloudSync(engine: engine, store: store, oauth: OAuthClient(tokens: tokens, session: StubHTTP.session()))
         let chat = ChatHistoryStore(engine: engine, folder: folder, deviceId: "ios-test")
-        let reminders = ReminderScheduler(center: center, folder: folder) {
-            try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
+        let reminders = ReminderScheduler(center: center, folder: folder) { firstSeen in
+            try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId, firstSeen: firstSeen)
         }
         let appleHealth = AppleHealthSync(store: store, engine: engine, client: health, memory: HealthSyncMemory(defaults: healthDefaults))
         let eraser = DataEraser(store: store, sync: sync, chat: chat, reminders: reminders, health: appleHealth, live: nil)
@@ -461,7 +461,7 @@ final class DataEraserTests: XCTestCase {
         try await Task.sleep(for: .milliseconds(50))
         let imported = await app.store.applyNow(.add(metric: "weight", value: 81, day: "2026-10-02"))
         guard case .erased = await erase.value else { return XCTFail("the erase did not finish") }
-        XCTAssertEqual(imported, .saved)
+        XCTAssertEqual(imported, .saved())
         let onDisk = try object(String(contentsOf: phoneFile, encoding: .utf8))
         XCTAssertEqual(rows(onDisk), 1, "the import is in the erased record, not written over")
         XCTAssertEqual(epoch(onDisk), 1)

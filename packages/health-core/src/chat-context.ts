@@ -27,13 +27,18 @@
  *     fields' SI unit, from FIELD_UNITS.
  *   - labEgfr, labEgfrDate, labEgfrOutdated (US-07 AC7, AC8): the input schema (ranged number;
  *     YYYY-MM-DD; true or absent); the plan reads them, and only derivedValues.eGFR prints.
+ *   - the creatinine's day (US-07 AC7) is never read from the payload: it is the
+ *     date of the creatinine point marked `draft` (chatContextOf's unsaved draft)
+ *     when that point holds the creatinine sent, else the newest saved point's
+ *     when it does, else today; runRoadmap passes a stated value's own.
  *   - limits (US-12 AC20): input-schema field names, the four comparator
  *     codes and finite bounds only; each is graded again here, and its
  *     latestValues entry prints "> 1.5", never a number the client sent.
  *   - excludedFields: input-schema field names only, never their values.
  *   - measurementHistory: metric keys on METRIC_TO_FIELD, YYYY-MM-DD dates,
  *     values that pass their field's schema, HISTORY_CAP_PER_METRIC points a
- *     metric and HISTORY_CAP_TOTAL in all.
+ *     metric and HISTORY_CAP_TOTAL in all; saved points only (a draft point
+ *     lends the creatinine's day, then is dropped).
  *   - medications: medicationsToInputs over rows whose key is a MEDICATION_KEY.
  *     A drug name on that key's list (the form's own options) passes; an
  *     empty name drops its key, a non-string name its row (medicationsToInputs
@@ -58,22 +63,19 @@
  *     the plan's gating field names it lacks. uploadedDocuments is always empty.
  * Every other key is dropped.
  */
-import type { HealthInputs, SuggestionInputs } from './types';
-import {
-  STATIN_NAMES, EZETIMIBE_OPTIONS, BEMPEDOIC_ACID_OPTIONS, PCSK9I_OPTIONS,
-  GLP1_NAMES, SGLT2I_NAMES, METFORMIN_OPTIONS,
-} from './types';
+import type { CreatinineDay, HealthInputs, SuggestionInputs } from './types';
+import { MEDICATION_ANSWERS } from './chat-edits';
 import { rangeFault, type UnitSystem } from './units';
 import {
   healthInputSchema, inRange, inputsPressureInverted, sanitizeInputs, excludedInputFields, MEDICATION_KEYS, SCREENING_KEYS,
 } from './validation';
 import {
-  FIELD_UNITS, LONGITUDINAL_FIELDS, METRIC_TO_FIELD, medicationsToInputs, screeningRange, screeningsToInputs,
+  FIELD_UNITS, LONGITUDINAL_FIELDS, METRIC_TO_FIELD, medicationsToInputs, screeningRange, screeningsToInputs, withPsaMeasurement,
   type ApiMedication, type ApiScreening,
 } from './mappings';
 import {
-  buildMeasurementHistory, latestFromHistory, HISTORY_CAP_PER_METRIC, ISO_DATE,
-  type MeasurementHistoryMap,
+  buildMeasurementHistory, isDraftPoint, latestFromHistory, newestExactPoint, newestUsablePsa, HISTORY_CAP_PER_METRIC, ISO_DATE,
+  type DatedMeasurement, type MeasurementHistoryMap,
 } from './measurement-history';
 import { calculateAge, calculateHealthResults, knownMinorOf, missingPlanInputs } from './calculations';
 import { parseLocalisedNumber } from './parseNumber';
@@ -96,18 +98,22 @@ export type ChatContextPayload = Partial<HealthInputs> & {
  * history built from `dated` (any rows with a `recordedAt`).
  */
 export function chatContextOf(
-  inputs: Partial<HealthInputs>,
+  inputs: Partial<HealthInputs> & CreatinineDay,
   unitSystem: UnitSystem,
   medications: ApiMedication[],
   screenings: ApiScreening[],
-  dated: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator }>,
+  dated: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator; id?: string; createdAt?: string }>,
 ): ChatContextPayload {
-  const measurementHistory = buildMeasurementHistory(dated);
+  const measurementHistory = withCreatinineDraft(buildMeasurementHistory(dated), inputs);
   // A limit travels as `limits` alone (US-12 AC20): its field's representative
   // stays home, so a client allow-list that strips `limits` (an older phone)
   // cannot pass it off as an exact value. The builder grades `limits` again.
   const sent: Record<string, unknown> = { ...inputs };
   for (const field of Object.keys(inputs.limits ?? {})) delete sent[field];
+  // The creatinine's day stays home too (US-07 AC7): the server reads it from
+  // measurementHistory (withCreatinineDraft put it there), so a phone's
+  // allow-list never has to know the key.
+  delete sent.creatinineDay;
   return {
     ...(sent as Partial<HealthInputs>),
     unitSystem,
@@ -118,6 +124,22 @@ export function chatContextOf(
     screenings: screenings.flatMap(r => (r && typeof r === 'object' ? [{ screeningKey: r.screeningKey, value: r.value }] : [])),
     ...(Object.keys(measurementHistory).length > 0 ? { measurementHistory } : {}),
   };
+}
+
+/**
+ * US-07 AC7: the plan may read an unsaved draft dated its own day
+ * (`creatinineDay`). When it is not the newest saved point, it travels as one
+ * more creatinine point marked `draft`, after the saved ones, which it never
+ * displaces; the server reads its day and drops it (historyOf). A typed value
+ * carries the client's day (withLabEgfr sets it), so the server never guesses it.
+ */
+function withCreatinineDraft(history: MeasurementHistoryMap, inputs: Partial<HealthInputs> & CreatinineDay): MeasurementHistoryMap {
+  const { creatinine, creatinineDay } = inputs;
+  if (creatinine === undefined || !creatinineDay || inputs.limits?.creatinine) return history;
+  const series = history.creatinine ?? [];
+  const newest = newestExactPoint(series);
+  if (newest?.value === creatinine && newest.date === creatinineDay) return history;
+  return { ...history, creatinine: [...series, { date: creatinineDay, value: creatinine, draft: true }] };
 }
 
 /**
@@ -172,7 +194,7 @@ export const LIMIT_CHAT_RULE =
  * The JSON the model reads for a payload, or null when it holds nothing:
  * no plan and nothing saved (an empty form). See the header for what reaches it.
  */
-export function buildChatContextJson(payload: unknown): string | null {
+export function buildChatContextJson(payload: unknown, statedCreatinineDay?: string): string | null {
   const raw = (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>;
   // Sanitize per field first: one out-of-range number must cost its own field,
   // not collapse the whole context to "no data entered". The snapshot is read
@@ -187,7 +209,8 @@ export function buildChatContextJson(payload: unknown): string | null {
   for (const [field, limit] of Object.entries(limits)) sanitized = withRowValue(sanitized, field as LimitField, limit.bound, limit.comparator);
   // A refused limit leaves its field out entirely: a number sent beside it is no value either.
   for (const field of outOfRange) delete sanitized[field];
-  const measurementHistory = historyOf(raw.measurementHistory);
+  // Saved points only from here on: a draft creatinine point lends its day and nothing else (US-07 AC7).
+  const { history: measurementHistory } = historyOf(raw.measurementHistory);
   // US-02 AC8: a blood pressure the wrong way up from one day is no blood
   // pressure, for the plan and for latestValues alike.
   const pressure = pressureOf(sanitized, measurementHistory);
@@ -214,10 +237,20 @@ export function buildChatContextJson(payload: unknown): string | null {
   const unitSystem: UnitSystem = raw.unitSystem === 'conventional' ? 'conventional' : 'si';
   const medicationRowsOnRecord = medicationRows(raw.medications);
   const screenings = screeningsToInputs(screeningRows(raw.screenings));
+  // US-06 AC14: the prostate cards read the newest usable saved PSA, by the plan's own rule; `screenings` stays
+  // the answers. A day's points arrive in the plan's order (buildMeasurementHistory), so the later point wins a tie.
+  const psaPoints = (measurementHistory.psa ?? []).map((p, i) =>
+    ({ id: String(i).padStart(4, '0'), metricType: 'psa', value: p.value, recordedAt: p.date, ...comparatorOf(p) }));
+  const planScreenings = withPsaMeasurement(screenings, newestUsablePsa(psaPoints, new Date()));
   // US-07 AC11: a left-out pair turns the blood pressure prompt into "check your reading".
-  const planInputs = parsed.success ? { ...inputs, ...(pressure ? { pressureOrder: true as const } : {}) } as SuggestionInputs : null;
+  // US-07 AC7: the eGFR's age is the one on the creatinine's day: a stated value's own
+  // (runRoadmap passes today for an undated one), else the saved point's.
+  const creatinineDay = statedCreatinineDay ?? creatinineDayOf(inputs.creatinine, raw.measurementHistory);
+  const planInputs = parsed.success ? {
+    ...inputs, ...(pressure ? { pressureOrder: true as const } : {}), ...(creatinineDay ? { creatinineDay } : {}),
+  } as SuggestionInputs : null;
   const results = planInputs
-    ? calculateHealthResults(planInputs, unitSystem, medicationsToInputs(medicationRowsOnRecord), screenings)
+    ? calculateHealthResults(planInputs, unitSystem, medicationsToInputs(medicationRowsOnRecord), planScreenings)
     : null;
   // An unlisted drug name must never reach the prompt, so it reads UNLISTED
   // here, and a dose shows only within (0, MAX_DOSE]. The plan above used the
@@ -233,7 +266,7 @@ export function buildChatContextJson(payload: unknown): string | null {
   // US-15 AC31: each card's description, from the plan over the medications
   // above, so no unlisted name or out-of-range dose reaches the prompt.
   const descriptions = new Map(planInputs
-    ? calculateHealthResults(planInputs, unitSystem, medications, screenings).suggestions.map(s => [s.id, s.description])
+    ? calculateHealthResults(planInputs, unitSystem, medications, planScreenings).suggestions.map(s => [s.id, s.description])
     : []);
   // As plan.ts: a known minor's raw numbers stay; the adult readings go (US-07 AC6).
   const adult = results?.knownMinor ? undefined : results;
@@ -332,22 +365,11 @@ const ageOf = (inputs: Partial<HealthInputs>) =>
 // Row sanitizers
 // ---------------------------------------------------------------------------
 
-const values = (options: ReadonlyArray<{ value: string }>) => options.map(o => o.value);
-const ESCALATION = ['not_yet', 'not_tolerated'];
-
 /** The drug names each medication slot can hold: the form's own options, plus
  *  the FHIR drug name that ezetimibe and PCSK9i rows carry with a dose. */
-const DRUG_NAMES: Record<(typeof MEDICATION_KEYS)[number], ReadonlySet<string>> = {
-  statin: new Set(values(STATIN_NAMES)),
-  ezetimibe: new Set([...values(EZETIMIBE_OPTIONS), 'ezetimibe']),
-  statin_escalation: new Set(ESCALATION),
-  pcsk9i: new Set([...values(PCSK9I_OPTIONS), 'pcsk9i']),
-  bempedoic_acid: new Set(values(BEMPEDOIC_ACID_OPTIONS)),
-  glp1: new Set(values(GLP1_NAMES)),
-  glp1_escalation: new Set(ESCALATION),
-  sglt2i: new Set(values(SGLT2I_NAMES)),
-  metformin: new Set(values(METFORMIN_OPTIONS)),
-};
+const DRUG_NAMES: ReadonlyMap<string, ReadonlySet<string>> = new Map(MEDICATION_KEYS.map((key) => [key, new Set([
+  ...MEDICATION_ANSWERS[key].map(o => o.value), ...(key === 'ezetimibe' || key === 'pcsk9i' ? [key] : []),
+])]));
 
 /** Largest dose, in mg, the prompt shows (the form's largest is 180). */
 const MAX_DOSE = 1000;
@@ -372,11 +394,12 @@ function medicationRows(raw: unknown): MedicationRow[] {
   if (!Array.isArray(raw)) return [];
   return raw.flatMap((row) => {
     const { medicationKey, drugName, doseValue } = fields(row);
-    if (typeof medicationKey !== 'string' || !own(DRUG_NAMES, medicationKey)) return [];
+    const names = typeof medicationKey === 'string' ? DRUG_NAMES.get(medicationKey) : undefined;
+    if (typeof medicationKey !== 'string' || !names) return [];
     // medicationsToInputs skips a name that is not a string, as if no row were
     // recorded, so this row goes too rather than reading as an answered UNLISTED.
     if (typeof drugName !== 'string') return [];
-    const listed = DRUG_NAMES[medicationKey as keyof typeof DRUG_NAMES].has(drugName);
+    const listed = names.has(drugName);
     const bounded = UNLISTED_NAME.test(drugName);
     // The widget's plan reads the saved dose as it is, so this one does too.
     const dose = typeof doseValue === 'number' && Number.isFinite(doseValue) ? doseValue : null;
@@ -422,25 +445,46 @@ function limitsOf(raw: unknown): { limits: Partial<Record<LimitField, { comparat
   return { limits, outOfRange };
 }
 
-function historyOf(raw: unknown): MeasurementHistoryMap {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+/**
+ * The day of the creatinine the plan reads, as the client's plan dated it: the
+ * draft point's, when it holds that value; else the newest saved point
+ * (latestFromHistory's), when it does. Otherwise undefined: the plan reads
+ * today's age, and runRoadmap, which weighs the lab eGFR by the same day,
+ * keeps the lab eGFR (US-07 AC7). `rawHistory` is the history as sent.
+ */
+export function creatinineDayOf(creatinine: number | undefined, rawHistory: unknown): string | undefined {
+  const { history, creatinineDraft: draft } = historyOf(rawHistory);
+  if (draft && draft.value === creatinine) return draft.date;
+  const newest = newestExactPoint(history.creatinine);
+  return newest && newest.value === creatinine ? newest.date : undefined;
+}
+
+/** The saved points, and the client's draft creatinine point (US-07 AC7), kept apart and outside the caps. */
+function historyOf(raw: unknown): { history: MeasurementHistoryMap; creatinineDraft?: DatedMeasurement } {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { history: {} };
   const shape = healthInputSchema.shape as Record<string, { safeParse: (v: unknown) => { success: boolean } }>;
   const out: MeasurementHistoryMap = {};
+  let creatinineDraft: DatedMeasurement | undefined;
   let total = 0;
   for (const [metric, series] of Object.entries(raw as Record<string, unknown>)) {
     if (!own(METRIC_TO_FIELD, metric) || !Array.isArray(series)) continue;
     const field = METRIC_TO_FIELD[metric];
     const clean: Array<{ date: string; value: number }> = [];
     for (const entry of series) {
-      if (clean.length >= HISTORY_CAP_PER_METRIC || total >= HISTORY_CAP_TOTAL) break;
       const { date, value, comparator } = fields(entry);
-      if (typeof date === 'string' && ISO_DATE.test(date) && typeof value === 'number' && shape[field].safeParse(value).success
-        && (comparator === undefined || isComparator(comparator))) {
+      const valid = typeof date === 'string' && ISO_DATE.test(date) && typeof value === 'number' && shape[field].safeParse(value).success;
+      // Any marked point is no saved one; only creatinine's, exact, lends its day.
+      if (isDraftPoint(entry)) {
+        if (valid && metric === 'creatinine' && comparator === undefined) creatinineDraft = { date, value };
+        continue;
+      }
+      if (clean.length >= HISTORY_CAP_PER_METRIC || total >= HISTORY_CAP_TOTAL) continue;
+      if (valid && (comparator === undefined || isComparator(comparator))) {
         clean.push({ date, value, ...comparatorOf({ comparator }) });
         total++;
       }
     }
     if (clean.length > 0) out[metric] = clean;
   }
-  return out;
+  return { history: out, ...(creatinineDraft ? { creatinineDraft } : {}) };
 }

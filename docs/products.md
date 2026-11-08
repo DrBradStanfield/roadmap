@@ -590,7 +590,7 @@ Source of truth: the v9 label artwork, read with `pdftotext -layout`: UK `multiv
 | Biotin | 30 mcg | 60% | Same (US v8 22.5 mcg) |
 | Vitamin B12 (Methylcobalamin) | 12 mcg | 480% | Same |
 
-**Ingredient count:** 25 listed actives (the panel also lists the capsule shell, 600 mg vegetable cellulose, HPMC, TiO2-free; it is not an active). Not in v9: potassium, choline bitartrate (CDP-citicoline replaces it), peppermint leaf extract, and (as in every version) vitamins A and E. The ingredients list declares no capsule colour and no flow agent (no L-leucine, no rice flour).
+**Ingredient count:** 25 listed actives (the panel also lists the capsule shell, 600 mg vegetable cellulose, HPMC, TiO2-free; it is not an active). Not in v9: potassium, choline bitartrate (CDP-citicoline replaces it), peppermint leaf extract, and (as in every version) vitamins A and E. The ingredients list declares no capsule colour and no flow agent (no L-leucine, no rice flour). **UK v9 capsules are green** (TiO2-free HPMC): G&G's v9 certificate of analysis and the signed order form DRS05 read "Capsule Shell (Hydroxypropyl Methylcellulose) (Green) (TiO2-free)", and the invoice line is "MicroVit 150s 00VGREEN" (`multivitamin/Manufacturing UK/G&G/6 order v9/`; checked 2026-11-05). EU v9 capsule colour not yet checked against its own order documents.
 
 **UK v7 → v9** (UK v7 label, per `claude_business/docs/brief-assets/v9-listing-images/v7-v9-diff.md`): removed choline bitartrate (181.5 mg), potassium (99 mg, chloride) and peppermint leaf extract (50 mg); added CDP-citicoline 500 mg and zeaxanthin 2 mg; vitamin B3 35→16 mg; vitamin C 45→90 mg with L-ascorbic acid → calcium ascorbate; zinc 8.25→11 mg; boron 1→3 mg (sodium borate both); manganese 1.15→2.3 mg; lycopene 0.3→10 mg (extract → LycoBeads®); lutein 0.25→10 mg (Lutemax 2020); copper 0.45→0.9 mg; B5 3.75→5 mg; B6 1.275→1.7 mg; selenium 27.5→55 mcg (yeast both); B1 0.9→1.2 mg; B2 0.975→1.3 mg; folate 200→400 mcg (5-MTHF calcium both); iodine 112.5→150 mcg; chromium 17.5→35 mcg (picolinate both); biotin 22.5→30 mcg; capsule shell 500→600 mg. Same dose: magnesium 126 mg, TMG 500 mg, hyaluronic acid 200 mg, vitamin D3 25 mcg (now Vitashine®, vegan, from lichen), vitamin K2 90 mcg (now named all-trans K2VITAL™ Delta), B12 12 mcg.
 
@@ -686,7 +686,7 @@ All doses per daily serving; each row lists the versions that share a value (v1�
 
 | | By version |
 |--|--|
-| Format | v1–v2 Tablets · v3 Tablets (5/serving) · v4 **Capsules**; US label: rice flour + L-leucine flow agents · v5 Capsules (no v5 label on file) · v6 **White TiO2-free**; L-leucine flow agent · v7 Green (intl); US L-leucine flow agent · v8 Same (L-leucine unchanged) · v9 Same |
+| Format | v1–v2 Tablets · v3 Tablets (5/serving) · v4 **Capsules**; US label: rice flour + L-leucine flow agents · v5 Capsules (no v5 label on file) · v6 **White TiO2-free**; L-leucine flow agent · v7 Green (intl); US L-leucine flow agent · v8 Same (L-leucine unchanged) · v9 Same in the US (white TiO2-free); UK v9 green (G&G v9 order documents) |
 | D3 source | v1–v3 Standard · v4–v7 **Vegetarian** · v8–v9 **Encap AlgeD3** |
 
 ### Version-by-Version Changelog

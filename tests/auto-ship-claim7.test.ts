@@ -26,17 +26,24 @@ echo "$*" >> "$LOG"
 q() { jq -r "$1" "$SCEN"; }
 case "$1" in
   issue) if [ "$2" = create ]; then while [ $# -gt 0 ]; do [ "$1" = --body ] && printf '%s' "$2" > "$LOG.body"; shift; done; echo "https://x/issues/99"; fi; exit 0;;
-  pr) exit 0;;
-  workflow) [ "$2" = run ] && [ "$3" = deploy.yml ] && [ "$(q .failDeploy)" = true ] && exit 1; exit 0;;
+  pr) [ "$2" = merge ] && touch "$LOG.merged"; exit 0;;
+  workflow) [ "$2" = run ] && [ "$3" = deploy.yml ] && [ "$(q .failDeploy)" = true ] && exit 1
+    [ "$2" = run ] && [ "$3" = pages.yml ] && [ "$(q .failPages)" = true ] && exit 1; exit 0;;
 esac
-shift; p=\${1#repos/o/r/}; shift; jqe=""
+shift; [ "$1" = --paginate ] && shift; p=\${1#repos/o/r/}; shift; jqe=""
 while [ $# -gt 0 ]; do case "$1" in --jq) jqe=$2; shift 2;; -f) shift 2;; *) shift;; esac; done
 upd=0; [ -f "$LOG.updated" ] && upd=1
 out() { if [ -n "$jqe" ]; then jq -r "$jqe"; else cat; fi; }
 case "$p" in
   pulls/7/update-branch) touch "$LOG.updated"; echo '{}';;
+  pulls/7/commits*) [ "$(q .commitsError)" = true ] && { echo "HTTP 502" >&2; exit 1; }
+    jq -c '.commits // [{sha:.head,author:{login:"DrBradStanfield"}}]' "$SCEN" | out;;
   pulls/7/files) jq -c '.prFiles // []' "$SCEN" | out;;
-  pulls/7) jq -c --argjson u $upd '{state:"open",title:"t",body:(.prBody // "b"),user:{login:"u"},labels:[],
+  pulls/7) k=0; [ -f "$LOG.merged" ] && { k=$(( $(cat "$LOG.reads" 2>/dev/null || echo 0) + 1 )); echo "$k" > "$LOG.reads"; }
+    [ -f "$LOG.merged" ] && { [ "$(q .failMergeRead)" = true ] || [ "$k" -le "$(q '.failMergeReads // 0')" ]; } && { echo "HTTP 502" >&2; exit 1; }
+    m=0; [ -f "$LOG.merged" ] && [ "$(q .staleMergeRead)" != true ] && [ "$k" -gt "$(q '.staleMergeReads // 0')" ] && m=1
+    jq -c --argjson u $upd --argjson m $m '{state:"open",merged:($m==1),title:"t",body:(.prBody // "b"),user:{login:"u"},labels:[],
+    commits:(.prCommitCount // ((.commits // [1]) | length)), merge_commit_sha:.mergeSha,
     head:{ref:"claude/x",repo:{full_name:"o/r"},sha:(if $u==1 then .newSha else .head end)}}' "$SCEN" | out;;
   issues/7/comments*) jq -c '.comments // [{user:{type:"Bot",login:"github-actions[bot]"},body:("VERDICT: APPROVE "+.head)}]' "$SCEN" | out;;
   commits/main) jq -c '{sha:.main}' "$SCEN" | out;;
@@ -45,6 +52,8 @@ case "$p" in
       elif .testNew=="none" then {check_runs:[]}
       else {check_runs:[{app:{slug:"github-actions"},conclusion:.testNew,check_suite:{id:2}}]} end' "$SCEN" | out;;
   commits/*) jq -c '{parents:(.newCommit.parents|map({sha:.})),commit:{verification:{verified:.newCommit.verified}},committer:{login:.newCommit.login}}' "$SCEN" | out;;
+  compare/*...main) left=\${p#compare/}; left=\${left%%...*}
+    jq -c --arg b "$left" '{status:(if ((.mainAncestors // []) | index($b)) != null then "ahead" else "diverged" end)}' "$SCEN" | out;;
   compare/*) left=\${p#compare/}; left=\${left%%...*}
     if [ "$left" = "$(q .main)" ]; then jq -c --argjson u $upd '{behind_by:(if $u==1 then 0 else .behind end)}' "$SCEN" | out
     else jq -c '{files:[{filename:(if .workflowTouched then ".github/workflows/ci.yml" else "a.ts" end)}]}' "$SCEN" | out; fi;;
@@ -55,7 +64,9 @@ esac
 
 const base = {
   head: "aaaa", main: "bbbb", newSha: "cccc", behind: 0, workflowTouched: false,
-  testNew: "success", failDeploy: false,
+  testNew: "success", failDeploy: false, failPages: false, mergeSha: "9".repeat(40),
+  // The real reviewer's comment: claude-code-action posts as claude[bot] (US-46 AC8).
+  comments: [{ user: { type: "Bot", login: "claude[bot]" }, body: "All ACs hold.\n\nVERDICT: APPROVE aaaa" }],
   newCommit: { parents: ["aaaa", "bbbb"], verified: true, login: "web-flow" },
 };
 
@@ -66,7 +77,7 @@ function run(over: Record<string, unknown>, script: string = stepScript()) {
   const scen = join(dir, "scen.json");
   mkdirSync(bin);
   writeFileSync(join(bin, "gh"), FAKE_GH);
-  writeFileSync(join(bin, "sleep"), "#!/bin/sh\nexit 0\n");
+  writeFileSync(join(bin, "sleep"), "#!/bin/sh\necho \"sleep $1\" >> \"$LOG\"\n");
   chmodSync(join(bin, "gh"), 0o755);
   chmodSync(join(bin, "sleep"), 0o755);
   writeFileSync(log, "");
@@ -210,6 +221,72 @@ describe("auto-ship claim 7 (US-46 AC5)", { timeout: 60_000 }, () => {
     });
   });
 
+  // US-46 AC14: every commit on the PR must be authored by DrBradStanfield,
+  // checked before the veto issue opens. Anything else, a commit with no
+  // linked login, or an API failure refuses without opening an issue.
+  describe("commit author gate (US-46 AC14)", () => {
+    const brad = (sha: string) => ({ sha, author: { login: "DrBradStanfield" } });
+    const issueOpened = (c: string) => c.split("\n").some((l) => l.startsWith("issue create"));
+    const refusedBy = (over: Record<string, unknown>, line: string) => {
+      const r = run(over);
+      expect(r.code).toBe(0);
+      expect(issueOpened(r.calls)).toBe(false);
+      expect(merged(r.calls)).toEqual([]);
+      expect(r.out).toContain(line);
+    };
+
+    it("all-Brad commits, his local merge commit included, open the issue and ship", () => {
+      const r = run({ commits: [brad("1111"), brad("2222"), brad("aaaa")] });
+      expect(r.code).toBe(0);
+      expect(r.calls).toContain("api --paginate repos/o/r/pulls/7/commits?per_page=100");
+      expect(issueOpened(r.calls)).toBe(true);
+      expect(merged(r.calls)).toEqual(["pr merge 7 -R o/r --merge --match-head-commit aaaa"]);
+    });
+    it("one commit by another account refuses, naming the commit and author", () => {
+      refusedBy({ commits: [brad("1111"), { sha: "2222", author: { login: "austin" } }, brad("aaaa")] },
+        "Commit 2222 authored by austin, not DrBradStanfield — not shipping.");
+    });
+    it("a commit with no linked GitHub login refuses", () => {
+      refusedBy({ commits: [{ sha: "2222", author: null }, brad("aaaa")] },
+        "Commit 2222 authored by (none), not DrBradStanfield — not shipping.");
+    });
+    it("an API error listing commits refuses (fail closed)", () => {
+      refusedBy({ commitsError: true }, "Could not list the PR's commits — not shipping");
+    });
+    it("a list without the head sha refuses", () => {
+      refusedBy({ commits: [brad("1111")] }, "Commit list does not include head aaaa — not shipping.");
+    });
+    it("a list shorter than the PR's commit count refuses (the 250 cap)", () => {
+      refusedBy({ commits: [brad("1111"), brad("aaaa")], prCommitCount: 251 }, "Commit list does not hold all 251 commits — not shipping.");
+    });
+
+    // Auto-ship's own update-branch merge (claim 7) is authored by
+    // github-actions[bot] and committed and signed by GitHub (web-flow); without
+    // this exception every later run would refuse that PR forever (#739 aabf6bd3).
+    const updateMerge = (over: Record<string, unknown> = {}) => ({
+      sha: "eeee", author: { login: "github-actions[bot]" }, committer: { login: "web-flow" },
+      commit: { verification: { verified: true } }, parents: [{ sha: "1111" }, { sha: "mmmm" }], ...over,
+    });
+    it("auto-ship's own GitHub-signed merge of main ships", () => {
+      const r = run({ commits: [brad("1111"), updateMerge(), brad("aaaa")], mainAncestors: ["mmmm"] });
+      expect(r.code).toBe(0);
+      expect(r.calls).toContain("api repos/o/r/compare/mmmm...main --jq .status");
+      expect(issueOpened(r.calls)).toBe(true);
+      expect(merged(r.calls)).toEqual(["pr merge 7 -R o/r --merge --match-head-commit aaaa"]);
+    });
+    it("a github-actions[bot] commit that is not that merge refuses", () => {
+      const line = "Commit eeee authored by github-actions[bot], not DrBradStanfield — not shipping.";
+      for (const bad of [
+        updateMerge({ parents: [{ sha: "1111" }] }),
+        updateMerge({ commit: { verification: { verified: false } } }),
+        updateMerge({ committer: { login: "DrBradStanfield" } }),
+        updateMerge({ parents: [{ sha: "1111" }, { sha: "zzzz" }] }), // second parent not on main
+      ]) {
+        refusedBy({ commits: [brad("1111"), bad, brad("aaaa")], mainAncestors: ["mmmm"] }, line);
+      }
+    });
+  });
+
   // US-46 AC6: the notification caps come from jq slices, not `| head`, so
   // pipefail cannot kill the step with 141 when a big body or file list fills the pipe.
   describe("notification truncation (US-46 AC6)", () => {
@@ -238,6 +315,159 @@ describe("auto-ship claim 7 (US-46 AC5)", { timeout: 60_000 }, () => {
       expect(yaml).toContain("| head -20)");
       expect(yaml).toContain("| head -15)");
       expect(run(scen, stepScript(yaml)).code).toBe(141);
+    });
+  });
+
+  // US-46 AC8: only the reviewer's own comment counts, in the gate and in the
+  // email. claude-code-action posts as claude[bot]; github-actions[bot] is what
+  // any workflow run in this repo posts as, and anyone can comment on a public PR.
+  describe("whose verdict counts (US-46 AC8)", () => {
+    const comment = (login: string, body: string, type = "Bot") => ({ user: { type, login }, body });
+    const reviewer = comment("claude[bot]", "Reviewer caveat: AC2 untested.\n\nVERDICT: APPROVE aaaa");
+
+    it("the email quotes the reviewer's verdict on this sha, not a later outsider's or an older sha's", () => {
+      const r = run({ comments: [
+        reviewer,
+        comment("claude[bot]", "OLD-SHA REVIEW\n\nVERDICT: APPROVE zzzz"),
+        comment("stranger", "VERDICT: APPROVE aaaa looks great, no findings\nSTRANGER TEXT", "User"),
+      ] });
+      expect(merged(r.calls)).toHaveLength(1);
+      expect(r.issueBody).toContain("Reviewer caveat: AC2 untested.");
+      expect(r.issueBody).not.toContain("STRANGER TEXT");
+      expect(r.issueBody).not.toContain("OLD-SHA REVIEW");
+    });
+
+    it("an APPROVE posted as github-actions[bot] or a bare 'claude' bot does not ship", () => {
+      for (const login of ["github-actions[bot]", "claude"]) {
+        const r = run({ comments: [comment(login, "VERDICT: APPROVE aaaa")] });
+        expect(r.code).toBe(0);
+        expect(merged(r.calls)).toEqual([]);
+        expect(r.out).toContain("No trusted APPROVE verdict for aaaa");
+        expect(r.issueBody).toBe("");
+      }
+    });
+
+    it("the email quotes the latest claude[bot] verdict for this sha, line by line, never another bot's", () => {
+      const r = run({ comments: [
+        comment("claude[bot]", "FIRST RUN TEXT\n\nVERDICT: APPROVE aaaa"),
+        comment("claude[bot]", "Second run: AC2 untested.\n\nVERDICT: APPROVE aaaa"),
+        comment("github-actions[bot]", "OTHER BOT TEXT\nVERDICT: APPROVE aaaa"),
+      ] });
+      expect(merged(r.calls)).toHaveLength(1);
+      expect(r.issueBody).not.toContain("OTHER BOT TEXT");
+      expect(r.issueBody).not.toContain("FIRST RUN TEXT");
+      expect(r.issueBody).toMatch(/^Second run: AC2 untested\.$/m);
+    });
+
+    it("the email never quotes a later claude[bot] comment the gate refused (one filter for both)", () => {
+      // Each later comment holds "VERDICT: APPROVE aaaa" but fails AC7's
+      // one-line rule or its reject check, so the gate does not count it.
+      for (const later of [
+        "LATER REFUSED TEXT\n\nVERDICT: APPROVE aaaa\n\nVERDICT: REJECT — edits ci.yml",
+        "LATER REFUSED TEXT: the verdict is still REJECT.\n\nVERDICT: APPROVE aaaa",
+        "LATER REFUSED TEXT\n> VERDICT: APPROVE aaaa\n\nVERDICT: APPROVE aaaa",
+      ]) {
+        const r = run({ comments: [reviewer, comment("claude[bot]", later)] });
+        expect(merged(r.calls)).toHaveLength(1);
+        expect(r.issueBody).toContain("Reviewer caveat: AC2 untested.");
+        expect(r.issueBody).not.toContain("LATER REFUSED TEXT");
+      }
+    });
+  });
+
+  // US-46 AC15: auto-ship merges with GITHUB_TOKEN, which starts no push
+  // workflow, so pages.yml never ran for an auto-shipped commit and deploy.yml's
+  // pages-smoke checked the previous Pages build. Pages is dispatched first, and
+  // the deploy is told which commit's Pages run to wait for (main may move on).
+  describe("Pages run for the merged commit (US-46 AC15)", () => {
+    const lines = (c: string) => c.split("\n");
+    const at = (c: string, prefix: string) => lines(c).findIndex((l) => l.startsWith(prefix));
+    const PAGES = "workflow run pages.yml -R o/r --ref main";
+    const DEPLOY = "workflow run deploy.yml -R o/r --ref main";
+    const deploys = (c: string) => lines(c).filter((l) => l.startsWith("workflow run deploy.yml"));
+
+    it("dispatches pages.yml on main after the merge and before deploy.yml", () => {
+      for (const over of [{}, { behind: 1 }]) {
+        const r = run(over);
+        expect(r.code).toBe(0);
+        expect(lines(r.calls).filter((l) => l.startsWith("workflow run pages.yml"))).toEqual([PAGES]);
+        expect(at(r.calls, "pr merge")).toBeGreaterThan(-1);
+        expect(at(r.calls, PAGES)).toBeGreaterThan(at(r.calls, "pr merge"));
+        expect(at(r.calls, DEPLOY)).toBeGreaterThan(at(r.calls, PAGES));
+      }
+    });
+
+    it("dispatches neither pages.yml nor deploy.yml when nothing merges", () => {
+      for (const over of [{ behind: 1, testNew: "failure" }, { comments: [] }]) {
+        const r = run(over);
+        expect(merged(r.calls)).toEqual([]);
+        expect(r.calls).not.toContain("workflow run pages.yml");
+        expect(at(r.calls, DEPLOY)).toBe(-1);
+      }
+    });
+
+    it("a failed Pages dispatch still dispatches the deploy, and the closing comment says so", () => {
+      const r = run({ failPages: true });
+      expect(r.code).toBe(0);
+      expect(at(r.calls, DEPLOY)).toBeGreaterThan(-1);
+      const c = closed(r.calls).join("\n");
+      expect(c).toContain("Merged aaaa and dispatched deploy.yml");
+      expect(c).toContain("Dispatching pages.yml failed, so the Pages smoke checked the previous Pages build.");
+      expect(c).toContain("no wait timer). Dispatching pages.yml failed");
+      expect(c).not.toContain("NOT merged");
+    });
+
+    it("the closing comment has no Pages note when the dispatch worked", () => {
+      const r = run({});
+      expect(closed(r.calls).join("\n")).toContain("Merged aaaa and dispatched deploy.yml");
+      expect(closed(r.calls).join("\n")).not.toContain("pages.yml failed");
+    });
+
+    it("the deploy is dispatched with the merge commit as pages_sha, read after the merge", () => {
+      for (const over of [{}, { behind: 1 }, { failPages: true }]) {
+        const r = run(over);
+        expect(r.code).toBe(0);
+        expect(deploys(r.calls)).toEqual([`${DEPLOY} -f surfaces=all -f pages_sha=${"9".repeat(40)}`]);
+        const reads = lines(r.calls).map((l, i) => (l === "api repos/o/r/pulls/7" ? i : -1)).filter((i) => i >= 0);
+        expect(reads.filter((i) => i > at(r.calls, "pr merge") && i < at(r.calls, DEPLOY))).toHaveLength(1);
+      }
+    });
+
+    it("an unknown or unreadable merge commit still dispatches the deploy, with an empty pages_sha", () => {
+      for (const over of [{ mergeSha: null }, { failMergeRead: true }, { staleMergeRead: true }]) {
+        const r = run(over);
+        expect(r.code).toBe(0);
+        expect(deploys(r.calls)).toEqual([`${DEPLOY} -f surfaces=all -f pages_sha=`]);
+        expect(closed(r.calls).join("\n")).toContain("Merged aaaa and dispatched deploy.yml");
+      }
+    });
+
+    // US-46 AC16 (Brad, 2026-11-04): the merged state can lag the merge call, so
+    // the read is tried 3 times, 2 s apart, before the deploy gets an empty pages_sha.
+    const afterMerge = (c: string) => lines(c).slice(at(c, "pr merge"), at(c, DEPLOY))
+      .filter((l) => l === "api repos/o/r/pulls/7" || l.startsWith("sleep"));
+    const READ = "api repos/o/r/pulls/7";
+
+    it("a merged state that shows on the second or third read still names the merge commit", () => {
+      const cases: { staleMergeReads?: number; failMergeReads?: number }[] = [{ staleMergeReads: 1 }, { staleMergeReads: 2 },
+        { failMergeReads: 1 }, { failMergeReads: 2 }, { failMergeReads: 1, staleMergeReads: 2 }];
+      for (const over of cases) {
+        const r = run(over);
+        expect(r.code).toBe(0);
+        expect(deploys(r.calls)).toEqual([`${DEPLOY} -f surfaces=all -f pages_sha=${"9".repeat(40)}`]);
+        const reads = 1 + Math.max(over.staleMergeReads ?? 0, over.failMergeReads ?? 0);
+        expect(afterMerge(r.calls)).toEqual([READ, ...Array(reads - 1).fill(["sleep 2", READ]).flat()]);
+      }
+    });
+
+    it("three reads, 2 s apart, then an empty pages_sha; one read when the first shows the merge", () => {
+      for (const over of [{ staleMergeRead: true }, { failMergeRead: true }, { mergeSha: null }, { staleMergeReads: 3 }]) {
+        const r = run(over);
+        expect(r.code).toBe(0);
+        expect(afterMerge(r.calls)).toEqual([READ, "sleep 2", READ, "sleep 2", READ]);
+        expect(deploys(r.calls)).toEqual([`${DEPLOY} -f surfaces=all -f pages_sha=`]);
+      }
+      expect(afterMerge(run({}).calls)).toEqual([READ]);
     });
   });
 });

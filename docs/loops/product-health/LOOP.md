@@ -20,7 +20,7 @@ unacted for a quarter, say so in the retro and propose the fleet review.
    sections against last week's report: a story that vanished is a CRITICAL
    finding (2026-09-01: 17 stories lost to a truncated read written back
    whole, invisible for 4 days). The build gate
-   (`scripts/build-user-stories-html.ts`) refuses such a source in CI now.
+   (`scripts/build-user-stories-html.ts --check-against`) refuses such a source in CI now.
 2. The two most recent reports here + `LEARNINGS.md` + `metrics.csv`.
 3. `docs/usage-audit-2026-08.md` §6 — the baseline backlog.
 4. The week's sibling-loop reports (`docs/loops/*/` files changed in the last
@@ -163,8 +163,8 @@ append rows to metrics.csv) · New errors · New feedback · Proposed backlog
 
 ## Write scope (beyond the default `docs/loops/product-health/**`)
 - Usage-evidence lines ONLY in `docs/user-stories.md` (never ACs or test
-  status — those belong to build sessions), then regenerate:
-  `npx tsx scripts/build-user-stories-html.ts`.
+  status — those belong to build sessions). Never commit the .html: Pages
+  builds it (US-64 AC11).
 - `docs/loops/repo-health/{ledger,metrics,feature-backlog}.csv`, and comments
   or spam closes on external issues and PRs, for the inbound pass only.
 

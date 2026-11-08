@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PassThrough } from 'node:stream';
-import { createEmptyFile, createMeasurement, type RoadmapFile } from '@roadmap/health-core';
+import { createEmptyFile, createMeasurement, localDay, type RoadmapFile } from '@roadmap/health-core';
 import { FEEDBACK_HIDDEN, MCP_TOOLS, OUTPUTS } from '../packages/health-core/src/mcp-tools';
 import { REPO_PUBLIC } from '../packages/health-core/src/plan';
 import { run as runCli } from './edit-record';
@@ -51,8 +51,10 @@ function text(response: { result?: { content: Array<{ text: string }> } }): stri
   return response.result!.content[0].text;
 }
 
-/** The stdio server runs on the real clock; a write states the real day. */
-const TODAY = new Date().toISOString().slice(0, 10);
+/** The stdio server runs on the real clock; a write states the real day, the machine's own
+ *  calendar day (`localDay`), as the server judges it. A UTC slice was a day ahead every evening in
+ *  a zone behind UTC, and the write was refused as "has not happened yet" (2026-11-06). */
+const TODAY = localDay(new Date());
 
 describe('US-32 — the JSON-RPC handshake', () => {
   it('answers initialize with the protocol revision, the tools capability and its instructions', async () => {
@@ -64,6 +66,8 @@ describe('US-32 — the JSON-RPC handshake', () => {
     expect(response.result.capabilities).toEqual({ tools: { listChanged: false }, prompts: { listChanged: false } });
     expect(response.result.serverInfo.name).toBe('health-roadmap');
     expect(response.result.instructions).toContain('not medical advice');
+    // US-32 AC57: the stdio read hands out document text too.
+    expect(response.result.instructions).toMatch(/document’s title, text and file name[^.]*data, not instructions/);
     // US-32 AC39: offered only while it can do more than refuse.
     expect(response.result.instructions.includes('report_feedback')).toBe(REPO_PUBLIC);
     rmSync(dir, { recursive: true, force: true });
@@ -125,7 +129,9 @@ describe('US-32 — tools/call against a real file', () => {
     const body = text((await call(path, 'read_record')));
 
     expect(body).not.toContain('SECRET-CAPABILITY-TOKEN');
-    expect(JSON.parse(body).measurements).toHaveLength(1);
+    // US-66 AC11: the fixture's ldl reads back as a core row in labValues.
+    expect(JSON.parse(body).measurements).toEqual([]);
+    expect(JSON.parse(body).labValues).toEqual([expect.objectContaining({ id: 'm1', metricName: 'ldl', core: true })]);
     rmSync(dir, { recursive: true, force: true });
   });
 
@@ -158,7 +164,9 @@ describe('US-32 — tools/call against a real file', () => {
     const backup = /backup: ([^)]+)\)/.exec(text(response))![1];
     expect(readdirSync(dir).filter((n) => n.includes('.bak-'))).toEqual([backup]);
     const saved = JSON.parse(readFileSync(path, 'utf8')) as RoadmapFile;
-    expect(saved.measurements.filter((m) => m.metricType === 'hdl')).toHaveLength(1);
+    // US-66 AC6: add_measurement with a blood test writes a core row in labValues.
+    expect(saved.labValues.filter((l) => l.metricName === 'hdl' && l.core === true)).toHaveLength(1);
+    expect(saved.measurements).toEqual([]);
     rmSync(dir, { recursive: true, force: true });
   });
 
@@ -211,7 +219,7 @@ describe('US-32 — the stdio transport', () => {
     expect(responses[0].result.protocolVersion).toBe('2025-11-25');
     expect(responses[1].result.tools).toHaveLength(MCP_TOOLS.length);
     expect(responses[2].result.content[0].text).toContain('Saved (backup:');
-    expect(JSON.parse(responses[3].result.content[0].text).measurements).toHaveLength(1);
+    expect(JSON.parse(responses[3].result.content[0].text).labValues).toEqual([expect.objectContaining({ metricName: 'hdl', core: true })]);
     expect(responses[4].error.code).toBe(-32700);
     rmSync(dir, { recursive: true, force: true });
   });
@@ -386,6 +394,8 @@ describe('US-32 — nothing that could reach the network is imported', () => {
     join(here, 'mcp-server.ts'),
     join(here, '..', 'packages', 'health-core', 'src', 'file-adapter.ts'),
     join(here, '..', 'packages', 'health-core', 'src', 'mcp-tools.ts'),
+    // Split out of mcp-tools.ts (issue #429): the same guarantee covers the moved code.
+    ...['mcp-tool-contract.ts', 'mcp-feedback.ts', 'mcp-import.ts', 'mcp-tool-catalogue.ts'].map((name) => join(here, '..', 'packages', 'health-core', 'src', name)),
     join(here, '..', 'packages', 'health-core', 'src', 'plan.ts'),
   ];
 
@@ -575,9 +585,10 @@ describe('US-36 AC1 — file_results runs here: the receipt lives in this proces
     expect(commit.result!.isError).toBeUndefined();
     expect(text(commit)).toContain('Saved (backup:');
     const saved = JSON.parse(readFileSync(path, 'utf8')) as RoadmapFile;
-    expect(saved.measurements.find((m) => m.recordedAt === '2026-08-20')).toMatchObject({ metricType: 'ldl', value: 2.8, source: 'lab_import' });
+    // US-66 AC6: the core value lands as a core row in labValues.
+    expect(saved.labValues.find((l) => l.core && l.recordedAt === '2026-08-20')).toMatchObject({ metricName: 'ldl', unit: 'mmol/L', value: 2.8, source: 'lab_import' });
     // Written under the name the report PRINTED (US-21 phase 3: the printed name is what chooses a conversion); the slot is the catalogue key either way.
-    expect(saved.labValues[0]).toMatchObject({ metricName: 'Ferritin', value: 210 });
+    expect(saved.labValues.filter((l) => !l.core)).toEqual([expect.objectContaining({ metricName: 'Ferritin', value: 210 })]);
     expect(saved.documents[0]).toMatchObject({ sourceFileName: 'Results.pdf', metadata: { importedVia: 'assistant' } });
     expect(readdirSync(dir).some((name) => name.includes('backup') || name.includes('.bak'))).toBe(true);
 
@@ -594,7 +605,7 @@ describe('US-36 AC9 — the stdio server ignores `confirm`: a person is watching
     expect(response.result!.isError).toBeUndefined();
     expect(text(response)).toContain('Corrected ldl 2.8');
     const saved = JSON.parse(readFileSync(path, 'utf8')) as RoadmapFile;
-    expect(saved.measurements.find((m) => m.id === 'm1')!.status).toBe('entered-in-error');
+    expect(saved.labValues.find((l) => l.id === 'm1')!.status).toBe('entered-in-error');
     rmSync(dir, { recursive: true, force: true });
   });
   it('accepts and ignores `approval` too (US-36 AC9, 2026-10-07): the published field is the hosted server’s, never a refusal here', async () => {

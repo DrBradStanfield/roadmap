@@ -84,6 +84,14 @@ describe('parseProductEvent', () => {
     ).toMatchObject({ metadata: { count: 12 } });
   });
 
+  it('takes the blood-table counts on their own event only (US-66 AC13)', () => {
+    const counts = { moved: 3, folded: 1, keptApart: 1 };
+    expect(parseProductEvent({ eventName: 'blood_tests_unified', visitorId: VISITOR, metadata: counts })).toMatchObject({ metadata: counts });
+    expect(parseProductEvent({ eventName: 'blood_tests_unified', visitorId: VISITOR, metadata: { moved: 1001 } })).toBeNull();
+    expect(parseProductEvent({ eventName: 'blood_tests_unified', visitorId: VISITOR, metadata: { count: 1 } })).toBeNull();
+    expect(parseProductEvent({ eventName: 'upload_saved', visitorId: VISITOR, metadata: { moved: 1 } })).toBeNull();
+  });
+
   // The SERVER list carries `reason` too (US-32 AC29). The browser's must not:
   // SERVER_ONLY_EVENT_NAMES keeps mcp_tool_call out, and this keeps the key out.
   it('does not take the server-only `via` key from a browser (US-32 AC38)', () => {
@@ -241,6 +249,15 @@ describe('the email-arrival counters', () => {
     });
     for (const metadata of [{ answer: 'none' }, { choice: 'saved' }, { field: 'sex' }, { provider: 'dropbox' }, { count: 1 }]) {
       expect(parseProductEvent({ eventName: 'alcohol_question_answered', visitorId: VISITOR, metadata })).toBeNull();
+    }
+  });
+
+  it('US-62 AC31: takes plan_ready_shown and plan_ready_dismissed from a browser by name alone', () => {
+    for (const eventName of ['plan_ready_shown', 'plan_ready_dismissed']) {
+      expect(parseProductEvent({ eventName, visitorId: VISITOR })).toEqual({ eventName, visitorId: VISITOR });
+      for (const metadata of [{ step: 'birth' }, { device: 'phone' }, { count: 1 }, { placement: 'header' }]) {
+        expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata })).toBeNull();
+      }
     }
   });
 

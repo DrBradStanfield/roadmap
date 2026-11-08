@@ -69,7 +69,7 @@ final class DataEraser {
         await chat.refresh()
         if case .refused = outcome { return outcome }
         awaitingDismissal = true
-        live?.forget()
+        await live?.forget()
         // After the record: an erase refused there must change nothing, and Health's
         // copies of typed values are only copies (D6).
         let healthErased = await health?.eraseOwnSamples() ?? true

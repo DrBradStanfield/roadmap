@@ -28,6 +28,8 @@
  * (widget-src/src/lib/constants.ts `formatShortDate`), not as a UTC day. A
  * wall-clock time labelled Z would show on the wrong day (review R1, 2026-10-21).
  */
+import { isActive } from './blood-tests';
+import { isBloodTestKey } from './core-rows';
 import { isCalendarDay } from './measurement-history';
 import { measurementValueFault, newId, slotKey, stampUpdatedAt } from './record-edits';
 import { createMeasurement, type FileMeasurement, type RoadmapFile } from './roadmap-file';
@@ -38,7 +40,7 @@ import { healthInputSchema, type MeasurementSource, METRIC_TYPES, pressureInvert
 export interface DeviceSample {
   /** The store's own id for the reading (a HealthKit sample UUID). */
   externalId: string;
-  /** A core metric (`METRIC_TYPES`), or `height` for the profile. */
+  /** A vital (`METRIC_TYPES` less the blood tests), or `height` for the profile. */
   metricType: string;
   /** SI canonical: kg, cm, mmHg. */
   value: number;
@@ -85,11 +87,13 @@ const CLOCK_SKEW_MS = 5 * 60_000;
  * The row's `recordedAt` for a reading, or null when its time is unreadable or
  * has not happened. "Not yet" compares instants: the reading's day is the day
  * where it was taken, which in a zone ahead of the phone's is already the
- * phone's tomorrow (re-check F1, 2026-10-21).
+ * phone's tomorrow (re-check F1, 2026-10-21). Health Records reads a result's
+ * draw time through it too (health-records-import.ts).
  */
-function recordedAtOf(sample: DeviceSample, now: string): string | null {
-  const parts = typeof sample.measuredAt === 'string' ? MEASURED_AT.exec(sample.measuredAt) : null;
-  const at = parts ? Date.parse(sample.measuredAt) : Number.NaN;
+export function recordedAtOf(measuredAt: unknown, now: string): string | null {
+  if (typeof measuredAt !== 'string') return null;
+  const parts = MEASURED_AT.exec(measuredAt);
+  const at = parts ? Date.parse(measuredAt) : Number.NaN;
   if (!parts || Number.isNaN(at) || at > Date.parse(now) + CLOCK_SKEW_MS) return null;
   const [, day, time, offset] = parts;
   return isCalendarDay(day) ? `${day}T${time}.000${offset}` : null;
@@ -135,13 +139,13 @@ export function importDeviceSamples(
   // a first import can carry years of readings.
   const measurements = [...file.measurements];
   const activeAt = new Map<string, number>();
-  measurements.forEach((row, i) => { if (row.status === 'active') activeAt.set(slotKey('measurement', row.metricType, row.recordedAt), i); });
+  measurements.forEach((row, i) => { if (isActive(row)) activeAt.set(slotKey('measurement', row.metricType, row.recordedAt), i); });
   let height: DeviceSample | null = null;
 
   for (const reading of readingsOf(samples)) {
     const skip = (why: keyof DeviceImportResult['skipped']) => { result.skipped[why] += reading.length; };
     if (reading.some((sample) => known.has(sample.externalId))) { skip('known'); continue; }
-    const times = reading.map((sample) => recordedAtOf(sample, now));
+    const times = reading.map((sample) => recordedAtOf(sample.measuredAt, now));
     if (times.some((time) => time === null) || reading.some((sample) => typeof sample.externalId !== 'string' || !sample.externalId)) {
       skip('invalid');
       continue;
@@ -157,7 +161,9 @@ export function importDeviceSamples(
     // person allowed, and half a reading is not a blood pressure.
     const halves = reading.map((sample) => sample.metricType).sort().join();
     if (typeof reading[0].pairId === 'string' && halves !== 'diastolic_bp,systolic_bp') { skip('invalid'); continue; }
-    if (reading.some((sample) => !(METRIC_TYPES as readonly string[]).includes(sample.metricType) || measurementValueFault(sample.metricType, sample.value))) {
+    // A blood test is no vital: it lives in `labValues` (US-66, one blood-test table), never here.
+    if (reading.some((sample) => !(METRIC_TYPES as readonly string[]).includes(sample.metricType) || isBloodTestKey(sample.metricType)
+      || measurementValueFault(sample.metricType, sample.value))) {
       skip('invalid');
       continue;
     }

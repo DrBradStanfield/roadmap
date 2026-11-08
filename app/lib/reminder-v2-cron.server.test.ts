@@ -351,3 +351,23 @@ describe('reminder v2 cron tick — US-28 AC3: a failed pass leaves the day open
     expect(sendMock).toHaveBeenCalledTimes(before);
   });
 });
+
+// US-28 AC4 (Brad 2026-11-03): the reminder pass runs only behind the day lock.
+// The admin "run now" page called processV2Reminders directly, skipping the lock,
+// so a press during the 08:00 UTC run could email the same people twice.
+describe('US-28 AC4: nothing outside the locked cron runs the reminder pass', () => {
+  it('no source file in app/ but the cron itself calls processV2Reminders', async () => {
+    const { readdirSync, readFileSync, statSync } = await import('node:fs');
+    const path = await import('node:path');
+    const appDir = path.resolve(__dirname, '..');
+    const walk = (dir: string): string[] => readdirSync(dir).flatMap((name) => {
+      const full = path.join(dir, name);
+      if (statSync(full).isDirectory()) return walk(full);
+      return /\.(ts|tsx)$/.test(name) && !/\.test(-helpers)?\./.test(name) ? [full] : [];
+    });
+    const callers = walk(appDir)
+      .filter((f) => readFileSync(f, 'utf8').includes('processV2Reminders'))
+      .map((f) => path.relative(appDir, f));
+    expect(callers).toEqual(['lib/reminder-v2-cron.server.ts']);
+  });
+});

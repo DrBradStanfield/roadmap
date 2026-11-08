@@ -13,7 +13,8 @@ import { trackProductEvent } from '../lib/server-api';
 import { getChatGate } from '../lib/chat-api';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { ChatKeyGate } from './ChatKeyGate';
-import { useChatState, MAX_CHARS, type ChatContextSource } from '../hooks/useChatState';
+import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource } from '../hooks/useChatState';
+import { useFollowLatest } from '../hooks/useFollowLatest';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { SubscriptionChangeCard } from './SubscriptionChangeCard';
 import { ChatPendingReply } from './ChatPendingReply';
@@ -62,7 +63,6 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
   const [isExpanded, setIsExpanded] = useState(startExpanded ?? false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showThreads, setShowThreads] = useState(false);
-  const [showScrollBtn, setShowScrollBtn] = useState(false);
   // BYOK gate (standalone build only — null on the Shopify widget).
   const [, refreshGate] = useReducer((x: number) => x + 1, 0);
   const gate = getChatGate();
@@ -86,20 +86,8 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
     }
   }, [startExpanded, actions.loadConversationsIfNeeded]);
 
-  // Auto-scroll to bottom when messages or any part of the pending reply change
-  useEffect(() => {
-    const el = messagesContainerRef.current;
-    if (!el) return;
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
-    if (nearBottom) el.scrollTop = el.scrollHeight;
-  }, [state.messages, state.pending, messagesContainerRef]);
-
-  const handleMessagesScroll = useCallback(() => {
-    const el = messagesContainerRef.current;
-    if (!el) return;
-    const shouldShow = el.scrollHeight - el.scrollTop - el.clientHeight > 100;
-    setShowScrollBtn(prev => prev === shouldShow ? prev : shouldShow);
-  }, [messagesContainerRef]);
+  // Follow a new message or any pending-reply change while the reader is at the latest one
+  const { showScrollBtn, onScroll: handleMessagesScroll } = useFollowLatest(messagesContainerRef, state.activeConversationId, state.messages, [state.pending]);
 
   const handleExpand = useCallback(() => {
     trackProductEvent('chat_opened');
@@ -110,7 +98,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
   }, [onExpand, actions.loadConversationsIfNeeded]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (sendsOnEnter(e)) {
       e.preventDefault();
       actions.handleSend();
     }
@@ -120,6 +108,12 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
     actions.selectConversation(id);
     setShowThreads(false);
   }, [actions.selectConversation]);
+
+  // A new chat shows the empty chat and its input, as opening a thread does (US-15 AC46a).
+  const handleStartNewChat = useCallback(() => {
+    actions.startNewChat();
+    setShowThreads(false);
+  }, [actions.startNewChat]);
 
   // ----- COLLAPSED STATE -----
   if (!isExpanded) {
@@ -168,7 +162,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
             activeConversationId={state.activeConversationId}
             className="chat-thread-list"
             onSelect={handleSelectConversation}
-            onNew={actions.startNewChat}
+            onNew={handleStartNewChat}
             onDelete={actions.handleDelete}
           />
         )}
@@ -219,7 +213,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
               value={state.inputText}
               onChange={e => actions.handleInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask a follow-up…"
+              placeholder={state.messages.length === 0 ? 'Ask a question' : 'Ask a follow-up…'}
               disabled={state.isLoading}
               rows={1}
             />

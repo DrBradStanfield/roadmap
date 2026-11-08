@@ -2,7 +2,7 @@ import type { HealthInputs, ApiMeasurement, ApiMedication, ApiScreening, ChatCon
 import type { UnitSystem } from '@roadmap/health-core';
 import {
   sanitizeInputs, mergeLongitudinalInputs, chatContextOf, detectUnitSystem, PREFILL_FIELDS, withLabEgfr, dayOf, localDay,
-  isComparator, labEgfrFrom,
+  isComparator, labEgfrFrom, isClinicalDay,
 } from '@roadmap/health-core';
 import type { ApiReminderPreference } from './api-types';
 
@@ -36,6 +36,8 @@ interface StoredData {
   reminderPreferences?: ApiReminderPreference[];
   /** The saved lab eGFR candidate (US-07 AC7): the other chats hold no lab rows. */
   labEgfr?: LabEgfr | null;
+  /** The newest usable saved PSA (US-06 AC14): the newest row per metric may be one the plan cannot use. */
+  psa?: ApiMeasurement | null;
   savedAt: string;
 }
 
@@ -46,6 +48,7 @@ export interface LoadedData {
   screenings: ApiScreening[];
   reminderPreferences: ApiReminderPreference[];
   labEgfr: LabEgfr | null;
+  psa: ApiMeasurement | null;
 }
 
 /**
@@ -53,7 +56,7 @@ export interface LoadedData {
  * metric, the medications and screenings on record, and the saved lab eGFR
  * (labEgfrOf over the record's lab rows). Tells the page.
  */
-export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasurements?: ApiMeasurement[], medications?: ApiMedication[], screenings?: ApiScreening[], reminderPreferences?: ApiReminderPreference[], labEgfr?: LabEgfr | null): void {
+export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasurements?: ApiMeasurement[], medications?: ApiMedication[], screenings?: ApiScreening[], reminderPreferences?: ApiReminderPreference[], labEgfr?: LabEgfr | null, psa?: ApiMeasurement | null): void {
   // After log-off the mirror stays gone: a cloud tab's later saves end here
   // (patchMirror too) and would put the health copy back (US-09 AC2e).
   if (healthWritesStopped) return;
@@ -67,6 +70,7 @@ export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasur
       // A lab eGFR printed as a limit keeps its limit and drops the plan's
       // representative, which an older embed would read as exact (US-12 AC20).
       labEgfr: labEgfr?.labEgfrLimit ? { labEgfrDate: labEgfr.labEgfrDate, labEgfrLimit: labEgfr.labEgfrLimit } : labEgfr,
+      psa: psa ?? null,
       savedAt: new Date().toISOString(),
     };
     localStorage.setItem(MIRROR_KEY, JSON.stringify(data));
@@ -89,6 +93,7 @@ export function patchMirror(patch: { profile?: Partial<HealthInputs> } & Partial
     patch.screenings ?? cached?.screenings ?? [],
     cached?.reminderPreferences ?? [],
     patch.labEgfr !== undefined ? patch.labEgfr : cached?.labEgfr ?? null,
+    cached?.psa ?? null,
   );
 }
 
@@ -135,6 +140,12 @@ export function loadFromLocalStorage(): LoadedData | null {
       labEgfr: lab.labEgfrDate === undefined ? null
         : limit ? labEgfrFrom(limit.bound, lab.labEgfrDate, limit.comparator)
         : lab.labEgfr !== undefined ? labEgfrFrom(lab.labEgfr, lab.labEgfrDate) : null,
+      // An untrusted copy: a PSA row only with a number (this field was only ever
+      // written as one, so null, "" or text is no PSA, never a 0), a real day and
+      // a readable comparator.
+      psa: data.psa && typeof data.psa.value === 'number' && Number.isFinite(data.psa.value) && isClinicalDay(data.psa.recordedAt)
+        && (data.psa.comparator === undefined || isComparator(data.psa.comparator))
+        ? { ...data.psa, metricType: 'psa' } : null,
     };
   } catch (error) {
     console.warn('Failed to load from localStorage:', error);
@@ -274,11 +285,14 @@ export function setJson(key: string, value: unknown): void {
 export function loadGuestInputs(): ChatContextPayload | null {
   const cached = loadFromLocalStorage();
   if (!cached) return null;
-  const merged = mergeLongitudinalInputs(cached.inputs, cached.previousMeasurements);
+  // The newest usable PSA stands in for the newest PSA row, in the snapshot
+  // and the history alike, so the chat reads what the widget's cards read (US-06 AC14).
+  const rows = cached.psa ? [...cached.previousMeasurements.filter(m => m.metricType !== 'psa'), cached.psa] : cached.previousMeasurements;
+  const merged = mergeLongitudinalInputs(cached.inputs, rows);
   if (Object.keys(merged).length === 0) return null;
-  const creatinine = cached.previousMeasurements.find(m => m.metricType === 'creatinine')?.recordedAt;
+  const creatinine = rows.find(m => m.metricType === 'creatinine')?.recordedAt;
   const inputs = withLabEgfr(merged, typeof creatinine === 'string' ? dayOf(creatinine) : null, cached.labEgfr, localDay(new Date()));
-  return chatContextOf(inputs, chatUnitSystem(cached.inputs.unitSystem), cached.medications, cached.screenings, cached.previousMeasurements);
+  return chatContextOf(inputs, chatUnitSystem(cached.inputs.unitSystem), cached.medications, cached.screenings, rows);
 }
 
 /** The unit system a chat sends, as HealthTool picks it: the saved

@@ -3,16 +3,17 @@
 // string-in, string-out door, because JSON is the one shape both sides share.
 // Its door list is bridge-contract.json; bridge.test.ts holds the two together.
 import { mergeFiles } from '../../packages/health-core/src/merge';
+import { isCalendarDay } from '../../packages/health-core/src/measurement-history';
 import { computePlan, PlanError, type Plan } from '../../packages/health-core/src/plan';
 import { CURRENT_SCHEMA_VERSION } from '../../packages/health-core/src/roadmap-file';
-import { planSections, type PlanSection } from '../../packages/health-core/src/plan-sections';
+import { planSections, topicSections, type PlanSection, type TopicLayout } from '../../packages/health-core/src/plan-sections';
 import { statTiles, type StatTile } from '../../packages/health-core/src/stat-tiles';
 import { cmToFeetInches, formatDisplayValue, fromCanonicalValue, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from '../../packages/health-core/src/units';
-import { fileNameLine, MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
+import { fileNameLine, labSearch, MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
 import { deviceWrites } from '../../packages/health-core/src/device-export';
 import { usProductSections, type UsPlanSection } from '../../packages/health-core/src/us-products';
-import { applyEdit, myData, newRecord, readNumber, readRecord, readView, type Edit } from './my-data';
-import { metricHistory } from './my-data-forms';
+import { applyEdit, movedRecord, myData, newRecord, readNumber, readRecord, readView, type Edit } from './my-data';
+import { derivedHistory, labHistory, metricHistory } from './my-data-forms';
 import { chatEditsPreview } from './chat-edits';
 import { readUnitChoices } from './unit-choices';
 import { phoneReminders } from './reminders';
@@ -87,12 +88,17 @@ export function newRecordJson(nowIso: string, deviceId: string, locale: string, 
  *  `isUS`: the App Store storefront is the US (US-61). `plan.usProducts` is then the sections
  *  ready to draw with Dr Brad's products on the supplement cards of a known adult
  *  (us-products.ts, the web's own overlay); left out when none shows. Anything but `true`,
- *  an app older than it included, gives none. */
+ *  an app older than it included, gives none.
+ *  `movedRecord`: the record as text, when reading `recordJson` moved its blood tests into
+ *  one table (US-66 AC14); the app writes it to the phone's file once, as it opens it. Left
+ *  out when nothing moved, so the written record never gives it again.
+ *  `plan.topics`: the same cards by topic for My health (health-core topicSections, US-73 AC3),
+ *  from `usProducts` when it shows, else `sections`, placed against My data's own questions. */
 export function screenJson(recordJson: string, nowIso: string, deviceId: string, unitsJson?: string, isUS?: boolean): string {
   const file = readView(recordJson, nowIso, deviceId);
   const choices = readUnitChoices(unitsJson);
   let plan: Plan | null = null;
-  let view: { sections: PlanSection[]; tiles: StatTile[]; usProducts?: UsPlanSection[]; ms: number } | { error: string; planError: boolean };
+  let view: { sections: PlanSection[]; tiles: StatTile[]; usProducts?: UsPlanSection[]; topics?: TopicLayout; ms: number } | { error: string; planError: boolean };
   try {
     const start = Date.now();
     plan = computePlan(file, new Date(nowIso), choices);
@@ -108,13 +114,25 @@ export function screenJson(recordJson: string, nowIso: string, deviceId: string,
   } catch (error) {
     view = { error: String(error), planError: error instanceof PlanError };
   }
-  return JSON.stringify({ myData: myData(file, nowIso, choices, plan), plan: view });
+  const data = myData(file, nowIso, choices, plan);
+  if ('sections' in view) {
+    try {
+      view.topics = topicSections(view.usProducts ?? view.sections, data);
+    } catch {
+      // no topics: the app draws the sections
+    }
+  }
+  const moved = movedRecord(recordJson, nowIso, deviceId);
+  return JSON.stringify({ myData: data, plan: view, ...(moved ? { movedRecord: moved } : null) });
 }
 
-/** One edit, as JSON: `{ ok: true, record }` with the new record as text, or the refusal. */
+/** One edit, as JSON: `{ ok: true, record }` with the new record as text (and the
+ *  outcome's other fields, such as a Health Records batch's counts), or the refusal. */
 export function applyEditJson(recordJson: string, editJson: string, nowIso: string, deviceId: string, unitsJson?: string): string {
   const outcome = applyEdit(readRecord(recordJson, nowIso, deviceId), JSON.parse(editJson) as Edit, nowIso, readUnitChoices(unitsJson));
-  return JSON.stringify(outcome.ok ? { ok: true, record: JSON.stringify(outcome.file) } : outcome);
+  if (!outcome.ok) return JSON.stringify(outcome);
+  const { file, ok, ...extra } = outcome;
+  return JSON.stringify({ ok, record: JSON.stringify(file), ...extra });
 }
 
 /** What the chat's proposed edits would do (US-67 AC3), as JSON: `{ medications: { lines, undo } | null,
@@ -154,13 +172,34 @@ export function healthWritesJson(recordJson: string, nowIso: string, deviceId: s
   return JSON.stringify(deviceWrites(readRecord(recordJson, nowIso, deviceId), 'apple_health'));
 }
 
-/** Every value recorded for one metric, newest first, as JSON (US-25 AC9). */
-export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string, unitsJson?: string): string {
-  return JSON.stringify(metricHistory(readView(recordJson, nowIso, deviceId), metric, nowIso, readUnitChoices(unitsJson)));
+/** Every value recorded for one metric, newest first, as JSON (US-25 AC9). `series` "lab": `metric`
+ *  is a lab test's series key (US-25 AC25); an app before it sends none, and is answered as before.
+ *  "egfr" and "whtr": the worked-out series of that name, `metric` unread (US-73 AC7). */
+export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string, unitsJson?: string, series?: string): string {
+  const file = readView(recordJson, nowIso, deviceId);
+  if (series === 'egfr' || series === 'whtr') return JSON.stringify(derivedHistory(file, series, nowIso));
+  return JSON.stringify(series === 'lab' ? labHistory(file, metric) : metricHistory(file, metric, nowIso, readUnitChoices(unitsJson)));
+}
+
+/** The core and catalogue blood tests a typed name finds, best first, as JSON (health-core labSearch,
+ *  US-73 AC8): the add sheet's matches. An optional door (bridge-optional.json): not in the hashed
+ *  contract, so an app reaches it only through HealthEngine.optionalCall. */
+export function labSearchJson(text: string): string {
+  return JSON.stringify(labSearch(text));
 }
 // Chat and lab upload (US-52): app-doors.ts.
 export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson, chatDeleteJson, settledJson, labReviewJson, labSaveSummaryJson } from './app-doors';
-/** The phone's reminders (reminders.ts): health-core's schedule plus the notification days, as JSON. */
-export function remindersJson(recordJson: string, nowIso: string, deviceId: string): string {
-  return JSON.stringify(phoneReminders(readView(recordJson, nowIso, deviceId), new Date(nowIso)));
+/** The phone's reminders (reminders.ts): health-core's schedule plus the notification days, as JSON.
+ *  `firstSeenJson` (US-17 AC15): the follow-up first-seen days the app keeps; anything that is not
+ *  an object of calendar days counts as none kept. An app before it sends none, and is answered as before. */
+export function remindersJson(recordJson: string, nowIso: string, deviceId: string, firstSeenJson?: string): string {
+  return JSON.stringify(phoneReminders(readView(recordJson, nowIso, deviceId), new Date(nowIso), undefined,
+    firstSeenJson === undefined ? undefined : readFirstSeen(firstSeenJson)));
+}
+
+function readFirstSeen(text: string): Record<string, string> {
+  let parsed: unknown;
+  try { parsed = JSON.parse(text); } catch { return {}; }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+  return Object.fromEntries(Object.entries(parsed).filter(([, day]) => typeof day === 'string' && isCalendarDay(day)));
 }

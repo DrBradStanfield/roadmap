@@ -57,7 +57,7 @@ struct AlcoholQuestion {
     var title: String { drinks ? "Do you still drink alcohol?" : "Do you drink alcohol?" }
     var message: String {
         drinks ? "Tell us if this has changed."
-            : "Your answer is kept in your record, so your plan follows it on every device. You can change it in My data, under About you."
+            : "Your answer is kept in your record, so your plan follows it on every device. You can change it in Settings, under About you."
     }
     var hint: String { drinks ? "Asks whether you still drink alcohol" : "Asks whether you drink alcohol" }
     /// The dialog's buttons; "I still drink" saves nothing.
@@ -184,7 +184,7 @@ private struct USProductBlock: View {
 }
 
 /// The parts of a suggestion behind the tap. Links open in the browser.
-private struct SuggestionDetails: View {
+struct SuggestionDetails: View {
     let suggestion: Suggestion
 
     var body: some View {

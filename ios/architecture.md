@@ -93,6 +93,16 @@ engines from this release on. Had it kept them, its allow-list would drop `limit
 engine no longer sends a limit field's representative, so it would lose that value rather
 than misreport it.
 
+**Bridge moved a third time, 2026-11-02 (US-72, D10).** The contract now names the `healthRecords` edit, so
+it hashes to `f4ba71cf3e7425f9`. A new app never runs an older over-the-air engine that lacks
+the edit; earlier builds keep their own bridge and get the edit only through the App Store.
+
+**Bridge moved, 2026-11-03 (merge of US-67 and US-72).** Main's `chatEditsJson` door
+(`8ced272282162ff2`) and this branch's `healthRecords` edit (`f4ba71cf3e7425f9`) meet in
+one contract, which hashes to `40fc97db4ca12547` with the story numbered US-72 in its text;
+`EngineRelease.bridge` and `bridge.test.ts` carry it. The earlier ids `9bf2188d4f963385` and
+`ad98aa80d4353126` never shipped.
+
 Speed, measured 2026-10-21 (Node 22, esbuild bundle, an Intel iMac, the sample record
 padded to 526 rows; `--jitless` stands in for an app's JavaScriptCore, which runs without a
 JIT): build the plan 1.3 ms with JIT, 1.6 ms without; merge two copies 3.2 ms vs 4.6 ms.
@@ -141,13 +151,13 @@ launch time: there, pre-main alone is 1.4 to 3 s (docs/reference.md gotcha).
 - **Stages 3 and 4 (2026-10-23): nothing in the app waits on the engine.** `blocking` lives in the test target, so the app cannot call it; and wherever JavaScript runs (`callValue`, `settle`, `evaluate`), a DEBUG precondition checks it is on the engine's queue and not on the main queue, the real rule: no JavaScript on main. App code awaits an engine door or `perform` (a body run on the engine's actor). What moved:
   - **Launch.** `Launch` (HealthRoadmapApp.swift) starts `AppParts.build` from the app's init, not a view, so a background launch builds too, and shows `LaunchView` until it is done: My data's plain background, no mark, read as "Loading". The system launch screen has the same colour (`UILaunchScreen` > `UIColorName` = `LaunchBackground`, an asset equal to `systemGroupedBackground` in light and dark, normal and high contrast, set in `HealthRoadmap-Info.plist`, which the generated plist merges), and so does the welcome screen and the questions (`OnboardingView`); the first-run cover is presented without animation (`RootView.decideFirstRun`). So the opening never flashes: one background from the tap to My data, or to the welcome screen (Brad 2026-10-26; the logo showed for about 100 ms). The file reads run `@concurrent`; `EngineBoot` is no longer main-actor: its checks, both engine loads and the quarantined self-test run off main, and only the trial mark (`EngineTrial`) is set on main, before the parts are handed out; `RecordStore.open` awaits the first `loadPhone`, once, before the first screen. The notification delegate is set synchronously in `Launch.init`. `CloudSync.init` queues the attach with `engine.enqueue`: the engine's queue runs in order, so the attach lands before any engine call asked for after it, and `marksPending` is set before any edit can be asked for. Health's observer may be set after the app became active, so the build ends with one refresh when it is. Measured (simulator, iPhone 18 Pro Max, two-year record): first frame 150 ms after init, all blocked, before; launch screen at 50 ms and the app at 165 ms after, main free between.
   - **Typed numbers** are read in Swift, `TypedNumber.read`, the engine's `readNumber` rule (Arabic-Indic digits, JavaScript's trim, either mark, plain decimals only, -0 as 0; "1,234" read as thousands only inside the input range My data's `inputRanges` gives with the decimal reading below it, never as the decimal, else nil, with the screen's message line asking `TypedNumber.question`; grouped thousands only against a range, US-02 AC7, 2026-10-27); NumberReadingTests holds it to the engine's `numberJson` on 59 texts, and on them and four more under six ranges against the rule written once in the test over the engine's readings. The engine's door stays (tests only; no bridge change). It is in the binary: a change to health-core's number rule needs an app release (D3).
-  - **A value's history** is `RecordStore.chart(for:) async`, read once per metric and record `revision` (a counter that moves with the record and the per-test units); a second ask for the same revision joins the read under way, so a page and the page above it make one engine call. The store keeps each answer with its chart inputs (`ChartData`: points, days, the first and last day and the range a page opens on, built once per history) and drops older revisions' as a newer one lands. A page draws `shownChart(for:)`, which may trail the record by one read, and asks again on `.task(id: store.revision)`; only `shownHistory(for:)`, the history read for the record and units as they are now, opens a correction, so Show All Data holds its taps while it trails (adversary R2). A correction's "Now" hint comes from that current history, and for Lp(a) only one read in the sheet's unit (`correctionHint`): never "100 mg/dL" from a 100 nmol/L row.
+  - **A value's history** is `RecordStore.chart(for:) async`, read once per metric and record `revision` (a counter that moves with the record and the per-test units; the eGFR and waist-to-height series once per draw too, review round 3); a second ask for the same revision joins the read under way, so a page and the page above it make one engine call. The store keeps each answer with its chart inputs (`ChartData`: points, days, the first and last day and the range a page opens on, built once per history) and drops older revisions' as a newer one lands. A page draws `shownChart(for:)`, which may trail the record by one read, and asks again on `.task(id: store.revision)`; only `shownHistory(for:)`, the history read for the record and units as they are now, opens a correction, so Show All Data holds its taps while it trails (adversary R2). A correction's "Now" hint comes from that current history, and for Lp(a) only one read in the sheet's unit (`correctionHint`): never "100 mg/dL" from a 100 nmol/L row.
   - **Onboarding's conversions** (`TypedAnswer`) await the engine; a unit switch's conversion lands only if the box did not move meanwhile, so a box never shows text in units it no longer holds. A trial's confirm needs no engine call: the store confirms as it draws.
   - **Chat history** (`ChatHistoryStore`) awaits the engine for its list, messages, saves and deletes; each save or delete reads, changes and writes in one engine step. The app has one store, made at launch (`AppParts`) and shared by Chat and the eraser: `DataEraser` reads its list again after an erase, and opening History reads it again, so Chat shows what is on disk without a refresh of its own. Both erases now write the chat tombstones on the engine's queue (the phone erase's `keepChat` runs through `perform`), so neither lands between a save's read and write.
   - **Cloud news** is decoded on the engine's queue (`CloudNews`) before it goes to main.
   - **Photos and scans** are resized `@concurrent` (`LabFileReader.photo` takes the photo's bytes; `pictures` takes the scan's images, which are Sendable in the iOS 27 SDK).
 - **The watchdog (DEBUG only, opt-in, US-25 AC21c).** `MainThreadWatchdog` runs only when the launch argument `-mainWatchdogLog <path>` names a log. It pings main every 50 ms from its own thread and appends "<timestamp> main stalled N ms" to that file when main took 100 ms or more to answer. It takes no stacks: a tool for timing by hand, not a test. `LaunchClock` logs the launch's milestones in ms since the process started.
-- **Apple Health observers at launch (adversary R1).** `Launch.init`, which runs as the process starts, registers HealthKit's observer queries and background delivery at once (`AppleHealthSync.observeAtLaunch`), as Apple requires, while the parts are still being built. A delivery awaits the parts, then refreshes; HealthKit's completion is called after that refresh, or at once if the parts never come. `HealthKitClient.observe` registers once per process, so the sync's own `start` keeps the launch's queries. Coming on screen refreshes Health from `follow`, beside sync and the updater; the sync itself listens only for the phone unlocking.
+- **Apple Health observers at launch (adversary R1).** `Launch.init`, which runs as the process starts, registers HealthKit's observer queries and background delivery at once (`AppleHealthSync.observeAtLaunch`), as Apple requires, while the parts are still being built. A delivery awaits the parts, then refreshes; HealthKit's completion is called after that refresh, or at once if the parts never come. `HealthKitClient.observe` registers once per process, so the sync's own `start` keeps the launch's queries. Coming on screen refreshes Health from `follow` (`AppleHealthSync.foreground`, which first asks for lab results where HealthKit says a request is needed, US-72), beside sync and the updater; the sync itself listens only for the phone unlocking.
 
 The runtime needs a bridge for what a bare JSContext lacks: `fetch`, `Response`, `Headers`,
 `URL`, `AbortController` with `AbortSignal.timeout`/`any`, `Blob`, `TextEncoder`/`Decoder`,
@@ -254,6 +264,35 @@ A signature means "the key holder approved this bundle", nothing more.
   an older engine (`MyDataLayoutTests.testARowReadsItsTargetAndPreviousValueFromTheEngine_US62`).
   Third (2026-11-02, D11): rows' `status` and `gradeWords`, and `labTests`
   (`MyDataLayoutTests.testARowReadsItsGradeFromTheEngine_US62`).
+  Fourth use (2026-11-02, US-66 AC14): `screenJson`'s `movedRecord`, the record to write once
+  when reading the phone's file moved its blood tests into one table. `loadPhone` writes it with
+  the edit path's atomic write and no pending marker (the move changes no value; an open cloud
+  writes its own copy, in `cloudOpen`, through `commit` as an edit does). A field, not a new
+  door, so the bridge id stays: an older app ignores it, an older engine sends none.
+  Fifth use (2026-11-05, US-73, PR B of the My health plan): `screenJson`'s `plan.topics`
+  (health-core `topicSections`) and two new `historyJson` series, `egfr` and `whtr`. The add by
+  name is a new edit kind, `labAddName` `{name, value, unit, day?}`, inside `editJson`, so no
+  contract field moves; an older engine knows no such kind, and the edit fails as an error.
+  **Optional doors (rule extension, 2026-11-05, orchestrator decision):** a third kind in
+  `bridge-optional.json`, `optionalDoors`: a whole door `entry.ts` exports that the hashed contract
+  leaves out, so adding it keeps the bridge id. An old app never calls a door it does not know.
+  A new app normally runs an engine at least as new as its bundled one (an over-the-air version
+  must beat the bundled engine's, the anti-rollback rule above), so the door is normally there.
+  Safety does not rest on that: Swift reaches an optional door only through
+  `HealthEngine.optionalCall`, which answers nil for a door the engine lacks (the feature
+  unavailable, never a crash). That nil is the insurance, not the expected path. The frozen
+  shapes are append-only (`bridge.test.ts` snapshots each door's arguments and answer), and
+  `EngineSelfTest`'s door list never names one. Enforced:
+  `bridge.test.ts` (every export is in the contract or an optional door, never both, with its
+  arity and argument names) and `EngineBridgeContractTests` (outside the contract and the
+  self-test list, in the bundled engine with its arity, and no Swift call to it but through
+  `optionalCall`). First: `labSearchJson(text)`, the add sheet's name search (health-core
+  `labSearch`, US-73 AC8), read in Swift as `HealthEngine.labSearch`.
+  **Schema 3 (Brad 2026-11-02, US-66 AC15):** a record holding a core blood row is
+  `schemaVersion` 3, so the engine's `schemaVersion` fact becomes 3. Build 3 bundles a
+  schema-2 engine: it refuses a moved record with its "update the app" path (US-65 AC5) and
+  writes nothing, and it refuses an over-the-air engine of schema 3 by the rule below (R7).
+  The iPhone update ships the schema-3 engine in the binary.
 - **The schema is the app's (R7).** A bundle whose record `schemaVersion` differs from the
   bundled engine's is refused. A schema change always needs an app update, so an over-the-
   air engine can never write a record the web or an older phone cannot read.
@@ -662,6 +701,9 @@ Decisions made building it (agent, 2026-10-21; Brad to confirm):
 - **"Not yet happened" compares instants**, with five minutes for a device clock running
   ahead: a reading's day is the day where it was taken, which in a zone ahead of the phone's
   is already the phone's tomorrow (fix-scoped re-check, 2026-10-21).
+- **Blood pressure is observed as its two halves** (2026-11-02): Apple refuses `HKCorrelationType` for background
+  delivery, so `observe` registers the systolic and diastolic quantity types; the import still reads the correlation.
+  One reading fires both observers, and `refresh` folds the second into the running import.
 - **Height** is the profile's: Apple Health fills an empty height and never replaces one.
   It is not written back: the profile has no source, so an imported height would echo.
 - **Blood glucose is not read.** It is a catalogue lab value, and lab rows have no
@@ -727,9 +769,10 @@ line (`chain`), not because of the main actor; a refresh asked for during one lo
   sample whose source is this app, which is every `healthroadmap:` sync id, and clears
   `HealthSyncMemory`'s written versions. Checked against a fake store only.
 
-**Entitlement.** `ios/HealthRoadmap.entitlements` (HealthKit, with background delivery, no
-Health Records access) is set as `CODE_SIGN_ENTITLEMENTS`; the purpose strings are
-`INFOPLIST_KEY_NSHealthShareUsageDescription` and `...UpdateUsageDescription`. The simulator
+**Entitlement.** `ios/HealthRoadmap.entitlements` (HealthKit, with background delivery, and
+`com.apple.developer.healthkit.access` = `health-records` since US-72) is set as
+`CODE_SIGN_ENTITLEMENTS`; the purpose strings are `INFOPLIST_KEY_NSHealthShareUsageDescription`,
+`...UpdateUsageDescription` and `...NSHealthClinicalHealthRecordsShareUsageDescription`. The simulator
 build signs it locally with no team. **For Brad, once the Apple Developer team exists:** set
 the team in Xcode (Signing & Capabilities), confirm the App ID `com.drstanfield.healthroadmap`
 has the HealthKit capability (Xcode adds it when signing automatically), and test the
@@ -742,14 +785,114 @@ they connect (changed at the cloud-sync merge, 2026-10-21). Health values reachi
 part of the record's summary, are a guideline 5.1.3 disclosure question for the chat consent. Whether a device backup counts as "iCloud"
 under 5.1.3 is the D5 backup question, still open.
 
-**Out of scope 2026-10-21: blood tests from Health Records** (`HKClinicalRecord`). Below
-is the plan for them, not built.
+**For Brad: Health Records (US-72).** In Xcode, target HealthRoadmap, Signing & Capabilities,
+HealthKit: tick **Clinical Health Records** (it writes the `health-records` value already in
+the entitlements file; Xcode then updates the App ID on the developer portal when signing
+automatically). Then archive and upload as usual. App Store Connect: the privacy answers add
+health records (read, not linked to tracking, kept on the device or the person's cloud), the
+privacy policy says so, and the review notes say why the app reads lab results (the plan's
+suggestions) and that the import sends nothing to Brad's server: the results stay in the
+person's record, and go with a chat question only when the person uses the chat (US-72 AC11;
+the purpose string says so). **Not confirmed (no developer
+account access from here):** whether the App ID shows a separate Clinical Health Records
+switch on developer.apple.com, whether Apple asks for any request or approval before a
+health-records build is accepted, and whether an existing provisioning profile must be
+regenerated by hand. Ship it in its own build, so a rejection holds back nothing else.
 
-**Blood tests** mostly are not HealthKit quantity types. They arrive as Health Records
-(`HKClinicalRecord`), which needs Apple's entitlement and, to our knowledge, works only in
-the US, UK and Canada (verify). Records come in FHIR DSTU2 or R4: decode by version, with
-fixtures for both, and refuse others visibly. Lab rows have no `externalId`, so dedup stays
-on (metric, recorded_at). The LOINC-to-catalogue map is clinical-adjacent code.
+**Blood tests from Health Records (US-72, built 2026-11-02; plan:
+[docs/drafts/apple-health-blood-tests.md](../docs/drafts/apple-health-blood-tests.md)).**
+Apple offers Health Records in the US, UK and Canada; records are FHIR, read-only.
+- **Asked only where it works:** `HKHealthStore.supportsHealthRecords()` true adds
+  `labResultRecord` to the read set of the one request (D12's one step; Health shows it on
+  its own sheet). Elsewhere nothing asks and no read runs.
+- **Asked again on coming forward (review 2026-11-02):** a person who connected before this
+  build, or who chose "Ask Before Sharing", is never shown the sheet by the one request.
+  `AppleHealthSync.foreground` (the app's `follow`, never a background wake, where no sheet
+  can show) asks for lab results alone when Apple Health is connected, `supportsHealthRecords`
+  and `statusForAuthorizationRequest` says `.shouldRequest`, then refreshes.
+- **Rules version:** `HealthSyncMemory.labResultsRulesVersion` (2 since 2026-11-02: results
+  dated by `issued`, the MDRD eGFR and the import winning a conflict), stored beside the anchor.
+  Bump it when the engine starts reading results it used to refuse (a new code or unit): a
+  phone whose anchor was kept under another version drops it once and reads every result
+  again. AC5's dedup by `externalId`, and its stale-version rule, make the re-read safe.
+- **One blood-test table (US-66, merged 2026-11-03):** every result lands in `labValues`, a
+  core test as a core row (`createCoreRow`: `core: true`, its key, its SI unit), so the
+  record's own write stamp makes it `schemaVersion` 3; `measurements` gets nothing from the
+  import. Its slots, identities, corrections and markers all live in `labValues`, where a
+  typed core value now lives too.
+- **Swift parses nothing (D2):** `HealthKitClient.labResults` is an anchored query; each
+  record goes to the engine as `{ sourceId, resourceType, fhirVersion, json }` (the
+  `healthRecords` edit). `sourceId` is the sample's source bundle id (`com.apple.public.health.clinical.<UUID>`,
+  one per institution account; seen on the simulator 2026-11-02): Apple says a FHIR id is
+  unique only per type and source. The institution's name stays out of the record. The engine (health-core) reads the JSON and decides what lands, with its counts
+  (`added`, `corrected`, `withdrawn`, `alreadyInRecord`, `notRead`).
+- **The import is the source of truth (Brad 2026-11-02, US-72 AC3, AC6, AC8, AC9):** the
+  day is `effectiveDateTime`, else `effectivePeriod.start`, else `issued`. A result whose
+  day holds a typed, uploaded, hand-corrected or Apple Health row with another value, unit
+  or comparator corrects that row (FHIR correction, its day kept); the same value appends
+  nothing. A version dated by `issued` alone keeps the day its result already holds: `issued`
+  is that version's release, so an amendment's later one is not a move (AC3). A newer version
+  with the same value, unit and comparator, and a lab's withdrawal, append a **version
+  marker** (AC5): a `health_records` row born `entered-in-error` on the result's test and
+  day, carrying the content of the version it records (the new version's value, unit,
+  comparator and range; a withdrawal's marker keeps the withdrawn row's), the new version in
+  its `externalId` and `correctsId: null` (merge reads no
+  `correctsId`, so it flips nothing on any device). A marker's `externalId` ends `|m` after
+  the version (`identity#version|m`), so it is known by its id, never guessed from its content
+  (Codex R2, adversary R3). The record remembers the version, so an
+  older one seen later is stale, and the person's rejection or hand edit stands; only another
+  value, unit or comparator lifts a rejection or overrides. After the lab's own withdrawal,
+  its newer version lands whatever its value (AC8). A withdrawal already in the record flips
+  an active copy a merge brought back only when that copy is not newer (AC7). A version that
+  moves the result to another test or day is not read, active row or not (AC6). The history
+  (`metricHistory`) leaves markers out with health-core's `isVersionMarker(row)`; readers
+  skip them as any `entered-in-error` row. Known limit (adversary R4): a result dated by its release day can
+  sit on another day than the same draw typed on the draw day, so both stay active.
+- **Same line, same anchor rules as vitals:** `RecordStore.applyNow(.healthRecords(_))`, its counts in `ApplyResult.saved`; the store's
+  one ordered line; the anchor (`HealthSyncMemory.labResultsAnchor`) moves only after the
+  record holding the batch is saved, and none is kept until a batch brought results (the
+  empty-refusal rule above). Locked phone: as vitals. Deletions in Health are ignored.
+- **Observer and background delivery** are registered for the clinical type beside the
+  vitals. Whether iOS delivers in the background for clinical types is not documented, and
+  the simulator does not run background delivery at all (Apple), so it is unchecked; the
+  unlock and foreground refreshes cover it either way.
+- **Usage signal (D9):** "Health Records asked" when HealthKit said the lab results request
+  was needed (`statusForAuthorizationRequest` before asking), "Health Records imported" when
+  a batch's `added + corrected > 0`.
+- **Checked on the simulator 2026-11-02 (iOS 27, region US, Sample Institution A added in
+  Health › Browse › Health Records › Add Account).** The one request shows Health Records'
+  own sheet FIRST (how sharing works, the accounts, "You Should Know", Lab Results with our
+  purpose string and Privacy Policy link, then "Automatically Share" or "Ask Before Sharing"
+  for new records), then the vitals sheet. The app read 3 results, source
+  `com.apple.public.health.clinical.<UUID>` (the record keeps the bundle id only; the
+  institution's name, "Sample Location A", is left out), all DSTU2 Observations. None
+  landed then: all three carry `issued` and no `effectiveDateTime`, which AC3 refused (one is a
+  panel with no value). AC3 now reads `issued` (Brad 2026-11-02); "rows appear in My data" is
+  not yet re-checked on the simulator.
+- **Import before the cloud record: intended (adversary R3, 2026-11-02; Brad 2026-11-03:
+  "remember that the Apple Health import is the source of truth. So if that brings back
+  deleted values, that's fine.").** A phone that imports Health Records before it connects
+  its cloud record writes those results with new row ids, and at first connect the cloud
+  copy holds the same results under other ids. The merge then decides, not the import's
+  rules: the newest-written row (`createdAt`) wins a slot. So the merge can bring back a
+  result the person deleted or withdrew (a second active row of the same version), and an
+  imported result can outrank a value typed on the same day. Both are meant: the import is
+  the source of truth (AC9). A lab's re-sent result after its own withdrawal also beats the
+  person's earlier deletion (AC8; Brad 2026-11-03: agreed). A result whose day a typed or
+  uploaded row won in a merge (that row does not correct the result's newest landed version,
+  through any chain of corrections) lost a merge, not a person's call: the lab's next version
+  corrects that row when the value differs, and lands a marker when it matches (AC9,
+  adversary R2). A correction of an older version that a merge put over the lab's amendment
+  is such a lost merge too (adversary R1). Two explicit choices of the person look the same,
+  so a lab version with another value overrides them: deleting the imported row then typing
+  a value on that day, and moving another day's value onto the result's day (Brad: the
+  import is the source of truth). **Still a known limit, beside
+  Brad's rule:** an erase admits the lower-epoch side's rows written after it, so the merge
+  can return results drawn before an erase (AC10); the fix is merge-class work, Brad's call.
+  US-72 AC5, AC8, AC9 and AC10 claim their own rules only on a phone that already holds the record.
+- **Gotcha:** an onboarding UI test that waits for the vitals sheet
+  (`UIA.Health.AuthSheet.AllCategoryButton`) meets the Health Records sheet first on a
+  simulator where `supportsHealthRecords()` is true (a US region, or an account added).
 
 **Writing.** Values typed in the app go to Apple Health. The sync identifier is the root id
 of the correction chain, with a rising version, so a correction replaces our sample instead
@@ -771,12 +914,12 @@ stages, VO2 max and steps, read live from HealthKit each time they show and neve
 record, merge, website, chat and engine never see them. Display only; no heart rate variability.
 Access is asked in onboarding's one Apple Health request, with D6's types (Brad 2026-10-26: "just
 do it in one step"; it replaced asking later from a card on My data). Heart rate, resting heart rate
-and sleep sit in Vitals under blood pressure; VO2 max and steps under a new Fitness heading.
+and sleep sit in Vitals under blood pressure; VO2 max and steps under a new Fitness heading. Since US-73 (2026-11-05) sleep sits under Sleep and VO2 max, resting heart rate and steps under Fitness; heart rate is gone (Brad dropped its card, round 4), so it is no longer read or kept, and a launch deletes its kept history once (`LiveHistory.forgetDropped`).
 VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note under D2).
 
 **US-56, built 2026-10-25 (phases 1 and 2), on My data.** `HealthRoadmap/AppleHealthMetrics/`:
 - `LiveHealthStore` is the protocol; `LiveHealthKitStore` the only code reading HealthKit for these
-  five types, on its own `HKHealthStore`. It names exactly heart rate, resting heart rate, sleep
+  four types, on its own `HKHealthStore` (heart rate dropped, US-73, 2026-11-05). It names exactly resting heart rate, sleep
   analysis, VO2 max and step count (`readTypes`), shares none, and never asks for them itself:
   **one request (Brad 2026-10-26):** `HealthKitClient.requested` is the union of D6's types, sex and
   date of birth, and `readTypes`, and `HealthKitClient.requestAuthorization` is the app's only Health
@@ -784,15 +927,15 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   the DEBUG seed). Both sets are `static let`, and all three share one `HKHealthStore.app`, as
   Apple recommends. So onboarding's "Connect Apple Health", My data's Apple Health row and the
   Turn On row all show one sheet; iOS lists only the types not yet asked, so a person connected
-  before 2026-10-26 sees just the five. `AppleHealthSync.connect()` is the one connect: it holds the
+  before 2026-10-26 sees just the four. `AppleHealthSync.connect()` is the one connect: it holds the
   app's `LiveHealth` (given once, in `AppParts`), so the cards read as soon as the sheet is answered, beside the import. It uses
-  `statusForAuthorizationRequest` on the five for the Turn On row; a status check that throws keeps
+  `statusForAuthorizationRequest` on the four for the Turn On row; a status check that throws keeps
   the answer `LiveHealth` had, so the row never flashes (adversary R4). Every call is
   `@concurrent`: HealthKit and the maths run off the main thread. HealthKit's statistics collection
   queries do the daily and hourly maths, chosen by each metric's `aggregation` (`.sum` steps,
-  `.range` heart rate's min, max and average, `.mean` the others); sleep is a category sample query.
-  The same field picks the headline, the mark, the y-scale, the audio graph's series and the card
-  rule (heart rate's card is its newest sample, with the time).
+  `.mean` the others); sleep is a category sample query. The same field picks the headline, the
+  mark, the y-scale and the audio graph's series. (`.range`, heart rate's min, max and average,
+  and its newest-sample card went with heart rate, US-73 round 4.)
 - **One calendar (adversary R2, 2026-10-25):** `Calendar.autoupdatingCurrent`, made once in
   `AppParts` and given to both `LiveHealthKitStore` (the statistics' day and hour anchor) and
   `LiveHealth` (days, nights, labels), so a trip to another zone never labels a day with the
@@ -823,7 +966,7 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   again deletes it, and `DataEraser` calls `forget()` (file gone, cards empty, nothing shown until
   the next read). `forget()` bumps a generation: a refresh begun before it, and one queued during
   it, keeps nothing (Codex R1, adversary R4). The file holds each card's trend values too (up to
-  30 daily values, or the last seven readings), so the trend line draws in the first frame. Pages' days, hours and nights are never kept. "Today",
+  30 daily values, or the last seven readings), so the trend line draws in the first frame. Since 2026-11-03 each page's days, its last week of hours (D) and sleep's samples are kept too (`LiveHistory`, below). "Today",
   times and the VO2 max band are worked out at draw time from the card's date and `now`. The app
   has no Apple Health disconnect of its own (access is changed in Settings), so the erase and an
   empty read are the only other reset paths. Rejected: UserDefaults (it is backed up and is the
@@ -832,7 +975,7 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   2026-10-26); a fixed window back from today dropped a VO2 max from six weeks ago (Codex R2).
   The trend is the last 30 days' readings, or the last seven however old (US-56 AC14); only a
   card with fewer than two readings in its 30 days and fewer than seven read reads further back
-  (400 days before its window; sleep, the 200 nights a sleep page reads, or back to its first
+  (400 days before its window; sleep, the 200 nights before today, or back to its first
   read's start when that is older), and a read-back that
   fails or finds nothing more keeps the first card.
   No record row, UserDefaults value, log or telemetry, and no file but the kept cards (a source-scan
@@ -848,8 +991,27 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   `SleepPage` (D's stages over the night, W/M/6M stacked nights with stage averages, its chart its
   own view, E3). Both pages share `LivePageFrame` (picker, empty line, footnote, read, range
   reset), `ScrollingChart` (axes, scroll, scrub, haptic, calendar) with `SelectionRule`, and
-  `PageHeadline`, which `MetricDetailView` uses too. Every metric page, MetricDetailView's included, takes `metricPageList` (inset grouped, inline title, an 8 pt top margin so the picker sits under the title; Brad 2026-10-25). While the sheet is still due for the five and Apple Health is connected (so only for someone connected before 2026-10-26) Vitals shows `LiveReconnectRow` with **Turn On** (US-56 AC5; the "Show from Apple Health" card is gone; not connected, My data's Apple Health row is the one way in), and after "Don't Allow" (or an empty Health) the same row with **Open Settings** (AC5b; "Reconnect" until 2026-11-01, AC5c). Turn On runs `connect()` on the known answer; Open Settings checks the status afresh and runs it while the sheet is due, else opens Settings (`LiveReconnectRow.action`); Settings opens at its top and iOS 27's app page there has no Health row, so the row names the path, chosen by OS (`LiveFooter.healthPath`: Settings › Apps › Health › Data Access & Devices › Health Roadmap from iOS 18, Settings › Health › … on iOS 17). **A page always shows its card's reading
-  (Codex R2, adversary R7):** it reads 400 days (sleep 200) or back to the reading, opens with it in
+  `PageHeadline`, which `MetricDetailView` uses too. Every metric page, MetricDetailView's included, takes `metricPageList` (inset grouped, inline title, an 8 pt top margin so the picker sits under the title; Brad 2026-10-25). While the sheet is still due for the four and Apple Health is connected (so only for someone connected before 2026-10-26) Vitals shows `LiveReconnectRow` with **Turn On** (US-56 AC5; the "Show from Apple Health" card is gone; not connected, My data's Apple Health row is the one way in), and after "Don't Allow" (or an empty Health) the same row with **Open Settings** (AC5b; "Reconnect" until 2026-11-01, AC5c). Turn On runs `connect()` on the known answer; Open Settings checks the status afresh and runs it while the sheet is due, else opens Settings (`LiveReconnectRow.action`); Settings opens at its top and iOS 27's app page there has no Health row, so the row names the path, chosen by OS (`LiveFooter.healthPath`: Settings › Apps › Health › Data Access & Devices › Health Roadmap from iOS 18, Settings › Health › … on iOS 17). **A page always shows its card's reading
+  (Codex R2, adversary R7):** it holds the metric's whole history, from its oldest sample
+  (`LiveHealthStore.earliest`, never before 2014), by day as HealthKit sums or averages it, so a
+  decade is about 3,650 points; sleep keeps every night's samples. **Decision, 2026-11-03 (US-56
+  AC7a): the histories are kept on the phone.** Why: Brad found VO2 max stopped a year back while
+  Weight scrolled to its first reading, and reading a decade of resting heart rate or sleep each time a
+  page opens is slow ("store it so that we can quickly load it and we don't have to keep fetching
+  it. And that load needs to not be in the user interface main thread"). This reverses AC2's
+  2026-10-27 line that pages are read fresh. How: the `LiveHistory` actor keeps one file per
+  metric (`history-<metric>.json`, sleep's holding its samples) and its last week of hours
+  (`hours-<metric>.json`, for D) beside the cards' file, under the
+  same rules (out of backups, complete-until-first-unlock, apart from the record, deleted by Delete
+  all my data, access reset or an empty Health). A page draws the kept history first; with none
+  (a first visit) it draws 400 days (sleep 200 nights) while the whole history is read and kept;
+  later reads ask HealthKit only what changed since the kept anchor (an anchored query): added
+  samples re-read just their days; sleep's samples are added or removed by id; a deleted day
+  sample (HealthKit gives only its id), a change list past 5,000 or a new time zone reads the
+  days in full again. Each file records its zone. Decoding, merging,
+  grouping nights and writing run on the actor, never the main thread. Rejected: two reads per
+  visit (fast first draw, then the full read) still re-read years each time; SwiftData or a
+  database was more machinery than five small JSON files. It opens with the reading in
   view (`LiveChartGeometry.opening`, the window's own length so a 31-day month still holds it),
   reads D's hours a day at a time as the scroll reaches a day (D scrolls a week back, or to the reading's day: a 400-day hourly domain took Swift Charts several seconds to lay out on the simulator), and reads the days only once the
   range leaves D (E4). Its bars live in `@State`, rebuilt after a read or a range change (E2). The
@@ -865,11 +1027,11 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   record metric's page. `LivePageFrame` draws it last; `MyDataView` hands it in from My data's `guides` by
   `LiveMetric.guideKey` (the snake-case key, as `paletteKey`). No engine change: the engine already serves every guide.
 - Simulator seeding: `App/LiveHealthSeed.swift`, DEBUG only (`#if DEBUG`, never in a release build):
-  `--seed-live-health` asks to write the five types and saves 60 days of synthetic samples and a
-  year of VO2 max. A sheet asked for during launch is dismissed by iOS, so it waits 4 s. Apple's
+  `--seed-live-health` asks to write the four types and saves three years of every metric in
+  batches of 5,000 (a page keeps and scrolls a long history, AC7a). A sheet asked for during launch is dismissed by iOS, so it waits 4 s. Apple's
   sheet in iOS 27 answers by "Select All", "Continue", "All Recorded Data", "Allow"; a UI test can
   tap them only by screen point (the sheet reports its frames at a third of screen points).
-- Purpose string: the six "go only into your record"; the five are kept only on this iPhone, never in the record (AC10, AC2 since 2026-10-27).
+- Purpose string: the six "go only into your record"; the four are kept only on this iPhone, never in the record (AC10, AC2 since 2026-10-27).
 - **AC8 built 2026-10-26 (Brad: "do it. we want the bands").** Apple publishes only the Low rule
   (white paper, May 2021: lowest FRIEND quintile for sex and decade at 20 to 59, Kaminsky 2015;
   below 18 mL/kg/min for men and 15 for women at 60 and over), so the page shows FRIEND 2022
@@ -904,7 +1066,20 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
   the web's emails who also turns on phone reminders is reminded twice; no dedupe.
 - **Lock-screen words: generic.** Title "Health Roadmap", body "A check-up is due. Open
   the app to see which." The procedure's name is shown only inside the app. Revisit if
-  Brad prefers the name ("Colonoscopy due") on the lock screen.
+  Brad prefers the name ("Colonoscopy due") on the lock screen. The in-app list names a
+  follow-up after an abnormal result as its plan card does ("Follow-up to organize:
+  repeat colonoscopy", "Follow-up check-in: colposcopy"; US-17 AC15 and US-25 AC27, approved by Brad 2026-11-05), from
+  `followupKinds` on the phone's own record; the lock screen stays generic (Brad
+  2026-11-05) and the pushed web schedule keeps the plain label.
+- **Follow-ups fire the first morning they are seen** (US-17 AC15, Brad 2026-11-05). A
+  follow-up's due day is already past, so counting from it would wait up to 90 days. The
+  app keeps the day each follow-up was first seen in `reminders-first-seen`, beside the
+  opt-in in the folder backups leave out (D5), and sends it back through `remindersJson`'s
+  optional `firstSeenJson`; the engine fires that morning (or the next if 09:00 has
+  passed, `NOTIFY_HOUR`, pinned equal to `ReminderScheduler.hour` by a test), or on its due
+  day if later, and every 90 days from it. Cleared whenever reminders are off, refused or
+  erased, even if the engine failed; an item no longer a follow-up drops its entry; a lost
+  entry fires once more, never in a loop; a kept day in the future heals. Never sent anywhere.
 - **Rebuilt from scratch** on launch, on return to the foreground and on every record
   change: remove our pending ones (ids start `reminder.`), add the soonest 64. One
   notification a day, however many things fall due on it (the words are generic, so two
@@ -1082,6 +1257,11 @@ log a closed reason word, never the key id or IP.
 - Apple's service unavailable at attest time: "try again later"; no fallback.
 - Key lost (app reinstalled: the Keychain id survives, the key does not) or unknown to the
   server (401 `unknown_key`): the app drops the id, attests a new key, and retries once.
+  A lost key may fail its assertion with more than one error code, not only `invalidKey`,
+  so any failure of the stored key counts as lost, once a launch: a key the launch
+  registered is used first, Keychain or not, and never replaced on the phone; it keeps
+  failing until a relaunch. A 401 `unknown_key` still re-registers once per request
+  (US-52 AC1c, 2026-11-09: Brad's reinstalled phone). A failed App Attest call names its step and code on screen ("App Attest assert 3").
 - Counter stale (401 `stale_counter`): one retry with a fresh assertion.
 - Key store down, or `APP_ATTEST_TEAM_ID` unset: 503. Never open.
 - Over a limit: 429 with a plain message; no model call.
@@ -1195,13 +1375,15 @@ health tool (`data-clarity-mask` on `HealthTool.tsx`'s root). The app matches th
   parent's mask does not force a text input's, so every TextField also carries
   `analyticsMasked()` (`clarityMask`). Screen names are fixed words (`Analytics.Screen`),
   never a navigation title, which can carry a supplement's name. Nothing is ever unmasked.
+  The screens (2026-11-05, US-73, Brad): "Welcome", "Onboarding", "My health" (was "My data";
+  "My plan" went with the merged tab), "Chat", "Apple Health metric".
 - `AnalyticsMaskingTests` (US-25 AC19) fails if the window is not masked first, if any code
   unmasks, if a text input lacks its mask, or if any file but Analytics.swift calls Clarity.
-- **Custom events, exactly sixteen fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58; "Alcohol answered" for US-60; "Chat edit proposed" and "Chat edit saved" for US-67):**
+- **Custom events, exactly nineteen fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58; "Alcohol answered" for US-60; "Chat edit proposed" and "Chat edit saved" for US-67; "Health Records asked" and "Health Records imported" 2026-11-02 for US-72 AC13; "Tile explainer opened" dropped and "Jump pill tapped" and "Blood test added" added 2026-11-05 for US-73, Brad):**
   `Analytics.event` sends `ClaritySDK.sendCustomEvent` with a word from one enum,
-  `Analytics.Event`: "Tour started", "Tour tip closed 1/2/3", "Tour skipped 1/2/3", "Tile
-  explainer opened", "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened", "Alcohol answered", "Chat edit proposed", "Chat edit saved".
-  Never a value, a tile's name or any other text; nothing before Clarity starts.
+  `Analytics.Event`: "Tour started", "Tour tip closed 1/2/3", "Tour skipped 1/2/3",
+  "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened", "Alcohol answered", "Chat edit proposed", "Chat edit saved", "Health Records asked", "Health Records imported", "Jump pill tapped" (any of My health's jump pills, never which), "Blood test added" (a save from the Add blood test sheet, never which test or value).
+  Never a value, a tile's name, a test's name, a count or any other text; nothing before Clarity starts.
   `AnalyticsMaskingTests` pins the list, so a new word is a test change and a D9 change.
   Views reach the one `Analytics` through the environment (`\.analytics`, set by RootView).
 - Second layer: the Clarity project's masking mode is set to **Strict** on its dashboard
@@ -1268,8 +1450,9 @@ updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.
 - **No title bar.** It cost a line for a word the tab bar already says. The "+" and Sync
   sit on the About you header, the unit switch on the Vitals header. With no bar, iOS 26's
   scroll edge effect left rows legible behind the clock (checked in the simulator), so a
-  zero-height top inset carries the list's background into the status bar. My plan keeps
-  its bar and `firmTopEdge`.
+  zero-height top inset carries the list's background into the status bar (`solidStatusBar`).
+  My plan lost its bar too (Brad 2026-11-03, US-25 AC26): "Your health snapshots" heads the
+  tiles in the sections' own `PlanHeading` and scrolls with them; same inset, plus `firmTopEdge`.
 - **Blood pressure is one engine edit.** `bloodPressure` (`engine/blood-pressure.ts`)
   runs health-core's `appendMeasurement` or `correctValue` for each half on one record and
   returns the first refusal, so both rows land or neither. Two Swift calls in a row would
@@ -1322,6 +1505,16 @@ updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.
   leaves ungraded, where there is a plan to grade it by, carries the web's "Printed as a limit"
   note (`limitUngraded`): on the row (`note`, said by VoiceOver where the grade would be) and on
   the history page (`historyJson` `note`), for weight, waist and blood pressure as for the blood tests.
+
+- **A lab test's page (Brad 2026-11-02, US-25 AC25).** A lab row opens `MetricDetailView`, the
+  metric page, with its history from the history door's optional `series: "lab"` (D14: an older
+  engine fails the read, and the page shows no history). The row itself says it is a lab test
+  (`series`), and the page, its kept history ("lab:<key>", `RecordStore.historyKey`) and its adds go
+  by that, never by name: a lab test filed as "Weight" is not the core weight (review R1). A value
+  is added by a new edit, `labAdd`, in the unit the sheet showed, through health-core's
+  `addLabValue` (the web's add too), and corrected by `labCorrect`, the engine's `correct`, in the
+  row's own unit and free of the record's units. No row is "used" or carries a limit note: lab tests
+  are never graded. A mixed-unit series draws no chart (US-21 AC3a).
 
 **Added 2026-10-26: "About this measure" guides (US-58).** Below Show All Data and Unit, a metric page shows
 "About {title}" (What it is, Why it matters, How to measure or prepare) and its Sources as links, as Apple Health
@@ -1647,6 +1840,33 @@ limit as `limits` only, never the field's hidden representative, and `limits` jo
 this release on). Apple Health never gets a limit (device-export.ts). The phone sends no
 `product_events`, so it has no count of limits.
 
+### D16 · My health: one tab, laid out by the engine (Brad, 2026-11-05, US-73)
+
+My data and My plan became one tab, My health, beside Chat (seven prototype rounds, draft PR
+842). Swift places no suggestion: `screenJson`'s `plan.topics` (health-core `topicSections`)
+puts each in a topic's cards or on a row (a medicine question by key, a screening group by
+id), an urgent one in both. `HealthPage` reads it once per draw (`RecordStore.draws`: an edit,
+and also a redraw at foreground, midnight or a storefront switch, which moves no `revision`;
+review round 2), with the two series below, and `MyDataView` only maps the page to views, so a test on the page is a test on what
+is drawn (each suggestion exactly once; an urgent one in its card and on its row). An unknown
+topic goes under Other, and with no layout every card does, so nothing is dropped. An urgent
+card leads its section and the red banner scrolls to it. The waist-to-height row reads
+`historyJson`'s `whtr` series; the eGFR row is the plan's current eGFR (its tile, on the day and
+from the source the `egfr` series' `plan` names, a lab limit included), the series giving only
+the previous value and the trend. Both series read the plan for the day drawn, so
+`RecordStore.chart` keeps them per draw as well as per `revision` (review round 3); until the
+page's task reads them again, the page draws the last ones. It opens its source's page, and creatinine's and the lab
+eGFR's pages link to each other; the lab's own eGFR row leaves Blood tests only while the eGFR
+row stands for it. The tiles are gone: each tile's explainer sits on its row's page
+(`PlanTiles.pages`). The add sheet searches through the optional door `labSearchJson` and adds
+by name in one place (`RecordEdit.labAddName`); an engine without the door lists the record's
+own tests only. About you, units, alcohol, reminders, Apple Health and the record sit in a
+settings sheet behind the person button; its close lets a due backup offer show (US-57 AC8).
+The review prompt waits for a plan card on screen (US-25 AC10). The tour's three tips anchor on
+the tab in Brad's words (US-57, approved 2026-11-05). Clarity's screen is "My health", with two
+new events, "Jump pill tapped" and "Blood test added" (D9, Brad 2026-11-05). Sleep and Fitness
+read Apple Health in their own view, so a live refresh never rebuilds the list.
+
 ## Phases
 
 0. **Readiness (Brad, in progress 2026-10-21):** macOS upgrade, Xcode 26, Apple Developer
@@ -1684,7 +1904,7 @@ this release on). Apple Health never gets a limit (device-export.ts). The phone 
 1. Engine work off the main thread: stages 1 to 4 done (above). Left: profile Charts' first draw
    on a real iPhone (277 ms in a debug build in the simulator, 2026-10-23, the largest stall
    under an app screen).
-2. US-56: heart rate, resting heart rate, sleep, VO2 max and steps from Apple Health, read live (D6).
+2. US-56: resting heart rate, sleep, VO2 max and steps from Apple Health, read live (D6).
    Built 2026-10-25 (D6), checked on seeded simulator data; AC8's bands built 2026-10-26; left: the
    side-by-side comparison on Brad's iPhone with a watch.
 3. `APP_ATTEST_TEAM_ID` on the education server, so chat and lab upload work on a phone (D8).

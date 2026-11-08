@@ -4,19 +4,21 @@
 // Values come in and go out in the user's units; the record stores SI. Web
 // twins: the widget's InputPanel.tsx and BloodTestTimeline.tsx, writing through
 // RoadmapStore.
-import { createEmptyFile, type FileMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { createEmptyFile, type FileLabValue, type FileMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import type { Plan } from '../../packages/health-core/src/plan';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
 import { parseLocalisedNumber } from '../../packages/health-core/src/parseNumber';
-import { appendMeasurement, bulkAppendValues, correctValue, validDay } from '../../packages/health-core/src/record-edits';
+import { addLabValue, appendMeasurement, bulkAppendValues, correctValue, validDay } from '../../packages/health-core/src/record-edits';
 import { labRows, type Extraction } from './lab-review';
 import { updateProfile } from '../../packages/health-core/src/mcp-tools';
 import { stampProfile, upsertMedication, upsertSupplement } from '../../packages/health-core/src/state-edits';
 import { medicationSchema, supplementSchema, zod3Message } from '../../packages/health-core/src/validation';
 import { customSupplementAdd, customSupplementMatch } from '../../packages/health-core/src/input-form';
-import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
+import { compareReadings, latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
+import { bloodTableReport, bloodTestKeyOf, currentValueRows, isActive, isCoreRow } from '../../packages/health-core/src/blood-tests';
 import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
+import { importHealthRecords, type ClinicalRecordInput, type HealthRecordsCounts } from '../../packages/health-core/src/health-records-import';
 import { applyFormEdit, formsOf, gradeContextOf, planOf, rowText, ungradedLimit, type FormEdit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import { METRIC_GUIDES, type MetricGuide } from '../../packages/health-core/src/metric-guides';
@@ -25,6 +27,7 @@ import { calculateAge } from '../../packages/health-core/src/calculations';
 import { rowTarget } from '../../packages/health-core/src/row-target';
 import { gradeWords, limitUngraded, pressureStatus, valueStatus, type GradeContext, type GradeStatus, type PressureReading } from '../../packages/health-core/src/row-grade';
 import { labSeriesRows } from '../../packages/health-core/src/lab-series';
+import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from '../../packages/health-core/src/lab-catalog';
 import { trendWindow } from '../../packages/health-core/src/recent-trend';
 import { isAlcoholAnswer, type AlcoholAnswer } from '../../packages/health-core/src/types';
 import { readableView, unreadableNote } from '../../packages/health-core/src/readable-rows';
@@ -35,7 +38,7 @@ import {
 import { applyPressure, BLOOD_PRESSURE, pressureHistory, type PressureEdit } from './blood-pressure';
 import { applyChatEdit, type ChatEdit } from './chat-edits';
 import { cellUnitFor, lpaUnitOf, SWITCHABLE, unitsOf, type UnitChoices } from './unit-choices';
-import { cellFromSI, cellLabel, cellRange, isLpaUnit, type CellUnit } from '../../packages/health-core/src/cell-unit';
+import { cellFromSI, cellLabel, cellRange, isLpaUnit, labRangeMessage, type CellUnit } from '../../packages/health-core/src/cell-unit';
 import { LIMIT_NOT_GRADED, comparatorOf, isComparator } from '../../packages/health-core/src/lab-limits';
 
 /** One row of Vitals or Blood tests: the plan's current value, if any, in the user's units. */
@@ -66,6 +69,9 @@ export interface MyDataRow {
   /** "Printed as a limit, so the plan cannot grade it against its cutoff.": a latest value printed as a
    *  limit the shared rule leaves ungraded, though there is a plan to grade it by (US-12 AC21); else null. */
   note: string | null;
+  /** "lab" on a lab test's row (US-25 AC25): the page, its history and its adds are the lab test's,
+   *  whatever its name. Absent on a core metric's row. */
+  series?: 'lab';
 }
 
 export interface MyData {
@@ -126,16 +132,25 @@ export type Edit =
   | { kind: 'supplement'; supplementKey: string; supplementName: string; doseValue?: number | null; doseUnit?: string | null; status: 'active' | 'stopped'; startedAt?: string }
   /** Readings from Apple Health (US-25 AC13): health-core's device-import decides what lands. */
   | { kind: 'appleHealth'; samples: DeviceSample[] }
+  /** Lab results from Health Records (US-72): health-core's health-records-import decides what lands. */
+  | { kind: 'healthRecords'; records: ClinicalRecordInput[] }
   /** Medication and screening answers and a typed supplement (my-data-forms.ts, US-25 AC8). */
   | FormEdit
   /** The ticked values of an uploaded lab report (US-52 AC8), written by the web's bulk rule. */
   | { kind: 'labImport'; extractionJson: string; refs: string[]; reportDay: string }
+  /** A new value for a lab test the record holds, on a day, in the unit the sheet showed (US-25 AC25):
+   *  health-core's `addLabValue`, the web's lab add too, named by its series key (`labSlotKey`). */
+  | { kind: 'labAdd'; series: string; value: number; day?: string; unit?: string }
+  /** The add sheet's add (US-73 AC8): any test by name, in the unit typed, as the web's general add
+   *  (AddLabTest.tsx). An engine before it knows no such kind, and the edit fails. */
+  | { kind: 'labAddName'; name: string; value: number; unit: string; day?: string }
   /** What the chat proposed, and its medications' Undo (US-67, chat-edits.ts). */
   | ChatEdit;
 
 /** A refusal leaves the record as it was. `existingId` names the row holding the day. */
 export type EditOutcome =
-  | { ok: true; file: RoadmapFile }
+  /** `healthRecords`: what a Health Records batch did (US-72), counts only. */
+  | { ok: true; file: RoadmapFile; healthRecords?: HealthRecordsCounts }
   | { ok: false; reason: string; message: string; existingId?: string };
 
 /**
@@ -171,8 +186,30 @@ export function readRecord(text: string, now: string, deviceId: string): Roadmap
     if (error instanceof SchemaTooNewError) throw new Refusal('A newer version of Health Roadmap wrote this record. Update the app to open it.');
     throw error;
   }
-  kept = { text, deviceId, file: FREEZE_KEPT ? deepFreeze(file) : file };
+  kept = { text, deviceId, file: FREEZE_KEPT ? deepFreeze(file) : file, moved: movedBloodTests(raw, file) };
   return file;
+}
+
+/**
+ * US-66 AC14: reading `stored`, the record as saved, moved blood tests out of
+ * `measurements` or folded old lab rows named like a core test, so `file` is
+ * written once. A moved record has nothing left to move. The web's twin:
+ * RoadmapStore.writeMovedRecord.
+ */
+export function movedBloodTests(stored: unknown, file: RoadmapFile): boolean {
+  if (typeof stored !== 'object' || stored === null) return false;
+  const rows = <T>(key: string): T[] => {
+    const list = (stored as Record<string, unknown>)[key];
+    return Array.isArray(list) ? list.filter((row): row is T => typeof row === 'object' && row !== null) : [];
+  };
+  const report = bloodTableReport({ measurements: rows<FileMeasurement>('measurements'), labValues: rows<FileLabValue>('labValues') }, file);
+  return report.moved + report.folded > 0;
+}
+
+/** The record to write once, as text, when reading `text` moved it (US-66 AC14); else null. */
+export function movedRecord(text: string, now: string, deviceId: string): string | null {
+  const file = readRecord(text, now, deviceId); // sets `kept` to this text's read
+  return kept!.moved ? JSON.stringify(file) : null;
 }
 
 /**
@@ -186,7 +223,7 @@ export function readRecord(text: string, now: string, deviceId: string): Roadmap
  * `meta.lastDeviceId`. Metadata clock recovery is deterministic even when both
  * stamps are missing or malformed, so migration never depends on `now`.
  */
-let kept: { text: string; deviceId: string; file: RoadmapFile } | null = null;
+let kept: { text: string; deviceId: string; file: RoadmapFile; moved: boolean } | null = null;
 
 /** Under the tests the kept record is frozen, so every engine test checks the
  *  read-only rule on every branch it runs (adversary R1). Never in the app. */
@@ -223,7 +260,7 @@ export function newRecord(now: string, deviceId: string, locale: string, timeZon
  *  that has it passes it, so the forms are not planned twice (entry.ts screenJson). */
 export function myData(file: RoadmapFile, now = new Date().toISOString(), choices: UnitChoices = {}, plan: Plan | null = planOf(file, now, choices)): MyData & FormsView {
   const system = unitsOf(file);
-  const current = new Map(latestActivePerMetric(file.measurements).map((row) => [row.metricType, row]));
+  const current = new Map(latestActivePerMetric(currentValueRows(file)).map((row) => [row.metricType, row]));
   const days = activeDays(file);
   const trend = trends(days, now, (metric, valueSI) => cellFromSI(metric as MetricType, valueSI, cellUnitFor(file, metric, choices)));
   // What the web's rows grade against (InputPanel.tsx rowCtx): none for a known minor (US-07 AC6),
@@ -347,11 +384,13 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       return { ok: false, reason: result.reason, message: typedRangeMessage(edit.metric, edit.value, unit, result), ...(result.existing ? { existingId: result.existing.id } : null) };
     }
     case 'correct': {
-      const target = file.measurements.find((row) => row.id === edit.id);
-      const shown = target && cellUnitFor(file, target.metricType, choices);
-      const result = correctValue(file, { id: edit.id, newValue: edit.value, unit: shown && cellLabel(target!.metricType as MetricType, shown), now });
+      // A blood test is a core lab row (US-66 AC6); a vital is a measurement.
+      const core = file.labValues.find((row) => row.id === edit.id && isCoreRow(row));
+      const metric = core?.metricName ?? file.measurements.find((row) => row.id === edit.id)?.metricType;
+      const shown = metric && cellUnitFor(file, metric, choices);
+      const result = correctValue(file, { id: edit.id, newValue: edit.value, unit: shown && cellLabel(metric as MetricType, shown), now });
       if (result.ok) return { ok: true, file: result.file };
-      return { ok: false, reason: result.reason, message: shown ? typedRangeMessage(target!.metricType, edit.value, shown, result) : result.message };
+      return { ok: false, reason: result.reason, message: shown ? typedRangeMessage(metric!, edit.value, shown, result) : result.message };
     }
     // The web's own writes (state-edits.ts), behind the API's own schemas:
     // the app's input is checked the way a request to the server was.
@@ -388,6 +427,11 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       if (!Array.isArray(edit.samples)) return { ok: false, reason: 'invalid-value', message: 'Apple Health readings come as a list.' };
       return { ok: true, file: importDeviceSamples(file, edit.samples, { now, source: 'apple_health' }).file };
     }
+    case 'healthRecords': {
+      if (!Array.isArray(edit.records)) return { ok: false, reason: 'invalid-value', message: 'Health Records results come as a list.' };
+      const { file: next, counts } = importHealthRecords(file, edit.records, { now });
+      return { ok: true, file: next, healthRecords: counts };
+    }
     case 'customSupplement':
       // A name already taken keeps its dose: adding it again changes nothing (US-06 AC1a).
       if (customSupplementMatch(edit.name, file.supplements)?.status === 'active') return { ok: true, file };
@@ -401,10 +445,55 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       // A held day is skipped and a refused unit left out: labSaveSummary says which, beforehand.
       return { ok: true, file: bulkAppendValues(file, rows.rows, now).file };
     }
+    case 'labAdd':
+      return addSeriesValue(file, edit, now);
+    case 'labAddName':
+      return addByName(file, edit, now, choices);
     case 'chatEdits':
     case 'chatUndo':
       return applyChatEdit(file, edit, now, choices);
   }
+}
+
+/**
+ * A lab add (US-25 AC25): health-core's one lab add (`addLabValue`), the web's too. The series' newest
+ * row names the test as it was printed; the unit is the one the sheet showed (`unit`), else the
+ * series' own, so a row synced in while the sheet was open never changes what the number means.
+ */
+function addSeriesValue(file: RoadmapFile, edit: Extract<Edit, { kind: 'labAdd' }>, now: string): EditOutcome {
+  const rows = file.labValues.filter((row) => !isCoreRow(row) && labSlotKey(row.metricName) === edit.series);
+  const named = rows.filter(isActive).sort(compareReadings).at(-1);
+  if (!named) return { ok: false, reason: 'not-found', message: 'There is no such lab test in your record.' };
+  // A kept-apart row named like a core test (an old "creatinine" may be urine, US-12 AC11): the add would
+  // write the core value, which this page never shows. It goes on the core test's own row (US-66 AC5).
+  if (bloodTestKeyOf(named.metricName)) return { ok: false, reason: 'core-name', message: 'Add this test from its row in Blood tests.' };
+  const unit = edit.unit ?? displayLabUnit(named.unit ?? '', resolveLabCatalogEntry(named.metricName));
+  const added = addLabValue(file, { metricName: named.metricName, unit, value: edit.value, day: edit.day, existingSeries: true }, now);
+  return added.ok ? { ok: true, file: added.file } : added;
+}
+
+/**
+ * The add sheet's add by name (US-73 AC8): the web's general add (AddLabTest.tsx), health-core's
+ * `addLabValue`. A core test's name writes its core row, range-checked (US-66 AC6); a catalogue
+ * test keeps its key and canonical unit, and a unit it does not take is refused (US-21 AC3, AC4);
+ * any other name is a new test in the unit typed. A held day names what it holds and offers it for
+ * correcting only when the number differs in the same unit (US-21 AC13). Never a second row.
+ */
+function addByName(file: RoadmapFile, edit: Extract<Edit, { kind: 'labAddName' }>, now: string, choices: UnitChoices): EditOutcome {
+  const { name, unit = '' } = edit;
+  const added = addLabValue(file, { metricName: name, unit, value: edit.value, day: edit.day }, now);
+  if (added.ok) return { ok: true, file: added.file };
+  const core = bloodTestKeyOf(name.trim());
+  const { bound, refused: _refused, ...refusal } = added;
+  // Out of range, in the web's words: the end it missed, in the unit typed.
+  const range = bound && core && labRangeMessage(core, unit, bound);
+  if (range) return { ...refusal, message: range };
+  // The correction is the `correct` edit, which reads its number in the unit the core row shows.
+  if (core && refusal.existingId && displayLabUnit(unit) !== cellLabel(core, cellUnitFor(file, core, choices))) {
+    const { existingId: _held, ...rest } = refusal;
+    return rest;
+  }
+  return refusal;
 }
 
 /** An Lp(a) value out of range, said in the unit it was typed in with the web's range
@@ -451,17 +540,21 @@ function gradeOf(status: GradeStatus, metric: string): Pick<MyDataRow, 'status' 
  *  build them (MyDataRows.tsx labRows), in this row's shape; never graded. A limit reads with its
  *  symbol and, as on the core rows, is no point on the trend (US-12 AC20). */
 function labTestRows(file: RoadmapFile, now: string): MyDataRow[] {
-  return labSeriesRows(file.labValues, new Date(now), true).map(({ seriesKey, label, unit, latest, previous, target, trend }) => ({
-    metric: seriesKey, label, unit, latest, trend, switchable: false, target, previous, ...gradeOf(null, seriesKey), note: null,
+  // A core row is a blood test's own row above, never a lab test here (US-66 AC7).
+  return labSeriesRows(file.labValues.filter((row) => !isCoreRow(row)), new Date(now), true).map(({ seriesKey, label, unit, latest, previous, target, trend }) => ({
+    metric: seriesKey, series: 'lab', label, unit, latest, trend, switchable: false, target, previous, ...gradeOf(null, seriesKey), note: null,
   }));
 }
 
-/** Each metric's active row per day (the slot's first, as findActiveInSlot reads it), in one pass. */
-function activeDays(file: RoadmapFile): Map<string, Map<string, FileMeasurement>> {
-  const byMetric = new Map<string, Map<string, FileMeasurement>>();
-  for (const row of file.measurements) {
-    if (row.status !== 'active') continue;
-    const days = byMetric.get(row.metricType) ?? new Map<string, FileMeasurement>();
+/** A current value: a vital, or a core blood-test row shaped as one (US-66 AC7). */
+type ValueRow = ReturnType<typeof currentValueRows>[number];
+
+/** Each metric's active row per day (the slot's first, as findActiveInSlot reads it), in one pass:
+ *  the vitals and the core blood-test rows (US-66 AC7). */
+function activeDays(file: RoadmapFile): Map<string, Map<string, ValueRow>> {
+  const byMetric = new Map<string, Map<string, ValueRow>>();
+  for (const row of currentValueRows(file)) {
+    const days = byMetric.get(row.metricType) ?? new Map<string, ValueRow>();
     byMetric.set(row.metricType, days);
     const day = row.recordedAt.slice(0, 10);
     if (!days.has(day)) days.set(day, row);
@@ -473,7 +566,7 @@ function activeDays(file: RoadmapFile): Map<string, Map<string, FileMeasurement>
  *  phone's local day, and the 29 before), or the last seven days however old when those 30
  *  hold fewer than two (US-25 AC17f). A day after today (an import that kept another zone's
  *  offset) is left out of both, as the phone leaves out a night dated after today. */
-function trends(byMetric: Map<string, Map<string, FileMeasurement>>, now: string, shown: (metric: string, valueSI: number) => number): Map<string, number[]> {
+function trends(byMetric: Map<string, Map<string, ValueRow>>, now: string, shown: (metric: string, valueSI: number) => number): Map<string, number[]> {
   const recent = trendWindow(new Date(now));
   const out = new Map<string, number[]>();
   for (const [metric, days] of byMetric) {

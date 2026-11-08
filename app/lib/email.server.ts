@@ -47,6 +47,13 @@ function resendErrorText(error: { name?: string; message?: string }): string {
   return `${error.name ?? 'unknown'} — ${scrubText(error.message ?? JSON.stringify(error))}`;
 }
 
+/** An accepted email has an id; a send with no error and no id is a failure
+ *  in every sender, not a success (US-17 AC14). */
+function requireResendId(data: { id?: string } | null): string {
+  if (!data?.id) throw new Error('Resend returned no error and no id — unexpected SDK response shape');
+  return data.id;
+}
+
 /**
  * Send an email via Resend. Throws on configuration miss OR on Resend API errors.
  *
@@ -72,10 +79,7 @@ export async function sendEmail(
   if (error) {
     throw new Error(`Resend rejected an email: ${resendErrorText(error)}`);
   }
-  if (!data?.id) {
-    throw new Error('Resend returned no error and no id — unexpected SDK response shape');
-  }
-  return { id: data.id };
+  return { id: requireResendId(data) };
 }
 
 // ---------------------------------------------------------------------------
@@ -107,7 +111,7 @@ export async function sendReminderEmail(
   }
 
   try {
-    const { error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: `Dr Brad Stanfield <${RESEND_FROM_EMAIL}>`,
       to,
       subject,
@@ -120,6 +124,7 @@ export async function sendReminderEmail(
     if (error) {
       throw new Error(`Resend rejected a reminder: ${resendErrorText(error)}`);
     }
+    requireResendId(data);
     return true;
   } catch (error) {
     console.error('Error sending reminder email:', error);
@@ -152,7 +157,7 @@ export async function sendFeedbackEmail(
     const customerLine = customerId ? `Customer ID: ${customerId}` : 'Guest user';
     const timestamp = new Date().toISOString();
 
-    const { error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: `Health Roadmap Feedback <${RESEND_FROM_EMAIL}>`,
       to: FEEDBACK_EMAIL,
       subject: 'Health Roadmap Feedback',
@@ -162,6 +167,7 @@ export async function sendFeedbackEmail(
     if (error) {
       throw new Error(`Resend rejected a feedback email: ${resendErrorText(error)}`);
     }
+    requireResendId(data);
     return true;
   } catch (error) {
     console.error('Error sending feedback email:', error);
@@ -261,6 +267,11 @@ function prominentUnsubscribeBlock(unsubscribeUrl: string): string {
  */
 const SERVER_FOOTPRINT = "Dr Brad's server keeps your reminder calendar and this email address. Your plan is not stored there.";
 
+/** US-17 AC15: one line in every reminder email (DRAFT for Brad). The server's
+ *  labels carry no result, so it cannot tell a follow-up from a routine item. It
+ *  names the tool, never "your plan", as the button does (US-22 AC12, US-23 AC10). */
+const FOLLOWUP_LINE = 'If you have a follow-up to arrange or a result to record, open the Health Roadmap.';
+
 /** The one button both emails carry (US-22 AC12, US-23 AC10). It opens the tool;
  *  it cannot promise the plan, which lives wherever the reader saved it. */
 const OPEN_TOOL_LABEL = 'Open the Health Roadmap';
@@ -308,6 +319,8 @@ export function buildReminderV2EmailHtml(
       </p>
 
       ${items}
+
+      <p style="color:#333;font-size:16px;line-height:1.5;margin:0 0 24px;">${FOLLOWUP_LINE}</p>
 
       <div style="text-align:center;margin:32px 0;">
         <a href="${ROADMAP_OPEN_URL}?src=reminder"

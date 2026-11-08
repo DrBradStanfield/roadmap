@@ -12,6 +12,10 @@ enum DemoRecord {
     static let argument = "--demo-record"
     /// Read once per launch; a test sets it.
     nonisolated(unsafe) static var isOn = ProcessInfo.processInfo.arguments.contains(argument)
+    /// With `--demo-live-health` too, US-56's cards read the simulator's Health store (seeded by
+    /// `--seed-live-health`), so a demo record shows them. The record itself still never touches Health.
+    static let liveHealthArgument = "--demo-live-health"
+    static var keepsLiveHealth: Bool { ProcessInfo.processInfo.arguments.contains(liveHealthArgument) }
 
     /// Application Support/Demo in demo mode, else the record's own folder.
     nonisolated static func recordFolder(in base: URL = .applicationSupportDirectory) throws -> URL {
@@ -34,8 +38,11 @@ enum DemoRecord {
 @MainActor
 final class NoHealth: HealthStoreClient {
     let isAvailable = false
-    func requestAuthorization() async throws {}
+    let supportsHealthRecords = false
+    func requestAuthorization() async throws -> Bool { false }
+    func requestLabResults() async throws -> Bool { false }
     func samples(of kind: HealthKind, after anchor: Data?) async throws -> HealthBatch { HealthBatch(samples: [], anchor: nil) }
+    func labResults(after anchor: Data?) async throws -> HealthRecordBatch { HealthRecordBatch(records: [], anchor: nil) }
     func canWrite(_ kind: HealthKind) -> Bool { false }
     func save(_ write: HealthWrite) async throws {}
     func observe(_ kinds: [HealthKind], onChange: @escaping @MainActor () async -> Void) {}
@@ -50,6 +57,8 @@ struct NoLiveHealth: LiveHealthStore {
     func points(_ metric: LiveMetric, from start: Date, to end: Date, every component: Calendar.Component) async throws -> [LivePoint] { [] }
     func latest(_ metric: LiveMetric) async throws -> (value: Double?, date: Date)? { nil }
     func sleep(from start: Date, to end: Date) async throws -> [SleepSegment] { [] }
+    func earliest(_ metric: LiveMetric) async throws -> Date? { nil }
+    func changes(_ metric: LiveMetric, after anchor: Data?, from start: Date?) async throws -> LiveChanges { LiveChanges() }
 }
 
 /// Notifications, absent: the phone's pending reminders are never listed, removed or added.

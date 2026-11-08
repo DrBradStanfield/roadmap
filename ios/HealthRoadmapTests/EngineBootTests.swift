@@ -87,7 +87,7 @@ final class EngineBootTests: XCTestCase {
         let shown = store.recordJSON
         XCTAssertThrowsError(try choice.engine.blocking { try $0.plan(recordJSON: shown, now: .now, deviceId: "test") })
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
-        window.rootViewController = UIHostingController(rootView: PlanView(store: store, showMyData: {}))
+        window.rootViewController = UIHostingController(rootView: MyHealthHost.view(store: store, engine: choice.engine))
         window.makeKeyAndVisible()
         try await Task.sleep(for: .seconds(2))
         XCTAssertEqual(try folder.readState(bundled: 0).trying, release.version, "still on trial")

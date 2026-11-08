@@ -133,8 +133,10 @@ struct ValueRow: View {
     private func reading(_ value: String?, _ unit: String, previous: String? = nil, feetInches: MyData.FeetInches? = nil, stacked: Bool) -> some View {
         if let value {
             let parts = feetInches.map { [(String($0.feet), "ft"), (String($0.inches), "in")] } ?? [(value, unit)]
-            let under = stacked && feetInches == nil
-            let pair = under ? AnyLayout(VStackLayout(alignment: .trailing, spacing: 0)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 4))
+            // The unit under the value, but for a US height; at accessibility sizes too, where
+            // beside "92.4 (94.1)" it broke as "k" over "g" (US-73, largest size).
+            let under = feetInches == nil
+            let pair = under ? AnyLayout(VStackLayout(alignment: stacked ? .trailing : .leading, spacing: 0)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 4))
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 ForEach(parts.indices, id: \.self) { index in
                     pair {
@@ -149,11 +151,13 @@ struct ValueRow: View {
                                 Text(" (\(previous))").font(.footnote).foregroundStyle(.secondary).monospacedDigit()
                             }
                         }
+                        // A reading never breaks: at accessibility sizes "92.4 (94.1)" split as "92." over "4".
+                        .fixedSize()
                         // VoiceOver: "3.4, above optimal, previous 2.9"; brackets and colour alone say
                         // nothing out loud (the web's rule).
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel(spokenLabel(parts[index].0, previous: previous))
-                        Text(parts[index].1).font(under ? .caption : .subheadline).foregroundStyle(.secondary)
+                        Text(parts[index].1).font(stacked ? .caption : .subheadline).foregroundStyle(.secondary)
                     }
                 }
             }

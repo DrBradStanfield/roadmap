@@ -1,6 +1,9 @@
 /** Local-first health records and client-side reports, on every widget surface. */
 import {
+  type AddLabValueRequest,
+  type AddLabValueResult,
   type ApiMeasurement,
+  type LabUnitRefusal,
   dayOf,
   type MoveKeep,
   type MoveRejection,
@@ -16,7 +19,7 @@ import {
   resolveLabCatalogEntry,
 } from '@roadmap/health-core';
 import { MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
-import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
+import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
@@ -43,17 +46,25 @@ export async function initRoadmapStore(adapter: StorageAdapter, cloudUnreachable
   // The page about to render shows this erase; it moves the mark as it shows
   // another, and the store refuses a write made against an older one (US-16 AC2a).
   store.showErase(store.eraseIdentity);
+  // US-66 AC13: the open moved blood tests into one table and wrote it: counts only, never a name or value.
+  void store.bloodTablesUnified.then((report) => { if (report) trackProductEvent('blood_tests_unified', report); });
   // Both surfaces init here, so this is the one place the live re-read starts
   // (US-34). It runs for the life of the page; nothing unmounts the data layer.
   store.startLiveRefresh();
   // Chat history (chat-history.json) syncs over the SAME adapter, created
   // lazily on first chat use (see chat-history-access.ts for the policy).
-  setChatHistoryFactory(() => ChatHistoryStore.create(adapter));
+  // It is read again after an erase, this page's or another device's (US-11 AC2g).
+  setChatHistoryFactory(() => ChatHistoryStore.create(adapter), getEraseIdentity);
 }
 
 /** Flush pending writes (call before navigation). */
 export async function flushRoadmapStore(): Promise<void> {
   await store?.flush();
+}
+
+/** Before leaving a cloud: this page's record onto the device (US-09 AC2g). */
+export async function copyRecordToDevice(): Promise<void> {
+  await store?.copyToDevice();
 }
 
 /** Synchronous last-ditch flush for tab-close / visibilitychange (mobile-safe). */
@@ -107,6 +118,11 @@ export function getInitialInputsSync(): Partial<HealthInputs> {
 /** US-65: how many record entries this build could not read (kept unchanged, not shown). */
 export function getUnreadableCount(): number {
   return store?.unreadableCount ?? 0;
+}
+
+/** US-67 N3: whether the record holds a `key` medication row this build cannot read. */
+export function holdsUnreadableMedication(key: string, answered = false): boolean {
+  return store?.holdsUnreadableMedication(key, answered) ?? false;
 }
 
 // --- lead capture (Shopify surface) ---
@@ -170,6 +186,10 @@ export async function loadLabValues(): Promise<ApiLabValue[] | null> {
 }
 export function loadLabValuesSync(): ApiLabValue[] | null {
   return store ? store.loadLabValues() : null;
+}
+/** My health's worked-out series (US-62 AC21), over the screen's profile; none before the store opens. */
+export function loadDerivedSeries(shown: Parameters<RoadmapStore['loadDerivedSeries']>[0]): DerivedSeries {
+  return store ? store.loadDerivedSeries(shown) : { whtr: [], egfr: [] };
 }
 
 // --- writes ---
@@ -242,16 +262,25 @@ export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[])
 export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<BulkLabValuesResult> {
   if (!store) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };
   const result = store.bulkSaveLabValues(values);
-  // The one place every lab writer passes, so each refused row is counted once:
-  // only a spelling the test does not take, the signal for the next one to teach it (US-21 AC15).
-  // A unit that is not a unit word is counted without it (US-21 AC11); a blank one as `(blank)` (AC22).
-  for (const row of result.refused) {
+  countRefusedSpellings(result.refused);
+  return result;
+}
+/** A lab value a person adds (US-21 AC2, US-25 AC25), by health-core's one lab add; null when nothing could be written. */
+export async function addLabValue(input: AddLabValueRequest): Promise<AddLabValueResult | null> {
+  const result = store ? store.addLabValue(input) : null;
+  if (result && !result.ok && result.refused) countRefusedSpellings([result.refused]);
+  return result;
+}
+/** Every lab writer passes here, so each refused row is counted once: only a spelling the test
+ *  does not take, the signal for the next one to teach it (US-21 AC15). A unit that is not a unit
+ *  word is counted without it (US-21 AC11); a blank one as `(blank)` (AC22). */
+function countRefusedSpellings(refused: LabUnitRefusal[]): void {
+  for (const row of refused) {
     if (!labUnitTaken(resolveLabCatalogEntry(row.key), row.unit)) {
       const unit = labUnitForEvent(row.unit);
       trackProductEvent('lab_unit_refused', unit ? { key: row.key, unit } : { key: row.key });
     }
   }
-  return result;
 }
 export async function bulkSaveDocuments(
   documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob }>,
@@ -297,8 +326,8 @@ export async function deleteUserData(): Promise<{ success: boolean; error?: stri
   // it is refused before either step runs (US-09 AC23). Chat goes through the
   // singleton, so an open chat panel's instance is the one erased. In the
   // cloud, a history that could not be opened rejects, so the session reports
-  // it and never counts it erased; `chatUnread` tells the page no tombstone
-  // exists to send later (US-11 AC2c). On the device the record erase clears
+  // it and never counts it erased; `chatUnread` tells the page the file could
+  // not be read (US-11 AC2c). On the device the record erase clears
   // the chat file itself, so a failed open there loses nothing.
   let chatUnread = false;
   const chat = getBackendKind() === 'local' ? getChatHistory : () => openChatHistory().catch((error: unknown) => {
@@ -317,11 +346,13 @@ export async function deleteUserData(): Promise<{ success: boolean; error?: stri
 // Shopify surface).
 // ---------------------------------------------------------------------------
 
-/** The rendered plan panel, cloned with interactive chrome stripped. */
+/** The plan as its PDF prints it (My health keeps it hidden, ResultsPanel's
+ *  PlanReport), cloned and shown, with interactive chrome stripped. */
 function clonePlanPanel(): HTMLElement | null {
   const panel = document.querySelector('.health-results-panel');
   if (!panel) return null;
   const clone = panel.cloneNode(true) as HTMLElement;
+  clone.hidden = false;
   // Strip interactive chrome + the sync-status box (meaningless on paper/email).
   clone.querySelectorAll('.no-print, .hr-sync, button, input, select, textarea').forEach((el) => el.remove());
   return clone;

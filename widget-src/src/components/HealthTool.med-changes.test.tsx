@@ -14,7 +14,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, waitFor, fireEvent, act } from '@testing-library/react';
 import type { ProposedMedicationEdit } from '@roadmap/health-core';
-import { addMeasurement, deleteUserData, flushRoadmapStore, loadLatestMeasurements, loadMedicationHistory } from '../lib/roadmap-data';
+import { addMeasurement, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, loadMedicationHistory } from '../lib/roadmap-data';
+import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 
@@ -34,6 +35,7 @@ vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 
 import { HealthTool } from './HealthTool';
+import { deleteButton } from '../testing/settings';
 
 useHealthToolLifecycle();
 
@@ -398,6 +400,120 @@ describe('US-06 AC12: a chat edit resets the drug\'s escalation answer', () => {
   });
 });
 
+// US-67 N3 (Brad 2026-11-02), as on the iPhone: Undo built from the readable
+// view would write "none" over a statin row this build cannot read (US-65),
+// which looks like a restore it never made. The change saves; the reply offers
+// no Undo, and the banner says why. Synthetic values only.
+describe('US-67 N3: no Undo after the chat replaces a medicine entry this build cannot read', () => {
+  const NO_UNDO = "Undo isn't available: an earlier entry couldn't be read.";
+  const atorvastatin20: ProposedMedicationEdit = { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' };
+
+  /** The page over a record whose `key` row a newer build wrote: a drug name this build cannot read. */
+  async function pageWithUnreadable(meds: Med[], key: string) {
+    await seedGuest(BMI_32, LDL_3, meds);
+    const stored = JSON.parse(localStorage.getItem('health_roadmap_file_v2')!);
+    for (const row of stored.medications) if (row.medicationKey === key) row.drugName = 42;
+    localStorage.setItem('health_roadmap_file_v2', JSON.stringify(stored));
+    localStorage.setItem('health_roadmap_file_v2_rev', String(Number(localStorage.getItem('health_roadmap_file_v2_rev') ?? 0) + 1));
+    await initRoadmapStore(new LocalStorageAdapter());
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(view.container.querySelector('#statin-name')).not.toBeNull());
+    return view;
+  }
+
+  it('an unreadable statin row changed by the chat saves, with no Undo and the fixed line', async () => {
+    await pageWithUnreadable([['statin', 'rosuvastatin', 20]], 'statin');
+    act(() => chat.props!.onProposeEdit([atorvastatin20]));
+    await settle();
+    expect(await recorded()).toMatchObject({ statin: 'atorvastatin@20' });
+    expect(document.querySelector('.chat-med-undo')).not.toBeNull();
+    expect(document.querySelector('.chat-med-undo-btn')).toBeNull();
+    expect(document.querySelector('.chat-med-undo')!.textContent).toContain(NO_UNDO);
+  });
+
+  it('one Undo covers the whole reply: a readable ezetimibe edit beside it gets no Undo either', async () => {
+    await pageWithUnreadable([['statin', 'rosuvastatin', 20]], 'statin');
+    act(() => chat.props!.onProposeEdit([
+      { kind: 'medication', medicationKey: 'ezetimibe', drugName: 'ezetimibe', doseValue: 10, doseUnit: 'mg' }, atorvastatin20,
+    ]));
+    await settle();
+    expect(await recorded()).toMatchObject({ statin: 'atorvastatin@20', ezetimibe: 'ezetimibe@10' });
+    expect(document.querySelector('.chat-med-undo-btn')).toBeNull();
+    expect(document.body.textContent).toContain(NO_UNDO);
+  });
+
+  // Control: an unreadable row the reply leaves alone keeps today's Undo.
+  it('an unreadable row the reply leaves alone keeps Undo, and Undo restores', async () => {
+    await pageWithUnreadable([['statin', 'rosuvastatin', 20], ['glp1', 'tirzepatide', 5]], 'glp1');
+    act(() => chat.props!.onProposeEdit([atorvastatin20]));
+    await settle();
+    expect(await recorded()).toMatchObject({ statin: 'atorvastatin@20' });
+    expect(document.body.textContent).not.toContain(NO_UNDO);
+    fireEvent.click(document.querySelector('.chat-med-undo-btn')!);
+    await settle();
+    expect(await recorded()).toMatchObject({ statin: 'rosuvastatin@20' });
+    expect(document.querySelector('.chat-med-undo')).toBeNull();
+  });
+
+  // The escalation answer the chat resets is the unreadable row, and the form
+  // holds a save for it that is still inside the 300 ms debounce: the reset
+  // still replaces it, so Undo could not put it back.
+  it('an unreadable escalation answer the form is saving, reset by a chat dose change: no Undo, the fixed line', async () => {
+    const view = await pageWithUnreadable([['statin', 'rosuvastatin', 20], ['ezetimibe', 'ezetimibe', 10], ['statin_escalation', 'not_tolerated']], 'statin_escalation');
+    fireEvent.change(view.container.querySelector('#statin-escalation')!, { target: { value: 'not_tolerated' } });
+    act(() => chat.props!.onProposeEdit([{ ...atorvastatin20, doseValue: 40 }]));
+    await settle();
+    expect(await recorded()).toMatchObject({ statin: 'atorvastatin@40' });
+    expect(document.querySelector('.chat-med-undo-btn')).toBeNull();
+    expect(document.querySelector('.chat-med-undo')!.textContent).toContain(NO_UNDO);
+  });
+
+  // US-06 AC12, US-67 N3 (Brad 2026-11-03): one reply saves the same record on both
+  // clients. The answer is about the old dose, so it is stale whether or not this
+  // build can read it; the web resets it as the iPhone engine does (ios/engine
+  // chat-edits.test.ts, "the same record as the web"), and offers no Undo.
+  it('an unreadable escalation answer, reset by a chat statin dose change: not yet, the statin saves, no Undo, the fixed line', async () => {
+    await pageWithUnreadable([['statin', 'rosuvastatin', 20], ['statin_escalation', 'not_tolerated']], 'statin_escalation');
+    act(() => chat.props!.onProposeEdit([{ ...atorvastatin20, drugName: 'rosuvastatin', doseValue: 40 }]));
+    await settle();
+    expect(await recorded()).toMatchObject({ statin: 'rosuvastatin@40', statin_escalation: 'not_yet@null' });
+    await flushRoadmapStore();
+    const raw = JSON.parse(localStorage.getItem('health_roadmap_file_v2')!).medications;
+    expect(raw.filter((m: { medicationKey: string }) => m.medicationKey === 'statin_escalation'))
+      .toEqual([expect.objectContaining({ drugName: 'not_yet', doseValue: null, doseUnit: null })]);
+    expect(document.querySelector('.chat-med-undo-btn')).toBeNull();
+    expect(document.querySelector('.chat-med-undo')!.textContent).toContain(NO_UNDO);
+  });
+
+  // One banner at a time: the newest reply decides whether Undo shows.
+  it('reply 1 readable then reply 2 replaces an unreadable row: the old Undo goes, the fixed line shows', async () => {
+    await pageWithUnreadable([['statin', 'rosuvastatin', 20], ['glp1', 'tirzepatide', 5]], 'glp1');
+    act(() => chat.props!.onProposeEdit([atorvastatin20]));
+    await settle();
+    expect(document.querySelector('.chat-med-undo-btn')).not.toBeNull();
+    act(() => chat.props!.onProposeEdit([{ kind: 'medication', medicationKey: 'glp1', drugName: 'semaglutide_injection', doseValue: 1, doseUnit: 'mg' }]));
+    await settle();
+    expect(await recorded()).toMatchObject({ glp1: 'semaglutide_injection@1' });
+    expect(document.querySelector('.chat-med-undo-btn')).toBeNull();
+    expect(document.querySelector('.chat-med-undo')!.textContent).toContain(NO_UNDO);
+  });
+
+  it('an unavailable banner then a readable reply: Undo is back, and restores the prior value', async () => {
+    await pageWithUnreadable([['statin', 'rosuvastatin', 20], ['glp1', 'tirzepatide', 5]], 'glp1');
+    act(() => chat.props!.onProposeEdit([{ kind: 'medication', medicationKey: 'glp1', drugName: 'semaglutide_injection', doseValue: 1, doseUnit: 'mg' }]));
+    await settle();
+    expect(document.querySelector('.chat-med-undo-btn')).toBeNull();
+    expect(document.body.textContent).toContain(NO_UNDO);
+    act(() => chat.props!.onProposeEdit([atorvastatin20]));
+    await settle();
+    expect(document.body.textContent).not.toContain(NO_UNDO);
+    expect(document.querySelector('.chat-med-undo-btn')).not.toBeNull();
+    fireEvent.click(document.querySelector('.chat-med-undo-btn')!);
+    await settle();
+    expect(await recorded()).toMatchObject({ statin: 'rosuvastatin@20', glp1: 'semaglutide_injection@1' });
+  });
+});
+
 describe('US-16 AC2 / US-09: erasing the data clears the pending chat Undo', () => {
   it('the "Medication updated from chat." banner goes on erase, so Undo cannot write the old medication back', async () => {
     await pageWith(LDL_3, [['statin', 'rosuvastatin', 20]], '#statin-name');
@@ -409,7 +525,7 @@ describe('US-16 AC2 / US-09: erasing the data clears the pending chat Undo', () 
     vi.stubGlobal('confirm', () => true);
     vi.stubGlobal('alert', () => {});
     fireEvent.click(await waitFor(() => {
-      const link = Array.from(document.querySelectorAll('button, a')).find((e) => e.textContent?.trim() === 'Delete All My Data');
+      const link = deleteButton();
       expect(link).toBeTruthy();
       return link!;
     }));

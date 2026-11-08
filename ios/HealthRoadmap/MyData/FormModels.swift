@@ -44,6 +44,14 @@ enum FormField: Decodable, Identifiable, Equatable {
         }
     }
 
+    /// The key its answer and the plan's suggestions on it go by: a dated value's metric.
+    var key: String {
+        switch self {
+        case .choice(let key, _, _, _, _), .month(let key, _, _, _), .number(let key, _, _, _): key
+        case .measurement(let metric, _, _): metric
+        }
+    }
+
     private enum Key: String, CodingKey { case kind, key, label, hint, options, value, when, metric }
 
     init(from decoder: Decoder) throws {
@@ -72,12 +80,20 @@ struct SupplementsView: Decodable, Equatable {
         let name: String
         let dose: Double?
         let unit: String?
-        /// YYYY-MM-DD
+        /// YYYY-MM-DD, the phone's own day
         let startedDay: String
+        /// A stopped one's latest stop, YYYY-MM-DD; nil from an engine before it (US-73 AC10b).
+        var stoppedDay: String?
         var id: String { key }
+
+        /// "Since 6 Nov 2026", or for a stopped one "Stopped 6 Nov 2026" (US-73 AC10b).
+        func dayLine(stopped: Bool) -> String {
+            guard stopped else { return "Since \(DayText.short(startedDay))" }
+            return stoppedDay.map { "Stopped \(DayText.short($0))" } ?? "Stopped"
+        }
     }
 
-    /// One the user could add: featured ones are the web's quick-add chips.
+    /// One the user could add: featured ones are the web's quick-add chips, starred in the add sheet.
     struct Choice: Decodable, Identifiable, Equatable {
         let key: String
         let name: String
@@ -87,7 +103,6 @@ struct SupplementsView: Decodable, Equatable {
         var id: String { key }
     }
 
-    let intro: String
     let active: [Row]
     let stopped: [Row]
     let choices: [Choice]
@@ -99,6 +114,15 @@ struct SupplementsView: Decodable, Equatable {
 struct ScreeningMonths: Decodable, Equatable {
     let past: [String]
     let future: [String]
+}
+
+/// A blood test the add sheet's search finds (US-73 AC8, health-core labSearch): `kind` is
+/// "core" or "catalogue"; `units` every unit it takes, the one it is stored in first.
+struct LabSearchMatch: Decodable, Equatable {
+    let name: String
+    let key: String
+    let kind: String
+    let units: [String]
 }
 
 /// Every value recorded for one metric, newest first (US-25 AC9).
@@ -124,6 +148,12 @@ struct MetricHistory: Decodable, Equatable {
         var bound: Double? = nil
         /// The plan's word on a current limit it cannot grade, shown instead of "Used in your plan".
         var note: String? = nil
+        /// A lab test's row: the unit it was reported in, as displayed (US-25 AC25); nil otherwise.
+        var unit: String? = nil
+        /// A lab test's exact value, unrounded, for the chart (`value` is for reading); nil otherwise.
+        var number: Double? = nil
+        /// An eGFR series row's: "lab" or "calculated" (US-73 AC7); nil elsewhere, or from an older engine.
+        var source: String? = nil
 
         var isActive: Bool { status == "active" }
     }
@@ -132,6 +162,19 @@ struct MetricHistory: Decodable, Equatable {
     let label: String
     let unit: String
     let rows: [Row]
+    /// A lab test reported in more than one unit: why the page draws no chart, in the web's words
+    /// (US-21 AC3a); nil otherwise, or from an older engine.
+    var unitsNote: String? = nil
+    /// A worked-out series' target, as a row prints it: waist-to-height's "Normal <0.5" (US-73 AC7).
+    var target: String? = nil
+    /// The eGFR series only: the day and source ("lab" or "calculated") of the eGFR the plan
+    /// uses now, a lab limit included; nil when the plan has none, or from an older engine.
+    var plan: PlanEgfr? = nil
+
+    struct PlanEgfr: Decodable, Equatable {
+        let day: String
+        let source: String
+    }
     /// The plan set the current value aside (outside the range it accepts), so it does not use it.
     let excluded: Bool
     /// The recorded medication changes this metric's chart marks, health-core's

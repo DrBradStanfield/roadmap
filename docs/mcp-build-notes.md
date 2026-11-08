@@ -190,7 +190,7 @@ widget's Sentry `/did not answer/` ignore.
 
 **`fetchOrFail`'s bound is feature-detected, and document uploads get a longer one.**
 `fetchOrFail` also runs in the browser (the widget's Drive and Dropbox adapters import it
-through the health-core barrel), where the Vite target is `modules`: Safari 14/15 has no
+through the health-core barrel), where the Vite target is `modules`: Safari 14/15 (below the Safari 16.4 floor since 2026-11-09, US-09 AC41) has no
 `AbortSignal.timeout` and 16–17.3 no `AbortSignal.any`, so calling either unguarded made
 the bound itself the outage and killed every read and save there. Both are now
 feature-detected; missing either, the call runs unbounded as it did before. And the flat
@@ -215,7 +215,7 @@ server changed, this is the widget hearing what the server already writes.
 **Every tool now declares an `outputSchema` and answers with `structuredContent`**
 (spec 2025-06-18 §Tools). The words each tool returns are unchanged, guides and tests
 pin them, and they stay in `content` as the serialized JSON the spec asks for on
-compatibility grounds. What is new is the same answer typed: `mcp-tools.ts` holds a zod
+compatibility grounds. What is new is the same answer typed: `mcp-tool-contract.ts` holds a zod
 output schema beside each input one, and the published JSON Schema mirrors it, checked by
 the same parity test that already guards the inputs. A record and a plan keep their shape
 loosely, both are published in full elsewhere, and restating them here would be a second

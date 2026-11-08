@@ -27,9 +27,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   scoped narrowly to read-back and correction; interpretation ("is my Lp(a) a
   concern?") deliberately still routes, because that is exactly the question
   the reference content exists to answer.
-- **2026-08-07 [latency]** Docs claimed a 250–400 ms router; 200 rows measured
-  median 1,615 ms, p90 3,063 ms, making the pre-router classifier 4–6× more
-  valuable. Measure; never trust a pre-launch estimate.
+- **2026-08-07 [latency]** Docs claimed a 250–400 ms router; 200 rows measured median
+  1,615 ms, p90 3,063 ms. Measure; never trust a pre-launch estimate.
 - **2026-08-07 [loop]** Corroboration count is not evidence: a stale estimate
   in four places outvoted the measured figure in two. One number repeated four
   times can be one mistake propagated; prefer one measurement to citations.
@@ -70,8 +69,9 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   one direct question among them, the rest reactions, thanks and spam).
   First-person vendor spam read as a health claim (W43: 19-comment burst, ROUTE
   14, three replies); SPAM label from 10-29T22:01Z (AC41). Check commit times
-  before reading a label count: W44's book-promo trio came 10 h before it. A lab's
-  self-promotion with no question still gets ROUTE 5/5 and a reply.
+  before reading a label count: W44's book-promo trio came 10 h before it. From
+  11-02 a company speaking as itself is SPAM too. W45: empties tripled (19 → 55) when
+  the per-video cap rose 10 → 30 at an unchanged 24% YouTube empty rate: read the rate.
 - **2026-08-10 [retrieval]** Term presence in the visible summary is necessary
   but NOT sufficient: before any summary edit, check what the router picked
   INSTEAD. On the Haiku router, steals (a theme neighbour beating the named
@@ -94,10 +94,10 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   be stale — or pure sampling noise: confirmed again 2026-08-22, when the ECA
   routing miss (production empty that same morning) passed 3/3 at baseline
   with no edit. One production empty is one router sample, not a defect.
-  W38: baseline the text AS TYPED — a one-word paraphrase ("my" for "the")
-  turned a 3/3-passing liver query into a ∅ 3/3 "shape" that did not exist;
-  the recommender fixture also flipped ∅ 3/3 → 6/6 on an identical index
-  between sessions, so a single 3-run arm is weak evidence either way.
+  W38: baseline the text AS TYPED — one word flips a fixture ("my" for "the" made
+  a ∅ 3/3 liver "shape"; W45 "my renin" ∅ 3/3 vs "my renin result" a guide 3/3;
+  "Bombyx mori" ∅ vs "silkworm extract" 3/3), so paraphrase fixtures close to as
+  typed and re-run them; one 3-run arm is weak evidence either way.
 - **2026-08-22 [retrieval]** Router-prompt rules work by POSITION: carve-outs
   buried in rule 7's empty-list bullets were inert; a top-level "practical
   questions route" rule fixed all five refused shapes (08-30, suite 89.3% →
@@ -177,3 +177,4 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   **Brad 11-01: no interim router fix.** A pathway replacement is due in about
   two weeks; re-point these fixtures to its entries when it lands. Until then,
   report the count and propose nothing for it.
+- **2026-11-03 [loop]** YouTube assistant rows are not all replies: from US-15 AC52 a fallback or refusal stores its unposted line, and SKIP_NO_REPLY was always stored; filter them out of reply metrics (Gather step).

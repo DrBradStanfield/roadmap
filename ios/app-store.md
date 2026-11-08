@@ -27,7 +27,7 @@ Add your height, weight, blood pressure and blood tests. Apple Health can fill i
 the vitals, and you can upload a lab report from your phone, Dropbox or Google
 Drive. The app reads it and asks you to confirm each value before saving it.
 
-If you allow it, My data also shows your heart rate, resting heart rate, sleep, VO2
+If you allow it, My data also shows your resting heart rate, sleep, VO2
 max and steps from Apple Health, with a chart for each. They stay out of your record
 and never leave your iPhone.
 *(For the next version: 0.1 is in review with the old text, "They are shown from Apple
@@ -68,10 +68,11 @@ three together. Brad's rule (2026-10-22): over-declare rather than under-declare
   upload send data through our server to Anthropic. The record itself never leaves the
   phone except to the user's own Dropbox or Google Drive, which is not collection by us.
 - **Health & Fitness > Health.** Collected. The record summary each chat question carries
-  (including values imported from Apple Health), and the lab values read from an uploaded
+  (including values imported from Apple Health and lab results from Health Records, which
+  Apple's definition of this type names: "data from the Clinical Health Records API"), and the lab values read from an uploaded
   report. Purpose: App Functionality only. Linked to the user's identity: Yes, because an
   uploaded report carries the patient's name and Anthropic may keep API inputs for a time.
-  Used for tracking: No. Heart rate, resting heart rate, sleep and VO2 max are not part of
+  Used for tracking: No. Resting heart rate, sleep, VO2 max and steps are not part of
   this: the app reads them from Apple Health and shows them on the phone, never in the
   record, and they never leave the device (Apple counts data as collected only when it
   leaves the device).
@@ -137,22 +138,33 @@ declares the three rows below; declare them as written.
   dose or measure anything with the phone's sensors.
 - Apple Health (guideline 2.5.1): the app imports Health values into the person's
   record and writes typed values back. In the same single permission sheet, shown once
-  during onboarding ("Connect Apple Health"), it also asks to read heart rate, resting
+  during onboarding ("Connect Apple Health"), it also asks to read resting
   heart rate, sleep, VO2 max and steps. A person who skipped that connects from My
   data's Apple Health row, which shows the same sheet. A person who connected before this
   was added gets "Turn On" on My data, the same sheet again; after a refusal, "Open Settings"
-  opens Settings. These five never go into the record: the app reads them each time a card
-  or chart shows, keeps only what the cards draw (each card's latest reading and the past month's
-  daily values behind its trend line) in one file on this iPhone (not backed up, deleted by
-  "Delete all my data") so the cards show at launch, and never sends them.
+  opens Settings. These four never go into the record: the app keeps a copy of what the cards
+  and charts draw (each card's latest reading and trend values, each chart's daily history, the
+  last week of hourly values, and sleep's stages) in files on this iPhone only (not backed up,
+  deleted by "Delete all my data"), so they show at once, and never sends them.
   For the next version: 0.1 is in review with the old text ("These five are shown from
   Apple Health, never kept: ... holds them in memory while it is open, and never saves or
   sends them."). To see them on a device without a watch, add sample data in the Health
   app first.
+- Health Records (clinical records, the `health-records` HealthKit entitlement; for the
+  version that adds it): where the iPhone supports Health Records (Canada, the UK and the
+  US), the same Apple Health request also asks to read lab results; Health shows them on
+  their own sheet. The app reads lab results only (never conditions, medications or
+  other record types), turns each one it recognises (cholesterol, HbA1c, ApoB,
+  creatinine, PSA, Lp(a), ferritin, TSH, eGFR) into a value in the person's record so
+  their plan uses their latest blood tests, and writes nothing back (clinical records are
+  read-only). The record stays on the iPhone or in the Dropbox or Google Drive the person
+  connects; lab results reach our server only inside the record summary a chat question
+  carries, after the user agrees to the chat. To test: on a simulator, Health › Browse ›
+  Health Records › Add Account, choose a sample institution, then open the app.
 - Guideline 5.1.3: HealthKit data is not used for advertising or marketing, not sold,
   and not stored in iCloud by us. It reaches our server only inside the record summary
   a chat question carries, after the user agrees to the chat; the server keeps no copy
-  (privacy policy, "Chat"). The five readings shown from Apple Health are not in the
+  (privacy policy, "Chat"). The four readings shown from Apple Health are not in the
   record, so they never reach the server.
 
 ## Before submission (Brad)
@@ -173,11 +185,12 @@ declares the three rows below; declare them as written.
    `ios/build/app-store-assets/screenshots/` (`app-store-compose.swift`). Slot 5 (Chat)
    and slot 2 (check each value) are drop-ins (`app-store-drop-in.swift`): Chat from an
    iPhone recording in the DEBUG `--demo-record` mode, slot 2 from the video's simulator
-   footage. Before filming, install a Debug build and seed the demo record: write the
+   footage. The Chat recording predates My health (US-73), so the drop-in and the video
+   take the simulator's current tab bar from `5 chat tab bar.png`. Before filming, install a Debug build and seed the demo record: write the
    screenshots' record (the sample plus the extra values in `app-store-shots.sh`) to a
    file, then `xcrun devicectl device copy to --device <id> --domain-type appDataContainer
    --domain-identifier com.drstanfield.healthroadmap --source <file> --destination
-   "Library/Application Support/Demo/health-roadmap.json"`, and check My data shows
+   "Library/Application Support/Demo/health-roadmap.json"`, and check My health shows
    weight 68.5 kg and ApoB 1.02 before you record. Without a seed the demo starts empty.
    Launch the iPhone demo with `--ui-testing` too, so analytics stay off:
    `xcrun devicectl device process launch --device <id> --terminate-existing com.drstanfield.healthroadmap --demo-record --ui-testing`.
