@@ -9,7 +9,7 @@ import React, { useState, useEffect, useRef, useCallback, useReducer } from 'rea
 import type { ProposedEdit } from '@roadmap/health-core';
 import { getChatGate } from '../lib/chat-api';
 import { observeVisibility } from '../lib/observe-visibility';
-import { useChatState, MAX_CHARS, type ChatContextSource } from '../hooks/useChatState';
+import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource } from '../hooks/useChatState';
 import { ChatKeyGate } from './ChatKeyGate';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { SubscriptionChangeCard } from './SubscriptionChangeCard';
@@ -70,7 +70,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
   }, [messagesContainerRef]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (sendsOnEnter(e)) {
       e.preventDefault();
       actions.handleSend();
     }
@@ -99,7 +99,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
 
   return (
     <div className="chat-embed-root no-print" data-clarity-mask="true" ref={rootRef}>
-      <ColumnHeader step={3} title="Ask about your plan" meta={null} muted={muted} />
+      <ColumnHeader title="Ask about your plan" muted={muted} />
       <div className="chat-embed" role="region" aria-label="Health by Dr Brad Chat">
 
       {drawerOpen && (
@@ -121,7 +121,10 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
             onClick={() => setDrawerOpen(true)}
             aria-label="Show conversations"
           >
-            ☰ History
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+              <path d="M2.5 4h11M2.5 8h11M2.5 12h11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+            </svg>
+            History
           </button>
           <ChatHeaderTitle subtitle={muted ? MUTED_CHAT.subtitle : "Answers cite your plan & the guidelines above"} />
         </div>
@@ -173,7 +176,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
               value={state.inputText}
               onChange={e => actions.handleInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask a follow-up…"
+              placeholder={state.messages.length === 0 ? 'Ask a question' : 'Ask a follow-up…'}
               disabled={state.isLoading}
               rows={1}
             />

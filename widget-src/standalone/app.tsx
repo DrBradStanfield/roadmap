@@ -20,12 +20,14 @@ import { resolveMarketCountry, setMarketCountry } from '../src/lib/market-countr
 import { autoEnrolReminders, cancelRemindersForErase, pushReminderSchedule } from './reminders';
 import { RemindersEnrolledNotice } from './reminders-control';
 import { DropboxAdapter, GoogleDriveAdapter } from '../src/storage';
+import { noteOtherTabsLogOffWhileLoading } from '../src/storage/local-storage-adapter';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
 import { StorageBar, SyncControl, RemindersSection } from './sync-control';
 import { ConnectRefusedNotice } from './connect-refused';
 import { EmailLandingNotice, emailLandingApplies, takeEmailFlag } from './email-landing';
 import { HistoryLightboxHost } from './history-lightbox';
+import { showLoadFailure } from './load-failure';
 import {
   connectRefusal,
   liftLocalInto,
@@ -48,10 +50,11 @@ async function resolveBackend(): Promise<{ resolved: ResolvedBackend; refused?: 
 
   // Returning from a Dropbox OAuth redirect?
   let resumed: DropboxAdapter | null = null;
+  let refused: string | undefined;
   try {
     resumed = await DropboxAdapter.completeRedirect(dropboxConfig());
   } catch (error) {
-    reportConnectFailure(error, 'dropbox');
+    refused = reportConnectFailure(error, 'dropbox');
   }
   if (resumed) {
     await liftLocalInto(resumed, 'dropbox');
@@ -63,12 +66,10 @@ async function resolveBackend(): Promise<{ resolved: ResolvedBackend; refused?: 
   // Returning from a Google Drive OAuth redirect? (Each completeRedirect only
   // claims a ?code that its own PKCE session entry initiated.)
   let gdResumed: GoogleDriveAdapter | null = null;
-  let refused: string | undefined;
   try {
     gdResumed = await GoogleDriveAdapter.completeRedirect(googleDriveConfig());
   } catch (error) {
-    refused = connectRefusal(error) ?? undefined;
-    if (!refused) reportConnectFailure(error, 'google-drive');
+    refused = connectRefusal(error) ?? reportConnectFailure(error, 'google-drive');
   }
   if (gdResumed) {
     await liftLocalInto(gdResumed, 'google-drive');
@@ -82,10 +83,15 @@ async function resolveBackend(): Promise<{ resolved: ResolvedBackend; refused?: 
 
 async function main() {
   initSentry();
+  // Before the first await (US-09 AC2h): another tab's log-off signal is set
+  // and removed at once, so note one heard during the OAuth code exchange or
+  // a Drive token refresh too. A cloud load that succeeds latches on it; a
+  // page that ends on the device copy never does.
+  noteOtherTabsLogOffWhileLoading();
   // Before the first await (US-22 AC13): an OAuth return rewrites the URL.
   const fromEmail = takeEmailFlag();
   const { resolved, refused } = await resolveBackend();
-  const { backend, reconnect } = await startOnBackend(resolved, initRoadmapStore);
+  const { backend, reconnect } = await startOnBackend(resolved, initRoadmapStore).catch(showLoadFailure);
   const state = storageState(backend, reconnect);
   const emailLanding = await emailLandingApplies(fromEmail, state);
   // "Delete all my data" must also delete the reminder row on Brad's server,

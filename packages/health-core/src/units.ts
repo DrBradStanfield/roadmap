@@ -702,11 +702,16 @@ export function waistToHeightRatio(waistCm: number, heightCm: number): number {
   return Math.round((waistCm / heightCm) * 100) / 100;
 }
 
+const WHTR_ELEVATED = 0.5;
+
 /** Central adiposity: the plan's rounded ratio at 0.5 or more. The plan and
  *  the vitals matrix both grade the waist by this (US-06 AC5). */
 export function isWaistToHeightElevated(ratio: number): boolean {
-  return ratio >= 0.5;
+  return ratio >= WHTR_ELEVATED;
 }
+
+/** The waist-to-height row's target, as the blood-test rows print theirs (US-73 AC7). */
+export const WHTR_TARGET = `Normal <${WHTR_ELEVATED}`;
 
 /** The waist, in cm, from which the plan counts the ratio as elevated at this
  *  height: it rounds to 0.50 from 0.495. */
@@ -740,12 +745,19 @@ export const LPA_THRESHOLDS = {
  * `formatGradedValue` at each of their grade lines (5.7 and 6.5 %, 75 and
  * 125 nmol/L), so 47 mmol/mol reads 6.45 % in the prediabetic range, not
  * 6.5 %. The lines are many display steps apart, so at most one moves the
- * number. Any other metric prints as `formatDisplayValue` (US-07 AC15).
+ * number. A PSA graded above 4.0 that would print 4.0 prints two decimals,
+ * rounded up, so 4.04 ng/mL reads 4.04 (US-06 AC18). Any other metric prints
+ * as `formatDisplayValue` (US-07 AC15).
  */
 export function formatGradedReading(metric: MetricType, canonical: number, system: UnitSystem): string {
   const lines = metric === 'hba1c' ? Object.values(HBA1C_THRESHOLDS)
     : metric === 'lpa' ? Object.values(LPA_THRESHOLDS) : [];
   const shown = formatDisplayValue(metric, canonical, system);
+  // PSA's grade is strict (> 4.0), so the line itself reads normal: `formatGradedValue` would print it.
+  if (metric === 'psa' && canonical > PSA_THRESHOLDS.normal && Number(shown) <= PSA_THRESHOLDS.normal) {
+    // At least 4.01: toPrecision strips float noise, which also rounds 4.000000000001 down to the line.
+    return (Math.max(Math.ceil(Number((canonical * 100).toPrecision(12))), PSA_THRESHOLDS.normal * 100 + 1) / 100).toFixed(2);
+  }
   for (const line of lines) {
     const graded = formatGradedValue(metric, canonical, system, line);
     if (graded !== shown) return graded;

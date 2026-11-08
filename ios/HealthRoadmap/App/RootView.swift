@@ -2,20 +2,21 @@ import StoreKit
 import UIKit
 import SwiftUI
 
-/// The tabs, in the web's mobile order (US-25 AC3): My data, My plan, then Chat (US-52).
-/// The app opens on My data. The web twin is widget-src/src/components/BottomTabBar.tsx.
-/// Each tab sits in a navigation stack. My plan has a small title, whose bar turns
-/// to frosted glass as content scrolls under it; My data has no bar (Brad
-/// 2026-10-22, US-25 AC17), and a strip of its background keeps rows from the clock.
+/// The two tabs (US-73 AC1): My health, which the app opens on, then Chat (US-52). The web
+/// twin is widget-src/src/components/BottomTabBar.tsx. Each tab sits in a navigation stack;
+/// My health has no bar (Brad 2026-10-22, US-25 AC17), and a strip of its background keeps
+/// rows from the clock.
 struct RootView: View {
-    enum Tab: Hashable { case data, plan, chat }
+    enum Tab: Hashable { case health, chat }
 
     let engine: HealthEngine
     let store: RecordStore
     let sync: CloudSync
     let chat: ChatHistoryStore
-    @State private var tab = Tab.data
+    @State private var tab = Tab.health
     @State private var reviewPrompt = ReviewPrompt()
+    /// A plan card has come on screen on My health: the review prompt waits for it (US-25 AC10).
+    @State private var planShowing = false
     @State private var analytics = Analytics()
     /// The backup offer after the person's third save (US-57 AC8).
     @State private var cloudPrompt = CloudPrompt()
@@ -60,13 +61,10 @@ struct RootView: View {
 
     var body: some View {
         TabView(selection: $tab) {
-            NavigationStack { MyDataView(engine: engine, store: store, sync: sync).firmTopEdge() }
-                .tabItem { Label("My data", systemImage: "list.bullet.clipboard") }
-                .tag(Tab.data)
-            // No title bar: the plan's own headings scroll with it (US-25 AC26, Brad 2026-11-03).
-            PlanView(store: store, showMyData: { tab = .data }).solidStatusBar().firmTopEdge()
-                .tabItem { Label("My plan", systemImage: "heart.text.square") }
-                .tag(Tab.plan)
+            NavigationStack { MyDataView(engine: engine, store: store, sync: sync, planShown: { if !planShowing { planShowing = true } },
+                                         settingsClosed: { Task { await offerCloudSoon() } }).firmTopEdge() }
+                .tabItem { Label("My health", systemImage: "heart.text.square") }
+                .tag(Tab.health)
             // ChatView keeps its own navigation stack and title.
             ChatView(engine: engine, store: store, history: chat)
                 .tabItem { Label("Chat", systemImage: "bubble.left.and.text.bubble.right") }
@@ -75,7 +73,7 @@ struct RootView: View {
         .sensoryFeedback(.selection, trigger: tab)
         .onChange(of: tab) { offerCloud() }
         // A tour tip shows only on its own tab (TourTips.swift).
-        .onChange(of: tab, initial: true) { Tour.showing(tab == .plan ? .plan : tab == .data ? .data : .other) }
+        .onChange(of: tab, initial: true) { Tour.showing(tab == .health ? .health : .other) }
         // Clarity starts only once the whole window is masked (Analytics.swift, D9).
         .background(WindowReader {
             window = $0
@@ -129,11 +127,11 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged).receive(on: RunLoop.main)) { _ in
             if scenePhase == .active { store.redraw() }
         }
-        .onChange(of: reminderTaps.planRequests, initial: true) { if reminderTaps.planRequests > 0 { tab = .plan } }
-        .task(id: tab) {
-            // A pause first, so the plan is on screen before iOS's rating sheet;
-            // leaving the tab during it cancels the ask without using it up.
-            guard tab == .plan else { return }
+        .onChange(of: reminderTaps.planRequests, initial: true) { if reminderTaps.planRequests > 0 { tab = .health } }
+        .task(id: ReviewMoment(tab: tab, planShowing: planShowing)) {
+            // Only once a plan card is on screen (US-25 AC10), and a pause first, so the plan is
+            // read before iOS's rating sheet; leaving the tab during it cancels the ask without using it up.
+            guard tab == .health, planShowing else { return }
             try? await Task.sleep(for: .seconds(2))
             // Never over the cloud prompt, a tour tip or any sheet (review R7): a later
             // visit asks instead, since planOpened is not used up here.
@@ -179,8 +177,8 @@ struct RootView: View {
         switch firstRun {
         case .welcome: .welcome
         case .questions: .onboarding
-        // A US-56 page on My data names only the screen, never the metric (its usage signal).
-        case nil: switch tab { case .data: (live?.pagesOpen ?? 0) > 0 ? .appleHealthMetric : .myData; case .plan: .plan; case .chat: .chat }
+        // A US-56 page names only the screen, never the metric (its usage signal). D9's words (Brad 2026-11-05).
+        case nil: switch tab { case .health: (live?.pagesOpen ?? 0) > 0 ? .appleHealthMetric : .myHealth; case .chat: .chat }
         }
     }
 
@@ -218,7 +216,7 @@ struct RootView: View {
     private func decideFirstRun() {
         guard !decided else { return }
         decided = true
-        // At launch the cover is simply there, never sliding up over an empty My data
+        // At launch the cover is simply there, never sliding up over an empty My health
         // (US-25 AC21b, Brad 2026-10-26).
         var now = Transaction()
         now.disablesAnimations = true
@@ -246,13 +244,16 @@ struct RootView: View {
         onboardingFromHealth = ""
         afterErase = false
         takeCount()
-        tab = .plan
+        tab = .health
         firstRun = nil
         // Onboarding's answers, the last one included, are not the person's own saves (R1).
         cloudPrompt.ignoreSaves(upTo: store.ownSaves)
-        // The tour continues on My plan, once ever (US-57 AC1).
+        // The tour continues on My health, once ever (US-57 AC1).
         if Tour.start() { analytics.event(.tourStarted) }
     }
+
+    /// What the review prompt's wait restarts on: the tab, and a plan coming on screen.
+    private struct ReviewMoment: Hashable { let tab: Tab; let planShowing: Bool }
 
     // MARK: Cloud prompt (US-57 AC8)
 

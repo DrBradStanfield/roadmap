@@ -31,16 +31,16 @@
  * writer can only edit safely with the lamport discipline this does not take on.
  */
 import {
-  canonicalLabRow, canonicalLabValue, correctionOffScale, type CountFault, displayLabUnit, foldName, labCountFault, type LabCatalogEntry,
-  labUnitRefusal, normalizeLabUnit, resolveLabCatalogEntry, type StoredLabRow,
+  canonicalLabRow, canonicalLabValue, correctionOffScale, type CountFault, displayLabUnit, foldName, labCountFault, type LabCatalogEntry, LAB_PLAUSIBLE_RANGES,
+  labSlotKey, looseFold, labUnitRefusal, normalizeLabUnit, resolveLabCatalogEntry, type StoredLabRow,
 } from './lab-catalog';
-import { bloodTestKeyOf, coreStored, createCoreRow, isBloodTestKey, isCoreRow, labRowSlot } from './blood-tests';
+import { bloodTestKeyOf, coreStored, createCoreRow, isActive, isBloodTestKey, isCoreRow, labRowSlot } from './blood-tests';
 import { METRIC_TO_FIELD } from './mappings';
 import { resolveCoreMetricName } from './lab-extraction';
 import { dayOf, latestStamp, localDay, rootIdOf } from './merge';
 import { isCalendarDay, isClinicalDay } from './measurement-history';
 import { CORE_BLOOD_UNITS, createLabValue, createMeasurement, recordSchemaVersion, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
-import { canonicalToReported, reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
+import { canonicalToReported, rangeFault, reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
 import { comparatorOf, type Comparator } from './lab-limits';
 import { formatLabValue, labUnitRefusalLine, savedLabText } from './lab-series';
 import { withEffectiveComparator } from './readable-rows';
@@ -339,10 +339,10 @@ export function slotOfRow(row: FileMeasurement | FileLabValue, day = dayOf(row.r
   return `${slotBase(row)}@${day}`;
 }
 
-/** Every active row by its slot — one pass, for a writer with many rows to place. */
+/** Every active row (a legacy row with no status is active) by its slot — one pass, for a writer with many rows to place. */
 export function slotIndex(file: RoadmapFile): Map<string, FileMeasurement | FileLabValue> {
   const index = new Map<string, FileMeasurement | FileLabValue>();
-  for (const row of [...file.measurements, ...file.labValues]) if (row.status === 'active') index.set(slotOfRow(row), row);
+  for (const row of [...file.measurements, ...file.labValues]) if (isActive(row)) index.set(slotOfRow(row), row);
   return index;
 }
 
@@ -353,7 +353,7 @@ export function slotIndex(file: RoadmapFile): Map<string, FileMeasurement | File
  */
 export function findActiveInSlot(file: RoadmapFile, kind: SlotKind, metric: string, day: string): FileMeasurement | FileLabValue | undefined {
   const key = slotKey(kind, metric, day);
-  return [...file.measurements, ...file.labValues].find((row) => row.status === 'active' && slotOfRow(row) === key);
+  return [...file.measurements, ...file.labValues].find((row) => isActive(row) && slotOfRow(row) === key);
 }
 
 /**
@@ -463,7 +463,7 @@ export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest
       : `"${request.metricName}" is the core metric ${coreMetric} — write it as a measurement, in SI units`);
   }
   if (!Number.isFinite(value)) return reject('invalid-value', 'A value must be a finite number');
-  if (!request.unit.trim()) return reject('invalid-value', 'A lab value needs the unit the lab reported it in');
+  if (!request.unit.trim()) return reject('invalid-value', NEEDS_UNIT);
   const recordedAt = resolveRecordedAt(request.recordedAt, request);
   if (typeof recordedAt !== 'string') return recordedAt;
 
@@ -491,12 +491,35 @@ export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest
   return { ok: true, file: withRow(file, 'labValues', [...file.labValues, row], now), row };
 }
 
-/** A lab value a person adds (US-25 AC25): the test's name, the unit they read it in, the number and the day. */
-export interface AddLabValueRequest { metricName: string; unit: string; value: number; day?: string }
+/** A lab value with no unit: appendLabValue's words and addLabValue's, one string. */
+const NEEDS_UNIT = 'A lab value needs the unit the lab reported it in';
+
+/** A lab value a person adds (US-25 AC25): the test's name, the unit they read it in, the number and the day.
+ *  `existingSeries`: added from that test's own page (the web's preset form, the iPhone's labAdd), so its
+ *  name and unit are the record's own, never refused as a vital's or for having no unit. */
+export interface AddLabValueRequest { metricName: string; unit: string; value: number; day?: string; existingSeries?: boolean }
 
 export type AddLabValueResult =
   | { ok: true; file: RoadmapFile; row: FileLabValue }
-  | { ok: false; reason: 'invalid-value' | 'invalid-date' | 'unknown-unit' | 'slot-occupied'; message: string; existingId?: string; refused?: LabUnitRefusal; bound?: 'above' | 'below' };
+  | { ok: false; reason: 'invalid-value' | 'invalid-date' | 'unknown-unit' | 'slot-occupied' | 'core-metric' | 'not-found'; message: string; existingId?: string; refused?: LabUnitRefusal; bound?: 'above' | 'below' };
+
+/** Blood pressure's own names, loosely folded: no lab test, though no one core metric either. */
+const BLOOD_PRESSURE_NAMES = new Set(['blood pressure', 'bp', 'blood pressure systolic', 'blood pressure diastolic', 'bp systolic', 'bp diastolic']);
+
+/** Why a typed value of a catalogued test is refused (US-21 AC26), or null inside its bounds, with
+ *  none, or in a unit it does not take: a value past its plausible range, in the stored SI unit, is
+ *  a slip of the number or unit. Names the number as typed, what it converted to, and the end it
+ *  passed, each as the matrix prints it, thousands separated. For the person who typed it. */
+function labPlausibleRefusal(entry: LabCatalogEntry, typed: number, unit: string): string | null {
+  const converted = canonicalLabValue(entry, typed, unit);
+  const range = converted && LAB_PLAUSIBLE_RANGES[entry.key];
+  const fault = range && rangeFault(range, converted.value);
+  if (!fault) return null;
+  const shown = (v: number) => Number(formatLabValue(v)).toLocaleString('en-US', { maximumFractionDigits: 20 });
+  const typedUnit = normalizeLabUnit(unit);
+  const conversion = typedUnit.toLowerCase() === entry.unit.toLowerCase() ? '' : `${shown(typed)} ${typedUnit} is ${shown(converted.value)} ${entry.unit}. `;
+  return `${conversion}${entry.label} ${fault} ${shown(fault === 'below' ? range.min : range.max)} ${entry.unit} is almost certainly a typing or unit mistake: check the number and its unit.`;
+}
 
 /**
  * The one lab add, the web's "+ Add a value" (AddLabTest.tsx) and the iPhone's lab page (US-25
@@ -511,10 +534,24 @@ export function addLabValue(file: RoadmapFile, request: AddLabValueRequest, now:
   const name = request.metricName.trim();
   const given = request.unit.trim();
   if (!name) return { ok: false, reason: 'invalid-value', message: 'A lab value needs a test name.' };
+  // The flag is a series' own page: it never starts a series, so never a new vital-named or unit-less one.
+  const series = labSlotKey(name);
+  if (request.existingSeries && !file.labValues.some((row) => isActive(row) && !isCoreRow(row) && labSlotKey(row.metricName) === series)) {
+    return { ok: false, reason: 'not-found', message: 'There is no such lab test in your record.' };
+  }
+  // A vital (weight, height, blood pressure, waist) typed by name is no lab test; a kept-apart lab
+  // series of that name adds from its own page (US-25 AC25). Blood pressure by its own name names
+  // no one core metric, so it is listed here (review round 3). appendLabValue (MCP, CLI) still
+  // refuses only what resolveCoreMetricName knows: "BP" there is a free-hand lab row.
+  const vital = !request.existingSeries && !bloodTestKeyOf(name) && (resolveCoreMetricName(name) || BLOOD_PRESSURE_NAMES.has(looseFold(name)));
+  if (vital) return { ok: false, reason: 'core-metric', message: `"${name}" is not a lab test: add it from its own row.` };
   if (!Number.isFinite(request.value) || request.value < 0) return { ok: false, reason: 'invalid-value', message: 'A lab value is a number, 0 or more.' };
   const day = resolveRecordedAt(request.day, { now });
   if (typeof day !== 'string') return { ok: false, reason: 'invalid-date', message: 'A lab value is for a real day, today or before.' };
   const entry = resolveLabCatalogEntry(name);
+  if (!given && !entry && !bloodTestKeyOf(name) && !request.existingSeries) return { ok: false, reason: 'invalid-value', message: NEEDS_UNIT };
+  const implausible = entry && labPlausibleRefusal(entry, request.value, given);
+  if (implausible) return { ok: false, reason: 'invalid-value', message: implausible };
   const exact = !!entry && displayLabUnit(given, entry) === entry.unit;
   const metricName = exact ? entry!.key : name;
   const unit = exact ? entry!.unit : given;
@@ -571,7 +608,7 @@ export function correctValue(file: RoadmapFile, request: CorrectValueRequest): E
   const measurement = found ?? (lab && isCoreRow(lab) ? { ...lab, metricType: lab.metricName } : undefined);
   const old = measurement ?? lab;
   if (!old) return reject('not-found', `No value in this record has id ${id}`);
-  if (old.status !== 'active') return reject('not-active', `Value ${id} is already entered-in-error; correct the row that replaced it`);
+  if (!isActive(old)) return reject('not-active', `Value ${id} is already entered-in-error; correct the row that replaced it`);
   // The refusal deliberately does not echo either number: a caller that
   // guessed must not learn the value by guessing at it.
   if (request.expectedValue !== undefined && !sameValue(old.value, request.expectedValue)) {
@@ -615,6 +652,9 @@ export function correctValue(file: RoadmapFile, request: CorrectValueRequest): E
     ? { value: request.newValue, unit: labRow.unit }
     : toStoredLab(entry, request.newValue, request.unit);
   if ('ok' in stored) return stored;
+  // A corrected number is typed too, so it meets the add's plausible range (US-21 AC26).
+  const implausible = entry && labPlausibleRefusal(entry, request.newValue, request.unit ?? labRow.unit);
+  if (implausible) return reject('invalid-value', implausible);
   // The row carries the unit it is STORED in, which is the conversion's answer
   // and not the old row's label: a legacy row in a spelling the catalogue
   // refuses is corrected INTO the canonical unit, and saying otherwise would
@@ -695,7 +735,7 @@ const metricOf = (row: ClinicalRow) => ('metricType' in row ? row.metricType : r
 /** Every active row on `day` that `pick` takes, measurements then lab values. */
 function activeOn(file: RoadmapFile, day: string, pick: (row: ClinicalRow) => boolean = () => true): ClinicalRow[] {
   const lists: ClinicalRow[][] = [file.measurements, file.labValues];
-  return lists.flatMap((list) => list.filter((row) => row.status === 'active' && dayOf(row.recordedAt ?? '') === day && pick(row)));
+  return lists.flatMap((list) => list.filter((row) => isActive(row) && dayOf(row.recordedAt ?? '') === day && pick(row)));
 }
 
 /**
@@ -934,7 +974,7 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
     if (input.correctsId) {
       const index = (inLabs ? atLab : atMeasurement).get(input.correctsId);
       const old = index === undefined ? undefined : list[index];
-      if (!old || old.status !== 'active' || slotOfRow(old) !== slot) { skippedDuplicates++; continue; }
+      if (!old || !isActive(old) || slotOfRow(old) !== slot) { skippedDuplicates++; continue; }
       list[index!] = { ...old, status: 'entered-in-error' };
       const row = makeRow(old.recordedAt, old.id);
       list.push(row);

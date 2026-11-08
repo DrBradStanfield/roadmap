@@ -46,10 +46,20 @@ export interface HealthInputs {
   limits?: InputLimits;
 }
 
+/**
+ * US-07 AC7: the day (YYYY-MM-DD) of the creatinine the inputs hold. The
+ * calculated eGFR uses the age on that day. Set by `withLabEgfr` on the
+ * client's plan, by `buildChatContextJson` on the chat's server (from the
+ * newest saved creatinine point) and by `runRoadmap` for a value stated in the
+ * chat. Kept out of HealthInputs on purpose: it never travels in a chat
+ * context (chatContextOf drops it).
+ */
+export type CreatinineDay = { creatinineDay?: string };
+
 /** What the plan computes from: the inputs, plus `pressureOrder` (US-07 AC11) when the
  *  newest pair was the wrong way up and the caller left both halves out (US-02 AC8). The
  *  blood pressure prompt then asks to check the reading. Never stored or sent. */
-export type SuggestionInputs = HealthInputs & { pressureOrder?: true };
+export type SuggestionInputs = HealthInputs & CreatinineDay & { pressureOrder?: true };
 
 /** US-60: the two answers to "Do you drink alcohol?". */
 export const ALCOHOL_ANSWERS = ['none', 'drinks'] as const;
@@ -384,6 +394,8 @@ export interface ScreeningInputs {
   // Prostate
   prostateDiscussion?: 'not_yet' | 'elected_not_to' | 'will_screen';
   prostatePsaValue?: number;
+  /** The saved PSA was printed as this limit (US-12 AC20): the card shows it, never `prostatePsaValue`. Derived, never stored. */
+  prostatePsaLimit?: { comparator: import('./lab-limits').Comparator; bound: number };
   prostateLastDate?: string;
 
   // Endometrial
@@ -435,7 +447,7 @@ export const SCREENING_MIN_AGE: Record<string, { age: number; sex?: 'male' | 'fe
   dexa:       { age: 50 },
 };
 
-/** Lung screening's smoking history, USPSTF 2021: 20 pack-years or more. The plan, the
+/** Lung screening's smoking history, ACS 2023: 20 pack-years or more. The plan, the
  *  reminders and both forms read it, so they cannot disagree again (#285). */
 export const LUNG_PACK_YEARS = 20;
 
@@ -604,8 +616,6 @@ export const SUPPLEMENT_OPTIONS: SupplementOption[] = [
   { key: 'b_complex', name: 'B-complex', category: 'general' },
   { key: 'probiotics', name: 'Probiotics', category: 'general' },
 ];
-
-export const FEATURED_SUPPLEMENTS = SUPPLEMENT_OPTIONS.filter(s => s.category === 'featured');
 
 /**
  * A single immutable measurement record (maps to health_measurements table).

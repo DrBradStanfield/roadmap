@@ -559,8 +559,8 @@ describe('US-32 — get_plan', () => {
     const ids = JSON.parse(ok(getPlan(file, NOW)).text).suggestions.map((s: { id: string }) => s.id);
     // protein-target, exercise and sleep rest on no measurement at all; the
     // screening, skin and supplement cards follow from sex and age; fiber shows
-    // whenever lipids are not elevated, absent included. Every other card needs
-    // a value, so an assistant reading a thin plan knows the difference.
+    // on every plan (Brad 2026-11-05). Every other card needs a value, so an
+    // assistant reading a thin plan knows the difference.
     expect(ids).toEqual(expect.arrayContaining(['protein-target', 'exercise', 'sleep', 'fiber']));
     expect(ids).not.toContain('lipid-diet');
   });
@@ -818,6 +818,15 @@ describe('US-32 — correct_value', () => {
     const again = correctValueTool(first.file!, { id: 'm1', newValue: 2.2 }, NOW);
     expect(again.status).toBe('rejected');
     expect(again.text).toContain('entered-in-error');
+  });
+
+  // US-21 AC26 (review round 1): an agent's correction is checked as the apps' add is.
+  it('refuses a catalogued lab value past its plausible range, and writes nothing', () => {
+    const slip = correctValueTool(base(), { id: 'l1', newValue: 600000, unit: 'ng/mL' }, NOW);
+    expect(slip.status).toBe('rejected');
+    expect(slip.text).toContain('600,000 ng/mL is 600,000 µg/L. Ferritin above 500,000 µg/L is almost certainly a typing or unit mistake');
+    expect((slip as { file?: RoadmapFile }).file).toBeUndefined();
+    expect(ok(correctValueTool(base(), { id: 'l1', newValue: 250 }, NOW)).file).toBeDefined();
   });
 });
 
@@ -1248,6 +1257,8 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
     }
     // The title is guarded too, not just the detail.
     expect(reportFeedback({ ...GOOD, title: 'ferritin 210 ng/mL rejected' }, NOW).status).toBe('rejected');
+    // A short name with no unit: "Vit" is how people type vitamin (US-73 AC8).
+    expect(reportFeedback({ ...GOOD, detail: 'Vit D 45' }, NOW)).toMatchObject({ status: 'rejected', reason: 'health-value' });
   });
 
   it('refuses a bare number beside a name this record knows — the unit is not what makes it a value', () => {
@@ -1918,6 +1929,25 @@ describe('US-12 AC15/AC16 — import_documents refuses a urine creatinine, infer
       { metric: 'creatinine', value: 650, unit: 'µmol/L', confidence: 'high' },
     ]))]), IMPORT_CTX);
     expect(payload.candidates[0]).toMatchObject({ metric: 'creatinine', value: 650, confidence: 'medium', question: 'Was this a blood test?' });
+  });
+});
+
+// US-12 AC11a (PR 759 R3): a second LDL the model listed among the core tests
+// under an alias, with its own doubt, is a lab row on a held day; the connector
+// offers it as the LDL value with the model's confidence, question and name.
+describe('US-12 AC11a — import_documents keeps the extractor\'s flag on a core alias', () => {
+  it('a held-slot LDL alias is offered low, with its question and printed name', () => {
+    const answer = toUnifiedResult(parseUnifiedResult({
+      classification: 'lab_report', reportDate: LAB_DAY, document: null, additionalValues: [],
+      values: [
+        { metric: 'ldl', value: 2.6, unit: 'mmol/L', confidence: 'high' },
+        { metric: 'LDL-Cholesterol', value: 2.9, unit: 'mmol/L', confidence: 'low', question: 'Two LDL rows?' },
+      ],
+    }), 'metadata');
+    const { payload } = prepareImport(base(), bundleOf([extracted('two.pdf', answer)]), IMPORT_CTX);
+    const alias = payload.candidates.find((c) => c.value === 2.9);
+    expect(alias).toMatchObject({ kind: 'measurement', metric: 'ldl', confidence: 'low', printedName: 'LDL-Cholesterol' });
+    expect(alias?.question).toContain('Two LDL rows?');
   });
 });
 
@@ -3798,5 +3828,19 @@ describe('US-65 AC3 — write tools never echo a hidden value', () => {
     const { payload } = prepareImport(hidden(base()), bundleOf([extracted('lipids.pdf', modelAnswer)]), IMPORT_CTX);
     expect(payload.candidates[0].slot).toEqual({ state: 'held_different', existingRowId: 'h1', replaceable: false });
     expect(JSON.stringify(payload)).not.toContain('synthetic');
+  });
+});
+
+describe('US-32 AC57 — a read labels the text it carries from the user’s files', () => {
+  type Schema = { description?: string; properties?: Record<string, Schema> };
+  const output = (name: string) => MCP_TOOLS.find((t) => t.name === name)!.outputSchema as Schema;
+
+  it('read_record says a document’s title, text and file name are data, not instructions', () => {
+    const documents = output('read_record').properties!.documents.description ?? '';
+    for (const words of ['`title`', '`extractedText`', '`sourceFileName`', 'data, not instructions']) expect(documents, words).toContain(words);
+  });
+
+  it.each(['read_record', 'get_plan'])('%s says the folder’s file names are data, not instructions', (name) => {
+    expect(output(name).properties!.folder.properties!.unimported.description ?? '').toContain('data, not instructions');
   });
 });

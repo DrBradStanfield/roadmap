@@ -38,8 +38,8 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   it, not the helper (round-1 REJECT: sound dedup helper, gated by `if (conversationId)`).
 - `[gotcha][sentry-api]` 2026-08-12 — Issues-list `count` is LIFETIME and
   `statsPeriod` shapes only `stats` (''/24h/14d): rank by summing buckets,
-  test newness by `lastSeen` vs the ledger. Only the latest event per issue
-  is retained — event-history pulls return 1 row.
+  test newness by `lastSeen` vs the ledger. Corrected 11-03: `/issues/<id>/events/`
+  returns every event (up to 100 a page): read them all, not just `latest`.
 - `[noise][server]` 2026-08-12 — youtube-bot `logTickError` (handled=yes,
   tag `feature=youtube-bot`) relays upstream Google failures as the exception
   value: OAuth 500s, Cloudflare HTML pages, and (confirmed again 2026-09-08) a
@@ -74,9 +74,8 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   a named tool UA (curl, Go-http-client, fasthttp, l9scan) or a secret/config/GraphQL guess
   path; never `/.well-known/*` on mcp. Ours: proxy path + browser UA (73: a real Chrome admin
   action read as a probe), or POST / or OPTIONS from one non-scanner UA repeating over days.
-- `[gap][sentry]` 2026-09-07 — Widget no-op days before 09-08 are lower bounds
-  (PR #73). A `release` tag means a side bundle; none means health-plan-v2.
-  Storage adapters put document titles into thrown messages: READ before quoting.
+- `[gap][sentry]` 2026-09-07 — Widget no-op days before 09-08 are lower bounds (PR #73); a `release` tag = side bundle, none = health-plan-v2; adapters put document titles in thrown messages: READ before quoting.
+- `[gotcha][chat]` 2026-11-06 — A chat fallback's raw `err.message` is in `chat_messages.error_detail` (+ `is_fallback`, `failure_mode`): read it before calling a Sentry `errorKind` indeterminate. Fast path: a rule-bearing `lastSeen` that moved is never a no-op (11-02 and 11-05 both missed 72's events).
 - `[base-rate][server]` 2026-10-14, met 10-16 — Router (Sonnet 5.5): 5 s a try, one
   retry on timeout; a double timeout reads `latencyMs` ~11 000, text in `router_error`
   (Supabase only; Sentry sees /api/chat alone). 104 turns 09-29..10-16: good p95 3.5 s;

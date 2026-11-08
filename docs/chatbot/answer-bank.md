@@ -1,4 +1,4 @@
-<!-- generated — never edit; source hash sha256:5ef2261ced98293282c94b5a51f2bb40fab27fa9a536177011558f91743037a8 -->
+<!-- generated — never edit; source hash sha256:0c7e3b05aae469053d98a43faa801b68d1efab67abdcbaa6e092a0f6a64f883e -->
 <!-- Built by claude_business tools/sync-shared-docs.mjs from docs/customer-service/answer-bank.md. Edit the master there and rerun the sync. -->
 
 Approved answers to questions customers have asked by email (81 entries), written in the first person. Each entry gives the question, then the answer.
@@ -305,7 +305,7 @@ Please let me know if you have any other questions
 Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 Was it only one night that you tried the Sleep supplement?
-Did you take it 3 hours before wanting to fall asleep?
+Did you take it 3 to 4 hours before wanting to fall asleep?
 
 And final question, did you try taking only 1 capsule (instead of the usual
 4), and then slowly build up to see how your body reacts to the supplement?
@@ -431,6 +431,8 @@ Have you looked at ConsumerLab for recommendations?
 Looking forward to hearing from you
 
 ### How much calcium does a woman after menopause need, and what are good food sources?
+
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 Best to discuss with your doctor
 

@@ -1,4 +1,4 @@
-import Foundation
+import SwiftUI
 
 /// One suggestion, as the engine writes it (`Suggestion` in packages/health-core/src/types.ts).
 /// The evidence fields are kept whole: a clinical suggestion is never shown without them.
@@ -31,7 +31,7 @@ struct Suggestion: Decodable, Identifiable {
     static let reduceAlcohol = "reduce-alcohol"
 }
 
-/// The Plan tab for one record, as the engine's `screenJson` gave it with My data (US-25 AC2).
+/// The plan for one record, as the engine's `screenJson` gave it with My health's rows (US-25 AC2).
 enum PlanState: Sendable {
     /// The plan, and how long the engine took to plan it (D2's plan budget).
     case planned(tiles: [StatTile], sections: [PlanSection], ms: Double)
@@ -59,8 +59,6 @@ struct PlanSection: Decodable, Identifiable {
     let ownershipLine: String?
 
     var id: String { key }
-    /// health-core's Foundation section (planSections' `info`), where tour tip 2 anchors.
-    var isFoundation: Bool { key == "info" }
 }
 
 /// One card: a single suggestion, or two or more of one category grouped together.
@@ -128,4 +126,45 @@ struct StatTile: Decodable, Identifiable {
     let about: String
 
     var id: String { key }
+}
+
+/// The plan's cards by topic for My health (health-core `topicSections`, `plan.topics`, US-73 AC3):
+/// every suggestion is a card in a topic, or sits on a row (a medicine question by its key, a
+/// screening group by its id); an urgent one is both. The engine decides every placement.
+struct TopicLayout: Decodable {
+    struct Section: Decodable {
+        /// weight, sleep, fitness, bloodPressure, cholesterol, screening, skin, bloodTests,
+        /// supplements or other; one the app does not know is drawn under Other.
+        let topic: String
+        let cards: [PlanCard]
+        /// Who owns the products, under the supplement cards (US-61 AC7).
+        let ownershipLine: String?
+    }
+
+    /// Suggestions on one row: a medicine question's `key`, or a screening group's `group`.
+    struct Placed: Decodable {
+        let key: String?
+        let group: String?
+        let suggestions: [Suggestion]
+    }
+
+    let sections: [Section]
+    let medicines: [Placed]
+    let screenings: [Placed]
+}
+
+/// The plan's own lines on My health.
+enum PlanText {
+    /// Same words as the web's disclaimer (ResultsPanel.tsx, `health-disclaimer`).
+    @MainActor static let disclaimer: LocalizedStringKey = "**Disclaimer:** This tool is for educational purposes only and is not a substitute for professional medical advice. Always consult with your healthcare provider before making any health decisions. Suggestions are based on general guidelines and may not apply to your individual situation."
+
+    /// health-core's PlanError in a plain sentence: its own words are written for connectors.
+    static let needsDetails = "Add your sex and height in Settings, and your plan appears here."
+
+    /// The privacy line's words, with the engine's own whole milliseconds: a plan faster
+    /// than its clock's tick reads 0, so "under 1 ms" (adversary R4).
+    static func workedOut(ms: Double) -> String {
+        ms < 1 ? "Worked out on this iPhone in under 1 ms."
+            : "Worked out on this iPhone in \(ms.formatted(.number.precision(.fractionLength(0)))) ms."
+    }
 }

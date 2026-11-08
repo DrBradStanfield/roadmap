@@ -19,6 +19,7 @@ import { METRIC_TO_FIELD } from './mappings';
 import type { HealthInputs } from './types';
 import { comparatorOf, type Comparator } from './lab-limits';
 import { stampInstant } from './merge';
+import { UNIT_DEFS } from './units';
 
 export interface DatedMeasurement {
   /** YYYY-MM-DD */
@@ -27,7 +28,12 @@ export interface DatedMeasurement {
   value: number;
   /** A lab result printed as a limit: `value` is its bound, not the result (US-12 AC20). */
   comparator?: Comparator;
+  /** An unsaved creatinine the client's plan read (US-07 AC7): the server takes its day, then drops it. */
+  draft?: true;
 }
+
+/** A client's draft point (US-07 AC7): the marker counts only as `draft: true`; anything else is a saved point. */
+export const isDraftPoint = (p: unknown): boolean => !!p && typeof p === 'object' && (p as { draft?: unknown }).draft === true;
 
 /** Per-metric chronological series — the LAST entry is the most recent. */
 export type MeasurementHistoryMap = Record<string, DatedMeasurement[]>;
@@ -54,13 +60,25 @@ export function isClinicalDay(recordedAt: unknown): recordedAt is string {
  * metric. Records without a valid YYYY-MM-DD recordedAt are dropped.
  */
 export function buildMeasurementHistory(
-  records: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator }>,
+  records: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator; id?: string; createdAt?: string }>,
   cap = HISTORY_CAP_PER_METRIC,
+  now = new Date(),
 ): MeasurementHistoryMap {
   const out: MeasurementHistoryMap = {};
-  for (const r of records) {
+  // A PSA the plan cannot use never takes a place under the cap, so newer
+  // unusable rows cannot push out the one the chat's plan reads (US-06 AC14).
+  const latestDay = latestDayOnEarth(now);
+  // Within one day, the order `latestActivePerMetric` ranks by (time, then
+  // createdAt, then id), so a day's last point is the row the plan reads (US-06 AC14).
+  const key = (r: (typeof records)[number]) => [r.recordedAt ?? '', r.createdAt ?? '', r.id ?? ''];
+  const ranked = [...records].sort((a, b) => {
+    const [x, y] = [key(a), key(b)];
+    const i = x.findIndex((v, n) => v !== y[n]);
+    return i < 0 ? 0 : x[i] < y[i] ? -1 : 1;
+  });
+  for (const r of ranked) {
     const date = (r.recordedAt || '').slice(0, 10);
-    if (!ISO_DATE.test(date)) continue;
+    if (!ISO_DATE.test(date) || (r.metricType === 'psa' && !usablePsa(r, latestDay))) continue;
     (out[r.metricType] ??= []).push({ date, value: r.value, ...comparatorOf(r) });
   }
   for (const k of Object.keys(out)) {
@@ -68,6 +86,32 @@ export function buildMeasurementHistory(
     if (out[k].length > cap) out[k] = out[k].slice(-cap);
   }
   return out;
+}
+
+/**
+ * The latest calendar day anywhere on Earth at `now` (UTC+14). A server runs
+ * in UTC, so a day the person has already reached can be its tomorrow; the
+ * old screening answers allowed the same (US-06 AC14).
+ */
+const latestDayOnEarth = (now: Date) => new Date(now.getTime() + 14 * 3600_000).toISOString().slice(0, 10);
+
+/** A PSA point the plan can use: in the PSA range, on a real day not after `latestDay`. */
+const usablePsa = (r: { value: number; recordedAt?: string | null }, latestDay: string) => {
+  const { min, max } = UNIT_DEFS.psa.validationRange.si;
+  return r.value >= min && r.value <= max && isClinicalDay(r.recordedAt) && r.recordedAt.slice(0, 10) <= latestDay;
+};
+
+/**
+ * US-06 AC14: the saved PSA the plan, the reminders, the web form and the
+ * chat all read. Among the active `psa` rows, those `usablePsa` keeps at
+ * `now` (the caller's clock), the newest by `latestActivePerMetric`'s rule.
+ * An unusable newer row never hides an older usable one.
+ */
+export function newestUsablePsa<
+  T extends { id: string; metricType: string; value: number; recordedAt: string; createdAt?: string; status?: string },
+>(rows: readonly T[], now: Date): T | undefined {
+  const latestDay = latestDayOnEarth(now);
+  return latestActivePerMetric(rows.filter((r) => r.metricType === 'psa' && usablePsa(r, latestDay)))[0];
 }
 
 /**
@@ -116,6 +160,12 @@ function beats(
   return a.id > b.id;
 }
 
+/** A series' newest point (the last: a series runs oldest first), or none when it is printed as a limit (US-12 AC20). */
+export function newestExactPoint(series: DatedMeasurement[] | undefined): DatedMeasurement | undefined {
+  const newest = series?.[series.length - 1];
+  return newest && !newest.comparator ? newest : undefined;
+}
+
 /**
  * The most recent dated reading per HealthInputs field (via METRIC_TO_FIELD).
  * Metrics with no field mapping are skipped. Callers merge this over their
@@ -127,8 +177,8 @@ export function latestFromHistory(
   const out: Partial<Record<keyof HealthInputs, number>> = {};
   for (const [metric, series] of Object.entries(history)) {
     const field = METRIC_TO_FIELD[metric];
-    // A newest point printed as a limit is no exact value to report (US-12 AC20).
-    if (field && series.length > 0 && !series[series.length - 1].comparator) out[field] = series[series.length - 1].value;
+    const newest = newestExactPoint(series);
+    if (field && newest) out[field] = newest.value;
   }
   return out;
 }

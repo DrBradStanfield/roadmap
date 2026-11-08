@@ -6,6 +6,9 @@
  * event is the one seam to the picker: openBackendPicker() is the only way in,
  * and standalone/sync-control.tsx is the only listener.
  */
+import type { SIGNIN_PLACEMENTS } from '@roadmap/health-core/product-events';
+import { trackProductEvent } from './server-api';
+
 export const OPEN_PICKER_EVENT = 'hr:open-backend-picker';
 
 const LINK_TEXT = 'Dropbox or Google Drive';
@@ -34,6 +37,12 @@ export function openBackendPicker(): void {
   window.dispatchEvent(new Event(OPEN_PICKER_EVENT));
 }
 
+/** US-62 AC3: a guest opens the picker from a sign-in prompt, counted by where. */
+export function openSignin(placement: (typeof SIGNIN_PLACEMENTS)[number]): void {
+  trackProductEvent('signin_opened', { placement });
+  openBackendPicker();
+}
+
 /** One storage sentence, with the provider names as a keyboard-focusable link. */
 export function StorageSentence({ surface, className = '' }: {
   surface: StorageSurface;
@@ -43,7 +52,7 @@ export function StorageSentence({ surface, className = '' }: {
   return (
     <p className={`hr-storage-notice ${className}`.trim()}>
       {before}
-      <button type="button" className="hr-storage-link" onClick={openBackendPicker}>
+      <button type="button" className="hr-storage-link" onClick={() => openSignin('plan_panel')}>
         {LINK_TEXT}
       </button>
       {after}

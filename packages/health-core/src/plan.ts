@@ -6,8 +6,8 @@
  * terminal. The CLI keeps reading the file and rendering text and HTML;
  * `renderJson` is the agent-facing shape, and both surfaces return it.
  */
-import { currentValueRows, isCoreRow } from './blood-tests';
-import { calculateHealthResults, missingPlanInputs } from './calculations';
+import { currentValueRows, isActive, isCoreRow } from './blood-tests';
+import { ageOnDay, calculateEGFR, calculateHealthResults, isKnownMinorOnDay, knownMinorOf, missingPlanInputs } from './calculations';
 import { fileProfileToApi, fileScreeningRows } from './file-inputs';
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
 import {
@@ -17,9 +17,10 @@ import {
   measurementsToInputs,
   medicationsToInputs,
   screeningsToInputs,
+  withPsaMeasurement,
   type ApiMeasurement,
 } from './mappings';
-import { latestActivePerMetric } from './measurement-history';
+import { latestActivePerMetric, newestUsablePsa } from './measurement-history';
 import { cmpStr, dayOf, localDay } from './merge';
 import { refLineFor } from './reference-hints';
 import { computeReminderSchedule, type ReminderScheduleItem } from './reminder-schedule';
@@ -28,9 +29,9 @@ import {
   LIMIT_NOT_GRADED, comparatorOf, egfrAsPrinted, formatValue, limitOf, limitSIText, withComparator, withoutLimit, withRowValue,
   type Comparator, type InputLimit, type LimitField,
 } from './lab-limits';
-import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs, SuggestionInputs } from './types';
+import type { CreatinineDay, HealthInputs, HealthResults, MedicationInputs, ScreeningInputs, SuggestionInputs } from './types';
 import {
-  UNIT_DEFS, formatGradedReading, formatGradedValue, getDisplayLabel, unitSystemOf, type MetricType, type UnitSystem,
+  UNIT_DEFS, formatGradedReading, formatGradedValue, getDisplayLabel, unitSystemOf, waistToHeightRatio, type MetricType, type UnitSystem,
 } from './units';
 import { getValidationErrors, PRESSURE_ORDER, sanitizeInputs, validateHealthInputs } from './validation';
 
@@ -103,7 +104,7 @@ export function oneLine(text: string): string {
 // ---------------------------------------------------------------------------
 
 export interface PlanInputs {
-  inputs: Partial<HealthInputs>;
+  inputs: Partial<HealthInputs> & CreatinineDay;
   unitSystem: UnitSystem;
   medications: MedicationInputs;
   screenings: ScreeningInputs;
@@ -156,10 +157,72 @@ export type LabEgfr = Pick<HealthInputs, 'labEgfr'> & Required<Pick<HealthInputs
  * does not decide is still the latest eGFR, never passed over for an older one.
  */
 export function labEgfrOf(labValues: readonly LabRowLike[]): LabEgfr | null {
-  const rows = labValues.filter((l) => labSlotKey(l.metricName) === 'egfr'
-    && l.unit === resolveLabCatalogEntry(l.metricName)?.unit && 'labEgfr' in sanitizeInputs({ labEgfr: l.value }));
-  const lab = latestActivePerMetric(rows.map((l) => ({ ...l, metricType: 'egfr' })))[0];
+  const lab = latestActivePerMetric(labValues.filter(isLabEgfrRow).map((l) => ({ ...l, metricType: 'egfr' })))[0];
   return lab ? labEgfrFrom(lab.value, dayOf(lab.recordedAt), lab.comparator) : null;
+}
+
+/** A lab's creatinine eGFR the plan reads: in the catalogue's unit and the schema's range. */
+function isLabEgfrRow(l: LabRowLike): boolean {
+  return labSlotKey(l.metricName) === 'egfr' && l.unit === resolveLabCatalogEntry(l.metricName)?.unit && 'labEgfr' in sanitizeInputs({ labEgfr: l.value });
+}
+
+/** One day of the eGFR history: the lab's printed number, or ours from that day's creatinine. */
+export interface EgfrPoint { id: string; day: string; value: number; source: 'lab' | 'calculated' }
+
+/**
+ * Every day's eGFR, newest first (US-73 AC7, US-07 AC7 and AC8). A day's lab
+ * eGFR (labEgfrOf's rows) wins it, as withLabEgfr lets it win the plan's day.
+ * Else the core creatinine's (never a kept-apart row, which may be urine,
+ * US-12 AC11), calculated as the plan does, with the age on that day: only
+ * with a sex and a birth year, and never by the plan's minor gate: a known
+ * minor today (`now`) or on the creatinine's day, over the birth info the plan
+ * keeps. A value printed as a limit gives no point (US-12 AC20); a lab limit
+ * holds its day, so no number is worked out under it. A row with no status is
+ * active (US-65 AC1).
+ */
+export function egfrSeries(file: Pick<RoadmapFile, 'measurements' | 'labValues' | 'profile'>, now = new Date()): EgfrPoint[] {
+  const days = new Map<string, EgfrPoint | null>();
+  for (const l of file.labValues) {
+    const day = dayOf(l.recordedAt);
+    if (!isActive(l) || isCoreRow(l) || !isLabEgfrRow(l) || days.has(day)) continue;
+    days.set(day, comparatorOf(l).comparator ? null : { id: l.id, day, value: Math.round(l.value), source: 'lab' });
+  }
+  const { sex, birthYear, birthMonth } = sanitizeInputs({
+    sex: file.profile.sex ?? undefined, birthYear: file.profile.birthYear ?? undefined, birthMonth: file.profile.birthMonth ?? undefined,
+  });
+  const minorToday = knownMinorOf({ birthYear, birthMonth }, now);
+  for (const row of currentValueRows(file)) {
+    const day = dayOf(row.recordedAt);
+    if (row.metricType !== 'creatinine' || days.has(day)) continue;
+    const { creatinine } = sanitizeInputs({ creatinine: row.value });
+    // calculateHealthResults's gate exactly (US-07 AC7).
+    const adult = birthYear !== undefined && !minorToday && !isKnownMinorOnDay(birthYear, birthMonth, day);
+    days.set(day, !comparatorOf(row).comparator && creatinine !== undefined && sex && adult
+      ? { id: row.id, day, value: Math.round(calculateEGFR(creatinine, ageOnDay(birthYear, birthMonth, day), sex)), source: 'calculated' }
+      : null);
+  }
+  return [...days.values()].filter((p): p is EgfrPoint => p !== null).sort((a, b) => b.day.localeCompare(a.day));
+}
+
+/** One day of the waist-to-height history. */
+export interface WhtrPoint { id: string; day: string; ratio: number }
+
+/**
+ * Every day's waist over the CURRENT height (the record holds one), to two
+ * places, newest first (US-73 AC7): past ratios move if the height is edited.
+ * The day's newest active waist decides it; one printed as a limit holds its
+ * day with no ratio, as a lab eGFR limit does (US-12 AC20). None without a height.
+ */
+export function whtrSeries(file: Pick<RoadmapFile, 'measurements' | 'labValues' | 'profile'>): WhtrPoint[] {
+  const height = file.profile.heightCm;
+  if (typeof height !== 'number' || height <= 0) return [];
+  const days = new Map<string, WhtrPoint | null>();
+  const waists = currentValueRows(file).filter((m) => m.metricType === 'waist').sort((a, b) => b.recordedAt.localeCompare(a.recordedAt));
+  for (const waist of waists) {
+    const day = dayOf(waist.recordedAt);
+    if (!days.has(day)) days.set(day, comparatorOf(waist).comparator ? null : { id: waist.id, day, ratio: waistToHeightRatio(waist.value, height) });
+  }
+  return [...days.values()].filter((p): p is WhtrPoint => p !== null);
 }
 
 /** A lab eGFR candidate from its printed number, day and code: a limit graded by
@@ -174,31 +237,38 @@ export function labEgfrFrom(value: number, labEgfrDate: string, comparator?: Com
  * it is the plan's eGFR, and cleared when it is not. The candidates are `lab`
  * (labEgfrOf) and the eGFR calculated from the creatinine the inputs hold,
  * dated `creatinineDay`. Only an eGFR the plan can calculate competes: a
- * creatinine the schema keeps, a birth year and a sex (AC8). The newer by day wins; on
+ * creatinine the schema keeps, a birth year, a sex (AC8) and no known minor on
+ * the creatinine's day (isKnownMinor's rule). The newer by day wins; on
  * the same day the lab's does, since ours may come from a misread creatinine.
  * A creatinine with no date (typed, not yet saved: `null`) is `today`'s, the
  * day it would be saved with. A newer creatinine the plan cannot calculate
- * from (no sex or no birth year) keeps the lab's, with `labEgfrOutdated` (AC8).
+ * from (no sex, no birth year, or taken by a known minor on its day) keeps the
+ * lab's, with `labEgfrOutdated` (AC8).
+ * The day itself goes on as `creatinineDay`, for the age the eGFR is worked out at,
+ * `today` for a typed one: the chat sends it, so the server never guesses it.
  */
 export function withLabEgfr<T extends Partial<HealthInputs>>(
   inputs: T, creatinineDay: string | null, lab: LabEgfr | null, today: string,
-): T {
-  const { labEgfr: _value, labEgfrDate: _day, labEgfrOutdated: _outdated, limits, ...rest } = inputs;
+): T & CreatinineDay {
+  const { labEgfr: _value, labEgfrDate: _day, labEgfrOutdated: _outdated, creatinineDay: _was, limits, ...rest } = inputs as T & CreatinineDay;
   const others = withoutLimit(limits, 'labEgfr');
   const kept = others.limits ?? {};
-  if (!lab) return { ...rest, ...others } as T;
-  const usable = sanitizeInputs({ creatinine: inputs.creatinine, birthYear: inputs.birthYear, sex: inputs.sex });
+  const usable = sanitizeInputs({ creatinine: inputs.creatinine, birthYear: inputs.birthYear, birthMonth: inputs.birthMonth, sex: inputs.sex });
   // A creatinine printed as a limit is held, but no eGFR is worked out from it (US-12 AC20).
-  const newer = (usable.creatinine !== undefined || !!kept.creatinine) && (creatinineDay ?? today) > lab.labEgfrDate;
-  if (newer && !kept.creatinine && usable.birthYear !== undefined && usable.sex !== undefined) return { ...rest, ...others } as T;
+  const day = creatinineDay ?? today;
+  const newer = !!lab && (usable.creatinine !== undefined || !!kept.creatinine) && day > lab.labEgfrDate;
+  // US-07 AC7: none from a creatinine taken by a known minor, so that one cannot outrank the lab's.
+  const adult = usable.birthYear !== undefined && !isKnownMinorOnDay(usable.birthYear, usable.birthMonth, day);
+  const ours = !lab || (newer && !kept.creatinine && adult && usable.sex !== undefined);
   // AC8: a newer creatinine the plan cannot read yet, or one printed as a limit, leaves the lab eGFR standing, marked outdated.
   // US-12 AC20: a limit that does not decide stands too, with no number; the
   // plan then has no eGFR, and never works one out from an older creatinine.
-  const { labEgfrLimit, ...value } = lab;
-  return {
+  const { labEgfrLimit, ...value } = lab ?? {};
+  const out = ours ? { ...rest, ...others } : {
     ...rest, ...value, ...(newer ? { labEgfrOutdated: true } : {}),
     ...(labEgfrLimit ? { limits: { ...kept, labEgfr: labEgfrLimit } } : others),
-  } as T;
+  };
+  return { ...out, ...(creatinineDay || inputs.creatinine !== undefined ? { creatinineDay: day } : {}) } as T & CreatinineDay;
 }
 
 export interface PlanLab {
@@ -215,7 +285,7 @@ export interface PlanLab {
 
 /** Latest active row per lab test, named and unit-labelled from the catalogue. A core value is a current value, never listed here (US-66 AC8). */
 function derivePlanLabs(file: RoadmapFile): PlanLab[] {
-  const active = file.labValues.filter((l) => l.status === 'active' && !isCoreRow(l));
+  const active = file.labValues.filter((l) => isActive(l) && !isCoreRow(l));
   const rows = latestActivePerMetric(active.map((l) => ({ ...l, metricType: labSlotKey(l.metricName) }))) as FileLabValue[];
   return rows
     .map((l) => {
@@ -300,7 +370,10 @@ export function computePlan(file: RoadmapFile, now = new Date(), unitOverrides?:
     ...(pressureOrder ? { pressureOrder } : {}),
     generatedAt: now.toISOString(),
     today: localDay(now),
-    results: calculateHealthResults(planInputs, derived.unitSystem, derived.medications, derived.screenings, unitOverrides, now),
+    // US-06 AC14: the prostate cards read the newest usable saved PSA; `screenings` above stays the record's answers.
+    results: calculateHealthResults(planInputs, derived.unitSystem, derived.medications,
+      withPsaMeasurement(derived.screenings, newestUsablePsa(currentValueRows(file) as ApiMeasurement[], now)),
+      unitOverrides, now),
     due: computeReminderSchedule(file, now),
     labs: derivePlanLabs(file),
   };

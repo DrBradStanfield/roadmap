@@ -19,7 +19,7 @@ import {
   resolveLabCatalogEntry,
 } from '@roadmap/health-core';
 import { MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
-import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
+import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
@@ -53,12 +53,18 @@ export async function initRoadmapStore(adapter: StorageAdapter, cloudUnreachable
   store.startLiveRefresh();
   // Chat history (chat-history.json) syncs over the SAME adapter, created
   // lazily on first chat use (see chat-history-access.ts for the policy).
-  setChatHistoryFactory(() => ChatHistoryStore.create(adapter));
+  // It is read again after an erase, this page's or another device's (US-11 AC2g).
+  setChatHistoryFactory(() => ChatHistoryStore.create(adapter), getEraseIdentity);
 }
 
 /** Flush pending writes (call before navigation). */
 export async function flushRoadmapStore(): Promise<void> {
   await store?.flush();
+}
+
+/** Before leaving a cloud: this page's record onto the device (US-09 AC2g). */
+export async function copyRecordToDevice(): Promise<void> {
+  await store?.copyToDevice();
 }
 
 /** Synchronous last-ditch flush for tab-close / visibilitychange (mobile-safe). */
@@ -180,6 +186,10 @@ export async function loadLabValues(): Promise<ApiLabValue[] | null> {
 }
 export function loadLabValuesSync(): ApiLabValue[] | null {
   return store ? store.loadLabValues() : null;
+}
+/** My health's worked-out series (US-62 AC21), over the screen's profile; none before the store opens. */
+export function loadDerivedSeries(shown: Parameters<RoadmapStore['loadDerivedSeries']>[0]): DerivedSeries {
+  return store ? store.loadDerivedSeries(shown) : { whtr: [], egfr: [] };
 }
 
 // --- writes ---
@@ -316,8 +326,8 @@ export async function deleteUserData(): Promise<{ success: boolean; error?: stri
   // it is refused before either step runs (US-09 AC23). Chat goes through the
   // singleton, so an open chat panel's instance is the one erased. In the
   // cloud, a history that could not be opened rejects, so the session reports
-  // it and never counts it erased; `chatUnread` tells the page no tombstone
-  // exists to send later (US-11 AC2c). On the device the record erase clears
+  // it and never counts it erased; `chatUnread` tells the page the file could
+  // not be read (US-11 AC2c). On the device the record erase clears
   // the chat file itself, so a failed open there loses nothing.
   let chatUnread = false;
   const chat = getBackendKind() === 'local' ? getChatHistory : () => openChatHistory().catch((error: unknown) => {
@@ -336,11 +346,13 @@ export async function deleteUserData(): Promise<{ success: boolean; error?: stri
 // Shopify surface).
 // ---------------------------------------------------------------------------
 
-/** The rendered plan panel, cloned with interactive chrome stripped. */
+/** The plan as its PDF prints it (My health keeps it hidden, ResultsPanel's
+ *  PlanReport), cloned and shown, with interactive chrome stripped. */
 function clonePlanPanel(): HTMLElement | null {
   const panel = document.querySelector('.health-results-panel');
   if (!panel) return null;
   const clone = panel.cloneNode(true) as HTMLElement;
+  clone.hidden = false;
   // Strip interactive chrome + the sync-status box (meaningless on paper/email).
   clone.querySelectorAll('.no-print, .hr-sync, button, input, select, textarea').forEach((el) => el.remove());
   return clone;

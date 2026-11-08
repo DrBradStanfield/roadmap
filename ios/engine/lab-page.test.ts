@@ -5,7 +5,7 @@
 // entered-in-error, one active row per test and day. Synthetic values.
 import { describe, expect, it } from 'vitest';
 import { applyEdit, myData, newRecord } from './my-data';
-import { historyJson } from './entry';
+import { applyEditJson, historyJson } from './entry';
 import { labHistory } from './my-data-forms';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 
@@ -62,7 +62,8 @@ describe('the history door for a lab test (US-25 AC25)', () => {
 
   it('an exact value carries its unrounded number for the chart; the text is for reading (review R5)', () => {
     const history = labHistory(record([lab('t1', 'tsh', 0.001, 'mIU/L', '2026-08-01'), lab('t2', 'tsh', 0.004, 'mIU/L', '2026-09-01')]), 'tsh');
-    expect(history.rows.map((r) => [r.value, r.number])).toEqual([['0', 0.004], ['0', 0.001]]);
+    // Below 0.1 the text keeps two significant figures (US-21 AC25, Brad 2026-11-04); it read "0" for both.
+    expect(history.rows.map((r) => [r.value, r.number])).toEqual([['0.004', 0.004], ['0.001', 0.001]]);
   });
 
   it('answers through historyJson with series "lab", and as before without it', () => {
@@ -108,6 +109,49 @@ describe('adding and correcting a lab value (US-25 AC25)', () => {
     const limit = applyEdit(ferritin(), { kind: 'correct', id: 'f4', value: 15 }, NOW);
     if (!limit.ok) throw new Error(limit.message);
     expect(limit.file.labValues.at(-1)!.comparator).toBeUndefined();
+  });
+
+  it('adds to a series a lab import saved with no unit (INR), in no unit (US-25 AC25)', () => {
+    const file = record([lab('i1', 'INR', 1.1, '', '2026-08-01')]);
+    const out = applyEdit(file, { kind: 'labAdd', series: 'inr', value: 1.2, day: '2026-10-01', unit: '' }, NOW);
+    if (!out.ok) throw new Error(out.message);
+    expect(out.file.labValues.at(-1)).toMatchObject({ metricName: 'INR', value: 1.2, unit: '', source: 'manual', status: 'active' });
+  });
+
+  it('adds to a series whose rows predate status (a legacy row with none is active)', () => {
+    const { status: _status, ...legacy } = lab('z1', 'Zinc custom', 80, 'µg/dL', '2026-08-01');
+    const out = applyEdit(record([legacy as RoadmapFile['labValues'][number]]), { kind: 'labAdd', series: 'zinc custom', value: 85, day: '2026-10-01' }, NOW);
+    if (!out.ok) throw new Error(out.message);
+    expect(out.file.labValues.at(-1)).toMatchObject({ metricName: 'Zinc custom', value: 85, unit: 'µg/dL' });
+  });
+
+  // Codex R1: a legacy row with no status holds its day, as an active row does (one active row per test and day).
+  describe('a legacy row with no status holds its day (Codex R1)', () => {
+    const legacyJson = () => {
+      const { status: _status, ...legacy } = lab('z1', 'Zinc custom', 80, 'µg/dL', '2026-08-01');
+      return JSON.stringify(record([legacy as RoadmapFile['labValues'][number]]));
+    };
+    const edit = (text: string, e: object) => JSON.parse(applyEditJson(text, JSON.stringify(e), NOW, 'phone'));
+
+    it('refuses a labAdd on its day, offering it for correcting, and writes nothing', () => {
+      const out = edit(legacyJson(), { kind: 'labAdd', series: 'zinc custom', value: 85, day: '2026-08-01' });
+      expect(out).toMatchObject({ ok: false, reason: 'slot-occupied', existingId: 'z1', message: 'That test already has 80 µg/dL for that date.' });
+      expect(out.record).toBeUndefined();
+    });
+
+    it('its page lists it as active, as the writes hold it', () => {
+      expect(labHistory(JSON.parse(legacyJson()), 'zinc custom').rows.map((r) => [r.id, r.status])).toEqual([['z1', 'active']]);
+    });
+
+    it('corrects it: a new row names it, and it turns entered-in-error', () => {
+      const out = edit(legacyJson(), { kind: 'correct', id: 'z1', value: 85 });
+      expect(out.ok).toBe(true);
+      const rows = JSON.parse(out.record).labValues;
+      expect(rows).toEqual([
+        expect.objectContaining({ id: 'z1', status: 'entered-in-error' }),
+        expect.objectContaining({ correctsId: 'z1', value: 85, status: 'active', recordedAt: '2026-08-01T00:00:00.000Z' }),
+      ]);
+    });
   });
 
   it('refuses to correct a row already entered in error', () => {

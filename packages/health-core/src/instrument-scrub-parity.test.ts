@@ -12,7 +12,7 @@ import * as source from './sentry-scrub';
 import { UNIT_DEFS } from './units';
 import { METRIC_TYPES } from './validation';
 import { METRIC_LABELS } from './mappings';
-import { foldName, LAB_CATALOG } from './lab-catalog';
+import { foldName, LAB_CATALOG, normalizeLabUnit } from './lab-catalog';
 // @ts-expect-error -- plain .mjs script with no declarations; this parity test
 // only needs its runtime exports.
 import * as copy from '../../../instrument-scrub.mjs';
@@ -197,6 +197,21 @@ const TEXTS = [
   'BP 140/90 and blood pressure 138/88 on metformin 500mg',
   'my ldl on the panel read 4.2 today',  // 19-char gap: inside the window
   'ran 5 in the morning, status 500 in 12ms, took 250 in total',
+  // US-09 AC7f: a name that starts or ends without a word character.
+  '120 Lp(a)', 'came back 120 lp(a)', '33 γ-GT',
+  '41 GGT', 'Lp(a) 120', 'γ-GT 33', '120 nmol/L Lp(a)', '4.2 k+', '7.1 a1c',
+  '12 bananas', '2 cholesterols',
+  // US-09 AC7f: a value never starts inside a digit run; the winner is unchanged.
+  '1.2.3 ldl', '12.34.5 ldl', '1,2,3 ldl', '120/80/60 bp', '1.2/3.4/5 bp', '12345 ldl',
+  '2026.11.04 ldl', 'v1.2.3 ldl', '1/2/3 hba1c', '3.2.1 Lp(a)', '5 17-ohp', '12 25(oh)d',
+  // US-09 AC7f: bounded email parts; two adjacent addresses both go.
+  'mail x.y+z@ex.co.uk now', 'a@b.com@c.org', '..a@b.co', '(brad@example.com)', 'é-brad@example.com', 'brad@@example.com',
+  'mailto:a@b.com%2Cc@d.com', 'a@b.com+joe@x.com', 'a@b.com-joe@x.com', 'a@b.com_joe@x.com', 'a@b.com1x@y.com',
+  'a@b.co.uk-x@y.com', 'first@example.com+second@example.org', 'a@b.com%20c@d.com', `${'x'.repeat(100)}@example.com`,
+  // US-09 AC7f: a name ending in a symbol ends there, whatever follows.
+  '120 lp(a)s', '120 lp(a)x',
+  // US-09 AC7f: a name starting with a symbol starts there, whatever precedes it.
+  '33 xγ-GT', '1xγ-gt', ')25(oh)dγ-gt',
 ];
 
 describe('free-text scrub parity', () => {
@@ -209,6 +224,10 @@ describe('free-text scrub parity', () => {
 
   it('instrument-scrub.mjs carries the derived SCRUB_UNITS verbatim', () => {
     expect(copy.SCRUB_UNITS, paste('SCRUB_UNITS', source.SCRUB_UNITS)).toEqual(source.SCRUB_UNITS);
+  });
+
+  it('US-09 AC7e — instrument-scrub.mjs builds the same unit regex', () => {
+    expect(copy.SCRUB_UNIT_PATTERN).toBe(source.SCRUB_UNIT_PATTERN);
   });
 
   it('instrument-scrub.mjs carries the derived SCRUB_METRIC_WORDS verbatim', () => {
@@ -231,6 +250,61 @@ describe('free-text scrub parity', () => {
       const units = new Set(impl.SCRUB_UNITS.map((u: string) => u.toLowerCase()));
       for (const entry of LAB_CATALOG) {
         expect(units, `unit "${entry.unit}" (${entry.key}) missing`).toContain(entry.unit.toLowerCase());
+      }
+    }
+  });
+
+  it('US-09 AC7e — a number beside a unit spelling the catalogue accepts is scrubbed, on both copies', () => {
+    for (const impl of [source, copy]) {
+      expect(impl.scrubText('potassium 4.1 mEq/L')).toBe('potassium [value]');
+      expect(impl.scrubText('result 4.1 mEq/L')).toBe('result [value]');
+      expect(impl.scrubText('read 2.5 µIU/mL today')).toBe('read [value] today');
+      expect(impl.scrubText('read 2.5 uIU/mL today')).toBe('read [value] today');
+      expect(impl.scrubText('count 250 thou/µL')).toBe('count [value]');
+      expect(impl.scrubText('count 250 thou/uL')).toBe('count [value]');
+      expect(impl.scrubText('count 6.1 x10^9/L')).toBe('count [value]');
+      expect(impl.scrubText('count 6.1 ×10^9/L')).toBe('count [value]');
+      expect(impl.scrubText('count 4.5 ×10³/µL')).toBe('count [value]');
+      expect(impl.scrubText('result 14 g/dL')).toBe('result [value]');
+      expect(impl.scrubText('result 12 mm/h')).toBe('result [value]');
+      // A unit alias that is an English word is never a unit here.
+      expect(impl.scrubText('retry 3 ratio')).toBe('retry 3 ratio');
+      expect(impl.scrubText('shard 2 fraction')).toBe('shard 2 fraction');
+      const units = new Set(impl.SCRUB_UNITS.map((u: string) => u.toLowerCase()));
+      for (const entry of LAB_CATALOG) {
+        for (const spelling of [...(entry.unitAliases ?? []), ...Object.keys(entry.conversions ?? {})]) {
+          if (/^[a-z]+$/i.test(spelling)) continue;
+          expect(units, `unit alias "${spelling}" (${entry.key}) missing`).toContain(spelling);
+        }
+      }
+    }
+  });
+
+  it('US-09 AC7e — every spelling normalizeLabUnit folds into a catalogue unit is scrubbed, on both copies', () => {
+    // One or more raw spellings per normaliser branch (lab-catalog.ts normalizeLabUnit).
+    const branches: Record<string, string[]> = {
+      'Greek mu': ['μmol/L', 'μIU/mL', 'μg/L'],
+      'cell-count exponent': ['10^9/L', '10e9/L', 'x 10e9/L', 'X10E9/L', '10*3/uL', '10**9/L', 'x10(3)/uL',
+        '10^(9)/L', '10³/µL', 'x10³/uL', '×10^12/L', 'x10^6/uL'],
+      'ASCII micro': ['umol/L', 'ug/L', 'uIU/mL', 'uU/mL'],
+      'mcg and mcL': ['mcg/L', 'cells/mcL', 'thou/mcL'],
+      'uL and ul': ['cells/uL', 'k/ul'],
+      'lowercase litre': ['mmol/l', 'nmol/l'],
+      'squared metre': ['mL/min/1.73m2', 'mL/min/1.73m^2', 'mL/min/1.73 m2'],
+      'gm/dL': ['gm/dL'],
+      'Unit and Units': ['Units/L', 'Unit/L'],
+      'cubic millimetre token': ['cells/cmm', 'cells/cumm', 'cells/cu mm', 'cells/cu.mm', 'cells/c.mm'],
+      'mm3 denominator': ['cells/mm3', 'cells/mm³', 'x10^3/mm3'],
+    };
+    const accepted = new Set(LAB_CATALOG.flatMap((entry) => [
+      entry.unit, ...(entry.unitAliases ?? []), ...Object.keys(entry.conversions ?? {})]).map((u) => u.toLowerCase()));
+    for (const [branch, spellings] of Object.entries(branches)) {
+      for (const raw of spellings) {
+        // The spelling really is one the catalogue reads, once normalised.
+        expect(accepted, `${branch}: "${raw}" → "${normalizeLabUnit(raw)}"`).toContain(normalizeLabUnit(raw).toLowerCase());
+        for (const impl of [source, copy]) {
+          expect(impl.scrubText(`result 4.2 ${raw} today`), `${branch}: "${raw}"`).toBe('result [value] today');
+        }
       }
     }
   });
@@ -290,6 +364,53 @@ describe('free-text scrub parity', () => {
     }
   });
 
+  it('US-09 AC7g — a name is never a value: a name with no value before another name never takes the second name\'s digits, on both copies', () => {
+    for (const impl of [source, copy]) {
+      for (const [text, scrubbed] of [
+        // A first name with no value: the value after the second name goes.
+        ['Ferritin pending, B12 300', 'Ferritin pending, B12 [value]'], ['Vitamin D pending, B12 300', 'Vitamin D pending, B12 [value]'],
+        ['LDL n/a, HbA1c 6.1', 'LDL n/a, HbA1c [value]'], ['Ferritin unknown; Vitamin B12 300 pmol/L', 'Ferritin unknown; Vitamin B1[value] [value]'],
+        ['Ferritin B12 300', 'Ferritin B12 [value]'], ['LDL HbA1c 6.1', 'LDL HbA1c [value]'], ['LDL 25(oh)d 80', 'LDL 25(oh)d [value]'],
+        // A name the vocabulary does not hold, ending in digits: a number after it is the value, and both go.
+        ['TSH: -, T4 15', 'TSH: -, T[value]'], ['LDL D3 45', 'LDL D[value]'], ['ldl T3 4.1', 'ldl T[value]'],
+        ['ldl b6 40', 'ldl b[value]'], ['ferritin CA-125 30', 'ferritin CA-[value]'], ['LDL Omega-3 8', 'LDL Omega-[value]'],
+        ['ldl140 160', 'ldl[value]'],
+      ]) {
+        expect(impl.scrubText(text), text).toBe(scrubbed);
+      }
+    }
+  });
+
+  it('US-09 AC7g — "vit", the typed short form of vitamin, is a name, and never takes the next name\'s digits, on both copies', () => {
+    for (const impl of [source, copy]) {
+      for (const [text, scrubbed] of [
+        ['Vit D 45', 'Vit D [value]'], ['vit. d 45', 'vit. d [value]'], ['Vit B12 300', 'Vit B12 [value]'],
+        ['Vit. B12 300', 'Vit. B12 [value]'], ['Vit D pending, B12 300', 'Vit D pending, B12 [value]'], ['vit d3 45', 'vit d[value]'],
+        // "vit" inside a longer word is not the name.
+        ['vitals ok', 'vitals ok'], ['vitals 3', 'vitals 3'], ['multivit 2 daily', 'multivit 2 daily'],
+        ['vital signs 3 of 4', 'vital signs 3 of 4'],
+      ]) {
+        expect(impl.scrubText(text), text).toBe(scrubbed);
+      }
+    }
+  });
+
+  // Codex and adversary review of f866201a: a digit name's value went when a space stood
+  // between, and stayed behind any other separator the name-then-value gap accepts.
+  it('US-09 AC7g — a digit name\'s value goes behind a comparator or any separator, on both copies', () => {
+    for (const impl of [source, copy]) {
+      for (const [text, value] of [
+        ['TSH: -, T4 <15', '15'], ['LDL n/a, T3 >4.1', '4.1'], ['ferritin CA-125 <30', '30'], ['LDL D3 ≥ 45', '45'],
+        ['Ferritin pending, B12 <300', '300'], ['LDL T4 - 15', '15'], ['LDL T4, 15', '15'], ['LDL T4 (15)', '15'],
+        ['Vit D3 - 45', '45'], ['vit d3, 45', '45'],
+        // Codex re-check: a long run of spaces still joins the two numbers, as before the shared gap.
+        ['TSH: -, T4' + ' '.repeat(21) + '15', '15'], ['LDL n/a, T3' + '\t'.repeat(30) + '4.1', '4.1'],
+      ]) {
+        expect(impl.scrubText(text), text).not.toContain(value);
+      }
+    }
+  });
+
   it('US-21 AC17 — every catalogue key, label and alias, followed by a value, loses the value', () => {
     for (const impl of [source, copy]) {
       for (const entry of LAB_CATALOG) {
@@ -300,6 +421,82 @@ describe('free-text scrub parity', () => {
         }
       }
     }
+  });
+
+  it('US-09 AC7f — a value before a name that starts or ends without a word character is scrubbed, on both copies', () => {
+    for (const impl of [source, copy]) {
+      for (const [text, scrubbed] of [
+        ['120 Lp(a)', '[value] Lp(a)'], ['came back 120 lp(a)', 'came back [value] lp(a)'], ['33 γ-GT', '[value] γ-GT'],
+        // A name ending in a symbol ends there, whatever follows, as with \b.
+        ['120 lp(a)s', '[value] lp(a)s'], ['120 lp(a)x', '[value] lp(a)x'],
+        // A name starting with a symbol starts there, whatever precedes it, as with \b.
+        ['33 xγ-GT', '[value] xγ-GT'], ['1xγ-gt', '[value]xγ-gt'], [')25(oh)dγ-gt', ')[value](oh)dγ-gt'],
+        // Controls that already behaved: either order, a unit between, a symbol name.
+        ['41 GGT', '[value] GGT'], ['Lp(a) 120', 'Lp(a) [value]'], ['γ-GT 33', 'γ-GT [value]'],
+        ['120 nmol/L Lp(a)', '[value] Lp(a)'], ['4.2 k+', '[value] k+'], ['7.1 a1c', '[value] a1c'],
+        // A name inside a longer word is not the name.
+        ['12 bananas', '12 bananas'], ['2 cholesterols', '2 cholesterols'],
+      ]) {
+        expect(impl.scrubText(text), text).toBe(scrubbed);
+      }
+    }
+  });
+
+  it('US-09 AC7f — a value starts at the head of its digit run, so the match that wins is unchanged, on both copies', () => {
+    for (const impl of [source, copy]) {
+      for (const [text, scrubbed] of [
+        ['1.2.3 ldl', '1.[value] ldl'], ['12.34.5 ldl', '12.[value] ldl'], ['1,2,3 ldl', '1,[value] ldl'],
+        ['120/80/60 bp', '120/[value] bp'], ['1.2/3.4/5 bp', '1.2/[value] bp'], ['12345 ldl', '[value] ldl'],
+        ['2026.11.04 ldl', '2026.[value] ldl'], ['v1.2.3 ldl', 'v1.[value] ldl'], ['1/2/3 hba1c', '1/[value] hba1c'],
+        ['3.2.1 Lp(a)', '3.[value] Lp(a)'],
+        // A name that starts with digits is the name, not part of the value.
+        ['5 17-ohp', '[value] 17-ohp'], ['12 25(oh)d', '[value] 25(oh)d'],
+      ]) {
+        expect(impl.scrubText(text), text).toBe(scrubbed);
+      }
+    }
+  });
+
+  it('US-09 AC7f — bounded email parts scrub both of two adjacent addresses, on both copies', () => {
+    for (const impl of [source, copy]) {
+      for (const [text, scrubbed] of [
+        ['mail x.y+z@ex.co.uk now', 'mail [email] now'], ['a@b.com@c.org', '[email]@c.org'], ['..a@b.co', '[email]'],
+        ['(brad@example.com)', '([email])'], ['é-brad@example.com', 'é[email]'], ['brad@@example.com', 'brad@@example.com'],
+        // A second address straight after the first, joined by a character an address can hold.
+        ['mailto:a@b.com%2Cc@d.com', 'mailto:[email][email]'], ['a@b.com+joe@x.com', '[email][email]'],
+        ['a@b.com-joe@x.com', '[email][email]'], ['a@b.com_joe@x.com', '[email][email]'], ['a@b.com1x@y.com', '[email][email]'],
+        ['a@b.co.uk-x@y.com', '[email][email]'], ['first@example.com+second@example.org', '[email][email]'],
+        ['a@b.com%20c@d.com', '[email][email]'],
+        // A local part over 64 characters keeps all but its last 64 (a stated residual).
+        [`${'x'.repeat(100)}@example.com`, `${'x'.repeat(36)}[email]`],
+      ]) {
+        expect(impl.scrubText(text), text).toBe(scrubbed);
+      }
+    }
+  });
+
+  // The value and email rules backtracked from every position inside a long
+  // run: about 0.8 s for 40,000 digits or letters. Linear now; the bound is
+  // generous for a slow CI runner.
+  it('US-09 AC7f — 40,000 digits or letters scrub in well under a second, on both copies', () => {
+    for (const impl of [source, copy]) {
+      for (const run of ['1'.repeat(40_000), 'a'.repeat(40_000)]) {
+        const start = performance.now();
+        expect(impl.scrubText(run)).toBe(run);
+        expect(performance.now() - start, `${impl === copy ? 'copy' : 'source'} ${run[0]}`).toBeLessThan(300);
+      }
+    }
+  });
+
+  it('US-09 AC7f — the server hook scrubs the value from the message and the exception value', () => {
+    const event = copy.scrubServerEvent({
+      message: 'came back 120 lp(a)',
+      exception: { values: [{ type: 'Error', value: 'import failed at 33 γ-GT for mailto:a@b.com%2Cc@d.com' }] },
+      extra: { to: 'first@example.com+second@example.org', level: '120 lp(a)s' },
+    });
+    expect(event.message).toBe('came back [value] lp(a)');
+    expect(event.exception.values[0].value).toBe('import failed at [value] γ-GT for mailto:[email][email]');
+    expect(event.extra).toEqual({ to: '[email][email]', level: '[value] lp(a)s' });
   });
 
   it('scrubText produces identical output', () => {

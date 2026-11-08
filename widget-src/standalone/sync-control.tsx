@@ -17,8 +17,9 @@ import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, PROVIDER_LABE
 import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
 import { remindersSupported } from './reminders';
-import { openBackendPicker, OPEN_PICKER_EVENT, PLAN_STORAGE_CTA, StorageSentence } from '../src/lib/storage-notice';
+import { openBackendPicker, openSignin, OPEN_PICKER_EVENT, PLAN_STORAGE_CTA, StorageSentence } from '../src/lib/storage-notice';
 import { safeGetItem, safeSetItem } from '../src/lib/storage';
+import { LOCAL_SAVE_EVENT, localSaveRefused } from '../src/storage/local-storage-adapter';
 
 /** US-09 AC19: the picker was opened once in this browser (a side key, never the record). */
 const STORAGE_CTA_SEEN_KEY = 'hr_storage_cta_seen';
@@ -39,6 +40,24 @@ function usePendingSync(backend: Backend): boolean {
     return () => window.removeEventListener(SYNC_PENDING_EVENT, check);
   }, [backend]);
   return pendingSync;
+}
+
+/** US-01 AC5: said while this browser's storage refused the record's last
+ *  save. The change stays on screen, as a refused cloud save's does. */
+const LOCAL_SAVE_REFUSED = 'Could not save on this device (local storage may be full). Your latest changes show here but are not saved.';
+
+/** True while a refused save on this device has stored none of its change;
+ *  the adapter fires the event on every flip, so no polling. */
+function useLocalSaveRefused(backend: Backend): boolean {
+  const [refused, setRefused] = useState(false);
+  useEffect(() => {
+    if (backend !== 'local') return;
+    const check = () => setRefused(localSaveRefused());
+    check();
+    window.addEventListener(LOCAL_SAVE_EVENT, check);
+    return () => window.removeEventListener(LOCAL_SAVE_EVENT, check);
+  }, [backend]);
+  return refused;
 }
 
 /** US-09 AC30: the top bar's label, from the real storage state (storageState's
@@ -93,6 +112,7 @@ function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
  *  state opens the one picker, which SyncControl hosts (AC13). */
 export function StorageBar({ backend, reconnect }: { backend: Backend; reconnect?: Exclude<Backend, 'local'> }) {
   const pendingSync = usePendingSync(backend);
+  const localRefused = useLocalSaveRefused(backend);
   const { busy, error, reconnectNow } = useReconnect(reconnect);
   return (
     <>
@@ -101,11 +121,13 @@ export function StorageBar({ backend, reconnect }: { backend: Backend; reconnect
         className="action-btn-small"
         aria-haspopup={reconnect ? undefined : 'dialog'}
         disabled={busy}
-        onClick={reconnect ? reconnectNow : openBackendPicker}
+        onClick={reconnect ? reconnectNow : backend === 'local' ? () => openSignin('top_bar') : openBackendPicker}
       >
         {busy ? 'Reconnecting…' : storageBarLabel(backend, reconnect, pendingSync)}
       </button>
       {error && <span className="hr-sync-error" role="alert">{error}</span>}
+      {/* US-01 AC5: here, not in the plan, so a phone shows it above every tab. */}
+      {localRefused && <span className="hr-sync-error" role="alert">{LOCAL_SAVE_REFUSED}</span>}
     </>
   );
 }
@@ -214,7 +236,7 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
       <div className="hr-sync hr-sync-local">
         <button
           className={`hr-sync-btn hr-sync-btn-full${attention && !ctaSeen ? ' hr-sync-btn-attention' : ''}`}
-          onClick={openBackendPicker}
+          onClick={() => openSignin('plan_panel')}
         >
           {PLAN_STORAGE_CTA}
         </button>

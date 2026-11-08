@@ -23,7 +23,7 @@ describe('guides through the screen door (US-58 AC3)', () => {
   });
 
   it('has a guide for each Apple Health page, by the app\'s LiveMetric.guideKey (US-58 AC7)', () => {
-    for (const key of ['heart_rate', 'resting_heart_rate', 'sleep', 'vo2_max', 'steps']) {
+    for (const key of ['resting_heart_rate', 'sleep', 'vo2_max', 'steps']) {
       expect(myData.guides[key], key).toBeDefined();
       expect(myData.guides[key].sources.length, key).toBeGreaterThan(0);
     }

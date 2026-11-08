@@ -260,6 +260,15 @@ describe('US-21 phase 2 — AddLabTest', () => {
     });
   });
 
+  it('US-21 AC26 — a catalogued value past its plausible range shows why and saves nothing', async () => {
+    const { getByLabelText, getByRole, onAdded, findByText } = openForm();
+    fireEvent.change(getByLabelText('Test'), { target: { value: 'potassium' } });
+    fireEvent.change(getByLabelText('Value'), { target: { value: '42' } });
+    fireEvent.click(getByRole('button', { name: /^save$/i }));
+    expect(await findByText('Potassium above 20 mmol/L is almost certainly a typing or unit mistake: check the number and its unit.')).toBeTruthy();
+    expect(onAdded).not.toHaveBeenCalled();
+  });
+
   it('Save is disabled until a test and a parseable value are entered', () => {
     const { getByLabelText, getByRole } = openForm();
     const save = getByRole('button', { name: /^save$/i }) as HTMLButtonElement;
@@ -270,6 +279,41 @@ describe('US-21 phase 2 — AddLabTest', () => {
     expect(save.disabled).toBe(true);
     fireEvent.change(getByLabelText('Value'), { target: { value: '30' } });
     expect(save.disabled).toBe(false);
+  });
+
+  it('US-21 AC2: "Choose a test…" after an Other test saves nothing; the name and unit it hides are not used', async () => {
+    const { getByLabelText, getByRole, queryByLabelText, onAdded } = openForm();
+    fireEvent.change(getByLabelText('Test'), { target: { value: 'custom' } });
+    fireEvent.change(getByLabelText('Test name'), { target: { value: 'Amylase ' } });
+    fireEvent.change(getByLabelText('Unit'), { target: { value: 'U/L' } });
+    fireEvent.change(getByLabelText('Value'), { target: { value: '55' } });
+    fireEvent.change(getByLabelText('Test'), { target: { value: '' } });
+    expect(queryByLabelText('Test name')).toBeNull();
+    const save = getByRole('button', { name: /^save$/i }) as HTMLButtonElement;
+    expect(save.disabled).toBe(true);
+    fireEvent.click(save);
+    await Promise.resolve();
+    expect(addLabValue).not.toHaveBeenCalled();
+    expect(onAdded).not.toHaveBeenCalled();
+    // Other again: what was typed is still there, and saves as before.
+    fireEvent.change(getByLabelText('Test'), { target: { value: 'custom' } });
+    expect((getByLabelText('Test name') as HTMLInputElement).value).toBe('Amylase ');
+    expect(save.disabled).toBe(false);
+    fireEvent.click(save);
+    await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'Amylase', unit: 'U/L', value: 55, day: todayIso });
+  });
+
+  it('US-21 AC2: a catalogue test picked after an Other test saves the catalogue test, not the typed name', async () => {
+    const { getByLabelText, getByRole, onAdded } = openForm();
+    fireEvent.change(getByLabelText('Test'), { target: { value: 'custom' } });
+    fireEvent.change(getByLabelText('Test name'), { target: { value: 'Amylase' } });
+    fireEvent.change(getByLabelText('Unit'), { target: { value: 'U/L' } });
+    fireEvent.change(getByLabelText('Test'), { target: { value: 'ggt' } });
+    fireEvent.change(getByLabelText('Value'), { target: { value: '30' } });
+    fireEvent.click(getByRole('button', { name: /^save$/i }));
+    await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'ggt', unit: 'U/L', value: 30, day: todayIso });
   });
 
   // US-02 AC7: a catalogued test has no input range, so "1,050" (1050 or
@@ -358,10 +402,45 @@ describe('US-66 AC6 — a core test typed under "Other"', () => {
     expect(trackProductEvent).not.toHaveBeenCalled(); // the value never enters telemetry
   });
 
+  it('an out-of-range Lp(a) in mg/L names its mg/L range, never the mg/dL one', async () => {
+    const utils = render(<AddLabTest onAdded={vi.fn()} labValues={[]} coreValues={[]} onCorrect={vi.fn()} />);
+    fireEvent.click(utils.getByRole('button', { name: /add a blood test/i }));
+    fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });
+    fireEvent.change(utils.getByLabelText('Test name'), { target: { value: 'Lp(a)' } });
+    fireEvent.change(utils.getByLabelText('Unit'), { target: { value: 'mg/L' } });
+    fireEvent.change(utils.getByLabelText('Value'), { target: { value: '5000' } });
+    fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+    expect(await utils.findByText('Max 3000 mg/L')).toBeTruthy();
+  });
+
   it('US-66 AC8 — the core rows the form reads are never listed as extra rows', () => {
     const { queryByText, getByRole } = render(<AdditionalLabRows labValues={[]} coreValues={[core]} onAdded={vi.fn()} />);
     expect(getByRole('button', { name: /add a blood test/i })).toBeTruthy();
     expect(queryByText(/ldl/i)).toBeNull();
+  });
+});
+
+// US-25 AC25: a value page's "+ Add a value" adds to its own series, whatever the general add refuses.
+describe('US-25 AC25: a value page adds to its own series', () => {
+  it('adds to a series a lab import saved with no unit (INR)', async () => {
+    holding({ id: 'i1', metricName: 'INR', value: 1.1, unit: '', recordedAt: '2026-01-01T00:00:00.000Z', createdAt: '2026-01-01T00:00:00.000Z', source: 'lab_import' });
+    const onAdded = vi.fn();
+    const { getByText, getByLabelText } = render(<AddLabTest onAdded={onAdded} labValues={[]} coreValues={[]} preset={{ metricName: 'INR', unit: '' }} />);
+    fireEvent.click(getByText('+ Add a value'));
+    fireEvent.change(getByLabelText(/value/i), { target: { value: '1.2' } });
+    fireEvent.click(getByText(/^save$/i));
+    await waitFor(() => expect(onAdded).toHaveBeenCalled());
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'INR', unit: '', value: 1.2, day: todayIso, existingSeries: true });
+  });
+
+  it('adds to a kept-apart lab series named like a vital (Weight)', async () => {
+    holding({ id: 'w1', metricName: 'Weight', value: 70, unit: 'kg', recordedAt: '2026-01-01T00:00:00.000Z', createdAt: '2026-01-01T00:00:00.000Z', source: 'lab_import' });
+    const onAdded = vi.fn();
+    const { getByText, getByLabelText } = render(<AddLabTest onAdded={onAdded} labValues={[]} coreValues={[]} preset={{ metricName: 'Weight', unit: 'kg' }} />);
+    fireEvent.click(getByText('+ Add a value'));
+    fireEvent.change(getByLabelText(/value/i), { target: { value: '71' } });
+    fireEvent.click(getByText(/^save$/i));
+    await waitFor(() => expect(onAdded).toHaveBeenCalled());
   });
 });
 

@@ -45,13 +45,21 @@ export function mixedUnitsNote(units: string[]): string {
   return `Units vary between reports (${units.map((u) => u || 'no unit').join(', ')}), so this test is not charted.`;
 }
 
-/** A lab value as the matrix shows it: up to two decimals, no trailing zeros. */
+/** A lab value as the matrix shows it: up to two decimals, no trailing zeros;
+ *  below 0.1, two significant figures, so a suppressed TSH of 0.004 never
+ *  prints "0" (US-21 AC25). */
 export function formatLabValue(v: number): string {
-  return String(Math.round(v * 100) / 100);
+  const size = Math.abs(v);
+  if (size >= 0.1 || size === 0 || !Number.isFinite(size)) return String(Math.round(v * 100) / 100);
+  // toFixed throws past 100 digits, and a reader takes any finite number, so
+  // an absurdly small one prints in exponent form rather than blank the table (US-65).
+  if (size < 1e-20) return String(Number(v.toPrecision(2)));
+  // toFixed, not String: String(4e-7) prints exponent notation.
+  return v.toFixed(1 - Math.floor(Math.log10(size))).replace(/0+$/, '');
 }
 
 /** A saved lab value as shown: a limit with its symbol and its bound as
- *  printed ("< 0.005"), else up to two decimals (US-12 AC20). */
+ *  printed ("< 0.005"), else `formatLabValue` (US-12 AC20, US-21 AC25). */
 export function savedLabText(v: number, comparator?: Comparator): string {
   return comparator ? limitText(v, 0, comparator) : formatLabValue(v);
 }

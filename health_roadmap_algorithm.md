@@ -2,7 +2,7 @@
 
 Single source of truth for all health calculations, clinical thresholds, medication cascades, screening logic, and suggestion rules. The code in `packages/health-core/src/` implements this algorithm. Clinical evidence (patient-facing reasons, guideline citations, DOI references) for each suggestion is defined in `packages/health-core/src/evidence.ts` and attached automatically by `generateSuggestions()`. The user-facing `roadmap_text.html` must stay consistent with this document and `evidence.ts`.
 
-`packages/health-core/src/metric-guides.ts` (`METRIC_GUIDES`, US-58) is display-only text, the "about this measure" guides in the iOS app: it may only restate thresholds and claims already in this document, `evidence.ts` and `roadmap_text.html`, plus standard prescribing facts Brad approved (side effects, how a drug works), the standard measuring and preparation tips he approved as a category on 2026-10-26, and the lines he restored that day (docs/drafts/metric-guides.md, "Brad's decisions (2026-10-26)"), and cites only `evidence.ts` references (its `GUIDE_REFERENCES` hold the roadmap_text.html citations no suggestion uses). A clinical change here that alters a guide's claim changes the guide too. Since 2026-10-31 it also holds guides for the five Apple Health metrics the app shows (`heart_rate`, `resting_heart_rate`, `sleep`, `vo2_max`, `steps`; US-56, US-58 AC7), with the claims Brad approved in docs/drafts/live-metric-guides.md. They set no target and change no plan: resting heart rate's risk link (Zhang 2016: about 9% higher risk of death per 10 bpm; Aune 2017; Reimers 2018 for exercise lowering it) and the step plateaus (Paluch 2022: about 6,000 to 8,000 a day from age 60, 8,000 to 10,000 younger) are display text, stated and cited in roadmap_text.html's Exercise section; sleep restates this document's 7-9 hours (Cappuccio 2010, with Watson 2015's AASM and SRS consensus as a second source). Apple's support pages, HealthKit documentation and white papers are cited only for how its devices measure, never for a clinical claim.
+`packages/health-core/src/metric-guides.ts` (`METRIC_GUIDES`, US-58) is display-only text, the "about this measure" guides in the iOS app: it may only restate thresholds and claims already in this document, `evidence.ts` and `roadmap_text.html`, plus standard prescribing facts Brad approved (side effects, how a drug works), the standard measuring and preparation tips he approved as a category on 2026-10-26, and the lines he restored that day (docs/drafts/metric-guides.md, "Brad's decisions (2026-10-26)"), and cites only `evidence.ts` references (its `GUIDE_REFERENCES` hold the roadmap_text.html citations no suggestion uses). A clinical change here that alters a guide's claim changes the guide too. Since 2026-10-31 it also holds guides for the four Apple Health metrics the app shows (`resting_heart_rate`, `sleep`, `vo2_max`, `steps`; US-56, US-58 AC7; `heart_rate` deleted 2026-11-06), with the claims Brad approved in docs/drafts/live-metric-guides.md. They set no target and change no plan: resting heart rate's risk link (Zhang 2016: about 9% higher risk of death per 10 bpm; Aune 2017; Reimers 2018 for exercise lowering it) and the step plateaus (Paluch 2022: about 6,000 to 8,000 a day from age 60, 8,000 to 10,000 younger) are display text, stated and cited in roadmap_text.html's Exercise section; sleep restates this document's 7-9 hours (Cappuccio 2010, with Watson 2015's AASM and SRS consensus as a second source). Apple's support pages, HealthKit documentation and white papers are cited only for how its devices measure, never for a clinical claim.
 
 All values are stored and compared in **SI canonical units**. Conversion to display units (conventional/US) happens only at the UI layer.
 
@@ -95,6 +95,8 @@ Input: creatinine in umol/L. Internal conversion: `Cr_mg_dL = Cr_umol_L / 88.4`.
 
 Rounded to nearest integer (mL/min/1.73m^2).
 
+**Age (US-07 AC7, Brad 2026-11-05):** the age on the creatinine's day, not today's, by the age rule in section 1 (a missing birth month is January): `ageOnDay(birthYear, birthMonth, day)`. A creatinine with no day yet (typed, not saved) uses today's age. **None from a creatinine taken by a known minor:** the equation is for adults, so a creatinine gives no calculated eGFR when the known-minor rule (section on adult readings, `isKnownMinor`) holds on the creatinine's day, even when the person is an adult today. That rule is judged on the test day exactly as it is judged today: with no birth month, a minor until 1 January of the year after they turn 18. A lab-printed eGFR still stands (below). The same rule judged today withholds every eGFR while the person is a known minor. The chat's server reads the day from `measurementHistory`, never a key of its own. An unsaved creatinine with a day (a blood-test draft) is sent as one more creatinine point marked `draft: true` (only that value marks one): the server takes that point's day when it holds the creatinine sent, then removes the point, so the model's history, `run_roadmap`'s "older than the saved value" check and every trend see saved points only. The client always sends the day of the creatinine in use: a creatinine typed with no day is sent as such a point dated the client's local today. Without such a point, or when it holds a different value, the day is the newest saved creatinine point's when it holds the value sent; else the plan uses today's age. `run_roadmap` weighs a lab eGFR against this same day, the day of the creatinine in use (any day after today counts as today there; a stated creatinine the run could not read, with a bad date or past the value cap, outdates the lab eGFR whatever its day). The server never guesses that day: with none to read, the lab eGFR stands. A lab eGFR it sets aside takes its printed limit (">90") with it. A creatinine stated in the chat uses its stated day (an undated one is today's), and it beats an unsaved draft, newer or not, because a draft is not saved (the older-than-saved check, US-15 AC33, is about saved points). In `run_roadmap`, a creatinine stated for a day the person was a known minor gives no calculated eGFR; with no lab eGFR, the standard protein card is kept and nothing is refused, as for a saved creatinine from such a day. A typed value goes as a draft dated today, so the chat reads it as today's, like the form.
+
 **No sex on record:** no calculated eGFR. The equation has no unisex form, so the plan never falls back to either branch (US-07 AC8). A lab-printed eGFR still stands (below).
 
 **Source (US-07 AC7, Brad 2026-10-27).** The plan reads one eGFR, chosen from two candidates by `withLabEgfr` (`plan.ts`):
@@ -102,7 +104,7 @@ Rounded to nearest integer (mL/min/1.73m^2).
 - (a) the eGFR above, calculated from the latest active creatinine and dated by that row;
 - (b) the latest active lab `egfr` row: the creatinine eGFR the lab printed, stored in mL/min/1.73m². `egfr_cystatin` and `egfr_combined` are never used.
 
-The newer by measurement day wins. On the same day the lab's eGFR wins: the lab worked it out from a real serum creatinine, and ours may come from a misread row. Only one exists: that one. Candidate (a) exists only when the plan can calculate it: a known birth year, a known sex (US-07 AC8) and a creatinine inside its input range (10–2650 µmol/L). Otherwise the lab eGFR stands, whatever the creatinine's day. Neither: no eGFR. A creatinine with no date (typed and not yet saved, or stated in the chat without a date) counts as today's, the day it would be saved with; an unsaved blood-test draft counts on the day it is dated. A creatinine is never worked back from an eGFR. The lab eGFR needs no age, and is rounded to the nearest integer. It drives the same rules as the calculated one: the CKD protein target, the potassium gate and the eGFR tile. One exception (US-07 AC8, orchestrator's call 2026-11-01, the cautious side): when a creatinine newer than the lab eGFR exists but the plan cannot calculate from it (no sex or no birth year), the lab eGFR still shows and still sets the protein target, but it does not open the potassium advice (`labEgfrOutdated`). Potassium advice needs an eGFR that no newer creatinine has outdated. A known minor's eGFR is withheld either way (section on adult readings). With a lab eGFR, creatinine is not a missing plan input.
+The newer by measurement day wins. On the same day the lab's eGFR wins: the lab worked it out from a real serum creatinine, and ours may come from a misread row. Only one exists: that one. Candidate (a) exists only when the plan can calculate it: a known birth year, a known sex (US-07 AC8), no known minor on the creatinine's day (above) and a creatinine inside its input range (10–2650 µmol/L). Otherwise the lab eGFR stands, whatever the creatinine's day. Neither: no eGFR. A creatinine with no date (typed and not yet saved, or stated in the chat without a date) counts as today's, the day it would be saved with; an unsaved blood-test draft counts on the day it is dated. A creatinine is never worked back from an eGFR. The lab eGFR needs no age, and is rounded to the nearest integer. It drives the same rules as the calculated one: the CKD protein target, the potassium gate and the eGFR tile. One exception (US-07 AC8, orchestrator's call 2026-11-01, the cautious side): when a creatinine newer than the lab eGFR exists but the plan cannot calculate from it (no sex, no birth year, or taken by a known minor), the lab eGFR still shows and still sets the protein target, but it does not open the potassium advice (`labEgfrOutdated`). Potassium advice needs an eGFR that no newer creatinine has outdated. A known minor's eGFR is withheld either way (section on adult readings). With a lab eGFR, creatinine is not a missing plan input.
 
 ### Non-HDL Cholesterol
 
@@ -174,19 +176,44 @@ Source: `units.ts`
 | psa | 1 | 1 |
 | lpa | 0 | 1 (mg/dL; mg/L, a tenth of it, at 0) |
 
+An additional lab test (one this table does not list) shows its stored value to up to two decimal places with no trailing zeros. Below 0.1 it keeps two significant figures instead, so a suppressed TSH of 0.004 mIU/L shows as 0.004, not 0, and 0.0456 as 0.046 (`formatLabValue`, US-21 AC25, Brad 2026-11-04). A value printed as a limit shows as printed ("< 0.005"). Display only: the stored number is unchanged.
+
 ### Lab catalogue conversions
 
 Source: `packages/health-core/src/lab-catalog.ts` (`LAB_CONVERSIONS`, `canonicalLabValue`). Since US-21 phase 3, a lab test the catalogue knows is **stored** in its canonical SI unit, not in the unit the lab printed. A writer sends the number and the unit as printed; the record converts it once, on the write, and converts `referenceLow`/`referenceHigh` by the same factor.
 
-Factor = the number a reported value is multiplied by to reach the canonical unit. Spellings are matched lower case, after `normalizeLabUnit` folds report and LLM spelling (`umol/L` → `µmol/L`, `mcg` → `µg`, `uL` → `µL`, `x 10e9/L` → `×10⁹/L`, `1.73m2` → `1.73m²`, `gm/dL` → `g/dL`, `Units/L` → `U/L`, `10^3/cmm`, `10^3/cumm`, `10^3/mm3` or `10^3/mm³` → `×10³/µL`, `10^6/mm3` or `10^6/mm³` → `×10⁶/µL`, `cells/uL`, `cells/cmm`, `cells/cumm`, `cells/mm3` or `cells/mm³` → `cells/µL`; a bracketed or superscript power of ten, `x10(3)/uL`, `10^(9)/L`, `x10³/µL` or `10³/µL` → `×10³/µL` or `×10⁹/L`, and `mcL` → `µL`, so `K/mcL` → `K/µL`). A cubic millimetre is a microlitre, so these folds rescale nothing. `mm3` and `mm³` fold only after a slash: a bare `mm³` is a volume and is never folded. A factor of 1 is a different notation for the same scale, not a conversion.
+Factor = the number a reported value is multiplied by to reach the canonical unit. Spellings are matched lower case, after `normalizeLabUnit` folds report and LLM spelling (`umol/L` → `µmol/L`, `mcg` → `µg`, `uL` → `µL`, `x 10e9/L` → `×10⁹/L`, `1.73m2` → `1.73m²`, `gm/dL` → `g/dL`, `Units/L` → `U/L`, `10^3/cmm`, `10^3/cumm`, `10^3/mm3` or `10^3/mm³` → `×10³/µL`, `10^6/mm3` or `10^6/mm³` → `×10⁶/µL`, `cells/uL`, `cells/cmm`, `cells/cumm`, `cells/mm3` or `cells/mm³` → `cells/µL`; a bracketed or superscript power of ten, `x10(3)/uL`, `10^(9)/L`, `x10³/µL` or `10³/µL` → `×10³/µL` or `×10⁹/L`, and `mcL` → `µL`, so `K/mcL` → `K/µL`; `dL`, `mL` and `µL` in any case, as a whole token, so `mg/dl` → `mg/dL`, while `G/L`, giga per litre, stays apart from `g/L`). A cubic millimetre is a microlitre, so these folds rescale nothing. `mm3` and `mm³` fold only after a slash: a bare `mm³` is a volume and is never folded. A factor of 1 is a different notation for the same scale, not a conversion.
 
 A spelling this table does not carry for that test is **refused** — never rescaled by guess. The refusal names the canonical unit and every spelling the test accepts, and the website counts it as `lab_unit_refused`. Six things follow from that:
 
 - **A count in cells/µL converts only as a whole number** (WBC, the five differentials, platelets). Cells are counted, so a decimal in the result or either reference bound, or (with both bounds printed) a result above a hundred times the high bound or, for WBC and platelets only, below a hundredth of the low bound, means the lab printed thousands under the wrong label: the row is refused, never rescaled. A decimal's refusal asks whether the report means ×10³/µL; a range mismatch's says the value and its printed range are on different scales. A result of 0 always passes (it reads the same on any scale), and the differentials get no low-side check because real counts sit near zero. A correction in cells/µL is checked the same way against the range the row already holds, read on the canonical scale (so a legacy row still stored as `K/uL` or `10^3/cmm` is checked too). No per-test minimum yet, so a mislabelled whole number can still land.
 - **A value no human sample reaches is refused** (US-21 AC21, Brad 2026-10-20). A real sheet printed free testosterone as "nmol/L" when its number and range (163–473) were pmol/L, so the ×1000 conversion produced an impossible result that would have saved. The count check cannot catch this, because the value and its range are mislabelled together. Five tests reachable through a ×1000 upward conversion carry a ceiling in their canonical unit: `free_testosterone` 10,000 pmol/L, `free_testosterone_calculated` 10,000 pmol/L, `reverse_t3` 10,000 pmol/L, `c_peptide` 50,000 pmol/L, `reticulocytes` 2,000 ×10⁹/L. The check applies only to a row converted by a ×1000 prefix step (nmol/L to pmol/L, ×10¹²/L to ×10⁹/L): when its converted value, or its converted printed high bound, passes the ceiling, it is refused, never rescaled. A row printed in any other spelling (the canonical unit, pg/mL, ng/dL, ng/mL) is never refused by the ceiling, because a real result can pass it (free testosterone on heavy androgen use can exceed 10,000 pmol/L, printed as pmol/L or as pg/mL). Without a printed range, a prefix error that lands under the ceiling is not caught (a female free testosterone of 8 printed as nmol/L stores 8,000 pmol/L). The refusal's note names the test, the ceiling and the two units, never the number: "Free testosterone above 10,000 pmol/L is not a measured value, so the printed unit is probably wrong (nmol/L vs pmol/L). Check the report, then add it in pmol/L with + Add a blood test." Troponin has no ceiling: a real high troponin overlaps a mislabelled one. Load never deletes or rewrites a row, so a stored row above a ceiling is left as it is: a legacy printed row gets no `#si` child, and one an older build already converted stays.
+- **A typed value past its plausible range is refused** (US-21 AC26, 2026-11-06; every bound approved by Brad the same day). A break-test typed glucose 5.5, picked mg/dL, and saved 0.31 mmol/L. These are typing-mistake limits, in the canonical unit after conversion, that no real result passes; they are not reference ranges, grade nothing and change no suggestion. Source: `LAB_PLAUSIBLE_RANGES` in `lab-catalog.ts`, each bound with its basis there. A min of 0 checks the top end only.
+
+  | key | canonical | min | max |
+  |-----|-----------|-----|-----|
+  | `glucose`, `glucose_random` | mmol/L | 0.5 (Brad 2026-11-06: "people would be dead at 0.5 mmol/L") | 150 |
+  | `sodium` | mmol/L | 70 | 260 |
+  | `potassium` | mmol/L | 0.5 | 20 |
+  | `urate` | mmol/L | 0 | 6 |
+  | `alt`, `ast` | U/L | 0 | 50,000 |
+  | `albumin` | g/L | 0 | 80 |
+  | `haemoglobin` | g/L | 5 | 300 |
+  | `wbc` | ×10⁹/L | 0 | 2,000 |
+  | `platelets` | ×10⁹/L | 0 | 10,000 |
+  | `tsh` | mIU/L | 0 | 2,000 |
+  | `ft4` | pmol/L | 0 | 200 |
+  | `crp` | mg/L | 0 | 1,000 |
+  | `vitamin_d` | nmol/L | 0 | 2,500 |
+  | `vitamin_b12` | pmol/L | 0 | 20,000 |
+  | `folate` | nmol/L | 0 | 1,000 |
+  | `ferritin` | µg/L | 0 | 500,000 |
+  | `iron` | µmol/L | 0 | 1,000 |
+
+  Checked where a person or agent types one value: `addLabValue` (the web's "+ Add a blood test" and "+ Add a value", the iPhone's add by name and a test's own "+") and `correctValue`'s lab branch (the web's value page and matrix correction, the iPhone's correct edit, MCP `correct_value`, the CLI's `correct`). Not checked: `appendLabValue` (MCP `add_lab_values`, `file_results`, the CLI's `add`), the bulk upload (`bulkAppendValues`, the review table's cells) and the Health Records import. Every one of these doors shows the refusal in the engine's words. The refusal names the number as typed and what it converted to when the typed unit is not the canonical one, then the end passed, each as the matrix prints it with thousands separators: "5.5 mg/dL is 0.31 mmol/L. Glucose below 0.5 mmol/L is almost certainly a typing or unit mistake: check the number and its unit." A row already stored past a bound is never touched and still shows.
 - **A differential in % is refused.** It is a share of the white count, not a count, and is never multiplied out from the WBC. Its refusal says the record keeps the absolute count (×10⁹/L or cells/µL), so the person looks for that line on the same report.
 - **Prolactin in ng/mL is refused on purpose.** The mIU/L factor is assay-dependent (about 21.2 for the WHO 3rd IS), so converting would invent precision the report does not have.
-- **A test the catalogue does not know is stored exactly as reported**, with its printed unit. There is no SI definition to convert it to, and refusing it would throw the value away.
+- **A test the catalogue does not know is stored exactly as reported**, with its printed unit. There is no SI definition to convert it to, and refusing it would throw the value away. Its units are compared after the folds above, so `mg/dL` and `mg/dl` are one unit and chart as one line (US-21 AC14, Brad 2026-11-04).
 - **Rows written before phase 3 are corrected at load**, not edited: `migrate.ts` appends a converted row with the id `<id>#si` and `correctsId` set, and flips the printed row to `entered-in-error`. Same id on every device, so cross-device copies merge into one row. A legacy `gm/dL` row (haemoglobin, albumin, total protein, globulin, MCHC) now converts at ×10 on load through the same path. So does a legacy whole count in cells/µL, at ×0.001; a decimal one is left as it is.
 
 | key | canonical | reported spelling | × factor | note |
@@ -308,6 +335,7 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `fibrinogen` | g/L | mg/dl | 0.01 | a milligram per decilitre is a hundredth of a gram per litre |
 | `tsh` | mIU/L | µiu/ml | 1 | µIU/mL and mIU/L are the same number |
 | `tsh` | mIU/L | mu/l | 1 | mU/L is mIU/L, printed short |
+| `tsh` | mIU/L | µu/ml | 1 | µU/mL is µIU/mL, printed short |
 | `tsh` | mIU/L | microiu/ml | 1 | µIU/mL with the prefix spelled out |
 | `tsh` | mIU/L | mciu/ml | 1 | µIU/mL with the mc prefix (as mcg) |
 | `ft4` | pmol/L | ng/dl | 12.87 | thyroxine 776.87 g/mol |
@@ -334,6 +362,8 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `estradiol` | pmol/L | pg/ml | 3.671 | estradiol 272.38 g/mol |
 | `estradiol` | pmol/L | ng/l | 3.671 | estradiol 272.38 g/mol |
 | `prolactin` | mIU/L | µiu/ml | 1 | µIU/mL and mIU/L are the same number (ng/mL stays refused: assay-dependent) |
+| `prolactin` | mIU/L | mu/l | 1 | mU/L is mIU/L, printed short |
+| `prolactin` | mIU/L | µu/ml | 1 | µU/mL is µIU/mL, printed short |
 | `prolactin` | mIU/L | microiu/ml | 1 | µIU/mL with the prefix spelled out |
 | `prolactin` | mIU/L | mciu/ml | 1 | µIU/mL with the mc prefix (as mcg) |
 | `cortisol_am` | nmol/L | µg/dl | 27.59 | cortisol 362.46 g/mol |
@@ -341,8 +371,10 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `cortisol_pm` | nmol/L | µg/dl | 27.59 | cortisol 362.46 g/mol |
 | `psa_free` | µg/L | ng/ml | 1 | ng/mL and µg/L are the same number |
 | `lh` | IU/L | miu/ml | 1 | mIU/mL and IU/L are the same number |
+| `lh` | IU/L | mu/ml | 1 | mU/mL is mIU/mL, printed short |
 | `lh` | IU/L | u/l | 1 | U/L is IU/L, printed short |
 | `fsh` | IU/L | miu/ml | 1 | mIU/mL and IU/L are the same number |
+| `fsh` | IU/L | mu/ml | 1 | mU/mL is mIU/mL, printed short |
 | `fsh` | IU/L | u/l | 1 | U/L is IU/L, printed short |
 | `progesterone` | nmol/L | ng/ml | 3.180 | progesterone 314.46 g/mol |
 | `dhea_s` | µmol/L | µg/dl | 0.02714 | DHEA sulfate 368.49 g/mol |
@@ -363,6 +395,7 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `acth` | pmol/L | ng/l | 0.2202 | ACTH 1-39 4541 g/mol |
 | `gh` | µg/L | ng/ml | 1 | ng/mL and µg/L are the same number |
 | `hcg` | IU/L | miu/ml | 1 | mIU/mL and IU/L are the same number |
+| `hcg` | IU/L | mu/ml | 1 | mU/mL is mIU/mL, printed short |
 | `vitamin_d` | nmol/L | ng/ml | 2.496 | 25-OH-D 400.64 g/mol |
 | `vitamin_d` | nmol/L | µg/l | 2.496 | 25-OH-D 400.64 g/mol |
 | `vitamin_b12` | pmol/L | pg/ml | 0.738 | cyanocobalamin 1355.4 g/mol |
@@ -448,7 +481,7 @@ Three-file sync: `evidence.ts` and `roadmap_text.html` are untouched because no 
 
 **Cortisol by timing (US-07 AC9, Brad 2026-11-02, issue 476).** Cortisol is read against the time it was drawn, so each timing has its own entry, in nmol/L at the same 27.59 µg/dL factor. A name that prints no timing ("Cortisol") is a morning cortisol, `cortisol_am` "Cortisol (morning)", since most cortisol tests are drawn in the morning. AM or morning spellings go there too. A random cortisol goes to `cortisol_random` "Cortisol (random)". A PM, evening or (blood) midnight cortisol goes to `cortisol_pm` "Cortisol (PM)". Salivary and urine cortisol are not catalogued: they keep their printed names. A row stored earlier under a random or PM name was uncatalogued; slots are computed on read, so it now reads under its new entry, and one printed in µg/dL is converted at load by an appended correction row (`migrate.ts`, as for every newly catalogued test). A bare "Cortisol" row stays in `cortisol_am`. The upload prompt offers all three cortisol names (US-07 AC10, Brad 2026-11-02: "just switch over"). Punctuated spellings ("Cortisol, A.M.", "cortisol-pm", "P.M. cortisol") reach the same entries through the second, punctuation-free try above.
 
-**Printed name decides (US-07 AC10, Brad 2026-11-02).** On a website or BYOK upload the model also returns each row's name as the report prints it. When that printed name resolves (the exact lookup or the punctuation-free one, never part of a name) to a core metric or a catalogued test, it decides where the row is filed, over the model's pick: a bare "Cortisol" is a morning cortisol whatever key the model chose, and a printed urine creatinine is a lab row, never serum creatinine. When it resolves to nothing, the model's pick stands. Specimen: when one name says urine or saliva and the other does not, the one that says it wins, for every test (a plain "Sodium" under a URINE heading stays urine sodium); for creatinine, a row the model listed among other tests is promoted when its printed name is a serum creatinine name; the unit check still refuses urine-only units. No review flag is added. A row with no printed name is filed as before. No row is edited; the connector, chat and agent paths are unchanged.
+**Printed name decides (US-07 AC10, Brad 2026-11-02).** On a website or BYOK upload the model also returns each row's name as the report prints it. When that printed name resolves (the exact lookup or the punctuation-free one, never part of a name) to a core metric or a catalogued test, it decides where the row is filed, over the model's pick: a bare "Cortisol" is a morning cortisol whatever key the model chose, and a printed urine creatinine is a lab row, never serum creatinine. When it resolves to nothing, the model's pick stands. Specimen: when one name says urine or saliva and the other does not, the one that says it wins, for every test (a plain "Sodium" under a URINE heading stays urine sodium); for creatinine, a row the model listed among other tests is promoted when its printed name is a serum creatinine name; the unit check still refuses urine-only units. No review flag is added. A row the model lists among the core tests under a name that is no core key (US-12 AC11a), with or without a printed name, is filed by its printed name when it has one, or else by that name, and is never dropped, on every path that reads the model's answer, the connector's folder import included. As one of the 11 core values it keeps the model's confidence and question, also when a held slot leaves it a lab row that is offered as that core value; creatinine needs a printed serum creatinine name; weight, waist, height and any other name are lab rows; a row with no name at all is counted as not saved. Any other row with no printed name keeps the model's pick. No row is edited; chat, agent writes and the assistant's own read are unchanged.
 
 ---
 
@@ -532,7 +565,7 @@ With no sex on record the plan grades no HDL, so `hdl-low` does not show (US-07 
 | Stage 2 | 140 | 90 |
 | Crisis | 180 | 120 |
 
-**Raised blood pressure** means one thing everywhere (the `bp-stage1` card and the weight-medication trigger): systolic >= 130 OR diastolic > 80. Either half counts on its own; the stage cards still need both halves to show.
+**Raised blood pressure** means one thing everywhere (the `bp-stage1` card and the weight-medication trigger): systolic >= 130 OR diastolic >= 80 (ACC/AHA 2017: stage 1 is 130–139 or 80–89; Brad 2026-11-03). Either half counts on its own; the stage cards still need both halves to show.
 
 **Inverted blood pressure (US-02 AC8):** a pair from one day with systolic at or below diastolic is not a blood pressure. When the newest systolic and diastolic are from the same day and inverted, the plan leaves both out (`validateHealthInputs` names the rule on both), so it shows no blood pressure tier card and raises no marker, the weight-medication trigger included, until a half is corrected. The plan shows the `measure-bp` card in its "Check your blood pressure reading" form instead (section 4, Missing Measurements First; US-07 AC11). It does not fall back to an earlier day. Halves from different days are not judged as a pair and are used as before. Writes refuse such a pair (section 12); a merge of two devices' one-half corrections can still make one. `evidence.ts` and `roadmap_text.html` do not change: this is an input-integrity rule, with no new threshold, card text or citation.
 
@@ -677,7 +710,7 @@ The gate's age (`isKnownMinor`) is the one in section 1, except that a missing b
 
 For a known minor, every surface also withholds:
 
-- **Adult readings.** The BMI category, ideal body weight, protein target and eGFR, and the status labels on the lipid, HbA1c and Lp(a) tiles, with the "why" behind each. The website tiles and the PDF show the raw numbers only (BMI, lipid marker, Lp(a), HbA1c); the ideal body weight, protein and eGFR tiles go. `get_plan` returns `bmiCategory`, `eGFR`, `idealBodyWeightKg` and `proteinTargetG` as `null`; the CLI prints the BMI with no category and no eGFR. Raw values (weight, height, waist, each lab value with its unit and date) are untouched.
+- **Adult readings.** The BMI category, ideal body weight, protein target and eGFR (an adult's eGFR also needs a creatinine taken when they were not a known minor: section 1, eGFR), and the status labels on the lipid, HbA1c and Lp(a) tiles, with the "why" behind each. The website tiles and the PDF show the raw numbers only (BMI, lipid marker, Lp(a), HbA1c); the ideal body weight, protein and eGFR tiles go. `get_plan` returns `bmiCategory`, `eGFR`, `idealBodyWeightKg` and `proteinTargetG` as `null`; the CLI prints the BMI with no category and no eGFR. Raw values (weight, height, waist, each lab value with its unit and date) are untouched.
 - **The schedule.** `computeReminderSchedule` returns nothing, not even the annual check-in floor, so `get_plan`'s `due` is empty. The browser never enrols a known minor in reminders, never pushes their schedule (the server would add its annual check-in to any schedule it is sent), and turns off a row enrolled earlier with the widget's own cancel. That cancel is the age gate's, not the user's: it is permanent (at 18 they turn reminders on by hand) and is not counted as an opt-out.
 - **The form's medicine wording.** The medication sections are plain fields with their neutral sentence: no recommendation, target sentence or step hint. People can still record what they take. The form does the same for an unknown age, because it follows the plan (US-06 AC5).
 - **The form's adult targets.** The weight row's "Target: <ideal body weight>", the blood-pressure target and its status colours, and the reference hints and status colours of the blood-test matrix (saved values, the draft column and the correction editor) and the upload review matrix. The form reads the validated birth year and month alone, so this holds with no plan too (no height or sex). The values stay and stay editable, and no empty box is left. The waist line, its colour and the waist-to-height tile stay: the 0.5 ratio is also used in children. Every one of these targets and hints has one source, health-core's `rowTarget` (US-62 AC9): the grids print its full line and the phone's My data rows the same target without its unit ("Normal <5.7"), so the rule above holds on both, and on the upload review.
@@ -707,11 +740,11 @@ Evidence: `measure-waist` keeps AACE 2025, NICE and Ashwell 2012 (WHtR a better 
 | ID | Category | What | Evidence |
 |----|----------|------|----------|
 | `protein-target` | nutrition | Daily protein target (CKD-adjusted if eGFR < 45). Needs sex: absent with no sex on record (US-07 AC8) | ISSN 2017 |
-| `fiber` | nutrition | 25-35g fiber daily | Reynolds 2019 |
+| `fiber` | nutrition | 25-35g fiber daily | Reynolds 2019; Hartley 2016 |
 | `exercise` | exercise | At least 150 min moderate cardio, or 75 min vigorous, or a mix (1 vigorous min = 2 moderate) + 2-3 resistance sessions/week | WHO 2020; Physical Activity Guidelines 2018 |
 | `sleep` | sleep | 7-9 hours nightly | Cappuccio 2010 |
 
-**Exercise safety (display text, Brad 2026-11-01):** roadmap_text.html's Exercise safety paragraph says only: stop if you get chest pain, dizziness, fainting, palpitations or unusual breathlessness, and see your doctor before you exercise again (Franklin 2020, AHA scientific statement, DOI: 10.1161/CIR.0000000000000749). The Apple Watch heart rate paragraph above it says (Brad 2026-11-02 moved it there, so the safety paragraph gives one instruction): get emergency care for chest pain, whatever your pulse (Gulati 2021, AHA/ACC chest pain guideline, DOI: 10.1161/CIR.0000000000001029), or for a racing pulse with fainting, dizziness or breathlessness (NHS Arrhythmia, 2024, www.nhs.uk/conditions/arrhythmia). A very slow pulse with fainting, dizziness or breathlessness needs prompt medical care (Kusumoto 2019, ACC/AHA/HRS bradycardia guideline, DOI: 10.1161/CIR.0000000000000628). The heart rate guide (`heart_rate` in `metric-guides.ts`) states the last two lines and cites Gulati 2021, NHS 2024 and Kusumoto 2019. No card or threshold changes.
+**Exercise safety (display text, Brad 2026-11-01):** roadmap_text.html's Exercise safety paragraph says only: stop if you get chest pain, dizziness, fainting, palpitations or unusual breathlessness, and see your doctor before you exercise again (Franklin 2020, AHA scientific statement, DOI: 10.1161/CIR.0000000000000749). The Apple Watch heart rate paragraph above it says (Brad 2026-11-02 moved it there, so the safety paragraph gives one instruction): get emergency care for chest pain, whatever your pulse (Gulati 2021, AHA/ACC chest pain guideline, DOI: 10.1161/CIR.0000000000001029), or for a racing pulse with fainting, dizziness or breathlessness (NHS Arrhythmia, 2024, www.nhs.uk/conditions/arrhythmia). A very slow pulse with fainting, dizziness or breathlessness needs prompt medical care (Kusumoto 2019, ACC/AHA/HRS bradycardia guideline, DOI: 10.1161/CIR.0000000000000628). The iPhone's heart rate guide (`heart_rate` in `metric-guides.ts`) repeated the last two lines; it was deleted with the app's heart rate reads (Brad 2026-11-06), and the web page keeps them. The resting heart rate guide stays. No card or threshold changes.
 
 ### Conditional Lifestyle Suggestions
 
@@ -789,7 +822,7 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 |----|-----------|----------|
 | `bp-crisis` | sys >= 180 OR dia >= 120 | urgent |
 | `bp-stage2` | sys >= 140 OR dia >= 90 | urgent |
-| `bp-stage1` | sys >= 130 OR dia > 80 | attention |
+| `bp-stage1` | sys >= 130 OR dia >= 80 | attention |
 
 Stage 1 shows age-dependent target: < 120/80 for age < 65, < 130/80 for age >= 65.
 
@@ -813,8 +846,6 @@ Any atherogenic marker at or above its optimal line (each marker checked on its 
 - LDL-C ≥ 1.4 mmol/L (55 mg/dL)
 
 **NOT suppressed by medication cascade** — diet is always complementary to medications.
-
-When active, the generic `fiber` suggestion is suppressed (lipid-diet covers fibre advice more specifically).
 
 ### Universal Foods (IBS/IBD-safe, low-FODMAP at recommended amounts)
 
@@ -932,9 +963,9 @@ On when either holds:
 So: BMI >= 30 is always on; 28 < BMI < 30 is on unless the waist is healthy and no marker is raised; 25 <= BMI <= 28 needs a marker; BMI < 25 is always off. BMI is the rounded value the tile shows.
 
 Raised markers, each named in the card in the plan's words:
-- HbA1c >= 38.8 mmol/mol (prediabetic) → "prediabetic HbA1c"
+- HbA1c >= 38.8 mmol/mol (prediabetic) → "prediabetic HbA1c"; at or above the diabetic line, 47.5 mmol/mol (6.5%), the urgent card's, → "diabetic-range HbA1c" (Brad 2026-11-06)
 - Triglycerides 150 mg/dL (about 1.7 mmol/L) or more → "elevated triglycerides"
-- Raised blood pressure: systolic >= 130 OR diastolic > 80, either half on its own (section 3) → "elevated blood pressure"
+- Raised blood pressure: systolic >= 130 OR diastolic >= 80, either half on its own (section 3) → "elevated blood pressure"
 - The plan's lipid marker (ApoB, else non-HDL, else LDL: `lipidMarkerFor`) at or above its risk-enhancing line → "elevated ApoB", "elevated non-HDL cholesterol" or "elevated LDL cholesterol":
   - ApoB >= 1.3 g/L (130 mg/dL)
   - Non-HDL >= 190 mg/dL (4.913 mmol/L), compared unrounded (section 1)
@@ -1045,12 +1076,16 @@ Source: `suggestions.ts` (screening section) + `types.ts` (intervals/follow-up)
 | Colorectal | 35-75 | Both | — |
 | Breast | 40+ | Female | 40-44 optional (info), 45+ recommended (attention) |
 | Cervical | 25-65 | Female | — |
-| Lung | 50-80 | Both | Former/current smoker AND >= 20 pack-years (USPSTF 2021) |
+| Lung | 50-80 | Both | Former/current smoker AND >= 20 pack-years (ACS 2023; no quit window) |
 | Prostate | 45+ | Male | Shared decision |
 | Endometrial | 45+ | Female | Abnormal bleeding = urgent |
 | DEXA | Female >= 50, Male >= 70 | Both | — |
 
 With no sex on record only the unsexed screenings (colorectal, lung) show (US-07 AC8).
+
+Lung: the plan does not ask when someone quit. Like the American Cancer Society's 2023 guideline, a former smoker with >= 20 pack-years stays eligible however long ago they quit (Brad 2026-11-03; US-07 AC1e).
+
+Lung follow-up: once an abnormal low-dose CT is recorded, its follow-up stays in the plan and the reminders whatever the pack-years and past 80, so a later correction below 20, or turning 81, never drops it (Brad 2026-11-03; US-07 AC1f, AC1g). Routine eligibility is age 50-80 with >= 20 pack-years; the follow-up exception needs only age 50 or over, a former/current smoking history, a last CT date and the abnormal result. Outside routine eligibility (below 20 pack-years or past 80) only the follow-up's organize and scheduled states show, as the urgent "Organize ..." card or the "follow-up scheduled" card; once the follow-up is completed, dated or not, there is no card and no reminder, because resuming annual screening is routine screening. No start, routine overdue/up-to-date or post-follow-up card shows there. Its reminder runs while the organize or scheduled card shows and falls on the follow-up dates in section 11 (US-17 AC15): the last CT's month (already due) while the follow-up is to organize, 3 months after the last CT once it is scheduled, never later than the routine annual date, repeating every 90 days until the status changes. At 50-80 with >= 20 pack-years nothing changes: a completed follow-up gives the post-follow-up card and reminder, and a completed one with no date falls back to the routine card and reminder.
 
 ### Screening Intervals (months)
 
@@ -1103,8 +1138,12 @@ overdue = now > nextDue
 
 ### Prostate-Specific
 
-- PSA > 4.0 ng/mL -> `screening-prostate-elevated` (attention)
-- `elected_not_to` -> no suggestion shown
+- PSA > 4.0 ng/mL -> `screening-prostate-elevated` (attention), whatever the screening answer
+- `elected_not_to` -> no screening card and no PSA reminder; a saved PSA above 4.0 still shows `screening-prostate-elevated` (Brad 2026-11-03)
+- Where the PSA comes from (US-06 AC14): the newest usable active `psa` row, its value and its day, a core lab row since US-66. Usable: a value in the PSA range (0 to 10,000 ng/mL) and a real day no later than the latest day anywhere on Earth (UTC+14), so a server in UTC still counts the person's today; a newer unusable row never hides an older usable one. Ties on a day go to the later `createdAt`, then the id. A PSA printed as a limit (US-12 AC20) is graded only when the limit decides against 4.0: "> 100" is elevated, and the card shows it as printed ("Your PSA of > 100.0 ng/mL ..."); "< 0.1" is not; "< 5", "<= 4.0" and ">= 4.0" leave it uncertain, so no elevated card. Its day still dates the next test. The old answers `prostate_psa_value` and `prostate_last_date` count only when there is no usable row or when they are newer by date, value and day together; an answer that gives only a month loses to a row from that month. The web plan, `computePlan`, the reminder schedule and the chat's plan all read it this way.
+- While `screening-prostate-elevated` shows, `screening-prostate-upcoming` ("PSA test up to date") does not: beside a raised PSA it reads as all clear. `screening-prostate-overdue` and the `screening_prostate` reminder are unchanged (US-06 AC17, Brad 2026-11-03).
+- A raised PSA never prints as 4.0 (US-06 AC18, Brad 2026-11-03): where one decimal would print 4.0 or less, a PSA above 4.0 prints two, rounded up (4.04 reads 4.04, not 4.0), on the card, `get_plan` and the PSA field's line on the web and the iPhone (`formatGradedReading`). Any other PSA prints to one decimal. A limit prints as printed.
+- A PSA typed in the prostate section (US-06 AC15) is saved as a `psa` row on the day picked beside it (a full date, today until changed; never after today), as every blood test is dated. That day is also the last PSA test for the due card and the reminder: no client asks for or writes `prostate_last_date` any more.
 
 ### DEXA-Specific
 
@@ -1231,6 +1270,15 @@ Triggers when ANY active medication (drug name not in `['none', 'not_yet', 'not_
 ### Screening Reminders
 
 Same eligibility criteria as the suggestion algorithm (section 8). Checks both initial screening overdue and post-follow-up overdue. Only triggers for screenings the user has started (not `'not_yet_started'`).
+
+**Follow-up reminders (US-17 AC15, Brad 2026-11-05).** After an abnormal result (osteoporosis for bone density) with a last screening date, the reminder follows the follow-up card and is never later than the routine date:
+- Follow-up to organize (no status, or `not_organized`): due at the last screening's month, which has passed, so the next daily email carries it.
+- Follow-up scheduled: a check-in due 3 months after the last screening date, to record the follow-up result. The date stays put once it has passed.
+- Follow-up completed with a date: the post-follow-up interval, unchanged. Completed with no date: the routine date, unchanged.
+
+Neither date depends on today's date, so it never moves. Organize and check-in reminders repeat every 90 days (the screening cooldown) until the status changes. The cooldown is per category and spans follow-up states, so the first organize email can wait up to 90 days after a routine send for the same screening, and a check-in can arrive up to 90 days after the organize email. This covers colorectal, breast, cervical, lung (with the AC1f and AC1g follow-up exception) and bone density. Prostate and endometrial have no follow-up states.
+
+Only the label and date reach the server, and the labels stay plain, but the date reflects the follow-up state over time, as a completed follow-up's post-follow-up date already did. Every reminder email carries one line for all items: "If you have a follow-up to arrange or a result to record, open the Health Roadmap." The iPhone works its reminders out on the phone and never calls the reminder server: its in-app list names the card's follow-up ("Follow-up to organize: repeat colonoscopy", "Follow-up check-in: colposcopy"), and a follow-up notifies on the first morning the phone sees it, or on its due day if later, then every 90 days from that day.
 
 ### Missing Profile Fields
 

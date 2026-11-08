@@ -16,6 +16,7 @@ import { render, fireEvent } from '@testing-library/react';
 
 const trackProductEvent = vi.fn();
 const loadConversationsIfNeeded = vi.fn();
+const shownMessages: unknown[] = [];
 
 vi.mock('../lib/server-api', () => ({ trackProductEvent: (...a: unknown[]) => trackProductEvent(...a) }));
 vi.mock('../lib/chat-api', () => ({ getChatGate: () => null }));
@@ -29,7 +30,7 @@ vi.mock('../hooks/useChatState', () => ({
     state: {
       conversations: [],
       activeConversationId: null,
-      messages: [],
+      messages: shownMessages,
       inputText: '',
       isLoading: false,
       isLocalSender: false,
@@ -104,7 +105,16 @@ describe('US-15 AC12 — chat copy follows the store surface', () => {
     expect(expanded).toContain('Products, ingredients, and the research behind them');
     expect(expanded).toContain("Ask what's in a product, how to take it, or what the evidence says about an ingredient. For orders and subscriptions, sign in to your account.");
     expect(expanded).not.toMatch(/\bplan\b|Discuss your health/);
-    expect(container.querySelector('textarea')?.getAttribute('placeholder')).toBe('Ask a follow-up…');
+    // Design review 2026-11-06: nothing to follow up yet.
+    expect(container.querySelector('textarea')?.getAttribute('placeholder')).toBe('Ask a question');
     expect(render(<ChatSection isLoggedIn />).container.textContent).toContain('Ask about our products');
+  });
+
+  it('the composer asks a question first, a follow-up once there is a reply', () => {
+    shownMessages.push({ id: 'm1', role: 'assistant', content: 'Synthetic reply' });
+    try {
+      const { container } = render(<ChatSection isLoggedIn startExpanded />);
+      expect(container.querySelector('textarea')?.getAttribute('placeholder')).toBe('Ask a follow-up…');
+    } finally { shownMessages.length = 0; }
   });
 });

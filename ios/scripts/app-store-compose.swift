@@ -58,8 +58,8 @@ struct Slot {
 
 // Crops are in the capture's pixels: 1206 × 2622, the 6.3-inch iPhone at 3×.
 let slots: [Slot] = [
-    // Search shows the first two: the biggest phone, and the plan's first card lifted off it.
-    Slot(number: 1, raw: "1 my plan", out: "1-my-plan", lines: ["Your next health steps,", "in one list"], ground: .green,
+    // Search shows the first two: the biggest phone, and Weight & diabetes lifted off it.
+    Slot(number: 1, raw: "1 my health", out: "1-my-plan", lines: ["Your next health steps,", "in one list"], ground: .green,
          screenWidth: 980, centerX: W / 2, top: 540,
          callout: Callout(crop: CGRect(x: 47, y: 480, width: 1112, height: 752), width: 1110, shift: CGSize(width: 0, height: 50))),
     Slot(number: 2, raw: "2 lab reading", out: "2-add-lab-report", lines: ["Add a lab report.", "Check each value."], ground: .light,
@@ -68,7 +68,7 @@ let slots: [Slot] = [
     Slot(number: 3, raw: "3 card opened", out: "3-evidence", lines: ["Every step shows", "its evidence"], ground: .green,
          screenWidth: 860, centerX: W / 2 + 130, top: 590,
          callout: Callout(crop: CGRect(x: 66, y: 787, width: 1088, height: 839), width: 1000, shift: CGSize(width: -190, height: 0))),
-    Slot(number: 4, raw: "4 my data", out: "4-my-data", lines: ["Your numbers", "in one place"], ground: .light,
+    Slot(number: 4, raw: "4 weight history", out: "4-my-data", lines: ["Your numbers", "in one place"], ground: .light,
          screenWidth: 860, centerX: W / 2 - 130, top: 590,
          callout: Callout(crop: CGRect(x: 47, y: 1455, width: 1112, height: 590), width: 960, shift: CGSize(width: 190, height: 50))),
     Slot(number: 5, raw: "5 chat", out: "5-chat", lines: ["Ask about", "your results"], ground: .green,

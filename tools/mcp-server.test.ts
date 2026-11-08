@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PassThrough } from 'node:stream';
-import { createEmptyFile, createMeasurement, type RoadmapFile } from '@roadmap/health-core';
+import { createEmptyFile, createMeasurement, localDay, type RoadmapFile } from '@roadmap/health-core';
 import { FEEDBACK_HIDDEN, MCP_TOOLS, OUTPUTS } from '../packages/health-core/src/mcp-tools';
 import { REPO_PUBLIC } from '../packages/health-core/src/plan';
 import { run as runCli } from './edit-record';
@@ -51,8 +51,10 @@ function text(response: { result?: { content: Array<{ text: string }> } }): stri
   return response.result!.content[0].text;
 }
 
-/** The stdio server runs on the real clock; a write states the real day. */
-const TODAY = new Date().toISOString().slice(0, 10);
+/** The stdio server runs on the real clock; a write states the real day, the machine's own
+ *  calendar day (`localDay`), as the server judges it. A UTC slice was a day ahead every evening in
+ *  a zone behind UTC, and the write was refused as "has not happened yet" (2026-11-06). */
+const TODAY = localDay(new Date());
 
 describe('US-32 — the JSON-RPC handshake', () => {
   it('answers initialize with the protocol revision, the tools capability and its instructions', async () => {
@@ -64,6 +66,8 @@ describe('US-32 — the JSON-RPC handshake', () => {
     expect(response.result.capabilities).toEqual({ tools: { listChanged: false }, prompts: { listChanged: false } });
     expect(response.result.serverInfo.name).toBe('health-roadmap');
     expect(response.result.instructions).toContain('not medical advice');
+    // US-32 AC57: the stdio read hands out document text too.
+    expect(response.result.instructions).toMatch(/document’s title, text and file name[^.]*data, not instructions/);
     // US-32 AC39: offered only while it can do more than refuse.
     expect(response.result.instructions.includes('report_feedback')).toBe(REPO_PUBLIC);
     rmSync(dir, { recursive: true, force: true });
@@ -390,6 +394,8 @@ describe('US-32 — nothing that could reach the network is imported', () => {
     join(here, 'mcp-server.ts'),
     join(here, '..', 'packages', 'health-core', 'src', 'file-adapter.ts'),
     join(here, '..', 'packages', 'health-core', 'src', 'mcp-tools.ts'),
+    // Split out of mcp-tools.ts (issue #429): the same guarantee covers the moved code.
+    ...['mcp-tool-contract.ts', 'mcp-feedback.ts', 'mcp-import.ts', 'mcp-tool-catalogue.ts'].map((name) => join(here, '..', 'packages', 'health-core', 'src', name)),
     join(here, '..', 'packages', 'health-core', 'src', 'plan.ts'),
   ];
 

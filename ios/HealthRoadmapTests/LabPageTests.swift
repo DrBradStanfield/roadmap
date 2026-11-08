@@ -134,13 +134,15 @@ final class LabPageTests: XCTestCase {
         XCTAssertTrue(RecordStore.dependsOnUnits(.correct(id: "w1", value: 1)))
     }
 
-    /// Review N1: a lab test filed as "lpa" (mg/dL) is read in its own unit, never the record's
-    /// Lp(a) unit (nmol/L): its add and correction show and save mg/dL, and its page has no Lp(a)
-    /// picker. A lab test filed as "HDL" shows no core HDL guide.
+    /// Review N1: a lab test filed as "lpa" is read in its own unit, never the record's Lp(a)
+    /// unit (nmol/L): its correction shows and saves its unit, its add is refused, and its page
+    /// has no Lp(a) picker. A lab test filed as "HDL" shows no core HDL guide. Each is printed in a unit
+    /// that does not convert, so US-66 AC5 keeps it a lab test rather than folding it into the
+    /// core value.
     func testALabTestNamedLikeACoreMetricUsesNoneOfItsUnitsGuideOrRange_US25_AC25() throws {
         let engine = try HealthEngine()
         let now = self.now
-        var text = try record(engine, labs: [lab("a1", "lpa", 40, "mg/dL", "2026-09-01"), lab("h1", "HDL", 1.3, "mmol/L", "2026-09-01")])
+        var text = try record(engine, labs: [lab("a1", "lpa", 40, "mg", "2026-09-01"), lab("h1", "HDL", 1.3, "mmol", "2026-09-01")])
         let unit = try engine.blocking { [now] in try $0.apply(.lpaUnit("nmol/L"), to: text, now: now, deviceId: "test") }
         text = try XCTUnwrap(unit.record)
         let saved = text
@@ -150,20 +152,22 @@ final class LabPageTests: XCTestCase {
         XCTAssertEqual(decoded.lpaUnit, "nmol/L")
         let labLpa = try XCTUnwrap(decoded.labTests?.first { $0.metric == "lpa" })
         let coreLpa = try XCTUnwrap(decoded.bloodTests.first { $0.metric == "lpa" })
-        XCTAssertEqual(labLpa.unit, "mg/dL")
-        // No Lp(a) unit, so no picker and no Lp(a) reading of the number: the add sheet shows mg/dL.
+        XCTAssertEqual(labLpa.unit, "mg")
+        // No Lp(a) unit, so no picker and no Lp(a) reading of the number.
         XCTAssertNil(RecordStore.lpaUnit(for: labLpa, recordUnit: decoded.lpaUnit))
         XCTAssertEqual(RecordStore.lpaUnit(for: coreLpa, recordUnit: decoded.lpaUnit), "nmol/L")
+        // US-66 AC5: a new value goes on the core Lp(a) row, so the lab row's add is refused.
         let added = try engine.blocking { [now] in try $0.apply(.labAdd(series: labLpa.metric, value: 42, day: "2026-10-01", unit: labLpa.unit), to: saved, now: now, deviceId: "test") }
-        let afterAdd = try engine.blocking { [now] in try $0.history(recordJSON: try XCTUnwrap(added.record), metric: "lpa", now: now, deviceId: "test", series: "lab") }
-        XCTAssertEqual(afterAdd.rows.first?.value, "42")
-        XCTAssertEqual(afterAdd.rows.first?.unit, "mg/dL", "the add saves mg/dL")
-        // The correction shows mg/dL whatever Lp(a)'s unit, and saves in it.
-        let older = try XCTUnwrap(afterAdd.rows.first { $0.id == "a1" })
-        XCTAssertEqual(MetricDetailView.correctionUnit(older, shown: labLpa, lpaUnit: "nmol/L"), "mg/dL")
+        XCTAssertFalse(added.ok)
+        XCTAssertNil(added.record)
+        // The correction shows mg whatever Lp(a)'s unit, and saves in it.
+        let history = try engine.blocking { [now] in try $0.history(recordJSON: saved, metric: "lpa", now: now, deviceId: "test", series: "lab") }
+        let older = try XCTUnwrap(history.rows.first { $0.id == "a1" })
+        XCTAssertEqual(older.unit, "mg")
+        XCTAssertEqual(MetricDetailView.correctionUnit(older, shown: labLpa, lpaUnit: "nmol/L"), "mg")
         let corrected = try engine.blocking { [now] in try $0.apply(.labCorrect(id: "a1", value: 45), to: saved, now: now, deviceId: "test") }
         let afterCorrect = try engine.blocking { [now] in try $0.history(recordJSON: try XCTUnwrap(corrected.record), metric: "lpa", now: now, deviceId: "test", series: "lab") }
-        XCTAssertEqual(afterCorrect.rows.first { $0.value == "45" }?.unit, "mg/dL", "the correction saves mg/dL")
+        XCTAssertEqual(afterCorrect.rows.first { $0.value == "45" }?.unit, "mg", "the correction saves mg")
         // A lab "HDL" has no core HDL guide; the core HDL row does.
         let labHdl = try XCTUnwrap(decoded.labTests?.first { $0.metric == "hdl" })
         let coreHdl = try XCTUnwrap(decoded.bloodTests.first { $0.metric == "hdl" })

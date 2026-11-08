@@ -12,6 +12,10 @@ enum DemoRecord {
     static let argument = "--demo-record"
     /// Read once per launch; a test sets it.
     nonisolated(unsafe) static var isOn = ProcessInfo.processInfo.arguments.contains(argument)
+    /// With `--demo-live-health` too, US-56's cards read the simulator's Health store (seeded by
+    /// `--seed-live-health`), so a demo record shows them. The record itself still never touches Health.
+    static let liveHealthArgument = "--demo-live-health"
+    static var keepsLiveHealth: Bool { ProcessInfo.processInfo.arguments.contains(liveHealthArgument) }
 
     /// Application Support/Demo in demo mode, else the record's own folder.
     nonisolated static func recordFolder(in base: URL = .applicationSupportDirectory) throws -> URL {
@@ -54,6 +58,7 @@ struct NoLiveHealth: LiveHealthStore {
     func latest(_ metric: LiveMetric) async throws -> (value: Double?, date: Date)? { nil }
     func sleep(from start: Date, to end: Date) async throws -> [SleepSegment] { [] }
     func earliest(_ metric: LiveMetric) async throws -> Date? { nil }
+    func changes(_ metric: LiveMetric, after anchor: Data?, from start: Date?) async throws -> LiveChanges { LiveChanges() }
 }
 
 /// Notifications, absent: the phone's pending reminders are never listed, removed or added.

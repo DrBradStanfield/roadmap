@@ -790,6 +790,17 @@ describe('forms (AC8)', () => {
     expect(data.psa.latest).toMatchObject({ value: '1.2', day: '2026-10-02' });
   });
 
+  it('US-06 AC18 (Brad 2026-11-03): a raised PSA of 4.04 reads 4.04, as the web, not 4.0', () => {
+    const psa = (value: number) => myData(man60({ kind: 'screening', key: 'prostate_discussion', value: 'will_screen' },
+      { kind: 'add', metric: 'psa', value, day: '2026-10-02' }), NOW).psa.latest?.value;
+    expect(psa(4.04)).toBe('4.04');
+    expect([psa(6.53), psa(4.0)]).toEqual(['6.5', '4.0']);
+    // The PSA page's history rows (and its headline) print the same (adversary R1).
+    const file = man60({ kind: 'screening', key: 'prostate_discussion', value: 'will_screen' },
+      { kind: 'add', metric: 'psa', value: 4.04, day: '2026-10-02' }, { kind: 'add', metric: 'psa', value: 6.53, day: '2026-09-02' });
+    expect(metricHistory(file, 'psa', NOW).rows.map((r) => r.value)).toEqual(['4.04', '6.5']);
+  });
+
   // US-06 AC1a: accepted names must produce keys accepted by the real native writer.
   it.each([93, 100])('saves long native names and collisions without losing identity (%i characters)', length => {
     const name = 'a'.repeat(length);
@@ -949,6 +960,14 @@ describe('odd rows the migration keeps (adversary R2, R3)', () => {
     const odd = { ...file, measurements: [...file.measurements, { ...bare, id: 'legacy', recordedAt: '2026-08-01' }] } as unknown as RoadmapFile;
     const rows = metricHistory(odd, 'weight').rows;
     expect(rows.map((r) => [r.id === 'legacy', r.correction])).toEqual([[false, false], [true, false]]);
+  });
+
+  // c71d283c: a legacy row with no status holds its day, so the page shows it as the current value.
+  it('shows a legacy row with no status as the active, current value, as the writes treat it', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'add', metric: 'weight', value: 80, day: '2026-09-01' });
+    const { status: _s, ...legacy } = file.measurements[0];
+    const odd = { ...file, measurements: [legacy] } as unknown as RoadmapFile;
+    expect(metricHistory(odd, 'weight', NOW).rows.map((r) => [r.status, r.current])).toEqual([['active', true]]);
   });
 });
 

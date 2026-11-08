@@ -1,8 +1,8 @@
 import XCTest
 
-/// The App Store preview video's flow (US-25 AC10, ios/scripts/app-store-video.sh): My data, a lab report
-/// added from Photos and read, its values checked and saved, My plan, one step opened to its
-/// evidence. Paced for a camera, not for speed. Each story beat prints a "VIDEO-MARK" line with
+/// The App Store preview video's flow (US-25 AC10, ios/scripts/app-store-video.sh): My health, a lab
+/// report added from Photos and read, its values checked and saved, then My health's steps, one
+/// opened to its evidence. Paced for a camera, not for speed. Each story beat prints a "VIDEO-MARK" line with
 /// the wall-clock time, so the script can cut the screen recording at the right moments.
 /// Opt-in: the script seeds the sample record, adds the fictional report to Photos, runs the
 /// local lab reader and sets TEST_RUNNER_APP_STORE_VIDEO; any other run skips.
@@ -20,8 +20,8 @@ final class AppStoreVideo: XCTestCase {
         app.launch()
 
         let tabs = app.tabBars
-        XCTAssertTrue(tabs.buttons["My data"].waitForExistence(timeout: 15), "the seeded record opens on the tabs")
-        tabs.buttons["My data"].tap()
+        XCTAssertTrue(tabs.buttons["My health"].waitForExistence(timeout: 15), "the seeded record opens on the tabs")
+        tabs.buttons["My health"].tap()
         pause(1.5)
         mark("mydata")
         pause(3.0)
@@ -73,16 +73,23 @@ final class AppStoreVideo: XCTestCase {
         XCTAssertTrue(done.isHittable, "the review offers Done")
         pause(1.2)
         done.tap()
-        // Back on My data: the blood tests the report filled in.
+        // Back on My health, then its Blood tests pill: the blood tests the report filled in.
+        pause(1.0)
+        let bloodTests = app.buttons["Blood tests"].firstMatch
+        XCTAssertTrue(bloodTests.waitForExistence(timeout: 5), "the Blood tests pill")
+        bloodTests.tap()
         pause(1.0)
         mark("after")
         pause(1.5)
         scroll(app, 0.3, velocity: 220)
         pause(2.5)
 
-        tabs.buttons["My plan"].tap()
+        // The plan's cards sit in My health's sections (US-73): back to the top, Weight & diabetes.
+        let weightTopic = app.staticTexts["Weight & diabetes"]
+        for _ in 0..<12 where !(weightTopic.exists && weightTopic.isHittable) { scroll(app, -0.6, velocity: 600) }
+        for _ in 0..<2 { scroll(app, -0.6, velocity: 600) }
         mark("plan")
-        XCTAssertTrue(app.staticTexts["Next Steps"].waitForExistence(timeout: 10) || app.staticTexts["Requires Attention"].waitForExistence(timeout: 5))
+        XCTAssertTrue(weightTopic.waitForExistence(timeout: 10))
         pause(2.5)
         scroll(app, 0.35, velocity: 240)
         pause(2.0)

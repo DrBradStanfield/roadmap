@@ -1,10 +1,10 @@
 #if DEBUG
 import HealthKit
 
-/// DEBUG only, never in a release build: with `--seed-live-health`, writes synthetic heart
-/// rate, resting heart rate, sleep with stages, VO2 max and steps into the simulator's
-/// Health store, so US-56's cards and pages can be checked against data (ios/architecture.md
-/// D6). Asks to write the five types, which the shipped app never does (US-56 AC2, AC10).
+/// DEBUG only, never in a release build: with `--seed-live-health`, writes synthetic resting
+/// heart rate, sleep with stages, VO2 max and steps into the simulator's Health store, so
+/// US-56's cards and pages can be checked against data (ios/architecture.md D6). Asks to write
+/// the four types, which the shipped app never does (US-56 AC2, AC10).
 enum LiveHealthSeed {
     static let argument = "--seed-live-health"
 
@@ -20,7 +20,7 @@ enum LiveHealthSeed {
     @concurrent
     private static func seed() async throws {
         let store = HKHealthStore.app
-        let types: Set<HKSampleType> = [HKQuantityType(.heartRate), HKQuantityType(.restingHeartRate), HKCategoryType(.sleepAnalysis),
+        let types: Set<HKSampleType> = [HKQuantityType(.restingHeartRate), HKCategoryType(.sleepAnalysis),
                                         HKQuantityType(.vo2Max), HKQuantityType(.stepCount)]
         try await store.requestAuthorization(toShare: types, read: types)
         let calendar = Calendar.current
@@ -32,21 +32,14 @@ enum LiveHealthSeed {
             guard start < .now else { return }
             samples.append(HKQuantitySample(type: HKQuantityType(id), quantity: HKQuantity(unit: unit, doubleValue: value), start: start, end: min(end, .now)))
         }
-        for back in 0..<60 {
+        // Three years of every metric, so each page shows it keeps and scrolls a long history (US-56 AC7a).
+        for back in 0..<1095 {
             let day = calendar.date(byAdding: .day, value: -back, to: today)!
             let wave = sin(Double(back) / 4)
             quantity(.restingHeartRate, 58 + 3 * wave, bpm, day.addingTimeInterval(7 * 3600), day.addingTimeInterval(7 * 3600))
             for hour in 7..<22 {
                 let start = day.addingTimeInterval(Double(hour) * 3600)
                 quantity(.stepCount, Double(200 + (hour * 37 + back * 53) % 900), .count(), start, start.addingTimeInterval(3600))
-                for minute in stride(from: 0, to: 60, by: back < 7 ? 15 : 60) {
-                    let at = start.addingTimeInterval(Double(minute) * 60)
-                    quantity(.heartRate, 62 + Double((hour * 13 + minute + back * 7) % 60), bpm, at, at)
-                }
-            }
-            for hour in [0, 3, 5] {
-                let at = day.addingTimeInterval(Double(hour) * 3600)
-                quantity(.heartRate, 50 + Double((hour + back) % 6), bpm, at, at)
             }
             // A night of stages ending this morning, as a watch records it.
             var at = day.addingTimeInterval(-3600 + Double(back % 3) * 900)
@@ -57,12 +50,14 @@ enum LiveHealthSeed {
                 at = end
             }
         }
-        // Three years of VO2 max, so a page shows it scrolls back past a year (US-56 AC7a).
         for week in 0..<156 {
             let day = calendar.date(byAdding: .day, value: -7 * week - 2, to: today)!.addingTimeInterval(18 * 3600)
             quantity(.vo2Max, 40 + 2 * sin(Double(week) / 5), vo2, day, day)
         }
-        try await store.save(samples)
+        // In batches: about 50,000 samples in one save is slow on a simulator.
+        for start in stride(from: 0, to: samples.count, by: 5000) {
+            try await store.save(Array(samples[start..<min(start + 5000, samples.count)]))
+        }
     }
 }
 #endif

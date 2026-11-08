@@ -393,13 +393,16 @@ describe('test-chatbot-matching router reply parsing (US-15 AC28)', () => {
 // any API call; an explicit {} is production's empty context.
 describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
   interface Entry {
-    query: string; category: string; surface?: string; answer_handles?: string[]; user_context?: unknown;
+    query: string; category: string; surface?: string; answer_handles?: string[]; expected?: string[]; user_context?: unknown;
     must_mention?: string[]; must_match?: string[]; must_not_match?: string[]; expect_no_plan?: true;
     expect_roadmap_run?: boolean; expect_profile_edit?: object;
   }
   const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as Entry[];
   const CATEGORIES = 'own-data-analysis,algorithm-precedence,algorithm-precedence-parked,minor-gate';
-  const cases = all.filter(q => CATEGORIES.split(',').includes(q.category));
+  // Only the fixed-handle answer checks the harness runs under --fixed-handles-only (no `expected`, an
+  // `answer_handles` list): a router fixture in the same category makes no answer call (W45 renin, 2026-11-07).
+  const cases = all.filter(q => CATEGORIES.split(',').includes(q.category)
+    && !Array.isArray(q.expected) && Array.isArray(q.answer_handles));
 
   /** Run the harness offline; `fixtures` (if given) replaces tools/test-queries.json. Returns the answer calls' systems. */
   function run(fixtures?: Entry[], answer: string | Record<string, string> = 'stub answer') {

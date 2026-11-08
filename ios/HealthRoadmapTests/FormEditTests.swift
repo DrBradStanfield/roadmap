@@ -80,6 +80,25 @@ final class FormEditTests: XCTestCase {
         XCTAssertEqual(data.supplements.stopped.first?.dose, 500)
     }
 
+    /// US-73 AC10b (break-test 2026-11-06): a stopped row says the phone's day it stopped, never
+    /// "Since" its start; an active one says since when, on the phone's day.
+    func testAStoppedSupplementSaysTheDayItStopped_US73_AC10b() throws {
+        let engine = try HealthEngine()
+        var record = try engine.blocking { [now] in try $0.newRecord(now: now, deviceId: "test", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!) }
+        record = try saved(engine, .form(.customSupplement(name: "Lion's Mane")), record)
+        let today = DayText.iso(now)
+        var data = try engine.blocking { [now] in try $0.myData(recordJSON: record, now: now, deviceId: "test") }
+        let active = try XCTUnwrap(data.supplements.active.first)
+        XCTAssertEqual(active.dayLine(stopped: false), "Since \(DayText.short(today))")
+        record = try saved(engine, .form(.supplement(key: "custom_lion_s_mane", name: "Lion's Mane", dose: nil, unit: nil, stopped: true)), record)
+        data = try engine.blocking { [now] in try $0.myData(recordJSON: record, now: now, deviceId: "test") }
+        let stopped = try XCTUnwrap(data.supplements.stopped.first)
+        XCTAssertEqual(stopped.stoppedDay, today)
+        XCTAssertEqual(stopped.dayLine(stopped: true), "Stopped \(DayText.short(today))")
+        let noStopDay = SupplementsView.Row(key: "k", name: "n", dose: nil, unit: nil, startedDay: today, stoppedDay: nil)
+        XCTAssertEqual(noStopDay.dayLine(stopped: true), "Stopped", "an engine before stoppedDay, or no stop recorded")
+    }
+
     /// Adversary R1: a dose past Int's range (the schema has no upper bound) must print, not trap on every launch.
     func testAHugeDoseOrNumberPrintsWithoutTrapping() {
         XCTAssertEqual(SupplementSheet.doseText(5), "5")

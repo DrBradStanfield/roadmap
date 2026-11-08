@@ -12,7 +12,7 @@ import { encodeSex, decodeSex, encodeUnitSystem, decodeUnitSystem, isAlcoholAnsw
 import { CANONICAL_UNITS, rangeFault, UNIT_DEFS, type MetricType, type ValidationRange } from './units';
 import { parseLocalisedNumber } from './parseNumber';
 import { birthKept } from './validation';
-import { limitOf, withRowValue } from './lab-limits';
+import { comparatorOf, limitOf, limitRepresentative, withRowValue } from './lab-limits';
 
 /**
  * Maps HealthInputs field names to metric_type values for storage in the
@@ -418,6 +418,28 @@ export function screeningsToInputs(
     }
   }
   return inputs;
+}
+
+/**
+ * US-06 AC14: the PSA the plan's prostate cards and PSA reminder read. PSA is
+ * a measurement now (no client writes `prostate_psa_value` or
+ * `prostate_last_date` any more), so the saved PSA (`newestUsablePsa`, which
+ * has checked its range and day) stands in for both, value and day together.
+ * The newer by date wins over the old answers; in the same month the row
+ * wins, since the answer gives no day. A PSA printed as a limit is graded
+ * only when the limit decides against 4.0 (US-12 AC20): otherwise it has no
+ * value, and its day still counts.
+ */
+export function withPsaMeasurement(
+  screenings: import('./types').ScreeningInputs,
+  psa: { value: number; recordedAt: string; comparator?: unknown } | undefined,
+): import('./types').ScreeningInputs {
+  const day = psa?.recordedAt.slice(0, 10);
+  if (!psa || !day || (screenings.prostateLastDate ?? '') > day) return screenings;
+  const { comparator } = comparatorOf(psa);
+  if (!comparator) return { ...screenings, prostatePsaValue: psa.value, prostatePsaLimit: undefined, prostateLastDate: day };
+  const graded = limitRepresentative('psa', comparator, psa.value);
+  return { ...screenings, prostatePsaValue: graded ?? undefined, prostatePsaLimit: { comparator, bound: psa.value }, prostateLastDate: day };
 }
 
 /** API profile shape (camelCase, as returned by API endpoints). */

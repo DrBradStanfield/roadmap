@@ -2,7 +2,7 @@
 // Core Graphics only: no ffmpeg, no new dependency). Every picture of the app is a frame of that
 // recording; the captions, the headline, the brand background, the phone outlines and the
 // fictional paper report are drawn here.
-//   compose preview <raw.mp4> <marks.txt> <out.mp4> [chat clip]   the 886 × 1920 app preview
+//   compose preview <raw.mp4> <marks.txt> <out.mp4> [chat clip [Chat tab capture]]   the 886 × 1920 app preview
 //   compose header  <raw.mp4> <marks.txt> <out dir>                the 3840 × 1646 header, its stills
 // marks.txt holds "VIDEO-MARK <beat> <unix seconds>" lines; "recording" is the recording's start.
 import AppKit
@@ -341,6 +341,19 @@ func chatStatusBar(_ ctx: CGContext, _ image: CGImage) {
     ctx.fillPath()
 }
 
+/// The clip's tab bar made the app's own: the clip was filmed before My health and shows the
+/// old three tabs. From 0.9 of the height down (below the question field, on Chat's white
+/// ground), the simulator's Chat tab band (app-store-drop-in.swift's, from row 2360 of its
+/// 1206 × 2622 capture), scaled to the clip's width and set on its bottom edge.
+func chatTabBar(_ ctx: CGContext, _ image: CGImage, _ bar: CGImage) {
+    let w = CGFloat(image.width), h = CGFloat(image.height)
+    let band = bar.cropping(to: CGRect(x: 0, y: 2360, width: bar.width, height: bar.height - 2360))!
+    let bandHeight = CGFloat(band.height) * w / CGFloat(bar.width)
+    ctx.setFillColor(CGColor(gray: 1, alpha: 1))
+    ctx.fill(CGRect(x: 0, y: h * 0.9, width: w, height: h * 0.1))
+    drawImage(ctx, band, in: CGRect(x: 0, y: h - bandHeight, width: w, height: bandHeight))
+}
+
 /// The clip's beats, from how much the picture changes below the status bar: `start` just
 /// before the tap on a starter question, `sent` once the sources show and the app is writing,
 /// `answer` just before the answer lands. The still wait between `sent` and `answer` is cut.
@@ -376,21 +389,21 @@ func chatTimes(_ clip: Footage) -> (start: Double, sent: Double, answer: Double)
     return (start: beats[0] + 0.35, sent: beats[wait - 1] + 0.45, answer: beats[wait] - 0.1)
 }
 
-func makePreview(raw: URL, out: URL, chat: URL?) {
+func makePreview(raw: URL, out: URL, chat: URL?, tabBar: CGImage?) {
     let size = CGSize(width: 886, height: 1920)
     let rec = Footage(raw, maxHeight: 1926 * 1.15)
     var pieces = [
-        // My data, as the person left it; a slow push towards the numbers.
+        // My health, as the person left it; a slow push towards the numbers.
         Piece(footage: rec, src0: mark("mydata") + 0.2, src1: mark("mydata") + 5.4, out: 4.6, z0: 1.0, z1: 1.06, anchor: CGPoint(x: 0.5, y: 0.35), caption: 0),
         // "Add medical records": the sheet opens on where the records are.
         Piece(footage: rec, src0: mark("add") + 0.1, src1: mark("add") + 2.6, out: 2.5, caption: 1),
         // The report on its way to Claude (the photo picker and the one-time consent are left out).
         Piece(footage: rec, src0: mark("reading") + 0.3, src1: mark("reading") + 2.3, out: 2.0, caption: 1),
-        // The values to check, then saved, then on My data.
+        // The values to check, then saved, then on My health.
         Piece(footage: rec, src0: mark("review") + 0.4, src1: mark("save") + 0.1, out: 4.4, z0: 1.0, z1: 1.1, anchor: CGPoint(x: 0.5, y: 0.42), caption: 1),
         Piece(footage: rec, src0: mark("save") + 0.1, src1: mark("saved") + 1.0, out: 1.8, caption: 1),
         Piece(footage: rec, src0: mark("after") - 0.3, src1: mark("after") + 3.6, out: 3.0, caption: 1),
-        // My plan, then one step opened to its evidence.
+        // My health's steps, then one opened to its evidence.
         Piece(footage: rec, src0: mark("plan") + 0.3, src1: mark("plan") + 6.2, out: 4.4, caption: 2),
         Piece(footage: rec, src0: mark("open") - 0.1, src1: mark("evidence") + 3.2, out: 5.5, z0: 1.0, z1: 1.04, anchor: CGPoint(x: 0.5, y: 0.4), caption: 3),
     ]
@@ -398,7 +411,10 @@ func makePreview(raw: URL, out: URL, chat: URL?) {
         // Chat, filmed on an iPhone (the simulator cannot answer): the tap on a starter question,
         // then, past the wait for the answer, the answer arriving and held.
         let clip = Footage(chat, maxHeight: 1926 * 1.15)
-        clip.touchUp = { ctx, image in chatStatusBar(ctx, image) }
+        clip.touchUp = { ctx, image in
+            chatStatusBar(ctx, image)
+            if let tabBar { chatTabBar(ctx, image, tabBar) }
+        }
         let times = chatTimes(clip)
         pieces.append(Piece(footage: clip, src0: times.start, src1: times.sent, out: (times.sent - times.start) / 1.25, caption: 4))
         pieces.append(Piece(footage: clip, src0: times.answer, src1: min(clip.duration, times.answer + 3.3), out: 3.3, caption: 4))
@@ -595,7 +611,7 @@ func fillScreen(_ ctx: CGContext, _ image: CGImage, _ rect: CGRect) {
     drawImage(ctx, image, in: CGRect(x: rect.midX - CGFloat(image.width) * k / 2, y: rect.minY, width: CGFloat(image.width) * k, height: CGFloat(image.height) * k))
 }
 
-/// The resting picture: headline, then the report read (left), My data (centre), the plan (right).
+/// The resting picture: headline, then the report read (left), My health's values (centre), its steps (right).
 func drawTableau(_ ctx: CGContext, _ layout: HeaderLayout, loop: Double, screens: [CGImage], offsets: [CGFloat] = [0, 0, 0],
                  alphas: [Double] = [1, 1, 1], skip: Set<Int> = [], headlineWord: ((Int) -> (Double, Double))? = nil) {
     drawBackground(ctx, layout.size, loop: loop)
@@ -859,7 +875,8 @@ func mark(_ name: String) -> Double {
 }
 switch args[1] {
 case "preview": makePreview(raw: URL(fileURLWithPath: args[2]), out: URL(fileURLWithPath: args[4]),
-                            chat: args.count > 5 ? URL(fileURLWithPath: args[5]) : nil)
+                            chat: args.count > 5 ? URL(fileURLWithPath: args[5]) : nil,
+                            tabBar: args.count > 6 ? NSImage(contentsOfFile: args[6])?.cgImage(forProposedRect: nil, context: nil, hints: nil) : nil)
 case "header": makeHeader(raw: URL(fileURLWithPath: args[2]), outDir: URL(fileURLWithPath: args[4]))
 default: fatalError("preview or header")
 }

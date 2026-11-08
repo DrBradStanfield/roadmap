@@ -12,6 +12,7 @@ import {
 } from '../../packages/health-core/src/chat-edits';
 import { FIELD_TO_METRIC, METRIC_LABELS } from '../../packages/health-core/src/mappings';
 import { latestDayOnEarth } from '../../packages/health-core/src/merge';
+import { isActive } from '../../packages/health-core/src/blood-tests';
 import { appendMeasurement, correctValue, findActiveInSlot, measurementValueFault, resolveRecordedAt } from '../../packages/health-core/src/record-edits';
 import { updateProfile } from '../../packages/health-core/src/mcp-tools';
 import { upsertMedication } from '../../packages/health-core/src/state-edits';
@@ -241,7 +242,10 @@ function reviewPart(file: RoadmapFile, edits: ProposedEdit[], invalid: string[],
       // A hidden half the pair write left as it was (its text reads as the same number) is corrected
       // too, last, against the new other half, so the banner's "replaces" is what was saved.
       for (const [index, row] of held.entries()) {
-        if (!row || shownRow(row) || next.measurements.find((m) => m.id === row.id)?.status !== 'active') continue;
+        if (!row || shownRow(row)) continue;
+        // A legacy row with no status is active too (c71d283c); a row gone from the record is not.
+        const stored = next.measurements.find((m) => m.id === row.id);
+        if (!stored || !isActive(stored)) continue;
         const fixed = correctValue(next, { id: row.id, newValue: index === 0 ? pair.systolic : pair.diastolic, now });
         if (!fixed.ok) return refuse(`Blood pressure on ${dayText(day, today)} could not be saved.`);
         next = fixed.file;

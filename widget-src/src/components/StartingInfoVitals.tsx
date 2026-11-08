@@ -62,7 +62,7 @@ import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { useRangeWait } from '../lib/useRangeWait';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { usePrefillRef } from '../lib/usePrefillRef';
-import { Sparkline, ValueCell, BatchDateCell, BackfillCell, SAVE_ERRORS, SAVE_FAILED, SAME_SLOT, useLiveRegion } from './BloodTestTimeline';
+import { Sparkline, ValueCell, BatchDateCell, BackfillCell, saveErrorText, SAVE_FAILED, SAME_SLOT, useLiveRegion } from './BloodTestTimeline';
 import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
 import { UnitChip } from './UnitChip';
@@ -95,9 +95,9 @@ interface StartingInfoVitalsProps {
   plan: Pick<PlanBasis, 'age' | 'idealBodyWeight' | 'heightCm'> | null;
   /** A known minor, plan or no plan: no adult weight or BP target or colour (US-07 AC6). */
   knownMinor?: boolean;
-  /** Called after the user types a valid weight — continues the
-   *  height → weight → email focus chain from the legacy form. */
-  onAutoFocusEmail?: () => boolean;
+  /** Called after the user types a valid weight: as the last onboarding
+   *  answer, the person lands at My health's top (US-62 AC25). */
+  onOnboardingDone?: () => boolean;
   /** The weight is asked beside the height (US-62 AC13): its row is left out, so it shows once. */
   withoutWeight?: boolean;
   /** Per-field unit overrides — clicking the weight/waist chip toggles
@@ -256,7 +256,7 @@ export function vitalsCellsOf(
 
 export function StartingInfoVitals({
   vitalsHistory, unitSystem, onSave, onCorrectValue,
-  onDraftValue, formStage, plan, knownMinor, onAutoFocusEmail, withoutWeight, unitOverrides, onToggleFieldUnit,
+  onDraftValue, formStage, plan, knownMinor, onOnboardingDone, withoutWeight, unitOverrides, onToggleFieldUnit,
   prefillRef, flushRef, onHoldsText,
 }: StartingInfoVitalsProps) {
   const rows = withoutWeight ? ROWS.filter(r => r.kind !== 'simple' || r.metric !== 'weight') : ROWS;
@@ -373,19 +373,19 @@ export function StartingInfoVitals({
     type([null, metric], typed, unitFor(metric));
     const n = parseLocalisedNumber(typed);
 
-    // Weight only: continue the height → weight → email focus chain.
-    if (metric === 'weight' && onAutoFocusEmail && !focusedEmailRef.current && n != null && !validateTypedValue(metric, typed, unitFor(metric)).error) {
+    // Weight only: as the last answer, on to My health's top.
+    if (metric === 'weight' && onOnboardingDone && !landedRef.current && n != null && !validateTypedValue(metric, typed, unitFor(metric)).error) {
       if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
       if (/^\d{2,3}$/.test(typed) && n >= 30 && n <= 400) {
         const couldExtend = /^\d{2}$/.test(typed) && n * 10 <= 400;
         // The once-only jump is spent only if it happened (not before the last answer).
-        const jump = () => { if (onAutoFocusEmail()) focusedEmailRef.current = true; };
+        const jump = () => { if (onOnboardingDone()) landedRef.current = true; };
         if (!couldExtend) requestAnimationFrame(jump);
         else focusTimerRef.current = setTimeout(jump, 800);
       }
     }
   };
-  const focusedEmailRef = useRef(false);
+  const landedRef = useRef(false);
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setBpDraft = (which: 'sys' | 'dia', typed: string) => type([null, which], typed);
@@ -484,7 +484,7 @@ export function StartingInfoVitals({
       })));
       settle(ready.flatMap(c => {
         const status = Object.keys(c.values!).map(metric => refusedSlots.get(slotOf(c.date, metric))).find(Boolean);
-        return c.keys.map((key): [CellRef<VitalsKey>, string | undefined] => [[c.column, key], status && SAVE_ERRORS[status]]);
+        return c.keys.map((key): [CellRef<VitalsKey>, string | undefined] => [[c.column, key], status && saveErrorText(status)]);
       }));
       if (refusedSlots.size === 0) setActiveCell(null);
     } finally {

@@ -28,6 +28,7 @@
  * (widget-src/src/lib/constants.ts `formatShortDate`), not as a UTC day. A
  * wall-clock time labelled Z would show on the wrong day (review R1, 2026-10-21).
  */
+import { isActive } from './blood-tests';
 import { isBloodTestKey } from './core-rows';
 import { isCalendarDay } from './measurement-history';
 import { measurementValueFault, newId, slotKey, stampUpdatedAt } from './record-edits';
@@ -138,7 +139,7 @@ export function importDeviceSamples(
   // a first import can carry years of readings.
   const measurements = [...file.measurements];
   const activeAt = new Map<string, number>();
-  measurements.forEach((row, i) => { if (row.status === 'active') activeAt.set(slotKey('measurement', row.metricType, row.recordedAt), i); });
+  measurements.forEach((row, i) => { if (isActive(row)) activeAt.set(slotKey('measurement', row.metricType, row.recordedAt), i); });
   let height: DeviceSample | null = null;
 
   for (const reading of readingsOf(samples)) {

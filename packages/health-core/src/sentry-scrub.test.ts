@@ -386,6 +386,14 @@ describe('scrubText', () => {
     expect(scrubText('42 is my hba1c')).toBe('[value] is my hba1c');
   });
 
+  it('US-09 AC7f — redacts a value before a name that starts or ends without a word character', () => {
+    expect(scrubText('120 Lp(a)')).toBe('[value] Lp(a)');
+    expect(scrubText('came back 120 lp(a)')).toBe('came back [value] lp(a)');
+    expect(scrubText('33 γ-GT')).toBe('[value] γ-GT');
+    expect(scrubText('12 bananas')).toBe('12 bananas');
+    expect(scrubText('2 cholesterols')).toBe('2 cholesterols');
+  });
+
   it('redacts a blood-pressure pair', () => {
     expect(scrubText('BP 140/90')).toBe('BP [value]');
     expect(scrubText('blood pressure 138/88 mmHg')).toBe('blood pressure [value]');
@@ -423,6 +431,26 @@ describe('scrubText', () => {
 
   it('does not attempt condition words — a stated limit, not an oversight', () => {
     expect(scrubText(AUDIT)).toContain('diabetes');
+  });
+});
+
+describe('a typed short name (US-09 AC7, US-73 AC8)', () => {
+  // "vit" is a name since US-09 AC7g. A first try at it swallowed the next name's digits ("Vit. B12
+  // 300", "Vit D pending, B12 300") and left the value (US-73 review round 3); a name's gap now
+  // stops where another name starts.
+  it('a value after "B12" is scrubbed however "vit" is written before it', () => {
+    for (const text of ['Vit. B12 300', 'vit. b12 300', 'Vit  B12 300', 'vit.b12 300', 'vit-b12 300', 'vit_b12 300', 'vit:b12 300', 'vit\tb12 300', 'vit b12 300', 'vitamin b12 300', 'Vit D pending, B12 300']) {
+      expect(scrubText(text), text).not.toContain('300');
+    }
+    expect(scrubText('vitals ok')).toBe('vitals ok');
+  });
+
+  it('US-09 AC7g — "Vit D 45" is scrubbed, and words that hold "vit" are not names', () => {
+    expect(scrubText('Vit D 45')).toBe('Vit D [value]');
+    expect(scrubText('vit. d 45')).toBe('vit. d [value]');
+    expect(scrubText('Vit B12 300')).toBe('Vit B12 [value]');
+    expect(scrubText('multivit 2 daily')).toBe('multivit 2 daily');
+    expect(scrubText('vital signs 3 of 4')).toBe('vital signs 3 of 4');
   });
 });
 

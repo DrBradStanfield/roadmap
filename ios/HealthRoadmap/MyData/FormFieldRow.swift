@@ -16,6 +16,15 @@ struct FormFieldRow: View {
     var openMeasurement: () -> Void = {}
     /// The question's guide (US-58 AC5), opened from the info button beside it.
     var guide: MetricGuide?
+    /// The plan's suggestions on this question (US-73 AC6), shown first in the info sheet; the
+    /// info button then takes the attention colour.
+    var suggestions: [Suggestion] = []
+    /// A screening group's name (US-73 AC6), drawn in the question's place so
+    /// the group takes one row; the question then names the empty answer, or sits under the row.
+    var heading: String?
+    /// Under the row, each suggestion's description (a screening group) or else its title, one
+    /// line (a medicine, Brad 2026-11-05); the full text is behind the info button.
+    var describes = false
     @Environment(\.analytics) private var analytics
     @State private var guideShown = false
 
@@ -90,8 +99,11 @@ struct FormFieldRow: View {
     /// "Not recorded" and "Other (recorded)" show only while they are the answer.
     private func choice(label: String, hint: String?, options: [FormOption], value: String) -> some View {
         let pickable = options.filter { $0.disabled != true }
-        let shown = options.first { $0.value == value }?.label ?? "Select..."
-        return labelled(label, hint: hint) {
+        // Under a group's name, "Select screening method"; a question ("Discussed…?") goes under the row instead.
+        let asks = label.hasSuffix("?")
+        let empty = heading == nil || asks ? "Select..." : "Select \(Self.lowercasedFirst(label))"
+        let shown = options.first { $0.value == value && !$0.value.isEmpty }?.label ?? empty
+        return labelled(label, hint: heading != nil && asks ? [label, hint].compactMap { $0 }.joined(separator: "\n") : hint) {
             Menu {
                 Picker(label, selection: Binding(get: { value }, set: { picked in
                     guard picked != value else { return }
@@ -119,20 +131,29 @@ struct FormFieldRow: View {
     private func title(_ label: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(label)
-            if let guide {
+            if guide != nil || !suggestions.isEmpty {
                 Button {
                     guideShown = true
-                    analytics?.event(.guideOpened)
+                    if let event = Self.opened(guide: guide) { analytics?.event(event) }
                 } label: {
-                    Image(systemName: "info.circle").foregroundStyle(Color.accentColor)
+                    Image(systemName: suggestions.isEmpty ? "info.circle" : "info.circle.fill")
+                        .foregroundStyle(suggestions.isEmpty ? Color.accentColor : Color.status("attention"))
                 }
                 .buttonStyle(.borderless)
                 // A 44-point tap area that leaves the row's layout as it was.
                 .padding(12).contentShape(Rectangle()).padding(-12)
-                .accessibilityLabel("About \(guide.title)")
-                .sheet(isPresented: $guideShown) { GuideSheet(guide: guide) }
+                .accessibilityLabel("About \(guide?.title ?? label)")
+                // The suggestions' own titles, so VoiceOver says one is inside.
+                .accessibilityValue(suggestions.map(\.title).joined(separator: ", "))
+                .sheet(isPresented: $guideShown) { GuideSheet(guide: guide, suggestions: suggestions) }
             }
         }
+    }
+
+    /// The info button's event: "Guide opened" only when its sheet shows a guide, never for a
+    /// sheet of the plan's suggestions alone (review R7).
+    static func opened(guide: MetricGuide?) -> Analytics.Event? {
+        guide == nil ? nil : .guideOpened
     }
 
     /// The question on the left, wrapped as long as it needs, the answer on the right, the hint below.
@@ -140,20 +161,31 @@ struct FormFieldRow: View {
         VStack(alignment: .leading, spacing: 6) {
             ViewThatFits(in: .horizontal) {
                 HStack(alignment: .firstTextBaseline) {
-                    title(label)
+                    title(heading ?? label)
                     Spacer(minLength: 12)
                     trailing()
                 }
                 VStack(alignment: .leading, spacing: 6) {
-                    title(label)
+                    title(heading ?? label)
                     trailing()
                 }
             }
             if let hint {
                 Text(hint).font(.footnote).foregroundStyle(.secondary)
             }
+            ForEach(suggestions) { suggestion in
+                Text(describes ? suggestion.description : suggestion.title)
+                    .font(.footnote)
+                    .foregroundStyle(suggestion.priority == "urgent" ? Color.status("urgent") : .primary)
+            }
         }
         .contentShape(Rectangle())
+    }
+
+    /// "Screening method" to "screening method"; "DEXA scan status" keeps its capitals.
+    private static func lowercasedFirst(_ text: String) -> String {
+        guard let first = text.first, text.dropFirst().first?.isLowercase == true else { return text }
+        return first.lowercased() + text.dropFirst()
     }
 }
 
