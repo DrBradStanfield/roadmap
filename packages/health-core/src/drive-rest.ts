@@ -216,7 +216,7 @@ export async function driveUploadDocument(accessToken: string, name: string, byt
  *  at `fetchOrFail`'s 30-second bound. */
 export async function driveDownloadDocument(accessToken: string, name: string, parentId: string): Promise<Blob> {
   const id = await driveFindFileId(accessToken, name, parentId);
-  if (!id) throw new StorageError(`${PROVIDER} document not found.`);
+  if (!id) throw new StorageError(`${PROVIDER} document not found.`, undefined, undefined, undefined, 'not-found');
   const res = await fetch(`${DRIVE_API}/files/${id}?alt=media`, { headers: auth(accessToken) });
   if (!res.ok) throw new StorageError(`${PROVIDER} document read failed (${res.status}).`, undefined, undefined, res.status);
   return res.blob();
