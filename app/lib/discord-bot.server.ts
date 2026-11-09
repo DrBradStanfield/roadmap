@@ -60,6 +60,7 @@ import {
   loadThreadHistory,
 } from './discord-bot-history.server';
 import { persistConversation } from './discord-bot-persist.server';
+import { safeErrorFields } from './safe-error-fields.server';
 
 export { splitForDiscord } from './discord-bot-messages.server';
 export { persistConversation } from './discord-bot-persist.server';
@@ -133,18 +134,18 @@ export function startDiscordBot(): void {
 
   client.on(Events.MessageCreate, (message) => {
     handleMessage(message).catch((err) => {
-      console.error('Discord message handler error:', err);
+      console.error('Discord message handler error:', safeErrorFields(err));
       Sentry.captureException(err, { tags: { platform: PLATFORM_DISCORD } });
     });
   });
 
   client.on(Events.Error, (err) => {
-    console.error('Discord client error:', err);
+    console.error('Discord client error:', safeErrorFields(err));
     Sentry.captureException(err, { tags: { platform: PLATFORM_DISCORD } });
   });
 
   client.login(DISCORD_BOT_TOKEN).catch((err) => {
-    console.error('Discord login failed:', err);
+    console.error('Discord login failed:', safeErrorFields(err));
     Sentry.captureException(err, { tags: { platform: PLATFORM_DISCORD } });
     client = null;
     isRunning = false;
@@ -159,7 +160,7 @@ export function stopDiscordBot(): void {
     client.destroy();
     console.log('Discord bot stopped');
   } catch (err) {
-    console.error('Discord destroy error:', err);
+    console.error('Discord destroy error:', safeErrorFields(err));
   }
   client = null;
   isRunning = false;
@@ -383,7 +384,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
       contextFirst: history.find(m => m.role === 'user')?.content,
       contextRecent: history.filter(m => m.role === 'user').slice(-3).map(m => m.content),
     }).catch((err) => {
-      console.error('Discord: persistConversation failed:', err);
+      console.error('Discord: persistConversation failed:', safeErrorFields(err));
       Sentry.captureException(err, {
         tags: { platform: PLATFORM_DISCORD, subsystem: 'persist' },
       });

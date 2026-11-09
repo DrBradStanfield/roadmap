@@ -1068,6 +1068,8 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
 class FakeDrive implements Server {
   online = true;
   folderMade = false;
+  /** A file name every search finds nothing for: a document deleted from Drive. */
+  missing: string | null = null;
   file: { text: string; version: number } | null = null;
   /** Runs at the version read that comes right before an upload. */
   beforeVersionCheck: (() => void) | null = null;
@@ -1092,6 +1094,7 @@ class FakeDrive implements Server {
     if (method === 'GET' && u.pathname === '/drive/v3/files' && q.includes('application/vnd.google-apps.folder')) {
       return ok({ files: this.folderMade ? [{ id: 'folder-1', name: 'Health Plan by Dr Brad' }] : [] });
     }
+    if (method === 'GET' && u.pathname === '/drive/v3/files' && this.missing && q.includes(this.missing)) return ok({ files: [] });
     if (method === 'GET' && u.pathname === '/drive/v3/files') return ok({ files: this.file ? [{ id: 'file-1' }] : [] });
     if (method === 'POST' && u.pathname === '/drive/v3/files') {
       this.folderMade = true;
@@ -1281,6 +1284,53 @@ describe('documents from "Add medical records" (US-52 AC13d)', () => {
     await expect(engine.documentOriginal(typed.id)).rejects.toThrow('no original');
     await engine.cloudClose(false);
     await expect(engine.documentOriginal(row.id)).rejects.toThrow('not open');
+  });
+
+  it('US-73 AC12 (PR 972 review R6): a refused original says why, as failure JSON Swift reads', async () => {
+    const { dropbox, engine, state, erase } = await opened();
+    const answer = JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1')) as Answer;
+    const [row] = (JSON.parse(answer.record) as RoadmapFile).documents;
+    const kindOf = async (read: Promise<ArrayBuffer>) => {
+      const error = await read.then(() => null, (e: Error) => e);
+      return (JSON.parse(error!.message) as { kind: string }).kind;
+    };
+    expect(await kindOf(engine.documentOriginal('no-such-id'))).toBe('no-original');
+    const answerOf = dropbox.answer.bind(dropbox);
+    dropbox.answer = () => ({ status: 500, headers: {}, body: 'internal_error' });
+    expect(await kindOf(engine.documentOriginal(row.id))).toBe('unreachable');
+    state.signedOut = true;
+    dropbox.answer = () => ({ status: 401, headers: {}, body: 'invalid_access_token' });
+    expect(await kindOf(engine.documentOriginal(row.id))).toBe('sign-in');
+    state.signedOut = false;
+    dropbox.answer = answerOf;
+    await engine.cloudClose(false);
+    expect(await kindOf(engine.documentOriginal(row.id))).toBe('not-open');
+  });
+
+  it('US-73 AC12 (PR 1051 review R1): an original deleted from the cloud is no-original, not unreachable', async () => {
+    const { dropbox, engine, erase } = await opened();
+    const answer = JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1')) as Answer;
+    const [row] = (JSON.parse(answer.record) as RoadmapFile).documents;
+    const kindOf = async (read: Promise<ArrayBuffer>) => {
+      const error = await read.then(() => null, (e: Error) => e);
+      return (JSON.parse(error!.message) as { kind: string }).kind;
+    };
+    // Deleted in Dropbox: its download answers 409 path/not_found, as Dropbox does.
+    const answerOf = dropbox.answer.bind(dropbox);
+    dropbox.answer = (url, headers, body) => url.endsWith('/files/download') && headers['dropbox-api-arg'].includes(row.fileRef.split('/').pop()!)
+      ? { status: 409, headers: {}, body: '{"error_summary":"path/not_found/"}' } : answerOf(url, headers, body);
+    expect(await kindOf(engine.documentOriginal(row.id))).toBe('no-original');
+    await engine.cloudClose(false);
+
+    const drive = new FakeDrive();
+    const withRow = await recordWith([], 'web');
+    withRow.documents = [{ ...row, fileRef: row.fileRef }];
+    drive.put(withRow);
+    drive.folderMade = true;
+    drive.missing = row.fileRef.split('/').pop()!;
+    const onDrive = await phone(drive);
+    await onDrive.engine.cloudOpen('google-drive', 'ios-1', false);
+    expect(await kindOf(onDrive.engine.documentOriginal(row.id))).toBe('no-original');
   });
 
   it('US-73 AC12 (review R5): a document deleted on another device no longer reads its original', async () => {

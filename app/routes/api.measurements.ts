@@ -8,6 +8,7 @@ import { buildUnsubscribeUrl, emailLimiterKey, enrolByEmail, scheduleSchema, typ
 import { recordServerEvent } from '../lib/product-events.server';
 import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
 import { createRateLimiter } from '../lib/rate-limiter';
+import { safeErrorFields } from '../lib/safe-error-fields.server';
 
 const checkGuestReportLimit = createRateLimiter(5, 24 * 60 * 60_000, 30 * 60_000); // 5/day per email
 // Per-IP as well as per-victim-email: the email limiter bounds harm to ONE
@@ -105,7 +106,7 @@ async function handleKlaviyoCapture(data: unknown, clientIp: string) {
     // lifetime totals), so this path stores no email/PII and no tally at all.
     return Response.json({ success: true });
   } catch (error) {
-    console.error('Klaviyo capture error:', error);
+    console.error('Klaviyo capture error:', safeErrorFields(error));
     Sentry.captureException(error, { tags: { feature: 'klaviyo_capture' } });
     return Response.json({ success: false, error: 'Failed to capture email' }, { status: 500 });
   }

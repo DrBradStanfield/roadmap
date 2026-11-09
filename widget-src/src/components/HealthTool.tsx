@@ -82,6 +82,7 @@ import type { ApiDocument } from '../lib/api-types';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { createRemoteChangeRelay } from '../lib/remote-replay';
+import { debounceSave, cancelListSave, flushListSaves, type ListSaves } from '../lib/list-saves';
 
 // What "Delete all my data" does, said BEFORE the click. The caveats used to
 // arrive in the alert afterwards, which is too late to be a decision, and
@@ -188,37 +189,6 @@ function loadUnitOverrides(): Record<string, UnitSystem> {
   const stored = getJson<unknown>('health_roadmap_unit_overrides');
   if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return {};
   return Object.fromEntries(Object.entries(stored).filter(([, us]) => us === 'si' || us === 'conventional'));
-}
-
-/** Each key's waiting save: its timer and the save itself. */
-type ListSaves = Map<string, { timer: ReturnType<typeof setTimeout>; fire: () => void }>;
-
-/** One save per key, 300 ms after its last change: rapid dropdown changes
- *  would otherwise race. The save carries the erase the page showed when the
- *  change was made, not when the timer fires (US-16 AC2a). */
-function debounceSave(timers: ListSaves, key: string, save: (erase: string) => void, erase = getShownErase()): void {
-  clearTimeout(timers.get(key)?.timer);
-  const fire = () => {
-    timers.delete(key);
-    save(erase);
-  };
-  timers.set(key, { timer: setTimeout(fire, 300), fire });
-}
-
-/** Drop one key's waiting save without running it. */
-function cancelListSave(timers: ListSaves, key: string): void {
-  clearTimeout(timers.get(key)?.timer);
-  timers.delete(key);
-}
-
-/** Run every waiting list save now, as the page goes away (US-06 AC13). */
-function flushListSaves(all: ListSaves[]): void {
-  for (const timers of all) {
-    for (const { timer, fire } of [...timers.values()]) {
-      clearTimeout(timer);
-      fire();
-    }
-  }
 }
 
 /**
@@ -450,9 +420,13 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // proposal, a medication Undo) go when the screen moves to another erase,
   // this tab's or another device's, even with post-erase rows. A re-read that
   // brings no erase keeps them.
+  // The same erase as React state: the upload modal is keyed on it, so an
+  // erase ends a review read before it (US-16 AC2c).
+  const [shownErase, setShownErase] = useState(getShownErase);
   const showErase = useCallback((erase: string) => {
     if (erase === getShownErase()) return;
     markEraseShown(erase);
+    setShownErase(erase);
     setMedUndo(null);
     setProfileProposal(null);
   }, []);
@@ -1163,9 +1137,11 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       setMedications([]);
       setScreenings([]);
       setSupplements([]);
+      // Cleared here too: a re-read during the write may have shown this
+      // erase already, and showErase then clears nothing (adversary R1).
       setProfileProposal(null);
       setMedUndo(null);
-      markEraseShown(getEraseIdentity());
+      showErase(getEraseIdentity());
       // A refusal of this erase's own leftovers is not news (adversary R3).
       refusedFor.current = getEraseIdentity();
       longitudinalDebounce.cancel();
@@ -1184,7 +1160,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       window.alert(result.error || 'Failed to delete data. Please try again.');
     }
     return result.success;
-  }, [longitudinalDebounce, profileDebounce]);
+  }, [longitudinalDebounce, profileDebounce, showErase]);
 
   // One field's new value, from the form or the chat. A weight or waist
   // keeps the unit its caller converted it from (typedIn). One update per
@@ -1644,7 +1620,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
         </div>
       )}
 
+      {/* A new erase mounts a new modal: a review read before it, hidden or
+          open, would save pre-erase values into the erased record (US-16 AC2c). */}
       <UploadModal
+        key={shownErase}
         open={showUploadModal}
         onOpen={() => setShowUploadModal(true)}
         unitSystem={unitSystem}

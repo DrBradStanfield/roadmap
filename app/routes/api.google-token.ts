@@ -22,8 +22,9 @@ import { ALLOWED_ORIGINS, BODY_TOO_LARGE, corsHeaders, getClientIp, parseSimpleR
  */
 
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
-// Google gets this long to answer before the exchange fails (US-09 AC31).
-const GOOGLE_TIMEOUT_MS = 10_000;
+// Google gets this long to answer before the exchange fails (US-09 AC31). The
+// browser waits longer for this route (drive.ts, issue #977; its test checks).
+export const GOOGLE_TIMEOUT_MS = 10_000;
 
 // Generous: a real user exchanges ~once an hour; connects are rare.
 const allowRequest = createRateLimiter(30, 60_000, 10 * 60_000);
@@ -43,6 +44,15 @@ const bodySchema = z.union([
     refreshToken: z.string().min(1).max(2048),
   }),
 ]);
+
+// What a 2xx from Google must hold before it reaches the browser (issue #924):
+// never a 200 without an access token or with an expiry that is not a number.
+const googleGrantSchema = z.object({
+  access_token: z.string().min(1),
+  refresh_token: z.string().min(1).optional(),
+  expires_in: z.number().finite(),
+  id_token: z.string().optional(),
+});
 
 export async function loader({ request }: LoaderFunctionArgs) {
   return Response.json({ error: 'POST only' }, { status: 405, headers: corsHeaders(request) });
@@ -115,16 +125,21 @@ export async function action({ request }: ActionFunctionArgs) {
     return Response.json({ error: 'exchange_failed', errorDescription: 'unreadable_response' }, { status: 502, headers });
   }
 
+  const grant = googleGrantSchema.safeParse(payload);
+  if (!grant.success) {
+    return Response.json({ error: 'exchange_failed', errorDescription: 'incomplete_response' }, { status: 502, headers });
+  }
+
   // Whitelist the fields the client needs — nothing else passes through.
   return Response.json(
     {
-      accessToken: payload.access_token,
-      refreshToken: payload.refresh_token, // present on code exchange only
-      expiresIn: payload.expires_in,
+      accessToken: grant.data.access_token,
+      refreshToken: grant.data.refresh_token, // present on code exchange only
+      expiresIn: grant.data.expires_in,
       // Signed ID token (present when the grant includes openid). The browser
       // forwards it to the reminders opt-in as proof of the verified email —
       // this endpoint still stores nothing.
-      idToken: payload.id_token,
+      idToken: grant.data.id_token,
     },
     { headers },
   );

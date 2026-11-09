@@ -1275,8 +1275,11 @@ log a closed reason word, never the key id or IP.
   A lost key may fail its assertion with more than one error code, not only `invalidKey`,
   so any failure of the stored key counts as lost, once a launch: a key the launch
   registered is used first, Keychain or not, and never replaced on the phone; it keeps
-  failing until a relaunch. A 401 `unknown_key` still re-registers once per request
-  (US-52 AC1c, 2026-11-09: Brad's reinstalled phone). A failed App Attest call names its step and code on screen ("App Attest assert 3").
+  failing until a relaunch. A 401 `unknown_key` still re-registers once per request, and
+  a registration that fails is not remembered, so the next request tries again: a
+  registration the server keeps refusing is retried per report (up to 20 for a 20-report
+  ZIP) and spends the IP's 10 failing attempts a day (AC1b), locking out other phones on
+  that IP until the next day (US-52 AC1c, 2026-11-09: Brad's reinstalled phone). A failed App Attest call names its step and code on screen ("App Attest assert 3").
 - Counter stale (401 `stale_counter`): one retry with a fresh assertion.
 - Key store down, or `APP_ATTEST_TEAM_ID` unset: 503. Never open.
 - Over a limit: 429 with a plain message; no model call.
@@ -1609,8 +1612,10 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
   Apple's Health sheet (#999, iOS 27.0, measured 2026-11-09): under load its Don't Allow drops
   out of the tree for a moment, and reading an element's `frame` then fails the test, so
   `declineInSheet` reads a snapshot, which throws instead. A snapshot's frame is not in screen
-  points (the button read 766 by snapshot, 828 by `frame`; the sheet's window starts 62 pt down,
-  98 at system XXXL), so the helper places it against the window's own snapshot at each look.
+  points (the button read 766 by snapshot, 828 by `frame`; the sheet's window starts 62 pt down),
+  so the helper places it against the window's own snapshot at each look. It reads a window's
+  live frame once, after both snapshots have read, waits for Apple's OK to have a place, and
+  passes only once the sheet's windows are gone; each miss names its own cause (#1032).
 - `HealthRoadmap/`: the SwiftUI app, one folder per feature:
   - `App/`: the entry point (`AppParts` makes the engine and the record once),
     `RootView` (the tabs: My data, My plan, Chat; and the first-run cover),

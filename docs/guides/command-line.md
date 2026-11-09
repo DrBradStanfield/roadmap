@@ -2,7 +2,7 @@
 title: "Run your health plan from the command line"
 description: "Two commands in this repo read your health-roadmap.json and write to it: one prints your plan offline, one files a new value."
 slug: "command-line"
-updated: "2026-10-21"
+updated: "2026-11-09"
 stories: ["US-30", "US-31", "US-33"]
 ---
 
@@ -26,7 +26,7 @@ Every command below uses that copy. Swap in your real path when you are ready.
 
 ## Install
 
-You need Node 20.10 or newer. Check with `node --version`. Then:
+You need Node 22 or newer. Check with `node --version`. Then:
 
 `git clone https://github.com/DrBradStanfield/roadmap.git`
 

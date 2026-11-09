@@ -2,7 +2,7 @@
 title: "An open-source health record you can connect to your AI"
 description: "The code is public and MIT licensed. Your record is one file in your own cloud, so the website, the command line and an AI with file access can all read it."
 slug: "ai-health-record"
-updated: "2026-11-02"
+updated: "2026-11-09"
 stories: ["US-29", "US-30", "US-31", "US-32", "US-38"]
 ---
 
@@ -69,7 +69,7 @@ Gemini is not on this list, because Google has not opened custom connectors to c
 
 Four steps, on any Claude plan. Nothing to install and no special mode to turn on.
 
-1. Open the add-connector dialog. In claude.ai, open Settings, then Connectors, then Add custom connector. Or follow [this link](https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Health%20Roadmap&connectorUrl=https%3A%2F%2Fmcp.drstanfield.com%2Fmcp), which Anthropic supports for exactly this: it opens the same dialog with the name and the address already in it, tells you the values came from an outside link, and waits for you to confirm. It adds nothing on its own and grants nothing on its own.
+1. Open the add-connector dialog. In claude.ai, open Settings, then Connectors, then Add custom connector. Or follow [this link](https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Health%20by%20Dr%20Brad&connectorUrl=https%3A%2F%2Fmcp.drstanfield.com%2Fmcp), which Anthropic supports for exactly this: it opens the same dialog with the name and the address already in it, tells you the values came from an outside link, and waits for you to confirm. It adds nothing on its own and grants nothing on its own.
 
 2. Fill it in and add it. Name it Health by Dr Brad. Paste `https://mcp.drstanfield.com/mcp` as the server address. Press Add.
 

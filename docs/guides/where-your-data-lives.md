@@ -2,7 +2,7 @@
 title: "Where your health data lives"
 description: "What the Health by Dr Brad tool keeps, where it keeps it and for how long, including everything that passes through our server or another company."
 slug: "where-your-data-lives"
-updated: "2026-10-30"
+updated: "2026-11-09"
 stories: ["US-09", "US-11", "US-12", "US-15", "US-17", "US-23", "US-32"]
 ---
 
@@ -90,7 +90,7 @@ Most requests from the tool reach our server through Shopify, which hosts this s
 
 ## Delete your data
 
-Use the Delete All My Data button at the bottom of your plan. It erases your health record and chat history in this browser and in your connected cloud, and turns off reminders. A few things are out of its reach, including your uploaded files, your provider's version history, the chat text our server keeps for 30 days, the copy it keeps of each health question, your account row if you are signed in, and the chat session and audit rows. [Find your health record file](/blogs/guides/find-your-record#delete-your-data) lists what it leaves in your cloud and says how to remove each one.
+Use the Delete all my data button at the bottom of Settings on a computer, or of the Account tab on a phone. It erases your health record and chat history in this browser and in your connected cloud, and turns off reminders. A few things are out of its reach, including your uploaded files, your provider's version history, the chat text our server keeps for 30 days, the copy it keeps of each health question, your account row if you are signed in, and the chat session and audit rows. [Find your health record file](/blogs/guides/find-your-record#delete-your-data) lists what it leaves in your cloud and says how to remove each one.
 
 To cut the tool off from your cloud, remove the app in your provider's settings: [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps) for Dropbox, [myaccount.google.com/connections](https://myaccount.google.com/connections) for Google Drive. That also disconnects any AI assistant you connected through us.
 

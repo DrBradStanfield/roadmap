@@ -30,6 +30,18 @@ const webPair = (systolic: number, diastolic: number) => edited(edited(nz(), NOW
 const history = (file: RoadmapFile) => metricHistory(file, 'blood_pressure', LATER).rows.map((row) => [row.day, row.value, row.status]);
 
 describe('blood pressure, one reading (US-25 AC17)', () => {
+  it('a half printed as a limit carries its printed words, for the chart\'s hollow point (US-12 AC20a, #922)', () => {
+    const file = edited(nz(), NOW,
+      { kind: 'bloodPressure', systolic: 125, diastolic: 78, day: '2026-10-02' },
+      { kind: 'bloodPressure', systolic: 120, diastolic: 80, day: '2026-10-20' });
+    file.measurements.find((row) => row.metricType === 'systolic_bp' && row.recordedAt.startsWith('2026-10-02'))!.comparator = '<';
+    const [exact, limited] = metricHistory(file, 'blood_pressure', LATER).rows;
+    expect(limited).toMatchObject({ value: '< 125/78', systolic: '125', diastolic: '78', systolicLimit: '< 125' });
+    expect(limited).not.toHaveProperty('diastolicLimit');
+    expect(exact).not.toHaveProperty('systolicLimit');
+    expect(exact).not.toHaveProperty('diastolicLimit');
+  });
+
   it('My data shows one row, the newest day\'s pair', () => {
     const file = edited(nz(), NOW,
       { kind: 'bloodPressure', systolic: 130, diastolic: 85, day: '2026-09-01' },

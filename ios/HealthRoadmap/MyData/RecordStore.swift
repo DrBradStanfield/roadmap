@@ -30,7 +30,7 @@ final class RecordStore {
     /// The plan's cards by topic, from the same call (US-73 AC3).
     var topics: TopicLayout? { drawn?.topics }
     /// Why the record cannot be read, if it cannot. The app then writes nothing.
-    private(set) var problem: String?
+    private(set) var problem: RecordProblem?
     /// While a cloud record is open (US-25 AC11): the erase the screen shows. Every
     /// edit then goes through the engine's session, which refuses one made for
     /// another erase. Nil: the record is the phone's file, written here.
@@ -240,7 +240,7 @@ final class RecordStore {
                 self.show(try await self.engine.loadPhone(file, deviceId: deviceId, units: units))
             } catch {
                 self.display(nil)
-                self.problem = "Your record on this iPhone could not be opened. \(error.localizedDescription)"
+                self.problem = RecordProblem(error)
             }
         }
     }
@@ -441,7 +441,7 @@ final class RecordStore {
             return .refused(message: "Your record changed while this was open, so this was not saved. Close this and enter the value again.", existingId: nil)
         }
         if let erase = seen.erase { return await applyInCloud(edit, erase: erase, seen: seen) }
-        if let problem { return .refused(message: problem, existingId: nil) }
+        if let problem { return .refused(message: problem.words, existingId: nil) }
         // A number read in units the record no longer has, as the cloud session refuses it
         // (cloud.ts dependsOnUnits): the master switch landed while the sheet was open.
         if Self.dependsOnUnits(edit), seen.units != (myData?.unitSystem ?? "si") {
@@ -561,7 +561,7 @@ final class RecordStore {
         guard seen.erase == cloudErase else {
             return .refused("Your record changed while this was open, so this was not saved. Close this and try again.")
         }
-        if seen.erase == nil, let problem { return .refused(problem) }
+        if seen.erase == nil, let problem { return .refused(problem.words) }
         let before = recordJSON
         do {
             // The engine decides whether an original is kept (only in a cloud); off-cloud

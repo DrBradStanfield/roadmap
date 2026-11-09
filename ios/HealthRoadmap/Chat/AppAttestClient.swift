@@ -106,7 +106,9 @@ actor AppAttestClient {
     /// but the key does not, and iOS may report that with more than one error code, not
     /// only `invalidKey`: so any failure of the stored key makes a new one. A key this
     /// launch registered is used first, even when the Keychain did not keep it, and never
-    /// replaced: a 20-report ZIP must not spend 20 registrations.
+    /// replaced on the phone: a 20-report ZIP must not spend 20 registrations. The server's
+    /// 401 `unknown_key` (see `post`) still replaces it, once per request, and a failed
+    /// registration is not remembered, so the next request registers again.
     private func assertion(_ clientDataHash: Data) async throws -> (String, Data) {
         if let registered { return (registered, try await device("assert") { try await service.generateAssertion(registered, clientDataHash: clientDataHash) }) }
         if let stored = keys.read() {

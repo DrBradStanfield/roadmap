@@ -143,16 +143,14 @@ final class OnboardingUITests: XCTestCase {
         guard sheet.cells["UIA.Health.AuthSheet.AllCategoryButton"].waitForExistence(timeout: 40) else {
             return XCTFail("Apple's Health sheet never appeared after Continue")
         }
-        if !declineInSheet(sheet) && sheet.windows.firstMatch.exists {
-            XCTFail("Apple's Health sheet stayed up after Don't Allow")
-        }
+        if let failure = declineInSheet(sheet) { XCTFail(failure) }
         app.activate()
     }
 
-    /// Taps Don't Allow in Apple's Health sheet, then the OK Apple shows after it, if it shows;
-    /// says whether it did.
-    @MainActor @discardableResult
-    private func declineInSheet(_ sheet: XCUIApplication) -> Bool {
+    /// Taps Don't Allow in Apple's Health sheet, then the OK Apple shows after it, if it shows.
+    /// Nil once the sheet has closed; else what went wrong (#1032: a miss names its own cause).
+    @MainActor
+    private func declineInSheet(_ sheet: XCUIApplication) -> String? {
         // On iOS 27.2 Don't Allow ends the long sheet, and asking whether it is hittable throws
         // ("Activation point invalid"): scroll until its frame is on screen, then tap that point.
         // On a loaded Mac the button drops out of the tree for a moment while the sheet settles: an
@@ -164,10 +162,15 @@ final class OnboardingUITests: XCTestCase {
         // the window's own snapshot, at each look, as the sheet may still be sliding up. Scrolled off
         // (at large text the sheet is long) the button reads an infinite frame and `exists` says no.
         // An element's own `tap` fails in Apple's sheet, so a button is tapped at the point it reports.
-        let dontAllow = sheet.buttons.matching(NSPredicate(format: "identifier == %@ OR label == %@", "UIA.Health.DoNotAllow.Button", "Don’t Allow")).firstMatch
         let window = sheet.windows.firstMatch
+        guard window.exists else { return "Apple's Health sheet had no window to decline in" }
+        // One read that the sheet is gone is no proof (#999): its windows must stay gone.
+        let closed = { (cause: String) -> String? in window.waitForNonExistence(timeout: 15) ? nil : cause }
+        let dontAllow = sheet.buttons.matching(NSPredicate(format: "identifier == %@ OR label == %@", "UIA.Health.DoNotAllow.Button", "Don’t Allow")).firstMatch
         /// Where `button` is on screen, when it is in `window`'s view: its snapshot moved by the
         /// window's screen frame less the window's own snapshot (62 pt on iOS 27.0, measured).
+        /// Both snapshots come first, as they throw rather than fail; the live frame is read once,
+        /// only after both have (#1032: a window that closes can fail that read, #999).
         let onScreen = { (button: XCUIElement, window: XCUIElement) -> CGRect? in
             guard let box = try? window.snapshot().frame, let frame = try? button.snapshot().frame, !frame.isEmpty,
                   box.contains(frame) else { return nil }
@@ -190,15 +193,24 @@ final class OnboardingUITests: XCTestCase {
                 spot = onScreen(dontAllow, window)
             }
             guard let spot else {
-                if attempt == 2 && window.exists { XCTFail("Apple's Health sheet has no Don't Allow") }
+                if attempt == 2 && window.exists { return "Apple's Health sheet has no Don't Allow" }
                 continue
             }
             tap(spot)
             _ = ok.waitForExistence(timeout: 30)
         }
-        guard let spot = onScreen(ok, okWindow) else { return false }
-        tap(spot)
-        return true
+        // A sheet that closed without Apple's OK is done; one still up with no OK stayed up.
+        guard ok.exists else { return closed("Apple's Health sheet stayed up after Don't Allow") }
+        // OK can be in the tree a moment before its snapshot reads (#1032): wait for its place.
+        var okSpot = onScreen(ok, okWindow)
+        for _ in 0..<20 where okSpot == nil && ok.exists {
+            RunLoop.current.run(until: .now + 0.5)
+            okSpot = onScreen(ok, okWindow)
+        }
+        guard let okSpot else { return closed("Apple's OK showed but never had a place on screen") }
+        tap(okSpot)
+        // The tap is not the proof: the sheet's windows must go.
+        return closed("Apple's Health sheet stayed up after Don't Allow and OK")
     }
 
     @MainActor
@@ -627,7 +639,7 @@ final class OnboardingUITests: XCTestCase {
             _ = all.waitForExistence(timeout: 40)
         }
         XCTAssertTrue(all.exists, "Apple's Health sheet appears")
-        XCTAssertTrue(declineInSheet(sheet), "Apple's note after Don't Allow")
+        XCTAssertNil(declineInSheet(sheet), "Apple's sheet closes after Don't Allow")
         app.activate()
         app.buttons["Done"].firstMatch.tap()
 

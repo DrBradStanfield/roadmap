@@ -141,6 +141,10 @@ struct MetricHistory: Decodable, Equatable {
         /// A blood pressure's halves; nil for a missing half or another metric (AC17).
         var systolic: String? = nil
         var diastolic: String? = nil
+        /// A blood pressure's half printed as a limit, as read ("< 125"), drawn hollow and off its
+        /// line (US-12 AC20a, #922); nil for an exact half, or from an older engine.
+        var systolicLimit: String? = nil
+        var diastolicLimit: String? = nil
         /// A blood pressure's active row ids, sent back with a replace (AC17).
         var pairIds: [String]? = nil
         /// A lab result printed as a limit (US-12 AC20): its bound in the page's unit, where the
