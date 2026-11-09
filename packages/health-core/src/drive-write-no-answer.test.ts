@@ -1,10 +1,10 @@
 /**
- * US-09 AC43: a Google Drive record or named-file save that goes
- * out and gets no answer may have landed, so its failure says so, as Dropbox,
- * GitHub and WebDAV saves already do (AC13d, AC13f). Drive's create (POST)
- * and update (PATCH) carried the unreachable hint, "Try once more", which the
- * hosted connector passes to the assistant about a change that may already be
- * in the file. Found by @robertaustinbell's untangle audit (bug 6).
+ * US-09 AC43: a Google Drive named-file save (chat-history.json, a pending
+ * import) that goes out and gets no answer may have landed, so its failure
+ * says so, as Dropbox, GitHub and WebDAV saves already do (AC13d, AC13f).
+ * Drive's create (POST) and update (PATCH) carried the unreachable hint, "Try
+ * once more". The record already had Drive's own landed hint (uncertain()).
+ * Found by @robertaustinbell's untangle audit (bug 6).
  * Real DriveAdapter; synthetic HTTP only, no live provider.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
