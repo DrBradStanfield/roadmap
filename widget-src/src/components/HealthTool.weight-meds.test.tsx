@@ -381,6 +381,34 @@ describe('US-06 AC5: the form recommends a cholesterol medication only when the 
   });
 });
 
+// US-06 AC20 (Brad, 2026-11-02): with the statin not tolerated the plan suggests the PCSK9
+// inhibitor first, then ezetimibe, then bempedoic acid, and the form asks in the same order.
+describe('US-06 AC20: statin not tolerated, the plan and the form step PCSK9 inhibitor, ezetimibe, bempedoic acid', () => {
+  /** The cholesterol section's question labels, in page order. */
+  const lipidQuestions = (container: HTMLElement) => waitFor(() => {
+    const title = Array.from(container.querySelectorAll('.health-section-title, .mh-group-label')).find((t) => t.textContent === 'Cholesterol Medications');
+    if (!title) throw new Error('the section is not on the page');
+    return Array.from(title.parentElement!.querySelectorAll('label')).map((l) => l.textContent);
+  });
+  const lipidCards = (container: HTMLElement) => planTitles(container)
+    .filter((t) => /statin|Ezetimibe|bempedoic|PCSK9/.test(t));
+
+  it('statin not tolerated: the PCSK9 inhibitor card, and its question straight after the statin', async () => {
+    const view = await guestWith({ sex: 'male', weight: 80, lipids: { ldl: 3 }, meds: [['statin', 'not_tolerated']] });
+    await waitFor(() => expect(lipidCards(view.container)).toEqual(['Consider a PCSK9 inhibitor']));
+    expect(await lipidQuestions(view.container)).toEqual(['Statin', 'On a PCSK9 inhibitor?']);
+  });
+
+  it('on the PCSK9 inhibitor with ezetimibe: the bempedoic acid card, and its question last', async () => {
+    const view = await guestWith({
+      sex: 'male', weight: 80, lipids: { ldl: 3 },
+      meds: [['statin', 'not_tolerated'], ['pcsk9i', 'pcsk9i', 140], ['ezetimibe', 'ezetimibe', 10]],
+    });
+    await waitFor(() => expect(lipidCards(view.container)).toEqual(['Consider adding bempedoic acid']));
+    expect(await lipidQuestions(view.container)).toEqual(['Statin', 'On a PCSK9 inhibitor?', 'On Ezetimibe 10mg?', 'Bempedoic acid']);
+  });
+});
+
 describe('US-06 AC5: the form\'s age-based targets and sections follow the plan\'s age', () => {
   /** The form's blood-pressure target hint: the vitals grid's, under "All results as a table" (US-62 AC11). */
   const bpHint = (container: HTMLElement) => waitFor(() => {

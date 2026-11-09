@@ -361,6 +361,16 @@ describe('generateSuggestions', () => {
       expect(bpSuggestion?.priority).toBe('urgent');
     });
 
+    // US-07 AC12 (Brad, 2026-11-02): no symptoms, recheck after 5 minutes and call your doctor if
+    // it is still that high; with symptoms, call the local emergency number (NHLBI).
+    it.each([[185, 100], [150, 125]])('the crisis card at %i/%i says recheck, then doctor, or emergency with symptoms (US-07 AC12)', (sys, dia) => {
+      const { inputs, results } = createTestData({ systolicBp: sys, diastolicBp: dia });
+      const card = generateSuggestions(inputs, results).find(s => s.id === 'bp-crisis');
+      expect(card?.description).toBe(`Your BP of ${sys}/${dia} mmHg is dangerously high. If you have no symptoms, rest and recheck it after 5 minutes; if it is still 180/120 or higher (either number), call your doctor. If you have chest, back or belly pain, shortness of breath, numbness or weakness, a change in vision, difficulty speaking or a sudden severe headache, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).`);
+      expect(card?.reason).toContain('wait 5 minutes and check again');
+      expect(card?.references?.map(r => r.url)).toContain('https://www.nhlbi.nih.gov/health/high-blood-pressure/symptoms');
+    });
+
     it('generates stage 2 suggestion for BP >= 140/90', () => {
       const { inputs, results } = createTestData({ systolicBp: 145, diastolicBp: 95 });
       const suggestions = generateSuggestions(inputs, results);
@@ -828,6 +838,30 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'low-salt')).toBeUndefined();
     });
+
+    // US-07 AC13 (Brad, 2026-11-02; gate and pregnancy 2026-11-09): a potassium-enriched salt substitute,
+    // with its exclusions, only with a current eGFR of 45 or more (the high-potassium card's gate).
+    const SUBSTITUTE = ' A potassium-enriched salt substitute can also help cut sodium, but not if you are pregnant, have kidney disease or diabetes, have been told to limit potassium, or take a potassium-sparing diuretic, a potassium supplement, an ACE inhibitor or an ARB, unless your doctor agrees.';
+    const SALT = 'Aim for less than 1,500mg of sodium daily. Most excess sodium comes from processed foods. Reducing sodium can help lower blood pressure.';
+    it.each([
+      ['no eGFR', undefined, SALT],
+      ['eGFR 45', 45, SALT + SUBSTITUTE],
+      ['eGFR 90', 90, SALT + SUBSTITUTE],
+      ['eGFR 44', 44, SALT],
+      ['eGFR 20', 20, SALT],
+    ])('low salt with %s: the salt substitute line shows only with a current eGFR of 45 or more (US-07 AC13)', (_name, eGFR, text) => {
+      const { inputs, results } = createTestData({ systolicBp: 125, diastolicBp: 75 }, { age: 50, eGFR });
+      const suggestions = generateSuggestions(inputs, results);
+      const card = suggestions.find(s => s.id === 'low-salt');
+      expect(card?.description).toBe(text);
+      // The same gate as the high-potassium card.
+      expect(suggestions.some(s => s.id === 'high-potassium')).toBe(text !== SALT);
+      expect(card?.reason).toContain('NICE also advises against them for older people.');
+      expect(card?.reason).toContain('shows the suggestion only with a current eGFR of 45 or more');
+      expect(card?.references?.map(r => r.url)).toEqual(expect.arrayContaining([
+        'https://doi.org/10.1056/NEJMoa2105675', 'https://doi.org/10.1016/j.jacc.2025.07.010',
+      ]));
+    });
   });
 
   describe('Lipid-lowering diet suggestion', () => {
@@ -1270,17 +1304,70 @@ describe('generateSuggestions', () => {
 
     // US-07 AC5: the sentence reads true at exactly the target.
     it.each([
-      { name: 'LDL 1.4', values: { ldlC: 1.4 }, text: 'Your LDL-c is 1.4 mmol/L; the treatment target is below 1.4 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor.' },
-      { name: 'ApoB 0.5', values: { apoB: 0.5 }, text: 'Your ApoB is 0.50 g/L; the treatment target is below 0.50 g/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor.' },
+      { name: 'LDL 1.4', values: { ldlC: 1.4 }, text: 'Your LDL-c is 1.4 mmol/L; the treatment target is below 1.4 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Don\'t start a statin if you are pregnant or planning a pregnancy.' },
+      { name: 'ApoB 0.5', values: { apoB: 0.5 }, text: 'Your ApoB is 0.50 g/L; the treatment target is below 0.50 g/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Don\'t start a statin if you are pregnant or planning a pregnancy.' },
     ])('med-statin at exactly the target, $name, shows and reads true (US-07 AC5)', ({ values, text }) => {
       const { inputs, results } = createTestData(values);
       expect(generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin')?.description).toBe(text);
     });
 
+    // US-07 AC14 (wording Brad 2026-11-09): every card for someone already on a statin says when to stop.
+    it.each([
+      ['med-statin-dose', { statin: { drug: 'pravastatin', dose: null }, ezetimibe: 'yes' }],
+      ['med-statin-increase', { statin: { drug: 'pravastatin', dose: 20 }, ezetimibe: 'yes' }],
+      ['med-statin-switch', { statin: { drug: 'atorvastatin', dose: 80 }, ezetimibe: 'yes' }],
+    ] as const)('%s ends with the pregnancy line for people on a statin (US-07 AC14)', (id, meds) => {
+      const { inputs, results } = createTestData({ ldlC: 3.0 });
+      expect(generateSuggestions(inputs, results, 'si', meds as MedicationInputs).find(s => s.id === id)?.description)
+        .toMatch(/ If you become pregnant, most people should stop their statin: talk to your doctor\. If you are planning a pregnancy, NICE advises stopping 3 months before trying to conceive\.$/);
+    });
+
+  // US-07 AC14 (Brad, 2026-11-02): "no statins in pregnancy", on the card itself, sourced in its reason.
+    it('the statin card says not to start one in pregnancy, and its reason cites the FDA and NICE (US-07 AC14)', () => {
+      const { inputs, results } = createTestData({ ldlC: 3.0 });
+      const card = generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin');
+      expect(card?.description).toMatch(/ Don't start a statin if you are pregnant or planning a pregnancy\.$/);
+      expect(card?.reason).toContain('The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive.');
+      expect(card?.reason).not.toContain('Statins are not used in pregnancy');
+      expect(card?.references?.map(r => r.url)).toEqual(expect.arrayContaining([
+        'https://www.fda.gov/drugs/drug-safety-and-availability/fda-requests-removal-strongest-warning-against-using-cholesterol-lowering-statins-during-pregnancy',
+        'https://www.nice.org.uk/guidance/ng238/chapter/Recommendations',
+      ]));
+    });
+
+    // US-07 AC14 (Brad 2026-11-09): on a statin, the ezetimibe and PCSK9 inhibitor cards also say when to
+    // stop the statin, after their own pregnancy line; statin-intolerant people do not get the statin line.
+    const ON_STATIN_LINE = ' If you become pregnant, most people should stop their statin: talk to your doctor. If you are planning a pregnancy, NICE advises stopping 3 months before trying to conceive.';
+    const UNSTUDIED = ' Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.';
+    it.each([
+      ['med-ezetimibe', { statin: { drug: 'atorvastatin', dose: 20 } }, true],
+      ['med-pcsk9i', { statin: { drug: 'atorvastatin', dose: 80 }, ezetimibe: 'yes', statinEscalation: 'not_tolerated' }, true],
+      ['med-pcsk9i', { statin: { drug: 'not_tolerated', dose: null } }, false],
+      ['med-ezetimibe', { statin: { drug: 'not_tolerated', dose: null }, pcsk9i: 'yes' }, false],
+    ] as const)('%s carries the on-statin pregnancy line only on a statin (%j) (US-07 AC14)', (id, meds, onStatin) => {
+      const { inputs, results } = createTestData({ ldlC: 3.0 });
+      const text = generateSuggestions(inputs, results, 'si', meds as MedicationInputs).find(s => s.id === id)?.description ?? '';
+      expect(text.endsWith(onStatin ? UNSTUDIED + ON_STATIN_LINE : UNSTUDIED)).toBe(true);
+    });
+
+    // US-06 AC20 (Brad 2026-11-09): each drug's pregnancy line, worded from its US label (8.1).
+    it.each([
+      ['med-pcsk9i', { statin: { drug: 'not_tolerated', dose: null } }, ' Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.', ['cd61e902-166d-4aa6-9f3c-a18c1008d07e', '7bcfbac2-e8ac-4569-8edc-bcde3b1fd172']],
+      ['med-ezetimibe', { statin: { drug: 'not_tolerated', dose: null }, pcsk9i: 'yes' }, ' Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.', ['174e45e0-45bb-48b7-9e60-8f6cfc1d22bb']],
+      ['med-ezetimibe', { statin: { drug: 'atorvastatin', dose: 20 } }, ' Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.', ['174e45e0-45bb-48b7-9e60-8f6cfc1d22bb']],
+      ['med-bempedoic-acid', { statin: { drug: 'not_tolerated', dose: null }, pcsk9i: 'yes', ezetimibe: 'yes' }, ' Not recommended in pregnancy; talk to your doctor if you are pregnant or planning to be.', ['88d06d89-a3da-40b4-b273-8f4f7d56c4c9']],
+    ] as const)('%s ends with its label-based pregnancy line and cites the label (US-06 AC20)', (id, meds, line, setids) => {
+      const { inputs, results } = createTestData({ ldlC: 3.0 });
+      const card = generateSuggestions(inputs, results, 'si', meds as MedicationInputs).find(s => s.id === id);
+      expect(card?.description).toContain(line);
+      expect(card?.reason).toMatch(/pregnan/);
+      for (const setid of setids) expect(card?.references?.map(r => r.url)).toContain(`https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=${setid}`);
+    });
+
     it('med-statin at exactly the non-HDL target of 1.6 shows (US-07 AC5)', () => {
       const { inputs, results } = createTestData({}, { nonHdlCholesterol: 1.6 });
       expect(generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin')?.description)
-        .toBe('Your non-HDL cholesterol is 1.6 mmol/L; the treatment target is below 1.6 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor.');
+        .toBe('Your non-HDL cholesterol is 1.6 mmol/L; the treatment target is below 1.6 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Don\'t start a statin if you are pregnant or planning a pregnancy.');
     });
 
     it.each([
@@ -3460,7 +3547,7 @@ describe('US-06 AC8: the dose cards', () => {
       category: 'medication',
       priority: 'attention',
       title: 'Add your statin dose',
-      description: "Your LDL-c is 3.0 mmol/L; the treatment target is below 1.4 mmol/L. Your statin dose isn't recorded, and your next step depends on it. A higher dose or a more potent statin may help. Add your current dose to see which.",
+      description: "Your LDL-c is 3.0 mmol/L; the treatment target is below 1.4 mmol/L. Your statin dose isn't recorded, and your next step depends on it. A higher dose or a more potent statin may help. Add your current dose to see which. If you become pregnant, most people should stop their statin: talk to your doctor. If you are planning a pregnancy, NICE advises stopping 3 months before trying to conceive.",
       reason: 'Statin strength depends on both the drug and the dose. Doubling a statin dose typically lowers LDL by a further 6–7% (the "rule of 6"), and rosuvastatin 40mg gives the largest reduction (~63%). Which step comes next depends on the dose you take now.',
     });
     expect(statinDose!.guidelines).toEqual(increase!.guidelines);
