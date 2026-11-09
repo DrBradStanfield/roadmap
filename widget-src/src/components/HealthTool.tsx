@@ -6,8 +6,8 @@ import { medicinesShown, weightMedicationTrigger, lipidMarkerFor } from '@roadma
 import { validateHealthInputs, getValidationErrors, convertValidationErrorsToUnits, birthRefusedMessage, inputRangeFault } from '@roadmap/health-core/validation';
 import { planInputsFrom, withLabEgfr, labEgfrOf } from '@roadmap/health-core/plan';
 import { type SuggestionInputs, type AlcoholAnswer, type HealthInputs, isSex } from '@roadmap/health-core/types';
-import { detectUnitSystem, type UnitSystem, type MetricType } from '@roadmap/health-core/units';
-import { PREFILL_FIELDS, hasUnsavedProfileEdits, LONGITUDINAL_FIELDS, medicationsToInputs, mergeLongitudinalInputs, screeningsToInputs, computeFormStage, opensFullForm, FIELD_METRIC_MAP, METRIC_TO_FIELD, withPsaMeasurement, type FormStage, type RecordHoldings } from '@roadmap/health-core/mappings';
+import type { UnitSystem } from '@roadmap/health-core/units';
+import { PREFILL_FIELDS, hasUnsavedProfileEdits, LONGITUDINAL_FIELDS, medicationsToInputs, mergeLongitudinalInputs, screeningsToInputs, computeFormStage, opensFullForm, METRIC_TO_FIELD, withPsaMeasurement, type FormStage, type RecordHoldings } from '@roadmap/health-core/mappings';
 import { chatContextOf, type ChatContextPayload } from '@roadmap/health-core/chat-context';
 import { statTiles } from '@roadmap/health-core/stat-tiles';
 import { medicationForm, screeningForm } from '@roadmap/health-core/input-form';
@@ -36,11 +36,6 @@ import {
   loadFromLocalStorage,
   patchMirror,
   clearLocalStorage,
-  saveUnitPreference,
-  loadUnitPreference,
-  safeSetItem,
-  safeRemoveItem,
-  getJson,
   localHealthWritesStopped,
 } from '../lib/storage';
 import {
@@ -78,6 +73,7 @@ import { createRemoteChangeRelay } from '../lib/remote-replay';
 import { debounceSave, cancelListSave, flushListSaves, type ListSaves } from '../lib/list-saves';
 import { useRecordState } from '../hooks/useRecordState';
 import { useTabs } from '../hooks/useTabs';
+import { useUnits } from '../hooks/useUnits';
 import { useLongitudinalSave, countedCorrection } from '../hooks/useLongitudinalSave';
 import { useChatEdits } from './ChatEdits';
 import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
@@ -89,15 +85,6 @@ import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNR
 async function mirrorSavedLists(): Promise<void> {
   const result = await loadLatestMeasurements();
   if (result) patchMirror({ medications: result.medications, screenings: result.screenings });
-}
-
-/** This device's per-field unit toggles: the entries whose unit is 'si' or
- *  'conventional'. A stored value that is not a plain object reads as none,
- *  so a hand edit or an old build's junk never breaks the page (US-05 AC6). */
-function loadUnitOverrides(): Record<string, UnitSystem> {
-  const stored = getJson<unknown>('health_roadmap_unit_overrides');
-  if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return {};
-  return Object.fromEntries(Object.entries(stored).filter(([, us]) => us === 'si' || us === 'conventional'));
 }
 
 /**
@@ -209,13 +196,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       for (const { timer } of screeningSaveTimers.current.values()) clearTimeout(timer);
     };
   }, []);
-  // Unit system: load saved preference or auto-detect
-  const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => {
-    return loadUnitPreference() ?? detectUnitSystem();
-  });
-
-  // Per-field unit overrides (persisted to localStorage)
-  const [unitOverrides, setUnitOverrides] = useState(loadUnitOverrides);
+  // The unit system and each field's own unit (hooks/useUnits, US-05).
+  const { unitSystem, unitOverrides, metricUnitOverrides, handleToggleFieldUnit, handleUnitSystemChange, applySavedUnitSystem } = useUnits(setInputs);
 
   // Track previously saved inputs to only save changed fields (demographics + height only)
   const previousInputsRef = useRef<Partial<HealthInputs>>({});
@@ -244,32 +226,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     refreshLabValues();
   }, [showUploadModal, refreshLabValues]);
 
-  // Toggle a single field's unit override
-  const handleToggleFieldUnit = useCallback((field: string) => {
-    setUnitOverrides(prev => {
-      const current = prev[field] ?? unitSystem;
-      const toggled = current === 'si' ? 'conventional' : 'si';
-      const next = { ...prev };
-      if (toggled === unitSystem) {
-        delete next[field];
-      } else {
-        next[field] = toggled;
-      }
-      safeSetItem('health_roadmap_unit_overrides', JSON.stringify(next));
-      return next;
-    });
-  }, [unitSystem]);
-
-  // Handle unit system change — save to localStorage and to inputs (for cloud sync)
-  const handleUnitSystemChange = useCallback((system: UnitSystem) => {
-    setUnitSystem(system);
-    saveUnitPreference(system);
-    setInputs(prev => ({ ...prev, unitSystem: system }));
-    // Clear per-field overrides when global unit changes
-    setUnitOverrides({});
-    safeRemoveItem('health_roadmap_unit_overrides');
-  }, []);
-
   const loadHistory = () => loadAllHistory().then(setHistory);
 
   // Re-read every value the page shows from the store: the plan's latest
@@ -287,18 +243,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     await Promise.all([refreshLabValues(), loadHistory()]);
     return result;
   }, [refreshLabValues]);
-
-  // Convert field-keyed overrides to MetricType-keyed for health-core + ResultsPanel.
-  // Lp(a) has its own three-unit control (US-05 AC2): an old build's two-way
-  // toggle for it is read there alone, and drives no other display.
-  const metricUnitOverrides = useMemo(() => {
-    const m: Partial<Record<MetricType, UnitSystem>> = {};
-    for (const [field, fieldUs] of Object.entries(unitOverrides)) {
-      const metric = FIELD_METRIC_MAP[field];
-      if (metric && metric !== 'lpa') m[metric] = fieldUs;
-    }
-    return Object.keys(m).length > 0 ? m : undefined;
-  }, [unitOverrides]);
 
   // The erase the screen shows, marked on the store, which refuses every
   // write while it holds another (US-16 AC2a). The chat's banners (a profile
@@ -349,11 +293,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
 
       if (hasSavedRecord(result)) {
         // Apply saved unit preference
-        const unitPref = result.inputs.unitSystem;
-        if (unitPref === 'si' || unitPref === 'conventional') {
-          setUnitSystem(unitPref);
-          saveUnitPreference(unitPref);
-        }
+        applySavedUnitSystem(result.inputs.unitSystem);
         setInputs(result.inputs);
         previousInputsRef.current = { ...result.inputs };
         setPreviousMeasurements(result.previousMeasurements);
