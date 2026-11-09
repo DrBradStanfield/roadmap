@@ -18,8 +18,8 @@ vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 afterEach(cleanup);
 vi.stubGlobal('matchMedia', (q: string) => ({ matches: !q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {} }));
 
-const props = (inputs: Partial<HealthInputs>, onChange: (field: keyof HealthInputs, value: unknown) => void, unitSystem: 'si' | 'conventional') => ({
-  ...myHealth({ settingsOpen: true }), // About you, low, sits in Settings (US-62 AC24)
+const props = (inputs: Partial<HealthInputs>, onChange: (field: keyof HealthInputs, value: unknown) => void, unitSystem: 'si' | 'conventional', settingsOpen = true) => ({
+  ...myHealth({ settingsOpen }), // About you, low, sits in Settings (US-62 AC24)
   inputs, effectiveInputs: inputs, onChange, errors: {}, unitSystem, onUnitSystemChange: vi.fn(),
   unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
   labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
@@ -29,10 +29,10 @@ const props = (inputs: Partial<HealthInputs>, onChange: (field: keyof HealthInpu
 }) as unknown as Parameters<typeof InputPanel>[0];
 
 /** InputPanel over a form that takes its own edits, as HealthTool's does. */
-function Panel({ start, unitSystem }: { start: Partial<HealthInputs>; unitSystem: 'si' | 'conventional' }) {
+function Panel({ start, unitSystem, settingsOpen = true }: { start: Partial<HealthInputs>; unitSystem: 'si' | 'conventional'; settingsOpen?: boolean }) {
   const [inputs, setInputs] = useState(start);
   const onChange = (field: keyof HealthInputs, value: unknown) => setInputs(prev => ({ ...prev, [field]: value }));
-  return <InputPanel {...props(inputs, onChange, unitSystem)}/>;
+  return <InputPanel {...props(inputs, onChange, unitSystem, settingsOpen)}/>;
 }
 
 const q = (c: HTMLElement, sel: string) => c.querySelector<HTMLInputElement>(sel);
@@ -68,4 +68,17 @@ it('US-62 AC12: a missing answer\'s row opens itself, stays open once answered, 
   done(c, 'sex');
   expect(q(c, '[data-about="sex"]')).toBeNull();
   expect(q(c, '#about-sex .about-row-value')!.textContent).toBe('Female');
+});
+
+it('US-62 AC12 (2026-11-10): on desktop a row opened by hand closes when the Settings sheet closes', () => {
+  const start = { sex: 'male' as const, heightCm: 180, birthYear: 1960, birthMonth: 1 };
+  const { container: c, rerender } = render(<Panel start={start} unitSystem="si"/>);
+  fireEvent.click(q(c, '#about-height')!);
+  expect(q(c, '[data-about="height"]')).not.toBeNull();
+
+  rerender(<Panel start={start} unitSystem="si" settingsOpen={false}/>);
+  expect(q(c, '#about-height, [data-about="height"]')).toBeNull(); // the sheet, and About you with it, is gone
+  rerender(<Panel start={start} unitSystem="si"/>);
+  expect(q(c, '[data-about="height"]')).toBeNull();
+  expect(q(c, '#about-height')).not.toBeNull(); // back as a row
 });
