@@ -202,8 +202,9 @@ export interface PipelineOutcome {
  * time. A refusal sends the web chat's bounded Sentry warning.
  */
 export function completionOutcome(completion: ChatCompletionResult, latencyMs: number): Pick<PipelineOutcome, 'posted' | 'skipReason' | 'isFallback' | 'failureMode' | 'replyText'> {
+  // The web chat's and Discord's bounded alert for a refusal or a fallback; a no-op for an answer (US-15 AC58).
+  reportChatFallback({ completion, platform: 'youtube', latencyMs });
   if (completion.isRefusal) {
-    reportChatFallback({ completion, platform: 'youtube', latencyMs });
     return { posted: false, skipReason: `main-LLM refusal (${completion.refusalCategory ?? 'other'})`, failureMode: 'refusal' };
   }
   if (completion.isFallback) {

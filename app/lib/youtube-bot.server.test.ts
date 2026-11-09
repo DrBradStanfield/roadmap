@@ -300,6 +300,19 @@ describe('US-15 AC15: a refusal skips the comment and keeps the claim', () => {
     expect(shouldUnclaim(outcome)).toBe(true);
   });
 
+  it('US-15 AC58: an empty-reply fallback sends the web chat\'s bounded Sentry warning; an answer sends none', () => {
+    vi.mocked(Sentry.captureMessage).mockClear();
+    completionOutcome({ content: 'Sorry', usage, isFallback: true, failureMode: 'empty-response' }, 7);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('Chat: main-LLM fallback (empty-response)', {
+      level: 'warning',
+      tags: { feature: 'chat', subsystem: 'main-llm', failureMode: 'empty-response', platform: 'youtube' },
+      extra: { latencyMs: 7, conversationId: null },
+    });
+    vi.mocked(Sentry.captureMessage).mockClear();
+    completionOutcome({ content: 'An answer.', usage, isFallback: false }, 1);
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+  });
+
   it('SKIP_NO_REPLY keeps the claim; an answer is posted', () => {
     const skip = completionOutcome({ content: ' SKIP_NO_REPLY ', usage, isFallback: false }, 1);
     expect(skip).toMatchObject({ posted: false, skipReason: 'main-LLM returned SKIP_NO_REPLY' });
