@@ -7,20 +7,21 @@ import { FIELD_METRIC_MAP } from '@roadmap/health-core/mappings';
 import { detectUnitSystem, type MetricType, type UnitSystem } from '@roadmap/health-core/units';
 import { getJson, loadUnitPreference, safeRemoveItem, safeSetItem, saveUnitPreference } from '../lib/storage';
 
+/** This device's per-field unit toggles (lib/lpa-unit.ts reads its old Lp(a) entry). */
+const UNIT_OVERRIDES_KEY = 'health_roadmap_unit_overrides';
+
 /** This device's per-field unit toggles: the entries whose unit is 'si' or
  *  'conventional'. A stored value that is not a plain object reads as none,
  *  so a hand edit or an old build's junk never breaks the page (US-05 AC6). */
 function loadUnitOverrides(): Record<string, UnitSystem> {
-  const stored = getJson<unknown>('health_roadmap_unit_overrides');
+  const stored = getJson<unknown>(UNIT_OVERRIDES_KEY);
   if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return {};
   return Object.fromEntries(Object.entries(stored).filter(([, us]) => us === 'si' || us === 'conventional'));
 }
 
 export function useUnits(setInputs: Dispatch<SetStateAction<Partial<HealthInputs>>>) {
   // Unit system: load saved preference or auto-detect
-  const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => {
-    return loadUnitPreference() ?? detectUnitSystem();
-  });
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => loadUnitPreference() ?? detectUnitSystem());
 
   // Per-field unit overrides (persisted to localStorage)
   const [unitOverrides, setUnitOverrides] = useState(loadUnitOverrides);
@@ -36,7 +37,7 @@ export function useUnits(setInputs: Dispatch<SetStateAction<Partial<HealthInputs
       } else {
         next[field] = toggled;
       }
-      safeSetItem('health_roadmap_unit_overrides', JSON.stringify(next));
+      safeSetItem(UNIT_OVERRIDES_KEY, JSON.stringify(next));
       return next;
     });
   }, [unitSystem]);
@@ -48,7 +49,7 @@ export function useUnits(setInputs: Dispatch<SetStateAction<Partial<HealthInputs
     setInputs(prev => ({ ...prev, unitSystem: system }));
     // Clear per-field overrides when global unit changes
     setUnitOverrides({});
-    safeRemoveItem('health_roadmap_unit_overrides');
+    safeRemoveItem(UNIT_OVERRIDES_KEY);
   }, []);
 
   // Convert field-keyed overrides to MetricType-keyed for health-core + ResultsPanel.
