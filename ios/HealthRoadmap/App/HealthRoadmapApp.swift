@@ -46,6 +46,8 @@ final class Launch {
         #endif
         // TipKit before any view asks for a tip (US-57 AC10).
         TourSetup.configure()
+        // A document's original copied for Quick Look never outlives the app's run (US-73 AC12).
+        DocumentPage.sweep()
         // Before launch finishes, so a tap that starts the app still reaches My health.
         let reminderTaps = ReminderTaps()
         UNUserNotificationCenter.current().delegate = reminderTaps

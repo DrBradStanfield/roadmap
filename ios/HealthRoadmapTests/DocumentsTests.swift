@@ -122,6 +122,13 @@ final class DocumentsTests: XCTestCase {
         XCTAssertNil(name("Letter", ""))
         // A passive name over a stated type that is not its own does not open.
         XCTAssertNil(name("Letter.pdf", "text/html"))
+        // Only the canonical type passes, as the web's viewableType: aliases are refused.
+        XCTAssertNil(name("Scan.jpg", "image/jpg"))
+        XCTAssertNil(name("Scan.jpeg", "image/pjpeg"))
+        XCTAssertNil(name("Letter.pdf", "application/x-pdf"))
+        XCTAssertNil(name("Scan", "image/jpg"))
+        XCTAssertEqual(name("Scan.JPG", "Image/JPEG; charset=binary"), "Scan.JPG")
+        XCTAssertEqual(name("Scan", "image/jpeg"), "Scan.jpeg")
     }
 
     /// Review R2: leaving the page while the original is read writes nothing.

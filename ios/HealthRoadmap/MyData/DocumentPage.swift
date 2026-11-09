@@ -1,6 +1,5 @@
 import QuickLook
 import SwiftUI
-import UniformTypeIdentifiers
 
 /// A letter's or scan result's row at the foot of My health (US-73 AC12): its title, then its day,
 /// and under Documents its kind, as the web's row shows its badge (HealthRecordsSection).
@@ -118,30 +117,31 @@ struct DocumentPage: View {
     /// The web's words for an original that would not load (DocumentLightbox).
     static let couldNotLoad = "Could not load the original file from your cloud storage."
 
-    /// The web's passive kinds (file-kinds.ts VIEWABLE_TYPES, US-14 AC3): only these open, by the
-    /// file's extension, never an SVG or a web page, which can carry script.
-    static let viewableExtensions: Set<String> = ["pdf", "png", "jpg", "jpeg", "heic"]
+    /// The web's passive kinds, each extension's one type (file-kinds.ts VIEWABLE_TYPES, US-14 AC3):
+    /// only these open, never an SVG or a web page, which can carry script.
+    static let viewableTypes: [String: String] = [
+        "pdf": "application/pdf", "png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "heic": "image/heic",
+    ]
 
-    /// The name Quick Look reads the original under, or nil when it may not open. As on the web,
-    /// the extension must be a passive kind and a stated type must agree with it; a name with no
-    /// extension takes its type's own (review R4).
+    /// The name Quick Look reads the original under, or nil when it may not open. As the web's
+    /// viewableType: the extension must be a passive kind, and a stated type must be exactly its
+    /// type, or none, or application/octet-stream ("image/jpg" does not pass). A name with no
+    /// extension takes its type's (review R4).
     static func previewName(_ original: MyData.Document.Original) -> String? {
         let file = (original.name as NSString).lastPathComponent
         let stated = original.mimeType.split(separator: ";").first.map { $0.trimmingCharacters(in: .whitespaces).lowercased() } ?? ""
-        let statedType = stated.isEmpty || stated == "application/octet-stream" ? nil : UTType(mimeType: stated)
         var ext = (file as NSString).pathExtension.lowercased()
         var name = file
-        if ext.isEmpty, let own = statedType?.preferredFilenameExtension?.lowercased() {
+        if ext.isEmpty, let own = viewableTypes.filter({ $0.value == stated }).keys.sorted().first {
             ext = own
             name = "\(file.isEmpty ? "document" : file).\(own)"
         }
-        guard viewableExtensions.contains(ext) else { return nil }
-        if let statedType, statedType != UTType(filenameExtension: ext) { return nil }
+        guard let type = viewableTypes[ext], stated == type || stated.isEmpty || stated == "application/octet-stream" else { return nil }
         return name
     }
 
     /// Where the copies Quick Look reads live, each in a folder of its own.
-    static var originals: URL { FileManager.default.temporaryDirectory.appending(path: "originals", directoryHint: .isDirectory) }
+    nonisolated static var originals: URL { FileManager.default.temporaryDirectory.appending(path: "originals", directoryHint: .isDirectory) }
 
     /// The bytes in a folder of their own under `folder`, under the file's own name (Quick Look
     /// reads the kind from it), protected while the phone is locked.
@@ -161,7 +161,7 @@ struct DocumentPage: View {
     }
 
     /// Every copy left in `folder`.
-    static func sweep(_ folder: URL = originals) {
+    nonisolated static func sweep(_ folder: URL = originals) {
         try? FileManager.default.removeItem(at: folder)
     }
 }

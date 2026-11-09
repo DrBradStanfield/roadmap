@@ -38,13 +38,15 @@ export function documentShelf(file: RoadmapFile): DocumentShelf {
   return { scans: live.filter(scan).map(shownDocument), others: live.filter((d) => !scan(d)).map(shownDocument) };
 }
 
-/** A legacy row may lack fields the schema now names (review R1): read as the web's
- *  defaults, so one old row never breaks the screen or blanks the list. The stored row
- *  is not changed. */
+/** A legacy row may lack fields the schema now names, or hold one of the wrong type (review
+ *  R1): each reads as the web's default, so one old row never breaks the screen or blanks
+ *  the list. The stored row is not changed. */
 function complete(d: FileDocument): FileDocument {
+  const text = (value: unknown, otherwise: string) => (typeof value === 'string' ? value : otherwise);
   return {
-    ...d, title: d.title ?? '', type: d.type ?? 'other', date: d.date ?? null, extractedText: d.extractedText ?? '',
-    fileRef: d.fileRef ?? '', mimeType: d.mimeType ?? '', addedAt: d.addedAt ?? '',
+    ...d, title: text(d.title, ''), type: text(d.type, 'other') as FileDocument['type'], date: typeof d.date === 'string' ? d.date : null,
+    extractedText: text(d.extractedText, ''), fileRef: text(d.fileRef, ''), mimeType: text(d.mimeType, ''), addedAt: text(d.addedAt, ''),
+    sourceFileName: typeof d.sourceFileName === 'string' ? d.sourceFileName : null,
   };
 }
 

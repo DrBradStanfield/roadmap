@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import type { FileDocument } from '../../packages/health-core/src/roadmap-file';
 import { screenJson } from './entry';
+import { documentShelf } from './documents';
 import { newRecord } from './my-data';
 
 const NOW = '2026-10-21T08:00:00.000Z';
@@ -76,6 +77,16 @@ describe('My health documents (US-73 AC12)', () => {
     expect(screen.myData.documents.others.map((d) => d.id)).toEqual(['valid', 'untyped', 'legacy']);
     expect(screen.myData.documents.others[2]).toEqual({ id: 'legacy', title: '', typeLabel: 'Clinic Letter', day: null, content: '', sourceFileName: null, original: null });
     expect(screen.myData.documents.others[1]).toMatchObject({ title: 'Old note', typeLabel: 'Document', content: '' });
+  });
+
+  // The screen's reader already sets a mistyped row aside (US-65); the shelf holds on its own too.
+  it('a field of the wrong type reads as the default: a date that is no text is undated, a title or text that is none is empty', () => {
+    const mistyped = { id: 'mistyped', type: 7, title: null, date: 20260101, extractedText: { md: 'x' }, fileRef: 3, mimeType: null, addedAt: 1, sourceFileName: 9 } as unknown as FileDocument;
+    const file = { ...newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), documents: [mistyped, doc('valid', { date: '2026-09-14' })] };
+    const { others } = documentShelf(file);
+    expect(others.map((d) => d.id)).toEqual(['valid', 'mistyped']);
+    expect(others[1]).toEqual({ id: 'mistyped', title: '', typeLabel: 'Document', day: null, content: '', sourceFileName: null, original: null });
+    expect(() => JSON.stringify(others)).not.toThrow();
   });
 
   it('an empty record lists none', () => {
