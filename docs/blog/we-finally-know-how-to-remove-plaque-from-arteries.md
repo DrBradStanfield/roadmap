@@ -1,6 +1,6 @@
 ---
-title: "We Didn't Know This Was Possible for Heart Disease"
-url: "https://drstanfield.com/blogs/articles/we-didnt-know-this-was-possible-for-heart-disease"
+title: "We Finally Know How To Remove Plaque From Arteries"
+url: "https://drstanfield.com/blogs/articles/we-finally-know-how-to-remove-plaque-from-arteries"
 commerceUrl: "https://microvitamin.com/blogs/articles/can-artery-plaque-shrink-flowpromote"
 youtube: "https://www.youtube.com/watch?v=jbVM_Lg7mI4"
 publishedAt: "2026-11-09T00:00:00Z"
