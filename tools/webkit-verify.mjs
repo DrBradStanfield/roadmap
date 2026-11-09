@@ -164,7 +164,7 @@ export function assertDesktopLayout(data) {
   assert(data.documentWidth <= data.viewportWidth + 1, 'page overflows horizontally');
   assert(data.nav && data.nav.links >= 3, 'section list missing');
   assert.equal(data.nav.position, 'sticky', 'section list is not sticky');
-  assert(data.scrolled > 0, 'the page did not scroll (no overflow to test)');
+  assert(data.scrolled > 0, `the page did not scroll (no overflow to test; under the mouse: ${data.underMouse})`);
   assert(data.nav.topAfter >= 0 && data.nav.topAfter < data.viewportHeight, 'section list left the screen when the page scrolled');
   assert.equal(data.nav.current, 1, 'not exactly one current section');
   assert(data.nav.right <= data.topicsLeft, 'section list overlaps the topics');
@@ -210,20 +210,39 @@ export function collectPhoneLayout() {
   return { gaps, pillRows: new Set(pills).size, smallTargets, header };
 }
 
+// US-62 AC16: how far a wheel moved the topics, read once they stop moving. The theme
+// scrolls a wrapper (scrollTop is ignored there in WebKit), so it is a wheel, measured
+// by the topics' top. One wheel and a fixed 400ms read 0 on a slow runner (deploy
+// 2026-11-09): this waits for the top to hold still 300ms (4s at most), and wheels once
+// more if the first moved nothing. A page that never scrolls still reads 0.
+export async function wheelUntilScrolled({ readTop, wheel, sleep }) {
+  const before = await readTop();
+  let top = before;
+  for (let tries = 0; tries < 2 && top === before; tries++) {
+    await wheel();
+    for (let waited = 0, still = 0; waited < 4000 && still < 300; waited += 50) {
+      await sleep(50);
+      const now = await readTop();
+      still = now === top ? still + 50 : 0;
+      top = now;
+    }
+  }
+  return before - top;
+}
+
 // Passed directly to Playwright's evaluate; keep this function self-contained.
 export function collectDesktopLayout() {
   const rect = (el) => el.getBoundingClientRect();
   const nav = document.querySelector('.mh-nav');
-  // The page was scrolled by a wheel (the theme scrolls a wrapper, which ignores scrollTop in WebKit): how far the topics went up.
-  const topics = document.querySelector('.mh-topics');
-  const scrolled = Math.round(-rect(topics).top);
+  // Where the wheel went (inspect moves the mouse here), named when the page did not scroll.
+  const desc = (el) => el && `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ''}${typeof el.className === 'string' && el.className.trim() ? `.${el.className.trim().split(/\s+/).slice(0, 2).join('.')}` : ''}`;
   const style = (el) => el && getComputedStyle(el);
   const select = style(document.querySelector('.health-tool select:not([multiple]):not([size]):not(.supplement-unit)'));
   const unit = style(document.querySelector('.health-tool select.supplement-unit'));
   const pills = document.querySelector('.mh-pills');
   return {
     viewportWidth: window.innerWidth, viewportHeight: window.innerHeight, documentWidth: document.documentElement.scrollWidth,
-    scrolled,
+    underMouse: desc(document.elementFromPoint(window.innerWidth / 2, 500)),
     nav: nav && {
       links: nav.querySelectorAll('a').length, position: getComputedStyle(nav).position, topAfter: rect(nav).top, right: rect(nav).right,
       current: nav.querySelectorAll('[aria-current="location"]').length,
@@ -296,9 +315,12 @@ async function inspect(browser, deviceName, viewport) {
       console.log(`${deviceName}: My health verified`, JSON.stringify(phone));
     } else {
       await page.mouse.move(viewport.width / 2, 500);
-      await page.mouse.wheel(0, 2000); // a person's scroll, down the topics
-      await page.waitForTimeout(400); // the section list's scroll-spy runs on a frame
-      const layout = await page.evaluate(collectDesktopLayout);
+      const scrolled = await wheelUntilScrolled({
+        readTop: () => page.evaluate(() => Math.round(document.querySelector('.mh-topics').getBoundingClientRect().top)),
+        wheel: () => page.mouse.wheel(0, 2000), // a person's scroll, down the topics
+        sleep: (ms) => page.waitForTimeout(ms),
+      });
+      const layout = { ...await page.evaluate(collectDesktopLayout), scrolled };
       assertDesktopLayout(layout);
       console.log(`desktop ${viewport.width}: My health verified`, JSON.stringify(layout));
     }
