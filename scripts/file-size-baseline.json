@@ -6,7 +6,7 @@
   },
   "files": {
     "widget-src/src/components/InputPanel.tsx": 2539,
-    "widget-src/src/components/HealthTool.tsx": 1782,
+    "widget-src/src/components/HealthTool.tsx": 1780,
     "tools/knowledge-batch-check.ts": 1730,
     "tools/codex-review.mjs": 1699,
     "widget-src/src/components/ReviewTable.tsx": 1621,

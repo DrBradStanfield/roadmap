@@ -21,7 +21,7 @@ export function PersonButton({ onClick, buttonRef, open }: { onClick: () => void
  * or Escape inside it with no other dialog open, closes it, and the focus goes
  * back to the person button. On a phone they are the Account tab's panel
  * (US-62 AC34): no `onClose`, so no Done, no Escape and no focus taken from the
- * tab; `action` (Sign in, or where the record lives) sits on the title's line.
+ * tab; `action` (where the record lives, or the reconnect) sits on the title's line.
  */
 export function SettingsSheet({ onClose, action, children }: { onClose?: () => void; action?: ReactNode; children: ReactNode }) {
   const titleId = useId();

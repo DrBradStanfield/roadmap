@@ -26,7 +26,7 @@ describe('US-20 AC6: WebKit tab bar gate', () => {
   const valid = {
     insideWidget: true, position: 'sticky', background: 'rgb(248, 248, 250)', backdropFilter: 'none', visible: true, top: 761, bottom: 812, viewportHeight: 812,
     oldPlanButton: false, tabs: ['My health', 'Chat', 'Account'], shownAfterChatTap: ['Chat'], chatCardBottom: 749, barTopOnChat: 761,
-    shownAfterAccountTap: ['Account'], accountTitle: 'Account', accountActionHeights: [44], accountActionBorders: [0],
+    shownAfterAccountTap: ['Account'], accountTitle: 'Account', accountTitleButtons: 0, accountSignInHeight: 44, accountSignInBackground: 'rgb(0, 109, 91)',
   };
   it('accepts a sticky, opaque bar inside the widget, on screen, that switches panels', () => {
     expect(() => assertTabBar(valid)).not.toThrow();
@@ -37,9 +37,10 @@ describe('US-20 AC6: WebKit tab bar gate', () => {
       { backdropFilter: 'blur(12px)' }, { visible: false }, { bottom: 900 }, { top: -10 },
       { oldPlanButton: true }, { tabs: ['My data', 'My plan', 'Chat'] }, { tabs: ['My health', 'Chat'] }, { shownAfterChatTap: ['My health', 'Chat'] },
       { chatCardBottom: 766 },
-      // US-62 AC34: the Account tab shows its panel alone, titled, with a quiet 44px Sign in.
-      { shownAfterAccountTap: ['My health', 'Account'] }, { accountTitle: null }, { accountActionHeights: [] },
-      { accountActionHeights: [36] }, { accountActionBorders: [1] },
+      // US-62 AC34: the Account tab shows its panel alone, titled; a guest's one sign-in is the
+      // storage card's filled 44px button, none on the title line (Brad 2026-11-09).
+      { shownAfterAccountTap: ['My health', 'Account'] }, { accountTitle: null }, { accountTitleButtons: 1 },
+      { accountSignInHeight: 0 }, { accountSignInHeight: 36 }, { accountSignInBackground: 'rgba(0, 0, 0, 0)' }, { accountSignInBackground: null },
     ]) {
       expect(() => assertTabBar({ ...valid, ...change })).toThrow();
     }

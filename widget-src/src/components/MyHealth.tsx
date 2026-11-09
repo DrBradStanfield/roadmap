@@ -67,13 +67,15 @@ export interface MyHealthProps {
   /** US-09 AC30: the storage button, on the title line (US-62 AC24). */
   storageBar?: ReactNode;
   personButton?: ReactNode;
-  /** US-01 AC5's alert, drawn here on a phone only: on desktop the storage button says it. */
+  /** Drawn here on a phone only, where the storage button is in Account: US-01 AC5's alert, and
+   *  US-09 AC30's reconnect or waiting save (`syncAlert`). On desktop the storage button says them. */
   saveAlert?: ReactNode;
+  syncAlert?: ReactNode;
   settingsOpen: boolean;
   onSettingsClose: () => void;
-  /** A phone's Account tab panel (US-62 AC34): Settings are drawn there, with the storage button
-   *  on their title line, and My health's title line holds no controls. Null until it mounts;
-   *  undefined on desktop, where Settings take My health's place. */
+  /** A phone's Account tab panel (US-62 AC34): Settings are drawn there, kept mounted, with the
+   *  storage state on their title line, and My health's title line holds no controls. Null until
+   *  it mounts; undefined on desktop, where Settings take My health's place. */
   settingsHost?: HTMLElement | null;
   /** Settings' parts after About you and units: the reminders (none for a known minor), where the
    *  record lives (US-09) and Delete all my data. */
@@ -82,7 +84,7 @@ export interface MyHealthProps {
   onDelete: () => void;
   isDeleting?: boolean;
   /** A guest's storage card shows at the foot while Settings are shut; a connected one waits
-   *  there hidden, so the picker it hosts still opens from the title line (US-09 AC30). */
+   *  there hidden, so the picker it hosts still opens from every way in (US-09 AC13). */
   storageAtFoot?: boolean;
   /** The topics' container: `results_viewed` watches it (US-62 AC5). */
   sectionsRef?: RefObject<HTMLDivElement>;
@@ -109,7 +111,7 @@ const RowsCard = memo(function RowsCard({ rows, onOpen, extra }: { rows: Array<R
   );
 });
 
-export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, personButton, saveAlert, settingsOpen, onSettingsClose, settingsHost, reminders, storageCard, onDelete, isDeleting, storageAtFoot,
+export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, personButton, saveAlert, syncAlert, settingsOpen, onSettingsClose, settingsHost, reminders, storageCard, onDelete, isDeleting, storageAtFoot,
   sectionsRef, healthDocuments, onDocumentDeleted, setShowUploadModal, onPlanReadyDismiss }: MyHealthProps) {
   // The form's row opener changes every render; the rows take a stable one, so memo'd rows stay put.
   const openRef = useRef(form.rows.open);
@@ -224,8 +226,8 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
         </div>
       )}
       {reminders}
-      {/* Where the record lives (US-09). Hidden for new users until they have entered real data. */}
-      {storageCard}
+      {/* Where the record lives (US-09), while Settings show (one card, one picker). */}
+      {settingsOpen && storageCard}
       {plan.planned && (
         <div className="delete-data-section">
           <button className="delete-data-link" onClick={onDelete} disabled={isDeleting}>
@@ -240,11 +242,11 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
       <div className="mh-header">
         <h2 className="mh-title" tabIndex={-1}>My health</h2>
         {!inTab && (personButton || storageBar) && <div className="mh-header-actions">{storageBar}{personButton}</div>}
-        {inTab && saveAlert}
+        {inTab && <>{saveAlert}{syncAlert}</>}
       </div>
-      {settingsOpen && (inTab
+      {inTab
         ? settingsHost && createPortal(<SettingsSheet action={storageBar}>{settingsParts}</SettingsSheet>, settingsHost)
-        : <SettingsSheet onClose={onSettingsClose}>{settingsParts}</SettingsSheet>)}
+        : settingsOpen && <SettingsSheet onClose={onSettingsClose}>{settingsParts}</SettingsSheet>}
       {/* Settings cover an open value page; it stays mounted, so its typing waits (US-62 AC10). */}
       <div className="mh-page-host" hidden={settingsOpen}>{form.renderPage(tiles)}</div>
       {form.messages}

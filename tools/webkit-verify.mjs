@@ -69,8 +69,8 @@ export function collectRows() {
 
 // US-20 AC6: on a phone, the bottom tab bar is inside the widget, sticky (never
 // fixed), opaque, on screen while the widget is, and the tab picks the one panel shown.
-// US-62 AC34: the third tab, Account, shows Settings with Sign in (or the provider) on its
-// title line, a quiet 44px control.
+// US-62 AC34: the third tab, Account, shows Settings under its heading; a guest signs in from
+// the storage card's button.
 export function assertTabBar(data) {
   assert(data.insideWidget, 'tab bar outside the widget');
   assert.equal(data.position, 'sticky', 'tab bar is not sticky');
@@ -82,9 +82,10 @@ export function assertTabBar(data) {
   assert.deepEqual(data.shownAfterChatTap, ['Chat'], 'Chat did not show its panel alone');
   assert.deepEqual(data.shownAfterAccountTap, ['Account'], 'Account did not show its panel alone');
   assert.equal(data.accountTitle, 'Account', 'the Account panel has no Account heading');
-  assert(data.accountActionHeights.length > 0, 'no Sign in on the Account title line');
-  assert(data.accountActionHeights.every(x => x >= 43.5), `Account title-line controls under 44px (${data.accountActionHeights})`);
-  assert(data.accountActionBorders.every(b => b === 0), `a boxed Account title-line control (${data.accountActionBorders})`);
+  // A guest (Brad 2026-11-09): one sign-in, the storage card's filled 44px button; none on the title line.
+  assert.equal(data.accountTitleButtons, 0, `${data.accountTitleButtons} buttons on a guest's Account title line`);
+  assert(data.accountSignInHeight >= 43.5, `the storage card's sign-in is missing or under 44px (${data.accountSignInHeight})`);
+  assert(data.accountSignInBackground && !/rgba\(0, 0, 0, 0\)|transparent/.test(data.accountSignInBackground), `the storage card's sign-in is not a filled button (${data.accountSignInBackground})`);
   // Live test 2026-11-06: the chat card ran 3-5px under the bar.
   assert(data.chatCardBottom <= data.barTopOnChat + 0.5, `chat card ends under the tab bar (${data.chatCardBottom} > ${data.barTopOnChat})`);
 }
@@ -339,11 +340,12 @@ async function inspect(browser, deviceName, viewport) {
       tabBar.shownAfterAccountTap = await bar.evaluate(shownPanels);
       Object.assign(tabBar, await page.evaluate(() => {
         const head = document.querySelector('.hr-tabpanel:not([hidden]) .mh-settings-head');
-        const actions = head ? [...head.querySelectorAll('.mh-header-actions > button')] : [];
+        const signIn = document.querySelector('.hr-tabpanel:not([hidden]) .mh-settings .hr-sync-btn');
         return {
           accountTitle: head?.querySelector('h2')?.textContent ?? null,
-          accountActionHeights: actions.map(el => Math.round(el.getBoundingClientRect().height)),
-          accountActionBorders: actions.map(el => parseFloat(getComputedStyle(el).borderTopWidth)),
+          accountTitleButtons: head ? head.querySelectorAll('.mh-header-actions button').length : 0,
+          accountSignInHeight: signIn ? Math.round(signIn.getBoundingClientRect().height) : 0,
+          accountSignInBackground: signIn ? getComputedStyle(signIn).backgroundColor : null,
         };
       }));
       assertTabBar(tabBar);

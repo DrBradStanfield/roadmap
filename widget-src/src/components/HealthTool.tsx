@@ -304,14 +304,15 @@ type ChatPrefetch = { epoch: number; data: ChatPrefetchData };
 const prefetchFor = (prefetch: ChatPrefetch | null, epoch: number): ChatPrefetchData | null =>
   (prefetch?.epoch === epoch ? prefetch.data : null);
 
-export function HealthTool({ syncControl, remindersSection, storageBar, saveAlert }: {
+export function HealthTool({ syncControl, remindersSection, storageBar, saveAlert, syncAlert }: {
   syncControl?: (ctx: { hasData: boolean; attention: boolean }) => ReactNode;
   remindersSection?: ReactNode;
   /** US-09 AC30: the Sign in button, in the input column's header. */
   storageBar?: ReactNode;
-  /** US-01 AC5: "Could not save on this device", atop My health on a phone, where the
-   *  storage button (which says it on desktop) is in the Account tab (US-62 AC34). */
+  /** On a phone, where the storage button is in the Account tab (US-62 AC34): US-01 AC5's
+   *  "Could not save on this device" atop My health and Chat, and a reconnect or waiting save atop My health. */
   saveAlert?: ReactNode;
+  syncAlert?: ReactNode;
 } = {}) {
   // The store is ready before render, so returning users see their saved prefill immediately.
   const [inputs, setInputs] = useState<Partial<HealthInputs>>(getInitialInputsSync);
@@ -1556,8 +1557,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const personButton = <PersonButton onClick={toggleSettings} buttonRef={personRef} open={settingsOpen}/>;
   // Where the record lives (US-09): in Settings, and for a guest (a record on this
   // device only) also at the foot of My health, so the sign-in prompt stays in the
-  // page's flow (orchestrator 2026-11-06). Drawn in one place at a time: one picker.
-  const storageCard = syncControl?.({ hasData: plan.planned, attention: plan.attention });
+  // page's flow (orchestrator 2026-11-06). Drawn in one place at a time: one picker. A phone's
+  // Account shows it before any data: its button is the tab's one sign-in (US-62 AC34).
+  const storageCard = syncControl?.({ hasData: plan.planned || (isMobile && settingsShown), attention: plan.attention });
 
   const myHealthProps = {
     plan, tiles, series, egfrCurrent, sectionsRef, setShowUploadModal,
@@ -1565,6 +1567,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     storageBar,
     personButton,
     saveAlert,
+    syncAlert,
     settingsOpen: settingsShown,
     onSettingsClose: closeSettings,
     settingsHost: isMobile ? accountHost : undefined,
@@ -1655,11 +1658,17 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
 
   // US-62 AC16, AC34: on a phone, three panels, My health, Chat and Account, and a bottom tab
   // bar. My health and Chat stay mounted (the form's drafts and the chat's conversation survive
-  // a switch); only the active one shows. Account holds Settings, drawn by My health while the
-  // tab shows, inside the erase lock.
+  // a switch); only the active one shows. Account holds Settings, drawn by My health and kept
+  // mounted (a half-typed reminder email survives a switch), inside the erase lock.
   const panel = (tab: TabId, children: ReactNode) => (
     <div className="hr-tabpanel" role="tabpanel" id={panelDomId(tabIds, tab)} aria-labelledby={tabDomId(tabIds, tab)} hidden={activeTab !== tab}>
       {children}
+    </div>
+  );
+  const healthForm = <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps}>{myHealth}</InputPanel></fieldset>;
+  const chat = (
+    <div className="health-tool-chat">
+      <ChatEmbed isLoggedIn={chatSectionProps.isLoggedIn} guestInputs={chatSectionProps.guestInputs} muted={formStage < 4} onProposeEdit={handleProposeEdit}/>
     </div>
   );
   return (
@@ -1667,36 +1676,17 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       {unreadableLine && <p className="hr-unreadable-note no-print" role="status">{unreadableLine}</p>}
       {isMobile ? (
         <>
-          {panel('health', <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps}>{myHealth}</InputPanel></fieldset>)}
-          {panel('chat', (
-            <div className="health-tool-chat">
-              <ChatEmbed
-                isLoggedIn={chatSectionProps.isLoggedIn}
-                guestInputs={chatSectionProps.guestInputs}
-                muted={formStage < 4}
-                onProposeEdit={handleProposeEdit}
-              />
-            </div>
-          ))}
+          {panel('health', healthForm)}
+          {/* US-01 AC5: a refused save is said on the open tab, here too (US-62 AC34). */}
+          {panel('chat', <>{saveAlert}{chat}</>)}
           {panel('account', <fieldset className="health-form-lock mh-account" disabled={isDeleting} ref={setAccountHost}/>)}
           <BottomTabBar activeTab={activeTab} onTabChange={selectTab} idPrefix={tabIds} />
         </>
       ) : (
         <div className="health-tool-content">
           {/* US-62 AC16: one My health column, centred; the chat column beside it from 1200px. */}
-          <div className="health-tool-main">
-            <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps}>{myHealth}</InputPanel></fieldset>
-          </div>
-          {isWideDesktop && (
-            <div className="health-tool-chat">
-              <ChatEmbed
-                isLoggedIn={chatSectionProps.isLoggedIn}
-                guestInputs={chatSectionProps.guestInputs}
-                muted={formStage < 4}
-                onProposeEdit={handleProposeEdit}
-              />
-            </div>
-          )}
+          <div className="health-tool-main">{healthForm}</div>
+          {isWideDesktop && chat}
         </div>
       )}
 

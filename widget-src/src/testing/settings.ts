@@ -3,9 +3,14 @@
 // Account tab on a phone (AC34). Imported by tests only.
 import { fireEvent } from '@testing-library/react';
 
-/** Opens the settings (a phone's Account tab), unless they are open already. */
+/** True while the settings show; a phone keeps them mounted in its hidden Account panel. */
+export function settingsShown(root: ParentNode = document): boolean {
+  return [...root.querySelectorAll('.mh-settings')].some(s => !s.closest('[hidden]'));
+}
+
+/** Opens the settings (a phone's Account tab), unless they show already. */
 export function openSettings(root: ParentNode = document): void {
-  if (root.querySelector('.mh-settings')) return;
+  if (settingsShown(root)) return;
   const opener = root.querySelector<HTMLButtonElement>('button[aria-label="Settings"]')
     ?? [...root.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(t => t.textContent === 'Account');
   if (!opener) throw new Error('No Settings button or Account tab on screen');

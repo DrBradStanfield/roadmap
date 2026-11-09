@@ -881,7 +881,7 @@ describe('US-62 AC31: "Your plan is ready." after the onboarding', () => {
 describe('US-62 AC12: About you goes low once the onboarding is done and its card is left', () => {
   const cards = (view: RenderResult) => Array.from(view.container.querySelectorAll('.health-input-panel > .section-card'));
   /** About you has left the page for Settings: the topics show and its card is gone. */
-  const aboutLow = (view: RenderResult) => (q(view, '.about-card') ? null : q(view, '.mh-sections'));
+  const aboutLow = (view: RenderResult) => (q(view, '.mh-page .about-card') ? null : q(view, '.mh-sections')); // a phone keeps Settings mounted in Account
 
   it.each([['desktop', false], ['phone', true]])('on %s: "199" moves nothing; "1990" lands on "Your plan is ready." and About you goes, as rows, to Settings', async (_, onPhone) => {
     phone = onPhone;
@@ -915,7 +915,7 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
     expect(about.querySelector('h3')?.textContent).toContain('About you');
     closeSettings(view.container);
     fireEvent.click(Array.from(view.container.querySelectorAll('[data-topic="weight"] .md-row')).find((r) => r.textContent?.startsWith('Waist'))!);
-    await waitFor(() => expect(within(q(view, '.md-page') as HTMLElement).getByRole('heading', { name: 'Waist' })).toBeTruthy());
+    await waitFor(() => expect(within(q(view, '.mh-page-host .md-page') as HTMLElement).getByRole('heading', { name: 'Waist' })).toBeTruthy());
   });
 
   it('the focus going from the birth year into the waist field keeps that field until the vitals card is left', async () => {

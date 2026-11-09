@@ -251,15 +251,23 @@ describe('US-62 AC34: the Account tab', () => {
     expect(phone).toMatch(/\.mh-header\s*\{\s*display:\s*contents;/); // no row, no gap
   });
 
-  it('signed out: Account holds Sign in on its title line, then Settings\' parts; no Done; one Sign in', async () => {
-    const view = await renderPhone(<button type="button">Sign in</button>);
+  // Brad 2026-11-09: one sign-in, the storage card's button. The title line holds only what the
+  // storage bar draws there (on a phone, no Sign in: standalone/storage-bar.test.tsx).
+  const guestCard = ({ hasData }: { hasData: boolean }) => (hasData
+    ? <div className="hr-sync"><button type="button" className="hr-sync-btn hr-sync-btn-full">Where do you want to keep your health record?</button></div>
+    : null);
+
+  it('signed out: Account holds Settings\' parts under its heading, the storage card\'s button the one sign-in; no Done', async () => {
+    const view = render(<HealthTool syncControl={guestCard} />);
+    await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
     const account = tabNamed(view, 'Account');
     fireEvent.click(account);
     const panel = panelOf(view, account);
     const sheet = panel.querySelector<HTMLElement>('.mh-settings')!;
     const heading = within(sheet).getByRole('heading', { name: 'Account' });
-    expect(heading.closest('.mh-settings-head')!.querySelector('.mh-header-actions button')?.textContent).toBe('Sign in');
-    expect(view.getAllByRole('button', { name: 'Sign in' })).toHaveLength(1);
+    expect(heading.closest('.mh-settings-head')!.querySelectorAll('button')).toHaveLength(0);
+    expect(view.queryByRole('button', { name: 'Sign in' })).toBeNull();
+    expect(within(sheet).getByRole('button', { name: 'Where do you want to keep your health record?' })).toBeTruthy();
     expect(within(sheet).getByRole('button', { name: /Switch units/ })).toBeTruthy();
     expect(within(sheet).getByRole('button', { name: 'Delete all my data' })).toBeTruthy();
     expect(within(sheet).queryByRole('button', { name: 'Done' })).toBeNull();
@@ -271,17 +279,54 @@ describe('US-62 AC34: the Account tab', () => {
     fireEvent.keyDown(within(sheet).getByRole('button', { name: 'Delete all my data' }), { key: 'Escape' });
     expect(account.getAttribute('aria-selected')).toBe('true');
     expect(panel.querySelector('.mh-settings')).not.toBeNull();
+    // The card keeps the storage button's filled style there (the flat Settings rule skips Account).
+    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
+    expect(css).toMatch(/:not\(\.mh-account\) > \.mh-settings \.hr-sync \.hr-sync-btn,/);
   });
 
-  it('signed in: Account names where the record lives on its title line and shows the storage card', async () => {
+  it('a new guest with nothing entered still finds the sign-in in Account, and no pitch on My health', async () => {
+    localStorage.clear();
+    await initRoadmapStore(new LocalStorageAdapter());
+    const view = render(<HealthTool syncControl={guestCard} />);
+    const signIn = () => view.queryByRole('button', { name: 'Where do you want to keep your health record?' });
+    await waitFor(() => expect(view.container.querySelector('.health-input-panel')).not.toBeNull());
+    expect(view.container.querySelector('.hr-sync')).toBeNull(); // nothing to save yet (US-09 AC5)
+    fireEvent.click(tabNamed(view, 'Account'));
+    expect(signIn()!.closest('.mh-settings')).not.toBeNull();
+    fireEvent.click(tabNamed(view, 'My health'));
+    expect(view.container.querySelector('.hr-sync')).toBeNull();
+  });
+
+  it('signed in: Account says where the record lives, as text, on its title line and shows the storage card', async () => {
     const card = () => <div className="hr-sync">Your health record lives in your Dropbox</div>;
-    const view = render(<HealthTool storageBar={<button type="button">Dropbox</button>} syncControl={card} />);
+    const view = render(<HealthTool storageBar={<span className="hr-storage-state">Synced to Dropbox</span>} syncControl={card} />);
     await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
     const account = tabNamed(view, 'Account');
     fireEvent.click(account);
     const sheet = panelOf(view, account).querySelector<HTMLElement>('.mh-settings')!;
-    expect(sheet.querySelector('.mh-settings-head .mh-header-actions button')?.textContent).toBe('Dropbox');
+    expect(sheet.querySelector('.mh-settings-head .mh-header-actions')?.textContent).toBe('Synced to Dropbox');
     expect([...view.container.querySelectorAll('.hr-sync')].map((c) => !!c.closest('.mh-settings'))).toEqual([true]); // one card, one picker
+  });
+
+  it('a sync problem shows atop My health on a phone, not only in Account; desktop keeps it on the title line', async () => {
+    const problem = <button type="button" className="action-btn-small">Sign in to Google again</button>;
+    const view = render(<HealthTool syncAlert={problem} />);
+    await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
+    const shown = view.getByRole('button', { name: 'Sign in to Google again' });
+    expect(shown.closest('.mh-header')).not.toBeNull();
+    expect(shown.closest('[hidden]')).toBeNull();
+    turn(false);
+    expect(view.queryByRole('button', { name: 'Sign in to Google again' })).toBeNull(); // desktop: the storage bar says it
+  });
+
+  it('a half-typed reminder email survives a tab switch: Account stays mounted', async () => {
+    const view = render(<HealthTool remindersSection={<input aria-label="Email for your reminders" />} />);
+    await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
+    fireEvent.click(tabNamed(view, 'Account'));
+    fireEvent.change(view.getByRole('textbox', { name: 'Email for your reminders' }), { target: { value: 'half@exa' } });
+    fireEvent.click(tabNamed(view, 'Chat'));
+    fireEvent.click(tabNamed(view, 'Account'));
+    expect((view.getByRole('textbox', { name: 'Email for your reminders' }) as HTMLInputElement).value).toBe('half@exa');
   });
 
   it('a guest\'s storage card sits at the foot of My health, and moves to Account while it shows: one at a time', async () => {
@@ -303,11 +348,12 @@ describe('US-62 AC34: the Account tab', () => {
   it('Delete all my data in Account lands on My health, its title focused', async () => {
     vi.stubGlobal('confirm', () => true);
     const view = await renderPhone();
-    fireEvent.click(tabNamed(view, 'Account'));
+    const account = tabNamed(view, 'Account');
+    fireEvent.click(account);
     fireEvent.click(view.getByRole('button', { name: 'Delete all my data' }));
     await waitFor(() => expect(tabNamed(view, 'My health').getAttribute('aria-selected')).toBe('true'));
     await waitFor(() => expect(document.activeElement).toBe(view.container.querySelector('.mh-title')));
-    expect(view.container.querySelector('.mh-settings')).toBeNull();
+    expect(panelOf(view, account).hidden).toBe(true);
   });
 });
 

@@ -198,7 +198,7 @@ describe('US-62 AC10: the value page', () => {
     await seed();
     const view = await renderTool();
     fireEvent.click(row(view, 'LDL Cholesterol'));
-    const page = view.container.querySelector<HTMLElement>('.md-page')!;
+    const page = view.container.querySelector<HTMLElement>('.mh-page-host .md-page')!;
     expect(within(page).getByRole('heading', { name: 'LDL Cholesterol' })).toBeTruthy();
     expect(page.querySelector('.md-page-target')!.textContent).toBe('Optimal: <1.4 mmol/L');
     expect(view.container.querySelector('.health-input-panel')!.className).toContain('md-page-open');
@@ -207,22 +207,32 @@ describe('US-62 AC10: the value page', () => {
     ]);
     await waitFor(() => expect(page.querySelector('canvas')).not.toBeNull());
     fireEvent.click(within(page).getByRole('button', { name: '‹ Back' }));
-    await waitFor(() => expect(view.container.querySelector('.md-page')).toBeNull());
+    await waitFor(() => expect(view.container.querySelector('.mh-page-host .md-page')).toBeNull());
     expect(view.container.querySelector('.health-input-panel')!.className).not.toContain('md-page-open');
+  });
+
+  // A phone has no Settings button; its Account tab holds the units (US-62 AC34).
+  it.each([['phone', true, 'Account'], ['desktop', false, 'Settings']])('US-62 AC34: on a %s the units hint names where the units live', async (_, onPhone, home) => {
+    phone = onPhone;
+    await seed();
+    const view = await renderTool();
+    fireEvent.click(row(view, 'Weight'));
+    const page = view.container.querySelector<HTMLElement>('.mh-page-host .md-page')!;
+    expect(within(page).getByText(/^To change units/).textContent).toBe(`To change units, use ${home} or All results as a table.`);
   });
 
   it('US-62 AC14: the title is a card title, and the chart does not repeat it (a pressure keeps its two names)', async () => {
     await seed();
     const view = await renderTool();
     fireEvent.click(row(view, 'LDL Cholesterol'));
-    let page = view.container.querySelector<HTMLElement>('.md-page')!;
+    let page = view.container.querySelector<HTMLElement>('.mh-page-host .md-page')!;
     expect(within(page).getByRole('heading', { name: 'LDL Cholesterol' }).className).toContain('health-section-title');
     await waitFor(() => expect(page.querySelector('canvas')).not.toBeNull());
     expect(within(page).getAllByRole('heading', { name: 'LDL Cholesterol' })).toHaveLength(1);
     expect(within(page).getByRole('img', { name: 'LDL Cholesterol chart' })).toBeTruthy();
     fireEvent.click(within(page).getByRole('button', { name: '‹ Back' }));
     fireEvent.click(await waitFor(() => row(view, 'Blood Pressure')));
-    page = view.container.querySelector<HTMLElement>('.md-page')!;
+    page = view.container.querySelector<HTMLElement>('.mh-page-host .md-page')!;
     await waitFor(() => expect(page.querySelectorAll('canvas')).toHaveLength(2));
     expect([...page.querySelectorAll('.metric-chart-container h3')].map(h => h.textContent)).toEqual(['Systolic', 'Diastolic']);
   });
@@ -231,7 +241,7 @@ describe('US-62 AC10: the value page', () => {
     await seed();
     const view = await renderTool();
     fireEvent.click(row(view, 'LDL Cholesterol'));
-    const page = view.container.querySelector<HTMLElement>('.md-page')!;
+    const page = view.container.querySelector<HTMLElement>('.mh-page-host .md-page')!;
     fireEvent.change(page.querySelector('input[type="date"]')!, { target: { value: '2026-10-30' } });
     fireEvent.change(within(page).getByLabelText(/Value/), { target: { value: '2.2' } });
     fireEvent.click(within(page).getByRole('button', { name: 'Add' }));
@@ -249,7 +259,7 @@ describe('US-62 AC10: the value page', () => {
     await seed();
     const view = await renderTool();
     fireEvent.click(row(view, 'LDL Cholesterol'));
-    const page = view.container.querySelector<HTMLElement>('.md-page')!;
+    const page = view.container.querySelector<HTMLElement>('.mh-page-host .md-page')!;
     fireEvent.change(page.querySelector('input[type="date"]')!, { target: { value: '2026-10-12' } });
     expect(page.querySelector('.md-add-note')!.textContent).toBe('This day has 3.4 mmol/L already. Saving corrects it.');
     fireEvent.change(within(page).getByLabelText(/Value/), { target: { value: '3.1' } });
@@ -265,9 +275,9 @@ describe('US-62 AC10: the value page', () => {
     await seed();
     const view = await renderTool();
     fireEvent.click(row(view, 'Blood Pressure'));
-    let page = view.container.querySelector<HTMLElement>('.md-page')!;
+    let page = view.container.querySelector<HTMLElement>('.mh-page-host .md-page')!;
     fireEvent.click(within(page).getAllByRole('button', { name: /Correct the reading/ })[0]);
-    page = view.container.querySelector<HTMLElement>('.md-page')!;
+    page = view.container.querySelector<HTMLElement>('.mh-page-host .md-page')!;
     expect((page.querySelector('input[type="date"]') as HTMLInputElement).value).toBe('2026-10-20');
     expect((within(page).getByLabelText('Systolic (top number)') as HTMLInputElement).value).toBe('126');
 
@@ -287,7 +297,7 @@ describe('US-62 AC10: the value page', () => {
     await seed();
     const view = await renderTool();
     fireEvent.click(row(view, 'Blood Pressure'));
-    const page = view.container.querySelector<HTMLElement>('.md-page')!;
+    const page = view.container.querySelector<HTMLElement>('.mh-page-host .md-page')!;
     fireEvent.change(within(page).getByLabelText('Systolic (top number)'), { target: { value: '80' } });
     fireEvent.change(within(page).getByLabelText('Diastolic (bottom number)'), { target: { value: '90' } });
     const rows = fileRows('systolic_bp').length;
@@ -300,7 +310,7 @@ describe('US-62 AC10: the value page', () => {
     await seed();
     const view = await renderTool();
     fireEvent.click(row(view, 'Weight'));
-    const page = view.container.querySelector<HTMLElement>('.md-page')!;
+    const page = view.container.querySelector<HTMLElement>('.mh-page-host .md-page')!;
     const old = fileRows('weight').find(r => r.recordedAt.startsWith('2026-10-20'))!;
     fireEvent.click(page.querySelector('.md-history-row .bt-cell-clickable')!);
     const input = page.querySelector<HTMLInputElement>('.md-history-row input')!;
@@ -314,7 +324,7 @@ describe('US-62 AC10: the value page', () => {
     await seed();
     const view = await renderTool();
     fireEvent.click(row(view, 'Sodium'));
-    const page = view.container.querySelector<HTMLElement>('.md-page')!;
+    const page = view.container.querySelector<HTMLElement>('.mh-page-host .md-page')!;
     expect(page.querySelector('.md-page-target')!.textContent).toBe('Ref: 135–145');
     fireEvent.click(within(page).getByRole('button', { name: '+ Add a value' }));
     expect(within(page).queryByLabelText('Test')).toBeNull();
@@ -407,7 +417,7 @@ async function remoteWrite(write: () => Promise<unknown>) {
   await flushRoadmapStore();
   window.dispatchEvent(new Event('hr:remote-changed'));
 }
-const page = (view: ReturnType<typeof render>) => view.container.querySelector<HTMLElement>('.md-page')!;
+const page = (view: ReturnType<typeof render>) => view.container.querySelector<HTMLElement>('.mh-page-host .md-page')!;
 
 describe('US-62 AC10 review fixes: what Add expects is frozen when entry begins (US-03 AC8)', () => {
   it('an empty day another device fills while a value is typed: refused, nothing written, its value untouched', async () => {
@@ -498,7 +508,7 @@ describe('US-62 AC10 review fixes: unit and erase', () => {
     fireEvent.click(row(view, 'LDL Cholesterol'));
     fireEvent.change(within(page(view)).getByLabelText(/Value/), { target: { value: '2.2' } });
     act(() => { window.dispatchEvent(new Event('hr:drafts-cleared')); });
-    await waitFor(() => expect(view.container.querySelector('.md-page')).toBeNull());
+    await waitFor(() => expect(view.container.querySelector('.mh-page-host .md-page')).toBeNull());
     expect(fileRows('ldl').some(r => r.value === 2.2)).toBe(false);
   });
 });
@@ -513,10 +523,10 @@ describe('US-62 AC10 review fixes: the back gesture', () => {
     expect(push).toHaveBeenCalledTimes(1);
     expect(push.mock.calls[0][2]).toBeUndefined(); // no URL change for analytics to see
     act(() => { history.back(); });
-    await waitFor(() => expect(view.container.querySelector('.md-page')).toBeNull());
+    await waitFor(() => expect(view.container.querySelector('.mh-page-host .md-page')).toBeNull());
     fireEvent.click(row(view, 'HbA1c'));
     fireEvent.click(within(page(view)).getByRole('button', { name: '‹ Back' }));
-    await waitFor(() => expect(view.container.querySelector('.md-page')).toBeNull());
+    await waitFor(() => expect(view.container.querySelector('.mh-page-host .md-page')).toBeNull());
     expect(history.state?.hrValuePage).toBeFalsy();
   });
 
@@ -533,7 +543,7 @@ describe('US-62 AC10 review fixes: the back gesture', () => {
     await waitFor(() => expect(history.state?.hrValuePage).toBe(true));
     confirm.mockReturnValue(true);
     fireEvent.click(within(page(view)).getByRole('button', { name: '‹ Back' }));
-    await waitFor(() => expect(view.container.querySelector('.md-page')).toBeNull());
+    await waitFor(() => expect(view.container.querySelector('.mh-page-host .md-page')).toBeNull());
   });
 });
 
@@ -595,6 +605,6 @@ describe('US-62 AC10 review re-check: Back on another tab', () => {
     fireEvent.click(view.getByRole('tab', { name: 'Chat' }));
     act(() => { history.back(); });
     await new Promise(r => setTimeout(r, 30));
-    expect(view.container.querySelector('.md-page')).not.toBeNull();
+    expect(view.container.querySelector('.mh-page-host .md-page')).not.toBeNull();
   });
 });

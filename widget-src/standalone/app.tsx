@@ -126,6 +126,7 @@ async function main() {
           remindersSection={<RemindersSection backend={backend} />}
           storageBar={<StorageBar backend={backend} reconnect={reconnect} />}
           saveAlert={<LocalSaveAlert backend={backend} />}
+          syncAlert={<StorageBar backend={backend} reconnect={reconnect} problemsOnly />}
         />
         <HistoryLightboxHost />
       </ErrorBoundary>

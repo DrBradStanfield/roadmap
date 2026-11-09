@@ -205,7 +205,7 @@ it('US-60 AC4 with US-62 AC12: once the birth date finishes the onboarding and i
     expect(view.container.querySelector('.md-about-you')).toBeNull(); // still typing
     act(() => year.blur());
     // About you goes to Settings once the onboarding is done (US-62 AC24, AC25).
-    await waitFor(() => expect(view.container.querySelector('.about-card')).toBeNull());
+    await waitFor(() => expect(view.container.querySelector('.mh-page .about-card')).toBeNull()); // a phone's Account keeps Settings mounted
     openSettings(view.container);
     const about = await waitFor(() => { const a = view.container.querySelector<HTMLElement>('.md-about-you'); expect(a).not.toBeNull(); return a!; });
     expect(within(about).getByText('Alcohol')).toBeTruthy();
