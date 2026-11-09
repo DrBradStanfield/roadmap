@@ -279,11 +279,12 @@ jobs:
       - name: Full test suite (final gate on the exact deployed commit)
         run: npm run test:all
 
-      - name: Typecheck (widget-src + health-core + server)
+      - name: Typecheck (widget-src + health-core + server + iPhone engine)
         run: |
           npx tsc --noEmit -p widget-src/tsconfig.json
           npx tsc --noEmit -p packages/health-core/tsconfig.json
           npm run typecheck:server
+          npm run typecheck:engine
 
       - name: Build widget bundles (main v2 + upload + side bundles)
         run: |
