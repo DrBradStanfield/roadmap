@@ -5,7 +5,7 @@
     "packages/health-core/src/mcp-tool-catalogue.ts": "data table: the published MCP tool and prompt text (mostly literals)"
   },
   "files": {
-    "widget-src/src/components/InputPanel.tsx": 2539,
+    "widget-src/src/components/InputPanel.tsx": 2537,
     "widget-src/src/components/HealthTool.tsx": 1780,
     "tools/knowledge-batch-check.ts": 1730,
     "tools/codex-review.mjs": 1699,
@@ -20,7 +20,7 @@
     "widget-src/src/components/ResultsPanel.tsx": 927,
     "packages/health-core/src/merge.ts": 893,
     "ios/scripts/app-store-video-compose.swift": 882,
-    "tools/test-chatbot-matching.ts": 848,
+    "tools/test-chatbot-matching.ts": 847,
     "app/routes/api.chat.ts": 829,
     "widget-src/src/components/StartingInfoVitals.tsx": 825,
     "packages/health-core/src/units.ts": 819,
