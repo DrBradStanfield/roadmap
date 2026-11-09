@@ -558,7 +558,7 @@ export function InputPanel({
   const writeMedication = (meds: MedicationInputs, cascadeMode: boolean, field: string, value: string) => {
     for (const w of medicationWrites(meds, cascadeMode, field, value)) onMedicationChange(w.medicationKey, w.drugName, w.doseValue, w.doseUnit);
   };
-  const form: FormKit = { inputs, rawInputs, setRawInputs, errors, updateField, readable, unreadable, range, typeIn, blurOnWheel, settleOnEnter, autoSaveGate, rangeWait, writeMedication };
+  const form: FormKit = { inputs, rawInputs, setRawInputs, errors, updateField, readable, unreadable, range, typeIn, blurOnWheel, settleOnEnter, autoSaveGate, rangeWait };
   // Imperial height, feet then inches: could some inches still bring it in range ("1" may be 10 or 11)?
   // The feet box hands on to the inches box: only leaving the pair shows the error (Codex R2).
   const leaveHeightPair = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -1458,7 +1458,7 @@ export function InputPanel({
 
     if (!cascadeMode && !hasAnyLipidInput) return null;
 
-    return <LipidMedications place={place} form={form} medications={medications} lipidMarker={lipidMarker} fieldUnit={fieldUnit}/>;
+    return <LipidMedications place={place} writeMedication={writeMedication} medications={medications} lipidMarker={lipidMarker} fieldUnit={fieldUnit}/>;
   };
 
   // Weight and diabetes medications: they recommend only when the plan's trigger is on (US-06 AC5).

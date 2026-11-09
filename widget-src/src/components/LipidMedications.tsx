@@ -1,7 +1,7 @@
 // Cholesterol medicine questions, one section of the form (moved out of InputPanel).
-import { optionElements, type FormKit } from './form-kit';
+import { optionElements } from './form-kit';
 import type { Placement } from './MyHealth';
-import { STATIN_NAMES, STATIN_DRUGS, EZETIMIBE_OPTIONS, PCSK9I_OPTIONS, BEMPEDOIC_ACID_OPTIONS } from '@roadmap/health-core/types';
+import { STATIN_NAMES, STATIN_DRUGS, EZETIMIBE_OPTIONS, PCSK9I_OPTIONS, BEMPEDOIC_ACID_OPTIONS, type MedicationInputs } from '@roadmap/health-core/types';
 import { medicationsToInputs, type ApiMedication, METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
 import { type LipidMarker, LIPID_MEDS_IN_STEPS, lipidTargetSentence } from '@roadmap/health-core/suggestions';
 import type { UnitSystem } from '@roadmap/health-core/units';
@@ -10,7 +10,8 @@ import { MEDICATION_TEXT, optionsShowing, escalationOptions, doseOptions } from 
 
 interface LipidMedicationsProps {
   place: Placement;
-  form: FormKit;
+  /** Sends one medication answer's writes, in order (health-core's rules). */
+  writeMedication: (meds: MedicationInputs, cascadeMode: boolean, field: string, value: string) => void;
   medications: ApiMedication[];
   /** The plan's lipid marker, which sets cascade or flat mode (US-06 AC5). */
   lipidMarker: LipidMarker | null | undefined;
@@ -21,9 +22,10 @@ interface LipidMedicationsProps {
 // Cholesterol medications, for a plan with an elevated lipid marker or any lipid
 // entered. The caller checks both, so My health draws no empty topic (US-62 AC17).
 export function LipidMedications(props: LipidMedicationsProps) {
-  const { place, form, medications, lipidMarker, fieldUnit } = props;
-  const { writeMedication } = form;
+  const { place, writeMedication, medications, lipidMarker, fieldUnit } = props;
 
+  // The call site decides this too, for its hide guard; derived here again so
+  // TypeScript narrows lipidMarker in the cascade branch. Keep both.
   const cascadeMode = !!lipidMarker?.elevated;
 
   const medInputs = medicationsToInputs(medications);

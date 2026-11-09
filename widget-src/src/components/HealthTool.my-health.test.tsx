@@ -134,6 +134,12 @@ describe('US-62 AC17: the sections, in the iPhone\'s order', () => {
     expect(topics(view).length).toBeGreaterThan(0); // the plan is drawn
     expect(topics(view)).not.toContain('screening');
   });
+
+  it('with no lipid value and nothing elevated, no cholesterol medicine questions (US-06 AC5 hidden mode)', async () => {
+    const view = await show(() => seedGuest({ sex: 'male', heightCm: 180, birthYear: 1975, birthMonth: 1, unitSystem: 'si' }, [['weight', 80]], [], DAY));
+    expect(topics(view).length).toBeGreaterThan(0); // the plan is drawn
+    expect(view.container.querySelector('#statin-name')).toBeNull();
+  });
 });
 
 describe('US-62 AC18: every suggestion drawn exactly once', () => {

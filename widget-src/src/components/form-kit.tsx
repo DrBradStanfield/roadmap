@@ -3,7 +3,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { openHistoryLightbox } from '../lib/roadmap-data';
 import type { useRangeWait } from '../lib/useRangeWait';
-import type { HealthInputs, MedicationInputs } from '@roadmap/health-core/types';
+import type { HealthInputs } from '@roadmap/health-core/types';
 import type { UnitSystem } from '@roadmap/health-core/units';
 import type { FormOption } from '@roadmap/health-core/input-form';
 
@@ -39,6 +39,4 @@ export interface FormKit {
   /** Whether the record has loaded, so a blur or Enter may auto-save. */
   autoSaveGate: boolean;
   rangeWait: ReturnType<typeof useRangeWait>;
-  /** Sends one medication answer's writes, in order (both medicine cascades). */
-  writeMedication: (meds: MedicationInputs, cascadeMode: boolean, field: string, value: string) => void;
 }
