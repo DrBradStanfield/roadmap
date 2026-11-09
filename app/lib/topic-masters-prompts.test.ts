@@ -240,3 +240,18 @@ describe('rules are applied silently (US-15 AC49)', () => {
     expect(doctor).toContain("Make this check silently: never say that the user's message named the product, or that you can answer because it did.");
   });
 });
+
+// US-45 AC4 (changed 2026-11-10, Brad: "drstanfield can talk about potassium-fiber drink because it's a drink with no
+// health claims"): the doctor posture's second exception, and the YouTube ownership line exempt from the reply caps.
+describe('Potassium Fiber Drink on the doctor surfaces (US-45 AC4)', () => {
+  const doctor = readFileSync('app/lib/chat-posture-doctor.md', 'utf-8');
+  const OWNERSHIP = 'Brad owns the company that sells it and profits from its sale.';
+  it('the doctor posture allows it only when the user names it, and never brings it up beside a condition', () => {
+    expect(doctor).toContain("when the user's message names it, you may name and describe it from the PRODUCTS section and link https://potassiumfiber.com");
+    expect(doctor).toContain('If a question that does not name the drink names a condition or symptom (blood pressure, constipation, kidney disease and the like), or the reply discusses outcome research, do not bring the drink up.');
+    expect(doctor).toContain('never steer to it, never recommend it');
+  });
+  it('a YouTube reply naming the drink carries the exact ownership sentence, outside the sentence and word limits', () => {
+    expect(youtube).toContain(`- **Potassium Fiber Drink ownership:** when a reply names or discusses the drink, it must include this exact sentence: "${OWNERSHIP}" This sentence is exempt from the do-not-copy rule above and does not count toward the sentence or word limits.`);
+  });
+});
