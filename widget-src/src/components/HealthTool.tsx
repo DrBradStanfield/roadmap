@@ -7,7 +7,7 @@ import { validateHealthInputs, getValidationErrors, convertValidationErrorsToUni
 import { planInputsFrom, withLabEgfr, labEgfrOf } from '@roadmap/health-core/plan';
 import { type SuggestionInputs, type AlcoholAnswer, type HealthInputs, isSex } from '@roadmap/health-core/types';
 import type { UnitSystem } from '@roadmap/health-core/units';
-import { PREFILL_FIELDS, hasUnsavedProfileEdits, LONGITUDINAL_FIELDS, medicationsToInputs, mergeLongitudinalInputs, screeningsToInputs, computeFormStage, opensFullForm, METRIC_TO_FIELD, withPsaMeasurement, type FormStage, type RecordHoldings } from '@roadmap/health-core/mappings';
+import { PREFILL_FIELDS, hasUnsavedProfileEdits, LONGITUDINAL_FIELDS, medicationsToInputs, mergeLongitudinalInputs, screeningsToInputs, computeFormStage, METRIC_TO_FIELD, withPsaMeasurement } from '@roadmap/health-core/mappings';
 import { chatContextOf, type ChatContextPayload } from '@roadmap/health-core/chat-context';
 import { statTiles } from '@roadmap/health-core/stat-tiles';
 import { medicationForm, screeningForm } from '@roadmap/health-core/input-form';
@@ -30,7 +30,6 @@ import { UploadModal } from './UploadModal';
 import { useIsMobile, useIsWideDesktop } from '../lib/useIsMobile';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
 import { BottomTabBar, panelDomId, tabDomId, type TabId } from './BottomTabBar';
-import { ONBOARDING_STEPS } from '@roadmap/health-core/product-events';
 import {
   saveToLocalStorage,
   loadFromLocalStorage,
@@ -72,6 +71,7 @@ import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { createRemoteChangeRelay } from '../lib/remote-replay';
 import { debounceSave, cancelListSave, flushListSaves, type ListSaves } from '../lib/list-saves';
 import { useRecordState } from '../hooks/useRecordState';
+import { useOnboarding } from '../hooks/useOnboarding';
 import { useTabs } from '../hooks/useTabs';
 import { useUnits } from '../hooks/useUnits';
 import { useLongitudinalSave, countedCorrection } from '../hooks/useLongitudinalSave';
@@ -87,33 +87,9 @@ async function mirrorSavedLists(): Promise<void> {
   if (result) patchMirror({ medications: result.medications, screenings: result.screenings });
 }
 
-/**
- * US-62 AC13: the highest onboarding stage reached on the record the screen
- * shows (`reached`), the stage that record opened at (`opened`), and a count
- * of the records shown (`epoch`). `reached` only rises, so nothing unlocked
- * goes away while an answer is retyped; `fullForm` latches the same way.
- * An erase (the screen moving to another erase identity) starts all again.
- */
-function useReachedStage(stage: FormStage, holdings: RecordHoldings): { reached: FormStage; opened: FormStage; epoch: number; fullForm: boolean } {
-  const ref = useRef<{ erase: string; reached: FormStage; opened: FormStage; epoch: number; fullForm: boolean } | null>(null);
-  const erase = getShownErase();
-  const was = ref.current;
-  if (!was || was.erase !== erase) ref.current = { erase, reached: stage, opened: stage, epoch: (was?.epoch ?? 0) + 1, fullForm: false };
-  else if (stage > was.reached) was.reached = stage;
-  const now = ref.current!;
-  // The whole form, once open on this record, stays open until an erase
-  // (a deleted document that opened it does not close it).
-  now.fullForm ||= opensFullForm(now.reached, holdings);
-  const { reached, opened, epoch, fullForm } = now;
-  return { reached, opened, epoch, fullForm };
-}
-
 /** The same rows, value for value: a re-read that changed nothing keeps the old array. */
 /** The onboarding's answers (US-62 AC13): only an edit to one of them counts as a step. */
 const ONBOARDING_FIELDS: ReadonlyArray<keyof HealthInputs> = ['heightCm', 'weightKg', 'sex', 'birthMonth', 'birthYear'];
-/** US-62 AC31: this browser has pressed "Your plan is ready."'s Got it. A UI flag only, never in the record. */
-const PLAN_READY_SEEN_KEY = 'hr_plan_ready_seen';
-const planReadySeen = (): boolean => { try { return localStorage.getItem(PLAN_READY_SEEN_KEY) === '1'; } catch { return false; } };
 
 /** The chat list fetched ahead of time, and the record (`epoch`) it was listed for. */
 type ChatPrefetch = { epoch: number; data: ChatPrefetchData };
@@ -158,7 +134,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const applyRemoteRef = useRef<() => void>(() => {});
   const remoteRelay = useRef(
     createRemoteChangeRelay(() => {
-      answeredHere.current = false; // another writer's change is no answer given here (US-62 AC13)
+      clearAnswered(); // another writer's change is no answer given here (US-62 AC13)
       trackProductEvent('remote_change_applied', { backend: getBackendKind() });
       void applyRemoteRef.current();
     }),
@@ -274,7 +250,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     if (erasingRef.current || refusedFor.current === getEraseIdentity()) return;
     refusedFor.current = getEraseIdentity();
     window.alert(WRITE_REFUSED);
-    answeredHere.current = false; // the record re-read is not an answer given here (US-62 AC13)
+    clearAnswered(); // the record re-read is not an answer given here (US-62 AC13)
     void applyRemoteRef.current();
   }, []);
   const afterListSave = useCallback((saved: boolean) => {
@@ -365,57 +341,25 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     () => computeFormStage(effectiveInputs, previousMeasurements),
     [effectiveInputs, previousMeasurements],
   );
-  const { reached, opened, epoch, fullForm } = useReachedStage(formStage, {
+  const onboarding = useOnboarding(formStage, {
     saved: previousMeasurements, medications, screenings, supplements, documents: documentHistory, labValues: labValueHistory,
-  });
-
-  // US-62 AC13: each step answered in this tab, once, and the end. Only a
-  // rise in `reached` after the person's own action here counts, as the
-  // step that was asked (the form,
-  // a matrix, the chat's profile proposal, an upload): a returning user, an
-  // answer retyped, or a jump from another device or tab sends none. An erase
-  // starts the count again. The step's name only, never its answer.
-  const answeredHere = useRef(false); // set by the person's actions, cleared by a remote change
-  const markAnswered = useCallback(() => { answeredHere.current = true; }, []);
-  // A matrix's weight cell is the one matrix edit that can answer a step.
+  }, hasApiResponse);
+  // Stable callbacks: the relay and the refused save above call them after the first commit.
+  const {
+    reached, epoch, fullForm, aboutYouLow, planReady,
+    markAnswered, clearAnswered, isComplete, profileLeft, dismissPlanReady: leavePlanReady,
+  } = onboarding;
+  // A matrix's weight cell is the one matrix edit that can answer a step (US-62 AC13).
   const markMatrixWeight = useCallback((e: React.SyntheticEvent) => {
     if ((e.target as HTMLElement).closest?.('.bt-vitals-card [data-metric="weight"]')) markAnswered();
   }, [markAnswered]);
-  const countedTo = useRef<{ epoch: number; stage: number } | null>(null);
-  // US-62 AC31: "Your plan is ready." for the record whose onboarding ended in this tab.
-  const [planReadyFor, setPlanReadyFor] = useState<number | null>(null);
   const dismissPlanReady = useCallback(() => {
-    trackProductEvent('plan_ready_dismissed');
-    try { localStorage.setItem(PLAN_READY_SEEN_KEY, '1'); } catch { /* private mode: gone for this visit only */ }
-    setPlanReadyFor(null);
+    leavePlanReady();
     // The focus stays on the page, not lost with the button.
     rootRef.current?.querySelector<HTMLElement>('.mh-title')?.focus({ preventScroll: true });
-  }, []);
-  useEffect(() => {
-    const from = countedTo.current?.epoch === epoch ? countedTo.current.stage : reached;
-    countedTo.current = { epoch, stage: reached };
-    if (reached <= from || !answeredHere.current || !hasApiResponse) return;
-    answeredHere.current = false;
-    // The step that was asked is the one answered; later steps a record already held were not (stage 1 asks the measurements, 2 sex, 3 the birth date).
-    trackProductEvent('onboarding_step', { step: ONBOARDING_STEPS[from - 1] });
-    if (reached === 4) {
-      trackProductEvent('onboarding_done');
-      if (!planReadySeen()) setPlanReadyFor(epoch); // US-62 AC31: this onboarding, this tab
-    }
-  });
-  // US-62 AC12: About you goes low for a record complete when first shown, and
-  // once the four answers hold and the focus leaves its card (this record:
-  // an erase starts it again).
-  const [movedLow, setMovedLow] = useState<number | null>(null);
-  const aboutYouLow = opened === 4 || movedLow === epoch;
-  const handleProfileLeft = useCallback(() => {
-    if (stageRef.current === 4) setMovedLow(epoch);
-  }, [epoch]);
+  }, [leavePlanReady]);
   // An erase closes the floating chat: its conversation belongs to the old record.
   useEffect(() => { setFloatingChatOpen(false); }, [epoch]);
-  // The latest stage, for a call made after the render that changed it.
-  const stageRef = useRef(formStage);
-  stageRef.current = formStage;
 
   // Pre-fetch chat conversations in background once the chat unmutes,
   // so messages are ready instantly when the user clicks the chat bubble.
@@ -926,7 +870,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // (`fromBirth`, Brad 2026-11-02) lands on both.
   const landOnMyHealth = useCallback((fromBirth = false): boolean => {
     // Only when the answer was the last one: a first weight is step 1.
-    if (stageRef.current !== 4 || (!emailCaptureActive && !fromBirth)) return false;
+    if (!isComplete() || (!emailCaptureActive && !fromBirth)) return false;
     selectTab('health');
     requestAnimationFrame(() => {
       const ready = rootRef.current?.querySelector<HTMLElement>('.mh-ready-title');
@@ -934,7 +878,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       else revealAndFocus(rootRef.current?.querySelector<HTMLElement>('.mh-title'), 'start', false);
     });
     return true;
-  }, [emailCaptureActive, selectTab]);
+  }, [emailCaptureActive, selectTab, isComplete]);
 
   // Memoised so the UploadModal's matrix doesn't rebuild on unrelated
   // HealthTool re-renders (typing, mobile-tab switches, etc.).
@@ -1017,7 +961,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     onDelete: async () => { if (await handleDeleteData()) { plan.onErased(); closeSettings(); } },
     isDeleting,
     storageAtFoot: getBackendKind() === 'local',
-    onPlanReadyDismiss: planReadyFor === epoch ? dismissPlanReady : undefined,
+    onPlanReadyDismiss: planReady ? dismissPlanReady : undefined,
     healthDocuments: documentHistory,
     onDocumentDeleted: dropDocument,
   };
@@ -1068,7 +1012,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     reached,
     fullForm,
     aboutYouLow,
-    onProfileLeft: handleProfileLeft,
+    onProfileLeft: profileLeft,
     setShowUploadModal,
     planBasis,
     grading,
