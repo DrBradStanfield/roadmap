@@ -44,7 +44,7 @@
  *   order, or a red flag without the exact emergency line (guideErrors, shared with knowledge-lint.ts). AC7's reference
  *   checks run on each guide too (citations, link text, identifiers for --check-ids, abstract files for new PubMed
  *   lines), with guide hosts: PubMed, doi.org, NIH ODS, DailyMed, accessdata.fda.gov, the sites the guide's own
- *   `sources:` names, and Brad's video posts; never ConsumerLab.
+ *   `sources:` names, and Brad's video posts; never a licensed testing site.
  *
  *   npx tsx tools/knowledge-batch-check.ts --print-schema
  *   npx tsx tools/knowledge-batch-check.ts --example <handle>
@@ -1380,7 +1380,7 @@ function referenceCheck(body: string, tag: string, ac7: Check) {
   ac7.infos.push(`${tag} ${defs.size} references, ${cited.size} cited`);
 }
 
-const ALLOWED_HOSTS = ["consumerlab.com", "ods.od.nih.gov", "pubmed.ncbi.nlm.nih.gov", "doi.org"];
+const ALLOWED_HOSTS = ["ods.od.nih.gov", "pubmed.ncbi.nlm.nih.gov", "doi.org", "dailymed.nlm.nih.gov", "accessdata.fda.gov", "medlineplus.gov"];
 /** A condition guide's reference hosts (US-70 AC2): public records, plus the guideline and label sites its own `sources:` names. */
 function guideHosts(text: string): string[] {
   const sources: unknown = parseFrontmatter(text)?.sources;

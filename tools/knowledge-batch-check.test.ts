@@ -785,8 +785,12 @@ describe("US-42 AC2/AC7 reference batch rules", () => {
     withRefs("[3] Foo B. Study. https://evil.example.com/x");
     expect(fails(run().AC7).join()).toContain("unknown host evil.example.com");
   });
+  it("refuses a licensed testing site as a reference host", () => {
+    withRefs(["[3] Foo B. Review. https://www.", ["consumer", "lab"].join(""), ".com/x"].join(""));
+    expect(fails(run().AC7).join()).toMatch(/unknown host/);
+  });
   it("allows the listed hosts and hosts already in the base references", () => {
-    withRefs("[3] Foo B. Study. [link](https://www.consumerlab.com/x) https://doi.org/10.1/x https://ods.od.nih.gov/y");
+    withRefs("[3] Foo B. Study. [link](https://dailymed.nlm.nih.gov/x) https://doi.org/10.1/x https://ods.od.nih.gov/y https://medlineplus.gov/z");
     expect(fails(run().AC7).filter((f) => /host|bare/.test(f))).toEqual([]);
     put("docs/blog/alpha.md", fx("alpha.base.md").replace("[2] Jones B. Synthetic safety review. 2020.", "[2] Jones B. Review. https://known.example.org/a"));
     sh(["add", "-A"]); sh(["commit", "-q", "-m", "base2"]);
