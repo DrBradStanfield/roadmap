@@ -21,7 +21,7 @@ Brad does not recommend L-citrulline, or any other nitric oxide supplement, and 
 
 - L-citrulline may lower blood pressure. Ask your doctor or pharmacist first if you take blood pressure medicines, nitrates such as nitroglycerin, or erectile dysfunction drugs such as sildenafil or tadalafil; no trial has tested citrulline alone with these medicines [6][18][41]. One small 14-day trial of a multi-ingredient drink in men using PDE5 inhibitors reported no adverse events [44].
 - If you have low blood pressure, or surgery planned, talk to your doctor first for the same reason [6][18].
-- Trials in pulmonary hypertension and heart failure were small and short, and the kidney does most of the conversion to arginine [3][25][26][33]. In the pulmonary hypertension trial, two patients were excluded because of adverse reactions [33]. Ask your doctor first if you have one of these conditions or kidney disease [40].
+- Trials in pulmonary hypertension (in one, two patients had adverse reactions) and heart failure were small and short, and the kidney does most of the conversion to arginine [3][25][26][33]. Ask your doctor first if you have one of these conditions or kidney disease [40].
 - Ask your doctor first if you are pregnant, breastfeeding, buying for a child or have diabetes. In a pre-eclampsia trial, systolic pressure and liver enzymes were higher at delivery with citrulline than with placebo, and in a trial in adolescents, blood glucose and insulin resistance rose [36][38][43].
 - High blood citrulline is one of the tests used to diagnose citrullinemia type I, so a supplement may confuse testing for urea cycle disorders [34].
 - Single doses up to 15 g caused no side effects in a small study, and trials have used 10 g a day for 4 to 8 weeks [3][22][23].
