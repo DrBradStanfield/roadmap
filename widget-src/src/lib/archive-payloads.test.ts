@@ -5,7 +5,7 @@ import {
   unarchivedOriginals,
   connectorDocumentEntries,
 } from './archive-payloads';
-import type { FileResult } from './review-matrix';
+import type { FileResult } from './upload-pipeline';
 
 const blob = () => new Blob(['x'], { type: 'application/pdf' });
 

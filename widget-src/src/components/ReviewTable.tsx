@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef, memo, useId, type ReactNode } from 'react';
 import { type LpaUnit, type UnitSystem, type MetricType, UNIT_DEFS, hasUnitChoice } from '@roadmap/health-core/units';
-import { type MeasurementSource, type DocumentType, healthInputSchema } from '@roadmap/health-core/validation';
+import { type DocumentType, healthInputSchema } from '@roadmap/health-core/validation';
 import { METRIC_LABELS, METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
 import { commaQuestion } from '@roadmap/health-core/parseNumber';
 import { isScreeningEligible } from '@roadmap/health-core/types';
@@ -22,36 +22,8 @@ import { LpaUnitControl } from './LpaUnitControl';
 import { UnitChip } from './UnitChip';
 import { describedBy } from '../lib/aria';
 import { type FullDate, parseReportDate, longDate, columnDay, pastDay, readDocumentDate, getDaysInMonth, buildRecordedAt, fullDateToIso, parseIsoToFullDate, columnWords, formatColumnDate } from '../lib/review-dates';
-import { type FileResult, type DateKey, type MatrixColumn, type MatrixRow, type ExistingCell, type EditableMatrixCell, type CoreCellView, type MatrixCell, sameValue, normaliseLabName, editId, replaceKey, buildMatrixModel, rowName, matrixCellKey, matrixRowKey } from '../lib/review-matrix';
-
-/** Document to be saved, assembled from review state */
-export interface DocumentToSave {
-  documentType: string;
-  title: string;
-  documentDate: string | null;
-  contentMd: string;
-  metadata: Record<string, unknown>;
-  sourceFileName: string | null;
-  /** If this maps to a screening type, the key to update (e.g. "colorectal_last_date") */
-  screeningUpdate?: { key: string; date: string };
-  /** The original bytes, carried inside the payload (no name-keyed re-join). */
-  file?: Blob;
-}
-
-/** A reviewed row on its way to the store. `correctsId` is set when the user
- *  ticked "Replace" on a slot an earlier writer already holds — the store
- *  turns it into a FHIR correction. */
-export interface ReviewedValue {
-  metric: string; valueSI: number; recordedAt: string; source?: MeasurementSource; correctsId?: string;
-  /** Printed as a limit and saved as printed (US-12 AC20); an edited cell is an exact value. */
-  comparator?: Comparator;
-}
-export interface ReviewedLabValue {
-  name: string; value: number; unit: string;
-  referenceLow?: number | null; referenceHigh?: number | null;
-  recordedAt: string; correctsId?: string;
-  comparator?: Comparator;
-}
+import type { FileResult, DocumentToSave, ReviewedValue, ReviewedLabValue } from '../lib/upload-pipeline';
+import { type DateKey, type MatrixColumn, type MatrixRow, type ExistingCell, type EditableMatrixCell, type CoreCellView, type MatrixCell, sameValue, normaliseLabName, editId, replaceKey, buildMatrixModel, rowName, matrixCellKey, matrixRowKey } from '../lib/review-matrix';
 
 interface ReviewTableProps {
   results: FileResult[];

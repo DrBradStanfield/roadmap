@@ -3,28 +3,13 @@ import { type UnitSystem, type MetricType, UNIT_DEFS } from '@roadmap/health-cor
 import { type ApiMeasurement, METRIC_LABELS, BLOOD_TEST_METRICS, VITAL_METRICS } from '@roadmap/health-core/mappings';
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from '@roadmap/health-core/lab-catalog';
 import { sameLabQuantity, slotState, type LabQuantity } from '@roadmap/health-core/record-edits';
-import { UNDATED_PREVIOUS, type RefusedLabValue } from '@roadmap/health-core/lab-extraction';
+import { UNDATED_PREVIOUS } from '@roadmap/health-core/lab-extraction';
 import { withComparator, comparatorOf, type Comparator } from '@roadmap/health-core/lab-limits';
-import type { ExtractedValue, AdditionalLabValue, ApiLabValue, DocumentResult } from './api-types';
+import type { ApiLabValue } from './api-types';
 import { labValueLabel } from '@roadmap/health-core/lab-series';
 import { type CellUnit, cellNumber } from './blood-test-cell';
+import type { FileResult } from './upload-pipeline';
 import { type FullDate, parseReportDate, UNDATED_DATE, dateSource, buildDatePrefix } from './review-dates';
-
-export interface FileResult {
-  fileName: string;
-  reportDate: string | null;
-  values: ExtractedValue[];
-  additionalValues: AdditionalLabValue[];
-  error?: string;
-  /** Present for non-lab documents (scan results, clinic letters, etc.) */
-  document?: DocumentResult;
-  /** Values the extractor refused rather than guessed, listed under "Not saved" (US-12 AC15). */
-  refusedValues?: RefusedLabValue[];
-  /** The original uploaded bytes — saved into the user's cloud archive (v2). */
-  file?: Blob;
-  /** 'sha256-<hex>' of `file` — matched against the record's document rows. */
-  contentHash?: string;
-}
 
 /** Two stored values are the same value when only float noise from a unit
  *  conversion separates them. */
@@ -46,13 +31,6 @@ function labUnitText(lab: { name: string; unit: string }): string {
 export function normaliseLabName(name: string): string {
   return `lab:${labSlotKey(name).replace(/\|/g, '/')}`;
 }
-
-// ============================================================================
-// Matrix model — review-time blood-test values rendered as a metric × date
-// grid. Replaces the per-file row layout. Existing history acts as greyed-out
-// context columns; new upload values are editable per cell. Documents render
-// below the matrix in per-file cards (unchanged).
-// ============================================================================
 
 export type DateKey = string; // YYYY-MM-DD or YYYY-MM
 
@@ -202,8 +180,7 @@ export function buildMatrixModel(
   //    brings, so it conflicts like any held slot (US-13 AC3) without every
   //    vitals date becoming a column.
   //    An upload brings a column only for a date one of its values carries:
-  //    document-only files (scans, letters) keep their own card below the
-  //    matrix, off the date axis. One rule for the seeding and the overlay.
+  //    document-only files (scans, letters) stay off the date axis. One rule for the seeding and the overlay.
   const bloodTestSet = new Set<string>(BLOOD_TEST_METRICS);
   const vitalSet = new Set<string>(VITAL_METRICS);
   const uploadDates = new Set(results.flatMap((r, fi) => [...r.values, ...r.additionalValues].map(v => slotDateKey(fi, v))));

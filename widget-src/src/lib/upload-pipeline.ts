@@ -1,9 +1,55 @@
-// The upload pipeline's pure steps: a server read turned into review rows (W2-7 split from UploadModal).
-import { resolveLabValues } from '@roadmap/health-core/lab-extraction';
+// The upload pipeline: what a file read becomes (FileResult), what the review hands back to save, and the pure steps between.
+import { resolveLabValues, type RefusedLabValue } from '@roadmap/health-core/lab-extraction';
 import { UNIT_DEFS, reportedToCanonical } from '@roadmap/health-core/units';
-import { comparatorOf } from '@roadmap/health-core/lab-limits';
+import { comparatorOf, type Comparator } from '@roadmap/health-core/lab-limits';
 import { bloodTestKeyOf } from '@roadmap/health-core/blood-tests';
-import type { FileResult } from './review-matrix';
+import type { MeasurementSource } from '@roadmap/health-core/validation';
+import type { ExtractedValue, AdditionalLabValue, DocumentResult } from './api-types';
+
+export interface FileResult {
+  fileName: string;
+  reportDate: string | null;
+  values: ExtractedValue[];
+  additionalValues: AdditionalLabValue[];
+  error?: string;
+  /** Present for non-lab documents (scan results, clinic letters, etc.) */
+  document?: DocumentResult;
+  /** Values the extractor refused rather than guessed, listed under "Not saved" (US-12 AC15). */
+  refusedValues?: RefusedLabValue[];
+  /** The original uploaded bytes — saved into the user's cloud archive (v2). */
+  file?: Blob;
+  /** 'sha256-<hex>' of `file` — matched against the record's document rows. */
+  contentHash?: string;
+}
+
+/** Document to be saved, assembled from review state */
+export interface DocumentToSave {
+  documentType: string;
+  title: string;
+  documentDate: string | null;
+  contentMd: string;
+  metadata: Record<string, unknown>;
+  sourceFileName: string | null;
+  /** If this maps to a screening type, the key to update (e.g. "colorectal_last_date") */
+  screeningUpdate?: { key: string; date: string };
+  /** The original bytes, carried inside the payload (no name-keyed re-join). */
+  file?: Blob;
+}
+
+/** A reviewed row on its way to the store. `correctsId` is set when the user
+ *  ticked "Replace" on a slot an earlier writer already holds — the store
+ *  turns it into a FHIR correction. */
+export interface ReviewedValue {
+  metric: string; valueSI: number; recordedAt: string; source?: MeasurementSource; correctsId?: string;
+  /** Printed as a limit and saved as printed (US-12 AC20); an edited cell is an exact value. */
+  comparator?: Comparator;
+}
+export interface ReviewedLabValue {
+  name: string; value: number; unit: string;
+  referenceLow?: number | null; referenceHigh?: number | null;
+  recordedAt: string; correctsId?: string;
+  comparator?: Comparator;
+}
 
 /**
  * Brad D5 (US-66 AC6): an extra value named like a core test, creatinine

@@ -5,7 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import { ReviewTable } from './ReviewTable';
-import type { FileResult } from '../lib/review-matrix';
+import type { FileResult } from '../lib/upload-pipeline';
 
 beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-15T12:00:00Z')); });
 afterEach(() => { cleanup(); vi.useRealTimers(); });

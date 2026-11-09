@@ -12,7 +12,7 @@ import { cleanup, fireEvent, render } from '@testing-library/react';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { ApiLabValue } from '../lib/api-types';
 import { ReviewTable } from './ReviewTable';
-import type { FileResult } from '../lib/review-matrix';
+import type { FileResult } from '../lib/upload-pipeline';
 
 beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-15T12:00:00Z')); });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
