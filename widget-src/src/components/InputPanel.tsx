@@ -27,7 +27,7 @@ import { useMoveTest, type MoveTestApi } from './MoveTestPanel';
 import { StartingInfoVitals, type VitalsPrefillFn } from './StartingInfoVitals';
 import { CommitTickButton } from './CommitTickButton';
 import { useLpaUnit } from '../lib/lpa-unit';
-import { useValuePage } from '../lib/useValuePage';
+import { useValuePage, type RevealCell } from '../lib/useValuePage';
 import { type RowContext } from './MyDataRows';
 import { ValuePage } from './ValuePage';
 import { AddLabTest } from './AddLabTest';
@@ -167,7 +167,7 @@ interface InputPanelProps {
   onOnboardingDone?: (fromBirth?: boolean) => boolean;
   /** A chat edit that filled a grid cell (US-16 AC2): the table opens so the
    *  filled cell shows, phone and desktop. Each new edit is a new object. */
-  revealCell?: { field: string; grid: boolean } | null;
+  revealCell?: RevealCell;
 }
 
 /**
@@ -289,7 +289,7 @@ export function InputPanel({
   }), [grading, planBasis, lpaUnit, unitOverrides, unitSystem]);
   // My data's view state: the open value page, its history entry and the table (lib/useValuePage).
   const panelRef = useRef<HTMLDivElement>(null);
-  const { pageShown, tableShown, openPage, closePage, mayLeave, showTable, pageDirty, panelMessages } = useValuePage(revealCell, panelRef);
+  const { pageShown, tableShown, openPage, switchPage, closePage, showTable, pageDirty, panelMessages } = useValuePage(revealCell, panelRef);
   // A grid's typed text not yet saved, valid or not (the plan and the chat
   // read the valid part, and an upload saves it first): where the grids sit
   // hidden under the rows, each card says so and opens the table
@@ -1106,7 +1106,7 @@ export function InputPanel({
     pageOpen: !!pageShown,
     renderPage: tiles => pageShown && (
       <ValuePage key={JSON.stringify(pageShown)} subject={pageShown} history={[...vitalsHistory, ...bloodTestHistory]} labValues={labValues}
-                 ctx={rowCtx} tiles={tiles} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} onOpen={subject => mayLeave() && openPage(subject)} dirtyRef={pageDirty}/>
+                 ctx={rowCtx} tiles={tiles} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} onOpen={switchPage} dirtyRef={pageDirty}/>
     ),
     rows: { ctx: rowCtx, open: openPage, vitals: vitalsHistory, blood: bloodTestHistory, labs: labValues, vitalsAsRows: vitalsRows, withoutWeight: weightInProfile },
     legacyVitals: !vitalsRows && (

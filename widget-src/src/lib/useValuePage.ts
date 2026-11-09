@@ -1,11 +1,14 @@
 // My data's view state (US-62 AC10, AC11): which value page is open, whether
 // the grids show as a table, and the browser history entry a page owns.
 //
-// The machine, in one place:
-//   rows ──open──▶ page(subject) ──open──▶ page(other subject)   (asks first if typed)
+// The page machine, in one place:
+//   rows ──openPage──▶ page(subject) ──switchPage──▶ page(other subject)   (asks first if typed)
 //   page ──close / Back──▶ rows, focus back on the row it opened from
 //   page ──erase / chat reveal──▶ rows (drop: no focus return)
-//   rows ⇄ table (showTable); a chat edit to a grid cell shows the table too.
+// Back is ignored while My data's tab is hidden; with Settings over the page,
+// Back closes Settings and the page keeps its entry. A reload drops a stale entry.
+// The table is a separate toggle beside it, not a third state: showTable opens
+// and closes it, and a chat edit to a grid cell shows it too.
 // A page is a history entry (a state marker, no URL change), so the phone's
 // back gesture closes it. Typed, unsaved input is never dropped silently:
 // leaving asks first, and a chat reveal that drops it says so.
@@ -20,7 +23,8 @@ const LEAVE_UNSAVED = 'Leave without saving the value you typed?';
 /** Said when a chat edit closes a page that held typed input. */
 const TYPED_NOT_SAVED = 'Your typed value was not saved.';
 
-type RevealCell = { field: string; grid: boolean } | null;
+/** The field a chat edit filled, for My data to show (US-16 AC2). */
+export type RevealCell = { field: string; grid: boolean } | null;
 
 const onPageEntry = () => !!window.history.state?.[VALUE_PAGE_STATE];
 const pushPageEntry = () => window.history.pushState({ ...window.history.state, [VALUE_PAGE_STATE]: true }, '');
@@ -47,6 +51,8 @@ export function useValuePage(revealCell: RevealCell, panelRef: RefObject<HTMLDiv
     setValuePage(subject);
     if (!onPageEntry()) pushPageEntry();
   };
+  /** From one page to another: asks first if the page holds typed input. */
+  const switchPage = (subject: ValueSubject) => { if (mayLeave()) openPage(subject); };
   /** Back to the rows, the focus on the row the page opened from. */
   const finishClose = () => {
     pageDirty.current = false;
@@ -103,8 +109,8 @@ export function useValuePage(revealCell: RevealCell, panelRef: RefObject<HTMLDiv
     window.addEventListener(DRAFTS_CLEARED_EVENT, onErase);
     return () => window.removeEventListener(DRAFTS_CLEARED_EVENT, onErase);
   }, []);
-  // A chat edit closes any open page, so the field it filled shows (US-16 AC2).
   const [sayPanel, panelMessages] = useLiveRegion('md-panel-messages');
+  // A chat edit closes any open page, so the field it filled shows (US-16 AC2).
   // Read as the reveal renders: the page unmounts in this commit, and its form clears the mark as it goes.
   const revealDropsTyping = useRef(false);
   if (revealing && valuePage && pageDirty.current) revealDropsTyping.current = true;
@@ -115,5 +121,5 @@ export function useValuePage(revealCell: RevealCell, panelRef: RefObject<HTMLDiv
     drop();
   }, [revealing]);
 
-  return { pageShown, tableShown, openPage, closePage, mayLeave, showTable, pageDirty, panelMessages };
+  return { pageShown, tableShown, openPage, switchPage, closePage, showTable, pageDirty, panelMessages };
 }
