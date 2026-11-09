@@ -27,6 +27,21 @@
         .hr-hero-short { display: inline; }
       }
     </style>
+    <!-- US-65 AC8: when the app's module script (or a file it imports) cannot be
+         fetched, the browser fires `error` on that script and the app never runs.
+         Say so where the skeleton is, with a reload button. A classic inline
+         script, because the build rewrites the module tag. It acts only while the
+         skeleton is still there, so it can never replace the running app. The
+         markup is a fixed string. -->
+    <script>
+      addEventListener('error', function (event) {
+        var root = document.getElementById('health-tool-root');
+        if (event.target.type !== 'module' || !root.querySelector('.hr-skeleton')) return;
+        root.innerHTML = '<div class="health-tool-error" role="alert"><h3>The health tool did not load</h3>'
+          + '<p>Check your connection, then reload the page.</p><button type="button">Reload the page</button></div>';
+        root.querySelector('button').addEventListener('click', function () { location.reload(); });
+      }, true);
+    </script>
   </head>
   <body>
     <header class="hr-hero">
