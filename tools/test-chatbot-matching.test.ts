@@ -131,6 +131,22 @@ describe('test-chatbot-matching fixed-handle answer checks (US-15 AC24)', () => 
     expect(out).toContain('Fixed-handle answer checks: 0/1 ✗ reported, not gating');
     expect(status).toBe(0);
   }, 60_000);
+
+  // Brad 2026-11-10: a failing answer prints in full and the answer calls show their cost, so no
+  // run is repeated just to read what the bot said or what it cost.
+  it('a failing answer prints the whole reply and an answer cost line', () => {
+    const { stderr, out } = run(['--fixed-handles-only'], false);
+    expect(out, stderr).toContain('Response (last run):');
+    expect(out).toContain('      Grokipedia says');
+    expect(out).toMatch(/SUMMARY answer .* pass=0\/1 .* calls=1 .*cost=\$/);
+  }, 60_000);
+
+  it('--estimate prices the run and makes no API call', () => {
+    const { status, stderr, out } = run(['--fixed-handles-only', '--estimate'], false);
+    expect(out, stderr).toMatch(/ESTIMATE router calls=0 \$0\.00; answer calls=1 up to \$0\.\d\d; .*No API call made\./);
+    expect(out).not.toContain('=== Results');
+    expect(status).toBe(0);
+  }, 60_000);
 });
 
 // US-15 AC13: --category takes a comma list, so several categories share one run.
