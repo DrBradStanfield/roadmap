@@ -3,12 +3,11 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { IMPORT_LIMITS } from '@roadmap/health-core/import-hints';
 import { METRIC_LABELS } from '@roadmap/health-core/mappings';
-import { UNDATED_PREVIOUS, unreadLines, uploadLimitSignal, zipMemberName, type UnreadLabValue, resolveLabValues } from '@roadmap/health-core/lab-extraction';
-import { UNIT_DEFS, reportedToCanonical, type UnitSystem, type MetricType } from '@roadmap/health-core/units';
+import { UNDATED_PREVIOUS, unreadLines, uploadLimitSignal, zipMemberName, type UnreadLabValue } from '@roadmap/health-core/lab-extraction';
+import type { UnitSystem, MetricType } from '@roadmap/health-core/units';
 import { comparatorOf } from '@roadmap/health-core/lab-limits';
 import type { DocumentPayload } from '@roadmap/health-core/document-save';
 import type { LabUnitRefusal, MeasurementRefusal } from '@roadmap/health-core/record-edits';
-import { bloodTestKeyOf } from '@roadmap/health-core/blood-tests';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
@@ -17,9 +16,10 @@ import { measurementRefusalLine } from '../lib/lab-value-labels';
 import { labUnitRefusalLine } from '@roadmap/health-core/lab-series';
 import { useLpaUnit } from '../lib/lpa-unit';
 import type { Grading } from '../lib/blood-test-cell';
-import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, type ReviewedLabValue } from './ReviewTable';
+import { ReviewTable } from './ReviewTable';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FloatingUploadIndicator } from './FloatingUploadIndicator';
+import { offerCoreExtras, type DocumentToSave, type ReviewedValue, type ReviewedLabValue, type FileResult } from '../lib/upload-pipeline';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries } from '../lib/archive-payloads';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
@@ -199,32 +199,6 @@ async function readPages(upload: HealthUploadAPI, { fileName: name, getFile }: R
 function readResult(fileName: string, result: LabImportResult, notices: FileNotice[]): FileResult {
   if (result.droppedValueCount) notices.push({ name: fileName, reason: 'valuesDropped', count: result.droppedValueCount, unread: result.unreadValues });
   return { fileName, reportDate: result.reportDate, ...offerCoreExtras(result), document: result.document ?? undefined };
-}
-
-/**
- * Brad D5 (US-66 AC6): an extra value named like a core test, creatinine
- * excepted (US-12 AC11), is offered as that core value. The extractor moves
- * one into a free slot; one it left is offered here. In a unit the test takes
- * it joins the core row, where a held day shows the conflict (US-13 AC3) and
- * a second reading of a day is listed as hidden (US-12 AC14). In any other
- * unit it is listed as not saved, with why (US-12 AC19).
- */
-export function offerCoreExtras(result: Pick<FileResult, 'values' | 'additionalValues' | 'refusedValues'>): Pick<FileResult, 'values' | 'additionalValues' | 'refusedValues'> {
-  const values = [...result.values];
-  const additionalValues: FileResult['additionalValues'] = [];
-  const refusedValues = [...(result.refusedValues ?? [])];
-  for (const v of result.additionalValues ?? []) {
-    const metric = bloodTestKeyOf(v.name);
-    if (!metric || metric === 'creatinine') { additionalValues.push(v); continue; }
-    const day = { ...(v.recordedAt ? { recordedAt: v.recordedAt } : null), ...(v.printedMonth ? { printedMonth: v.printedMonth } : null) };
-    if (reportedToCanonical(metric, v.value, v.unit)) {
-      values.push(...resolveLabValues([{ metric, value: v.value, unit: v.unit, confidence: v.confidence ?? 'high', question: v.question, printedName: v.printedName, ...day, ...comparatorOf(v) }]));
-    } else {
-      const { si, conventional } = UNIT_DEFS[metric].label;
-      refusedValues.push({ metric, value: v.value, unit: v.unit, reason: `This test is measured in ${si === conventional ? si : `${si} or ${conventional}`}.`, ...day });
-    }
-  }
-  return { values, additionalValues, ...(refusedValues.length ? { refusedValues } : null) };
 }
 
 /** The notice for a file's own error code; anything else is a server error. */

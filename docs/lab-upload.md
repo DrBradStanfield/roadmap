@@ -299,7 +299,7 @@ Thin wrapper around the Anthropic API using direct `fetch` (no SDK). `extractOrC
 
 4-state machine. `loadPromiseRef` prevents duplicate `<script>` injection; `onStart` persists unsaved longitudinal values; `handleSave` uses `try/finally`; ZIP progress is two-phase; `allFilesToProcess` is a union type so pre-extracted ZIP entries and individual files process uniformly. Original bytes are attached to each result at processing time (`attachOriginals`, with a sha256 `contentHash`) only when the backend can archive them.
 
-### Review Table (`ReviewTable.tsx`)
+### Review Table (`ReviewTable.tsx`, model in `lib/review-matrix.ts`, dates in `lib/review-dates.ts`)
 
 - **`FullDate`**: `{ day: string | null, month: string, year: string }` — preserves the day the LLM extracted
 - **`buildMatrixModel()`**: resolves each upload value against the slot it lands on (free / equal / conflict) using health-core's `slotState` — the one place that decision lives
@@ -438,7 +438,7 @@ which slots one value per metric per day the same way. v1 dropped the document's
 number and showed "Already saved"; v2 never drops it before the user has seen it.
 
 The review table is a date × metric matrix (`buildMatrixModel` in
-`ReviewTable.tsx`). Each upload value meets whatever already holds its cell:
+`lib/review-matrix.ts`). Each upload value meets whatever already holds its cell:
 
 | Slot state | What the reviewer sees | What saves |
 |---|---|---|

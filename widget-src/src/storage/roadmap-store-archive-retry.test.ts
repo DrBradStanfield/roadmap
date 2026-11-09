@@ -7,7 +7,7 @@ import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { RoadmapStore } from './roadmap-store';
 import { MemoryAdapter, MemoryCloud } from './index';
 import { sha256Blob, unarchivedOriginals } from '../lib/archive-payloads';
-import type { FileResult } from '../components/ReviewTable';
+import type { FileResult } from '../lib/upload-pipeline';
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 afterEach(() => vi.restoreAllMocks());
 const payload = () => ({
