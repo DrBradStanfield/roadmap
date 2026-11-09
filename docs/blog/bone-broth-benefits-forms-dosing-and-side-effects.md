@@ -20,6 +20,8 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 ## Key safety points
 
 - If you take prescription medicines, or have been told to limit salt, potassium or fluids, check with your doctor or pharmacist before starting. The spironolactone label advises people who take it to avoid potassium supplements and foods high in potassium [6].
+- If you have kidney disease or are on dialysis, ask your kidney team first. MedlinePlus advises people with chronic kidney disease to limit salt and potassium, and people on dialysis to count soups in their daily fluid [39].
+- If you take warfarin, a broth made with leafy greens such as spinach, kale or parsley counts toward the foods MedlinePlus says to keep steady from day to day [38].
 - If you take levodopa for Parkinson's disease, dietary protein can reduce its absorption [7]. Bone broth and collagen add protein, though neither has been studied with levodopa.
 - Bones store lead: a small test found organic chicken bone broths held several times the lead of the water used to make them [8], though another study judged lead levels of a few micrograms per serving a minimal risk [5].
 - The most reported side effects of collagen supplements in osteoarthritis trials were mild to moderate stomach and bowel complaints [4]. In several trials, side effects did not differ from placebo or the comparison treatment [9][10].
@@ -45,6 +47,14 @@ We found no clinical trials of bone broth itself for joint, skin, bone, muscle o
 Collagen products fall into three groups: undenatured collagen, gelatin and collagen hydrolysate [4]. They are used at very different doses. Trials of undenatured type II collagen used 40 mg a day for knee osteoarthritis [10], while trials of collagen hydrolysate or collagen peptides used grams a day (see Recommended Dosing).
 
 In mice, 95% of an oral dose of gelatin hydrolysate was absorbed within the first 12 hours, and it built up in cartilage to more than twice the level seen after a labelled proline control [11]. This was an animal study and did not compare gelatin hydrolysate with intact gelatin.
+
+### Collagen Types
+
+We found no public study that measured which types of collagen bone broth contains. The undenatured type II collagen in the trials below came from chicken sternum cartilage [10].
+
+### Liquid vs. Powder vs. Capsule Forms
+
+We found no public study that compared liquid, powdered and capsule bone broth for protein, collagen or nutrient content.
 
 ### Factors Affecting Nutrient Content
 
@@ -131,6 +141,10 @@ In 15 healthy people, sipping hot water raised nasal mucus speed from 6.2 to 8.4
 
 We found no clinical trials of bone broth or collagen in people with leaky gut, ulcerative colitis or Crohn's disease.
 
+### Cardiovascular Considerations
+
+We found no trials of bone broth for blood pressure, cholesterol or heart disease. MedlinePlus advises people with high blood pressure to limit sodium to no more than 2,300 mg a day [37]. The sodium in bone broth varies by product, so check the label (see Sodium Content).
+
 ### Sleep
 
 Glycine is one of the amino acids in bone broth [2]. In small human trials, glycine taken before bedtime improved subjective sleep quality in people with insomniac tendencies [34], and 3 g of glycine before bed reduced next-day fatigue in people whose sleep was restricted [35]. In rats, glycine lowered core body temperature, which may be how it aids sleep [34][36].
@@ -138,6 +152,10 @@ Glycine is one of the amino acids in bone broth [2]. In small human trials, glyc
 We found no study of bone broth and sleep, and no source that measured whether a serving of broth provides the glycine doses used in these trials.
 
 ## 4. Recommended Dosing
+
+### No Established Daily Requirement
+
+We found no public source that sets a recommended daily amount for bone broth, gelatin or collagen.
 
 The doses below come from trials of collagen supplements and gelatin, not bone broth.
 
@@ -186,9 +204,13 @@ The most reported side effects of collagen derivatives in osteoarthritis trials 
 
 In rheumatoid arthritis trials of oral type II collagen, one found no treatment-related adverse events [14]. Another found stomach and bowel symptoms common with both chicken type II collagen and methotrexate, with fewer and milder side effects in the collagen group [15].
 
+Twenty-five randomised trials of hydrolysed collagen, reviewed in 2026, found it generally well tolerated, with a low incidence of adverse events [42]. Older reports of headache, dizziness, insomnia, poor appetite, rash, canker sores and raised liver enzymes with type II collagen could not be confirmed in public sources.
+
 ### Sodium Content
 
 Our sources did not measure sodium in bone broth. If you have been told to limit salt, check the sodium on the nutrition label and ask your doctor.
+
+MedlinePlus advises people with high blood pressure to limit sodium to no more than 2,300 mg a day [37]. For people with chronic kidney disease, it advises checking labels and looking for products with less than 100 mg of salt per serving [39].
 
 ### Heavy Metal Contamination
 
@@ -202,9 +224,19 @@ Choose a product that an independent lab has tested.
 
 We found no public source that tested bone broth in people with kidney disease, on dialysis, or in pregnancy. If you have kidney disease or are on dialysis, or have been told to limit salt, potassium or fluids, ask your doctor before drinking bone broth regularly.
 
+**Kidney disease and dialysis:** MedlinePlus advises people with chronic kidney disease to limit salt, potassium and phosphorus, and not to use salt substitutes because they contain potassium. People on dialysis need to watch how much liquid they take in, and soups count toward it [39]. One review lists potassium and phosphorus among the minerals in bone broth [40].
+
+**Pregnancy:** MedlinePlus notes that unborn children are the most vulnerable to lead [41]. If you are pregnant, keep the lead findings above in mind and ask your midwife or doctor before drinking bone broth regularly.
+
+**Histamine intolerance:** Long-simmered bone broth is sometimes said to be high in histamine. We found no public source that measured this. If you have histamine intolerance, ask your doctor first.
+
 ## 6. Drug Interactions
 
 We found no studies of drug interactions with bone broth itself. If you take prescription medicines, check with your doctor or pharmacist before starting.
+
+### Sodium and Antihypertensive Medications
+
+A low-salt diet helps lower blood pressure, and MedlinePlus advises limiting sodium to no more than 2,300 mg a day [37]. If you take blood pressure medicine, check the sodium on the label and count it in your daily total.
 
 ### Potassium and Potassium-Sparing Diuretics
 
