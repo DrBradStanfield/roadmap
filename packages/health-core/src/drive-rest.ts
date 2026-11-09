@@ -193,9 +193,7 @@ export function driveCreateFile(
     // minutes sending. Scale the bound with the bytes so the upload is judged
     // on the provider's silence, not on the user's connection.
     timeoutMs: Math.min(300_000, 30_000 + Math.round(body.size / 10_000) * 1_000),
-    signal,
-    // A create that went out and got no answer may have landed (US-09 AC13f).
-    mayHaveWritten: true,
+    signal, mayHaveWritten: true, // a create with no answer may have landed (US-09 AC43)
   });
 }
 
@@ -230,8 +228,7 @@ async function driveUpdateFile(accessToken: string, fileId: string, json: string
     method: 'PATCH',
     headers: { ...auth(accessToken), 'Content-Type': 'application/json' },
     body: json,
-    signal,
-    mayHaveWritten: true,
+    signal, mayHaveWritten: true,
   });
   if (!res.ok) await fail('write', res);
   return JSON.stringify([fileId, String((await jsonBody<{ version?: string }>(res)).version ?? '')]);
