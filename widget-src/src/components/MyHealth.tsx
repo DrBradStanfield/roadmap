@@ -4,7 +4,7 @@
 // the desktop section list, the documents and the foot; the settings behind the
 // person button on desktop, in the Account tab on a phone (AC34). The form's parts come from InputPanel (`FormSlots`); the plan's
 // from usePlanView.
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { byNewestDocument, DOCUMENT_TYPE_LABELS, isLabArchiveDocument, TOPICS, type ApiMeasurement, type StatTile, type TopicId } from '@roadmap/health-core';
 import { DocumentLightbox } from './DocumentLightbox';
@@ -78,7 +78,7 @@ export interface MyHealthProps {
    *  it mounts; undefined on desktop, where Settings take My health's place. */
   settingsHost?: HTMLElement | null;
   /** Settings' parts after About you and units: the reminders (none for a known minor), where the
-   *  record lives (US-09) and Delete all my data. */
+   *  record lives (US-09; first, under the title, for a phone's guest, AC34) and Delete all my data. */
   reminders?: ReactNode;
   storageCard?: ReactNode;
   onDelete: () => void;
@@ -215,28 +215,30 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
     ...(documents.length > 0 ? [{ id: 'documents', title: 'Documents', urgent: false }] : [])];
 
   const inTab = settingsHost !== undefined;
-  const settingsParts = (
-    <>
-      {form.aboutYouLow ? form.aboutCard : (
-        <div className="section-card">
-          <div className="basic-info-units">
-            <span className="basic-info-units-label">Units</span>
-            {form.unitPill}
-          </div>
+  // Where the record lives (US-09), while Settings show (one card, one picker). A phone's guest
+  // gets it first, under the Account title (US-62 AC34); keyed, so moving it keeps its picker.
+  const storage = settingsOpen && storageCard ? <Fragment key="storage">{storageCard}</Fragment> : null;
+  const storageFirst = inTab && storageAtFoot;
+  const settingsParts = [
+    storageFirst && storage,
+    form.aboutYouLow ? <Fragment key="about">{form.aboutCard}</Fragment> : (
+      <div key="about" className="section-card">
+        <div className="basic-info-units">
+          <span className="basic-info-units-label">Units</span>
+          {form.unitPill}
         </div>
-      )}
-      {reminders}
-      {/* Where the record lives (US-09), while Settings show (one card, one picker). */}
-      {settingsOpen && storageCard}
-      {plan.planned && (
-        <div className="delete-data-section">
-          <button className="delete-data-link" onClick={onDelete} disabled={isDeleting}>
-            {isDeleting ? 'Deleting...' : 'Delete all my data'}
-          </button>
-        </div>
-      )}
-    </>
-  );
+      </div>
+    ),
+    <Fragment key="reminders">{reminders}</Fragment>,
+    !storageFirst && storage,
+    plan.planned && (
+      <div key="delete" className="delete-data-section">
+        <button className="delete-data-link" onClick={onDelete} disabled={isDeleting}>
+          {isDeleting ? 'Deleting...' : 'Delete all my data'}
+        </button>
+      </div>
+    ),
+  ];
   return (
     <div ref={form.panelRef} className={`health-input-panel mh-page${form.pageOpen || settingsOpen ? ' md-page-open' : ''}`}>
       <div className="mh-header">

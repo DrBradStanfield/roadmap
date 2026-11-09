@@ -384,7 +384,7 @@ describe('US-62 AC24: a guest\'s storage card, at the foot and in Settings', () 
   it('shows at the foot of My health for a record on this device; in Settings when they open, one at a time', async () => {
     await RECORDS['a known minor']();
     await flushRoadmapStore();
-    const storage = ({ hasData }: { hasData: boolean }) => <div className="hr-sync">Where do you want to keep your health record? {String(hasData)}</div>;
+    const storage = ({ hasData }: { hasData: boolean }) => <div className="hr-sync">Keep my record in Dropbox or Google Drive {String(hasData)}</div>;
     const view = render(<HealthTool syncControl={storage}/>);
     await waitFor(() => expect(view.container.querySelector('.mh-sections')).not.toBeNull());
     const cards = () => [...view.container.querySelectorAll('.hr-sync')];

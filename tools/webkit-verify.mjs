@@ -86,6 +86,9 @@ export function assertTabBar(data) {
   assert.equal(data.accountTitleButtons, 0, `${data.accountTitleButtons} buttons on a guest's Account title line`);
   assert(data.accountSignInHeight >= 43.5, `the storage card's sign-in is missing or under 44px (${data.accountSignInHeight})`);
   assert(data.accountSignInBackground && !/rgba\(0, 0, 0, 0\)|transparent/.test(data.accountSignInBackground), `the storage card's sign-in is not a filled button (${data.accountSignInBackground})`);
+  assert.equal(data.accountSignInLabel, 'Keep my record in Dropbox or Google Drive', 'the storage card\'s sign-in label changed');
+  // Brad 2026-11-09: a guest's card comes straight under the Account heading, before About you.
+  assert.equal(data.accountFirstPart, 'storage', `a guest's Account does not open with the storage card (${data.accountFirstPart})`);
   // Live test 2026-11-06: the chat card ran 3-5px under the bar.
   assert(data.chatCardBottom <= data.barTopOnChat + 0.5, `chat card ends under the tab bar (${data.chatCardBottom} > ${data.barTopOnChat})`);
 }
@@ -346,6 +349,8 @@ async function inspect(browser, deviceName, viewport) {
           accountTitleButtons: head ? head.querySelectorAll('.mh-header-actions button').length : 0,
           accountSignInHeight: signIn ? Math.round(signIn.getBoundingClientRect().height) : 0,
           accountSignInBackground: signIn ? getComputedStyle(signIn).backgroundColor : null,
+          accountSignInLabel: signIn?.textContent ?? null,
+          accountFirstPart: head?.nextElementSibling?.matches('.hr-sync') ? 'storage' : head?.nextElementSibling?.className ?? null,
         };
       }));
       assertTabBar(tabBar);

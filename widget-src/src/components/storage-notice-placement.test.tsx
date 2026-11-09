@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * US-09 AC5 (Brad 2026-11-02): the storage promise is said once, in the plan's
- * "Where do you want to keep your health record?" card. Starting Info and the
+ * "Keep my record in Dropbox or Google Drive" card. Starting Info and the
  * PDF box no longer repeat "Your health record stays in your browser…".
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';

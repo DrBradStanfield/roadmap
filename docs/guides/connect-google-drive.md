@@ -28,7 +28,7 @@ Google also shares your email address with the tool. The tool says so on the Goo
 
 ## Connect, step by step
 
-1. Open [the tool](https://drstanfield.com/pages/roadmap). Once you have entered your sex and height, a button at the top of your plan says "Where do you want to keep your health record?" On a phone, the plan is the Plan tab. Click the button. The words "Dropbox or Google Drive", in the line that says your record stays in your browser, open the same box.
+1. Open [the tool](https://drstanfield.com/pages/roadmap). Once you have entered your sex and height, a button at the top of your plan says "Keep my record in Dropbox or Google Drive." On a phone, the plan is the Plan tab. Click the button. The words "Dropbox or Google Drive", in the line that says your record stays in your browser, open the same box.
 2. A box opens with the same question as its title. The Google Drive option says "One file in your own Google Drive, in a private "Health Plan by Dr Brad" folder." Its last line says "On Google's screen, tick the Google Drive box. Without it we cannot save your file."
 3. Click Google Drive. The page moves to Google.
 4. Pick your Google account, and sign in if asked.
