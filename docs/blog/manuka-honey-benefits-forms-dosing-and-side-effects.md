@@ -6,291 +6,247 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["manuka honey", "UMF", "MGO", "methylglyoxal", "antibacterial", "wound healing", "honey", "GERD", "acid reflux", "burns", "dry eye", "gut health", "inflammation", "quercetin", "antioxidant", "cough", "sore throat", "blood sugar", "diabetes", "cholesterol", "triglycerides", "skin"]
-summary: "Reference on manuka honey: wound healing, acid reflux (GERD), antibacterial, dry eye, oral health. UMF 15+ for therapeutic use; 1-2 tsp/day general wellness, 5g three times daily for GERD. Avoid in infants. Always discuss with your doctor."
+summary: "Topic master on manuka honey: UMF grading, MGO, and trial evidence for burns, wounds, GERD, cough, dry mouth and dry eye. Brad's view covers ordinary honey for cold cough. Never give honey to a baby under 1. Talk to your doctor first if you have diabetes, a honey allergy or a weak immune system."
+reviewed: "2026-11-09"
+sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/26176586/","checked":"2026-11-09","fingerprint":"sha256:8fea3494fdcba49c12e6df549a173248d72ad2a7601edbead9f48ff595f5f55f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28154806/","checked":"2026-11-09","fingerprint":"sha256:8cf38b5a9e1c8fda57b6717bc23014779d28beed87231ad1d446ef68828aee00"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24433600/","checked":"2026-11-09","fingerprint":"sha256:cf5077201120d6f1b9d718d4f47e240ebcd764bfe3b27d5292848ad69082f9d7"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33985563/","checked":"2026-11-09","fingerprint":"sha256:466a656930417bde5f495ce8f0eb617409ee7dfe323de3b6d98cc8dc42ff3cbc"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18955301/","checked":"2026-11-09","fingerprint":"sha256:64bdef9f47524dcaa13e46740d0a8f79bd089fbc5c78b8ef204c1f63f27fd41d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/21776290/","checked":"2026-11-09","fingerprint":"sha256:c3124d11bd2b0cbb45e802b378e8defed8b0f6de71c8c043363ba3e71f2b2b35"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22985336/","checked":"2026-11-09","fingerprint":"sha256:a1dc8d7a054c39d801462f93305ce4ed3f33ba08f667610e73cab6f744ecd0bb"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28239398/","checked":"2026-11-09","fingerprint":"sha256:8289afe801cb36d682b02038beb3979a5bc1c794dc36f719230571ce5dbc3c15"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/7491882/","checked":"2026-11-09","fingerprint":"sha256:c6990fd13fa71a10b2f6b453f15b51efa448f1116b065fd049b464922f51fd9b"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/38211407/","checked":"2026-11-09","fingerprint":"sha256:058fc2d56a2488c5d88e24255fd4178b26bb0999851f207796239fd6631d3184"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28030589/","checked":"2026-11-09","fingerprint":"sha256:a4b9c8fbf7419024130ae72b22c2654fd270084065921cdb91434adbb6a65267"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18194804/","checked":"2026-11-09","fingerprint":"sha256:14ed27e174083092d659844e6385d39b3d70b3712bb32308c4d7736c3a86f9fd"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18210383/","checked":"2026-11-09","fingerprint":"sha256:61aba8b036f86d8f0c2d039ac4910a0baedc3fd5a7dbce6b7949af0d9ff5df5c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/27148246/","checked":"2026-11-09","fingerprint":"sha256:72058b8dec39357fc5bcbabaa1abf4d5fb7845d5326d1b39af120c882947bdd4"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/25310890/","checked":"2026-11-09","fingerprint":"sha256:e357425cf4839717c1d95f7c8e94571a0fcce713c96c2eda16d4e2c5b1139115"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/29619623/","checked":"2026-11-09","fingerprint":"sha256:c23f3d71e074c0d7010ea324b4943cbbe90bf96b89e4a3377d4ca5bffd82768a"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/38268884/","checked":"2026-11-09","fingerprint":"sha256:25fe5fdd838dcbe8f036faeb7074cf339436c0d7202d22c890256dfdfabf5134"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/32795863/","checked":"2026-11-09","fingerprint":"sha256:4bd9bf831c3c63a1d0401fedd0028b7055ab900c94dcd2cfecb09880345ea185"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/26920322/","checked":"2026-11-09","fingerprint":"sha256:cd2239ceb6409a751779a089a9593a12123e885950161c261bf1941df9229140"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/34708153/","checked":"2026-11-09","fingerprint":"sha256:6c90e2c08d593ea117901543533d38a48efb88dbb049abdbdf392004d08962d9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/25742878/","checked":"2026-11-09","fingerprint":"sha256:6e033d1272c3f6a722c1c6341c39104fd294afc6007d28e78ecf22483872183f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/32817011/","checked":"2026-11-09","fingerprint":"sha256:8c0793df8170a46b26486525ecbe3c9f976ff1399b2fee0b68aad2609f017ea1"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/29633783/","checked":"2026-11-09","fingerprint":"sha256:f853e3c881588aa91d8c4ca661da64cf82711492af06d3346b1d0089232a1211"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/40321015/","checked":"2026-11-09","fingerprint":"sha256:40c6e9342f5e2555e6201313b80ff145d36d2c6f850009d9d508192cfbdf0285"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/25157984/","checked":"2026-11-09","fingerprint":"sha256:b619622860a70bdafcac2769c81daec9d29220ad3f95cc33404341a375edcf06"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/29568170/","checked":"2026-11-09","fingerprint":"sha256:72c7a372e7b0eb29391252f0e16b139b7c7f7f9c6d4212b55dbd5165bbdff4a3"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/40410721/","checked":"2026-11-09","fingerprint":"sha256:ae1a978853893c8b618ee921de40ebd8cd533090d36d2638cf70bf310b93f790"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/35950413/","checked":"2026-11-09","fingerprint":"sha256:a7c953ff5f9d5dd8b4eb52eb72f86b8e83ff395019e56ea57a859b33afbd8cf3"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28585260/","checked":"2026-11-09","fingerprint":"sha256:75908db29e551ea3324a9037b3f7681182e3b0e589c6760c49ac7ec14267f028"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31759183/","checked":"2026-11-09","fingerprint":"sha256:fa87dde500300b889c6291c02f099238f846d778f5dfdbd2de447f1703b82de3"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31247940/","checked":"2026-11-09","fingerprint":"sha256:abd935cbf05457f1950cff49b5c11a5e3c04edfd3a8433a4ab88253043557858"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31789670/","checked":"2026-11-09","fingerprint":"sha256:8041a93f334860bd0eb8f87acd3c4a9495bf9019986985567638ee5c60c7787a"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/36379223/","checked":"2026-11-09","fingerprint":"sha256:1d6c633150646b0bc1decb5440b34ada13a035514fb26286eaecc1c06251e2f5"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/32878255/","checked":"2026-11-09","fingerprint":"sha256:f7dc92056bdfca9a99546262a3397594701de9fd03941c9a1a845f2f10180960"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/2791208/","checked":"2026-11-09","fingerprint":"sha256:72b7ced82f9aa1ca97ebaa08cd3f6c99182f3ce0d017847fa26d5d37fdc3894d"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine","checked":"2026-11-09","fingerprint":"publishedAt:2026-04-16"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/manuka-honey-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/manuka-honey-benefits-forms-dosing-and-side-effects)*
 
+## Current view (reviewed 9 November 2026)
+
+In his video on cold remedies, Brad points to an Oxford team's pooled analysis of 14 randomised trials, in which honey improved combined symptom scores, cough frequency and cough severity compared with usual care ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)). He quotes the Oxford researchers' advice that honey is cheap and widely available, so it is worth trying before visiting your GP ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)). His practical step is around a teaspoon of honey before bedtime ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)). Honey will not shorten a cold the way zinc lozenges can, but it may improve comfort and sleep ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)). The best dose is not known, and neither is whether raw honey differs from processed honey ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)).
+
+## Key safety points
+
+- Never give honey of any kind, manuka included, to a child younger than 1 year: honey is the best-known source of infant botulism [1][2].
+- People allergic to honey should avoid all honey. Reactions are very rare but can include anaphylaxis, and some people who react to honey also react to bee venom or weed pollen [3][4][5].
+- During cancer treatment or with a weak immune system, choose commercial, heat-treated honey and avoid raw honey or honeycomb [6][2].
+- Put only sterile, medical-grade honey dressings on wounds; food honey can carry bacteria and fungi [7][2]. Ask your doctor or nurse first before using a honey dressing on a deep burn or a heavily bleeding wound.
+- With diabetes, count honey as sugar, and ask your doctor before using manuka honey on a wound: the evidence on MGO and diabetic wound healing conflicts [8][9][10][11].
+- Large amounts (50 to 100 g) can cause loose stools, probably because some of the fructose is not absorbed [12].
+
+## Brad's videos on this topic
+
+- 16 Apr 2026, [This $2 Remedy Beats Every Cold Medicine](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine): ordinary honey (not manuka specifically) eases cough from colds better than usual care; about a teaspoon before bed.
+
 ## 1. Overview
 
-Manuka honey is a monofloral honey derived primarily from the nectar of the manuka tree (*Leptospermum scoparium*), which grows throughout New Zealand and Eastern Australia [1]. Unlike conventional honeys, manuka honey contains exceptionally high concentrations of methylglyoxal (MGO), an antibacterial compound that gives it unique therapeutic properties. MGO levels in manuka honey range from 85 mg/kg to greater than 1,000 mg/kg, compared to 0.4–24.1 mg/kg in non-manuka varieties such as citrus, honeydew, and multifloral honeys [1][2][3].
+Manuka honey comes from bees feeding on the nectar of *Leptospermum scoparium* flowers [13]. Several Australian *Leptospermum* species also produce high-activity honey: exceptionally high levels of up to 1100 mg/kg MGO were found in *L. polygalifolium* honey [14].
 
-Manuka honey has a thick, caramel-like texture and a rich, earthy flavor. It comes in a variety of colors, from pale gold to dark amber, depending on its production, processing, and age. Higher-grade manuka honeys tend to have a darker color and a more bitter, complex taste profile.
+Methylglyoxal (MGO) is the compound behind manuka honey's non-peroxide antibacterial activity [15][16]. In one analysis, six New Zealand manuka honeys held 38 to 761 mg/kg of MGO, up to 100-fold more than conventional honeys [16].
 
-Beyond MGO, manuka honey is a rich source of phenolic compounds, including protocatechuic acid, syringic acid, and genistic acid, as well as flavonoids such as quercetin, luteolin, kaempferol, and apigenin. These plant compounds are responsible for manuka honey's antioxidant, antimicrobial, anti-inflammatory, and wound-healing properties [4][5]. Manuka honey is also composed of carbohydrates (approximately 80% sugar, primarily fructose and glucose), proteins, minerals, and fatty acids [1].
+Manuka honey is a good source of phenolics and of compounds found in few other honeys, including MGO, dihydroxyacetone (DHA), leptosperin, methyl syringate and leptosin [13]. Like all honey, it is mostly sugar: honey provides 304 kcal and 82.1 g of total sugars per 100 g [8].
 
-Honey has been used medicinally for thousands of years. Ancient Egyptian, Greek, and Roman medical texts describe the use of honey for wound treatment and as a remedy for gastrointestinal complaints. The World Health Organization has recommended honey for treating coughs since 2001 [6]. However, what distinguishes manuka honey from ordinary honey is its non-peroxide antibacterial activity — while all honeys generate hydrogen peroxide (which has antibacterial effects), manuka honey's high MGO content provides antibacterial activity that persists even after the hydrogen peroxide is neutralized [1][5].
-
-The global manuka honey market has grown rapidly, and with that growth has come concerns about authenticity. Studies have estimated that significantly more "manuka honey" is sold worldwide than is actually produced in New Zealand. This has led to the development of rigorous grading and authentication systems, most notably the Unique Manuka Factor (UMF) certification system, which validates potency, authenticity, purity, shelf life, and freshness [7].
-
-Each 21-gram serving (approximately one tablespoon) of manuka honey provides about 60 calories and is approximately 80% sugar [8]. Despite its sugar content, manuka honey contains bioactive compounds not found in refined sugar, and moderate consumption as part of a healthy diet may offer benefits beyond those of conventional sweeteners.
+The ancient Egyptians and Greeks used honey on wounds [7]. Today, therapeutic honey commands a premium price, and the honey industry actively promotes studies that support its use [17]. The UMF Honey Association grades New Zealand manuka honey on four markers: MGO, leptosperin, DHA and HMF [18].
 
 ## 2. Grading and Authentication
 
 ### The Unique Manuka Factor (UMF) System
 
-Manuka honey is graded using the Unique Manuka Factor (UMF), an independently certified quality assurance system that validates the potency, authenticity, purity, shelf life, and freshness of New Zealand manuka honey. UMF certification is managed by the UMF Honey Association (UMFHA), a non-profit organization based in New Zealand [7].
+The UMF Honey Association tests four markers, and its quality mark appears only on its members' products [18].
 
-The UMF system measures four key compounds in manuka honey [1][7]:
+**Methylglyoxal (MGO)** is the source of the honey's antibacterial activity [18][16]. It forms without enzymes from DHA in manuka nectar [14].
 
-**Methylglyoxal (MGO)** is the primary marker of antibacterial potency. MGO forms naturally from the conversion of dihydroxyacetone (DHA), which is present in manuka flower nectar. To be UMF certified, honey must contain at least 83 mg/kg of MGO, with more potent honeys exceeding 1,000 mg/kg [1][7].
+**Leptosperin**, a glycoside of methyl syringate, is found only in honey from *Leptospermum scoparium*, so it serves as an authenticity marker [19][18].
 
-**Leptosperin** is an authentication marker unique to honey derived from *Leptospermum* (manuka) trees. This compound is not found in other types of honey, making it a reliable indicator of genuine manuka origin. UMF certification requires at least 100 mg/kg of leptosperin [7].
+**Dihydroxyacetone (DHA)** is not the omega-3 fat docosahexaenoic acid. It slowly converts to MGO in stored honey, so DHA signals the potential for more MGO [14][18]. The UMF Honey Association says the best manuka honey must have more than 70 mg/kg DHA to be UMF certified, although its own grade table starts at 150 mg/kg [18].
 
-**Dihydroxyacetone (DHA)** is a precursor to MGO found in manuka flower nectar. Note that this DHA is not the omega-3 fatty acid docosahexaenoic acid. DHA slowly converts to MGO during honey production and storage. A higher DHA content indicates that the honey has greater potential to develop higher MGO levels over time and provides a measure of remaining shelf life. UMF certification requires at least 70 mg/kg of DHA [1][7].
-
-**Hydroxymethylfurfural (HMF)** is a freshness indicator. HMF is a compound that forms when honey is heated or stored for extended periods. An HMF level below 40 mg/kg indicates that the honey has not been overheated or stored too long. For honeys originating from tropical regions, the HMF limit increases to below 80 mg/kg. HMF levels are expected to rise as honey ages and approaches its expiration date [1][9].
+**Hydroxymethylfurfural (HMF)** forms from sugars when honey is heated, and storage conditions also affect it, which makes it an indicator of honey quality [20]. UMF tests it to confirm the honey has not been overheated [18].
 
 ### UMF Grade Requirements
 
 | Grade | MGO (mg/kg) | Leptosperin (mg/kg) | DHA (mg/kg) | HMF (mg/kg) |
 |-------|:-----------:|:-------------------:|:-----------:|:------------:|
-| UMF 5+ | ≥83 | >100 | ≥150 | <40 |
-| UMF 10+ | ≥261 | >150 | ≥250 | <40 |
-| UMF 15+ | ≥512 | >200 | ≥400 | <40 |
-| UMF 20+ | ≥826 | >200 | ≥500 | <40 |
-| UMF 25+ | ≥1,197 | >200 | ≥550 | <40 |
+| UMF 5+ | 83 | >100 | 150 | <40 |
+| UMF 10+ | 261 | >150 | 250 | <40 |
+| UMF 15+ | 512 | >200 | 400 | <40 |
+| UMF 20+ | 826 | >200 | 500 | <40 |
+| UMF 25+ | 1197 | >200 | 500 | <40 |
 
-Source: UMF Honey Association [7].
+Source: UMF Honey Association [18]. The page lays out its table without clear column labels, and it shows the same DHA level for UMF 20+ and UMF 25+; an earlier version of this article gave a higher DHA level for UMF 25+. Check the current values on the association's site.
 
 ### Choosing a UMF Grade
 
-It is generally recommended to select manuka honey with a UMF rating of 15+ or greater to ensure a potent and fresh product [1][7]. Higher UMF ratings mean higher MGO levels and greater antibacterial potency, but there are practical trade-offs:
-
-- **UMF 5+–10+:** Entry-level grades. Suitable for general wellness use, culinary purposes, and as an everyday sweetener alternative to regular honey. Lower antibacterial activity.
-- **UMF 15+:** The most commonly recommended minimum for therapeutic use. Balances potency with palatability — honeys at this grade are less bitter than higher grades.
-- **UMF 20+–25+:** Maximum potency. Best suited for targeted therapeutic applications (e.g., wound care, GERD). These grades have a noticeable bitter aftertaste that some consumers find unpalatable.
+There is no good public evidence on which grade to choose. Higher grades carry more MGO [18]. The only GERD trial used honey with at least 400 mg/kg of methylglyoxal [21].
 
 ### MGO-Only Grading
 
-Some manufacturers label their manuka honey with an MGO rating rather than a UMF rating (e.g., "MGO 400+" or "MGO 850+"). While MGO is the most important marker of antibacterial potency, an MGO-only rating does not verify leptosperin (authenticity), DHA (shelf life potential), or HMF (freshness). UMF certification provides a more comprehensive quality assessment because it validates all four markers [7].
+Some labels give only an MGO number. An MGO figure says nothing about leptosperin, DHA or HMF, which UMF grading also tests [18].
 
 ### Verifying Authenticity
 
-Consumers can verify the authenticity of UMF-rated manuka honey by entering the batch or lot number and the brand's UMF license number (found on the product label or jar bottom) on the UMF Honey Association's Certification Search page at umf.org.nz. This search returns the honey's verified MGO, HMF, and DHA levels [7].
-
-When shopping, it is advisable to choose products with at least a few years before their expiration date, as manuka honey loses freshness over time and HMF levels rise as the product ages [1][9].
+Leptosperin can be measured to check that honey is genuine manuka, and an antibody test allows many samples to be checked at once [19]. Choose a product that an independent lab has tested. Because storage conditions affect HMF formation, fresher stock is likely to be better [20].
 
 ## 3. Composition and Key Compounds
 
 ### Methylglyoxal (MGO)
 
-Methylglyoxal is the primary bioactive compound responsible for manuka honey's non-peroxide antibacterial activity. MGO is a reactive carbonyl compound that forms naturally from the conversion of DHA present in manuka nectar. The concentration of MGO in manuka honey ranges from approximately 85 mg/kg in entry-level products to over 1,000 mg/kg in premium grades [1][2].
+MGO is the main non-peroxide antibacterial compound in manuka honey [15][16]. In laboratory tests, the minimum inhibitory concentration of MGO was 1.1 mM for both *E. coli* and *S. aureus*, and manuka honeys still inhibited bacteria when diluted to 15-30% [16]. In a diabetic-wound commentary, MGO concentrations in manuka honey are described as up to 100-fold higher than in conventional honeys [9].
 
-MGO exerts antibacterial effects by damaging bacterial proteins and DNA, disrupting cell membranes, and inhibiting bacterial biofilm formation. It is effective against a broad spectrum of bacteria, including methicillin-resistant *Staphylococcus aureus* (MRSA), *Escherichia coli*, *Pseudomonas aeruginosa*, and *Streptococcus* species [5].
-
-The stability of MGO is influenced by temperature. A laboratory study showed that heating manuka honey for one hour at temperatures of 140°F (60°C, approximately the temperature of somewhat hot tea) or less did not significantly reduce MGO concentration. However, heating to 194°F (90°C, slightly below boiling) for one hour significantly decreased MGO content [10]. This has practical implications for consumers who add manuka honey to hot beverages — moderate temperatures are acceptable, but very hot liquids should be avoided.
+Heat lowers MGO: MGO and 2'-methoxyacetophenone were significantly decreased by heating at 90 °C [22]. There is no public evidence on a safe temperature for warm drinks. In storage, warmer temperatures speed the loss of DHA, but conversion of DHA to MGO is more efficient at lower temperatures [23].
 
 ### Phenolic Compounds and Flavonoids
 
-Manuka honey contains a diverse array of phenolic acids and flavonoids that contribute to its antioxidant and anti-inflammatory properties [4][5]:
-
-- **Phenolic acids:** Protocatechuic acid, syringic acid, genistic acid, gallic acid, caffeic acid
-- **Flavonoids:** Quercetin, luteolin, kaempferol, apigenin, chrysin, pinocembrin, pinobanksin, galangin
-
-These compounds act as free radical scavengers, reducing oxidative stress and inflammation. The total phenolic content of manuka honey is generally higher than that of conventional honeys, and it correlates with both MGO content and antioxidant capacity [4][5].
+Manuka honey is a good source of phenolics [13]. Laboratory, animal and clinical studies report antioxidant, anti-inflammatory, immunomodulatory and antimicrobial activity, and the same review notes open debate about manuka grading, safety, efficacy and implied benefits [13]. Honey in general contains flavonoids, phenolic acid, organic acids, enzymes and vitamins [24].
 
 ### Sugar Composition
 
-Like all honeys, manuka honey is approximately 80% sugar by weight. The primary sugars are fructose (approximately 38–42%) and glucose (approximately 30–34%), with smaller amounts of sucrose, maltose, and other oligosaccharides. The high fructose content is relevant to both the potential laxative effect of honey and its impact on blood lipids (discussed in Safety and Side Effects) [8][11].
+Per 100 g, honey contains 82.1 g of total sugars, of which 40.9 g is fructose and 35.8 g is glucose [8]. Because honey contains fructose in excess of glucose, some of the fructose may not be absorbed, which matters for its laxative effect and for blood lipids (see Safety and Side Effects) [12].
 
 ### Other Components
 
-Manuka honey also contains small amounts of amino acids, vitamins (particularly B vitamins and vitamin C), minerals (including potassium, calcium, magnesium, sodium, iron, and zinc), enzymes (glucose oxidase, diastase, invertase), and organic acids [1][4].
+Per 100 g, honey supplies 52.0 mg potassium, 6.00 mg calcium and 0.420 mg iron, so it adds very little of any mineral [8].
 
 ## 4. Evidence for Benefits
 
 ### Wound Healing and Burns
 
-Honey has been used in wound treatment since ancient times, and manuka honey has become the best-studied honey type for this application. Its wound-healing properties operate through multiple mechanisms: reducing inflammation, stimulating skin cell proliferation and tissue regeneration, maintaining a moist wound environment, and protecting against infection through its antibacterial activity [12][13].
+A 2015 Cochrane review identified 26 eligible trials (total of 3011 participants) of honey, of any type, on acute and chronic wounds [25].
 
-**Burns:** A 2015 Cochrane systematic review of published studies concluded that honey appears to heal partial-thickness burns more quickly than conventional treatment methods, including leaving burns exposed, using antiseptics, and applying gauze dressings. The review encompassed multiple trials comparing honey-based wound management to standard care [12].
+**Burns:** There is high quality evidence (2 trials, n=992) that honey dressings heal partial thickness burns more quickly than conventional dressings (weighted mean difference -4.68 days) [25].
 
-**Infected postoperative wounds:** The same Cochrane review found that manuka honey healed infected postoperative wounds more quickly than antiseptics and gauze [12].
+**Infected post-operative wounds:** Honey healed infected post-operative wounds more quickly than antiseptic washes followed by gauze (1 trial, n=50, moderate quality evidence, RR of healing 1.69) [25].
 
-**Chronic wounds and leg ulcers:** However, the Cochrane review also noted that three studies using manuka honey did not find sufficient evidence that it was more helpful than standard wound care for healing chronic wounds or leg ulcers [12]. This is an important distinction — the evidence for manuka honey in wound care is strongest for acute wounds (burns and infected surgical wounds) rather than chronic, slow-healing wounds.
+**Chronic wounds and leg ulcers:** The effects of honey were unclear for venous leg ulcers (2 trials, n=476), diabetic foot ulcers (2 trials, n=93) and mixed chronic wounds (2 trials, n=150) [25]. Beyond burns and infected post-operative wounds, the review judged the evidence low or very low quality, not a robust basis for decisions [25].
 
-**Cancerous wounds:** A 2021 review found that manuka honey decreased odor and inflammation in cancerous wounds, led to significant clinical improvement in infected, surgical, and traumatic wounds, and controlled infection and inflammation while improving healing time in burns [13].
+**Other wounds:** A 2021 review describes honey for a broad range of wound types, including burns, diabetic boils, malignancies, leg ulcers and surgical wounds, but gives no pooled numbers [24].
 
-**MediHoney:** The US Food and Drug Administration (FDA) permits a patented, sterilized manuka honey-based wound dressing called MediHoney to be sold by prescription and over-the-counter for the treatment of leg ulcers and other wounds [14]. MediHoney has been the subject of multiple clinical studies and is used in hospital settings. Its manufacturers warn consumers not to use the product if they have a known sensitivity to honey, and not to use it on third-degree burns or to control heavy bleeding [14].
+**MediHoney:** The US Food and Drug Administration has cleared MediHoney dressings with active manuka honey through its 510(k) process, including an over-the-counter version [26]. A wound-care review encourages CE-certified honey dressings with standardised antibacterial activity, such as Medihoney products [7].
 
-**Sterility considerations:** Although honey has been used on wounds, there is a risk that non-sterile honey could introduce microbial contamination to wounds. Medical-grade manuka honey products like MediHoney are gamma-irradiated to achieve sterility while preserving antibacterial activity. Non-medical-grade manuka honey purchased as a food product should not be assumed to be sterile and may not be safe for wound application [14][15].
+**Sterility considerations:** Honey may contain a great variety of bacteria and, particularly, fungi [2]. Food honey is not sterile and should not go on open wounds; use a medical-grade product [7].
 
 ### Gastroesophageal Reflux Disease (GERD)
 
-Manuka honey is promoted for various gastrointestinal conditions, but clinical evidence is limited, with the strongest preliminary data supporting a benefit for gastroesophageal reflux disease (GERD).
+A pilot trial in Poland randomised 30 adults with GERD, 15 to each group, to manuka honey or a placebo of artificial honey [21]. Each batch of honey held at least 400 mg/kg of methylglyoxal, and participants took a unit dose of 5 g, three times a day, fasting in the morning and between main meals, for 4 weeks [21]. Mean ages were 54.9 years in the manuka group and 59.1 years in the placebo group [21].
 
-A clinical study in Poland enrolled 30 adults (average age 57) with GERD, most of whom were already taking a proton pump inhibitor (PPI) or H2 blocker. Participants who also took 5 grams (about 0.75 teaspoons) of manuka honey standardized to contain at least 400 mg/kg MGO three times daily before breakfast and between meals for 4 weeks showed improvement in self-reported symptoms in 100% of cases, compared to only 40% of those receiving placebo (artificial honey). A greater percentage of people taking manuka honey also showed improvement based on endoscopy examination (73.3% vs 33.3%) and examination of esophageal tissue (73.3% vs 20%). However, the study did not report whether any of these differences were statistically significant, which limits the strength of the findings [16].
+Symptoms improved in 86.7% and 100% of the manuka group at 2 and 4 weeks, against 26.7% and 40% of the placebo group [21]. On endoscopy, 73.3% of the manuka group improved; the abstract says improvement in the placebo group was much lower, and that histology confirmed the results [21]. The full text marks statistical significance at p < .05 [21]. Among participants taking no reflux medicines, only those on manuka honey improved [21].
 
-The proposed mechanism is that manuka honey may coat the esophagus and stomach lining, helping to reduce the upward flow of gastric juices. Because this is likely a short-term, local protective effect, taking manuka honey only once daily would likely be less beneficial than the multiple-times-daily dosing used in the study [16][17].
-
-It is important to note that this is a single small study, and larger, well-powered trials are needed before manuka honey can be recommended as a standard adjunct treatment for GERD. The study also did not compare manuka honey to regular honey, so it is unclear whether the benefit (if confirmed) is specific to manuka or applies to honey in general.
+The authors call it a pilot study before testing in a larger population [21]. It compared manuka honey with artificial honey, not with ordinary honey, so it cannot say whether the effect is specific to manuka.
 
 ### Cough and Upper Respiratory Infections
 
-Honey in general has been recognized as a cough suppressant by the World Health Organization since 2001 [6]. A systematic review and meta-analysis by Abuelgasim et al. (2021) found that honey was superior to "usual care" (including antihistamines, expectorants, and other standard treatments) for improving upper respiratory infection symptoms, particularly cough frequency and cough severity [6][18].
+A 2021 meta-analysis of 14 studies found that, compared with usual care, honey improved combined symptom score (three studies, mean difference -3.96), cough frequency (eight studies, SMD -0.36) and cough severity (five studies, SMD -0.44) in upper respiratory tract infections [27]. It notes that guidelines recommended honey for acute cough in children [27].
 
-However, there are no clinical studies investigating the effects of manuka honey specifically for cough [1]. Given manuka honey's significantly higher cost compared to regular honey, and the fact that the cough-suppressing properties of honey are thought to relate primarily to its viscosity and sugar content (which coat and soothe irritated throat tissue) rather than its MGO content, it is difficult to justify using manuka honey specifically as a cough remedy [1]. A jar of conventional honey is likely to be equally effective and far less expensive.
+A 2018 Cochrane review of six randomised controlled trials involving 899 children, aged 12 months to 18 years, concluded that honey probably relieves cough symptoms more than no treatment, diphenhydramine and placebo, but may make little or no difference compared with dextromethorphan [28]. Most children received treatment for one night only [28].
 
-**Important safety note:** Honey, including manuka honey, should never be given to infants under 12 months of age. All types of honey may contain *Clostridium botulinum* spores, which can cause infant botulism — a dangerous condition characterized by weakness, poor feeding, and respiratory difficulties [18][19].
+These reviews concern honey in general, not manuka honey. Manuka honey sells at a premium [17], so ordinary honey is the cheaper choice for a cough. Do not give honey to a child younger than 1 year [1].
 
 ### Sore Throat
 
-Honey has traditionally been used to soothe sore throats and may act as a demulcent, coating irritated or inflamed tissue in the throat [20]. The WHO recommends adding honey to hot tea or combining it with lemon juice and glycerin to help relieve sore throats [6].
+The BEE PAIN FREE trial recruited 400 children having tonsillectomy and allocated them to standard treatment alone, Western Australian marri honey, Western Australian manuka honey or placebo; the honey and placebo groups were asked to take 5 ml six times a day for at least 7 days [29]. Children actually took between 2 and 3 doses per day, and 20% were lost to follow-up or withdrew [29]. Honey at this frequency did not improve pain or recovery over a 14-day follow-up period [29].
 
-However, there does not appear to be published research specifically evaluating manuka honey for sore throats or throat infections [1]. Furthermore, a randomized controlled trial among 391 children undergoing tonsillectomy (tonsil removal) showed that taking 5 mL (about 1 teaspoon) of Western Australian manuka honey by mouth — generally two or three times daily, preferably 30 minutes before eating and before brushing teeth at bedtime — along with standard pain medication, for at least 7 days post-tonsillectomy did not significantly reduce post-operative pain, use of pain medication, or the number of unplanned visits to the hospital or a primary care provider after surgery compared to placebo (a mixture of glucose, sucrose, and rice malt syrup) [21].
-
-This trial is significant because it was large (n=391), randomized, placebo-controlled, and specifically used manuka honey rather than generic honey. The negative result suggests that manuka honey does not provide meaningful additional pain relief in the post-tonsillectomy setting, despite its theoretical anti-inflammatory and antibacterial properties.
+There is no good public evidence on manuka honey for ordinary sore throats yet.
 
 ### Gastrointestinal Health: Constipation and H. pylori
 
-**Constipation:** Manuka honey is promoted as a treatment for constipation, although there are no published studies in humans specifically testing this claim. However, evidence from other studies suggests a potential laxative role through two mechanisms [1][22][23]:
+**Constipation:** There is no good public evidence on manuka honey for constipation in people. Two lines of indirect evidence exist. In rats, an enema of MGO raised faecal water content and caused visceral hypersensitivity [30]. In 20 healthy volunteers, 100 g of honey caused loose stools in six and 50 g caused them in three, probably because of incomplete fructose absorption [12].
 
-1. **MGO-induced laxative effect:** A study in rats showed that enema infusions of methylglyoxal increased diarrhea and other symptoms of irritable bowel syndrome (IBS) [22].
-2. **Fructose-mediated osmotic effect:** A human study using non-manuka honey found that honey has a laxative effect, likely caused by its high fructose concentration. Fructose is a simple sugar that draws water into the gut and is known to cause diarrhea, bloating, and other digestive symptoms when consumed in excess [23].
-
-Like other honeys, manuka honey is high in fructose, and this, coupled with the potential laxative effect of methylglyoxal, may help explain why it is promoted for the relief of constipation [1][23]. However, without controlled human trials, the evidence remains speculative.
-
-**H. pylori:** Manuka honey is promoted for the treatment of gastric/stomach ulcers caused by *Helicobacter pylori*. While manuka honey demonstrates potent antibacterial activity against *H. pylori* in laboratory (in vitro) settings, clinical results have been disappointing. A study of 12 individuals with active *H. pylori* infections who took one tablespoon of manuka honey four times per day showed that all participants continued to harbor the bacteria at the end of two weeks [24].
-
-This disconnect between laboratory and clinical results likely reflects the dilution and neutralization of manuka honey in the acidic, enzymatically active gastric environment. The concentrations of MGO achievable in the stomach after oral ingestion may be insufficient to eradicate an established *H. pylori* infection, even though higher concentrations kill the bacteria in a test tube [24].
+**H. pylori:** There is no good public evidence on manuka honey for *H. pylori* infection yet.
 
 ### Oral Health: Plaque and Gingivitis
 
-A 22-day randomized controlled trial of 124 school children in India evaluated manuka honey mouthwash for oral health. Both a manuka honey mouthwash and one made with raw (non-manuka) honey each led to decreases in plaque accumulation and gingivitis (gum inflammation). However, neither honey-based mouthwash was as effective as standard treatment with chlorhexidine, an antiseptic oral rinse commonly prescribed for periodontal disease [25].
-
-The researchers noted several practical advantages of honey-based mouthwashes over chlorhexidine: unlike chlorhexidine, honey does not stain teeth, contains no alcohol, artificial colors, or sweeteners, and may be more palatable to (and therefore more regularly used by) children [25]. However, the inferior clinical efficacy means honey mouthwashes cannot be recommended as a replacement for standard antimicrobial oral rinses in patients with significant periodontal disease.
+A double-blind trial randomised 135 school children aged 12-15 years in India to manuka honey, raw honey or 0.2% chlorhexidine mouthwash, 10 ml twice daily for 21 days [31]. All three rinses reduced plaque and gingival scores; the two honey rinses worked equally well, and chlorhexidine gave the largest reduction [31].
 
 ### Oral Health: Dry Mouth (Xerostomia)
 
-A one-month clinical study in Egypt enrolled 42 older adults (average age 67) with self-reported dry mouth. Participants who rinsed with a manuka honey mouthwash for one minute three times per day (preferably after meals) showed significant improvements compared to those using regular honey mouthwash or saline [26]:
-
-- **Dry mouth severity:** Reduced by 2.07 points out of 5 with manuka honey, compared to 1.15 points with regular honey and 0.72 points with saline
-- **Salivary flow rate:** Increased by 0.54 mL/min with manuka honey, compared to 0.25 mL/min with regular honey and 0.26 mL/min with saline
-
-These self-reported improvements were significantly greater with manuka honey than with the other rinses. However, no significant improvement was observed based on clinical and visual examination of the oral cavity, suggesting that the benefits were primarily subjective (symptomatic relief) rather than objective [26].
-
-The manuka honey mouthwash was prepared by diluting 20 mL (about 0.7 fl oz) of New Zealand manuka honey in 100 mL (about 3.4 fl oz) of filtered water [26].
+A single-blinded trial randomised 42 elderly patients with dry mouth to a manuka honey rinse, a natural honey rinse or saline, used 3 times per day for 1 month [32]. The manuka rinse reduced both the symptom score and the objective clinical oral dryness score more than the other two rinses, and salivary flow after one month was significantly higher with manuka honey [32].
 
 ### Dry Eye
 
-Several studies have evaluated eye drops containing manuka honey for dry eye caused by meibomian gland dysfunction.
+A meta-analysis of five randomised controlled trials with 288 adult participants found that, compared with controls, manuka honey improved the Ocular Surface Disease Index, Standard Patient Evaluation of Eye Dryness, tear evaporation rate, ocular surface staining and daily use of lubricant drops [33]. No serious adverse events were reported, except for temporary stinging and redness; the authors say limitations of the included studies affect the reliability of this conclusion [33].
 
-A 2023 systematic review that included five clinical studies found that treatment with manuka honey-containing eye drops significantly improved multiple markers of dry eye severity compared to control groups [27]:
-
-- Improved Ocular Surface Disease Index (OSDI) scores
-- Improved Standard Patient Evaluation of Eye Dryness (SPEED) scores
-- Reduced tear evaporation rate
-- Decreased daily use of lubricant eye drops
-- Improved other markers of dry eye severity
-
-The drops were well tolerated, and no serious adverse events were reported, with the exception of temporary stinging and redness [27].
-
-**Important caveat:** The eye drops used in the included studies (Optimel brand) contained glycerin as the active ingredient, while manuka honey was listed only as an inactive ingredient. Therefore, it is not possible to determine from these studies whether the manuka honey itself was responsible for the observed benefits, or whether the improvements were attributable to the glycerin or other components of the formulation [28][29].
+In one of these trials, 114 people with dry eye from meibomian gland dysfunction added Optimel gel (98 per cent *Leptospermum* honey) or Optimel drops (16 per cent *Leptospermum* honey) to conventional therapy [34]. Both reduced the need for lubricants, the drops most, and temporary redness and stinging were the only adverse effects [34].
 
 ### Blepharitis (Eyelid Infection)
 
-A study evaluating a manuka honey-containing cream for treating blepharitis (eyelid infection) suggested some benefit. However, the study had no placebo control group, making it impossible to determine whether the observed improvements were due to the treatment or to the natural course of the condition. Additionally, the cream included excipients with moisturizing, emulsifying, buffering, and emollient properties, so the contribution of manuka honey itself to any symptom improvement is unclear [30].
+A masked, randomised, paired-eye trial in 53 people with blepharitis applied a manuka honey eye cream to the closed eyelids of one eye overnight for 3 months, with the other eye as control [35]. Treated eyes had fewer symptoms and lower Demodex and bacterial load, with no major adverse events [35]. There was no placebo cream, so the trial cannot separate the honey from the cream's other ingredients.
 
 ## 5. Recommended Dosing
 
-There is no established Recommended Dietary Allowance (RDA) or standardized clinical dose for manuka honey, as it is classified as a food rather than a supplement or pharmaceutical. Dosing guidance is derived primarily from clinical studies and traditional use patterns.
+There is no recommended dietary allowance for manuka honey, and there is no good public evidence on a dose for general health. The doses below are the ones trials used.
 
 ### By Indication
 
-**General wellness use:** 1–2 teaspoons (5–10 g) daily, taken plain. No clinical trials have established a specific dose for general health maintenance. This amount provides the bioactive compounds in manuka honey while limiting sugar and calorie intake [1].
+**GERD:** 5 g, three times a day, fasting in the morning and between main meals, for 4 weeks, with honey holding at least 400 mg/kg of methylglyoxal [21]. This comes from one small pilot trial.
 
-**GERD / acid reflux support:** 5 grams (approximately 0.75 teaspoons) three times daily, taken before breakfast and between meals. This is the dosing protocol used in the Polish GERD study, with manuka honey standardized to at least 400 mg/kg MGO (approximately UMF 15+). For reflux purposes, timing matters — taking honey before meals and before bed may help coat the esophagus and reduce the upward flow of gastric juices [16][17].
+**Cough:** Brad suggests around a teaspoon of honey before bedtime ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)). In the children's trials, most children received honey for one night [28].
 
-**Cough and sore throat:** 1 teaspoon (5 mL) to 1 tablespoon (15 mL) as needed, up to three or four times daily. This dose range is based on honey-for-cough studies (using honeys in general, not manuka specifically). Can be taken plain or mixed into warm (not hot) beverages [6][18][20].
+**Wound care (topical):** Only medical-grade, standardised honey dressings, used as the product directs or as a health professional advises [7][26].
 
-**Wound care (topical):** Only medical-grade, sterile manuka honey products (such as MediHoney) should be applied directly to wounds. These products come in various formats including gels, pastes, impregnated dressings, and ointments. Application frequency and dressing changes should follow the product manufacturer's instructions or the guidance of a healthcare professional [12][13][14].
+**Oral rinse (dry mouth):** The trial used the rinse 3 times per day for 1 month [32].
 
-**Oral rinse (dry mouth):** 20 mL of manuka honey diluted in 100 mL of filtered water, swished for one minute three times per day, preferably after meals [26].
-
-**Oral rinse (plaque/gingivitis):** No standardized protocol. The study in children used a manuka honey mouthwash, but chlorhexidine remained more effective [25].
+**Oral rinse (plaque and gingivitis):** The trial used 10 ml twice daily for 21 days; chlorhexidine worked better [31].
 
 ### UMF/MGO Grade Selection by Use
 
-| Application | Minimum Recommended Grade | Rationale |
-|-------------|:-------------------------:|-----------|
-| General wellness / culinary | UMF 5+–10+ (MGO 83–261) | Lower cost; sufficient for basic bioactive compound intake |
-| GERD / digestive support | UMF 15+ (MGO 512+) | Matches the clinical study protocol (≥400 mg/kg MGO) |
-| Wound care | Medical-grade (MediHoney) | Sterile, standardized; not food-grade honey |
-| Immune support / cough | UMF 10+–15+ (MGO 261–512) | Moderate antibacterial activity; higher grades unnecessary for cough |
-| Maximum potency | UMF 20+–25+ (MGO 826–1,197+) | Highest MGO; bitter taste; premium cost |
+There is no good public evidence for choosing a grade by use. The GERD trial used honey with at least 400 mg/kg of methylglyoxal [21], and wound guidance favours medical-grade dressings over food honey [7].
 
 ### Practical Usage Tips
 
-**Taking manuka honey plain:** Manuka honey is typically consumed in teaspoon- or tablespoon-sized doses directly from the spoon. It has a thick, viscous consistency that does not require mixing. For GERD purposes, taking it plain without food or beverage allows it to coat the esophageal and gastric lining [1][16].
+**Hot drinks:** Heating manuka honey at 90 °C significantly decreased its MGO [22], so very hot liquids may lower it.
 
-**Adding to hot beverages:** Manuka honey can be added to tea or other warm drinks without significantly degrading its key compound, MGO, provided the liquid temperature is at or below 140°F (60°C). Adding manuka honey to boiling or near-boiling liquids (194°F / 90°C and above) will significantly reduce MGO content [10].
+**Sugar:** Honey provides 304 kcal and 82.1 g of total sugars per 100 g [8]. A dose taken several times a day adds up.
 
-**Calorie considerations:** Each tablespoon (21 g) of manuka honey provides approximately 60 calories and contains about 17 g of sugar. Consumers monitoring sugar or calorie intake should account for this, particularly if taking honey multiple times daily (e.g., the GERD protocol of 5 g three times daily adds approximately 43 calories and 12 g of sugar per day) [8].
+**Storage:** DHA is lost faster at warmer temperatures, and DHA converts to MGO more efficiently when cooler [23], so a cool place is better than a warm one.
 
-**Storage:** Manuka honey should be stored at room temperature (between 68°F and 72°F / 20°C and 22°C). Storing at 68°F or lower helps slow the loss of freshness by reducing the rate of HMF formation. Manuka honey does not require refrigeration and has a long shelf life when stored properly [1].
-
-**Cost considerations:** Manuka honey is significantly more expensive than conventional honey. For uses where standard honey has equivalent evidence (e.g., cough suppression), using regular honey is more cost-effective. Reserve manuka honey for applications where its unique properties (high MGO, non-peroxide antibacterial activity) may provide additional benefit, such as digestive support or topical wound care [1].
+**Cost:** Therapeutic honey commands a premium price [17]. Where ordinary honey has the same evidence, as for cough, it is the cheaper choice.
 
 ## 6. Safety and Side Effects
 
 ### General Safety
 
-Manuka honey is generally recognized as safe for most adults when consumed in food-normal amounts. The primary safety concerns relate to its high sugar content, its fructose-mediated effects on digestion and lipids, and the potential effects of MGO on specific populations [1][11][15].
+Honey has been considered a relatively safe food; infant botulism is the most prominent health risk linked to it [2]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Gastrointestinal Effects
 
-Consuming large amounts of honey (between 50 and 100 g, equivalent to approximately 2.5–5 tablespoons) can have a mild laxative effect. This is primarily due to the high fructose content of honey, which may not be fully absorbed in the small intestine. Unabsorbed fructose draws water into the gut through osmotic mechanisms, leading to loose stools, bloating, gas, and diarrhea [11][22][23].
-
-Manuka honey's high MGO content may add to this laxative effect. A rat study found that methylglyoxal increased diarrhea and other IBS-like symptoms [22]. Individuals with fructose malabsorption or IBS may be particularly sensitive to these effects.
+In 20 healthy volunteers, six reported loose stools after 100 g of honey and three after 50 g, probably because of incomplete fructose absorption [12]. In rats, MGO given by enema caused diarrhoea and visceral hypersensitivity, but this has not been tested by eating manuka honey [30].
 
 ### Sugar and Metabolic Considerations
 
-All types of honey are high in sugar, making excess consumption inadvisable for individuals with high blood sugar, including those with diabetes. Each tablespoon provides approximately 17 g of sugar and 60 calories [8].
+Honey is mostly sugar [8], so people with high blood sugar, including those with diabetes, should count it as sugar.
 
-The high fructose concentration in honey may elevate LDL ("bad") cholesterol and triglycerides, so individuals with high lipid levels should avoid consuming large amounts of honey [31]. However, a 2021 systematic review found that when consumed in moderation as part of a healthy diet, honey may actually improve glycemic control and lipid levels [32]. This apparent contradiction likely reflects dose-dependency — small amounts may be neutral or beneficial, while large amounts may worsen metabolic parameters.
+Fructose matters for blood fats. Over 10 weeks, fructose-sweetened drinks raised apoCIII and postprandial triglyceride-rich particles more than glucose-sweetened drinks [36], and a review suggests that eating less fructose and fructose-containing sugars may lower triglycerides [37]. Those studies used fructose drinks, not honey.
 
-The high concentrations of MGO in manuka honey might also negatively affect blood sugar or insulin function. A study in mice given extremely high doses of MGO showed that tissue insulin sensitivity became impaired [33]. While the relevance of this finding to typical human consumption is uncertain, individuals with diabetes or insulin resistance should exercise caution with manuka honey and consult their healthcare provider.
+A meta-analysis of 18 controlled trials (N = 1105 participants) found that honey reduced fasting glucose (MD = -0.20 mmol/L), total cholesterol (MD = -0.18 mmol/L), LDL cholesterol (MD = -0.16 mmol/L) and fasting triglycerides (MD = -0.13 mmol/L), and increased HDL cholesterol (MD = 0.07 mmol/L), mostly with low certainty of evidence [38]. The authors say honey may improve glycemic control and lipid levels when consumed within a healthy dietary pattern [38]. The difference from the fructose studies may reflect the amount eaten.
+
+In rats, 4-week intragastric MG administration impaired glucose tolerance and adipose tissue insulin sensitivity [39]. Whether eating manuka honey does the same in people is not known.
 
 ### Wound Healing in People with Diabetes
 
-Concerns have been raised that the high concentrations of MGO in manuka honey, applied topically or ingested, might impair wound healing in people with diabetes. Animal studies suggest that MGO might damage or impair tiny blood vessels in the skin (microvasculature) or have other negative effects on wound repair in diabetic tissue. However, the evidence is conflicting — some studies show benefit, while others show harm [13][15][34].
+A 2011 commentary raised the concern that MGO in manuka honey may delay wound healing in diabetic patients [9]. The small trials so far point the other way. In 63 people with type 2 diabetes, manuka honey dressings healed neuropathic foot ulcers in a mean of 31 days, against 43 days with conventional dressings [10]. In a 31-person pilot, complete healing was 50% with manuka honey, 40% with conventional dressings and 81.8% with nanocrystalline silver [11].
 
-Until more is known about how manuka honey impacts wound healing in the context of diabetes, people with diabetes should consult their physician before using manuka honey topically on wounds [13][15][34].
+The evidence is conflicting and thin, so people with diabetes should ask their doctor before using manuka honey on a wound [9][10][11].
 
 ### Cancer Considerations
 
-Based on animal studies, concerns have been raised that dietary intake of MGO might increase the risk of certain types of cancer, such as gastric cancer [35]. However, not all animal studies have found increased cancer risk with MGO exposure. According to the International Agency for Research on Cancer (IARC), there is inadequate evidence in experimental animals for the carcinogenicity of MGO, and no data on the potential carcinogenicity of MGO in people [36]. The IARC has not classified MGO as a carcinogen.
+In a rat stomach-cancer model, methylglyoxal in drinking water did not enhance the development of adenocarcinomas, but the incidence of pyloric hyperplasia was significantly increased; the authors concluded MGO might have tumour-promoting potential [40]. There is no good public evidence on this in people.
 
-Separately, the American Cancer Society advises people undergoing cancer treatment who have low white blood cell counts to "avoid raw honey or honeycomb" and to "select a commercial, grade A, heat-treated honey instead." The British Dietetic Association similarly suggests avoiding raw honey for immunocompromised individuals, as such people are more susceptible to infection from microbes that may be present in raw honey [1]. This guidance applies to all raw honeys, not specifically to manuka honey.
+The American Cancer Society notes that cancer and its treatment can weaken the immune system, and advises choosing commercial, grade A, heat-treated honey and avoiding raw honey or honeycomb [6]. This applies to all raw honey, not only manuka.
 
 ### Infant Botulism
 
-Infants younger than 12 months should not consume honey of any kind due to the risk of infant botulism. This illness is caused by toxins released by *Clostridium botulinum* bacteria, which can be present as spores in honey. In adults and older children, the mature gut microbiome prevents *C. botulinum* colonization, but the immature infant gut cannot, leading to potential toxin production, weakness, poor feeding, and respiratory compromise [18][19]. This applies to all honeys, including manuka.
+Do not feed honey to a child who is younger than 1 year old, and do not give products made with it, including honey pacifiers [1]. Infant botulism caused by *Clostridium botulinum* is the most prominent health risk linked to honey [2]. This applies to every honey, manuka included.
 
 ### Allergy
 
-People who are allergic to honey should avoid all honey types, including manuka, as well as products made with honey. Honey allergy can manifest as contact dermatitis, oral allergy syndrome, or in rare cases, anaphylaxis. Cross-reactivity with bee venom allergy is possible but not universal. People allergic to bee stings should exercise caution and consider allergy testing before consuming honey [37].
+Honey allergy is a very rare, but serious health condition [3]. In a report of six patients with systemic reactions after eating honey, three had anaphylaxis, four had high specific IgE for honey bee venom, and two of five had also had anaphylaxis from bee stings [4]. A 5-year-old sensitised to Compositae weed pollen had anaphylaxis after eating artisanal honey [5]. People who are allergic to honey should avoid all honey, manuka included, and products made with it.
 
 ### Microbial Contamination
 
-Unless specifically labeled as medical-grade and sterile (such as MediHoney), manuka honey is a raw food product that may contain bacterial spores, yeast, and other microorganisms. While the antibacterial properties of manuka honey inhibit the growth of most pathogenic bacteria, the product is not sterile. This is particularly relevant for wound care applications — non-sterile honey should not be applied to open wounds [14][15].
+Unless it is a sterile, medical-grade product, manuka honey is a food that may contain a great variety of bacteria and, particularly, fungi [2]. Do not put food honey on open wounds [7]. Ask your doctor or nurse first before using a honey dressing on a deep burn or a heavily bleeding wound, or if you are sensitive to honey.
 
 ## 7. Drug Interactions
 
-There are no well-documented drug-specific interactions unique to manuka honey. However, several general considerations apply [1][11][15][31][33]:
+There is no good public evidence on drug interactions specific to manuka honey. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
-**Diabetes medications (insulin, metformin, sulfonylureas):** Manuka honey is high in sugar and may affect blood glucose levels. People taking diabetes medications should monitor their blood sugar when adding manuka honey to their diet and adjust their intake accordingly. The MGO in manuka honey may also have independent effects on insulin sensitivity based on animal data [33].
+**Diabetes medicines:** Honey is mostly sugar [8]. People taking insulin or other glucose-lowering medicines should count it in their carbohydrate intake.
 
-**Anticoagulants (warfarin, heparin) and antiplatelet agents:** There is no established interaction, but some honey compounds (e.g., quercetin and other flavonoids) have been shown to have mild antiplatelet effects in laboratory studies. Clinically significant interactions have not been documented, but patients on anticoagulation therapy should inform their healthcare provider if consuming manuka honey regularly.
+**Lipid-lowering medicines:** A diet lower in fructose and fructose-containing sugars may help lower triglycerides [37], so large amounts of honey are a poor fit for anyone treating high triglycerides.
 
-**Lipid-lowering medications (statins, fibrates):** High fructose intake from any source, including honey, may counteract the effects of lipid-lowering therapy by increasing triglycerides and LDL cholesterol. Individuals on these medications should consume manuka honey in moderation [31].
+**Chemotherapy and immunosuppressants:** People whose treatment weakens their immune system should avoid raw honey and honeycomb and choose commercial, heat-treated honey [6].
 
-**Chemotherapy and immunosuppressants:** Immunocompromised individuals should avoid raw, unpasteurized honey (including most food-grade manuka honey) due to the risk of microbial exposure. Medical-grade, sterilized manuka honey products may be acceptable but should be discussed with an oncologist or immunologist [1].
-
-**Proton pump inhibitors (PPIs) and H2 blockers:** The GERD study used manuka honey as an adjunct to existing PPI or H2 blocker therapy. No adverse interactions were reported, and the combination appeared to provide additional benefit [16]. However, this is based on a single small study.
-
-**Antibiotics:** While manuka honey has in vitro antibacterial activity, there is no clinical evidence that it either enhances or interferes with antibiotic therapy. Manuka honey should not be used as a substitute for prescribed antibiotics for bacterial infections [5][24].
+**Antibiotics:** Manuka honey has antibacterial activity in the laboratory [16]. Do not use it in place of an antibiotic your doctor has prescribed.
 
 ## 8. Dietary Sources and Comparison with Other Honeys
 
@@ -298,124 +254,123 @@ There are no well-documented drug-specific interactions unique to manuka honey. 
 
 | Property | Manuka Honey | Regular Honey |
 |----------|:------------:|:-------------:|
-| MGO content | 83–1,000+ mg/kg | 0.4–24 mg/kg |
-| Non-peroxide antibacterial activity | High | Low to negligible |
-| Hydrogen peroxide production | Yes | Yes |
-| Total phenolic content | Higher | Variable (generally lower) |
-| Calorie content (per tbsp) | ~60 kcal | ~64 kcal |
-| Sugar content | ~80% | ~80% |
-| Fructose content | ~38–42% | ~38–42% |
-| Price | $30–$100+ per 250g | $5–$15 per 250g |
-| Clinical evidence for wound healing | Multiple trials, FDA-cleared product | Some evidence (mainly from older studies) |
-| Clinical evidence for cough | No manuka-specific trials | Systematic review supports efficacy |
-
-Sources: [1][2][3][5][6][8][18].
-
-All honeys share certain properties: they are approximately 80% sugar, contain hydrogen peroxide (generated by the enzyme glucose oxidase), have osmotic antimicrobial properties due to high sugar concentration, and provide antioxidant phenolic compounds. What makes manuka honey unique is its high MGO content, which provides potent non-peroxide antibacterial activity that persists even when the honey is diluted or the hydrogen peroxide is neutralized [1][5].
+| MGO content | 38 to 761 mg/kg in six New Zealand samples [16]; up to 1100 mg/kg in some Australian *Leptospermum* honey [14] | Up to 100-fold lower [16] |
+| Antibacterial activity on dilution | Active when diluted to 15-30% [16] | Most samples showed no inhibition at 80% or below [16] |
+| Sugar | Mostly sugar, as all honey [8] | 82.1 g total sugars per 100 g [8] |
+| Price | Premium price [17] | Cheaper |
+| Wound evidence | FDA-cleared manuka dressings [26] | Cochrane evidence for burns covers honey in general [25] |
+| Cough evidence | No separate evidence | Reviews support honey in general [27][28] |
 
 ### Other Honeys with Therapeutic Properties
 
-Manuka is not the only honey studied for health benefits. Other honeys with notable bioactive properties include:
+Manuka is not the only honey studied for health effects:
 
-- **Tualang honey** (Malaysia): Studied for wound healing, antioxidant activity, and fertility
-- **Kanuka honey** (New Zealand, from *Kunzea ericoides*): Related to manuka; some antibacterial activity, though generally lower MGO
-- **Buckwheat honey:** Dark-colored honey with high antioxidant content; has been studied for cough in children
-- **Jarrah honey** (Western Australia): High antimicrobial activity from hydrogen peroxide production
+- **Australian *Leptospermum* honeys:** Some, including *L. polygalifolium*, reach MGO levels as high as New Zealand manuka [14].
+- **Robinia, clover and raw honey:** In the cardiometabolic meta-analysis, these showed beneficial effects on fasting glucose and total cholesterol [38].
+- **Marri honey** (Western Australia): Tested beside manuka honey after tonsillectomy, with no benefit [29].
 
-For general cough suppression and sore throat relief, these honeys and conventional honeys may be equally effective and significantly less expensive than manuka honey [6][18].
+For cough, ordinary honey has the evidence and costs less than manuka honey [27][17].
 
 ### Nutritional Profile of Honey (Per Tablespoon / 21g)
 
-| Nutrient | Amount |
+USDA values are per 100 g; a tablespoon is roughly a fifth of that.
+
+| Nutrient | Per 100 g |
 |----------|:------:|
-| Calories | ~60 kcal |
-| Total carbohydrates | ~17 g |
-| Sugars | ~17 g |
-| Fructose | ~8 g |
-| Glucose | ~6–7 g |
-| Protein | <0.1 g |
+| Energy | 304 kcal |
+| Carbohydrate | 82.4 g |
+| Total sugars | 82.1 g |
+| Fructose | 40.9 g |
+| Glucose | 35.8 g |
+| Protein | 0.300 g |
 | Fat | 0 g |
-| Fiber | 0 g |
-| Potassium | ~11 mg |
-| Calcium | ~1 mg |
-| Iron | ~0.1 mg |
+| Fiber | 0.200 g |
+| Potassium | 52.0 mg |
+| Calcium | 6.00 mg |
+| Iron | 0.420 mg |
 
 Source: USDA FoodData Central [8].
 
-Honey is not a significant source of vitamins or minerals. Its health value comes from its bioactive compounds (MGO, phenolics, flavonoids, enzymes) rather than its nutritional content.
+Honey is not a meaningful source of vitamins or minerals [8].
 
 ## 9. References
 
-[1] El-Senduny FF, Hegazi NM, Abd Elghani GE, Farag MA. "Manuka honey, a unique mono-floral honey. A comprehensive review of its bioactive, antimicrobial activities, and mechanisms of action." *Food Biosci*. 2021;42:101132.
+[1] Centers for Disease Control and Prevention. Preventing botulism. https://www.cdc.gov/botulism/prevention/index.html
 
-[2] Webster J, Sherlock O, Allen M, et al. "Methylglyoxal content of New Zealand manuka honey." *Food Chem*. 2025;463:141158.
+[2] Grabowski NT, Klein G. Microbiology and foodborne pathogens in honey. Crit Rev Food Sci Nutr. 2017. PMID: 26176586. https://pubmed.ncbi.nlm.nih.gov/26176586/
 
-[3] Terio V, Catella C, Savino F, et al. "Methylglyoxal (MGO) in Italian Honey." *Appl Sci*. 2021;11(2):831. [https://doi.org/10.3390/app11020831](https://doi.org/10.3390/app11020831)
+[3] Aguiar R et al. Anaphylaxis caused by honey: a case report. Asia Pac Allergy. 2017. PMID: 28154806. https://pubmed.ncbi.nlm.nih.gov/28154806/
 
-[4] Wang R, Starkey M, Haber R, et al. "Phenolic compounds and antioxidant activity of manuka honey." *Food Chem*. 2024;434:137434.
+[4] Vezir E et al. Anaphylaxis/angioedema caused by honey ingestion. Allergy Asthma Proc. 2014. PMID: 24433600. https://pubmed.ncbi.nlm.nih.gov/24433600/
 
-[5] Carter DA, Blair SE, Cokcetin NN, et al. "Therapeutic Manuka Honey: No Longer So Alternative." *Front Microbiol*. 2016;7:569. [https://doi.org/10.3389/fmicb.2016.00569](https://doi.org/10.3389/fmicb.2016.00569)
+[5] Di Costanzo M et al. Anaphylaxis caused by artisanal honey in a child: a case report. J Med Case Rep. 2021. PMID: 33985563. https://pubmed.ncbi.nlm.nih.gov/33985563/
 
-[6] World Health Organization. "Cough and cold remedies for the treatment of acute respiratory infections in young children." WHO/FCH/CAH/01.02. 2001.
+[6] American Cancer Society. Food Safety During Cancer Treatment. https://www.cancer.org/cancer/survivorship/coping/nutrition/weak-immune-system.html
 
-[7] UMF Honey Association. "Understanding UMF." UMF.org.nz. Accessed 2025. [https://www.umf.org.nz/](https://www.umf.org.nz/)
+[7] Simon A et al. Medical honey for wound care--still the 'latest resort'? Evid Based Complement Alternat Med. 2009. PMID: 18955301. https://pubmed.ncbi.nlm.nih.gov/18955301/
 
-[8] U.S. Department of Agriculture, FoodData Central. "Honey." [https://fdc.nal.usda.gov/](https://fdc.nal.usda.gov/)
+[8] U.S. Department of Agriculture, FoodData Central. Honey (SR Legacy, FDC ID 169640), nutrients per 100 g. https://fdc.nal.usda.gov/food-details/169640/nutrients
 
-[9] Shapla UM, Solayman M, Alam N, Khalil MI, Gan SH. "5-Hydroxymethylfurfural (HMF) levels in honey and other food products: effects on bees and human health." *Chem Cent J*. 2018;12(1):35. [https://doi.org/10.1186/s13065-018-0408-3](https://doi.org/10.1186/s13065-018-0408-3)
+[9] Majtan J. Methylglyoxal-a potential risk factor of manuka honey in healing of diabetic ulcers. Evid Based Complement Alternat Med. 2011. PMID: 21776290. https://pubmed.ncbi.nlm.nih.gov/21776290/
 
-[10] Kato Y, Umeda N, Maeda A, Matsumoto D, Kitamoto N, Kikuzaki H. "Identification of a novel glycoside, leptosin, as a chemical marker of manuka honey." *Food Chem*. 2021;345:128785. (MGO thermal stability data.)
+[10] Kamaratos AV et al. Manuka honey-impregnated dressings in the treatment of neuropathic diabetic foot ulcers. Int Wound J. 2014. PMID: 22985336. https://pubmed.ncbi.nlm.nih.gov/22985336/
 
-[11] Schell KR, Fernandes KE, Engel DL, et al. "Honey and associated adverse effects." *Front Nutr*. 2022;9:1016367. [https://doi.org/10.3389/fnut.2022.1016367](https://doi.org/10.3389/fnut.2022.1016367)
+[11] Tsang KK et al. A Pilot Randomized, Controlled Study of Nanocrystalline Silver, Manuka Honey, and Conventional Dressing in Healing Diabetic Foot Ulcer. Evid Based Complement Alternat Med. 2017. PMID: 28239398. https://pubmed.ncbi.nlm.nih.gov/28239398/
 
-[12] Jull AB, Cullum N, Dumville JC, Westby MJ, Deshpande S, Walker N. "Honey as a topical treatment for wounds." *Cochrane Database Syst Rev*. 2015;2015(3):CD005083. [https://doi.org/10.1002/14651858.CD005083.pub4](https://doi.org/10.1002/14651858.CD005083.pub4)
+[12] Ladas SD et al. Honey may have a laxative effect on normal subjects because of incomplete fructose absorption. Am J Clin Nutr. 1995. PMID: 7491882. https://pubmed.ncbi.nlm.nih.gov/7491882/
 
-[13] Tashkandi H. "Honey in wound healing: An updated review." *Open Life Sci*. 2021;16(1):1091-1100. [https://doi.org/10.1515/biol-2021-0084](https://doi.org/10.1515/biol-2021-0084)
+[13] Wang S, Qiu Y, Zhu F. An updated review of functional ingredients of Manuka honey and their value-added innovations. Food Chem. 2024. PMID: 38211407. https://pubmed.ncbi.nlm.nih.gov/38211407/
 
-[14] Simon A, Traynor K, Santos K, Blaser G, Bode U, Molan P. "Medical Honey for Wound Care—Still the 'Latest Resort'?" *Evid Based Complement Alternat Med*. 2009;6(2):165-173. [https://doi.org/10.1093/ecam/nem175](https://doi.org/10.1093/ecam/nem175)
+[14] Cokcetin NN et al. The Antibacterial Activity of Australian Leptospermum Honey Correlates with Methylglyoxal Levels. PLoS One. 2016. PMID: 28030589. https://pubmed.ncbi.nlm.nih.gov/28030589/
 
-[15] Majtan J. "Methylglyoxal—a potential risk factor of manuka honey in healing of diabetic ulcers." *Evid Based Complement Alternat Med*. 2011;2011:295494. [https://doi.org/10.1093/ecam/neq013](https://doi.org/10.1093/ecam/neq013)
+[15] Adams CJ et al. Isolation by HPLC and characterisation of the bioactive fraction of New Zealand manuka (Leptospermum scoparium) honey. Carbohydr Res. 2008. PMID: 18194804. https://pubmed.ncbi.nlm.nih.gov/18194804/
 
-[16] Goslinski M, Kocot AM, Wroblewska L. "Manuka honey supplementation in GERD: A pilot study." *Food Sci Nutr*. 2023;11(7):3956-3964. [https://doi.org/10.1002/fsn3.3383](https://doi.org/10.1002/fsn3.3383)
+[16] Mavric E et al. Identification and quantification of methylglyoxal as the dominant antibacterial constituent of Manuka (Leptospermum scoparium) honeys from New Zealand. Mol Nutr Food Res. 2008. PMID: 18210383. https://pubmed.ncbi.nlm.nih.gov/18210383/
 
-[17] Pasupuleti VR, Sammugam L, Ramesh N, Gan SH. "Honey, propolis, and royal jelly: a comprehensive review of their biological actions and health benefits." *Oxid Med Cell Longev*. 2017;2017:1259510. [https://doi.org/10.1155/2017/1259510](https://doi.org/10.1155/2017/1259510)
+[17] Carter DA et al. Therapeutic Manuka Honey: No Longer So Alternative. Front Microbiol. 2016. PMID: 27148246. https://pubmed.ncbi.nlm.nih.gov/27148246/
 
-[18] Abuelgasim H, Albury C, Lee J. "Effectiveness of honey for symptomatic relief in upper respiratory tract infections: a systematic review and meta-analysis." *BMJ Evid Based Med*. 2021;26(2):57-64. [https://doi.org/10.1136/bmjebm-2020-111336](https://doi.org/10.1136/bmjebm-2020-111336)
+[18] UMF Honey Association. Unique Mānuka Factor (grading markers and grade table). Accessed 9 November 2026. https://www.umf.org.nz/unique-manuka-factor/
 
-[19] Sopo SM, Fioretti E, Margiotta M, et al. "Honey and infant botulism." *Allergol Immunopathol (Madr)*. 2014;42(6):641-642.
+[19] Kato Y et al. Immunochemical authentication of manuka honey using a monoclonal antibody specific to a glycoside of methyl syringate. J Agric Food Chem. 2014. PMID: 25310890. https://pubmed.ncbi.nlm.nih.gov/25310890/
 
-[20] Ran D, Todorova L, Bhatt DL. "Does honey offer a 'sweet' solution to the problem of antimicrobial resistance?" *Can Fam Physician*. 2014;60(1):21-22. [https://pubmed.ncbi.nlm.nih.gov/24452555/](https://pubmed.ncbi.nlm.nih.gov/24452555/)
+[20] Shapla UM et al. 5-Hydroxymethylfurfural (HMF) levels in honey and other food products: effects on bees and human health. Chem Cent J. 2018. PMID: 29619623. https://pubmed.ncbi.nlm.nih.gov/29619623/
 
-[21] Sommerfield T, Norgaard MW, Prichard KA, et al. "Manuka honey after tonsillectomy: a randomised controlled trial." *Anaesthesia*. 2025;80(3):289-299. [https://doi.org/10.1111/anae.16518](https://doi.org/10.1111/anae.16518)
+[21] Gośliński M et al. Application of Manuka honey in treatment patients with GERD. Food Sci Nutr. 2024. PMID: 38268884. https://pubmed.ncbi.nlm.nih.gov/38268884/
 
-[22] Zhang B, Weng Z, Sismanopoulos N, et al. "Methylglyoxal induces symptoms associated with irritable bowel syndrome." *PLoS One*. 2014;9(10):e108913. [https://doi.org/10.1371/journal.pone.0108913](https://doi.org/10.1371/journal.pone.0108913)
+[22] Kato Y et al. Methylglyoxal binds to amines in honey matrix and 2'-methoxyacetophenone is released in gaseous form into the headspace on the heating of manuka honey. Food Chem. 2021. PMID: 32795863. https://pubmed.ncbi.nlm.nih.gov/32795863/
 
-[23] Ladas SD, Haritos DN, Raptis SA. "Honey may have a laxative effect on normal subjects because of incomplete fructose absorption." *Am J Clin Nutr*. 1995;62(6):1212-1215. [https://doi.org/10.1093/ajcn/62.6.1212](https://doi.org/10.1093/ajcn/62.6.1212)
+[23] Grainger MN et al. Kinetics of conversion of dihydroxyacetone to methylglyoxal in New Zealand mānuka honey: Part I--Honey systems. Food Chem. 2016. PMID: 26920322. https://pubmed.ncbi.nlm.nih.gov/26920322/
 
-[24] McGovern DPB, Abbas SZ, Vivian G, Dalton HR. "Manuka honey against Helicobacter pylori." *J R Soc Med*. 1999;92(8):439. [https://doi.org/10.1177/014107689909200832](https://doi.org/10.1177/014107689909200832)
+[24] Tashkandi H. Honey in wound healing: An updated review. Open Life Sci. 2021. PMID: 34708153. https://pubmed.ncbi.nlm.nih.gov/34708153/
 
-[25] Singhal R, Siddibhavi M, Sankeshwari R, Patil P, Kulkarni S, Devanoorkar A. "Effectiveness of three mouthwashes – Manuka honey, raw honey and chlorhexidine on plaque and gingival scores of 12-15 year-old school children." *J Indian Soc Periodontol*. 2018;22(1):34-39. [https://doi.org/10.4103/jisp.jisp_288_17](https://doi.org/10.4103/jisp.jisp_288_17)
+[25] Jull AB et al. Honey as a topical treatment for wounds. Cochrane Database Syst Rev. 2015. PMID: 25742878. https://pubmed.ncbi.nlm.nih.gov/25742878/
 
-[26] Ghalwash DM, Elgamily HM, El-Sayed HY. "Manuka honey mouthwash for xerostomia in elderly adults: a randomized controlled trial." *BMC Oral Health*. 2025;25(1):87. [https://doi.org/10.1186/s12903-025-05425-w](https://doi.org/10.1186/s12903-025-05425-w)
+[26] U.S. Food and Drug Administration. 510(k) clearances for MediHoney dressings with active manuka honey (K072956, K081584 and later), openFDA device database. https://api.fda.gov/device/510k.json?search=device_name:medihoney
 
-[27] Hu J, Zhang S, Yang B, et al. "Manuka honey eye drops for dry eye disease: A systematic review." *Clin Exp Optom*. 2023;106(8):809-818. [https://doi.org/10.1080/08164622.2023.2174189](https://doi.org/10.1080/08164622.2023.2174189)
+[27] Abuelgasim H et al. Effectiveness of honey for symptomatic relief in upper respiratory tract infections: a systematic review and meta-analysis. BMJ Evid Based Med. 2021. PMID: 32817011. https://pubmed.ncbi.nlm.nih.gov/32817011/
 
-[28] Li XH, Lam AKC, Chu R, et al. "Glycerine-based eye drops with manuka honey: the Optimel eye drops." *Br J Ophthalmol*. 2022;106(11):1469-1470. [https://doi.org/10.1136/bjophthalmol-2021-320700](https://doi.org/10.1136/bjophthalmol-2021-320700)
+[28] Oduwole O et al. Honey for acute cough in children. Cochrane Database Syst Rev. 2018. PMID: 29633783. https://pubmed.ncbi.nlm.nih.gov/29633783/
 
-[29] Albietz JM, Schmid KL. "Randomised controlled trial of topical antibacterial Manuka (Leptospermum species) honey for evaporative dry eye." *Clin Exp Optom*. 2017;100(6):603-615. [https://doi.org/10.1111/cxo.12517](https://doi.org/10.1111/cxo.12517)
+[29] Sommerfield D et al. Impact of honey on post-tonsillectomy pain in children (BEE PAIN FREE Trial): a multicentre, double-blind, randomised controlled trial. Anaesthesia. 2025. PMID: 40321015. https://pubmed.ncbi.nlm.nih.gov/40321015/
 
-[30] Craig JP, Tomlinson A, McCann LC, et al. "A randomized clinical trial investigating the impact of a novel manuka honey-based eyelid cream on meibomian gland dysfunction." *Ocul Surf*. 2020;18(3):484-491. [https://doi.org/10.1016/j.jtos.2020.04.005](https://doi.org/10.1016/j.jtos.2020.04.005)
+[30] Zhang S et al. Methylglyoxal induces systemic symptoms of irritable bowel syndrome. PLoS One. 2014. PMID: 25157984. https://pubmed.ncbi.nlm.nih.gov/25157984/
 
-[31] Hieronimus B, Griffen SC, Keim NL, et al. "Effects of Fructose or Glucose on Circulating ApoCIII and Triglyceride and Cholesterol Content of Lipoprotein Subfractions in Humans." *Curr Opin Lipidol*. 2020;31(5):252-259.
+[31] Singhal R et al. Effectiveness of three mouthwashes - Manuka honey, Raw honey, and Chlorhexidine on plaque and gingival scores of 12-15-year-old school children: A randomized controlled field trial. J Indian Soc Periodontol. 2018. PMID: 29568170. https://pubmed.ncbi.nlm.nih.gov/29568170/
 
-[32] Ahmed S, Sulaiman SA, Baber AA, Tajuddin SN. "Honey as a Potential Natural Antioxidant Medicine: An Insight into Its Molecular Mechanisms of Action." *Nutr Rev*. 2021;79(3):suppl 21-36.
+[32] Ghalwash D et al. Efficacy of Manuka honey oral rinse in treatment of xerostomia among elderly patients: a randomized controlled trial. BMC Oral Health. 2025. PMID: 40410721. https://pubmed.ncbi.nlm.nih.gov/40410721/
 
-[33] Huttl M, Markova I, Miklankova D, et al. "Methylglyoxal-Induced Glycation Changes Adipose Tissue and Liver in the Prediabetic and Diabetic State." *Antioxidants (Basel)*. 2020;9(3):258. [https://doi.org/10.3390/antiox9030258](https://doi.org/10.3390/antiox9030258)
+[33] Hu J et al. Efficacy and safety of manuka honey for dry eye. Clin Exp Optom. 2023. PMID: 35950413. https://pubmed.ncbi.nlm.nih.gov/35950413/
 
-[34] Majtan J. "Methylglyoxal—a potential risk factor of manuka honey in healing of diabetic ulcers." *Evid Based Complement Alternat Med*. 2011;2011:295494. [https://doi.org/10.1093/ecam/neq013](https://doi.org/10.1093/ecam/neq013)
+[34] Albietz JM, Schmid KL. Randomised controlled trial of topical antibacterial Manuka (Leptospermum species) honey for evaporative dry eye due to meibomian gland dysfunction. Clin Exp Optom. 2017. PMID: 28585260. https://pubmed.ncbi.nlm.nih.gov/28585260/
 
-[35] Takahashi M, Okamoto K, Burnham DR, Nobuya Y. "Dose-dependent inhibitory effects of methylglyoxal in human colonic cancer cell growth." *Carcinogenesis*. 1989;10(1):31-36.
+[35] Craig JP et al. Randomized masked trial of the clinical efficacy of MGO Manuka Honey microemulsion eye cream for the treatment of blepharitis. Ocul Surf. 2020. PMID: 31759183. https://pubmed.ncbi.nlm.nih.gov/31759183/
 
-[36] International Agency for Research on Cancer (IARC). "Methylglyoxal." Accessed 2024. [https://monographs.iarc.who.int/](https://monographs.iarc.who.int/)
+[36] Hieronimus B et al. Effects of Fructose or Glucose on Circulating ApoCIII and Triglyceride and Cholesterol Content of Lipoprotein Subfractions in Humans. J Clin Med. 2019. PMID: 31247940. https://pubmed.ncbi.nlm.nih.gov/31247940/
 
-[37] Aguiar R, Duarte FC, Mendes A, Bartolome B, Barbosa MP. "Anaphylaxis caused by honey: a case report." *Asia Pac Allergy*. 2017;7(1):48-50. [https://doi.org/10.5415/apallergy.2017.7.1.48](https://doi.org/10.5415/apallergy.2017.7.1.48)
+[37] Hieronimus B, Stanhope KL. Dietary fructose and dyslipidemia: new mechanisms involving apolipoprotein CIII. Curr Opin Lipidol. 2020. PMID: 31789670. https://pubmed.ncbi.nlm.nih.gov/31789670/
+
+[38] Ahmed A et al. Effect of honey on cardiometabolic risk factors: a systematic review and meta-analysis. Nutr Rev. 2023. PMID: 36379223. https://pubmed.ncbi.nlm.nih.gov/36379223/
+
+[39] Hüttl M et al. Adverse Effects of Methylglyoxal on Transcriptome and Metabolic Changes in Visceral Adipose Tissue in a Prediabetic Rat Model. Antioxidants (Basel). 2020. PMID: 32878255. https://pubmed.ncbi.nlm.nih.gov/32878255/
+
+[40] Takahashi M et al. Effects of glyoxal and methylglyoxal administration on gastric carcinogenesis in Wistar rats after initiation with N-methyl-N'-nitro-N-nitrosoguanidine. Carcinogenesis. 1989. PMID: 2791208. https://pubmed.ncbi.nlm.nih.gov/2791208/
