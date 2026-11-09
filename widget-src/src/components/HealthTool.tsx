@@ -7,7 +7,7 @@ import { validateHealthInputs, getValidationErrors, convertValidationErrorsToUni
 import { planInputsFrom, withLabEgfr, labEgfrOf } from '@roadmap/health-core/plan';
 import { type SuggestionInputs, type AlcoholAnswer, type HealthInputs, isSex } from '@roadmap/health-core/types';
 import { detectUnitSystem, toCanonicalValue, type UnitSystem, type MetricType, formatHeightDisplay } from '@roadmap/health-core/units';
-import { PREFILL_FIELDS, hasUnsavedProfileEdits, LONGITUDINAL_FIELDS, BLOOD_TEST_METRICS, VITAL_METRICS, FIELD_TO_METRIC, medicationsToInputs, mergeLongitudinalInputs, screeningsToInputs, computeFormStage, opensFullForm, FIELD_METRIC_MAP, METRIC_TO_FIELD, withPsaMeasurement, type ApiMeasurement, type ApiMedication, type ApiScreening, type FormStage, type RecordHoldings } from '@roadmap/health-core/mappings';
+import { PREFILL_FIELDS, hasUnsavedProfileEdits, LONGITUDINAL_FIELDS, FIELD_TO_METRIC, medicationsToInputs, mergeLongitudinalInputs, screeningsToInputs, computeFormStage, opensFullForm, FIELD_METRIC_MAP, METRIC_TO_FIELD, withPsaMeasurement, type FormStage, type RecordHoldings } from '@roadmap/health-core/mappings';
 import { chatContextOf, type ChatContextPayload } from '@roadmap/health-core/chat-context';
 import { statTiles } from '@roadmap/health-core/stat-tiles';
 import { medicationForm, screeningForm } from '@roadmap/health-core/input-form';
@@ -17,7 +17,7 @@ import { VITALS_INPUT_FIELDS, chatMedicationChange, unsavedProfile, type ChatMed
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { MoveTestApi } from './MoveTestPanel';
 import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';
-import type { ApiSupplement, ApiLabValue, LatestMeasurementsResult } from '../lib/api-types';
+import type { LatestMeasurementsResult } from '../lib/api-types';
 import { InputPanel, type PlanBasis } from './InputPanel';
 import { OpenEvidenceContext, usePlanView } from './ResultsPanel';
 import { PersonButton } from './SettingsSheet';
@@ -59,7 +59,6 @@ import {
   loadAllHistory,
   loadAllHistorySync,
   loadLabValues,
-  loadLabValuesSync,
   loadDerivedSeries,
   saveChangedMeasurements,
   addMeasurement,
@@ -78,11 +77,11 @@ import { trackABImpression, trackABConversion, trackProductEvent } from '../lib/
 import { observeVisibility } from '../lib/observe-visibility';
 import { activeRowIndex, routeTasksToSaves, slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import type { Grading } from '../lib/blood-test-cell';
-import type { ApiDocument } from '../lib/api-types';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { createRemoteChangeRelay } from '../lib/remote-replay';
 import { debounceSave, cancelListSave, flushListSaves, type ListSaves } from '../lib/list-saves';
+import { useRecordState } from '../hooks/useRecordState';
 import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
 
 /** A correction the store answered; a success is counted (name only). */
@@ -144,9 +143,6 @@ const ONBOARDING_FIELDS: ReadonlyArray<keyof HealthInputs> = ['heightCm', 'weigh
 const PLAN_READY_SEEN_KEY = 'hr_plan_ready_seen';
 const planReadySeen = (): boolean => { try { return localStorage.getItem(PLAN_READY_SEEN_KEY) === '1'; } catch { return false; } };
 
-const sameRows = (a: ApiMeasurement[], b: ApiMeasurement[]) =>
-  a.length === b.length && a.every((r, i) => r.id === b[i].id && r.value === b[i].value && r.recordedAt === b[i].recordedAt);
-
 /** The chat list fetched ahead of time, and the record (`epoch`) it was listed for. */
 type ChatPrefetch = { epoch: number; data: ChatPrefetchData };
 /** That list, only for the record shown: an erase starts it again (US-11 AC2g). */
@@ -175,27 +171,16 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // with no flash of step 1 (US-62 AC13); the first load reuses it.
   const mountRead = useRef<{ erase: string; result: LatestMeasurementsResult | null } | null | undefined>(undefined);
   if (mountRead.current === undefined) mountRead.current = { erase: getEraseIdentity(), result: loadLatestMeasurementsSync() };
-  const [previousMeasurements, setPreviousMeasurementsRaw] = useState<ApiMeasurement[]>(() => mountRead.current?.result?.previousMeasurements ?? []);
-  const setPreviousMeasurements = useCallback((next: ApiMeasurement[]) => setPreviousMeasurementsRaw(prev => (sameRows(prev, next) ? prev : next)), []);
-  // Every active measurement, re-read after each save. The blood-test matrix
-  // and the vitals matrix (StartingInfoVitals) each read their own metrics.
-  // Read at mount too, with the record, so the phone's rows never show Add
-  // for a saved value while the first load runs (US-62 AC8).
-  const [history, setHistory] = useState<ApiMeasurement[]>(loadAllHistorySync);
-  const bloodTestHistory = useMemo(() => history.filter(r => BLOOD_TEST_METRICS.includes(r.metricType)), [history]);
-  const vitalsHistory = useMemo(
-    () => history.filter(r => VITAL_METRICS.includes(r.metricType)),
-    [history],
-  );
-  const [documentHistory, setDocumentHistory] = useState<ApiDocument[]>([]);
-  const [labValueHistory, setLabValueHistory] = useState<ApiLabValue[]>(() => loadLabValuesSync() ?? []);
-  const [medications, setMedications] = useState<ApiMedication[]>([]);
-  const [screenings, setScreenings] = useState<ApiScreening[]>([]);
+  // The screen's copy of the record: replaced by a re-read, emptied by an erase (hooks/useRecordState).
+  const {
+    previousMeasurements, history, bloodTestHistory, vitalsHistory, documentHistory, labValueHistory, medications, screenings, supplements,
+    setPreviousMeasurements, setHistory, setLabValueHistory,
+    applyLists, clearForErase, patchMedication, patchScreening, patchSupplement, stopSupplement, dropDocument,
+  } = useRecordState(() => mountRead.current?.result?.previousMeasurements ?? []);
   // The prostate section's PSA day (YYYY-MM-DD); null until one is picked, so today (US-06 AC15).
   const [psaDate, setPsaDate] = useState<string | null>(null);
   // The PSA row was committed since its last save (US-06 AC15).
   const psaCommittedRef = useRef(false);
-  const [supplements, setSupplements] = useState<ApiSupplement[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   // US-54 AC5b: the birth month a save refused, in words, until the next birth edit.
   const [birthRefused, setBirthRefused] = useState<string | null>(null);
@@ -401,10 +386,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
         if (result.previousMeasurements.length > 0) {
           isFirstSaveRef.current = false;
         }
-        setMedications(result.medications);
-        setScreenings(result.screenings);
-        if (result.supplements) setSupplements(result.supplements);
-        setDocumentHistory(result.documents);
+        applyLists(result);
         // Every measurement, for both matrices (fire-and-forget, so it
         // doesn't block the first render).
         loadHistory();
@@ -847,10 +829,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
         return next;
       });
       previousInputsRef.current = { ...result.inputs };
-      setMedications(result.medications);
-      setScreenings(result.screenings);
-      if (result.supplements) setSupplements(result.supplements);
-      setDocumentHistory(result.documents);
+      applyLists(result);
     }
     // Another device erased the record (US-16 AC2a / US-09): a chat banner
     // left standing would write pre-erase values into the erased record.
@@ -1055,13 +1034,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       // originals go by the session's rule, never by the page (US-11 AC6).
       clearOffFileAfterErase();
       setInputs({});
-      setPreviousMeasurements([]);
-      setHistory([]);
-      setLabValueHistory([]);
-      setDocumentHistory([]);
-      setMedications([]);
-      setScreenings([]);
-      setSupplements([]);
+      clearForErase();
       // Cleared here too: a re-read during the write may have shown this
       // erase already, and showErase then clears nothing (adversary R1).
       setProfileProposal(null);
@@ -1127,19 +1100,15 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     doseValue: number | null,
     doseUnit: string | null,
   ) => {
-    // Update local state immediately
-    setMedications(prev => {
-      const idx = prev.findIndex(m => m.medicationKey === medicationKey);
-      const updated: ApiMedication = {
-        id: idx >= 0 ? prev[idx].id : '',
-        medicationKey,
-        drugName,
-        doseValue,
-        doseUnit,
-        updatedAt: new Date().toISOString(),
-      };
-      return idx >= 0 ? [...prev.slice(0, idx), updated, ...prev.slice(idx + 1)] : [...prev, updated];
-    });
+    // Shown at once, ahead of the save.
+    patchMedication(medicationKey, old => ({
+      id: old?.id ?? '',
+      medicationKey,
+      drugName,
+      doseValue,
+      doseUnit,
+      updatedAt: new Date().toISOString(),
+    }));
 
     debounceSave(medSaveTimers.current, medicationKey,
       (erase) => void saveMedication(medicationKey, drugName, doseValue, doseUnit, erase).then(afterListSave));
@@ -1147,16 +1116,12 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
 
   // `erase`: a caller that asked before now, such as an upload (US-16 AC2a).
   const handleScreeningChange = useCallback((screeningKey: string, value: string, erase?: string) => {
-    setScreenings(prev => {
-      const idx = prev.findIndex(s => s.screeningKey === screeningKey);
-      const updated: ApiScreening = {
-        id: idx >= 0 ? prev[idx].id : '',
-        screeningKey,
-        value,
-        updatedAt: new Date().toISOString(),
-      };
-      return idx >= 0 ? [...prev.slice(0, idx), updated, ...prev.slice(idx + 1)] : [...prev, updated];
-    });
+    patchScreening(screeningKey, old => ({
+      id: old?.id ?? '',
+      screeningKey,
+      value,
+      updatedAt: new Date().toISOString(),
+    }));
 
     debounceSave(screeningSaveTimers.current, screeningKey,
       (stamp) => void saveScreening(screeningKey, value, stamp).then(afterListSave), erase);
@@ -1173,20 +1138,16 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     status: string = 'active',
     startedAt?: string,
   ) => {
-    setSupplements(prev => {
-      const idx = prev.findIndex(s => s.supplementKey === supplementKey);
-      const updated: ApiSupplement = {
-        id: idx >= 0 ? prev[idx].id : '',
-        supplementKey,
-        supplementName,
-        doseValue,
-        doseUnit,
-        status,
-        startedAt: startedAt ?? (idx >= 0 ? prev[idx].startedAt : null) ?? new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      return idx >= 0 ? [...prev.slice(0, idx), updated, ...prev.slice(idx + 1)] : [...prev, updated];
-    });
+    patchSupplement(supplementKey, old => ({
+      id: old?.id ?? '',
+      supplementKey,
+      supplementName,
+      doseValue,
+      doseUnit,
+      status,
+      startedAt: startedAt ?? old?.startedAt ?? new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }));
 
     debounceSave(supSaveTimers.current, supplementKey,
       (erase) => void saveSupplement(supplementKey, supplementName, doseValue, doseUnit, status, startedAt, erase).then(saved => { if (!saved) writeRefused(); }));
@@ -1195,8 +1156,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const handleSupplementDelete = useCallback((supplementKey: string) => {
     // A dose save still waiting would land after the stop and restart the row.
     cancelListSave(supSaveTimers.current, supplementKey);
-    // Keep stopped keys reserved for later additions, as they are after reload.
-    setSupplements(prev => prev.map(s => s.supplementKey === supplementKey ? { ...s, status: 'stopped', updatedAt: new Date().toISOString() } : s));
+    stopSupplement(supplementKey);
     void deleteSupplementApi(supplementKey).then(saved => { if (!saved) writeRefused(); });
   }, [writeRefused]);
 
@@ -1434,9 +1394,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     storageAtFoot: getBackendKind() === 'local',
     onPlanReadyDismiss: planReadyFor === epoch ? dismissPlanReady : undefined,
     healthDocuments: documentHistory,
-    onDocumentDeleted: (docId: string) => {
-      setDocumentHistory(prev => prev.filter(d => d.id !== docId));
-    },
+    onDocumentDeleted: dropDocument,
   };
   // The reasons open on screen are the PDF's too (US-62 AC28).
   const myHealth = (form: FormSlots) => (
