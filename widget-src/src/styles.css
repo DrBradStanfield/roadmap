@@ -5992,6 +5992,13 @@ input[type="number"] {
 .supplement-add.mh-add-test:first-child {
   border-top: 0;
 }
+/* 16px or iOS zooms the page on focus, and the zoom moved the list under the finger (US-62 AC30e);
+   each option a 44px target. */
+.supplement-add.mh-add-test input,
+.mh-add-test .supplement-dropdown-item {
+  min-height: 44px;
+  font-size: 16px;
+}
 .mh-add-test .alr-add-btn,
 .mh-add-test .alr-add-btn:hover {
   width: 100%;
