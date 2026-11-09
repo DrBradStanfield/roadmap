@@ -35,6 +35,8 @@ struct ValueRow: View {
     /// trends line up down the section however wide one value is (Brad 2026-10-23).
     var column: Column?
     @Environment(\.dynamicTypeSize) private var textSize
+    /// Bold Text: the label draws bold, so it is measured bold (#1002 R1).
+    @Environment(\.legibilityWeight) private var weight
     /// A compact row's trend, growing a little with the text.
     @ScaledMetric(relativeTo: .body) private var trendWidth = 56.0
     /// The label block's height and its first and last baselines, from its top: the trend's box
@@ -73,21 +75,13 @@ struct ValueRow: View {
         return Group {
             if stacked, textSize > .large, trend.count >= 2 {
                 ViewThatFits(in: .horizontal) {
-                    rowLayout(stacked: true, showsTrend: true, wordRoom: longestWord)
+                    rowLayout(stacked: true, showsTrend: true, wordRoom: Self.longestWord(label, font: Self.bodyFont(textSize, weight)))
                     rowLayout(stacked: true, showsTrend: false, wordRoom: nil)
                 }
             } else {
                 rowLayout(stacked: stacked, showsTrend: true, wordRoom: nil)
             }
         }
-    }
-
-    /// The label's widest word in its own font (body, at this size); a line may break after a
-    /// hyphen, so a hyphen ends a word.
-    private var longestWord: CGFloat {
-        let font = UIFont.preferredFont(forTextStyle: .body, compatibleWith: UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(textSize)))
-        let words = label.replacingOccurrences(of: "-", with: "- ").split(separator: " ")
-        return ceil(words.map { (String($0) as NSString).size(withAttributes: [.font: font]).width }.max() ?? 0)
     }
 
     /// The row. `wordRoom`, when set, is the room the label asks for when ViewThatFits measures
@@ -117,7 +111,7 @@ struct ValueRow: View {
             HStack(alignment: stacked ? .center : .firstTextBaseline, spacing: 12) {
                 if showsTrend {
                     Sparkline(points: trend, tint: tint, size: Self.trendSize(width: trendWidth, nameHeight: name.height > 0 ? name.height : nil, textSize: textSize),
-                              band: stacked ? Self.trendBand(capTop: name.firstBaseline - Self.capHeight(textSize), baseline: name.lastBaseline, width: trendWidth) : nil)
+                              band: stacked ? Self.trendBand(capTop: name.firstBaseline - Self.bodyFont(textSize, weight).capHeight, baseline: name.lastBaseline, width: trendWidth) : nil)
                         .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 2 }
                 }
                 ZStack(alignment: .trailing) {
@@ -229,9 +223,19 @@ extension ValueRow {
         return top...top + height
     }
 
-    /// The label's cap height: the body text it is drawn in, at `size`.
-    static func capHeight(_ size: DynamicTypeSize) -> CGFloat {
-        UIFont.preferredFont(forTextStyle: .body, compatibleWith: UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size))).capHeight
+    /// The label's font as drawn: body at `size`, bold under Bold Text, so measuring matches
+    /// drawing (#1002 R1).
+    static func bodyFont(_ size: DynamicTypeSize, _ weight: LegibilityWeight?) -> UIFont {
+        UIFont.preferredFont(forTextStyle: .body, compatibleWith: UITraitCollection {
+            $0.preferredContentSizeCategory = UIContentSizeCategory(size)
+            $0.legibilityWeight = weight == .bold ? .bold : .regular
+        })
+    }
+
+    /// The label's widest word in `font`; a line may break after a hyphen, so a hyphen ends a word.
+    static func longestWord(_ label: String, font: UIFont) -> CGFloat {
+        let words = label.replacingOccurrences(of: "-", with: "- ").split(separator: " ")
+        return ceil(words.map { (String($0) as NSString).size(withAttributes: [.font: font]).width }.max() ?? 0)
     }
 
     /// A zero-size mark that reports its height from the label block's top: set on a baseline, it
