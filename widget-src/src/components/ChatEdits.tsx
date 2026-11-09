@@ -26,7 +26,6 @@ interface ChatEditsDeps {
   inputs: Partial<HealthInputs>;
   inputsRef: MutableRefObject<Partial<HealthInputs>>;
   unitSystem: UnitSystem;
-  isMobileRef: MutableRefObject<boolean>;
   /** The store holds an erase the screen does not show (US-16 AC2a). */
   eraseUnshown: () => boolean;
   handleInputChange: <K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem) => void;
@@ -34,15 +33,15 @@ interface ChatEditsDeps {
   medSaveTimers: MutableRefObject<ListSaves>;
   vitalsPrefillRef: MutableRefObject<VitalsPrefillFn | null>;
   bloodTestPrefillRef: MutableRefObject<BloodTestPrefillFn | null>;
-  /** The hand-off: the form shows the field the chat filled. */
-  selectHealthTab: () => void;
-  closeSettings: () => void;
+  /** The hand-off: the form comes into view (a phone's tab, Settings closed)... */
+  showForm: () => void;
+  /** ...and shows the field the chat filled. */
   reveal: (cell: { field: string; grid: boolean }) => void;
 }
 
 export function useChatEdits({
-  medications, inputs, inputsRef, unitSystem, isMobileRef, eraseUnshown, handleInputChange, handleMedicationChange,
-  medSaveTimers, vitalsPrefillRef, bloodTestPrefillRef, selectHealthTab, closeSettings, reveal,
+  medications, inputs, inputsRef, unitSystem, eraseUnshown, handleInputChange, handleMedicationChange,
+  medSaveTimers, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal,
 }: ChatEditsDeps) {
   // A one-shot undo for a medication change the chat just applied (meds
   // auto-save, so the chat states the change; only this banner offers Undo): every row the
@@ -155,11 +154,10 @@ export function useChatEdits({
     // on a phone the form's tab opens, so they SEE it and its Save button
     // (they were on the chat tab). Mirror landOnMyHealth.
     if (editedField) {
-      if (isMobileRef.current) selectHealthTab();
-      closeSettings(); // they cover the field (US-62 AC11)
+      showForm();
       reveal({ field: editedField, grid: inGrid });
     }
-  }, [applyFieldEdit, applyMedicationEdit, unitSystem, eraseUnshown, inputsRef, isMobileRef, selectHealthTab, closeSettings, reveal]);
+  }, [applyFieldEdit, applyMedicationEdit, unitSystem, eraseUnshown, inputsRef, showForm, reveal]);
 
   const undoMedEdit = useCallback(() => {
     if (!Array.isArray(medUndo)) return;

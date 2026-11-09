@@ -910,6 +910,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
 
   // Mobile tab state
   const isMobile = useIsMobile();
+  const isMobileRef = useRef(isMobile);
+  isMobileRef.current = isMobile;
   const isWideDesktop = useIsWideDesktop(1200);
   const floatingChat = !isMobile && !isWideDesktop && reached === 4;
   const [activeTab, setActiveTab] = useState<TabId>('health');
@@ -1149,14 +1151,16 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
 
   // Settings (US-62 AC24): the person button opens them in My health's place.
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const isMobileRef = useRef(isMobile);
-  isMobileRef.current = isMobile;
-  // Edits the chat proposes, routed to the form (components/ChatEdits).
-  const selectHealthTab = useCallback(() => selectTab('health'), [selectTab]);
-  const hideSettings = useCallback(() => setSettingsOpen(false), []);
+  // Edits the chat proposes, routed to the form (components/ChatEdits). The
+  // hand-off: on a phone the form's tab opens, and Settings, which cover the
+  // field, close (US-62 AC11).
+  const showForm = useCallback(() => {
+    if (isMobileRef.current) selectTab('health');
+    setSettingsOpen(false);
+  }, [selectTab]);
   const { handleProposeEdit, clearChatEdits, dropProfileProposal, banners: chatEditBanners } = useChatEdits({
-    medications, inputs, inputsRef, unitSystem, isMobileRef, eraseUnshown, handleInputChange, handleMedicationChange,
-    medSaveTimers, vitalsPrefillRef, bloodTestPrefillRef, selectHealthTab, closeSettings: hideSettings, reveal: setRevealCell,
+    medications, inputs, inputsRef, unitSystem, eraseUnshown, handleInputChange, handleMedicationChange,
+    medSaveTimers, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal: setRevealCell,
   });
 
   // Email capture and US-23 reminder enrolment require the Shopify server.
