@@ -344,8 +344,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const onboarding = useOnboarding(formStage, {
     saved: previousMeasurements, medications, screenings, supplements, documents: documentHistory, labValues: labValueHistory,
   }, hasApiResponse);
-  // The callbacks are stable (the hook's `[]` deps), so the relay and the refused
-  // save, made on the first render above, call them after it commits.
+  // Stable callbacks: the relay and the refused save above call them after the first commit.
   const {
     reached, epoch, fullForm, aboutYouLow, planReady,
     markAnswered, clearAnswered, isComplete, profileLeft, dismissPlanReady: leavePlanReady,
