@@ -44,6 +44,15 @@ const bodySchema = z.union([
   }),
 ]);
 
+// What a 2xx from Google must hold before it reaches the browser (issue #924):
+// never a 200 without an access token or with an expiry that is not a number.
+const googleGrantSchema = z.object({
+  access_token: z.string().min(1),
+  refresh_token: z.string().min(1).optional(),
+  expires_in: z.number().finite(),
+  id_token: z.string().optional(),
+});
+
 export async function loader({ request }: LoaderFunctionArgs) {
   return Response.json({ error: 'POST only' }, { status: 405, headers: corsHeaders(request) });
 }
@@ -115,16 +124,21 @@ export async function action({ request }: ActionFunctionArgs) {
     return Response.json({ error: 'exchange_failed', errorDescription: 'unreadable_response' }, { status: 502, headers });
   }
 
+  const grant = googleGrantSchema.safeParse(payload);
+  if (!grant.success) {
+    return Response.json({ error: 'exchange_failed', errorDescription: 'incomplete_response' }, { status: 502, headers });
+  }
+
   // Whitelist the fields the client needs — nothing else passes through.
   return Response.json(
     {
-      accessToken: payload.access_token,
-      refreshToken: payload.refresh_token, // present on code exchange only
-      expiresIn: payload.expires_in,
+      accessToken: grant.data.access_token,
+      refreshToken: grant.data.refresh_token, // present on code exchange only
+      expiresIn: grant.data.expires_in,
       // Signed ID token (present when the grant includes openid). The browser
       // forwards it to the reminders opt-in as proof of the verified email —
       // this endpoint still stores nothing.
-      idToken: payload.id_token,
+      idToken: grant.data.id_token,
     },
     { headers },
   );
