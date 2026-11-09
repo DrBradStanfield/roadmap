@@ -83,7 +83,7 @@ import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { createRemoteChangeRelay } from '../lib/remote-replay';
 import { debounceSave, cancelListSave, flushListSaves, type ListSaves } from '../lib/list-saves';
-import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD, WRITE_REFUSED } from '../lib/erase-copy';
+import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
 
 /** A correction the store answered; a success is counted (name only). */
 const countedCorrection = async (id: string, newValue: number, erase?: string) => {
@@ -1082,7 +1082,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       const done = result.chatErased ? ERASE_DONE : result.chatUnread ? ERASE_DONE_CHAT_UNREAD : ERASE_DONE_CHAT_PENDING;
       window.alert(result.warning ? `${done}\n\n${result.warning}` : done);
     } else {
-      window.alert(result.error || 'Failed to delete data. Please try again.');
+      window.alert(result.error || ERASE_FAILED);
     }
     return result.success;
   }, [longitudinalDebounce, profileDebounce, showErase]);

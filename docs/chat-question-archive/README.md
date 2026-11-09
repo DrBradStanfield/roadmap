@@ -27,5 +27,10 @@ customers are told.
    product event carries the same counts. Many skips mean the strict checks
    are rejecting good scrubs: look at the counts, never at the questions.
 
+**Status (checked 2026-11-10):** step 3 is done, and ce5676ed (2026-10-31)
+says both privacy pages and the guides were republished that day (step 4).
+`CHAT_QUESTION_ARCHIVE` is set on `health-tool-app`; its value cannot be read
+back, so whether it is `on` is in Fly, not here.
+
 To switch it off: set the secret to anything else. Copies already kept stay
 until deleted; the policies must keep describing them while any remain.

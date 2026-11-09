@@ -75,5 +75,8 @@ export const ERASE_DONE_CHAT_UNREAD =
   'Your health record is deleted. Your chat history could not be read, so any chats you saved ' +
   'are still in your cloud folder, in chat-history.json.' + ERASE_DONE_TAIL;
 
+/** Said when the erase itself failed and gave no reason of its own. */
+export const ERASE_FAILED = 'Failed to delete data. Please try again.';
+
 /** A save the record refused, since it was erased under the page (US-16 AC2a). */
 export const WRITE_REFUSED = 'That change was not saved: your data was just deleted, here or on another device. The page now shows your record as it is.';
