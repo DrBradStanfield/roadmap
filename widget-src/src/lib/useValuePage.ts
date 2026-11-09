@@ -4,14 +4,17 @@
 // The page machine, in one place:
 //   rows ──openPage──▶ page(subject) ──switchPage──▶ page(other subject)   (asks first if typed)
 //   page ──close / Back──▶ rows, focus back on the row it opened from
-//   page ──erase / chat reveal──▶ rows (drop: no focus return)
+//        (after a switch, on what held the focus as it switched)
+//   page ──erase / chat reveal──▶ rows (drop: goes back too; its popstate,
+//        if it lands before the page unmounts, closes as Back does)
 // Back is ignored while My data's tab is hidden; with Settings over the page,
 // Back closes Settings and the page keeps its entry. A reload drops a stale entry.
 // The table is a separate toggle beside it, not a third state: showTable opens
 // and closes it, and a chat edit to a grid cell shows it too.
 // A page is a history entry (a state marker, no URL change), so the phone's
-// back gesture closes it. Typed, unsaved input is never dropped silently:
-// leaving asks first, and a chat reveal that drops it says so.
+// back gesture closes it. Typed, unsaved input is not dropped silently:
+// leaving asks first, and a chat reveal that drops it says so. An erase
+// drops it as it drops everything else (US-16 AC2a).
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { DRAFTS_CLEARED_EVENT } from './storage';
 import { useLiveRegion } from '../components/BloodTestTimeline';
