@@ -307,12 +307,12 @@ final class TextSizeLayoutTests: XCTestCase {
                 .listStyle(.insetGrouped)
         }
         let long = list("Androstenedione", "4.2", "3.9", "nmol/L"), short = list("Weight", "92.4", "94.1", "kg")
-        let texts = try drawnTexts(in: long, at: .extraExtraExtraLarge, screen: se)
+        let texts = try drawnTexts(in: long, at: .extraExtraExtraLarge, screen: se, weight: .regular)
         XCTAssertEqual(texts.cut, 0, "no words end in …")
         XCTAssertEqual(texts.lines, 1, "Androstenedione keeps its line")
-        XCTAssertNil(try inkAndRed(long.frame(width: se.width, height: 240), at: .extraExtraExtraLarge).red, "Androstenedione's trend gives way")
-        XCTAssertNotNil(try inkAndRed(short.frame(width: se.width, height: 240), at: .extraExtraExtraLarge).red, "Weight keeps its trend")
-        XCTAssertNotNil(try inkAndRed(long.frame(width: se.width, height: 240), at: .large).red, "at the default size the trend stays")
+        XCTAssertNil(try inkAndRed(long.frame(width: se.width, height: 240), at: .extraExtraExtraLarge, weight: .regular).red, "Androstenedione's trend gives way")
+        XCTAssertNotNil(try inkAndRed(short.frame(width: se.width, height: 240), at: .extraExtraExtraLarge, weight: .regular).red, "Weight keeps its trend")
+        XCTAssertNotNil(try inkAndRed(long.frame(width: se.width, height: 240), at: .large, weight: .regular).red, "at the default size the trend stays")
     }
 
     /// US-62 AC8a, #1002 R1: under Bold Text (the window's legibility trait, as the setting sets it)
@@ -335,7 +335,7 @@ final class TextSizeLayoutTests: XCTestCase {
         }
         XCTAssertNil(try inkAndRed(row("Thyroglobulin").frame(width: se.width, height: 240), at: .extraExtraExtraLarge, weight: .bold).red, "bold: the trend gives way")
         XCTAssertNotNil(try inkAndRed(row("Testosterone").frame(width: se.width, height: 240), at: .extraExtraExtraLarge, weight: .bold).red, "bold Testosterone keeps its trend")
-        XCTAssertNotNil(try inkAndRed(row("Thyroglobulin").frame(width: se.width, height: 240), at: .extraExtraExtraLarge).red, "regular: the trend fits")
+        XCTAssertNotNil(try inkAndRed(row("Thyroglobulin").frame(width: se.width, height: 240), at: .extraExtraExtraLarge, weight: .regular).red, "regular: the trend fits")
     }
 
     /// US-62 AC8a: a word that only just fits beside the trend keeps both. On an SE at XXXL, regular
@@ -349,10 +349,10 @@ final class TextSizeLayoutTests: XCTestCase {
         for target in [nil, "Normal <35"] {
             let list = List { ValueRow(label: "Thyroglobulin", value: "4.2", unit: "ng/mL", day: "2026-07-14", target: target, previous: "3.9", trend: [1, 2, 3], tint: .red) }
                 .listStyle(.insetGrouped)
-            let texts = try drawnTexts(in: list, at: .extraExtraExtraLarge, screen: se)
+            let texts = try drawnTexts(in: list, at: .extraExtraExtraLarge, screen: se, weight: .regular)
             XCTAssertEqual(texts.cut, 0, "no words end in …")
             XCTAssertEqual(texts.lines, 1, "Thyroglobulin keeps its line (target \(target ?? "none"))")
-            XCTAssertNotNil(try inkAndRed(list.frame(width: se.width, height: 240), at: .extraExtraExtraLarge).red, "and its trend")
+            XCTAssertNotNil(try inkAndRed(list.frame(width: se.width, height: 240), at: .extraExtraExtraLarge, weight: .regular).red, "and its trend")
         }
     }
 
