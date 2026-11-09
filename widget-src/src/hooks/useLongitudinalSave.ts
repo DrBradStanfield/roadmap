@@ -41,7 +41,10 @@ export function useLongitudinalSave({
   inputs, setInputs, history, unitOverrides, unitSystem, reloadValues,
   flushPendingProfileSave, typedIn, isFirstSaveRef,
 }: LongitudinalSaveDeps) {
-  const [isSavingLongitudinal, setIsSavingLongitudinal] = useState(false);
+  // How many saves are running: "Saving…" holds until the last one ends (US-03 AC9).
+  // A departure's save runs beside a queued one, so a single flag ended early.
+  const [savesRunning, setSavesRunning] = useState(0);
+  const isSavingLongitudinal = savesRunning > 0;
   // The saves in order, each after the last (see handleSaveLongitudinal).
   const savesRef = useRef<Promise<unknown>>(Promise.resolve());
   // Counts the first-time vitals fields' saves, so InputPanel closes the
@@ -112,7 +115,7 @@ export function useLongitudinalSave({
     );
 
     const finish = async (toSave: SaveTask[], staged: Promise<Refused>): Promise<Refused> => {
-      setIsSavingLongitudinal(true);
+      setSavesRunning(n => n + 1);
       try {
         const refused = await staged;
         await reloadValues();
@@ -147,7 +150,7 @@ export function useLongitudinalSave({
         }
         return refused;
       } finally {
-        setIsSavingLongitudinal(false);
+        setSavesRunning(n => n - 1);
       }
     };
     if (now) {
@@ -206,8 +209,16 @@ export function useLongitudinalSave({
     void handleSaveLongitudinalRef.current(undefined, pending.erase, true);
   }, [longitudinalDebounce]);
 
+  /** An erase: the fields' waiting save was asked of the old record, so it goes, timer and all (US-03 AC9). */
+  const cancelPendingSave = useCallback(() => {
+    pendingSaveRef.current = null;
+    longitudinalDebounce.cancel();
+  }, [longitudinalDebounce]);
+  /** A save the page needs landed now (an upload's re-read): the waiting one runs at once. */
+  const flushPendingSave = useCallback(() => longitudinalDebounce.flush(), [longitudinalDebounce]);
+
   return {
     handleSaveLongitudinal, scheduleLongitudinalSave, flushLongitudinalSave, commitPsa, stagePendingSave,
-    longitudinalDebounce, isSavingLongitudinal, fieldsSaved, psaDate, setPsaDate,
+    cancelPendingSave, flushPendingSave, isSavingLongitudinal, fieldsSaved, psaDate, setPsaDate,
   };
 }
