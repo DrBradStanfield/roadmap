@@ -32,6 +32,14 @@ describe('US-09 AC42: only a not_found 409 is absence', () => {
     },
   );
 
+  it('the failure names only Dropbox\'s summary, never the rest of the body', async () => {
+    reply409(JSON.stringify({ error_summary: 'path/locked/..', error: { path: '/Lab results/ldl.pdf' }, user_message: { text: 'secret' } }));
+    const error = await failure(dropboxRead('token', ROADMAP_FILE_NAME)) as StorageError;
+    expect(error.message).toBe('Dropbox read failed (409): path/locked/..');
+    reply409('not json');
+    expect((await failure(dropboxRead('token', ROADMAP_FILE_NAME)) as StorageError).message).toBe('Dropbox read failed (409): unreadable reply');
+  });
+
   it('a folder that does not exist lists as empty; a refused listing fails', async () => {
     reply409(summary('path/not_found/'));
     expect(await dropboxListFolder('token', 'imports')).toEqual([]);
