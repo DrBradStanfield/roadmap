@@ -19,12 +19,12 @@ Brad lists PQQ among the supplements he would not take, grouping it with CoQ10 a
 
 ## Key safety points
 
-- There is no good public evidence on PQQ drug interactions, and human trials have been small and short [1]. Ask your doctor or pharmacist first if you take a blood thinner such as warfarin, a statin, cancer treatment, an immunosuppressant or any other prescription medicine.
+- There is no good public evidence on PQQ drug interactions, and human trials have been small and short. Ask your doctor or pharmacist first if you take a blood thinner such as warfarin, a statin, cancer treatment, an immunosuppressant or any other prescription medicine.
 - If you are pregnant or breastfeeding, ask your doctor first. EFSA's safety opinion covers healthy adults and excludes pregnant and lactating women [2].
 - If you have kidney disease, ask your doctor first. In mice the kidneys cleared most absorbed PQQ, and high doses caused reversible kidney changes in female rats [3][4].
 - If you have cancer or are having cancer treatment, ask your oncologist first. In lab studies PQQ killed some tumour cells and acted as a pro-oxidant, and its effect alongside treatment is unknown [5][6].
 - Trials used about 20 mg a day, and EFSA judged a maximum proposed intake of 20 mg a day safe for healthy adults [7][8][2]. Long-term safety still needs study [9].
-- Trial abstracts report no adverse events, but the trials were small [10][11]. If you notice new symptoms after starting PQQ, stop it and talk to your doctor.
+- Trial abstracts report no adverse events, but the trials were small [10][11]. Full trial reports may list mild effects the abstracts do not mention. If you notice new symptoms after starting PQQ, stop it and talk to your doctor.
 
 ## Brad's videos on this topic
 
@@ -50,7 +50,7 @@ PQQ is an aromatic tricyclic o-quinone that takes part in redox cycling [12][26]
 
 ### Branded Ingredients
 
-Two branded ingredients appear in most human trials. BioPQQ, from Mitsubishi Gas Chemical, was used in the cholesterol trial and an attention trial [8][7], and EFSA assessed it as a novel food [2]. A review by Mitsubishi authors states that it was approved as a new food ingredient by the FDA in 2008 and is now approved as a food in Japan and the EU [25]. mnemoPQQ, developed by Ryusendo, was used in a cognition trial and a muscle trial [27][10][11]. Other makers have filed FDA notices for PQQ disodium salt, including Nascent Health Sciences and Zhejiang Hisun Pharmaceutical [24][1].
+Two branded ingredients appear in most human trials. BioPQQ, from Mitsubishi Gas Chemical, was used in the cholesterol trial and an attention trial [8][7], and EFSA assessed it as a novel food [2]. A review by Mitsubishi authors states that it is now approved as a food in Japan and the EU [25]. mnemoPQQ, developed by Ryusendo, was used in a cognition trial and a muscle trial [27][10][11]. Other makers have filed FDA notices for PQQ disodium salt, including Nascent Health Sciences and Zhejiang Hisun Pharmaceutical [24][1].
 
 ### Fermentation vs. Chemical Synthesis
 
@@ -78,7 +78,7 @@ Human data are indirect. In men not trained in endurance exercise, 20 mg a day f
 
 Small trials, most run by ingredient makers, suggest PQQ may modestly improve some memory and attention scores in healthy middle-aged and older adults. The one trial in people with mild cognitive impairment tested a blend and found little.
 
-In one trial, 64 healthy Japanese adults aged 40 to under 80 who felt more forgetful took mnemoPQQ (21.5 mg a day of PQQ disodium salt) or placebo for 12 weeks; 58 finished [10]. Compared with placebo, the PQQ group scored better on composite memory, verbal memory, reaction time, complex attention, cognitive flexibility, executive function and motor speed, and on a forgetfulness questionnaire and the MMSE-J [10]. The abstract reports no adverse events. The authors were mainly from Ryusendo, the maker of mnemoPQQ [10].
+In one trial, 64 healthy Japanese adults, at least 40 and younger than 80, who reported becoming more forgetful took mnemoPQQ (21.5 mg a day of PQQ disodium salt) or placebo for 12 weeks; 58 finished [10]. Compared with placebo, the PQQ group scored better on composite memory, verbal memory, reaction time, complex attention, cognitive flexibility, executive function and motor speed, and on a forgetfulness questionnaire and the MMSE-J [10]. The abstract reports no adverse events. The authors were mainly from Ryusendo, the maker of mnemoPQQ [10].
 
 In a trial of 41 healthy older adults, 20 mg of BioPQQ a day or placebo was given for 12 weeks [7]. On the Stroop test, the PQQ group's interference ratio changed significantly less than placebo's. On a tablet test of visual-spatial function, a gain appeared only in a subgroup analysis of people with an initial score less than 70 [7]. One author worked at Mitsubishi Gas Chemical [7].
 
@@ -94,7 +94,7 @@ Taken together, three small trials in healthy adults, each with authors from an 
 
 ### Muscle Strength, Exercise Endurance, and Body Composition
 
-In a mnemoPQQ trial, 64 healthy Japanese adults took 21.5 mg a day or placebo for 12 weeks, and 62 finished (mean ages 54.2 and 54.5 in the two groups) [11]. The abstract reports significant gains in leg extension strength (the primary outcome) and grip strength in the PQQ group, along with better results on 10-meter shuttle walking, 6-minute walking and 10-meter walking tests (p < 0.01) [11]. It reports no adverse events [11].
+In a mnemoPQQ trial, 64 healthy Japanese adults took 21.5 mg a day or placebo for 12 weeks, and 62 finished (mean ages 54.2 and 54.5 in the two groups) [11]. The abstract reports significant gains in leg extension strength (the primary outcome) and grip strength in the PQQ group, along with better results on 10-meter shuttle walking, 6-minute walking and 10-meter walking tests (p < 0.01) [11]. The abstract reports no adverse events [11]. Full trial reports may list mild effects the abstracts do not mention.
 
 In 23 men not trained in endurance exercise, on a supervised six-week endurance program, 20 mg a day of PQQ did not improve aerobic performance compared with placebo [20]. Peak oxygen uptake and test duration improved in both groups, and PQQ raised PGC-1alpha protein more than placebo [20]. The authors conclude that PQQ does not appear to have ergogenic effects on aerobic performance or body composition [20]. This is the only PQQ trial here that tested exercise training. In this six-week trial, PQQ neither added to nor blunted the training gains, though the trial was small and short.
 
@@ -175,7 +175,7 @@ Most trials gave 20 mg of PQQ disodium salt a day; the two mnemoPQQ trials gave 
 | Harris et al., 2013 (inflammation) [28] | 0.3 mg/kg | 76 hours | Crossover, 10 adults | Lower CRP and IL-6 |
 | Tsuji et al., 2026 (ovarian reserve) [23] | 20 mg | 90 ± 10 days | Open label, 35 women analyzed | No overall change in AMH |
 
-The 2026 trial in healthy women aged 25 to 42 years (35 analyzed) found no overall change in anti-Mullerian hormone after 20 mg a day; it had no control group and was funded by ROHTO Pharmaceutical [23].
+The 2026 trial in healthy women aged 25 to 42 years (35 analyzed) found no overall change in anti-Mullerian hormone after 20 mg a day; it had no control group and was funded by ROHTO Pharmaceutical [23]. In an exploratory subgroup of 13 older women with lower baseline AMH, AMH fell significantly (p = 0.033); the authors call the subgroup findings inconsistent and say they do not permit conclusions [23].
 
 ### How to Take
 
@@ -201,7 +201,7 @@ The trial abstracts do not say whether PQQ was taken with food or at a set time 
 
 ### Reported Adverse Effects
 
-The published abstracts of the main trials report no adverse events. The cognition and muscle trials each state that none were observed [10][11], and the attention trial found no abnormal blood or urine findings [7]. FDA notice files summarize placebo-controlled human studies with no adverse effects at up to 60 mg of PQQ a day for four weeks, the highest dose tested [1]. These trials were small and short. If you notice new symptoms after starting PQQ, stop it and talk to your doctor.
+The published abstracts of the main trials report no adverse events. The cognition and muscle trials each state that none were observed [10][11], and the attention trial found no abnormal blood or urine findings [7]. Full trial reports may list mild effects the abstracts do not mention. In its FDA notice, one ingredient maker summarizes placebo-controlled human studies with no adverse effects at up to 60 mg of PQQ a day for four weeks, the highest dose tested [1]. These trials were small and short. If you notice new symptoms after starting PQQ, stop it and talk to your doctor.
 
 ### Severe Adverse Effects
 
@@ -231,7 +231,7 @@ In genotoxicity tests, BioPQQ was negative in the Ames test and in a mouse micro
 
 ## 6. Drug Interactions
 
-There is no good public evidence on PQQ drug interactions yet. Human trials have been small and short [1]. If you take prescription medicines, check with your doctor or pharmacist before starting.
+There is no good public evidence on PQQ drug interactions yet. Human trials have been small and short. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Theoretical Considerations
 
