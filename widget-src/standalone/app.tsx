@@ -23,7 +23,7 @@ import { DropboxAdapter, GoogleDriveAdapter } from '../src/storage';
 import { noteOtherTabsLogOffWhileLoading } from '../src/storage/local-storage-adapter';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
-import { StorageBar, SyncControl, RemindersSection } from './sync-control';
+import { LocalSaveAlert, StorageBar, SyncControl, RemindersSection } from './sync-control';
 import { ConnectRefusedNotice } from './connect-refused';
 import { EmailLandingNotice, emailLandingApplies, takeEmailFlag } from './email-landing';
 import { HistoryLightboxHost } from './history-lightbox';
@@ -125,6 +125,8 @@ async function main() {
           syncControl={({ hasData, attention }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} attention={attention} />}
           remindersSection={<RemindersSection backend={backend} />}
           storageBar={<StorageBar backend={backend} reconnect={reconnect} />}
+          saveAlert={<LocalSaveAlert backend={backend} />}
+          syncAlert={<StorageBar backend={backend} reconnect={reconnect} problemsOnly />}
         />
         <HistoryLightboxHost />
       </ErrorBoundary>

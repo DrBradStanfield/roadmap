@@ -19,6 +19,7 @@ import { RemindersControl } from './reminders-control';
 import { remindersSupported } from './reminders';
 import { openBackendPicker, openSignin, OPEN_PICKER_EVENT, PLAN_STORAGE_CTA, StorageSentence } from '../src/lib/storage-notice';
 import { safeGetItem, safeSetItem } from '../src/lib/storage';
+import { useIsMobile } from '../src/lib/useIsMobile';
 import { LOCAL_SAVE_EVENT, localSaveRefused } from '../src/storage/local-storage-adapter';
 
 /** US-09 AC19: the picker was opened once in this browser (a side key, never the record). */
@@ -60,14 +61,22 @@ function useLocalSaveRefused(backend: Backend): boolean {
   return refused;
 }
 
-/** US-09 AC30: the top bar's label, from the real storage state (storageState's
- *  three, plus pending sync), so it never claims what is not true. A reconnect
+/** US-01 AC5: said while this device refuses the record's saves. Beside the storage button,
+ *  and on a phone also atop My health and Chat, since the button sits in the Account tab (US-62 AC34). */
+export function LocalSaveAlert({ backend }: { backend: Backend }) {
+  const localRefused = useLocalSaveRefused(backend);
+  return localRefused ? <span className="hr-sync-error" role="alert">{LOCAL_SAVE_REFUSED}</span> : null;
+}
+
+/** US-09 AC30: the title line's words, from the real storage state (storageState's
+ *  three, plus pending sync), so they never claim what is not true. A reconnect
  *  session runs on 'local', so it is asked first. */
 function storageBarLabel(backend: Backend, reconnect: Exclude<Backend, 'local'> | undefined, pendingSync: boolean): string {
   // Only Drive can re-auth in place; the others only try the read again, as the panel says.
   if (reconnect) return reconnect === 'google-drive' ? 'Sign in to Google again' : 'Retry';
   if (backend === 'local') return 'Sign in';
-  return pendingSync ? 'Saving…' : PROVIDER_LABELS[backend];
+  // Status, not a call to action (Brad 2026-11-09).
+  return pendingSync ? 'Saving…' : `Synced to ${PROVIDER_LABELS[backend]}`;
 }
 
 /** One reconnect at a time across the bar and the panel (both mount the hook). */
@@ -107,27 +116,34 @@ function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
   return { busy, error, run, reconnectNow };
 }
 
-/** US-09 AC30: the top bar's storage button, where "Supercharge this tool" sat.
- *  A record that could not be read runs the panel's own reconnect; every other
- *  state opens the one picker, which SyncControl hosts (AC13). */
-export function StorageBar({ backend, reconnect }: { backend: Backend; reconnect?: Exclude<Backend, 'local'> }) {
+/** US-09 AC30: the title line's storage state. A record that could not be read runs the
+ *  panel's own reconnect; a guest's Sign in opens the one picker, which SyncControl hosts
+ *  (AC13). A connected record's state is text: the storage card's provider link opens the
+ *  picker. On a phone (US-62 AC34) Account draws no Sign in here, since the storage card's
+ *  button is the one sign-in, and `problemsOnly` draws the bar atop My health only while a
+ *  reconnect or a waiting save needs saying. */
+export function StorageBar({ backend, reconnect, problemsOnly = false }: { backend: Backend; reconnect?: Exclude<Backend, 'local'>; problemsOnly?: boolean }) {
   const pendingSync = usePendingSync(backend);
-  const localRefused = useLocalSaveRefused(backend);
+  const isMobile = useIsMobile();
   const { busy, error, reconnectNow } = useReconnect(reconnect);
+  if (problemsOnly && !reconnect && !pendingSync) return null;
+  const label = storageBarLabel(backend, reconnect, pendingSync);
   return (
     <>
-      <button
-        type="button"
-        className="action-btn-small"
-        aria-haspopup={reconnect ? undefined : 'dialog'}
-        disabled={busy}
-        onClick={reconnect ? reconnectNow : backend === 'local' ? () => openSignin('top_bar') : openBackendPicker}
-      >
-        {busy ? 'Reconnecting…' : storageBarLabel(backend, reconnect, pendingSync)}
-      </button>
+      {reconnect || (backend === 'local' && !isMobile) ? (
+        <button
+          type="button"
+          className="action-btn-small"
+          aria-haspopup={reconnect ? undefined : 'dialog'}
+          disabled={busy}
+          onClick={reconnect ? reconnectNow : () => openSignin('top_bar')}
+        >
+          {busy ? 'Reconnecting…' : label}
+        </button>
+      ) : backend !== 'local' && <span className="hr-storage-state">{label}</span>}
       {error && <span className="hr-sync-error" role="alert">{error}</span>}
-      {/* US-01 AC5: here, not in the plan, so a phone shows it above every tab. */}
-      {localRefused && <span className="hr-sync-error" role="alert">{LOCAL_SAVE_REFUSED}</span>}
+      {/* US-01 AC5: beside where the record lives; atop My health and Chat, a phone's saveAlert says it. */}
+      {!problemsOnly && <LocalSaveAlert backend={backend} />}
     </>
   );
 }

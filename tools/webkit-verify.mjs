@@ -69,6 +69,8 @@ export function collectRows() {
 
 // US-20 AC6: on a phone, the bottom tab bar is inside the widget, sticky (never
 // fixed), opaque, on screen while the widget is, and the tab picks the one panel shown.
+// US-62 AC34: the third tab, Account, shows Settings under its heading; a guest signs in from
+// the storage card's button.
 export function assertTabBar(data) {
   assert(data.insideWidget, 'tab bar outside the widget');
   assert.equal(data.position, 'sticky', 'tab bar is not sticky');
@@ -76,8 +78,14 @@ export function assertTabBar(data) {
   assert(!data.backdropFilter || data.backdropFilter === 'none', 'tab bar blurs what is behind it');
   assert(!data.oldPlanButton, 'the old fixed plan button is back');
   assert(data.visible && data.bottom <= data.viewportHeight + 1 && data.top >= 0, 'tab bar not on screen with the widget');
-  assert.deepEqual(data.tabs, ['My health', 'Chat'], 'tab labels changed');
+  assert.deepEqual(data.tabs, ['My health', 'Chat', 'Account'], 'tab labels changed');
   assert.deepEqual(data.shownAfterChatTap, ['Chat'], 'Chat did not show its panel alone');
+  assert.deepEqual(data.shownAfterAccountTap, ['Account'], 'Account did not show its panel alone');
+  assert.equal(data.accountTitle, 'Account', 'the Account panel has no Account heading');
+  // A guest (Brad 2026-11-09): one sign-in, the storage card's filled 44px button; none on the title line.
+  assert.equal(data.accountTitleButtons, 0, `${data.accountTitleButtons} buttons on a guest's Account title line`);
+  assert(data.accountSignInHeight >= 43.5, `the storage card's sign-in is missing or under 44px (${data.accountSignInHeight})`);
+  assert(data.accountSignInBackground && !/rgba\(0, 0, 0, 0\)|transparent/.test(data.accountSignInBackground), `the storage card's sign-in is not a filled button (${data.accountSignInBackground})`);
   // Live test 2026-11-06: the chat card ran 3-5px under the bar.
   assert(data.chatCardBottom <= data.barTopOnChat + 0.5, `chat card ends under the tab bar (${data.chatCardBottom} > ${data.barTopOnChat})`);
 }
@@ -176,12 +184,9 @@ export function assertPhoneLayout(data) {
   for (const g of data.gaps) assert(g === data.gaps[0], `phone section gaps differ (${data.gaps})`);
   assert.equal(data.pillRows, 1, 'the pills wrap');
   assert.deepEqual(data.smallTargets, [], `controls under 44px: ${data.smallTargets}`);
-  // US-62 AC28: Sign in and Settings sit quiet on the title's line, never a heavy row.
-  const h = data.header;
-  assert(h.height <= 52, `the title line is ${h.height}px tall`);
-  assert(h.actionBorders.every(b => b === 0), `a boxed title-line control (${h.actionBorders})`);
-  assert(h.actionHeights.every(x => x >= 43.5), `title-line controls under 44px (${h.actionHeights})`);
-  assert(h.centreOffset <= 4, `title-line controls not centred on their row (${h.centreOffset}px)`);
+  // US-62 AC34 (option A): Sign in and Settings live in the Account tab; My health draws no header row.
+  assert.equal(data.header.height, 0, `My health draws a ${data.header.height}px header row`);
+  assert.equal(data.header.controls, 0, `${data.header.controls} controls on My health's title line`);
 }
 
 // Passed directly to Playwright's evaluate; keep this function self-contained.
@@ -193,15 +198,11 @@ export function collectPhoneLayout() {
   const smallTargets = [...document.querySelectorAll('.mh-sections button, .mh-sections a')]
     .filter(el => { const r = rect(el); return r.width > 0 && r.height > 0 && r.height < 43.5 && !el.closest('.md-table, .suggestion-evidence-section, .evidence-refs, .guideline-tag, .suggestion-title, .us-product') && !el.matches('.unit-toggle-pill'); })
     .map(el => `${(el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 24)} ${Math.round(rect(el).height)}px`);
-  // A phone draws no title (US-62 AC32): the controls centre on their own 44px row.
+  // A phone draws no header row (US-62 AC32, AC34): its controls are in the Account tab.
   const row = document.querySelector('.mh-header');
-  const actions = [...document.querySelectorAll('.mh-header-actions > button')].filter(el => rect(el).height > 0);
-  const middle = (el) => rect(el).top + rect(el).height / 2;
   const header = {
-    height: Math.round(rect(document.querySelector('.mh-header')).height),
-    actionBorders: actions.map(el => parseFloat(getComputedStyle(el).borderTopWidth)),
-    actionHeights: actions.map(el => Math.round(rect(el).height)),
-    centreOffset: Math.round(Math.max(0, ...actions.map(el => Math.abs(middle(el) - middle(row))))),
+    height: Math.round(rect(row).height),
+    controls: [...row.querySelectorAll('button')].filter(el => rect(el).height > 0).length,
   };
   return { gaps, pillRows: new Set(pills).size, smallTargets, header };
 }
@@ -335,6 +336,18 @@ async function inspect(browser, deviceName, viewport) {
         chatCardBottom: document.querySelector('.hr-tabpanel:not([hidden]) .chat-embed').getBoundingClientRect().bottom,
         barTopOnChat: document.querySelector('.hr-tabbar').getBoundingClientRect().top,
       })));
+      await bar.getByRole('tab', { name: 'Account' }).tap();
+      tabBar.shownAfterAccountTap = await bar.evaluate(shownPanels);
+      Object.assign(tabBar, await page.evaluate(() => {
+        const head = document.querySelector('.hr-tabpanel:not([hidden]) .mh-settings-head');
+        const signIn = document.querySelector('.hr-tabpanel:not([hidden]) .mh-settings .hr-sync-btn');
+        return {
+          accountTitle: head?.querySelector('h2')?.textContent ?? null,
+          accountTitleButtons: head ? head.querySelectorAll('.mh-header-actions button').length : 0,
+          accountSignInHeight: signIn ? Math.round(signIn.getBoundingClientRect().height) : 0,
+          accountSignInBackground: signIn ? getComputedStyle(signIn).backgroundColor : null,
+        };
+      }));
       assertTabBar(tabBar);
       console.log(`${deviceName}: tab bar verified`, JSON.stringify(tabBar));
     }

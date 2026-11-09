@@ -3,7 +3,7 @@
  * US-01 AC5 on a phone (768px or narrower): a measurement is added through the
  * store's addMeasurement while the Input tab is open (the default) and the
  * plan's tab is hidden. No form field is typed into. The alert must be on the
- * open tab: in the top bar above every tab, not in the hidden plan.
+ * open tab: atop My health, then atop Chat (US-62 AC34), not in the hidden Account tab beside the storage button.
  * The whole widget is mounted as standalone/app.tsx mounts it (the top bar's
  * StorageBar and the plan's SyncControl), on the real store and device
  * adapter. The storage is a uniform byte budget, as in
@@ -12,7 +12,7 @@
  * CSS. Synthetic values only.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, render, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
 
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../src/lib/server-api', async original => ({
@@ -28,7 +28,7 @@ vi.mock('./reminders', () => ({ remindersSupported: () => false }));
 vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 
 import { HealthTool } from '../src/components/HealthTool';
-import { StorageBar, SyncControl } from './sync-control';
+import { LocalSaveAlert, StorageBar, SyncControl } from './sync-control';
 import { RoadmapStore } from '../src/storage/roadmap-store';
 import { LocalStorageAdapter } from '../src/storage/local-storage-adapter';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../src/lib/roadmap-data';
@@ -83,11 +83,12 @@ afterEach(async () => {
   vi.restoreAllMocks(); vi.unstubAllGlobals();
 });
 
-describe('US-01 AC5 on a phone: the alert is on the My health title line while the guest is on that tab', () => {
+describe('US-01 AC5 on a phone: the alert is atop My health and atop Chat, whichever tab the guest is on', () => {
   it('shows and is in the accessibility tree once, outside every hidden tab', async () => {
     const view = render(
       <HealthTool
         storageBar={<StorageBar backend="local" />}
+        saveAlert={<LocalSaveAlert backend="local" />}
         syncControl={({ hasData, attention }) => <SyncControl backend="local" hasData={hasData} attention={attention} />}
       />,
     );
@@ -108,10 +109,37 @@ describe('US-01 AC5 on a phone: the alert is on the My health title line while t
     const stored = JSON.parse(storage.getItem('health_roadmap_file_v2')!) as { measurements: Array<{ value: number }> };
     expect(stored.measurements.map((m) => m.value)).not.toContain(93); // the save was refused
 
-    const alerts = [...view.container.querySelectorAll('[role="alert"]')];
-    expect(alerts).toHaveLength(1);
-    expect(alerts[0].textContent).toContain(FULL_LINE);
-    expect(alerts[0].closest('.mh-header')).not.toBeNull(); // the storage button sits on My health's title line (US-62 AC24)
-    expect(alerts[0].closest('[hidden]')).toBeNull();
+    // Only the open tab's alert is on the page; the hidden tabs' are out of the accessibility tree.
+    const shown = () => [...view.container.querySelectorAll('[role="alert"]')].filter((a) => !a.closest('[hidden]'));
+    expect(shown()).toHaveLength(1);
+    expect(shown()[0].textContent).toContain(FULL_LINE);
+    // Atop My health, though the storage button sits in the Account tab (US-62 AC34).
+    expect(shown()[0].closest('.mh-header')).not.toBeNull();
+    // And atop Chat, when the guest goes there.
+    fireEvent.click(within(view.getByRole('tablist')).getByRole('tab', { name: 'Chat' }));
+    expect(shown()).toHaveLength(1);
+    expect(shown()[0].textContent).toContain(FULL_LINE);
+    expect(shown()[0].closest('.hr-tabpanel')!.querySelector('.health-tool-chat')).not.toBeNull();
+  });
+});
+
+// US-62 AC34: the storage button sits in Account on a phone, so a record that could not be read
+// says so atop My health too, through app.tsx's `syncAlert` (the same StorageBar, problemsOnly).
+describe('US-62 AC34 on a phone: a reconnect shows atop My health, not only in Account', () => {
+  it('the reconnect button is in My health\'s header and on the page', async () => {
+    const view = render(
+      <HealthTool
+        storageBar={<StorageBar backend="local" reconnect="dropbox" />}
+        saveAlert={<LocalSaveAlert backend="local" />}
+        syncAlert={<StorageBar backend="local" reconnect="dropbox" problemsOnly />}
+        syncControl={({ hasData, attention }) => <SyncControl backend="local" reconnect="dropbox" hasData={hasData} attention={attention} />}
+      />,
+    );
+    const retry = await waitFor(() => {
+      const shown = [...view.container.querySelectorAll('button.action-btn-small')].filter((b) => b.textContent === 'Retry' && !b.closest('[hidden]')); // the storage bar's, not the card's
+      expect(shown).toHaveLength(1);
+      return shown[0];
+    });
+    expect(retry.closest('.mh-header')).not.toBeNull();
   });
 });

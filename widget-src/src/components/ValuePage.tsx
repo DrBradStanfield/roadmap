@@ -35,6 +35,7 @@ import { chartTimestamp, formatShortDate } from '../lib/constants';
 import { getShownErase } from '../lib/roadmap-data';
 import { ErrorBoundary } from './ErrorBoundary';
 import { scrollToTop } from '../lib/reveal';
+import { useIsMobile } from '../lib/useIsMobile';
 import { ValueCell, saveErrorText, useLiveRegion } from './BloodTestTimeline';
 import { AddLabTest } from './AddLabTest';
 import { LAB_EGFR, isLabEgfr, pressureText, subjectKey, tintOf, type RowContext, type ValueSubject } from './MyDataRows';
@@ -135,6 +136,8 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
   // The ideal weight tile says the weight page's target: the line would say it twice.
   const targetShown = target?.bare && !pageTiles.some(t => t.key === 'ibw');
   const pointer = window.matchMedia?.('(pointer: fine)').matches ? 'Click' : 'Tap';
+  // A phone has no Settings button: its Account tab holds the units (US-62 AC34).
+  const unitsHome = useIsMobile() ? 'Account' : 'Settings';
 
   return (
     <section className="md-page" aria-labelledby={titleId} ref={pageRef}>
@@ -194,7 +197,7 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
         </ul>
       )}
       {metric && <p className="md-page-hint">{pointer} a value to correct it.</p>}
-      {subject.kind !== 'lab' && <p className="md-page-hint">To change units, use Settings or All results as a table.</p>}
+      {subject.kind !== 'lab' && <p className="md-page-hint">To change units, use {unitsHome} or All results as a table.</p>}
       {messages}
     </section>
   );
