@@ -21,7 +21,7 @@ Brad does not recommend L-citrulline, or any other nitric oxide supplement, and 
 
 - L-citrulline may lower blood pressure. Ask your doctor or pharmacist first if you take blood pressure medicines, nitrates such as nitroglycerin, or erectile dysfunction drugs such as sildenafil or tadalafil; no trial has tested citrulline alone with these medicines [6][18][41]. One small 14-day trial of a multi-ingredient drink in men using PDE5 inhibitors reported no adverse events [44].
 - If you have low blood pressure, or surgery planned, talk to your doctor first for the same reason [6][18].
-- Trials in pulmonary hypertension and heart failure were small and short, and the kidney does most of the conversion to arginine [3][25][26][33]. Ask your doctor first if you have one of these conditions or kidney disease [40].
+- Trials in pulmonary hypertension and heart failure were small and short, and the kidney does most of the conversion to arginine [3][25][26][33]. In the pulmonary hypertension trial, two patients were excluded because of adverse reactions [33]. Ask your doctor first if you have one of these conditions or kidney disease [40].
 - Ask your doctor first if you are pregnant, breastfeeding, buying for a child or have diabetes. In a pre-eclampsia trial, systolic pressure and liver enzymes were higher at delivery with citrulline than with placebo, and in a trial in adolescents, blood glucose and insulin resistance rose [36][38][43].
 - High blood citrulline is one of the tests used to diagnose citrullinemia type I, so a supplement may confuse testing for urea cycle disorders [34].
 - Single doses up to 15 g caused no side effects in a small study, and trials have used 10 g a day for 4 to 8 weeks [3][22][23].
@@ -253,11 +253,11 @@ In 8 healthy men, single doses of 2 to 15 g caused no side effects, and the auth
 
 ### Common Side Effects
 
-Stomach discomfort is the side effect most often reported: 14.63% of men had it after 8 g of citrulline malate in one trial [16]. A review notes the lack of gastrointestinal distress with citrulline compared with arginine, which can cause significant gut problems at high doses (about 13 g) [1]. Several trials reported no adverse events [9][27]. If you get heartburn or reflux after taking it, stop and ask your doctor or pharmacist.
+Stomach discomfort is the side effect most often reported: 14.63% of men had it after 8 g of citrulline malate in one trial [16]. A review notes the lack of gastrointestinal distress with citrulline compared with arginine, which can cause significant gut problems at high doses (about 13 g) [1]. Several trials reported no adverse events [9][27]. In a small uncontrolled trial in pulmonary arterial hypertension, two patients had swelling in the limbs, more frequent urination, a worse cough or heartburn, mostly mild to moderate [33]. If you get heartburn or reflux after taking it, stop and ask your doctor or pharmacist.
 
 ### Specific Populations
 
-**People with pulmonary arterial hypertension:** In 25 people with pulmonary arterial hypertension, 1 g of citrulline malate three times a day for 2 weeks increased 6-minute walk distance by about 44 m in an uncontrolled before-and-after study [33]. The study was small and short. If you have pulmonary hypertension, ask your doctor before trying it.
+**People with pulmonary arterial hypertension:** In 25 people with pulmonary arterial hypertension, 1 g of citrulline malate three times a day for 2 weeks increased 6-minute walk distance by about 44 m in an uncontrolled before-and-after study [33]. Two patients were excluded because of adverse reactions, and two had swelling in the limbs, more frequent urination, a worse cough or heartburn, mostly mild to moderate [33]. The study was small and short and had no control group, so it cannot show how much of the benefit or the side effects came from citrulline. If you have pulmonary hypertension, ask your doctor before trying it.
 
 **People with low blood pressure:** Citrulline lowered mean arterial pressure in healthy men [6] and systolic pressure in a meta-analysis [18]. In 40 people with hypertension, 6 g of citrulline malate increased the fall in blood pressure after exercise [39]. If you have low blood pressure, ask your doctor first.
 
