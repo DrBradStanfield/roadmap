@@ -81,7 +81,7 @@ Creatinine comes from muscle, so muscle and diet shift the eGFR. NICE asks adult
 
 KDIGO asks for a whole-person plan aimed at slowing CKD and preventing its complications, heart disease above all [1].
 
-**Blood pressure.** Raised pressure strains the small blood vessels in the kidneys [7]. Targets differ (see "Where guidelines differ").
+**Blood pressure.** Raised pressure strains the small blood vessels in the kidneys [7]. Targets differ (see "Where guidelines differ"); the high blood pressure guide covers home readings and treatment.
 
 **Diabetes.** High blood glucose damages the kidneys' filters [7]. Several diabetes medicines also protect the kidneys (see "Medicines").
 
@@ -91,7 +91,7 @@ KDIGO asks for a whole-person plan aimed at slowing CKD and preventing its compl
 
 **Protein.** KDIGO suggests 0.8 g per kg of body weight a day in CKD G3 to G5, and advises avoiding more than 1.3 g per kg a day in adults whose CKD is at risk of getting worse [1]. NICE advises against low-protein diets, below 0.6 to 0.8 g per kg a day [2]. See the [protein powders page](https://drstanfield.com/blogs/articles/protein-powders-benefits-types-dosing-and-side-effects) for supplements.
 
-**Potassium and salt substitutes.** Damaged kidneys may not clear potassium well, and blood potassium can rise too high [8]. Potassium salt substitutes can help cut sodium, but not if you are pregnant, have kidney disease or diabetes, have been told to limit potassium, or take a potassium-sparing diuretic, a potassium supplement, an ACE inhibitor or an ARB, unless your doctor agrees; the plan suggests one only with a current eGFR of 45 or more (Brad's current guidance, 2 Nov 2026). The NHS advises people with CKD to avoid potassium supplements [8]. See the [potassium page](https://drstanfield.com/blogs/articles/potassium-benefits-forms-dosing-and-side-effects).
+**Potassium and salt substitutes.** Damaged kidneys may not clear potassium well, and blood potassium can rise too high [8]. Potassium salt substitutes can help cut sodium, but not if you are pregnant, have kidney disease or diabetes, have been told to limit potassium, or take a potassium-sparing diuretic, a potassium supplement, an ACE inhibitor or an ARB, unless your doctor agrees; the plan suggests one only with a current eGFR of 45 or more (Brad's current guidance, 9 Nov 2026). The NHS advises people with CKD to avoid potassium supplements [8]. See the [potassium page](https://drstanfield.com/blogs/articles/potassium-benefits-forms-dosing-and-side-effects).
 
 **Exercise and weight.** KDIGO recommends at least 150 minutes a week of moderate activity, or as much as your heart and fitness allow, less sitting, and weight loss for people with obesity [1].
 
@@ -138,7 +138,7 @@ Most medicines for CKD are chosen by your urine ACR, your eGFR and whether you h
 
 - **Pregnancy and breastfeeding.** Neither ACE inhibitors nor ARBs are used in pregnancy [20][21]. A creatinine eGFR is less reliable in pregnancy [2]. KDIGO asks doctors to review every medicine for harm to a baby in people with CKD who could become pregnant [1].
 - **Older adults.** KDIGO suggests less intensive blood pressure lowering with frailty, a high risk of falls or dizziness on standing, and higher protein and calorie targets with frailty or muscle loss [1].
-- **Diabetes.** People with diabetes should be tested every year [2][3]. Several medicines protect both kidneys and heart in diabetes (see "Medicines").
+- **Diabetes.** People with diabetes should be tested every year [2][3].
 - **Higher-risk groups.** CKD is more common in people who are Black or of South Asian origin [7]. Australian guidance has its own testing schedule for First Nations people [3].
 - **Low eGFR and medicines.** Check with your doctor or pharmacist before any new medicine or supplement [1][9].
 - **Under 18.** Kidney tests in children are judged differently; talk to their doctor [1].

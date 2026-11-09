@@ -26,7 +26,7 @@ This guide covers the risk of a first heart attack or stroke caused by narrowed 
 
 - Chest pain that feels tight, heavy or squeezing, or spreads to the arm, neck or jaw, or comes with sweating or severe breathlessness: call your emergency number now (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). [12]
 - Possible stroke: sudden face drooping, arm or leg weakness or numbness, trouble speaking, or loss of vision, even if it gets better within minutes. Call your emergency number now (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). [24]
-- Blood pressure of 180 systolic or more, or 120 diastolic or more, is dangerously high and urgent even without symptoms (Brad's current guidance, 2 Nov 2026). With symptoms such as chest pain, shortness of breath, severe headache or vision changes: seek immediate medical attention (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- Blood pressure of 180 systolic or more, or 120 diastolic or more, is dangerously high and urgent even without symptoms (Brad's current guidance, 2 Nov 2026). With chest, back or belly pain, shortness of breath, numbness or weakness, a change in vision, difficulty speaking or a sudden severe headache, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). With no symptoms, rest and recheck after 5 minutes; if it is still 180/120 or higher, call your doctor.
 
 ## What it is
 
