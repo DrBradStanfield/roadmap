@@ -2,11 +2,11 @@
 title: "Upload a lab report and fix a value it got wrong"
 description: "Add a blood test PDF or photo to the Health by Dr Brad tool, check what it read before you save, and correct a value later if it went in wrong."
 slug: "upload-lab-report"
-updated: "2026-10-20"
+updated: "2026-11-09"
 stories: ["US-04", "US-12", "US-13", "US-14"]
 ---
 
-You can add blood test results to [the tool](https://drstanfield.com/pages/roadmap) without typing them in. Upload the report, check what the tool read, then save. If a number still goes in wrong, you fix it in the table where it shows.
+You can add blood test results to [the tool](https://drstanfield.com/pages/roadmap) without typing them in. Upload the report, check what the tool read, then save. If a number still goes in wrong, you fix it where it shows.
 
 ## What you can upload
 
@@ -16,11 +16,11 @@ Some files will not read. An old Word .doc file cannot be opened, so save it as 
 
 ## Upload it
 
-1. Open [the tool](https://drstanfield.com/pages/roadmap). On a phone, stay on the Input tab.
+1. Open [the tool](https://drstanfield.com/pages/roadmap). On a phone, stay on the My health tab.
 
-2. Find Blood Test Results. It appears once you have entered your sex, height and weight.
+2. Find the Blood tests section. It appears once you have answered the first questions: your height, weight, sex and birth date.
 
-3. Press Upload your lab results.
+3. Press the + button beside the Blood tests heading. It is labelled Upload lab results. If you have the full table open (All results as a table), its Upload your lab results button does the same.
 
 4. If you have not connected a cloud folder yet, the tool first asks where to keep your original files. Press Choose where to keep it to connect Dropbox or Google Drive. Or press Continue without keeping my files. Your values are still saved that way, but the file itself is not kept.
 
@@ -42,11 +42,11 @@ Go through it with the report beside you.
 - Each new column needs the day the blood was taken. If the report gave no full date, pick the day in the column heading. Save waits until every new column has a day.
 - If the report has a column of earlier results with no date, the tool asks you for that date too.
 - If your record already holds a different number for that test on that day, the cell shows both, with a Replace box. Tick Replace only if the report is right. Leave it unticked and your saved number stays.
-- In the Blood Test Results rows, a number outside the range the tool accepts is marked, and Save waits until you correct it or clear it. For other tests, a value the record cannot accept is left out when you save, and the tool says which.
+- For the main blood tests, a number outside the range the tool accepts is marked, and Save waits until you correct it or clear it. For other tests, a value the record cannot accept is marked with the reason and left out when you save. That includes a number far outside anything a body could show, which is almost always a misread number or unit.
 
 Look hardest at the test names and the dates. Once a value is saved, the tool cannot move it to a different test or a different day. The review is the place to catch that.
 
-Above the table you may see two lists. "Check these files" names any file the tool could not fully read, and says why. "Not saved" names any value the tool would not guess at, such as a result printed in a unit it does not know. If one of those is a blood test you want, type it into the Blood Test Results table yourself after you save.
+Above the table you may see two lists. "Check these files" names any file the tool could not fully read, and says why. "Not saved" names any value the tool would not guess at, such as a result printed in a unit it does not know. If one of those is a blood test you want, add it yourself under Blood tests after you save.
 
 A clinic letter or a scan report shows as a card with a title and a date you can edit. A new one is ticked to be kept; untick it to leave it out. One already in your record shows as Already saved.
 
@@ -56,13 +56,13 @@ If you upload the same report twice, values already in your record show as plain
 
 ## Fix a value after saving
 
-1. Find the value in the Blood Test Results table. Tests that are not in that table sit below it, under Additional lab results. Open a group to see its values.
+1. In My health, find the test under Blood tests and open it. Its page lists every value under History.
 
-2. Click the number. It turns into a box you can type in.
+2. Click or tap the number. It turns into a box you can type in. You can also press All results as a table at the foot of Blood tests and click the number there. In the table, tests outside the main grid sit below it, under Additional lab results.
 
 3. Type the right number. Press Enter, or click anywhere else, to save it. Press Escape to stop without saving. If you clear the box and leave it, nothing changes. If the number is not one the tool accepts, Enter does nothing, and clicking away puts the old number back without saving.
 
-In the Blood Test Results table, if the number is right but the unit is wrong, change the unit first, then type the value. Changing the unit while the box is open closes it without saving, and the tool tells you so. Tests under Additional lab results keep the unit they were saved in, so check those units in the review before you save. If a unit is wrong there, clear that box so the value is not saved.
+For the main blood tests, if the number is right but the unit is wrong, change the unit first, then type the value. The units are in Settings on a computer and in the Account tab on a phone, or beside each row in the table. Changing the unit while the box is open closes it without saving, and the tool tells you so. Other tests keep the unit they were saved in, so check those units in the review before you save. If a unit is wrong there, clear that box so the value is not saved.
 
 A correction never overwrites the old number. The tool adds the right number as a new entry and marks the old one as entered in error. Both stay in your record file, so you can always see what was there before. Your plan uses only the corrected number. There is no delete button: a correction is how a wrong value is fixed.
 
