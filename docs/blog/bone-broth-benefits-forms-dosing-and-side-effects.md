@@ -6,7 +6,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["bone broth", "collagen", "collagen peptides", "gelatin", "glycine", "proline", "glutamine", "amino acids", "joint health", "gut health", "skin", "wrinkles", "osteoarthritis", "inflammation", "muscle", "sarcopenia", "bone density", "osteoporosis", "hyaluronic acid", "aging", "longevity", "sleep", "protein", "calcium", "magnesium", "potassium", "sodium", "iron", "zinc", "phosphorus", "creatine", "taurine", "fiber", "gut health", "microbiome"]
-summary: "Bone broth reference. No trials test broth itself; claims rest on collagen trials (2.5 to 15 g a day) for joints, skin, bone and muscle. Broth gave far lower collagen amino acids than a 20 g dose. Poor calcium source; lead low. Talk to your doctor first if you take spironolactone or levodopa."
+summary: "Bone broth reference. No trials test broth itself; claims rest on collagen trials (2.5 to 15 g a day) for joints, skin, bone and muscle. Broth gave significantly lower collagen amino acids than a 20 g dose. Poor calcium source; lead low. Ask your doctor first if you take spironolactone or levodopa."
 reviewed: "2026-11-09"
 sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31096622/","checked":"2026-11-09","fingerprint":"sha256:6f3f88206d86ce21b9c51bb92cb6419cb0c4cfcec5332dd2ee4b925d26c9b3a8"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/29893587/","checked":"2026-11-09","fingerprint":"sha256:8a2dfc4d8c8f8f2d40a60f33da30fa95af1b1925593654d9824a849edd107e67"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30368550/","checked":"2026-11-09","fingerprint":"sha256:85de9a492f34598bfd7d6a3a7d59cd2e30b774f2212fde7b8be75c592d1179a9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22521757/","checked":"2026-11-09","fingerprint":"sha256:51b149861f6875ff7728eb6f54b23a95fccb9301b686f846a03297cb9359ab8c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28804437/","checked":"2026-11-09","fingerprint":"sha256:48796efb691f69dc0ad7ecd93d7153e618b585e75e119ca1d017d2ee721d317d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/37355689/","checked":"2026-11-09","fingerprint":"sha256:111eb8b191b3be7816d92cf87e090562129411878c7d80d5adf4f7f28e7732ce"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23375414/","checked":"2026-11-09","fingerprint":"sha256:200308b583b8a23a9c86083161123018a92a6f676231a1891587d54181e98587"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22500661/","checked":"2026-11-09","fingerprint":"sha256:82201198da45326050f433eddfc9dcc43f3dd82e513bb5ad5d84714e40baf920"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/26822714/","checked":"2026-11-09","fingerprint":"sha256:05c58278bc22b5b9b4e2ab9a93b9182423776ee4c4a7fc77eff6ff1d01eae8d0"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/10498764/","checked":"2026-11-09","fingerprint":"sha256:a4141c335f8e50d11f21ad86d67878d32bad9b9a02878a2c9014b0dd1862f78e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24852756/","checked":"2026-11-09","fingerprint":"sha256:057e6eb05f4ebec44707ced94d1b6fe4dbcf75eee6140d4e4558ed440f8e9035"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/20401752/","checked":"2026-11-09","fingerprint":"sha256:59f594583855b8664ce8264f0e338df4c37904686cbcf8adddf9d60c6d9340e7"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/9485087/","checked":"2026-11-09","fingerprint":"sha256:1a3154e68f572bebe48d4c585a6ff7f396dad6e712f55b55f3e56a4b29711005"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18576295/","checked":"2026-11-09","fingerprint":"sha256:3217b76ef50272de45abdbce22c707e46791d10ab72e8198279fe8c371fc3212"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18416885/","checked":"2026-11-09","fingerprint":"sha256:3910c6fc1181a2b4faf0693fb32658544774991718f026ed773c193d30ffbd0e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/29769831/","checked":"2026-11-09","fingerprint":"sha256:f5e4d8a99abb710a02393185158650222b6ba509bd12322d7f2c1947670fe20e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/27852613/","checked":"2026-11-09","fingerprint":"sha256:e918f1bb162cbbdbf5b7c4aafa38925ff21bc7c4156c28207d3296798950fb58"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/29337906/","checked":"2026-11-09","fingerprint":"sha256:e8de7af7aeee8bd34d409bb51cb92acacfc907b7c239ee1db0cb9412932e86b9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/8625373/","checked":"2026-11-09","fingerprint":"sha256:71b69b6f93a910c2bf36001f6c3f4d2c631cfbae4227960dc7cd03b18873a074"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/26353786/","checked":"2026-11-09","fingerprint":"sha256:023c83a76763697858c875489a88ebf04272b5188d62f7e9b514c2b55323c722"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24401291/","checked":"2026-11-09","fingerprint":"sha256:a50188fd764c1bff5eaf46a0ae1f3721979375c1956e0d239b553b87721f262f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23949208/","checked":"2026-11-09","fingerprint":"sha256:fc52e5e37df7085d02c9a0a423adc35ded4dc33f5932676d88fbfcabaf678e7d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24131075/","checked":"2026-11-09","fingerprint":"sha256:ae389eaf7e62aae5b5c13f48ae732e532dd19a016b14101dba7080e6dfef923d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33742704/","checked":"2026-11-09","fingerprint":"sha256:35e47625e19fd0479988c94c35b0fe0ca5edf21ccbe9e86eed96ef79abfd057d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28786550/","checked":"2026-11-09","fingerprint":"sha256:aad488ab2c4fd7c53d3b0a64f2a29b53a04db26dec11f4486174974086a082e4"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11035691/","checked":"2026-11-09","fingerprint":"sha256:522a93f146f03a98705d95eca14510f982f2205dce3b41f1946493ecd0eafa46"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/359266/","checked":"2026-11-09","fingerprint":"sha256:84e9720ad27caad5ff8e3ed94ba3c8e1fff51529a9bd7eb81d493d4750bd0466"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22629114/","checked":"2026-11-09","fingerprint":"sha256:c8438bb51264d4ecb0496892fd03f0d0839c97ead750ac9665c09f9caa721872"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24918016/","checked":"2026-11-09","fingerprint":"sha256:8834d01d4faca56c0dbfd89d881ff5ae773e9086edbf19c9b921e2435f2276ca"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28448477/","checked":"2026-11-09","fingerprint":"sha256:318cfae4f72bec8be08e42dec406e05b785b3a462f07d4c631fdb8eaf03c0a2d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31272969/","checked":"2026-11-09","fingerprint":"sha256:fc695d039309100e9927c99b45997c67dcf9a719074e1f537f7e3664026627a7"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/14600124/","checked":"2026-11-09","fingerprint":"sha256:083fd10554dfbe6dbc5eb2b9c1eb4b209e0224f0c5376eea9afffebe8c0eac5b"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22293292/","checked":"2026-11-09","fingerprint":"sha256:e8e805dfda2113f8775fb190386b4a0071700f4234e1cf9721759656560084e9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22529837/","checked":"2026-11-09","fingerprint":"sha256:e4b3b2645b7d6b7590ec2a72233b48dcb9bcf0f8feff4782b72ec79879dc28a8"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/25533534/","checked":"2026-11-09","fingerprint":"sha256:a1021ca605ef16f2b5163c292499cf486a319e36b54ee3db31814db3d96073fe"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/40180691/","checked":"2026-11-09","fingerprint":"sha256:9134b8a4aeb015fa02f19c35bac08c3ca787b54b8d0c30ce10ca31167c002c14"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/42342959/","checked":"2026-11-09","fingerprint":"sha256:aa03333e4c264aa23b6e509ad49b9f744eaeb6c80770a13addf6b74ccaa92a0d"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing","checked":"2026-11-09","fingerprint":"publishedAt:2026-10-15"}]
 ---
@@ -19,12 +19,12 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
-- If you take prescription medicines, or have been told to limit salt, potassium or fluids, check with your doctor or pharmacist before starting. The spironolactone label advises people who take it to avoid potassium supplements and foods high in potassium [6].
+- If you take prescription medicines, or have been told to limit salt, potassium or fluids, check with your doctor or pharmacist before starting. The spironolactone label advises people who take it to avoid potassium supplements and foods high in potassium, and warns that ACE inhibitors and angiotensin receptor blockers raise the risk of high potassium [6].
 - If you have kidney disease or are on dialysis, ask your kidney team first. MedlinePlus advises people with chronic kidney disease to limit salt and potassium, and people on dialysis to count soups in their daily fluid [39].
 - If you take warfarin, a broth made with leafy greens such as spinach, kale or parsley counts toward the foods MedlinePlus says to keep steady from day to day [38].
 - If you take levodopa for Parkinson's disease, dietary protein can reduce its absorption [7]. Bone broth and collagen add protein, though neither has been studied with levodopa.
 - Bones store lead: a small test found organic chicken bone broths held several times the lead of the water used to make them [8], though another study judged lead levels of a few micrograms per serving a minimal risk [5].
-- The most reported side effects of collagen supplements in osteoarthritis trials were mild to moderate stomach and bowel complaints [4]. In several trials, side effects did not differ from placebo or the comparison treatment [9][10].
+- The most reported side effects of collagen supplements in osteoarthritis trials were mild to moderate stomach and bowel complaints [4]. In two trials, side effects did not differ from placebo or the comparison treatment [9][10].
 
 ## Brad's videos on this topic
 
@@ -63,13 +63,13 @@ We found no public study that compared liquid, powdered and capsule bone broth f
 - **Bone type and species:** Leg and rib bones released metals differently, and the differences between species were larger than those within a species [5].
 - **Recipe and maker:** Amino acid levels varied widely between non-standardised recipes, and commercial broths were lower than home-made broths made to the same recipe. Batches made to one standard recipe did not differ [2].
 
-Even with acid and long cooking, the calcium and magnesium in broth stayed under 5% of daily recommended levels per serving (see Dietary Sources) [5].
+The home-made and commercial broths tested stayed under 5% of daily recommended calcium and magnesium levels per serving (see Dietary Sources) [5].
 
 ## 3. Evidence for Benefits
 
 ### Joint Health and Osteoarthritis
 
-We found no published clinical trials of bone broth for arthritis or joint pain. The evidence comes from trials of collagen supplements.
+The joint evidence comes from trials of collagen supplements, not broth.
 
 **Systematic reviews:** A systematic review of eight trials (six on collagen hydrolysate, two on gelatin, one on undenatured collagen) found that collagen hydrolysate did not significantly reduce WOMAC pain scores compared with placebo (pooled mean difference -0.49, 95% CI -1.10 to 0.12). Gelatin was superior to placebo and to other treatments for pain. The review judged the evidence insufficient to recommend collagen hydrolysate for osteoarthritis in daily practice, with overall quality moderate to very low [4].
 
@@ -87,7 +87,7 @@ In a trial in adults with knee osteoarthritis, 10 g of enzymatic hydrolysed coll
 
 **Rheumatoid arthritis:** Evidence is weak and mixed. In a trial in which patients took oral type II collagen at 20 to 2,500 micrograms a day for 24 weeks, only the lowest dose beat placebo, and only on one of three sets of response criteria [14]. In a trial of 236 patients, chicken type II collagen worked less well than methotrexate: 68.57% vs 83.02% met the ACR20 response criteria at 24 weeks [15].
 
-**Caveat:** These trials used defined collagen products at known doses. Bone broth gave much lower levels of collagen amino acids than a 20 g supplement dose in the one analysis we found [2], so these results cannot be assumed to apply to broth.
+**Caveat:** These trials used defined collagen products at known doses. Bone broth gave significantly lower levels of collagen amino acids than a 20 g supplement dose in the one analysis we found [2], so these results cannot be assumed to apply to broth.
 
 ### Exercise-Related Joint Pain
 
@@ -113,33 +113,33 @@ Collagen lacks the essential amino acid tryptophan, so it counts as an incomplet
 
 ### Skin Health, Wrinkles, and Nails
 
+**Meta-analyses:** An earlier meta-analysis of 19 trials and 1,125 participants reported benefits of hydrolysed collagen for skin hydration, elasticity and wrinkles [25]. In his October 2026 video, Brad said that a 2026 meta-analysis gives reasonable evidence that collagen peptides may improve skin hydration and elasticity, but that it found no effect on wrinkles, and longer studies are likely needed ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing)). Brad's current guidance gives the collagen doses used in skin trials as 0.5 to 10 g a day (Brad's current guidance, 2 Nov 2026).
+
 **Wrinkles:** In women aged 45 to 65, 2.5 g a day of a specific collagen peptide (VERISOL) for 8 weeks reduced eye wrinkle volume compared with placebo (20% at 8 weeks), with an effect still seen 4 weeks after stopping. Procollagen type I was 65% higher and elastin 18% higher than with placebo [22].
 
 **Skin elasticity:** In 69 women aged 35 to 55, 2.5 g or 5.0 g a day for 8 weeks improved skin elasticity compared with placebo. Changes in skin moisture did not reach statistical significance [23].
 
 **Skin hydration:** In a small trial in South Korea, 3 g of collagen peptide daily for 12 weeks improved skin hydration and elasticity. Adding 500 mg of vitamin C gave no extra benefit [24].
 
-**Meta-analyses:** An earlier meta-analysis of 19 trials and 1,125 participants reported benefits of hydrolysed collagen for skin hydration, elasticity and wrinkles [25]. In his October 2026 video, Brad said that a 2026 meta-analysis gives reasonable evidence that collagen peptides may improve skin hydration and elasticity, but that it found no effect on wrinkles, and longer studies are likely needed ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing)). Brad's current guidance gives the collagen doses used in skin trials as 0.5 to 10 g a day (Brad's current guidance, 2 Nov 2026).
-
 **Nails:** In an open-label study without a placebo group, 25 participants took 2.5 g a day of a specific collagen peptide for 24 weeks. Nail growth rate rose 12% and broken nails fell 42% [26]. Without a control group, these results are hard to interpret.
 
 ### Immune Function
 
-Claims that bone broth helps the immune system rest on two studies of chicken soup, not bone broth.
-
-In a lab dish, a traditional chicken soup inhibited the migration of neutrophils (a type of white blood cell). The authors suggested a mild anti-inflammatory effect as one way the soup might ease cold symptoms [27].
+We found no trials of bone broth and immunity. The two studies usually cited tested chicken soup.
 
 In 15 healthy people, sipping hot water raised nasal mucus speed from 6.2 to 8.4 mm per min, and sipping hot chicken soup from 6.9 to 9.2 mm per min. All values were back to baseline by 30 minutes [28].
 
+In a lab dish, a traditional chicken soup inhibited the migration of neutrophils (a type of white blood cell). The authors suggested a mild anti-inflammatory effect as one way the soup might ease cold symptoms [27].
+
 ### Gut Health and Digestive Disorders
 
-**Gelatin tannate:** Gelatin tannate is gelatin combined with tannic acid. It reduced inflammatory signals in human gut cells in the lab [29] and reduced the severity of colitis in mice [30]. It is unclear whether gelatin or collagen alone would act the same way.
+We found no clinical trials of bone broth or collagen in inflammatory bowel disease or so-called leaky gut. The nearest human evidence comes from gelatin tannate, which is gelatin combined with tannic acid.
 
 **Diarrhoea in children:** In one trial, 103 children given gelatin tannate plus oral rehydration solution had fewer watery stools at 12 hours than 100 children given rehydration plus placebo (59.2% vs 77.0%) [31]. A later meta-analysis of three trials (276 children) found no difference from placebo in the duration of diarrhoea [32].
 
-**Collagen levels in IBD:** People with ulcerative colitis and Crohn's disease had lower blood levels of collagen IV than healthy controls (72.8 and 71.0 vs 79.8 ng/ml) [33]. This does not show that eating collagen would change those levels.
+**Lab and animal studies:** Gelatin tannate reduced inflammatory signals in human gut cells in the lab [29] and reduced the severity of colitis in mice [30]. These studies tested gelatin with tannic acid added, not broth.
 
-We found no clinical trials of bone broth or collagen in people with leaky gut, ulcerative colitis or Crohn's disease.
+**Collagen levels in IBD:** People with ulcerative colitis and Crohn's disease had lower blood levels of collagen IV than healthy controls (72.8 and 71.0 vs 79.8 ng/ml) [33]. This does not show that eating collagen would change those levels.
 
 ### Cardiovascular Considerations
 
@@ -180,11 +180,11 @@ A review of this research described effective amounts of collagen peptides as 2.
 
 ### Practical Bone Broth Dosing
 
-We found no study that measured how much bone broth would supply the collagen doses used in these trials. In the one analysis we found, broth made to a standard recipe gave much lower levels of collagen amino acids than a 20 g supplement dose [2]. Bone broth cannot be relied on to match trial doses.
+We found no study that measured how much bone broth would supply the collagen doses used in these trials. In the one analysis we found, broth made to a standard recipe gave significantly lower levels of collagen amino acids than a 20 g supplement dose [2]. Bone broth cannot be relied on to match trial doses.
 
 ### Product Context
 
-Dr Brad Stanfield's MicroVitamin+ Powder includes 12.5 g of collagen peptides alongside 5 g of creatine monohydrate and 25 core vitamin and mineral ingredients ([shop MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder)).
+Dr Brad Stanfield's MicroVitamin+ Powder includes 10 g of collagen peptides alongside 5 g of creatine monohydrate, 5 g of acacia fiber and 25 core vitamin and mineral ingredients ([shop MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder)).
 
 ### Timing and Administration
 
@@ -204,7 +204,7 @@ The most reported side effects of collagen derivatives in osteoarthritis trials 
 
 In rheumatoid arthritis trials of oral type II collagen, one found no treatment-related adverse events [14]. Another found stomach and bowel symptoms common with both chicken type II collagen and methotrexate, with fewer and milder side effects in the collagen group [15].
 
-Twenty-five randomised trials of hydrolysed collagen, reviewed in 2026, found it generally well tolerated, with a low incidence of adverse events [42]. Older reports of headache, dizziness, insomnia, poor appetite, rash, canker sores and raised liver enzymes with type II collagen could not be confirmed in public sources.
+Twenty-five randomised trials of hydrolysed collagen, reviewed in 2026, found it generally well tolerated, with a low incidence of adverse events [42]. Older reports of other mild effects and of raised liver enzymes with type II collagen could not be confirmed in public sources.
 
 ### Sodium Content
 
@@ -226,7 +226,7 @@ We found no public source that tested bone broth in people with kidney disease, 
 
 **Kidney disease and dialysis:** MedlinePlus advises people with chronic kidney disease to limit salt, potassium and phosphorus, and not to use salt substitutes because they contain potassium. People on dialysis need to watch how much liquid they take in, and soups count toward it [39]. One review lists potassium and phosphorus among the minerals in bone broth [40].
 
-**Pregnancy:** MedlinePlus notes that unborn children are the most vulnerable to lead [41]. If you are pregnant, keep the lead findings above in mind and ask your midwife or doctor before drinking bone broth regularly.
+**Pregnancy and children:** MedlinePlus notes that lead is much more harmful to children than to adults, and that unborn children are the most vulnerable [41]. If you are pregnant, or plan to give bone broth to a child regularly, keep the lead findings above in mind and ask your doctor or midwife first.
 
 **Histamine intolerance:** Long-simmered bone broth is sometimes said to be high in histamine. We found no public source that measured this. If you have histamine intolerance, ask your doctor first.
 
@@ -240,7 +240,7 @@ A low-salt diet helps lower blood pressure, and MedlinePlus advises limiting sod
 
 ### Potassium and Potassium-Sparing Diuretics
 
-The spironolactone (Aldactone) label warns that a diet rich in potassium, potassium supplements or potassium-containing salt substitutes may lead to severe hyperkalaemia, and advises patients to avoid potassium supplements and foods high in potassium [6]. We found no public source for the potassium content of bone broth, so check the nutrition label and ask your doctor.
+The spironolactone (Aldactone) label warns that a diet rich in potassium, potassium supplements or potassium-containing salt substitutes may lead to severe hyperkalaemia, and advises patients to avoid potassium supplements and foods high in potassium [6]. The label adds that the risk is higher with impaired kidney function or with drugs that raise potassium, such as ACE inhibitors and angiotensin receptor blockers [6]. If you take another potassium-sparing diuretic, ask your doctor first. We found no public source for the potassium content of bone broth, so check the nutrition label and ask your doctor.
 
 ### Warfarin and Anticoagulants
 
@@ -286,7 +286,7 @@ In one small trial, adding 500 mg of vitamin C to 3 g of collagen peptide did no
 
 ### Optimizing Homemade Bone Broth
 
-Adding acid and cooking for more than 8 hours raised calcium and magnesium extraction [5], but broth stayed a poor source of both. Amino acid levels in home-made broth made to a standard recipe were higher than in commercial broth made the same way [2].
+In experiments, adding acid and cooking for more than 8 hours raised calcium and magnesium extraction [5]. The home-made and commercial broths tested stayed a poor source of both [5]. Amino acid levels in home-made broth made to a standard recipe were higher than in commercial broth made the same way [2].
 
 ### Storage
 
