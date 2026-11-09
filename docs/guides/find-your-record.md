@@ -14,7 +14,7 @@ Where that file lives depends on what you chose when the tool asked where to kee
 
 Open Settings: on a computer, the person button beside My health; on a phone, the Account tab. If you connected a cloud, a line there says "Your health record is yours alone. It lives in your", followed by the name of your provider. Click that name to see the list of places you can keep it, with a tick beside the one you use.
 
-If instead you see a button that says "Keep my record in Dropbox or Google Drive", nothing is connected. Your record is in this browser only.
+If instead you see a button that says "Keep my record in Dropbox or Google Drive", nothing is connected. Your record is in this browser only. On a phone that button heads the Account tab. On a computer, a Sign in button beside the My health title means the same.
 
 ## Dropbox
 
@@ -86,7 +86,7 @@ To stop using the tool on a shared computer, open Settings (the Account tab on a
 
 ## Delete your data
 
-Use the Delete All My Data button at the bottom of your plan. The tool explains what it will erase before you confirm.
+Use the Delete all my data button at the bottom of Settings on a computer, or of the Account tab on a phone. The tool explains what it will erase before you confirm.
 
 It erases your health record and chat history in this browser and in your connected cloud. The file itself stays, now empty except for a note of the erase. That note is what makes your other devices and open tabs drop the same values when they next read the file. A value another device had not saved yet is kept and arrives later.
 
@@ -98,6 +98,7 @@ Some things it cannot reach, and the confirm box lists them:
 - backups from the command-line tool, until that tool next writes the file
 - your chat questions on our server: on the tool page each is blanked 30 days after you sent it; on the chat bubble and the chatbot embed, questions, replies and the title are gone 30 days after your last message in that chat
 - the copy we keep of each health question you asked in the chat, with no end date, to improve the chatbot (see [the questions we keep](/blogs/guides/where-your-data-lives#the-questions-we-keep)); email brad@drstanfield.com the wording to have one deleted
+- what you sent through the feedback box, which our server keeps with your email address, and the copy that went to Brad by email
 
 Delete those in your cloud account if you want them gone.
 

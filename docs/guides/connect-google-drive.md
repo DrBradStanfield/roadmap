@@ -28,7 +28,7 @@ Google also shares your email address with the tool. The tool says so on the Goo
 
 ## Connect, step by step
 
-1. Open [the tool](https://drstanfield.com/pages/roadmap). Once you have entered your sex and height, a button that says "Keep my record in Dropbox or Google Drive" appears at the foot of My health. It is also in Settings on a computer, and in the Account tab on a phone. Click the button. The words "Dropbox or Google Drive", in the line under the button, open the same box.
+1. Open [the tool](https://drstanfield.com/pages/roadmap). On a phone, open the Account tab: a button that says "Keep my record in Dropbox or Google Drive" heads it. On a computer, the same button appears at the foot of My health once you have entered your height, and in Settings (the person button beside the My health title); the Sign in button beside that title opens the same box. Click the button. The words "Dropbox or Google Drive", in the line under the button, open the same box too.
 2. A box opens, titled "Where do you want to keep your health record?" The Google Drive option says "One file in your own Google Drive, in a private "Health Plan by Dr Brad" folder." Its last line says "On Google's screen, tick the Google Drive box. Without it we cannot save your file."
 3. Click Google Drive. The page moves to Google.
 4. Pick your Google account, and sign in if asked.
@@ -77,7 +77,7 @@ Log off this device. Open Settings on a computer, or the Account tab on a phone.
 
 Withdraw the tool's access at Google. Go to [myaccount.google.com/connections](https://myaccount.google.com/connections), find the tool in the list, and remove its access. That stops the tool reaching your Drive from any device until you connect again. It also cuts off the ChatGPT or Claude connector, if you use one, because the connector signs in to Google as the same app. Your folder and file stay in your Drive.
 
-To erase your record, use Delete All My Data at the bottom of your plan first. [Find your health record file](/blogs/guides/find-your-record#delete-your-data) explains what it erases and what it cannot reach. Do not delete the folder by hand to erase it. A tab or device that still has your record open can save it again, and the file comes back. Once Delete All My Data has run, you can delete the folder too if you want.
+To erase your record, first use Delete all my data, at the bottom of Settings on a computer or of the Account tab on a phone. [Find your health record file](/blogs/guides/find-your-record#delete-your-data) explains what it erases and what it cannot reach. Do not delete the folder by hand to erase it. A tab or device that still has your record open can save it again, and the file comes back. Once Delete all my data has run, you can delete the folder too if you want.
 
 ## Other guides
 

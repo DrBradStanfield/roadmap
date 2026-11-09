@@ -26,7 +26,7 @@ It is free, and you do not create an account. The code is public under the MIT l
 
 ## Step 1: Start your record
 
-Open [the tool](https://drstanfield.com/pages/roadmap) and enter your sex, height and weight. A button that says "Keep my record in Dropbox or Google Drive" then appears at the foot of My health. It is also in Settings on a computer, and in the Account tab on a phone. Click it and pick Dropbox or Google Drive. When the cloud connects, the tool copies what you entered into a new file in your cloud folder.
+Open [the tool](https://drstanfield.com/pages/roadmap) and answer its first questions: your height, weight and sex. Then find the button that says "Keep my record in Dropbox or Google Drive". On a phone it heads the Account tab. On a computer it sits at the foot of My health and in Settings, and the Sign in button beside the My health title opens the same choice. Click it and pick Dropbox or Google Drive. When the cloud connects, the tool copies what you entered into a new file in your cloud folder.
 
 Until you connect a cloud, the tool keeps your record in your browser only, and no assistant can reach it. [Find your health record file](/blogs/guides/find-your-record) shows where the file lands in each cloud.
 
@@ -58,7 +58,7 @@ There are two main ways to get a lab report into your record.
 
 In the chat, drop in a PDF or a photo of the report and ask your assistant to file it. The assistant reads the file itself and sends our server only the values it read: the test name as printed, the number, the unit and the date. Our server checks each value against the record's list of tests, units and ranges. You see the candidate values first. Nothing is written until you confirm.
 
-On the website, upload the report under Blood Test Results. The tool shows what it read in a table, and you check it against the report before you press Save. The details, including file types and limits, are in [upload a lab report](/blogs/guides/upload-lab-report).
+On the website, press the + button beside Blood tests in My health and upload the report there. The tool shows what it read in a table, and you check it against the report before you press Save. The details, including file types and limits, are in [upload a lab report](/blogs/guides/upload-lab-report).
 
 With a Dropbox record, you can also put lab files in your Dropbox folder and ask the assistant to import them. Those files go through our server to Anthropic's API to be read. The [ChatGPT guide](/blogs/guides/connect-chatgpt#what-it-can-do) explains that path.
 
