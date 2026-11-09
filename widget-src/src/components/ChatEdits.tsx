@@ -11,7 +11,6 @@ import { toCanonicalValue, formatHeightDisplay, type MetricType, type UnitSystem
 import { VITALS_INPUT_FIELDS, chatMedicationChange, unsavedProfile, type ChatMedicationRow, type ProposedEdit, type ProposedFieldEdit, type ProposedMedicationEdit, type ProposedProfileEdit } from '@roadmap/health-core/chat-edits';
 import { loadLatestMeasurementsSync, holdsUnreadableMedication } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
-import type { ListSaves } from '../lib/list-saves';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { VitalsPrefillFn } from './StartingInfoVitals';
 
@@ -39,7 +38,8 @@ interface ChatEditsDeps {
   eraseUnshown: () => boolean;
   handleInputChange: <K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem) => void;
   handleMedicationChange: (medicationKey: string, drugName: string, doseValue: number | null, doseUnit: string | null) => void;
-  medSaveTimers: MutableRefObject<ListSaves>;
+  /** A medication's save still waits on its timer. */
+  medicationWaiting: (key: string) => boolean;
   vitalsPrefillRef: MutableRefObject<VitalsPrefillFn | null>;
   bloodTestPrefillRef: MutableRefObject<BloodTestPrefillFn | null>;
   /** The hand-off: the form comes into view (a phone's tab, Settings closed)... */
@@ -50,7 +50,7 @@ interface ChatEditsDeps {
 
 export function useChatEdits({
   medications, inputs, inputsRef, unitSystem, eraseUnshown, handleInputChange, handleMedicationChange,
-  medSaveTimers, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal,
+  medicationWaiting, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal,
 }: ChatEditsDeps) {
   // A one-shot undo for a medication change the chat just applied (meds
   // auto-save, so the chat states the change; only this banner offers Undo): every row the
@@ -103,12 +103,12 @@ export function useChatEdits({
     const saved = loadLatestMeasurementsSync()?.medications ?? [];
     const onForm = medicationsRef.current.find(m => m.medicationKey === edit.medicationKey);
     const { undo, reset } = chatMedicationChange(edit, saved, stated, onForm);
-    const resets = !!reset && (undo.some(m => m.medicationKey === reset) || medSaveTimers.current.has(reset) || holdsUnreadableMedication(reset, true));
+    const resets = !!reset && (undo.some(m => m.medicationKey === reset) || medicationWaiting(reset) || holdsUnreadableMedication(reset, true));
     const undoable = ![edit.medicationKey, resets && reset].some(key => key && holdsUnreadableMedication(key));
     if (resets) handleMedicationChange(reset, 'not_yet', null, null);
     handleMedicationChange(edit.medicationKey, edit.drugName, edit.doseValue, edit.doseUnit);
     return undoable ? undo : null;
-  }, [handleMedicationChange, medSaveTimers]);
+  }, [handleMedicationChange, medicationWaiting]);
 
   // Only what the profile does not already hold shows, however it changed since.
   const pendingProfile = profileProposal && unsavedProfile(profileProposal, inputs, unitSystem);
