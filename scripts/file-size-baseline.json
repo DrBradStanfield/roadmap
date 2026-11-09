@@ -28,7 +28,7 @@
     "widget-src/src/components/StartingInfoVitals.tsx": 806,
     "ios/HealthRoadmap/MyData/RecordStore.swift": 798,
     "packages/health-core/src/record-session.ts": 783,
-    "widget-src/src/storage/drive.ts": 759,
+    "widget-src/src/storage/drive.ts": 757,
     "packages/health-core/src/mcp-tools.ts": 747,
     "packages/health-core/src/drive-rest.ts": 730,
     "app/lib/anthropic.server.ts": 727,

@@ -24,10 +24,10 @@
  * check-to-upload gap of one PATCH round trip remains; verify-after-write
  * catches a writer who lands inside it.
  */
-import * as z from '@roadmap/health-core/zod';
 import { ConflictError, fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, jsonBody, timeoutDeadline, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { driveCreateFile, driveCreateFolder, driveDownloadDocument, driveDownloadJson, driveEnsureSubfolder, driveFileIsLive, driveFileVersion, driveFindFileId, driveFindFolder, driveUpdateIfVersion, driveUploadDocument, readDriveRecord, DRIVE_API, DRIVE_FOLDER_NAME, writeDriveRecord } from '@roadmap/health-core/drive-rest';
 import { splitDocumentRef } from '@roadmap/health-core/document-path';
+import { codeGrantReply } from './drive-token-reply';
 import { getJson, setJson, safeRemoveItem } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
 
@@ -116,14 +116,6 @@ function expiry(expiresIn?: number): number {
 export const DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
 type RefreshGrant = { accessToken: string; expiresIn: number; idToken?: string };
-
-/** The code exchange's reply, used only when whole (US-09 AC37, issue #924), as Dropbox's is (AC1a). */
-const codeGrantSchema = z.object({
-  accessToken: z.string().min(1),
-  refreshToken: z.string().min(1).optional(),
-  expiresIn: z.number().finite(),
-  idToken: z.string().optional(),
-});
 
 /**
  * POST a refresh grant to the stateless endpoint and read a 2xx body, both in
@@ -331,8 +323,6 @@ export class GoogleDriveAdapter implements StorageAdapter {
     // POST a CORS "simple request" (no preflight — remix-serve can't answer
     // OPTIONS). The endpoint parses JSON regardless of content type. Bounded
     // (US-09 AC37), as Dropbox's is: the page waits on this before it draws.
-    // 15 s, past the server's own 10 s for Google, so the browser never gives
-    // up on a code the server is still spending (issue #977).
     const res = await fetchOrFail('Google Drive', config.exchangeUrl, {
       method: 'POST',
       body: JSON.stringify({
@@ -341,14 +331,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
         codeVerifier: claimed.verifier,
         redirectUri: config.redirectUri,
       }),
-      timeoutMs: 15_000,
+      timeoutMs: 15_000, // past the server's 10 s for Google (issue #977)
     });
-    if (!res.ok) {
-      throw new StorageError(`Google Drive connect failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
-    }
-    const reply = codeGrantSchema.safeParse(await res.json().catch(() => null));
-    if (!reply.success) throw new StorageError('Google Drive sent an incomplete sign-in reply. Please reconnect.');
-    const json = reply.data;
+    const json = await codeGrantReply(res);
     setJson(TOKENS_KEY, {
       accessToken: json.accessToken,
       refreshToken: json.refreshToken,
