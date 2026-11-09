@@ -30,6 +30,14 @@ describe('US-62 AC30: My health styles', () => {
     expect(blocks(/\.mh-add-test \.supplement-dropdown-item/).join('')).toMatch(/min-height:\s*44px/);
   });
 
+  it('AC30f: the supplement list sits in the page, never floating over the card below', () => {
+    // A real iPhone sent a tap on the floating list to the card behind it (2026-11-10).
+    const all = blocks(/\.supplement-dropdown\s*(,|$)/m).join('');
+    expect(all).not.toMatch(/position:\s*(absolute|fixed)/);
+    expect(all).not.toMatch(/overflow(-y)?:\s*(auto|scroll)/);
+    expect(all).not.toMatch(/z-index/);
+  });
+
   it('AC32, AC34: a phone draws no title, still there for screen readers, and no header row; desktop keeps it', () => {
     const phone = css.slice(css.lastIndexOf('@media (max-width: 768px)'));
     const title = /\.mh-title\s*\{([^}]*)\}/.exec(phone)![1];
