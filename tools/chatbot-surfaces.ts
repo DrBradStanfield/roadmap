@@ -14,11 +14,14 @@
  * without the video's post kept, which production never does) and takes no
  * user_context. Its query is the raw comment, as production sends it; history
  * turns carry the "Name: " prefix buildThreadHistory gives them.
- * Not covered: the classifier gate before the answer (SILENT_ON_YOUTUBE).
+ * Not covered: the classifier gate before the answer (SILENT_ON_YOUTUBE), and
+ * the router (fixed handles only). The harness lowercases and strips markdown
+ * before matching, so `skip_no_reply` or `**SKIP_NO_REPLY**` passes a skip
+ * check here, though production skips only on the exact SKIP_NO_REPLY.
  */
 import fs from 'fs';
 import path from 'path';
-import { loadBlogIndex, type BlogIndexEntry } from '../app/lib/blog-index.server';
+import { findBlogByVideoId, loadBlogIndex, type BlogIndexEntry } from '../app/lib/blog-index.server';
 import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content';
 import { stripFrontmatter } from '../app/lib/frontmatter';
 import { preferMasters } from '../app/lib/router-view';
@@ -60,7 +63,8 @@ export function loadYouTubeVideos<Q extends SurfaceFixture>(queries: Q[]): Map<Q
     const entry = loadBlogIndex().find(a => a.handle === q.youtube_video);
     const videoId = entry?.youtube?.match(/(?:v=|youtu\.be\/)([\w-]{11})/)?.[1];
     const raw = entry && loadBlogArticle(entry.handle);
-    if (!entry || !videoId || !raw) return `youtube_video "${q.youtube_video}" is not a post with a video and a body, on: ${q.query}`;
+    // Production finds the post by its video (loadVideoBody); a second post sharing that video is never picked.
+    if (!entry || !videoId || !raw || findBlogByVideoId(videoId)?.handle !== entry.handle) return `youtube_video "${q.youtube_video}" is not a post with a video and a body, on: ${q.query}`;
     videos.set(q, { videoId, entry, body: stripFrontmatter(raw) });
   }
   return videos;
