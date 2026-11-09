@@ -5,7 +5,7 @@
     "packages/health-core/src/mcp-tool-catalogue.ts": "data table: the published MCP tool and prompt text (mostly literals)"
   },
   "files": {
-    "widget-src/src/components/InputPanel.tsx": 1937,
+    "widget-src/src/components/InputPanel.tsx": 1772,
     "tools/knowledge-batch-check.ts": 1730,
     "widget-src/src/components/HealthTool.tsx": 1713,
     "tools/codex-review.mjs": 1699,
