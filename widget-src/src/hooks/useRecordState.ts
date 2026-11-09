@@ -1,11 +1,13 @@
 // The screen's copy of the record (untangle W1-4): the plan's latest values,
 // every measurement, the lab rows, the documents and the three lists. The
 // store is authoritative. This copy changes only four ways:
-//   a re-read replaces it (applyLists, and the setters reloadValues uses);
+//   a re-read replaces it (applyLists, and the setters the first load,
+//     reloadValues and the lab-row refresh use);
 //   an erase empties it (clearForErase);
-//   a list change patches one row ahead of its save (patchRow, stopSupplement),
-//     which the next re-read confirms or replaces;
-//   a deleted document leaves the list (setDocumentHistory).
+//   a list change patches one row ahead of its save (patchMedication,
+//     patchScreening, patchSupplement, stopSupplement), which the next re-read
+//     confirms or replaces;
+//   a deleted document leaves the list (dropDocument).
 import { useCallback, useMemo, useState } from 'react';
 import { BLOOD_TEST_METRICS, VITAL_METRICS, type ApiMeasurement, type ApiMedication, type ApiScreening } from '@roadmap/health-core/mappings';
 import type { ApiDocument, ApiLabValue, ApiSupplement } from '../lib/api-types';
@@ -69,9 +71,11 @@ export function useRecordState(initialPrevious: () => ApiMeasurement[]) {
   const stopSupplement = useCallback((key: string) =>
     setSupplements(prev => prev.map(s => s.supplementKey === key ? { ...s, status: 'stopped', updatedAt: new Date().toISOString() } : s)), []);
 
+  const dropDocument = useCallback((id: string) => setDocumentHistory(prev => prev.filter(d => d.id !== id)), []);
+
   return {
     previousMeasurements, history, bloodTestHistory, vitalsHistory, documentHistory, labValueHistory, medications, screenings, supplements,
-    setPreviousMeasurements, setHistory, setLabValueHistory, setDocumentHistory,
-    applyLists, clearForErase, patchMedication, patchScreening, patchSupplement, stopSupplement,
+    setPreviousMeasurements, setHistory, setLabValueHistory,
+    applyLists, clearForErase, patchMedication, patchScreening, patchSupplement, stopSupplement, dropDocument,
   };
 }

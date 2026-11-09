@@ -174,8 +174,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // The screen's copy of the record: replaced by a re-read, emptied by an erase (hooks/useRecordState).
   const {
     previousMeasurements, history, bloodTestHistory, vitalsHistory, documentHistory, labValueHistory, medications, screenings, supplements,
-    setPreviousMeasurements, setHistory, setLabValueHistory, setDocumentHistory,
-    applyLists, clearForErase, patchMedication, patchScreening, patchSupplement, stopSupplement,
+    setPreviousMeasurements, setHistory, setLabValueHistory,
+    applyLists, clearForErase, patchMedication, patchScreening, patchSupplement, stopSupplement, dropDocument,
   } = useRecordState(() => mountRead.current?.result?.previousMeasurements ?? []);
   // The prostate section's PSA day (YYYY-MM-DD); null until one is picked, so today (US-06 AC15).
   const [psaDate, setPsaDate] = useState<string | null>(null);
@@ -1394,9 +1394,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     storageAtFoot: getBackendKind() === 'local',
     onPlanReadyDismiss: planReadyFor === epoch ? dismissPlanReady : undefined,
     healthDocuments: documentHistory,
-    onDocumentDeleted: (docId: string) => {
-      setDocumentHistory(prev => prev.filter(d => d.id !== docId));
-    },
+    onDocumentDeleted: dropDocument,
   };
   // The reasons open on screen are the PDF's too (US-62 AC28).
   const myHealth = (form: FormSlots) => (
