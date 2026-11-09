@@ -6,28 +6,16 @@
 // is the grid's own AddLabTest. No save path of its own.
 
 import { lazy, Suspense, useEffect, useId, useMemo, useRef, useState, type MutableRefObject } from 'react';
-import {
-  type ApiMeasurement,
-  type CellUnit,
-  type MetricType,
-  type StatTile,
-  METRIC_LABELS,
-  PRESSURE_ORDER,
-  cellFromSI,
-  cellLabel,
-  cellText,
-  cellToSI,
-  localDay,
-  groupLabValues,
-  limitText,
-  limitUngraded,
-  LIMIT_NOT_GRADED,
-  pressureInverted,
-  pressureStatus,
-  rowTarget,
-  savedLabText,
-  valueStatus,
-} from '@roadmap/health-core';
+import { type ApiMeasurement, METRIC_LABELS } from '@roadmap/health-core/mappings';
+import { type CellUnit, cellFromSI, cellLabel, cellText, cellToSI } from '@roadmap/health-core/cell-unit';
+import type { MetricType } from '@roadmap/health-core/units';
+import type { StatTile } from '@roadmap/health-core/stat-tiles';
+import { PRESSURE_ORDER, pressureInverted } from '@roadmap/health-core/validation';
+import { localDay } from '@roadmap/health-core/merge';
+import { groupLabValues, savedLabText } from '@roadmap/health-core/lab-series';
+import { limitText, LIMIT_NOT_GRADED } from '@roadmap/health-core/lab-limits';
+import { limitUngraded, pressureStatus, valueStatus } from '@roadmap/health-core/row-grade';
+import { rowTarget } from '@roadmap/health-core/row-target';
 import { blockBadNumericKeys, blockNonIntegerKeys, readTypedValue, sameAsSaved, savedCellText, validateTypedValue } from '../lib/blood-test-cell';
 import { activeRowIndex, slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import { pressureReadings, readingsOf, type DayReading } from '../lib/my-data-rows';

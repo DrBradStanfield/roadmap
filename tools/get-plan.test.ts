@@ -13,20 +13,13 @@ import { readFileSync, mkdtempSync, writeFileSync, rmSync, realpathSync, existsS
 import { tmpdir } from 'node:os';
 import { join, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-  calculateHealthResults,
-  createEmptyFile,
-  createMeasurement,
-  medicationsToInputs,
-  mergeFiles,
-  mergeLongitudinalInputs,
-  migrateFile,
-  screeningsToInputs,
-  toOldShape,
-  type FileLabValue,
-  type HealthInputs,
-  type RoadmapFile,
-} from '@roadmap/health-core';
+import { calculateHealthResults } from '@roadmap/health-core/calculations';
+import { createEmptyFile, createMeasurement, type FileLabValue, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { medicationsToInputs, mergeLongitudinalInputs, screeningsToInputs } from '@roadmap/health-core/mappings';
+import { mergeFiles } from '@roadmap/health-core/merge';
+import { migrateFile } from '@roadmap/health-core/migrate';
+import { toOldShape } from '@roadmap/health-core/blood-tests';
+import type { HealthInputs } from '@roadmap/health-core/types';
 import { RoadmapStore } from '../widget-src/src/storage/roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../packages/health-core/src/adapter';

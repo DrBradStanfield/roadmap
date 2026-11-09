@@ -2,7 +2,9 @@
 // a profile preference stamped like any other, so it follows them across
 // devices.
 import { describe, it, expect } from 'vitest';
-import { MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { RoadmapStore } from './roadmap-store';
 
 const readCloudFile = (cloud: MemoryCloud): RoadmapFile => JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;

@@ -8,7 +8,8 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
-import { LIMIT_NOT_GRADED, type ApiMeasurement } from '@roadmap/health-core';
+import { LIMIT_NOT_GRADED } from '@roadmap/health-core/lab-limits';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { BloodTestTimeline } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
 import { BLOOD_ROWS, MetricRows, coreRow, pressureRow, type RowContext } from './MyDataRows';

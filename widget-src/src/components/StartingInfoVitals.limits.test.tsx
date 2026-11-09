@@ -6,7 +6,8 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from '@testing-library/react';
-import { LIMIT_NOT_GRADED, type ApiMeasurement, type Comparator } from '@roadmap/health-core';
+import { LIMIT_NOT_GRADED, type Comparator } from '@roadmap/health-core/lab-limits';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { StartingInfoVitals } from './StartingInfoVitals';
 
 afterEach(() => { cleanup(); localStorage.clear(); });

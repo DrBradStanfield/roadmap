@@ -2,7 +2,7 @@
  * What a picked file is, by its mime type or name (US-12 AC13). Pure, so the
  * modal reads and counts by the same rule without loading the upload bundle.
  */
-import { extensionOf } from '@roadmap/health-core';
+import { extensionOf } from '@roadmap/health-core/document-path';
 
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 

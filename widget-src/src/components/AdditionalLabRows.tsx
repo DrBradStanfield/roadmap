@@ -5,7 +5,7 @@
 // corrected in place, like a core one (AC5).
 
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { groupLabValues, type LabRowsIcon, type LabValueGroup } from '@roadmap/health-core';
+import { groupLabValues, type LabRowsIcon, type LabValueGroup } from '@roadmap/health-core/lab-series';
 import { countLabValuePoints, labGroupMatrix } from '../lib/lab-rows';
 import { AddLabTest } from './AddLabTest';
 import { UnitChip } from './UnitChip';
@@ -15,7 +15,7 @@ import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { trackProductEvent } from '../lib/server-api';
 import type { CorrectFn } from '../lib/matrix-save';
 import type { ApiLabValue } from '../lib/api-types';
-import type { ApiMeasurement } from '@roadmap/health-core';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 
 function GroupIcon({ icon }: { icon: LabRowsIcon }) {
   const common = { width: 14, height: 14, viewBox: '0 0 16 16', fill: 'none', 'aria-hidden': true } as const;

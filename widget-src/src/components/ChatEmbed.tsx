@@ -6,7 +6,7 @@
  * panel scrolls into view, giving the health widget priority on page load.
  */
 import React, { useState, useEffect, useRef, useCallback, useReducer } from 'react';
-import type { ProposedEdit } from '@roadmap/health-core';
+import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { getChatGate } from '../lib/chat-api';
 import { observeVisibility } from '../lib/observe-visibility';
 import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource } from '../hooks/useChatState';

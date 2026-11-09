@@ -1,34 +1,19 @@
 import { useState, useMemo, useEffect, useCallback, useRef, memo, useId, type ReactNode } from 'react';
-import type { LpaUnit, UnitSystem, MetricType, MeasurementSource, ApiMeasurement, DocumentType } from '@roadmap/health-core';
-import {
-  UNIT_DEFS,
-  healthInputSchema,
-  METRIC_LABELS,
-  METRIC_TO_FIELD,
-  commaQuestion,
-  BLOOD_TEST_METRICS,
-  VITAL_METRICS,
-  hasUnitChoice,
-  isScreeningEligible,
-  displayLabUnit,
-  labSlotKey,
-  resolveLabCatalogEntry,
-  canonicalLabRow,
-  labCountFault,
-  labPlausibleBound,
-  sameLabQuantity,
-  slotState,
-  validDay,
-  isCalendarDay,
-  UNDATED_PREVIOUS,
-  withComparator,
-  comparatorOf,
-  type Comparator,
-  type LabQuantity,
-} from '@roadmap/health-core';
+import { type LpaUnit, type UnitSystem, type MetricType, UNIT_DEFS, hasUnitChoice } from '@roadmap/health-core/units';
+import { type MeasurementSource, type DocumentType, healthInputSchema } from '@roadmap/health-core/validation';
+import { type ApiMeasurement, METRIC_LABELS, METRIC_TO_FIELD, BLOOD_TEST_METRICS, VITAL_METRICS } from '@roadmap/health-core/mappings';
+import { commaQuestion } from '@roadmap/health-core/parseNumber';
+import { isScreeningEligible } from '@roadmap/health-core/types';
+import { displayLabUnit, labSlotKey, resolveLabCatalogEntry, canonicalLabRow, labCountFault, labPlausibleBound } from '@roadmap/health-core/lab-catalog';
+import { sameLabQuantity, slotState, validDay, type LabQuantity } from '@roadmap/health-core/record-edits';
+import { isCalendarDay } from '@roadmap/health-core/measurement-history';
+import { UNDATED_PREVIOUS, type RefusedLabValue } from '@roadmap/health-core/lab-extraction';
+import { withComparator, comparatorOf, type Comparator } from '@roadmap/health-core/lab-limits';
 import { getCurrentDateValue } from './DatePicker';
 import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, DocumentResult, UploadHistory } from '../lib/api-types';
-import { labUnitRefusalLine, labValueLabel, pendingRowsFor, rowTarget, type RefusedLabValue } from '@roadmap/health-core';
+import { labUnitRefusalLine, labValueLabel } from '@roadmap/health-core/lab-series';
+import { pendingRowsFor } from '@roadmap/health-core/document-save';
+import { rowTarget } from '@roadmap/health-core/row-target';
 import { unarchivedOriginals } from '../lib/archive-payloads';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
 import { type CellUnit, type Grading, cellLabel, cellNumber, cellText, cellToSI, hasNumericSyntax, NUMERIC_SYNTAX_GUIDANCE, readNumericCell, readTypedValue, validateTypedValue } from '../lib/blood-test-cell';

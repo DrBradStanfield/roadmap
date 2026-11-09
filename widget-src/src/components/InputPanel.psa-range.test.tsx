@@ -5,7 +5,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
-import { UNIT_DEFS } from '@roadmap/health-core';
+import { UNIT_DEFS } from '@roadmap/health-core/units';
 import { InputPanel } from './InputPanel';
 import { MY_HEALTH_PROPS } from '../testing/my-health-props';
 

@@ -1,9 +1,12 @@
-import type { HealthInputs, ApiMeasurement, ApiMedication, ApiScreening, ChatContextPayload, LabEgfr } from '@roadmap/health-core';
-import type { UnitSystem } from '@roadmap/health-core';
-import {
-  sanitizeInputs, mergeLongitudinalInputs, chatContextOf, detectUnitSystem, PREFILL_FIELDS, withLabEgfr, dayOf, localDay,
-  isComparator, labEgfrFrom, isClinicalDay,
-} from '@roadmap/health-core';
+import type { HealthInputs } from '@roadmap/health-core/types';
+import { type ApiMeasurement, type ApiMedication, type ApiScreening, mergeLongitudinalInputs, PREFILL_FIELDS } from '@roadmap/health-core/mappings';
+import { type ChatContextPayload, chatContextOf } from '@roadmap/health-core/chat-context';
+import { type LabEgfr, withLabEgfr, labEgfrFrom } from '@roadmap/health-core/plan';
+import { type UnitSystem, detectUnitSystem } from '@roadmap/health-core/units';
+import { sanitizeInputs } from '@roadmap/health-core/validation';
+import { dayOf, localDay } from '@roadmap/health-core/merge';
+import { isComparator } from '@roadmap/health-core/lab-limits';
+import { isClinicalDay } from '@roadmap/health-core/measurement-history';
 import type { ApiReminderPreference } from './api-types';
 
 /** The mirror: HealthTool's copy of the saved record, which the chatbot embed

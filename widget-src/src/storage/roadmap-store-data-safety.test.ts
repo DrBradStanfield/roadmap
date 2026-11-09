@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createEmptyFile, toOldShape, type RoadmapFile } from '@roadmap/health-core';
+import { createEmptyFile, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { toOldShape } from '@roadmap/health-core/blood-tests';
 import { ERASE_UNREACHABLE, RoadmapStore, PENDING_MIRROR_KEY, markSyncPending, isSyncPending } from './roadmap-store';
-import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { LocalStorageAdapter } from './local-storage-adapter';
-import { ROADMAP_FILE_NAME, StorageError, type WriteResult } from '@roadmap/health-core';
+import { ROADMAP_FILE_NAME, StorageError, type WriteResult } from '@roadmap/health-core/adapter';
 import { DRAFTS_CLEARED_EVENT } from '../lib/storage';
 
 /** The file as it landed in the (simulated) cloud after a flush. */

@@ -8,7 +8,9 @@
  * a MemoryAdapter that refuses the way Drive did (StorageError, status 403).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { MemoryAdapter, ROADMAP_FILE_NAME, StorageError, createEmptyFile, type RoadmapFile, type StorageAdapter } from '@roadmap/health-core';
+import { MemoryAdapter } from '@roadmap/health-core/memory-adapter';
+import { ROADMAP_FILE_NAME, StorageError, type StorageAdapter } from '@roadmap/health-core/adapter';
+import { createEmptyFile, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { LocalStorageAdapter, isSyncPending } from '../src/storage';
 import { ERASE_UNREACHABLE, RoadmapStore } from '../src/storage/roadmap-store';
 import * as data from '../src/lib/roadmap-data';

@@ -3,7 +3,8 @@
  * Bundled in health-upload.js (separate IIFE).
  */
 import JSZip from 'jszip';
-import { fileNameLine, IMPORT_LIMITS, isImportableEntryName } from '@roadmap/health-core';
+import { fileNameLine, isImportableEntryName } from '@roadmap/health-core/lab-extraction';
+import { IMPORT_LIMITS } from '@roadmap/health-core/import-hints';
 
 /** ZIP entry enumeration — filters junk, dotfiles, unsupported extensions
  *  (the rule is health-core's, shared with the connector's import). */

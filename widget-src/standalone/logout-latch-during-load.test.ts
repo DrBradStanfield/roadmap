@@ -15,7 +15,7 @@
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryAdapter } from '@roadmap/health-core';
+import { MemoryAdapter } from '@roadmap/health-core/memory-adapter';
 
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: vi.fn() }));
@@ -142,7 +142,7 @@ describe('US-09 AC2h: a tab still loading when another tab logs off', () => {
       storage: await import('../src/storage/roadmap-store'),
       local: await import('../src/storage/local-storage-adapter'),
       connect: await import('./connect'),
-      core: await import('@roadmap/health-core'), // its own StorageError class
+      core: await import('@roadmap/health-core/adapter'), // its own StorageError class
     };
     const cloud = new SlowFirstReadCloud();
     cloud.firstReadError = new other.core.StorageError('synthetic unreachable cloud', undefined, undefined, 503);

@@ -15,7 +15,10 @@
  * until a test saves it.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ConflictError, createEmptyFile, createMeasurement, MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME, StorageError, toOldShape, type RoadmapFile } from '@roadmap/health-core';
+import { ConflictError, ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
+import { createEmptyFile, createMeasurement, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { toOldShape } from '@roadmap/health-core/blood-tests';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from './roadmap-store';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { BT_TIMELINE_DRAFT_KEY, DRAFTS_CLEARED_EVENT, VITALS_DRAFT_KEY } from '../lib/storage';

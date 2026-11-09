@@ -6,7 +6,7 @@
 import { beforeEach, afterEach, vi } from 'vitest';
 import { cleanup, fireEvent } from '@testing-library/react';
 import { openSettings } from './settings';
-import type { HealthInputs } from '@roadmap/health-core';
+import type { HealthInputs } from '@roadmap/health-core/types';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import {
   addMeasurement,

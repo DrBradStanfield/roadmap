@@ -4,10 +4,10 @@
 // in the history, never as extra lab rows (AC7, AC8, AC9).
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  createEmptyFile, createMeasurement, measurementsToInputs, MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME, type RoadmapFile,
-} from '@roadmap/health-core';
-import { createLabValue } from '@roadmap/health-core/roadmap-file';
+import { createEmptyFile, createMeasurement, type RoadmapFile, createLabValue } from '@roadmap/health-core/roadmap-file';
+import { measurementsToInputs } from '@roadmap/health-core/mappings';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { RoadmapStore } from './roadmap-store';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { lpaRowsToCheck } from '../lib/lpa-unit';

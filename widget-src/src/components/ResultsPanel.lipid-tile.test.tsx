@@ -5,9 +5,11 @@
  * "Above optimal" in amber, as ApoB's Borderline is amber at its 0.5 target.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { statTiles } from '@roadmap/health-core';
+import { statTiles } from '@roadmap/health-core/stat-tiles';
 import { cleanup, render } from '@testing-library/react';
-import { calculateHealthResults, toCanonicalValue, type HealthInputs, type UnitSystem } from '@roadmap/health-core';
+import { calculateHealthResults } from '@roadmap/health-core/calculations';
+import { toCanonicalValue, type UnitSystem } from '@roadmap/health-core/units';
+import type { HealthInputs } from '@roadmap/health-core/types';
 
 vi.mock('../lib/roadmap-data', () => ({
   getReportHtml: vi.fn(), sendGuestReport: vi.fn(), getReportEmailCaptured: () => false, markReportEmailCaptured: vi.fn(),

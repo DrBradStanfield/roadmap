@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react';
 import { CAUSE_CLASS_TAGS, ERROR_CLASS_TAGS, EXPECTED_NETWORK_ERRORS, HTTP_STATUS_TAGS } from './error-diagnostics';
-import { scrubSensitiveData, scrubBreadcrumbData, scrubUrl, scrubEventText, dropLongStrings } from '@roadmap/health-core';
+import { scrubSensitiveData, scrubBreadcrumbData, scrubUrl, scrubEventText, dropLongStrings } from '@roadmap/health-core/sentry-scrub';
 
 declare const __SENTRY_RELEASE__: string;
 

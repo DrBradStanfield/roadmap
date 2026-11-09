@@ -7,7 +7,9 @@
 // StartingInfoVitals.
 
 import { useEffect, useRef, useState } from 'react';
-import { isLpaUnit, localDay, type LpaUnit, type UnitSystem } from '@roadmap/health-core';
+import { isLpaUnit } from '@roadmap/health-core/cell-unit';
+import { localDay } from '@roadmap/health-core/merge';
+import type { LpaUnit, UnitSystem } from '@roadmap/health-core/units';
 import type { CellUnit } from './blood-test-cell';
 import { DRAFTS_CLEARED_EVENT, localHealthWritesStopped, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
 import type { SaveTask } from './matrix-save';

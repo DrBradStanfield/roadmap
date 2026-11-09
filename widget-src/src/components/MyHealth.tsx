@@ -6,7 +6,11 @@
 // from usePlanView.
 import { Fragment, memo, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
-import { byNewestDocument, DOCUMENT_TYPE_LABELS, isLabArchiveDocument, TOPICS, type ApiMeasurement, type StatTile, type TopicId } from '@roadmap/health-core';
+import { byNewestDocument, DOCUMENT_TYPE_LABELS } from '@roadmap/health-core/document-path';
+import { isLabArchiveDocument } from '@roadmap/health-core/document-save';
+import { TOPICS, type TopicId } from '@roadmap/health-core/plan-sections';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
+import type { StatTile } from '@roadmap/health-core/stat-tiles';
 import { DocumentLightbox } from './DocumentLightbox';
 import { formatDocumentDate } from '../lib/document-format';
 import type { ApiDocument, ApiLabValue } from '../lib/api-types';

@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createEmptyFile, createMeasurement, MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME } from '@roadmap/health-core';
+import { createEmptyFile, createMeasurement } from '@roadmap/health-core/roadmap-file';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { ERASE_UNREACHABLE, RoadmapStore } from '../storage/roadmap-store';
 import { initRoadmapStore, flushRoadmapStore } from './roadmap-data';
 import * as data from './roadmap-data';

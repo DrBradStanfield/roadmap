@@ -7,7 +7,7 @@ import { flushSync } from 'react-dom';
 import { Fragment, useState, useEffect, useLayoutEffect, useMemo, useRef, type MutableRefObject, type ReactNode } from 'react';
 import { InfoTooltip } from './InfoTooltip';
 import { openHistoryLightbox } from '../lib/roadmap-data';
-import { SEXES } from '@roadmap/health-core';
+import { SEXES, type HealthInputs, type HealthResults, type ScreeningInputs, STATIN_NAMES, STATIN_DRUGS, EZETIMIBE_OPTIONS, PCSK9I_OPTIONS, BEMPEDOIC_ACID_OPTIONS, SUPPLEMENT_OPTIONS, GLP1_NAMES, GLP1_DRUGS, SGLT2I_NAMES, SGLT2I_DRUGS, METFORMIN_OPTIONS, type MedicationInputs } from '@roadmap/health-core/types';
 import type { CorrectFn, Refused, SaveTask } from '../lib/matrix-save';
 import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, mayStillFit, type Grading } from '../lib/blood-test-cell';
 import { useRangeWait } from '../lib/useRangeWait';
@@ -18,74 +18,16 @@ import { DRAFTS_CLEARED_EVENT, loadFromLocalStorage } from '../lib/storage';
 const interceptHistory = (metric: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
   if (openHistoryLightbox(metric)) e.preventDefault();
 };
-import type { FormStage, HealthInputs, HealthResults, ScreeningInputs, WeightMedicationTrigger, LipidMarker } from '@roadmap/health-core';
-import {
-  type UnitSystem,
-  fromCanonicalValue,
-  toCanonicalValue,
-  getDisplayLabel,
-  getDisplayRange,
-  identityFieldRange,
-  UNIT_DEFS,
-  hasUnitChoice,
-  FIELD_METRIC_MAP,
-  medicationsToInputs,
-  screeningsToInputs,
-  type ApiMeasurement,
-  formatValue,
-  formatGradedOrLimit,
-  type ApiMedication,
-  type ApiScreening,
-  STATIN_NAMES,
-  STATIN_DRUGS,
-  EZETIMIBE_OPTIONS,
-  PCSK9I_OPTIONS,
-  BEMPEDOIC_ACID_OPTIONS,
-  SUPPLEMENT_OPTIONS,
-  cmToFeetInches,
-  feetInchesToCm,
-  formatHeightDisplay,
-  GLP1_NAMES,
-  GLP1_DRUGS,
-  weightCascade,
-  lipidCascade,
-  LIPID_MEDS_IN_STEPS,
-  lipidTargetSentence,
-  weightMedIntro,
-  bpTargetFor,
-  METRIC_TO_FIELD,
-  VITAL_METRICS,
-  SGLT2I_NAMES,
-  SGLT2I_DRUGS,
-  METFORMIN_OPTIONS,
-  isBirthYearClearlyInvalid,
-  parseLocalisedNumber,
-  dayOf,
-  newestUsablePsa,
-  localDay,
-  MEDICATION_TEXT,
-  SCREENING_TEXT,
-  SCREENING_OPTIONS,
-  SCREENING_LABELS,
-  SUPPLEMENT_TEXT,
-  SUPPLEMENT_DOSE_UNITS,
-  optionsShowing,
-  escalationOptions,
-  doseOptions,
-  medicationWrites,
-  screeningWrites,
-  readScreening,
-  followupName,
-  followupDateLabel,
-  anyScreeningEligible,
-  dexaEligible,
-  lungGroupShown,
-  lungScreeningAsked,
-  customSupplementAdd,
-  customSupplementMatch,
-  type FormOption,
-  type MedicationInputs,
-} from '@roadmap/health-core';
+import { type FormStage, FIELD_METRIC_MAP, medicationsToInputs, screeningsToInputs, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD, VITAL_METRICS } from '@roadmap/health-core/mappings';
+import { type WeightMedicationTrigger, type LipidMarker, LIPID_MEDS_IN_STEPS, lipidTargetSentence, weightMedIntro } from '@roadmap/health-core/suggestions';
+import { type UnitSystem, fromCanonicalValue, toCanonicalValue, getDisplayLabel, getDisplayRange, UNIT_DEFS, hasUnitChoice, cmToFeetInches, feetInchesToCm, formatHeightDisplay, bpTargetFor } from '@roadmap/health-core/units';
+import { identityFieldRange, isBirthYearClearlyInvalid } from '@roadmap/health-core/validation';
+import { formatValue, formatGradedOrLimit } from '@roadmap/health-core/lab-limits';
+import { weightCascade, lipidCascade } from '@roadmap/health-core/medication-cascades';
+import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
+import { dayOf, localDay } from '@roadmap/health-core/merge';
+import { newestUsablePsa } from '@roadmap/health-core/measurement-history';
+import { MEDICATION_TEXT, SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, SUPPLEMENT_TEXT, SUPPLEMENT_DOSE_UNITS, optionsShowing, escalationOptions, doseOptions, medicationWrites, screeningWrites, readScreening, followupName, followupDateLabel, anyScreeningEligible, dexaEligible, lungGroupShown, lungScreeningAsked, customSupplementAdd, customSupplementMatch, type FormOption } from '@roadmap/health-core/input-form';
 import { formatShortDate, MONTHS_FULL } from '../lib/constants';
 import { BloodTestTimeline, useLiveRegion, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';

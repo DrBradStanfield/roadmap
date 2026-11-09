@@ -3,7 +3,7 @@
 // shows the conflict (US-13 AC3); a unit the test does not take is listed as
 // not saved, with why (US-12 AC19); creatinine stays an extra row (US-12 AC11).
 import { describe, expect, it } from 'vitest';
-import type { ApiMeasurement } from '@roadmap/health-core';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { buildMatrixModel, type FileResult } from './ReviewTable';
 import { offerCoreExtras } from './UploadModal';
 import { parseUnifiedResult, toUnifiedResult } from '@roadmap/health-core/lab-extraction';

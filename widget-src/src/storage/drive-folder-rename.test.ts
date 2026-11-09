@@ -7,7 +7,7 @@
  * network failure already was. Real adapter; synthetic Drive, no live provider.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DRIVE_FOLDER_NAME, DRIVE_LEGACY_FOLDER_NAME } from '@roadmap/health-core';
+import { DRIVE_FOLDER_NAME, DRIVE_LEGACY_FOLDER_NAME } from '@roadmap/health-core/drive-rest';
 import { DRIVE_FILE_SCOPE, GoogleDriveAdapter } from './drive';
 
 const CONFIG = {

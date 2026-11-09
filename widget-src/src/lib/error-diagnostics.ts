@@ -1,4 +1,5 @@
-import { ConflictError, RecordShapeError, SchemaTooNewError, StorageError } from '@roadmap/health-core';
+import { ConflictError, StorageError } from '@roadmap/health-core/adapter';
+import { RecordShapeError, SchemaTooNewError } from '@roadmap/health-core/migrate';
 
 /** Expected transport interruptions stay quiet without retaining raw messages. */
 export const EXPECTED_NETWORK_ERRORS = [

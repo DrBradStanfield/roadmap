@@ -11,7 +11,12 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, fireEvent, waitFor, act, type RenderResult } from '@testing-library/react';
-import { createEmptyFile, parseProposedEdit, ROADMAP_FILE_NAME, CURRENT_SCHEMA_VERSION, MemoryAdapter, MemoryCloud, migrateFile, rowRootIds, type ProposedEdit, type RoadmapFile, type StorageAdapter } from '@roadmap/health-core';
+import { createEmptyFile, CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { parseProposedEdit, type ProposedEdit } from '@roadmap/health-core/chat-edits';
+import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/adapter';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { migrateFile } from '@roadmap/health-core/migrate';
+import { rowRootIds } from '@roadmap/health-core/merge';
 import { ERASE_UNREACHABLE, REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveDocuments, bulkSaveLabValues, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';

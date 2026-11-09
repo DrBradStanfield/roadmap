@@ -9,7 +9,7 @@
  * live provider.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { StorageError } from '@roadmap/health-core';
+import { StorageError } from '@roadmap/health-core/adapter';
 import { failureTags } from '../lib/error-diagnostics';
 import { DRIVE_FILE_SCOPE, GoogleDriveAdapter } from './drive';
 

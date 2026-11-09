@@ -23,7 +23,7 @@
  * the real Drive adapter opens no popup.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { FileReminderOptIn } from '@roadmap/health-core';
+import type { FileReminderOptIn } from '@roadmap/health-core/roadmap-file';
 
 type FetchMock = ReturnType<typeof vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>>;
 

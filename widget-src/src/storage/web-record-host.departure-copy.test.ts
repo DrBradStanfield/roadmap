@@ -9,10 +9,12 @@
  * "This device" never removes the record that tab now runs on (US-09 AC2).
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import {
-  ConflictError, MemoryAdapter, MemoryCloud, RecordSession, ROADMAP_FILE_NAME, copyCloudDown, createMeasurement,
-  liftDeviceCopy, type RecordHost, type RoadmapFile, type WriteResult,
-} from '@roadmap/health-core';
+import { ConflictError, ROADMAP_FILE_NAME, type WriteResult } from '@roadmap/health-core/adapter';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { RecordSession } from '@roadmap/health-core/record-session';
+import { copyCloudDown, liftDeviceCopy } from '@roadmap/health-core/record-transfer';
+import { createMeasurement, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import type { RecordHost } from '@roadmap/health-core/record-host';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { BACKEND_KEY, isSyncPending, webRecordHost } from './web-record-host';
 

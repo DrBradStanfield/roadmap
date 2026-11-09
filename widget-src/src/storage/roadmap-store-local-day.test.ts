@@ -13,7 +13,7 @@ process.env.TZ = 'Pacific/Auckland';
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { RoadmapStore } from './roadmap-store';
-import { MemoryAdapter } from '@roadmap/health-core';
+import { MemoryAdapter } from '@roadmap/health-core/memory-adapter';
 
 afterEach(() => {
   vi.useRealTimers();

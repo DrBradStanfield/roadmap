@@ -25,7 +25,7 @@ import { getAssistantName, getChatSurface } from '../lib/assistant-config';
 
 export type { ChatPrefetchData } from '../hooks/useChatState';
 import type { ChatPrefetchData } from '../hooks/useChatState';
-import type { ProposedEdit } from '@roadmap/health-core';
+import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 
 // US-15 AC12: the brand store has no plan, so its chat names products. The
 // brand title reads the metafield-set assistant name at render, not import.

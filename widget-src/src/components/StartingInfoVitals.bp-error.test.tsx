@@ -6,7 +6,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
-import type { ApiMeasurement } from '@roadmap/health-core';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { VITALS_DRAFT_KEY } from '../lib/storage';
 import { a11yTextWithDigits } from '../testing/a11y-text';
 import { SAME_SLOT } from './BloodTestTimeline';

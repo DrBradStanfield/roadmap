@@ -7,7 +7,7 @@
  * Blobs are only attached to results when the backend can archive them
  * (getDocumentArchiveMode() === 'cloud'), so off-cloud this returns [].
  */
-import { labArchivePayload, pendingRowsFor, type DocumentPayload, type ExistingDoc } from '@roadmap/health-core';
+import { labArchivePayload, pendingRowsFor, type DocumentPayload, type ExistingDoc } from '@roadmap/health-core/document-save';
 import type { FileResult } from '../components/ReviewTable';
 
 /** 'sha256-<hex>' content fingerprint — names the blob + detects corruption. */

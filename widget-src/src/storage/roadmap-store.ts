@@ -24,62 +24,31 @@
  *  - Medication-history chart annotations use explicit change types saved at write time.
  */
 import { sha256Blob } from '../lib/archive-payloads';
-import {
-  type AddLabValueRequest,
-  type AddLabValueResult,
-  type BulkRow,
-  LiveRefresh,
-  addLabValue as addRecordLabValue,
-  RecordSession,
-  bulkAppendValues,
-  birthInFuture,
-  placeMeasurement,
-  saveDocuments,
-  documentView,
-  type DocumentPayload,
-  type MoveKeep,
-  type MoveRejection,
-  type MovePlan,
-  setReminderOptIn,
-  setScreening,
-  stampProfile,
-  upsertMedication,
-  upsertSupplement,
-  medicationChanges,
-  computeReminderSchedule,
-  correctValue as correctRecordValue,
-  moveBloodTest as moveRecordBloodTest,
-  planBloodTestMove,
-  diffInputsToMeasurements,
-  fileProfileToApi,
-  fileScreeningRows,
-  isClinicalDay,
-  latestActivePerMetric,
-  localDay,
-  measurementsToInputs,
-  PREFILL_FIELDS,
-  type ApiMeasurement,
-  type ApiMedication,
-  type ApiScreening,
-  type FileDocument,
-  type FileReminderOptIn,
-  type FileSupplement,
-  type HealthInputs,
-  type LabUnitRefusal,
-  type LpaUnit,
-  type MeasurementRefusal,
-  type MeasurementSource,
-  type Comparator,
-  type ReminderScheduleItem,
-  type RoadmapFile,
-  type RoadmapProfile,
-} from '@roadmap/health-core';
-import { bloodTableReport, egfrSeries, inputRangeFault, isAlcoholAnswer, isCoreRow, isReadableRow, readableView, ROADMAP_DOC, ROADMAP_FILE_NAME, whtrSeries, type EgfrPoint, type FileLabValue, type FileMeasurement, type WhtrPoint } from '@roadmap/health-core';
+import { type AddLabValueRequest, type AddLabValueResult, type BulkRow, addLabValue as addRecordLabValue, bulkAppendValues, placeMeasurement, type MoveKeep, type MoveRejection, type MovePlan, correctValue as correctRecordValue, moveBloodTest as moveRecordBloodTest, planBloodTestMove, type LabUnitRefusal, type MeasurementRefusal } from '@roadmap/health-core/record-edits';
+import { LiveRefresh } from '@roadmap/health-core/live-refresh';
+import { RecordSession, saveRecordInto, type EraseResult, type EraseSteps } from '@roadmap/health-core/record-session';
+import { birthInFuture, type MeasurementSource, inputRangeFault } from '@roadmap/health-core/validation';
+import { saveDocuments, documentView, type DocumentPayload } from '@roadmap/health-core/document-save';
+import { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertSupplement } from '@roadmap/health-core/state-edits';
+import { medicationChanges } from '@roadmap/health-core/medication-annotations';
+import { computeReminderSchedule, type ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
+import { diffInputsToMeasurements, measurementsToInputs, PREFILL_FIELDS, type ApiMeasurement, type ApiMedication, type ApiScreening } from '@roadmap/health-core/mappings';
+import { fileProfileToApi, fileScreeningRows } from '@roadmap/health-core/file-inputs';
+import { isClinicalDay, latestActivePerMetric } from '@roadmap/health-core/measurement-history';
+import { localDay } from '@roadmap/health-core/merge';
+import type { FileDocument, FileReminderOptIn, FileSupplement, RoadmapFile, RoadmapProfile, FileLabValue, FileMeasurement } from '@roadmap/health-core/roadmap-file';
+import { type HealthInputs, isAlcoholAnswer } from '@roadmap/health-core/types';
+import type { LpaUnit } from '@roadmap/health-core/units';
+import type { Comparator } from '@roadmap/health-core/lab-limits';
+import { bloodTableReport, isCoreRow, currentValueRows } from '@roadmap/health-core/blood-tests';
+import { egfrSeries, whtrSeries, type EgfrPoint, type WhtrPoint } from '@roadmap/health-core/plan';
+import { isReadableRow, readableView } from '@roadmap/health-core/readable-rows';
+import { ROADMAP_DOC } from '@roadmap/health-core/roadmap-doc';
+import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/adapter';
 
 /** The worked-out series My health's rows read (US-62 AC21). */
 export interface DerivedSeries { whtr: WhtrPoint[]; egfr: EgfrPoint[] }
-import { currentValueRows } from '@roadmap/health-core/blood-tests';
-import { saveRecordInto, type EraseResult, type EraseSteps, type RecordHost, type StorageAdapter } from '@roadmap/health-core';
+import type { RecordHost } from '@roadmap/health-core/record-host';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { webRecordHost } from './web-record-host';
 import { Sentry } from '../lib/sentry';
@@ -94,7 +63,7 @@ export { ROADMAP_DOC };
  *  the modules that import it from the store. */
 export { PENDING_MIRROR_KEY, SYNC_PENDING_EVENT, REMOTE_CHANGED_EVENT, markSyncPending, beginRoadmapLogOff, isSyncPending } from './web-record-host';
 /** Defined in health-core's record session, which makes the erase. */
-export { ERASE_UNREACHABLE } from '@roadmap/health-core';
+export { ERASE_UNREACHABLE } from '@roadmap/health-core/record-session';
 
 // --- App-facing shapes (moved here from api.ts; the data ones come from health-core) ---
 

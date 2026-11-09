@@ -6,7 +6,9 @@
  */
 import { describe, expect, it } from 'vitest';
 import { PERSIST_DEBOUNCE_MS } from '../../../packages/health-core/src/record-session';
-import { MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME, StorageError, type RoadmapFile } from '@roadmap/health-core';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
+import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { RoadmapStore } from './roadmap-store';
 
 class CountingAdapter extends MemoryAdapter {

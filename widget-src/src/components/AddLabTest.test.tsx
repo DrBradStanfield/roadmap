@@ -7,7 +7,9 @@
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, fireEvent, cleanup, waitFor } from '@testing-library/react';
-import { addLabValue as addRecordLabValue, createEmptyFile, labUnitRefusalLine, type FileLabValue } from '@roadmap/health-core';
+import { addLabValue as addRecordLabValue } from '@roadmap/health-core/record-edits';
+import { createEmptyFile, type FileLabValue } from '@roadmap/health-core/roadmap-file';
+import { labUnitRefusalLine } from '@roadmap/health-core/lab-series';
 
 afterEach(cleanup);
 
@@ -28,7 +30,8 @@ vi.mock('../lib/server-api', () => ({
 
 import { AddLabTest } from './AddLabTest';
 import { AdditionalLabRows } from './AdditionalLabRows';
-import { reportedToCanonical, type ApiMeasurement } from '@roadmap/health-core';
+import { reportedToCanonical } from '@roadmap/health-core/units';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { validateTypedValue } from '../lib/blood-test-cell';
 
 beforeEach(() => {

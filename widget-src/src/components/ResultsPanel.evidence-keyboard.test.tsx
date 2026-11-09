@@ -6,7 +6,9 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
-import { calculateHealthResults, statTiles, type HealthInputs } from '@roadmap/health-core';
+import { calculateHealthResults } from '@roadmap/health-core/calculations';
+import { statTiles } from '@roadmap/health-core/stat-tiles';
+import type { HealthInputs } from '@roadmap/health-core/types';
 
 vi.mock('../lib/roadmap-data', () => ({
   getReportHtml: vi.fn(), sendGuestReport: vi.fn(), getReportEmailCaptured: () => false, markReportEmailCaptured: vi.fn(),

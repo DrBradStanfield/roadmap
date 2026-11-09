@@ -9,7 +9,8 @@
  * bring the old title back either.
  */
 import { describe, it, expect } from 'vitest';
-import { MemoryAdapter, MemoryCloud, mergeChatHistoryFiles, type ChatHistoryFile } from '@roadmap/health-core';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { mergeChatHistoryFiles, type ChatHistoryFile } from '@roadmap/health-core/chat-history';
 import { ChatHistoryStore } from './chat-history-store';
 
 const CHAT_FILE = 'chat-history.json';

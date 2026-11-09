@@ -5,7 +5,7 @@
  * remote path cleared only the drafts and the Lp(a) kept answers.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { RoadmapStore } from './roadmap-store';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
