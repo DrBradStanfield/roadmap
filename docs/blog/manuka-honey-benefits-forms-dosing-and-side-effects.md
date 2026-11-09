@@ -22,8 +22,8 @@ In his video on cold remedies, Brad points to an Oxford team's pooled analysis o
 - Never give honey of any kind, manuka included, to a child younger than 1 year: honey is the best-known source of infant botulism [1][2].
 - People allergic to honey should avoid all honey. Reactions are very rare but can include anaphylaxis, and some people who react to honey also react to bee venom or weed pollen [3][4][5].
 - During cancer treatment or with a weak immune system, choose commercial, heat-treated honey and avoid raw honey or honeycomb [6][2].
-- Put only sterile, medical-grade honey dressings on wounds; food honey can carry bacteria and fungi [7][2]. Ask your doctor or nurse first before using a honey dressing on a deep burn or a heavily bleeding wound.
-- With diabetes, count honey as sugar, and ask your doctor before using manuka honey on a wound: the evidence on MGO and diabetic wound healing conflicts [8][9][10][11].
+- Put only sterile, medical-grade honey dressings on wounds; food honey can carry bacteria and fungi [7][2]. Serious burns need medical care right away, and no household remedy should go on a severe burn [41]. Ask your doctor or nurse first before using a honey dressing on a deep burn or a heavily bleeding wound.
+- With diabetes, count honey as sugar [8][42], and ask your doctor before using manuka honey on a wound: the evidence on MGO and diabetic wound healing conflicts [9][10][11].
 - Large amounts (50 to 100 g) can cause loose stools, probably because some of the fructose is not absorbed [12].
 
 ## Brad's videos on this topic
@@ -204,7 +204,7 @@ In 20 healthy volunteers, six reported loose stools after 100 g of honey and thr
 
 ### Sugar and Metabolic Considerations
 
-Honey is mostly sugar [8], so people with high blood sugar, including those with diabetes, should count it as sugar.
+Honey is mostly sugar [8], so people with high blood sugar, including those with diabetes, should count it as sugar. MedlinePlus lists 1 tbsp (15 mL) of honey among the foods with about 15 grams of carbohydrate used to treat low blood sugar in diabetes [42].
 
 Fructose matters for blood fats. Over 10 weeks, fructose-sweetened drinks raised apoCIII and postprandial triglyceride-rich particles more than glucose-sweetened drinks [36], and a review suggests that eating less fructose and fructose-containing sugars may lower triglycerides [37]. Those studies used fructose drinks, not honey.
 
@@ -234,7 +234,7 @@ Honey allergy is a very rare, but serious health condition [3]. In a report of s
 
 ### Microbial Contamination
 
-Unless it is a sterile, medical-grade product, manuka honey is a food that may contain a great variety of bacteria and, particularly, fungi [2]. Do not put food honey on open wounds [7]. Ask your doctor or nurse first before using a honey dressing on a deep burn or a heavily bleeding wound, or if you are sensitive to honey.
+Unless it is a sterile, medical-grade product, manuka honey is a food that may contain a great variety of bacteria and, particularly, fungi [2]. Do not put food honey on open wounds [7]. Serious burns need medical care right away, and MedlinePlus advises against putting any household remedy on a severe burn [41]. Ask your doctor or nurse first before using a honey dressing on a deep burn or a heavily bleeding wound, or if you are sensitive to honey.
 
 ## 7. Drug Interactions
 
@@ -245,6 +245,10 @@ There is no good public evidence on drug interactions specific to manuka honey. 
 **Lipid-lowering medicines:** A diet lower in fructose and fructose-containing sugars may help lower triglycerides [37], so large amounts of honey are a poor fit for anyone treating high triglycerides.
 
 **Chemotherapy and immunosuppressants:** People whose treatment weakens their immune system should avoid raw honey and honeycomb and choose commercial, heat-treated honey [6].
+
+**Blood thinners:** There is no good public evidence of an interaction with warfarin or other blood thinners. Ask your doctor or pharmacist first if you take a blood thinner and plan to take manuka honey regularly.
+
+**Acid-reducing medicines:** There is no good public evidence on taking manuka honey with proton pump inhibitors or other reflux medicines. Ask your doctor before stopping or changing a prescribed reflux medicine.
 
 **Antibiotics:** Manuka honey has antibacterial activity in the laboratory [16]. Do not use it in place of an antibiotic your doctor has prescribed.
 
@@ -374,3 +378,7 @@ Honey is not a meaningful source of vitamins or minerals [8].
 [39] Hüttl M et al. Adverse Effects of Methylglyoxal on Transcriptome and Metabolic Changes in Visceral Adipose Tissue in a Prediabetic Rat Model. Antioxidants (Basel). 2020. PMID: 32878255. https://pubmed.ncbi.nlm.nih.gov/32878255/
 
 [40] Takahashi M et al. Effects of glyoxal and methylglyoxal administration on gastric carcinogenesis in Wistar rats after initiation with N-methyl-N'-nitro-N-nitrosoguanidine. Carcinogenesis. 1989. PMID: 2791208. https://pubmed.ncbi.nlm.nih.gov/2791208/
+
+[41] MedlinePlus Medical Encyclopedia. Burns. https://medlineplus.gov/ency/article/000030.htm
+
+[42] MedlinePlus Medical Encyclopedia. Low blood sugar - self-care. https://medlineplus.gov/ency/patientinstructions/000085.htm
