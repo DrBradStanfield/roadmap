@@ -100,6 +100,8 @@ Per 100 g, honey supplies 52.0 mg potassium, 6.00 mg calcium and 0.420 mg iron, 
 
 ## 4. Evidence for Benefits
 
+The uses below run from the strongest evidence to the weakest.
+
 ### Wound Healing and Burns
 
 A 2015 Cochrane review identified 26 eligible trials (total of 3011 participants) of honey, of any type, on acute and chronic wounds [25].
@@ -116,14 +118,6 @@ A 2015 Cochrane review identified 26 eligible trials (total of 3011 participants
 
 **Sterility considerations:** Honey may contain a great variety of bacteria and, particularly, fungi [2]. Food honey is not sterile and should not go on open wounds; use a medical-grade product [7].
 
-### Gastroesophageal Reflux Disease (GERD)
-
-A pilot trial in Poland randomised 30 adults with GERD, 15 to each group, to manuka honey or a placebo of artificial honey [21]. Each batch of honey held at least 400 mg/kg of methylglyoxal, and participants took a unit dose of 5 g, three times a day, fasting in the morning and between main meals, for 4 weeks [21]. Mean ages were 54.9 years in the manuka group and 59.1 years in the placebo group [21].
-
-Symptoms improved in 86.7% and 100% of the manuka group at 2 and 4 weeks, against 26.7% and 40% of the placebo group [21]. On endoscopy, 73.3% of the manuka group improved; the abstract says improvement in the placebo group was much lower, and that histology confirmed the results [21]. Among participants taking no reflux medicines, only those on manuka honey improved [21].
-
-The authors call it a pilot study before testing in a larger population [21]. It compared manuka honey with artificial honey, not with ordinary honey, so it cannot say whether the effect is specific to manuka.
-
 ### Cough and Upper Respiratory Infections
 
 A 2021 meta-analysis of 14 studies found that, compared with usual care, honey improved combined symptom score (three studies, mean difference -3.96), cough frequency (eight studies, SMD -0.36) and cough severity (five studies, SMD -0.44) in upper respiratory tract infections [27]. It notes that guidelines recommended honey for acute cough in children [27].
@@ -131,6 +125,34 @@ A 2021 meta-analysis of 14 studies found that, compared with usual care, honey i
 A 2018 Cochrane review of six randomised controlled trials involving 899 children, aged 12 months to 18 years, concluded that honey probably relieves cough symptoms more than no treatment, diphenhydramine and placebo, but may make little or no difference compared with dextromethorphan [28]. Most children received treatment for one night only [28].
 
 These reviews concern honey in general, not manuka honey. Manuka honey sells at a premium [17], so ordinary honey is the cheaper choice for a cough. Do not give honey to a child younger than 1 year [1].
+
+### Dry Eye
+
+A meta-analysis of five randomised controlled trials with 288 adult participants found that, compared with controls, manuka honey improved the Ocular Surface Disease Index, Standard Patient Evaluation of Eye Dryness, tear evaporation rate, ocular surface staining and daily use of lubricant drops [33]. No serious adverse events were reported, except for temporary stinging and redness; the authors say limitations of the included studies affect the reliability of this conclusion [33].
+
+In one of these trials, an open-label study, 114 people with dry eye from meibomian gland dysfunction added Optimel gel (98 per cent *Leptospermum* honey) or Optimel drops (16 per cent *Leptospermum* honey) to conventional therapy [34]. Both reduced the need for lubricants, the drops most, and temporary redness and stinging were the only adverse effects [34].
+
+That trial used commercial honey eye products made for the purpose [34]. Food honey can carry bacteria and fungi [2], so never put it in your eyes.
+
+### Oral Health: Dry Mouth (Xerostomia)
+
+A single-blinded trial randomised 42 elderly patients with dry mouth to a manuka honey rinse, a natural honey rinse or saline, used 3 times per day for 1 month [32]. The manuka rinse reduced both the symptom score and the objective clinical oral dryness score more than the other two rinses, and salivary flow after one month was significantly higher with manuka honey [32].
+
+### Oral Health: Plaque and Gingivitis
+
+A double-blind trial randomised 135 school children aged 12-15 years in India to manuka honey, raw honey or 0.2% chlorhexidine mouthwash, 10 ml twice daily for 21 days [31]. All three rinses reduced plaque and gingival scores; the two honey rinses worked equally well, and chlorhexidine gave the largest reduction [31].
+
+### Blepharitis (Eyelid Infection)
+
+A masked, randomised, paired-eye trial in 53 people with blepharitis applied a manuka honey eye cream to the closed eyelids of one eye overnight for 3 months, with the other eye as control [35]. Treated eyes had fewer symptoms and lower Demodex and bacterial load, with no major adverse events [35]. There was no placebo cream, so the trial cannot separate the honey from the cream's other ingredients.
+
+### Gastroesophageal Reflux Disease (GERD)
+
+A pilot trial in Poland randomised 30 adults with GERD, 15 to each group, to manuka honey or a placebo of artificial honey [21]. Each batch of honey held at least 400 mg/kg of methylglyoxal, and participants took a unit dose of 5 g, three times a day, fasting in the morning and between main meals, for 4 weeks [21]. Mean ages were 54.9 years in the manuka group and 59.1 years in the placebo group [21].
+
+Symptoms improved in 86.7% and 100% of the manuka group at 2 and 4 weeks, against 26.7% and 40% of the placebo group [21]. On endoscopy, 73.3% of the manuka group improved; the abstract says improvement in the placebo group was much lower, and that histology confirmed the results [21]. Among participants taking no reflux medicines, only those on manuka honey improved [21].
+
+The authors call it a pilot study before testing in a larger population [21]. It compared manuka honey with artificial honey, not with ordinary honey, so it cannot say whether the effect is specific to manuka.
 
 ### Sore Throat
 
@@ -143,26 +165,6 @@ There is no good public evidence on manuka honey for ordinary sore throats yet.
 **Constipation:** There is no good public evidence on manuka honey for constipation in people. Two lines of indirect evidence exist. In rats, an enema of MGO raised faecal water content and caused visceral hypersensitivity [30]. In 20 healthy volunteers, 100 g of honey caused loose stools in six and 50 g caused them in three, probably because of incomplete fructose absorption [12].
 
 **H. pylori:** There is no good public evidence on manuka honey for *H. pylori* infection yet. Do not use manuka honey in place of treatment for *H. pylori* or a stomach ulcer; see your doctor.
-
-### Oral Health: Plaque and Gingivitis
-
-A double-blind trial randomised 135 school children aged 12-15 years in India to manuka honey, raw honey or 0.2% chlorhexidine mouthwash, 10 ml twice daily for 21 days [31]. All three rinses reduced plaque and gingival scores; the two honey rinses worked equally well, and chlorhexidine gave the largest reduction [31].
-
-### Oral Health: Dry Mouth (Xerostomia)
-
-A single-blinded trial randomised 42 elderly patients with dry mouth to a manuka honey rinse, a natural honey rinse or saline, used 3 times per day for 1 month [32]. The manuka rinse reduced both the symptom score and the objective clinical oral dryness score more than the other two rinses, and salivary flow after one month was significantly higher with manuka honey [32].
-
-### Dry Eye
-
-A meta-analysis of five randomised controlled trials with 288 adult participants found that, compared with controls, manuka honey improved the Ocular Surface Disease Index, Standard Patient Evaluation of Eye Dryness, tear evaporation rate, ocular surface staining and daily use of lubricant drops [33]. No serious adverse events were reported, except for temporary stinging and redness; the authors say limitations of the included studies affect the reliability of this conclusion [33].
-
-In one of these trials, an open-label study, 114 people with dry eye from meibomian gland dysfunction added Optimel gel (98 per cent *Leptospermum* honey) or Optimel drops (16 per cent *Leptospermum* honey) to conventional therapy [34]. Both reduced the need for lubricants, the drops most, and temporary redness and stinging were the only adverse effects [34].
-
-That trial used commercial honey eye products made for the purpose [34]. Food honey can carry bacteria and fungi [2], so never put it in your eyes.
-
-### Blepharitis (Eyelid Infection)
-
-A masked, randomised, paired-eye trial in 53 people with blepharitis applied a manuka honey eye cream to the closed eyelids of one eye overnight for 3 months, with the other eye as control [35]. Treated eyes had fewer symptoms and lower Demodex and bacterial load, with no major adverse events [35]. There was no placebo cream, so the trial cannot separate the honey from the cream's other ingredients.
 
 ## 5. Recommended Dosing
 
@@ -200,9 +202,13 @@ There is no good public evidence for choosing a grade by use. The GERD trial use
 
 Honey has been considered a relatively safe food; infant botulism is the most prominent health risk linked to it [2]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
-### Gastrointestinal Effects
+### Infant Botulism
 
-In 20 healthy volunteers, six reported loose stools after 100 g of honey and three after 50 g, probably because of incomplete fructose absorption [12]. In rats, MGO given by enema caused diarrhoea and visceral hypersensitivity, but this has not been tested by eating manuka honey [30].
+Do not feed honey to a child who is younger than 1 year old, and do not give products made with it, including honey pacifiers [1]. Infant botulism caused by *Clostridium botulinum* is the most prominent health risk linked to honey [2]. This applies to every honey, manuka included.
+
+### Allergy
+
+Honey allergy is a very rare, but serious health condition [3]. In a report of six patients with systemic reactions after eating honey, three had anaphylaxis, four had high specific IgE for honey bee venom, and two of five had also had anaphylaxis from bee stings [4]. A 5-year-old sensitised to Compositae weed pollen had anaphylaxis after eating artisanal honey [5]. If honey has ever given you an allergic reaction, avoid every kind, manuka included, and foods that contain it.
 
 ### Sugar and Metabolic Considerations
 
@@ -214,29 +220,25 @@ Honey is mostly sugar [8], so if you have diabetes or raised blood sugar, count 
 
 In rats, 4-week intragastric MG administration impaired glucose tolerance and adipose tissue insulin sensitivity [39]. Whether eating manuka honey does the same in people is not known.
 
+### Gastrointestinal Effects
+
+In 20 healthy volunteers, six reported loose stools after 100 g of honey and three after 50 g, probably because of incomplete fructose absorption [12]. In rats, MGO given by enema caused diarrhoea and visceral hypersensitivity, but this has not been tested by eating manuka honey [30].
+
+### Cancer Considerations
+
+The American Cancer Society notes that cancer and its treatment can weaken the immune system, and advises choosing commercial, grade A, heat-treated honey and avoiding raw honey or honeycomb [6]. This applies to all raw honey, not only manuka.
+
+In a rat stomach-cancer model, methylglyoxal in drinking water did not enhance the development of adenocarcinomas, but the incidence of pyloric hyperplasia was significantly increased; the authors concluded MGO might have tumour-promoting potential [40]. There is no good public evidence on this in people.
+
+### Microbial Contamination
+
+Unless it is a sterile, medical-grade product, manuka honey is a food that may contain a great variety of bacteria and, particularly, fungi [2]. Do not put food honey on open wounds [7]. Serious burns need medical care right away, and MedlinePlus advises against putting any household remedy on a severe burn [41]. Ask your doctor or nurse first before using a honey dressing on a deep burn or a heavily bleeding wound, or if you are sensitive to honey.
+
 ### Wound Healing in People with Diabetes
 
 A 2011 commentary raised the concern that MGO in manuka honey may delay wound healing in diabetic patients [9]. The small trials so far point the other way. In 63 people with type 2 diabetes, manuka honey dressings healed neuropathic foot ulcers in a mean of 31 days, against 43 days with conventional dressings [10]. In a 31-person pilot, complete healing was 50% with manuka honey, 40% with conventional dressings and 81.8% with nanocrystalline silver [11].
 
 The evidence is conflicting and thin, so people with diabetes should ask their doctor before using manuka honey on a wound [9][10][11].
-
-### Cancer Considerations
-
-In a rat stomach-cancer model, methylglyoxal in drinking water did not enhance the development of adenocarcinomas, but the incidence of pyloric hyperplasia was significantly increased; the authors concluded MGO might have tumour-promoting potential [40]. There is no good public evidence on this in people.
-
-The American Cancer Society notes that cancer and its treatment can weaken the immune system, and advises choosing commercial, grade A, heat-treated honey and avoiding raw honey or honeycomb [6]. This applies to all raw honey, not only manuka.
-
-### Infant Botulism
-
-Do not feed honey to a child who is younger than 1 year old, and do not give products made with it, including honey pacifiers [1]. Infant botulism caused by *Clostridium botulinum* is the most prominent health risk linked to honey [2]. This applies to every honey, manuka included.
-
-### Allergy
-
-Honey allergy is a very rare, but serious health condition [3]. In a report of six patients with systemic reactions after eating honey, three had anaphylaxis, four had high specific IgE for honey bee venom, and two of five had also had anaphylaxis from bee stings [4]. A 5-year-old sensitised to Compositae weed pollen had anaphylaxis after eating artisanal honey [5]. If honey has ever given you an allergic reaction, avoid every kind, manuka included, and foods that contain it.
-
-### Microbial Contamination
-
-Unless it is a sterile, medical-grade product, manuka honey is a food that may contain a great variety of bacteria and, particularly, fungi [2]. Do not put food honey on open wounds [7]. Serious burns need medical care right away, and MedlinePlus advises against putting any household remedy on a severe burn [41]. Ask your doctor or nurse first before using a honey dressing on a deep burn or a heavily bleeding wound, or if you are sensitive to honey.
 
 ## 7. Drug Interactions
 
