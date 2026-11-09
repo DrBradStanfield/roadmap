@@ -171,7 +171,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // The unit system and each field's own unit (hooks/useUnits, US-05).
   const { unitSystem, unitOverrides, metricUnitOverrides, handleToggleFieldUnit, handleUnitSystemChange, applySavedUnitSystem } = useUnits(setInputs);
 
-
   // Load additional lab values on mount (AdditionalLabRows surfaces them
   // under the matrix — US-21 phase 1) and refresh when the upload modal
   // opens (review-matrix dedup/context columns). Was modal-open-only while
@@ -353,7 +352,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
 
   // The profile's save: height, sex, the birth date, the unit system (hooks/useProfileSave).
   const { flushProfile, profileTimer, markSaved, profileDirty, birthRefused, clearBirthRefused } = useProfileSave({
-    inputs, inputsRef, setInputs, loaded: hasApiResponse, relay: remoteRelay, writeRefused,
+    inputs, inputsRef, setInputs, loaded: hasApiResponse, onClean: remoteRelay.saved, writeRefused,
   });
 
   // The saved-value editor's correction, core or lab (US-04, US-21 AC5),

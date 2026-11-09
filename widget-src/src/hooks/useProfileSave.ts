@@ -5,7 +5,6 @@ import { birthRefusedMessage } from '@roadmap/health-core/validation';
 import { getBackendKind, getShownErase, saveChangedMeasurements } from '../lib/roadmap-data';
 import { localHealthWritesStopped, patchMirror } from '../lib/storage';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
-import type { createRemoteChangeRelay } from '../lib/remote-replay';
 
 /** The profile fields a save carries: height, sex, the birth date and the unit system. */
 const PROFILE_FIELDS: ReadonlyArray<keyof HealthInputs> = [...PREFILL_FIELDS, 'unitSystem'];
@@ -22,14 +21,16 @@ const PROFILE_FIELDS: ReadonlyArray<keyof HealthInputs> = [...PREFILL_FIELDS, 'u
  * - saving: the write is on its way;
  * - kept: the store refused a value (out of range, US-02 AC5, or a birth
  *   pair, US-54 AC5b). It stays unsaved; an out-of-range value stays in the
- *   form with its error, a refused birth pair goes back to the record's and
- *   says why in `birthRefused` until the next birth edit.
+ *   form with its error. A refused birth pair goes back to the record's
+ *   (unless typed over since) and says why in `birthRefused` until the next
+ *   birth edit.
  *
  * A remote change that arrived while the form was dirty is held by the relay
- * and released once the form is clean (US-34 AC4): after a save that took
- * every edit, or when nothing was left to save. Not while a refused value is
- * still in the form (the re-read would replace it and its error), nor while
- * an edit made during the save's await is unsaved.
+ * and released (`onClean`) once the form is clean (US-34 AC4): after a save
+ * that left no out-of-range value in the form (a refused birth pair goes
+ * back, so it counts as clean), or when nothing was left to save. Not while
+ * an out-of-range value is still in the form (the re-read would replace it
+ * and its error), nor while an edit made during the save's await is unsaved.
  */
 export interface ProfileSave {
   /** Save any unsaved profile field now. True if saved or nothing to save; false if refused. */
@@ -49,10 +50,11 @@ export function useProfileSave(args: {
   inputsRef: MutableRefObject<Partial<HealthInputs>>;
   setInputs: Dispatch<SetStateAction<Partial<HealthInputs>>>;
   loaded: boolean;
-  relay: ReturnType<typeof createRemoteChangeRelay>;
+  /** The form is clean: a held remote change may apply (the relay's `saved`). */
+  onClean: () => void;
   writeRefused: () => void;
 }): ProfileSave {
-  const { inputs, inputsRef, setInputs, loaded, relay, writeRefused } = args;
+  const { inputs, inputsRef, setInputs, loaded, onClean, writeRefused } = args;
   const saved = useRef<Partial<HealthInputs>>({});
   const [birthRefused, setBirthRefused] = useState<string | null>(null);
 
@@ -68,7 +70,7 @@ export function useProfileSave(args: {
 
     const hasChanges = PROFILE_FIELDS.some(f => inputs[f] !== saved.current[f]);
     // Clean (a refused value cleared or put back): a held remote change applies now (N1).
-    if (!hasChanges) { relay.saved(); return true; }
+    if (!hasChanges) { onClean(); return true; }
 
     const result = await saveChangedMeasurements(current, previous, erase);
     if (!result.ok) {
@@ -96,7 +98,7 @@ export function useProfileSave(args: {
     // already has (US-15 AC10).
     patchMirror({ profile: { ...saved.current } });
     // Clean again: release a held remote change (see the header).
-    if (!result.refused && !PROFILE_FIELDS.some(f => inputsRef.current[f] !== inputs[f])) relay.saved();
+    if (!result.refused && !PROFILE_FIELDS.some(f => inputsRef.current[f] !== inputs[f])) onClean();
     return true;
   }
 
