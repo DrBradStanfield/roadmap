@@ -239,9 +239,8 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(bulkSaveDocuments).toHaveBeenCalledTimes(2);
     expect(vi.mocked(bulkSaveDocuments).mock.calls[1][0]).toEqual(vi.mocked(bulkSaveDocuments).mock.calls[0][0]);
   });
-  // US-12 AC6c: a retry finishes what the first Save began, so the done
-  // screen counts both attempts, and a retry cannot start before the page
-  // has read back what the first one saved.
+  // US-12 AC6c: the done screen counts every attempt, and a retry cannot start
+  // before the page has read back what the first one saved.
   const savedLdl: UploadHistory = { ...emptyHistory, measurements: [{ id: 'saved', metricType: 'ldl', value: 3.9, recordedAt: '2024-06-01T00:00:00.000Z', createdAt: '2024-06-01T00:00:00.000Z' }] };
   function originalFailsOnce() {
     const file = new Blob(['synthetic original'], { type: 'application/pdf' });
@@ -263,8 +262,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(trackProductEvent).toHaveBeenCalledWith('upload_saved', { count: 2 });
   });
   it('US-12 AC6c: an original filed again on the retry counts once', async () => {
-    // Attempt 1 files the original metadata-only (its blob write fell back) while the
-    // values throw; the retry files the same original again, and the record holds one.
+    // Attempt 1 files it metadata-only while the values throw; the retry refiles it.
     const payload = { documentType: 'pathology_report', title: 'Blood test results', documentDate: '2024-06-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'test.pdf' };
     vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([payload]).mockReturnValueOnce([payload]);
     vi.mocked(bulkSaveMeasurements).mockRejectedValueOnce(new Error('synthetic measurement failure'));
@@ -289,14 +287,16 @@ describe('US-12 AC4–6 upload session ownership', () => {
   });
   it('US-12 AC6c: a failed re-read after a partial save is reported, tag only, and frees Save', async () => {
     originalFailsOnce();
-    render(<Harness completedHistory={savedLdl} refresh={Promise.reject(new Error('synthetic re-read failure'))} />);
+    const failedReread = Promise.reject(new Error('synthetic re-read failure'));
+    failedReread.catch(() => {}); // handled from the start: the modal's catch is under test
+    render(<Harness completedHistory={savedLdl} refresh={failedReread} />);
     await ready();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();
     expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), { tags: { area: 'upload-save', branch: 'reread' } });
     expect((screen.getByRole('button', { name: /^Save / }) as HTMLButtonElement).disabled).toBe(false);
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByRole('button', { name: 'Done' });
+    fireEvent.click(screen.getByRole('button', { name: /^Save / })); await screen.findByRole('button', { name: 'Done' });
+    expect(Sentry.captureException).toHaveBeenCalledTimes(2); // the success path's re-read fails too
   });
   it('US-12 AC6c: Save stays busy until the page has read back a partial save', async () => {
     originalFailsOnce();

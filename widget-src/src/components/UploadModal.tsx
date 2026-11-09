@@ -505,16 +505,16 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         }
       }
 
+      const reread = () => Promise.resolve(onComplete()).catch(err => { Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'reread' } }); });
       if (!saveFailed) {
         trackProductEvent('upload_saved', { count: next.values + next.labValues + next.documents.length });
         setState('done');
-        onComplete();
+        void reread();
       } else {
         // Stay in review: a second Save retries idempotently (values dedup on
         // skippedDuplicates, documents on contentHash). Save stays busy until the
-        // page has read back what saved, so the retry does not send it again. A
-        // failed re-read is reported, tag only, and is not this save's error.
-        if (totalSaved > 0) await Promise.resolve(onComplete()).catch(err => { Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'reread' } }); });
+        // page has read back what saved, so the retry does not send it again; a failed re-read is only reported.
+        if (totalSaved > 0) await reread();
         setError(threw ? 'Some items could not be saved. Please try again.' : 'Failed to save. Please try again.');
       }
     } catch {
