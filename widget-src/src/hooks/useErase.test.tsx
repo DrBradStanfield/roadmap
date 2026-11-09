@@ -79,6 +79,14 @@ describe('US-16 AC2a: this tab\'s erase', () => {
     expect(result.current.refusalIsNews()).toBe(false);
   });
 
+  it('the chat edits are cleared even when a re-read during the write already showed the erase (adversary R1)', async () => {
+    const onShown = vi.fn();
+    const { result } = renderHook(() => useErase(onShown));
+    store.next = async () => { store.identity = 'e2'; store.shown = 'e2'; return { success: true, chatErased: true }; };
+    await act(async () => { await result.current.eraseAll(() => {}); });
+    expect(onShown).toHaveBeenCalledTimes(1);
+  });
+
   it('a failed write that still moved the erase forgets the record; one that moved nothing keeps it', async () => {
     const forget = vi.fn();
     const { result } = renderHook(() => useErase(() => {}));

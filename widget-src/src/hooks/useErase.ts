@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { deleteUserData, getEraseIdentity, getShownErase, markEraseShown } from '../lib/roadmap-data';
 import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD, ERASE_FAILED } from '../lib/erase-copy';
 
@@ -24,7 +24,7 @@ import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNR
 export interface Erase {
   shownErase: string;
   erasing: boolean;
-  /** The screen now shows this erase. `onShown` runs once per move. */
+  /** The screen now shows this erase; `onShown` runs on each move (and again in eraseAll, which may find it already shown). */
   showErase: (erase: string) => void;
   eraseUnshown: () => boolean;
   /** A save the store refused: true if it is news to say, once per erase. */
@@ -34,8 +34,9 @@ export interface Erase {
 }
 
 export function useErase(onShown: () => void): Erase {
+  // The latest committed `onShown`, never one from a render that did not finish.
   const shownHook = useRef(onShown);
-  shownHook.current = onShown;
+  useLayoutEffect(() => { shownHook.current = onShown; });
   const [shownErase, setShownErase] = useState(getShownErase);
   const [erasing, setErasing] = useState(false);
   const erasingNow = useRef(false); // the same, for a refusal inside the erase's own turn
