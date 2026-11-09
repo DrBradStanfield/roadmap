@@ -417,9 +417,9 @@ final class OnboardingStepsTests: XCTestCase {
         XCTAssertNil(weight.question)
     }
 
-    /// Brad 2026-10-25: the hint above "Connect Apple Health", short and in plain words.
-    func testTheAppleHealthHintSaysWhatToTap_AC3() {
-        XCTAssertEqual(OnboardingView.appleAsksNextWords, "Next, Apple asks for access. Turn everything on, then tap **Allow**.",
-                       "version-neutral: iOS 27's sheet says Select All, older ones Turn On All (2026-10-26)")
+    /// The hint above "Continue", short and in plain words (Brad 2026-10-25; words Brad 2026-11-09,
+    /// after App Review 5.1.1(iv): it says what Apple asks, never which switches to turn on).
+    func testTheAppleHealthHintSaysWhatApplesSheetAsks_AC3() {
+        XCTAssertEqual(OnboardingView.appleAsksNextWords, "Next, Apple asks which data to share.")
     }
 }

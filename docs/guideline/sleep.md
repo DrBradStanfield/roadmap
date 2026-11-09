@@ -244,7 +244,7 @@ It was well tolerated. No guideline covers it.
 
 ### Sleep by Dr Brad
 
-**Current formula (V2, on sale since August 2026):** 0.8 mg sustained-release melatonin (Melotime®), 126 mg elemental magnesium as fully chelated magnesium bisglycinate, and 2,400 mg glycine. 120 capsules; **4 capsules about 3 hours before you want to fall asleep** (30 servings). $40 one-time, $36 on subscription. Third-party tested by Labdoor (LTSCERT-151).
+**Current formula (V2, on sale since August 2026):** 0.8 mg sustained-release melatonin (Melotime®), 126 mg elemental magnesium as fully chelated magnesium bisglycinate, and 2,400 mg glycine. 120 capsules; **4 capsules 3 to 4 hours before you want to fall asleep** (the label says 3 hours, inside that range) (30 servings). $40 one-time, $36 on subscription. Third-party tested by Labdoor (LTSCERT-151).
 
 Superseded V1 formula, only for "what changed" questions: 0.3 mg immediate-release melatonin, 126 mg elemental magnesium as magnesium glycinate (not fully chelated) and 2,500 mg glycine, taken 2 hours before bed. V2 made three changes: melatonin form and dose, a fully chelated magnesium, and a glycine figure that now counts the chelate's glycine.
 

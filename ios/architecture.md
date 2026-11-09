@@ -940,7 +940,7 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   date of birth, and `readTypes`, and `HealthKitClient.requestAuthorization` is the app's only Health
   request (`LiveHealthStore` has no request at all; an advisory source scan allows only it and
   the DEBUG seed). Both sets are `static let`, and all three share one `HKHealthStore.app`, as
-  Apple recommends. So onboarding's "Connect Apple Health", My data's Apple Health row and the
+  Apple recommends. So onboarding's Apple Health page (its Continue), My data's Apple Health row and the
   Turn On row all show one sheet; iOS lists only the types not yet asked, so a person connected
   before 2026-10-26 sees just the four. `AppleHealthSync.connect()` is the one connect: it holds the
   app's `LiveHealth` (given once, in `AppParts`), so the cards read as soon as the sheet is answered, beside the import. It uses

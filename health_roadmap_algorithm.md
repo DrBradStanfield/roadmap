@@ -750,7 +750,7 @@ Evidence: `measure-waist` keeps AACE 2025, NICE and Ashwell 2012 (WHtR a better 
 
 | ID | Condition | Priority | Notes |
 |----|-----------|----------|-------|
-| `low-salt` | systolicBp > 120 (age < 65) or > 130 (age >= 65) | info | Target: <1,500 mg/day (ACC/AHA 2017) |
+| `low-salt` | systolicBp > 120 (age < 65) or > 130 (age >= 65) | info | Target: <1,500 mg/day (ACC/AHA 2017). Salt substitute line (US-07 AC13, Brad 2026-11-02), shown only with a current eGFR of 45 or more (Brad 2026-11-09): the same `potassiumSafe` check as the `high-potassium` card (eGFR >= `EGFR_THRESHOLDS.mildlyDecreased` and not `labEgfrOutdated`), so with no eGFR, an eGFR below 45 or one a newer creatinine has outdated it is left out: "A potassium-enriched salt substitute can also help cut sodium, but not if you are pregnant, have kidney disease or diabetes, have been told to limit potassium, or take a potassium-sparing diuretic, a potassium supplement, an ACE inhibitor or an ARB, unless your doctor agrees." Sources: SSaSS (Neal 2021, N Engl J Med, DOI: 10.1056/NEJMoa2105675); 2025 AHA/ACC guideline (useful except in kidney disease or with medicines that reduce potassium excretion; Gulati 2025, DOI: 10.1016/j.jacc.2025.07.010); diabetes, pregnancy and older people from NICE NG136 1.4.5 (verified 2026-11-09: not for older people, people with diabetes, pregnant women, people with kidney disease or people taking some antihypertensives, such as ACE inhibitors and ARBs). The card names pregnancy; the reason adds that NICE also advises against them for older people (Brad 2026-11-09). |
 | `high-potassium` | eGFR >= 45 (safe kidney function), from an eGFR no newer creatinine has outdated (US-07 AC8, section 1) | info | |
 | `trig-nutrition` | triglycerides 150 mg/dL (about 1.7 mmol/L) or more | attention | Its text names "limit alcohol" among the key measures, except for someone who answered "I don't drink": then "Key measures: reduce sugar intake, and reduce total fat and calorie intake." (US-60, Brad 2026-10-31). Its evidence reason is one text for everyone: "reducing sugar and total calorie intake, and reducing alcohol for people who drink." |
 | `reduce-alcohol` | (BMI >= 30, OR (BMI >= 25 AND WHtR >= 0.5), OR triglycerides 150 mg/dL (about 1.7 mmol/L) or more), and the person has not answered "I don't drink" | attention | "I drink" or no answer keeps the card (US-60) |
@@ -824,6 +824,8 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 | `bp-stage2` | sys >= 140 OR dia >= 90 | urgent |
 | `bp-stage1` | sys >= 130 OR dia >= 80 | attention |
 
+`bp-crisis` text (US-07 AC12, Brad 2026-11-02 approved "recheck after 5 minutes; if still that high, call your doctor"): "Your BP of {sys}/{dia} mmHg is dangerously high. If you have no symptoms, rest and recheck it after 5 minutes; if it is still 180/120 or higher (either number), call your doctor. If you have chest, back or belly pain, shortness of breath, numbness or weakness, a change in vision, difficulty speaking or a sudden severe headache, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK)." Source: NHLBI, High Blood Pressure: Symptoms (www.nhlbi.nih.gov/health/high-blood-pressure/symptoms): at 180/120 without symptoms "wait 5 minutes and check your blood pressure again", then call your healthcare provider if still high; with a sudden severe headache, difficulty breathing, sudden severe pain in the abdomen, chest or back, numbness or weakness, a sudden change in vision or problems talking, call emergency services.
+
 Stage 1 shows age-dependent target: < 120/80 for age < 65, < 130/80 for age >= 65.
 
 With no reading on record (either half missing), none of these shows; `measure-bp` asks for one instead (Missing Measurements First, above).
@@ -831,6 +833,13 @@ With no reading on record (either half missing), none of these shows; `measure-b
 Stage 1 and 2 include conditional extra paragraphs:
 - If eGFR >= 45, from an eGFR no newer creatinine has outdated (US-07 AC8, section 1): potassium recommendation
 - If the weight-medication trigger is on (section 6): weight loss + GLP-1 mention (the GLP-1 sentence only for a known age of 18 or over; US-07 AC6)
+
+### Positions With No Card (Brad 2026-11-02)
+
+- **Aspirin:** for secondary prevention only. After a heart attack, stroke or stent, aspirin is taken as your doctor directs; it is not for preventing a first event. The plan has no input for a past heart attack or stroke and no aspirin card.
+- **No risk calculator or coronary calcium (CAC) score:** Brad: "I don't see the value. Just maximally control the cardiovascular risk factors". The plan treats each risk factor to its own target and records no calculated risk or CAC score.
+
+`evidence.ts` has nothing to change for these (no card); `roadmap_text.html` states both in its cholesterol section.
 
 ---
 
@@ -895,9 +904,15 @@ Both conditions must hold:
 
 **Condition:** Statin is null, undefined, `'none'`, or has an invalid drug name (handles old tier-based migration data).
 
+**Card text** (after the lipid reason sentence): "Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Don't start a statin if you are pregnant or planning a pregnancy." (US-07 AC14, Brad 2026-11-02: "no statins in pregnancy"; wording Brad 2026-11-09.) The cards for someone already on a statin (`med-statin-dose`, `med-statin-increase`, `med-statin-switch`) end: "If you become pregnant, most people should stop their statin: talk to your doctor. If you are planning a pregnancy, NICE advises stopping 3 months before trying to conceive." On a listed statin, the `med-ezetimibe` and `med-pcsk9i` cards end with the same line, after their own pregnancy line (Brad 2026-11-09); with the statin not tolerated they do not carry it. The reason adds: "The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive." The categorical "Statins are not used in pregnancy" was dropped on 2026-11-09: the FDA removed the contraindication. Sources: FDA Drug Safety Communication, 20 July 2021 (it asked for the contraindication in all pregnant patients to be removed, but "most patients should stop statins once they learn they are pregnant"); NICE NG238 recommendation 1.5.10 (verified 2026-11-09: stop 3 months before attempting to conceive).
+
+**Pregnancy, other lipid drugs (Brad 2026-11-09, from each drug's US label, section 8.1, DailyMed):** the `med-pcsk9i` and `med-ezetimibe` cards end "Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.": the Repatha (evolocumab), Praluent (alirocumab) and Zetia (ezetimibe) labels say only that the data are insufficient to evaluate a drug-associated risk. The `med-bempedoic-acid` card ends "Not recommended in pregnancy; talk to your doctor if you are pregnant or planning to be.": the Nexletol label says to discontinue it when pregnancy is recognized unless the benefits outweigh the potential risks to the fetus. Each reason says the same and cites its label; the bempedoic acid reason keeps the label's hedge: "unless the benefits outweigh the possible risks to the baby".
+
+**Muscle damage (Brad 2026-11-02):** "statin muscle damage is rare but it does happen. if it does happen, switch to PCSK9i". The person records the statin as not tolerated, and the plan moves to the PCSK9 inhibitor (the statin-intolerant path below). The `med-pcsk9i` reason says: "Statin muscle damage is rare, but if it happens, stop the statin and move to a PCSK9 inhibitor."
+
 ### Step 2: Add Ezetimibe (`med-ezetimibe`)
 
-**Condition:** On a statin (or statin not tolerated) AND ezetimibe is `undefined`, `'no'`, or `'not_yet'`.
+**Condition:** On a listed statin AND ezetimibe is `undefined`, `'no'`, or `'not_yet'`. With the statin not tolerated, ezetimibe comes after the PCSK9 inhibitor instead (below).
 
 ### Step 3: Statin Escalation (`med-statin-increase` or `med-statin-switch`)
 
@@ -908,13 +923,29 @@ Both conditions must hold:
 - A dose not on the list is graded as the drug's nearest listed dose, the lower on a tie, so a step up is never skipped (`gradedDose`, US-06 AC10, Brad 2026-09-28). Rosuvastatin 2.5 mg grades as 5 mg (increase); atorvastatin 30 mg as 20 mg (increase); simvastatin 80 mg as 40 mg, its highest (switch).
 - The switch card reads "You're at or near the maximum dose of {statin}": a dose graded up to the highest (AC10) may sit just below it, such as atorvastatin 70 mg.
 
-**No dose recorded (`med-statin-dose`, US-06 AC8, Brad 2026-09-28):** on a listed statin whose dose is not recorded, the next step depends on the dose, so once ezetimibe is handled the plan asks for it. The dose card takes the slot the escalation or PCSK9 inhibitor card would have taken, whatever `statinEscalation` or `pcsk9i` says; bempedoic acid still shows first while unanswered. Before ezetimibe is handled nothing changes. Title "Add your statin dose"; text, after the lipid reason sentence: "Your statin dose isn't recorded, and your next step depends on it. A higher dose or a more potent statin may help. Add your current dose to see which." On rosuvastatin, whose highest dose moves on to the PCSK9 inhibitor, the middle sentence reads "A higher dose may help, or you may already take the highest." Each card names only the steps its drug can take next.
+**No dose recorded (`med-statin-dose`, US-06 AC8, Brad 2026-09-28):** on a listed statin whose dose is not recorded, the next step depends on the dose, so once ezetimibe is handled the plan asks for it. The dose card takes the slot the escalation or PCSK9 inhibitor card would have taken, whatever `statinEscalation` or `pcsk9i` says. Before ezetimibe is handled nothing changes. Title "Add your statin dose"; text, after the lipid reason sentence: "Your statin dose isn't recorded, and your next step depends on it. A higher dose or a more potent statin may help. Add your current dose to see which." On rosuvastatin, whose highest dose moves on to the PCSK9 inhibitor, the middle sentence reads "A higher dose may help, or you may already take the highest." Each card names only the steps its drug can take next.
 
 ### Step 4: PCSK9 Inhibitor (`med-pcsk9i`)
 
-**Condition:** Statin dose recorded (or statin not tolerated) AND statin escalation not tolerated, or already at max potency, or no escalation possible. AND pcsk9i is `undefined`, `'no'`, or `'not_yet'`.
+**Condition:** On a statin: ezetimibe handled, statin dose recorded AND statin escalation not tolerated, or already at max potency, or no escalation possible. In both, pcsk9i is `undefined`, `'no'`, or `'not_yet'`: on a statin, a `'no'` re-suggests it. Statin not tolerated: straight after the statin step, while pcsk9i is `undefined` or `'not_yet'`; taken, declined (`'no'`) or not tolerated moves on to ezetimibe (below).
 
-**Note:** When every step is answered and the marker is still at or above its target, the plan shows no further card. Brad decided not to flag it (2026-09-28): "there's nothing else that clinically can be done if taking statin, ezetimibe, and PCSK9i" (US-06 AC9).
+**Note:** On a statin, when every step is answered and the marker is still at or above its target, the plan shows no further card. Brad decided not to flag it (2026-09-28): "there's nothing else that clinically can be done if taking statin, ezetimibe, and PCSK9i" (US-06 AC9). Bempedoic acid is never suggested to someone on a statin.
+
+### Statin Not Tolerated: PCSK9 Inhibitor, Then Ezetimibe (US-06 AC20, Brad 2026-11-02)
+
+When the statin is recorded as `'not_tolerated'`, the order is PCSK9 inhibitor → ezetimibe → bempedoic acid, each only while the marker is still at or above its target (the cascade's trigger):
+
+1. `med-pcsk9i` while pcsk9i is `undefined` or `'not_yet'`, whatever ezetimibe says.
+2. `med-ezetimibe` once the PCSK9 inhibitor is answered any way but `'not_yet'` (taken, `'no'` or `'not_tolerated'`) AND ezetimibe is `undefined` or `'not_yet'`. Brad: "Ezetimibe doesn't have evidence as a sole agent (to my knowledge)". The one outcome trial of ezetimibe alone found is EWTOPIA 75 (Ouchi 2019, Circulation, DOI: 10.1161/CIRCULATIONAHA.118.039415): an open-label trial of 3,796 Japanese adults aged 75 or over with raised LDL-C and no coronary disease, in which ezetimibe 10 mg lowered a composite of sudden cardiac death, heart attack, coronary revascularisation or stroke against usual care (HR 0.66, 95% CI 0.50-0.86); its authors advise caution over the size of the benefit, given the open-label design, early stop and follow-up problems. Recorded here only; it changes no card.
+3. Step 5, bempedoic acid, below.
+
+**Declined or not tolerated moves on (interim default 2026-11-02; Brad confirmed the wording 2026-11-09):** a PCSK9 inhibitor declined (`'no'`) or `'not_tolerated'` moves on to ezetimibe, and ezetimibe declined (`'no'`) or `'not_tolerated'` moves on to bempedoic acid (Brad 2026-11-09; until then an ezetimibe `'no'` re-suggested ezetimibe). Bempedoic acid has its own outcome data in people who cannot take statins (CLEAR Outcomes). With the statin not tolerated, `'no'` therefore ends the PCSK9 and ezetimibe steps; on a statin it still re-suggests them. The `med-pcsk9i` reason says: "If a statin is not tolerated for any reason, this plan suggests a PCSK9 inhibitor next. If your level is still above target after that step (taken, declined or not tolerated), ezetimibe comes next; bempedoic acid last." The form steps through the same order (statin, PCSK9 inhibitor, ezetimibe, bempedoic acid; US-06 AC5); a step that holds a recorded value always shows. Existing records keep their answers: no migration.
+
+### Step 5: Bempedoic Acid (`med-bempedoic-acid`, US-06 AC20)
+
+**Condition:** Statin `'not_tolerated'` AND pcsk9i answered any way but `'not_yet'` AND ezetimibe answered any way but `'not_yet'` (taken, `'no'` or `'not_tolerated'`; see above) AND bempedoic acid is `undefined`, `'not_yet'` or `'none'`, with the marker still at or above its target. Brad 2026-11-02: "maybe if PCSK9i + Ezetimibe isn't enough to get ApoB below 50? then add bempedoic acid (would only be used if statin intolerant)". The rule above extends this to a declined or not-tolerated PCSK9 inhibitor or ezetimibe. Never on a statin. Card text: "Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor. Not recommended in pregnancy; talk to your doctor if you are pregnant or planning to be." Reason: CLEAR Outcomes (Nissen 2023, N Engl J Med 388:1353-1364, DOI: 10.1056/NEJMoa2215024, PMID 36876740), 13% fewer major adverse cardiovascular events in statin-intolerant patients; "This plan suggests it only if you cannot take a statin and your level is still above target after the PCSK9 inhibitor and ezetimibe steps (each taken, declined or not tolerated)." The form's hint: "Bempedoic acid lowers cholesterol production via a different pathway than statins. It is an option when a statin is not tolerated."
+
+Until 2026-11-02 the plan suggested bempedoic acid to everyone right after ezetimibe, alongside the statin step-up.
 
 ### The input form (both cascades, US-06 AC5 and AC7)
 
@@ -944,7 +975,7 @@ When discussing statins in educational contexts (not personalized cascade sugges
 **Why low-dose + ezetimibe over high-dose monotherapy:**
 Low-dose statins (~30–40% LDL reduction) combined with ezetimibe 10mg (~20% additional reduction) achieve better outcomes with fewer side effects than high-dose statin alone. Combination therapy is the recommended approach before escalating statin dose.
 
-**Escalation order:** low-dose statin → add ezetimibe → escalate statin dose → PCSK9 inhibitor. Never skip ezetimibe to go straight to high-dose.
+**Escalation order:** low-dose statin → add ezetimibe → escalate statin dose → PCSK9 inhibitor. Never skip ezetimibe to go straight to high-dose. If a statin is not tolerated (muscle damage included): PCSK9 inhibitor → ezetimibe → bempedoic acid (section 5).
 
 Atorvastatin and simvastatin are fat-soluble; higher doses carry more myopathy risk. Reserve these for cases where hydrophilic statins are unavailable or ineffective.
 

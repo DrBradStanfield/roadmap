@@ -112,9 +112,12 @@ declares the three rows below; declare them as written.
 
 ## App Review notes
 
-- No sign-in. Open the app, tap Get started, and add a height, sex and birth year on
-  My data; My plan then shows a plan. To see a full plan quickly, add LDL cholesterol
-  160 mg/dL and systolic blood pressure 145 mmHg.
+- No sign-in. Tap Get started. A short page explains Apple Health, then Continue opens
+  Apple's permission sheet. Allow or Don't Allow, then answer height, sex and birth
+  year. A person who declines can turn access on later in iOS Settings (My health shows
+  Open Settings); one who came in through 'I already use Health Roadmap' connects from
+  My data's Apple Health row. To see a full plan quickly, add LDL cholesterol 160 mg/dL
+  and systolic blood pressure 145 mmHg.
 - Cloud sync is optional (My data, Sync). A reviewer Dropbox account: give the
   details in the notes field, never in this file.
 - Chat and lab upload use Apple's App Attest to prove the request comes from this
@@ -138,9 +141,8 @@ declares the three rows below; declare them as written.
   dose or measure anything with the phone's sensors.
 - Apple Health (guideline 2.5.1): the app imports Health values into the person's
   record and writes typed values back. In the same single permission sheet, shown once
-  during onboarding ("Connect Apple Health"), it also asks to read resting
-  heart rate, sleep, VO2 max and steps. A person who skipped that connects from My
-  data's Apple Health row, which shows the same sheet. A person who connected before this
+  during onboarding (the Apple Health page's "Continue"), it also asks to read resting
+  heart rate, sleep, VO2 max and steps. A person who connected before this
   was added gets "Turn On" on My data, the same sheet again; after a refusal, "Open Settings"
   opens Settings. These four never go into the record: the app keeps a copy of what the cards
   and charts draw (each card's latest reading and trend values, each chart's daily history, the
