@@ -50,10 +50,6 @@ import {
   loadDerivedSeries,
   moveBloodTest,
   previewMove,
-  saveMedication,
-  saveScreening,
-  saveSupplement,
-  deleteSupplementApi,
   getBackendKind,
   getUnreadableCount,
 } from '../lib/roadmap-data';
@@ -64,27 +60,17 @@ import type { Grading } from '../lib/blood-test-cell';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { createRemoteChangeRelay } from '../lib/remote-replay';
-import { debounceSave, cancelListSave, flushListSaves, type ListSaves } from '../lib/list-saves';
 import { useRecordState } from '../hooks/useRecordState';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { useErase } from '../hooks/useErase';
 import { useProfileSave } from '../hooks/useProfileSave';
+import { useListSaves } from '../hooks/useListSaves';
 import { useTabs } from '../hooks/useTabs';
 import { useUnits } from '../hooks/useUnits';
 import { useLongitudinalSave, countedCorrection } from '../hooks/useLongitudinalSave';
 import { useChatEdits } from './ChatEdits';
 import { WRITE_REFUSED } from '../lib/erase-copy';
 
-/** After a medication or screening save, failed or not, the chat copy takes
- *  the lists the store holds (US-15 AC10). Never the form's: a failed save
- *  would leave a row the record lacks, and a re-read inside the debounce
- *  would put the old list back with nothing to undo it. */
-async function mirrorSavedLists(): Promise<void> {
-  const result = await loadLatestMeasurements();
-  if (result) patchMirror({ medications: result.medications, screenings: result.screenings });
-}
-
-/** The same rows, value for value: a re-read that changed nothing keeps the old array. */
 /** The onboarding's answers (US-62 AC13): only an edit to one of them counts as a step. */
 const ONBOARDING_FIELDS: ReadonlyArray<keyof HealthInputs> = ['heightCm', 'weightKg', 'sex', 'birthMonth', 'birthYear'];
 
@@ -154,20 +140,11 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // the form holds that value. The journey redesign deletes it: it rebuilds
   // these fields on the matrices' draft model.
   const typedIn = useRef<Partial<Record<keyof HealthInputs, { value: unknown; unit: UnitSystem }>>>({});
-  const medSaveTimers = useRef<ListSaves>(new Map());
-  const screeningSaveTimers = useRef<ListSaves>(new Map());
   const isFirstSaveRef = useRef(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [floatingChatOpen, setFloatingChatOpen] = useState(false);
   const [chatPrefetch, setChatPrefetch] = useState<ChatPrefetch | null>(null);
 
-  // Clean up debounce timers on unmount to prevent stale API calls
-  useEffect(() => {
-    return () => {
-      for (const { timer } of medSaveTimers.current.values()) clearTimeout(timer);
-      for (const { timer } of screeningSaveTimers.current.values()) clearTimeout(timer);
-    };
-  }, []);
   // The unit system and each field's own unit (hooks/useUnits, US-05).
   const { unitSystem, unitOverrides, metricUnitOverrides, handleToggleFieldUnit, handleUnitSystemChange, applySavedUnitSystem } = useUnits(setInputs);
 
@@ -227,10 +204,11 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     clearAnswered(); // the record re-read is not an answer given here (US-62 AC13)
     void applyRemoteRef.current();
   }, []);
-  const afterListSave = useCallback((saved: boolean) => {
-    if (!saved) writeRefused();
-    return mirrorSavedLists();
-  }, [writeRefused]);
+  // The medication, screening and supplement saves (hooks/useListSaves).
+  const {
+    handleMedicationChange, handleScreeningChange, handleSupplementChange, handleSupplementDelete,
+    flushListSaves, dropListSaves, medicationWaiting,
+  } = useListSaves({ patchMedication, patchScreening, patchSupplement, stopSupplement }, writeRefused);
 
   // The RoadmapStore is authoritative. Never replay the retired v1 cache into it.
   useEffect(() => {
@@ -403,7 +381,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       stagePendingSave();
       // The waiting medication, screening and supplement saves, each with the
       // erase it was made against, so the write below holds them (US-06 AC13).
-      flushListSaves([medSaveTimers.current, screeningSaveTimers.current, supSaveTimers.current]);
+      flushListSaves();
       flushRoadmapStoreSync();
     };
     const onUnload = () => stage(true);
@@ -625,12 +603,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     cancelPendingSave();
     profileTimer.cancel();
     // A save the form scheduled before the erase is pre-erase (US-16 AC2a).
-    for (const timers of [medSaveTimers, screeningSaveTimers, supSaveTimers]) {
-      for (const { timer } of timers.current.values()) clearTimeout(timer);
-      timers.current.clear();
-    }
+    dropListSaves();
     markSaved({});
-  }), [eraseAll, cancelPendingSave, profileTimer, markSaved]);
+  }), [eraseAll, cancelPendingSave, profileTimer, markSaved, dropListSaves]);
 
   // One field's new value, from the form or the chat. A weight or waist
   // keeps the unit its caller converted it from (typedIn). One update per
@@ -666,72 +641,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     });
   }, []);
 
-  const handleMedicationChange = useCallback((
-    medicationKey: string,
-    drugName: string,
-    doseValue: number | null,
-    doseUnit: string | null,
-  ) => {
-    // Shown at once, ahead of the save.
-    patchMedication(medicationKey, old => ({
-      id: old?.id ?? '',
-      medicationKey,
-      drugName,
-      doseValue,
-      doseUnit,
-      updatedAt: new Date().toISOString(),
-    }));
-
-    debounceSave(medSaveTimers.current, medicationKey,
-      (erase) => void saveMedication(medicationKey, drugName, doseValue, doseUnit, erase).then(afterListSave));
-  }, [afterListSave]);
-
-  // `erase`: a caller that asked before now, such as an upload (US-16 AC2a).
-  const handleScreeningChange = useCallback((screeningKey: string, value: string, erase?: string) => {
-    patchScreening(screeningKey, old => ({
-      id: old?.id ?? '',
-      screeningKey,
-      value,
-      updatedAt: new Date().toISOString(),
-    }));
-
-    debounceSave(screeningSaveTimers.current, screeningKey,
-      (stamp) => void saveScreening(screeningKey, value, stamp).then(afterListSave), erase);
-  }, [afterListSave]);
-
-  const supSaveTimers = useRef<ListSaves>(new Map());
-  useEffect(() => () => { for (const { timer } of supSaveTimers.current.values()) clearTimeout(timer); }, []);
-
-  const handleSupplementChange = useCallback((
-    supplementKey: string,
-    supplementName: string,
-    doseValue: number | null,
-    doseUnit: string | null,
-    status: string = 'active',
-    startedAt?: string,
-  ) => {
-    patchSupplement(supplementKey, old => ({
-      id: old?.id ?? '',
-      supplementKey,
-      supplementName,
-      doseValue,
-      doseUnit,
-      status,
-      startedAt: startedAt ?? old?.startedAt ?? new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }));
-
-    debounceSave(supSaveTimers.current, supplementKey,
-      (erase) => void saveSupplement(supplementKey, supplementName, doseValue, doseUnit, status, startedAt, erase).then(saved => { if (!saved) writeRefused(); }));
-  }, [writeRefused]);
-
-  const handleSupplementDelete = useCallback((supplementKey: string) => {
-    // A dose save still waiting would land after the stop and restart the row.
-    cancelListSave(supSaveTimers.current, supplementKey);
-    stopSupplement(supplementKey);
-    void deleteSupplementApi(supplementKey).then(saved => { if (!saved) writeRefused(); });
-  }, [writeRefused]);
-
   // Settings (US-62 AC24): the person button opens them in My health's place.
   const [settingsOpen, setSettingsOpen] = useState(false);
   // Edits the chat proposes, routed to the form (components/ChatEdits). The
@@ -743,7 +652,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   }, [selectTab]);
   const { handleProposeEdit, clearChatEdits, dropProfileProposal, banners: chatEditBanners } = useChatEdits({
     medications, inputs, inputsRef, unitSystem, eraseUnshown, handleInputChange, handleMedicationChange,
-    medSaveTimers, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal: setRevealCell,
+    medicationWaiting, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal: setRevealCell,
   });
 
   // Email capture and US-23 reminder enrolment require the Shopify server.
