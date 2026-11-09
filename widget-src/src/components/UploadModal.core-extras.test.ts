@@ -4,8 +4,8 @@
 // not saved, with why (US-12 AC19); creatinine stays an extra row (US-12 AC11).
 import { describe, expect, it } from 'vitest';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
-import { buildMatrixModel, type FileResult } from './ReviewTable';
-import { offerCoreExtras } from './UploadModal';
+import { buildMatrixModel, type FileResult } from '../lib/review-matrix';
+import { offerCoreExtras } from '../lib/upload-pipeline';
 import { parseUnifiedResult, toUnifiedResult } from '@roadmap/health-core/lab-extraction';
 
 const DATE = { day: '01', month: '06', year: '2024' };

@@ -6,7 +6,8 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
-import { ReviewTable, type FileResult } from './ReviewTable';
+import { ReviewTable } from './ReviewTable';
+import type { FileResult } from '../lib/review-matrix';
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 

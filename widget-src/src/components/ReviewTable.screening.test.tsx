@@ -6,7 +6,8 @@
  */
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, fireEvent, cleanup } from '@testing-library/react';
-import { ReviewTable, type FileResult } from './ReviewTable';
+import { ReviewTable } from './ReviewTable';
+import type { FileResult } from '../lib/review-matrix';
 
 afterEach(cleanup);
 

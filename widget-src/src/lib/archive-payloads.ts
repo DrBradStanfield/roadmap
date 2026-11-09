@@ -8,7 +8,7 @@
  * (getDocumentArchiveMode() === 'cloud'), so off-cloud this returns [].
  */
 import { labArchivePayload, pendingRowsFor, type DocumentPayload, type ExistingDoc } from '@roadmap/health-core/document-save';
-import type { FileResult } from '../components/ReviewTable';
+import type { FileResult } from './review-matrix';
 
 /** 'sha256-<hex>' content fingerprint — names the blob + detects corruption. */
 export async function sha256Blob(blob: Blob): Promise<string> {

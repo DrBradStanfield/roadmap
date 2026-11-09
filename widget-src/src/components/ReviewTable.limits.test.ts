@@ -3,8 +3,7 @@
 // surface does, so the shown limit stays true; an exact value rounds as before.
 import { describe, it, expect } from 'vitest';
 import type { Comparator } from '@roadmap/health-core/lab-limits';
-import { buildMatrixModel } from './ReviewTable';
-import type { FileResult } from './ReviewTable';
+import { buildMatrixModel, type FileResult } from '../lib/review-matrix';
 
 const DATE = { day: '01', month: '06', year: '2024' };
 const HDL_60_MGDL = 60 / 38.67; // 1.55159… mmol/L
