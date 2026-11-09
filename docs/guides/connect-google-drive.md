@@ -2,7 +2,7 @@
 title: "Connect Google Drive to Health by Dr Brad"
 description: "Keep your health record in your own Google Drive. Tick the Google Drive box on Google's screen or the connection is refused. Retry or disconnect."
 slug: "connect-google-drive"
-updated: "2026-10-22"
+updated: "2026-11-09"
 stories: ["US-09"]
 ---
 
@@ -28,8 +28,8 @@ Google also shares your email address with the tool. The tool says so on the Goo
 
 ## Connect, step by step
 
-1. Open [the tool](https://drstanfield.com/pages/roadmap). Once you have entered your sex and height, a button at the top of your plan says "Keep my record in Dropbox or Google Drive." On a phone, the plan is the Plan tab. Click the button. The words "Dropbox or Google Drive", in the line that says your record stays in your browser, open the same box.
-2. A box opens with the same question as its title. The Google Drive option says "One file in your own Google Drive, in a private "Health Plan by Dr Brad" folder." Its last line says "On Google's screen, tick the Google Drive box. Without it we cannot save your file."
+1. Open [the tool](https://drstanfield.com/pages/roadmap). Once you have entered your sex and height, a button that says "Keep my record in Dropbox or Google Drive" appears at the foot of My health. It is also in Settings on a computer, and in the Account tab on a phone. Click the button. The words "Dropbox or Google Drive", in the line under the button, open the same box.
+2. A box opens, titled "Where do you want to keep your health record?" The Google Drive option says "One file in your own Google Drive, in a private "Health Plan by Dr Brad" folder." Its last line says "On Google's screen, tick the Google Drive box. Without it we cannot save your file."
 3. Click Google Drive. The page moves to Google.
 4. Pick your Google account, and sign in if asked.
 5. Google lists what the tool is asking for. The Google Drive permission has a box beside it. **Tick the Google Drive box**, then continue.

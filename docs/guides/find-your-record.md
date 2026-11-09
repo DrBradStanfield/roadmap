@@ -2,7 +2,7 @@
 title: "Find your health record file"
 description: "Where the Health by Dr Brad tool keeps your record in Dropbox, Google Drive, GitHub or your browser, and how to open, back up, move or delete it."
 slug: "find-your-record"
-updated: "2026-10-30"
+updated: "2026-11-09"
 stories: ["US-09", "US-10", "US-11", "US-29"]
 ---
 
@@ -12,7 +12,7 @@ Where that file lives depends on what you chose when the tool asked where to kee
 
 ## Which one are you using?
 
-Look at the top of your plan. On a phone, that is the Plan tab. If you connected a cloud, it says "Your health record is yours alone. It lives in your", followed by the name of your provider. Click that name to see the list of places you can keep it, with a tick beside the one you use.
+Open Settings: on a computer, the person button beside My health; on a phone, the Account tab. If you connected a cloud, a line there says "Your health record is yours alone. It lives in your", followed by the name of your provider. Click that name to see the list of places you can keep it, with a tick beside the one you use.
 
 If instead you see a button that says "Keep my record in Dropbox or Google Drive", nothing is connected. Your record is in this browser only.
 

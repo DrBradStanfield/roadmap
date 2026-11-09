@@ -6,10 +6,15 @@
  * event is the one seam to the picker: openBackendPicker() is the only way in,
  * and standalone/sync-control.tsx is the only listener.
  */
+import { createContext } from 'react';
 import type { SIGNIN_PLACEMENTS } from '@roadmap/health-core/product-events';
 import { trackProductEvent } from './server-api';
 
 export const OPEN_PICKER_EVENT = 'hr:open-backend-picker';
+
+/** A true guest: the record on this device, no provider to reconnect (standalone/app.tsx sets it
+ *  once per page load). Only a guest's storage card heads a phone's Account (US-62 AC34). */
+export const GuestContext = createContext(false);
 
 const LINK_TEXT = 'Dropbox or Google Drive';
 

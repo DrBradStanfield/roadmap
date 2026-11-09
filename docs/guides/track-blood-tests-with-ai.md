@@ -2,7 +2,7 @@
 title: "Track your blood tests over time with ChatGPT or Claude"
 description: "Keep every blood test in one file in your own Dropbox or Google Drive, connect ChatGPT or Claude to it, and ask how a result has changed."
 slug: "track-blood-tests-with-ai"
-updated: "2026-10-22"
+updated: "2026-11-09"
 stories: ["US-07", "US-09", "US-12", "US-32", "US-36", "US-38"]
 ---
 
@@ -26,7 +26,7 @@ It is free, and you do not create an account. The code is public under the MIT l
 
 ## Step 1: Start your record
 
-Open [the tool](https://drstanfield.com/pages/roadmap) and enter your sex, height and weight. A button then appears at the top of your plan, which on a phone is the Plan tab. It says "Keep my record in Dropbox or Google Drive." Click it and pick Dropbox or Google Drive. When the cloud connects, the tool copies what you entered into a new file in your cloud folder.
+Open [the tool](https://drstanfield.com/pages/roadmap) and enter your sex, height and weight. A button that says "Keep my record in Dropbox or Google Drive" then appears at the foot of My health. It is also in Settings on a computer, and in the Account tab on a phone. Click it and pick Dropbox or Google Drive. When the cloud connects, the tool copies what you entered into a new file in your cloud folder.
 
 Until you connect a cloud, the tool keeps your record in your browser only, and no assistant can reach it. [Find your health record file](/blogs/guides/find-your-record) shows where the file lands in each cloud.
 
