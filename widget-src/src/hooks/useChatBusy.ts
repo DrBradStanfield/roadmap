@@ -40,7 +40,7 @@ export function useChatBusy() {
     if (sending ?? shows) {
       remoteSends.set(instanceId, setTimeout(() => { drop(instanceId); setIsLoading(busyNow()); }, REMOTE_PENDING_MS));
       if (sending === undefined) legacy.add(instanceId);
-    } else legacy.forEach(drop);
+    } else if (!shows) legacy.forEach(drop); // a mirror (sending false, shows true) is no end
     setIsLoading(busyNow());
   }, [remoteSends, legacy, drop, busyNow]);
   useEffect(() => () => { remoteSends.forEach(clearTimeout); remoteSends.clear(); legacy.clear(); }, [remoteSends, legacy]);

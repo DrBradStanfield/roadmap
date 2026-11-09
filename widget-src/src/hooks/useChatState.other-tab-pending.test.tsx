@@ -229,6 +229,13 @@ describe('US-15 AC17c: the chat is busy while any tab\'s send is in flight, each
     expect(hook.result.current.state.isLoading).toBe(false);
   });
 
+  it('US-15 AC17c (re-check N1): a newer tab that only mirrors an older bundle\'s send does not free it', () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: true }));
+    fromOtherTab(true, undefined, 'old-bundle-sender');
+    fromOtherTab(true, false, 'new-mirror'); // it opened a thread mid-reply
+    expect(hook.result.current.state.isLoading).toBe(true);
+  });
+
   it('US-15 AC17c: two presses of Send before the re-render send once', async () => {
     const hook = renderHook(() => useChatState({ isLoggedIn: false }));
     act(() => hook.result.current.actions.handleInputChange('And LDL?'));
