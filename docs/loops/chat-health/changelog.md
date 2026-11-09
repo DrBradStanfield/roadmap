@@ -11,20 +11,20 @@ the archive). Exempt from the 200-line operative cap.
   (Theuwissen). Nitric oxide lines that rested only on WebMD are re-sourced to
   WebMD's own text, VINTAGE MI or Mayo Clinic. Batch 3 (lithium, taurine,
   electrolytes, glycine, resveratrol) merged at 2aeb54c0. Glycine's food table
-  was ConsumerLab's figures relabelled as USDA; it is rebuilt from USDA
+  was a licensed source's figures relabelled as USDA; it is rebuilt from USDA
   FoodData Central. Lithium gains label cautions (serotonin syndrome,
   nitroimidazoles, breastfeeding, Brugada) and a toxicity emergency line. The
   electrolytes overdrinking warning is corrected per Almond 2005. Batch 2
   (vitamin K, turmeric, protein powders, vitamin D, B vitamins) merged at
-  15d4b1f0. ConsumerLab findings are removed and re-sourced to primary
+  15d4b1f0. Licensed-source findings are removed and re-sourced to primary
   abstracts, NIH sheets, LiverTox and labels. Each master gains Key safety
   points, with ratios stated as the abstracts give them. Every batch had a fix
   round, a re-check and touch-ups after a fresh Opus adversary per master plus
   Codex. The chat content cap is now 160K (83436c97). CI run 39760005648
   deployed all stages green, which put all 20 cleaned masters live.
 - 2026-10-22 (orchestrator): masters cleanup batch 1 (omega-3, cholesterol,
-  magnesium, vitamin C, creatine). ConsumerLab findings are removed and
-  re-sourced to primary studies. Each master gains Key safety points. The
+  magnesium, vitamin C, creatine). Licensed-source findings are removed
+  and re-sourced to primary studies. Each master gains Key safety points. The
   omega-3 Current view matches the clinical files. Creatine gains a bipolar
   caution. Red yeast rice interactions match the lovastatin label. Ruling 17
   emergency numbers apply. Unreviewed after the review cap: the five touch-up

@@ -62,7 +62,7 @@ before deploying.
 - `docs/blog/*.md` — chatbot blog cache from claude_business `/blog-post`; after a frontmatter edit, `npm run rebuild-index` rebuilds `docs/blog/index.json` (CI checks it is in sync).
 - **Customer-service gateway (live):** its OWN Fly app; code only in private claude_business `customer-service-gateway/`. Spec: its `docs/customer-service.md`.
   **Replying to mail sent to brad@microvitamin.com** (the Gmail connector reaches only drstanfield.com): find it with claude_business `node tools/gmail.js search --account microvitamin`, send Brad's approved text in that thread via the gateway's `POST /send-reply` — never a new email from drstanfield.com (Brad 2026-10-16).
-- **Chatbot docs are private (Brad 2026-10-22):** start at claude_business `docs/chat-start-here.md`; knowledge-pipeline docs in its `docs/roadmap-chat/`. No third-party clinical text (pathway publishers, UpToDate, ConsumerLab findings) in this public repo.
+- **Chatbot docs are private (Brad 2026-10-22):** start at claude_business `docs/chat-start-here.md`; knowledge-pipeline docs in its `docs/roadmap-chat/`. No licensed third-party clinical text, and no account of how the private pipeline uses it, in this public repo.
 
 ## Anti-Entropy & Writing Style
 
