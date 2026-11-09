@@ -311,27 +311,72 @@ describe('US-62 AC22, AC23: Blood tests and Supplements', () => {
     const supplements = view.container.querySelector<HTMLElement>('[data-topic="supplements"]')!;
     const row = () => within(supplements).queryByRole('button', { name: '+ Add another supplement' });
     const search = () => within(supplements).queryByPlaceholderText('Add another supplement...') as HTMLInputElement | null;
-    // Left empty: Tab or a tap elsewhere takes the focus out of the box.
+    // Left empty: a tap on nothing focusable takes the focus out with no relatedTarget, as browsers do.
     fireEvent.click(row()!);
-    fireEvent.blur(search()!, { relatedTarget: document.body });
+    fireEvent.blur(search()!, { relatedTarget: null });
     expect(search()).toBeNull();
     expect(row()).not.toBeNull();
     // Something typed stays open when left.
     fireEvent.click(row()!);
     fireEvent.change(search()!, { target: { value: 'Tau' } });
-    fireEvent.blur(search()!, { relatedTarget: document.body });
+    fireEvent.blur(search()!, { relatedTarget: null });
     expect(search()!.value).toBe('Tau');
     // Escape: back to the row, the focus on it.
     fireEvent.keyDown(search()!, { key: 'Escape' });
     expect(search()).toBeNull();
     expect(document.activeElement).toBe(row());
-    // A supplement added: back to the row, the supplement listed.
+    // A supplement added: back to the row, the focus on it, the supplement listed. A press in the
+    // list is default-prevented, so the search keeps the focus and its blur never closes it first.
     fireEvent.click(row()!);
     fireEvent.change(search()!, { target: { value: 'Taurine test' } });
-    fireEvent.click(supplements.querySelector('.supplement-custom')!);
+    const custom = supplements.querySelector('.supplement-custom')!;
+    expect(fireEvent.mouseDown(custom)).toBe(false);
+    fireEvent.click(custom);
+    expect(search()).toBeNull();
+    expect(document.activeElement).toBe(row());
+    expect([...supplements.querySelectorAll('.supplement-name')].map(n => n.textContent)).toContain('Taurine test');
+  });
+
+  it('AC30c (#985): Tab from the empty search through its list and out past the last option: back to the row', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    const supplements = view.container.querySelector<HTMLElement>('[data-topic="supplements"]')!;
+    const row = () => within(supplements).queryByRole('button', { name: '+ Add another supplement' });
+    const search = () => within(supplements).queryByPlaceholderText('Add another supplement...') as HTMLInputElement | null;
+    const options = () => [...supplements.querySelectorAll<HTMLButtonElement>('.supplement-dropdown-item')];
+    fireEvent.click(row()!);
+    expect(document.activeElement).toBe(search());
+    // Empty, the list shows every option. Focus moves into it, then down it: the search stays open.
+    expect(options().length).toBeGreaterThan(1);
+    act(() => options()[0].focus());
+    act(() => options().at(-1)!.focus());
+    expect(search()).not.toBeNull();
+    expect(document.activeElement).toBe(options().at(-1));
+    // Out past the last option, onto a supplement's remove button: the row is back.
+    act(() => supplements.querySelector<HTMLButtonElement>('.supplement-remove')!.focus());
     expect(search()).toBeNull();
     expect(row()).not.toBeNull();
-    expect([...supplements.querySelectorAll('.supplement-name')].map(n => n.textContent)).toContain('Taurine test');
+  });
+
+  it('AC30c: by keyboard, Escape on an option closes to the row, and Enter on one adds it, the focus on the row', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    const supplements = view.container.querySelector<HTMLElement>('[data-topic="supplements"]')!;
+    const row = () => within(supplements).queryByRole('button', { name: '+ Add another supplement' });
+    const search = () => within(supplements).queryByPlaceholderText('Add another supplement...') as HTMLInputElement | null;
+    const options = () => [...supplements.querySelectorAll<HTMLButtonElement>('.supplement-dropdown-item')];
+    // Escape on a focused option.
+    fireEvent.click(row()!);
+    act(() => options()[0].focus());
+    fireEvent.keyDown(options()[0], { key: 'Escape' });
+    expect(search()).toBeNull();
+    expect(document.activeElement).toBe(row());
+    // Enter on a focused option: a browser turns it into the button's click.
+    fireEvent.click(row()!);
+    act(() => options()[0].focus());
+    const name = options()[0].textContent!;
+    fireEvent.click(options()[0]);
+    expect(search()).toBeNull();
+    expect(document.activeElement).toBe(row());
+    expect([...supplements.querySelectorAll('.supplement-name')].map(n => n.textContent)).toContain(name);
   });
 });
 

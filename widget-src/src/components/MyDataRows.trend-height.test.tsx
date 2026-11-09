@@ -3,7 +3,8 @@
  * US-62 AC8a (Brad 2026-11-09): a row's trend box is as tall as its name block and as wide as
  * its CSS column (56, or 44 below 390px), and the line is drawn over the block's ink, from the
  * title's cap height to the date line's baseline, capped at 0.8 x its width and centred. It
- * follows the block when the block changes, and an unchanged measurement renders nothing.
+ * follows the block when the block changes or the web fonts load, and an unchanged measurement
+ * renders nothing.
  * jsdom lays nothing out, so the block, the column, the text's line boxes and the font's
  * metrics are given through stubs.
  */
@@ -123,6 +124,46 @@ describe('US-62 AC8a: the trend is drawn over the name block\'s ink', () => {
     layout = { ...layout, height: 40 };
     remeasure();
     expect(commits).toHaveBeenCalledTimes(settled + 1);
+  });
+
+  it('re-measures once the web fonts have loaded, as a swap moves the ink but not the block (#1002 R2)', async () => {
+    let loaded!: () => void;
+    const ready = new Promise<void>(resolve => { loaded = resolve; });
+    Object.defineProperty(document, 'fonts', { value: { ready }, configurable: true });
+    try {
+      const { container } = render(<MetricRows rows={[row]} onOpen={() => {}}/>);
+      expect(drawn(container).top).toBeCloseTo(7, 1);
+      // The web font swaps in: same block height, so no resize fires, but the ink moves.
+      layout = { ...layout, capTop: 9, baseline: 30 };
+      await act(async () => { loaded(); await ready; });
+      const { top, bottom } = drawn(container);
+      expect(top).toBeCloseTo(9 + 2, 1);
+      expect(bottom).toBeCloseTo(30 - 2, 1);
+    } finally {
+      Reflect.deleteProperty(document, 'fonts');
+    }
+  });
+
+  it('measures nothing once the row is gone, when the fonts load after it (#1002 R2)', async () => {
+    let loaded!: () => void;
+    const ready = new Promise<void>(resolve => { loaded = resolve; });
+    Object.defineProperty(document, 'fonts', { value: { ready }, configurable: true });
+    try {
+      const { unmount } = render(<MetricRows rows={[row]} onOpen={() => {}}/>);
+      unmount();
+      const boxes = vi.mocked(Element.prototype.getBoundingClientRect);
+      boxes.mockClear();
+      await act(async () => { loaded(); await ready; });
+      expect(boxes).not.toHaveBeenCalled();
+    } finally {
+      Reflect.deleteProperty(document, 'fonts');
+    }
+  });
+
+  it('draws where the browser has no document.fonts', () => {
+    expect('fonts' in document).toBe(false); // jsdom: no FontFaceSet
+    const { container } = render(<MetricRows rows={[row]} onOpen={() => {}}/>);
+    expect(drawn(container).top).toBeCloseTo(7, 1);
   });
 
   it('halves the fill under the line', () => {
