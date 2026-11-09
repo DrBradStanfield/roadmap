@@ -19,7 +19,7 @@ import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable } from './ReviewTable';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FloatingUploadIndicator } from './FloatingUploadIndicator';
-import { UploadError, KEY_ERROR_MESSAGES, BATCH_THRESHOLD, MAX_FILES, MAX_FILE_SIZE, shortName, hasValues, processBatch, processPipeline, type FileNotice, type FileNoticeReason, type ReadInput, type DocumentToSave, type ReviewedValue, type ReviewedLabValue, type FileResult } from '../lib/upload-pipeline';
+import { UploadError, KEY_ERROR_MESSAGES, BATCH_THRESHOLD, MAX_FILE_SIZE, shortName, hasValues, processBatch, processPipeline, type FileNotice, type FileNoticeReason, type ReadInput, type DocumentToSave, type ReviewedValue, type ReviewedLabValue, type FileResult } from '../lib/upload-pipeline';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries } from '../lib/archive-payloads';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
@@ -85,6 +85,7 @@ const BYOK_NOTICE_TEXT: Partial<Record<FileNoticeReason, string>> = {
   serverError: 'Not read. Anthropic could not be reached or could not read it. Please try again.',
   limitError: 'Not read. Your Anthropic key hit its rate limit. Wait a minute and try again.',
 };
+const MAX_FILES = IMPORT_LIMITS.websiteFiles; // also the server's per-IP daily limit (US-12 AC17)
 const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
 const OVER_LIMIT_TEXT = `Not read. It is over the ${MAX_FILES}-file limit for one upload. Upload it separately.`;
 

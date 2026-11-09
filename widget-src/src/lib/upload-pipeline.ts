@@ -120,7 +120,6 @@ const PROGRESS_MESSAGES = [
   'Reviewing scan results...',
 ];
 
-export const MAX_FILES = IMPORT_LIMITS.websiteFiles; // also the server's per-IP daily limit (US-12 AC17)
 export const MAX_FILE_SIZE = IMPORT_LIMITS.websiteFileMb * 1024 * 1024; // the connector's hint names this number
 
 /** Why a file was not fully read (US-12 AC9). Each is also its `upload_outcome` count. */
