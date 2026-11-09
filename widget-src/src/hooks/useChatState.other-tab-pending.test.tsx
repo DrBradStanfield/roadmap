@@ -31,7 +31,8 @@ vi.mock('../lib/observe-visibility', () => ({ observeVisibility: () => () => {} 
 vi.mock('../components/FeedbackForm', () => ({ FeedbackForm: () => null }));
 vi.mock('../components/ChatKeyGate', () => ({ ChatKeyGate: () => null }));
 
-import { useChatState, REMOTE_PENDING_MS } from './useChatState';
+import { useChatState } from './useChatState';
+import { REMOTE_PENDING_MS } from './useChatBusy';
 import { ChatEmbed } from '../components/ChatEmbed';
 
 const question = { id: 'temp-1', role: 'user' as const, content: 'What about ApoB?', createdAt: 'x' };
@@ -209,6 +210,14 @@ describe('US-15 AC17c: the chat is busy while any tab\'s send is in flight, each
     expect(hook.result.current.state.isLoading).toBe(true);
     act(() => { vi.advanceTimersByTime(REMOTE_PENDING_MS); });
     expect(hook.result.current.state.isLoading).toBe(false);
+  });
+
+  it('US-15 AC17c: two presses of Send before the re-render send once', async () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    act(() => hook.result.current.actions.handleInputChange('And LDL?'));
+    const { handleSend } = hook.result.current.actions;
+    await act(async () => { void handleSend(); void handleSend(); });
+    expect(sendMessage).toHaveBeenCalledOnce();
   });
 
   it('US-15 AC17c: this tab says whether its own send is in flight, apart from what it shows', async () => {

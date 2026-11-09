@@ -54,7 +54,6 @@ interface UseChatStateOptions {
 export const MAX_CHARS = 8000;
 const CUT_NOTICE = `Your message was cut at ${MAX_CHARS.toLocaleString('en')} characters.`;
 const NO_PENDING: ChatPending = { thinking: '', text: '', status: '', sources: [] };
-export { REMOTE_PENDING_MS } from './useChatBusy';
 
 /** Enter sends, Shift+Enter is a new line, and an Enter that commits an input method's composition only commits it
  *  (US-15 AC26a): Chrome and Firefox mark it `isComposing`, Safari sends it just after with keyCode 229. */
@@ -103,7 +102,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   const inputTextRef = useRef(inputText);
   const isLoadingConvsRef = useRef(false);
   // Busy while any tab's send is in flight, each tracked on its own (US-15 AC17c).
-  const { isLoading, isLoadingRef, ownSendRef, updateBusy, onRemote } = useChatBusy();
+  const { isLoading, busyNow, ownSending, startOwnSend, endOwnSend, onRemote } = useChatBusy();
   // Bumped by each thread load and by a reply landing on screen: a load that
   // started before either is stale (US-15 AC7a).
   const loadGenRef = useRef(0);
@@ -171,7 +170,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         setMessages(payload.messages);
         // That tab's own send, tracked apart from this tab's; an older bundle says only isLoading (US-15 AC17c).
         onRemote(msg.instanceId, payload.sending ?? payload.isLoading);
-        if (!ownSendRef.current) setIsLocalSender(false);
+        if (!ownSending()) setIsLocalSender(false);
         setError(payload.error);
         return;
       }
@@ -245,8 +244,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         conversations: conversationsRef.current,
         activeConversationId: id,
         messages: msgs,
-        isLoading: isLoadingRef.current, // a reply still in flight is not over (US-15 AC7a)
-        sending: ownSendRef.current,
+        isLoading: busyNow(), // for older bundles: a reply still in flight is not over (US-15 AC7a)
+        sending: ownSending(),
         error: null,
       },
       ts: Date.now(),
@@ -263,7 +262,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
   const handleSend = useCallback(async () => {
     const trimmed = inputText.trim();
-    if (!trimmed || isLoading) return;
+    if (!trimmed || busyNow()) return; // read now: a second press before the re-render sends nothing
     if (trimmed.length > MAX_CHARS) return;
     if (isOffline) { setError("You're offline. Check your connection and try again."); return; }
 
@@ -283,8 +282,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     setInputText('');
     inputTextRef.current = ''; // the box is empty now, before the re-render (US-15 AC57)
     postInputSync(instanceId, '');
-    ownSendRef.current = true;
-    updateBusy();
+    startOwnSend();
     setIsLocalSender(true);
     setSendingConversationId(currentConvId);
 
@@ -323,7 +321,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       Sentry.captureMessage('Chat context read failed', { tags: { feature: 'chat' } });
       return { result: null, error: { error: 'Something went wrong. Please try again.' } };
     });
-    ownSendRef.current = false;
+    endOwnSend(); // another tab's send may still be in flight (US-15 AC17c)
     const approach = endStream();
     // Another thread was opened while the reply was in flight (US-15 AC7a): it stays
     // on screen, and the reply stays with the thread it was sent from.
@@ -342,7 +340,6 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         postInputSync(instanceId, trimmed);
       }
       setError(sendError.error);
-      updateBusy(); // another tab's send may still be in flight (US-15 AC17c)
       setIsLocalSender(false);
       postSync({
         instanceId,
@@ -403,7 +400,6 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         setConversations(finalConversations);
       }
 
-      updateBusy(); // as in the error path (US-15 AC17c)
       setIsLocalSender(false);
       postSync({
         instanceId,
@@ -419,7 +415,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         ts: Date.now(),
       });
     }
-  }, [inputText, isLoading, isOffline, instanceId, guestInputs, handleDelta, endStream, updateBusy]);
+  }, [inputText, busyNow, isOffline, instanceId, guestInputs, handleDelta, endStream, startOwnSend, endOwnSend]);
 
   const handleDelete = useCallback(async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();

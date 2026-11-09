@@ -26,7 +26,8 @@ vi.mock('../lib/chat-api', () => ({
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/observe-visibility', () => ({ observeVisibility: () => () => {} }));
 
-import { useChatState, REMOTE_PENDING_MS } from './useChatState';
+import { useChatState } from './useChatState';
+import { REMOTE_PENDING_MS } from './useChatBusy';
 
 const conversations = [
   { id: 'A', title: 'A', updatedAt: 'x', createdAt: 'x' },
