@@ -121,7 +121,7 @@ struct MyDataView: View {
         if let data = store.myData {
             list(data)
         } else {
-            ContentUnavailableView("Your record could not be opened", systemImage: "exclamationmark.triangle", description: Text(store.problem ?? ""))
+            ContentUnavailableView(store.problem?.heading ?? "Your record did not load", systemImage: "exclamationmark.triangle", description: Text(store.problem?.words ?? ""))
         }
     }
 

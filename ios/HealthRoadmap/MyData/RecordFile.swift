@@ -62,7 +62,35 @@ struct PhoneLoad: Sendable {
     /// My data and the plan; nil when it cannot be read.
     let drawn: HealthEngine.Drawn?
     /// Why it cannot be read; the app then writes nothing.
-    let problem: String?
+    let problem: RecordProblem?
+}
+
+/// Why the phone's record is not shown (#923; the web's twin is US-65 AC7). Only a record the
+/// app refuses "could not be opened": not text, not JSON, not a record, or a newer app's. Any
+/// other failure "did not load": the record may be fine, and opening the app again may help.
+struct RecordProblem: Equatable, Sendable {
+    let refused: Bool
+    let words: String
+
+    var heading: String { refused ? "Your record could not be opened" : "Your record did not load" }
+
+    init(_ error: Error) {
+        refused = Self.refuses(error)
+        words = refused
+            ? "Your saved record could not be opened, so nothing will be saved over it. \(error.localizedDescription)"
+            : "Your saved record did not load, so nothing will be saved over it. \(error.localizedDescription) Close the app and open it again to try again."
+    }
+
+    /// A refusal: the engine's own (`Refusal`), its not-JSON or not-a-record exception, read by
+    /// the JavaScript error's name, or a file that is not UTF-8 text.
+    static func refuses(_ error: Error) -> Bool {
+        switch error {
+        case HealthEngine.EngineError.refused: true
+        case HealthEngine.EngineError.callFailed(let thrown): thrown.hasPrefix("SyntaxError:") || thrown.hasPrefix("RecordShapeError:")
+        case let error as CocoaError: error.code == .fileReadInapplicableStringEncoding || error.code == .fileReadCorruptFile
+        default: false
+        }
+    }
 }
 
 /// What one edit to the phone's file did.
@@ -84,7 +112,7 @@ extension HealthEngine {
             do {
                 record = try String(contentsOf: file, encoding: .utf8)
             } catch {
-                return PhoneLoad(record: "", drawn: nil, problem: "Your saved record could not be opened, so nothing will be saved over it. \(error.localizedDescription)")
+                return PhoneLoad(record: "", drawn: nil, problem: RecordProblem(error))
             }
         } else {
             record = try newRecord(now: .now, deviceId: deviceId)
@@ -101,7 +129,7 @@ extension HealthEngine {
             return PhoneLoad(record: record, drawn: drawn, problem: nil)
         } catch {
             // A damaged file, or one a newer app wrote: keep it as it is for a later fix.
-            return PhoneLoad(record: record, drawn: nil, problem: "Your saved record could not be read, so nothing will be saved over it. \(error.localizedDescription)")
+            return PhoneLoad(record: record, drawn: nil, problem: RecordProblem(error))
         }
     }
 
