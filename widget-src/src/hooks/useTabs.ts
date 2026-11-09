@@ -1,13 +1,17 @@
 // The phone's tabs (US-20): which one shows, and each tab's own scroll
 // position (AC6). The page scrolls, not the panel, so leaving a tab records
 // the page's offset and coming back restores it; a tab not yet visited opens
-// at the widget's top.
-import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+// at the widget's top. On a switch it also sizes the chat's card to the
+// screen between the sticky header and the tab bar (--hr-chat-top,
+// --hr-tabbar-h on the widget root), measured once the new panel shows.
+import { useCallback, useId, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { stickyTop } from '../lib/reveal';
 import { panelDomId, type TabId } from '../components/BottomTabBar';
 
-export function useTabs(tabIds: string, rootRef: RefObject<HTMLDivElement | null>) {
+export function useTabs(rootRef: RefObject<HTMLDivElement | null>) {
   const [activeTab, setActiveTab] = useState<TabId>('health');
+  /** The prefix of the tabs' and panels' DOM ids. */
+  const tabIds = useId();
   const activeTabRef = useRef(activeTab);
   activeTabRef.current = activeTab;
   const scrollByTab = useRef<Partial<Record<TabId, number>>>({});
@@ -37,5 +41,5 @@ export function useTabs(tabIds: string, rootRef: RefObject<HTMLDivElement | null
     else if (top !== 0) window.scrollTo({ top: window.scrollY + top, behavior: 'instant' });
   }, [activeTab]);
 
-  return { activeTab, selectTab };
+  return { activeTab, selectTab, tabIds };
 }

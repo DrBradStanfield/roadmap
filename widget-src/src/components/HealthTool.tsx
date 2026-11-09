@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef, useId, type ReactNode } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { calculateHealthResults, knownMinorOf } from '@roadmap/health-core/calculations';
 import { unreadableNote } from '@roadmap/health-core/readable-rows';
@@ -915,10 +915,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   isMobileRef.current = isMobile;
   const isWideDesktop = useIsWideDesktop(1200);
   const floatingChat = !isMobile && !isWideDesktop && reached === 4;
-  const tabIds = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   // The phone's three tabs, each keeping its own scroll (hooks/useTabs, US-20 AC6).
-  const { activeTab, selectTab } = useTabs(tabIds, rootRef);
+  const { activeTab, selectTab, tabIds } = useTabs(rootRef);
 
   // US-62 AC4: the redesign's denominator, once per tab, with the layout chosen
   // at mount (a later resize does not change it). Shopify only, like every event.
@@ -958,7 +957,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const egfrFromLab = !!(results?.eGFRFromLab || results?.limits?.labEgfr);
   const egfrDay = egfrFromLab ? planInputs.labEgfrDate : results?.eGFR !== undefined ? planInputs.creatinineDay ?? localDay(new Date()) : undefined;
   const egfrCurrent = egfrDay ? { day: egfrDay, source: egfrFromLab ? 'lab' as const : 'calculated' as const } : null;
-
 
   // US-16 AC2 on a phone: after a chat edit switches to My data, the filled
   // cell (a matrix's highlighted cell, or the plain field) is scrolled to the
