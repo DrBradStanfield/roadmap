@@ -217,7 +217,7 @@ These are the doses trials used, not recommendations.
 | Blood pressure | 3 to 9 g a day of L-citrulline | 1 to 17 weeks | Systolic fall of about 4 mmHg in two meta-analyses, none in a third [18][19][20] |
 | Vascular function in hypertensive postmenopausal women | 10 g a day of L-citrulline | 4 to 8 weeks | Better flow-mediated dilation [22][23] |
 | Exercise, multi-day | 6 g a day of L-citrulline | 7 days | Better exercise tolerance in one trial of 10 men [6] |
-| Exercise, single dose | 8 g of citrulline malate, or 5.3 g of citrulline | 45 to 60 minutes before | Mostly no benefit [7][8][10] |
+| Exercise, single dose | 8 g of citrulline malate, or 5.3 g of citrulline | 45 to 60 minutes before | Mostly no benefit [7][8][10][17] |
 | Mild erectile dysfunction | 1.5 g a day of L-citrulline | 1 month | Better hardness in 12 of 24 men [27] |
 | Heart failure (no placebo) | 3 g a day | 2 to 4 months | Better ventricular function than no treatment [25][26] |
 
