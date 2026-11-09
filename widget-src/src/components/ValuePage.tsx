@@ -147,7 +147,10 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
       )}
 
       {readings.length > 0 && (
-        <ErrorBoundary>
+        // A chart that cannot load (offline, its chunk refused) says so in its place only (US-62 AC36).
+        <ErrorBoundary feature="value_page_chart" fallback={
+          <p className="md-page-empty">The chart could not load. Check your connection, then reload the page to see it.</p>
+        }>
           <Suspense fallback={<p className="history-loading">Loading chart…</p>}>
             {lab?.mixedUnits && <MixedUnitsNote label={label} units={[...new Set(lab.points.map(p => p.unit))]}/>}
             {charts.map(c => <TimeSeriesChart key={c.title} title={c.title} showTitle={c.title !== label} data={c.data} unit={c.unit} color={c.color}/>)}
