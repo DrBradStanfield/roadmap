@@ -153,7 +153,7 @@ Blank cells mean the source we saved does not address the point. The Australian 
 
 **Will potassium lower my blood pressure?** Potassium from food is recommended by the 2025 US guideline, except in kidney disease or with medicines that reduce potassium excretion, where blood potassium should be checked [2]. NICE does not use potassium supplements to lower blood pressure [4]. See the [potassium page](https://drstanfield.com/blogs/articles/potassium-benefits-forms-dosing-and-side-effects).
 
-**Should I use a salt substitute?** It may help if you salt food at home [2][19], but not with kidney disease or on an ACE inhibitor, ARB or potassium-sparing diuretic without asking your doctor [2][4][24][25].
+**Should I use a salt substitute?** It may help if you salt food at home [2][19], but not if you are pregnant or have kidney disease, or on an ACE inhibitor, ARB or potassium-sparing diuretic without asking your doctor [2][4][24][25]. NICE also advises against them for older people and people with diabetes [4]. The health tool shows the suggestion only with a current eGFR of 45 or more.
 
 **Can I take an ACE inhibitor or ARB with reduced kidney function?** Often yes, but the choice, dose and blood tests are for your doctor. Check with your doctor or pharmacist.
 

@@ -26,7 +26,7 @@ thresholds: [{"ref":"EGFR_THRESHOLDS.normal","value":70},{"ref":"EGFR_THRESHOLDS
 
 ## Get help now
 
-- Blood pressure of 180/120 or higher with chest pain, shortness of breath, back pain, numbness or weakness, a change in vision or difficulty speaking: call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). With no symptoms, rest and recheck after 5 minutes; if it is still 180/120 or higher, call your doctor (Brad's current guidance, 2 Nov 2026).
+- Blood pressure of 180/120 or higher with chest, back or belly pain, shortness of breath, numbness or weakness, a change in vision, difficulty speaking or a sudden severe headache: call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). With no symptoms, rest and recheck after 5 minutes; if it is still 180/120 or higher, call your doctor (Brad's current guidance, 2 Nov 2026).
 - For chest pain or signs of a stroke (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - On an ACE inhibitor or ARB: for trouble breathing or swelling of the face, lips, tongue or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [20].
 - On an SGLT2 inhibitor (such as empagliflozin or dapagliflozin): with nausea, vomiting, belly pain, unusual tiredness or laboured breathing, stop the medicine and seek medical attention immediately, even if your blood sugar is normal; if you are very unwell or confused, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [17].
@@ -81,7 +81,7 @@ Creatinine comes from muscle, so muscle and diet shift the eGFR. NICE asks adult
 
 KDIGO asks for a whole-person plan aimed at slowing CKD and preventing its complications, heart disease above all [1].
 
-**Blood pressure.** Raised pressure strains the small blood vessels in the kidneys [7]. Targets differ (see "Where guidelines differ"); the high blood pressure guideline covers measuring at home and treatment.
+**Blood pressure.** Raised pressure strains the small blood vessels in the kidneys [7]. Targets differ (see "Where guidelines differ").
 
 **Diabetes.** High blood glucose damages the kidneys' filters [7]. Several diabetes medicines also protect the kidneys (see "Medicines").
 
@@ -89,9 +89,9 @@ KDIGO asks for a whole-person plan aimed at slowing CKD and preventing its compl
 
 **Diet.** KDIGO advises a varied diet with more plant foods than animal foods and fewer ultra-processed foods, with a renal dietitian to tailor sodium, potassium, phosphorus and protein [1].
 
-**Protein.** KDIGO suggests 0.8 g per kg of body weight a day in CKD G3 to G5, and advises avoiding more than 1.3 g per kg a day in adults whose CKD is at risk of getting worse [1]. NICE advises against low-protein diets, below 0.6 to 0.8 g per kg a day [2]. The plan's own target is in "Your numbers" and "Brad's view". See the [protein powders page](https://drstanfield.com/blogs/articles/protein-powders-benefits-types-dosing-and-side-effects) for supplements.
+**Protein.** KDIGO suggests 0.8 g per kg of body weight a day in CKD G3 to G5, and advises avoiding more than 1.3 g per kg a day in adults whose CKD is at risk of getting worse [1]. NICE advises against low-protein diets, below 0.6 to 0.8 g per kg a day [2]. See the [protein powders page](https://drstanfield.com/blogs/articles/protein-powders-benefits-types-dosing-and-side-effects) for supplements.
 
-**Potassium and salt substitutes.** Damaged kidneys may not clear potassium well, and blood potassium can rise too high [8]. Potassium salt substitutes can help cut sodium, but they are not for people with kidney disease, people told to limit potassium, or people taking a potassium-sparing diuretic, a potassium supplement, an ACE inhibitor or an ARB, unless their doctor agrees (Brad's current guidance, 2 Nov 2026). The NHS advises people with CKD to avoid potassium supplements [8]. See the [potassium page](https://drstanfield.com/blogs/articles/potassium-benefits-forms-dosing-and-side-effects).
+**Potassium and salt substitutes.** Damaged kidneys may not clear potassium well, and blood potassium can rise too high [8]. Potassium salt substitutes can help cut sodium, but not if you are pregnant, have kidney disease or diabetes, have been told to limit potassium, or take a potassium-sparing diuretic, a potassium supplement, an ACE inhibitor or an ARB, unless your doctor agrees; the plan suggests one only with a current eGFR of 45 or more (Brad's current guidance, 2 Nov 2026). The NHS advises people with CKD to avoid potassium supplements [8]. See the [potassium page](https://drstanfield.com/blogs/articles/potassium-benefits-forms-dosing-and-side-effects).
 
 **Exercise and weight.** KDIGO recommends at least 150 minutes a week of moderate activity, or as much as your heart and fitness allow, less sitting, and weight loss for people with obesity [1].
 
@@ -161,7 +161,7 @@ Most medicines for CKD are chosen by your urine ACR, your eGFR and whether you h
 | Who is tested | Kidney function for every adult [28] | People at risk; every 1 to 2 years, yearly with diabetes or hypertension [4] | Yearly with diabetes or hypertension; every 2 years with heart disease, kidney failure in the family, obesity or smoking; once at 60 or over [3] | USPSTF screening advice dates from 2012 and is being updated [5] | Diabetes, hypertension, past AKI, heart disease, gout and other risks [2] | People at risk, with both eGFR and ACR [1] |
 | Blood pressure target | Below 120/80 under 65; below 130/80 from 65 | Below 120 to 130/80 for most [4] | Below 130/80; below 120 systolic may suit very high heart risk [3] | Below 130/80 for all adults [6] | Below 140/90 if ACR under 70; below 130/80 if ACR 70 or more (mg/mmol) [2] | Systolic below 120 if tolerated [1] |
 | Protein | 1.2 g/kg ideal body weight; 1.0 g/kg if eGFR below 45 | Avoid high intake; no restriction without supervision [4] | | | No low-protein diets (below 0.6 to 0.8 g/kg) [2] | 0.8 g/kg in G3 to G5; avoid above 1.3 g/kg if at risk [1] |
-| Potassium salt substitutes | Not with kidney disease or potassium-raising medicines unless the doctor agrees | | Avoid potassium-rich salt substitutes when potassium runs high [3] | Can be useful, except in CKD or with potassium-raising medicines, where potassium is monitored [6] | | |
+| Potassium salt substitutes | Not in pregnancy, kidney disease or diabetes, or with potassium-raising medicines, unless the doctor agrees | | Avoid potassium-rich salt substitutes when potassium runs high [3] | Can be useful, except in CKD or with potassium-raising medicines, where potassium is monitored [6] | | |
 | SGLT2 inhibitor for CKD | Offered only within the weight-medicine steps | Empagliflozin from eGFR 20 with type 2 diabetes, ACR 20 mg/mmol or more, or heart failure [4] | | Empagliflozin and dapagliflozin approved for CKD [16][17] | eGFR 20 to 45, or 45 to 90 with ACR 22.6 mg/mmol or more or type 2 diabetes, on top of an ACE inhibitor or ARB [2] | eGFR 20 or more with ACR 20 mg/mmol or more, or heart failure; suggested at eGFR 20 to 45 with lower ACR [1] |
 
 Blank cells mean the source we saved does not address the point.
