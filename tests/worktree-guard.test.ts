@@ -79,6 +79,10 @@ beforeAll(() => {
   writeFileSync(join(BIN, 'cp'), `#!/bin/sh\n[ -n "$CP_FAIL" ] && exit 1\n`
     + `case "$*" in *"\${CP_FAIL_ON:-//none//}"*) exit 1;; esac\nexec ${spawnSync('sh', ['-c', 'command -v cp'], { encoding: 'utf8' }).stdout.trim()} "$@"\n`);
   chmodSync(join(BIN, 'cp'), 0o755);
+  // rm passes through to the real one, unless RM_FAIL is set and the call names a package clone folder.
+  writeFileSync(join(BIN, 'rm'), `#!/bin/sh\ncase "$*" in *claude-worktree-packages/*) [ -n "$RM_FAIL" ] && exit 1;; esac\n`
+    + `exec ${spawnSync('sh', ['-c', 'command -v rm'], { encoding: 'utf8' }).stdout.trim()} "$@"\n`);
+  chmodSync(join(BIN, 'rm'), 0o755);
   ENV = {
     ...process.env,
     PATH: `${BIN}:${process.env.PATH}`,
@@ -378,6 +382,12 @@ describe('package clones: new worktrees, failures, races and orphans (US-64 AC3,
     w = newWorktree('reuse').path;
     expect(existsSync(join(cacheDir(w), 'node_modules/stale'))).toBe(false);
   });
+  it('worktree-new still prints the path when it cannot delete an old clone (issue 936)', () => {
+    const r = newWorktree('rmfail', { RM_FAIL: '1' });
+    expect(r.status).toBe(0);
+    expect(r.path).toMatch(/\/rmfail$/);
+    expect(r.stderr).toMatch(/could not delete/);
+  });
   it('a failed clone answers cleanly, links nothing and leaves no temp folder', () => {
     const w = newWorktree('noclone', { CP_FAIL: '1' }).path;
     expect(newWorktree('noclone2', { CP_FAIL: '1' }).stderr).toMatch(/no package links yet/);
@@ -476,5 +486,16 @@ describe('SessionStart names merged worktrees ready to remove (US-64 AC21)', () 
     expect(ctx).toMatch(/- \.claude\/worktrees\/nudge-live \[claude\/nudge-live\]: merged, in use \(changed in the last day\); leave it/);
     expect(ctx).not.toMatch(/worktree-done\.sh nudge-live/);
     expect(done('nudge-live').status).toBe(0);
+  });
+  it('a merged worktree whose session ended a turn in the last day is in use, even with an old git dir (issue 937)', () => {
+    const w = newWorktree('nudge-idle').path;
+    mergeIn(w, 'nudge-idle');
+    sh(w, 'git status -s');
+    ageGitDir(w);
+    stop(w); // the Stop hook leaves its heartbeat in the git dir
+    ageGitDir(w); // its own git status touched the index; only the heartbeat is recent now
+    const ctx = hook({ hook_event_name: 'SessionStart', cwd: MAIN }).hookSpecificOutput.additionalContext as string;
+    expect(ctx).toMatch(/nudge-idle \[claude\/nudge-idle\]: merged, in use/);
+    expect(ctx).not.toMatch(/worktree-done\.sh nudge-idle/);
   });
 });
