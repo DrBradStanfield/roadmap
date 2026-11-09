@@ -21,8 +21,9 @@ vi.mock('../lib/chat-api', () => ({
   listConversations: vi.fn(), loadConversation: vi.fn(), deleteConversation: vi.fn(),
 }));
 const postSync = vi.hoisted(() => vi.fn());
+const postInputSync = vi.hoisted(() => vi.fn());
 vi.mock('../lib/chat-sync', () => ({
-  postSync, postInputSync: vi.fn(), subscribeSync: () => () => {}, generateInstanceId: () => 'test',
+  postSync, postInputSync, subscribeSync: () => () => {}, generateInstanceId: () => 'test',
 }));
 
 import * as hookModule from './useChatState';
@@ -138,9 +139,11 @@ describe('US-15 AC57 — a failed send puts the question back in the box', () =>
     await act(async () => { send.resolve!({ result: null, error: { error: 'Network error' } }); await sending; });
     expect(hook.result.current.state.inputText).toBe('What about ApoB?');
     expect(hook.result.current.state.error).toBe('Network error');
+    // Other tabs mirror the box, so they get the question back too.
+    expect(postInputSync).toHaveBeenLastCalledWith('test', 'What about ApoB?');
   });
 
-  it('something typed while it was sending is kept', async () => {
+  it('text already in the box (mirrored from another tab) is kept', async () => {
     const { hook, sending } = await startSend();
     act(() => hook.result.current.actions.handleInputChange('And LDL?'));
     await act(async () => { send.resolve!({ result: null, error: { error: 'Network error' } }); await sending; });
