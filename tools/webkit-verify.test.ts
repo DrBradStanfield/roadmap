@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assertDesktopLayout, assertMatrixLayout, assertPhoneLayout, assertRows, assertTabBar, assertValuePage, wheelUntilScrolled } from './webkit-verify.mjs';
+import { assertDesktopLayout, assertMatrixLayout, assertPhoneLayout, assertRows, assertTabBar, assertValuePage, settleTop, wheelDistance } from './webkit-verify.mjs';
 
 describe('US-20: WebKit deployment gate', () => {
   const values = ['35', '36', '2.4'].map(text => ({ text, width: 72, height: 40, numberWidth: 20, numberHeight: 18, visible: true, boxSizing: 'border-box' }));
@@ -94,23 +94,23 @@ describe('US-62 AC16, AC27: WebKit desktop gate', () => {
       expect(() => assertDesktopLayout({ ...valid, ...change })).toThrow(message);
     }
   });
-  it('names what was under the mouse when the page did not scroll', () => {
-    expect(() => assertDesktopLayout({ ...valid, scrolled: 0, underMouse: 'div.cookie-banner' })).toThrow('div.cookie-banner');
+  it('names what the page looked like before the wheel when it did not scroll', () => {
+    const scrollState = { underMouse: 'div.cookie-banner', scroller: 'div.page-wrapper 900/900', overflow: 'hidden/hidden' };
+    expect(() => assertDesktopLayout({ ...valid, scrolled: 0, scrollState })).toThrow('div.page-wrapper 900/900');
   });
 });
 
 // Deploy 2026-11-09 (run 42564390802): the live desktop check failed "did not scroll"
 // twice, at 1440 and then 1200, though the page scrolls. One wheel and a fixed 400ms
-// read 0 when the wheel came early or the runner was still scrolling.
+// read 0 when the runner was still loading or still scrolling.
 describe('US-62 AC16: the desktop scroll is measured once it has happened', () => {
-  // A fake page: the topics' top moves toward its target at `speed` px per ms;
-  // wheels before `readyAt` are ignored (the scroller not ready yet).
-  function fakePage({ readyAt = 1, speed = Infinity, scrolls = true } = {}) {
-    const state = { top: 880, target: 880, wheels: 0 };
+  // A fake page: the topics' top moves toward its target at `speed` px per ms.
+  function fakePage({ speed = Infinity, scrolls = true, top = 880 } = {}) {
+    const state = { top, target: 880, wheels: 0 };
     return {
       state,
       readTop: async () => Math.round(state.top),
-      wheel: async () => { state.wheels += 1; if (scrolls && state.wheels >= readyAt) state.target = state.top - 2000; },
+      wheel: async () => { state.wheels += 1; if (scrolls) state.target = state.top - 2000; },
       sleep: async (ms: number) => {
         const step = speed * ms;
         state.top = Math.abs(state.target - state.top) <= step ? state.target : state.top + Math.sign(state.target - state.top) * step;
@@ -119,21 +119,25 @@ describe('US-62 AC16: the desktop scroll is measured once it has happened', () =
   }
   it('measures a quick scroll after one wheel', async () => {
     const page = fakePage();
-    expect(await wheelUntilScrolled(page)).toBe(2000);
+    expect(await wheelDistance(page)).toBe(2000);
     expect(page.state.wheels).toBe(1);
   });
   it('waits for a smooth scroll to finish, not a fixed 400ms', async () => {
-    expect(await wheelUntilScrolled(fakePage({ speed: 1 }))).toBe(2000);
+    expect(await wheelDistance(fakePage({ speed: 1 }))).toBe(2000);
   });
-  it('wheels again when the first wheel came before the page could scroll', async () => {
-    const page = fakePage({ readyAt: 2 });
-    expect(await wheelUntilScrolled(page)).toBe(2000);
-    expect(page.state.wheels).toBe(2);
+  it('measures from where the page came to rest before the wheel', async () => {
+    // Still settling from load (top 1200 heading to 880) when the check starts.
+    expect(await wheelDistance(fakePage({ speed: 1, top: 1200 }))).toBe(2000);
   });
-  it('still reads 0 for a page that never scrolls, so the gate fails', async () => {
+  it('reads 0 for a page that does not scroll, with one wheel and no retry, so the gate fails', async () => {
     const page = fakePage({ scrolls: false });
-    expect(await wheelUntilScrolled(page)).toBe(0);
-    expect(page.state.wheels).toBe(2);
+    expect(await wheelDistance(page)).toBe(0);
+    expect(page.state.wheels).toBe(1);
+  });
+  it('settleTop returns the top once it holds still, or after 4s of movement', async () => {
+    expect(await settleTop(fakePage({ speed: 1, top: 1200 }))).toBe(880);
+    let t = 0;
+    expect(await settleTop({ readTop: async () => t, sleep: async (ms: number) => { t += ms; } })).toBe(4000);
   });
 });
 
