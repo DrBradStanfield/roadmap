@@ -18,6 +18,7 @@ import {
   type ChatPending,
 } from '../lib/chat-api';
 import { postSync, postInputSync, subscribeSync, generateInstanceId } from '../lib/chat-sync';
+import { useChatBusy } from './useChatBusy';
 import { cutText } from '@roadmap/health-core/chat-history';
 import type { ChatContextPayload } from '@roadmap/health-core/chat-context';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
@@ -53,8 +54,7 @@ interface UseChatStateOptions {
 export const MAX_CHARS = 8000;
 const CUT_NOTICE = `Your message was cut at ${MAX_CHARS.toLocaleString('en')} characters.`;
 const NO_PENDING: ChatPending = { thinking: '', text: '', status: '', sources: [] };
-/** How long another tab's reply in flight may lock this tab's chat with no word from it (US-15 AC17a). */
-export const REMOTE_PENDING_MS = 5 * 60_000;
+export { REMOTE_PENDING_MS } from './useChatBusy';
 
 /** Enter sends, Shift+Enter is a new line, and an Enter that commits an input method's composition only commits it
  *  (US-15 AC26a): Chrome and Firefox mark it `isComposing`, Safari sends it just after with keyCode 229. */
@@ -69,7 +69,6 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   const [activeConversationId, setActiveConversationId] = useState<string | null>(prefetchedData?.activeConversationId ?? null);
   const [messages, setMessages] = useState<ChatMessage[]>(prefetchedData?.messages ?? []);
   const [inputText, setInputText] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   // isLocalSender: true only on the instance that triggered the send — controls animation
   const [isLocalSender, setIsLocalSender] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,8 +102,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   const messagesRef = useRef(messages);
   const inputTextRef = useRef(inputText);
   const isLoadingConvsRef = useRef(false);
-  const ownSendRef = useRef(false); // this tab's own send is in flight (US-15 AC17a)
-  const isLoadingRef = useRef(isLoading);
+  // Busy while any tab's send is in flight, each tracked on its own (US-15 AC17c).
+  const { isLoading, isLoadingRef, ownSendRef, updateBusy, onRemote } = useChatBusy();
   // Bumped by each thread load and by a reply landing on screen: a load that
   // started before either is stale (US-15 AC7a).
   const loadGenRef = useRef(0);
@@ -113,8 +112,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     activeConversationIdRef.current = activeConversationId;
     messagesRef.current = messages;
     inputTextRef.current = inputText;
-    isLoadingRef.current = isLoading;
-  }, [conversations, activeConversationId, messages, inputText, isLoading]);
+  }, [conversations, activeConversationId, messages, inputText]);
 
   // Offline detection
   useEffect(() => {
@@ -152,8 +150,6 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
   // BroadcastChannel subscription — sync state from other instances
   useEffect(() => {
-    // A tab closed mid-reply never says the reply ended (US-15 AC17a).
-    let remotePending: ReturnType<typeof setTimeout> | undefined;
     const unsubscribe = subscribeSync((msg) => {
       if (msg.instanceId === instanceId) return;
 
@@ -173,13 +169,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         setConversations(payload.conversations);
         setActiveConversationId(payload.activeConversationId);
         setMessages(payload.messages);
-        // This tab's own send ends only with its own reply (US-15 AC17b).
-        const loading = payload.isLoading || ownSendRef.current;
-        setIsLoading(loading);
-        isLoadingRef.current = loading; // a load landing before the re-render says what this message said (US-15 AC7a)
-        clearTimeout(remotePending);
-        // The expiry never ends this tab's own send.
-        if (payload.isLoading) remotePending = setTimeout(() => { if (!ownSendRef.current) { setIsLoading(false); isLoadingRef.current = false; } }, REMOTE_PENDING_MS);
+        // That tab's own send, tracked apart from this tab's; an older bundle says only isLoading (US-15 AC17c).
+        onRemote(msg.instanceId, payload.sending ?? payload.isLoading);
         if (!ownSendRef.current) setIsLocalSender(false);
         setError(payload.error);
         return;
@@ -202,8 +193,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         return;
       }
     });
-    return () => { unsubscribe(); clearTimeout(remotePending); };
-  }, [instanceId, onRemoteConversationSelected]);
+    return unsubscribe;
+  }, [instanceId, onRemoteConversationSelected, onRemote]);
 
   const dropThread = useCallback((id: string) => {
     setConversations(prev => prev.filter(c => c.id !== id));
@@ -255,6 +246,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         activeConversationId: id,
         messages: msgs,
         isLoading: isLoadingRef.current, // a reply still in flight is not over (US-15 AC7a)
+        sending: ownSendRef.current,
         error: null,
       },
       ts: Date.now(),
@@ -291,7 +283,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     setInputText('');
     inputTextRef.current = ''; // the box is empty now, before the re-render (US-15 AC57)
     postInputSync(instanceId, '');
-    setIsLoading(true);
+    ownSendRef.current = true;
+    updateBusy();
     setIsLocalSender(true);
     setSendingConversationId(currentConvId);
 
@@ -303,6 +296,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         activeConversationId: currentConvId,
         messages: optimisticMessages,
         isLoading: true,
+        sending: true,
         error: null,
       },
       ts: Date.now(),
@@ -315,7 +309,6 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     // blog bubble and the chatbot embed from the widget's saved copy. The
     // reader runs here, so each message carries what is saved now, even a save
     // made after the page loaded (US-15 AC10). None degrades to the empty context.
-    ownSendRef.current = true;
     // A throw before the request (reading the plan for context) is a failed
     // send like any other: the chat frees and the question goes back (US-15 AC17b).
     const { result, error: sendError } = await (async () => sendMessage(
@@ -349,8 +342,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         postInputSync(instanceId, trimmed);
       }
       setError(sendError.error);
-      setIsLoading(false);
-      isLoadingRef.current = false; // a load landing before the re-render must not say in flight (US-15 AC7a)
+      updateBusy(); // another tab's send may still be in flight (US-15 AC17c)
       setIsLocalSender(false);
       postSync({
         instanceId,
@@ -360,6 +352,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
           activeConversationId: shownId,
           messages: withoutOptimistic,
           isLoading: false,
+          sending: false,
           error: sendError.error,
         },
         ts: Date.now(),
@@ -410,8 +403,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         setConversations(finalConversations);
       }
 
-      setIsLoading(false);
-      isLoadingRef.current = false; // as in the error path (US-15 AC7a)
+      updateBusy(); // as in the error path (US-15 AC17c)
       setIsLocalSender(false);
       postSync({
         instanceId,
@@ -421,12 +413,13 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
           activeConversationId: finalConvId,
           messages: finalMessages,
           isLoading: false,
+          sending: false,
           error: null,
         },
         ts: Date.now(),
       });
     }
-  }, [inputText, isLoading, isOffline, instanceId, guestInputs, handleDelta, endStream]);
+  }, [inputText, isLoading, isOffline, instanceId, guestInputs, handleDelta, endStream, updateBusy]);
 
   const handleDelete = useCallback(async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();

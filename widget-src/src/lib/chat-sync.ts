@@ -10,7 +10,9 @@ const CHANNEL_NAME = 'hr_chat_sync';
 
 export type SyncMessage =
   | { instanceId: string; type: 'input'; payload: { text: string }; ts: number }
-  | { instanceId: string; type: 'state'; payload: { conversations: ChatConversation[]; activeConversationId: string | null; messages: ChatMessage[]; isLoading: boolean; error: string | null }; ts: number }
+  // `isLoading` is what the sender shows, which can mirror another tab's reply;
+  // `sending` is the sender's own send in flight (US-15 AC17c). An older bundle sends no `sending`.
+  | { instanceId: string; type: 'state'; payload: { conversations: ChatConversation[]; activeConversationId: string | null; messages: ChatMessage[]; isLoading: boolean; sending?: boolean; error: string | null }; ts: number }
   | { instanceId: string; type: 'thread-new'; payload: Record<string, never>; ts: number }
   | { instanceId: string; type: 'thread-deleted'; payload: { id: string }; ts: number };
 
