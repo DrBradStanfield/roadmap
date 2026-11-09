@@ -152,7 +152,7 @@ Endpoint list + auth flow detail: docs/reference.md.
 ## Adding New Screening Types (silent-data-loss checklist)
 
 1 `types.ts` ScreeningInputs · 2 `mappings.ts` screeningsToInputs · 3
-`roadmap-file.ts` schema key · 4 `suggestions.ts` logic · 5 `InputPanel.tsx` UI
+`roadmap-file.ts` schema key · 4 `suggestions.ts` logic · 5 `ScreeningQuestions.tsx` UI
 · 6 `HealthTool.tsx` handleScreeningChange · 7 `mappings.test.ts` round-trip
 test. Miss a step = the value silently fails to round-trip.
 
