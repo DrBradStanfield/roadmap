@@ -42,7 +42,7 @@ Cholesterol is a fat your body needs for cell walls and hormones. In the blood i
 
 **Common causes.** Guidelines first rule out other causes: heavy drinking, uncontrolled diabetes, an underactive thyroid, liver disease and nephrotic syndrome [NICE NG238].
 
-**Familial hypercholesterolaemia (FH)** is an inherited condition that keeps LDL high from birth. About 1 in 311 people have it [Hu 2020]. An LDL above 5 mmol/L (190 mg/dL) should prompt the question [Nordestgaard 2016]. Other clues are fatty lumps on the tendons (xanthomas), and heart disease or sudden cardiac death at a young age in you or a close relative [ESC/EAS 2019]. If you have FH, ask about testing your close relatives, best done through a lipid clinic [ESC/EAS 2019].
+**Familial hypercholesterolaemia (FH)** is an inherited condition that keeps LDL high from birth. About 1 in 311 people have it [Hu 2020]. An LDL above 5 mmol/L (190 mg/dL) should prompt the question [Nordestgaard 2016]. Other clues are fatty lumps on the tendons (xanthomas), and heart disease or sudden cardiac death at a young age in you or a close relative [ESC/EAS 2019]. If you have FH, ask about testing close relatives through a lipid clinic [ESC/EAS 2019].
 
 ## Your numbers
 
@@ -84,7 +84,7 @@ These steps work with medicines, not instead of them.
 - **Swap saturated fat for unsaturated fat.** Butter, fatty meat and coconut oil for olive oil, nuts, seeds and oily fish. In a Cochrane review, cutting saturated fat lowered combined cardiovascular events (risk ratio 0.83), with little or no effect on deaths [Hooper 2020]. See the diet guideline.
 - **Eat the cholesterol-lowering foods together.** In a controlled feeding trial, a "portfolio" of plant sterols, soy protein, viscous fibre and almonds lowered LDL by 28.6%, against 30.9% with lovastatin 20 mg [Jenkins 2003]. Eaten at home for six months, the drop was about 13% to 14% [Jenkins 2011].
 - **Soluble fibre.** Psyllium at a median of about 10 g a day lowered LDL by 0.33 mmol/L and ApoB by 0.05 g/L across 28 trials [Jovanovski 2018]. Oats, beans and lentils add more.
-- **Move, and stop smoking.** Guidelines encourage physical activity and quitting smoking for everyone, whatever their risk [Nelson 2024]. See the exercise guideline.
+- **Move, and stop smoking.** Guidelines advise both for everyone, whatever their risk [Nelson 2024]. See the exercise guideline.
 - **For high triglycerides,** weight loss, less alcohol and better blood sugar control can bring levels down a long way [NZ Ministry of Health 2018].
 
 **Supplements.** Plant sterols at about 2 g a day lower LDL by about 9% [Demonty 2009], but have no outcome trial, and NICE does not advise them to prevent heart disease [NICE NG238]. Never take red yeast rice with a statin: it can hold monacolin K, the same molecule as lovastatin, in unknown amounts, with the same side effects and interactions [NCCIH red yeast rice]. Brad's entries cover cholesterol-lowering supplements, psyllium, red yeast rice and berberine.
@@ -100,7 +100,7 @@ Statins block cholesterol production in the liver. In 26 trials, each 1 mmol/L d
 - Common choices: atorvastatin calcium 10 to 80 mg once daily [Lipitor label]; rosuvastatin calcium 5 to 40 mg once daily [Crestor label]; pravastatin, pitavastatin, simvastatin.
 - Each dose step adds less LDL lowering than the first [Law 2003]; the most intensive regimens carry slightly more muscle symptoms [CTT 2022].
 
-**Muscle symptoms.** In 19 double-blind trials, muscle pain or weakness was reported by 27.1% of people on a statin and 26.6% on placebo. Only about 1 in 15 first-year reports were caused by the statin, with no clear excess after year 1 [CTT 2022]. In the SAMSON trial, 60 people who had quit statins took statin, placebo and empty months in random order: symptoms were the same on statin and placebo [Howard 2021]. The labels list age 65 or over, an underactive thyroid, kidney impairment, some interacting drugs and higher doses as risk factors, and advise reporting unexplained muscle pain, tenderness or weakness promptly [Crestor label; Lipitor label]. If symptoms persist, options include a lower dose, a different statin, or stopping and trying again once symptoms settle [NZ Ministry of Health 2018].
+**Muscle symptoms.** In 19 double-blind trials, muscle pain or weakness was reported by 27.1% of people on a statin and 26.6% on placebo. Only about 1 in 15 first-year reports were caused by the statin, with no clear excess after year 1 [CTT 2022]. In the SAMSON trial, 60 people who had quit statins rotated statin, placebo and no-pill months: symptoms were the same on statin and placebo [Howard 2021]. The labels list age 65 or over, an underactive thyroid, kidney impairment, some interacting drugs and higher doses as risk factors, and advise reporting unexplained muscle pain, tenderness or weakness promptly [Crestor label; Lipitor label]. If symptoms persist, options include a lower dose, a different statin, or stopping and trying again once symptoms settle [NZ Ministry of Health 2018].
 
 **Diabetes.** Statins raise the chance of type 2 diabetes a little (odds ratio 1.09, about one extra case per 255 people treated for four years), far less than the heart attacks they prevent [Sattar 2010].
 
@@ -130,7 +130,7 @@ Levels of 11 mmol/L or more may need treatment whatever the overall risk, becaus
 
 ## Brad's view (reviewed 2 Nov 2026)
 
-**Targets.** The targets in "Your numbers" are Brad's. The ApoB target, lower than the ESC/EAS 2019 goal of below 65 mg/dL for very high risk, rests on the Ez-PAVE trial and the PESA study (Brad's current guidance, 2 Nov 2026). He aims for an LDL below 55 mg/dL himself because PESA showed plaque building even at an LDL of 60 mg/dL ([statin panic post](https://drstanfield.com/blogs/articles/the-30-year-statin-panic-is-finally-over)). With his patients he discusses aiming for 55 rather than 70, and he notes Ez-PAVE's limits: it ran only in South Korea, and only 60.8% of the intensive group reached the target ([cholesterol war post](https://drstanfield.com/blogs/articles/the-cholesterol-war-is-over-heres-who-won)).
+**Targets.** The targets in "Your numbers" are Brad's. The ApoB target rests on the Ez-PAVE trial and the PESA study (Brad's current guidance, 2 Nov 2026). He aims for an LDL below 55 mg/dL himself because PESA showed plaque building even at an LDL of 60 mg/dL ([statin panic post](https://drstanfield.com/blogs/articles/the-30-year-statin-panic-is-finally-over)). With his patients he discusses aiming for 55 rather than 70, and he notes Ez-PAVE's limits: it ran only in South Korea, and only 60.8% of the intensive group reached the target ([cholesterol war post](https://drstanfield.com/blogs/articles/the-cholesterol-war-is-over-heres-who-won)).
 
 **Measure ApoB.** Brad would rather people knew their ApoB than their LDL, because ApoB is a particle count and the count does the damage ([heart attacks post](https://drstanfield.com/blogs/articles/soon-well-forget-what-heart-attacks-are)).
 
@@ -180,7 +180,7 @@ Brad's plan uses one set of targets for every adult on treatment. Most guideline
 | | Risk tool | Start a statin (no heart disease) | LDL goal, no heart disease | LDL goal with heart disease |
 |---|---|---|---|---|
 | **Brad's plan** | None; uses the lipid marker | Suggests a statin when the marker is at or above target | Below 1.4 mmol/L (55 mg/dL); ApoB below 0.5 g/L | Same |
-| **New Zealand** (2018) | 5-year risk calculator | Strongly advised at 15% or more; discuss at 5% to 15%; also if total to HDL ratio is 8 or more | 40% or more reduction (5% to 15% risk); below 1.8 mmol/L at 15% or more | No set goal; notes targets of about 1.6 to 1.8 mmol/L in use |
+| **New Zealand** (2018) | 5-year risk calculator | Strongly advised at 15% or more; discuss at 5% to 15%; also if total to HDL ratio is 8 or more | 40% or more reduction (5% to 15% risk); below 1.8 mmol/L at 15% or more | No set goal; notes targets of about 1.6 to 1.8 mmol/L |
 | **Australia** (2023) | Aus CVD Risk calculator, 5-year | Prescribe at 10% or more; consider at 5% to under 10% | Not set | Not covered |
 | **United States** (ACC/AHA 2026; USPSTF 2022) | 10-year risk | USPSTF: ages 40 to 75 with a risk factor and risk of 10% or more; selectively at 7.5% to under 10% | Below 70 mg/dL (1.8 mmol/L) at high risk; below 100 mg/dL (2.6 mmol/L) at borderline or intermediate risk | Very high risk: below 55 mg/dL (1.4 mmol/L), non-HDL below 85 mg/dL |
 | **United Kingdom** (NICE 2023) | QRISK3, 10-year | Atorvastatin at 10% or more | More than 40% fall in non-HDL | LDL 2.0 mmol/L or less, or non-HDL 2.6 mmol/L or less |
@@ -192,7 +192,7 @@ Sources: NZ Ministry of Health 2018; Nelson 2024; ACC/AHA 2026; USPSTF 2022; NIC
 - **Lower LDL targets.** In Ez-PAVE, 3,048 people with heart disease aimed for LDL below 55 or below 70 mg/dL; three-year events were 6.6% against 9.7% [Ez-PAVE].
 - **ApoB.** ACC/AHA 2026 suggests checking ApoB once LDL and non-HDL goals are met [ACC/AHA 2026]. Brad uses ApoB first.
 - **Statin dose.** NICE offers atorvastatin 80 mg to people with heart disease [NICE NG238]; Brad starts low.
-- **Statin not tolerated.** NICE offers ezetimibe instead of a statin, then bempedoic acid with ezetimibe if that is not enough [NICE NG238]. Brad's plan puts a PCSK9 inhibitor first. The PCSK9 outcome trials were run on top of a statin [FOURIER]; bempedoic acid's was not [CLEAR Outcomes].
+- **Statin not tolerated.** NICE offers ezetimibe instead of a statin, then bempedoic acid with ezetimibe if that is not enough [NICE NG238]. Brad's plan puts a PCSK9 inhibitor first. The PCSK9 outcome trial ran on a statin [FOURIER]; bempedoic acid's was not [CLEAR Outcomes].
 - **Very high triglycerides.** The plan calls 5.65 mmol/L (500 mg/dL) urgent. ESC/EAS puts clinically significant pancreatitis risk above 10 mmol/L, though it can occur at 5 to 10 [ESC/EAS 2019]. NICE seeks specialist advice if a repeat fasting level stays above 10, and urgent review above 20 [NICE NG238]. New Zealand acts at 11 [NZ Ministry of Health 2018].
 - **Calcium score.** ACC/AHA uses it when the decision to treat is uncertain [ACC/AHA 2026]. A score of 0 may allow waiting, but not in smokers, people with diabetes or a strong family history of early heart disease. An LDL of 4.9 mmol/L (190 mg/dL) or more, as in FH, calls for a statin whatever the score [ACC/AHA 2018].
 
@@ -216,8 +216,8 @@ Sources: NZ Ministry of Health 2018; Nelson 2024; ACC/AHA 2026; USPSTF 2022; NIC
 - NZ Ministry of Health 2018: Cardiovascular Disease Risk Assessment and Management for Primary Care. https://static.info.content.health.nz/docs/health-pros/topics/diseases-conditions/cardiovascular-disease-risk-assessment-management-primary-care-2018.pdf
 - Nelson 2024: Nelson MR et al. 2023 Australian guideline for assessing and managing cardiovascular disease risk. Med J Aust 2024;220(9):482-490. https://doi.org/10.5694/mja2.52280
 - USPSTF 2022: Statin use for the primary prevention of cardiovascular disease in adults. JAMA 2022;328(8):746-753. https://doi.org/10.1001/jama.2022.13044
-- Nordestgaard 2016: Fasting is not routinely required for a lipid profile. EAS/EFLM consensus. Eur Heart J 2016;37(25):1944-58. https://doi.org/10.1093/eurheartj/ehw152
-- Kronenberg 2022: Lipoprotein(a) in atherosclerotic cardiovascular disease and aortic stenosis: EAS consensus. Eur Heart J 2022;43(39):3925-3946. https://doi.org/10.1093/eurheartj/ehac361
+- Nordestgaard 2016: Fasting is not routinely required for a lipid profile. Eur Heart J 2016;37(25):1944-58. https://doi.org/10.1093/eurheartj/ehw152
+- Kronenberg 2022: Lipoprotein(a) in atherosclerotic cardiovascular disease and aortic stenosis. Eur Heart J 2022;43(39):3925-3946. https://doi.org/10.1093/eurheartj/ehac361
 - FDA 2021: FDA requests removal of strongest warning against statins in pregnancy. https://www.fda.gov/drugs/drug-safety-and-availability/fda-requests-removal-strongest-warning-against-using-cholesterol-lowering-statins-during-pregnancy
 
 **Patient pages**
