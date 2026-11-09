@@ -30,13 +30,18 @@ const archivedLetter = { id: 'd1', documentType: 'clinic_letter', title: letter.
 const onComplete = vi.fn();
 const extractFromPdf = vi.fn();
 /** `archived`: what a completed save leaves in the reloaded history. */
-function Harness({ onStart, archived, completedHistory, initialHistory = emptyHistory }: { onStart?: () => Promise<void>; archived?: typeof archivedLetter; completedHistory?: UploadHistory; initialHistory?: UploadHistory }) {
+/** `refresh`: the page's re-read after a save; the history changes only once it ends. */
+function Harness({ onStart, archived, completedHistory, initialHistory = emptyHistory, refresh }: { onStart?: () => Promise<void>; archived?: typeof archivedLetter; completedHistory?: UploadHistory; initialHistory?: UploadHistory; refresh?: Promise<void> }) {
   const [open, setOpen] = useState(true);
   const [history, setHistory] = useState(initialHistory);
   return <><button onClick={() => setOpen(true)}>Upload records</button><UploadModal
     open={open} onOpen={() => setOpen(true)} onClose={() => setOpen(false)}
     unitSystem="si" grading={{}} history={history} onStart={onStart}
-    onComplete={() => { onComplete(); if (completedHistory) setHistory(completedHistory); if (archived) setHistory({ ...emptyHistory, documents: [archived] }); }}
+    onComplete={() => {
+      onComplete();
+      if (refresh) return refresh.then(() => { if (completedHistory) setHistory(completedHistory); });
+      if (completedHistory) setHistory(completedHistory); if (archived) setHistory({ ...emptyHistory, documents: [archived] });
+    }}
   /></>;
 }
 function selectFile() {
@@ -53,7 +58,9 @@ beforeEach(() => {
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(extraction as Awaited<ReturnType<typeof labImport>>);
   vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>);
-  vi.mocked(bulkSaveDocuments).mockResolvedValue({ saved: [], errorCount: 0 });
+  // Reset, not cleared: a test that fails early must not leave its queued answers to the next.
+  vi.mocked(bulkSaveDocuments).mockReset().mockResolvedValue({ saved: [], errorCount: 0 });
+  vi.mocked(attachOriginals).mockReset().mockImplementation(async results => results);
   extractFromPdf.mockResolvedValue({ pages: [{ type: 'text', content: 'synthetic' }], truncated: false });
   Object.assign(window, { HealthUpload: { extractFromPdf, isPdf: () => true, isZip: () => false, isImage: () => false } });
 });
@@ -231,6 +238,44 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(bulkSaveMeasurements).toHaveBeenCalledOnce();
     expect(bulkSaveDocuments).toHaveBeenCalledTimes(2);
     expect(vi.mocked(bulkSaveDocuments).mock.calls[1][0]).toEqual(vi.mocked(bulkSaveDocuments).mock.calls[0][0]);
+  });
+  // US-12 AC6c: a retry finishes what the first Save began, so the done
+  // screen counts both attempts, and a retry cannot start before the page
+  // has read back what the first one saved.
+  const savedLdl: UploadHistory = { ...emptyHistory, measurements: [{ id: 'saved', metricType: 'ldl', value: 3.9, recordedAt: '2024-06-01T00:00:00.000Z', createdAt: '2024-06-01T00:00:00.000Z' }] };
+  function originalFailsOnce() {
+    const file = new Blob(['synthetic original'], { type: 'application/pdf' });
+    vi.mocked(attachOriginals).mockImplementationOnce(async results => results.map(r => ({ ...r, file, contentHash: 'sha256-test' })));
+    const payload = { documentType: 'pathology_report', title: 'Blood test results', documentDate: '2024-06-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'test.pdf', file };
+    vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([payload]).mockReturnValueOnce([payload]);
+    vi.mocked(bulkSaveDocuments).mockResolvedValueOnce({ saved: [], errorCount: 1 })
+      .mockResolvedValueOnce({ saved: [{ ...archivedLetter, fileRef: 'archive/test.pdf' }], errorCount: 0 });
+  }
+  it('US-12 AC6c: the done screen after a retry names what the first Save saved too', async () => {
+    originalFailsOnce();
+    render(<Harness completedHistory={savedLdl} />);
+    await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Save 1 Original' }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(screen.getByText(/Saved 1 blood test value, 1 document/)).toBeTruthy();
+    expect(screen.queryByText(/not added/)).toBeNull();
+    expect(trackProductEvent).toHaveBeenCalledWith('upload_saved', { count: 2 });
+  });
+  it('US-12 AC6c: Save stays busy until the page has read back a partial save', async () => {
+    originalFailsOnce();
+    const reread = deferred<void>();
+    render(<Harness completedHistory={savedLdl} refresh={reread.promise} />);
+    await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await waitFor(() => expect(onComplete).toHaveBeenCalledOnce());
+    // Before the re-read the review still offers the LDL: a retry now would send it again.
+    expect((screen.getByRole('button', { name: /^Sav/ }) as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => reread.resolve());
+    expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Save 1 Original' }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(bulkSaveMeasurements).toHaveBeenCalledOnce();
   });
   it('does not file a reviewed letter twice when a retry follows a partial save off-cloud (US-12 AC6)', async () => {
     vi.mocked(getDocumentArchiveMode).mockReturnValue('device-only');
