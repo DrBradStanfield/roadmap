@@ -6,8 +6,8 @@
   },
   "files": {
     "widget-src/src/components/InputPanel.tsx": 2307,
-    "widget-src/src/components/HealthTool.tsx": 1734,
     "tools/knowledge-batch-check.ts": 1730,
+    "widget-src/src/components/HealthTool.tsx": 1713,
     "tools/codex-review.mjs": 1699,
     "packages/health-core/src/suggestions.ts": 1251,
     "packages/health-core/src/lab-extraction.ts": 1166,
