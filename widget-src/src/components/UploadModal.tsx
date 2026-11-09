@@ -29,7 +29,7 @@ import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { isDocx } from '../lib/file-kinds';
 import type { HealthUploadAPI } from '../upload-entry';
 
-/** Upload-level failures only: `refused` and `too_long` are one file's notice (FILE_NOTICE_TEXT). */
+/** Upload-level failures only: `refused` and `too_long` are one file's notice (UploadNotices.tsx). */
 const UPLOAD_ERROR_MESSAGES: Partial<Record<UploadErrorCode, string>> = {
   ...KEY_ERROR_MESSAGES,
   rate_limit: 'Daily upload limit reached. You can upload more tomorrow.',
