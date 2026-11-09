@@ -113,7 +113,7 @@ describe('US-15 AC17a — another tab\'s pending reply expires', () => {
   it('US-15 AC17a, AC17c: a wait left over from the other tab does not end this tab\'s own later send', async () => {
     const hook = renderHook(() => useChatState({ isLoggedIn: false }));
     await sendHere(hook);
-    fromOtherTab(true); // the other tab sent too, then closed before its reply
+    fromOtherTab(true, true); // the other tab sent too, then closed before its reply
     await replyLandsHere();
     // AC17c: the other tab's send is still counted until its wait ends.
     expect(hook.result.current.state.isLoading).toBe(true);
@@ -209,6 +209,23 @@ describe('US-15 AC17c: the chat is busy while any tab\'s send is in flight, each
     act(() => { vi.advanceTimersByTime(1000); }); // tab-a's wait ends
     expect(hook.result.current.state.isLoading).toBe(true);
     act(() => { vi.advanceTimersByTime(REMOTE_PENDING_MS); });
+    expect(hook.result.current.state.isLoading).toBe(false);
+  });
+
+  it('US-15 AC17c (adversary R1): an older bundle\'s tab that only mirrors this tab\'s reply frees as this tab\'s reply lands', async () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    await sendHere(hook);
+    fromOtherTab(true, undefined, 'old-bundle-tab'); // it opened a thread mid-reply; no `sending`
+    await replyLandsHere();
+    expect(hook.result.current.state.isLoading).toBe(false);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('US-15 AC17c (adversary R1): an older bundle\'s mirroring tab frees at another tab\'s word that its send ended', () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: true }));
+    fromOtherTab(true, true, 'new-sender');
+    fromOtherTab(true, undefined, 'old-bundle-tab');
+    fromOtherTab(false, false, 'new-sender');
     expect(hook.result.current.state.isLoading).toBe(false);
   });
 

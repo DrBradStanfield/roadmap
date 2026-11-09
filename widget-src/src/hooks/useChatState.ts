@@ -168,8 +168,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         setConversations(payload.conversations);
         setActiveConversationId(payload.activeConversationId);
         setMessages(payload.messages);
-        // That tab's own send, tracked apart from this tab's; an older bundle says only isLoading (US-15 AC17c).
-        onRemote(msg.instanceId, payload.sending ?? payload.isLoading);
+        // That tab's own send, tracked apart from this tab's (US-15 AC17c).
+        onRemote(msg.instanceId, payload.sending, payload.isLoading);
         if (!ownSending()) setIsLocalSender(false);
         setError(payload.error);
         return;

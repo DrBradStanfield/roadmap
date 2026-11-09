@@ -6,6 +6,9 @@
 //               says it is not, or REMOTE_PENDING_MS after its latest such word
 //               (a tab closed mid-reply never says).
 // Busy is derived from these on every change, so one tab's end never frees another's send.
+// An older bundle's message has no `sending`, only what it shows, which can
+// mirror another tab's reply and is never followed by its own end: such an
+// entry ends at any tab's word that its send ended, this tab's included, as all waits did before.
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /** How long another tab's reply in flight may lock this tab's chat with no word from it (US-15 AC17a). */
@@ -18,16 +21,28 @@ export function useChatBusy() {
   /** Busy now, before the re-render (US-15 AC7a). */
   const busyNow = useCallback(() => ownSendRef.current || remoteSends.size > 0, [remoteSends]);
   const ownSending = useCallback(() => ownSendRef.current, []);
-  const setOwnSend = useCallback((on: boolean) => { ownSendRef.current = on; setIsLoading(busyNow()); }, [busyNow]);
+  const [legacy] = useState(() => new Set<string>());
+  const drop = useCallback((instanceId: string) => {
+    clearTimeout(remoteSends.get(instanceId));
+    remoteSends.delete(instanceId);
+    legacy.delete(instanceId);
+  }, [remoteSends, legacy]);
+  const setOwnSend = useCallback((on: boolean) => {
+    ownSendRef.current = on;
+    if (!on) legacy.forEach(drop); // this tab's word that its send ended
+    setIsLoading(busyNow());
+  }, [legacy, drop, busyNow]);
   const startOwnSend = useCallback(() => setOwnSend(true), [setOwnSend]);
   const endOwnSend = useCallback(() => setOwnSend(false), [setOwnSend]);
-  /** Another tab's word on its own send (AC17c). */
-  const onRemote = useCallback((instanceId: string, sending: boolean) => {
-    clearTimeout(remoteSends.get(instanceId));
-    if (sending) remoteSends.set(instanceId, setTimeout(() => { remoteSends.delete(instanceId); setIsLoading(busyNow()); }, REMOTE_PENDING_MS));
-    else remoteSends.delete(instanceId);
+  /** Another tab's word on its own send (AC17c); `sending` is undefined from an older bundle, which says only what it `shows`. */
+  const onRemote = useCallback((instanceId: string, sending: boolean | undefined, shows: boolean) => {
+    drop(instanceId);
+    if (sending ?? shows) {
+      remoteSends.set(instanceId, setTimeout(() => { drop(instanceId); setIsLoading(busyNow()); }, REMOTE_PENDING_MS));
+      if (sending === undefined) legacy.add(instanceId);
+    } else legacy.forEach(drop);
     setIsLoading(busyNow());
-  }, [remoteSends, busyNow]);
-  useEffect(() => () => { remoteSends.forEach(clearTimeout); remoteSends.clear(); }, [remoteSends]);
+  }, [remoteSends, legacy, drop, busyNow]);
+  useEffect(() => () => { remoteSends.forEach(clearTimeout); remoteSends.clear(); legacy.clear(); }, [remoteSends, legacy]);
   return { isLoading, busyNow, ownSending, startOwnSend, endOwnSend, onRemote };
 }
