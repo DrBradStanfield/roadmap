@@ -13,6 +13,7 @@ vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessa
 vi.mock('./supabase.server', () => ({ supabaseAdmin: {} }));
 
 import { assessThreadFollowUp, filterThread } from './youtube-bot-pipeline.server';
+import { buildYouTubePlatformContext } from './youtube-context';
 import type { YouTubeReply } from './youtube-bot-api.server';
 
 const CHANNEL = 'UC_brad';
@@ -54,5 +55,14 @@ describe('US-15 AC56: a short crisis follow-up reaches the pipeline', () => {
     const thread = { topLevelCommentId: 'c1', videoId: 'v1', authorDisplayName: 'A', authorChannelId: null, publishedAt: minutesAgo(5) };
     expect(filterThread({ ...thread, text: 'does it cause blindness?' })).toEqual({ pass: false, reason: 'too short (4 words)' });
     expect(filterThread({ ...thread, text: 'chest pain' }).pass).toBe(true);
+  });
+
+  it('the follow-up prompt puts Step 0 ahead of its own rules (Brad 2026-11-09)', () => {
+    const entry = { title: 'A video', handle: 'a-video', url: 'u', tags: [], publishedAt: '2026-01-01T00:00:00Z' };
+    const followUp = buildYouTubePlatformContext('v1', entry, 'Body.', [], true);
+    const step0 = followUp.indexOf('- Step 0 still comes first: a current emergency or thoughts of suicide or self-harm get Output A');
+    expect(step0).toBeGreaterThan(followUp.indexOf('FOLLOW-UP TURN'));
+    expect(step0).toBeLessThan(followUp.indexOf('- Answer ONLY a genuine'));
+    expect(buildYouTubePlatformContext('v1', entry, 'Body.', [], false)).not.toContain('Step 0 still comes first');
   });
 });
