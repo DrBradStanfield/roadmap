@@ -170,6 +170,9 @@ duplicates.
 - **2026-10-18 [instrumentation]** `upload_started`/`upload_saved` fire once per TAB
   (server-api.ts:164-171); only `upload_outcome` (live 10-13) counts runs. Unit refusals with no
   nearby start/save are a tab's later runs (W41's "untraced path"); started vs saved hides those runs.
+- **2026-11-09 [instrumentation]** `upload_saved`'s `count` is the session's total since US-12 AC6c:
+  a retry after a partial save adds to what the first Save saved (documents by content hash, else file name).
+  Before, it was the last attempt's alone. The event still fires once per tab.
 - **2026-10-20 [instrumentation]** From the PR #197 deploy, `cloud_connect_*` events throttle once per
   TAB per PROVIDER (was per tab): a tab trying Dropbox then Drive now sends both starts. New
   `cloud_connect_cancelled` counts only the provider's Cancel/Deny (redirect path); browser Back and
