@@ -354,6 +354,33 @@ describe('a cloud tab left open while another tab switches this browser to anoth
     expect(ids(first.file)).toEqual(['late']);
   });
 
+  it("leaves the lift record to the new cloud when an old-cloud page opens across the switch (#974 review)", async () => {
+    let oldCloud!: MemoryCloud;
+    const tabB = await switchStarted((cloud) => { oldCloud = cloud; return new MemoryAdapter(cloud); });
+    const { fresh, release, lifting } = await liftHeld(); // tab A has lifted r1; its upload is held
+    // Tab C starts opening the old cloud: it notes the device copy at r1, its read is held.
+    let releaseRead!: () => void;
+    const readGate = new Promise<void>((resolve) => { releaseRead = resolve; });
+    const opening = RecordSession.open(webRecordHost(new (class extends MemoryAdapter {
+      async read(...args: Parameters<MemoryAdapter['read']>) {
+        await readGate;
+        return super.read(...args);
+      }
+    })(oldCloud)));
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    add(tabB, 'late', 81);
+    tabB.flushSync(); // tab B writes r2
+    await tabB.flush(); // and saves it to the old cloud, clearing the marker
+    release();
+    expect(await lifting).toBe('lifted'); // tab A records r1
+    localStorage.setItem(BACKEND_KEY, 'dropbox');
+    releaseRead();
+    await opening; // tab C's open ends on the old cloud
+    expect(isSyncPending()).toBe(false);
+    const first = await RecordSession.open(webRecordHost(new NewProvider(fresh)));
+    expect(ids(first.file)).toEqual(['base', 'late']);
+  });
+
   it("control: a lift no write followed takes nothing in at the first load, and leaves no record", async () => {
     await switchStarted();
     const fresh = new MemoryCloud();

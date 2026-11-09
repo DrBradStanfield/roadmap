@@ -116,11 +116,12 @@ export type RecordHost =
  * (another tab's departure, US-06 AC13) is marked for this session to take in,
  * whatever became of the shared marker meanwhile: an old-cloud tab's save may
  * have cleared it (#974). Once the new cloud is remembered, no old-cloud tab
- * clears the marker again (RecordSession.releaseMarker). The record goes.
+ * clears the marker again (RecordSession.releaseMarker). Only a session on the
+ * remembered cloud reads the record, and then it goes.
  */
 export function liftMissed(mirror: DeviceMirror, copyRevision: string | null | undefined): boolean {
   const lifted = mirror.lifted?.get();
-  if (lifted == null) return false;
+  if (lifted == null || !mirror.stillChosen?.()) return false; // an old-cloud page leaves it
   mirror.lifted!.clear();
   if ((copyRevision ?? '') === lifted) return false;
   mirror.pending.set();

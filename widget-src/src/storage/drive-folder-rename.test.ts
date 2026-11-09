@@ -90,7 +90,7 @@ describe('US-09 AC40: the Drive folder rename is marked done only when Drive acc
 
   // #976 review R3: the 404 can come back after the dead cached folder was
   // forgotten and another folder took its place; that folder's rename is not done.
-  it('a 404 that answers after the folder was replaced does not mark the new folder renamed', async () => {
+  it.each([404, 200])('a %i that answers after the folder was replaced does not mark the new folder renamed', async (status) => {
     let answer!: (res: Response) => void;
     vi.stubGlobal('fetch', vi.fn(async (input: string | URL, init: RequestInit = {}) => {
       if (init.method === 'PATCH' && String(input).endsWith(`/files/${FOLDER}`)) {
@@ -105,7 +105,7 @@ describe('US-09 AC40: the Drive folder rename is marked done only when Drive acc
     await vi.waitFor(() => expect(renames).toHaveLength(1));
     // liveFolderId found the cached folder dead, forgot it, and found another under the old name.
     internals.stored = { folderId: 'folder-2', folderName: DRIVE_LEGACY_FOLDER_NAME };
-    answer(new Response('gone', { status: 404 }));
+    answer(new Response(status === 200 ? JSON.stringify({ id: FOLDER }) : 'gone', { status }));
     await renaming;
     expect(internals.stored.folderName).toBe(DRIVE_LEGACY_FOLDER_NAME);
   });
