@@ -197,9 +197,9 @@ describe('US-62 AC13: a step answered in this tab by an upload or the chat count
 describe('US-62 AC13: what a refused write\'s re-read raises is not counted', () => {
   // A real refusal comes with an erase (the store refuses a write under another
   // erase identity, record-session `refuses`), whose re-read starts a new record,
-  // where countedTo counts nothing anyway. So the state below is unreachable in
+  // where the step count counts nothing anyway. So the state below is unreachable in
   // production today: the refusal is forced on the same record, so the re-read
-  // raises the stage and only the cleared answeredHere keeps it from counting.
+  // raises the stage and only the cleared answer mark keeps it from counting.
   it('US-62 AC13 (guard): if a refused write\'s re-read ever raised the stage on the same record, nothing would be counted', async () => {
     const alert = vi.fn();
     vi.stubGlobal('alert', alert);
@@ -287,7 +287,7 @@ describe('US-62 AC25: the last answer lands on My health, once per record (D1)',
   });
 });
 
-describe('US-62 AC12, AC31 (D6, a product question): another device fills the last answer', () => {
+describe('US-62 AC12, AC31 (D6, Brad 2026-11-10: keep it): another device fills the last answer', () => {
   it('US-62 AC12: the form opens, About you stays at the top until it is focused and left, and no plan-ready card shows', async () => {
     await saveChangedMeasurements({ heightCm: 170, sex: 'female' }, {});
     await addMeasurement('weight', 70, '2026-09-01');
