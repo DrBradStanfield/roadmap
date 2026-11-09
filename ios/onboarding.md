@@ -39,8 +39,7 @@ flowchart TD
   W[Welcome] -->|Get started| H{Use Apple Health?}
   W -->|I already use Health Roadmap| C[Connect Dropbox or Google Drive]
   C --> P
-  H -->|Allow| Q1
-  H -->|Not now| Q1
+  H -->|Continue, then Apple's sheet| Q1
   Q1[Sex] --> Q2[Birth month and year]
   Q2 --> Q3[Height]
   Q3 --> Q4[Weight]
@@ -61,12 +60,14 @@ flowchart TD
    ("So you type less."; since 2026-10-27 it names the six, "Your sex, birth date, height,
    weight, waist and blood pressure go only into your record", since US-56's four are kept
    on the phone too) on where they go and that added values are saved back.
-   Just above **Connect Apple Health**, the last thing read before the tap, a small callout
+   Just above **Continue**, the last thing read before the tap, a small callout
    in the accent green (not red, which read as something wrong; Brad 2026-10-25) gives
-   Apple's two taps: "Next, Apple asks for access. Turn everything on, then tap **Allow**."
-   (Version-neutral since 2026-10-26: iOS 27's sheet says "Select All", older ones "Turn On All".)
+   what Apple asks next: "Next, Apple asks which data to share." (Brad 2026-11-09; it named
+   Apple's two taps until then.)
    No switch of ours:
-   Apple's sheet cannot be pre-switched. **Not now** goes on. Either way the next screens
+   Apple's sheet cannot be pre-switched. **Continue** is the only button, and Apple's sheet
+   always follows (App Review 5.1.1(iv), 2026-11-09: it was "Connect Apple Health" with a
+   "Not now"); a person who does not want to share declines there. Either way the next screens
    come next. **One sheet (Brad 2026-10-26):** it also asks to read US-56's four (resting
    heart rate, sleep, VO2 max, steps; heart rate dropped, US-73, 2026-11-05), so Apple asks once.
    **Health's answers are not asked again (US-54 AC3b, Brad 2026-10-26):** each question
@@ -120,7 +121,7 @@ Health, and see my plan, without facing the full form.
 - AC2: "I already use Health Roadmap" runs Sync's own connect (US-25 AC11). A record
   that already has sex, birth year and height skips the questions and opens My plan.
   One that lacks any of them asks only for those.
-- AC3: Connect Apple Health on the Apple Health screen asks HealthKit for read access to sex, date of
+- AC3: Continue on the Apple Health screen asks HealthKit for read access to sex, date of
   birth, height and weight. Values it returns preselect the matching screens. Sex
   "other" or "not set" preselects nothing. Of the birth date, only month and year are
   used; the day is never stored.

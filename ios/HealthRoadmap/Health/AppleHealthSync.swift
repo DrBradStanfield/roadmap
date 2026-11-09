@@ -104,7 +104,10 @@ final class AppleHealthSync {
         guard client.isAvailable else { return }
         do {
             // Health showed its lab results sheet because HealthKit said one was needed (AC13).
-            if try await client.requestAuthorization() { analytics?.event(.healthRecordsAsked) }
+            if try await client.requestAuthorization() {
+                memory.labResultsAsked = .now
+                analytics?.event(.healthRecordsAsked)
+            }
         } catch {
             status = .failed(error.localizedDescription)
             return
@@ -117,16 +120,35 @@ final class AppleHealthSync {
     }
 
     /// Coming on screen (the app's `follow`), never from a background wake, where no sheet
-    /// can show: a person who connected before lab results were asked for, or who chose
-    /// "Ask Before Sharing", gets Health's lab results sheet when HealthKit says one is
-    /// needed (US-72 AC1, AC13). Then the refresh, which imports what they allowed.
+    /// can show: a person who connected before lab results were asked for gets Health's lab
+    /// results sheet when HealthKit says one is needed (US-72 AC1, AC13), once. HealthKit
+    /// keeps saying so for a person with no Health Records account, or who closed the sheet,
+    /// so a sheet once shown is remembered and coming on screen never shows one again.
+    /// Then the refresh, which imports what they allowed.
     func foreground() async {
-        if memory.connected, client.isAvailable, client.supportsHealthRecords, !asking {
-            asking = true
-            if (try? await client.requestLabResults()) == true { analytics?.event(.healthRecordsAsked) }
-            asking = false
-        }
+        if memory.labResultsAsked == nil { _ = await askForLabResults() }
         await refresh()
+    }
+
+    /// Settings' "Share new lab results" row is offered (US-72 AC14).
+    var offersLabResults: Bool { connected && client.isAvailable && client.supportsHealthRecords }
+
+    /// The row's tap (US-72 AC14): Health's lab results sheet when HealthKit says one is
+    /// needed ("Ask Before Sharing" and new results), then the import. Otherwise nothing.
+    func shareNewLabResults() async {
+        if await askForLabResults() { await refresh() }
+    }
+
+    /// Health's lab results sheet, when HealthKit says one is needed; true when it showed.
+    /// Nothing of ours comes before it (guideline 5.1.1).
+    private func askForLabResults() async -> Bool {
+        guard memory.connected, client.isAvailable, client.supportsHealthRecords, !asking else { return false }
+        asking = true
+        defer { asking = false }
+        guard (try? await client.requestLabResults()) == true else { return false }
+        memory.labResultsAsked = .now
+        analytics?.event(.healthRecordsAsked)
+        return true
     }
 
     /// At launch and on connect: refresh when Health has new data (in the background
