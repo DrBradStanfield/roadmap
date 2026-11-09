@@ -784,10 +784,13 @@ export function generateSuggestions(
     const statinDoses = STATIN_DRUGS[statinDrug]?.doses;
     const switchesAtTop = !!statinDoses && shouldSuggestSwitch(statinDrug, statinDoses[statinDoses.length - 1]);
     // Statins and pregnancy (US-07 AC14): the start card says not to start one, and every card for
-    // someone already on a statin says when to stop (FDA, NICE NG238 1.5.10).
+    // someone already on a statin says when to stop (FDA, NICE NG238 1.5.10), the ezetimibe and
+    // PCSK9 inhibitor cards after their own line.
     const onStatinPregnancy = 'If you become pregnant, most people should stop their statin: talk to your doctor. If you are planning a pregnancy, NICE advises stopping 3 months before trying to conceive.';
-    // The US labels: bempedoic acid is to be stopped in pregnancy; ezetimibe and the PCSK9 inhibitors lack data.
-    const pregnancyUnstudied = 'Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.';
+    // The US labels: bempedoic acid is to be stopped in pregnancy; ezetimibe and the PCSK9 inhibitors lack data
+    // (on a statin, the statin line follows).
+    const pregnancyUnstudied = 'Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.'
+      + (statinDoses ? ` ${onStatinPregnancy}` : '');
     const stepCards: Record<LipidStep, [title: string, text: string]> = {
       statin: ['Consider starting a statin', "Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Don't start a statin if you are pregnant or planning a pregnancy."],
       ezetimibe: ['Consider adding Ezetimibe', `Discuss adding Ezetimibe 10mg with your doctor. ${pregnancyUnstudied}`],

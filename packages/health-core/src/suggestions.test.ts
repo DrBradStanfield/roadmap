@@ -1335,6 +1335,21 @@ describe('generateSuggestions', () => {
       ]));
     });
 
+    // US-07 AC14 (Brad 2026-11-09): on a statin, the ezetimibe and PCSK9 inhibitor cards also say when to
+    // stop the statin, after their own pregnancy line; statin-intolerant people do not get the statin line.
+    const ON_STATIN_LINE = ' If you become pregnant, most people should stop their statin: talk to your doctor. If you are planning a pregnancy, NICE advises stopping 3 months before trying to conceive.';
+    const UNSTUDIED = ' Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.';
+    it.each([
+      ['med-ezetimibe', { statin: { drug: 'atorvastatin', dose: 20 } }, true],
+      ['med-pcsk9i', { statin: { drug: 'atorvastatin', dose: 80 }, ezetimibe: 'yes', statinEscalation: 'not_tolerated' }, true],
+      ['med-pcsk9i', { statin: { drug: 'not_tolerated', dose: null } }, false],
+      ['med-ezetimibe', { statin: { drug: 'not_tolerated', dose: null }, pcsk9i: 'yes' }, false],
+    ] as const)('%s carries the on-statin pregnancy line only on a statin (%j) (US-07 AC14)', (id, meds, onStatin) => {
+      const { inputs, results } = createTestData({ ldlC: 3.0 });
+      const text = generateSuggestions(inputs, results, 'si', meds as MedicationInputs).find(s => s.id === id)?.description ?? '';
+      expect(text.endsWith(onStatin ? UNSTUDIED + ON_STATIN_LINE : UNSTUDIED)).toBe(true);
+    });
+
     // US-06 AC20 (Brad 2026-11-09): each drug's pregnancy line, worded from its US label (8.1).
     it.each([
       ['med-pcsk9i', { statin: { drug: 'not_tolerated', dose: null } }, ' Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.', ['cd61e902-166d-4aa6-9f3c-a18c1008d07e', '7bcfbac2-e8ac-4569-8edc-bcde3b1fd172']],
@@ -1344,7 +1359,7 @@ describe('generateSuggestions', () => {
     ] as const)('%s ends with its label-based pregnancy line and cites the label (US-06 AC20)', (id, meds, line, setids) => {
       const { inputs, results } = createTestData({ ldlC: 3.0 });
       const card = generateSuggestions(inputs, results, 'si', meds as MedicationInputs).find(s => s.id === id);
-      expect(card?.description.endsWith(line)).toBe(true);
+      expect(card?.description).toContain(line);
       expect(card?.reason).toMatch(/pregnan/);
       for (const setid of setids) expect(card?.references?.map(r => r.url)).toContain(`https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=${setid}`);
     });

@@ -482,7 +482,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'med-bempedoic-acid': {
-    reason: 'Bempedoic acid (Nexletol) inhibits ATP citrate lyase, lowering cholesterol production via a different pathway than statins. The CLEAR Outcomes trial showed a 13% reduction in major adverse cardiovascular events in statin-intolerant patients. This plan suggests it only if you cannot take a statin and your level is still above target after the PCSK9 inhibitor and ezetimibe steps (each taken, declined or not tolerated). The combination pill with ezetimibe (Nexlizet) offers convenience.\n\nIts US label says to stop it when pregnancy is recognized, unless the benefits outweigh the risks to the baby.',
+    reason: 'Bempedoic acid (Nexletol) inhibits ATP citrate lyase, lowering cholesterol production via a different pathway than statins. The CLEAR Outcomes trial showed a 13% reduction in major adverse cardiovascular events in statin-intolerant patients. This plan suggests it only if you cannot take a statin and your level is still above target after the PCSK9 inhibitor and ezetimibe steps (each taken, declined or not tolerated). The combination pill with ezetimibe (Nexlizet) offers convenience.\n\nIts US label says to stop it when pregnancy is recognized, unless the benefits outweigh the possible risks to the baby.',
     guidelines: ['ACC/AHA 2026', 'ESC/EAS 2019'],
     references: [
       { label: 'Nissen 2023 – CLEAR Outcomes: bempedoic acid in statin-intolerant patients (NEJM)', url: 'https://doi.org/10.1056/NEJMoa2215024' },
