@@ -26,7 +26,16 @@ vi.mock('../lib/chat-api', async original => ({
   ...(await original<typeof import('../lib/chat-api')>()),
   listConversations: () => Promise.resolve(null), getChatGate: () => null,
 }));
+// Where the record lives: this browser unless a test connects a cloud (US-62 AC34's card order).
+const backend = vi.hoisted(() => ({ kind: 'local' as 'local' | 'cloud' }));
+vi.mock('../lib/roadmap-data', async original => ({
+  ...(await original<typeof import('../lib/roadmap-data')>()),
+  getBackendKind: () => backend.kind,
+}));
 import { HealthTool } from './HealthTool';
+import { GuestContext } from '../lib/storage-notice';
+// standalone/app.tsx marks a true guest (no provider to reconnect) once per page load.
+const AsGuest = ({ children }: { children: React.ReactNode }) => <GuestContext.Provider value>{children}</GuestContext.Provider>;
 
 const stops: Array<() => void> = [];
 let phone = true;
@@ -42,6 +51,7 @@ const scrollTo = vi.fn((x: number | ScrollToOptions, y?: number) => { scrollY = 
 
 beforeEach(async () => {
   phone = true;
+  backend.kind = 'local';
   scrollY = 0;
   scrollTo.mockClear();
   localStorage.clear(); sessionStorage.clear();
@@ -254,7 +264,7 @@ describe('US-62 AC34: the Account tab', () => {
   // Brad 2026-11-09: one sign-in, the storage card's button. The title line holds only what the
   // storage bar draws there (on a phone, no Sign in: standalone/storage-bar.test.tsx).
   const guestCard = ({ hasData }: { hasData: boolean }) => (hasData
-    ? <div className="hr-sync"><button type="button" className="hr-sync-btn hr-sync-btn-full">Where do you want to keep your health record?</button></div>
+    ? <div className="hr-sync"><button type="button" className="hr-sync-btn hr-sync-btn-full">Keep my record in Dropbox or Google Drive</button></div>
     : null);
 
   it('signed out: Account holds Settings\' parts under its heading, the storage card\'s button the one sign-in; no Done', async () => {
@@ -267,7 +277,7 @@ describe('US-62 AC34: the Account tab', () => {
     const heading = within(sheet).getByRole('heading', { name: 'Account' });
     expect(heading.closest('.mh-settings-head')!.querySelectorAll('button')).toHaveLength(0);
     expect(view.queryByRole('button', { name: 'Sign in' })).toBeNull();
-    expect(within(sheet).getByRole('button', { name: 'Where do you want to keep your health record?' })).toBeTruthy();
+    expect(within(sheet).getByRole('button', { name: 'Keep my record in Dropbox or Google Drive' })).toBeTruthy();
     expect(within(sheet).getByRole('button', { name: /Switch units/ })).toBeTruthy();
     expect(within(sheet).getByRole('button', { name: 'Delete all my data' })).toBeTruthy();
     expect(within(sheet).queryByRole('button', { name: 'Done' })).toBeNull();
@@ -288,7 +298,7 @@ describe('US-62 AC34: the Account tab', () => {
     localStorage.clear();
     await initRoadmapStore(new LocalStorageAdapter());
     const view = render(<HealthTool syncControl={guestCard} />);
-    const signIn = () => view.queryByRole('button', { name: 'Where do you want to keep your health record?' });
+    const signIn = () => view.queryByRole('button', { name: 'Keep my record in Dropbox or Google Drive' });
     await waitFor(() => expect(view.container.querySelector('.health-input-panel')).not.toBeNull());
     expect(view.container.querySelector('.hr-sync')).toBeNull(); // nothing to save yet (US-09 AC5)
     fireEvent.click(tabNamed(view, 'Account'));
@@ -330,7 +340,7 @@ describe('US-62 AC34: the Account tab', () => {
   });
 
   it('a guest\'s storage card sits at the foot of My health, and moves to Account while it shows: one at a time', async () => {
-    const card = () => <div className="hr-sync">Where do you want to keep your health record?</div>;
+    const card = () => <div className="hr-sync">Keep my record in Dropbox or Google Drive</div>;
     const view = render(<HealthTool storageBar={<button type="button">Sign in</button>} syncControl={card} />);
     await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
     const cards = () => [...view.container.querySelectorAll('.hr-sync')];
@@ -343,6 +353,70 @@ describe('US-62 AC34: the Account tab', () => {
     expect(cards()).toHaveLength(1);
     // Mounted in the hidden My health, so the picker it hosts still opens from a banner or the upload.
     expect(cards()[0].closest('.mh-foot-storage')).not.toBeNull();
+  });
+
+  // Brad 2026-11-09: a guest's sign-in heads Account; a connected record's card stays low.
+  const settingsOrder = (view: ReturnType<typeof render>) => {
+    const sheet = [...view.container.querySelectorAll<HTMLElement>('.mh-settings')].find((el) => !el.closest('[hidden]'))!;
+    return [...sheet.children].map((el) => (el.matches('.mh-settings-head') ? 'title'
+      : el.matches('.hr-sync') ? 'storage'
+        : el.querySelector('.basic-info-units, [aria-label^="Switch units"]') || el.matches('.basic-info-section, .about-you-card') ? 'about'
+          : el.matches('.delete-data-section') ? 'delete' : 'other'));
+  };
+
+  it('a guest\'s storage card comes first in Account, straight under the title, before About you (US-62 AC34)', async () => {
+    const view = render(<AsGuest><HealthTool syncControl={guestCard} /></AsGuest>);
+    await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
+    fireEvent.click(tabNamed(view, 'Account'));
+    const order = settingsOrder(view);
+    expect(order.slice(0, 3)).toEqual(['title', 'storage', 'about']);
+    expect(order.indexOf('storage')).toBeLessThan(order.indexOf('delete'));
+    expect(order.filter((p) => p === 'storage')).toHaveLength(1);
+    expect(view.getByRole('button', { name: 'Keep my record in Dropbox or Google Drive' }).closest('.mh-settings')).not.toBeNull();
+  });
+
+  it('a new guest\'s storage card also comes first in Account (US-62 AC34)', async () => {
+    localStorage.clear();
+    await initRoadmapStore(new LocalStorageAdapter());
+    const view = render(<AsGuest><HealthTool syncControl={guestCard} /></AsGuest>);
+    await waitFor(() => expect(view.container.querySelector('.health-input-panel')).not.toBeNull());
+    fireEvent.click(tabNamed(view, 'Account'));
+    expect(settingsOrder(view).slice(0, 2)).toEqual(['title', 'storage']);
+  });
+
+  it('a connected record keeps its storage card low in Account, after About you (US-62 AC34)', async () => {
+    backend.kind = 'cloud';
+    const card = () => <div className="hr-sync">Your health record lives in your Dropbox</div>;
+    const view = render(<HealthTool storageBar={<span className="hr-storage-state">Synced to Dropbox</span>} syncControl={card} />);
+    await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
+    fireEvent.click(tabNamed(view, 'Account'));
+    const order = settingsOrder(view);
+    expect(order[1]).toBe('about');
+    expect(order.indexOf('storage')).toBeGreaterThan(order.indexOf('about'));
+    expect(order.indexOf('storage')).toBeLessThan(order.indexOf('delete'));
+  });
+
+  it('a reconnect keeps its storage card low in Account, after About you: its title line holds the reconnect (US-62 AC34)', async () => {
+    // A reconnect: the record waits on this device (backend local), but it is not a guest.
+    const card = () => <div className="hr-sync"><button type="button" className="hr-sync-btn">Sign in to Dropbox again</button></div>;
+    const reconnect = <button type="button" className="action-btn-small">Sign in to Dropbox again</button>;
+    const view = render(<HealthTool storageBar={reconnect} syncAlert={reconnect} syncControl={card} />);
+    await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
+    fireEvent.click(tabNamed(view, 'Account'));
+    const order = settingsOrder(view);
+    expect(order[1]).toBe('about');
+    expect(order.indexOf('storage')).toBeGreaterThan(order.indexOf('about'));
+    expect(order.indexOf('storage')).toBeLessThan(order.indexOf('delete'));
+  });
+
+  it('desktop Settings keep the storage card after About you, guest or not (US-62 AC34)', async () => {
+    phone = false;
+    const view = render(<AsGuest><HealthTool storageBar={<button type="button">Sign in</button>} syncControl={guestCard} /></AsGuest>);
+    await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
+    fireEvent.click(view.getByRole('button', { name: 'Settings' }));
+    const order = settingsOrder(view);
+    expect(order[1]).toBe('about');
+    expect(order.indexOf('storage')).toBeGreaterThan(order.indexOf('about'));
   });
 
   it('Delete all my data in Account lands on My health, its title focused', async () => {

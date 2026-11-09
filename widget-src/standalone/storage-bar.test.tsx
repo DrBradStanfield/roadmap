@@ -116,7 +116,7 @@ describe('US-62 AC34 — the bar on a phone', () => {
     expect(bar()).toBeNull();
     expect(document.body.textContent).not.toContain('Sign in');
     const cardButton = [...document.querySelectorAll<HTMLButtonElement>('.hr-sync-btn')];
-    expect(cardButton.map((b) => b.textContent)).toEqual(['Where do you want to keep your health record?']);
+    expect(cardButton.map((b) => b.textContent)).toEqual(['Keep my record in Dropbox or Google Drive']);
     fireEvent.click(cardButton[0]);
     expect(document.querySelectorAll('dialog.hr-modal')).toHaveLength(1);
   });

@@ -12,6 +12,7 @@ import React from 'react';
 import { registerPageDeparture } from './page-departure';
 import { createRoot } from 'react-dom/client';
 import { HealthTool } from '../src/components/HealthTool';
+import { GuestContext } from '../src/lib/storage-notice';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { initSentry } from '../src/lib/sentry';
 import { initRoadmapStore, setPreEraseHook } from '../src/lib/roadmap-data';
@@ -121,13 +122,15 @@ async function main() {
         <RemindersEnrolledNotice backend={backend} />
         {refused && <ConnectRefusedNotice message={refused} />}
         {emailLanding && <EmailLandingNotice />}
-        <HealthTool
-          syncControl={({ hasData, attention }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} attention={attention} />}
-          remindersSection={<RemindersSection backend={backend} />}
-          storageBar={<StorageBar backend={backend} reconnect={reconnect} />}
-          saveAlert={<LocalSaveAlert backend={backend} />}
-          syncAlert={<StorageBar backend={backend} reconnect={reconnect} problemsOnly />}
-        />
+        <GuestContext.Provider value={state === 'guest'}>
+          <HealthTool
+            syncControl={({ hasData, attention }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} attention={attention} />}
+            remindersSection={<RemindersSection backend={backend} />}
+            storageBar={<StorageBar backend={backend} reconnect={reconnect} />}
+            saveAlert={<LocalSaveAlert backend={backend} />}
+            syncAlert={<StorageBar backend={backend} reconnect={reconnect} problemsOnly />}
+          />
+        </GuestContext.Provider>
         <HistoryLightboxHost />
       </ErrorBoundary>
     </React.StrictMode>,

@@ -2,7 +2,7 @@
 title: "Find your health record file"
 description: "Where the Health by Dr Brad tool keeps your record in Dropbox, Google Drive, GitHub or your browser, and how to open, back up, move or delete it."
 slug: "find-your-record"
-updated: "2026-10-30"
+updated: "2026-11-09"
 stories: ["US-09", "US-10", "US-11", "US-29"]
 ---
 
@@ -12,9 +12,9 @@ Where that file lives depends on what you chose when the tool asked where to kee
 
 ## Which one are you using?
 
-Look at the top of your plan. On a phone, that is the Plan tab. If you connected a cloud, it says "Your health record is yours alone. It lives in your", followed by the name of your provider. Click that name to see the list of places you can keep it, with a tick beside the one you use.
+Open Settings: on a computer, the person button beside My health; on a phone, the Account tab. If you connected a cloud, a line there says "Your health record is yours alone. It lives in your", followed by the name of your provider. Click that name to see the list of places you can keep it, with a tick beside the one you use.
 
-If instead you see a button that says "Where do you want to keep your health record?", nothing is connected. Your record is in this browser only.
+If instead you see a button that says "Keep my record in Dropbox or Google Drive", nothing is connected. Your record is in this browser only.
 
 ## Dropbox
 
@@ -54,7 +54,7 @@ With nothing connected, there is no file to find. The tool keeps your record in 
 
 Clearing your browsing data for the site deletes it, and so can a private window when it closes.
 
-To get your record out, connect Dropbox or Google Drive. Click "Where do you want to keep your health record?" and pick one. The tool copies everything in this browser into the new file, merging it with anything already there. From then on you have a real file you can open.
+To get your record out, connect Dropbox or Google Drive. Click "Keep my record in Dropbox or Google Drive" and pick one. The tool copies everything in this browser into the new file, merging it with anything already there. From then on you have a real file you can open.
 
 ## Other files in the same folder
 
@@ -74,7 +74,7 @@ The command-line tool, and Claude running on your own computer, make a backup ea
 
 ## Move it somewhere else
 
-To switch provider, click your provider's name at the top of your plan, or the "Where do you want to keep your health record?" button, and pick another. The tool first copies your record from the old provider into this browser, then into the new one. If the old provider cannot be reached, the switch stops, so your record is never left behind.
+To switch provider, click your provider's name in Settings on a computer or the Account tab on a phone, or the "Keep my record in Dropbox or Google Drive" button, and pick another. The tool first copies your record from the old provider into this browser, then into the new one. If the old provider cannot be reached, the switch stops, so your record is never left behind.
 
 The old file stays where it was. The tool does not delete it. Your uploaded lab reports do not move either, so copy them across yourself if you want them in the new place.
 
@@ -82,7 +82,7 @@ To take your record to another tool, download the file. The format is published 
 
 ## Log off a device
 
-To stop using the tool on a shared computer, click your provider's name at the top of your plan, then Log off this device. That signs this browser out and clears your record from it. The file in your cloud is not touched. Sign back in with the same account to get everything back.
+To stop using the tool on a shared computer, open Settings (the Account tab on a phone), click your provider's name, then Log off this device. That signs this browser out and clears your record from it. The file in your cloud is not touched. Sign back in with the same account to get everything back.
 
 ## Delete your data
 

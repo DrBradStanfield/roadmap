@@ -27,6 +27,7 @@ describe('US-20 AC6: WebKit tab bar gate', () => {
     insideWidget: true, position: 'sticky', background: 'rgb(248, 248, 250)', backdropFilter: 'none', visible: true, top: 761, bottom: 812, viewportHeight: 812,
     oldPlanButton: false, tabs: ['My health', 'Chat', 'Account'], shownAfterChatTap: ['Chat'], chatCardBottom: 749, barTopOnChat: 761,
     shownAfterAccountTap: ['Account'], accountTitle: 'Account', accountTitleButtons: 0, accountSignInHeight: 44, accountSignInBackground: 'rgb(0, 109, 91)',
+    accountSignInLabel: 'Keep my record in Dropbox or Google Drive', accountFirstPart: 'storage',
   };
   it('accepts a sticky, opaque bar inside the widget, on screen, that switches panels', () => {
     expect(() => assertTabBar(valid)).not.toThrow();
@@ -41,6 +42,7 @@ describe('US-20 AC6: WebKit tab bar gate', () => {
       // storage card's filled 44px button, none on the title line (Brad 2026-11-09).
       { shownAfterAccountTap: ['My health', 'Account'] }, { accountTitle: null }, { accountTitleButtons: 1 },
       { accountSignInHeight: 0 }, { accountSignInHeight: 36 }, { accountSignInBackground: 'rgba(0, 0, 0, 0)' }, { accountSignInBackground: null },
+      { accountSignInLabel: 'Where do you want to keep your health record?' }, { accountFirstPart: 'section-card' },
     ]) {
       expect(() => assertTabBar({ ...valid, ...change })).toThrow();
     }
