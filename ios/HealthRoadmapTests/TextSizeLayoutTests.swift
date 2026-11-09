@@ -106,11 +106,12 @@ final class TextSizeLayoutTests: XCTestCase {
     /// on an SE and a 17e, from the default size to accessibility XL; the page scrolls instead.
     func testTheAppleHealthPageNeverCutsItsWords_US54_AC8b() throws {
         guard #available(iOS 18, *) else { throw XCTSkip("Text.Layout.isTruncated needs iOS 18") }
-        let page = NavigationStack { OnboardingView.healthPage(connecting: false, allow: {}, notNow: {}) }
+        let page = NavigationStack { OnboardingView.healthPage(connecting: false, allow: {}) }
         for screen in screens {
             for category in sizes {
                 let texts = try drawnTexts(in: page, at: category, screen: screen.size)
-                XCTAssertGreaterThan(texts.drawn, 5, "\(screen.name) \(category.rawValue): the page drew its words")
+                // A guard that the page drew: five texts at the largest sizes since "Not now" went (2026-11-09).
+                XCTAssertGreaterThanOrEqual(texts.drawn, 5, "\(screen.name) \(category.rawValue): the page drew its words")
                 XCTAssertEqual(texts.cut, 0, "\(screen.name) \(category.rawValue): no words end in …")
             }
         }
@@ -119,7 +120,7 @@ final class TextSizeLayoutTests: XCTestCase {
     /// US-54 AC8: at accessibility sizes the real Apple Health page keeps its buttons on
     /// screen and at least 120 pt for its scrolling words, on an SE and a 17e. The scroll
     /// region gets only what the buttons leave, so a block of buttons too tall for the
-    /// screen squeezes it to nothing and pushes "Not now" off the bottom.
+    /// screen squeezes it to nothing and pushes them off the bottom.
     func testTheAppleHealthPageKeepsRoomToScrollAboveItsButtons_US54_AC8() throws {
         for screen in screens {
             let room = CGSize(width: screen.size.width, height: screen.size.height - screen.insets)
@@ -128,7 +129,7 @@ final class TextSizeLayoutTests: XCTestCase {
                 let window = UIWindow(windowScene: scene)
                 window.frame = CGRect(origin: .zero, size: room)
                 window.traitOverrides.preferredContentSizeCategory = category
-                let host = UIHostingController(rootView: NavigationStack { OnboardingView.healthPage(connecting: false, allow: {}, notNow: {}) })
+                let host = UIHostingController(rootView: NavigationStack { OnboardingView.healthPage(connecting: false, allow: {}) })
                 host.safeAreaRegions = []
                 window.rootViewController = host
                 window.makeKeyAndVisible()

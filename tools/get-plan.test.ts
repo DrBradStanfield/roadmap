@@ -258,8 +258,10 @@ describe('US-30 AC1/AC3/AC4 — the three output modes', () => {
     expect(html).toMatch(/^<!doctype html>/);
     expect(html).not.toMatch(/<script/i);
     expect(html).not.toMatch(/<link/i);
-    // Reference links are allowed; www.who.int is the WHO 2026 dementia guideline (US-07 AC1, 2026-10-21).
-    expect(html).not.toMatch(/(src|href)\s*=\s*["']https?:\/\/(?!doi\.org|www\.cancer\.org|diabetesjournals\.org|www\.who\.int)/i);
+    // Reference links are allowed; www.who.int is the WHO 2026 dementia guideline (US-07 AC1, 2026-10-21);
+    // NHLBI, FDA and NICE are the BP crisis, statin pregnancy and salt substitute sources (US-07 AC12-AC14);
+    // DailyMed holds the lipid drug labels' pregnancy sections (US-06 AC20, 2026-11-09).
+    expect(html).not.toMatch(/(src|href)\s*=\s*["']https?:\/\/(?!doi\.org|www\.cancer\.org|diabetesjournals\.org|www\.who\.int|www\.nhlbi\.nih\.gov|www\.fda\.gov|www\.nice\.org\.uk|dailymed\.nlm\.nih\.gov)/i);
     expect(html).toContain('<style>');
     expect(html).toContain('Consider adding Ezetimibe');
   });
@@ -614,6 +616,13 @@ describe('US-30 AC7 — a plan from numbers, with no record file', () => {
     expect(text).toContain('from the values you gave.');
     expect(text.replace('the values you gave', 'your record file')).toBe((await captureRun([path])).stdout);
     rmSync(fileDir, { recursive: true, force: true });
+  });
+
+  it('US-21 AC26: refuses a blood test past its plausible range, as edit-record does, computing nothing', async () => {
+    const result = await captureRun(['--from-values', spec([{ test: 'Glucose', value: 5.5, unit: 'mg/dL', date: '2026-08-20' }])]);
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('values[0]: 5.5 mg/dL is 0.31 mmol/L. Glucose below 0.5 mmol/L is almost certainly a typing or unit mistake');
+    expect(result.stdout).toBe('');
   });
 
   it("converts a conventional unit by edit-record's rules (LDL 123.8 mg/dL is 3.2 mmol/L)", async () => {

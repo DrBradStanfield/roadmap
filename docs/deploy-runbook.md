@@ -313,8 +313,8 @@ Moved out of CLAUDE.md 2026-09-24 (entropy pass). `.env` has all of them.
   (both apps share the Fly organisation's private network). The code also
   requires `CHAT_SURFACE=brand`.
 - **GitHub Actions** secrets, by where they live (names only). Repo level:
-  CLAUDE_CODE_OAUTH_TOKEN (claude-review.yml) and ANTHROPIC_API_KEY (no
-  workflow uses it any more, but it is still set). `production` environment
+  CLAUDE_CODE_OAUTH_TOKEN (claude-review.yml); ANTHROPIC_API_KEY was deleted
+  2026-11-09, as no workflow used it. `production` environment
   (gated; deploy.yml): FLY_DEPLOY_TOKEN_EDU, FLY_DEPLOY_TOKEN_PROD,
   SENTRY_AUTH_TOKEN, SHOPIFY_CLI_PARTNERS_TOKEN_EDU and
   SHOPIFY_CLI_PARTNERS_TOKEN_PROD. `engine-signing` environment

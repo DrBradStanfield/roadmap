@@ -246,7 +246,8 @@ function rejection(result: EditRejection): ToolOutcome {
         'Nothing was written. To change it, call correct_value with that row id — never add a second value to the same day.',
     };
   }
-  return { status: 'rejected', reason: result.reason, text: `${oneLine(result.message)}. Nothing was written.` };
+  // One full stop, though a person's words (a typed correction's, US-21 AC26) already end in one.
+  return { status: 'rejected', reason: result.reason, text: `${oneLine(result.message).replace(/\.$/, '')}. Nothing was written.` };
 }
 
 /**

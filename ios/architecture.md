@@ -805,11 +805,22 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
 - **Asked only where it works:** `HKHealthStore.supportsHealthRecords()` true adds
   `labResultRecord` to the read set of the one request (D12's one step; Health shows it on
   its own sheet). Elsewhere nothing asks and no read runs.
-- **Asked again on coming forward (review 2026-11-02):** a person who connected before this
-  build, or who chose "Ask Before Sharing", is never shown the sheet by the one request.
+- **Asked once on coming forward (review 2026-11-02; once only since 2026-11-09):** a person
+  who connected before this build is never shown the sheet by the one request.
   `AppleHealthSync.foreground` (the app's `follow`, never a background wake, where no sheet
   can show) asks for lab results alone when Apple Health is connected, `supportsHealthRecords`
-  and `statusForAuthorizationRequest` says `.shouldRequest`, then refreshes.
+  and `statusForAuthorizationRequest` says `.shouldRequest`, then refreshes. It asks at most
+  once per phone: a TestFlight tester with no Health Records account was asked on every open,
+  because HealthKit stays at `.shouldRequest` when there is no account or the sheet is closed
+  without a choice. `HealthSyncMemory.labResultsAsked` holds the date the lab results sheet was
+  last shown (by connect, by coming forward or by Settings' row); once set, coming forward
+  never asks. Someone upgrading from an earlier build has no date yet, so they may see the
+  sheet once more on their first open after the update. "Ask Before Sharing" people get no
+  automatic ask for later results. Settings' "Share new lab results" row (US-72 AC14, shown
+  when connected and `supportsHealthRecords`) can still show Apple's sheet when HealthKit
+  says one is needed, then refreshes. A deliberate connect can still show it too, but once
+  connected the live cards' Turn On shows only while the live types are due. No screen of
+  ours comes before the sheet (guideline 5.1.1).
 - **Rules version:** `HealthSyncMemory.labResultsRulesVersion` (2 since 2026-11-02: results
   dated by `issued`, the MDRD eGFR and the import winning a conflict), stored beside the anchor.
   Bump it when the engine starts reading results it used to refuse (a new code or unit): a
@@ -925,7 +936,7 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   date of birth, and `readTypes`, and `HealthKitClient.requestAuthorization` is the app's only Health
   request (`LiveHealthStore` has no request at all; an advisory source scan allows only it and
   the DEBUG seed). Both sets are `static let`, and all three share one `HKHealthStore.app`, as
-  Apple recommends. So onboarding's "Connect Apple Health", My data's Apple Health row and the
+  Apple recommends. So onboarding's Apple Health page (its Continue), My data's Apple Health row and the
   Turn On row all show one sheet; iOS lists only the types not yet asked, so a person connected
   before 2026-10-26 sees just the four. `AppleHealthSync.connect()` is the one connect: it holds the
   app's `LiveHealth` (given once, in `AppParts`), so the cards read as soon as the sheet is answered, beside the import. It uses

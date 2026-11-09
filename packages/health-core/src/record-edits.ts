@@ -31,7 +31,7 @@
  * writer can only edit safely with the lamport discipline this does not take on.
  */
 import {
-  canonicalLabRow, canonicalLabValue, correctionOffScale, type CountFault, displayLabUnit, foldName, labCountFault, type LabCatalogEntry, LAB_PLAUSIBLE_RANGES,
+  canonicalLabRow, canonicalLabValue, correctionOffScale, type CountFault, displayLabUnit, foldName, labCountFault, type LabCatalogEntry, LAB_PLAUSIBLE_RANGES, labPlausibleBound,
   labSlotKey, looseFold, labUnitRefusal, normalizeLabUnit, resolveLabCatalogEntry, type StoredLabRow,
 } from './lab-catalog';
 import { bloodTestKeyOf, coreStored, createCoreRow, isActive, isBloodTestKey, isCoreRow, labRowSlot } from './blood-tests';
@@ -40,9 +40,9 @@ import { resolveCoreMetricName } from './lab-extraction';
 import { dayOf, latestStamp, localDay, rootIdOf } from './merge';
 import { isCalendarDay, isClinicalDay } from './measurement-history';
 import { CORE_BLOOD_UNITS, createLabValue, createMeasurement, recordSchemaVersion, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
-import { canonicalToReported, rangeFault, reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
+import { canonicalToReported, reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
 import { comparatorOf, type Comparator } from './lab-limits';
-import { formatLabValue, labUnitRefusalLine, savedLabText } from './lab-series';
+import { formatLabValue, labNumberText, labUnitRefusalLine, savedLabText } from './lab-series';
 import { withEffectiveComparator } from './readable-rows';
 import { healthInputSchema, type MeasurementSource, METRIC_TYPES, PRESSURE_ORDER, pressureInverted } from './validation';
 import type { MEASUREMENT_REFUSAL_REASONS } from './product-events';
@@ -142,6 +142,8 @@ export interface EditRejection {
   message: string;
   /** The active row holding the slot, on `slot-occupied`. */
   existing?: FileMeasurement | FileLabValue;
+  /** The end of its plausible range a lab value passed (US-21 AC26). */
+  bound?: 'above' | 'below';
 }
 
 export interface EditSuccess<TRow> {
@@ -218,7 +220,8 @@ function coreUnitRefusal(metric: MetricType, unit: string): EditRejection {
  * Rule 8 for a lab value: the row a catalogued test is STORED in, or the
  * refusal. The write doors — `appendLabValue`, `bulkAppendValues`, the lab
  * branch of `correctValue` and the Health Records import — all come here, because a second opinion
- * about a factor is a wrong lab result.
+ * about a factor is a wrong lab result. So does the plausible range (US-21 AC26): a number past it
+ * is refused on every door, `fault: 'implausible'` with the end it passed.
  *
  * A test the catalogue does not know is returned untouched: there is no SI
  * definition to convert it to, and refusing it would throw the value away.
@@ -237,6 +240,8 @@ export function toStoredLab(
     const fault = labCountFault(entry, { value, unit, ...bounds });
     return { ...reject('unknown-unit', labUnitRefusal(entry, unit, fault)), ...(fault ? { fault } : null) };
   }
+  const implausible = labPlausibleFault(entry, value, unit);
+  if (implausible) return { ...reject('invalid-value', implausible.message), fault: 'implausible', bound: implausible.bound };
   return canonical.stored;
 }
 
@@ -506,19 +511,19 @@ export type AddLabValueResult =
 /** Blood pressure's own names, loosely folded: no lab test, though no one core metric either. */
 const BLOOD_PRESSURE_NAMES = new Set(['blood pressure', 'bp', 'blood pressure systolic', 'blood pressure diastolic', 'bp systolic', 'bp diastolic']);
 
-/** Why a typed value of a catalogued test is refused (US-21 AC26), or null inside its bounds, with
+/** Why a value of a catalogued test is refused (US-21 AC26), or null inside its bounds, with
  *  none, or in a unit it does not take: a value past its plausible range, in the stored SI unit, is
- *  a slip of the number or unit. Names the number as typed, what it converted to, and the end it
- *  passed, each as the matrix prints it, thousands separated. For the person who typed it. */
-function labPlausibleRefusal(entry: LabCatalogEntry, typed: number, unit: string): string | null {
-  const converted = canonicalLabValue(entry, typed, unit);
-  const range = converted && LAB_PLAUSIBLE_RANGES[entry.key];
-  const fault = range && rangeFault(range, converted.value);
+ *  a slip of the number or unit. Names the number as given, what it converted to, and the end it
+ *  passed, each as the matrix prints it, thousands separated. The words a person who typed it
+ *  reads, without the closing full stop (a refusal's own, as every `EditRejection` message). */
+function labPlausibleFault(entry: LabCatalogEntry, typed: number, unit: string): { message: string; bound: 'above' | 'below' } | null {
+  const fault = labPlausibleBound(entry, typed, unit);
   if (!fault) return null;
-  const shown = (v: number) => Number(formatLabValue(v)).toLocaleString('en-US', { maximumFractionDigits: 20 });
+  const converted = canonicalLabValue(entry, typed, unit)!;
+  const range = LAB_PLAUSIBLE_RANGES[entry.key];
   const typedUnit = normalizeLabUnit(unit);
-  const conversion = typedUnit.toLowerCase() === entry.unit.toLowerCase() ? '' : `${shown(typed)} ${typedUnit} is ${shown(converted.value)} ${entry.unit}. `;
-  return `${conversion}${entry.label} ${fault} ${shown(fault === 'below' ? range.min : range.max)} ${entry.unit} is almost certainly a typing or unit mistake: check the number and its unit.`;
+  const conversion = typedUnit.toLowerCase() === entry.unit.toLowerCase() ? '' : `${labNumberText(typed)} ${typedUnit} is ${labNumberText(converted.value)} ${entry.unit}. `;
+  return { message: `${conversion}${entry.label} ${fault} ${labNumberText(fault === 'below' ? range.min : range.max)} ${entry.unit} is almost certainly a typing or unit mistake: check the number and its unit`, bound: fault };
 }
 
 /**
@@ -550,15 +555,16 @@ export function addLabValue(file: RoadmapFile, request: AddLabValueRequest, now:
   if (typeof day !== 'string') return { ok: false, reason: 'invalid-date', message: 'A lab value is for a real day, today or before.' };
   const entry = resolveLabCatalogEntry(name);
   if (!given && !entry && !bloodTestKeyOf(name) && !request.existingSeries) return { ok: false, reason: 'invalid-value', message: NEEDS_UNIT };
-  const implausible = entry && labPlausibleRefusal(entry, request.value, given);
-  if (implausible) return { ok: false, reason: 'invalid-value', message: implausible };
+  // Checked here in the unit typed, which the write below may already have converted from (US-21 AC26).
+  const implausible = entry && labPlausibleFault(entry, request.value, given);
+  if (implausible) return { ok: false, reason: 'invalid-value', message: `${implausible.message}.` };
   const exact = !!entry && displayLabUnit(given, entry) === entry.unit;
   const metricName = exact ? entry!.key : name;
   const unit = exact ? entry!.unit : given;
   const result = bulkAppendValues(file, [{ kind: 'lab', metricName, value: request.value, unit, recordedAt: `${day}T00:00:00.000Z`, source: 'manual' }], now);
   if (result.saved.length) return { ok: true, file: result.file, row: result.saved[0] as FileLabValue };
   const [refused] = result.refused;
-  if (refused) return { ok: false, reason: 'unknown-unit', message: labUnitRefusalLine(refused.key, refused.unit, refused.fault), refused };
+  if (refused) return { ok: false, reason: 'unknown-unit', message: labUnitRefusalLine(refused.key, refused.unit, refused.fault, refused.bound), refused };
   // A core test's name writes its core row (US-66 AC6): a number out of its range, or a held core day.
   const [range] = result.measurementRefusals;
   if (range) return { ok: false, reason: 'invalid-value', message: range.message, ...(range.bound ? { bound: range.bound } : null) };
@@ -648,13 +654,14 @@ export function correctValue(file: RoadmapFile, request: CorrectValueRequest): E
   if (request.unit !== undefined && !entry) {
     return reject('unknown-unit', `${labRow.metricName} is stored in the unit it was reported in (${labRow.unit}) — correct the number only`);
   }
+  // A corrected number is typed too, so it meets the add's plausible range (US-21 AC26), in the
+  // person's words; checked first, as `toStoredLab` would refuse it without the full stop.
+  const implausible = entry && labPlausibleFault(entry, request.newValue, request.unit ?? labRow.unit);
+  if (implausible) return reject('invalid-value', `${implausible.message}.`);
   const stored = request.unit === undefined
     ? { value: request.newValue, unit: labRow.unit }
     : toStoredLab(entry, request.newValue, request.unit);
   if ('ok' in stored) return stored;
-  // A corrected number is typed too, so it meets the add's plausible range (US-21 AC26).
-  const implausible = entry && labPlausibleRefusal(entry, request.newValue, request.unit ?? labRow.unit);
-  if (implausible) return reject('invalid-value', implausible);
   // The row carries the unit it is STORED in, which is the conversion's answer
   // and not the old row's label: a legacy row in a spelling the catalogue
   // refuses is corrected INTO the canonical unit, and saying otherwise would
@@ -857,13 +864,17 @@ export type BulkRow =
 
 /** One lab row the record would not store because the catalogue does not know
  *  that unit spelling for that test (US-21 phase 3): the key and the printed
- *  unit, never the value — that is what refusing the row protected. */
+ *  unit, never the value — that is what refusing the row protected. A number
+ *  past its plausible range (`implausible`, US-21 AC26) is named only in
+ *  `message`, the assistant's copy; the person's line names the bound. */
 export interface LabUnitRefusal {
   key: string;
   unit: string;
   message: string;
-  /** Set when the test takes the spelling and the NUMBER was refused (US-21 AC15). */
+  /** Set when the test takes the spelling and the NUMBER was refused (US-21 AC15, AC26). */
   fault?: CountFault;
+  /** For `implausible`: the end of the plausible range it passed, named without the value (US-21 AC26). */
+  bound?: 'above' | 'below';
 }
 
 export interface MeasurementRefusal {
@@ -935,7 +946,7 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
       const entry = resolveLabCatalogEntry(input.metricName);
       const stored = toStoredLab(entry, input.value, input.unit, input.referenceLow, input.referenceHigh);
       if ('ok' in stored) {
-        refused.push({ key: entry?.key ?? foldName(input.metricName), unit: input.unit, message: stored.message, ...(stored.fault ? { fault: stored.fault } : null) });
+        refused.push({ key: entry?.key ?? foldName(input.metricName), unit: input.unit, message: stored.message, ...(stored.fault ? { fault: stored.fault } : null), ...(stored.bound ? { bound: stored.bound } : null) });
         continue;
       }
       makeRow = (recordedAt, correctsId) => createLabValue({

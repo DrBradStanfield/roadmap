@@ -361,6 +361,22 @@ describe('US-12 AC4–6 upload session ownership', () => {
     const line = await screen.findByText('Platelets: the value and its printed range are on different scales, so the row was not stored.');
     expect(line.textContent).not.toContain('whole number');
   });
+
+  // US-21 AC26 (Brad 2026-11-09) · an uploaded value past its plausible range is refused like a
+  // typed one, and the summary names the end it passed, never the number.
+  it('US-21 AC26 — a value past its plausible range is named as not saved, with its bound', async () => {
+    vi.mocked(labImport).mockResolvedValue({
+      result: { ...extraction.result, additionalValues: [{ name: 'Glucose', value: 3000, unit: 'mg/dL', referenceLow: null, referenceHigh: null }] },
+    } as Awaited<ReturnType<typeof labImport>>);
+    vi.mocked(bulkSaveLabValues).mockResolvedValue({
+      saved: [], skippedDuplicates: 0, errorCount: 0,
+      refused: [{ key: 'glucose', unit: 'mg/dL', message: 'Glucose above 150 mmol/L', fault: 'implausible', bound: 'above' }],
+    } as Awaited<ReturnType<typeof bulkSaveLabValues>>);
+    render(<Harness />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    const line = await screen.findByText('Glucose: a value above 150 mmol/L is almost certainly a misread number or unit, so it was not saved. Check the report.');
+    expect(line.textContent).not.toContain('3000');
+  });
 });
 
 // US-14 AC4: an original the cloud would not store, behind a row it already
