@@ -8,19 +8,19 @@
  * asserting what the user reads.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD } from './HealthTool';
+import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD } from './erase-copy';
 
 /** The erase strings as one build shows them. */
 async function eraseCopyOn(shopify: boolean) {
   vi.resetModules();
-  vi.doMock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: shopify, LOCAL_FIRST: true }));
-  return import('./HealthTool');
+  vi.doMock('./build-flags', () => ({ SHOPIFY_SURFACE: shopify, LOCAL_FIRST: true }));
+  return import('./erase-copy');
 }
 /** ERASE_CONFIRM as one build shows it. */
 async function eraseConfirmOn(shopify: boolean): Promise<string> {
   return (await eraseCopyOn(shopify)).ERASE_CONFIRM;
 }
-afterEach(() => { vi.doUnmock('../lib/build-flags'); vi.resetModules(); });
+afterEach(() => { vi.doUnmock('./build-flags'); vi.resetModules(); });
 
 describe('erase confirm copy (US-11)', () => {
   it('names what is erased: the record and the chat history', () => {
