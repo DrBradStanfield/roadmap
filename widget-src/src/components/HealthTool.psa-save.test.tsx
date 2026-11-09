@@ -13,7 +13,10 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, waitFor } from '@testing-library/react';
-import { localDay, ROADMAP_FILE_NAME, toOldShape, type RoadmapFile } from '@roadmap/health-core';
+import { localDay } from '@roadmap/health-core/merge';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import { toOldShape } from '@roadmap/health-core/blood-tests';
+import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveScreening } from '../lib/roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';

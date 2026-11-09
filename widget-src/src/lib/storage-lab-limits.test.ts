@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { labEgfrFrom } from '@roadmap/health-core';
+import { labEgfrFrom } from '@roadmap/health-core/plan';
 import { loadFromLocalStorage, saveToLocalStorage, MIRROR_KEY } from './storage';
 
 // Adversary review of 0a2b89b0 (R2): the mirror never holds the plan's hidden

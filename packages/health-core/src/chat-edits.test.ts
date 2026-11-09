@@ -16,9 +16,8 @@ import {
   type ProposedFieldEdit,
   type ProposedMedicationEdit,
 } from './chat-edits';
-import { FIELD_TO_METRIC, UNIT_DEFS, toCanonicalValue, type MetricType } from './index';
-import { lookupUnit, type UnitSystem } from './units';
-import { medicationsToInputs } from './mappings';
+import { lookupUnit, UNIT_DEFS, toCanonicalValue, type MetricType, type UnitSystem } from './units';
+import { FIELD_TO_METRIC, medicationsToInputs } from './mappings';
 import { lipidCascade, weightCascade } from './medication-cascades';
 import {
   BEMPEDOIC_ACID_OPTIONS, EZETIMIBE_OPTIONS, GLP1_NAMES, METFORMIN_OPTIONS, PCSK9I_OPTIONS, SGLT2I_NAMES, STATIN_NAMES,

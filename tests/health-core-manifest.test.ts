@@ -38,8 +38,18 @@ describe('health-core package manifest', () => {
     }
   });
 
-  it('the root tsconfig resolves @roadmap/health-core to its source', () => {
-    expect(resolveUnderRootTsconfig('@roadmap/health-core')).toBe('packages/health-core/src/index.ts');
+  it('the root tsconfig resolves a per-module import to its source', () => {
+    expect(resolveUnderRootTsconfig('@roadmap/health-core/units')).toBe('packages/health-core/src/units.ts');
+  });
+
+  // US-64 AC24: the one-file barrel (index.ts) was every feature's conflict
+  // point (110 commits in 30 days, 162 counting merges). Callers import the
+  // module that owns the name; with no root entry the barrel cannot come back.
+  it('has no package-root entry: a bare @roadmap/health-core import does not resolve', () => {
+    expect(manifest.main).toBeUndefined();
+    expect(manifest.types).toBeUndefined();
+    expect(Object.keys(manifest.exports)).toEqual(['./*']);
+    expect(existsSync(join(CORE, 'src/index.ts'))).toBe(false);
   });
 
   it('keeps no build script for the dist nothing reads', () => {

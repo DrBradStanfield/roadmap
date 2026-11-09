@@ -12,7 +12,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { render, cleanup, fireEvent, act, within } from '@testing-library/react';
 import type { MutableRefObject } from 'react';
-import type { ApiMeasurement, MetricType, UnitSystem } from '@roadmap/health-core';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
+import type { MetricType, UnitSystem } from '@roadmap/health-core/units';
 import { BloodTestTimeline, SAVE_ERRORS, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { formatShortDate } from '../lib/constants';
 import { slotOf } from '../lib/matrix-save';

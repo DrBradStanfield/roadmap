@@ -11,7 +11,7 @@
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import type { Mock } from 'vitest';
-import { StorageError } from '@roadmap/health-core';
+import { StorageError } from '@roadmap/health-core/adapter';
 import { GitHubAdapter } from './github';
 
 const CONFIG = { token: 'ghp_test', owner: 'octocat', repo: 'health' };

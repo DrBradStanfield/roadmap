@@ -8,9 +8,9 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { statTiles } from '@roadmap/health-core';
+import { statTiles } from '@roadmap/health-core/stat-tiles';
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
-import { calculateHealthResults } from '@roadmap/health-core';
+import { calculateHealthResults } from '@roadmap/health-core/calculations';
 import { US_SUPPLEMENT_DESCRIPTIONS } from '@roadmap/health-core/suggestions';
 import { US_SUPPLEMENT_REFERENCES } from '@roadmap/health-core/evidence';
 import { US_OWNERSHIP_LINE, US_PRODUCT_LINES, type UsPlanSection } from '@roadmap/health-core/us-products';

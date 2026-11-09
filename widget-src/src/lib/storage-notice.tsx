@@ -6,10 +6,15 @@
  * event is the one seam to the picker: openBackendPicker() is the only way in,
  * and standalone/sync-control.tsx is the only listener.
  */
+import { createContext } from 'react';
 import type { SIGNIN_PLACEMENTS } from '@roadmap/health-core/product-events';
 import { trackProductEvent } from './server-api';
 
 export const OPEN_PICKER_EVENT = 'hr:open-backend-picker';
+
+/** A true guest: the record on this device, no provider to reconnect (standalone/app.tsx sets it
+ *  once per page load). Only a guest's storage card heads a phone's Account (US-62 AC34). */
+export const GuestContext = createContext(false);
 
 const LINK_TEXT = 'Dropbox or Google Drive';
 
@@ -27,7 +32,10 @@ export type StorageSurface = keyof typeof PARTS;
 const sentence = (surface: StorageSurface): string => PARTS[surface][0] + LINK_TEXT + PARTS[surface][1];
 
 export const PLAN_STORAGE_NOTICE = sentence('plan');
-export const PLAN_STORAGE_CTA = 'Where do you want to keep your health record?';
+/** The storage card's sign-in button (Brad 2026-11-09). */
+export const PLAN_STORAGE_CTA = 'Keep my record in Dropbox or Google Drive';
+/** The picker's own title: the question the button opens. */
+export const PICKER_TITLE = 'Where do you want to keep your health record?';
 /** The upload modal's own paragraph (plain prose; the CTA button beneath it is
  *  the affordance there). */
 export const UPLOAD_STORAGE_NOTICE =

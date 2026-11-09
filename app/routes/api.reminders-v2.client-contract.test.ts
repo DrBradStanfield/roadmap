@@ -11,7 +11,7 @@
  * cancel, the cloud switch and "Delete all my data" left the server row active.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { FileReminderOptIn } from '@roadmap/health-core';
+import type { FileReminderOptIn } from '@roadmap/health-core/roadmap-file';
 
 // --- the client's dependencies ---------------------------------------------
 const getReminderOptIn = vi.fn<() => FileReminderOptIn | undefined>(() => undefined);

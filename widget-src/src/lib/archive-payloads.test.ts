@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LAB_ARCHIVE_FLAG } from '@roadmap/health-core';
+import { LAB_ARCHIVE_FLAG } from '@roadmap/health-core/document-rows';
 import {
   synthesizeLabArchiveEntries,
   unarchivedOriginals,

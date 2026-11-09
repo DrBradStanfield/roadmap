@@ -5,7 +5,9 @@
  */
 import { describe, it, expect } from 'vitest';
 import { RoadmapStore } from './roadmap-store';
-import { createEmptyFile, MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME } from '@roadmap/health-core';
+import { createEmptyFile } from '@roadmap/health-core/roadmap-file';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 
 const DAY = '2026-09-01T00:00:00.000Z';
 

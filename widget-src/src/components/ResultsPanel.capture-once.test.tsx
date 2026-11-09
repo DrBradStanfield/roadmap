@@ -5,9 +5,9 @@
  * print window and sends nothing more; after a failed send, the box works again.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { statTiles } from '@roadmap/health-core';
+import { statTiles } from '@roadmap/health-core/stat-tiles';
 import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
-import { calculateHealthResults } from '@roadmap/health-core';
+import { calculateHealthResults } from '@roadmap/health-core/calculations';
 
 const mocks = vi.hoisted(() => ({
   getReportHtml: vi.fn(),

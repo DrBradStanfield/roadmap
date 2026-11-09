@@ -8,7 +8,13 @@
  * disturbing the type graph. `api.ts` re-exports everything here for back-compat
  * import paths; new code may import directly from `./api-types`.
  */
-import type { Comparator, HealthInputs, DocumentType, ApiMeasurement, ApiMedication, ApiScreening, MedicationChange, LabUnitRefusal, MeasurementRefusal, RefusedLabValue, UnreadLabValue } from '@roadmap/health-core';
+import type { Comparator } from '@roadmap/health-core/lab-limits';
+import type { HealthInputs } from '@roadmap/health-core/types';
+import type { DocumentType } from '@roadmap/health-core/validation';
+import type { ApiMeasurement, ApiMedication, ApiScreening } from '@roadmap/health-core/mappings';
+import type { MedicationChange } from '@roadmap/health-core/medication-annotations';
+import type { LabUnitRefusal, MeasurementRefusal } from '@roadmap/health-core/record-edits';
+import type { RefusedLabValue, UnreadLabValue } from '@roadmap/health-core/lab-extraction';
 import type { ExtractionStopCode } from '@roadmap/health-core/models';
 
 export interface ApiReminderPreference {
@@ -79,7 +85,7 @@ export interface ExtractedValue {
   displayUnit: string;
   /** Which unit system displayUnit/displayValue belong to. Optional for
    *  back-compat with API responses predating the May 2026 redesign. */
-  displaySystem?: import('@roadmap/health-core').UnitSystem;
+  displaySystem?: import('@roadmap/health-core/units').UnitSystem;
   confidence: 'high' | 'medium' | 'low';
   question?: string;
   /** This value's own day, from a dated previous-results column (US-12 AC12),

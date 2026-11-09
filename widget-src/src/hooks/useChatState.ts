@@ -17,7 +17,9 @@ import {
   type ChatPending,
 } from '../lib/chat-api';
 import { postSync, postInputSync, subscribeSync, generateInstanceId } from '../lib/chat-sync';
-import { cutText, type ChatContextPayload, type ProposedEdit } from '@roadmap/health-core';
+import { cutText } from '@roadmap/health-core/chat-history';
+import type { ChatContextPayload } from '@roadmap/health-core/chat-context';
+import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { confirmSubscriptionChange, type SubscriptionCard, type SubscriptionResult } from '../lib/subscription-card';
 
 /** A subscription change card under an answer (US-59): idle, sending, or closed with its outcome. */
@@ -98,6 +100,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   const conversationsRef = useRef(conversations);
   const activeConversationIdRef = useRef(activeConversationId);
   const messagesRef = useRef(messages);
+  const inputTextRef = useRef(inputText);
   const isLoadingConvsRef = useRef(false);
   const ownSendRef = useRef(false); // this tab's own send is in flight (US-15 AC17a)
   const isLoadingRef = useRef(isLoading);
@@ -108,8 +111,9 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     conversationsRef.current = conversations;
     activeConversationIdRef.current = activeConversationId;
     messagesRef.current = messages;
+    inputTextRef.current = inputText;
     isLoadingRef.current = isLoading;
-  }, [conversations, activeConversationId, messages, isLoading]);
+  }, [conversations, activeConversationId, messages, inputText, isLoading]);
 
   // Offline detection
   useEffect(() => {
@@ -328,6 +332,12 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     if (sendError) {
       const withoutOptimistic = stayed ? optimisticMessages.filter(m => m.id !== optimisticMsg.id) : messagesRef.current;
       setMessages(withoutOptimistic);
+      // The question leaves the thread, so it goes back in the box, unless
+      // something new was typed meanwhile, as Stop does on the iPhone (US-15 AC57).
+      if (stayed && !inputTextRef.current) {
+        setInputText(trimmed);
+        postInputSync(instanceId, trimmed);
+      }
       setError(sendError.error);
       setIsLoading(false);
       isLoadingRef.current = false; // a load landing before the re-render must not say in flight (US-15 AC7a)

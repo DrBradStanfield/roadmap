@@ -6,7 +6,10 @@
 // iPhone runs (ios/engine/my-data.ts).
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render } from '@testing-library/react';
-import { LIMIT_NOT_GRADED, calculateHealthResults, knownMinorOf, type ApiMeasurement, type Comparator, type SuggestionInputs } from '@roadmap/health-core';
+import { LIMIT_NOT_GRADED, type Comparator } from '@roadmap/health-core/lab-limits';
+import { calculateHealthResults, knownMinorOf } from '@roadmap/health-core/calculations';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
+import type { SuggestionInputs } from '@roadmap/health-core/types';
 import type { RoadmapFile } from '../../../packages/health-core/src/roadmap-file';
 import { applyEdit, myData, newRecord } from '../../../ios/engine/my-data';
 import { currentValueRows } from '../../../packages/health-core/src/blood-tests';

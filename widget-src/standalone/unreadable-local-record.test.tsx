@@ -6,9 +6,9 @@
  * Pages and Shopify builds share) on a seeded localStorage.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createEmptyFile } from '@roadmap/health-core';
+import { createEmptyFile } from '@roadmap/health-core/roadmap-file';
 
-type Core = typeof import('@roadmap/health-core');
+type Core = typeof import('@roadmap/health-core/adapter');
 
 vi.mock('../src/lib/sentry', () => ({ initSentry: vi.fn(), Sentry: { captureException: vi.fn(), captureMessage: vi.fn() } }));
 vi.mock('../src/lib/server-api', async (importOriginal) => ({ ...(await importOriginal<object>()), trackProductEvent: vi.fn() }));
@@ -125,7 +125,7 @@ describe('US-65 AC7: an on-device record the app refuses at load is explained, n
     let error: Error | undefined;
     vi.doMock('../src/lib/roadmap-data', async (importOriginal) => ({
       ...(await importOriginal<object>()),
-      initRoadmapStore: async () => { throw (error = failure(await import('@roadmap/health-core'))); },
+      initRoadmapStore: async () => { throw (error = failure(await import('@roadmap/health-core/adapter'))); },
     }));
     try {
       await import('./app');

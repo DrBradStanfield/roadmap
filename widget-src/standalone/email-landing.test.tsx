@@ -12,7 +12,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, fireEvent, cleanup, act } from '@testing-library/react';
-import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { RoadmapStore } from '../src/storage/roadmap-store';
 import { addMeasurement, initRoadmapStore } from '../src/lib/roadmap-data';
 import { trackProductEvent } from '../src/lib/server-api';

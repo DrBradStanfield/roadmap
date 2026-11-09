@@ -8,7 +8,9 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, beforeAll, expect, it, vi } from 'vitest';
 import { act, cleanup, render } from '@testing-library/react';
-import { calculateHealthResults, statTiles, type HealthInputs } from '@roadmap/health-core';
+import { calculateHealthResults } from '@roadmap/health-core/calculations';
+import { statTiles } from '@roadmap/health-core/stat-tiles';
+import type { HealthInputs } from '@roadmap/health-core/types';
 
 vi.mock('../lib/roadmap-data', () => ({
   getReportHtml: vi.fn(), sendGuestReport: vi.fn(), getReportEmailCaptured: () => false, markReportEmailCaptured: vi.fn(),

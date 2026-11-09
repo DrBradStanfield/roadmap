@@ -17,14 +17,7 @@
  *     writes degrade to last-write-wins — see the implementation build log.
  * iOS note: WebDAV is the only self-host path on iOS (no File System Access API).
  */
-import {
-  ConflictError,
-  StorageError,
-  fetchOrFail,
-  type ReadResult,
-  type StorageAdapter,
-  type WriteResult,
-} from '@roadmap/health-core';
+import { ConflictError, StorageError, fetchOrFail, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { getJson, setJson, safeRemoveItem } from '../lib/storage';
 import { encodeStoragePath, legacyDocumentUrl } from './storage-path';
 import { bytesToBase64 } from '../lib/base64';

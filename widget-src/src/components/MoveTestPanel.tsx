@@ -5,10 +5,12 @@
 // move for both matrices (InputPanel); only the Move button writes.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import {
-  METRIC_LABELS, METRIC_TO_FIELD, isCoreRow, labValueLabel, savedLabText,
-  type FileLabValue, type FileMeasurement, type MetricType, type MoveKeep, type MovePlan, type MoveRejection, type UnitSystem,
-} from '@roadmap/health-core';
+import { METRIC_LABELS, METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
+import { isCoreRow } from '@roadmap/health-core/blood-tests';
+import { labValueLabel, savedLabText } from '@roadmap/health-core/lab-series';
+import type { FileLabValue, FileMeasurement } from '@roadmap/health-core/roadmap-file';
+import type { MetricType, UnitSystem } from '@roadmap/health-core/units';
+import type { MoveKeep, MovePlan, MoveRejection } from '@roadmap/health-core/record-edits';
 import { cellLabel, savedCellText, type CellUnit } from '../lib/blood-test-cell';
 import { lpaRowsToCheck, useLpaKept, useLpaUnit } from '../lib/lpa-unit';
 import type { MoveOutcome } from '../storage/roadmap-store';

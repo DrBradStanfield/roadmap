@@ -10,7 +10,8 @@
  * Synthetic data, in-memory cloud, no network.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME } from '@roadmap/health-core';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { initRoadmapStore, flushRoadmapStore } from './roadmap-data';
 import * as data from './roadmap-data';

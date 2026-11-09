@@ -1,65 +1,19 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef, useId, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  calculateHealthResults,
-  unreadableNote,
-  knownMinorOf,
-  medicinesShown,
-  weightMedicationTrigger,
-  lipidMarkerFor,
-  validateHealthInputs,
-  planInputsFrom,
-  type SuggestionInputs,
-  getValidationErrors,
-  convertValidationErrorsToUnits,
-  detectUnitSystem,
-  PREFILL_FIELDS,
-  hasUnsavedProfileEdits,
-  LONGITUDINAL_FIELDS,
-  BLOOD_TEST_METRICS,
-  VITAL_METRICS,
-  FIELD_TO_METRIC,
-  medicationsToInputs,
-  mergeLongitudinalInputs,
-  screeningsToInputs,
-  chatContextOf,
-  computeFormStage,
-  opensFullForm,
-  statTiles,
-  medicationForm,
-  screeningForm,
-  FIELD_METRIC_MAP,
-  METRIC_TO_FIELD,
-  localDay,
-  dayOf,
-  withLabEgfr,
-  withPsaMeasurement,
-  newestUsablePsa,
-  labEgfrOf,
-  toCanonicalValue,
-  VITALS_INPUT_FIELDS,
-  chatMedicationChange,
-  unsavedProfile,
-  type AlcoholAnswer,
-  type HealthInputs,
-  type UnitSystem,
-  type MetricType,
-  type ApiMeasurement,
-  type ApiMedication,
-  type ApiScreening,
-  type ChatContextPayload,
-  type ChatMedicationRow,
-  type ProposedEdit,
-  type ProposedFieldEdit,
-  type ProposedMedicationEdit,
-  type ProposedProfileEdit,
-  type FormStage,
-  type RecordHoldings,
-  isSex,
-  formatHeightDisplay,
-  birthRefusedMessage,
-  inputRangeFault,
-} from '@roadmap/health-core';
+import { calculateHealthResults, knownMinorOf } from '@roadmap/health-core/calculations';
+import { unreadableNote } from '@roadmap/health-core/readable-rows';
+import { medicinesShown, weightMedicationTrigger, lipidMarkerFor } from '@roadmap/health-core/suggestions';
+import { validateHealthInputs, getValidationErrors, convertValidationErrorsToUnits, birthRefusedMessage, inputRangeFault } from '@roadmap/health-core/validation';
+import { planInputsFrom, withLabEgfr, labEgfrOf } from '@roadmap/health-core/plan';
+import { type SuggestionInputs, type AlcoholAnswer, type HealthInputs, isSex } from '@roadmap/health-core/types';
+import { detectUnitSystem, toCanonicalValue, type UnitSystem, type MetricType, formatHeightDisplay } from '@roadmap/health-core/units';
+import { PREFILL_FIELDS, hasUnsavedProfileEdits, LONGITUDINAL_FIELDS, BLOOD_TEST_METRICS, VITAL_METRICS, FIELD_TO_METRIC, medicationsToInputs, mergeLongitudinalInputs, screeningsToInputs, computeFormStage, opensFullForm, FIELD_METRIC_MAP, METRIC_TO_FIELD, withPsaMeasurement, type ApiMeasurement, type ApiMedication, type ApiScreening, type FormStage, type RecordHoldings } from '@roadmap/health-core/mappings';
+import { chatContextOf, type ChatContextPayload } from '@roadmap/health-core/chat-context';
+import { statTiles } from '@roadmap/health-core/stat-tiles';
+import { medicationForm, screeningForm } from '@roadmap/health-core/input-form';
+import { localDay, dayOf } from '@roadmap/health-core/merge';
+import { newestUsablePsa } from '@roadmap/health-core/measurement-history';
+import { VITALS_INPUT_FIELDS, chatMedicationChange, unsavedProfile, type ChatMedicationRow, type ProposedEdit, type ProposedFieldEdit, type ProposedMedicationEdit, type ProposedProfileEdit } from '@roadmap/health-core/chat-edits';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { MoveTestApi } from './MoveTestPanel';
 import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';
@@ -304,11 +258,15 @@ type ChatPrefetch = { epoch: number; data: ChatPrefetchData };
 const prefetchFor = (prefetch: ChatPrefetch | null, epoch: number): ChatPrefetchData | null =>
   (prefetch?.epoch === epoch ? prefetch.data : null);
 
-export function HealthTool({ syncControl, remindersSection, storageBar }: {
+export function HealthTool({ syncControl, remindersSection, storageBar, saveAlert, syncAlert }: {
   syncControl?: (ctx: { hasData: boolean; attention: boolean }) => ReactNode;
   remindersSection?: ReactNode;
   /** US-09 AC30: the Sign in button, in the input column's header. */
   storageBar?: ReactNode;
+  /** On a phone, where the storage button is in the Account tab (US-62 AC34): US-01 AC5's
+   *  "Could not save on this device" atop My health and Chat, and a reconnect or waiting save atop My health. */
+  saveAlert?: ReactNode;
+  syncAlert?: ReactNode;
 } = {}) {
   // The store is ready before render, so returning users see their saved prefill immediately.
   const [inputs, setInputs] = useState<Partial<HealthInputs>>(getInitialInputsSync);
@@ -1533,16 +1491,17 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer, aboutYouRow: aboutYouLow },
   });
 
-  // Settings open in My health's place, so a press from elsewhere shows that tab first.
+  // Desktop: Settings open in My health's place, behind the person button. A phone: they are
+  // the Account tab (US-62 AC34), so leaving them (an erase) lands on My health's title.
   const personRef = useRef<HTMLButtonElement>(null);
-  const toggleSettings = useCallback(() => {
-    selectTab('health');
-    setSettingsOpen(open => !open);
-  }, [selectTab]);
+  const [accountHost, setAccountHost] = useState<HTMLFieldSetElement | null>(null);
+  const settingsShown = isMobile ? activeTab === 'account' : settingsOpen;
+  const toggleSettings = useCallback(() => setSettingsOpen(open => !open), []);
   const closeSettings = useCallback(() => {
     setSettingsOpen(false);
-    requestAnimationFrame(() => personRef.current?.focus());
-  }, []);
+    if (isMobileRef.current) selectTab('health');
+    requestAnimationFrame(() => (isMobileRef.current ? rootRef.current?.querySelector<HTMLElement>('.mh-title') : personRef.current)?.focus());
+  }, [selectTab]);
   // Back closes Settings, as it closes a value page (US-62 AC24).
   useEffect(() => {
     if (!settingsOpen) return;
@@ -1550,18 +1509,22 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     return () => window.removeEventListener('popstate', closeSettings);
   }, [settingsOpen, closeSettings]);
   const personButton = <PersonButton onClick={toggleSettings} buttonRef={personRef} open={settingsOpen}/>;
-  // Where the record lives (US-09): in Settings, and for a guest (a record on this
-  // device only) also at the foot of My health, so the sign-in prompt stays in the
-  // page's flow (orchestrator 2026-11-06). Drawn in one place at a time: one picker.
-  const storageCard = syncControl?.({ hasData: plan.planned, attention: plan.attention });
+  // Where the record lives (US-09): in Settings, and for a guest also at My health's foot (orchestrator
+  // 2026-11-06). One place at a time: one picker. A phone's Account shows it before any data (its button
+  // is the tab's one sign-in, US-62 AC34). A tab switch remounts SyncControl and shuts an open picker;
+  // the chat hand-off's selectTab('health') can do that mid-pick (accepted: the lift finishes on its own).
+  const storageCard = syncControl?.({ hasData: plan.planned || (isMobile && settingsShown), attention: plan.attention });
 
   const myHealthProps = {
     plan, tiles, series, egfrCurrent, sectionsRef, setShowUploadModal,
-    // On My health's title line, phone and desktop: no band of its own (design review 2026-11-06).
+    // On My health's title line on desktop; on a phone, on the Account tab's (US-62 AC34).
     storageBar,
     personButton,
-    settingsOpen,
+    saveAlert,
+    syncAlert,
+    settingsOpen: settingsShown,
     onSettingsClose: closeSettings,
+    settingsHost: isMobile ? accountHost : undefined,
     // US-07 AC6: no reminders for a known minor, who is never enrolled and must see no mailing-list box.
     reminders: plan.planned && !results?.knownMinor ? remindersSection : null,
     storageCard,
@@ -1647,12 +1610,19 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     onProposeEdit: handleProposeEdit,
   };
 
-  // US-62 AC16: on a phone, two panels, My health and Chat, and a bottom tab bar.
-  // Both stay mounted (the form's drafts and the chat's conversation survive a
-  // switch); only the active one shows.
+  // US-62 AC16, AC34: on a phone, three panels, My health, Chat and Account, and a bottom tab
+  // bar. My health and Chat stay mounted (the form's drafts and the chat's conversation survive
+  // a switch); only the active one shows. Account holds Settings, drawn by My health and kept
+  // mounted (a half-typed reminder email survives a switch), inside the erase lock.
   const panel = (tab: TabId, children: ReactNode) => (
     <div className="hr-tabpanel" role="tabpanel" id={panelDomId(tabIds, tab)} aria-labelledby={tabDomId(tabIds, tab)} hidden={activeTab !== tab}>
       {children}
+    </div>
+  );
+  const healthForm = <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps}>{myHealth}</InputPanel></fieldset>;
+  const chat = (
+    <div className="health-tool-chat">
+      <ChatEmbed isLoggedIn={chatSectionProps.isLoggedIn} guestInputs={chatSectionProps.guestInputs} muted={formStage < 4} onProposeEdit={handleProposeEdit}/>
     </div>
   );
   return (
@@ -1660,35 +1630,17 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       {unreadableLine && <p className="hr-unreadable-note no-print" role="status">{unreadableLine}</p>}
       {isMobile ? (
         <>
-          {panel('health', <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps}>{myHealth}</InputPanel></fieldset>)}
-          {panel('chat', (
-            <div className="health-tool-chat">
-              <ChatEmbed
-                isLoggedIn={chatSectionProps.isLoggedIn}
-                guestInputs={chatSectionProps.guestInputs}
-                muted={formStage < 4}
-                onProposeEdit={handleProposeEdit}
-              />
-            </div>
-          ))}
+          {panel('health', healthForm)}
+          {/* US-01 AC5: a refused save is said on the open tab, here too (US-62 AC34). */}
+          {panel('chat', <>{saveAlert}{chat}</>)}
+          {panel('account', <fieldset className="health-form-lock mh-account" disabled={isDeleting} ref={setAccountHost}/>)}
           <BottomTabBar activeTab={activeTab} onTabChange={selectTab} idPrefix={tabIds} />
         </>
       ) : (
         <div className="health-tool-content">
           {/* US-62 AC16: one My health column, centred; the chat column beside it from 1200px. */}
-          <div className="health-tool-main">
-            <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps}>{myHealth}</InputPanel></fieldset>
-          </div>
-          {isWideDesktop && (
-            <div className="health-tool-chat">
-              <ChatEmbed
-                isLoggedIn={chatSectionProps.isLoggedIn}
-                guestInputs={chatSectionProps.guestInputs}
-                muted={formStage < 4}
-                onProposeEdit={handleProposeEdit}
-              />
-            </div>
-          )}
+          <div className="health-tool-main">{healthForm}</div>
+          {isWideDesktop && chat}
         </div>
       )}
 

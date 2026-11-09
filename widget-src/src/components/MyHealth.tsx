@@ -2,10 +2,15 @@
 // (US-73). The onboarding's form first; then the PDF box, the pills, the banner, the topics in
 // health-core's order (TOPICS) with their rows, questions and the plan's cards,
 // the desktop section list, the documents and the foot; the settings behind the
-// person button. The form's parts come from InputPanel (`FormSlots`); the plan's
+// person button on desktop, in the Account tab on a phone (AC34). The form's parts come from InputPanel (`FormSlots`); the plan's
 // from usePlanView.
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { byNewestDocument, DOCUMENT_TYPE_LABELS, isLabArchiveDocument, TOPICS, type ApiMeasurement, type StatTile, type TopicId } from '@roadmap/health-core';
+import { Fragment, memo, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { createPortal } from 'react-dom';
+import { byNewestDocument, DOCUMENT_TYPE_LABELS } from '@roadmap/health-core/document-path';
+import { isLabArchiveDocument } from '@roadmap/health-core/document-save';
+import { TOPICS, type TopicId } from '@roadmap/health-core/plan-sections';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
+import type { StatTile } from '@roadmap/health-core/stat-tiles';
 import { DocumentLightbox } from './DocumentLightbox';
 import { formatDocumentDate } from '../lib/document-format';
 import type { ApiDocument, ApiLabValue } from '../lib/api-types';
@@ -15,6 +20,7 @@ import { observeVisibility } from '../lib/observe-visibility';
 import { BLOOD_ROWS, MetricRows, TopicHeading, coreRow, egfrRow, isLabEgfr, labRows, nonHdlRow, pressureRow, weightRow, whtrRow, type RowContext, type RowModel, type ValueSubject } from './MyDataRows';
 import { PlanCardList, PlanEmptyPreview, QuickStats, RowSuggestions, type PlanView } from './ResultsPanel';
 import { SettingsSheet } from './SettingsSheet';
+import { GuestContext } from '../lib/storage-notice';
 import { SectionNav } from './SectionNav';
 import type { DerivedSeries } from '../storage/roadmap-store';
 
@@ -66,16 +72,24 @@ export interface MyHealthProps {
   /** US-09 AC30: the storage button, on the title line (US-62 AC24). */
   storageBar?: ReactNode;
   personButton?: ReactNode;
+  /** Drawn here on a phone only, where the storage button is in Account: US-01 AC5's alert, and
+   *  US-09 AC30's reconnect or waiting save (`syncAlert`). On desktop the storage button says them. */
+  saveAlert?: ReactNode;
+  syncAlert?: ReactNode;
   settingsOpen: boolean;
   onSettingsClose: () => void;
+  /** A phone's Account tab panel (US-62 AC34): Settings are drawn there, kept mounted, with the
+   *  storage state on their title line, and My health's title line holds no controls. Null until
+   *  it mounts; undefined on desktop, where Settings take My health's place. */
+  settingsHost?: HTMLElement | null;
   /** Settings' parts after About you and units: the reminders (none for a known minor), where the
-   *  record lives (US-09) and Delete all my data. */
+   *  record lives (US-09; first, under the title, for a phone's true guest, AC34) and Delete all my data. */
   reminders?: ReactNode;
   storageCard?: ReactNode;
   onDelete: () => void;
   isDeleting?: boolean;
   /** A guest's storage card shows at the foot while Settings are shut; a connected one waits
-   *  there hidden, so the picker it hosts still opens from the title line (US-09 AC30). */
+   *  there hidden, so the picker it hosts still opens from every way in (US-09 AC13). */
   storageAtFoot?: boolean;
   /** The topics' container: `results_viewed` watches it (US-62 AC5). */
   sectionsRef?: RefObject<HTMLDivElement>;
@@ -102,7 +116,7 @@ const RowsCard = memo(function RowsCard({ rows, onOpen, extra }: { rows: Array<R
   );
 });
 
-export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, personButton, settingsOpen, onSettingsClose, reminders, storageCard, onDelete, isDeleting, storageAtFoot,
+export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, personButton, saveAlert, syncAlert, settingsOpen, onSettingsClose, settingsHost, reminders, storageCard, onDelete, isDeleting, storageAtFoot,
   sectionsRef, healthDocuments, onDocumentDeleted, setShowUploadModal, onPlanReadyDismiss }: MyHealthProps) {
   // The form's row opener changes every render; the rows take a stable one, so memo'd rows stay put.
   const openRef = useRef(form.rows.open);
@@ -205,34 +219,43 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
   const navTopics = [...shown.map(({ id }) => ({ id: id as string, title: titleOf(id), urgent: (plan.topics.get(id)?.urgent.length ?? 0) > 0 })),
     ...(documents.length > 0 ? [{ id: 'documents', title: 'Documents', urgent: false }] : [])];
 
+  const inTab = settingsHost !== undefined;
+  const guest = useContext(GuestContext);
+  // Where the record lives (US-09), while Settings show (one card, one picker). A phone's true
+  // guest gets it first, under the Account title (US-62 AC34); a reconnect keeps it low, its title
+  // line already holds the reconnect. Keyed, a defensive guard: connecting reloads the page.
+  const storage = settingsOpen && storageCard ? <Fragment key="storage">{storageCard}</Fragment> : null;
+  const storageFirst = inTab && guest;
+  const settingsParts = [
+    storageFirst && storage,
+    form.aboutYouLow ? <Fragment key="about">{form.aboutCard}</Fragment> : (
+      <div key="about" className="section-card">
+        <div className="basic-info-units">
+          <span className="basic-info-units-label">Units</span>
+          {form.unitPill}
+        </div>
+      </div>
+    ),
+    <Fragment key="reminders">{reminders}</Fragment>,
+    !storageFirst && storage,
+    plan.planned && (
+      <div key="delete" className="delete-data-section">
+        <button className="delete-data-link" onClick={onDelete} disabled={isDeleting}>
+          {isDeleting ? 'Deleting...' : 'Delete all my data'}
+        </button>
+      </div>
+    ),
+  ];
   return (
     <div ref={form.panelRef} className={`health-input-panel mh-page${form.pageOpen || settingsOpen ? ' md-page-open' : ''}`}>
       <div className="mh-header">
         <h2 className="mh-title" tabIndex={-1}>My health</h2>
-        {(personButton || storageBar) && <div className="mh-header-actions">{storageBar}{personButton}</div>}
+        {!inTab && (personButton || storageBar) && <div className="mh-header-actions">{storageBar}{personButton}</div>}
+        {inTab && <>{saveAlert}{syncAlert}</>}
       </div>
-      {settingsOpen && (
-        <SettingsSheet onClose={onSettingsClose}>
-          {form.aboutYouLow ? form.aboutCard : (
-            <div className="section-card">
-              <div className="basic-info-units">
-                <span className="basic-info-units-label">Units</span>
-                {form.unitPill}
-              </div>
-            </div>
-          )}
-          {reminders}
-          {/* Where the record lives (US-09). Hidden for new users until they have entered real data. */}
-          {storageCard}
-          {plan.planned && (
-            <div className="delete-data-section">
-              <button className="delete-data-link" onClick={onDelete} disabled={isDeleting}>
-                {isDeleting ? 'Deleting...' : 'Delete all my data'}
-              </button>
-            </div>
-          )}
-        </SettingsSheet>
-      )}
+      {inTab
+        ? settingsHost && createPortal(<SettingsSheet action={storageBar}>{settingsParts}</SettingsSheet>, settingsHost)
+        : settingsOpen && <SettingsSheet onClose={onSettingsClose}>{settingsParts}</SettingsSheet>}
       {/* Settings cover an open value page; it stays mounted, so its typing waits (US-62 AC10). */}
       <div className="mh-page-host" hidden={settingsOpen}>{form.renderPage(tiles)}</div>
       {form.messages}

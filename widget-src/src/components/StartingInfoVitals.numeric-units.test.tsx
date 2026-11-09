@@ -3,7 +3,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, within } from '@testing-library/react';
 import { useState } from 'react';
-import { formatDisplayValue, type ApiMeasurement, type UnitSystem } from '@roadmap/health-core';
+import { formatDisplayValue, type UnitSystem } from '@roadmap/health-core/units';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { Refused, SaveTask } from '../lib/matrix-save';
 import { StartingInfoVitals } from './StartingInfoVitals';
 

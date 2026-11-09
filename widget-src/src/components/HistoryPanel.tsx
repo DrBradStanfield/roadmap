@@ -1,18 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import {
-  type UnitSystem,
-  type ApiMeasurement,
-  METRIC_TO_FIELD,
-  FIELD_METRIC_MAP,
-  fromCanonicalValue,
-  getDisplayLabel,
-  UNIT_DEFS,
-  detectUnitSystem,
-  METRIC_LABELS,
-  medicationAnnotations,
-  type ChartAnnotation,
-  formatValue,
-} from '@roadmap/health-core';
+import { type UnitSystem, fromCanonicalValue, getDisplayLabel, UNIT_DEFS, detectUnitSystem } from '@roadmap/health-core/units';
+import { type ApiMeasurement, METRIC_TO_FIELD, FIELD_METRIC_MAP, METRIC_LABELS } from '@roadmap/health-core/mappings';
+import { medicationAnnotations, type ChartAnnotation } from '@roadmap/health-core/medication-annotations';
+import { formatValue } from '@roadmap/health-core/lab-limits';
 import {
   Chart,
   LineController,
@@ -31,7 +21,7 @@ import type { ApiLabValue, ApiMedicationHistory } from '../lib/api-types';
 import { loadUnitPreference } from '../lib/storage';
 import { groupLabHistory } from '../lib/lab-rows';
 import { chartTimestamp, formatShortDate } from '../lib/constants';
-import { mixedUnitsNote, savedLabText } from '@roadmap/health-core';
+import { mixedUnitsNote, savedLabText } from '@roadmap/health-core/lab-series';
 
 // Register only what we need
 Chart.register(LineController, LineElement, PointElement, LinearScale, TimeScale, Tooltip, Filler, annotationPlugin);

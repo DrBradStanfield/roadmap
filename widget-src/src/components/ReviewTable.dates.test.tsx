@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, fireEvent, cleanup } from '@testing-library/react';
-import type { ApiMeasurement } from '@roadmap/health-core';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { ReviewTable, buildMatrixModel, type FileResult } from './ReviewTable';
 
 afterEach(cleanup);

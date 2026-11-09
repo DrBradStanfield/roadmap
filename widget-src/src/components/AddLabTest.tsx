@@ -8,7 +8,15 @@
 // number reads as the matrix says it.
 
 import { useEffect, useState, type MutableRefObject } from 'react';
-import { canonicalToReported, commaQuestion, displayLabUnit, LAB_CATALOG, LAB_GROUPS, labRangeMessage, localDay, parseLocalisedNumber, resolveLabCatalogEntry, savedLabText, slotKey, type ApiMeasurement, type Comparator } from '@roadmap/health-core';
+import { canonicalToReported } from '@roadmap/health-core/units';
+import { commaQuestion, parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
+import { displayLabUnit, LAB_CATALOG, LAB_GROUPS, resolveLabCatalogEntry } from '@roadmap/health-core/lab-catalog';
+import { labRangeMessage } from '@roadmap/health-core/cell-unit';
+import { localDay } from '@roadmap/health-core/merge';
+import { savedLabText } from '@roadmap/health-core/lab-series';
+import { slotKey } from '@roadmap/health-core/record-edits';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
+import type { Comparator } from '@roadmap/health-core/lab-limits';
 import { bloodTestKeyOf, coreStored } from '@roadmap/health-core/blood-tests';
 import { UnitChip } from './UnitChip';
 import { SAVE_ERRORS, saveErrorText } from './BloodTestTimeline';

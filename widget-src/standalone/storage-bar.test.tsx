@@ -59,6 +59,12 @@ const mount = (backend: Backend, reconnect?: Cloud) => render(
 );
 /** The bar itself (the plan's status line names the provider too). */
 const bar = () => document.querySelector('button.action-btn-small') as HTMLButtonElement;
+/** A connected record's status text, where its button was. */
+const state = () => document.querySelector('.hr-storage-state');
+/** A phone: every max-width query matches (US-62 AC34). */
+const asPhone = () => vi.stubGlobal('matchMedia', (q: string) => ({
+  matches: q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {},
+}));
 const dialog = () => document.querySelector('dialog.hr-modal') as HTMLDialogElement | null;
 /** The picker row whose name starts with this provider. */
 const option = (name: string) => [...dialog()!.querySelectorAll('.hr-opt')]
@@ -70,20 +76,23 @@ describe('US-09 AC30 — the label says the real storage state', () => {
     expect(bar().textContent).toBe('Sign in');
   });
 
+  // Brad 2026-11-09: a bare teal provider name read as a call to action; it is status text.
   it.each([['dropbox', 'Dropbox'], ['google-drive', 'Google Drive'], ['github', 'GitHub']] as const)(
-    'connected to %s, it names the provider', (backend, label) => {
+    'connected to %s, it says "Synced to" the provider, as text, not a button', (backend, label) => {
       mount(backend);
-      expect(bar().textContent).toBe(label);
+      expect(state()?.textContent).toBe(`Synced to ${label}`);
+      expect(state()?.closest('button')).toBeNull();
+      expect(bar()).toBeNull();
     },
   );
 
   it('connected with changes still waiting, it says Saving… and goes back once they land', () => {
     sync.pending = true;
     mount('dropbox');
-    expect(bar().textContent).toBe('Saving…');
+    expect(state()?.textContent).toBe('Saving…');
     sync.pending = false;
     act(() => { window.dispatchEvent(new Event('hr:sync-pending')); });
-    expect(bar().textContent).toBe('Dropbox');
+    expect(state()?.textContent).toBe('Synced to Dropbox');
   });
 
   it.each([
@@ -95,6 +104,43 @@ describe('US-09 AC30 — the label says the real storage state', () => {
     mount('local', provider);
     expect(bar().textContent).toBe(label);
     expect(bar().textContent).not.toBe('Sign in'); // never the guest pitch for a placed record
+  });
+});
+
+// US-62 AC34 (Brad 2026-11-09): on a phone the bar sits on the Account tab's title line, where
+// the storage card's button is the one sign-in; a sync problem also shows atop My health.
+describe('US-62 AC34 — the bar on a phone', () => {
+  it('a guest\'s Account title line has no Sign in; the storage card\'s button opens the picker', () => {
+    asPhone();
+    mount('local');
+    expect(bar()).toBeNull();
+    expect(document.body.textContent).not.toContain('Sign in');
+    const cardButton = [...document.querySelectorAll<HTMLButtonElement>('.hr-sync-btn')];
+    expect(cardButton.map((b) => b.textContent)).toEqual(['Keep my record in Dropbox or Google Drive']);
+    fireEvent.click(cardButton[0]);
+    expect(document.querySelectorAll('dialog.hr-modal')).toHaveLength(1);
+  });
+
+  it('a reconnect keeps its button on a phone: it is an action', () => {
+    asPhone();
+    mount('local', 'google-drive');
+    expect(bar().textContent).toBe('Sign in to Google again');
+  });
+
+  it('problemsOnly (atop My health) draws nothing while all is well, Saving… while a save waits, and the reconnect', () => {
+    asPhone();
+    const only = (backend: Backend, reconnect?: Cloud) => render(<StorageBar backend={backend} reconnect={reconnect} problemsOnly />);
+    expect(only('dropbox').container.innerHTML).toBe('');
+    cleanup();
+    expect(only('local').container.innerHTML).toBe('');
+    cleanup();
+    sync.pending = true;
+    only('dropbox');
+    expect(state()?.textContent).toBe('Saving…');
+    cleanup();
+    sync.pending = false;
+    only('local', 'dropbox');
+    expect(bar().textContent).toBe('Retry');
   });
 });
 
@@ -143,9 +189,10 @@ describe('US-09 AC30 — the other states open the one picker, current={reconnec
     );
   });
 
-  it('connected, the picker marks that provider connected and drops the guest line', () => {
+  it('connected, the storage card\'s provider link opens the picker; it marks that provider connected and drops the guest line', () => {
     mount('google-drive');
-    fireEvent.click(bar());
+    fireEvent.click(document.querySelector('.hr-sync-status-link')!); // the title line is text now
+    expect(document.querySelectorAll('dialog.hr-modal')).toHaveLength(1);
     expect(option('Google Drive').textContent).toContain('✓ Connected');
     expect(dialog()!.textContent).not.toContain(PICKER_GUEST_LEAD);
   });

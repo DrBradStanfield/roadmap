@@ -9,7 +9,7 @@
  * Real adapters; synthetic HTTP and a fake clock, no live provider.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { StorageError } from '@roadmap/health-core';
+import { StorageError } from '@roadmap/health-core/adapter';
 import { GitHubAdapter } from './github';
 import { WebDavAdapter } from './webdav';
 

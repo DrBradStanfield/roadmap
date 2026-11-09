@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { bulkAppendValues, convertValidationErrorsToUnits, createEmptyFile, LAB_CATALOG, labUnitRefusalLine, labValueLabel, PRESSURE_ORDER, type MetricType } from '@roadmap/health-core';
+import { bulkAppendValues } from '@roadmap/health-core/record-edits';
+import { convertValidationErrorsToUnits, PRESSURE_ORDER } from '@roadmap/health-core/validation';
+import { createEmptyFile } from '@roadmap/health-core/roadmap-file';
+import { LAB_CATALOG } from '@roadmap/health-core/lab-catalog';
+import { labUnitRefusalLine, labValueLabel } from '@roadmap/health-core/lab-series';
+import type { MetricType } from '@roadmap/health-core/units';
 import { cellToSI, type CellUnit } from './blood-test-cell';
 import { measurementRefusalLine } from './lab-value-labels';
 

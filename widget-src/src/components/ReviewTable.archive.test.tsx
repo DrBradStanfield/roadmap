@@ -8,7 +8,7 @@
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, fireEvent, cleanup, within } from '@testing-library/react';
-import type { ApiMeasurement } from '@roadmap/health-core';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { ReviewTable, type FileResult } from './ReviewTable';
 import type { ApiDocument } from '../lib/api-types';
 

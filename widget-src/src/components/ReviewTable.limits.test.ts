@@ -2,7 +2,7 @@
 // rounds away from its band in whatever unit the row shows, as every other
 // surface does, so the shown limit stays true; an exact value rounds as before.
 import { describe, it, expect } from 'vitest';
-import type { Comparator } from '@roadmap/health-core';
+import type { Comparator } from '@roadmap/health-core/lab-limits';
 import { buildMatrixModel } from './ReviewTable';
 import type { FileResult } from './ReviewTable';
 

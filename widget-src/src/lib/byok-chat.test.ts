@@ -30,7 +30,7 @@ vi.mock('./byok-anthropic', () => ({
   },
 }));
 
-import { buildChatContextJson, MINOR_CHAT_RULE } from '@roadmap/health-core';
+import { buildChatContextJson, MINOR_CHAT_RULE } from '@roadmap/health-core/chat-context';
 import { sendMessage } from './byok-chat';
 
 const SNAPSHOT = {

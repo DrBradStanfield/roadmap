@@ -8,7 +8,11 @@
  * method's own error answer, never a throw, and leaves the record as it was.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME, migrateFile, rowRootIds, type FileDocument, type RoadmapFile } from '@roadmap/health-core';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import { migrateFile } from '@roadmap/health-core/migrate';
+import { rowRootIds } from '@roadmap/health-core/merge';
+import type { FileDocument, RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { sha256Blob } from '../lib/archive-payloads';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from './roadmap-store';

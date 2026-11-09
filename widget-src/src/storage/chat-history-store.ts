@@ -10,7 +10,8 @@
  * (conversation CRUD; the answer itself still comes from Brad's server).
  * Callers treat failures as best-effort (history must never break the chat).
  */
-import { ChatSession, type StorageAdapter } from '@roadmap/health-core';
+import { ChatSession } from '@roadmap/health-core/chat-session';
+import type { StorageAdapter } from '@roadmap/health-core/adapter';
 import { webRecordHost } from './web-record-host';
 
 export type ChatHistoryStore = ChatSession;

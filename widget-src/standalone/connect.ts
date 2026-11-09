@@ -6,7 +6,8 @@
  * two modules.
  */
 import { useState } from 'react';
-import { copyCloudDown, isStorageFailure, liftDeviceCopy } from '@roadmap/health-core';
+import { copyCloudDown, liftDeviceCopy } from '@roadmap/health-core/record-transfer';
+import { isStorageFailure } from '@roadmap/health-core/sync-manager';
 import {
   DropboxAdapter,
   DriveGrantRefusedError,

@@ -9,10 +9,10 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from '@testing-library/react';
-import {
-  LIPID_MEDS_IN_STEPS, medicationForm, medicationsToInputs, screeningForm, screeningsToInputs,
-  type ApiMedication, type ApiScreening, type FormSection, type HealthInputs, type LipidMarker,
-} from '@roadmap/health-core';
+import { LIPID_MEDS_IN_STEPS, type LipidMarker } from '@roadmap/health-core/suggestions';
+import { medicationForm, screeningForm, type FormSection } from '@roadmap/health-core/input-form';
+import { medicationsToInputs, screeningsToInputs, type ApiMedication, type ApiScreening } from '@roadmap/health-core/mappings';
+import type { HealthInputs } from '@roadmap/health-core/types';
 import { InputPanel, type PlanBasis } from './InputPanel';
 import { MY_HEALTH_PROPS } from '../testing/my-health-props';
 

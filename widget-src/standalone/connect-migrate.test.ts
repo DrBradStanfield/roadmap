@@ -13,12 +13,12 @@
  * fails on the observable outcome (the cloud/local file contents).
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import type { RoadmapFile } from '@roadmap/health-core';
+import { type RoadmapFile, createEmptyFile } from '@roadmap/health-core/roadmap-file';
 import { MemoryAdapter, MemoryCloud, LocalStorageAdapter } from '../src/storage';
-import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core';
+import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
 import { RoadmapStore, PENDING_MIRROR_KEY } from '../src/storage/roadmap-store';
 import { migrateLocalInto, copyDownFrom, liftLocalInto } from './connect';
-import { createEmptyFile, toOldShape } from '@roadmap/health-core';
+import { toOldShape } from '@roadmap/health-core/blood-tests';
 
 function readCloudFile(cloud: MemoryCloud): RoadmapFile {
   return JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
