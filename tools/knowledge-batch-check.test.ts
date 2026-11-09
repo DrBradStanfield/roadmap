@@ -1736,6 +1736,26 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
         basis(`POSITION:docs/products.md: ${Q}`, "Some other sentence (Brad's current guidance, 9 Oct 2026).");
         expect(fails(mrun().MASTER).join()).toContain("no current_view_basis entry");
       });
+      it("accepts one uncited scope sentence beside a cited one (Brad rulings B5, B8, 2026-11-10)", () => {
+        pos(`${SENT} The video discusses ordinary honey; Brad has not spoken about manuka specifically.`); basis(`POSITION:docs/products.md: ${Q}`);
+        expect(fails(mrun().MASTER)).toEqual([]);
+      });
+      it("rejects a second scope sentence", () => {
+        pos(`${SENT} Brad has not spoken about manuka. He has not spoken about kanuka.`); basis(`POSITION:docs/products.md: ${Q}`);
+        expect(masterFails()).toContain("more than one uncited scope sentence");
+      });
+      it("rejects a view that holds only a scope sentence", () => {
+        pos("Brad has not spoken about manuka specifically."); basis(`POSITION:docs/products.md: ${Q}`);
+        expect(masterFails()).toContain("only a scope sentence");
+      });
+      it("rejects a scope sentence carrying a number", () => {
+        pos(`${SENT} Brad has not spoken about manuka, but take 5 g a day.`); basis(`POSITION:docs/products.md: ${Q}`);
+        expect(masterFails()).toContain("no current_view_basis entry");
+      });
+      it("rejects a scope sentence carrying a citation", () => {
+        pos(`${SENT} Brad has not spoken about manuka (Brad's current guidance, 9 Oct 2026).`); basis(`POSITION:docs/products.md: ${Q}`);
+        expect(masterFails()).toContain("no current_view_basis entry");
+      });
       it("fails when the path is not an extra_raw at base", () => {
         pos(); basis(`POSITION:docs/products.md: ${Q}`); reps.alpha.extra_raw = [];
         expect(fails(mrun().MASTER).join()).toContain("no current_view_basis entry");
