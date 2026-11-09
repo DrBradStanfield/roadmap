@@ -201,6 +201,12 @@ At 250 mg of potassium per 100 g [2], a large glass of coconut water adds a mean
 
 That does not make very large amounts safe. Coconut water, popular as a sports drink, has been reported to cause fatal heart rhythm problems through severe hyperkalemia [30][32].
 
+### Product Context
+
+Brad Stanfield owns the company that sells Potassium Fiber Drink, a drink powder sold as a dietary supplement, and profits from its sale. One scoop gives 500 mg of potassium (as potassium citrate) and 8 g of fiber from acacia gum ([shop it](https://microvitamin.com/products/potassium-fiber-drink)).
+
+The store's warning: "Contains 500 mg of added potassium per serving (1,000 mg at the two-scoop daily maximum). Talk to your doctor before using this product if you have kidney disease, if you have been told to limit potassium, or if you take an angiotensin converting enzyme inhibitor (often called an ACE inhibitor), an angiotensin receptor blocker, a potassium-sparing diuretic, or any other potassium supplement. Not for children. Keep out of reach of children. If you are pregnant or breastfeeding, ask your doctor first."
+
 ### Storage
 
 Fresh coconut water spoils quickly [4]. Packaged coconut water is processed to extend its shelf life [4]; follow the label once it is open.
