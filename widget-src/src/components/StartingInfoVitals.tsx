@@ -18,6 +18,7 @@
 // the matrix's `Sparkline`, `NumericInputCell`, `DraftDateCell`, and `UnitChip`.
 
 import { useEffect, useId, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { getShownErase } from '../lib/roadmap-data';
 import type { ApiMeasurement, FormStage } from '@roadmap/health-core/mappings';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import { type MetricType, type UnitSystem, toCanonicalValue, fromCanonicalValue, formatDisplayValue, getDisplayLabel, bpTargetFor } from '@roadmap/health-core/units';
@@ -109,15 +110,6 @@ export type VitalsPrefillFn = (
   fromUnit: UnitSystem,
   date: string | null,
 ) => string | null;
-
-/** Decide where a chatbot vitals edit should land. When the vitals matrix is
- *  mounted (`matrixMounted`, i.e. its prefill ref is registered) the value
- *  routes to the matrix cell so it pre-fills AND flashes; otherwise it goes to
- *  the plain form field (fresh users, no flash). Pure so HealthTool's routing
- *  is unit-testable without rendering. */
-export function routeVitalsEdit(matrixMounted: boolean): 'matrix' | 'field' {
-  return matrixMounted ? 'matrix' : 'field';
-}
 
 // ── Row config ──────────────────────────────────────────────────────────
 
@@ -354,19 +346,21 @@ export function StartingInfoVitals({
     type([null, metric], typed, unitFor(metric));
     const n = parseLocalisedNumber(typed);
 
-    // Weight only: as the last answer, on to My health's top.
-    if (metric === 'weight' && onOnboardingDone && !landedRef.current && n != null && !validateTypedValue(metric, typed, unitFor(metric)).error) {
+    // Weight only: as the last answer, on to My health's top, on the record it was typed on.
+    const erase = getShownErase();
+    if (metric === 'weight' && onOnboardingDone && landedFor.current !== erase && n != null && !validateTypedValue(metric, typed, unitFor(metric)).error) {
       if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
       if (/^\d{2,3}$/.test(typed) && n >= 30 && n <= 400) {
         const couldExtend = /^\d{2}$/.test(typed) && n * 10 <= 400;
         // The once-only jump is spent only if it happened (not before the last answer).
-        const jump = () => { if (onOnboardingDone()) landedRef.current = true; };
+        const jump = () => { if (getShownErase() === erase && onOnboardingDone()) landedFor.current = erase; };
         if (!couldExtend) requestAnimationFrame(jump);
         else focusTimerRef.current = setTimeout(jump, 800);
       }
     }
   };
-  const landedRef = useRef(false);
+  // Once per record, as InputPanel's weight jump is (US-62 AC25, D1): the erase it landed on.
+  const landedFor = useRef<string | null>(null);
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setBpDraft = (which: 'sys' | 'dia', typed: string) => type([null, which], typed);

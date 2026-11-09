@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { toCanonicalValue, type UnitSystem } from '@roadmap/health-core/units';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
-import { buildColumns, bpPairReady, vitalsCellsOf, routeVitalsEdit } from './StartingInfoVitals';
+import { buildColumns, bpPairReady, vitalsCellsOf } from './StartingInfoVitals';
+import { routeVitalsEdit } from './ChatEdits';
 
 // `buildColumns` is the one genuinely new pure helper introduced when the
 // vitals section was unified onto the blood-test matrix's column grid: it
