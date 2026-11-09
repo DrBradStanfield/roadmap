@@ -95,7 +95,7 @@ interface Open {
   unflushed: number;
 }
 
-let open: Open | null = null;
+export let open: Open | null = null; // read by entry.ts documentOriginal (US-73 AC12); written only here
 /** The newest open or close asked for. An open that finishes after a newer
  *  open or a close began is out of date: it closes itself and rejects, so two
  *  opens racing never leave one session orphaned and the other shown. */
@@ -200,7 +200,7 @@ function refuse(reason: string, message: string): Refusal {
   return { ok: false, reason, message };
 }
 
-const NOT_OPEN = 'The cloud record is not open.';
+export const NOT_OPEN = 'The cloud record is not open.';
 const ERASED = 'Your record was erased on another device, so this was not saved.';
 
 /** Take `next` as the session's working copy: on the phone first, marked for the

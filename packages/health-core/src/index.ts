@@ -332,8 +332,8 @@ export {
 
 // v2 document paths — the organised-archive scheme (folders + date-first names)
 export {
-  buildDocumentRef,
-  DOCUMENT_FOLDERS,
+  buildDocumentRef, byNewestDocument,
+  DOCUMENT_FOLDERS, DOCUMENT_TYPE_LABELS,
   extensionOf,
   LAB_ARCHIVE_TITLE,
   sanitizeTitle,
@@ -413,7 +413,7 @@ export {
   type LabValueGroup,
   type LabValueRow,
 } from './lab-series';
-export { trendWindow, recentTrend } from './recent-trend';
+export { trendWindow, recentTrend, trendRange } from './recent-trend';
 
 // chat-history.json — chat conversations synced to the user's own cloud (Phase 6)
 export {

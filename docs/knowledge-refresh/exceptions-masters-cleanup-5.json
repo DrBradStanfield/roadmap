@@ -1,0 +1,10 @@
+[
+  {
+    "check": "AC4",
+    "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ## Current view (reviewed 22 October 2026)",
+    "reason": "Orchestrator 2026-11-01 (issue #437, Brad's ruling): the Current view's timing sentence now gives Brad's 3 to 4 hour guidance, so its heading and reviewed: are re-dated 1 November 2026; the section itself is kept. Precedent: exceptions-masters-answers-2026-10-21.json (R6).",
+    "by": "orchestrator",
+    "date": "2026-11-01"
+  }
+]

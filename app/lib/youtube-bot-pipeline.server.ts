@@ -25,6 +25,7 @@ import {
   CHANNEL_ID,
   COMMENT_MAX_AGE_DAYS,
   MIN_WORDS,
+  FOLLOWUP_MIN_WORDS,
   CRISIS,
   MAX_CHANNEL_REPLIES_PER_THREAD,
 } from './youtube-bot-config.server';
@@ -39,11 +40,11 @@ interface FilterResult {
   reason?: string;
 }
 
-export function wordCount(text: string): number {
+function wordCount(text: string): number {
   return text.trim().split(/\s+/).length;
 }
 
-export function ageInDays(publishedAt: string): number {
+function ageInDays(publishedAt: string): number {
   return (Date.now() - new Date(publishedAt).getTime()) / (24 * 60 * 60_000);
 }
 
@@ -57,12 +58,19 @@ export function loadVideoBody(videoId: string): { entry: BlogIndexEntry; body: s
   return { entry, body: stripFrontmatter(fullContent) };
 }
 
+/** The comment's word count when it is under the floor, or null when it may go on.
+ *  A short crisis or emergency comment always goes on, top-level or follow-up, so it
+ *  gets the chat's emergency reply (US-15 AC39 review N5, AC56). */
+function belowWordFloor(text: string, floor: number): number | null {
+  const words = wordCount(text);
+  return words < floor && !CRISIS.test(text) ? words : null;
+}
+
 export function filterThread(thread: YouTubeThread): FilterResult {
   if (thread.canReply === false) return { pass: false, reason: 'cannot reply' };
   if (!thread.text || !thread.text.trim()) return { pass: false, reason: 'empty' };
-  const words = wordCount(thread.text);
-  // A short crisis or emergency comment still gets the chat's emergency reply (US-15 AC39 review N5).
-  if (words < MIN_WORDS && !CRISIS.test(thread.text)) return { pass: false, reason: `too short (${words} words)` };
+  const words = belowWordFloor(thread.text, MIN_WORDS);
+  if (words !== null) return { pass: false, reason: `too short (${words} words)` };
 
   // Don't reply to Brad's own comments
   if (thread.authorChannelId && CHANNEL_ID && thread.authorChannelId === CHANNEL_ID) {
@@ -91,6 +99,14 @@ export function filterThread(thread: YouTubeThread): FilterResult {
 //      (classifier skip or SKIP_NO_REPLY with the follow-up posture block).
 // ---------------------------------------------------------------------------
 
+/** The same hygiene gates as a top-level comment, with the shorter follow-up word
+ *  floor: the gate's name when the follow-up is skipped, or null. */
+function followUpHygiene(reply: YouTubeReply): 'stale' | 'too-short' | null {
+  if (ageInDays(reply.publishedAt) > COMMENT_MAX_AGE_DAYS) return 'stale';
+  if (belowWordFloor(reply.text, FOLLOWUP_MIN_WORDS) !== null) return 'too-short';
+  return null;
+}
+
 type FollowUpDecision = { skip: string } | { candidate: YouTubeReply };
 
 export function assessThreadFollowUp(p: {
@@ -116,7 +132,10 @@ export function assessThreadFollowUp(p: {
   );
   if (candidates.length === 0) return { skip: 'no-addressed-followup' };
 
-  return { candidate: candidates[0] }; // oldest first — one follow-up per thread per tick
+  // The oldest that passes the hygiene gates, one follow-up per thread per tick. A short
+  // or stale reply is passed over, so a later crisis reply in the thread is still seen (AC56).
+  const passing = candidates.find(r => followUpHygiene(r) === null);
+  return passing ? { candidate: passing } : { skip: followUpHygiene(candidates[0])! };
 }
 
 /** Rebuild the thread as chat history for the main LLM: top-level comment,

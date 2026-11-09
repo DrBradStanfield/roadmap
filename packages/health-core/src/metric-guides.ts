@@ -215,7 +215,7 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   bempedoic_acid: {
     title: 'Bempedoic acid',
     whatItIs: 'A daily 180 mg tablet (Nexletol) that lowers LDL cholesterol. It also comes combined with ezetimibe (Nexlizet).',
-    whyItMatters: 'In the CLEAR Outcomes trial, people who could not take statins had 13% fewer major heart and blood vessel events on bempedoic acid. It can also be used alongside a statin for extra lowering.',
+    whyItMatters: 'In the CLEAR Outcomes trial, people who could not take statins had 13% fewer major heart and blood vessel events on bempedoic acid. It can be taken with a statin, but this plan suggests it only to people who cannot take a statin.',
     howTo: { heading: WORKS, points: [
       'It lowers the cholesterol your liver makes, working at a different step from statins.',
       'It is activated in the liver but not in muscle, which may explain why muscle aches seem less common than with statins.',

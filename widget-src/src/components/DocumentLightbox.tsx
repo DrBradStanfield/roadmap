@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { deleteDocument, readDocumentFile } from '../lib/roadmap-data';
-import { DOCUMENT_TYPE_LABELS, formatDocumentDate } from '../lib/document-format';
+import { DOCUMENT_TYPE_LABELS } from '@roadmap/health-core';
+import { formatDocumentDate } from '../lib/document-format';
 import { viewableType } from '../lib/file-kinds';
 import type { ApiDocument } from '../lib/api-types';
 import { renderMarkdown } from '../lib/markdown';

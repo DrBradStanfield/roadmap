@@ -36,7 +36,10 @@ struct ValueRow: View {
     var column: Column?
     @Environment(\.dynamicTypeSize) private var textSize
     /// A compact row's trend, growing a little with the text.
-    @ScaledMetric(relativeTo: .body) private var trendWidth = 44.0
+    @ScaledMetric(relativeTo: .body) private var trendWidth = 56.0
+    /// The label block's height and its first and last baselines, from its top: the trend's box
+    /// and the ink band it is drawn over (US-62 AC8a).
+    @State private var name = NameBox()
     /// Counts the value's own changes: a new value in the same unit, not a units switch (review R3).
     @State private var bounces = 0
     @State private var shownUnit: String?
@@ -63,9 +66,35 @@ struct ValueRow: View {
 
     private var rowBody: some View {
         // Side by side: the trend, then the value over its unit, right-aligned in the section's
-        // column. At accessibility sizes, under the label and inline.
+        // column. At accessibility sizes, under the label and inline. Above the default size, the
+        // trend gives way when the label's longest word would not fit beside it, so no word breaks
+        // mid-word (US-62 AC8a; Brad's brief let it hide at the largest sizes).
         let stacked = !textSize.isAccessibilitySize
-        return LabelValue.layout(textSize).callAsFunction {
+        return Group {
+            if stacked, textSize > .large, trend.count >= 2 {
+                ViewThatFits(in: .horizontal) {
+                    rowLayout(stacked: true, showsTrend: true, wordRoom: longestWord)
+                    rowLayout(stacked: true, showsTrend: false, wordRoom: nil)
+                }
+            } else {
+                rowLayout(stacked: stacked, showsTrend: true, wordRoom: nil)
+            }
+        }
+    }
+
+    /// The label's widest word in its own font (body, at this size); a line may break after a
+    /// hyphen, so a hyphen ends a word.
+    private var longestWord: CGFloat {
+        let font = UIFont.preferredFont(forTextStyle: .body, compatibleWith: UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(textSize)))
+        let words = label.replacingOccurrences(of: "-", with: "- ").split(separator: " ")
+        return ceil(words.map { (String($0) as NSString).size(withAttributes: [.font: font]).width }.max() ?? 0)
+    }
+
+    /// The row. `wordRoom`, when set, is the room the label asks for when ViewThatFits measures
+    /// the row: its widest word, not its whole one-line width, so a label that wraps between
+    /// words keeps its trend.
+    private func rowLayout(stacked: Bool, showsTrend: Bool, wordRoom: CGFloat?) -> some View {
+        LabelValue.layout(textSize).callAsFunction {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
                 let meta = [target, day.map(DayText.monthYear)].compactMap { $0 }
@@ -79,10 +108,18 @@ struct ValueRow: View {
                     .font(.caption).foregroundStyle(.secondary)
                 }
             }
+            .background(alignment: Alignment(horizontal: .leading, vertical: .firstTextBaseline)) { Self.mark { name.firstBaseline = $0 } }
+            .background(alignment: Alignment(horizontal: .leading, vertical: .lastTextBaseline)) { Self.mark { name.lastBaseline = $0 } }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { name.height = $0 }
+            .coordinateSpace(.named(NameBox.space))
+            .frame(idealWidth: wordRoom, maxWidth: wordRoom.map { _ in .infinity }, alignment: .leading)
             Spacer(minLength: 0)
             HStack(alignment: stacked ? .center : .firstTextBaseline, spacing: 12) {
-                Sparkline(points: trend, tint: tint, size: stacked ? CGSize(width: trendWidth, height: trendWidth * 18 / 44) : CGSize(width: 44, height: 18))
-                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 2 }
+                if showsTrend {
+                    Sparkline(points: trend, tint: tint, size: Self.trendSize(width: trendWidth, nameHeight: name.height > 0 ? name.height : nil, textSize: textSize),
+                              band: stacked ? Self.trendBand(capTop: name.firstBaseline - Self.capHeight(textSize), baseline: name.lastBaseline, width: trendWidth) : nil)
+                        .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 2 }
+                }
                 ZStack(alignment: .trailing) {
                     if stacked, let column {
                         Group {
@@ -172,6 +209,44 @@ struct ValueRow: View {
 }
 
 extension ValueRow {
+    /// A compact row's trend box (US-62 AC8a, Brad 2026-11-09): as tall as the label block beside
+    /// it, as the web's row. Before that block is measured, the old 44 by 18 shape. At accessibility
+    /// sizes, where the row stacks, it stays small beside the value.
+    nonisolated static func trendSize(width: CGFloat, nameHeight: CGFloat?, textSize: DynamicTypeSize) -> CGSize {
+        if textSize.isAccessibilitySize { return CGSize(width: 44, height: 18) }
+        return CGSize(width: width, height: nameHeight ?? width * 18 / 44)
+    }
+
+    /// Where in that box the line is drawn: the title's cap height to the date line's baseline,
+    /// capped at 0.8 x the width and centred there, so a title wrapped at large text never draws a
+    /// tall spike. None while the two are not yet a band wider than the line's 2 pt padding each
+    /// side, as the baselines arrive one at a time: the trend then fills its box. The web's twin is
+    /// MyDataRows.tsx `trendBand`.
+    nonisolated static func trendBand(capTop: CGFloat, baseline: CGFloat, width: CGFloat) -> ClosedRange<CGFloat>? {
+        guard baseline - capTop > 4 else { return nil }
+        let height = min(baseline - capTop, 0.8 * width)
+        let top = capTop + (baseline - capTop - height) / 2
+        return top...top + height
+    }
+
+    /// The label's cap height: the body text it is drawn in, at `size`.
+    static func capHeight(_ size: DynamicTypeSize) -> CGFloat {
+        UIFont.preferredFont(forTextStyle: .body, compatibleWith: UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size))).capHeight
+    }
+
+    /// A zero-size mark that reports its height from the label block's top: set on a baseline, it
+    /// reads that baseline.
+    static func mark(_ read: @escaping (CGFloat) -> Void) -> some View {
+        Color.clear.frame(width: 0, height: 0)
+            .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named(NameBox.space)).minY } action: { read($0) }
+    }
+
+    /// The label block as laid out: its height, and its first and last baselines from its top.
+    struct NameBox: Equatable {
+        static let space = "value-row-name"
+        var height: CGFloat = 0, firstBaseline: CGFloat = 0, lastBaseline: CGFloat = 0
+    }
+
     /// A grade's colour, the web's row colours (styles.css `.md-status-warn` amber #b45309,
     /// `.md-status-bad` red #b91c1c) in the app's status tones: amber is `info` (the tiles'
     /// Borderline and Above optimal), red is `urgent` (#B91C1C, the web's own). Nil: plain.
@@ -295,26 +370,28 @@ struct Sparkline: View {
     let tint: Color
     /// A row's line is small; a vitals card draws it larger.
     var size = CGSize(width: 44, height: 18)
+    /// The rows of `size` the line is drawn over (a row's ink band, US-62 AC8a); nil, all of it.
+    var band: ClosedRange<CGFloat>? = nil
 
     var body: some View {
         if points.count >= 2 {
             Canvas { context, size in
-                let low = points.min()!, high = points.max()!
-                let span = high - low == 0 ? 1 : high - low
+                let (low, high) = Self.range(points)
+                let (top, bottom) = (band?.lowerBound ?? 0, band?.upperBound ?? size.height)
                 let pad = 2.0
                 let spot = { (index: Int) in
                     CGPoint(x: pad + Double(index) / Double(self.points.count - 1) * (size.width - pad * 2),
-                            y: size.height - pad - (self.points[index] - low) / span * (size.height - pad * 2))
+                            y: bottom - pad - (self.points[index] - low) / (high - low) * (bottom - top - pad * 2))
                 }
                 var line = Path()
                 line.move(to: spot(0))
                 for index in points.indices.dropFirst() { line.addLine(to: spot(index)) }
                 var area = line
-                area.addLine(to: CGPoint(x: size.width - pad, y: size.height))
-                area.addLine(to: CGPoint(x: pad, y: size.height))
+                area.addLine(to: CGPoint(x: size.width - pad, y: bottom))
+                area.addLine(to: CGPoint(x: pad, y: bottom))
                 area.closeSubpath()
-                context.fill(area, with: .linearGradient(Gradient(colors: [tint.opacity(0.25), tint.opacity(0)]),
-                                                         startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)))
+                context.fill(area, with: .linearGradient(Gradient(colors: [tint.opacity(0.125), tint.opacity(0)]),
+                                                         startPoint: CGPoint(x: 0, y: top), endPoint: CGPoint(x: 0, y: bottom)))
                 context.stroke(line, with: .color(tint), style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
                 let last = spot(points.count - 1)
                 context.fill(Path(ellipseIn: CGRect(x: last.x - 2, y: last.y - 2, width: 4, height: 4)), with: .color(tint))
@@ -322,5 +399,17 @@ struct Sparkline: View {
             .frame(width: size.width, height: size.height)
             .accessibilityHidden(true)
         }
+    }
+
+    /// The vertical range the line is drawn over: its points' lowest to highest, widened about
+    /// their middle to at least ±5% of the latest point, so a tiny change draws nearly flat
+    /// (US-62 AC8a). Points that all equal zero keep a span of one. Twin of health-core's
+    /// `trendRange` (recent-trend.ts), tested on the same cases.
+    nonisolated static func range(_ points: [Double]) -> (low: Double, high: Double) {
+        let low = points.min()!, high = points.max()!
+        let wide = max(high - low, 0.1 * abs(points.last!))
+        let span = wide == 0 ? 1 : wide
+        let middle = (low + high) / 2
+        return (middle - span / 2, middle + span / 2)
     }
 }

@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 Context for Claude Code in this repo. Depth lives in on-demand docs: [docs/reference.md](docs/reference.md) (FHIR detail,
-file inventory, data model, A/B, endpoints, gotcha archive) · [docs/deploy-runbook.md](docs/deploy-runbook.md) (manual deploy, build flags, two-app split, env vars, scaling) ·
+file inventory, data model, A/B, endpoints) · [docs/gotchas.md](docs/gotchas.md) (gotcha archive) · [docs/deploy-runbook.md](docs/deploy-runbook.md) (manual deploy, build flags, two-app split, env vars, scaling) ·
 [docs/architecture-v2.md](docs/architecture-v2.md) (visual system map; the entry point for new threads) ·
 [docs/ai-discoverability.md](docs/ai-discoverability.md) (AI visibility: what's live, listings, rules; update it with every change).
 
@@ -202,10 +202,10 @@ test. Miss a step = the value silently fails to round-trip.
 - **Chatbot regressions:** every real miss becomes a router or tool-use fixture (files, command: docs/reference.md).
 - **Verify beyond tests:** UI/CSS/Liquid via Chrome DevTools MCP AND real
   WebKit (`tools/webkit-verify.mjs` — Chrome mobile emulation is Blink and
-  misses iOS bugs; theme CSS only reproduces LIVE). Traps: docs/reference.md.
+  misses iOS bugs; theme CSS only reproduces LIVE). Traps: docs/gotchas.md.
 - **If an approach is failing, stop and re-plan.**
 - **Every gotcha gets archived, same commit as the fix** — symptom / root
-  cause / fix / evidence commit, in the docs/reference.md archive. Promote to
+  cause / fix / evidence commit, in the docs/gotchas.md archive. Promote to
   the curated list below ONLY if silent (no error, no test catches it) or
   repo-wide; domain-specific ones go to the owning loop's LEARNINGS.md.
 - **Model delegation (Brad, 2026-09-28):** the main session runs the newest Opus as orchestrator and
@@ -232,7 +232,7 @@ test. Miss a step = the value silently fails to round-trip.
   **Loops and cloud sessions never run, request or wait on Codex** (Brad, 2026-10-11): their fresh
   `adversary` is the whole review; no Codex run or waiver gates their commits, PRs or merges.
 
-## Dangerous Gotchas (curated — full archive in docs/reference.md)
+## Dangerous Gotchas (curated — full archive in docs/gotchas.md)
 
 - **NEVER `shopify app dev`** (dev preview overrides production; fix:
   `npx shopify app dev clean`). **NEVER DROP TABLE on Supabase** (PostgREST
@@ -249,14 +249,14 @@ test. Miss a step = the value silently fails to round-trip.
   — hold space with an NBSP.
 - **Shopify's `appProxy` check verifies the LAST copy of a repeated query key; `searchParams.get` reads the FIRST.** Read
   `logged_in_customer_id` only through `getCustomerId` (our verifier refuses repeated Shopify params); never echo a signed query.
-- **Lab-import auto-retries server-side** (retry counts: docs/reference.md), so
+- **Lab-import auto-retries server-side** (retry counts: docs/gotchas.md), so
   failures self-heal: never add client retries.
 - **react-router 7.17 exports resolve everything to dist/development** — a
   `generateBundle` guard FAILS THE BUILD if a dep escapes: add it to
   `ssr.noExternal`, never allow-list. Sentry dev frames from
-  `react-router-serve` are expected residue (saga: docs/reference.md).
+  `react-router-serve` are expected residue (saga: docs/gotchas.md).
 - **Fly:** deploy from repo root; suspension needs `fly machine start`; "No
   access token" ≠ expired (pass `FLY_API_TOKEN` from `~/.fly/config.yml`,
   never `fly auth login`); canary-deploy anything regenerating package-lock.
   Shopify Dashboard is read-only: config via toml + deploy.
-- **Without the `write_app_proxy` scope the app proxy answers a silent 404** (all scopes: docs/reference.md).
+- **Without the `write_app_proxy` scope the app proxy answers a silent 404** (all scopes: docs/gotchas.md).

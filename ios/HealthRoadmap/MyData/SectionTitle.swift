@@ -23,5 +23,7 @@ struct SectionTitle: View {
     static func supplements() -> Self { Self(title: "Supplements", symbol: "leaf.fill", tint: .green) }
     static func reminders() -> Self { Self(title: "Reminders", symbol: "bell.fill", tint: .orange) }
     static func appleHealth() -> Self { Self(title: "Apple Health", symbol: "heart.text.square.fill", tint: .pink) }
+    static func scanResults() -> Self { Self(title: "Scan results", symbol: "photo.on.rectangle.angled", tint: .mint) }
+    static func documents() -> Self { Self(title: "Documents", symbol: "doc.text.fill", tint: .brown) }
     static func record() -> Self { Self(title: "Your record", symbol: "folder.fill", tint: .gray) }
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as Sentry from '@sentry/react-router';
 import {
   assessThreadFollowUp,
@@ -93,6 +93,9 @@ const base = {
 };
 
 describe('assessThreadFollowUp', () => {
+  // The fixtures are dated 2026-08-09; the pick now skips stale replies (AC56), so pin that day.
+  beforeEach(() => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date('2026-08-09T12:00:00Z')); });
+  afterEach(() => { vi.useRealTimers(); });
   it('accepts the original author continuing after the bot reply', () => {
     const d = assessThreadFollowUp({
       ...base,
