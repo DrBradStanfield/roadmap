@@ -1,12 +1,12 @@
 // About you's fields, height, sex, birth date and alcohol, and its rows (moved out of InputPanel).
 import { flushSync } from 'react-dom';
-import { useEffect, useRef, useState, type MutableRefObject, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { focusById, type FormKit } from './form-kit';
 import { ALCOHOL_OPTIONS } from './AlcoholQuestion';
 import { MONTHS_FULL } from '../lib/constants';
 import { blockBadNumericKeys, blockNonIntegerKeys } from '../lib/blood-test-cell';
 import { SEXES } from '@roadmap/health-core/types';
-import { FIELD_METRIC_MAP, type FormStage } from '@roadmap/health-core/mappings';
+import { FIELD_METRIC_MAP } from '@roadmap/health-core/mappings';
 import { type UnitSystem, getDisplayRange, cmToFeetInches, feetInchesToCm, formatHeightDisplay } from '@roadmap/health-core/units';
 import { identityFieldRange, isBirthYearClearlyInvalid } from '@roadmap/health-core/validation';
 import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
@@ -249,19 +249,16 @@ export function AlcoholField(props: { form: FormKit }) {
 
 interface BirthFieldsProps {
   form: FormKit;
-  /** The year's field, once shown, stays while the birth question does. */
-  yearShown: MutableRefObject<boolean>;
-  /** The birth month was last pressed by a pointer, not a key (US-01 AC6). */
-  monthByPointer: MutableRefObject<boolean>;
-  /** The birth year's jump: once per record. */
-  yearJumped: MutableRefObject<boolean>;
-  onOnboardingDone?: (fromBirth?: boolean) => boolean;
-  aboutYouLow: boolean;
-  reached: FormStage;
+  /** The year's field, once shown, stays while the birth question does (InputPanel keeps it across remounts). */
+  yearShown: boolean;
+  /** The onboarding's last answer: on to My health. Given only while the onboarding may still jump (once per record). */
+  onYearComplete?: () => void;
 }
 
 export function BirthFields(props: BirthFieldsProps) {
-  const { form, yearShown, monthByPointer, yearJumped, onOnboardingDone, aboutYouLow, reached } = props;
+  const { form, yearShown, onYearComplete } = props;
+  /** The birth month was last pressed by a pointer, not a key (US-01 AC6). Set fresh by every gesture. */
+  const monthByPointer = useRef(false);
   const { inputs, errors, updateField, typeIn, blurOnWheel, settleOnEnter, rangeWait } = form;
   return (
     <>
@@ -296,7 +293,7 @@ export function BirthFields(props: BirthFieldsProps) {
         </div>
 
         {/* Once shown on this record it stays, so clearing a year to retype keeps the field (US-62 AC13). */}
-        {yearShown.current && (
+        {yearShown && (
           <div className={`health-field stage-reveal${!inputs.birthYear ? ' field-attention' : ''}`}>
             <label htmlFor="birthYear">Birth Year</label>
             <input
@@ -315,9 +312,8 @@ export function BirthFields(props: BirthFieldsProps) {
                 // you moves without waiting for a blur. "199" never does, nor a
                 // returning user's edit in About you's Birth row (Codex R3).
                 const years = identityFieldRange('birthYear')!;
-                if (onOnboardingDone && !yearJumped.current && !aboutYouLow && reached < 4 && inputs.birthMonth && num !== undefined && /^\d{4}$/.test(e.target.value) && num >= years.min && num <= years.max) {
-                  yearJumped.current = true;
-                  requestAnimationFrame(() => onOnboardingDone(true));
+                if (onYearComplete && inputs.birthMonth && num !== undefined && /^\d{4}$/.test(e.target.value) && num >= years.min && num <= years.max) {
+                  onYearComplete();
                 }
               }}
               onBlur={rangeWait.settle}
@@ -351,7 +347,8 @@ interface AboutRowsProps {
  *  answer opens its field, which stays open while it is typed in, until Done.
  *  Mounted only while About you is low (and, on desktop, Settings are open):
  *  unmounting closes every row, so after an erase the next record's rows
- *  start closed. */
+ *  start closed, and on desktop a row opened by hand closes with the Settings
+ *  sheet (the phone's Settings tab stays mounted, so it keeps it open). */
 export function AboutRows(props: AboutRowsProps) {
   const { form: { inputs, unreadable }, allErrors, unitSystem, planAge, editors } = props;
   const [aboutOpen, setAboutOpen] = useState<ReadonlySet<AboutKey>>(new Set());

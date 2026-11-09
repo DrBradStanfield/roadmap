@@ -479,8 +479,6 @@ export function InputPanel({
   // question going (an erase) starts it again.
   const birthShown = fullForm || reached >= 3;
   const yearShown = useRef(false);
-  /** The birth month was last pressed by a pointer, not a key (US-01 AC6). */
-  const monthByPointer = useRef(false);
   yearShown.current = birthShown && (yearShown.current || !!(inputs.birthMonth || inputs.birthYear));
 
   const heightPair = useHeightPair(inputs.heightCm, unitSystem);
@@ -909,8 +907,13 @@ export function InputPanel({
   );
   const sexField = <SexField form={form} aboutYouLow={aboutYouLow}/>;
   const birthFields = (
-    <BirthFields form={form} yearShown={yearShown} monthByPointer={monthByPointer} yearJumped={yearJumped}
-      onOnboardingDone={onOnboardingDone} aboutYouLow={aboutYouLow} reached={reached}/>
+    <BirthFields form={form} yearShown={yearShown.current}
+      // The year's jump, once per record, never a returning user's edit in About you's Birth row (Codex R3).
+      onYearComplete={onOnboardingDone && !aboutYouLow && reached < 4 ? () => {
+        if (yearJumped.current) return;
+        yearJumped.current = true;
+        requestAnimationFrame(() => onOnboardingDone(true));
+      } : undefined}/>
   );
 
   // ── Section render functions (shared closure state, not separate components) ──
