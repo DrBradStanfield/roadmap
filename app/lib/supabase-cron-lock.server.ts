@@ -7,7 +7,7 @@ import { supabaseAdmin } from './supabase-client.server';
 /** Names of seeded `cron_lock` rows. New crons must add their lock name here AND
  *  seed a row in supabase/rls-policies.sql — typo on either side silently disables
  *  the cron (UPDATE matches zero rows → returns false → cron never runs). */
-export type CronLockName = 'reminder_v2_cron' | 'trending_cron' | 'trending_cron_edu' | 'youtube_bot_summary' | 'chat_text_purge';
+export type CronLockName = 'reminder_v2_cron' | 'trending_cron' | 'trending_cron_edu' | 'chat_text_purge';
 
 /** Attempt to acquire the cron lock for today. Returns true if this machine
  *  should run the cron; false if it lost the race or the lock is permanently
