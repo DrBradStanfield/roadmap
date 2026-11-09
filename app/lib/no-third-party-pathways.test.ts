@@ -18,6 +18,10 @@ const ROOT = process.cwd();
 // Built from parts so this public repo never spells the publisher's name. The
 // name also matches its "community" variant.
 const THIRD_PARTY = new RegExp([['Health', 'Pathways'].join(''), ['Auckland', 'Region'].join(' ')].join('|'), 'i');
+// The licensed point-of-care reference and the supplement-testing service, built the same way.
+const REFERENCE = ['Up', 'To', 'Date'].join('');
+const TESTER = ['Consumer', 'Lab'].join('');
+const REFERENCE_RE = new RegExp(REFERENCE, 'i');
 // Handles that were pathways before 2026-10-22, crisis and red-flag ones among them.
 const FORMER_PATHWAYS = ['chest-pain', 'suicide-prevention-in-adults', 'stroke', 'pain-and-bleeding-in-early-pregnancy', 'febrile-illness-in-children'];
 
@@ -203,12 +207,12 @@ describe('US-15 AC39 — no third-party pathway content', () => {
   });
 
   // 2026-10-26 sleep rewrite (Codex R1): the guideline the web chat loads no longer quotes a point-of-care reference.
-  it('the sleep guideline and its index summary never mention UpToDate', () => {
+  it('the sleep guideline and its index summary never name the licensed reference', () => {
     const sleep = fs.readFileSync(path.join(ROOT, 'docs/guideline/sleep.md'), 'utf-8');
-    expect(sleep).not.toMatch(/uptodate/i);
+    expect(sleep).not.toMatch(REFERENCE_RE);
     const entry = loadBlogIndex().find(e => e.handle === 'sleep' && (e.type as string | undefined) === 'guideline');
     expect(entry).toBeDefined();
-    expect(entry!.summary ?? '').not.toMatch(/uptodate/i);
+    expect(entry!.summary ?? '').not.toMatch(REFERENCE_RE);
   });
 
   // 2026-10-26 sleep rewrite (Codex r2 R1): the rewrite must keep the safety advice the old text carried.
@@ -221,10 +225,10 @@ describe('US-15 AC39 — no third-party pathway content', () => {
   });
 
   // US-70 AC2: a condition guide is public, so neither it nor its index summary names a licensed source.
-  it('no condition guide or its index summary names the pathway publisher, UpToDate or ConsumerLab', () => {
-    const LICENSED = new RegExp([THIRD_PARTY.source, 'uptodate', 'consumer\\s*lab'].join('|'), 'i');
+  it('no condition guide or its index summary names a licensed clinical source', () => {
+    const LICENSED = new RegExp([THIRD_PARTY.source, REFERENCE, 'consumer\\s*lab'].join('|'), 'i');
     const sample = ['Health', 'Pathways'].join('');
-    for (const bad of [`Adapted from ${sample}.`, 'See UpToDate.', 'ConsumerLab tested it.', 'Consumer Lab']) expect(LICENSED.test(bad), bad).toBe(true);
+    for (const bad of [`Adapted from ${sample}.`, `See ${REFERENCE}.`, `${TESTER} tested it.`, 'Consumer Lab']) expect(LICENSED.test(bad), bad).toBe(true);
     expect(LICENSED.test('Keep your vaccines up to date.')).toBe(false); // the product name, not the phrase
     const dir = path.join(ROOT, 'docs/guideline');
     const isGuide = (raw: string) => parseFrontmatter(raw)?.kind === 'condition';
