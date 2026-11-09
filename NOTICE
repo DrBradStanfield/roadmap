@@ -3,9 +3,10 @@ Notice
 The MIT licence in LICENSE covers the software in this repository.
 
 It does not cover the clinical and educational content listed below. That content
-is derived from third-party sources, including ConsumerLab.com, the NIH Office
-of Dietary Supplements, and guidelines from the American Heart Association, the
-World Health Organization and the American Academy of Sleep Medicine.
+is derived from third-party sources, including published studies indexed in
+PubMed, the NIH Office of Dietary Supplements, drug labels, and guidelines from
+the American Heart Association, the World Health Organization and the American
+Academy of Sleep Medicine.
 
 Third-party-derived content:
 - docs/guideline/

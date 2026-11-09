@@ -8,6 +8,8 @@ import {
   type Report, type Result, REPORT_SCHEMA, applyAddenda, exampleReport, isGuideText, keySafetyErrors, main, normQuote, productMentions, renderReport, runBatch, validateExceptions,
   sentences, sha256, tokenise, validateReport,
 } from "./knowledge-batch-check";
+// The licensed supplement-testing site, built from parts so this public repo never spells it (Brad 2026-11-09).
+const TESTER_HOST = [["consumer", "lab"].join(""), "com"].join(".");
 
 // Story: US-42 "Knowledge refresh" (docs/user-stories.md); each describe names its AC.
 // Synthetic fixtures only (tools/fixtures/knowledge-batch/). No real raw text, no model calls.
@@ -786,7 +788,7 @@ describe("US-42 AC2/AC7 reference batch rules", () => {
     expect(fails(run().AC7).join()).toContain("unknown host evil.example.com");
   });
   it("refuses a licensed testing site as a reference host", () => {
-    withRefs(["[3] Foo B. Review. https://www.", ["consumer", "lab"].join(""), ".com/x"].join(""));
+    withRefs(`[3] Foo B. Review. https://www.${TESTER_HOST}/x`);
     expect(fails(run().AC7).join()).toMatch(/unknown host/);
   });
   it("allows the listed hosts and hosts already in the base references", () => {
@@ -1262,7 +1264,7 @@ describe("US-42 AC2 primary study cited without its abstract (R14d)", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("[1] Smith A. Synthetic trial. 2019.", `[1] Smith A. Synthetic trial. PMID: ${pm} https://pubmed.ncbi.nlm.nih.gov/${pm}/`));
   });
   const flagged = () => fails(run().AC2).join("\n");
-  it("fails a ConsumerLab-only quote for a number whose sentence cites a PubMed record", () => {
+  it("fails a raw-only quote for a number whose sentence cites a PubMed record", () => {
     expect(flagged()).toContain("number cited to a primary study without its abstract in reach");
   });
   it("accepts a quote from the cited PMID's abstract", () => {
@@ -1277,7 +1279,7 @@ describe("US-42 AC2 primary study cited without its abstract (R14d)", () => {
     reps.alpha.changed_tokens[0].raw_quote = "NIH: participants took 300 mg in adults every day";
     expect(flagged()).toContain("without its abstract in reach");
   });
-  it("lets a number whose own sentence has no [n] quote ConsumerLab", () => {
+  it("lets a number whose own sentence has no [n] quote the main raw", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("Trials used 300 mg in adults [1].", "Trials used 300 mg in adults.").replace("[1] Smith A. Synthetic trial. 2019.", `[1] Smith A. Synthetic trial. PMID: ${pm} https://pubmed.ncbi.nlm.nih.gov/${pm}/`));
     expect(flagged()).not.toContain("without its abstract");
   });
@@ -1569,9 +1571,9 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
     master([`reviewed: "2026-10-20"`, "sources: []"]);
     expect(f1(mrun())).toContain("sources");
   });
-  it("rejects a source name outside consumerlab, nih-ods, brad-video and pubmed", () => {
+  it("rejects a source name outside nih-ods, brad-video and pubmed", () => {
     master([`reviewed: "2026-10-20"`, `sources: ${SRC.replace("nih-ods", "NIH ODS")}`]);
-    expect(f1(mrun())).toContain("name must be one of consumerlab, nih-ods, brad-video, pubmed");
+    expect(f1(mrun())).toContain("name must be one of nih-ods, brad-video, pubmed");
   });
   it("accepts a pubmed source, for a master with no NIH sheet and no post", () => {
     master([`reviewed: "2026-10-20"`, `sources: ${SRC.replace("nih-ods", "pubmed")}`]);
@@ -2292,7 +2294,7 @@ describe("US-70 AC1 condition guides: --guides", () => {
     expect(grun().GUIDE.status).toBe("PASS");
   });
   // Review A6: guide batches run AC7's citation-integrity and identifier checks, with guide sources: public guideline
-  // and label hosts named in the guide's own sources:, PubMed and DOI, NIH ODS and Brad's video posts; never ConsumerLab.
+  // and label hosts named in the guide's own sources:, PubMed and DOI, NIH ODS and Brad's video posts; never the licensed testing site (TESTER_HOST).
   it("runs AC7's reference checks on a guide: citations, hosts, link text", () => {
     const refs = (lines: string) => SOUND.replace("1. Example guideline. https://example.org/guideline", lines);
     addGuide();
@@ -2301,16 +2303,16 @@ describe("US-70 AC1 condition guides: --guides", () => {
     expect(fails(grun().AC7)).toEqual(["FAIL g: reference lines never cited: 1"]);
     addGuide(refs("1. A guideline on an unlisted site. https://unlisted.example.com/g"));
     expect(fails(grun().AC7)).toEqual([expect.stringMatching(/^FAIL g: reference line has unknown host unlisted\.example\.com: /)]);
-    addGuide(refs("1. ConsumerLab review. https://www.consumerlab.com/reviews/x"));
-    expect(fails(grun().AC7)).toEqual([expect.stringMatching(/^FAIL g: reference line has unknown host consumerlab\.com: /)]);
+    addGuide(refs(`1. Testing-site review. https://www.${TESTER_HOST}/reviews/x`));
+    expect(fails(grun().AC7)).toEqual([expect.stringMatching(new RegExp(`^FAIL g: reference line has unknown host ${TESTER_HOST.replace(".", "\\.")}: `))]);
     addGuide(refs("1. Trial. [PMID 12345678](https://pubmed.ncbi.nlm.nih.gov/87654321/)"));
     expect(fails(grun().AC7).join("\n")).toContain("PMID link text 12345678 differs from its URL id 87654321");
   });
-  // Re-check R1: a ConsumerLab URL in the guide's own sources: never makes consumerlab.com an allowed reference host.
-  it("refuses a ConsumerLab reference even when the guide's sources: lists a consumerlab.com URL", () => {
-    const g = SOUND.replaceAll("https://example.org/guideline", "https://www.consumerlab.com/reviews/x");
+  // Re-check R1: a testing-site URL in the guide's own sources: never makes that site an allowed reference host.
+  it("refuses a testing-site reference even when the guide's sources: lists its URL", () => {
+    const g = SOUND.replaceAll("https://example.org/guideline", `https://www.${TESTER_HOST}/reviews/x`);
     addGuide(g);
-    expect(fails(grun().AC7).join("\n")).toMatch(/unknown host consumerlab\.com/);
+    expect(fails(grun().AC7).join("\n")).toContain(`unknown host ${TESTER_HOST}`);
   });
   it("takes a guide's reference to a host its sources: names, DailyMed, doi.org and Brad's video posts", () => {
     put("docs/blog/other.md", "---\ntitle: \"O\"\n---\n\nA video post.\n");

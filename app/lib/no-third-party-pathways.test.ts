@@ -228,7 +228,7 @@ describe('US-15 AC39 — no third-party pathway content', () => {
   it('no condition guide or its index summary names a licensed clinical source', () => {
     const LICENSED = new RegExp([THIRD_PARTY.source, REFERENCE, 'consumer\\s*lab'].join('|'), 'i');
     const sample = ['Health', 'Pathways'].join('');
-    for (const bad of [`Adapted from ${sample}.`, `See ${REFERENCE}.`, `${TESTER} tested it.`, 'Consumer Lab']) expect(LICENSED.test(bad), bad).toBe(true);
+    for (const bad of [`Adapted from ${sample}.`, `See ${REFERENCE}.`, `${TESTER} tested it.`, TESTER.replace('Lab', ' Lab')]) expect(LICENSED.test(bad), bad).toBe(true);
     expect(LICENSED.test('Keep your vaccines up to date.')).toBe(false); // the product name, not the phrase
     const dir = path.join(ROOT, 'docs/guideline');
     const isGuide = (raw: string) => parseFrontmatter(raw)?.kind === 'condition';
@@ -239,6 +239,22 @@ describe('US-15 AC39 — no third-party pathway content', () => {
       expect(LICENSED.test(fs.readFileSync(path.join(dir, f), 'utf-8')), f).toBe(false);
       const entry = loadBlogIndex().find(e => e.handle === f.replace(/\.md$/, ''));
       expect(LICENSED.test(`${entry?.summary ?? ''} ${(entry?.keywords ?? []).join(' ')}`), `${f} index entry`).toBe(false);
+    }
+  });
+
+  // Brad 2026-11-09: the supplement reference articles (and topic masters) are re-sourced to public primary
+  // sources, so none names or links the licensed testing site, in its body, frontmatter or index entry.
+  it('no supplement reference article or its index entry names the licensed testing site', () => {
+    const TESTER_RE = new RegExp(TESTER.replace('Lab', '\\s*lab\\b'), 'i');
+    expect(TESTER_RE.test(`See ${TESTER.toLowerCase()}.com.`)).toBe(true);
+    expect(TESTER_RE.test('A consumer label review.')).toBe(false);
+    const dir = path.join(ROOT, 'docs/blog');
+    const refs = fs.readdirSync(dir).filter(f => f.endsWith('.md'))
+      .filter(f => (parseFrontmatter(fs.readFileSync(path.join(dir, f), 'utf-8'))?.type as string | undefined) === 'reference');
+    expect(refs.length).toBeGreaterThan(100);
+    for (const f of refs) expect(TESTER_RE.test(fs.readFileSync(path.join(dir, f), 'utf-8')), f).toBe(false);
+    for (const e of loadBlogIndex().filter(x => (x.type as string | undefined) === 'reference')) {
+      expect(TESTER_RE.test(`${e.summary ?? ''} ${(e.keywords ?? []).join(' ')}`), `${e.handle} index entry`).toBe(false);
     }
   });
 

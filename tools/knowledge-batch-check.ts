@@ -295,7 +295,9 @@ export function validDate(s: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
 }
 const SOURCE_KEYS = ["name", "url", "checked", "fingerprint"];
-export const SOURCE_NAMES = ["consumerlab", "nih-ods", "brad-video", "pubmed"];
+export const SOURCE_NAMES = ["nih-ods", "brad-video", "pubmed"];
+// The licensed supplement-testing site, built from parts so this public repo never spells it (Brad 2026-11-09).
+const TESTER = ["Consumer", "Lab"].join("");
 const jsonOf = (v: string): unknown => { try { return JSON.parse(v); } catch { return undefined; } };
 
 /** Shape errors of one master frontmatter value (US-50 AC1), or null. `value` is the text after `key:` on its line. */
@@ -695,7 +697,7 @@ export const productMentions = (body: string) =>
     .replace(OMEGA_GENERIC, (m, at: number, str: string) => (brandNear(str, at, m.length) ? m : ""))
     .match(PRODUCT_RE) ?? []).length;
 
-const BANNED = ["Top Pick", "What CL Found", "ConsumerLab approved", "CL Approved", "Approved Quality"];
+const BANNED = ["Top Pick", "What CL Found", `${TESTER} approved`, "CL Approved", "Approved Quality"];
 const BRAND_RANKING = /\b(?:best|top|#1|number one|top[- ]rated|highest[- ]rated)\s+brands?\b|\bbrand rankings?\b|\bbrands?,? ranked\b|\branked (?:the )?brands?\b/i;
 
 // ---------- git helpers ----------
@@ -1199,7 +1201,7 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, info: PairIn
       }
     }
     if (!hits.size) return fail(partial ? `raw_quote: its numbers are not whole tokens in the raw: ${line}` : `raw_quote is not in the raw file: ${line}`);
-    // A number whose own sentence cites a PubMed record must be quoted from that record's abstract, not ConsumerLab or NIH text.
+    // A number whose own sentence cites a PubMed record must be quoted from that record's abstract, not licensed-source or NIH text.
     const ok = new Set<string>();
     for (const [tok, ms] of hits) {
       const cited = c.type === "reference" ? citedForEntry(entry.body_line, tok, c.newBody, lineTokens) : null;
@@ -1384,7 +1386,7 @@ const ALLOWED_HOSTS = ["ods.od.nih.gov", "pubmed.ncbi.nlm.nih.gov", "doi.org", "
 /** A condition guide's reference hosts (US-70 AC2): public records, plus the guideline and label sites its own `sources:` names. */
 function guideHosts(text: string): string[] {
   const sources: unknown = parseFrontmatter(text)?.sources;
-  const named = Array.isArray(sources) ? sources.map((x: { url?: unknown }) => hostOf(String(x?.url ?? ""))).filter((h) => h && !/(^|\.)consumerlab\.com$/.test(h)) : [];
+  const named = Array.isArray(sources) ? sources.map((x: { url?: unknown }) => hostOf(String(x?.url ?? ""))).filter((h) => h && !new RegExp(`(^|\\.)${TESTER.toLowerCase()}\\.com$`).test(h)) : [];
   return ["ods.od.nih.gov", "pubmed.ncbi.nlm.nih.gov", "doi.org", "dailymed.nlm.nih.gov", "accessdata.fda.gov", ...named];
 }
 const URL_RE = /https?:\/\/[^\s)\]>]+/g;
