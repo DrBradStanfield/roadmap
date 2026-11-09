@@ -40,7 +40,7 @@ Cholesterol is a fat your body needs for cell walls and hormones. In the blood i
 
 "High cholesterol" usually means too many ApoB particles. It causes no symptoms, and plaque can grow silently for decades [Ibanez 2021]. In the PESA study of 4,184 middle-aged adults without symptoms, about half of those with no standard risk factors already had plaque, and the odds rose with LDL [Fernández-Friera 2017].
 
-**Common causes.** Before treatment, guidelines check for other causes, such as heavy drinking, uncontrolled diabetes, an underactive thyroid, liver disease and nephrotic syndrome [NICE NG238].
+**Common causes.** Guidelines first rule out other causes: heavy drinking, uncontrolled diabetes, an underactive thyroid, liver disease and nephrotic syndrome [NICE NG238].
 
 **Familial hypercholesterolaemia (FH)** is an inherited condition that keeps LDL high from birth. About 1 in 311 people have it [Hu 2020]. An LDL above 5 mmol/L (190 mg/dL) should prompt the question [Nordestgaard 2016]. Other clues are fatty lumps on the tendons (xanthomas), and heart disease or sudden cardiac death at a young age in you or a close relative [ESC/EAS 2019]. If you have FH, ask about testing your close relatives, best done through a lipid clinic [ESC/EAS 2019].
 
@@ -108,15 +108,15 @@ Statins block cholesterol production in the liver. In 26 trials, each 1 mmol/L d
 
 ### Ezetimibe
 
-Ezetimibe blocks cholesterol absorption in the gut. The dose is 10 mg once daily [Zetia label]. Added to simvastatin after a recent heart attack or unstable angina, it lowered LDL to 1.4 mmol/L and reduced the main composite outcome over seven years (32.7% against 34.7%), with similar side effects [IMPROVE-IT]. A moderate-dose statin plus ezetimibe was as good as a high-dose statin over three years, got more people under 1.8 mmol/L, and fewer people stopped or cut the dose because of side effects (4.8% against 8.2%) [RACING 2022].
+Ezetimibe blocks cholesterol absorption in the gut. The dose is 10 mg once daily [Zetia label]. Added to simvastatin after a recent heart attack or unstable angina, it lowered LDL to 1.4 mmol/L and reduced the main composite outcome over seven years (32.7% against 34.7%) [IMPROVE-IT]. A moderate-dose statin plus ezetimibe was as good as a high-dose statin over three years, got more people under 1.8 mmol/L, and fewer stopped or cut the dose for side effects (4.8% against 8.2%) [RACING 2022].
 
 ### Bempedoic acid
 
-Bempedoic acid blocks cholesterol production one step before statins act. The dose is 180 mg once daily [Nexletol label]. In people who could not take statins, it lowered major cardiovascular events (11.7% against 13.3%) over about 40 months, with more gout and gallstones [CLEAR Outcomes]. The label warns of raised uric acid and tendon rupture, and limits simvastatin to 20 mg and pravastatin to 40 mg alongside it [Nexletol label].
+Bempedoic acid blocks cholesterol production earlier in the pathway than statins. The dose is 180 mg once daily [Nexletol label]. In people who could not take statins, it lowered major cardiovascular events (11.7% against 13.3%) over about 40 months, with more gout and gallstones [CLEAR Outcomes]. The label warns of raised uric acid and tendon rupture, and limits simvastatin to 20 mg and pravastatin to 40 mg alongside it [Nexletol label].
 
 ### PCSK9 drugs
 
-- **Evolocumab** and alirocumab are injections. Evolocumab is 140 mg every 2 weeks or 420 mg once a month [Repatha label]. On a statin, in people with heart disease, it cut LDL by 59% to a median 0.78 mmol/L and lowered events (9.8% against 11.3%) with no rise in diabetes or memory problems [FOURIER]. In people with atherosclerosis or diabetes but no previous heart attack or stroke, it lowered first major events over five years (6.2% against 8.0%) [VESALIUS-CV].
+- **Evolocumab** and alirocumab are injections. Evolocumab is 140 mg every 2 weeks or 420 mg once a month [Repatha label]. On a statin, in people with heart disease, it cut LDL by 59% to a median 0.78 mmol/L and lowered events (9.8% against 11.3%) with no rise in diabetes or memory problems [FOURIER]. Very low LDL looks safe short term; long-term safety, especially outside high-risk groups, is less studied [Karagiannis 2021]. In people with atherosclerosis or diabetes but no previous heart attack or stroke, it lowered first major events over five years (6.2% against 8.0%) [VESALIUS-CV].
 - **Inclisiran** is an injection given at 0 and 3 months, then every 6 months (284 mg) [Leqvio label]. It lowered LDL by about half in two trials [ORION-10 and ORION-11]. Those trials measured LDL, not heart attacks.
 - **Enlicitide** is a PCSK9 tablet, approved in the US in July 2026. It lowers LDL about as much as the injections but is not yet shown to prevent heart attacks ([Lp(a) post](https://drstanfield.com/blogs/articles/lpa-cholesterol-study-shocks-cardiologists-now-what)).
 
@@ -126,7 +126,7 @@ Levels of 11 mmol/L or more may need treatment whatever the overall risk, becaus
 
 - **Fibrates** lower triglycerides. Limited trial evidence suggests they may reduce heart events [NZ Ministry of Health 2018], but in 10,497 people with type 2 diabetes, pemafibrate cut triglycerides by about a quarter and did not lower events [PROMINENT].
 - **Icosapent ethyl**, a purified prescription omega-3 (EPA), lowered events in people on a statin with heart disease or diabetes and triglycerides of 1.52 to 5.63 mmol/L (17.2% against 22.0% over about five years). More were admitted to hospital with atrial fibrillation (3.1% against 2.1%) [REDUCE-IT].
-- **Fish oil supplements** did not prevent heart attacks or strokes in two large trials [VITAL; ASCEND], and they raise the risk of atrial fibrillation, more so above 1 g a day [Gencer 2021]. See Brad's [omega-3 entry](https://drstanfield.com/blogs/articles/omega-3-fish-oil-benefits-forms-dosing-and-side-effects).
+- **Fish oil supplements** did not lower major cardiovascular events, the main outcome, in two large trials [VITAL; ASCEND], and they raise the risk of atrial fibrillation, more so above 1 g a day [Gencer 2021]. See Brad's [omega-3 entry](https://drstanfield.com/blogs/articles/omega-3-fish-oil-benefits-forms-dosing-and-side-effects).
 
 ## Brad's view (reviewed 2 Nov 2026)
 
@@ -142,7 +142,7 @@ Levels of 11 mmol/L or more may need treatment whatever the overall risk, becaus
 
 **Lp(a).** The plan follows the 2026 ACC/AHA advice to measure Lp(a) at least once in all adults and, when it is high, drives every other risk factor down: lipids, blood pressure, blood sugar and weight (Brad's current guidance, 2 Nov 2026). Brad aims for ApoB below 0.5 g/L in that case and is quicker to add a PCSK9 inhibitor, which is not licensed to lower Lp(a) ([Lp(a) post](https://drstanfield.com/blogs/articles/lpa-cholesterol-study-shocks-cardiologists-now-what)).
 
-**Calcium scores.** If your risk factors are already controlled, Brad sees no reason for a coronary calcium score, because it would not change anything ([heart attacks post](https://drstanfield.com/blogs/articles/soon-well-forget-what-heart-attacks-are)).
+**Calcium scores.** If your risk factors are already controlled, Brad sees no reason for a coronary calcium score, because it would not change anything, and guidelines say not to rescan once treating ([heart attacks post](https://drstanfield.com/blogs/articles/soon-well-forget-what-heart-attacks-are)).
 
 **When every step is taken.** Above target with every step answered: no further card. Brad's reason: nothing else can clinically be done (Brad's current guidance, 2 Nov 2026).
 
@@ -180,9 +180,9 @@ Brad's plan uses one set of targets for every adult on treatment. Most guideline
 | | Risk tool | Start a statin (no heart disease) | LDL goal, no heart disease | LDL goal with heart disease |
 |---|---|---|---|---|
 | **Brad's plan** | None; uses the lipid marker | Suggests a statin when the marker is at or above target | Below 1.4 mmol/L (55 mg/dL); ApoB below 0.5 g/L | Same |
-| **New Zealand** (2018) | 5-year risk calculator | Strongly advised at 15% or more; discuss at 5% to 15%; also if total to HDL ratio is 8 or more | 40% or more reduction (5% to 15% risk); below 1.8 mmol/L at 15% or more | See source |
+| **New Zealand** (2018) | 5-year risk calculator | Strongly advised at 15% or more; discuss at 5% to 15%; also if total to HDL ratio is 8 or more | 40% or more reduction (5% to 15% risk); below 1.8 mmol/L at 15% or more | No set goal; notes targets of about 1.6 to 1.8 mmol/L in use |
 | **Australia** (2023) | Aus CVD Risk calculator, 5-year | Prescribe at 10% or more; consider at 5% to under 10% | Not set | Not covered |
-| **United States** (ACC/AHA 2026; USPSTF 2022) | 10-year risk | USPSTF: ages 40 to 75 with a risk factor and risk of 10% or more; selectively at 7.5% to under 10% | Below 70 mg/dL (1.8 mmol/L) at high risk; below 100 mg/dL (2.6 mmol/L) at borderline or intermediate risk | Very high risk: below 55 mg/dL (1.4 mmol/L), non-HDL below 85 mg/dL, and a 50% or more reduction |
+| **United States** (ACC/AHA 2026; USPSTF 2022) | 10-year risk | USPSTF: ages 40 to 75 with a risk factor and risk of 10% or more; selectively at 7.5% to under 10% | Below 70 mg/dL (1.8 mmol/L) at high risk; below 100 mg/dL (2.6 mmol/L) at borderline or intermediate risk | Very high risk: below 55 mg/dL (1.4 mmol/L), non-HDL below 85 mg/dL |
 | **United Kingdom** (NICE 2023) | QRISK3, 10-year | Atorvastatin at 10% or more | More than 40% fall in non-HDL | LDL 2.0 mmol/L or less, or non-HDL 2.6 mmol/L or less |
 
 Sources: NZ Ministry of Health 2018; Nelson 2024; ACC/AHA 2026; USPSTF 2022; NICE NG238.
@@ -190,10 +190,11 @@ Sources: NZ Ministry of Health 2018; Nelson 2024; ACC/AHA 2026; USPSTF 2022; NIC
 **Other differences:**
 - **Europe** (ESC/EAS 2019) sets LDL below 1.4 mmol/L with a 50% fall at very high risk and below 1.8 mmol/L at high risk. Its ApoB goals are below 65, 80 and 100 mg/dL at very high, high and moderate risk [ESC/EAS 2019].
 - **Lower LDL targets.** In Ez-PAVE, 3,048 people with heart disease aimed for LDL below 55 or below 70 mg/dL; three-year events were 6.6% against 9.7% [Ez-PAVE].
-- **ApoB.** ACC/AHA 2026 suggests checking ApoB once LDL and non-HDL goals are met, with a goal below 55 mg/dL at very high risk [ACC/AHA 2026]. Brad uses ApoB first.
-- **Statin not tolerated.** NICE offers ezetimibe instead of a statin, then bempedoic acid with ezetimibe if ezetimibe alone is not enough [NICE NG238]. Brad's plan puts a PCSK9 inhibitor first. The PCSK9 outcome trials were run on top of a statin [FOURIER; VESALIUS-CV]; bempedoic acid's was not [CLEAR Outcomes].
+- **ApoB.** ACC/AHA 2026 suggests checking ApoB once LDL and non-HDL goals are met [ACC/AHA 2026]. Brad uses ApoB first.
+- **Statin dose.** NICE offers atorvastatin 80 mg to people with heart disease [NICE NG238]; Brad starts low.
+- **Statin not tolerated.** NICE offers ezetimibe instead of a statin, then bempedoic acid with ezetimibe if that is not enough [NICE NG238]. Brad's plan puts a PCSK9 inhibitor first. The PCSK9 outcome trials were run on top of a statin [FOURIER]; bempedoic acid's was not [CLEAR Outcomes].
 - **Very high triglycerides.** The plan calls 5.65 mmol/L (500 mg/dL) urgent. ESC/EAS puts clinically significant pancreatitis risk above 10 mmol/L, though it can occur at 5 to 10 [ESC/EAS 2019]. NICE seeks specialist advice if a repeat fasting level stays above 10, and urgent review above 20 [NICE NG238]. New Zealand acts at 11 [NZ Ministry of Health 2018].
-- **Calcium score.** ACC/AHA uses it when the decision to treat is uncertain and advises against repeat scans once treatment starts [ACC/AHA 2026]. A score of 0 may allow waiting, but not in smokers, people with diabetes or a strong family history of early heart disease. An LDL of 4.9 mmol/L (190 mg/dL) or more, as in FH, calls for a statin whatever the score [ACC/AHA 2018].
+- **Calcium score.** ACC/AHA uses it when the decision to treat is uncertain [ACC/AHA 2026]. A score of 0 may allow waiting, but not in smokers, people with diabetes or a strong family history of early heart disease. An LDL of 4.9 mmol/L (190 mg/dL) or more, as in FH, calls for a statin whatever the score [ACC/AHA 2018].
 
 ## Common questions
 
@@ -256,6 +257,7 @@ Sources: NZ Ministry of Health 2018; Nelson 2024; ACC/AHA 2026; USPSTF 2022; NIC
 - VESALIUS-CV: Evolocumab without a previous heart attack or stroke. N Engl J Med 2026;394(2):117-127. https://doi.org/10.1056/NEJMoa2514428
 - ORION-10 and ORION-11: Ray KK et al. Inclisiran in patients with elevated LDL cholesterol. N Engl J Med 2020;382:1507-1519. https://doi.org/10.1056/NEJMoa1912387
 - Ott 2015: Ott BR et al. Statins and cognition: a meta-analysis of trials. J Gen Intern Med 2015;30(3):348-58. https://doi.org/10.1007/s11606-014-3115-3
+- Karagiannis 2021: How low is safe? Eur Heart J 2021;42(22):2154-2169. https://doi.org/10.1093/eurheartj/ehaa1080
 - Law 2003: Quantifying effect of statins on LDL cholesterol, ischaemic heart disease, and stroke. BMJ 2003;326:1423. https://doi.org/10.1136/bmj.326.7404.1423
 - PROMINENT: Das Pradhan A et al. Triglyceride lowering with pemafibrate. N Engl J Med 2022;387:1923-1934. https://doi.org/10.1056/NEJMoa2210645
 - REDUCE-IT: Bhatt DL et al. Icosapent ethyl for hypertriglyceridemia. N Engl J Med 2019;380:11-22. https://doi.org/10.1056/NEJMoa1812792

@@ -3,7 +3,7 @@ title: "Weight: Obesity, BMI, Fat Loss and Weight-Loss Drugs"
 type: "guideline"
 kind: "condition"
 tags: ["Guideline"]
-keywords: ["weight loss", "weight", "overweight", "obesity", "BMI", "waist", "waist-to-height", "body fat", "muscle", "GLP-1", "semaglutide", "Ozempic", "Wegovy", "tirzepatide", "Mounjaro", "Zepbound", "retatrutide", "microdosing", "orlistat", "fat loss", "bariatric", "protein target", "ideal body weight", "metabolic syndrome", "insulin resistance"]
+keywords: ["weight loss", "weight", "overweight", "obesity", "BMI", "waist", "waist-to-height", "body fat", "muscle", "GLP-1", "semaglutide", "Ozempic", "Wegovy", "tirzepatide", "Mounjaro", "Zepbound", "retatrutide", "microdosing", "orlistat", "fat loss", "bariatric", "protein target", "ideal body weight", "metabolic syndrome"]
 summary: "Weight and obesity: what BMI, waist and body fat tell you, a diet and exercise plan that keeps muscle, and when GLP-1 drugs (semaglutide, tirzepatide) help, with label doses, side effects and low-dose use. Built from obesity guidelines, drug labels and trials, plus Brad's framework."
 reviewed: "2026-11-09"
 sources: [{"name":"guideline","url":"https://www.nice.org.uk/guidance/ng246","checked":"2026-11-02","fingerprint":"NICE NG246 updated 08 Jan 2026"},{"name":"guideline","url":"https://www.nice.org.uk/guidance/ta875","checked":"2026-11-02","fingerprint":"NICE TA875 updated 04 Sep 2023"},{"name":"guideline","url":"https://www.nice.org.uk/guidance/ta1026","checked":"2026-11-02","fingerprint":"NICE TA1026 updated 01 Sep 2025"},{"name":"guideline","url":"https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/obesity-in-adults-interventions","checked":"2026-11-02","fingerprint":"USPSTF 2018"},{"name":"guideline","url":"https://www.nhs.uk/conditions/obesity/","checked":"2026-11-02","fingerprint":"NHS page last reviewed 29 April 2026"},{"name":"guideline","url":"https://www.nhs.uk/symptoms/unintentional-weight-loss/","checked":"2026-11-02","fingerprint":"NHS page last reviewed 28 July 2025"},{"name":"guideline","url":"https://www.healthdirect.gov.au/obesity","checked":"2026-11-02","fingerprint":"healthdirect last reviewed September 2024"},{"name":"label","url":"https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=487cd7e7-434c-4925-99fa-aa80b1cc776b","checked":"2026-11-02","fingerprint":"Zepbound SPL published Sep 02 2026"},{"name":"label","url":"https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ee06186f-2aa3-4990-a760-757579d8f77b","checked":"2026-11-02","fingerprint":"Wegovy SPL published Jun 30 2026"},{"name":"label","url":"https://www.medsafe.govt.nz/profs/Datasheet/m/Mounjaroinj.pdf","checked":"2026-11-02","fingerprint":"Medsafe Mounjaro data sheet vA4.0 Sep 2026"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33567185/","checked":"2026-11-02","fingerprint":"PMID:33567185"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/35658024/","checked":"2026-11-02","fingerprint":"PMID:35658024"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/37952131/","checked":"2026-11-02","fingerprint":"PMID:37952131"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/we-are-witnessing-the-end-of-obesity","checked":"2026-11-02","fingerprint":"publishedAt:2026-10-06T03:22:05Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/should-you-use-ozempic-glp-1-weight-loss-meds-nuanced-answer","checked":"2026-11-02","fingerprint":"publishedAt:2025-02-22T07:41:55Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/microdosing-tirzepatide-ozempic-glp1-for-longevity","checked":"2026-11-02","fingerprint":"publishedAt:2025-10-22T04:35:09Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/were-all-about-to-become-lean-and-ripped-new-evidence","checked":"2026-11-02","fingerprint":"publishedAt:2026-06-15T12:00:00Z"},{"name":"guideline","url":"https://pubmed.ncbi.nlm.nih.gov/42296496/","checked":"2026-11-09","fingerprint":"sha256:90277f0296584d612fba91638979e4a0cfffda41ba29140dcc3b0c09d8a4ba91"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/38078870/","checked":"2026-11-09","fingerprint":"sha256:4b4c86b07c705b010806069bde3d9b138e28db06e42d671c344c7d8ef5b042d0"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/42119587/","checked":"2026-11-09","fingerprint":"sha256:559e92362b4d3416950ec259d53547cb4745d921912d14023ab2e6694c0ae829"},{"name":"guideline","url":"https://pmc.ncbi.nlm.nih.gov/articles/PMC9834364/","checked":"2026-11-09","fingerprint":"sha256:aa3dda91794c70001af18b0b9b1a8a92c0dbe77b4103272630d8c2a0264203aa"},{"name":"guideline","url":"https://www.fda.gov/drugs/drug-alerts-and-statements/fdas-concerns-unapproved-glp-1-drugs-used-weight-loss","checked":"2026-11-09","fingerprint":"sha256:89bef75f93f55e0fe642585abfb45e1e68ab12b62777be8f763efb087bdf611f"}]
@@ -12,7 +12,7 @@ thresholds: [{"ref":"HBA1C_THRESHOLDS.prediabetes","value":38.8},{"ref":"TRIGLYC
 
 # Weight: Obesity, BMI, Fat Loss and Weight-Loss Drugs
 
-*Sources: NICE NG246, TA875 and TA1026, NHS, healthdirect, USPSTF 2018, ACP 2026, the FDA, US labels for Zepbound and Wegovy, the NZ Mounjaro data sheet, and primary trials. Brad's view comes from the Health Roadmap algorithm and his posts. Full list at the end.*
+*Sources: NICE NG246, TA875 and TA1026, NHS, healthdirect, USPSTF 2018, ACP 2026, the FDA, US labels for Zepbound and Wegovy, the NZ Mounjaro data sheet, and primary trials. Brad's view comes from the Health Roadmap algorithm and his posts.*
 
 ## In short
 
@@ -94,7 +94,7 @@ The cholesterol lines come from the 2018 AHA/ACC cholesterol guideline, which us
 
 **Help preserve your muscle.** Any weight loss takes some muscle with it. A 2025 joint advisory from four US societies calls for resistance training and a suitable diet to preserve muscle and bone during GLP-1 treatment [20]. The protein target above gives a daily amount; the [protein powder](https://drstanfield.com/blogs/articles/protein-powders-benefits-types-dosing-and-side-effects) and [creatine](https://drstanfield.com/blogs/articles/creatine-benefits-best-forms-dosing-and-side-effects) entries cover supplements.
 
-**Sleep, stress and alcohol** also matter [20]. Alcohol is high in calories, and the NHS advises cutting down [6]. See the sleep guideline.
+**Sleep, stress and alcohol.** The 2025 advisory lists sleep, mental stress and substance use in the lifestyle check before a GLP-1 [20]. Alcohol is high in calories, and the NHS advises cutting down [6]. See the sleep guideline.
 
 **Weight-loss supplements:** see the [weight-loss supplements entry](https://drstanfield.com/blogs/articles/weight-loss-supplements-benefits-evidence-and-safety) before buying any.
 
@@ -115,17 +115,17 @@ All weight medicines are used with a reduced-calorie diet and more activity [3, 
 - **Wegovy (semaglutide) injection:** 0.25 mg once a week for 4 weeks, then 0.5 mg, 1 mg and 1.7 mg, each for 4 weeks. Maintenance for weight is 2.4 mg (recommended) or 1.7 mg once a week. If 2.4 mg is tolerated for at least 4 weeks and more weight loss is needed, the dose may rise to a maximum of 7.2 mg once a week [22].
 - **Wegovy (semaglutide) tablets:** 1.5 mg once a day for 30 days, then stepped up every 30 days to a maintenance dose of 25 mg once a day [22].
 
-**Stopping.** In the STEP 1 extension, people who stopped semaglutide regained two-thirds of their lost weight within a year, and their blood pressure, blood sugar and cholesterol drifted back [13]. In SURMOUNT-4, people switched to placebo regained 14.0% of body weight in a year; those staying on tirzepatide lost a further 5.5% [24]. In SURMOUNT-MAINTAIN, stepping down from 10 or 15 mg to 5 mg held weight 16.6% below baseline, against 21.9% on the full dose and 9.9% on placebo [25]. NICE says to review tirzepatide if under 5% of starting weight is lost after 6 months on the highest tolerated dose [5].
+**Stopping.** In the STEP 1 extension, people who stopped semaglutide regained two-thirds of their lost weight within a year, and their blood pressure, blood sugar and cholesterol drifted back [13]. In SURMOUNT-4, people switched to placebo regained 14.0% of body weight in a year; those staying on tirzepatide lost a further 5.5% [24]. In SURMOUNT-MAINTAIN, stepping down from 10 or 15 mg to 5 mg held weight 16.6% below baseline, against 21.9% on the full dose and 9.9% on placebo. People who regained over half their lost weight could restart full tirzepatide: 25% did on 5 mg, 8% on the full dose and 67% on placebo [25]. NICE says to review tirzepatide if under 5% of starting weight is lost after 6 months on the highest tolerated dose [5].
 
 **Side effects and safety (from the US labels unless cited otherwise):**
 
 - Nausea, diarrhoea, vomiting, constipation, indigestion and reflux are the most common. They are worst when the dose goes up [21].
 - Rats given these medicines developed thyroid C-cell tumours. It is unknown whether this happens in people. Do not use them if you or a relative has had medullary thyroid cancer, or if you have MEN 2 [21].
-- Pancreatitis, gallbladder disease and kidney injury from dehydration have been reported [21]. A meta-analysis of 76 trials found gallbladder and bile duct disease more common on GLP-1 medicines. In the 13 weight-loss trials the risk was 2.29 times that of the comparison group, and higher at higher doses and with longer use [18].
+- Pancreatitis, gallbladder disease and kidney injury from dehydration have been reported [21]. A meta-analysis of 76 trials found gallbladder and bile duct disease more common on GLP-1 medicines, more so at higher doses and with longer use. In the 13 weight-loss trials the risk was 2.29 times that of the comparison group [18].
 - Resting heart rate rose by 1 to 4 beats a minute on Wegovy in weight trials [22].
 - They slow stomach emptying, so tell your surgeon or anaesthetist before any procedure that needs anaesthesia or deep sedation [21].
 - Tirzepatide can make birth control pills less reliable. Switch to a non-pill method, or add a barrier method, for 4 weeks after starting and after each dose increase [21].
-- Avoid compounded, online or copycat versions. The FDA does not review them for safety, effectiveness or quality, fakes may hold the wrong ingredients, and dosing errors have put people in hospital. Fill a doctor's prescription at a licensed pharmacy [33].
+- Avoid compounded, online or copycat versions. The FDA does not review them for safety, effectiveness or quality, fakes may hold the wrong ingredients, and harms, some needing hospital care, may be related to dosing errors. Fill a doctor's prescription at a licensed pharmacy [33].
 
 **Other medicines.** NICE also lists liraglutide, a daily injection, and orlistat, a capsule that blocks fat absorption [3]. Orlistat can be prescribed at a BMI of 30, or 28 with risk factors, and is sold at a lower dose in pharmacies [3].
 
@@ -135,7 +135,7 @@ All weight medicines are used with a reduced-calorie diet and more activity [3, 
 
 ## Brad's view (reviewed 2 Nov 2026)
 
-**He raises weight medicine at lower lines than guidelines.** Guidelines consider these medicines at a BMI of 30 or more, or 27 or more with a weight-related condition. Some wait for months of lifestyle change first. The American College of Physicians (ACP, 2026) does not, but at BMI 27 to 30 it requires type 2 diabetes, abnormal blood fats, high blood pressure, sleep apnoea or heart disease [29]. Brad's plan suggests discussing them at a BMI of 30 or more, above 28 unless the waist is healthy, and from 25 when a marker is raised, alongside diet, exercise and sleep rather than after months of them. No guideline supports these lower lines, and a doctor may not agree to prescribe below the licensed ones (Brad's current guidance, 2 Nov 2026).
+**He raises weight medicine at lower lines than guidelines.** Most guidelines consider these medicines at a BMI of 30 or more, or 27 or more with a weight-related condition; NHS England sets higher lines [4, 5]. The American College of Physicians (ACP, 2026) at BMI 27 to 30 requires type 2 diabetes, abnormal blood fats, high blood pressure, sleep apnoea or heart disease [29]. Brad's plan suggests discussing them at a BMI of 30 or more, above 28 unless the waist is healthy, and from 25 when a marker is raised, alongside diet, exercise and sleep with no waiting period. No guideline supports these lower lines, and a doctor may not agree to prescribe below the licensed ones (Brad's current guidance, 2 Nov 2026).
 
 **Waist over BMI.** A BMI of 25 to 29.9 with a waist under half your height counts as normal in his plan, and by itself does not trigger weight advice (Brad's current guidance, 2 Nov 2026).
 
@@ -157,7 +157,7 @@ All weight medicines are used with a reduced-calorie diet and more activity [3, 
 
 ## Who needs extra care
 
-- **Pregnancy and planning pregnancy.** Weight loss is not recommended in pregnancy. Stop semaglutide (Wegovy) at least 2 months before a planned pregnancy, because it stays in the body a long time [22]. The US Zepbound label says to stop tirzepatide when a pregnancy is recognised and to tell your doctor if you plan to become pregnant [21]; the New Zealand data sheet says to stop it if you wish to become pregnant [23]. NICE says not to use tirzepatide, semaglutide or liraglutide in pregnancy [3].
+- **Pregnancy and planning pregnancy.** Weight loss is not recommended in pregnancy. Stop semaglutide (Wegovy) at least 2 months before a planned pregnancy, because it stays in the body a long time [22]. The US Zepbound label says to stop tirzepatide when a pregnancy is recognised and to tell your doctor if you plan to become pregnant [21]; the New Zealand data sheet says to stop it if you wish to become pregnant [23]. Arrange stopping with your prescriber before you try to conceive. NICE says not to use tirzepatide, semaglutide or liraglutide in pregnancy [3].
 - **Breastfeeding.** Breastfeeding is not recommended on Wegovy tablets, as an added ingredient passes into milk. For the injections, effects on the baby are unknown; weigh the benefits with your doctor [21, 22].
 - **People of South Asian, Chinese, other Asian, Middle Eastern, Black African or African-Caribbean background.** Health risks start at a lower BMI. NICE uses overweight from 23 and obesity from 27.5 [1].
 - **High muscle mass.** BMI can overstate fat; use your waist-to-height ratio [1].
@@ -190,13 +190,13 @@ All weight medicines are used with a reduced-calorie diet and more activity [3, 
 
 **How do I lose fat without losing muscle?** Lose slowly, lift weights, and eat enough protein [6, 20].
 
-**Which weight-loss medicine should I ask about?** Brad's plan prefers tirzepatide, with semaglutide as the alternative (Brad's current guidance, 2 Nov 2026). Semaglutide has heart-outcome evidence in people with heart disease and no diabetes [15]. Your doctor weighs your other conditions, cost and access.
+**Which weight-loss medicine should I ask about?** Brad's plan prefers tirzepatide, with semaglutide as the alternative (Brad's current guidance, 2 Nov 2026). Your doctor weighs your other conditions, cost and access.
 
 **What doses do people use to microdose?** There is no tested microdose. Zepbound's label calls 2.5 mg a starting dose only [21]. Brad takes 2.5 mg a week off-label, not as a recommendation (Brad's current guidance, 2 Nov 2026).
 
 **Is a GLP-1 safe if I have reflux?** Reflux and indigestion are common side effects on the Zepbound label, though not contraindications [21]. Discuss it with your doctor first, along with any hiatus hernia or swallowing problems.
 
-**What happens if I stop?** Most people regain much of it: two-thirds within a year in the STEP 1 extension [13].
+**What happens if I stop?** Most regain much of it: two-thirds within a year in STEP 1 [13].
 
 **My ideal weight looks too low for my build.** The plan's ideal weight uses a BMI of 24 for men and 22 for women, inside the lowest-mortality ranges it cites from large studies: 23 to 26 for men, 20 to 23 for women (Brad's current guidance, 2 Nov 2026). It is a guide; your waist-to-height ratio shows whether your current weight carries risk.
 
