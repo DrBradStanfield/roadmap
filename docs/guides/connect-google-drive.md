@@ -33,7 +33,7 @@ Google also shares your email address with the tool. The tool says so on the Goo
 3. Click Google Drive. The page moves to Google.
 4. Pick your Google account, and sign in if asked.
 5. Google lists what the tool is asking for. The Google Drive permission has a box beside it. **Tick the Google Drive box**, then continue.
-6. Google sends you back to the tool. The top of your plan now says "✓ Your health record is yours alone. It lives in your Google Drive".
+6. Google sends you back to the tool. Beside the My health title on a computer, or the Account title on a phone, it now says "Synced to Google Drive". Settings on a computer, and the Account tab on a phone, say "✓ Your health record is yours alone. It lives in your Google Drive".
 
 Google's exact wording on that screen is Google's, and it can change. Look for the line that mentions Google Drive and make sure its box is ticked before you continue. The tool needs only that box to connect.
 
@@ -63,7 +63,7 @@ If that copy cannot reach Drive straight away, the tool keeps your record in thi
 
 ## If Google Drive is signed out later
 
-Sometimes the tool cannot sign back in to Google on its own, for example after you withdraw access. The top of your plan then says "Google Drive is signed out", with a Reconnect Google Drive button.
+Sometimes the tool cannot sign back in to Google on its own, for example after you withdraw access. A "Sign in to Google again" button then shows beside the My health title on a computer, and at the top of My health on a phone. Settings on a computer, and the Account tab on a phone, say "Google Drive is signed out", with a Reconnect Google Drive button.
 
 Click it and a Google window opens. The same rule applies: tick the Google Drive box. Anything you changed meanwhile is kept in this browser and merges when you reconnect.
 
@@ -73,7 +73,7 @@ If you would rather stop using Drive, click "Use this browser only" instead. You
 
 There are two ways, and they do different things.
 
-Log off this device. Click Google Drive at the top of your plan, then Log off this device. The tool asks "Log off this device?". Click Log off. This signs this browser out and clears your record from it. Your file in Drive is not touched. Sign back in with the same account to get everything back. Use this on a shared computer.
+Log off this device. Open Settings on a computer, or the Account tab on a phone. Click Google Drive in the line that says where your record lives, then Log off this device. The tool asks "Log off this device?". Click Log off. This signs this browser out and clears your record from it. Your file in Drive is not touched. Sign back in with the same account to get everything back. Use this on a shared computer.
 
 Withdraw the tool's access at Google. Go to [myaccount.google.com/connections](https://myaccount.google.com/connections), find the tool in the list, and remove its access. That stops the tool reaching your Drive from any device until you connect again. It also cuts off the ChatGPT or Claude connector, if you use one, because the connector signs in to Google as the same app. Your folder and file stay in your Drive.
 

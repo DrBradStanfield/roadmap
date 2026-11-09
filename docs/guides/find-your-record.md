@@ -74,7 +74,7 @@ The command-line tool, and Claude running on your own computer, make a backup ea
 
 ## Move it somewhere else
 
-To switch provider, click your provider's name at the top of your plan, or the "Keep my record in Dropbox or Google Drive" button, and pick another. The tool first copies your record from the old provider into this browser, then into the new one. If the old provider cannot be reached, the switch stops, so your record is never left behind.
+To switch provider, click your provider's name in Settings on a computer or the Account tab on a phone, or the "Keep my record in Dropbox or Google Drive" button, and pick another. The tool first copies your record from the old provider into this browser, then into the new one. If the old provider cannot be reached, the switch stops, so your record is never left behind.
 
 The old file stays where it was. The tool does not delete it. Your uploaded lab reports do not move either, so copy them across yourself if you want them in the new place.
 
@@ -82,7 +82,7 @@ To take your record to another tool, download the file. The format is published 
 
 ## Log off a device
 
-To stop using the tool on a shared computer, click your provider's name at the top of your plan, then Log off this device. That signs this browser out and clears your record from it. The file in your cloud is not touched. Sign back in with the same account to get everything back.
+To stop using the tool on a shared computer, open Settings (the Account tab on a phone), click your provider's name, then Log off this device. That signs this browser out and clears your record from it. The file in your cloud is not touched. Sign back in with the same account to get everything back.
 
 ## Delete your data
 
