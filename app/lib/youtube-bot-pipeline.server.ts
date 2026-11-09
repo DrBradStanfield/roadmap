@@ -4,6 +4,7 @@
  * conditional router, main LLM). Split out of youtube-bot.server.ts (issue
  * #429), which re-exports its public names.
  */
+import * as Sentry from '@sentry/react-router';
 import { classifyMessage, isUnreadableAnswer, shouldFireRouter } from './chat-classifier.server';
 import { routeQuery, sanitizeForRouter, type RouterResult } from './chat-router.server';
 import { SILENT_ON_YOUTUBE } from '../../packages/health-core/src/models';
@@ -202,19 +203,39 @@ export interface PipelineOutcome {
  * time. A refusal sends the web chat's bounded Sentry warning.
  */
 export function completionOutcome(completion: ChatCompletionResult, latencyMs: number): Pick<PipelineOutcome, 'posted' | 'skipReason' | 'isFallback' | 'failureMode' | 'replyText'> {
-  // The web chat's and Discord's bounded alert for a refusal or a fallback; a no-op for an answer (US-15 AC58).
-  reportChatFallback({ completion, platform: 'youtube', latencyMs });
   if (completion.isRefusal) {
+    reportChatFallback({ completion, platform: 'youtube', latencyMs });
     return { posted: false, skipReason: `main-LLM refusal (${completion.refusalCategory ?? 'other'})`, failureMode: 'refusal' };
   }
   if (completion.isFallback) {
     const failureMode = completion.failureMode ?? 'unknown';
+    tickFallbacks.set(failureMode, (tickFallbacks.get(failureMode) ?? 0) + 1);
     return { posted: false, skipReason: `main-LLM failure (${failureMode})`, isFallback: true, failureMode };
   }
   const replyText = completion.content.trim();
   // SKIP_NO_REPLY is still a real, deliberate model decision — worth keeping as training signal.
   if (replyText === 'SKIP_NO_REPLY') return { posted: false, skipReason: 'main-LLM returned SKIP_NO_REPLY' };
   return { posted: true, replyText };
+}
+
+/** Main-LLM fallbacks this tick, by failure mode (US-15 AC58). Ticks never overlap (runTick). */
+const tickFallbacks = new Map<string, number>();
+
+/**
+ * One bounded Sentry warning for the tick's main-LLM fallbacks, then a fresh
+ * count (US-15 AC58). A fallback is unclaimed and retried every tick, so an
+ * alert per comment, as the web chat sends per question, would repeat for each
+ * failing comment every 30 minutes; one per tick is at most 48 a day. Counts
+ * and failure modes only, never a comment or a reply.
+ */
+export function reportTickFallbacks(): void {
+  if (tickFallbacks.size === 0) return;
+  const byMode = Object.fromEntries(tickFallbacks);
+  tickFallbacks.clear();
+  const count = Object.values(byMode).reduce((a, b) => a + b, 0);
+  Sentry.captureMessage('YouTube bot: main-LLM fallbacks this tick', {
+    level: 'warning', tags: { feature: 'youtube-bot', subsystem: 'main-llm', platform: 'youtube' }, extra: { count, byMode },
+  });
 }
 
 /** Only a main-LLM failure is retried next tick; skips, silent classifier skips and refusals keep the claim. */

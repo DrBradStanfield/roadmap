@@ -73,6 +73,7 @@ import {
   buildThreadHistory,
   shouldUnclaim,
   runPipeline,
+  reportTickFallbacks,
   type PipelineOutcome,
 } from './youtube-bot-pipeline.server';
 
@@ -87,6 +88,7 @@ export {
   completionOutcome,
   shouldUnclaim,
   runPipeline,
+  reportTickFallbacks,
 } from './youtube-bot-pipeline.server';
 
 // ---------------------------------------------------------------------------
@@ -160,6 +162,7 @@ async function runTick(): Promise<void> {
   try {
     await tick();
   } finally {
+    reportTickFallbacks();
     tickInFlight = false;
   }
 }

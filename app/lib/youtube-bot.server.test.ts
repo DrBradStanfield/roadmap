@@ -7,6 +7,7 @@ import {
   readPostingCaps,
   PER_VIDEO_REPLY_CAP,
   completionOutcome,
+  reportTickFallbacks,
   shouldUnclaim,
   persistYouTubeTurn,
   filterThread,
@@ -300,17 +301,28 @@ describe('US-15 AC15: a refusal skips the comment and keeps the claim', () => {
     expect(shouldUnclaim(outcome)).toBe(true);
   });
 
-  it('US-15 AC58: an empty-reply fallback sends the web chat\'s bounded Sentry warning; an answer sends none', () => {
+  it('US-15 AC58: a tick\'s fallbacks send one bounded Sentry warning with their count; an answer sends none', () => {
+    reportTickFallbacks(); // a fresh tick: earlier tests' fallbacks are flushed
     vi.mocked(Sentry.captureMessage).mockClear();
+    vi.mocked(Sentry.captureException).mockClear();
+    completionOutcome({ content: 'Sorry, the private comment text', usage, isFallback: true, failureMode: 'empty-response' }, 7);
+    completionOutcome({ content: 'Sorry', usage, isFallback: true, failureMode: 'api-error' }, 7);
     completionOutcome({ content: 'Sorry', usage, isFallback: true, failureMode: 'empty-response' }, 7);
-    expect(Sentry.captureMessage).toHaveBeenCalledWith('Chat: main-LLM fallback (empty-response)', {
-      level: 'warning',
-      tags: { feature: 'chat', subsystem: 'main-llm', failureMode: 'empty-response', platform: 'youtube' },
-      extra: { latencyMs: 7, conversationId: null },
-    });
-    vi.mocked(Sentry.captureMessage).mockClear();
     completionOutcome({ content: 'An answer.', usage, isFallback: false }, 1);
+    // Nothing per comment: a fallback is retried every tick, so it would repeat.
     expect(Sentry.captureMessage).not.toHaveBeenCalled();
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+    reportTickFallbacks();
+    expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('YouTube bot: main-LLM fallbacks this tick', {
+      level: 'warning',
+      tags: { feature: 'youtube-bot', subsystem: 'main-llm', platform: 'youtube' },
+      extra: { count: 3, byMode: { 'empty-response': 2, 'api-error': 1 } },
+    });
+    expect(JSON.stringify(vi.mocked(Sentry.captureMessage).mock.calls)).not.toContain('private');
+    // The count starts again: a quiet tick sends nothing.
+    reportTickFallbacks();
+    expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
   });
 
   it('SKIP_NO_REPLY keeps the claim; an answer is posted', () => {
