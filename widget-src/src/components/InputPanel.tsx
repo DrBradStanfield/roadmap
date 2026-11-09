@@ -11,6 +11,7 @@ import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, mayStillFit, ty
 import { useRangeWait } from '../lib/useRangeWait';
 import type { ApiLabValue, ApiSupplement } from '../lib/api-types';
 import { loadFromLocalStorage } from '../lib/storage';
+import { getShownErase } from '../lib/roadmap-data';
 
 import { type FormStage, FIELD_METRIC_MAP, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD, VITAL_METRICS } from '@roadmap/health-core/mappings';
 import { type WeightMedicationTrigger, type LipidMarker } from '@roadmap/health-core/suggestions';
@@ -213,7 +214,9 @@ export function InputPanel({
     setUnreadable(prev => ({ ...prev, [field]: bad }));
     return !bad;
   };
-  const hasLandedOnMyHealth = useRef(false);
+  // The weight's jump to My health, once per record (US-62 AC25): the erase
+  // whose record it landed on, so an erase in this tab frees it (D1).
+  const landedFor = useRef<string | null>(null);
   // The birth year's jump (Brad 2026-11-02): once per record, as the weight's is once.
   const yearJumped = useRef(false);
   // One auto-advance instance per TARGET, so a new keystroke on any source
@@ -615,12 +618,12 @@ export function InputPanel({
                 return;
               }
               updateField(field, parseAndConvert(field, raw), fieldUnit(field));
-              if (field === 'weightKg' && !hasLandedOnMyHealth.current && onOnboardingDone) {
+              if (field === 'weightKg' && landedFor.current !== getShownErase() && onOnboardingDone) {
                 const weightNum = parseLocalisedNumber(raw);
                 if (weightNum !== undefined && /^\d{2,3}$/.test(raw) && weightNum >= r.min && weightNum <= r.max) {
                   advanceToMyHealth({
                     ambiguous: /^\d{2}$/.test(raw) && weightNum * 10 <= r.max,
-                    advance: () => requestAnimationFrame(() => { if (onOnboardingDone()) hasLandedOnMyHealth.current = true; }),
+                    advance: () => requestAnimationFrame(() => { if (onOnboardingDone()) landedFor.current = getShownErase(); }),
                   });
                 }
               }

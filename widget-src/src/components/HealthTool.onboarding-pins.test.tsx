@@ -276,13 +276,12 @@ describe('US-62 AC25: the last answer lands on My health, once per record (D1)',
     await weightLastTwice();
   });
 
-  // KNOWN LATENT BUG D1: InputPanel's hasLandedOnMyHealth, the #weightKg
-  // field's once-only landing, is spent per mount, never reset per record, so
-  // after an erase in this tab the next record's last-answer weight does not
-  // land. StartingInfoVitals' landedRef (the matrix weight) has the same
-  // pattern and is not driven here. Flip to `it` once fixed; the setup's
-  // checkpoints pass in the test above.
-  it.fails('US-62 AC25 (D1): Shopify build, weight last, erase, weight last again on the new record: the second landing still happens', async () => {
+  // D1, fixed 2026-11-10: the #weightKg field's landing was spent per mount,
+  // never per record, so after an erase in this tab the next record's
+  // last-answer weight did not land. It is now keyed to the record's erase
+  // identity. StartingInfoVitals' matrix weight follows the same rule and is
+  // not driven here.
+  it('US-62 AC25 (D1): Shopify build, weight last, erase, weight last again on the new record: the second landing still happens', async () => {
     await weightLastTwice();
     await waitFor(() => expect(landed()).toBe(true), { timeout: 1000 });
   });

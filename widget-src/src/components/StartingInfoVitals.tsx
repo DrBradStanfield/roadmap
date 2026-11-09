@@ -18,6 +18,7 @@
 // the matrix's `Sparkline`, `NumericInputCell`, `DraftDateCell`, and `UnitChip`.
 
 import { useEffect, useId, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { getShownErase } from '../lib/roadmap-data';
 import type { ApiMeasurement, FormStage } from '@roadmap/health-core/mappings';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import { type MetricType, type UnitSystem, toCanonicalValue, fromCanonicalValue, formatDisplayValue, getDisplayLabel, bpTargetFor } from '@roadmap/health-core/units';
@@ -355,18 +356,19 @@ export function StartingInfoVitals({
     const n = parseLocalisedNumber(typed);
 
     // Weight only: as the last answer, on to My health's top.
-    if (metric === 'weight' && onOnboardingDone && !landedRef.current && n != null && !validateTypedValue(metric, typed, unitFor(metric)).error) {
+    if (metric === 'weight' && onOnboardingDone && landedFor.current !== getShownErase() && n != null && !validateTypedValue(metric, typed, unitFor(metric)).error) {
       if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
       if (/^\d{2,3}$/.test(typed) && n >= 30 && n <= 400) {
         const couldExtend = /^\d{2}$/.test(typed) && n * 10 <= 400;
         // The once-only jump is spent only if it happened (not before the last answer).
-        const jump = () => { if (onOnboardingDone()) landedRef.current = true; };
+        const jump = () => { if (onOnboardingDone()) landedFor.current = getShownErase(); };
         if (!couldExtend) requestAnimationFrame(jump);
         else focusTimerRef.current = setTimeout(jump, 800);
       }
     }
   };
-  const landedRef = useRef(false);
+  // Once per record, as InputPanel's weight jump is (US-62 AC25, D1): the erase it landed on.
+  const landedFor = useRef<string | null>(null);
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setBpDraft = (which: 'sys' | 'dia', typed: string) => type([null, which], typed);
