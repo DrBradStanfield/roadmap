@@ -227,9 +227,9 @@ describe('a cloud tab left open while another tab switches this browser to anoth
 
   /** Tab B on the old cloud holds 'base'; tab A picks another provider: the old cloud is copied down and the
    *  sign-in redirect starts, so the old cloud is still remembered. */
-  async function switchStarted(): Promise<RecordSession> {
+  async function switchStarted(tabBCloud: (cloud: MemoryCloud) => MemoryAdapter = (cloud) => new StalledCloud(cloud)): Promise<RecordSession> {
     const old = new MemoryCloud();
-    const tabB = await RecordSession.open(webRecordHost(new StalledCloud(old)));
+    const tabB = await RecordSession.open(webRecordHost(tabBCloud(old)));
     const seed = await RecordSession.open(webRecordHost(new MemoryAdapter(old)));
     add(seed, 'base', 80);
     await seed.flush();
@@ -278,6 +278,57 @@ describe('a cloud tab left open while another tab switches this browser to anoth
     await first.flush();
     expect(await cloudIds(fresh)).toEqual(['base', 'late']);
     expect(isSyncPending()).toBe(false);
+  });
+
+  /** Issue #974: tab B's old-cloud save lands while the lift is held. The
+   *  save covers the copy, but the marker is the new provider's to clear. */
+  async function liftHeld() {
+    const fresh = new MemoryCloud();
+    const adapter = new NewProvider(fresh);
+    let release!: () => void;
+    adapter.gate = new Promise<void>((resolve) => { release = resolve; });
+    const host = webRecordHost(adapter);
+    if (host.tier !== 'cloud') throw new Error('cloud host expected');
+    const lifting = liftDeviceCopy(host); // has read the device copy, its write is held
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    return { fresh, release, lifting };
+  }
+
+  it("sends a write whose old-cloud save lands while the lift runs to the new cloud at its first load (#974, US-06 AC13)", async () => {
+    const tabB = await switchStarted((cloud) => new MemoryAdapter(cloud));
+    const { fresh, release, lifting } = await liftHeld();
+    add(tabB, 'late', 81);
+    tabB.flushSync(); // tab B goes away while the lift runs
+    await tabB.flush(); // and its old-cloud save lands first
+    release();
+    expect(await lifting).toBe('lifted');
+    expect(await cloudIds(fresh)).toEqual(['base']);
+    expect(isSyncPending()).toBe(true);
+    localStorage.setItem(BACKEND_KEY, 'dropbox');
+    const first = await RecordSession.open(webRecordHost(new NewProvider(fresh)));
+    expect(ids(first.file)).toEqual(['base', 'late']);
+  });
+
+  it("keeps the marker when that old-cloud save lands after the new provider is remembered (#974, US-06 AC13)", async () => {
+    let releaseOld!: () => void;
+    const oldGate = new Promise<void>((resolve) => { releaseOld = resolve; });
+    const tabB = await switchStarted((cloud) => new (class extends MemoryAdapter {
+      async write(...args: Parameters<MemoryAdapter['write']>): Promise<WriteResult> {
+        await oldGate;
+        return super.write(...args);
+      }
+    })(cloud));
+    const { fresh, release, lifting } = await liftHeld();
+    add(tabB, 'late', 81);
+    tabB.flushSync(); // tab B goes away while the lift runs; its save is held
+    release();
+    expect(await lifting).toBe('lifted');
+    localStorage.setItem(BACKEND_KEY, 'dropbox');
+    releaseOld();
+    await tabB.flush(); // the old-cloud save lands now
+    expect(isSyncPending()).toBe(true);
+    const first = await RecordSession.open(webRecordHost(new NewProvider(fresh)));
+    expect(ids(first.file)).toEqual(['base', 'late']);
   });
 });
 

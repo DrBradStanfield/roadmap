@@ -663,7 +663,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
           headers: { ...(await this.authHeaders()), 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: FOLDER_NAME }),
         });
-        if (!res.ok) return; // refused: not done, so tried again (US-09 AC40)
+        if (!res.ok && res.status !== 404) return; // refused: tried again; a 404 folder is gone (US-09 AC40)
       }
       this.stored = { ...(this.stored ?? {}), folderName: FOLDER_NAME };
       setJson(CONFIG_KEY, this.stored);

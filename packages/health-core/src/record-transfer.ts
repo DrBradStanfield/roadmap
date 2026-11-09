@@ -27,8 +27,9 @@ function ctxOf(host: RecordHost): SyncContext {
  */
 export async function liftDeviceCopy(host: CloudHost): Promise<'lifted' | 'empty' | 'unreadable'> {
   let body: unknown;
+  let version: string | null;
   try {
-    ({ body } = await host.mirror.adapter.read(ROADMAP_FILE_NAME));
+    ({ body, version } = await host.mirror.adapter.read(ROADMAP_FILE_NAME));
   } catch {
     return 'unreadable';
   }
@@ -38,6 +39,14 @@ export async function liftDeviceCopy(host: CloudHost): Promise<'lifted' | 'empty
   } catch (error) {
     host.mirror.pending.set();
     throw error;
+  }
+  // Another tab wrote the device copy while this upload ran (US-06 AC13): the
+  // marker carries that write to the new cloud's first load, even when the
+  // tab's own old-cloud save landed and cleared it (#974).
+  try {
+    if ((await host.mirror.adapter.read(ROADMAP_FILE_NAME)).version !== version) host.mirror.pending.set();
+  } catch {
+    host.mirror.pending.set();
   }
   return 'lifted';
 }

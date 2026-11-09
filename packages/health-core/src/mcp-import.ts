@@ -4,7 +4,7 @@
  * (issue #429).
  */
 import { bloodTestKeyOf, isCoreRow } from './blood-tests';
-import { dayOf, daysBetween } from './merge';
+import { dayOf, daysBetween, localDay } from './merge';
 import { displayLabUnit, labSlotKey } from './lab-catalog';
 import {
   type AdditionalLabValue,
@@ -443,7 +443,7 @@ export function prepareImport(
   bundle: ImportBundle,
   ctx: EditContext & { maxCorrectionAgeDays?: number; payloadId: string },
 ): PreparedImport {
-  const latestDay = ctx.latestDay ?? dayOf(ctx.now);
+  const latestDay = ctx.latestDay ?? localDay(ctx.now);
   const system = unitSystemOf(file.profile);
   const files: Array<z.infer<typeof importFileOutput>> = [];
   const candidates: ImportCandidate[] = [];

@@ -77,6 +77,17 @@ describe('US-09 AC40: the Drive folder rename is marked done only when Drive acc
     expect(storedName()).toBe(DRIVE_FOLDER_NAME);
   });
 
+  // Issue #976: a 404 is a folder that is gone, so no later PATCH can land.
+  it('a rename Drive answers 404 is marked done and not sent again (#976)', async () => {
+    renameAnswers = [404];
+    const adapter = new GoogleDriveAdapter(CONFIG);
+
+    await useFolder(adapter);
+    await useFolder(adapter);
+    expect(renames).toHaveLength(1);
+    expect(storedName()).toBe(DRIVE_FOLDER_NAME);
+  });
+
   it('control: an accepted rename is marked done and not sent again', async () => {
     renameAnswers = [200];
     const adapter = new GoogleDriveAdapter(CONFIG);

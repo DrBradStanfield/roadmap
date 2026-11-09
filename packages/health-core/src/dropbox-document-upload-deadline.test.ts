@@ -57,6 +57,9 @@ describe('US-09 AC39: a Dropbox document upload has a 5-minute deadline', () => 
     const failure = await failureAt(dropboxUploadDocument('token', REF, bytes()), UPLOAD_MS);
     expect(failure).toBeInstanceOf(StorageError);
     expect((failure as Error).message).toBe('Dropbox did not answer');
+    // Issue #980: the bytes went out, so the upload may have landed, as a
+    // Drive document create says (US-09 AC13d).
+    expect((failure as StorageError).hint).toBe('The change may have landed. Read the record again before trying it a second time.');
   });
 
   it('the same through the adapter the web and the iPhone use to file an original', async () => {

@@ -615,12 +615,12 @@ export class RecordSession {
    * the saved record lacks. A copy that holds more, such as another tab's
    * departure written since this save began, keeps it for the next load to
    * lift up, and so does one that cannot be read. The copy itself stays: a
-   * load that cannot reach the cloud starts from it (US-09 AC13). A host
-   * whose copy has no synchronous path clears the marker as before (the
-   * iPhone's marker holds its own generation).
+   * load that cannot reach the cloud starts from it (US-09 AC13). A copy with
+   * no synchronous path (the iPhone's, whose marker holds its own generation)
+   * clears as before. A browser moved to another provider never clears (#974).
    */
   private releaseMarker(mirror: DeviceMirror): void {
-    if (mirror.sync && (!mirror.pending.get() || !this.coveredCopy(mirror.sync))) return;
+    if (mirror.stillChosen?.() === false || (mirror.sync && (!mirror.pending.get() || !this.coveredCopy(mirror.sync)))) return;
     mirror.pending.clear();
   }
 
