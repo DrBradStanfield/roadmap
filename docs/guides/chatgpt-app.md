@@ -76,7 +76,7 @@ Reads the lab files sitting in your own connected Dropbox folder and shows you e
 
 Files the results from a report you drop into the chat. ChatGPT reads the file itself and sends us only the values it read, checked against our own catalogue, units and ranges.
 
-**What it will not do.** The file never reaches our server, and the document is filed by name and date only, never its contents.
+**What it will not do.** The file never reaches our server, and the document is filed as a record with a title, a date and at most a one-line summary, never the file itself.
 
 There is no delete. Nothing in your record can be removed by any tool here. A correction adds the right value and marks the wrong one entered-in-error, so the history stays honest and you can see what was changed.
 
