@@ -187,7 +187,7 @@ JPG/PNG uploaded directly → resize to max 1500px dimension (canvas, preserving
 
 ## UI States
 
-The upload modal (`UploadModal.tsx`) is a 4-state machine: `'select' | 'processing' | 'review' | 'done'`.
+The upload modal (`UploadModal.tsx`) is a 5-state machine: `'select' | 'processing' | 'review' | 'done' | 'error'`.
 
 ### State 1: Select
 - Drag-and-drop zone + file browser
@@ -267,7 +267,7 @@ The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: 
 | Machine cap | `AI_DAILY_FILE_CAP` (default 2000/day/machine), SHARED with the connector's `import_documents` | `machineFiles` in `rate-limiter.ts`; the true ceiling is cap × machines × 2 Fly apps |
 | Max files | 200 per upload session (client) | `UploadModal.tsx` |
 | Max pages | 20 per PDF (client); 100 page blocks per request (`labImportRequestSchema`) | `pdf-extract.ts`, `validation.ts` |
-| Max file size | 10 MB per file (client only); server rejects bodies over 200 MB | `UploadModal.tsx`, `api.lab-import-v2.ts` |
+| Max file size | 10 MB per file (client only); server rejects bodies over 200 MB | `lib/upload-pipeline.ts` (`MAX_FILE_SIZE`), `api.lab-import-v2.ts` |
 | Max tokens | 10000 (`'full'`, one file), 12288 (batch, BYOK), 3072 (`'metadata'`) | `anthropic.server.ts`, `lab-extraction.ts` |
 | Worst-case cost | bounded by the machine cap, not the per-IP limit: about 2000 files a day per machine (`AI_DAILY_FILE_CAP`), 4x the old 500 cap and its worst-case cost, per machine and per Fly app (the figure the cap's comment in `api.lab-import-v2.ts` gives). Since the per-IP limit rose to 200, ten IPs can reach the cap in a day (three could reach the old 500). | |
 | Sentry | `feature: 'lab_import_v2'`, page count and types only, never values | `api.lab-import-v2.ts` |
@@ -318,7 +318,7 @@ Thin wrapper around the Anthropic API using direct `fetch` (no SDK). `extractOrC
 Current file-by-file inventory: docs/reference.md. The upload feature spans
 `app/routes/api.lab-import-v2.ts`, `app/lib/anthropic.server.ts`,
 `packages/health-core/src/{lab-extraction,document-path,record-edits,import-hints}.ts`,
-`widget-src/src/lib/{pdf-extract,docx-extract,zip-extract,image-resize,upload-api,byok-upload,archive-payloads}.ts`,
+`widget-src/src/lib/{pdf-extract,docx-extract,zip-extract,image-resize,upload-api,byok-upload,archive-payloads,upload-pipeline,review-matrix,review-dates}.ts`,
 `widget-src/src/components/{UploadModal,ReviewTable}.tsx`, and
 `widget-src/src/storage/roadmap-store.ts`. Connector: `app/lib/mcp-import.server.ts` + `packages/health-core/src/mcp-tools.ts`.
 
@@ -347,7 +347,7 @@ Triggered by a customer report of a wrong ApoB extraction (`0.5 g/L` misread as 
 |---|---|---|
 | **D1** | Inline-edit the value at review time | `ReviewTable.tsx` value cell is a numeric input (`type="text"`, `inputMode="decimal"`, locale-aware so `0,5` and `0.5` both parse). Edited rows save with `source: 'lab_import_edited'`; unedited rows `'lab_import'`. |
 | **D2** | FHIR `replaces` for post-save corrections | A correction flips the old row to `entered-in-error` and appends a new active row with `correctsId` and `source: 'manual_correction'`. Lives in `record-edits.ts` (`correctValue`) and is applied by `RoadmapStore`; the v1 Supabase RPC, trigger and unique index that first enforced this are gone. |
-| **D3** | Concurrency 5 LLM × 3 extractors | `LLM_CONCURRENCY = 5` + `EXTRACT_CONCURRENCY = 3` in `UploadModal.tsx`. Wall-clock for a 12-file ZIP: ~12s (down from ~50s). 3 parallel pdf.js workers keep the LLM queue fed without UI jank. |
+| **D3** | Concurrency 5 LLM × 3 extractors | `LLM_CONCURRENCY = 5` + `EXTRACT_CONCURRENCY = 3` in `lib/upload-pipeline.ts`. Wall-clock for a 12-file ZIP: ~12s (down from ~50s). 3 parallel pdf.js workers keep the LLM queue fed without UI jank. |
 | **D4** | No dual-OCR / second-engine consensus | Two correction surfaces (review-time edit + click-to-correct after save) give the user the verification step the customer actually wanted, without doubling LLM cost. Revisit if production correction frequency stays high. |
 
 ### Click-to-correct UX (`BloodTestTimeline.tsx`)

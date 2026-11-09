@@ -5,7 +5,8 @@
 import crypto from 'node:crypto';
 import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin } from './supabase-client.server';
-import { logAudit, safeErrorFields } from './supabase-identity.server';
+import { logAudit } from './supabase-identity.server';
+import { safeErrorFields } from './safe-error-fields.server';
 
 // ---------------------------------------------------------------------------
 // Guest chat session management

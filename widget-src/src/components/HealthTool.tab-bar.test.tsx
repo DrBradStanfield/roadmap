@@ -289,9 +289,9 @@ describe('US-62 AC34: the Account tab', () => {
     fireEvent.keyDown(within(sheet).getByRole('button', { name: 'Delete all my data' }), { key: 'Escape' });
     expect(account.getAttribute('aria-selected')).toBe('true');
     expect(panel.querySelector('.mh-settings')).not.toBeNull();
-    // The card keeps the storage button's filled style there (the flat Settings rule skips Account).
+    // The card keeps the storage button's filled style there (US-62 AC35: no Settings rule flattens it).
     const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
-    expect(css).toMatch(/:not\(\.mh-account\) > \.mh-settings \.hr-sync \.hr-sync-btn,/);
+    expect(css).not.toMatch(/\.mh-settings \.hr-sync \.hr-sync-btn,\s*\.mh-foot-storage/);
   });
 
   it('a new guest with nothing entered still finds the sign-in in Account, and no pitch on My health', async () => {

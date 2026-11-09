@@ -187,6 +187,9 @@ if (event === 'PreToolUse') {
 
 if (event === 'Stop') {
   if (!inWorktree || input.stop_hook_active) process.exit(0);
+  // Heartbeat: a session that ended a turn here is alive; SessionStart reads this file's mtime (a session idle
+  // for a day writes no index, so the git dir alone would offer its worktree for removal).
+  try { fs.writeFileSync(path.join(git(top, ['rev-parse', '--absolute-git-dir']), 'session-heartbeat'), ''); } catch { /* best effort */ }
   const problems = [];
   let branch = '';
   try {
@@ -225,10 +228,10 @@ if (event === 'SessionStart') {
       const w = real(wt);
       if (same(w, main) || same(w, top)) continue;
       const br = ((block.match(/^branch refs\/heads\/(.+)$/m) || [])[1]) || '(detached)';
-      // Used in the last day: index or HEAD in its git dir changed, worktree-done.sh's own test. Read before
+      // Used in the last day: index, HEAD or the Stop hook's heartbeat in its git dir changed, worktree-done.sh's own test. Read before
       // landing(), whose `git status` may rewrite the index.
       const gd = git(w, ['rev-parse', '--absolute-git-dir']);
-      const recent = ['index', 'HEAD'].some((f) => { try { return Date.now() - fs.statSync(path.join(gd, f)).mtimeMs < 864e5; } catch { return false; } });
+      const recent = ['index', 'HEAD', 'session-heartbeat'].some((f) => { try { return Date.now() - fs.statSync(path.join(gd, f)).mtimeMs < 864e5; } catch { return false; } });
       const s = landing(w);
       const dirty = s.dirty ? s.dirty.split('\n').length : 0;
       const ahead = s.ahead();

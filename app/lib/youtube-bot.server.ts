@@ -76,6 +76,7 @@ import {
   reportTickFallbacks,
   type PipelineOutcome,
 } from './youtube-bot-pipeline.server';
+import { safeErrorFields } from './safe-error-fields.server';
 
 // Every name this file exported before the split (issue #429).
 export { PER_VIDEO_REPLY_CAP } from './youtube-bot-config.server';
@@ -168,7 +169,7 @@ async function runTick(): Promise<void> {
 }
 
 function logTickError(err: unknown): void {
-  console.error('YouTube bot tick error:', err);
+  console.error('YouTube bot tick error:', safeErrorFields(err));
   Sentry.captureException(err, { tags: { feature: 'youtube-bot' } });
 }
 
