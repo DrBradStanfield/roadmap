@@ -3812,7 +3812,6 @@ input[type="number"] {
 }
 
 .supplement-add {
-  position: relative;
   margin-top: 8px;
 }
 
@@ -3824,18 +3823,13 @@ input[type="number"] {
   font-size: 13px;
 }
 
+/* In the page, pushing what follows down: a real iPhone sent a tap on the old floating
+   list to the card behind it (US-62 AC30f). At most 8 options, so no inner scroll. */
 .supplement-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
+  margin-top: 4px;
   background: white;
   border: 1px solid var(--color-border, #d1d9e6);
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 10;
-  max-height: 200px;
-  overflow-y: auto;
 }
 
 .supplement-dropdown-item {
@@ -5212,7 +5206,6 @@ input[type="number"] {
   .bt-move-panel {
     scroll-margin-bottom: 60px;
   }
-  .supplement-dropdown,
   .bp-info-tooltip,
   .upload-lab-tooltip {
     z-index: 21;

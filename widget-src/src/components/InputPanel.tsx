@@ -10,7 +10,7 @@ import type { CorrectFn, Refused, SaveTask } from '../lib/matrix-save';
 import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, mayStillFit, type Grading } from '../lib/blood-test-cell';
 import { useRangeWait } from '../lib/useRangeWait';
 import type { ApiLabValue, ApiSupplement } from '../lib/api-types';
-import { DRAFTS_CLEARED_EVENT, loadFromLocalStorage } from '../lib/storage';
+import { loadFromLocalStorage } from '../lib/storage';
 
 import { type FormStage, FIELD_METRIC_MAP, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD, VITAL_METRICS } from '@roadmap/health-core/mappings';
 import { type WeightMedicationTrigger, type LipidMarker } from '@roadmap/health-core/suggestions';
@@ -21,13 +21,14 @@ import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
 import { dayOf, localDay } from '@roadmap/health-core/merge';
 import { anyScreeningEligible, medicationWrites, screeningWrites, readScreening, dexaEligible } from '@roadmap/health-core/input-form';
 import { formatShortDate, MONTHS_FULL } from '../lib/constants';
-import { BloodTestTimeline, useLiveRegion, type BloodTestPrefillFn } from './BloodTestTimeline';
+import { BloodTestTimeline, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
 import { useMoveTest, type MoveTestApi } from './MoveTestPanel';
 import { StartingInfoVitals, type VitalsPrefillFn } from './StartingInfoVitals';
 import { CommitTickButton } from './CommitTickButton';
 import { useLpaUnit } from '../lib/lpa-unit';
-import { type RowContext, type ValueSubject } from './MyDataRows';
+import { useValuePage, type RevealCell } from '../lib/useValuePage';
+import { type RowContext } from './MyDataRows';
 import { ValuePage } from './ValuePage';
 import { AddLabTest } from './AddLabTest';
 import { SupplementsSection } from './SupplementsSection';
@@ -38,12 +39,6 @@ import { LipidMedications } from './LipidMedications';
 import { WeightMedications } from './WeightMedications';
 import { BoneDensity } from './BoneDensity';
 import { AboutRows, AlcoholField, BirthFields, HeightField, SexField, useHeightPair } from './AboutYou';
-
-/** The history-state key a phone value page's entry carries (US-62 AC10). */
-const VALUE_PAGE_STATE = 'hrValuePage';
-const LEAVE_UNSAVED = 'Leave without saving the value you typed?';
-/** Said when a chat edit closes a page that held typed input. */
-const TYPED_NOT_SAVED = 'Your typed value was not saved.';
 
 interface FieldConfig {
   field: keyof HealthInputs;
@@ -172,7 +167,7 @@ interface InputPanelProps {
   onOnboardingDone?: (fromBirth?: boolean) => boolean;
   /** A chat edit that filled a grid cell (US-16 AC2): the table opens so the
    *  filled cell shows, phone and desktop. Each new edit is a new object. */
-  revealCell?: { field: string; grid: boolean } | null;
+  revealCell?: RevealCell;
 }
 
 /**
@@ -292,93 +287,9 @@ export function InputPanel({
     plan: planBasis,
     unitOf: m => (m === 'lpa' ? lpaUnit : unitOverrides[METRIC_TO_FIELD[m]] ?? unitSystem),
   }), [grading, planBasis, lpaUnit, unitOverrides, unitSystem]);
-  const [valuePage, setValuePage] = useState<ValueSubject | null>(null);
-  const [tableOpen, setTableOpen] = useState(false);
-  const [seenReveal, setSeenReveal] = useState<{ field: string; grid: boolean } | null>(null);
-  // A chat reveal closes the value page; only a filled grid cell opens the table (adversary R6).
-  const revealing = !!revealCell && revealCell !== seenReveal;
-  const tableShown = tableOpen || (revealing && revealCell.grid);
-  const pageShown = !revealing ? valuePage : null;
-  // A page is a history entry (a state marker, no URL change), so the phone's
-  // back gesture closes it, and "‹ My data" goes back. Typed, unsaved Add
-  // input is never dropped silently: leaving asks first. Back returns to the
-  // row it opened from, scrolled and focused as it was.
-  const cameFrom = useRef<{ el: Element | null; y: number }>({ el: null, y: 0 });
-  const pageDirty = useRef(false);
-  const onPageEntry = () => !!window.history.state?.[VALUE_PAGE_STATE];
-  const mayLeave = () => !pageDirty.current || window.confirm(LEAVE_UNSAVED);
-  // `from` is the row pressed: WebKit does not focus a button on a tap, so the active element is stale.
-  const openPage = (subject: ValueSubject, from?: Element) => {
-    cameFrom.current = { el: from ?? document.activeElement, y: window.scrollY };
-    setSeenReveal(revealCell);
-    setValuePage(subject);
-    if (!onPageEntry()) window.history.pushState({ ...window.history.state, [VALUE_PAGE_STATE]: true }, '');
-  };
-  const finishClose = () => {
-    pageDirty.current = false;
-    setValuePage(null);
-    requestAnimationFrame(() => {
-      const { el, y } = cameFrom.current;
-      if (el instanceof HTMLElement && el.isConnected) {
-        el.scrollIntoView({ behavior: 'instant', block: 'center' });
-        el.focus({ preventScroll: true });
-      } else window.scrollTo?.({ top: y, behavior: 'instant' });
-    });
-  };
-  const closePage = () => {
-    if (!mayLeave()) return;
-    pageDirty.current = false;
-    if (onPageEntry()) window.history.back(); // its popstate closes the page
-    else finishClose();
-  };
-  // A reload on a page's entry opens on the rows: drop the stale marker, so the next page pushes its own.
-  useEffect(() => {
-    if (onPageEntry()) window.history.replaceState({ ...window.history.state, [VALUE_PAGE_STATE]: undefined }, '');
-  }, []);
-  useEffect(() => {
-    if (!valuePage) return;
-    const onPop = () => {
-      // A page left open on My data while another tab shows does not answer Back.
-      if (onPageEntry() || panelRef.current?.closest('[hidden]')) return;
-      // Settings cover the page: Back closes them (HealthTool), and the page keeps its entry.
-      if (panelRef.current?.querySelector('.mh-page-host[hidden]')) {
-        window.history.pushState({ ...window.history.state, [VALUE_PAGE_STATE]: true }, '');
-        return;
-      }
-      // Back from a page holding typed input, declined: stay, and keep the entry.
-      if (!mayLeave()) { window.history.pushState({ ...window.history.state, [VALUE_PAGE_STATE]: true }, ''); return; }
-      finishClose();
-    };
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
-  }, [valuePage]);
-  // An erase, here or on another device, closes an open page and drops what it held (US-16 AC2a).
-  useEffect(() => {
-    const drop = () => {
-      if (!valuePageRef.current) return;
-      setValuePage(null);
-      pageDirty.current = false;
-      if (onPageEntry()) window.history.back();
-    };
-    window.addEventListener(DRAFTS_CLEARED_EVENT, drop);
-    return () => window.removeEventListener(DRAFTS_CLEARED_EVENT, drop);
-  }, []);
-  const valuePageRef = useRef(valuePage);
-  valuePageRef.current = valuePage;
-  // A chat edit closes any open page, so the field it filled shows (US-16 AC2):
-  // the table opens only for a grid cell (adversary R6).
-  const [sayPanel, panelMessages] = useLiveRegion('md-panel-messages');
-  // Read as the reveal renders: the page unmounts in this commit, and its form clears the mark as it goes.
-  const revealDropsTyping = useRef(false);
-  if (revealing && valuePage && pageDirty.current) revealDropsTyping.current = true;
-  useEffect(() => {
-    if (!revealing || !valuePage) return;
-    if (revealDropsTyping.current) sayPanel(TYPED_NOT_SAVED);
-    revealDropsTyping.current = false;
-    setValuePage(null);
-    pageDirty.current = false;
-    if (onPageEntry()) window.history.back();
-  }, [revealing]);
+  // My data's view state: the open value page, its history entry and the table (lib/useValuePage).
+  const panelRef = useRef<HTMLDivElement>(null);
+  const { pageShown, tableShown, openPage, switchPage, closePage, showTable, pageDirty, panelMessages } = useValuePage(revealCell, panelRef);
   // A grid's typed text not yet saved, valid or not (the plan and the chat
   // read the valid part, and an upload saves it first): where the grids sit
   // hidden under the rows, each card says so and opens the table
@@ -388,13 +299,6 @@ export function InputPanel({
   const unsavedCue = (shown: boolean) => !tableShown && shown && (
     <button type="button" className="md-unsaved" onClick={() => showTable(true)}>Unsaved values: review</button>
   );
-  const showTable = (open: boolean) => { setSeenReveal(revealCell); setTableOpen(open); };
-  const panelRef = useRef<HTMLDivElement>(null);
-  // A grid mounted hidden never scrolled to its newest column: do it on showing.
-  useEffect(() => {
-    if (!tableShown) return;
-    panelRef.current?.querySelectorAll<HTMLElement>('.md-table .bt-timeline-scroll').forEach(el => { el.scrollLeft = el.scrollWidth; });
-  }, [tableShown]);
   // About you sits low, as on the iPhone, phone and desktop (US-62 AC12): for
   // a record complete when first shown, and once the onboarding's four answers
   // hold and the focus leaves its card, never mid-typing. The card travels to
@@ -1202,7 +1106,7 @@ export function InputPanel({
     pageOpen: !!pageShown,
     renderPage: tiles => pageShown && (
       <ValuePage key={JSON.stringify(pageShown)} subject={pageShown} history={[...vitalsHistory, ...bloodTestHistory]} labValues={labValues}
-                 ctx={rowCtx} tiles={tiles} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} onOpen={subject => mayLeave() && openPage(subject)} dirtyRef={pageDirty}/>
+                 ctx={rowCtx} tiles={tiles} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} onOpen={switchPage} dirtyRef={pageDirty}/>
     ),
     rows: { ctx: rowCtx, open: openPage, vitals: vitalsHistory, blood: bloodTestHistory, labs: labValues, vitalsAsRows: vitalsRows, withoutWeight: weightInProfile },
     legacyVitals: !vitalsRows && (
