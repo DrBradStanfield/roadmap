@@ -277,6 +277,27 @@ describe('US-12 AC4–6 upload session ownership', () => {
     await screen.findByRole('button', { name: 'Done' });
     expect(screen.getByText(/Saved 1 blood test value, 1 document$/)).toBeTruthy();
   });
+  it('US-12 AC6c: two different originals that share a name count as two', async () => {
+    vi.mocked(bulkSaveDocuments).mockResolvedValueOnce({ saved: [
+      { ...archivedLetter, id: 'a', contentHash: 'sha256-one' }, { ...archivedLetter, id: 'b', contentHash: 'sha256-two' },
+    ], errorCount: 0 });
+    vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([{ documentType: 'pathology_report', title: 'Blood test results', documentDate: '2024-06-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'test.pdf' }]);
+    render(<Harness />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(screen.getByText(/Saved 1 blood test value, 2 documents$/)).toBeTruthy();
+  });
+  it('US-12 AC6c: a failed re-read after a partial save is reported, tag only, and frees Save', async () => {
+    originalFailsOnce();
+    render(<Harness completedHistory={savedLdl} refresh={Promise.reject(new Error('synthetic re-read failure'))} />);
+    await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();
+    expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), { tags: { area: 'upload-save', branch: 'reread' } });
+    expect((screen.getByRole('button', { name: /^Save / }) as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+  });
   it('US-12 AC6c: Save stays busy until the page has read back a partial save', async () => {
     originalFailsOnce();
     const reread = deferred<void>();

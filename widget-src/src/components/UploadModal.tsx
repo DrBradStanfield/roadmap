@@ -157,7 +157,7 @@ function FileNotices({ notices }: { notices: FileNotice[] }) {
 
 /** One session's save outcome (US-12 AC6c). The saved counts add up across a
  *  retry, which finishes what the first Save began; the rest are the last
- *  attempt's. Documents count by file name: a retry may file an original again. `unstored`: originals the cloud would not store behind details it
+ *  attempt's. Documents count by content, else name: a retry may refile one. `unstored`: originals the cloud would not store behind details it
  *  already holds (US-14 AC4). The refusals are lab rows in a unit the record
  *  does not know for that test, and core values it refused: each is named, as
  *  a dropped value must never be silent (US-21 phase 3, US-35 AC17). */
@@ -485,7 +485,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       const next: SaveOutcome = {
         values: prior.values + savedValues.saved.length,
         labValues: prior.labValues + savedLabValues.saved.length,
-        documents: [...new Set([...prior.documents, ...savedDocs.saved.map(d => d.sourceFileName ?? d.id)])],
+        documents: [...new Set([...prior.documents, ...savedDocs.saved.map(d => d.contentHash ?? d.sourceFileName ?? d.id)])],
         skippedValues: savedValues.skippedDuplicates, skippedLabValues: savedLabValues.skippedDuplicates,
         errors: saveErrors, unstored: savedDocs.unstored ?? 0,
         refusedLabUnits: savedLabValues.refused, refusedMeasurements: savedValues.refused,
