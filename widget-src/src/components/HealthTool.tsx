@@ -6,17 +6,16 @@ import { medicinesShown, weightMedicationTrigger, lipidMarkerFor } from '@roadma
 import { validateHealthInputs, getValidationErrors, convertValidationErrorsToUnits, birthRefusedMessage, inputRangeFault } from '@roadmap/health-core/validation';
 import { planInputsFrom, withLabEgfr, labEgfrOf } from '@roadmap/health-core/plan';
 import { type SuggestionInputs, type AlcoholAnswer, type HealthInputs, isSex } from '@roadmap/health-core/types';
-import { detectUnitSystem, toCanonicalValue, type UnitSystem, type MetricType, formatHeightDisplay } from '@roadmap/health-core/units';
-import { PREFILL_FIELDS, hasUnsavedProfileEdits, LONGITUDINAL_FIELDS, FIELD_TO_METRIC, medicationsToInputs, mergeLongitudinalInputs, screeningsToInputs, computeFormStage, opensFullForm, FIELD_METRIC_MAP, METRIC_TO_FIELD, withPsaMeasurement, type FormStage, type RecordHoldings } from '@roadmap/health-core/mappings';
+import { detectUnitSystem, type UnitSystem, type MetricType } from '@roadmap/health-core/units';
+import { PREFILL_FIELDS, hasUnsavedProfileEdits, LONGITUDINAL_FIELDS, medicationsToInputs, mergeLongitudinalInputs, screeningsToInputs, computeFormStage, opensFullForm, FIELD_METRIC_MAP, METRIC_TO_FIELD, withPsaMeasurement, type FormStage, type RecordHoldings } from '@roadmap/health-core/mappings';
 import { chatContextOf, type ChatContextPayload } from '@roadmap/health-core/chat-context';
 import { statTiles } from '@roadmap/health-core/stat-tiles';
 import { medicationForm, screeningForm } from '@roadmap/health-core/input-form';
 import { localDay, dayOf } from '@roadmap/health-core/merge';
 import { newestUsablePsa } from '@roadmap/health-core/measurement-history';
-import { VITALS_INPUT_FIELDS, chatMedicationChange, unsavedProfile, type ChatMedicationRow, type ProposedEdit, type ProposedFieldEdit, type ProposedMedicationEdit, type ProposedProfileEdit } from '@roadmap/health-core/chat-edits';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { MoveTestApi } from './MoveTestPanel';
-import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';
+import type { VitalsPrefillFn } from './StartingInfoVitals';
 import type { LatestMeasurementsResult } from '../lib/api-types';
 import { InputPanel, type PlanBasis } from './InputPanel';
 import { OpenEvidenceContext, usePlanView } from './ResultsPanel';
@@ -55,7 +54,6 @@ import {
   clearOffFileAfterErase,
   flushRoadmapStoreSync,
   loadLatestMeasurementsSync,
-  holdsUnreadableMedication,
   loadAllHistory,
   loadAllHistorySync,
   loadLabValues,
@@ -82,6 +80,7 @@ import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { createRemoteChangeRelay } from '../lib/remote-replay';
 import { debounceSave, cancelListSave, flushListSaves, type ListSaves } from '../lib/list-saves';
 import { useRecordState } from '../hooks/useRecordState';
+import { useChatEdits } from './ChatEdits';
 import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
 
 /** A correction the store answered; a success is counted (name only). */
@@ -90,12 +89,6 @@ const countedCorrection = async (id: string, newValue: number, erase?: string) =
   if (status === 'ok') trackProductEvent('correction_made');
   return status;
 };
-
-/** The profile fields a chat proposal carries: the names its counter may send (US-16 AC2). */
-const profileFields = (p: ProposedProfileEdit) =>
-  [...(p.sex ? ['sex' as const] : []), ...(p.heightCm !== null ? ['heightCm' as const] : [])];
-
-const sexLabel = (sex: 'male' | 'female') => (sex === 'male' ? 'Male' : 'Female');
 
 /** After a medication or screening save, failed or not, the chat copy takes
  *  the lists the store holds (US-15 AC10). Never the form's: a failed save
@@ -337,8 +330,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     if (erase === getShownErase()) return;
     markEraseShown(erase);
     setShownErase(erase);
-    setMedUndo(null);
-    setProfileProposal(null);
+    clearChatEdits();
   }, []);
   // The store holds an erase the screen does not show yet: this tab's erase
   // still writing or failed to write, or another device's erase whose re-read
@@ -918,6 +910,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
 
   // Mobile tab state
   const isMobile = useIsMobile();
+  const isMobileRef = useRef(isMobile);
+  isMobileRef.current = isMobile;
   const isWideDesktop = useIsWideDesktop(1200);
   const floatingChat = !isMobile && !isWideDesktop && reached === 4;
   const [activeTab, setActiveTab] = useState<TabId>('health');
@@ -1009,10 +1003,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     cell?.focus({ preventScroll: true });
   }, [revealCell]);
 
-  // US-16 AC2: a sex or height the chat proposed, waiting for the user's Save.
-  // The form writes these on change, so nothing reaches the form until then.
-  const [profileProposal, setProfileProposal] = useState<ProposedProfileEdit | null>(null);
-
   const handleDeleteData = useCallback(async () => {
     const confirmed = window.confirm(ERASE_CONFIRM);
     if (!confirmed) return false;
@@ -1037,8 +1027,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       clearForErase();
       // Cleared here too: a re-read during the write may have shown this
       // erase already, and showErase then clears nothing (adversary R1).
-      setProfileProposal(null);
-      setMedUndo(null);
+      clearChatEdits();
       showErase(getEraseIdentity());
       // A refusal of this erase's own leftovers is not news (adversary R3).
       refusedFor.current = getEraseIdentity();
@@ -1067,7 +1056,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     if (ONBOARDING_FIELDS.includes(field)) markAnswered(); // US-62 AC13: an answer given in this tab
     if (unit) typedIn.current[field] = { value, unit };
     // The user's own sex or height outranks a chat proposal for it (US-16 AC2).
-    if (field === 'sex' || field === 'heightCm') setProfileProposal(null);
+    if (field === 'sex' || field === 'heightCm') dropProfileProposal();
     if (field === 'birthYear' || field === 'birthMonth') setBirthRefused(null);
     setInputs(prev => ({ ...prev, [field]: value }));
   }, []);
@@ -1160,133 +1149,19 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     void deleteSupplementApi(supplementKey).then(saved => { if (!saved) writeRefused(); });
   }, [writeRefused]);
 
-  // ---------------------------------------------------------------------------
-  // Chatbot-driven form edits (the chat proposes; this routes to the real form)
-  // ---------------------------------------------------------------------------
-  // A one-shot undo for a medication change the chat just applied (meds
-  // auto-save, so the chat states the change; only this banner offers Undo): every row the
-  // change wrote, as it was before. 'unavailable': the change replaced a row
-  // this build cannot read, so the banner offers no Undo (US-67 N3).
-  const [medUndo, setMedUndo] = useState<ChatMedicationRow[] | 'unavailable' | null>(null);
-  // The form's medications, unsaved changes included: a chat change is
-  // judged against these as well as the saved ones (US-06 AC12).
-  const medicationsRef = useRef(medications);
-  medicationsRef.current = medications;
-  const isMobileRef = useRef(isMobile);
-  isMobileRef.current = isMobile;
-
-  /** Returns whether the edit filled a grid cell (the table then opens, US-62 AC11). */
-  const applyFieldEdit = useCallback((edit: ProposedFieldEdit): boolean => {
-    const metric = FIELD_TO_METRIC[edit.field] as MetricType | undefined;
-    if (!metric) return false;
-    // Vitals (weight/waist/BP). When the vitals MATRIX is mounted (returning
-    // users), route into its draft/backfill cell so it pre-fills AND flashes —
-    // exactly like the blood-test matrix. The matrix only registers its prefill
-    // ref while mounted, so a non-null ref is the "matrix is shown" signal.
-    // Fresh users (legacy plain fields, ref null) fall back to setting the form
-    // input directly — no flash, unchanged behaviour.
-    if (VITALS_INPUT_FIELDS.includes(edit.field)) {
-      // The matrix refuses a weight it does not show (the weight beside the
-      // height, US-62 AC13): that edit goes to the visible field.
-      const filled = routeVitalsEdit(!!vitalsPrefillRef.current) === 'matrix'
-        && vitalsPrefillRef.current!(metric, edit.displayValue, edit.unitSystem, edit.date) !== null;
-      if (!filled) handleInputChange(edit.field, toCanonicalValue(metric, edit.displayValue, edit.unitSystem), edit.unitSystem);
-      return filled;
-    }
-    // Blood-test metrics → the timeline matrix's draft/backfill cell.
-    return (bloodTestPrefillRef.current?.(metric, edit.displayValue, edit.unitSystem, edit.date) ?? null) !== null;
-  }, [handleInputChange]);
-
-  /** Apply one chat medication edit; returns the rows it wrote, as they were
-   *  before, for Undo, or null when it replaces a row this build cannot read
-   *  (US-65): Undo could not put that row back (US-67 N3). `stated` holds
-   *  every key the same reply names. */
-  const applyMedicationEdit = useCallback((edit: ProposedMedicationEdit, stated: ReadonlySet<string>) => {
-    // Snapshot the prior values FIRST so Undo can restore them: the saved
-    // ones, from the copy the banner's erase check reads (US-16 AC2a).
-    // The rule is health-core's, shared with the iPhone (US-06 AC12, US-67 AC4):
-    // a new drug or dose resets the drug's escalation answer, escalation first,
-    // unless the same reply states it. Flat mode too: the chat changes the drug
-    // on purpose. An answer the form holds but has not saved yet, or one this
-    // build cannot read, was about the old drug too: it is reset as well, as on
-    // the iPhone, and only the readable saved one is Undo's to restore.
-    const saved = loadLatestMeasurementsSync()?.medications ?? [];
-    const onForm = medicationsRef.current.find(m => m.medicationKey === edit.medicationKey);
-    const { undo, reset } = chatMedicationChange(edit, saved, stated, onForm);
-    const resets = !!reset && (undo.some(m => m.medicationKey === reset) || medSaveTimers.current.has(reset) || holdsUnreadableMedication(reset, true));
-    const undoable = ![edit.medicationKey, resets && reset].some(key => key && holdsUnreadableMedication(key));
-    if (resets) handleMedicationChange(reset, 'not_yet', null, null);
-    handleMedicationChange(edit.medicationKey, edit.drugName, edit.doseValue, edit.doseUnit);
-    return undoable ? undo : null;
-  }, [handleMedicationChange]);
-
-  // Only what the profile does not already hold shows, however it changed since.
-  const pendingProfile = profileProposal && unsavedProfile(profileProposal, inputs, unitSystem);
-  const answerProfileProposal = (save: boolean) => {
-    if (!pendingProfile) return;
-    // The store holds an erase the screen does not show: write nothing (US-16 AC2a).
-    if (eraseUnshown()) { setProfileProposal(null); return; }
-    if (save && pendingProfile.sex) handleInputChange('sex', pendingProfile.sex);
-    if (save && pendingProfile.heightCm !== null) handleInputChange('heightCm', pendingProfile.heightCm);
-    for (const field of profileFields(pendingProfile)) trackProductEvent('chat_profile_edit', { field, choice: save ? 'saved' : 'declined' });
-    setProfileProposal(null);
-  };
-
   // Settings (US-62 AC24): the person button opens them in My health's place.
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const handleProposeEdit = useCallback((edits: ProposedEdit[]) => {
-    // While the store holds an erase the screen does not show, the reply comes
-    // from the conversation the erase tombstones: none of it applies (US-16 AC2a).
-    if (eraseUnshown()) return;
-    let editedField: string | null = null;
-    let inGrid = false;
-    const stated = new Set(edits.flatMap(e => (e.kind === 'medication' ? [e.medicationKey] : [])));
-    // Undo restores every medication row the reply changed, the last edit
-    // first; one Undo covers the whole reply, so a row it cannot restore
-    // means none (US-67 N3). Field edits are drafts the person saves or discards.
-    const undo: ChatMedicationRow[] = [];
-    let undoable = true;
-    for (const edit of edits) {
-      switch (edit.kind) {
-        case 'field': if (applyFieldEdit(edit)) inGrid = true; editedField ??= edit.field; break;
-        case 'medication': {
-          const rows = applyMedicationEdit(edit, stated);
-          if (rows) undo.unshift(...rows); else undoable = false;
-          break;
-        }
-        case 'profile': break; // merged below
-        // A kind this build does not know writes nothing (an older server's reply, or a newer one's).
-        default: break;
-      }
-    }
-    if (!undoable) setMedUndo('unavailable');
-    else if (undo.length > 0) setMedUndo(undo);
-    // A reply's profile proposal replaces any pending one; within the reply, a
-    // later stated field wins. A field already saved with the same value (as
-    // the user sees it) needs no Save.
-    const profiles = edits.filter((e): e is ProposedProfileEdit => e.kind === 'profile');
-    if (profiles.length > 0) {
-      const profile = profiles.reduce((a, e) => ({ kind: 'profile', sex: e.sex ?? a.sex, heightCm: e.heightCm ?? a.heightCm }));
-      const pending = unsavedProfile(profile, inputsRef.current, unitSystem);
-      setProfileProposal(pending);
-      for (const field of pending ? profileFields(pending) : []) trackProductEvent('chat_profile_edit', { field, choice: 'shown' });
-    }
-    // Hand-off: the grid holding the pre-filled cell shows (US-62 AC11), and
-    // on a phone the form's tab opens, so they SEE it and its Save button
-    // (they were on the chat tab). Mirror landOnMyHealth.
-    if (editedField) {
-      if (isMobileRef.current) selectTab('health');
-      setSettingsOpen(false); // they cover the field (US-62 AC11)
-      setRevealCell({ field: editedField, grid: inGrid });
-    }
-  }, [applyFieldEdit, applyMedicationEdit, unitSystem, eraseUnshown, selectTab]);
-
-  const undoMedEdit = useCallback(() => {
-    if (!Array.isArray(medUndo)) return;
-    // The store holds an erase the screen does not show: write nothing (US-16 AC2a).
-    if (!eraseUnshown()) for (const m of medUndo) handleMedicationChange(m.medicationKey, m.drugName, m.doseValue, m.doseUnit);
-    setMedUndo(null);
-  }, [medUndo, handleMedicationChange, eraseUnshown]);
+  // Edits the chat proposes, routed to the form (components/ChatEdits). The
+  // hand-off: on a phone the form's tab opens, and Settings, which cover the
+  // field, close (US-62 AC11).
+  const showForm = useCallback(() => {
+    if (isMobileRef.current) selectTab('health');
+    setSettingsOpen(false);
+  }, [selectTab]);
+  const { handleProposeEdit, clearChatEdits, dropProfileProposal, banners: chatEditBanners } = useChatEdits({
+    medications, inputs, inputsRef, unitSystem, eraseUnshown, handleInputChange, handleMedicationChange,
+    medSaveTimers, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal: setRevealCell,
+  });
 
   // Email capture and US-23 reminder enrolment require the Shopify server.
   const emailCaptureActive = SHOPIFY_SURFACE;
@@ -1522,47 +1397,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
         grading={grading}
       />
 
-      {/* Undo banner for a medication the chat just changed (meds auto-save, so
-          the chat applies + states the change; this banner offers the Undo). */}
-      {/* Both portal outside the masked widget root, so their column carries
-          the Clarity mask (US-09 AC8), and stacks them (styles.css .chat-banners). */}
-      {(medUndo || pendingProfile) && createPortal(
-        <div className="chat-banners no-print" data-clarity-mask="true">
-          {medUndo && (
-            <div className="chat-med-undo" role="status">
-              <span className="chat-med-undo-text">
-                Medication updated from chat.
-                {medUndo === 'unavailable' && " Undo isn't available: an earlier entry couldn't be read."}
-              </span>
-              {medUndo !== 'unavailable' && <button type="button" className="chat-med-undo-btn" onClick={undoMedEdit}>Undo</button>}
-              <button
-                type="button"
-                className="chat-med-undo-dismiss"
-                aria-label="Dismiss"
-                onClick={() => setMedUndo(null)}
-              >✕</button>
-            </div>
-          )}
-          {/* US-16 AC2: a sex or height the chat proposed. Nothing is written
-              until the user presses Save; Not now writes nothing. */}
-          {pendingProfile && (
-            <div className="chat-med-undo chat-profile-proposal" role="status">
-              <span className="chat-med-undo-text">
-                Save to your profile: {[
-                  pendingProfile.sex && sexLabel(pendingProfile.sex)
-                    + (inputs.sex ? ` (replaces ${sexLabel(inputs.sex)})` : ''),
-                  pendingProfile.heightCm !== null && (inputs.heightCm != null
-                    ? `height ${formatHeightDisplay(pendingProfile.heightCm, unitSystem)} (replaces ${formatHeightDisplay(inputs.heightCm, unitSystem)})`
-                    : formatHeightDisplay(pendingProfile.heightCm, unitSystem)),
-                ].filter(Boolean).join(', ')}?
-              </span>
-              <button type="button" className="chat-med-undo-btn" onClick={() => answerProfileProposal(true)}>Save</button>
-              <button type="button" className="chat-med-undo-dismiss" onClick={() => answerProfileProposal(false)}>Not now</button>
-            </div>
-          )}
-        </div>,
-        document.body,
-      )}
+      {chatEditBanners}
 
       {/* Floating chat FAB + expanded panel — portaled to body so their
           position: fixed doesn't resolve against the transform'd .health-tool. */}
