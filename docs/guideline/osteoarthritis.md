@@ -16,7 +16,7 @@ thresholds: [{"ref":"EGFR_THRESHOLDS.normal","value":70},{"ref":"EGFR_THRESHOLDS
 
 - Osteoarthritis is the most common type of arthritis. It causes pain and stiffness, most often in the knees, hips and small joints of the hands [6][7].
 - Doctors usually diagnose it from your symptoms and an examination. Most people do not need an X-ray [3].
-- Exercise is a core treatment for everyone with osteoarthritis, and weight loss is a core treatment for people with overweight and knee or hip osteoarthritis [1][2][3].
+- Exercise is a core treatment for everyone with osteoarthritis [1][2][3], and weight loss for people with overweight and knee or hip osteoarthritis [2][3].
 - Topical anti-inflammatory gels (topical NSAIDs) are a first medicine for knee osteoarthritis. Paracetamol gives little benefit in trials [3][13][14].
 - Glucosamine and hyaluronic acid injections are not recommended by most current guidelines [2][3][4].
 - Joint replacement is an option when pain and stiffness badly affect your life and other treatment has not worked [3][20].
@@ -38,7 +38,7 @@ thresholds: [{"ref":"EGFR_THRESHOLDS.normal","value":70},{"ref":"EGFR_THRESHOLDS
 
 In osteoarthritis, the smooth cartilage that covers the ends of the bones in a joint breaks down. Bony growths can form, and the joint can become swollen, painful and stiff [7].
 
-It is common. A global analysis estimated that 595 million people had osteoarthritis in 2020, with the knee the most common site [6]. Risk rises with age, past joint injury, obesity, family history and female sex [7].
+A global analysis estimated that 595 million people had osteoarthritis in 2020, with the knee the most common site [6]. Risk rises with age, past joint injury, obesity, family history and female sex [7].
 
 **Symptoms.** Pain that gets worse the more you use the joint, stiffness, and trouble moving the joint. Some people also notice swelling, tenderness or a grating or crackling feeling [7]. Symptoms can come and go, and do not always worsen; some people improve [7].
 
@@ -67,7 +67,7 @@ The plan does not link these bands to any pain medicine.
 
 Every guideline starts with exercise, weight management where it applies, and information about the condition [1][2][3][4].
 
-**Exercise.** NICE recommends exercise tailored to each person, such as muscle strengthening and aerobic fitness, for everyone with osteoarthritis [3]. In a 2024 Cochrane review of 139 trials in knee osteoarthritis, exercise probably improved physical function and may have improved pain compared with usual care, though the authors judged these gains of uncertain clinical importance; exercise may increase adverse events compared with no treatment [8]. In a 2026 Cochrane review of 18 mostly small hip trials, exercise may make little or no difference to pain against an attention control; against usual care it probably helped pain and function slightly, but not by a clinically meaningful amount [9]. Guidelines still recommend it for the hip [2][3]. A 2025 network meta-analysis of 217 trials (15,684 people) in knee osteoarthritis found aerobic exercise was most likely to be the best type for pain, function, walking and quality of life, with moderate certainty [10].
+**Exercise.** NICE recommends exercise tailored to each person, such as muscle strengthening and aerobic fitness [3]. In a 2024 Cochrane review of 139 trials in knee osteoarthritis, exercise probably improved physical function and may have improved pain compared with usual care, though the authors judged these gains of uncertain clinical importance; exercise may increase adverse events compared with no treatment [8]. In a 2026 Cochrane review of 18 mostly small hip trials, exercise may make little or no difference to pain against an attention control; against usual care it probably helped pain and function slightly, but probably not by a clinically meaningful amount [9]. Guidelines still recommend it for the hip [2][3]. A 2025 network meta-analysis of 217 trials (15,684 people) in knee osteoarthritis found aerobic exercise was most likely to be the best type for pain, function, walking and quality of life, with moderate certainty [10].
 
 **Expect some discomfort at first.** NICE advises that joint pain may rise when you start exercising, and that regular exercise still helps the joint [3].
 
@@ -96,7 +96,7 @@ Medicines are used alongside exercise and weight management, at the lowest dose 
 
 **Paracetamol (acetaminophen).** In a Cochrane review of 10 trials, paracetamol gave only minimal improvement in pain and function in knee and hip osteoarthritis, and abnormal liver tests were more common than with placebo, though the authors were less certain of this and of its clinical importance [13]. NICE does not routinely offer it, except for occasional short-term use when other medicines are unsuitable [3]. The US guideline still recommends it, conditionally, for short-term use when NSAIDs are unsuitable [2]. One extra-strength 500 mg label allows 2 tablets every 6 hours and no more than 6 tablets in 24 hours; its liver warning applies above 4,000 mg in 24 hours, with other paracetamol products, or with 3 or more alcoholic drinks a day [24].
 
-**Steroid injections into the joint.** NICE considers them when other medicines fail or to help you exercise, and says the relief lasts only about 2 to 10 weeks [3]. A Cochrane review found any benefit fades over time, with no evidence of an effect at 6 months [15]. In a 2-year trial, injections every 3 months caused more cartilage loss than saline and did not improve pain more [16]. Guidelines differ on hip injections: the US guideline strongly recommends them, OARSI does not [1][2]. One hospital found rapidly worsening hip damage within months of a hip steroid injection in 5.4% of people, more often after high (80 mg or more) or repeat doses [36]. An injection in the 3 months before replacing that joint is linked to more infection after surgery [37].
+**Steroid injections into the joint.** NICE considers them when other medicines fail or to help you exercise, and says the relief lasts only about 2 to 10 weeks [3]. A Cochrane review found any benefit fades over time, with no evidence of an effect at 6 months [15]. In a 2-year trial, injections every 3 months caused more cartilage loss than saline and did not improve pain more [16]. One hospital found rapidly worsening hip damage within months of a hip steroid injection in 5.4% of people, more often after high (80 mg or more) or repeat doses [36]. An injection in the 3 months before replacing that joint may be linked to more infection after surgery [37].
 
 **Hyaluronic acid injections.** NICE does not offer them [3]. The US guideline recommends against them, conditionally for the knee and strongly for the hip [2]. In a meta-analysis of 89 trials, the large trials with blinded assessment showed a clinically irrelevant effect on pain, and the injections increased serious adverse events [17].
 
@@ -104,7 +104,7 @@ Medicines are used alongside exercise and weight management, at the lowest dose 
 
 **Other medicines.** The US guideline conditionally recommends duloxetine and tramadol for some people [2]. NICE does not offer strong opioids, because their risks outweigh their benefits [3], and OARSI strongly advises against opioids [1].
 
-**Surgery.** NICE considers referral for knee, hip or shoulder replacement when symptoms badly affect your quality of life and non-surgical treatment has not worked or is unsuitable. It does not exclude people because of age, smoking, other conditions or BMI, though risks vary with them [3]. In England in 2021, two in three local health bodies had a BMI policy for these operations, most often a cut-off of 40 [38]. In a trial of 100 people eligible for knee replacement, surgery plus 12 weeks of non-surgical care gave more pain relief and better function at 12 months than the non-surgical care alone, but more serious adverse events [20].
+**Surgery.** NICE considers referral for joint replacement when symptoms badly affect your life and non-surgical treatment has not worked or is unsuitable. It does not exclude people because of age, smoking, other conditions or BMI, though risks vary with them [3]. In England in 2021, two in three local health bodies had a BMI policy for these operations; where they restricted access, most often at a BMI of 40 [38]. In a trial of 100 people eligible for knee replacement, surgery plus 12 weeks of non-surgical care gave more pain relief and better function at 12 months than that care alone, but more serious adverse events [20].
 
 ## Brad's view (reviewed 2 Nov 2026)
 
@@ -151,9 +151,11 @@ Blank cells: not addressed. All but NICE date from 2018 or 2019 and may be updat
 
 ## Common questions
 
-**Is walking or exercise bad for arthritic knees?** No. Exercise is a core treatment in every guideline, and trials show it eases pain a little and improves function [3][8][10].
+**Is walking or exercise bad for arthritic knees?** No. Every guideline recommends it, and trials show it eases pain a little and improves function [3][8][10].
 
 **Is running bad for my knees?** Brad notes the 2025 meta-analysis has no running data, and suggests low-impact exercise such as cycling for most of his patients [30].
+
+**What do knee osteoarthritis trials show for collagen?** Brad notes that in a trial that matched protein, knee pain improved no more with collagen than with milk protein [33].
 
 **I have a meniscus tear and arthritis. Do I need keyhole surgery?** Usually not. NICE does not offer arthroscopic washout or trimming for osteoarthritis, and the Australian guideline advises against arthroscopic meniscus surgery for knee osteoarthritis unless the knee is locking [3][4].
 
