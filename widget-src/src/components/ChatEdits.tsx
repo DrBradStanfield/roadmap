@@ -13,7 +13,16 @@ import { loadLatestMeasurementsSync, holdsUnreadableMedication } from '../lib/ro
 import { trackProductEvent } from '../lib/server-api';
 import type { ListSaves } from '../lib/list-saves';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
-import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';
+import type { VitalsPrefillFn } from './StartingInfoVitals';
+
+/** Decide where a chatbot vitals edit should land. When the vitals matrix is
+ *  mounted (`matrixMounted`, i.e. its prefill ref is registered) the value
+ *  routes to the matrix cell so it pre-fills AND flashes; otherwise it goes to
+ *  the plain form field (fresh users, no flash). Pure, so the routing is
+ *  unit-testable without rendering. */
+export function routeVitalsEdit(matrixMounted: boolean): 'matrix' | 'field' {
+  return matrixMounted ? 'matrix' : 'field';
+}
 
 /** The profile fields a chat proposal carries: the names its counter may send (US-16 AC2). */
 const profileFields = (p: ProposedProfileEdit) =>

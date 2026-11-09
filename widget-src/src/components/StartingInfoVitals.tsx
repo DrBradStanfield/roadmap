@@ -111,15 +111,6 @@ export type VitalsPrefillFn = (
   date: string | null,
 ) => string | null;
 
-/** Decide where a chatbot vitals edit should land. When the vitals matrix is
- *  mounted (`matrixMounted`, i.e. its prefill ref is registered) the value
- *  routes to the matrix cell so it pre-fills AND flashes; otherwise it goes to
- *  the plain form field (fresh users, no flash). Pure so HealthTool's routing
- *  is unit-testable without rendering. */
-export function routeVitalsEdit(matrixMounted: boolean): 'matrix' | 'field' {
-  return matrixMounted ? 'matrix' : 'field';
-}
-
 // ── Row config ──────────────────────────────────────────────────────────
 
 type SimpleRowConfig = {

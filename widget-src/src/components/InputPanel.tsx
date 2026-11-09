@@ -9,6 +9,7 @@ import { type HealthInputs, type HealthResults, type ScreeningInputs, type Medic
 import type { CorrectFn, Refused, SaveTask } from '../lib/matrix-save';
 import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, mayStillFit, type Grading } from '../lib/blood-test-cell';
 import { useRangeWait } from '../lib/useRangeWait';
+import { useAutoAdvance } from '../lib/useAutoAdvance';
 import type { ApiLabValue, ApiSupplement } from '../lib/api-types';
 import { loadFromLocalStorage } from '../lib/storage';
 import { getShownErase } from '../lib/roadmap-data';
@@ -169,24 +170,6 @@ interface InputPanelProps {
   /** A chat edit that filled a grid cell (US-16 AC2): the table opens so the
    *  filled cell shows, phone and desktop. Each new edit is a new object. */
   revealCell?: RevealCell;
-}
-
-/**
- * Auto-advance focus once a typed value is complete: fires immediately, or
- * after a short wait when the current digits could still extend to another
- * valid value (weight "25" might become "250"; inches "1" might become "11").
- * Owns the timer: each call cancels the previous pending advance, and unmount
- * cleans up. The field-specific "could this extend?" predicate stays at the
- * call site.
- */
-function useAutoAdvance(): (opts: { ambiguous: boolean; advance: () => void }) => void {
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
-  return ({ ambiguous, advance }) => {
-    if (timer.current) clearTimeout(timer.current);
-    if (ambiguous) timer.current = setTimeout(advance, 800);
-    else advance();
-  };
 }
 
 export function InputPanel({
