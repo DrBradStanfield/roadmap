@@ -2423,7 +2423,10 @@ export function InputPanel({
           ))}
 
           {/* Add other supplement: a row like Add a blood test, its search behind it. */}
-          <div className="supplement-add mh-add-test" ref={supplementDropdownRef}>
+          <div className="supplement-add mh-add-test" ref={supplementDropdownRef} onBlur={e => {
+            // Focus leaving the search and its list empty, by Tab or a tap elsewhere: back to the row (#985).
+            if (addingSupplement && !supplementSearch.trim() && !e.currentTarget.contains(e.relatedTarget as Node | null)) closeSupplementAdd(false);
+          }}>
             {!addingSupplement ? (
               <button ref={supplementAddRef} type="button" className="alr-add-btn" onClick={() => {
                 // Shown and focused inside the tap itself, so a phone opens its keyboard (US-01 AC6).
@@ -2436,10 +2439,6 @@ export function InputPanel({
             <input
               ref={supplementSearchRef}
               onKeyDown={e => { if (e.key === 'Escape') { setSupplementSearch(''); closeSupplementAdd(true); } }}
-              onBlur={e => {
-                // Left empty, by Tab or a tap elsewhere: back to the row. A press in its own list keeps it.
-                if (!supplementSearch.trim() && !supplementDropdownRef.current?.contains(e.relatedTarget as Node | null)) closeSupplementAdd(false);
-              }}
               type="text"
               placeholder={SUPPLEMENT_TEXT.addPlaceholder}
               value={supplementSearch}

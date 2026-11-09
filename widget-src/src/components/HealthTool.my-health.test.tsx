@@ -333,6 +333,29 @@ describe('US-62 AC22, AC23: Blood tests and Supplements', () => {
     expect(row()).not.toBeNull();
     expect([...supplements.querySelectorAll('.supplement-name')].map(n => n.textContent)).toContain('Taurine test');
   });
+
+  it('AC30c (#985): Tab from the empty search through its list and out past the last option: back to the row', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    const supplements = view.container.querySelector<HTMLElement>('[data-topic="supplements"]')!;
+    const row = () => within(supplements).queryByRole('button', { name: '+ Add another supplement' });
+    const search = () => within(supplements).queryByPlaceholderText('Add another supplement...') as HTMLInputElement | null;
+    const options = () => [...supplements.querySelectorAll<HTMLButtonElement>('.supplement-dropdown-item')];
+    fireEvent.click(row()!);
+    // Empty, the list shows every option. Tab into it, then down it: the search stays open.
+    expect(options().length).toBeGreaterThan(1);
+    const first = options()[0];
+    fireEvent.blur(search()!, { relatedTarget: first });
+    first.focus();
+    const last = options().at(-1)!;
+    fireEvent.blur(first, { relatedTarget: last });
+    last.focus();
+    expect(search()).not.toBeNull();
+    expect(options().length).toBeGreaterThan(1);
+    // Tab out past the last option: the row is back, no empty search left open.
+    fireEvent.blur(last, { relatedTarget: document.body });
+    expect(search()).toBeNull();
+    expect(row()).not.toBeNull();
+  });
 });
 
 describe('US-62 AC24: a guest\'s storage card, at the foot and in Settings', () => {
