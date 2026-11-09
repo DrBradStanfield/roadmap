@@ -8,7 +8,7 @@ tags: ["Supplements"]
 keywords: ["alginate", "alginic acid", "sodium alginate", "reflux", "heartburn", "GERD", "gaviscon", "acid reflux", "gut health", "fiber", "calcium", "magnesium"]
 summary: "Reference on alginates (Gaviscon, sodium alginate) for heartburn, GERD and throat reflux. Meta-analyses disagree on how much they beat placebo or antacids. Take 2 hours apart from other medicines. Talk to your doctor first if on a low-salt diet, with kidney disease or on regular medicines."
 reviewed: "2026-11-09"
-sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/10848650/","checked":"2026-11-09","fingerprint":"sha256:56c70495fb4137d6f02aa15dbeaa38d191413d760fb484ec5d01becb9bb89a97"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28375448/","checked":"2026-11-09","fingerprint":"sha256:51695753301f9581bd848b4e7af4bf31d150fc792401e0839ac8c373c097fab0"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33275256/","checked":"2026-11-09","fingerprint":"sha256:2c5618379a738fb1683beb068aaddd3302ce04bbd89dba1b02c49fb4aded6592"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22361121/","checked":"2026-11-09","fingerprint":"sha256:c1b7c18cd80d561df37695a670b3c6035691ca461f65a9b85651739fb39ce8dc"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30103217/","checked":"2026-11-09","fingerprint":"sha256:c04cb400f04927b1104e1ac46fd06d54ffa7185400b831caebda91a5d266ca71"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11421910/","checked":"2026-11-09","fingerprint":"sha256:61e8059fa47912e2c2ce651d8a4612f44b8dab3770b1ad5723dace730de600de"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/15851425/","checked":"2026-11-09","fingerprint":"sha256:9bd5941e5a6ee8a88fd58d1e6bdd2af8a7d37d3cccdce2f1ca415cfc5d68dd8c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/16183570/","checked":"2026-11-09","fingerprint":"sha256:fba802721cf531de44b080d5a8b0cd5130decfff23926e5ad36e9c0dc9c6aeaa"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/32163080/","checked":"2026-11-09","fingerprint":"sha256:2ff3f9da35d1859be94923faa42a484e0ef2d0efbdede661e21c0d0f513d5f3a"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23669304/","checked":"2026-11-09","fingerprint":"sha256:fd1a36c08b94d1e600e00d6f1c292f66a6dc7b2ebb775a8c015214c2789cfa1d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/21535446/","checked":"2026-11-09","fingerprint":"sha256:9c33105799268624931f2f749c68ea35a8db6070dfb1971c3a1f1f9cca6a7eb9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/32625343/","checked":"2026-11-09","fingerprint":"sha256:2020c3153e135694f66857a9821825712c635d34c923c66dcd250a117347608e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/35032204/","checked":"2026-11-09","fingerprint":"sha256:998513ade06245cedb87d0912f7b94080513876233a0157edae6a05c5152e93d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30272584/","checked":"2026-11-09","fingerprint":"sha256:cc3d151b08983e48368f58b3b58f74d506926349accabe2664edb36fdb1425ea"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/15814238/","checked":"2026-11-09","fingerprint":"sha256:2b574953ab8a042473fdf051b61e79627d6b3fada69855ebd7f7b7cd74d99006"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/19703345/","checked":"2026-11-09","fingerprint":"sha256:ad33e2282317e3d2eabf05776c98cc5f185475762fd51204afbc00fe3044a350"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/38493017/","checked":"2026-11-09","fingerprint":"sha256:5680996401688df9dec38357162625907df8198b8d56ed732e329713a16e07b4"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/16977507/","checked":"2026-11-09","fingerprint":"sha256:85ec862c7a74b907720dfb8b961bda376472ad000c51e4b446053a23ea1dee13"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/32343001/","checked":"2026-11-09","fingerprint":"sha256:7fb570087e04a2269122c68d2bf8d9c4e7d23ce731e7ef0518b2c0e51dd30bf3"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/35238407/","checked":"2026-11-09","fingerprint":"sha256:ba7130b9b40c074d126b9e965622a58b61692335b27542437b171f7c6efb4b10"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22050449/","checked":"2026-11-09","fingerprint":"sha256:1ee5e1fa3ad7bca43322cc9b2df82ee2914434c8c7fba087a77b42a86567da54"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22969201/","checked":"2026-11-09","fingerprint":"sha256:f61805bfec1990712aab8553d4ef4316f367c2084b5efa04a1ab7a10850b56f6"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/26909885/","checked":"2026-11-09","fingerprint":"sha256:ec83267324f4048cca203e7cc5cf10e0682caa51c54ef20c674218731bf94c61"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18506466/","checked":"2026-11-09","fingerprint":"sha256:98033f6ffbe0ddc56fe0dfb40b70ca14953c780a20fb33170b343c80e2d925bd"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/36452699/","checked":"2026-11-09","fingerprint":"sha256:7d52399bde1f235e8d104b42e4f53346b5e25cddc4603833d114844b6e622753"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/41044379/","checked":"2026-11-09","fingerprint":"sha256:8d9dfa7c43f114d100b9505d93c1d6831ee6a8020f76b34226e95c4d409409e6"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/34807007/","checked":"2026-11-09","fingerprint":"sha256:f13e5ca9b963c65ffdc4a4a65f6da767ab2d6a64ac24f97d2af48c68b162ff2b"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24096290/","checked":"2026-11-09","fingerprint":"sha256:98f6105ef4bbca74006ec9df16a614a1e84e11418c84658ea59fffac925a0ce8"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23209926/","checked":"2026-11-09","fingerprint":"sha256:f1b5e12cf691c9d315b3a85032e7535846a9d3edf6137b8ae5b5261bc80a5a79"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28317885/","checked":"2026-11-09","fingerprint":"sha256:4a97488341acfcc9d788f6351c95f63b6164f51579bac0d760f61761caa09db0"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/10573545/","checked":"2026-11-09","fingerprint":"sha256:1f0fb364d1b3f787c56a6a81753e28fbfd4c167efacfeed533227df044b0e589"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11448582/","checked":"2026-11-09","fingerprint":"sha256:51a3524d4defbe2819bbc47aaa242ab3956fa129163b3dd533b4435b38762966"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/6531686/","checked":"2026-11-09","fingerprint":"sha256:253cfd1c7c05a274125703078e64d05a66d97ec9ca388420b0c9c99f25c9ea23"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30198186/","checked":"2026-11-09","fingerprint":"sha256:146dc7b150aff797a44e17052dcd798920e5dd516b1715e85653c2dde5c7b06d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/19260424/","checked":"2026-11-09","fingerprint":"sha256:d29bf6a0fb84a2b68bac3fbcdb3fecbc093937bc637bfb5a154b12c29c8207e4"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/16776680/","checked":"2026-11-09","fingerprint":"sha256:bb76e117889ef61ef328f8f73f27ea50957d767b69cdb2d05dfd3a937df06db9"}]
+sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/10848650/","checked":"2026-11-09","fingerprint":"sha256:56c70495fb4137d6f02aa15dbeaa38d191413d760fb484ec5d01becb9bb89a97"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28375448/","checked":"2026-11-09","fingerprint":"sha256:51695753301f9581bd848b4e7af4bf31d150fc792401e0839ac8c373c097fab0"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33275256/","checked":"2026-11-09","fingerprint":"sha256:2c5618379a738fb1683beb068aaddd3302ce04bbd89dba1b02c49fb4aded6592"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22361121/","checked":"2026-11-09","fingerprint":"sha256:c1b7c18cd80d561df37695a670b3c6035691ca461f65a9b85651739fb39ce8dc"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30103217/","checked":"2026-11-09","fingerprint":"sha256:c04cb400f04927b1104e1ac46fd06d54ffa7185400b831caebda91a5d266ca71"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11421910/","checked":"2026-11-09","fingerprint":"sha256:61e8059fa47912e2c2ce651d8a4612f44b8dab3770b1ad5723dace730de600de"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/14767738/","checked":"2026-11-09","fingerprint":"sha256:bf1bc2238cd32259677ae371b8f34047ed945bf71ee4987cb88abc3af867ace0"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/15851425/","checked":"2026-11-09","fingerprint":"sha256:9bd5941e5a6ee8a88fd58d1e6bdd2af8a7d37d3cccdce2f1ca415cfc5d68dd8c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/16183570/","checked":"2026-11-09","fingerprint":"sha256:fba802721cf531de44b080d5a8b0cd5130decfff23926e5ad36e9c0dc9c6aeaa"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/32163080/","checked":"2026-11-09","fingerprint":"sha256:2ff3f9da35d1859be94923faa42a484e0ef2d0efbdede661e21c0d0f513d5f3a"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23669304/","checked":"2026-11-09","fingerprint":"sha256:fd1a36c08b94d1e600e00d6f1c292f66a6dc7b2ebb775a8c015214c2789cfa1d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/21535446/","checked":"2026-11-09","fingerprint":"sha256:9c33105799268624931f2f749c68ea35a8db6070dfb1971c3a1f1f9cca6a7eb9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/32625343/","checked":"2026-11-09","fingerprint":"sha256:2020c3153e135694f66857a9821825712c635d34c923c66dcd250a117347608e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/35032204/","checked":"2026-11-09","fingerprint":"sha256:998513ade06245cedb87d0912f7b94080513876233a0157edae6a05c5152e93d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30272584/","checked":"2026-11-09","fingerprint":"sha256:cc3d151b08983e48368f58b3b58f74d506926349accabe2664edb36fdb1425ea"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/15814238/","checked":"2026-11-09","fingerprint":"sha256:2b574953ab8a042473fdf051b61e79627d6b3fada69855ebd7f7b7cd74d99006"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/19703345/","checked":"2026-11-09","fingerprint":"sha256:ad33e2282317e3d2eabf05776c98cc5f185475762fd51204afbc00fe3044a350"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/38493017/","checked":"2026-11-09","fingerprint":"sha256:5680996401688df9dec38357162625907df8198b8d56ed732e329713a16e07b4"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/16977507/","checked":"2026-11-09","fingerprint":"sha256:85ec862c7a74b907720dfb8b961bda376472ad000c51e4b446053a23ea1dee13"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/32343001/","checked":"2026-11-09","fingerprint":"sha256:7fb570087e04a2269122c68d2bf8d9c4e7d23ce731e7ef0518b2c0e51dd30bf3"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/35238407/","checked":"2026-11-09","fingerprint":"sha256:ba7130b9b40c074d126b9e965622a58b61692335b27542437b171f7c6efb4b10"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22050449/","checked":"2026-11-09","fingerprint":"sha256:1ee5e1fa3ad7bca43322cc9b2df82ee2914434c8c7fba087a77b42a86567da54"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22969201/","checked":"2026-11-09","fingerprint":"sha256:f61805bfec1990712aab8553d4ef4316f367c2084b5efa04a1ab7a10850b56f6"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/26909885/","checked":"2026-11-09","fingerprint":"sha256:ec83267324f4048cca203e7cc5cf10e0682caa51c54ef20c674218731bf94c61"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18506466/","checked":"2026-11-09","fingerprint":"sha256:98033f6ffbe0ddc56fe0dfb40b70ca14953c780a20fb33170b343c80e2d925bd"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/36452699/","checked":"2026-11-09","fingerprint":"sha256:7d52399bde1f235e8d104b42e4f53346b5e25cddc4603833d114844b6e622753"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/41044379/","checked":"2026-11-09","fingerprint":"sha256:8d9dfa7c43f114d100b9505d93c1d6831ee6a8020f76b34226e95c4d409409e6"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/34807007/","checked":"2026-11-09","fingerprint":"sha256:f13e5ca9b963c65ffdc4a4a65f6da767ab2d6a64ac24f97d2af48c68b162ff2b"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24096290/","checked":"2026-11-09","fingerprint":"sha256:98f6105ef4bbca74006ec9df16a614a1e84e11418c84658ea59fffac925a0ce8"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23209926/","checked":"2026-11-09","fingerprint":"sha256:f1b5e12cf691c9d315b3a85032e7535846a9d3edf6137b8ae5b5261bc80a5a79"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28317885/","checked":"2026-11-09","fingerprint":"sha256:4a97488341acfcc9d788f6351c95f63b6164f51579bac0d760f61761caa09db0"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/10573545/","checked":"2026-11-09","fingerprint":"sha256:1f0fb364d1b3f787c56a6a81753e28fbfd4c167efacfeed533227df044b0e589"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11448582/","checked":"2026-11-09","fingerprint":"sha256:51a3524d4defbe2819bbc47aaa242ab3956fa129163b3dd533b4435b38762966"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/6531686/","checked":"2026-11-09","fingerprint":"sha256:253cfd1c7c05a274125703078e64d05a66d97ec9ca388420b0c9c99f25c9ea23"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30198186/","checked":"2026-11-09","fingerprint":"sha256:146dc7b150aff797a44e17052dcd798920e5dd516b1715e85653c2dde5c7b06d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/19260424/","checked":"2026-11-09","fingerprint":"sha256:d29bf6a0fb84a2b68bac3fbcdb3fecbc093937bc637bfb5a154b12c29c8207e4"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/16776680/","checked":"2026-11-09","fingerprint":"sha256:bb76e117889ef61ef328f8f73f27ea50957d767b69cdb2d05dfd3a937df06db9"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/alginates-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/alginates-benefits-forms-dosing-and-side-effects)*
@@ -20,11 +20,13 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 ## Key safety points
 
 - Alginate products can reduce the absorption of other medicines. The UK label advises a 2-hour gap, especially from tetracyclines, fluoroquinolones, iron, thyroid hormones, chloroquine, bisphosphonates and estramustine [2]. In rats, sodium alginate lowered carbamazepine blood levels [6].
+- Many alginate products also contain an antacid. Some drug labels ask for longer gaps from antacids: levothyroxine at least 4 hours apart, and ciprofloxacin at least 2 hours before or 6 hours after [43][44].
+- Chew tablets thoroughly and follow them with water or another drink; do not swallow them whole [38][40].
 - Do not use them if you are allergic to alginate or to the parabens some liquids contain. Anaphylaxis is very rare but has been reported [2][7].
 - Some liquids are high in sodium: the maximum daily dose of one UK liquid supplies 23.14% of the WHO daily sodium limit. Ask your doctor first if you have heart failure, kidney disease, high blood calcium or calcium kidney stones [2].
 - Children under 12 should take them only on medical advice. In infants, an alginate formula did not reduce reflux events [2][8].
 - If heartburn has not improved after 7 days, see your doctor [2].
-- Side effects are uncommon: diarrhea, nausea and vomiting [2].
+- Side effects are uncommon: diarrhea, nausea and vomiting [2]. Constipation can occur, usually after more than the recommended dose [38].
 
 ## Brad's videos on this topic
 
@@ -51,7 +53,7 @@ Products differ in the minerals they add. One UK sodium alginate liquid contains
 Trials have tested alginates as liquids and as chewable tablets:
 
 - **Liquid suspensions** are the most studied form. Gaviscon Advance contains sodium alginate 1,000 mg and potassium hydrogen carbonate 200 mg in each 10 mL dose [2]. Trial doses ranged from 10 mL to 30 mL (see Recommended Dosing).
-- **Chewable tablets**: in a 7-day trial of 424 adults, alginate-antacid chewable tablets relieved reflux symptoms better than placebo [15].
+- **Chewable tablets**: in a 7-day trial of 424 adults, alginate-antacid chewable tablets relieved reflux symptoms better than placebo [15]. Labels say to chew them thoroughly, and a US label adds to follow them with half a glass of water or other liquid and not to swallow them whole [38][40].
 
 ### Key Formulation Components
 
@@ -214,7 +216,8 @@ The UK label dose of Gaviscon Advance for adults and children 12 years and over 
 
 - **After meals and at bedtime:** this is the label timing [2]. After a meal, the raft forms on top of the stomach contents, where the acid pocket sits [1][11].
 - **Children:** under 12 years, only on medical advice. No dose change is needed for older adults or people with liver impairment [2].
-- **Other medicines:** leave a 2-hour gap between an alginate product and other medicines, including iron [2].
+- **Tablets:** chew thoroughly, then drink half a glass of water or other liquid [38][40].
+- **Other medicines:** leave a 2-hour gap between an alginate product and other medicines, including iron [2]. Some medicines need a longer gap (see Drug Interactions).
 - **Review:** if symptoms do not improve after 7 days, see your doctor [2].
 
 ### How to Read a Supplement Label
@@ -231,11 +234,15 @@ Alginates are generally well tolerated. The 2020 meta-analysis found the risk of
 
 The UK label lists diarrhea, nausea and vomiting as uncommon [2]. In trials, one patient had mild diarrhea and two reported nausea and bloating [22][23]. An overdose is likely to cause only minor abdominal discomfort [2].
 
+Constipation is listed, with unknown frequency, for a chewable tablet that also contains calcium carbonate; it usually follows larger than recommended doses [38]. The infant sachet label lists constipation and diarrhea as very rare [39]. Some US antacid liquids that contain sodium alginate warn of a laxative effect instead [41].
+
 ### Sodium Content
 
 Products made with sodium alginate add sodium to the diet. One UK liquid contains 57.85 mg of sodium per 5 mL, 2.9% of the WHO recommended maximum daily intake, and its maximum daily dose supplies 23.14% [2]. The label calls it high in sodium and asks people on a low-salt diet, for example in some cases of heart failure or kidney disease, to take this into account [2].
 
 The same liquid contains 1.0 mmol (39.06 mg) of potassium per 5 mL, which matters for people with reduced kidney function or on a controlled potassium diet [2]. Each 10 mL also contains 200 mg (2.0 mmol) of calcium carbonate, so care is needed with high blood calcium, nephrocalcinosis or recurrent calcium kidney stones [2].
+
+Chewable tablets carry sodium too. One UK alginate tablet supplies 223.56 mg of sodium per 4-tablet dose, and its maximum daily dose equals 44.71% of the WHO limit [38]. A US chewable antacid that contains alginic acid lists 20 mg of sodium per tablet and asks people on a sodium-restricted diet to check with a doctor or pharmacist first [40].
 
 In a study of 144 pregnant women, serum sodium did not change during treatment [30].
 
@@ -246,7 +253,7 @@ Alginate, like other soluble fibers, can reduce the absorption of some nutrients
 - **Carotenoids:** in 6 healthy women given fiber at 0.15 g per kg of body weight with a meal, pectin, guar and alginate cut beta-carotene absorption by 33-43% on average. All the fibers tested cut lycopene and lutein absorption by 40-74% [32].
 - **Calcium, iron and zinc:** in a lab model of infant formula, 2 g of alginic acid per 100 mL lowered calcium availability from 13.3% to 5.3%, but raised iron availability from 1.28% to 6.05% and zinc from 6.7% to 10.2% [33].
 
-These studies gave alginate with a meal or mixed into formula. Whether label doses taken after meals affect nutrients has not been studied.
+These studies gave alginate with a meal or mixed into formula. Whether label doses taken after meals affect nutrients has not been studied. No public study has looked at older adults, who may eat less and take more supplements. The label's 2-hour gap covers iron salts [2]; if you are older or take mineral supplements, ask your doctor or pharmacist first how to time them.
 
 ### Allergic Reactions
 
@@ -257,6 +264,10 @@ Allergic reactions to alginate are rare but reported:
 - **Oral products:** a 2001 case report described IgE-mediated anaphylaxis to an antacid [7]. The UK label lists anaphylactic reactions, hives and bronchospasm as very rare, and warns that its paraben preservatives may cause allergic reactions, possibly delayed [2].
 - **Possible anti-allergic effects:** in rodent and cell studies, alginic acid reduced anaphylaxis and histamine release, and alginate reduced allergic reactions in a mouse model of egg allergy. These findings have not been tested in people [37][10].
 
+### Esophageal Obstruction Risk
+
+We found no public report of an alginate capsule or tablet sticking in the esophagus. Alginates do thicken in the stomach, though. The infant sachet label lists intestinal obstruction and bezoar (a hard mass in the stomach) as possible effects, and rules the product out when the bowel is blocked [39]. In a 9-year-old girl taking sodium alginate with other medicines, a gastric bezoar formed and cleared after the medicines were stopped [42]. Chew tablets thoroughly, follow them with half a glass of water or other liquid, and do not swallow them whole [38][40]. If you have trouble swallowing, ask your doctor or pharmacist first whether a liquid suits you better.
+
 ### Special Populations
 
 **Who should not use them:** people with known or suspected hypersensitivity to the active substances or to any excipient, including the parabens methyl and propyl parahydroxybenzoate [2].
@@ -265,9 +276,9 @@ Allergic reactions to alginate are rare but reported:
 
 **Children:** under 12, use only on medical advice [2]. In 20 infants given Gaviscon Infant or placebo in milk, reflux events per hour did not differ (1.58 vs. 1.68). Only reflux height was marginally lower, and the authors questioned any clinical benefit [8]. The EU food safety panel advised that infants' and young children's exposure from food additives should stay below the therapeutic doses at which side effects could occur [13].
 
-**Older adults:** the label requires no dose change [2].
+**Older adults:** the label requires no dose change [2]. Whether alginates lower nutrient levels in older people has not been studied (see Effects on Nutrient Absorption).
 
-**Kidney disease:** use with caution because of the sodium, potassium and calcium in some products (see Sodium Content) [2].
+**Kidney disease:** use with caution because of the sodium, potassium and calcium in some products (see Sodium Content) [2]. A US antacid liquid that contains sodium alginate asks people with kidney disease to check with a doctor or pharmacist first, and the infant sachets must not be used in babies with poor kidney function [41][39].
 
 ## 6. Drug Interactions
 
@@ -285,6 +296,19 @@ The UK label advises a 2-hour gap between Gaviscon and other medicines, especial
 - Bisphosphonates
 - Estramustine
 
+Many alginate products also contain an antacid, such as calcium carbonate, aluminum hydroxide or magnesium carbonate [38][40][41]. The label of one UK chewable tablet adds digoxin, thyroxine, ketoconazole, neuroleptics, penicillamine, some beta-blockers, glucocorticoids and H2 blockers to its 2-hour list [38]. The labels of some other drugs set their own gaps from antacids:
+
+| Medicine | What its label says |
+|----------|---------------------|
+| Levothyroxine | Take it at least 4 hours apart from drugs that interfere with its absorption, such as calcium carbonate [43] |
+| Ciprofloxacin (a fluoroquinolone) | Take it at least 2 hours before or 6 hours after magnesium or aluminum antacids, or products with calcium, iron or zinc [44] |
+| Doxycycline (a tetracycline) | Antacids containing aluminum, calcium or magnesium, and iron, impair its absorption [45] |
+| Gabapentin | An aluminum-magnesium antacid cut its absorption by about 20%; take gabapentin at least 2 hours after the antacid [46] |
+| Digoxin | Antacids can lower digoxin levels, which should be measured [47] |
+| Fosinopril (an ACE inhibitor) | Antacids may impair its absorption; separate the doses by 2 hours [48] |
+
+These labels describe antacids, not alginate alone. Whether a product with no antacid has the same effect has not been tested.
+
 A review by authors from SmithKline Beecham Consumer Health Care reported that Gaviscon is compatible with, and does not interfere with, the acid-suppressing drug cimetidine [1].
 
 ### Drug Absorption Study
@@ -293,7 +317,7 @@ A review by authors from SmithKline Beecham Consumer Health Care reported that G
 
 ### Practical Recommendation
 
-Take alginate products 2 hours apart from other medicines [2]. Because alginates are usually taken after meals and at bedtime, and many medicines are taken in the morning or with meals, adjusting the timing of one or both usually achieves this.
+Take alginate products 2 hours apart from other medicines [2]. Because alginates are usually taken after meals and at bedtime, and many medicines are taken in the morning or with meals, adjusting the timing of one or both usually achieves this. Levothyroxine, ciprofloxacin and gabapentin need longer gaps from antacids (see the table above) [43][44][46].
 
 ## 7. Dietary Sources
 
@@ -304,6 +328,10 @@ Alginate is chemically extracted from brown seaweed [34][37]. One study used alg
 ### Food Additive Use
 
 In the EU, alginic acid and its sodium, potassium, ammonium and calcium salts are authorized food additives E 400 to E 404 [13]. In 2017 the European Food Safety Authority found no need for a numerical acceptable daily intake and no safety concern at the reported uses [13]. Food makers use alginate as a stabilizer, thickener or emulsifier [9].
+
+### Seaweed as Food
+
+There is no good public evidence on how much alginate seaweed foods supply, or on whether eating seaweed helps reflux.
 
 ## 8. Frequently Asked Questions
 
@@ -326,7 +354,7 @@ The UK label allows use in pregnancy, if clinically needed, based on studies in 
 The UK label says symptoms that do not improve after 7 days should be reviewed by a doctor [2]. One throat-reflux trial followed patients for 6 months [25].
 
 **Does alginate interfere with my medications?**
-It can. Leave 2 hours between an alginate product and other medicines, especially tetracyclines, fluoroquinolones, iron, thyroid hormones, chloroquine, bisphosphonates and estramustine [2].
+It can. Leave 2 hours between an alginate product and other medicines, especially tetracyclines, fluoroquinolones, iron, thyroid hormones, chloroquine, bisphosphonates and estramustine [2]. Levothyroxine, ciprofloxacin and gabapentin need longer gaps from antacids (see Drug Interactions) [43][44][46].
 
 **Are there different types of alginate supplements?**
 Yes. They come as alginic acid or as sodium, potassium, calcium or magnesium salts, and as liquids or chewable tablets [13][14][15]. Sodium alginate liquids can be high in sodium, so check the label if you are on a low-salt diet [2].
@@ -406,3 +434,25 @@ Yes. They come as alginic acid or as sodium, potassium, calcium or magnesium sal
 [36] Gangemi S et al. Fatal anaphylactic shock due to a dental impression material. Int J Prosthodont. 2009;22(1):33-34. PMID: 19260424. https://pubmed.ncbi.nlm.nih.gov/19260424/
 
 [37] Jeong HJ et al. Alginic acid has anti-anaphylactic effects and inhibits inflammatory cytokine expression via suppression of nuclear factor-kappaB activation. Clin Exp Allergy. 2006;36(6):785-794. PMID: 16776680. https://pubmed.ncbi.nlm.nih.gov/16776680/
+
+[38] Gaviscon Double Action Mint Flavour Chewable Tablets: Summary of Product Characteristics. Electronic Medicines Compendium (eMC). https://www.medicines.org.uk/emc/product/5329/smpc
+
+[39] Gaviscon Infant Sachets: Summary of Product Characteristics. Electronic Medicines Compendium (eMC). https://www.medicines.org.uk/emc/product/6581/smpc
+
+[40] Gaviscon Extra Strength chewable tablets: drug facts label. DailyMed. https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=7f367927-c366-465c-a059-e2cfb337d562
+
+[41] Gaviscon liquid: drug facts label. DailyMed. https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2d74e5bc-1f10-4fb6-9258-cd906e360013
+
+[42] Kaneko H et al. Pharmacobezoar complicating treatment with sodium alginate. J Gastroenterol. 2004;39(1):69-71. PMID: 14767738. https://pubmed.ncbi.nlm.nih.gov/14767738/
+
+[43] Synthroid (levothyroxine sodium) tablets: prescribing information. DailyMed. https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1e11ad30-1041-4520-10b0-8f9d30d30fcc
+
+[44] Ciprofloxacin tablets: prescribing information. DailyMed. https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3c611c8c-deed-4904-93f7-f75a2147fbf7
+
+[45] Doxycycline hyclate: prescribing information. DailyMed. https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3e7cf78f-3b48-4614-9fa4-c6d1e0c05a35
+
+[46] Neurontin (gabapentin): prescribing information. DailyMed. https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=97935fd9-1d4a-43b6-a5d9-de994591187b
+
+[47] Lanoxin (digoxin) tablets: prescribing information. DailyMed. https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=d91e3646-4c63-4512-ab22-db39c085c4dc
+
+[48] Fosinopril sodium tablets: prescribing information. DailyMed. https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=aee04f17-8ee9-42f5-861f-b6ba17220ca4
