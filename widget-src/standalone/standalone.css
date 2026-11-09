@@ -25,6 +25,9 @@
   .hr-hero-long { display: none; }
   .hr-hero-short { display: inline; }
 }
+/* US-62 AC35c: on a phone the hero tops My health only, not Chat or Account (the tab bar marks the page). */
+html[data-hr-tab="chat"] .hr-hero,
+html[data-hr-tab="account"] .hr-hero { display: none; }
 
 /* Sync control (rendered inside the plan panel, where "Data synced" was). */
 .hr-sync {
