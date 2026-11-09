@@ -292,6 +292,26 @@ final class TextSizeLayoutTests: XCTestCase {
         return (points(ink), points(red), points(redX).map { $0.upperBound - $0.lowerBound })
     }
 
+    /// US-62 AC8a (review F2, option A): at the largest size before the row stacks, on an SE, a
+    /// row whose label's longest word would not fit beside the trend drops the trend, so the word
+    /// keeps its line (Androstenedione); a short label keeps its trend (Weight). In an inset list,
+    /// as My health lays its rows; the trend is the red, the words are probed as drawn.
+    func testALongWordDropsTheTrendRatherThanBreak_US62_AC8a() throws {
+        guard #available(iOS 18, *) else { throw XCTSkip("Text.Layout.isTruncated needs iOS 18") }
+        let se = screens[0].size
+        let list = { (label: String, value: String, previous: String, unit: String) in
+            List { ValueRow(label: label, value: value, unit: unit, day: "2026-07-14", previous: previous, trend: [1, 2, 3], tint: .red) }
+                .listStyle(.insetGrouped)
+        }
+        let long = list("Androstenedione", "4.2", "3.9", "nmol/L"), short = list("Weight", "92.4", "94.1", "kg")
+        let texts = try drawnTexts(in: long, at: .extraExtraExtraLarge, screen: se)
+        XCTAssertEqual(texts.cut, 0, "no words end in …")
+        XCTAssertEqual(texts.lines, 1, "Androstenedione keeps its line")
+        XCTAssertNil(try inkAndRed(long.frame(width: se.width, height: 240), at: .extraExtraExtraLarge).red, "Androstenedione's trend gives way")
+        XCTAssertNotNil(try inkAndRed(short.frame(width: se.width, height: 240), at: .extraExtraExtraLarge).red, "Weight keeps its trend")
+        XCTAssertNotNil(try inkAndRed(long.frame(width: se.width, height: 240), at: .large).red, "at the default size the trend stays")
+    }
+
     /// The height `view` takes when offered `room`: more than `room` means it runs off screen.
     private func taken(by view: some View, in room: CGSize, at category: UIContentSizeCategory) throws -> CGSize {
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)

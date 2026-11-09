@@ -66,9 +66,35 @@ struct ValueRow: View {
 
     private var rowBody: some View {
         // Side by side: the trend, then the value over its unit, right-aligned in the section's
-        // column. At accessibility sizes, under the label and inline.
+        // column. At accessibility sizes, under the label and inline. Above the default size, the
+        // trend gives way when the label's longest word would not fit beside it, so no word breaks
+        // mid-word (US-62 AC8a; Brad's brief let it hide at the largest sizes).
         let stacked = !textSize.isAccessibilitySize
-        return LabelValue.layout(textSize).callAsFunction {
+        return Group {
+            if stacked, textSize > .large, trend.count >= 2 {
+                ViewThatFits(in: .horizontal) {
+                    rowLayout(stacked: true, showsTrend: true, wordRoom: longestWord)
+                    rowLayout(stacked: true, showsTrend: false, wordRoom: nil)
+                }
+            } else {
+                rowLayout(stacked: stacked, showsTrend: true, wordRoom: nil)
+            }
+        }
+    }
+
+    /// The label's widest word in its own font (body, at this size); a line may break after a
+    /// hyphen, so a hyphen ends a word.
+    private var longestWord: CGFloat {
+        let font = UIFont.preferredFont(forTextStyle: .body, compatibleWith: UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(textSize)))
+        let words = label.replacingOccurrences(of: "-", with: "- ").split(separator: " ")
+        return ceil(words.map { (String($0) as NSString).size(withAttributes: [.font: font]).width }.max() ?? 0)
+    }
+
+    /// The row. `wordRoom`, when set, is the room the label asks for when ViewThatFits measures
+    /// the row: its widest word, not its whole one-line width, so a label that wraps between
+    /// words keeps its trend.
+    private func rowLayout(stacked: Bool, showsTrend: Bool, wordRoom: CGFloat?) -> some View {
+        LabelValue.layout(textSize).callAsFunction {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
                 let meta = [target, day.map(DayText.monthYear)].compactMap { $0 }
@@ -86,11 +112,14 @@ struct ValueRow: View {
             .background(alignment: Alignment(horizontal: .leading, vertical: .lastTextBaseline)) { Self.mark { name.lastBaseline = $0 } }
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { name.height = $0 }
             .coordinateSpace(.named(NameBox.space))
+            .frame(idealWidth: wordRoom, maxWidth: wordRoom.map { _ in .infinity }, alignment: .leading)
             Spacer(minLength: 0)
             HStack(alignment: stacked ? .center : .firstTextBaseline, spacing: 12) {
-                Sparkline(points: trend, tint: tint, size: Self.trendSize(width: trendWidth, nameHeight: name.height > 0 ? name.height : nil, textSize: textSize),
-                          band: stacked ? Self.trendBand(capTop: name.firstBaseline - Self.capHeight(textSize), baseline: name.lastBaseline, width: trendWidth) : nil)
-                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 2 }
+                if showsTrend {
+                    Sparkline(points: trend, tint: tint, size: Self.trendSize(width: trendWidth, nameHeight: name.height > 0 ? name.height : nil, textSize: textSize),
+                              band: stacked ? Self.trendBand(capTop: name.firstBaseline - Self.capHeight(textSize), baseline: name.lastBaseline, width: trendWidth) : nil)
+                        .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 2 }
+                }
                 ZStack(alignment: .trailing) {
                     if stacked, let column {
                         Group {
