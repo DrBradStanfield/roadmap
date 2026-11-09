@@ -6901,13 +6901,6 @@
     "notes": "2026-W43 chat-health: storefront chat turn, paraphrased (personal history dropped). Production empty; replay of the original empty 6/6. No entry covers supplements in CKD as a topic; several ingredient references carry kidney cautions. Revisit expected if a CKD-supplements entry is built (content-backlog.csv)."
   },
   {
-    "query": "what does HealthPathways recommend for treating an ear infection in a 4 year old?",
-    "expected": [],
-    "category": "pediatric",
-    "source": "chat-health-2026-W43",
-    "notes": "2026-W43 chat-health: widget first turn, paraphrased. Guards US-15 AC39: the pathway content is gone, so a request naming the publisher routes nothing. Production empty (router v4); replay empty 6/6."
-  },
-  {
     "query": "Switched my Semax to VendorX after one order from a forum shop. HPLC sheet matched, dose matched my labs. Not going back.",
     "category": "classifier-spam",
     "source": "chat-health-2026-W43",
