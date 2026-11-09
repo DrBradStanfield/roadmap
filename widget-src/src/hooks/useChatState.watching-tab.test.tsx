@@ -26,7 +26,8 @@ vi.mock('../lib/chat-api', () => ({
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/observe-visibility', () => ({ observeVisibility: () => () => {} }));
 
-import { useChatState, REMOTE_PENDING_MS } from './useChatState';
+import { useChatState } from './useChatState';
+import { REMOTE_PENDING_MS } from './useChatBusy';
 
 const conversations = [
   { id: 'A', title: 'A', updatedAt: 'x', createdAt: 'x' },
@@ -57,7 +58,7 @@ describe('US-15 AC7a — a tab that did not send opens another thread', () => {
   it('US-15 AC7a: tab C opening B while tab A\'s reply is in flight tells other tabs it is still in flight', async () => {
     const { finishB, openingB } = await tabCOpensBWhileAIsInFlight();
     await act(async () => { finishB(threadB); await openingB; });
-    expect(postSync.mock.calls.at(-1)![0].payload).toMatchObject({ activeConversationId: 'B', isLoading: true });
+    expect(postSync.mock.calls.at(-1)![0].payload).toMatchObject({ activeConversationId: 'B', isLoading: true, sending: false });
   });
 
   it('US-15 AC7a: tab C\'s load of B landing just after tab A said the reply ended tells other tabs it is over', async () => {

@@ -10,7 +10,10 @@ const CHANNEL_NAME = 'hr_chat_sync';
 
 export type SyncMessage =
   | { instanceId: string; type: 'input'; payload: { text: string }; ts: number }
-  | { instanceId: string; type: 'state'; payload: { conversations: ChatConversation[]; activeConversationId: string | null; messages: ChatMessage[]; isLoading: boolean; error: string | null }; ts: number }
+  // `sending` is the sender's own send in flight (US-15 AC17c). `isLoading` is
+  // read only from an older bundle's message, which has no `sending`; it can go
+  // once no cached bundle without `sending` can still be open.
+  | { instanceId: string; type: 'state'; payload: { conversations: ChatConversation[]; activeConversationId: string | null; messages: ChatMessage[]; isLoading: boolean; sending?: boolean; error: string | null }; ts: number }
   | { instanceId: string; type: 'thread-new'; payload: Record<string, never>; ts: number }
   | { instanceId: string; type: 'thread-deleted'; payload: { id: string }; ts: number };
 
