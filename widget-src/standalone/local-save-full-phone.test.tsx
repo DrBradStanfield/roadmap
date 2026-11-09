@@ -122,3 +122,24 @@ describe('US-01 AC5 on a phone: the alert is atop My health and atop Chat, which
     expect(shown()[0].closest('.hr-tabpanel')!.querySelector('.health-tool-chat')).not.toBeNull();
   });
 });
+
+// US-62 AC34: the storage button sits in Account on a phone, so a record that could not be read
+// says so atop My health too, through app.tsx's `syncAlert` (the same StorageBar, problemsOnly).
+describe('US-62 AC34 on a phone: a reconnect shows atop My health, not only in Account', () => {
+  it('the reconnect button is in My health\'s header and on the page', async () => {
+    const view = render(
+      <HealthTool
+        storageBar={<StorageBar backend="local" reconnect="dropbox" />}
+        saveAlert={<LocalSaveAlert backend="local" />}
+        syncAlert={<StorageBar backend="local" reconnect="dropbox" problemsOnly />}
+        syncControl={({ hasData, attention }) => <SyncControl backend="local" reconnect="dropbox" hasData={hasData} attention={attention} />}
+      />,
+    );
+    const retry = await waitFor(() => {
+      const shown = [...view.container.querySelectorAll('button.action-btn-small')].filter((b) => b.textContent === 'Retry' && !b.closest('[hidden]')); // the storage bar's, not the card's
+      expect(shown).toHaveLength(1);
+      return shown[0];
+    });
+    expect(retry.closest('.mh-header')).not.toBeNull();
+  });
+});
