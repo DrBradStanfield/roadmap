@@ -6,7 +6,6 @@ import { SectionIcon } from './icons';
 import { flushSync } from 'react-dom';
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, type MutableRefObject, type ReactNode } from 'react';
 import { InfoTooltip } from './InfoTooltip';
-import { openHistoryLightbox } from '../lib/roadmap-data';
 import { SEXES, type HealthInputs, type HealthResults, type ScreeningInputs, STATIN_NAMES, STATIN_DRUGS, EZETIMIBE_OPTIONS, PCSK9I_OPTIONS, BEMPEDOIC_ACID_OPTIONS, GLP1_NAMES, GLP1_DRUGS, SGLT2I_NAMES, SGLT2I_DRUGS, METFORMIN_OPTIONS, type MedicationInputs } from '@roadmap/health-core/types';
 import type { CorrectFn, Refused, SaveTask } from '../lib/matrix-save';
 import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, mayStillFit, type Grading } from '../lib/blood-test-cell';
@@ -14,20 +13,15 @@ import { useRangeWait } from '../lib/useRangeWait';
 import type { ApiLabValue, ApiSupplement } from '../lib/api-types';
 import { DRAFTS_CLEARED_EVENT, loadFromLocalStorage } from '../lib/storage';
 
-/** Every surface opens metric history in the local lightbox. */
-const interceptHistory = (metric: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
-  if (openHistoryLightbox(metric)) e.preventDefault();
-};
 import { type FormStage, FIELD_METRIC_MAP, medicationsToInputs, screeningsToInputs, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD, VITAL_METRICS } from '@roadmap/health-core/mappings';
 import { type WeightMedicationTrigger, type LipidMarker, LIPID_MEDS_IN_STEPS, lipidTargetSentence, weightMedIntro } from '@roadmap/health-core/suggestions';
 import { type UnitSystem, fromCanonicalValue, toCanonicalValue, getDisplayLabel, getDisplayRange, UNIT_DEFS, hasUnitChoice, cmToFeetInches, feetInchesToCm, formatHeightDisplay, bpTargetFor } from '@roadmap/health-core/units';
 import { identityFieldRange, isBirthYearClearlyInvalid } from '@roadmap/health-core/validation';
-import { formatValue, formatGradedOrLimit } from '@roadmap/health-core/lab-limits';
+import { formatValue } from '@roadmap/health-core/lab-limits';
 import { weightCascade, lipidCascade } from '@roadmap/health-core/medication-cascades';
 import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
 import { dayOf, localDay } from '@roadmap/health-core/merge';
-import { newestUsablePsa } from '@roadmap/health-core/measurement-history';
-import { MEDICATION_TEXT, SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, optionsShowing, escalationOptions, doseOptions, medicationWrites, screeningWrites, readScreening, followupName, followupDateLabel, anyScreeningEligible, dexaEligible, lungGroupShown, lungScreeningAsked, type FormOption } from '@roadmap/health-core/input-form';
+import { anyScreeningEligible, MEDICATION_TEXT, SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, optionsShowing, escalationOptions, doseOptions, medicationWrites, screeningWrites, readScreening, followupDateLabel, dexaEligible } from '@roadmap/health-core/input-form';
 import { formatShortDate, MONTHS_FULL } from '../lib/constants';
 import { BloodTestTimeline, useLiveRegion, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
@@ -41,6 +35,8 @@ import { ValuePage } from './ValuePage';
 import { AddLabTest } from './AddLabTest';
 import { SupplementsSection } from './SupplementsSection';
 import type { FormSlots, Placement } from './MyHealth';
+import { interceptHistory, optionElements, type FormKit } from './form-kit';
+import { ScreeningQuestions } from './ScreeningQuestions';
 
 /** The history-state key a phone value page's entry carries (US-62 AC10). */
 const VALUE_PAGE_STATE = 'hrValuePage';
@@ -64,10 +60,6 @@ const BASIC_LONGITUDINAL_FIELDS: FieldConfig[] = [
   WEIGHT_FIELD,
   { field: 'waistCm', name: 'Waist Circumference' },
 ];
-
-/** Option data (health-core's input-form) as <option> elements. */
-const optionElements = (options: FormOption[]) =>
-  options.map(opt => <option key={opt.value} value={opt.value} disabled={opt.disabled}>{opt.label}</option>);
 
 /** What a screening's month and year pickers show: a date still being picked
  *  (year or month blank, but not both, so nothing is saved yet) as picked,
@@ -561,6 +553,7 @@ export function InputPanel({
     : rawInputs[field] ?? String(inputs[field as keyof HealthInputs] ?? '');
   const errors = Object.fromEntries(Object.entries(allErrors).filter(([field]) => !rangeWait.waits(field, shownText(field))));
   const typeIn = (field: string, raw: string) => rangeWait.typed(field, raw, mayStillFit(raw, range(field).min, range(field).max));
+  const form: FormKit = { inputs, rawInputs, setRawInputs, errors, updateField, readable, unreadable, range, typeIn, blurOnWheel, settleOnEnter, autoSaveGate, rangeWait };
   // Imperial height, feet then inches: could some inches still bring it in range ("1" may be 10 or 11)?
   // The feet box hands on to the inches box: only leaving the pair shows the error (Codex R2).
   const leaveHeightPair = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -1801,376 +1794,13 @@ export function InputPanel({
     );
   };
 
-  // Cancer screening: shown when the plan has an age.
+  // Null, not an empty element, when no screening applies: My health draws a topic for any element (US-62 AC17).
   const renderScreening = (place: Placement) => {
-    // The plan's age, from the validated birth year (January when no month)
     const age = planBasis?.age;
-    if (age === undefined) return null;
-
-    const sex = inputs.sex;
-    const scr = screeningsToInputs(screenings);
-
-    /** Render result dropdown + follow-up status + follow-up date for a screening type. */
-    const renderResultFollowup = (type: string, method: string | undefined) => {
-      if (!readScreening(scr, `${type}_last_date`)) return null;
-
-      const result = readScreening(scr, `${type}_result`);
-      const followupStatus = readScreening(scr, `${type}_followup_status`);
-      const name = followupName(type, method);
-      const followupLabel = name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Follow-up';
-
-      return (
-        <>
-          <div className="health-field">
-            <label htmlFor={`${type}-result`}>{SCREENING_LABELS.result}</label>
-            <select
-              id={`${type}-result`}
-              value={result}
-              onChange={(e) => writeScreening(scr, `${type}_result`, e.target.value)}
-            >
-              {optionElements(SCREENING_OPTIONS.result)}
-            </select>
-          </div>
-
-          {result === 'abnormal' && (
-            <div className="health-field">
-              <label htmlFor={`${type}-followup-status`}>{followupLabel} status</label>
-              <select
-                id={`${type}-followup-status`}
-                value={followupStatus}
-                onChange={(e) => writeScreening(scr, `${type}_followup_status`, e.target.value)}
-              >
-                {optionElements(SCREENING_OPTIONS.followup_status)}
-              </select>
-            </div>
-          )}
-
-          {result === 'abnormal' && (followupStatus === 'scheduled' || followupStatus === 'completed') && (
-            renderScreeningDateInput(scr,
-              `${type}_followup_date`,
-              followupDateLabel(name, followupStatus),
-              { futureOnly: followupStatus === 'scheduled' }
-            )
-          )}
-        </>
-      );
-    };
-
-    if (!anyScreeningEligible(age, sex)) return null;
-
-    return (
-      <div className="section-card">
-      <section className="health-section screening-cascade">
-        <p className="health-section-desc">
-          {SCREENING_TEXT.intro}
-        </p>
-
-        {/* Colorectal (age 35-85, all genders) */}
-        {age >= 35 && age <= 85 && (
-          <div className="screening-group">
-            <h4>Colorectal</h4>
-            {place.in('colorectal')}
-            {age < 45 && (
-              <div className="screening-notice">
-                {SCREENING_TEXT.colorectalEarly}
-              </div>
-            )}
-
-            {age <= 75 ? (
-              <>
-                <div className="health-field">
-                  <label htmlFor="colorectal-method">{SCREENING_LABELS.method}</label>
-                  <select
-                    id="colorectal-method"
-                    value={readScreening(scr, 'colorectal_method')}
-                    onChange={(e) => writeScreening(scr, 'colorectal_method', e.target.value)}
-                  >
-                    {optionElements(SCREENING_OPTIONS.colorectal_method)}
-                  </select>
-                </div>
-
-                {readScreening(scr, 'colorectal_method') && readScreening(scr, 'colorectal_method') !== 'not_yet_started' && (
-                  <>
-                    {renderScreeningDateInput(scr, 'colorectal_last_date', SCREENING_LABELS.lastScreening)}
-                    {renderResultFollowup('colorectal', readScreening(scr, 'colorectal_method'))}
-                  </>
-                )}
-              </>
-            ) : (
-              <p className="screening-age-message">
-                {SCREENING_TEXT.colorectalIndividual}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Breast (female, age 40+) */}
-        {sex === 'female' && age >= 40 && (
-          <div className="screening-group">
-            <h4>Breast</h4>
-            {place.in('breast')}
-            {place.noteShown('breast', SCREENING_TEXT.breastByAge(age)) && (
-              <p className="screening-age-message">
-                {SCREENING_TEXT.breastByAge(age)}
-              </p>
-            )}
-
-            <div className="health-field">
-              <label htmlFor="breast-frequency">{SCREENING_LABELS.frequency}</label>
-              <select
-                id="breast-frequency"
-                value={readScreening(scr, 'breast_frequency')}
-                onChange={(e) => writeScreening(scr, 'breast_frequency', e.target.value)}
-              >
-                {optionElements(SCREENING_OPTIONS.breast_frequency)}
-              </select>
-            </div>
-
-            {readScreening(scr, 'breast_frequency') && readScreening(scr, 'breast_frequency') !== 'not_yet_started' && (
-              <>
-                {renderScreeningDateInput(scr, 'breast_last_date', SCREENING_LABELS.lastMammogram)}
-                {renderResultFollowup('breast', readScreening(scr, 'breast_frequency'))}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Cervical (female, age 25+) */}
-        {sex === 'female' && age >= 25 && (
-          <div className="screening-group">
-            <h4>Cervical</h4>
-            {place.in('cervical')}
-            {age <= 65 ? (
-              <>
-                <div className="health-field">
-                  <label htmlFor="cervical-method">{SCREENING_LABELS.method}</label>
-                  <select
-                    id="cervical-method"
-                    value={readScreening(scr, 'cervical_method')}
-                    onChange={(e) => writeScreening(scr, 'cervical_method', e.target.value)}
-                  >
-                    {optionElements(SCREENING_OPTIONS.cervical_method)}
-                  </select>
-                </div>
-
-                {readScreening(scr, 'cervical_method') && readScreening(scr, 'cervical_method') !== 'not_yet_started' && (
-                  <>
-                    {renderScreeningDateInput(scr, 'cervical_last_date', SCREENING_LABELS.lastScreening)}
-                    {renderResultFollowup('cervical', readScreening(scr, 'cervical_method'))}
-                  </>
-                )}
-              </>
-            ) : (
-              <p className="screening-age-message">
-                {SCREENING_TEXT.cervicalStop}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Lung (age 50-80, all genders; past 80 for an abnormal CT or any stored LDCT answer, US-07 AC1g) */}
-        {lungGroupShown(age, scr) && (
-          <div className="screening-group">
-            <h4>Lung</h4>
-            {place.in('lung')}
-
-            <div className="health-field">
-              <label htmlFor="lung-smoking-history">{SCREENING_LABELS.smokingHistory}</label>
-              <select
-                id="lung-smoking-history"
-                value={readScreening(scr, 'lung_smoking_history')}
-                onChange={(e) => writeScreening(scr, 'lung_smoking_history', e.target.value)}
-              >
-                {optionElements(SCREENING_OPTIONS.lung_smoking_history)}
-              </select>
-            </div>
-
-            {(readScreening(scr, 'lung_smoking_history') === 'former_smoker' || readScreening(scr, 'lung_smoking_history') === 'current_smoker') && (
-              <>
-                <div className="health-field">
-                  <label htmlFor="lung-pack-years">{SCREENING_TEXT.packYearsLabel}</label>
-                  <input
-                    type="number"
-                    id="lung-pack-years"
-                    onKeyDown={blockNonIntegerKeys}
-                    onWheel={blurOnWheel}
-                    value={scr.lungPackYears ?? ''}
-                    onChange={(e) => { if (readable('lung_pack_years', e)) onScreeningChange('lung_pack_years', e.target.value); }}
-                    placeholder=""
-                    min="0"
-                    max="200"
-                    step="1"
-                  />
-                  {unreadable.lung_pack_years && <span className="field-error">Enter a number</span>}
-                  <span className="field-hint">{SCREENING_TEXT.packYearsHint}</span>
-                </div>
-
-                {lungScreeningAsked(scr) && (
-                  <>
-                    <div className="health-field">
-                      <label htmlFor="lung-screening">{SCREENING_LABELS.lungScreening}</label>
-                      <select
-                        id="lung-screening"
-                        value={readScreening(scr, 'lung_screening')}
-                        onChange={(e) => writeScreening(scr, 'lung_screening', e.target.value)}
-                      >
-                        {optionElements(SCREENING_OPTIONS.lung_screening)}
-                      </select>
-                    </div>
-
-                    {readScreening(scr, 'lung_screening') === 'annual_ldct' && (
-                      <>
-                        {renderScreeningDateInput(scr, 'lung_last_date', SCREENING_LABELS.lastLdct)}
-                        {renderResultFollowup('lung', readScreening(scr, 'lung_screening'))}
-                      </>
-                    )}
-                  </>
-                )}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Prostate (male, age 45+) — shared decision */}
-        {sex === 'male' && age >= 45 && (
-          <div className="screening-group">
-            <h4>Prostate</h4>
-            {place.in('prostate')}
-            {place.noteShown('prostate', SCREENING_TEXT.prostateByAge(age)) && (
-              <p className="screening-age-message">
-                {SCREENING_TEXT.prostateByAge(age)}
-              </p>
-            )}
-
-            <div className="health-field">
-              <label htmlFor="prostate-discussion">{SCREENING_LABELS.prostateDiscussion}</label>
-              <select
-                id="prostate-discussion"
-                value={readScreening(scr, 'prostate_discussion')}
-                onChange={(e) => writeScreening(scr, 'prostate_discussion', e.target.value)}
-              >
-                {optionElements(SCREENING_OPTIONS.prostate_discussion)}
-              </select>
-            </div>
-
-            {readScreening(scr, 'prostate_discussion') === 'will_screen' && (
-              <>
-                {/* PSA input with inline date picker */}
-                {(() => {
-                  const today = localDay(new Date());
-                  const psaDay = psaDate ?? today;
-                  const psaDayError = !psaDay || psaDay > today ? 'Choose a day up to today.' : null;
-                  // One PSA per day: a value typed for a day that holds one corrects it, so say so,
-                  // while a value is typed (US-06 AC15).
-                  const psaHeld = inputs.psa === undefined ? undefined
-                    : bloodTestHistory.find(m => m.metricType === 'psa' && dayOf(m.recordedAt) === psaDay);
-                  const psaMeasurement = newestUsablePsa(bloodTestHistory, new Date()); // the PSA the plan reads (US-06 AC14)
-                  const psaPreviousLabel = psaHeld
-                    ? `Replaces ${formatGradedOrLimit('psa', psaHeld.value, 'si', psaHeld.comparator)} ng/mL`
-                    : psaMeasurement
-                    ? `${formatGradedOrLimit('psa', psaMeasurement.value, 'si', psaMeasurement.comparator)} ng/mL · ${formatShortDate(psaMeasurement.recordedAt)}`
-                    : null;
-
-                  return (
-                    <div className="health-field">
-                      <label htmlFor="psa-input">{SCREENING_TEXT.psaLabel}</label>
-                      {/* Saves once focus leaves the row, so a date picked after the value counts (US-06 AC15). */}
-                      <div className="psa-inline-row" onBlur={(e) => {
-                        if (autoSaveGate && !unreadable.psa && !e.currentTarget.contains(e.relatedTarget as Node | null)) onPsaCommit(false);
-                      }}>
-                        <input
-                          type="number"
-                          id="psa-input"
-                          onWheel={blurOnWheel}
-                          value={rawInputs.psa ?? (inputs.psa !== undefined ? String(inputs.psa) : '')}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            typeIn('psa', val);
-                            setRawInputs(prev => ({ ...prev, psa: val }));
-                            if (!readable('psa', e)) return;
-                            if (val === '') {
-                              updateField('psa', undefined);
-                            } else {
-                              const num = parseLocalisedNumber(val);
-                              if (num !== undefined) updateField('psa', num);
-                            }
-                          }}
-                          onBlur={() => {
-                            if (unreadable.psa) return;
-                            rangeWait.settle();
-                            setRawInputs(prev => { const next = { ...prev }; delete next.psa; return next; });
-                          }}
-                          onKeyDown={(e) => {
-                            blockBadNumericKeys(e); settleOnEnter(e);
-                            if (e.key !== 'Enter') return;
-                            e.preventDefault();
-                            if (autoSaveGate && !unreadable.psa) onPsaCommit(true);
-                          }}
-                          placeholder=""
-                          step="0.1"
-                          min={range('psa').min}
-                          max={range('psa').max}
-                          className={errors.psa ? 'error' : ''}
-                        />
-                        <input type="date" aria-label="PSA test date" value={psaDay} max={today}
-                               onChange={(e) => onPsaDateChange(e.target.value)} />
-                        {autoSaveGate && inputs.psa !== undefined && (
-                          <CommitTickButton ariaLabel="Save PSA" onClick={() => onPsaCommit(true)}/>
-                        )}
-                      </div>
-                      {(unreadable.psa || errors.psa || psaDayError) && <span className="field-error">{unreadable.psa ? 'Enter a number' : errors.psa ?? psaDayError}</span>}
-                      <div className="field-meta">
-                        <span className="field-hint">{SCREENING_TEXT.psaHint}</span>
-                        {psaPreviousLabel && (
-                          <a
-                            className="previous-value"
-                            href="#health-history"
-                            onClick={interceptHistory('psa')}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >{psaPreviousLabel}</a>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Endometrial (female, age 45+) — awareness */}
-        {sex === 'female' && age >= 45 && (
-          <div className="screening-group">
-            <h4>Endometrial</h4>
-            {place.in('endometrial')}
-
-            <div className="health-field">
-              <label htmlFor="endometrial-discussion">{SCREENING_LABELS.endometrialDiscussion}</label>
-              <select
-                id="endometrial-discussion"
-                value={readScreening(scr, 'endometrial_discussion')}
-                onChange={(e) => writeScreening(scr, 'endometrial_discussion', e.target.value)}
-              >
-                {optionElements(SCREENING_OPTIONS.endometrial_discussion)}
-              </select>
-            </div>
-
-            <div className="health-field">
-              <label htmlFor="endometrial-bleeding">{SCREENING_LABELS.endometrialBleeding}</label>
-              <select
-                id="endometrial-bleeding"
-                value={readScreening(scr, 'endometrial_abnormal_bleeding')}
-                onChange={(e) => writeScreening(scr, 'endometrial_abnormal_bleeding', e.target.value)}
-              >
-                {optionElements(SCREENING_OPTIONS.endometrial_abnormal_bleeding)}
-              </select>
-            </div>
-          </div>
-        )}
-      </section>
-      </div>
-    );
+    if (age === undefined || !anyScreeningEligible(age, inputs.sex)) return null;
+    return <ScreeningQuestions place={place} form={form} screenings={screenings} onScreeningChange={onScreeningChange}
+                               psaDate={psaDate} onPsaDateChange={onPsaDateChange} onPsaCommit={onPsaCommit} bloodTestHistory={bloodTestHistory}
+                               age={age} writeScreening={writeScreening} renderScreeningDateInput={renderScreeningDateInput}/>;
   };
 
   const renderBoneDensity = (place: Placement) => {
