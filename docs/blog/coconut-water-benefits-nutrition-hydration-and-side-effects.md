@@ -8,7 +8,7 @@ tags: ["Supplements"]
 keywords: ["coconut water", "electrolytes", "potassium", "sodium", "magnesium", "calcium", "hydration", "blood pressure", "hypertension", "kidney", "diabetes", "blood sugar", "cholesterol", "ldl", "hdl", "triglycerides", "gut health", "inflammation", "exercise", "weight loss", "heart health", "cardiovascular"]
 summary: "Coconut water is mostly water, rich in potassium and low in calories. Small trials found it rehydrates about as well as a sports drink after exercise, and one trial suggests it may help ulcerative colitis. Talk to your doctor first if you have kidney disease or take medicines that raise potassium."
 reviewed: "2026-11-09"
-sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/20032881/","checked":"2026-11-09","fingerprint":"sha256:b120b86e2ea45daa4e059a1a7411eafaf3e9e5527da714ccc880597588ff309d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/26243942/","checked":"2026-11-09","fingerprint":"sha256:668da9daed1843a60c849031be07869841cdc4652f2ee23e5abfe8f91c8161b0"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/40361585/","checked":"2026-11-09","fingerprint":"sha256:6643af0e5405090fe0e92b3d401332e7a0308269a85f323662473fe814ece349"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33241361/","checked":"2026-11-09","fingerprint":"sha256:3881ca663e41a7d5e536849623eabeb77fd3aba17d338ae27da572514de442f5"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22257640/","checked":"2026-11-09","fingerprint":"sha256:15a768cbb77fc7461b01da576c89fc6c72db5e4e8c3c4649e090c7d0d763a665"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/27768399/","checked":"2026-11-09","fingerprint":"sha256:f44bd60fa9b1c2f4dd2f2b775a9b4b6cecfc1c503ef87920fd7325f6a2a3bf25"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/7163850/","checked":"2026-11-09","fingerprint":"sha256:bf1163fda3b03277d4331487b3ee03cf2eb77e3f3ef742fd92763c15c0ea9cb4"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/8463517/","checked":"2026-11-09","fingerprint":"sha256:8726dadb487348225fb766520625058d0aab7448de4c9cc27cb1947b652d050c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/17883020/","checked":"2026-11-09","fingerprint":"sha256:18cb452d318eaabcae66cd8944e99dd3a3d4e2996890e3b0a7cffb40273a91bf"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/12056182/","checked":"2026-11-09","fingerprint":"sha256:d4f3959392813ba62d7a251e09a35e294a25ce50a9cd82e54e9aa29dee9d4d89"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/37755860/","checked":"2026-11-09","fingerprint":"sha256:4f76c55052ff1ee6872908d379bd04702cf7569388112f0a72d7d6aa673f43ae"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/41359932/","checked":"2026-11-09","fingerprint":"sha256:006236a7cf926cc51c16693850fb0261cdd9574d1f643330bac84c70ae3f6d51"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/15892382/","checked":"2026-11-09","fingerprint":"sha256:3515630511aecb4f049023f1440eb2ce1aec16102ea125658e8445b8355de3c8"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/39221800/","checked":"2026-11-09","fingerprint":"sha256:b4646fc83f7766a1d092a601483e6adf3410fc8e2f20bfbef5753fb41f380e16"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23558164/","checked":"2026-11-09","fingerprint":"sha256:6326b559f4114b3ef4f0094b8b204d054ad6f749081f9fb09d47dab59463d683"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18809454/","checked":"2026-11-09","fingerprint":"sha256:18c5fb2e89ba71cf0f90501b4efda20e935114d6639fdb7355466e59d7c92d0a"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22576019/","checked":"2026-11-09","fingerprint":"sha256:ef067683de935b17478f80f0108a83d21619ebe939685cca03b486e691564f50"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30515390/","checked":"2026-11-09","fingerprint":"sha256:9fe708b3673ae60443cb2e8ea009489c8f53e70241b63fe1242b43e51b030b8c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23489503/","checked":"2026-11-09","fingerprint":"sha256:bf0ec30870ea18f05a2a0e381aa627001df80303b3e7ce679c5e3672030d0450"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/1496708/","checked":"2026-11-09","fingerprint":"sha256:68d8e0294bce3d387334100e657cae2e1b36ef9babd02b4f9a1c8fcfe7f337b1"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/34313978/","checked":"2026-11-09","fingerprint":"sha256:b5c191758013e29c2bf4681d39f5e2a6da7686fbff39b963aca63a49a9a72c4e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/38278200/","checked":"2026-11-09","fingerprint":"sha256:2a0b8ef39c46d6e08a3ccb7a621263df39c5cab8a8ba99ecc6e519d7156f52de"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/10674546/","checked":"2026-11-09","fingerprint":"sha256:b793095535e11ebed0a7787760d474b4166b885a6afab0cc1d6e084e361afa6d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11447514/","checked":"2026-11-09","fingerprint":"sha256:92c734754238752f855d2f495a96683e2a9c647390d3db488e71b82095d28fe4"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/21771462/","checked":"2026-11-09","fingerprint":"sha256:d57128c149d9b45a227ab83e6be7880f0c6c598a13d02954a731f145e5d4558f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30844154/","checked":"2026-11-09","fingerprint":"sha256:05b692a4d351e7a3ac1db3172add66855a2e384928fd7b7c6498485e57f67df2"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30002937/","checked":"2026-11-09","fingerprint":"sha256:601afbe0c9861ff6f8ee9ded5c49e8870ba2d039e984382a753ad1bca3b353b7"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23124410/","checked":"2026-11-09","fingerprint":"sha256:f076411598a9b341a170cf87c6935e69488da61d9b64e0afdd362ab599647695"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24550410/","checked":"2026-11-09","fingerprint":"sha256:13e89e997a21ab157f3218daa7eac45d061e2226d58b48ba4ff99b857de94602"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23091750/","checked":"2026-11-09","fingerprint":"sha256:e30314e25749b51a149beaaf862be13ff486972d9db58bf3451cadef62341b20"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/37625503/","checked":"2026-11-09","fingerprint":"sha256:aee96f3172da0a816121f84fdf4d64c01754aa2e6abeaf71761c108bdead844d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33548470/","checked":"2026-11-09","fingerprint":"sha256:290e61c9f32319e242c21fd741dfae031bfda4fe147d7af739f22cedc85b67ef"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28961189/","checked":"2026-11-09","fingerprint":"sha256:39c41bc82b97ac16b53481f7fa91ec994fe2e378489a4885fac126859a283c12"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/38975685/","checked":"2026-11-09","fingerprint":"sha256:515985ade8f4099b055643df72c5ef040bf6ba112328c899cd2a7ce88e6f33c1"}]
+sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/20032881/","checked":"2026-11-09","fingerprint":"sha256:b120b86e2ea45daa4e059a1a7411eafaf3e9e5527da714ccc880597588ff309d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/26243942/","checked":"2026-11-09","fingerprint":"sha256:668da9daed1843a60c849031be07869841cdc4652f2ee23e5abfe8f91c8161b0"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/40361585/","checked":"2026-11-09","fingerprint":"sha256:6643af0e5405090fe0e92b3d401332e7a0308269a85f323662473fe814ece349"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33241361/","checked":"2026-11-09","fingerprint":"sha256:3881ca663e41a7d5e536849623eabeb77fd3aba17d338ae27da572514de442f5"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22257640/","checked":"2026-11-09","fingerprint":"sha256:15a768cbb77fc7461b01da576c89fc6c72db5e4e8c3c4649e090c7d0d763a665"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/27768399/","checked":"2026-11-09","fingerprint":"sha256:f44bd60fa9b1c2f4dd2f2b775a9b4b6cecfc1c503ef87920fd7325f6a2a3bf25"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/7163850/","checked":"2026-11-09","fingerprint":"sha256:bf1163fda3b03277d4331487b3ee03cf2eb77e3f3ef742fd92763c15c0ea9cb4"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/8463517/","checked":"2026-11-09","fingerprint":"sha256:8726dadb487348225fb766520625058d0aab7448de4c9cc27cb1947b652d050c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/17883020/","checked":"2026-11-09","fingerprint":"sha256:18cb452d318eaabcae66cd8944e99dd3a3d4e2996890e3b0a7cffb40273a91bf"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/12056182/","checked":"2026-11-09","fingerprint":"sha256:d4f3959392813ba62d7a251e09a35e294a25ce50a9cd82e54e9aa29dee9d4d89"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/37755860/","checked":"2026-11-09","fingerprint":"sha256:4f76c55052ff1ee6872908d379bd04702cf7569388112f0a72d7d6aa673f43ae"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/41359932/","checked":"2026-11-09","fingerprint":"sha256:006236a7cf926cc51c16693850fb0261cdd9574d1f643330bac84c70ae3f6d51"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/15892382/","checked":"2026-11-09","fingerprint":"sha256:3515630511aecb4f049023f1440eb2ce1aec16102ea125658e8445b8355de3c8"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/39221800/","checked":"2026-11-09","fingerprint":"sha256:b4646fc83f7766a1d092a601483e6adf3410fc8e2f20bfbef5753fb41f380e16"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23558164/","checked":"2026-11-09","fingerprint":"sha256:6326b559f4114b3ef4f0094b8b204d054ad6f749081f9fb09d47dab59463d683"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18809454/","checked":"2026-11-09","fingerprint":"sha256:18c5fb2e89ba71cf0f90501b4efda20e935114d6639fdb7355466e59d7c92d0a"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22576019/","checked":"2026-11-09","fingerprint":"sha256:ef067683de935b17478f80f0108a83d21619ebe939685cca03b486e691564f50"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30515390/","checked":"2026-11-09","fingerprint":"sha256:9fe708b3673ae60443cb2e8ea009489c8f53e70241b63fe1242b43e51b030b8c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23489503/","checked":"2026-11-09","fingerprint":"sha256:bf0ec30870ea18f05a2a0e381aa627001df80303b3e7ce679c5e3672030d0450"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/1496708/","checked":"2026-11-09","fingerprint":"sha256:68d8e0294bce3d387334100e657cae2e1b36ef9babd02b4f9a1c8fcfe7f337b1"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/34313978/","checked":"2026-11-09","fingerprint":"sha256:b5c191758013e29c2bf4681d39f5e2a6da7686fbff39b963aca63a49a9a72c4e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/38278200/","checked":"2026-11-09","fingerprint":"sha256:2a0b8ef39c46d6e08a3ccb7a621263df39c5cab8a8ba99ecc6e519d7156f52de"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/10674546/","checked":"2026-11-09","fingerprint":"sha256:b793095535e11ebed0a7787760d474b4166b885a6afab0cc1d6e084e361afa6d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11447514/","checked":"2026-11-09","fingerprint":"sha256:92c734754238752f855d2f495a96683e2a9c647390d3db488e71b82095d28fe4"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/21771462/","checked":"2026-11-09","fingerprint":"sha256:d57128c149d9b45a227ab83e6be7880f0c6c598a13d02954a731f145e5d4558f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30844154/","checked":"2026-11-09","fingerprint":"sha256:05b692a4d351e7a3ac1db3172add66855a2e384928fd7b7c6498485e57f67df2"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30002937/","checked":"2026-11-09","fingerprint":"sha256:601afbe0c9861ff6f8ee9ded5c49e8870ba2d039e984382a753ad1bca3b353b7"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23124410/","checked":"2026-11-09","fingerprint":"sha256:f076411598a9b341a170cf87c6935e69488da61d9b64e0afdd362ab599647695"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24550410/","checked":"2026-11-09","fingerprint":"sha256:13e89e997a21ab157f3218daa7eac45d061e2226d58b48ba4ff99b857de94602"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23091750/","checked":"2026-11-09","fingerprint":"sha256:e30314e25749b51a149beaaf862be13ff486972d9db58bf3451cadef62341b20"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/37625503/","checked":"2026-11-09","fingerprint":"sha256:aee96f3172da0a816121f84fdf4d64c01754aa2e6abeaf71761c108bdead844d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33548470/","checked":"2026-11-09","fingerprint":"sha256:290e61c9f32319e242c21fd741dfae031bfda4fe147d7af739f22cedc85b67ef"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28961189/","checked":"2026-11-09","fingerprint":"sha256:39c41bc82b97ac16b53481f7fa91ec994fe2e378489a4885fac126859a283c12"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/38975685/","checked":"2026-11-09","fingerprint":"sha256:515985ade8f4099b055643df72c5ef040bf6ba112328c899cd2a7ce88e6f33c1"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33350928/","checked":"2026-11-09","fingerprint":"sha256:7bc6b4df9bd3b7db6ce794b38fc3090ac6332cb0cdba151e51ae1d06a259b550"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28700090/","checked":"2026-11-09","fingerprint":"sha256:5b6cd502dcf67a0b7a47a6f7c35ef46a8d1dc88eab4f9a51fcaf3a868170f4da"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/39338557/","checked":"2026-11-09","fingerprint":"sha256:a864cacc5118cc3bb9885832c4846fd415f03d3114f119b0b3a12c89d6fe82e7"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/coconut-water-benefits-nutrition-hydration-and-side-effects](https://drstanfield.com/blogs/articles/coconut-water-benefits-nutrition-hydration-and-side-effects)*
@@ -26,6 +26,7 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 - In one case report, a newborn had low sodium and seizures after the mother drank large amounts during labour [37].
 - Coconut allergy is uncommon, but about half of reactions after eating coconut in one clinic met the criteria for anaphylaxis [34][35].
 - In one trial, people felt more bloated and had more stomach upset with coconut water than with a sports drink [6].
+- Do not drink coconut water that tastes or smells off: a man died after drinking spoiled water from a coconut kept out of the fridge for a month [38].
 
 ## Brad's videos on this topic
 
@@ -83,6 +84,10 @@ Source: USDA FoodData Central [2].
 These values are averages. Composition shifts as the fruit matures. In a Brazilian study, sodium stayed at a mean of 2.9 mEq/L from the 5th to the 7th month, then rose to 12.5 mEq/L after the 8th month [9]. Glucose fell sharply after the 9th month, and osmolality fell with it, from about 377.3 mOsm/l up to the 8th month to 310.3 mOsm/l after the 9th [9].
 
 A Thai analysis put coconut water's osmolarity at 288 mOsm/l, against 693 mOsm/l for soft drinks; its pH was 5.4, against 3.1 [8]. Young-coconut sodium was far lower than the USDA figure [9], and in a heat trial, adding sodium improved coconut water's rehydration [10].
+
+### Electrolyte Comparison: Coconut Water vs. Sports Drinks
+
+The trials below compared coconut water with sports drinks for rehydration [6][10][11][12][13]. This review found no public side-by-side analysis of their electrolyte content.
 
 ## 3. Evidence for Health Benefits
 
@@ -148,9 +153,33 @@ Coconut water has been tried as a home drink for diarrhoea. In a Brazilian study
 
 In remote settings, coconut water has been given intravenously as a short-term fluid; one report describes a patient in the Solomon Islands [25]. In a laboratory test, it affected blood clotting no differently from the same volume of saline [26].
 
+### Pregnancy and Maternal Health
+
+No trial in the sources reviewed here has tested coconut water in pregnancy. The one public report is the newborn case under Special Populations [37].
+
+### Breastfeeding and Lactation
+
+There is no good public evidence on this yet.
+
+### Hangover Recovery
+
+There is no good public evidence on this yet.
+
+### Skin Health Claims
+
+There is no good public evidence on this yet.
+
+### Weight Loss Claims
+
+There is no good public evidence on this yet.
+
 ### Antioxidant and Anti-inflammatory Properties
 
 A review lists antibacterial, antifungal, antiviral, antioxidant, hypoglycaemic, hepatoprotective and immune effects for coconut water and kernel [27]. A 2025 review adds anti-inflammatory, anti-cancer and heart-protective effects [4]. These findings come from laboratory and animal work. No human trial has shown that drinking coconut water gives a clinical antioxidant or anti-inflammatory benefit.
+
+### Acid Reflux and Heartburn
+
+There is no good public evidence on this yet.
 
 ## 4. Recommended Intake
 
@@ -182,25 +211,37 @@ Fresh coconut water spoils quickly [4]. Packaged coconut water is processed to e
 
 In the exercise trials, coconut water was well tolerated, though one trial found more bloating and stomach upset than with a sports drink [6][11]. In the ulcerative colitis trial, adverse events matched placebo over 8 weeks [24].
 
+Large amounts may loosen the stools in some people, but no public study has measured this. If coconut water gives you loose stools or bloating, drink less.
+
+If you have irritable bowel syndrome, try a small glass first. A review lists coconut among the main high-FODMAP foods in South Asian diets, though it did not report on coconut water itself [40].
+
 ### Hyperkalemia (Dangerously High Potassium)
 
 The main risk is hyperkalemia, a high blood potassium level. It may trigger heart rhythms that can kill [23].
 
 **Hemachandra 2018:** A 78-year-old man in Sri Lanka developed rising paralysis over five hours and then dangerous heart rhythms, with a serum potassium of 7.02 mEq/L [30]. He took losartan and spironolactone for ischaemic heart disease, and had drunk large amounts of king coconut water over the past week [30]. The authors blamed several triggers together: coconut water, kidney failure, diabetes, metabolic acidosis and the potassium-sparing diuretic [30]. His potassium fell to 6.1 mEq/L within 2 hours of emergency treatment, and he recovered fully within 24 hours without dialysis [30].
 
-**Other reports:** A UK report described coconut water-induced hyperkalemia [31]. A 2014 report in a heart-rhythm journal, titled "Death by coconut", described another case [32]. A Japanese report blamed night-time muscle cramps in a 79-year-old woman on potassium overload from eating a mango every night, though the author hedged the cause [33].
+**Other reports:** A UK report described coconut water-induced hyperkalemia [31]. A 2014 report in a heart-rhythm journal, titled "Death by coconut", described another case [32]; the Sri Lankan case report cites it as showing that coconut water can cause fatal heart rhythm problems through severe hyperkalemia [30]. A Japanese report blamed night-time muscle cramps in a 79-year-old woman on potassium overload from eating a mango every night, though the author hedged the cause [33].
 
-People with kidney disease are most at risk, because their kidneys clear less potassium; medicines that block the renin-angiotensin system add to the risk [23]. If you have sudden muscle weakness or an irregular heartbeat after drinking a lot of coconut water, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+People with kidney disease are most at risk, because their kidneys clear less potassium; medicines that block the renin-angiotensin system add to the risk [23]. MedlinePlus lists poor kidney function, ACE inhibitors, ARBs and spironolactone among the causes of high potassium [39].
+
+No safe daily amount has been set. The authors of the Sri Lankan case wrote that there is not enough evidence on safe daily limits for people with other illnesses such as diabetes [30]. If you plan to drink large amounts every day, ask your doctor first, especially if you have kidney disease or diabetes or take blood pressure medicines.
+
+High potassium often causes no symptoms. When it does, they may include chest pain, difficulty breathing, nausea or vomiting, palpitations, a slow, weak or irregular pulse, and sudden collapse when the heartbeat slows or stops [39]. A very high level needs emergency treatment [39]. If you have sudden muscle weakness or an irregular heartbeat after drinking a lot of coconut water, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ### Allergic Reactions
 
 Coconut allergy is uncommon. In a US survey of 78,851 people, 0.39% had convincing coconut allergy [34]. In a children's hospital series, about 50% of reactions after eating coconut were mild or moderate anaphylaxis, and many patients were also sensitised to tree nuts [35]. A review notes that coconut allergy is not directly linked to nut allergy [36]. These studies cover coconut in general, not coconut water alone.
 
+### Bacterial Contamination
+
+In a Brazilian study, coconut water sold from street carts held more microbes than refrigerated samples, and some samples carried opportunistic bacteria such as *Klebsiella pneumoniae* [41]. In Denmark, a man died after drinking from a ready-to-drink coconut that had been kept on a kitchen table for a month instead of in the fridge; the water tasted foul, and a fungus that had spoiled it made the toxin that killed him [38]. Keep coconuts and opened coconut water cold, and do not drink coconut water that tastes or smells off. If you are pregnant or have a weakened immune system, ask your doctor first before drinking unpasteurised coconut water.
+
 ### Special Populations
 
 **Kidney disease:** Kidney disease raises the risk of hyperkalemia [19][23]. Do not use coconut water for rehydration where kidney function is impaired [22], and ask your doctor before drinking it regularly.
 
-**Type 2 diabetes:** Diabetes is a risk factor for hyperkalemia on ACE inhibitors [19], and the man in the Sri Lankan case had diabetes [30].
+**Type 2 diabetes:** Diabetes is a risk factor for hyperkalemia on ACE inhibitors [19], and the man in the Sri Lankan case had diabetes [30]. The authors of that case cite reports that people with diabetes are at higher risk of hyperkalemia after drinking coconut water [30].
 
 **Pregnancy and labour:** One case report linked seizures and a serum sodium of 113 mmol/L in a newborn to the mother drinking excessive amounts of coconut water during labour [37]. The authors stressed care with both fluid volume and electrolytes in labour.
 
@@ -216,6 +257,7 @@ Coconut water's potassium is the source of its drug interactions. The spironolac
 | ACE inhibitors | Lisinopril, enalapril, captopril | Raise potassium | Risk is higher with kidney impairment, diabetes or potassium-sparing diuretics [19] |
 | Angiotensin receptor blockers (ARBs) | Losartan, valsartan, candesartan | Raise potassium | Listed among drugs that raise potassium [29]; add to the risk in kidney disease [23] |
 | NSAIDs (regular use) | Ibuprofen, naproxen | Can raise potassium | Listed among drugs that raise potassium [29] |
+| Digoxin | Lanoxin | Potassium level matters | Low potassium raises the risk of digoxin toxicity [42]; ask your doctor before large changes in potassium intake |
 
 **General guidance:** If you take any of these medicines, have kidney disease, or have been told to limit potassium, ask your doctor before drinking coconut water regularly [19][29]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
@@ -224,6 +266,14 @@ Coconut water's potassium is the source of its drug interactions. The spironolac
 ### Coconut Water Sources
 
 Coconut water is drunk fresh from young green coconuts or bought packaged. Fresh coconut water spoils fast, which drives new preservation methods for packaged products [4]. Packaged coconut water varies: a review of its authenticity covers natural variation, changes from processing, adulteration and product recalls [5]. Choose a product that an independent lab has tested.
+
+### Potassium-Rich Food Alternatives
+
+Many fruits and vegetables are rich in potassium. MedlinePlus names bananas, oranges and orange juice, potatoes, tomatoes, avocados and cooked spinach among the foods to limit when potassium is high [39].
+
+### Other Natural Electrolyte Sources
+
+For everyday hydration, plain water works. No trial in this review found coconut water better than water for performance [6][7].
 
 ### Traditional and Historical Uses
 
@@ -304,3 +354,13 @@ Coconut water is drunk worldwide as a refreshing beverage [1], and coconut is a 
 [36] Anagnostou K. Coconut Allergy Revisited. Children (Basel). 2017. PMID: 28961189. https://pubmed.ncbi.nlm.nih.gov/28961189/
 
 [37] Soriano LP et al. Case Report of Hyponatremic Seizures in a Term Neonate Attributed to Excessive Maternal Coconut Water Ingestion During Labor. A A Pract. 2024. PMID: 38975685. https://pubmed.ncbi.nlm.nih.gov/38975685/
+
+[38] Birkelund T et al. Fatal 3-Nitropropionic Acid Poisoning after Consuming Coconut Water. Emerg Infect Dis. 2021. PMID: 33350928. https://pubmed.ncbi.nlm.nih.gov/33350928/
+
+[39] MedlinePlus Medical Encyclopedia. High potassium level. https://medlineplus.gov/ency/article/001179.htm
+
+[40] Hewawasam SP et al. Dietary practices and FODMAPs in South Asia: Applicability of the low FODMAP diet to patients with irritable bowel syndrome. J Gastroenterol Hepatol. 2018. PMID: 28700090. https://pubmed.ncbi.nlm.nih.gov/28700090/
+
+[41] Peterle VM et al. Microbiological Quality of Coconut Water Sold in the Grande Vitória Region, Brazil, and Phenogenotypic Antimicrobial Resistance of Associated Enterobacteria. Microorganisms. 2024. PMID: 39338557. https://pubmed.ncbi.nlm.nih.gov/39338557/
+
+[42] Lanoxin (digoxin) tablet. DailyMed label. https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=d91e3646-4c63-4512-ab22-db39c085c4dc
