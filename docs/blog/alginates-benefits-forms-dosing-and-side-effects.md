@@ -20,12 +20,12 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 ## Key safety points
 
 - Alginate products can reduce the absorption of other medicines. The UK label advises a 2-hour gap, especially from tetracyclines, fluoroquinolones, iron, thyroid hormones, chloroquine, bisphosphonates and estramustine [2]. In rats, sodium alginate lowered carbamazepine blood levels [6].
-- Many alginate products also contain an antacid. Some drug labels ask for longer gaps from antacids: levothyroxine at least 4 hours apart, and ciprofloxacin at least 2 hours before or 6 hours after [43][44].
+- Many alginate products also contain an antacid. Some drug labels ask for longer gaps: levothyroxine at least 4 hours apart from calcium carbonate, and ciprofloxacin at least 2 hours before or 6 hours after magnesium or aluminum antacids [43][44].
 - Chew tablets thoroughly and follow them with water or another drink; do not swallow them whole [38][40].
 - Do not use them if you are allergic to alginate or to the parabens some liquids contain. Anaphylaxis is very rare but has been reported [2][7].
 - Some liquids are high in sodium: the maximum daily dose of one UK liquid supplies 23.14% of the WHO daily sodium limit. Ask your doctor first if you have heart failure, kidney disease, high blood calcium or calcium kidney stones [2].
 - Children under 12 should take them only on medical advice. In infants, an alginate formula did not reduce reflux events [2][8].
-- If heartburn has not improved after 7 days, see your doctor [2].
+- If heartburn has not improved after 7 days, see your doctor [2]. See one promptly for trouble swallowing, weight loss, bleeding, vomiting or anemia [28].
 - Side effects are uncommon: diarrhea, nausea and vomiting [2]. Constipation can occur, usually after more than the recommended dose [38].
 
 ## Brad's videos on this topic
@@ -54,6 +54,8 @@ Trials have tested alginates as liquids and as chewable tablets:
 
 - **Liquid suspensions** are the most studied form. Gaviscon Advance contains sodium alginate 1,000 mg and potassium hydrogen carbonate 200 mg in each 10 mL dose [2]. Trial doses ranged from 10 mL to 30 mL (see Recommended Dosing).
 - **Chewable tablets**: in a 7-day trial of 424 adults, alginate-antacid chewable tablets relieved reflux symptoms better than placebo [15]. Labels say to chew them thoroughly, and a US label adds to follow them with half a glass of water or other liquid and not to swallow them whole [38][40].
+
+Some alginate supplements come as capsules. We found no public trial of a capsule product. If you have trouble swallowing, ask your doctor or pharmacist first whether a liquid suits you better.
 
 ### Key Formulation Components
 
@@ -193,13 +195,13 @@ The UK label states that studies in more than 500 pregnant women and post-market
 
 ### Alginate as Dietary Fiber
 
-As an indigestible polysaccharide, alginate can be viewed as a dietary fiber [9]. A 2005 review examined its fiber-like effects on intestinal absorption and the colon [9]. Large amounts of alginate eaten with a meal can reduce the absorption of some carotenoids (see Effects on Nutrient Absorption) [32].
+As an indigestible polysaccharide, alginate can be viewed as a dietary fiber [9]. A 2005 review examined its fiber-like effects on intestinal absorption and the colon [9]. We found no good public evidence that alginate supplements lower cholesterol or blood sugar. Large amounts of alginate eaten with a meal can reduce the absorption of some carotenoids (see Effects on Nutrient Absorption) [32].
 
 ## 4. Recommended Dosing
 
 ### Effective Dose Range
 
-The UK label dose of Gaviscon Advance for adults and children 12 years and over is 5 to 10 mL after meals and at bedtime [2]. A 10 mL dose of Gaviscon Advance contains 1,000 mg of sodium alginate [2]. Trials used 10 mL four times daily up to 30 mL four times daily, and one trial used an alginate at 500 mg per 10 mL [5][22][26].
+The UK label dose of Gaviscon Advance for adults and children 12 years and over is 5 to 10 mL after meals and at bedtime [2]. A 10 mL dose of Gaviscon Advance contains 1,000 mg of sodium alginate, and 10 mL is the label's largest single dose [2]. US labels say not to use the maximum dose for more than 2 weeks except on a doctor's advice [40][41]. Most trials used 10 mL four times daily [5][24]. One Japanese trial used 30 mL four times a day of a different sodium alginate liquid whose strength was not stated, so that volume does not carry over to Gaviscon Advance [22]. Another trial used an alginate at 500 mg per 10 mL [26].
 
 ### Dosing by Indication
 
@@ -219,6 +221,7 @@ The UK label dose of Gaviscon Advance for adults and children 12 years and over 
 - **Tablets:** chew thoroughly, then drink half a glass of water or other liquid [38][40].
 - **Other medicines:** leave a 2-hour gap between an alginate product and other medicines, including iron [2]. Some medicines need a longer gap (see Drug Interactions).
 - **Review:** if symptoms do not improve after 7 days, see your doctor [2].
+- **Warning signs:** see a doctor promptly if reflux comes with trouble swallowing, weight loss, bleeding, vomiting or anemia. The ACG guideline calls these alarm symptoms and advises an endoscopy as soon as feasible. Chest pain should be checked for heart disease before it is put down to reflux [28].
 
 ### How to Read a Supplement Label
 
@@ -232,9 +235,9 @@ Alginates are generally well tolerated. The 2020 meta-analysis found the risk of
 
 ### Common Side Effects
 
-The UK label lists diarrhea, nausea and vomiting as uncommon [2]. In trials, one patient had mild diarrhea and two reported nausea and bloating [22][23]. An overdose is likely to cause only minor abdominal discomfort [2].
+The UK label lists diarrhea, nausea and vomiting as uncommon [2]. In trials, one patient had mild diarrhea and two reported nausea and bloating [22][23]. For that alginate liquid, the label says an overdose is likely to cause only minor abdominal discomfort [2].
 
-Constipation is listed, with unknown frequency, for a chewable tablet that also contains calcium carbonate; it usually follows larger than recommended doses [38]. The infant sachet label lists constipation and diarrhea as very rare [39]. Some US antacid liquids that contain sodium alginate warn of a laxative effect instead [41].
+Products with calcium carbonate carry more risk at high doses. For a chewable tablet that also contains calcium carbonate, the label lists constipation, alkalosis, acid rebound, high blood calcium and milk-alkali syndrome, with unknown frequency; they usually follow larger than recommended doses [38]. US labels say not to use the maximum dose for more than 2 weeks except on a doctor's advice [40][41]. The infant sachet label lists constipation and diarrhea as very rare [39]. Some US antacid liquids that contain sodium alginate warn of a laxative effect instead [41].
 
 ### Sodium Content
 
@@ -259,9 +262,9 @@ These studies gave alginate with a meal or mixed into formula. Whether label dos
 
 Allergic reactions to alginate are rare but reported:
 
+- **Oral products:** a 2001 case report described IgE-mediated anaphylaxis to an antacid [7]. The UK label lists anaphylactic reactions, hives and bronchospasm as very rare, and warns that its paraben preservatives may cause allergic reactions, possibly delayed [2].
 - **Occupational exposure:** Henderson et al. (1984) surveyed a British alginate factory and found lung hypersensitivity to seaweed dust in 7% of the workforce, and antibodies to sodium alginate and seaweed extracts in 4.5% [34]. Challenge testing showed immediate airway narrowing followed by a later loss of lung volume. These workers inhaled seaweed dust and alginate at work.
 - **Medical and dental materials:** alginate has caused anaphylaxis from a wound dressing and fatal anaphylaxis from a dental impression paste [35][36].
-- **Oral products:** a 2001 case report described IgE-mediated anaphylaxis to an antacid [7]. The UK label lists anaphylactic reactions, hives and bronchospasm as very rare, and warns that its paraben preservatives may cause allergic reactions, possibly delayed [2].
 - **Possible anti-allergic effects:** in rodent and cell studies, alginic acid reduced anaphylaxis and histamine release, and alginate reduced allergic reactions in a mouse model of egg allergy. These findings have not been tested in people [37][10].
 
 ### Esophageal Obstruction Risk
@@ -317,7 +320,7 @@ A review by authors from SmithKline Beecham Consumer Health Care reported that G
 
 ### Practical Recommendation
 
-Take alginate products 2 hours apart from other medicines [2]. Because alginates are usually taken after meals and at bedtime, and many medicines are taken in the morning or with meals, adjusting the timing of one or both usually achieves this. Levothyroxine, ciprofloxacin and gabapentin need longer gaps from antacids (see the table above) [43][44][46].
+Take alginate products 2 hours apart from other medicines [2]. Because alginates are usually taken after meals and at bedtime, and many medicines are taken in the morning or with meals, adjusting the timing of one or both usually achieves this. Levothyroxine, ciprofloxacin and gabapentin need longer gaps from some antacids (see the table above) [43][44][46].
 
 ## 7. Dietary Sources
 
@@ -351,10 +354,10 @@ After meals and at bedtime, as the label directs [2]. After a meal, the raft for
 The UK label allows use in pregnancy, if clinically needed, based on studies in more than 500 pregnant women [2]. An open-label study of 144 pregnant women rated treatment a success in 91% [30]. In a randomized trial, an alginate worked no better than an antacid gel, and outcomes for mothers and babies did not differ [31].
 
 **How long can I take alginate?**
-The UK label says symptoms that do not improve after 7 days should be reviewed by a doctor [2]. One throat-reflux trial followed patients for 6 months [25].
+The UK label says symptoms that do not improve after 7 days should be reviewed by a doctor [2]. US labels say not to use the maximum dose for more than 2 weeks except on a doctor's advice [40][41]. One throat-reflux trial followed patients for 6 months [25].
 
 **Does alginate interfere with my medications?**
-It can. Leave 2 hours between an alginate product and other medicines, especially tetracyclines, fluoroquinolones, iron, thyroid hormones, chloroquine, bisphosphonates and estramustine [2]. Levothyroxine, ciprofloxacin and gabapentin need longer gaps from antacids (see Drug Interactions) [43][44][46].
+It can. Leave 2 hours between an alginate product and other medicines, especially tetracyclines, fluoroquinolones, iron, thyroid hormones, chloroquine, bisphosphonates and estramustine [2]. Levothyroxine, ciprofloxacin and gabapentin need longer gaps from some antacids (see Drug Interactions) [43][44][46].
 
 **Are there different types of alginate supplements?**
 Yes. They come as alginic acid or as sodium, potassium, calcium or magnesium salts, and as liquids or chewable tablets [13][14][15]. Sodium alginate liquids can be high in sodium, so check the label if you are on a low-salt diet [2].
