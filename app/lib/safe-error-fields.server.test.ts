@@ -49,7 +49,6 @@ const SITES = [
   'app/lib/chat-purge-cron.server.ts',
   'app/lib/discord-bot.server.ts',
   'app/lib/youtube-bot.server.ts',
-  'app/lib/youtube-bot-summary-cron.server.ts',
   'app/routes/webhooks.orders-paid.ts',
   'app/routes/api.feedback.ts',
   'app/lib/supabase-dashboard.server.ts',
