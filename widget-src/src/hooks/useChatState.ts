@@ -17,7 +17,7 @@ import {
   type ChatMessage,
   type ChatPending,
 } from '../lib/chat-api';
-import { postSync, postInputSync, subscribeSync, generateInstanceId } from '../lib/chat-sync';
+import { postSync, postInputSync, subscribeSync, generateInstanceId, type SyncState } from '../lib/chat-sync';
 import { useChatBusy } from './useChatBusy';
 import { cutText } from '@roadmap/health-core/chat-history';
 import type { ChatContextPayload } from '@roadmap/health-core/chat-context';
@@ -50,6 +50,9 @@ interface UseChatStateOptions {
   /** Called when the model proposes form edits via tool_use (pre-fill / med update). */
   onProposeEdit?: (edits: ProposedEdit[]) => void;
 }
+
+/** This instance's chat state, to every other instance (US-15 AC17c names its fields). */
+const postState = (instanceId: string, payload: SyncState) => postSync({ instanceId, type: 'state', payload, ts: Date.now() });
 
 export const MAX_CHARS = 8000;
 const CUT_NOTICE = `Your message was cut at ${MAX_CHARS.toLocaleString('en')} characters.`;
@@ -237,18 +240,13 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     // Another thread was opened, or a reply landed, meanwhile (US-15 AC7a).
     if (activeConversationIdRef.current !== id || gen !== loadGenRef.current) return;
     setMessages(msgs);
-    postSync({
-      instanceId,
-      type: 'state',
-      payload: {
-        conversations: conversationsRef.current,
-        activeConversationId: id,
-        messages: msgs,
-        isLoading: busyNow(), // for older bundles: a reply still in flight is not over (US-15 AC7a)
-        sending: ownSending(),
-        error: null,
-      },
-      ts: Date.now(),
+    postState(instanceId, {
+      conversations: conversationsRef.current,
+      activeConversationId: id,
+      messages: msgs,
+      isLoading: busyNow(), // for older bundles: a reply still in flight is not over (US-15 AC7a)
+      sending: ownSending(),
+      error: null,
     });
   }, [instanceId, dropThread]);
 
@@ -286,18 +284,13 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     setIsLocalSender(true);
     setSendingConversationId(currentConvId);
 
-    postSync({
-      instanceId,
-      type: 'state',
-      payload: {
-        conversations: currentConvs,
-        activeConversationId: currentConvId,
-        messages: optimisticMessages,
-        isLoading: true,
-        sending: true,
-        error: null,
-      },
-      ts: Date.now(),
+    postState(instanceId, {
+      conversations: currentConvs,
+      activeConversationId: currentConvId,
+      messages: optimisticMessages,
+      isLoading: true,
+      sending: true,
+      error: null,
     });
 
     // Always send the plan as chat context: local-first (v2) means the server
@@ -341,18 +334,13 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       }
       setError(sendError.error);
       setIsLocalSender(false);
-      postSync({
-        instanceId,
-        type: 'state',
-        payload: {
-          conversations: convsNow,
-          activeConversationId: shownId,
-          messages: withoutOptimistic,
-          isLoading: false,
-          sending: false,
-          error: sendError.error,
-        },
-        ts: Date.now(),
+      postState(instanceId, {
+        conversations: convsNow,
+        activeConversationId: shownId,
+        messages: withoutOptimistic,
+        isLoading: false,
+        sending: false,
+        error: sendError.error,
       });
       return;
     }
@@ -401,18 +389,13 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       }
 
       setIsLocalSender(false);
-      postSync({
-        instanceId,
-        type: 'state',
-        payload: {
-          conversations: finalConversations,
-          activeConversationId: finalConvId,
-          messages: finalMessages,
-          isLoading: false,
-          sending: false,
-          error: null,
-        },
-        ts: Date.now(),
+      postState(instanceId, {
+        conversations: finalConversations,
+        activeConversationId: finalConvId,
+        messages: finalMessages,
+        isLoading: false,
+        sending: false,
+        error: null,
       });
     }
   }, [inputText, busyNow, isOffline, instanceId, guestInputs, handleDelta, endStream, startOwnSend, endOwnSend]);

@@ -41,6 +41,9 @@ export function postSync(msg: SyncMessage): void {
   getChannel()?.postMessage(msg);
 }
 
+/** What a state message carries. */
+export type SyncState = Extract<SyncMessage, { type: 'state' }>['payload'];
+
 export function subscribeSync(handler: (msg: SyncMessage) => void): () => void {
   const ch = getChannel();
   if (!ch) return () => {};
