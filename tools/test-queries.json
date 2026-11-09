@@ -9156,7 +9156,9 @@
       "your doctor"
     ],
     "must_not_mention": [
-      "potassiumfiber"
+      "Potassium Fiber",
+      "potassiumfiber",
+      "microvitamin"
     ],
     "must_not_claim": [
       "try potassium fiber",
