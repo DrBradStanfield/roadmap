@@ -65,7 +65,7 @@ it as a JPEG, or take a screenshot. Whatever it cannot read, it tells you why an
 do. Either way it shows you candidate values, in the units your record uses, and writes nothing
 to your record until you confirm: the candidates wait in a pending file in your own folder for
 an hour. Accept the ones that look right and it writes them, filing the document itself as
-a record with no text or image kept, just its name and date. If you connected before
+a record with a title, a date and at most a one-line summary, never the file itself. If you connected before
 7 September 2026, refresh the connector once in ChatGPT's settings (open the connector and
 choose Refresh) so ChatGPT reads dropped files itself instead of handing them to our server. A report with no printed date is not
 lost: it asks you when the test was taken and files it on that day. A value your record
