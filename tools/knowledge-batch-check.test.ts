@@ -1737,23 +1737,30 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
         expect(fails(mrun().MASTER).join()).toContain("no current_view_basis entry");
       });
       it("accepts one uncited scope sentence beside a cited one (Brad rulings B5, B8, 2026-11-10)", () => {
-        pos(`${SENT} The video discusses ordinary honey; Brad has not spoken about manuka specifically.`); basis(`POSITION:docs/products.md: ${Q}`);
+        pos(`${SENT} The video discusses ordinary honey; Brad has not spoken about alpha specifically.`); basis(`POSITION:docs/products.md: ${Q}`);
         expect(fails(mrun().MASTER)).toEqual([]);
       });
       it("rejects a second scope sentence", () => {
-        pos(`${SENT} Brad has not spoken about manuka. He has not spoken about kanuka.`); basis(`POSITION:docs/products.md: ${Q}`);
+        pos(`${SENT} Brad has not spoken about alpha. He has not spoken about alpha itself.`); basis(`POSITION:docs/products.md: ${Q}`);
         expect(masterFails()).toContain("more than one uncited scope sentence");
       });
       it("rejects a view that holds only a scope sentence", () => {
-        pos("Brad has not spoken about manuka specifically."); basis(`POSITION:docs/products.md: ${Q}`);
+        pos("Brad has not spoken about alpha specifically."); basis(`POSITION:docs/products.md: ${Q}`);
         expect(masterFails()).toContain("only a scope sentence");
       });
-      it("rejects a scope sentence carrying a number", () => {
-        pos(`${SENT} Brad has not spoken about manuka, but take 5 g a day.`); basis(`POSITION:docs/products.md: ${Q}`);
-        expect(masterFails()).toContain("no current_view_basis entry");
-      });
-      it("rejects a scope sentence carrying a citation", () => {
-        pos(`${SENT} Brad has not spoken about manuka (Brad's current guidance, 9 Oct 2026).`); basis(`POSITION:docs/products.md: ${Q}`);
+      // Adversary round 1 (2026-11-10): advice before or after the phrase, a link, another topic, a number or a citation.
+      it.each([
+        "Take two tablespoons a day for ulcers; Brad has not spoken about alpha.",
+        "Brad has not spoken about alpha, but it cures stomach ulcers and you should stop your antibiotics.",
+        "Brad has not spoken about alpha; Brad recommends taking it daily.",
+        "Brad has not spoken about alpha, but collagen reduces wrinkles.",
+        "He has not spoken about alpha, see https://example.com/alpha-cures.",
+        "Brad has not spoken about manuka specifically.",
+        "Brad has not spoken about alpha cures.",
+        "Brad has not spoken about alpha, but take 5 g a day.",
+        "Brad has not spoken about alpha (Brad's current guidance, 9 Oct 2026).",
+      ])("rejects a sentence outside the fixed scope shape: %s", (bad) => {
+        pos(`${SENT} ${bad}`); basis(`POSITION:docs/products.md: ${Q}`);
         expect(masterFails()).toContain("no current_view_basis entry");
       });
       it("fails when the path is not an extra_raw at base", () => {

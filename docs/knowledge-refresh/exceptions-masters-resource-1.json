@@ -1357,7 +1357,7 @@
   "match": "product mentions rose 3 -> 4",
   "reason": "Brad ruling 2026-11-10 (A2): the shop link moved to the docs/products.md URL microvitamin.com/products/microvitamin-plus, whose host and path both contain the product word; one link, no new claim.",
   "date": "2026-11-10",
-  "by": "Brad"
+  "by": "orchestrator"
  },
  {
   "check": "AC7",
@@ -1365,7 +1365,7 @@
   "match": "report says product mentions 2 -> 2, recomputed 3 -> 4",
   "reason": "Same link change as above (Brad ruling 2026-11-10, A2); the report field cannot be reset by addendum.",
   "date": "2026-11-10",
-  "by": "Brad"
+  "by": "orchestrator"
  },
  {
   "check": "AC7",
@@ -1373,7 +1373,7 @@
   "match": "product section added: ### Product Context",
   "reason": "Brad ruling 2026-11-10 (A4): add the Potassium Fiber Drink. Nutrient content, ownership and the store warning in full, per docs/products.md; no health claim.",
   "date": "2026-11-10",
-  "by": "Brad"
+  "by": "orchestrator"
  },
  {
   "check": "AC7",
@@ -1381,6 +1381,6 @@
   "match": "report says product mentions 1 -> 1, recomputed 3 -> 2",
   "reason": "Brad ruling 2026-11-10 (A4): the new Product Context names the drink once and links its microvitamin.com page; the report field cannot be reset by addendum.",
   "date": "2026-11-10",
-  "by": "Brad"
+  "by": "orchestrator"
  }
 ]

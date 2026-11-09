@@ -331,8 +331,11 @@ export const VIEW_HEADING = /^##\s+(?:(Current view \(reviewed [^)]+\))|Current 
 /** The contract's first sentence of a Current evidence position (claude_business docs/roadmap-chat/knowledge-refresh/master-writer-contract.md). */
 export const EVIDENCE_OPENING = "Brad has not made a video on this topic; this is a summary of the evidence, not his view.";
 /** A Current view may hold ONE uncited scope sentence saying what Brad's source does not cover (Brad 2026-11-10, rulings B5
- *  and B8: "The video discusses ordinary honey; Brad has not spoken about manuka specifically."). No digit, link or citation. */
-export const SCOPE_SENTENCE = /^[^\d()[\]]*\b(?:Brad|[Hh]e) has not spoken about [^\d()[\]]+\.$/;
+ *  and B8: "The video discusses ordinary honey; Brad has not spoken about manuka specifically."). A fixed shape, so it can
+ *  carry no advice: an optional "<The|Brad's> <video|post> <discusses|is about> <1-2 words>; ", then "<Brad|he> has not
+ *  spoken about <topic>" with an optional " specifically" or " itself". The topic, hyphenated, must start the handle. */
+export const SCOPE_SENTENCE = /^(?:(?:The|Brad's) (?:video|post) (?:discusses|is about) [a-z]+(?: [a-z]+)?; )?(?:Brad|[Hh]e) has not spoken about ([a-z]+(?: (?!specifically\.|itself\.)[a-z]+)?)(?: specifically| itself)?\.$/;
+const isScope = (sn: string, handle: string) => { const t = SCOPE_SENTENCE.exec(sn)?.[1]; const h = t?.replace(/ /g, "-"); return !!h && (handle === h || handle.startsWith(`${h}-`)); };
 /** Frontmatter keys that appear more than once. */
 export const duplicateKeys = (front: string) => {
   const keys = front.split(/\r?\n/).map((l) => /^([A-Za-z_][\w-]*):/.exec(l)?.[1]).filter((k): k is string => !!k);
@@ -892,7 +895,7 @@ function checkMasterBody(c: Ctx, m: Check, raw: RawSet | null, isPost: (h: strin
       (GUIDANCE.test(sn) && v.some((n) => n.kind === "POSITION"));
   };
   for (const [, u] of c.newBody.matchAll(/\]\(([^)\s]+)\)/g)) if (!/^[a-z]+:/i.test(u) && MASTER_RAW.test(u)) m.fails.push(`${c.handle}: the body links a repo file (${u}); cite a position as "(Brad's current guidance, <D Mon YYYY>)"`);
-  const scope = isView ? said.filter((sn) => !supported(sn) && SCOPE_SENTENCE.test(sn)) : [];
+  const scope = isView ? said.filter((sn) => !supported(sn) && isScope(sn, c.handle)) : [];
   if (scope.length > 1) m.fails.push(`${c.handle}: a Current view holds more than one uncited scope sentence: ${clip(scope[1], 100)}`);
   if (scope.length && said.every((sn) => scope.includes(sn))) m.fails.push(`${c.handle}: a Current view holds only a scope sentence`);
   if (isView) for (const sn of said) if (!supported(sn) && sn !== scope[0]) m.fails.push(`${c.handle}: Current view sentence has no current_view_basis entry for this exact sentence with a verbatim POST:<the linked post>: or POSITION:<path>: quote (6 words or 30 characters): ${clip(sn, 100)}`);
