@@ -8456,5 +8456,107 @@
     "source": "chat-health-2026-W45",
     "expected_classification": "PRODUCT",
     "notes": "2026-W45 chat-health: storefront first turn, paraphrased. A Dr Stanfield product ingredient question. Production ROUTE (router empty); replay of the original PRODUCT 3/3, so production's ROUTE may be one draw."
+  },
+  {
+    "query": "Which cancer screening tests should I be getting at 50?",
+    "expected": [
+      "cancer-screening"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-09; not run (Brad 2026-11-02: no router harness run). Guide cancer-screening."
+  },
+  {
+    "query": "Is a PSA test worth it for a 55 year old man?",
+    "expected": [
+      "cancer-screening"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-09; not run (Brad 2026-11-02: no router harness run). Guide cancer-screening."
+  },
+  {
+    "query": "Should I get one of those multi-cancer blood tests like Galleri?",
+    "expected": [
+      "cancer-screening"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-09; not run (Brad 2026-11-02: no router harness run). Guide cancer-screening."
+  },
+  {
+    "query": "When should I start colonoscopies if my dad had bowel cancer?",
+    "expected": [
+      "cancer-screening"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-09; not run (Brad 2026-11-02: no router harness run). Guide cancer-screening."
+  },
+  {
+    "query": "My DEXA scan says osteopenia, what should I do?",
+    "expected": [
+      "bone-health"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-09; not run (Brad 2026-11-02: no router harness run). Guide bone-health."
+  },
+  {
+    "query": "Do calcium and vitamin D supplements actually prevent fractures?",
+    "expected": [
+      "bone-health"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-09; not run (Brad 2026-11-02: no router harness run). Guide bone-health."
+  },
+  {
+    "query": "Is it safe to stop alendronate after five years?",
+    "expected": [
+      "bone-health"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-09; not run (Brad 2026-11-02: no router harness run). Guide bone-health."
+  },
+  {
+    "query": "Who should get a bone density scan?",
+    "expected": [
+      "bone-health"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-09; not run (Brad 2026-11-02: no router harness run). Guide bone-health."
+  },
+  {
+    "query": "What can I do to lower my risk of dementia?",
+    "expected": [
+      "dementia"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-09; not run (Brad 2026-11-02: no router harness run). Guide dementia."
+  },
+  {
+    "query": "Is lecanemab worth it for early Alzheimer's?",
+    "expected": [
+      "dementia"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-09; not run (Brad 2026-11-02: no router harness run). Guide dementia."
+  },
+  {
+    "query": "My mum keeps forgetting things, when should she see a doctor?",
+    "expected": [
+      "dementia"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-09; not run (Brad 2026-11-02: no router harness run). Guide dementia."
+  },
+  {
+    "query": "Do any supplements help with memory or prevent Alzheimer's?",
+    "expected": [
+      "dementia"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-09; not run (Brad 2026-11-02: no router harness run). Guide dementia."
+  },
+  {
+    "query": "I suddenly can't speak properly and my face is drooping",
+    "expected": [],
+    "category": "condition-guides",
+    "notes": "US-70 AC5 negative, registered 2026-11-09; not run. A red-flag symptom routes to no guide (emergency rule)."
   }
 ]

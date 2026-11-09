@@ -76,6 +76,24 @@
    "headings": [],
    "handles": [],
    "terms": ["osteoarthritis", "knee", "glucosamine", "joint", "arthroplasty"]
+  },
+  {
+   "topic": "cancer-screening",
+   "headings": ["8. Cancer Screening"],
+   "handles": [],
+   "terms": ["cancer screening", "colonoscopy", "mammogram", "PSA", "cervical screening"]
+  },
+  {
+   "topic": "bone-health",
+   "headings": ["DEXA-Specific"],
+   "handles": [],
+   "terms": ["osteoporosis", "bone density", "DEXA", "bisphosphonate", "fracture"]
+  },
+  {
+   "topic": "dementia",
+   "headings": [],
+   "handles": [],
+   "terms": ["dementia", "Alzheimer", "memory", "cognitive impairment", "lecanemab"]
   }
  ]
 }
