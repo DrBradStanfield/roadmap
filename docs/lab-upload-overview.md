@@ -256,7 +256,7 @@ Two surfaces let the user fix a wrong value, intervening at different moments:
 
 ### ① Edit at review time
 
-In `ReviewTable.tsx`, each value cell is a numeric input (`type="text"`, `inputMode="decimal"`, locale-aware so `0,5` and `0.5` both parse). User types over the LLM's extraction before clicking **Save**.
+In `ReviewMatrix.tsx` (the review's grid view), each value cell is a numeric input (`type="text"`, `inputMode="decimal"`, locale-aware so `0,5` and `0.5` both parse). User types over the LLM's extraction before clicking **Save**.
 
 - Edited rows save with `source: 'lab_import_edited'`.
 - Unedited rows save with `source: 'lab_import'`.
@@ -415,4 +415,4 @@ Load-bearing choices that future work should preserve unless deliberately overtu
 
 ---
 
-Canonical sources: `docs/lab-upload.md`, `docs/user-stories.md` (US-32 AC24, the upload conflict), `app/routes/api.lab-import-v2.ts` (the only endpoint an upload calls), `app/lib/anthropic.server.ts` + `packages/health-core/src/lab-extraction.ts` (extraction + unit resolution), `widget-src/src/storage/roadmap-store.ts` (bulk saves, supersede, document archive), `packages/health-core/src/{merge,roadmap-file,document-path,validation,units}.ts`, `widget-src/src/components/UploadModal.tsx` (pipeline + done-screen), `widget-src/src/components/ReviewTable.tsx` (matrix, inline-edit, conflict cell), `widget-src/src/lib/archive-payloads.ts` (archive policy, the Original path), `packages/health-core/src/record-edits.ts` (slot rule, `bulkAppendValues`), `app/lib/mcp-import.server.ts` + `packages/health-core/src/mcp-tools.ts` (the connector route).
+Canonical sources: `docs/lab-upload.md`, `docs/user-stories.md` (US-32 AC24, the upload conflict), `app/routes/api.lab-import-v2.ts` (the only endpoint an upload calls), `app/lib/anthropic.server.ts` + `packages/health-core/src/lab-extraction.ts` (extraction + unit resolution), `widget-src/src/storage/roadmap-store.ts` (bulk saves, supersede, document archive), `packages/health-core/src/{merge,roadmap-file,document-path,validation,units}.ts`, `widget-src/src/components/UploadModal.tsx` (pipeline + done-screen), `widget-src/src/components/ReviewTable.tsx` (review state, dedup, save) and `ReviewMatrix.tsx` (matrix, inline-edit, conflict cell), `widget-src/src/lib/archive-payloads.ts` (archive policy, the Original path), `packages/health-core/src/record-edits.ts` (slot rule, `bulkAppendValues`), `app/lib/mcp-import.server.ts` + `packages/health-core/src/mcp-tools.ts` (the connector route).
