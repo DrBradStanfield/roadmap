@@ -31,6 +31,9 @@ import { failureTags, recordFailure, storageCauseClass, storageFailureClass } fr
  */
 export const PENDING_MIRROR_KEY = 'health_roadmap_pending_cloud_sync';
 
+/** The device copy's revision a connect's lift uploaded (DeviceMirror.lifted). */
+const LIFTED_REVISION_KEY = 'health_roadmap_lifted_revision';
+
 /** The backend this browser uses, as the standalone picker remembers it
  *  (standalone/connect.ts); absent on the device tier. */
 export const BACKEND_KEY = 'health_roadmap_backend';
@@ -154,6 +157,11 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
       adapter: device,
       sync: device,
       pending: { get: isSyncPending, set: markSyncPending, clear: clearSyncPending },
+      lifted: {
+        get: () => safeGetItem(LIFTED_REVISION_KEY),
+        set: (revision: string) => safeSetItem(LIFTED_REVISION_KEY, revision),
+        clear: () => safeRemoveItem(LIFTED_REVISION_KEY),
+      },
       writesStopped: roadmapLocalWritesStopped,
       stillChosen: () => safeGetItem(BACKEND_KEY) === store.id,
       wipe: () => device.disconnect(),
