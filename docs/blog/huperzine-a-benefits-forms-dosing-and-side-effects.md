@@ -249,7 +249,7 @@ A 2020 laboratory analysis of 22 supplements labelled as containing huperzine A 
 - Sixteen (73%) had at least one labelled ingredient that the analysis did not detect, and 16 (73%) held compounds not on the label.
 - Nine (41%) listed ingredients that do not meet FDA rules for supplement ingredients. Stimulants detected included higenamine and halostachine, and also hordenine, an ingredient on an FDA advisory list.
 
-Products with independent third-party testing may lower these risks; consumerlab.com and Labdoor test some supplements.
+Products with independent third-party testing may lower these risks; Labdoor tests some supplements.
 
 ## 6. Drug Interactions
 

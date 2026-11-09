@@ -62,7 +62,7 @@ Saw palmetto supplements come as liquids, powders, dried berries and tinctures, 
 
 ### Standardization and What to Look For
 
-Liquid saw palmetto supplements contained significantly more total fatty acids (908.5 mg/g) and total phytosterols (2.04 mg/g) than the other forms, and the authors suggested liquids for people who want the highest amounts of both [9]. Pointers to independent product testing, such as consumerlab.com or Labdoor, can help when choosing a brand.
+Liquid saw palmetto supplements contained significantly more total fatty acids (908.5 mg/g) and total phytosterols (2.04 mg/g) than the other forms, and the authors suggested liquids for people who want the highest amounts of both [9]. Pointers to independent product testing, such as Labdoor, can help when choosing a brand.
 
 ### Beta-Sitosterol Forms
 

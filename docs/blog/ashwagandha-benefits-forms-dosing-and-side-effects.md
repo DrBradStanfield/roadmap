@@ -15,7 +15,7 @@ sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/Ashwagandha
 
 ## Current view (reviewed 23 October 2026)
 
-There is some human evidence that ashwagandha can improve anxiety, but the effect is inconsistent and the trials are small, so Brad does not think the evidence yet justifies adding another pill (Brad's current guidance, 31 Jul 2026). For exercise, a 2025 trial in 41 healthy non-athlete men found that 600 mg a day of root extract added nothing to the gains in aerobic capacity and blood measures from 8 weeks of HIIT, and Brad said more high-quality research is needed before drawing confident conclusions ([Brad, 15 Oct 2025](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)). In 2025 he said it may still help stress and anxiety, pointing to a 2009 trial in which naturopathic care that included 300 mg of ashwagandha twice daily cut anxiety scores by 56.5%, against 30.5% with psychotherapy, and to a 2024 meta-analysis of 9 trials in 558 people that found lower stress, anxiety and cortisol ([Brad, 15 Oct 2025](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)). When patients want to try it, he explains the evidence and its limits and suggests a product tested by consumerlab.com ([Brad, 15 Oct 2025](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)).
+There is some human evidence that ashwagandha can improve anxiety, but the effect is inconsistent and the trials are small, so Brad does not think the evidence yet justifies adding another pill (Brad's current guidance, 31 Jul 2026). For exercise, a 2025 trial in 41 healthy non-athlete men found that 600 mg a day of root extract added nothing to the gains in aerobic capacity and blood measures from 8 weeks of HIIT, and Brad said more high-quality research is needed before drawing confident conclusions ([Brad, 15 Oct 2025](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)). In 2025 he said it may still help stress and anxiety, pointing to a 2009 trial in which naturopathic care that included 300 mg of ashwagandha twice daily cut anxiety scores by 56.5%, against 30.5% with psychotherapy, and to a 2024 meta-analysis of 9 trials in 558 people that found lower stress, anxiety and cortisol ([Brad, 15 Oct 2025](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)). When patients want to try it, he explains the evidence and its limits and suggests a product with independent third-party testing ([Brad, 15 Oct 2025](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)).
 
 ## Key safety points
 
@@ -304,7 +304,7 @@ A published case report links ashwagandha to kidney transplant rejection [99].
 
 Ashwagandha is not a nutrient found in common foods. Supplements use the root of the *Withania somnifera* plant, and some add leaf [42].
 
-Products vary widely in withanolide content and in how much leaf they contain [25]. Brad suggests choosing a product with independent testing, for example one tested by consumerlab.com ([Brad, 15 Oct 2025](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)).
+Products vary widely in withanolide content and in how much leaf they contain [25]. Brad suggests choosing a product with independent testing, for example one tested by an independent lab ([Brad, 15 Oct 2025](https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study)).
 
 ## 8. References
 

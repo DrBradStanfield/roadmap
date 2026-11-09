@@ -276,7 +276,7 @@ NAC is a thiol, a sulfur-containing compound [4], not a sulfonamide ("sulfa") dr
 
 ### Contaminated Products
 
-Supplements can contain more or less than the label says. Independent testers, such as consumerlab.com and Labdoor, publish product test results.
+Supplements can contain more or less than the label says. Independent testers, such as Labdoor, publish product test results.
 
 ## 6. Drug Interactions
 

@@ -78,7 +78,7 @@ In a randomised study of 65 participants published in *Nature Metabolism*, NR an
 
 ### Quality Concerns
 
-Choose a product that has passed independent testing; consumerlab.com and Labdoor publish product test results.
+Choose a product that has passed independent testing; Labdoor publishes product test results.
 
 ## 3. Evidence for Benefits
 

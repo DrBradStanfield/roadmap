@@ -76,7 +76,7 @@ Ginseng is available as:
 
 ### Ginsenoside Content Standards
 
-For independent product testing, see consumerlab.com or Labdoor.
+For independent product testing, see Labdoor.
 
 ### Key Bioavailability Considerations
 

@@ -293,7 +293,7 @@ Reports to US poison control centers of melatonin ingestion by people 19 and you
 
 ### Label Accuracy Concerns
 
-A 2023 study found 22 of 25 melatonin gummy products were inaccurately labeled, with melatonin ranging from 74% to 347% of the labeled amount; most held 1.2 to 1.7 times more than stated [13]. In an earlier study, 26% of supplements contained serotonin, a hormone that can have harmful effects at relatively low levels [13]. To check independent testing of a product, you can look it up at consumerlab.com or labdoor.com.
+A 2023 study found 22 of 25 melatonin gummy products were inaccurately labeled, with melatonin ranging from 74% to 347% of the labeled amount; most held 1.2 to 1.7 times more than stated [13]. In an earlier study, 26% of supplements contained serotonin, a hormone that can have harmful effects at relatively low levels [13]. To check independent testing of a product, you can look it up at labdoor.com.
 
 ## 6. Drug Interactions
 

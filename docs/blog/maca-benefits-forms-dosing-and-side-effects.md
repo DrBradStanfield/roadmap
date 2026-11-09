@@ -255,7 +255,7 @@ Trials have lasted from 14 days to 4 months [25][32]. A 2011 review said maca's 
 
 ### Contaminant Concerns
 
-Maca can contain lead. A woman aged 32 had a blood lead level of 44 μg/dL; after an earlier source was removed, her level rose again when she began taking maca root powder and fell when she stopped [58]. The authors warn that imported products may contain significant amounts of lead [58]. Mass production with fertilisers and pesticides may also affect product safety [39]. Choosing products tested by a third party for heavy metals is sensible; consumerlab.com and Labdoor publish testing results.
+Maca can contain lead. A woman aged 32 had a blood lead level of 44 μg/dL; after an earlier source was removed, her level rose again when she began taking maca root powder and fell when she stopped [58]. The authors warn that imported products may contain significant amounts of lead [58]. Mass production with fertilisers and pesticides may also affect product safety [39]. Choosing products tested by a third party for heavy metals is sensible; Labdoor publishes testing results.
 
 ## 6. Drug Interactions
 

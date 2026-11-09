@@ -150,7 +150,7 @@ Self-reports of reactions to Quorn products, collected through an advocacy group
 
 ### Protein Purity and Essential Amino Acid Content
 
-To compare products, look at what share of each serving is protein. For independent product testing, see consumerlab.com or Labdoor.
+To compare products, look at what share of each serving is protein. For independent product testing, see Labdoor.
 
 ## 3. Evidence for Benefits
 
@@ -319,7 +319,7 @@ In adults without chronic kidney disease, a meta-analysis of 22 randomised trial
 
 ### Heavy Metal Contamination
 
-A 2020 risk assessment of published heavy-metal test results for protein powders found no increased health risk from one or three servings a day, with the lowest risk in whey powders (Bandara, *Toxicol Rep*, 2020) [119]. In the Consumer Reports test that Brad discussed, plant-based protein powders tended to contain more lead, though animal-based products were also affected ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)). For independent testing of named products, see consumerlab.com or Labdoor.
+A 2020 risk assessment of published heavy-metal test results for protein powders found no increased health risk from one or three servings a day, with the lowest risk in whey powders (Bandara, *Toxicol Rep*, 2020) [119]. In the Consumer Reports test that Brad discussed, plant-based protein powders tended to contain more lead, though animal-based products were also affected ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)). For independent testing of named products, see Labdoor.
 
 Brad bases his decisions on FDA safety limits, which are over 17 times higher than the Consumer Reports threshold; the worst powder in the Consumer Reports test, at 7.7 mcg of lead per serving, still fell within typical daily dietary exposure and just under the FDA's safety limit ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)).
 
