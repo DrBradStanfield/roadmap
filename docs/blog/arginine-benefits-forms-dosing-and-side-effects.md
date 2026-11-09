@@ -37,7 +37,7 @@ Brad does not recommend L-arginine, or any other nitric oxide supplement, and do
 
 L-arginine is an amino acid. Besides building proteins, the body uses it to make nitric oxide, urea, polyamines, proline, glutamate, creatine and agmatine [11]. Arginine is made and broken down in several organs, including the liver, small intestine and kidney [11].
 
-Nitric oxide relaxes blood vessels by creating a messenger molecule called cGMP [12]. Most arginine supplements rest on one idea: more arginine should mean more nitric oxide and better blood flow. The trials below test that idea for heart and circulation problems, blood pressure, sexual function, exercise, cognition, wound healing, cancer, COVID-19 and sickle cell pain. Results are mixed. In one long trial in leg artery disease, arginine raised blood arginine but did not raise measures of nitric oxide availability [4].
+Nitric oxide relaxes blood vessels by creating a messenger molecule called cGMP [12]. Most arginine supplements rest on one idea: more arginine should mean more nitric oxide and better blood flow. The trials below test that idea for blood pressure, sexual function, wound healing, exercise, cognition, Raynaud's, cancer, heart and leg artery disease, sickle cell pain and COVID-19. Results are mixed. In one long trial in leg artery disease, arginine raised blood arginine but did not raise measures of nitric oxide availability [4].
 
 A single 10 g dose also raised growth hormone at 24 hours in young men [13].
 
@@ -61,30 +61,6 @@ Choose a product that an independent lab has tested. Arginine pills have caused 
 
 ## 3. Evidence for Benefits
 
-### Congestive Heart Failure
-
-**Important: Congestive heart failure is a life-threatening condition. Do not attempt to treat it with arginine except under physician supervision.**
-
-In a randomized crossover trial of 15 people with moderate to severe heart failure, 5.6 to 12.6 g a day of L-arginine HCl for 6 weeks raised forearm blood flow during exercise. Six-minute walk distance was longer on arginine (422 versus 390 m) and quality-of-life scores were better [16]. The authors said further studies were needed to confirm the benefit.
-
-In 40 people with severe heart failure, 8 g a day for 4 weeks improved blood vessel lining (endothelial) function about as much as daily handgrip training, and the two together appeared to add to each other [18]. This trial measured artery responses, not symptoms.
-
-### Angina
-
-**Important: Angina is a life-threatening condition. Do not attempt to treat it with arginine except under physician supervision.**
-
-In a crossover trial of 25 people with stable coronary artery disease, 6 g of arginine a day for 3 days lengthened treadmill exercise from 604 to 647 seconds. It did not change ST-segment depression, the ECG sign of reduced blood flow to the heart [19].
-
-In 36 people with stable angina, two arginine-enriched food bars a day for 2 weeks raised treadmill exercise time by 20% over placebo and improved quality-of-life scores. They did not change ECG signs of ischemia or the time to angina onset [20]. The bars also contained other nutrients, so the effect cannot be put down to arginine alone.
-
-### Intermittent Claudication
-
-**Important: Intermittent claudication involves insufficient blood flow to the legs and can be a sign of peripheral arterial disease. Do not attempt to treat it with arginine except under physician supervision.**
-
-In a 2-week trial in 41 people with claudication, two arginine-enriched food bars a day increased pain-free walking distance by 66% and total walking distance by 23% [21]. One bar a day did not.
-
-The longer trial points the other way. In the NO-PAIN trial, 133 people with claudication took 3 g of arginine a day or placebo for 6 months. Walking distance improved in both groups, but less with arginine than with placebo (11.5% versus 28.3%) [4]. The authors concluded that long-term arginine is not useful in peripheral arterial disease and titled the paper "no benefit and possible harm".
-
 ### High Blood Pressure
 
 A 2011 meta-analysis pooled 11 double-blind trials in 387 people taking 4 to 24 g a day. Compared with placebo, arginine lowered systolic blood pressure by 5.39 mmHg and diastolic by 2.66 mmHg [2].
@@ -97,27 +73,13 @@ A single 6 g drink lowered systolic pressure in 9 healthy men aged 19 to 38 (123
 
 ### Sexual Dysfunction in Men (Erectile Dysfunction)
 
-**Arginine alone:** In a double-blind trial of 50 men with organic erectile dysfunction, 5 g a day for 6 weeks gave a subjective improvement in 9 of 29 men (31%) on arginine and 2 of 17 on placebo. Objective measures did not change. All nine men who improved had low nitric oxide markers in their urine at the start [23].
+**Arginine alone:** A 2019 meta-analysis of 10 trials in 540 men with mild to moderate erectile dysfunction found that 1,500 to 5,000 mg a day improved erectile dysfunction compared with placebo or no treatment (odds ratio 3.37). Side effects occurred in 8.3% on arginine and 2.3% on placebo, and none were severe [24].
 
-A 2019 meta-analysis of 10 trials in 540 men with mild to moderate erectile dysfunction found that 1,500 to 5,000 mg a day improved erectile dysfunction compared with placebo or no treatment (odds ratio 3.37). Side effects occurred in 8.3% on arginine and 2.3% on placebo, and none were severe [24].
+In a double-blind trial of 50 men with organic erectile dysfunction, 5 g a day for 6 weeks gave a subjective improvement in 9 of 29 men (31%) on arginine and 2 of 17 on placebo. Objective measures did not change. All nine men who improved had low nitric oxide markers in their urine at the start [23].
 
-**Arginine plus tadalafil:** In a double-blind trial in 108 men with diabetes and mild to moderate erectile dysfunction, daily arginine plus tadalafil raised erectile function scores and total testosterone more than either drug alone [25].
+**Arginine plus a PDE5 inhibitor:** A 2021 meta-analysis of 4 trials (373 men) found that the combination beat either alone, a PDE5 inhibitor alone beat arginine alone, and the combination did not add side effects [26].
 
-A 2021 meta-analysis of 4 trials (373 men) agreed: the combination beat either alone, a PDE5 inhibitor alone beat arginine alone, and the combination did not add side effects [26].
-
-### Sexual Dysfunction in Women
-
-**L-arginine alone:** In a trial in women with major depressive disorder, 1 g of L-arginine twice a day for 4 weeks improved lubrication and orgasm scores compared with baseline, but not compared with placebo. Depression scores fell in both groups [27].
-
-**Combination product:** In 77 women, a supplement combining L-arginine with ginseng, ginkgo, damiana, vitamins and minerals improved satisfaction with sex life in 73.5% after 4 weeks, against 37.2% on placebo. No significant side effects were noted [28]. Because the product had several active ingredients, the effect cannot be put down to arginine.
-
-### Raynaud's Phenomenon
-
-Raynaud's phenomenon is a passing loss of blood supply to the fingers and toes. Case reports describe oral arginine reversing finger tissue death (necrosis) in two people with severe Raynaud's and easing symptoms in two more [29].
-
-In one study, arginine improved finger blood vessel responses in people whose Raynaud's was due to systemic sclerosis [30]. In primary Raynaud's, a double-blind crossover trial of 8 g a day for 28 days found no effect [31].
-
-**Conclusion:** The evidence does not support arginine for primary Raynaud's. For Raynaud's due to systemic sclerosis, the evidence is limited to one study and case reports.
+In a double-blind trial in 108 men with diabetes and mild to moderate erectile dysfunction, daily arginine plus tadalafil raised erectile function scores and total testosterone more than either drug alone [25].
 
 ### Pressure Ulcers (Bed Sores)
 
@@ -125,17 +87,11 @@ The 2024 Cochrane review found that supplements with arginine and micronutrients
 
 The earlier 2014 review found no clear evidence that nutritional interventions help prevent or treat pressure ulcers [33].
 
-### Cancer
-
-**Breast cancer:** In 96 women, 30 g of L-arginine a day for 3 days before chemotherapy did not change the overall response rate (77% versus 71% on placebo). In tumours less than 6 cm across, better tissue responses were more common with arginine (88% versus 52%) [34].
-
-The same 3-day dose raised the activity of natural killer cells by 81% and lymphokine-activated killer cells by 107% [35].
-
-**Colorectal tumours:** In 60 people with colorectal cancer and 60 with colorectal adenomas, 30 g a day for 3 days lowered markers of cell growth in adenomas [36]. This measured markers, not cancer outcomes.
-
-**Arginine-dependent cancers:** Some cancers, including melanoma and hepatocellular carcinoma (a liver cancer), lose an enzyme that makes arginine and come to depend on arginine from outside. Drugs that break down arginine are in clinical trials for these cancers [37]. The sources reviewed here do not show whether arginine supplements affect these cancers, so people with cancer should ask their cancer doctor first.
-
 ### Exercise Endurance and Recovery
+
+**Meta-analysis, disputed:** A 2020 meta-analysis of 15 studies found arginine improved aerobic performance tests (standardized mean difference 0.84) and anaerobic tests (0.24) [41].
+
+A 2025 comment argued that the analysis made errors common in sports nutrition meta-analyses, which distort pooled effects [42]. Treat these pooled figures with caution.
 
 **Studies with a benefit:** In 16 older male cyclists, a supplement of arginine with antioxidants raised the anaerobic threshold by 16.7% at week 1 and 14.2% at week 3, with no change in VO2 max [38].
 
@@ -145,11 +101,17 @@ In 9 healthy men, a drink with 6 g of L-arginine taken 1 hour before exercise ex
 
 In 30 young male athletes who did resistance training, a drink with 3 g of L-arginine HCl and 8 g of L-citrulline malate did not change biceps blood flow, muscle size or muscle pump [40].
 
-**Meta-analysis, disputed:** A 2020 meta-analysis of 15 studies found arginine improved aerobic performance tests (standardized mean difference 0.84) and anaerobic tests (0.24) [41].
-
-A 2025 comment argued that the analysis made errors common in sports nutrition meta-analyses, which distort pooled effects [42]. Treat these pooled figures with caution.
-
 **Summary:** Single studies show small gains in some groups, and others show none. In Brad's reading, higher blood arginine has not reliably translated into better performance [12].
+
+### Arginine in Combination with Citrulline
+
+L-citrulline is an amino acid the body converts to L-arginine. Oral L-citrulline raises blood citrulline and arginine, but evidence that it improves blood vessel widening or muscle blood flow is scarce and inconsistent. Some studies report better exercise performance and recovery [48]. Brad notes that L-citrulline raises blood arginine more than L-arginine itself, but its performance results have been underwhelming [12].
+
+### Sexual Dysfunction in Women
+
+**Combination product:** In 77 women, a supplement combining L-arginine with ginseng, ginkgo, damiana, vitamins and minerals improved satisfaction with sex life in 73.5% after 4 weeks, against 37.2% on placebo. No significant side effects were noted [28]. Because the product had several active ingredients, the effect cannot be put down to arginine.
+
+**L-arginine alone:** In a trial in women with major depressive disorder, 1 g of L-arginine twice a day for 4 weeks improved lubrication and orgasm scores compared with baseline, but not compared with placebo. Depression scores fell in both groups [27].
 
 ### Cognition in Healthy Adults
 
@@ -159,11 +121,43 @@ In a crossover trial of 19 young adults, a single 1.5 g dose of inositol-stabili
 
 In frail older adults with high blood pressure and cognitive impairment, 4 weeks of oral L-arginine gave better Montreal Cognitive Assessment scores than placebo (35 completed on arginine, 37 on placebo) [43]. The trial was small and short.
 
-### COVID-19
+### Raynaud's Phenomenon
 
-In people hospitalized with severe COVID-19, 1.66 g of L-arginine twice a day was added to standard care. In an interim analysis of the first 101 patients, respiratory support had been reduced at 10 days in 71.1% on arginine and 44.4% on placebo, but there was no significant difference at 20 days. Median hospital stay was 25 days on arginine and 46 days on placebo [44]. No serious adverse events were put down to arginine. Both the arginine and the placebo were provided by a pharmaceutical company [44]. These are interim results from one trial.
+Raynaud's phenomenon is a passing loss of blood supply to the fingers and toes. In primary Raynaud's, a double-blind crossover trial of 8 g a day for 28 days found no effect on blood vessel responses in the finger skin [31]. It measured those responses, not symptoms.
 
-A correction to the paper was published in 2022 [45].
+In people whose Raynaud's was due to systemic sclerosis, a small study with no reported placebo group found better finger blood vessel responses after arginine [30]. Case reports describe oral arginine reversing finger tissue death (necrosis) in two people with severe Raynaud's and easing symptoms in two more [29].
+
+**Conclusion:** The evidence does not support arginine for primary Raynaud's. For Raynaud's due to systemic sclerosis, the evidence is limited to one uncontrolled study and case reports.
+
+### Cancer
+
+**Arginine-dependent cancers:** Some cancers, including melanoma and hepatocellular carcinoma (a liver cancer), lose an enzyme that makes arginine and come to depend on arginine from outside. Drugs that break down arginine are in clinical trials for these cancers [37]. The sources reviewed here do not show whether arginine supplements affect these cancers, so people with cancer should ask their cancer doctor first.
+
+**Breast cancer:** In 96 women, 30 g of L-arginine a day for 3 days before chemotherapy did not change the overall response rate (77% versus 71% on placebo). In tumours less than 6 cm across, better tissue responses were more common with arginine (88% versus 52%) [34].
+
+The same 3-day dose raised the activity of natural killer cells by 81% and lymphokine-activated killer cells by 107% [35].
+
+**Colorectal tumours:** In 60 people with colorectal cancer and 60 with colorectal adenomas, 30 g a day for 3 days lowered markers of cell growth in adenomas [36]. This measured markers, not cancer outcomes.
+
+### Intermittent Claudication
+
+Leg artery disease (which causes claudication), angina and heart failure all need a doctor's care, so do not use arginine to treat any of them on your own.
+
+In a 2-week trial in 41 people with claudication, two arginine-enriched food bars a day increased pain-free walking distance by 66% and total walking distance by 23% [21]. One bar a day did not.
+
+The longer trial points the other way. In the NO-PAIN trial, 133 people with claudication took 3 g of arginine a day or placebo for 6 months. Walking distance improved in both groups, but less with arginine than with placebo (11.5% versus 28.3%) [4]. The authors concluded that long-term arginine is not useful in peripheral arterial disease and titled the paper "no benefit and possible harm".
+
+### Angina
+
+In a crossover trial of 25 people with stable coronary artery disease, 6 g of arginine a day for 3 days lengthened treadmill exercise from 604 to 647 seconds. It did not change ST-segment depression, the ECG sign of reduced blood flow to the heart [19].
+
+In 36 people with stable angina, two arginine-enriched food bars a day for 2 weeks raised treadmill exercise time by 20% over placebo and improved quality-of-life scores. They did not change ECG signs of ischemia or the time to angina onset [20]. The bars also contained other nutrients, so the effect cannot be put down to arginine alone.
+
+### Congestive Heart Failure
+
+In a randomized crossover trial of 15 people with moderate to severe heart failure, 5.6 to 12.6 g a day of L-arginine HCl for 6 weeks raised forearm blood flow during exercise. Six-minute walk distance was longer on arginine (422 versus 390 m) and quality-of-life scores were better [16]. The authors said further studies were needed to confirm the benefit.
+
+In 40 people with severe heart failure, 8 g a day for 4 weeks improved blood vessel lining (endothelial) function about as much as daily handgrip training, and the two together appeared to add to each other [18]. This trial measured artery responses, not symptoms.
 
 ### Sickle Cell Disease (Vaso-Occlusive Episodes)
 
@@ -171,9 +165,11 @@ A correction to the paper was published in 2022 [45].
 
 **Follow-up trial:** A phase 2 trial of intravenous arginine randomized 108 patients aged 3 to 21 and did not meet its primary end point: opioid use, time to crisis resolution and pain scores were similar across groups [47]. In a post hoc analysis of children aged 5 to 16, opioid use was nearly double on placebo, reaching significance in those with plasma arginine less than 60 μM. Arginine was low at presentation in 79% of patients [47].
 
-### Arginine in Combination with Citrulline
+### COVID-19
 
-L-citrulline is an amino acid the body converts to L-arginine. Oral L-citrulline raises blood citrulline and arginine, but evidence that it improves blood vessel widening or muscle blood flow is scarce and inconsistent. Some studies report better exercise performance and recovery [48]. Brad notes that L-citrulline raises blood arginine more than L-arginine itself, but its performance results have been underwhelming [12].
+In people hospitalized with severe COVID-19, 1.66 g of L-arginine twice a day was added to standard care. In an interim analysis of the first 101 patients, respiratory support had been reduced at 10 days in 71.1% on arginine and 44.4% on placebo, but there was no significant difference at 20 days. Median hospital stay was 25 days on arginine and 46 days on placebo [44]. No serious adverse events were put down to arginine. Both the arginine and the placebo were provided by a pharmaceutical company [44]. These are interim results from one trial.
+
+A correction to the paper was published in 2022 [45].
 
 ### Other Potential Uses
 
@@ -206,7 +202,7 @@ If a product lists L-arginine HCl, about 17% of that weight is hydrochloride, so
 
 ### Timing
 
-Exercise trials gave a single dose about 1 hour before testing [22][17].
+One exercise trial gave a single dose 1 hour before testing [22].
 
 Longer trials split the daily amount. One gave 1.66 g twice a day [44].
 
@@ -222,13 +218,15 @@ In the erectile dysfunction meta-analysis, side effects occurred in 8.3% on argi
 
 Hospital trials in sickle cell pain and COVID-19 reported no drug-related or serious adverse events put down to arginine [46][44].
 
+Apart from hospital trials in children with sickle cell disease, the sources reviewed here have no safety data on arginine supplements in pregnancy, breastfeeding or childhood. If you are pregnant or breastfeeding, or are thinking of giving arginine to a child, ask your doctor first.
+
 ### Esophagitis (Esophageal Inflammation)
 
 Arginine pills can cause pill esophagitis. A 2019 case report described a 40-year-old woman who developed it after taking L-arginine, selenium and vitamin E supplements; the authors found 6 earlier reports of L-arginine-induced esophagitis [5]. Later reports describe arginine supplement esophagitis in an adolescent boy [6] and an arginine pill esophageal ulcer [7]. Pill esophagitis can be serious: cases have led to hospital admission, and some to bleeding or penetration through the gullet wall [5]. A review of pill esophagitis found that taking pills upright and with plenty of fluids lowers the risk, though it cannot remove it [59].
 
 ### Stomach Acid and Esophageal Reflux
 
-In rat stomach glands, L-arginine (10 mM) switched on acid secretion. The authors suggested this could raise the risk of acid-related disease [49]. This has not been tested in people.
+In rat stomach glands, L-arginine (10 mM) switched on acid secretion. The authors suggested this could raise the risk of acid-related disease [49]. This has not been tested in people. If you have a stomach ulcer or reflux, ask your doctor before taking arginine.
 
 ### Acute Myocardial Infarction -- CONTRAINDICATED
 
@@ -260,7 +258,7 @@ In tissue culture, the herpes simplex virus needs arginine to replicate, and lys
 
 ### Migraines
 
-A 2020 review proposed that L-arginine might reduce migraine risk, based on a hypothesis about blood flow in the brain [53]. It is a hypothesis paper, not a trial.
+Arginine could, in theory, bring on a migraine as well as ease one. A 2020 review notes that nitric oxide donors given acutely make migraine pain worse [53], and the body uses arginine to make nitric oxide [11]. The same review then proposed that L-arginine might reduce migraine risk, based on a hypothesis about blood flow in the brain [53]. It is a hypothesis paper, not a trial, and no trial in this review tested arginine in migraine.
 
 ### Creatinine Elevation (Not Kidney Damage)
 
