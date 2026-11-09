@@ -1,17 +1,16 @@
 // The upload pipeline: reading each file's pages, sending them to be read (one by one or as a batch),
 // what a file read becomes (FileResult) and what the review hands back to save.
-import { resolveLabValues, type RefusedLabValue } from '@roadmap/health-core/lab-extraction';
-import { UNIT_DEFS, reportedToCanonical } from '@roadmap/health-core/units';
+import { resolveLabValues, type RefusedLabValue, type UnreadLabValue } from '@roadmap/health-core/lab-extraction';
+import { UNIT_DEFS, reportedToCanonical, type UnitSystem } from '@roadmap/health-core/units';
 import { comparatorOf, type Comparator } from '@roadmap/health-core/lab-limits';
 import { bloodTestKeyOf } from '@roadmap/health-core/blood-tests';
 import type { MeasurementSource } from '@roadmap/health-core/validation';
 import { IMPORT_LIMITS } from '@roadmap/health-core/import-hints';
-import type { UnreadLabValue } from '@roadmap/health-core/lab-extraction';
-import type { UnitSystem } from '@roadmap/health-core/units';
 import type { UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import type { ExtractedValue, AdditionalLabValue, DocumentResult, LabImportResult, PageContent, UploadErrorCode } from './api-types';
 import { labImport, labImportBatch, pollBatchStatus } from './upload-api';
 import { isDocx, isLegacyDoc } from './file-kinds';
+// Type only: a value import would pull the lazy upload bundle into the main one.
 import type { HealthUploadAPI } from '../upload-entry';
 
 export interface FileResult {
@@ -99,17 +98,17 @@ export const KEY_ERROR_MESSAGES = {
 };
 
 export const BATCH_THRESHOLD = 20; // Use batch API for 20+ files; pipeline for fewer
-export const POLL_INTERVAL = 5000;
-export const FAKE_TICK_INTERVAL = 500;
-export const EXTRACT_TIMEOUT = 30_000;
+const POLL_INTERVAL = 5000;
+const FAKE_TICK_INTERVAL = 500;
+const EXTRACT_TIMEOUT = 30_000;
 // Max LLM calls in flight at once. Tier 2 ceiling (80K output tokens/min)
 // comfortably absorbs 5 concurrent lab-report extractions (~500-1500 output
 // tokens each). Scan/letter markdown conversion (~4K tokens) can overflow:
 // fetchAnthropicRaw() does not retry a 429, so that file fails as a server error.
-export const LLM_CONCURRENCY = 5;
+const LLM_CONCURRENCY = 5;
 // Parallel pdf.js extractors. Extraction is CPU-bound on the main thread,
 // so 3 workers keep the queue feeding 5 LLM workers without UI jank.
-export const EXTRACT_CONCURRENCY = 3;
+const EXTRACT_CONCURRENCY = 3;
 
 /** Rotating status messages shown during batch processing */
 const PROGRESS_MESSAGES = [
@@ -136,7 +135,7 @@ const LEGACY_DOC_TEXT = 'Word .doc files cannot be read. Save it as a PDF or .do
 export const shortName = (fileName: string) => fileName.split('/').pop() || fileName;
 
 export const hasValues = (r: FileResult) => r.values.length + r.additionalValues.length > 0;
-export function withTimeout<T>(work: Promise<T>): Promise<T> {
+function withTimeout<T>(work: Promise<T>): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('timeout')), EXTRACT_TIMEOUT); });
   return Promise.race([work, timeout]).finally(() => clearTimeout(timer));
@@ -151,7 +150,7 @@ export interface ReadInput { fileName: string; getFile: () => Promise<File> }
  *  from: its original travels with its result. A file that will not open, or
  *  has no pages, is noted and gives none; it is never silently dropped. The
  *  size limit is checked here too: a small ZIP can hold a member past it. */
-export async function readPages(upload: HealthUploadAPI, { fileName: name, getFile }: ReadInput, notices: FileNotice[]): Promise<{ pages: PageContent[]; file?: File }> {
+async function readPages(upload: HealthUploadAPI, { fileName: name, getFile }: ReadInput, notices: FileNotice[]): Promise<{ pages: PageContent[]; file?: File }> {
   try {
     const file = await getFile();
     if (file.size > MAX_FILE_SIZE) {
@@ -182,16 +181,16 @@ export async function readPages(upload: HealthUploadAPI, { fileName: name, getFi
 }
 
 /** A file the server read, as a review row; values its parse refused are named (US-12 AC9). */
-export function readResult(fileName: string, result: LabImportResult, notices: FileNotice[]): FileResult {
+function readResult(fileName: string, result: LabImportResult, notices: FileNotice[]): FileResult {
   if (result.droppedValueCount) notices.push({ name: fileName, reason: 'valuesDropped', count: result.droppedValueCount, unread: result.unreadValues });
   return { fileName, reportDate: result.reportDate, ...offerCoreExtras(result), document: result.document ?? undefined };
 }
 
 /** The notice for a file's own error code; anything else is a server error. */
-export const UNREAD_REASONS: Partial<Record<UploadErrorCode, FileNoticeReason>> = { rate_limit: 'limitError', refused: 'refused', too_long: 'tooLong' };
+const UNREAD_REASONS: Partial<Record<UploadErrorCode, FileNoticeReason>> = { rate_limit: 'limitError', refused: 'refused', too_long: 'tooLong' };
 
 /** A file the server did not read, named with why: the daily limit, a refusal, a cut-off answer, or anything else. */
-export function unreadResult(fileName: string, errorCode: UploadErrorCode | undefined, error: string, notices: FileNotice[]): FileResult {
+function unreadResult(fileName: string, errorCode: UploadErrorCode | undefined, error: string, notices: FileNotice[]): FileResult {
   const keyError = errorCode === 'key_refused' || errorCode === 'no_credit' ? `Not read. ${KEY_ERROR_MESSAGES[errorCode]}` : undefined;
   notices.push({ name: fileName, reason: (errorCode && UNREAD_REASONS[errorCode]) || 'serverError', text: keyError });
   return { fileName, reportDate: null, values: [], additionalValues: [], error };
