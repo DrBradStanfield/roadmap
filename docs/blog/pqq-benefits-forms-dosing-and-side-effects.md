@@ -19,7 +19,7 @@ Brad lists PQQ among the supplements he would not take, grouping it with CoQ10 a
 
 ## Key safety points
 
-- There is no good public evidence on PQQ drug interactions, and human trials have been small and short. Ask your doctor or pharmacist first if you take a blood thinner such as warfarin, a statin, cancer treatment, an immunosuppressant or any other prescription medicine.
+- There is no good public evidence on PQQ drug interactions, and human trials have been small and short [10][11][20]. Ask your doctor or pharmacist first if you take a blood thinner such as warfarin, a statin, cancer treatment, an immunosuppressant or any other prescription medicine.
 - If you are pregnant or breastfeeding, ask your doctor first. EFSA's safety opinion covers healthy adults and excludes pregnant and lactating women [2].
 - If you have kidney disease, ask your doctor first. In mice the kidneys cleared most absorbed PQQ, and high doses caused reversible kidney changes in female rats [3][4].
 - If you have cancer or are having cancer treatment, ask your oncologist first. In lab studies PQQ killed some tumour cells and acted as a pro-oxidant, and its effect alongside treatment is unknown [5][6].
@@ -78,7 +78,7 @@ Human data are indirect. In men not trained in endurance exercise, 20 mg a day f
 
 Small trials, most run by ingredient makers, suggest PQQ may modestly improve some memory and attention scores in healthy middle-aged and older adults. The one trial in people with mild cognitive impairment tested a blend and found little.
 
-In one trial, 64 healthy Japanese adults, at least 40 and younger than 80, who reported becoming more forgetful took mnemoPQQ (21.5 mg a day of PQQ disodium salt) or placebo for 12 weeks; 58 finished [10]. Compared with placebo, the PQQ group scored better on composite memory, verbal memory, reaction time, complex attention, cognitive flexibility, executive function and motor speed, and on a forgetfulness questionnaire and the MMSE-J [10]. The abstract reports no adverse events. The authors were mainly from Ryusendo, the maker of mnemoPQQ [10].
+In one trial, 64 healthy middle-aged and older Japanese adults who reported becoming more forgetful took mnemoPQQ (21.5 mg a day of PQQ disodium salt) or placebo for 12 weeks; 58 finished [10]. Compared with placebo, the PQQ group scored better on composite memory, verbal memory, reaction time, complex attention, cognitive flexibility, executive function and motor speed, and on a forgetfulness questionnaire and the MMSE-J [10]. The abstract reports no adverse events. The authors were mainly from Ryusendo, the maker of mnemoPQQ [10].
 
 In a trial of 41 healthy older adults, 20 mg of BioPQQ a day or placebo was given for 12 weeks [7]. On the Stroop test, the PQQ group's interference ratio changed significantly less than placebo's. On a tablet test of visual-spatial function, a gain appeared only in a subgroup analysis of people with an initial score less than 70 [7]. One author worked at Mitsubishi Gas Chemical [7].
 
@@ -231,7 +231,7 @@ In genotoxicity tests, BioPQQ was negative in the Ames test and in a mouse micro
 
 ## 6. Drug Interactions
 
-There is no good public evidence on PQQ drug interactions yet. Human trials have been small and short. If you take prescription medicines, check with your doctor or pharmacist before starting.
+There is no good public evidence on PQQ drug interactions yet. Human trials have been small and short [10][11][20]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Theoretical Considerations
 
