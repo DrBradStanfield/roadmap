@@ -601,12 +601,13 @@ export function InputPanel({
                 return;
               }
               updateField(field, parseAndConvert(field, raw), fieldUnit(field));
-              if (field === 'weightKg' && landedFor.current !== getShownErase() && onOnboardingDone) {
+              const erase = getShownErase(); // the record as the weight was typed, not as the jump fires
+              if (field === 'weightKg' && landedFor.current !== erase && onOnboardingDone) {
                 const weightNum = parseLocalisedNumber(raw);
                 if (weightNum !== undefined && /^\d{2,3}$/.test(raw) && weightNum >= r.min && weightNum <= r.max) {
                   advanceToMyHealth({
                     ambiguous: /^\d{2}$/.test(raw) && weightNum * 10 <= r.max,
-                    advance: () => requestAnimationFrame(() => { if (onOnboardingDone()) landedFor.current = getShownErase(); }),
+                    advance: () => requestAnimationFrame(() => { if (getShownErase() === erase && onOnboardingDone()) landedFor.current = erase; }),
                   });
                 }
               }

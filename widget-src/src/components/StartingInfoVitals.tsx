@@ -346,13 +346,14 @@ export function StartingInfoVitals({
     type([null, metric], typed, unitFor(metric));
     const n = parseLocalisedNumber(typed);
 
-    // Weight only: as the last answer, on to My health's top.
-    if (metric === 'weight' && onOnboardingDone && landedFor.current !== getShownErase() && n != null && !validateTypedValue(metric, typed, unitFor(metric)).error) {
+    // Weight only: as the last answer, on to My health's top, on the record it was typed on.
+    const erase = getShownErase();
+    if (metric === 'weight' && onOnboardingDone && landedFor.current !== erase && n != null && !validateTypedValue(metric, typed, unitFor(metric)).error) {
       if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
       if (/^\d{2,3}$/.test(typed) && n >= 30 && n <= 400) {
         const couldExtend = /^\d{2}$/.test(typed) && n * 10 <= 400;
         // The once-only jump is spent only if it happened (not before the last answer).
-        const jump = () => { if (onOnboardingDone()) landedFor.current = getShownErase(); };
+        const jump = () => { if (getShownErase() === erase && onOnboardingDone()) landedFor.current = erase; };
         if (!couldExtend) requestAnimationFrame(jump);
         else focusTimerRef.current = setTimeout(jump, 800);
       }
