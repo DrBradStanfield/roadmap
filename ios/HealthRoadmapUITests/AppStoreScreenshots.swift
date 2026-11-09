@@ -1,8 +1,9 @@
 import XCTest
 
-/// The App Store screenshots' raw captures (US-25 AC10, ios/app-store.md step 6): My plan,
-/// a lab report being read, an opened card, My data and Sync, from the sample record.
-/// Chat's comes from Brad's iPhone (the simulator cannot reach the chat server).
+/// The App Store screenshots' raw captures (US-25 AC10, ios/app-store.md step 6): My health by
+/// topic, a lab report being read, a step opened to its evidence, Weight's page and Sync, from
+/// the sample record. Chat's comes from Brad's iPhone (the simulator cannot reach the chat
+/// server); the simulator's Chat tab gives it the current tab bar.
 /// Opt-in: ios/scripts/app-store-shots.sh seeds the record, puts a photo in the library,
 /// holds the lab read open and sets TEST_RUNNER_APP_STORE_SHOTS; any other run skips.
 /// ios/scripts/app-store-compose.swift then frames each one.
@@ -19,44 +20,60 @@ final class AppStoreScreenshots: XCTestCase {
         app.launch()
 
         let tabs = app.tabBars
-        XCTAssertTrue(tabs.buttons["My data"].waitForExistence(timeout: 15), "the seeded record opens on the tabs, not onboarding")
+        XCTAssertTrue(tabs.buttons["My health"].waitForExistence(timeout: 15), "the seeded record opens on the tabs, not onboarding")
 
-        // My plan, scrolled until Next Steps sits near the top (no title bar, US-25 AC26): its first cards show whole.
-        tabs.buttons["My plan"].tap()
-        let nextSteps = app.staticTexts["Next Steps"]
-        XCTAssertTrue(nextSteps.waitForExistence(timeout: 10), "the Next Steps heading")
-        scrollUntil(app, nextSteps, isAbove: 0.18)
-        shoot(app, "1 my plan")
-        // The call-out: Next Steps and its first card, down to the line under the card's second step.
+        // My health at the top (US-73): the topics, Weight & diabetes first, its values then its steps.
+        let weightTopic = app.staticTexts["Weight & diabetes"]
+        XCTAssertTrue(weightTopic.waitForExistence(timeout: 10), "the Weight & diabetes heading")
+        sleep(2) // the page is built once its series are read
+        shoot(app, "1 my health")
+        // The call-out: Weight & diabetes, its values and its first step.
         let steps = app.buttons.matching(identifier: "plan.suggestion")
-        crop("1", top: nextSteps.frame.minY - 12, bottom: steps.element(boundBy: 1).frame.maxY + 16)
+        crop("1", top: weightTopic.frame.minY - 12, bottom: steps.firstMatch.frame.maxY + 8)
 
-        // The first suggestion, opened, by its identifier: the summary tiles above are buttons too.
-        let card = app.buttons.matching(identifier: "plan.suggestion").firstMatch
-        XCTAssertTrue(card.waitForExistence(timeout: 5), "a suggestion card")
+        // A row's page: Weight, its chart of the six weights.
+        func row(_ name: String) -> XCUIElement { app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", name)).firstMatch }
+        row("Weight, ").tap()
+        XCTAssertTrue(app.navigationBars["Weight"].waitForExistence(timeout: 5), "the Weight page")
+        let showAll = app.buttons["Show All Data"]
+        XCTAssertTrue(showAll.waitForExistence(timeout: 5), "the Weight page's chart")
+        sleep(1)
+        shoot(app, "4 weight history")
+        // The call-out: the chart's card, its section gap above Show All Data left out.
+        crop("4", top: app.navigationBars["Weight"].frame.maxY + 4, bottom: showAll.frame.minY - 30)
+        app.navigationBars["Weight"].buttons.firstMatch.tap()
+        XCTAssertTrue(weightTopic.waitForExistence(timeout: 5), "back on My health")
+
+        // A step opened to its evidence: the protein target, under Weight & diabetes.
+        let card = app.buttons.matching(NSPredicate(format: "identifier == 'plan.suggestion' AND label BEGINSWITH 'Daily protein'")).firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 5), "the protein step")
+        scrollUntil(app, card, isAbove: 0.25)
         card.tap()
         let why = app.staticTexts["Why this suggestion?"].firstMatch
-        XCTAssertTrue(why.waitForExistence(timeout: 5), "the opened card's reason")
-        scrollUntil(app, why, isAbove: 0.36) // so the card's title stays in view below the bar
+        XCTAssertTrue(why.waitForExistence(timeout: 5), "the opened step's reason")
+        scrollUntil(app, why, isAbove: 0.36) // so the step's title stays in view above it
         shoot(app, "3 card opened")
-        // The call-out: the reason and its citations, down to the next step's divider.
-        crop("3", top: why.frame.minY - 14, bottom: steps.element(boundBy: 1).frame.minY - 18)
+        // The call-out: the reason and its citations, down to the next step, above the tab bar.
+        let next = steps.allElementsBoundByIndex.map(\.frame.minY).filter { $0 > why.frame.maxY }.min() ?? .infinity
+        crop("3", top: why.frame.minY - 14, bottom: min(next - 18, app.tabBars.firstMatch.frame.minY - 8))
         card.tap()
 
-        // My data at the top: the vitals, then the blood tests with their values.
-        tabs.buttons["My data"].tap()
-        for _ in 0..<3 { app.swipeDown() }
-        XCTAssertTrue(app.staticTexts["Weight"].firstMatch.waitForExistence(timeout: 5), "the Weight row")
-        shoot(app, "4 my data")
-        // The call-out: the first three blood tests (each row reads as one element).
-        func row(_ name: String) -> XCUIElement { app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", name)).firstMatch }
-        crop("4", top: row("HbA1c").frame.minY - 10, bottom: row("ApoB").frame.maxY + 7)
-
-        // Sync, from the Vitals line.
+        // Sync, from the title line at the top.
+        for _ in 0..<6 { app.swipeDown() }
         app.buttons["Sync"].firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Sync"].waitForExistence(timeout: 5), "the Sync screen")
         shoot(app, "6 sync")
         app.navigationBars["Sync"].buttons["Done"].tap()
+
+        // Chat, for its tab bar only: the Chat slot's drop-in and the video's Chat clip were filmed on
+        // an iPhone before My health, and take this tab bar in place of theirs (app-store-drop-in.swift).
+        tabs.buttons["Chat"].tap()
+        let agreeChat = app.buttons["Agree and continue"]
+        if agreeChat.waitForExistence(timeout: 5) { agreeChat.tap() }
+        sleep(2)
+        shoot(app, "5 chat tab bar")
+        tabs.buttons["My health"].tap()
+        XCTAssertTrue(weightTopic.waitForExistence(timeout: 5), "back on My health")
 
         // Add medical records: the photo the script added, consent, then the reading screen.
         // The script's listener on the Mac holds the send open, so the read stays on screen;

@@ -10,7 +10,7 @@ struct SyncProblem: Equatable {
         case tooNew = "too-new"
         /// No network, or the provider did not answer: it retries by itself.
         case unreachable
-        /// The cloud has no room left (Drive's storageQuotaExceeded).
+        /// The cloud has no room left: Drive's storageQuotaExceeded, or a full Dropbox (US-09 AC38).
         case storageFull = "storage-full"
         /// Edits kept landing while the app opened the cloud record; it tries again later.
         case busy

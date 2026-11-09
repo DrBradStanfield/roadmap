@@ -4,7 +4,7 @@
  * plain reason, and each run sends one count-only `upload_outcome` event.
  * Same harness shape as UploadModal.session.test.tsx.
  */
-import { zipMemberName } from '@roadmap/health-core';
+import { zipMemberName } from '@roadmap/health-core/lab-extraction';
 import { UPLOAD_OUTCOME_KEYS } from '@roadmap/health-core/product-events';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -14,7 +14,7 @@ import { attachOriginals } from '../lib/archive-payloads';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getEraseIdentity } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
-import type { FileResult } from './ReviewTable';
+import type { FileResult } from '../lib/upload-pipeline';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
 vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));

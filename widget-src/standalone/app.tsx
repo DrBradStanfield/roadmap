@@ -12,6 +12,7 @@ import React from 'react';
 import { registerPageDeparture } from './page-departure';
 import { createRoot } from 'react-dom/client';
 import { HealthTool } from '../src/components/HealthTool';
+import { GuestContext } from '../src/lib/storage-notice';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { initSentry } from '../src/lib/sentry';
 import { initRoadmapStore, setPreEraseHook } from '../src/lib/roadmap-data';
@@ -23,10 +24,11 @@ import { DropboxAdapter, GoogleDriveAdapter } from '../src/storage';
 import { noteOtherTabsLogOffWhileLoading } from '../src/storage/local-storage-adapter';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
-import { StorageBar, SyncControl, RemindersSection } from './sync-control';
+import { LocalSaveAlert, StorageBar, SyncControl, RemindersSection } from './sync-control';
 import { ConnectRefusedNotice } from './connect-refused';
 import { EmailLandingNotice, emailLandingApplies, takeEmailFlag } from './email-landing';
 import { HistoryLightboxHost } from './history-lightbox';
+import { showLoadFailure } from './load-failure';
 import {
   connectRefusal,
   liftLocalInto,
@@ -49,10 +51,11 @@ async function resolveBackend(): Promise<{ resolved: ResolvedBackend; refused?: 
 
   // Returning from a Dropbox OAuth redirect?
   let resumed: DropboxAdapter | null = null;
+  let refused: string | undefined;
   try {
     resumed = await DropboxAdapter.completeRedirect(dropboxConfig());
   } catch (error) {
-    reportConnectFailure(error, 'dropbox');
+    refused = reportConnectFailure(error, 'dropbox');
   }
   if (resumed) {
     await liftLocalInto(resumed, 'dropbox');
@@ -64,12 +67,10 @@ async function resolveBackend(): Promise<{ resolved: ResolvedBackend; refused?: 
   // Returning from a Google Drive OAuth redirect? (Each completeRedirect only
   // claims a ?code that its own PKCE session entry initiated.)
   let gdResumed: GoogleDriveAdapter | null = null;
-  let refused: string | undefined;
   try {
     gdResumed = await GoogleDriveAdapter.completeRedirect(googleDriveConfig());
   } catch (error) {
-    refused = connectRefusal(error) ?? undefined;
-    if (!refused) reportConnectFailure(error, 'google-drive');
+    refused = connectRefusal(error) ?? reportConnectFailure(error, 'google-drive');
   }
   if (gdResumed) {
     await liftLocalInto(gdResumed, 'google-drive');
@@ -91,7 +92,7 @@ async function main() {
   // Before the first await (US-22 AC13): an OAuth return rewrites the URL.
   const fromEmail = takeEmailFlag();
   const { resolved, refused } = await resolveBackend();
-  const { backend, reconnect } = await startOnBackend(resolved, initRoadmapStore);
+  const { backend, reconnect } = await startOnBackend(resolved, initRoadmapStore).catch((error) => showLoadFailure(error, refused));
   const state = storageState(backend, reconnect);
   const emailLanding = await emailLandingApplies(fromEmail, state);
   // "Delete all my data" must also delete the reminder row on Brad's server,
@@ -121,11 +122,15 @@ async function main() {
         <RemindersEnrolledNotice backend={backend} />
         {refused && <ConnectRefusedNotice message={refused} />}
         {emailLanding && <EmailLandingNotice />}
-        <HealthTool
-          syncControl={({ hasData, attention }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} attention={attention} />}
-          remindersSection={<RemindersSection backend={backend} />}
-          storageBar={<StorageBar backend={backend} reconnect={reconnect} />}
-        />
+        <GuestContext.Provider value={state === 'guest'}>
+          <HealthTool
+            syncControl={({ hasData, attention }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} attention={attention} />}
+            remindersSection={<RemindersSection backend={backend} />}
+            storageBar={<StorageBar backend={backend} reconnect={reconnect} />}
+            saveAlert={<LocalSaveAlert backend={backend} />}
+            syncAlert={<StorageBar backend={backend} reconnect={reconnect} problemsOnly />}
+          />
+        </GuestContext.Provider>
         <HistoryLightboxHost />
       </ErrorBoundary>
     </React.StrictMode>,

@@ -7,7 +7,8 @@
  */
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
-import { ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
@@ -24,6 +25,7 @@ vi.mock('../lib/chat-api', async original => ({
   listConversations: () => Promise.resolve(null), getChatGate: () => null,
 }));
 import { HealthTool } from './HealthTool';
+import { openSettings } from '../testing/settings';
 
 const stops: Array<() => void> = [];
 const saved = () => new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME).body as RoadmapFile;
@@ -141,9 +143,10 @@ it('US-60 AC3 (Brad 2026-11-01): on a phone with sex and height in, the "I still
   await saveChangedMeasurements({ alcohol: 'drinks' }, {});
   await flushRoadmapStore();
   const view = render(<HealthTool />);
+  await waitFor(() => openSettings(view.container)); // About you sits in Settings (US-62 AC24)
   const titles = [...view.container.querySelectorAll('.health-section-title')].map((h) => h.textContent!.replace('\u25B8', '').trim());
   expect(titles).toContain('About you');
-  expect(titles).not.toContain('Starting Info');
+  expect(titles).not.toContain('Starting info');
   await dismiss(view.container, 'Do you still drink alcohol?');
   fireEvent.click(within(dialog()!).getByText('I still drink'));
   expect(dialog()!.textContent).toBe(`${still('About you')}OK`);
@@ -165,20 +168,20 @@ it('US-60 AC3 (Brad 2026-11-01): a drinker\'s "I\'ve stopped" saves \'none\' thr
 const stub = (phone: boolean) => vi.stubGlobal('matchMedia', (q: string) => ({
   matches: q.includes('max-width') ? phone : !phone, media: q, addEventListener() {}, removeEventListener() {},
 }));
-const panel = (root: HTMLElement) => root.querySelector<HTMLElement>('.health-input-panel')!;
 
 it('US-60 AC4 (Brad 2026-11-02): mid-onboarding there is no Alcohol row, and "I still drink" names no section, on desktop and a phone', async () => {
-  // No birth date yet: the onboarding is not done, so Starting Info shows its boxes.
+  // No birth date yet: the onboarding is not done, so Starting Info shows its boxes. A saved
+  // blood test opens the whole form (opensFullForm), where the plan's cards show (US-62 AC25).
   localStorage.clear();
   await initRoadmapStore(new LocalStorageAdapter());
-  await saveChangedMeasurements({ sex: 'male', heightCm: 178, unitSystem: 'si', weightKg: 100, alcohol: 'drinks' }, {});
+  await saveChangedMeasurements({ sex: 'male', heightCm: 178, unitSystem: 'si', weightKg: 100, alcohol: 'drinks', hba1c: 35 }, {});
   await flushRoadmapStore();
   for (const phone of [false, true]) {
     stub(phone);
     const view = render(<HealthTool />);
     await waitFor(() => expect(alcoholCard(view.container)).toBeDefined());
     expect(view.container.querySelector('#alcohol')).toBeNull();
-    expect(within(panel(view.container)).queryByText(/alcohol/i)).toBeNull();
+    expect(within(view.container.querySelector<HTMLElement>('.about-card')!).queryByText(/alcohol/i)).toBeNull(); // Starting Info asks nothing of it
     await dismiss(view.container, 'Do you still drink alcohol?');
     fireEvent.click(within(dialog()!).getByText('I still drink'));
     expect(dialog()!.textContent).toBe('This stays on your plan because the advice applies to anyone who drinks.OK');
@@ -191,7 +194,7 @@ it('US-60 AC4 with US-62 AC12: once the birth date finishes the onboarding and i
   for (const phone of [false, true]) {
     localStorage.clear();
     await initRoadmapStore(new LocalStorageAdapter());
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, unitSystem: 'si', weightKg: 100, alcohol: 'drinks' }, {});
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, unitSystem: 'si', weightKg: 100, alcohol: 'drinks', hba1c: 35 }, {});
     await flushRoadmapStore();
     stub(phone);
     const view = render(<HealthTool />);
@@ -202,6 +205,9 @@ it('US-60 AC4 with US-62 AC12: once the birth date finishes the onboarding and i
     fireEvent.change(year, { target: { value: '1980' } });
     expect(view.container.querySelector('.md-about-you')).toBeNull(); // still typing
     act(() => year.blur());
+    // About you goes to Settings once the onboarding is done (US-62 AC24, AC25).
+    await waitFor(() => expect(view.container.querySelector('.mh-page .about-card')).toBeNull()); // a phone's Account keeps Settings mounted
+    openSettings(view.container);
     const about = await waitFor(() => { const a = view.container.querySelector<HTMLElement>('.md-about-you'); expect(a).not.toBeNull(); return a!; });
     expect(within(about).getByText('Alcohol')).toBeTruthy();
     await dismiss(view.container, 'Do you still drink alcohol?');
@@ -217,12 +223,13 @@ it('US-60 AC4, AC4b (Brad 2026-11-02): About you\'s rows hold an Alcohol row tha
     stub(phone);
     const view = render(<HealthTool />);
     await waitFor(() => expect(alcoholCard(view.container)).toBeDefined());
+    openSettings(view.container); // About you sits in Settings (US-62 AC24)
     const row = view.container.querySelector<HTMLButtonElement>('#about-alcohol')!;
     expect(row.closest('.about-rows')).not.toBeNull();
     expect(row.textContent).toBe('AlcoholNot answered');
     expect(view.container.querySelector('#alcohol')).toBeNull();
     fireEvent.click(row);
-    const group = within(panel(view.container)).getByRole('group', { name: 'Alcohol' });
+    const group = within(view.container.querySelector<HTMLElement>('.mh-settings')!).getByRole('group', { name: 'Alcohol' }); // a phone's Account tab (US-62 AC34)
     expect(group.id).toBe('alcohol');
     const button = (name: string) => within(group).getByRole('button', { name });
     expect([button("I don't drink"), button('I drink')].map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'false']);
@@ -248,12 +255,14 @@ it('US-60 AC4, AC4b (Brad 2026-11-02): About you\'s rows hold an Alcohol row tha
   }
 });
 
-it('US-60 AC3 (C2): in a grouped Nutrition card the Dismiss sits on the alcohol section, and "I don\'t drink" also drops "limit alcohol" from the triglycerides card', async () => {
+// Since US-62 AC18 the triglycerides advice sits under Cholesterol and the alcohol card under
+// Weight & diabetes, so the two no longer share a grouped card; the answer still reaches both.
+it('US-60 AC3 (C2): the Dismiss sits on the alcohol card, and "I don\'t drink" also drops "limit alcohol" from the triglycerides card', async () => {
   await saveChangedMeasurements({ triglycerides: 2.0 }, {});
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   await dismiss(view.container);
-  expect(alcoholCard(view.container)!.closest('.suggestion-subsection')).not.toBeNull();
+  expect(alcoholCard(view.container)!.closest('[data-topic]')?.getAttribute('data-topic')).toBe('weight');
   const trigText = () => [...view.container.querySelectorAll('.suggestion-desc')].find((d) => d.textContent?.startsWith('Blood triglycerides'))?.textContent;
   expect(trigText()).toContain('limit alcohol');
   fireEvent.click(within(dialog()!).getByText("I don't drink"));

@@ -12,7 +12,9 @@
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import type { Mock } from 'vitest';
-import { ROADMAP_DOC, StorageError, SyncManager } from '@roadmap/health-core';
+import { ROADMAP_DOC } from '@roadmap/health-core/roadmap-doc';
+import { StorageError } from '@roadmap/health-core/adapter';
+import { SyncManager } from '@roadmap/health-core/sync-manager';
 import { GitHubAdapter } from './github';
 import { ChatHistoryStore } from './chat-history-store';
 

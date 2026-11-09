@@ -13,7 +13,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render, waitFor, fireEvent, act } from '@testing-library/react';
-import type { ProposedMedicationEdit } from '@roadmap/health-core';
+import type { ProposedMedicationEdit } from '@roadmap/health-core/chat-edits';
 import { addMeasurement, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, loadMedicationHistory } from '../lib/roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
@@ -35,6 +35,7 @@ vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 
 import { HealthTool } from './HealthTool';
+import { deleteButton } from '../testing/settings';
 
 useHealthToolLifecycle();
 
@@ -524,7 +525,7 @@ describe('US-16 AC2 / US-09: erasing the data clears the pending chat Undo', () 
     vi.stubGlobal('confirm', () => true);
     vi.stubGlobal('alert', () => {});
     fireEvent.click(await waitFor(() => {
-      const link = Array.from(document.querySelectorAll('button, a')).find((e) => e.textContent?.trim() === 'Delete All My Data');
+      const link = deleteButton();
       expect(link).toBeTruthy();
       return link!;
     }));

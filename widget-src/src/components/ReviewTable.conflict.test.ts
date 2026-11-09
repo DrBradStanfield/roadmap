@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import type { ApiMeasurement } from '@roadmap/health-core';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { ApiLabValue } from '../lib/api-types';
-import { buildMatrixModel } from './ReviewTable';
-import type { FileResult } from './ReviewTable';
+import { buildMatrixModel } from '../lib/review-matrix';
+import type { FileResult } from '../lib/upload-pipeline';
 
 const DATE = { day: '01', month: '06', year: '2024' };
 

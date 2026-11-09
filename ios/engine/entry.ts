@@ -3,20 +3,25 @@
 // string-in, string-out door, because JSON is the one shape both sides share.
 // Its door list is bridge-contract.json; bridge.test.ts holds the two together.
 import { mergeFiles } from '../../packages/health-core/src/merge';
+import { isCalendarDay } from '../../packages/health-core/src/measurement-history';
 import { computePlan, PlanError, type Plan } from '../../packages/health-core/src/plan';
 import { CURRENT_SCHEMA_VERSION } from '../../packages/health-core/src/roadmap-file';
-import { planSections, type PlanSection } from '../../packages/health-core/src/plan-sections';
+import { planSections, topicSections, type PlanSection, type TopicLayout } from '../../packages/health-core/src/plan-sections';
 import { statTiles, type StatTile } from '../../packages/health-core/src/stat-tiles';
 import { cmToFeetInches, formatDisplayValue, fromCanonicalValue, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from '../../packages/health-core/src/units';
-import { fileNameLine, MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
+import { fileNameLine, labSearch, MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
 import { deviceWrites } from '../../packages/health-core/src/device-export';
 import { usProductSections, type UsPlanSection } from '../../packages/health-core/src/us-products';
 import { applyEdit, movedRecord, myData, newRecord, readNumber, readRecord, readView, type Edit } from './my-data';
-import { labHistory, metricHistory } from './my-data-forms';
+import { derivedHistory, labHistory, metricHistory } from './my-data-forms';
 import { chatEditsPreview } from './chat-edits';
 import { readUnitChoices } from './unit-choices';
 import { phoneReminders } from './reminders';
 import { installShim, type Natives } from './shim';
+import { NOT_OPEN, open } from './cloud';
+import { failed } from './cloud-adapters';
+import { StorageError } from '../../packages/health-core/src/adapter';
+import { documentShelf } from './documents';
 
 // The web APIs the cloud adapters need, over Swift's natives (shim.ts). Absent
 // in Node, where the parity goldens run the bundle with nothing but ECMAScript.
@@ -90,12 +95,14 @@ export function newRecordJson(nowIso: string, deviceId: string, locale: string, 
  *  an app older than it included, gives none.
  *  `movedRecord`: the record as text, when reading `recordJson` moved its blood tests into
  *  one table (US-66 AC14); the app writes it to the phone's file once, as it opens it. Left
- *  out when nothing moved, so the written record never gives it again. */
+ *  out when nothing moved, so the written record never gives it again.
+ *  `plan.topics`: the same cards by topic for My health (health-core topicSections, US-73 AC3),
+ *  from `usProducts` when it shows, else `sections`, placed against My data's own questions. */
 export function screenJson(recordJson: string, nowIso: string, deviceId: string, unitsJson?: string, isUS?: boolean): string {
   const file = readView(recordJson, nowIso, deviceId);
   const choices = readUnitChoices(unitsJson);
   let plan: Plan | null = null;
-  let view: { sections: PlanSection[]; tiles: StatTile[]; usProducts?: UsPlanSection[]; ms: number } | { error: string; planError: boolean };
+  let view: { sections: PlanSection[]; tiles: StatTile[]; usProducts?: UsPlanSection[]; topics?: TopicLayout; ms: number } | { error: string; planError: boolean };
   try {
     const start = Date.now();
     plan = computePlan(file, new Date(nowIso), choices);
@@ -111,8 +118,17 @@ export function screenJson(recordJson: string, nowIso: string, deviceId: string,
   } catch (error) {
     view = { error: String(error), planError: error instanceof PlanError };
   }
+  // The letters and scan results at My health's foot ride on myData (US-73 AC12, documents.ts).
+  const data = { ...myData(file, nowIso, choices, plan), documents: documentShelf(file) };
+  if ('sections' in view) {
+    try {
+      view.topics = topicSections(view.usProducts ?? view.sections, data);
+    } catch {
+      // no topics: the app draws the sections
+    }
+  }
   const moved = movedRecord(recordJson, nowIso, deviceId);
-  return JSON.stringify({ myData: myData(file, nowIso, choices, plan), plan: view, ...(moved ? { movedRecord: moved } : null) });
+  return JSON.stringify({ myData: data, plan: view, ...(moved ? { movedRecord: moved } : null) });
 }
 
 /** One edit, as JSON: `{ ok: true, record }` with the new record as text (and the
@@ -162,14 +178,59 @@ export function healthWritesJson(recordJson: string, nowIso: string, deviceId: s
 }
 
 /** Every value recorded for one metric, newest first, as JSON (US-25 AC9). `series` "lab": `metric`
- *  is a lab test's series key (US-25 AC25); an app before it sends none, and is answered as before. */
+ *  is a lab test's series key (US-25 AC25); an app before it sends none, and is answered as before.
+ *  "egfr" and "whtr": the worked-out series of that name, `metric` unread (US-73 AC7). */
 export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string, unitsJson?: string, series?: string): string {
   const file = readView(recordJson, nowIso, deviceId);
+  if (series === 'egfr' || series === 'whtr') return JSON.stringify(derivedHistory(file, series, nowIso));
   return JSON.stringify(series === 'lab' ? labHistory(file, metric) : metricHistory(file, metric, nowIso, readUnitChoices(unitsJson)));
+}
+
+/** The core and catalogue blood tests a typed name finds, best first, as JSON (health-core labSearch,
+ *  US-73 AC8): the add sheet's matches. An optional door (bridge-optional.json): not in the hashed
+ *  contract, so an app reaches it only through HealthEngine.optionalCall. */
+export function labSearchJson(text: string): string {
+  return JSON.stringify(labSearch(text));
+}
+
+/** A listed document's original from the person's cloud, as bytes (US-73 AC12; the web's "View
+ *  original file", US-14): the document page's door, optional like labSearchJson. By the document's
+ *  id, so only a file the record names is read. Rejects with the failure JSON Swift reads (review R6
+ *  of PR 972): kind "not-open" when no cloud is open, "no-original" when the record names none for
+ *  it, else the cloud's own failure, classed as a save's is (`failed`: sign-in, unreachable...). */
+export async function documentOriginal(id: string): Promise<ArrayBuffer> {
+  const at = open;
+  if (!at) throw new Error(JSON.stringify({ kind: 'not-open', detail: NOT_OPEN }));
+  const doc = at.session.file.documents.find((d) => d.id === id && !d.deleted);
+  if (!doc?.fileRef) throw new Error(JSON.stringify({ kind: 'no-original', detail: 'This document has no original in your cloud.' }));
+  try {
+    return await (await at.host.store.readDocument(doc.fileRef)).arrayBuffer();
+  } catch (error) {
+    if (originalGone(error)) throw new Error(JSON.stringify({ kind: 'no-original', detail: 'This document\'s original is not in your cloud.' }));
+    throw new Error(failed(at.provider, error));
+  }
+}
+
+/** The cloud no longer holds the original (PR 1051 review R1): any 404; Dropbox answers a download
+ *  of a missing path 409 (path/not_found; dropbox-rest.ts `dropboxDownload` keeps the status, not
+ *  the body, so every download 409 counts); Drive finds no file of that name (drive-rest.ts
+ *  `driveDownloadDocument`, which sets no status but the reason not-found, #979). */
+function originalGone(error: unknown): boolean {
+  return error instanceof StorageError && (error.status === 404 || error.status === 409 || error.reason === 'not-found');
 }
 // Chat and lab upload (US-52): app-doors.ts.
 export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson, chatDeleteJson, settledJson, labReviewJson, labSaveSummaryJson } from './app-doors';
-/** The phone's reminders (reminders.ts): health-core's schedule plus the notification days, as JSON. */
-export function remindersJson(recordJson: string, nowIso: string, deviceId: string): string {
-  return JSON.stringify(phoneReminders(readView(recordJson, nowIso, deviceId), new Date(nowIso)));
+/** The phone's reminders (reminders.ts): health-core's schedule plus the notification days, as JSON.
+ *  `firstSeenJson` (US-17 AC15): the follow-up first-seen days the app keeps; anything that is not
+ *  an object of calendar days counts as none kept. An app before it sends none, and is answered as before. */
+export function remindersJson(recordJson: string, nowIso: string, deviceId: string, firstSeenJson?: string): string {
+  return JSON.stringify(phoneReminders(readView(recordJson, nowIso, deviceId), new Date(nowIso), undefined,
+    firstSeenJson === undefined ? undefined : readFirstSeen(firstSeenJson)));
+}
+
+function readFirstSeen(text: string): Record<string, string> {
+  let parsed: unknown;
+  try { parsed = JSON.parse(text); } catch { return {}; }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+  return Object.fromEntries(Object.entries(parsed).filter(([, day]) => typeof day === 'string' && isCalendarDay(day)));
 }

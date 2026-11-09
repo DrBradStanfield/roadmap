@@ -107,20 +107,30 @@ input[type="number"] {
   background: #f8f9fa;
   box-shadow: 0 0 0 100vmax #f8f9fa;
   clip-path: inset(0 -100vmax);
+  /* The grids' ink scale, for everything inside the widget. */
+  --bt-ink-50: #f6f7f8;
+  --bt-ink-100: #eceef0;
+  --bt-ink-200: #d7dbdf;
+  --bt-ink-400: #7b858e;
+  --bt-ink-500: #5b6670;
+  --bt-ink-700: #2b3036;
+  --bt-ink-900: #111417;
+  --bt-warn: #c58b2a;
+}
+/* Hidden means hidden, whatever display a class sets (the grids under the rows, the PDF's copy). */
+.health-tool [hidden] {
+  display: none !important;
 }
 
-/* Two-Panel Layout */
+/* US-62 AC16, AC27: one My health column, centred: its section list, then
+   the topics, no wider than 720px; from 1200px the chat column sits beside it. */
 .health-tool-content {
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  grid-template-columns: minmax(0, 960px);
+  justify-content: center;
   gap: 32px;
-  align-items: stretch;
-}
-
-@media (max-width: 768px) {
-  .health-tool-content {
-    grid-template-columns: 1fr;
-  }
+  align-items: start;
+  padding: 0 24px;
 }
 
 @media (max-width: 768px) {
@@ -132,22 +142,6 @@ input[type="number"] {
     padding: 12px !important;
     margin-left: 10px;
     margin-right: 10px;
-  }
-
-  .health-tool-right {
-    margin: 0 10px;
-  }
-
-  /* US-20 AC6: the top bar holds the storage button above every tab, with
-     the cards' 10px gutter. */
-  .hr-top-bar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
-    padding: 8px 10px 0;
-    font-size: 12px;
   }
 
   /* The phone's panels; only the active one shows (the others are [hidden]). */
@@ -162,16 +156,9 @@ input[type="number"] {
     margin-bottom: 0;
   }
 
-  /* One gap between cards on both tabs: My data's cards and the plan's
-     sections (desktop keeps 20px), US-62 AC14. */
-  .hr-tabpanel .health-input-panel,
-  .hr-tabpanel .hr-col-body {
+  /* One gap between My health's cards (desktop keeps 20px), US-62 AC14. */
+  .hr-tabpanel .health-input-panel {
     gap: 16px;
-  }
-
-  .hr-tabpanel .health-tool-right {
-    position: static;
-    max-height: none;
   }
 
   /* US-20 AC6: the bottom tab bar, as on the iPhone. Sticky at the widget's
@@ -209,17 +196,6 @@ input[type="number"] {
     color: var(--color-brand-text);
   }
 
-  /* US-62 AC13: something new on this tab (a tile on My plan). */
-  .hr-tab-dot {
-    position: absolute;
-    top: 6px;
-    left: calc(50% + 10px);
-    width: 0;
-    height: 0;
-    border: 4px solid var(--color-brand); /* a border, so forced colours still draw it */
-    border-radius: 50%;
-  }
-
   .hr-tab-icon {
     width: 26px;
     height: 26px;
@@ -239,39 +215,11 @@ input[type="number"] {
   min-width: 0;
 }
 
-.health-tool-left {
+.health-tool-main {
   display: flex;
   flex-direction: column;
   gap: 16px;
   min-width: 0;
-}
-
-.health-tool-right {
-  position: sticky;
-  top: 24px;
-  max-height: calc(100vh - 48px);
-  display: flex;
-  flex-direction: column;
-}
-
-/* US-62: the plan column's header stays put; only the body under it scrolls.
-   The body always has its scrollbar (overflow-y: scroll, as scrollbar-gutter is
-   not kept by WebKit until it overflows), so the plan never narrows when it grows
-   past the screen; overlay scrollbars (a Mac trackpad) take no room at all. The
-   header keeps the same room where the browser honours scrollbar-gutter. */
-@media (min-width: 769px) {
-  .health-tool-right .health-results-panel {
-    min-height: 0;
-  }
-  .health-tool-right .hr-col-body {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: scroll;
-  }
-  .health-tool-right .hr-col-header {
-    overflow-y: hidden;
-    scrollbar-gutter: stable;
-  }
 }
 
 /* Input Panel */
@@ -300,79 +248,11 @@ input[type="number"] {
   color: var(--color-gray-dark);
 }
 
-.health-section-title--collapsible {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  user-select: none;
-}
-
-.collapse-chevron {
-  font-size: 14px;
-  color: var(--color-gray-light);
-  display: inline-block;
-  transition: transform 0.3s ease;
-}
-.collapse-chevron.expanded {
-  transform: rotate(90deg);
-}
-
-/* Animated collapse: summary fade-in */
-/* Scoped under .health-tool: on the storefront the site-chat bundle
-   (health-site-chat.css — an old, byte-stable copy of this file until Phase 7)
-   also loads, and its stale same-specificity rules would win by document
-   order. The extra ancestor keeps the v2 rules in charge. */
-.health-tool .prefill-summary-wrapper {
-  display: grid;
-  grid-template-rows: 0fr;
-  opacity: 0;
-  /* Spacing lives HERE (on .visible), not on the child: child margins leak
-     past the 0fr track and nudged the form 8px on first sex/height entry. */
-  margin: 0;
-  transition: grid-template-rows 0.3s ease, opacity 0.3s ease, margin 0.3s ease;
-}
-.health-tool .prefill-summary-wrapper > * {
-  overflow: hidden;
-}
-.health-tool .prefill-summary-wrapper.visible {
-  grid-template-rows: 1fr;
-  opacity: 1;
-  margin: -8px 0 16px;
-}
-
-.health-tool .prefill-summary {
-  font-size: 14px;
-  color: var(--color-gray-medium);
-  margin: 0;
-  cursor: pointer;
-}
-
-/* Animated collapse: fields height transition.
-   The wrapper can hold MORE than one child: returning users also get the
-   birth month/year group as a second grid item (renderBirthInfo). A single
-   `grid-template-rows: 0fr` only zeroes the FIRST track, leaving the second
-   child in an `auto` implicit row at full height — that was the ~82px gap
-   between the collapsed "Starting Info" summary line and the vitals table.
-   Collapse implicit tracks too via `grid-auto-rows`. */
+/* The profile's fields: a grid, so each step's group keeps its own row. */
 .prefill-fields-wrapper {
   display: grid;
   grid-template-rows: 1fr;
   grid-auto-rows: auto;
-  transition: grid-template-rows 0.35s ease, grid-auto-rows 0.35s ease, opacity 0.25s ease;
-  opacity: 1;
-}
-.prefill-fields-wrapper.collapsing > *,
-.prefill-fields-wrapper.collapsed > * {
-  overflow: hidden;
-}
-.prefill-fields-wrapper.collapsing {
-  opacity: 0;
-}
-.prefill-fields-wrapper.collapsed {
-  grid-template-rows: 0fr;
-  grid-auto-rows: 0fr;
-  opacity: 0;
 }
 
 .health-section-desc {
@@ -680,19 +560,6 @@ input[type="number"] {
   min-height: 100%;
 }
 
-/* One rhythm down the plan: 20px between its sections (the tiles, the storage
-   card, the PDF card, each suggestions group, the footer), as between column
-   1's cards (8px gap + 12px card margin). The gap is the only spacing, so the
-   sections' own margins go; the tiles keep their tighter 12px inside. */
-.hr-col-body {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-.health-results-panel > .hr-col-body > * {
-  margin-top: 0;
-  margin-bottom: 0;
-}
 
 .plan-empty-preview {
   display: flex;
@@ -773,6 +640,11 @@ input[type="number"] {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
+}
+
+/* A lone tile (the onboarding's BMI) spans the row: no void beside it (design re-check 2026-11-06). */
+.stats-grid > .stat-card:only-child {
+  grid-column: 1 / -1;
 }
 
 /* Two tiles a row on a phone. After the base rule, or the base rule wins. A
@@ -1076,6 +948,14 @@ input[type="number"] {
   cursor: pointer;
 }
 .suggestion-dismiss:hover { color: var(--color-text-heading); }
+/* 44px to press on every width (live test 2026-11-06: 21px on desktop). */
+.suggestion-dismiss {
+  min-height: 44px;
+}
+.health-tool .supplement-remove {
+  min-width: 44px;
+  min-height: 44px;
+}
 .upload-modal.alcohol-dialog {
   max-width: 360px;
   padding: 20px;
@@ -2733,6 +2613,10 @@ input[type="number"] {
   margin-bottom: 16px;
   min-width: 0;
 }
+/* In My health's topics, the column's gap spaces it (US-62 AC33). */
+.mh-topics > .health-records-section {
+  margin-bottom: 0;
+}
 
 .health-records-list {
   display: flex;
@@ -3181,7 +3065,7 @@ input[type="number"] {
 
 .chat-empty p {
   font-size: 14px;
-  color: var(--color-gray-light);
+  color: var(--color-text-secondary); /* 4.5:1 on white; #888 was 3.5:1 */
   line-height: 1.6;
   max-width: 280px;
 }
@@ -3721,8 +3605,7 @@ input[type="number"] {
 }
 
 .chat-fab-icon {
-  font-size: 20px;
-  line-height: 1;
+  flex: 0 0 auto;
 }
 
 .chat-fab-label {
@@ -3825,9 +3708,9 @@ input[type="number"] {
   gap: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--color-primary, #2563eb);
+  color: var(--color-brand-text);
   background: none;
-  border: 1px solid var(--color-border, #d1d9e6);
+  border: 1px solid var(--color-gray-border);
   border-radius: 6px;
   padding: 4px 10px;
   cursor: pointer;
@@ -3881,27 +3764,6 @@ input[type="number"] {
 }
 
 /* ── Supplements ── */
-
-.supplement-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.supplement-chip {
-  background: var(--color-bg-light, #f0f4f8);
-  border: 1px solid var(--color-border, #d1d9e6);
-  border-radius: 16px;
-  padding: 4px 12px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.supplement-chip:hover {
-  background: rgba(0, 163, 139, 0.1);
-}
 
 .supplement-row {
   display: flex;
@@ -4003,11 +3865,10 @@ input[type="number"] {
   justify-content: space-between;
   gap: 12px;
   padding: 0 4px;
-  margin-bottom: 12px;
-  /* All three headers one height, the height of the tallest thing any holds
-     (column 1's Sign in pill, the plan's Save as PDF), so every column's first
-     card starts on one line. */
-  min-height: 28px;
+  /* The chat column's header is My health's title line, 44px, its card the column's 8px gap below,
+     so the chat card's top lines up with the banner's or the first card's (design review 2026-11-06). */
+  margin-bottom: 0;
+  min-height: 44px;
 }
 .hr-col-title {
   font-size: 12px;
@@ -4021,31 +3882,9 @@ input[type="number"] {
   /* One line: a wrapped title would make its header taller than the others. */
   white-space: nowrap;
 }
-/* Narrow three-column widths: tighter tracking keeps the plan's title on one line. */
+/* 1200 to 1439px: tighter tracking keeps the chat column's title on one line. */
 @media (min-width: 1200px) and (max-width: 1439px) {
   .hr-col-title { letter-spacing: 0.4px; }
-}
-.hr-col-step {
-  display: inline-flex;
-  width: 20px;
-  height: 20px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: #e6f4f1;
-  color: var(--color-brand-text);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0;
-}
-.hr-col-meta {
-  font-size: 12px;
-  color: var(--color-gray-light);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
 /* US-18 AC6: the refused-window note must be read; the meta grey is below AA. */
@@ -4061,17 +3900,9 @@ input[type="number"] {
 .hr-col-header--muted .hr-col-title {
   color: #b8bfc5;
 }
-.hr-col-header--muted .hr-col-step {
-  background: #eef0f2;
-  color: #b8bfc5;
-}
 
 @media (max-width: 768px) {
   .hr-col-header { display: none; }
-  /* US-44 AC6: a header's actions stay (Save as PDF on the plan; the tabs
-     name the column), right-aligned with the cards' 10px gutter. */
-  .hr-col-header--actions { display: flex; justify-content: flex-end; padding: 8px 10px 0; }
-  .hr-col-header--actions .hr-col-title { display: none; }
 }
 
 /* ─── Inline unit toggle in Basic Information card header ─────── */
@@ -4097,7 +3928,7 @@ input[type="number"] {
 /* ─── 3-column layout (≥1200px viewport) ─────────────────────── */
 @media (min-width: 1200px) {
   .health-tool-content {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.95fr);
+    grid-template-columns: minmax(0, 1000px) minmax(340px, 420px);
   }
 }
 
@@ -4152,11 +3983,21 @@ input[type="number"] {
   }
   /* A fixed height: the messages scroll inside, so the chat's auto-scroll
      works and the composer stays on screen. */
+  /* The screen below the card's own top (the theme's sticky header and the card's inset in its
+     panel, measured on the switch in HealthTool) less the tab bar and a 12px gap above it, the
+     cards' rhythm: no void, and the card never runs under the bar (live test 2026-11-06). */
   .hr-tabpanel .health-tool-chat .chat-embed {
     flex: none;
-    height: calc(100vh - 150px - env(safe-area-inset-bottom, 0px));
-    height: calc(100svh - 150px - env(safe-area-inset-bottom, 0px));
+    height: calc(100vh - var(--hr-chat-top, 0px) - var(--hr-tabbar-h, 51px) - 12px);
+    height: calc(100svh - var(--hr-chat-top, 0px) - var(--hr-tabbar-h, 51px) - 12px);
     min-height: 300px;
+  }
+
+  /* US-62 AC34: the Account panel fills the same screen, so a short Settings never leaves
+     the tab bar floating mid-screen (its top is the theme's header: no card inset). */
+  .hr-tabpanel .mh-account {
+    min-height: calc(100vh - var(--hr-chat-top, 0px) - var(--hr-tabbar-h, 51px) - 32px);
+    min-height: calc(100svh - var(--hr-chat-top, 0px) - var(--hr-tabbar-h, 51px) - 32px);
   }
 
   .chat-embed .chat-header-sub {
@@ -5391,11 +5232,11 @@ input[type="number"] {
   white-space: nowrap;
   border: 0;
 }
-.health-input-panel.md-page-open > :not(.md-page, .hr-col-header) {
+.health-input-panel.md-page-open > :not(.md-page, .mh-header, .mh-page-host) {
   display: none !important;
 }
-.md-table[hidden] {
-  display: none !important;
+.mh-page-host {
+  display: contents;
 }
 /* The rows' inset is every card's: on a phone the card's own 12px padding
    (forced on every card there), on desktop, where this card has none, 24px. */
@@ -5417,13 +5258,21 @@ input[type="number"] {
 .about-rows > li + li .about-row {
   border-top: 1px solid var(--bt-ink-100, #eceef0);
 }
-.md-row,
+.md-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 56px 104px;
+  column-gap: 12px;
+  min-height: 60px;
+}
 .about-row {
   display: flex;
-  align-items: center;
   gap: 10px;
-  width: 100%;
   min-height: 56px;
+}
+.md-row,
+.about-row {
+  align-items: center;
+  width: 100%;
   padding: 8px 0;
   background: none;
   border: 0;
@@ -5442,7 +5291,6 @@ input[type="number"] {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 1 1 auto;
   min-width: 0;
 }
 .md-row-label {
@@ -5456,16 +5304,22 @@ input[type="number"] {
 }
 .md-row-trend {
   display: block;
-  flex: 0 0 44px;
-  width: 44px;
-  height: 18px;
+  width: 56px;
+}
+/* Below 390px the trend keeps its old 44px, so a target and its date stay on one line
+   ("Target <120/80 · Aug 2026" at 375px, US-62 AC8a). The row reads the width from here. */
+@media (max-width: 389px) {
+  .md-row {
+    grid-template-columns: minmax(0, 1fr) 44px 104px;
+  }
+  .md-row-trend {
+    width: 44px;
+  }
 }
 .md-row-reading {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  flex: 0 0 auto;
-  min-width: 56px;
   text-align: right;
 }
 .md-row-value {
@@ -5544,10 +5398,6 @@ input[type="number"] {
 .md-section-head > .health-section-title {
   margin: 0;
   min-width: 0;
-}
-.md-head-btn {
-  flex: 0 0 auto;
-  white-space: nowrap;
 }
 .md-foot-btn,
 .md-back,
@@ -5656,20 +5506,34 @@ input[type="number"] {
 }
 .md-history-row {
   display: flex;
-  align-items: center;
+  /* The value on its date's baseline (design re-check 2026-11-06). */
+  align-items: baseline;
+  padding: 10px 0;
   justify-content: space-between;
   gap: 8px;
   min-height: 44px;
   border-top: 1px solid var(--bt-ink-100, #eceef0);
 }
 .md-history-day {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-text-secondary);
 }
 .md-history-row .bt-cell-value,
 .md-history-row .bt-cell-input {
   min-width: 96px;
   justify-content: flex-end;
+}
+/* The value on the card's right edge with its unit, no grid divider (design review 2026-11-06). */
+.md-history-row .bt-cell-value {
+  flex: 0 0 auto;
+  align-items: flex-end;
+  padding-right: 0;
+  border-left: 0;
+}
+.md-history-row .alr-cell-unit {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
 }
 .md-history-bp {
   display: flex;
@@ -5701,4 +5565,862 @@ input[type="number"] {
   font-size: 14px;
   font-weight: 600;
   color: var(--bt-ink-900);
+}
+
+/* ─── US-62 phase 5: My health (the iPhone's MyDataView), calm (AC28) ───── */
+.mh-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+}
+.mh-title {
+  flex: 0 0 auto;
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--color-text);
+}
+.mh-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+}
+/* Sign in, or the reconnect: quiet teal text on the title's line (My health's on desktop,
+   Account's on a phone, and a phone's My health while a reconnect waits), the iPhone's toolbar
+   button, not a box (Brad 2026-11-06). A long label shortens; the title never wraps. */
+.mh-header-actions .action-btn-small,
+.mh-header-actions .action-btn-small:hover,
+.mh-header > .action-btn-small,
+.mh-header > .action-btn-small:hover {
+  min-height: 44px;
+  max-width: 14em;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--color-brand-text);
+  font-size: 15px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mh-header-actions .action-btn-small:hover,
+.mh-header > .action-btn-small:hover {
+  text-decoration: underline;
+}
+/* A connected record's state is status, not a call to action (Brad 2026-11-09). */
+.hr-storage-state {
+  max-width: 14em;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* On a phone the title line is gone: an alert or a waiting save gets its own line. */
+.mh-header > .hr-sync-error,
+.mh-header > .hr-storage-state,
+.hr-tabpanel > .hr-sync-error {
+  display: block;
+  margin: 8px 0;
+}
+.mh-header-actions .action-btn-small:focus-visible {
+  outline: 2px solid var(--color-brand-text);
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+.mh-person-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-brand-text);
+  cursor: pointer;
+}
+.mh-person-btn[aria-expanded="true"] {
+  background: rgba(0, 0, 0, 0.06);
+}
+.mh-person-btn:focus-visible,
+.mh-pill:focus-visible,
+.mh-banner:focus-visible,
+.mh-info-btn:focus-visible,
+.mh-head-icon-btn:focus-visible,
+.health-tool .mh-nav-link:focus-visible {
+  outline: 2px solid var(--color-brand-text);
+  outline-offset: 2px;
+}
+.mh-sections,
+.mh-topics,
+.mh-pdf,
+.mh-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+/* "Your plan is ready." (US-62 AC31): one calm card, its Got it the accent's text button. */
+.mh-ready-title {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.mh-ready-title:focus {
+  outline: none;
+}
+.mh-ready-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+}
+.mh-ready-btn,
+.mh-ready-btn:hover {
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-brand-text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.mh-ready-btn:focus-visible {
+  outline: 2px solid var(--color-brand-text);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+/* Three pills of one width under the title, a phone's only; they scroll with the page (US-62 AC17). */
+.mh-pills {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.mh-pill {
+  min-height: 44px;
+  padding: 0 8px;
+  border: 1px solid var(--color-gray-border, #d9dde3);
+  border-radius: 22px;
+  background: #fff;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+/* The urgent banner: white on the urgent red, an outline icon before its words. */
+.mh-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 14px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--color-grade-bad-text);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.mh-banner-icon {
+  flex: 0 0 auto;
+}
+.mh-topic {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scroll-margin-top: 12px;
+}
+.mh-topic .section-card {
+  margin-bottom: 0;
+}
+.mh-topic-head {
+  margin: 8px 4px 0;
+}
+.mh-topic-head .health-section-title {
+  font-size: 20px;
+  scroll-margin-top: 12px;
+}
+.mh-topic-head .health-section-title:focus,
+.mh-card:focus,
+.mh-settings-title:focus {
+  outline: none;
+}
+.mh-card {
+  scroll-margin: 80px 0;
+}
+.mh-card:focus-visible > .suggestion-card {
+  box-shadow: 0 0 0 2px var(--color-brand-text);
+}
+/* The rows carry their own 8px padding, so the card adds only 4px above and below. !important
+   because a phone forces 12px on every .section-card (max-width 768px), which stacked to 20px. */
+.mh-rows-card.section-card {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+.mh-head-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-brand-text);
+  font: inherit;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* A suggestion card on My health (AC28): one neutral white card; a status is a word and a dot. */
+.suggestion-card.suggestion-card--calm,
+.suggestion-card.suggestion-card--calm:hover {
+  margin: 0;
+  background: #fff;
+  border: 0;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  padding: 16px 18px;
+  transform: none;
+  animation: none;
+}
+.suggestion-card--calm .suggestion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 6px;
+  min-height: 0;
+}
+.suggestion-card--calm .suggestion-title,
+.suggestion-card--calm .suggestion-title a,
+.suggestion-card--calm .suggestion-body:hover .suggestion-title {
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0 0 4px;
+}
+.suggestion-card--calm .suggestion-desc {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+.suggestion-card--calm .evidence-toggle {
+  color: var(--color-brand-text);
+}
+.suggestion-card--calm .guideline-tag {
+  background: var(--bt-ink-50);
+  border-color: transparent;
+  color: var(--color-text-secondary);
+}
+.suggestion-card--calm .suggestion-subsection {
+  border: 0;
+  border-top: 1px solid var(--bt-ink-100);
+  border-radius: 0;
+  background: none;
+  padding: 12px 0 0;
+  margin: 12px 0 0;
+}
+.suggestion-card--calm .grouped-subsections > .suggestion-subsection:first-child {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+.mh-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.mh-status::before,
+.mh-row-suggestion.suggestion-attention .mh-row-suggestion-text::before,
+.mh-row-suggestion.suggestion-urgent .mh-row-suggestion-text::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.mh-status--urgent,
+.mh-row-suggestion.suggestion-urgent .mh-row-suggestion-text::before { color: var(--color-grade-bad-text); }
+.mh-status--attention,
+.mh-row-suggestion.suggestion-attention .mh-row-suggestion-text::before { color: var(--color-grade-warn-text); }
+
+/* Medicines: a plain group under the section's own title (AC20, AC28). */
+.mh-group-label {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.01em;
+}
+.mh-topics .medication-cascade .health-section-desc,
+.mh-topics .screening-cascade .health-section-desc {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0 0 12px;
+}
+/* Callouts keep one 16px gap below them. */
+.mh-topics .screening-notice,
+.mh-topics .screening-age-message {
+  margin: 0 0 16px;
+}
+/* The quiet fill: a suggestion on its question (AC20). */
+.mh-row-suggestion {
+  border: 0;
+  border-radius: 10px;
+  background: var(--bt-ink-50);
+}
+.mh-row-suggestion {
+  margin: 8px 0 16px;
+  padding: 10px 12px;
+}
+.mh-row-suggestion-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mh-row-suggestion-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.mh-row-suggestion-text::before {
+  margin: 0 8px 1px 0;
+}
+.mh-info-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: -8px -10px -8px 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.mh-info-btn > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--color-brand-text);
+  border-radius: 50%;
+  color: var(--color-brand-text);
+  font: 600 12px/1 inherit;
+}
+.mh-row-suggestion-detail {
+  padding: 4px 0 2px;
+  font-size: 14px;
+}
+.mh-row-suggestion-title {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+/* A new or changed suggestion (US-07 AC3): one soft teal glow on its card or row, whatever
+   its priority; then it fades back to the card's own fill. */
+.suggestion-card.suggestion-card--calm.suggestion-highlight,
+.suggestion-card--calm .suggestion-highlight,
+.mh-row-suggestion.suggestion-highlight {
+  background-color: rgba(0, 163, 139, 0.08);
+  animation: highlight-fade-in 0.5s ease backwards;
+}
+.suggestion-card.suggestion-card--calm.suggestion-fade-out { background-color: #fff; }
+.suggestion-card--calm .suggestion-fade-out { background-color: transparent; }
+.mh-row-suggestion.suggestion-fade-out { background-color: var(--bt-ink-50); }
+.suggestion-card.suggestion-card--calm.suggestion-fade-out,
+.suggestion-card--calm .suggestion-fade-out,
+.mh-row-suggestion.suggestion-fade-out {
+  animation: mh-glow-out 0.5s ease !important;
+}
+@keyframes mh-glow-out {
+  from { background-color: rgba(0, 163, 139, 0.08); }
+}
+
+/* "All results as a table": the list's last row, left-aligned (AC22). */
+.mh-topics .md-foot {
+  justify-content: flex-start;
+  padding: 0;
+  border-top: 1px solid var(--bt-ink-100);
+}
+.mh-topics .md-foot .md-foot-btn {
+  width: 100%;
+  min-height: 48px;
+  text-align: left;
+}
+/* Add blood test at the foot of Blood tests' rows (AC22): a row like the rows' Add, then one
+   clean grid with a full-width select, one light border per input, a readable disabled Save. */
+.mh-add-test {
+  border-top: 1px solid var(--bt-ink-100);
+  padding: 8px 0;
+}
+/* Add another supplement, the same row (Brad 2026-11-09); the card's section pads below it,
+   and with no list above it, no line. */
+.supplement-add.mh-add-test {
+  margin-top: 0;
+  padding-bottom: 0;
+}
+.supplement-add.mh-add-test:first-child {
+  border-top: 0;
+}
+/* 16px or iOS zooms the page on focus, and the zoom moved the list under the finger (US-62 AC30e);
+   each option a 44px target. */
+.supplement-add.mh-add-test input,
+.mh-add-test .supplement-dropdown-item {
+  min-height: 44px;
+  font-size: 16px;
+}
+.mh-add-test .alr-add-btn,
+.mh-add-test .alr-add-btn:hover {
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: none;
+  font-size: 15px;
+  font-weight: 500;
+  text-align: left;
+  color: var(--color-brand-text);
+}
+/* On the card's own ground, no box in the box (design review 2026-11-06). */
+.mh-add-test .alr-add-form {
+  margin: 4px 0 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.mh-add-test .alr-add-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.mh-add-test .alr-add-select,
+.mh-add-test .alr-add-name {
+  grid-column: 1 / -1;
+}
+.mh-add-test .alr-add-select,
+.mh-add-test .alr-add-input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--bt-ink-200);
+  box-shadow: none;
+  font-size: 16px; /* 16px or iOS zooms on focus */
+}
+.mh-add-test .alr-add-save,
+.mh-add-test .alr-add-cancel {
+  min-height: 44px;
+  font-size: 15px;
+}
+.mh-add-test .alr-add-save {
+  background: var(--color-brand-text);
+  border-color: var(--color-brand-text);
+}
+.mh-add-test .alr-add-save:disabled {
+  opacity: 0.45; /* still the teal button, waiting for a value */
+  color: #fff;
+}
+
+/* Settings (AC24): one heading level, plain group labels, the storage question in plain text. */
+.mh-settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.mh-settings-title {
+  margin: 0;
+}
+.mh-settings-done {
+  min-height: 44px;
+  font-weight: 600;
+}
+.mh-settings > .section-card {
+  margin: 12px 0 0;
+  padding: 0 !important; /* beats a phone card's forced 12px: one content edge in Settings and Account (US-62 AC34) */
+  box-shadow: none;
+}
+.mh-settings .delete-data-section {
+  margin-top: 16px;
+  text-align: left;
+}
+.mh-settings .delete-data-link {
+  font-size: 14px;
+}
+.mh-settings .about-card .health-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+.mh-settings .about-card .section-icon {
+  display: none;
+}
+.mh-settings .hr-sync,
+.mh-foot-storage .hr-sync {
+  background: #fff;
+  border: 0;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+/* Inside Settings the card is one more group of the sheet, not a box in a box. */
+.mh-settings .hr-sync {
+  gap: 8px 12px;
+  box-shadow: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+/* The foot is quiet (design review 2026-11-06): the disclaimer needs no frame, and
+   "Send feedback" is a link beside "View source code", not a second filled button. */
+.mh-foot .health-disclaimer {
+  border: 0;
+  background: none;
+  padding: 0;
+}
+.mh-foot .feedback-btn,
+.mh-foot .feedback-btn:hover {
+  min-height: 44px;
+  padding: 0 4px;
+  background: none;
+  color: var(--color-brand-text);
+  font-weight: 600;
+}
+.mh-foot .feedback-btn:hover {
+  text-decoration: underline;
+}
+/* Settings keep the storage button's own filled style, a control, not a heading (US-62 AC35a):
+   on desktop it hugs its words; Account's spans the card, the one sign-in (AC34). */
+.mh-settings .hr-sync .hr-sync-btn-full {
+  width: auto;
+  min-height: 44px;
+  padding: 0 18px;
+  font-size: 15px;
+}
+.mh-foot-storage .hr-sync .hr-sync-btn {
+  width: auto;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 600;
+  text-align: left;
+}
+.mh-account .hr-sync .hr-sync-btn {
+  width: 100%;
+  text-wrap: balance;
+  min-height: 44px;
+  font-size: 16px;
+}
+/* A phone's Account is the iPhone's inset grouped list (US-62 AC35b, MyDataView.swift settingsList):
+   no outer card, each part a white 12px group on the page grey, a quiet heading above its group. */
+.mh-account .mh-settings {
+  background: none;
+  box-shadow: none;
+  padding: 8px 0 16px;
+}
+.mh-account .mh-settings-head {
+  padding: 0 16px; /* the title, the headings and the rows share one left edge */
+}
+.mh-account .mh-settings > .hr-sync,
+.mh-account .mh-settings > .section-card > .basic-info-units,
+.mh-account .mh-settings .about-card .prefill-fields-wrapper,
+.mh-account .mh-settings .hr-reminders-section > .hr-sync,
+.mh-account .mh-settings > .delete-data-section {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: none;
+  padding: 12px 16px;
+}
+.mh-account .mh-settings > .hr-sync,
+.mh-account .mh-settings > .delete-data-section {
+  margin-top: 16px;
+}
+.mh-account .mh-settings > .hr-sync {
+  padding: 16px;
+}
+.mh-account .mh-settings > .section-card {
+  margin-top: 16px;
+  background: none;
+}
+.mh-account .mh-settings > .section-card > .basic-info-units {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+}
+.mh-account .mh-settings .about-card .health-section {
+  padding: 0;
+}
+.mh-account .mh-settings .about-card .prefill-fields-wrapper {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.mh-account .about-card .hr-section-card-header,
+.mh-account .hr-reminders-heading {
+  padding: 0 16px;
+  margin: 8px 0 6px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.mh-account .hr-reminders-heading {
+  font-weight: 600;
+}
+.mh-account .hr-reminders-section {
+  margin: 16px 0 0;
+}
+.mh-account .about-card .basic-info-units {
+  margin: 0;
+}
+.mh-account .mh-settings > .delete-data-section {
+  padding: 0;
+}
+.mh-account .delete-data-link {
+  width: 100%;
+  min-height: 44px;
+  font-size: 16px;
+  text-decoration: none;
+}
+/* The latest value leads the page, large, as the iPhone's metric page (design review 2026-11-06). */
+.md-page-latest {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  margin: 4px 0 6px;
+}
+.md-page-latest-value {
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+.md-page-latest-unit {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+}
+.md-page-latest-day {
+  flex-basis: 100%;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+/* The tiles on a page: one row of plain stats, parted by a hairline, not boxes in a grid. */
+.md-page .md-page-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 8px 0 4px;
+}
+.md-page .md-page-tiles .stat-card,
+.md-page .md-page-tiles .stat-card:hover {
+  flex: 1 1 0;
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+  padding: 8px 12px;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  transform: none;
+  border-left: 1px solid var(--bt-ink-100);
+}
+.md-page .md-page-tiles .stat-card:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.md-page .md-page-tiles .stat-card-open {
+  flex-basis: 100%;
+}
+/* Tile words 13px or more, on one line each (design re-check 2026-11-06). */
+.md-page .md-page-tiles .stat-card > span:not(.stat-value) {
+  font-size: 13px;
+}
+.md-page .md-page-tiles .stat-label {
+  white-space: nowrap;
+}
+/* A phone: two tiles a row, so "Ideal Body Weight" never breaks mid-label. */
+@media (max-width: 768px) {
+  .md-page .md-page-tiles {
+    row-gap: 8px;
+  }
+  .md-page .md-page-tiles .stat-card {
+    flex: 0 0 50%;
+  }
+  .md-page .md-page-tiles .stat-card:nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
+  }
+}
+.md-page-link {
+  display: block;
+  min-height: 44px;
+}
+
+/* US-62 AC27: on desktop the sections the page holds, listed beside them, sticky; the one being
+   read marked in the iPhone's green, a red dot on one holding an urgent card. */
+.mh-nav {
+  display: none;
+}
+.health-tool .mh-nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.health-tool .mh-nav-list > li {
+  margin: 0;
+  padding: 0;
+}
+.health-tool .mh-nav-link,
+.health-tool .mh-nav-link:visited {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.3;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.health-tool .mh-nav-link:hover {
+  color: var(--color-text);
+  background: rgba(0, 0, 0, 0.04);
+  text-decoration: none;
+}
+.health-tool .mh-nav-link--active,
+.health-tool .mh-nav-link--active:hover {
+  color: var(--color-brand-text);
+  background: rgba(0, 163, 139, 0.1);
+  font-weight: 600;
+}
+.mh-nav-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.mh-nav-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-grade-bad-text);
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
+}
+@media (prefers-reduced-motion: reduce) {
+  .health-tool .mh-nav-link { transition: none; }
+}
+
+/* The placeholder tiles before a plan: grey words, not a status colour, and no box. */
+.stat-card--awaiting .stat-status {
+  color: var(--color-text-secondary);
+  background: none;
+}
+
+@media (min-width: 769px) {
+  .mh-header {
+    min-height: 28px;
+  }
+  .mh-sections {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 760px);
+    column-gap: 40px;
+    align-items: start;
+  }
+  .mh-pills {
+    display: none;
+  }
+  .mh-nav {
+    display: block;
+    position: sticky;
+    top: 24px;
+    padding-top: 4px;
+  }
+}
+
+/* A phone: the cards' 10px gutter; every control a 44px target (Brad 2026-11-06). */
+@media (max-width: 768px) {
+  /* Option A (Brad 2026-11-09, US-62 AC34): Sign in and Settings live in the Account tab, and
+     the tab bar names the screen, so My health draws no header row at all. The title stays for
+     screen readers and as the focus a landing or a dismissed card moves to. */
+  .mh-header {
+    display: contents;
+  }
+  .mh-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+  .mh-pdf,
+  .mh-page > .mh-ready,
+  .mh-topics > .health-records-section,
+  .mh-pills,
+  .mh-banner,
+  .mh-topic-head,
+  .mh-foot,
+  .mh-foot-storage,
+  .mh-topic .section-card,
+  .mh-topic > .mh-card,
+  .mh-topic > .us-ownership,
+  .mh-page > .quick-stats,
+  .mh-page > .plan-empty-preview {
+    margin-left: 10px;
+    margin-right: 10px;
+  }
+  .md-foot-btn,
+  .md-back,
+  .feedback-btn {
+    min-height: 44px;
+  }
+  /* A unit pill is small to read but 44px to press; on a phone it names the system alone,
+     so "Starting info" never wraps beside it. */
+  .health-tool .unit-toggle-pill {
+    position: relative;
+  }
+  .unit-pill-detail {
+    display: none;
+  }
+  .health-tool .unit-toggle-pill::after {
+    content: '';
+    position: absolute;
+    inset: -13px -6px;
+  }
 }

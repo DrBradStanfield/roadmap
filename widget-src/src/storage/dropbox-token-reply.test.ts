@@ -5,7 +5,7 @@
  * Synthetic replies; no network.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { StorageError } from '@roadmap/health-core';
+import { StorageError } from '@roadmap/health-core/adapter';
 import { DropboxAdapter } from './dropbox';
 
 const CONFIG = { clientId: 'test-app-key', redirectUri: 'https://example.com/' };
@@ -93,5 +93,38 @@ describe('US-09 AC1a: a refresh refuses an incomplete token reply and keeps the 
       .mockResolvedValue(json({ email: 'Someone@Example.com', email_verified: true })));
     expect(await new DropboxAdapter(CONFIG).accountEmail()).toBe('someone@example.com');
     expect(stored()).toMatchObject({ accessToken: 'at-new', refreshToken: 'rt-old' });
+  });
+});
+
+// US-09 AC1a (2026-11-06): a 200 whose body is not JSON (a wifi sign-in page,
+// a proxy's HTML) fails like any incomplete reply. Before, `res.json()` threw a
+// bare SyntaxError, which is not a storage failure, so the page stayed blank.
+describe('US-09 AC1a: a token reply that is not JSON is refused as a storage failure', () => {
+  const html = () => new Response('<html><body>Sign in to the wifi</body></html>', { status: 200, headers: { 'Content-Type': 'text/html' } });
+
+  it('at connect: StorageError, nothing kept', async () => {
+    vi.stubGlobal('sessionStorage', storage(new Map([[PKCE_KEY, JSON.stringify({ verifier: 'v', state: 's' })]])));
+    vi.stubGlobal('window', { location: { search: '?code=c&state=s' }, history: { replaceState: vi.fn() } });
+    vi.stubGlobal('fetch', vi.fn(async () => html()));
+    await expect(DropboxAdapter.completeRedirect(CONFIG)).rejects.toBeInstanceOf(StorageError);
+    expect(local.has(TOKEN_KEY)).toBe(false);
+  });
+
+  it('at refresh: StorageError, old tokens kept', async () => {
+    const OLD = { accessToken: 'at-old', refreshToken: 'rt-old', expiresAt: Date.now() - 1000 };
+    local.set(TOKEN_KEY, JSON.stringify(OLD));
+    const fetchMock = vi.fn().mockResolvedValueOnce(html()).mockResolvedValue(json({ email: 'someone@example.com', email_verified: true }));
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(new DropboxAdapter(CONFIG).accountEmail()).rejects.toBeInstanceOf(StorageError);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(stored()).toEqual(OLD);
+  });
+
+  it('at refresh, after a disconnect elsewhere: says so and keeps nothing in memory', async () => {
+    local.set(TOKEN_KEY, JSON.stringify({ accessToken: 'at-old', refreshToken: 'rt-old', expiresAt: Date.now() - 1000 }));
+    const adapter = new DropboxAdapter(CONFIG);
+    vi.stubGlobal('fetch', vi.fn(async () => { local.delete(TOKEN_KEY); return html(); }));
+    await expect(adapter.accountEmail()).rejects.toThrow(/disconnected/);
+    expect(adapter.isConnected()).toBe(false);
   });
 });

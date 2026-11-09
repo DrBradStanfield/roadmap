@@ -8,13 +8,15 @@ this page because the app uses Apple Health (App Store Review Guideline 5.1.3). 
 `app/lib/app-*.server.ts`, `app/routes/api.app.v1.*`, the app branch of
 `app/routes/api.chat.ts` (D9: no row) and the `app_attest_keys` section of
 `supabase/rls-policies.sql`. The engine update paragraph describes D3, which was being
-built that day: re-audit it when it merges. The section on heart rate, resting heart rate,
+built that day: re-audit it when it merges. The section on resting heart rate,
 sleep, VO2 max and steps was rewritten on 2026-10-27 from the code of the change that keeps
 the cards' readings on the phone (US-56 AC2, not yet committed; commit: to fill in). On
 2026-10-30 the text was brought in line with docs/writing-style.md and the line on the
 website's chat was corrected (it keeps replies too, on the blog bubble). Republished
 30 October 2026. Re-audited 2026-10-30 for US-15 AC44 (the website keeps a copy of health
-questions). Republished 31 October 2026, when the archive was switched on.
+questions). Republished 31 October 2026, when the archive was switched on. On 2026-11-05 heart rate
+came out (US-73: the app no longer shows it, so it no longer reads or keeps it); republish
+once that build ships.
 
 This policy covers the Health Roadmap iPhone app, made by DR BRAD, INC. It adds to our
 main [privacy policy](https://drstanfield.com/policies/privacy-policy). The website has its
@@ -41,10 +43,9 @@ cloud until you delete it.
 
 ## Apple Health
 
-The app uses Apple Health only if you allow it. It reads weight, height, waist and blood
-pressure, and adds them to your record. It writes the weight, waist and blood pressure in
+The app uses Apple Health only if you allow it. It reads weight, height, waist, blood pressure and, with Health Records, lab results, and adds them to your record. It writes the weight, waist and blood pressure in
 your record to Apple Health, except readings that came from Apple Health in the first place.
-It never writes height. It does not read blood tests or Health Records.
+It never writes height. Where your iPhone supports Health Records, it also asks to read lab results your healthcare provider sent to Health. It reads lab results only, keeps the ones its plan uses (such as cholesterol, HbA1c and creatinine) in your record, and never writes to Health Records. If you use the chat, they can be part of the record summary each question carries.
 
 When you connect Apple Health during setup, it also reads your sex and your date of birth.
 It saves your sex and the month and year you were born to your record straight away,
@@ -61,21 +62,20 @@ A value imported from Apple Health becomes part of your record, so it goes where
 goes: this iPhone, the Dropbox or Google Drive you connect, and, if you use the chat, the
 summary of your record that each question carries (below). The app sends it nowhere else.
 
-### Heart rate, resting heart rate, sleep, VO2 max and steps
+### Resting heart rate, sleep, VO2 max and steps
 
-These five are different. They never go into your record. The app asks to read them in the same
+These four are different. They never go into your record. The app asks to read them in the same
 Apple Health permission as everything else, all at once, when you connect Apple Health during
-setup, or later from "Connect Apple Health" in My data. If you connected before this was
-added, My data offers "Turn On", which shows the same permission (iOS lists only what it
+setup, or later from "Connect Apple Health" in Settings (the person button on My health). If
+you connected before this was added, My health offers "Turn On", which shows the same permission (iOS lists only what it
 has not asked you yet) and also brings in any new weight, height, waist and blood pressure
 readings, as connecting does. If you said no, or Apple Health has none of these readings, My
-data shows an "Open Settings" button. Once you have answered, iOS does not ask again, so the
+health shows an "Open Settings" button. Once you have answered, iOS does not ask again, so the
 button opens Settings (on recent iOS versions, at its top page). From there, the path under
 the button leads to the app's Apple Health page, where you can turn the readings on. So the
 cards and charts show at once, the app keeps a copy of these readings on this iPhone only:
 each card's latest reading, with its date and the values behind its trend line; each chart's
-history, as one value a day (steps as the day's total, heart rate as the day's lowest,
-highest and average, the others as the day's average); the last week of hourly values for
+history, as one value a day (steps as the day's total, the others as the day's average); the last week of hourly values for
 the day view; and sleep's recorded stages, with their times, which app recorded them and Apple Health's id for each; each file also notes the phone's time zone.
 Each time a card or chart shows, it checks Apple Health for changes and updates the copy. These files sit in the app's private storage, apart from your record, and are not
 backed up to iCloud or to a computer. When the phone has a passcode, they are encrypted
@@ -85,7 +85,7 @@ Health Roadmap website or our server. The app sends them nowhere. If Apple Healt
 nothing back, or iOS asks for permission again, the app deletes these files. Clarity learns
 only that one of these pages was opened, never which one or any value. "Delete all my data"
 deletes them; while the app can still read Apple Health, it keeps new ones the next time it
-shows the cards and charts. The app writes none of these five to Apple Health, so the
+shows the cards and charts. The app writes none of these four to Apple Health, so the
 readings themselves stay where they are: in Apple Health, under your Apple settings.
 
 ## Chat

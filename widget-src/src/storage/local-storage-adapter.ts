@@ -11,14 +11,7 @@
 import {
   DOC_KEY_PREFIX, localHealthWritesStopped, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem, stopLocalHealthWrites,
 } from '../lib/storage';
-import {
-  ConflictError,
-  ROADMAP_FILE_NAME,
-  StorageError,
-  type ReadResult,
-  type StorageAdapter,
-  type WriteResult,
-} from '@roadmap/health-core';
+import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 
 // The roadmap file keeps its ORIGINAL keys (existing users' device data lives
 // under them); other named files (chat-history.json, …) get namespaced keys.
@@ -174,6 +167,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     try {
       localStorage.setItem(fileKey(fileName), written);
     } catch (error) {
+      noteRecordSave(fileName, false);
       throw new StorageError(FULL, undefined, error);
     }
     try {
@@ -186,8 +180,10 @@ export class LocalStorageAdapter implements StorageAdapter {
       // removing a key cannot hit the quota, and every tab then re-reads.
       const restored = safeGetItem(fileKey(fileName)) === written && restoreItem(fileKey(fileName), previous);
       if (!restored) safeRemoveItem(versionKey(fileName));
+      noteRecordSave(fileName, safeGetItem(fileKey(fileName)) === written);
       throw new StorageError(FULL, restored ? undefined : 'This change may have been stored. Read the record again before trying it a second time.', error);
     }
+    noteRecordSave(fileName, true);
     return { version: next };
   }
 
@@ -196,6 +192,15 @@ export class LocalStorageAdapter implements StorageAdapter {
    *  AC9). Cheap, so a tab can ask each time it comes back (US-34 AC6). */
   revision(fileName: string): string | null {
     return safeGetItem(fileKey(fileName)) == null ? null : safeGetItem(versionKey(fileName)) ?? '0';
+  }
+
+  /** Remove the file at the revision it was read at, as writeSync checks:
+   *  another tab's write since stays (US-06 AC13). */
+  removeSync(fileName: string, expectedVersion: string | null): void {
+    const current = this.revision(fileName);
+    if (expectedVersion !== current) throw new ConflictError(`expected version ${expectedVersion}, but local is ${current}`);
+    safeRemoveItem(fileKey(fileName));
+    safeRemoveItem(versionKey(fileName));
   }
 
   /** Another tab's save. The browser fires `storage` in every OTHER tab of
@@ -232,6 +237,24 @@ export class LocalStorageAdapter implements StorageAdapter {
 }
 
 const FULL = 'Could not save on this device (local storage may be full).';
+
+/** US-01 AC5: the last write of the record on this device was refused and
+ *  left none of its change stored. Set and cleared here, at the write, the
+ *  one place that knows; the guest's status line listens for the event. */
+export const LOCAL_SAVE_EVENT = 'hr:local-save-changed';
+let saveRefused = false;
+export function localSaveRefused(): boolean {
+  return saveRefused;
+}
+function noteRecordSave(fileName: string, stored: boolean): void {
+  if (fileName !== ROADMAP_FILE_NAME || saveRefused === !stored) return;
+  saveRefused = !stored;
+  try {
+    window.dispatchEvent(new Event(LOCAL_SAVE_EVENT));
+  } catch {
+    /* non-browser environment */
+  }
+}
 
 /** Put a key back as it was (`null`: absent). False when the write refuses. */
 function restoreItem(key: string, value: string | null): boolean {

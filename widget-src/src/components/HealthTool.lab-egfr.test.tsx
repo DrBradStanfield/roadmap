@@ -8,7 +8,9 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, waitFor, act } from '@testing-library/react';
-import { buildChatContextJson, calculateEGFR, type ChatContextPayload, type HealthResults } from '@roadmap/health-core';
+import { buildChatContextJson, type ChatContextPayload } from '@roadmap/health-core/chat-context';
+import { calculateEGFR } from '@roadmap/health-core/calculations';
+import type { HealthResults } from '@roadmap/health-core/types';
 import { useHealthToolLifecycle } from '../testing/health-tool-harness';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveLabValues, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
@@ -22,14 +24,15 @@ vi.mock('../lib/server-api', async (importOriginal) => ({
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const seen = vi.hoisted(() => ({ panel: null as null | Record<string, any>, results: null as HealthResults | null, chat: null as null | (() => ChatContextPayload | null) }));
+const seen = vi.hoisted(() => ({ panel: null as null | Record<string, any>, results: null as HealthResults | null, tiles: [] as Array<{ label: string; value: string }>, chat: null as null | (() => ChatContextPayload | null) }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: ({ guestInputs }: { guestInputs: () => ChatContextPayload | null }) => { seen.chat = guestInputs; return null; } }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 vi.mock('./InputPanel', () => ({ InputPanel: (props: Record<string, unknown>) => { seen.panel = props; return null; } }));
 vi.mock('./ResultsPanel', async (importOriginal) => {
   const real = await importOriginal<typeof import('./ResultsPanel')>();
-  return { ResultsPanel: (props: { results: HealthResults | null }) => { seen.results = props.results; return <real.ResultsPanel {...(props as Parameters<typeof real.ResultsPanel>[0])} />; } };
+  // The plan My health draws (US-62 phase 5): what usePlanView is given.
+  return { ...real, usePlanView: (options: Parameters<typeof real.usePlanView>[0]) => { seen.results = options.results; seen.tiles = options.tiles; return real.usePlanView(options); } };
 });
 
 import { HealthTool } from './HealthTool';
@@ -45,8 +48,9 @@ async function seed(creatinine: Array<[value: number, day: string]>, lab: [value
   await flushRoadmapStore();
 }
 
-const eGFRTile = (container: HTMLElement) => Array.from(container.querySelectorAll('.stat-card'))
-  .find((c) => c.querySelector('.stat-label')?.textContent === 'eGFR')?.querySelector('.stat-value')?.textContent;
+// The eGFR tile the plan hands My health (on the creatinine page since US-62 AC26).
+const eGFRTile = (_container: HTMLElement) => seen.tiles
+  ?.find((t) => t.label === 'eGFR')?.value;
 const chatEGFR = () => JSON.parse(buildChatContextJson(seen.chat!()!)!).derivedValues.eGFR;
 
 useHealthToolLifecycle();

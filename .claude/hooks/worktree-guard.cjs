@@ -8,8 +8,9 @@
 //                                 Bash writes (sed -i, >, cp) are NOT covered.
 //   Stop                          in a linked worktree, block ending the turn (once) while work is uncommitted,
 //                                 unpushed, or pushed with neither an open PR nor a merge into origin/main.
-//   SessionStart                  report local worktrees holding unlanded work, and uncommitted files in the main
-//                                 checkout.
+//   SessionStart                  report local worktrees holding unlanded work, uncommitted files in the main
+//                                 checkout, and merged worktrees not yet removed (with their worktree-done line,
+//                                 or "in use" when used in the last day).
 // Skipped in cloud sessions (CLAUDE_CODE_REMOTE=true: the loops commit to main from their own checkout, LOOP.md
 // landing check) and when CLAUDE_MAIN_CHECKOUT_WRITES=1 (an unattended local job that commits to main itself; none
 // in this repo today). Fails open on any git or gh error: the GitHub watches (stranded-branch-watch,
@@ -186,6 +187,9 @@ if (event === 'PreToolUse') {
 
 if (event === 'Stop') {
   if (!inWorktree || input.stop_hook_active) process.exit(0);
+  // Heartbeat: a session that ended a turn here is alive; SessionStart reads this file's mtime (a session idle
+  // for a day writes no index, so the git dir alone would offer its worktree for removal).
+  try { fs.writeFileSync(path.join(git(top, ['rev-parse', '--absolute-git-dir']), 'session-heartbeat'), ''); } catch { /* best effort */ }
   const problems = [];
   let branch = '';
   try {
@@ -213,6 +217,8 @@ if (event === 'Stop') {
 
 if (event === 'SessionStart') {
   const notes = [];
+  const merged = []; // landed worktrees nobody finished (56 on 2026-11-06), each with the line that finishes it
+  let mainLine = null;
   let blocks = [];
   try { blocks = git(main, ['worktree', 'list', '--porcelain']).split('\n\n'); } catch { /* fall through */ }
   for (const block of blocks) {
@@ -222,11 +228,24 @@ if (event === 'SessionStart') {
       const w = real(wt);
       if (same(w, main) || same(w, top)) continue;
       const br = ((block.match(/^branch refs\/heads\/(.+)$/m) || [])[1]) || '(detached)';
+      // Used in the last day: index, HEAD or the Stop hook's heartbeat in its git dir changed, worktree-done.sh's own test. Read before
+      // landing(), whose `git status` may rewrite the index.
+      const gd = git(w, ['rev-parse', '--absolute-git-dir']);
+      const recent = ['index', 'HEAD', 'session-heartbeat'].some((f) => { try { return Date.now() - fs.statSync(path.join(gd, f)).mtimeMs < 864e5; } catch { return false; } });
       const s = landing(w);
       const dirty = s.dirty ? s.dirty.split('\n').length : 0;
       const ahead = s.ahead();
       if (dirty || s.localOnly !== '0' || ahead !== '0') {
         notes.push(`- ${path.relative(main, w)} [${br}]: ${dirty} uncommitted file(s), ${s.localOnly} unpushed commit(s), ${ahead} not on origin/main`);
+      } else if (same(path.dirname(w), path.join(main, '.claude', 'worktrees'))) {
+        // Landed: merged, unless HEAD is a commit of main's own line (a fresh worktree with nothing of its own yet).
+        mainLine = mainLine || new Set(git(main, ['rev-list', '--first-parent', 'origin/main']).split('\n'));
+        if (!mainLine.has(git(w, ['rev-parse', 'HEAD']))) {
+          // A merged session may still be deploying or verifying there, and worktree-done by name skips the
+          // lock and last-used checks: offer no removal line for a worktree in recent use.
+          merged.push(`- ${path.relative(main, w)} [${br}]: ` + (recent ? 'merged, in use (changed in the last day); leave it'
+            : `merged; if no session still uses it, bash tools/worktree-done.sh ${path.basename(w)}`));
+        }
       }
     } catch { /* one unreadable worktree must not hide the rest */ }
   }
@@ -252,9 +271,17 @@ if (event === 'SessionStart') {
     const mainDirty = git(main, ['status', '--porcelain']).split('\n').filter(Boolean);
     if (mainDirty.length) notes.push(`- main checkout: ${mainDirty.length} uncommitted file(s), e.g. ${mainDirty.slice(0, 5).map((l) => l.slice(3)).join(', ')}`);
   } catch { /* skip */ }
-  if (!notes.length) process.exit(0);
-  out({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext:
-    'Unlanded git work on this machine (another session may still own it; leave it alone unless Brad asks, but '
-    + 'mention it in your final message if it looks abandoned; docs/git-workflow.md):\n' + notes.join('\n') } });
+  if (!notes.length && !merged.length) process.exit(0);
+  const parts = [];
+  if (notes.length) {
+    parts.push('Unlanded git work on this machine (another session may still own it; leave it alone unless Brad asks, but '
+      + 'mention it in your final message if it looks abandoned; docs/git-workflow.md):\n' + notes.join('\n'));
+  }
+  if (merged.length) {
+    parts.push('Merged worktrees not yet removed (worktree-done refuses anything not landed, but by name it removes a '
+      + 'live session\'s worktree: run it from the main checkout only for those given a line, never one in use):\n'
+      + merged.join('\n'));
+  }
+  out({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: parts.join('\n\n') } });
 }
 process.exit(0);

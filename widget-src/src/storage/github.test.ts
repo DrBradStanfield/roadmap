@@ -11,7 +11,7 @@
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import type { Mock } from 'vitest';
-import { StorageError } from '@roadmap/health-core';
+import { StorageError } from '@roadmap/health-core/adapter';
 import { GitHubAdapter } from './github';
 
 const CONFIG = { token: 'ghp_test', owner: 'octocat', repo: 'health' };
@@ -198,5 +198,38 @@ describe('GitHubAdapter.accountEmail — a hung read gives up', () => {
     } finally {
       timeout.mockRestore();
     }
+  });
+});
+
+// US-09 AC13g (review of #788): accountEmail now holds its deadline in a
+// try/finally, so its other answers are pinned here too.
+describe('GitHubAdapter.accountEmail — the answers it maps', () => {
+  afterEach(() => { vi.unstubAllGlobals(); });
+  const answer = (status: number, body: unknown = []) =>
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(body), { status })));
+
+  it.each([403, 404])('a %s (token without the email permission) is null, not a failure', async (status) => {
+    answer(status);
+    await expect(new GitHubAdapter(CONFIG).accountEmail()).resolves.toBeNull();
+  });
+
+  it('a 500 throws, so the caller retries next visit', async () => {
+    answer(500);
+    await expect(new GitHubAdapter(CONFIG).accountEmail()).rejects.toThrow('GitHub email read failed (500).');
+  });
+
+  it('with no verified primary, a verified other address; with none verified, null', async () => {
+    answer(200, [{ email: 'Primary@Example.com', primary: true, verified: false }, { email: 'Other@Example.com', primary: false, verified: true }]);
+    await expect(new GitHubAdapter(CONFIG).accountEmail()).resolves.toBe('other@example.com');
+    answer(200, [{ email: 'a@example.com', primary: true, verified: false }]);
+    await expect(new GitHubAdapter(CONFIG).accountEmail()).resolves.toBeNull();
+  });
+
+  it('not connected throws before any request', async () => {
+    vi.stubGlobal('localStorage', makeStorage()); // nothing saved to load a config from
+    const fetch = vi.fn();
+    vi.stubGlobal('fetch', fetch);
+    await expect(new GitHubAdapter().accountEmail()).rejects.toThrow('GitHub is not connected.');
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

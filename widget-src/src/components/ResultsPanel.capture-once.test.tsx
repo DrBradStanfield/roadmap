@@ -5,9 +5,9 @@
  * print window and sends nothing more; after a failed send, the box works again.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { statTiles } from '@roadmap/health-core';
+import { statTiles } from '@roadmap/health-core/stat-tiles';
 import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
-import { calculateHealthResults } from '@roadmap/health-core';
+import { calculateHealthResults } from '@roadmap/health-core/calculations';
 
 const mocks = vi.hoisted(() => ({
   getReportHtml: vi.fn(),
@@ -29,7 +29,8 @@ vi.mock('../lib/server-api', () => ({ trackABConversion: mocks.trackABConversion
 vi.mock('../lib/build-flags', () => ({ get SHOPIFY_SURFACE() { return mocks.shopify.value; } }));
 vi.mock('../lib/assistant-config', () => ({ getSkipEmailGate: () => mocks.skip.value }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
-import { ResultsPanel, REMINDER_SIGNUP_DONE } from './ResultsPanel';
+import { REMINDER_SIGNUP_DONE } from './ResultsPanel';
+import { PlanHost as ResultsPanel } from '../testing/plan-host';
 
 const results = calculateHealthResults({ heightCm: 175, sex: 'male' });
 

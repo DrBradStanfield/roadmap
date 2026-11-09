@@ -5,6 +5,7 @@ import {
   customSupplementAdd, customSupplementKey, customSupplementMatch, medicationForm, medicationWrites, screeningForm, screeningMonths, screeningWrites,
   type FormField, type FormSection, type MedicationBasis,
 } from './input-form';
+import { LIPID_MEDS_IN_STEPS } from './suggestions';
 import type { MedicationInputs, ScreeningInputs } from './types';
 
 // US-06 AC1a: additions share identity rules without changing explicit keyed edits.
@@ -177,6 +178,27 @@ describe('screeningForm', () => {
     expect(keys(screeningForm(60, 'male', { lungSmokingHistory: 'former_smoker', lungPackYears: 19 }))).not.toContain('lung_screening');
     expect(keys(screeningForm(60, 'male', { lungSmokingHistory: 'former_smoker', lungPackYears: 20 }))).toContain('lung_screening');
   });
+
+  it('US-07 AC1g: past 80 the lung questions show for an abnormal CT or any stored LDCT answer, so the follow-up can be closed (Brad 2026-11-03)', () => {
+    const abnormal = { lungSmokingHistory: 'former_smoker', lungPackYears: 25, lungScreening: 'annual_ldct', lungLastDate: '2025-01', lungResult: 'abnormal' } as ScreeningInputs;
+    expect(keys(screeningForm(81, 'male', abnormal)).filter((k) => k.startsWith('lung_'))).toEqual(
+      ['lung_smoking_history', 'lung_pack_years', 'lung_screening', 'lung_last_date', 'lung_result', 'lung_followup_status']);
+    // Review of commit 5, R2: past 80 a stored LDCT answer keeps the group, so a result changed to normal (or
+    // "Not yet started") can be put back; with no lung answer past 80 there is no group.
+    expect(keys(screeningForm(81, 'male', { ...abnormal, lungResult: 'normal' }))).toContain('lung_result');
+    expect(keys(screeningForm(81, 'male', { lungSmokingHistory: 'former_smoker', lungPackYears: 25, lungScreening: 'not_yet_started' }))).toContain('lung_screening');
+    expect(keys(screeningForm(81, 'male', { lungSmokingHistory: 'former_smoker', lungPackYears: 25 })).filter((k) => k.startsWith('lung_'))).toEqual([]);
+  });
+
+  it('US-07 AC1f: below 20 pack-years, recorded LDCT data keeps its questions so the follow-up can be closed', () => {
+    const abnormal = { lungSmokingHistory: 'former_smoker', lungPackYears: 15, lungScreening: 'annual_ldct', lungLastDate: '2025-01', lungResult: 'abnormal' } as ScreeningInputs;
+    expect(keys(screeningForm(60, 'male', abnormal)).filter((k) => k.startsWith('lung_'))).toEqual(
+      ['lung_smoking_history', 'lung_pack_years', 'lung_screening', 'lung_last_date', 'lung_result', 'lung_followup_status']);
+    // No lung data: the start question stays gated at 20.
+    expect(keys(screeningForm(60, 'male', { lungSmokingHistory: 'former_smoker', lungPackYears: 15 }))).not.toContain('lung_screening');
+    // Review R4: "Not yet started" clears the chain but keeps the question, so LDCT can be picked again.
+    expect(keys(screeningForm(60, 'male', { lungSmokingHistory: 'former_smoker', lungPackYears: 15, lungScreening: 'not_yet_started' }))).toContain('lung_screening');
+  });
 });
 
 describe('screeningWrites', () => {
@@ -233,6 +255,32 @@ describe('medicationForm', () => {
     const onStatin: MedicationInputs = { statin: { drug: 'atorvastatin', dose: 10 } };
     expect(keys(medicationForm(onStatin, elevated))).toEqual(['statin', 'statin_dose', 'ezetimibe', 'glp1']);
     expect(field(medicationForm(onStatin, elevated), 'ezetimibe').hint).toMatch(/more ApoB reduction/);
+  });
+
+  // US-06 AC20 (Brad, 2026-11-02): with the statin not tolerated the form steps through the
+  // plan's order, PCSK9 inhibitor, then ezetimibe, then bempedoic acid; on a statin it never
+  // opens bempedoic acid.
+  it('statin not tolerated: the PCSK9 inhibitor first, then ezetimibe, then bempedoic acid (US-06 AC20)', () => {
+    const intolerant = { drug: 'not_tolerated', dose: null };
+    const lipidKeys = (meds: MedicationInputs) => keys(medicationForm(meds, elevated)).filter((k) => k !== 'glp1');
+    expect(lipidKeys({ statin: intolerant })).toEqual(['statin', 'pcsk9i']);
+    // Interim default, pending Brad: a PCSK9 inhibitor not tolerated still moves on to ezetimibe.
+    expect(lipidKeys({ statin: intolerant, pcsk9i: 'not_tolerated' })).toEqual(['statin', 'pcsk9i', 'ezetimibe']);
+    expect(lipidKeys({ statin: intolerant, pcsk9i: 'yes' })).toEqual(['statin', 'pcsk9i', 'ezetimibe']);
+    expect(lipidKeys({ statin: intolerant, pcsk9i: 'yes', ezetimibe: 'yes' })).toEqual(['statin', 'pcsk9i', 'ezetimibe', 'bempedoic_acid']);
+    expect(field(medicationForm({ statin: intolerant, pcsk9i: 'yes', ezetimibe: 'yes' }, elevated), 'bempedoic_acid').hint)
+      .toBe('Bempedoic acid lowers cholesterol production via a different pathway than statins. It is an option when a statin is not tolerated.');
+    // On a statin, every step answered: no bempedoic acid question, unless one is already recorded.
+    const allAnswered: MedicationInputs = { statin: { drug: 'rosuvastatin', dose: 40 }, ezetimibe: 'yes', pcsk9i: 'yes' };
+    expect(lipidKeys(allAnswered)).toEqual(['statin', 'statin_dose', 'ezetimibe', 'pcsk9i']);
+    expect(lipidKeys({ ...allAnswered, bempedoicAcid: 'bempedoic_acid' })).toEqual(['statin', 'statin_dose', 'ezetimibe', 'pcsk9i', 'bempedoic_acid']);
+  });
+
+  it('US-73 AC6: the cholesterol medicines intro is the target, then Brad\'s medicines sentence, no food list (Brad 2026-11-05)', () => {
+    const intro = medicationForm({}, elevated)[0].intro!;
+    expect(intro).toMatch(/ApoB/);
+    expect(intro.endsWith(`. ${LIPID_MEDS_IN_STEPS}`)).toBe(true);
+    expect(intro).not.toMatch(/oats|walnuts|psyllium/i);
   });
 
   it('shows an unrecorded dose as "Add dose", not pickable', () => {

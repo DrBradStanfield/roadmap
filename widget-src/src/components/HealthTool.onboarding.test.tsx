@@ -13,7 +13,10 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
-import { CURRENT_SCHEMA_VERSION, localDay, migrateFile, ROADMAP_FILE_NAME, rowRootIds, type RoadmapFile } from '@roadmap/health-core';
+import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { localDay, rowRootIds } from '@roadmap/health-core/merge';
+import { migrateFile } from '@roadmap/health-core/migrate';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveDocuments, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
@@ -42,6 +45,7 @@ vi.mock('./ChatSection', () => ({
   ChatSection: ({ muted }: { muted?: boolean }) => { floating.muted.push(!!muted); return <div className="floating-chat-panel"/>; },
 }));
 import { HealthTool } from './HealthTool';
+import { closeSettings, deleteButton, openSettings } from '../testing/settings';
 
 const TODAY = localDay(new Date());
 const WHY_SEX = 'Used to calculate ideal body weight, kidney function, and screening programs.';
@@ -98,7 +102,8 @@ const activeWeights = async () => (await recordOnDisk()).measurements
  *  a complete record's About you rows opened, so each field shows (US-62 AC12). */
 async function open(): Promise<RenderResult> {
   const view = render(<HealthTool />);
-  await waitFor(() => expect(view.container.querySelector('#heightCm, .about-row')).toBeTruthy());
+  // A complete record's About you sits in Settings (US-62 AC24): openAboutYou opens them.
+  await waitFor(() => expect(view.container.querySelector('#heightCm') ?? (openAboutYou(view.container), view.container.querySelector('.about-row'))).toBeTruthy());
   await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
   openAboutYou(view.container);
   return view;
@@ -183,6 +188,61 @@ describe('US-62 AC13: each step reveals the next', () => {
     await waitFor(() => expect(fullForm(view)).toBe(true));
   });
 
+  // US-01 AC6: iOS Safari opens the keyboard only for a focus() made inside the user's own
+  // event. So the year must hold the focus when the change event returns, with no frame waited.
+  it('US-01 AC6: choosing a birth month focuses the empty birth year inside the change event itself', async () => {
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    await nextFrame(); // the sex click's own focus move to the month (a frame later)
+    const month = q(view, '#birthMonth') as HTMLSelectElement;
+    act(() => { month.focus(); });
+    fireEvent.pointerDown(month); // a tap opens the picker
+    fireEvent.change(month, { target: { value: '5' } });
+    expect(document.activeElement).toBe(q(view, '#birthYear')); // synchronous: no await before this line
+    // A year already typed: changing the month leaves the focus where it is.
+    type(q(view, '#birthYear'), '197');
+    act(() => { month.focus(); });
+    fireEvent.pointerDown(month);
+    fireEvent.change(month, { target: { value: '6' } });
+    expect(document.activeElement).toBe(month);
+  });
+
+  // Adversary R1 on PR 964 (WCAG 3.2.2): arrowing a closed select fires change on Windows browsers.
+  it('US-01 AC6: a key\'s change, with a fine pointer, keeps the focus on the month', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('min-width') || q.includes('pointer: fine'), media: q, addEventListener() {}, removeEventListener() {} }));
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    await nextFrame();
+    const month = q(view, '#birthMonth') as HTMLSelectElement;
+    act(() => { month.focus(); });
+    fireEvent.keyDown(month, { key: 'ArrowDown' });
+    fireEvent.change(month, { target: { value: '1' } });
+    expect(document.activeElement).toBe(month);
+    fireEvent.keyDown(month, { key: 'ArrowDown' });
+    fireEvent.change(month, { target: { value: '2' } });
+    expect(document.activeElement).toBe(month);
+    // A mouse press after the keys moves on again.
+    fireEvent.pointerDown(month);
+    fireEvent.change(month, { target: { value: '3' } });
+    expect(document.activeElement).toBe(q(view, '#birthYear'));
+  });
+
+  // Adversary R7 on PR 964: one PDF box, its typing kept when it moves above the pills.
+  it('US-62 AC30d: a half-typed email survives the full form opening', async () => {
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    const email = await waitFor(() => { const el = q(view, '#guestEmail') as HTMLInputElement | null; expect(el).not.toBeNull(); return el!; });
+    expect(email.closest('.mh-topics')).toBeNull(); // at the foot, before the full form
+    fireEvent.change(email, { target: { value: 'reader@exam' } });
+    birthWithoutJump(view);
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    const moved = await waitFor(() => { const el = q(view, '.mh-topics #guestEmail') as HTMLInputElement | null; expect(el).not.toBeNull(); return el!; });
+    expect(moved.value).toBe('reader@exam');
+  });
+
   it('the why-texts are no longer tooltips', async () => {
     const view = await open();
     await measurements(view);
@@ -210,7 +270,7 @@ describe('US-62 AC13: the weight saves when its field is left (B10)', () => {
 describe('US-62 AC12, AC13 (Brad 2026-11-02): boxes while typing, rows after', () => {
   const sectionOrder = (view: RenderResult) =>
     [...view.container.querySelectorAll('.health-input-panel h3')].map(h => h.textContent!.replace('\u25B8', '').trim())
-      .filter(t => ['Vitals', 'Blood tests', 'Supplements', 'About you', 'Starting Info'].includes(t));
+      .filter(t => ['Vitals', 'Blood tests', 'Supplements', 'About you', 'Starting info'].includes(t));
   const aboutRows = (view: RenderResult) => [...view.container.querySelectorAll('.about-row')]
     .map(r => [r.querySelector('.about-row-label')!.textContent, r.querySelector('.about-row-value, .md-row-add')!.textContent]);
 
@@ -229,16 +289,19 @@ describe('US-62 AC12, AC13 (Brad 2026-11-02): boxes while typing, rows after', (
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
     birthWithoutJump(view, '6', '1985'); // no jump to the email box: the focus stays in the card
     await waitFor(() => expect(fullForm(view)).toBe(true));
-    expect(sectionOrder(view)[0]).toBe('Starting Info');
+    expect(sectionOrder(view)[0]).toBe('Starting info');
     expect(q(view, '#weightKg')).toBeTruthy(); // typed here, it stays beside the height for the visit
     expect(q(view, '.about-row')).toBeNull();
     await waitFor(async () => expect((await recordOnDisk()).profile.birthYear).toBe(1985), { timeout: 2000 });
     view.unmount();
 
     const again = render(<HealthTool />);
+    // My health's topics, About you in Settings (US-62 AC17, AC24).
+    await waitFor(() => expect(q(again, '.mh-sections')).toBeTruthy());
+    expect(sectionOrder(again)).toEqual(['Blood tests', 'Supplements']);
+    openSettings(again.container);
     await waitFor(() => expect(q(again, '.about-row')).toBeTruthy());
-    expect(sectionOrder(again)).toEqual(['Vitals', 'Blood tests', 'Supplements', 'About you']);
-    expect(aboutRows(again)).toEqual([['Height', '185 cm'], ['Sex', 'Male'], ['Birth', 'June 1985'], ['Alcohol', 'Not answered']]); // US-60 AC4
+    expect(aboutRows(again)).toEqual([['Height', '185 cm'], ['Sex', 'Male'], ['Birth', expect.stringMatching(/^June 1985 \(Age \d+\)$/)], ['Alcohol', 'Not answered']]); // US-60 AC4
     expect(q(again, '#heightCm')).toBeNull();
     expect(q(again, '.md-about-you #weightKg')).toBeNull(); // the weight lives in the vitals rows
     // A tap opens the field itself, its why-line with it; Done gives the row back.
@@ -362,25 +425,7 @@ describe('US-62 AC13: onboarding events (AC1, AC2)', () => {
   });
 });
 
-describe('US-62 AC13: on a phone, the My plan tab shows a dot when a new tile appears', () => {
-  it('dots on the BMI tile, clears on opening My plan, dots again on the next tiles', async () => {
-    phone = true;
-    const view = await open();
-    const planTab = view.getByRole('tab', { name: /My plan/ });
-    expect(planTab.querySelector('.hr-tab-dot')).toBeNull();
-    await measurements(view);
-    await waitFor(() => expect(planTab.querySelector('.hr-tab-dot')).toBeTruthy());
-    // Read as the tab's description; the name stays "My plan".
-    expect(view.getByRole('tab', { name: 'My plan' })).toBe(planTab);
-    expect(document.getElementById(planTab.getAttribute('aria-describedby')!)?.textContent).toBe('New');
-    fireEvent.click(planTab);
-    expect(planTab.querySelector('.hr-tab-dot')).toBeNull();
-    fireEvent.click(view.getByRole('tab', { name: /My data/ }));
-    expect(planTab.querySelector('.hr-tab-dot')).toBeNull();
-    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-    await waitFor(() => expect(planTab.querySelector('.hr-tab-dot')).toBeTruthy());
-  });
-});
+// The My plan tab's dot (AC13) went with the tab in phase 5 (US-62 AC16): there is no tab to mark.
 
 describe('US-62 AC13 review fixes (PR 421)', () => {
   it('R1: a birth year alone answers the step: a year-only record gets the whole form, nothing pinned', async () => {
@@ -524,7 +569,6 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
     expect(document.activeElement).toBe(year);
     fireEvent.change(year, { target: { value: '1981' } });
     expect(q(view, '#birthYear')).toBe(year);
-    expect(view.container.querySelector('.prefill-summary')?.textContent).toContain('Born 1981');
   });
 
   it.each([
@@ -576,22 +620,6 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
     expect(floating.muted.at(-1)).toBe(true);
   });
 
-  it('N3: an erase starts the tab dot again', async () => {
-    phone = true;
-    vi.stubGlobal('confirm', () => true);
-    vi.stubGlobal('alert', () => {});
-    const view = await open();
-    await measurements(view);
-    const planTab = view.getByRole('tab', { name: 'My plan' });
-    fireEvent.click(planTab); // BMI seen
-    fireEvent.click(view.getByRole('tab', { name: 'My data' }));
-    expect(planTab.querySelector('.hr-tab-dot')).toBeNull();
-    fireEvent.click(view.getByText('Delete All My Data'));
-    await waitFor(() => expect(sexQuestion(view)).toBeNull());
-    await measurements(view, '165', '60');
-    await waitFor(() => expect(planTab.querySelector('.hr-tab-dot')).toBeTruthy());
-  });
-
   it('R7: the vitals matrix weight jumps to the email box only as the last answer', async () => {
     // Sex missing: the weight is not the last answer, so the email box keeps still.
     await saveChangedMeasurements({ heightCm: 170, birthYear: 1980, birthMonth: 3 }, {});
@@ -623,7 +651,8 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
       return input as HTMLInputElement;
     });
     type(cell, '170');
-    await waitFor(() => expect(document.activeElement?.id).toBe('guestEmail'));
+    // The last answer lands on "Your plan is ready." (US-62 AC31), not the email box.
+    await waitFor(() => expect(document.activeElement?.classList.contains('mh-ready-title')).toBe(true));
   });
 });
 
@@ -676,15 +705,19 @@ describe('US-62 AC13 review fixes, round 3 (PR 421)', () => {
     expect(q(view, '#birthYear')).toBe(year);
   });
 
-  it('4: About you, collapsed for a complete record, opens when another device clears an answer', async () => {
+  // About you's collapse went with US-62 AC24 (its rows sit in Settings); the cleared answer
+  // brings the onboarding's boxes back to the page instead.
+  it('4: About you, in Settings for a complete record, comes back to the page when another device clears an answer', async () => {
     await completeRecord();
-    const view = await open();
-    await waitFor(() => expect(q(view, '.prefill-summary-wrapper.visible')).toBeTruthy());
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(q(view, '.mh-sections')).toBeTruthy());
+    expect(q(view, '.about-card')).toBeNull();
     await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, { heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 });
     await saveChangedMeasurements({ heightCm: undefined }, { heightCm: 170 }); // another writer clears the height
     await flushRoadmapStore();
     await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
-    await waitFor(() => expect(q(view, '.prefill-summary-wrapper.visible')).toBeNull(), { timeout: 3000 });
+    openSettings(view.container);
+    await waitFor(() => expect(q(view, '[data-about="height"] #heightCm')).toBeTruthy(), { timeout: 3000 });
     expect(named('onboarding_step')).toEqual([]);
   });
 });
@@ -693,7 +726,7 @@ describe('US-62 AC12 (adversary R5, 2026-11-02): About you rows hold a missing a
   /** The tool with a complete record's About you rows left closed. */
   async function rows() {
     const view = render(<HealthTool />);
-    await waitFor(() => expect(q(view, '#about-height')).toBeTruthy());
+    await waitFor(() => expect(q(view, '#about-height') ?? (openSettings(view.container), q(view, '#about-height'))).toBeTruthy());
     return view;
   }
   const editor = (view: RenderResult, key: string) => q(view, `[data-about="${key}"]`) as HTMLElement | null;
@@ -727,7 +760,7 @@ describe('US-62 AC12 (adversary R5, 2026-11-02): About you rows hold a missing a
     leave(q(view, '#birthYear'));
     done(view, 'birth');
     expect(editor(view, 'birth')).toBeNull();
-    expect(q(view, '#about-birth')!.textContent).toBe('BirthMarch 1981');
+    expect(q(view, '#about-birth')!.textContent).toMatch(/^BirthMarch 1981 \(Age \d+\)$/);
   });
 
   it('an erase takes About you from rows back to the onboarding boxes', async () => {
@@ -736,7 +769,7 @@ describe('US-62 AC12 (adversary R5, 2026-11-02): About you rows hold a missing a
     await completeRecord();
     const view = await rows();
     expect(q(view, '#heightCm')).toBeNull();
-    fireEvent.click(view.getByText('Delete All My Data'));
+    fireEvent.click(deleteButton());
     await waitFor(() => expect(q(view, '#heightCm')).toBeTruthy());
     expect(q(view, '.about-row')).toBeNull();
     expect(q(view, '#weightKg')).toBeTruthy(); // the box beside the height again
@@ -775,11 +808,85 @@ describe('US-02 AC9: a range error waits while the number is still being typed',
   });
 });
 
+// Since US-62 AC24 "low" is Settings: the card leaves the page for the sheet behind the person button.
+describe('US-62 AC31: "Your plan is ready." after the onboarding', () => {
+  const BODY = 'Each section below shows where you stand and one next step to discuss with your doctor. Add more numbers, like blood pressure or blood tests, and the suggestions get more specific.';
+  async function finish(view: RenderResult) {
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    birth(view);
+  }
+
+  it('shows in Starting info\'s place with the focus on its heading, no scroll, and Got it hides it for good', async () => {
+    const scrolled: Element[] = [];
+    vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(function (this: Element) { scrolled.push(this); });
+    const view = await open();
+    await finish(view);
+    const heading = await waitFor(() => view.getByRole('heading', { name: 'Your plan is ready.' }));
+    await waitFor(() => expect(document.activeElement).toBe(heading));
+    const card = heading.closest('.mh-ready') as HTMLElement;
+    expect(card.textContent).toContain(BODY);
+    await waitFor(() => expect(q(view, '.about-card')).toBeNull()); // Starting info has gone
+    // The card is first in the page after the header, where Starting info stood.
+    expect(card.compareDocumentPosition(q(view, '.mh-sections')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(scrolled.some((el) => el.classList.contains('mh-title') || el.closest('.mh-topic'))).toBe(false); // no jump
+    await waitFor(() => expect(named('plan_ready_shown')).toHaveLength(1)); // jsdom has no IntersectionObserver: shown at once
+    expect(named('plan_ready_shown')[0].metadata).toBeUndefined();
+    expect(localStorage.getItem('hr_plan_ready_seen')).toBeNull();
+
+    fireEvent.click(within(card).getByRole('button', { name: 'Got it' }));
+    expect(q(view, '.mh-ready')).toBeNull();
+    expect(localStorage.getItem('hr_plan_ready_seen')).toBe('1');
+    expect(document.activeElement?.classList.contains('mh-title')).toBe(true); // the focus is not lost
+    await waitFor(() => expect(named('plan_ready_dismissed')).toHaveLength(1));
+    expect(named('plan_ready_dismissed')[0].metadata).toBeUndefined();
+  });
+
+  it('plan_ready_shown waits until the card is on screen (adversary R2 on PR 964)', async () => {
+    const watched: Array<{ el: Element; cb: IntersectionObserverCallback }> = [];
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(private cb: IntersectionObserverCallback) {}
+      observe(el: Element) { watched.push({ el, cb: this.cb }); }
+      disconnect() {} unobserve() {} takeRecords() { return []; }
+    });
+    const view = await open();
+    await finish(view);
+    const card = await waitFor(() => { const el = q(view, '.mh-ready'); expect(el).not.toBeNull(); return el!; });
+    const mine = () => watched.filter((w) => w.el === card);
+    await waitFor(() => expect(mine().length).toBeGreaterThan(0));
+    act(() => { for (const w of mine()) w.cb([{ isIntersecting: false, target: card } as IntersectionObserverEntry], {} as IntersectionObserver); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect(named('plan_ready_shown')).toEqual([]); // hidden or off screen: not counted
+    act(() => { for (const w of mine()) w.cb([{ isIntersecting: true, target: card } as IntersectionObserverEntry], {} as IntersectionObserver); });
+    await waitFor(() => expect(named('plan_ready_shown')).toHaveLength(1));
+  });
+
+  it('a browser that pressed Got it before never sees it: the last answer lands on the title', async () => {
+    localStorage.setItem('hr_plan_ready_seen', '1');
+    const view = await open();
+    await finish(view);
+    await waitFor(() => expect(document.activeElement?.classList.contains('mh-title')).toBe(true));
+    expect(q(view, '.mh-ready')).toBeNull();
+    expect(named('plan_ready_shown')).toEqual([]);
+  });
+
+  it('a returning user with all four answers never sees it', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await addMeasurement('weight', 70, TODAY);
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(q(view, '.mh-sections')).toBeTruthy());
+    expect(q(view, '.mh-ready')).toBeNull();
+    expect(named('plan_ready_shown')).toEqual([]);
+  });
+});
+
 describe('US-62 AC12: About you goes low once the onboarding is done and its card is left', () => {
   const cards = (view: RenderResult) => Array.from(view.container.querySelectorAll('.health-input-panel > .section-card'));
-  const aboutLow = (view: RenderResult) => q(view, '.md-about-you');
+  /** About you has left the page for Settings: the topics show and its card is gone. */
+  const aboutLow = (view: RenderResult) => (q(view, '.mh-page .about-card') ? null : q(view, '.mh-sections')); // a phone keeps Settings mounted in Account
 
-  it.each([['desktop', false], ['phone', true]])('on %s: "199" moves nothing; "1990" jumps on (desktop: the email box; phone: out of the field, still on My data) and About you goes, as rows, to the foot', async (_, onPhone) => {
+  it.each([['desktop', false], ['phone', true]])('on %s: "199" moves nothing; "1990" lands on "Your plan is ready." and About you goes, as rows, to Settings', async (_, onPhone) => {
     phone = onPhone;
     const view = await open();
     await measurements(view);
@@ -795,23 +902,23 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
 
     type(year, '1990'); // complete, in range, the month set: the last answer
     await waitFor(() => expect(aboutLow(view)).toBeTruthy());
-    if (onPhone) {
-      expect(document.activeElement).toBe(document.body);
-      expect(view.getByRole('tab', { name: 'My data' }).getAttribute('aria-selected')).toBe('true');
-    } else {
-      expect(document.activeElement?.id).toBe('guestEmail');
-    }
-    expect(cards(view).at(-1)).toBe(aboutLow(view)); // the column's foot
-    expect(Array.from(aboutLow(view)!.querySelectorAll('.about-row-label')).map((l) => l.textContent)).toEqual(['Height', 'Sex', 'Birth', 'Alcohol']);
-    expect(aboutLow(view)!.querySelector('h3')?.textContent).toContain('About you');
+    // Phone and desktop land on "Your plan is ready." in Starting info's place (US-62 AC31).
+    await waitFor(() => expect(document.activeElement?.classList.contains('mh-ready-title')).toBe(true));
+    if (onPhone) expect(view.getByRole('tab', { name: 'My health' }).getAttribute('aria-selected')).toBe('true');
     expect(weightPlaces(view)).toHaveLength(1); // the weight joins the vitals, shown once
-    // The returning layout: the vitals as rows, the grids hidden but mounted.
-    const vitals = cards(view)[0];
-    await waitFor(() => expect(Array.from(vitals.querySelectorAll('.md-row-label')).map((l) => l.textContent)).toEqual(['Weight', 'Waist', 'Blood Pressure']));
-    expect(vitals.querySelector('#waistCm, .collapsed-field-row')).toBeNull();
-    expect(vitals.querySelector('.md-table[hidden] .bt-vitals-card')).toBeTruthy();
-    fireEvent.click(Array.from(vitals.querySelectorAll('.md-row')).find((r) => r.textContent?.includes('Waist'))!);
-    await waitFor(() => expect(within(q(view, '.md-page') as HTMLElement).getByRole('heading', { name: 'Waist' })).toBeTruthy());
+    // The returning layout: the vitals as rows in their topics, the grids hidden but mounted.
+    const labels = (topic: string) => Array.from(view.container.querySelectorAll(`[data-topic="${topic}"] .md-row-label`)).map((l) => l.textContent);
+    await waitFor(() => expect(labels('weight')).toEqual(['Waist', 'Weight', 'HbA1c']));
+    expect(labels('bloodPressure')[0]).toBe('Blood Pressure');
+    expect(q(view, '#waistCm, .collapsed-field-row')).toBeNull();
+    expect(q(view, '.md-table[hidden] .bt-vitals-card')).toBeTruthy();
+    openSettings(view.container);
+    const about = q(view, '.mh-settings .md-about-you')!;
+    expect(Array.from(about.querySelectorAll('.about-row-label')).map((l) => l.textContent)).toEqual(['Height', 'Sex', 'Birth', 'Alcohol']);
+    expect(about.querySelector('h3')?.textContent).toContain('About you');
+    closeSettings(view.container);
+    fireEvent.click(Array.from(view.container.querySelectorAll('[data-topic="weight"] .md-row')).find((r) => r.textContent?.startsWith('Waist'))!);
+    await waitFor(() => expect(within(q(view, '.mh-page-host .md-page') as HTMLElement).getByRole('heading', { name: 'Waist' })).toBeTruthy());
   });
 
   it('the focus going from the birth year into the waist field keeps that field until the vitals card is left', async () => {
@@ -829,7 +936,7 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
     expect(document.activeElement).toBe(waist);
     leave(waist);
     await waitFor(() => expect(q(view, '#waistCm')).toBeNull());
-    expect(Array.from(cards(view)[0].querySelectorAll('.md-row-label')).map((l) => l.textContent)).toContain('Waist');
+    expect(Array.from(view.container.querySelectorAll('[data-topic="weight"] .md-row-label')).map((l) => l.textContent)).toContain('Waist');
   });
 
   it('a stage short of four moves nothing when the card is left', async () => {
@@ -855,7 +962,8 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
     act(() => { (q(view, '#birthYear') as HTMLElement).focus(); });
     leave(q(view, '#birthYear'));
     await waitFor(() => expect(aboutLow(view)).toBeTruthy());
-    expect(aboutLow(view)!.querySelector('#waistCm, .md-section-title')).toBeNull();
+    openSettings(view.container);
+    expect(q(view, '.md-about-you')!.querySelector('#waistCm, .md-section-title')).toBeNull();
   });
 });
 
@@ -1043,7 +1151,7 @@ describe('PR 518 review: refused and erased records', () => {
     fireEvent.pointerDown(view.getByRole('radio', { name: 'Male' })); // Safari: the toggle takes no focus
     leave(year); // focusout, relatedTarget null
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
-    expect(q(view, '.md-about-you')).toBeNull();
+    expect(q(view, '.about-card')).not.toBeNull();
     expect(q(view, '#birthYear')).toBe(year);
   });
 
@@ -1060,14 +1168,14 @@ describe('PR 518 review: refused and erased records', () => {
     await finish();
     act(() => { (q(view, '#birthYear') as HTMLElement).focus(); });
     leave(q(view, '#birthYear'));
-    await waitFor(() => expect(q(view, '.md-about-you')).toBeTruthy());
-    fireEvent.click(view.getByText('Delete All My Data'));
+    await waitFor(() => expect(q(view, '.about-card')).toBeNull());
+    fireEvent.click(deleteButton());
     await waitFor(() => expect(fullForm(view)).toBe(false));
     await finish();
     act(() => { (q(view, '#birthYear') as HTMLElement).focus(); });
     const waist = q(view, '#waistCm') as HTMLElement;
     act(() => { waist.focus(); }); // Tab out of the profile card, into the vitals
-    await waitFor(() => expect(q(view, '.md-about-you')).toBeTruthy());
+    await waitFor(() => expect(q(view, '.about-card')).toBeNull());
     expect(q(view, '#waistCm')).toBe(waist);
     expect(document.activeElement).toBe(waist);
   });
@@ -1079,7 +1187,7 @@ describe('PR 518 Codex re-check', () => {
   it('R3: a returning user changing Birth in About you keeps the focus in the editor (no jump to the email box)', async () => {
     await completeRecord();
     const view = render(<HealthTool />);
-    fireEvent.click(await waitFor(() => { const b = q(view, '#about-birth'); expect(b).toBeTruthy(); return b as HTMLElement; }));
+    fireEvent.click(await waitFor(() => { const b = q(view, '#about-birth') ?? (openSettings(view.container), q(view, '#about-birth')); expect(b).toBeTruthy(); return b as HTMLElement; }));
     const year = await waitFor(() => { const y = q(view, '[data-about="birth"] #birthYear'); expect(y).toBeTruthy(); return y as HTMLInputElement; });
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); }); // opening the row focuses its month
     act(() => { year.focus(); });
@@ -1175,9 +1283,9 @@ describe('PR 518 adversary re-check', () => {
     fireEvent.pointerDown(view.getByRole('radio', { name: 'Male' }));
     leave(year); // Safari: nothing takes the focus
     await act(async () => { await new Promise((r) => setTimeout(r, 30)); });
-    expect(q(view, '.md-about-you')).toBeNull();
+    expect(q(view, '.about-card')).not.toBeNull();
     fireEvent.pointerDown(document.body); // a press outside the card
-    await waitFor(() => expect(q(view, '.md-about-you')).toBeTruthy());
+    await waitFor(() => expect(q(view, '.about-card')).toBeNull());
   });
 
   it('N4: a press inside cancelled by the browser (iOS starting a scroll) does not hold back the leaving', async () => {
@@ -1193,13 +1301,13 @@ describe('PR 518 adversary re-check', () => {
     fireEvent.pointerDown(male);
     fireEvent.pointerCancel(male);
     leave(year);
-    await waitFor(() => expect(q(view, '.md-about-you')).toBeTruthy());
+    await waitFor(() => expect(q(view, '.about-card')).toBeNull());
   });
 
   it('R5 (US-62 AC12): opening About you\'s Height row focuses the height box, not the unit pill', async () => {
     await completeRecord();
     const view = render(<HealthTool />);
-    fireEvent.click(await waitFor(() => { const b = q(view, '#about-height'); expect(b).toBeTruthy(); return b as HTMLElement; }));
+    fireEvent.click(await waitFor(() => { const b = q(view, '#about-height') ?? (openSettings(view.container), q(view, '#about-height')); expect(b).toBeTruthy(); return b as HTMLElement; }));
     await waitFor(() => expect(document.activeElement?.id).toBe('heightCm'));
   });
 

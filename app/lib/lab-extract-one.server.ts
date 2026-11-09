@@ -9,6 +9,7 @@ import type { LabImportRequest } from '../../packages/health-core/src/validation
 import { UNDATED_PREVIOUS } from '../../packages/health-core/src/lab-extraction';
 import { extractOrClassify, ExtractionStopError, reportExtractionStop } from './anthropic.server';
 import type { DayFlags } from './lab-batches.server';
+import { safeErrorFields } from './safe-error-fields.server';
 
 /**
  * One file's extraction and its answer, shared with the iPhone app's route
@@ -29,7 +30,7 @@ export async function extractOneFile(data: LabImportRequest, extra: () => object
       reportExtractionStop(error.code, error.refusalCategory, 'single');
       return Response.json({ success: false, error: 'Not read', errorCode: error.code }, { status: 422 });
     }
-    console.error('Lab import error (v2):', error);
+    console.error('Lab import error (v2):', safeErrorFields(error));
     Sentry.captureException(error, {
       tags: { feature: 'lab_import_v2', errorName: (error as Error)?.name ?? 'unknown' },
       extra: { pageCount: pages.length, pageTypes: pages.map((p) => p.type) },

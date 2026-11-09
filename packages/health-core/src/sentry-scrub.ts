@@ -245,7 +245,8 @@ export const SCRUB_METRIC_WORDS: readonly string[] = [...new Set([
   ...LAB_CATALOG.flatMap((entry) => [entry.key, entry.label, ...entry.aliases]).map((name) => name.toLowerCase()),
   // What no name in either list spells: the phrases a person writes, and the
   // metrics that live in the calculator rather than the catalogue.
-  'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height',
+  // "vit" is the typed short form of vitamin ("Vit D 45", US-09 AC7g).
+  'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height', 'vit',
 ])];
 
 /** A number, or a blood-pressure pair ("140/90"). */
@@ -291,8 +292,16 @@ const UNIT_VALUE_RE = new RegExp(
 // after a name are its value ("ldl140"), never part of it. A number inside a
 // word, with a letter on both sides (the 1 of "A1c"), is never the value, so
 // "Hb" cannot take it in "Hb A1c 7.2"; "a1c" scrubs the 7.2 itself.
+// A name is never a value (US-09 AC7g): the gap stops where another name
+// starts, so "Ferritin pending, B12 300" leaves the 300 to "B12". And a number
+// glued to a letter with another number after it, across the same gap a name
+// takes ("T4 15", "T4 <15", "CA-125, 30"), ends a name the list does not hold,
+// so the number after it goes too.
+const METRIC_NAME = `(?<![a-z0-9])(?:${alternation(SCRUB_METRIC_WORDS)})(?![a-z])`;
+/** What may stand between a name and its value: up to 20 characters, no digit, no other name. */
+const NAME_GAP = `(?:(?!${METRIC_NAME})[^\\d\\n]){0,20}?`;
 const METRIC_THEN_VALUE_RE = new RegExp(
-  `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])([^\\d\\n]{0,20}?)(?!(?<=[a-z])\\d+(?:[.,]\\d+)?[a-z])(${NUMBER})`, 'gi');
+  `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])(${NAME_GAP})(?!(?<=[a-z])\\d+(?:[.,]\\d+)?[a-z]|${METRIC_NAME})((?<=[a-z]-?)${NUMBER}(?:[ \\t:=]+|${NAME_GAP})(?!${METRIC_NAME})${NUMBER}|${NUMBER})`, 'gi');
 // Name edges, not \b: "Lp(a)" ends and "γ-GT" starts with no word character,
 // so \b never matched there. A name starts where no letter or digit runs into
 // it, or at its own first character when that is a symbol ("xγ-GT"), and ends

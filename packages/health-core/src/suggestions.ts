@@ -54,8 +54,8 @@ export const US_SUPPLEMENT_DESCRIPTIONS: Readonly<Partial<Record<UsProductCardId
   'supplement-lutein-zeaxanthin': LUTEIN_PIGMENT,
 };
 
-/** Dietary advice for elevated lipids — shared between suggestion card and InputPanel medication cascade */
-export const LIPID_DIET_ADVICE = 'Specific foods can lower LDL cholesterol: oats, walnuts, almonds, ground flaxseed, edamame, and replacing butter with extra-virgin olive oil. If you don\'t have IBS or IBD, beans, lentils, chickpeas, and mixed vegetables are also great options. Psyllium husk is a soluble fibre that is well-tolerated even with IBS or IBD; discuss with your doctor whether it fits your routine.';
+/** Dietary advice for elevated lipids: the lipid-diet card's text. */
+const LIPID_DIET_ADVICE = 'Specific foods can lower LDL cholesterol: oats, walnuts, almonds, ground flaxseed, edamame, and replacing butter with extra-virgin olive oil. If you don\'t have IBS or IBD, beans, lentils, chickpeas, and mixed vegetables are also great options. Psyllium husk is a soluble fibre that is well-tolerated even with IBS or IBD; discuss with your doctor whether it fits your routine.';
 
 /** Format a metric value with its display unit, e.g. "5.7%", "39 mmol/mol" or a limit's "< 39 mmol/mol" (US-12 AC20). */
 function fmtMetric(metricType: MetricType, value: number, us: UnitSystem, comparator?: Comparator): string {
@@ -128,6 +128,9 @@ export function lipidTargetSentence(marker: LipidMarker, unitFor: (metric: Metri
   return `Your ${marker.label} is ${fmtMarkerValue(marker, u)}; the treatment target is below ${fmtLipidTarget(metric, marker.target, u)}.`;
 }
 
+/** The form's cholesterol intro says it after lipidTargetSentence (US-73 AC6, Brad 2026-11-05). */
+export const LIPID_MEDS_IN_STEPS = 'In addition to a great diet, cholesterol-lowering medications can also be added in steps.';
+
 /** Join a list the way the plan writes it: "a, b and c". */
 export function joinWithAnd(items: string[]): string {
   return items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
@@ -172,7 +175,10 @@ export function weightMedicationTrigger(inputs: HealthInputs, results: HealthRes
   const { bmi, waistToHeightRatio: whr } = results;
   if (bmi === undefined || bmi < 25) return { on: false, reasons: [] };
   const reasons: string[] = [];
-  if (inputs.hba1c !== undefined && inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) reasons.push('prediabetic HbA1c');
+  // A diabetic-range HbA1c is named as such, matching its urgent card (Brad 2026-11-06, US-06 AC6).
+  if (inputs.hba1c !== undefined && inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) {
+    reasons.push(inputs.hba1c >= HBA1C_THRESHOLDS.diabetes ? 'diabetic-range HbA1c' : 'prediabetic HbA1c');
+  }
   if (inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline) reasons.push('elevated triglycerides');
   if (isBpRaised(inputs.systolicBp, inputs.diastolicBp)) reasons.push('elevated blood pressure');
   const lipid = lipidMarkerFor(inputs, results);
@@ -299,37 +305,40 @@ export function generateSuggestions(
     });
   }
 
-  // Low salt — above the age-dependent BP target
+  // Potassium advice needs a current eGFR of 45 or more: the high-potassium card and the
+  // salt substitute line both read this (US-07 AC8, AC13). Damaged kidneys may not clear
+  // the extra potassium.
+  const potassiumSafe = results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildlyDecreased && !inputs.labEgfrOutdated;
+
+  // Low salt — above the age-dependent BP target; the salt substitute line only when potassiumSafe.
   if (inputs.systolicBp !== undefined && inputs.systolicBp > bpTargetFor(results.age)) {
     suggestions.push({
       id: 'low-salt',
       category: 'nutrition',
       priority: 'info',
       title: 'Reduce sodium intake',
-      description: 'Aim for less than 1,500mg of sodium daily. Most excess sodium comes from processed foods. Reducing sodium can help lower blood pressure.',
+      description: 'Aim for less than 1,500mg of sodium daily. Most excess sodium comes from processed foods. Reducing sodium can help lower blood pressure.'
+        + (potassiumSafe ? ' A potassium-enriched salt substitute can also help cut sodium, but not if you are pregnant, have kidney disease or diabetes, have been told to limit potassium, or take a potassium-sparing diuretic, a potassium supplement, an ACE inhibitor or an ARB, unless your doctor agrees.' : ''),
     });
   }
 
   // Whether any atherogenic marker is at or above its on-treatment target, the
-  // marker's own test (used for lipid-diet and fiber suppression, US-07 AC5)
+  // marker's own test (used for lipid-diet, US-07 AC5)
   const hasElevatedLipids = atOrAboveTarget(inputs.apoB, LIPID_TREATMENT_TARGETS.apobGl)
     || atOrAboveTarget(results.nonHdlCholesterol, LIPID_TREATMENT_TARGETS.nonHdlMmol)
     || atOrAboveTarget(inputs.ldlC, LIPID_TREATMENT_TARGETS.ldlMmol);
 
-  // Fiber — show when lipid-diet is not active (lipid-diet covers fiber advice more specifically)
-  if (!hasElevatedLipids) {
-    suggestions.push({
-      id: 'fiber',
-      category: 'nutrition',
-      priority: 'info',
-      title: 'Maximize fiber intake',
-      description: 'Aim for 25-35g of fiber daily from whole grains, fruits, and vegetables. Increase gradually to avoid discomfort. If you have IBS or IBD, discuss appropriate fiber levels with your doctor.',
-    });
-  }
+  // Fiber — shown to everyone, lipid-diet or not (Brad 2026-11-05)
+  suggestions.push({
+    id: 'fiber',
+    category: 'nutrition',
+    priority: 'info',
+    title: 'Maximize fiber intake',
+    description: 'Aim for 25-35g of fiber daily from whole grains, fruits, and vegetables. Increase gradually to avoid discomfort. If you have IBS or IBD, discuss appropriate fiber levels with your doctor.',
+  });
 
   // High-potassium diet — only when eGFR ≥ 45 (safe kidney function), from an eGFR no newer
   // creatinine has outdated (US-07 AC8): potassium advice errs on the cautious side.
-  const potassiumSafe = results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildlyDecreased && !inputs.labEgfrOutdated;
   if (potassiumSafe) {
     suggestions.push({
       id: 'high-potassium',
@@ -745,7 +754,7 @@ export function generateSuggestions(
         category: 'blood_pressure',
         priority: 'urgent',
         title: 'Hypertensive crisis',
-        description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg is dangerously high. Seek immediate medical attention if accompanied by symptoms.`,
+        description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg is dangerously high. If you have no symptoms, rest and recheck it after 5 minutes; if it is still ${BP_THRESHOLDS.crisisSys}/${BP_THRESHOLDS.crisisDia} or higher (either number), call your doctor. If you have chest, back or belly pain, shortness of breath, numbness or weakness, a change in vision, difficulty speaking or a sudden severe headache, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).`,
       });
     } else if (sys >= BP_THRESHOLDS.stage2Sys || dia >= BP_THRESHOLDS.stage2Dia) {
       suggestions.push({
@@ -774,16 +783,25 @@ export function generateSuggestions(
     const statinDrug = medications.statin?.drug ?? '';
     const statinDoses = STATIN_DRUGS[statinDrug]?.doses;
     const switchesAtTop = !!statinDoses && shouldSuggestSwitch(statinDrug, statinDoses[statinDoses.length - 1]);
+    // Statins and pregnancy (US-07 AC14): the start card says not to start one, and every card for
+    // someone already on a statin says when to stop (FDA, NICE NG238 1.5.10), the ezetimibe and
+    // PCSK9 inhibitor cards after their own line.
+    const onStatinPregnancy = 'If you become pregnant, most people should stop their statin: talk to your doctor. If you are planning a pregnancy, NICE advises stopping 3 months before trying to conceive.';
+    // The US labels: bempedoic acid is to be stopped in pregnancy; ezetimibe and the PCSK9 inhibitors lack data
+    // (on a statin, the statin line follows).
+    const pregnancyUnstudied = 'Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.'
+      + (statinDoses ? ` ${onStatinPregnancy}` : '');
     const stepCards: Record<LipidStep, [title: string, text: string]> = {
-      statin: ['Consider starting a statin', 'Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor.'],
-      ezetimibe: ['Consider adding Ezetimibe', 'Discuss adding Ezetimibe 10mg with your doctor.'],
-      'bempedoic-acid': ['Consider adding bempedoic acid', 'Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor.'],
-      'statin-dose': ['Add your statin dose', doseCardText('statin', switchesAtTop ? 'a more potent statin' : null)],
-      'statin-increase': ['Consider increasing statin dose', 'Discuss increasing your statin dose with your doctor.'],
-      'statin-switch': ['Consider switching to a more potent statin', `You're at or near the maximum dose of ${statinDrug.charAt(0).toUpperCase() + statinDrug.slice(1)}. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor.`],
-      pcsk9i: ['Consider a PCSK9 inhibitor', 'Discuss a PCSK9 inhibitor with your doctor.'],
+      statin: ['Consider starting a statin', "Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Don't start a statin if you are pregnant or planning a pregnancy."],
+      ezetimibe: ['Consider adding Ezetimibe', `Discuss adding Ezetimibe 10mg with your doctor. ${pregnancyUnstudied}`],
+      'bempedoic-acid': ['Consider adding bempedoic acid', 'Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor. Not recommended in pregnancy; talk to your doctor if you are pregnant or planning to be.'],
+      'statin-dose': ['Add your statin dose', `${doseCardText('statin', switchesAtTop ? 'a more potent statin' : null)} ${onStatinPregnancy}`],
+      'statin-increase': ['Consider increasing statin dose', `Discuss increasing your statin dose with your doctor. ${onStatinPregnancy}`],
+      'statin-switch': ['Consider switching to a more potent statin', `You're at or near the maximum dose of ${statinDrug.charAt(0).toUpperCase() + statinDrug.slice(1)}. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor. ${onStatinPregnancy}`],
+      pcsk9i: ['Consider a PCSK9 inhibitor', `Discuss a PCSK9 inhibitor with your doctor. ${pregnancyUnstudied}`],
     };
-    // Statin → ezetimibe → bempedoic acid, then the statin's dose if not recorded, a step up or a PCSK9 inhibitor
+    // On a statin: statin → ezetimibe → the statin's dose if not recorded, a step up or a PCSK9 inhibitor.
+    // Statin not tolerated: PCSK9 inhibitor → ezetimibe → bempedoic acid (US-06 AC20).
     for (const step of lipidCascade(medications).suggest) {
       const [title, text] = stepCards[step];
       suggestions.push({ id: `med-${step}`, category: 'medication', priority: 'attention', title, description: `${lipidReason} ${text}` });
@@ -962,10 +980,16 @@ export function generateSuggestions(
       }
     }
 
-    // Lung (age 50-80, smokers with 20+ pack-years — USPSTF 2021)
-    if (age >= 50 && age <= 80 &&
-        (screenings.lungSmokingHistory === 'former_smoker' || screenings.lungSmokingHistory === 'current_smoker') &&
-        screenings.lungPackYears !== undefined && screenings.lungPackYears >= LUNG_PACK_YEARS) {
+    // Lung (age 50-80, smokers with 20+ pack-years — ACS 2023). Below 20 or past 80, an abnormal CT
+    // keeps its follow-up card until the follow-up is completed (US-07 AC1f, AC1g; Brad 2026-11-03).
+    const lungSmoker = age >= 50 &&
+        (screenings.lungSmokingHistory === 'former_smoker' || screenings.lungSmokingHistory === 'current_smoker');
+    if (lungSmoker && (age > 80 || screenings.lungPackYears === undefined || screenings.lungPackYears < LUNG_PACK_YEARS)) {
+      const followup = screenings.lungScreening && screenings.lungScreening !== 'not_yet_started' && screenings.lungLastDate
+        && screenings.lungResult === 'abnormal' && screenings.lungFollowupStatus !== 'completed'
+        && screeningFollowup('lung', screenings.lungScreening, screenings.lungResult, screenings.lungFollowupStatus, screenings.lungFollowupDate);
+      if (followup) suggestions.push(followup);
+    } else if (lungSmoker) {
       if (!screenings.lungScreening || screenings.lungScreening === 'not_yet_started') {
         suggestions.push({
           id: 'screening-lung',

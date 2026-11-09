@@ -4,7 +4,12 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, waitFor } from '@testing-library/react';
-import { CURRENT_SCHEMA_VERSION, MemoryAdapter, MemoryCloud, migrateFile, ROADMAP_FILE_NAME, rowRootIds, upsertSupplement, type RoadmapFile } from '@roadmap/health-core';
+import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { migrateFile } from '@roadmap/health-core/migrate';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import { rowRootIds } from '@roadmap/health-core/merge';
+import { upsertSupplement } from '@roadmap/health-core/state-edits';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveSupplement } from '../lib/roadmap-data';
 import { ERASE_UNREACHABLE, RoadmapStore } from '../storage/roadmap-store';
 import { DRAFTS_CLEARED_EVENT } from '../lib/storage';
@@ -22,6 +27,7 @@ vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 
 import { HealthTool } from './HealthTool';
+import { deleteButton } from '../testing/settings';
 
 useHealthToolLifecycle();
 
@@ -172,6 +178,7 @@ describe('US-06 AC1b: supplement dose autosave', () => {
     await settle();
     expect((await persisted()).supplements[0]).toMatchObject({ doseValue: 25, status: 'stopped' });
     expect(view.container.querySelector('.supplement-dose')).toBeNull();
+    fireEvent.click(view.getByRole('button', { name: '+ Add another supplement' })); // its search (US-62 AC30c)
     fireEvent.change(view.container.querySelector('.supplement-add input')!, { target: { value: 'Test supplement' } });
     fireEvent.click(view.container.querySelector('.supplement-custom')!);
     expect(dose(view.container).value).toBe('');
@@ -248,7 +255,7 @@ describe('US-11: supplement dose draft erase lifecycle', () => {
         vi.stubGlobal('confirm', () => true);
         const alert = vi.fn();
         vi.stubGlobal('alert', alert);
-        fireEvent.click(view.getByText('Delete All My Data'));
+        fireEvent.click(deleteButton());
         await waitFor(() => expect(alert).toHaveBeenCalled());
       } else {
         await remoteErase(adapter);
@@ -295,7 +302,7 @@ describe('US-11: supplement dose draft erase lifecycle', () => {
       const alert = vi.fn();
       vi.stubGlobal('confirm', () => true);
       vi.stubGlobal('alert', alert);
-      fireEvent.click(view.getByText('Delete All My Data'));
+      fireEvent.click(deleteButton());
       await waitFor(() => expect(alert).toHaveBeenCalledWith(ERASE_UNREACHABLE));
       failure.mockRestore();
       expect(cleared).not.toHaveBeenCalled();

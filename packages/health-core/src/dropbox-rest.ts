@@ -54,6 +54,46 @@ export function dropboxApiArg(arg: object): string {
   return JSON.stringify(arg).replace(/[\u0080-\uffff]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);
 }
 
+/** `error_summary` of a Dropbox error body, or null when the body is not one
+ *  (a JSON `null` body throws on the read and lands in the catch). */
+function errorSummary(text: string): string | null {
+  try {
+    const summary = (JSON.parse(text) as { error_summary?: unknown }).error_summary;
+    return typeof summary === 'string' ? summary : null;
+  } catch {
+    return null;
+  }
+}
+
+/** A 409 from files/upload is not always a conflict: Dropbox answers 409 for
+ *  every UploadError (US-09 AC35). Only `path/conflict` (the rev moved) and
+ *  `path/too_many_write_operations` (another write held the folder's lock;
+ *  Dropbox says to retry) can pass on a re-read and retry, so they, and a body
+ *  we cannot read, stay a ConflictError. Any other reason, a full Dropbox above
+ *  all, fails once as a StorageError. */
+function uploadRefusal(text: string): Error {
+  const summary = errorSummary(text);
+  if (summary === null || /^path\/(conflict|too_many_write_operations)\b/.test(summary)) {
+    return new ConflictError(`${PROVIDER} write conflict: ${text}`);
+  }
+  if (summary.startsWith('path/insufficient_space')) {
+    // "Nothing was written" goes in the hint: SyncManager swaps the hint when an earlier attempt may have landed.
+    return new StorageError(`${PROVIDER} is full`, 'Nothing was written. Free up space in Dropbox, then try again.', undefined, 409, 'storage-full');
+  }
+  return new StorageError(`${PROVIDER} write failed (409): ${text}`, undefined, undefined, 409);
+}
+
+/** Return quietly when a 409 means "nothing at this path", else throw. Dropbox
+ *  answers 409 for every endpoint error, so only a `not_found` summary is
+ *  absence; any other (a locked, restricted or malformed path, an unreadable
+ *  body) is a failure, never an empty record or a delete that "worked". The
+ *  body is read once: the iPhone engine's Response has no `clone()`. */
+async function expectNotFound(res: Response, what: string): Promise<void> {
+  const summary = errorSummary(await res.text());
+  if (summary !== null && /^path(_lookup)?\/not_found\b/.test(summary)) return;
+  throw new StorageError(`${PROVIDER} ${what} failed (409): ${summary ?? 'unreadable reply'}`, undefined, undefined, 409);
+}
+
 /** A Dropbox `path` argument: an `id:…` from a listing as is, else a folder-relative name. */
 function pathArg(ref: string): string {
   return ref.startsWith('id:') ? ref : `/${ref}`;
@@ -78,7 +118,10 @@ function download(accessToken: string, ref: string, signal?: AbortSignal): Promi
  */
 export async function dropboxRead(accessToken: string, fileName: string, signal?: AbortSignal): Promise<ReadResult> {
   const res = await download(accessToken, fileName, signal);
-  if (res.status === 409) return { body: null, version: null }; // path/not_found
+  if (res.status === 409) {
+    await expectNotFound(res, 'read');
+    return { body: null, version: null };
+  }
   if (!res.ok) throw new StorageError(`${PROVIDER} read failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
   const meta = parseApiResult(res);
   const text = await res.text();
@@ -106,13 +149,15 @@ export async function dropboxDownload(accessToken: string, ref: string, signal?:
 /**
  * Store one uploaded document at its folder-relative `ref`, overwriting
  * whatever is there (refs are collision-suffixed by buildDocumentRef). The
- * browser adapter and an opted-in DropboxAdapter both call this. Bare `fetch`,
- * not `request`: a 10 MB original on a slow uplink outlives `fetchOrFail`'s
- * 30-second bound, and the browser's failures keep the class they always had.
+ * browser adapter and an opted-in DropboxAdapter both call this. A 10 MB
+ * original on a slow uplink outlives the 30-second default, so it gets the
+ * 5 minutes every other document upload has (US-09 AC39, AC13e).
  */
 export async function dropboxUploadDocument(accessToken: string, ref: string, bytes: Blob | Uint8Array<ArrayBuffer>): Promise<void> {
   const arg = { path: `/${ref}`, mode: { '.tag': 'overwrite' }, autorename: false, mute: true };
-  const res = await fetch(UPLOAD_URL, {
+  const res = await request(UPLOAD_URL, {
+    timeoutMs: 300_000,
+    mayHaveWritten: true, // an upload with no answer may have landed (US-09 AC13d)
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -156,7 +201,10 @@ export async function dropboxListFolder(accessToken: string, folder: string, sig
       body: JSON.stringify(body),
       signal,
     });
-    if (res.status === 409 && url === LIST_URL) return []; // path/not_found
+    if (res.status === 409 && url === LIST_URL) {
+      await expectNotFound(res, 'list');
+      return [];
+    }
     if (!res.ok) throw new StorageError(`${PROVIDER} list failed (${res.status})`, undefined, undefined, res.status);
     const page = await jsonBody<{ entries?: Array<Record<string, unknown>>; cursor?: string; has_more?: boolean }>(res);
     for (const entry of page.entries ?? []) {
@@ -182,7 +230,8 @@ async function dropboxDelete(accessToken: string, fileName: string, signal?: Abo
     body: JSON.stringify({ path: `/${fileName}` }),
     signal,
   });
-  if (!res.ok && res.status !== 409) throw new StorageError(`${PROVIDER} delete failed (${res.status})`, undefined, undefined, res.status);
+  if (res.status === 409) return expectNotFound(res, 'delete');
+  if (!res.ok) throw new StorageError(`${PROVIDER} delete failed (${res.status})`, undefined, undefined, res.status);
 }
 
 /**
@@ -222,7 +271,7 @@ export async function dropboxWrite(
     // An upload that went out and got no answer may have landed (US-09 AC13f).
     mayHaveWritten: true,
   });
-  if (res.status === 409) throw new ConflictError(`${PROVIDER} write conflict: ${await res.text()}`);
+  if (res.status === 409) throw uploadRefusal(await res.text());
   if (!res.ok) throw new StorageError(`${PROVIDER} write failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
   const meta = await jsonBody<{ rev?: string }>(res);
   if (!meta.rev) throw new StorageError(`${PROVIDER} write returned no rev.`);

@@ -41,7 +41,7 @@ struct SupplementSheet: View {
                         .labelsHidden()
                     }
                 } footer: {
-                    if let message { Text(message).foregroundStyle(.red) } else { Text("Since \(DayText.short(row.startedDay))") }
+                    if let message { Text(message).foregroundStyle(.red) } else { Text(row.dayLine(stopped: false)) }
                 }
                 Section {
                     Button("Stop taking \(row.name)") { confirmingStop = true }.disabled(saving)

@@ -6,7 +6,7 @@
  * country. Only the screen overlays a product block, on the Shopify web build
  * and the iPhone app, for a known adult in the US. Import this module by path,
  * and only under SHOPIFY_SURFACE on the web, so the GitHub Pages bundle carries
- * no product name. Not exported from index.ts for that reason.
+ * no product name. The package has no root entry, so nothing pulls it in by accident.
  *
  * Pure and JSON-shaped, so the iPhone's engine bundle can call it too.
  */

@@ -12,8 +12,7 @@ duplicates.
   resurrection, reminder-optout revert, BP validation hole) share one shape:
   a mutation path that bypasses the established stamped/validated helper. When
   auditing, look for the sibling that doesn't use the shared helper.
-- **2026-08-07 [funnel]** Product events went live 2026-08-06 (lab rows 08-07): earlier weeks are
-  no-data, not zero-usage.
+- **2026-08-07 [funnel]** Events live 08-06 (lab rows 08-07): earlier weeks are no-data, not zero.
 - **2026-08-10 [funnel]** A funnel event reading 0 can be dead instrumentation,
   not zero usage (`chat_opened`: unreachable emit site, then a second layer —
   side bundles with their own vite configs never define `VITE_SHOPIFY_SURFACE`,
@@ -155,7 +154,7 @@ duplicates.
   back only in the browser that made it, and mostly lands elsewhere: 14 of 17
   W40 clicks fired `email_landing_empty` within ~3.4 s (16 of 21 since 09-24);
   1 of 8 visitors clearly recovered. W41: 9 of 20, about 8 clicks opened a plan,
-  2 of 9 recovered; W42: 11 of 30, 3 of 10; W44: 10 of 43, 2 of 10. None of the landing ids had any earlier event (an unused browser). A connect is not a recovery: require
+  2 of 9 recovered; W42: 11 of 30, 3 of 10; W44: 10 of 43, 2 of 10; W45: 8 of 20, 0 of 8. None of the landing ids had any earlier event (an unused browser). A connect is not a recovery: require
   `results_viewed` after it (W39's "recovered" visitor connected, saw nothing,
   and kept looking). Pair clicks to landings by timestamp; the email events'
   constant `visitor_id` cannot.
@@ -164,19 +163,22 @@ duplicates.
   09-24T21:49 while the old code was still live. The obvious suspect
   (94627c07, "never repeat one") shipped 8 h later, so it is ruled out; the
   cause is one of three bundles that night. Check the suspect commit's deploy
-  time against the last row before naming it (W40 review R2).
-- **2026-10-18 [feedback]** Replies to our emails are a feedback channel the form search misses:
-  W40's Drive complaint (Klaviyo follow-up) and W42's urine-creatinine report (plan-ready email, a
-  clinical-pipeline defect, unread for hours) both came that way. Search those replies every run.
+  time against the last row before naming it (W40 review R2). Confirmed again W45: the US-62
+  redesign dropped `guide_opened`'s `header` emit (40 → 9) and redefined `results_viewed` twice.
+- **2026-10-18 [feedback]** Replies to our emails are feedback the form search misses: W40's Drive
+  complaint and W42's urine-creatinine defect both came that way. Search them every run.
 - **2026-10-18 [instrumentation]** `upload_started`/`upload_saved` fire once per TAB
   (server-api.ts:164-171); only `upload_outcome` (live 10-13) counts runs. Unit refusals with no
   nearby start/save are a tab's later runs (W41's "untraced path"); started vs saved hides those runs.
+- **2026-11-09 [instrumentation]** `upload_saved`'s `count` is the session's total since US-12 AC6c:
+  a retry after a partial save adds to what the first Save saved (documents by content hash, else file name).
+  Before, it was the last attempt's alone. The event still fires once per tab.
 - **2026-10-20 [instrumentation]** From the PR #197 deploy, `cloud_connect_*` events throttle once per
   TAB per PROVIDER (was per tab): a tab trying Dropbox then Drive now sends both starts. New
   `cloud_connect_cancelled` counts only the provider's Cancel/Deny (redirect path); browser Back and
   GIS-popup cancels stay silent. Read the funnel per visitor, never starts minus outcomes (US-09 AC22).
   Baseline before the break: 29 of 86 Drive visitors reached no outcome (07-22..10-18). Refused
-  share of Drive visitors: W42 41%, W43 33%, W44 52% (no reason key on the row).
+  share of Drive visitors: W42 41%, W43 33%, W44 52%, W45 47% (no reason key on the row).
 - **2026-10-25 [instrumentation]** `lab_unit_refused` omits any unit `isLabUnitWord` distrusts
   (roadmap-data.ts:206) and fires only when `labUnitTaken` is false. Since be7b1b58 reached the
   widget (first `(blank)` row 10-28T21:48Z), an absent unit means an untrusted spelling and
@@ -186,6 +188,7 @@ duplicates.
   default. Two workers' parallel `npm ci` in one checkout left node_modules broken ("stryker: not
   found"), and as root the US-31 AC8 unwritable-folder test passes its write, so Stryker's dry run
   aborts. Run it alone, as a non-root user, in a copy of the checkout; start it first (~1 h).
+  W45: that user cannot read the proxy CA; copy it and pass the proxy env, or npm ci fails.
 - **2026-10-31 [fleet]** A loop's ledger can silently skip a range: repo-health's had no rows from
   #263 on, so W44's pass logged 98 items at once and the median fell for a batch-merge reason.
   Check the last ledgered ref against the newest external item before computing a median.

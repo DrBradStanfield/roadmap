@@ -1,7 +1,7 @@
-<!-- generated — never edit; source hash sha256:edcd18b9bea3947ac53d5db2b7382b7cc59f23bb271d9e389fd28b2f8e4d874c -->
+<!-- generated — never edit; source hash sha256:714c5ecd43d966303c40a5146f63be840a3dfeff3337542b12f4e7e91cd2b82c -->
 <!-- Built by claude_business tools/sync-shared-docs.mjs from docs/customer-service/answer-bank.md. Edit the master there and rerun the sync. -->
 
-Approved answers to questions customers have asked by email (81 entries), written in the first person. Each entry gives the question, then the answer.
+Approved answers to questions customers have asked by email (78 entries), written in the first person. Each entry gives the question, then the answer.
 
 ### Can the glycine or glycinate mineral forms in MicroVitamin cause reactions in someone sensitive to glycine or who reacted badly to magnesium glycinate?
 
@@ -141,7 +141,7 @@ Yes, you can open the capsule and mix the powder into your food
 
 Please let me know if you need any further assistance
 
-### Is it better to split the dose through the day?
+### Is it better to split the MicroVitamin+ dose through the day?
 
 To my knowledge, there's no clinical trial that has demonstrated benefit to
 spreading out vitamin intake throughout the day, compared to taking it all
@@ -161,44 +161,8 @@ What do you think?
 
 Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
-Yes, ideally medications would be taken at a different time to
-MicroVitamin+ powder, due to the psyllium husk
-
-Please let me know if you have any other questions
-
-### Does the psyllium husk in MicroVitamin+ reduce absorption of its vitamins and minerals?
-
-Product facts here vary by market: confirm them in PRODUCTS for the user's country.
-
-Yes, I have an FAQ about this on my website:
-Does the psyllium husk in MicroVitamin+ reduce absorption of the vitamins
-and minerals?
-
-No. In human clinical studies, psyllium supplementation has not been shown
-to cause clinically meaningful changes in vitamin and mineral status
-compared with placebo, even when used for several months and at doses
-higher than the 2.5 g of psyllium in one serving of MicroVitamin+
-
-   Reference: "Psyllium treatment had no clinically significant
-   effects on vitamin and mineral status." (American Journal of Clinical
-   Nutrition) https://ajcn.nutrition.org/article/S0002-9165(23)07010-7/pdf
-   Reference: "Psyllium... makes little practical difference to
-   availability of co-ingested calcium." (PubMed)
-   https://pubmed.ncbi.nlm.nih.gov/7884114/
-   Reference: "No significant between group differences in serum
-   micronutrient concentrations after... psyllium fibre supplementation."
-   (Springer Nature) https://link.springer.com/article/10.1186/s40795-022-00534-7
-
-Please let me know if you have any other questions
-
-### Does 2.5g of psyllium do anything, given studies use 7 to 10g?
-
-This is a tricky one. In a perfect world, I'd have more psyllium husk in
-MicroVitamin+, but that might cause side effects for some people.
-I thought it would be better to opt for a lower dose, and if people wanted
-to add additional psyllium, then they can
-
-What do you think?
+Yes, ideally medications would be taken at a different time to MicroVitamin+ powder, as fiber can slow how some medicines are absorbed
+A gap of a couple of hours is plenty
 
 ### Is the vitamin B6 a concern for someone with peripheral neuropathy?
 
@@ -288,17 +252,6 @@ to you:
 https://youtu.be/jtvFe_cibS8
 
 Let me know what you think
-
-### How much leucine is in the capsules, and is it enough for muscle?
-
-Product facts here vary by market: confirm them in PRODUCTS for the user's country.
-
-Yes, there's very little L-Leucine in the capsules and it's primarily used
-as a flow agent.
-The best way to get enough Leucine is via a good diet that has around 1.2g
-of protein per kg of ideal bodyweight per day
-
-Please let me know if you have any other questions
 
 ### The Sleep supplement kept me awake; what should I do?
 
@@ -510,15 +463,13 @@ Given your history, please show the label to your doctor before starting it
 
 Please let me know if you have any other questions
 
-### The psyllium in MicroVitamin+ gives me hard or painful stools (with IBS)
+### Is MicroVitamin+ OK if I have IBS?
 
 Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
-Some people with IBS find psyllium husk doesn't agree with them
-Drinking plenty of water with the powder can help
-Or the MicroVitamin capsules have most of the same vitamins and minerals without the psyllium, if you'd like to switch
-
-Looking forward to hearing from you
+Yes, the acacia fiber in MicroVitamin+ is fine to take if you have IBS
+It's a gentle fiber that most people tolerate well
+If you notice any gut symptoms when you start, you could begin with half a scoop and build up over a week or two
 
 ### Could MicroVitamin+ cause vivid dreams?
 

@@ -21,8 +21,9 @@ vi.mock('../lib/chat-api', () => ({
   listConversations: vi.fn(), loadConversation: vi.fn(), deleteConversation: vi.fn(),
 }));
 const postSync = vi.hoisted(() => vi.fn());
+const postInputSync = vi.hoisted(() => vi.fn());
 vi.mock('../lib/chat-sync', () => ({
-  postSync, postInputSync: vi.fn(), subscribeSync: () => () => {}, generateInstanceId: () => 'test',
+  postSync, postInputSync, subscribeSync: () => () => {}, generateInstanceId: () => 'test',
 }));
 
 import * as hookModule from './useChatState';
@@ -125,6 +126,34 @@ describe('US-15 AC16/AC17 — streaming state in useChatState', () => {
     expect(state.pending.text).toBe('');
     expect(state.messages).toEqual([]);
     expect(state.error).toBe('Network error');
+  });
+});
+
+// US-15 AC57: a send that fails takes the question off the thread, so it goes
+// back in the box. Before, the box was cleared at send and never refilled, and
+// the question was gone (@robertaustinbell's untangle audit, bug 8).
+describe('US-15 AC57 — a failed send puts the question back in the box', () => {
+  it('the question returns to an empty box', async () => {
+    const { hook, sending } = await startSend();
+    expect(hook.result.current.state.inputText).toBe('');
+    await act(async () => { send.resolve!({ result: null, error: { error: 'Network error' } }); await sending; });
+    expect(hook.result.current.state.inputText).toBe('What about ApoB?');
+    expect(hook.result.current.state.error).toBe('Network error');
+    // Other tabs mirror the box, so they get the question back too.
+    expect(postInputSync).toHaveBeenLastCalledWith('test', 'What about ApoB?');
+  });
+
+  it('text already in the box (mirrored from another tab) is kept', async () => {
+    const { hook, sending } = await startSend();
+    act(() => hook.result.current.actions.handleInputChange('And LDL?'));
+    await act(async () => { send.resolve!({ result: null, error: { error: 'Network error' } }); await sending; });
+    expect(hook.result.current.state.inputText).toBe('And LDL?');
+  });
+
+  it('a send that succeeds leaves the box empty', async () => {
+    const { hook, sending } = await startSend();
+    await act(async () => { send.resolve!({ result: { conversationId: 'c1', messageId: null, content: 'ApoB counts.' }, error: null }); await sending; });
+    expect(hook.result.current.state.inputText).toBe('');
   });
 });
 
@@ -292,6 +321,16 @@ describe('US-15 AC6a — the reply came back in a new conversation', () => {
     expect(state.conversations[0].title).toBe('What about ApoB?');
     expect(state.messages.map(m => m.content)).toEqual(['What about ApoB?', 'ApoB counts.']);
     expect(postSync.mock.calls.at(-1)![0].payload).toMatchObject({ activeConversationId: 'c2' });
+  });
+
+  it('US-15 AC26b: the new conversation\'s title in the list is never cut through an emoji', async () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    act(() => hook.result.current.actions.handleInputChange(`${'q'.repeat(79)}\u{1F600} and more`));
+    let sending!: Promise<void>;
+    act(() => { sending = hook.result.current.actions.handleSend(); });
+    await act(async () => { send.resolve!({ result: { conversationId: 'c9', messageId: 'm9', content: 'ok' }, error: null }); await sending; });
+    expect(hook.result.current.state.conversations[0].title).toBe('q'.repeat(79));
+    expect(JSON.stringify(postSync.mock.calls.at(-1)![0].payload)).not.toMatch(/\\ud83d(?!\\ude00)/i);
   });
 
   it('US-15 AC6a: opening a thread the server no longer recognizes drops it from the list', async () => {

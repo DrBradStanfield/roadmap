@@ -7,13 +7,13 @@
  * standard prescribing facts Brad approved (side effects, how a drug works; Brad
  * 2026-10-25), the standard measuring and preparation tips he approved as a category,
  * and the lines he restored (Brad 2026-10-26; docs/drafts/metric-guides.md). Sources are evidence.ts's own references, never a new citation.
- * The five Apple Health guides (Brad 2026-10-31; docs/drafts/live-metric-guides.md) restate the claims he
+ * The four Apple Health guides (Brad 2026-10-31, heart rate's deleted 2026-11-06; docs/drafts/live-metric-guides.md) restate the claims he
  * approved there, which roadmap_text.html now states and cites; Apple sources back only device facts.
  * metric-guides.test.ts holds both rules: every source resolves to an evidence.ts
  * reference, and every number is on its entry's list, found in the clinical files.
  *
  * Keys: metric types from mappings.ts (blood pressure as one, `blood_pressure`), height,
- * MEDICATION_KEYS without the two escalation answers, and the five Apple Health metrics in snake case
+ * MEDICATION_KEYS without the two escalation answers, and the four Apple Health metrics in snake case
  * (the app's `LiveMetric.guideKey`). The iOS engine serves them on
  * My data (ios/engine/my-data.ts), so a correction ships over the air (ios/architecture.md D3).
  */
@@ -215,7 +215,7 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   bempedoic_acid: {
     title: 'Bempedoic acid',
     whatItIs: 'A daily 180 mg tablet (Nexletol) that lowers LDL cholesterol. It also comes combined with ezetimibe (Nexlizet).',
-    whyItMatters: 'In the CLEAR Outcomes trial, people who could not take statins had 13% fewer major heart and blood vessel events on bempedoic acid. It can also be used alongside a statin for extra lowering.',
+    whyItMatters: 'In the CLEAR Outcomes trial, people who could not take statins had 13% fewer major heart and blood vessel events on bempedoic acid. It can be taken with a statin, but this plan suggests it only to people who cannot take a statin.',
     howTo: { heading: WORKS, points: [
       'It lowers the cholesterol your liver makes, working at a different step from statins.',
       'It is activated in the liver but not in muscle, which may explain why muscle aches seem less common than with statins.',
@@ -277,17 +277,6 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
 
   // ── Apple Health (US-56 pages; US-58 AC7, Brad 2026-10-31) ──
   // Apple's pages are cited only for how its devices measure, never for a clinical claim.
-  heart_rate: {
-    title: 'Heart rate',
-    whatItIs: 'How many times your heart beats each minute (bpm). Apple Watch measures your pulse with light sensors on its back, through the day and during workouts.',
-    whyItMatters: 'Heart rate rises with activity, stress, caffeine, heat, dehydration and illness, and falls as you rest. The pattern over days tells you more than any one reading. Get emergency care for chest pain, whatever your pulse, or for a racing pulse with fainting, dizziness or breathlessness. A very slow pulse with fainting, dizziness or breathlessness needs prompt medical care.',
-    howTo: { heading: READ, points: [
-      'Compare readings taken at rest with each other, not with readings taken just after moving.',
-      'Wear the watch so it fits well. A good fit helps the reading.',
-      'If your watch warns of a high, low or irregular heart rate, tell your doctor.',
-    ] },
-    sources: [ref('Gulati 2021'), ref('NHS 2024'), ref('Kusumoto 2019'), ref('Apple 2026 – Monitor your heart rate')],
-  },
   resting_heart_rate: {
     title: 'Resting heart rate',
     whatItIs: 'Your heart rate when you are calm and still: the lowest it runs while you are awake and resting. Apple Watch estimates it each day from readings taken while you sit still, so the day\'s value can change as more readings come in.',

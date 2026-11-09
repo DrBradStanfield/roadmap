@@ -27,7 +27,7 @@ final class ChatKeyboardUITests: XCTestCase {
 
     @MainActor
     private func type(_ text: String, into field: XCUIElement, of app: XCUIApplication) {
-        let myData = app.tabBars.buttons["My data"].frame
+        let myHealth = app.tabBars.buttons["My health"].frame
         field.tap()
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5),
                       "the software keyboard shows (turn off Connect Hardware Keyboard)")
@@ -40,10 +40,10 @@ final class ChatKeyboardUITests: XCTestCase {
         }
         XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: onScreen, object: nil)], timeout: 10), .completed,
                        "the keyboard is on screen: \(app.keyboards.firstMatch.frame)")
-        // isHittable ignores the keyboard's window, so the check is a tap: where My data
+        // isHittable ignores the keyboard's window, so the check is a tap: where My health
         // was, the keyboard takes it.
-        app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: myData.midX, dy: myData.midY)).tap()
-        XCTAssertFalse(app.buttons["Add medical records"].firstMatch.waitForExistence(timeout: 2), "the keyboard covers the tab bar: My data did not open")
+        app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: myHealth.midX, dy: myHealth.midY)).tap()
+        XCTAssertFalse(app.buttons["Add medical records"].firstMatch.waitForExistence(timeout: 2), "the keyboard covers the tab bar: My health did not open")
         XCTAssertTrue(app.keyboards.firstMatch.exists, "the keyboard is still up")
         keepScreenshot(app.screenshot(), named: "keyboard up")
     }
@@ -53,10 +53,9 @@ final class ChatKeyboardUITests: XCTestCase {
         let gone = NSPredicate(format: "count == 0")
         let wait = XCTNSPredicateExpectation(predicate: gone, object: app.keyboards)
         XCTAssertEqual(XCTWaiter.wait(for: [wait], timeout: 5), .completed, "the keyboard went down")
-        XCTAssertTrue(app.tabBars.buttons["My data"].isHittable, "My data is one tap away")
-        XCTAssertTrue(app.tabBars.buttons["My plan"].isHittable, "My plan is one tap away")
-        app.tabBars.buttons["My data"].tap()
-        XCTAssertTrue(app.buttons["Add medical records"].firstMatch.waitForExistence(timeout: 5), "one tap opens My data")
+        XCTAssertTrue(app.tabBars.buttons["My health"].isHittable, "My health is one tap away")
+        app.tabBars.buttons["My health"].tap()
+        XCTAssertTrue(app.buttons["Add medical records"].firstMatch.waitForExistence(timeout: 5), "one tap opens My health")
     }
 
     @MainActor

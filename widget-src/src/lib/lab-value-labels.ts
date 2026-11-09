@@ -1,4 +1,7 @@
-import { METRIC_LABELS, PRESSURE_ORDER, UNIT_DEFS, roundBoundInward, type MeasurementRefusal, type MetricType } from '@roadmap/health-core';
+import { METRIC_LABELS } from '@roadmap/health-core/mappings';
+import { PRESSURE_ORDER } from '@roadmap/health-core/validation';
+import { UNIT_DEFS, roundBoundInward, type MetricType } from '@roadmap/health-core/units';
+import type { MeasurementRefusal } from '@roadmap/health-core/record-edits';
 import { cellDecimalPlaces, cellFromSI, cellLabel, type CellUnit } from './blood-test-cell';
 
 /** The same line for a blood test value the record refused (US-12 AC6,

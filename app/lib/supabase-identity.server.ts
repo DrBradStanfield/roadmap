@@ -4,6 +4,7 @@
  */
 import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin } from './supabase-client.server';
+import { safeErrorFields } from './safe-error-fields.server';
 
 // ---------------------------------------------------------------------------
 // User ID cache — avoids repeated profile lookups for the same customer.
@@ -58,7 +59,7 @@ export function logAudit(
       metadata: metadata ?? null,
     })
     .then(({ error }) => {
-      if (error) console.error('Audit log failed:', error.message);
+      if (error) console.error('Audit log failed:', safeErrorFields(error));
     });
 }
 
@@ -171,8 +172,8 @@ export async function getOrCreateSupabaseUser(
     );
 
   if (upsertError) {
-    console.error('Failed to create profile:', upsertError);
-    throw new Error(`Failed to create profile: ${upsertError.message}`);
+    console.error('Failed to create profile:', safeErrorFields(upsertError));
+    throw new Error('Failed to create profile');
   }
 
   // Verify the row carries this link — catches silent failures and a competing insert

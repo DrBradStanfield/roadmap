@@ -25,6 +25,9 @@
   .hr-hero-long { display: none; }
   .hr-hero-short { display: inline; }
 }
+/* US-62 AC35c: on a phone the hero tops My health only, not Chat or Account (the tab bar marks the page). */
+html[data-hr-tab="chat"] .hr-hero,
+html[data-hr-tab="account"] .hr-hero { display: none; }
 
 /* Sync control (rendered inside the plan panel, where "Data synced" was). */
 .hr-sync {
@@ -118,12 +121,19 @@
 .hr-modal::backdrop { background: rgba(28, 43, 51, 0.45); }
 .hr-modal--wide { max-width: 960px; }
 .hr-modal-inner { position: relative; padding: 24px 24px 20px; }
-.hr-modal h2 { font-size: 19px; margin: 0 32px 6px 0; }
+.hr-modal h2 { font-size: 19px; margin: 0 48px 6px 0; }
+.hr-modal h2:focus { outline: none; }
 .hr-modal-sub { font-size: 13.5px; color: #5a6b73; margin: 0 0 14px; }
-.hr-modal-close {
-  position: absolute; top: 10px; right: 12px; background: none; border: 0;
-  font-size: 24px; line-height: 1; color: #5a6b73; cursor: pointer; padding: 4px;
+/* A round, borderless 44px button 16px in from the corner, clear of the scrollbar; the theme's
+   button border never reaches it (design review 2026-11-06). The ring shows for the keyboard only. */
+.hr-modal .hr-modal-close {
+  position: absolute; top: 12px; right: 16px; display: flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; background: none; box-shadow: none;
+  font-size: 24px; line-height: 1; color: #5a6b73; cursor: pointer;
 }
+.hr-modal .hr-modal-close:hover { background: rgba(0, 0, 0, 0.05); }
+.hr-modal .hr-modal-close:focus { outline: none; }
+.hr-modal .hr-modal-close:focus-visible { outline: 2px solid var(--color-brand-text); outline-offset: 0; }
 .hr-modal-back {
   background: none; border: 0; color: var(--color-brand-text); font-size: 13px; cursor: pointer;
   padding: 0; margin-bottom: 10px;
@@ -156,7 +166,7 @@
 @media (max-width: 600px) {
   .hr-modal { max-width: none; width: 100vw; border-radius: 0; max-height: 100dvh; height: 100dvh; margin: 0; }
 }
-/* US-09 AC5 — "Where do you want to keep your health record?" leads the local
+/* US-09 AC5 — "Keep my record in Dropbox or Google Drive" leads the local
    state, so it spans the card instead of sitting right-aligned beside a status. */
 .hr-sync-btn-full { margin-left: 0; width: 100%; box-sizing: border-box; }
 /* US-09 AC19: once the guest has their PDF, the storage button wears the form's

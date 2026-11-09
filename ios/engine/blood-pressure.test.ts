@@ -30,6 +30,18 @@ const webPair = (systolic: number, diastolic: number) => edited(edited(nz(), NOW
 const history = (file: RoadmapFile) => metricHistory(file, 'blood_pressure', LATER).rows.map((row) => [row.day, row.value, row.status]);
 
 describe('blood pressure, one reading (US-25 AC17)', () => {
+  it('a half printed as a limit carries its printed words, for the chart\'s hollow point (US-12 AC20a, #922)', () => {
+    const file = edited(nz(), NOW,
+      { kind: 'bloodPressure', systolic: 125, diastolic: 78, day: '2026-10-02' },
+      { kind: 'bloodPressure', systolic: 120, diastolic: 80, day: '2026-10-20' });
+    file.measurements.find((row) => row.metricType === 'systolic_bp' && row.recordedAt.startsWith('2026-10-02'))!.comparator = '<';
+    const [exact, limited] = metricHistory(file, 'blood_pressure', LATER).rows;
+    expect(limited).toMatchObject({ value: '< 125/78', systolic: '125', diastolic: '78', systolicLimit: '< 125' });
+    expect(limited).not.toHaveProperty('diastolicLimit');
+    expect(exact).not.toHaveProperty('systolicLimit');
+    expect(exact).not.toHaveProperty('diastolicLimit');
+  });
+
   it('My data shows one row, the newest day\'s pair', () => {
     const file = edited(nz(), NOW,
       { kind: 'bloodPressure', systolic: 130, diastolic: 85, day: '2026-09-01' },
@@ -329,5 +341,34 @@ describe('blood pressure the right way up (US-02 AC8)', () => {
   it('one half typed on the web against the other half held is refused too', () => {
     const sys = edited(nz(), NOW, { kind: 'add', metric: 'systolic_bp', value: 80, day: '2026-10-20' });
     expect(applyEdit(sys, { kind: 'add', metric: 'diastolic_bp', value: 120, day: '2026-10-20' }, LATER)).toMatchObject({ ok: false, reason: 'out-of-range', message: expect.stringContaining(`${ORDER} To change both numbers`) });
+  });
+});
+
+// A legacy row with no status is active (blood-tests isActive, c71d283c). The BP sheet's page and
+// its save must agree on the pair the day holds, or the sheet can never save that day.
+describe('US-25 AC17: a legacy BP half with no status holds its day', () => {
+  const legacyHalf = (): RoadmapFile => {
+    const file = edited(nz(), NOW, { kind: 'add', metric: 'systolic_bp', value: 120, day: '2026-10-20' });
+    const { status: _status, ...legacy } = file.measurements[0];
+    return { ...file, measurements: [legacy as RoadmapFile['measurements'][number]] };
+  };
+
+  it('the page shows it as the pair now, and the sheet saves with the seenIds it gives: a correction', () => {
+    const file = legacyHalf();
+    const id = file.measurements[0].id;
+    const page = metricHistory(file, 'blood_pressure', LATER).rows;
+    expect(page.map((row) => [row.value, row.status, row.current])).toEqual([['120/–', 'active', true]]);
+    expect(page[0].pairIds).toEqual([id]);
+    // The sheet's first save asks first, offering the held half.
+    expect(applyEdit(file, { kind: 'bloodPressure', systolic: 125, diastolic: 80, day: '2026-10-20' }, LATER))
+      .toMatchObject({ ok: false, reason: 'slot-occupied', existingId: id });
+    // The replace sends back the ids the page gave.
+    const out = applyEdit(file, { kind: 'bloodPressure', systolic: 125, diastolic: 80, day: '2026-10-20', replace: true, seenIds: page[0].pairIds }, LATER);
+    if (!out.ok) throw new Error(out.message);
+    expect(out.file.measurements.map((row) => [row.metricType, row.value, row.status, row.correctsId ?? null])).toEqual([
+      ['systolic_bp', 120, 'entered-in-error', null],
+      ['systolic_bp', 125, 'active', id],
+      ['diastolic_bp', 80, 'active', null],
+    ]);
   });
 });

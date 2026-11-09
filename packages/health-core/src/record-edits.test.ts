@@ -533,6 +533,22 @@ describe('US-35 AC6 — one slot rule for the website and the connector', () => 
 describe('US-35 AC8 — bulkAppendValues is the review table’s save, as one pure rule', () => {
   const day = '2026-08-01';
 
+  // c71d283c: a legacy row with no status is active: it takes its slot, and a correction may name it.
+  it('US-35 AC8 — a legacy row with no status takes its slot, and a correctsId on it supersedes it', () => {
+    const typed = ok(appendLabValue(base(), { metricName: 'tsh', value: 1.2, unit: 'mIU/L', recordedAt: day, now: NOW, source: 'manual' }));
+    const { status: _s, ...legacy } = typed.file.labValues.at(-1)!;
+    const file = { ...typed.file, labValues: [...typed.file.labValues.slice(0, -1), legacy as FileLabValue] };
+    const row = { kind: 'lab' as const, metricName: 'tsh', value: 2.4, unit: 'mIU/L', recordedAt: day, source: 'lab_import' as const };
+    const taken = bulkAppendValues(file, [row], NOW);
+    expect(taken.saved).toEqual([]);
+    expect(taken.skippedDuplicates).toBe(1);
+    const fixed = bulkAppendValues(file, [{ ...row, correctsId: legacy.id }], NOW);
+    expect(fixed.skippedDuplicates).toBe(0);
+    expect(fixed.file.labValues.filter((l) => l.metricName === 'tsh').map((l) => [l.value, l.status, l.correctsId])).toEqual([
+      [1.2, 'entered-in-error', null], [2.4, 'active', legacy.id],
+    ]);
+  });
+
   it('US-35 AC17 — refuses an invalid core correction without tombstoning the old row', () => {
     const file = base();
     const result = bulkAppendValues(file, [

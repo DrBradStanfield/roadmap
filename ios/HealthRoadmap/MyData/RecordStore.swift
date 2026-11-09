@@ -20,15 +20,17 @@ final class RecordStore {
 
     /// The record as stored, JSON text.
     private(set) var recordJSON: String { didSet { if recordJSON != oldValue { revision += 1 } } }
-    /// My data and the plan, from one engine call, so the two always show the same record
+    /// My health's rows and the plan, from one engine call, so the two always show the same record
     /// (US-25 AC2); nil while the record cannot be read.
     private(set) var drawn: HealthEngine.Drawn?
-    /// What My data shows; nil while the record cannot be read.
+    /// My health's rows and forms; nil while the record cannot be read.
     var myData: MyData? { drawn?.myData }
-    /// What the Plan tab shows; nil while the record cannot be read.
+    /// My health's plan; nil while the record cannot be read.
     var plan: PlanState? { drawn?.plan }
+    /// The plan's cards by topic, from the same call (US-73 AC3).
+    var topics: TopicLayout? { drawn?.topics }
     /// Why the record cannot be read, if it cannot. The app then writes nothing.
-    private(set) var problem: String?
+    private(set) var problem: RecordProblem?
     /// While a cloud record is open (US-25 AC11): the erase the screen shows. Every
     /// edit then goes through the engine's session, which refuses one made for
     /// another erase. Nil: the record is the phone's file, written here.
@@ -54,10 +56,13 @@ final class RecordStore {
     private(set) var ownSaves = 0
     /// Moves whenever the record or the per-test units change: a page keyed on it asks again.
     private(set) var revision = 0
+    /// Moves with every screen drawn: each edit, and a redraw of the same record (a new day, a
+    /// storefront switch), which moves no `revision`. My health builds its page on it (review round 2).
+    private(set) var draws = 0
     /// Where the record is kept.
     let file: URL
     let deviceId: String
-    private let engine: HealthEngine
+    let engine: HealthEngine  // not private: RecordStore+Documents.swift reads it
 
     /// What the screen showed when an edit began: the erase it was at (nil on the
     /// phone's file) and its units. A sheet pins it as it opens (`pinsRecord`),
@@ -149,6 +154,7 @@ final class RecordStore {
     /// to catch (US-25 AC18, review R5).
     private func display(_ drawn: HealthEngine.Drawn?) {
         self.drawn = drawn
+        draws += 1
         if drawn?.plan.planned == true { engine.trial?.confirm() }
     }
 
@@ -234,7 +240,7 @@ final class RecordStore {
                 self.show(try await self.engine.loadPhone(file, deviceId: deviceId, units: units))
             } catch {
                 self.display(nil)
-                self.problem = "Your record on this iPhone could not be opened. \(error.localizedDescription)"
+                self.problem = RecordProblem(error)
             }
         }
     }
@@ -301,30 +307,42 @@ final class RecordStore {
         return try String(contentsOf: file, encoding: .utf8)
     }
 
-    /// The history and its chart's inputs, read by the engine once per `revision` and metric,
+    /// The history and its chart's inputs, read by the engine once per `stamp` and metric,
     /// off the main thread: a second ask while that read runs (a page and the page above it)
     /// joins it. Kept in `histories`, which a page draws; older revisions' are dropped.
     /// `series` "lab": `metric` is a lab test's series key, its own history (US-25 AC25), kept apart
     /// from a core metric of the same name.
     func chart(for metric: String, series: String? = nil) async -> ChartData? {
         guard problem == nil else { return nil }
-        let revision = revision
+        let stamp = self.stamp(series)
         let key = Self.historyKey(metric, series)
-        if let kept = histories[key], kept.revision == revision { return kept.chart }
-        if let read = reading[key], read.revision == revision { return await read.task.value }
+        if let kept = histories[key], kept.stamp == stamp { return kept.chart }
+        if let read = reading[key], read.stamp == stamp { return await read.task.value }
         let (units, record, deviceId, engine) = (unitChoices.json, recordJSON, deviceId, engine)
         let task = Task {
             (try? await engine.history(recordJSON: record, metric: metric, now: .now, deviceId: deviceId, units: units, series: series)).map(ChartData.init)
         }
-        reading[key] = (revision, task)
+        reading[key] = (stamp, task)
         let chart = await task.value
-        if reading[key]?.revision == revision { reading[key] = nil }
+        if reading[key]?.stamp == stamp { reading[key] = nil }
         // The record moved on while the engine ran: a page asks again for the new one.
-        if revision == self.revision {
-            histories = histories.filter { $0.value.revision == revision }
-            histories[key] = KeptHistory(revision: revision, chart: chart)
+        if stamp == self.stamp(series) {
+            histories = histories.filter { $0.value.stamp.revision == stamp.revision }
+            histories[key] = KeptHistory(stamp: stamp, chart: chart)
         }
         return chart
+    }
+
+    /// What a kept history is current for: the record's `revision`, and for a worked-out series
+    /// (eGFR, waist-to-height) the screen drawn too, since it reads the plan for the day drawn
+    /// (an 18th birthday, a next-day resume; review round 3).
+    private func stamp(_ series: String?) -> Stamp {
+        Stamp(revision: revision, draws: series.map(HealthPage.series.contains) == true ? draws : nil)
+    }
+
+    private struct Stamp: Equatable {
+        let revision: Int
+        let draws: Int?
     }
 
     /// A kept history's key: a lab test's is "lab:<series key>", never a core metric's name.
@@ -349,7 +367,7 @@ final class RecordStore {
     /// (adversary R2). Only this one may open a correction: a page keeps drawing the older
     /// one, its taps held, until the fresh one lands.
     func shownHistory(for metric: String, series: String? = nil) -> MetricHistory? {
-        guard problem == nil, let kept = histories[Self.historyKey(metric, series)], kept.revision == revision else { return nil }
+        guard problem == nil, let kept = histories[Self.historyKey(metric, series)], kept.stamp == stamp(series) else { return nil }
         return kept.chart?.history
     }
 
@@ -366,12 +384,12 @@ final class RecordStore {
 
 
     private struct KeptHistory {
-        let revision: Int
+        let stamp: Stamp
         let chart: ChartData?
     }
     private var histories: [String: KeptHistory] = [:]
-    /// A history the engine is reading, for the revision it was asked at.
-    @ObservationIgnored private var reading: [String: (revision: Int, task: Task<ChartData?, Never>)] = [:]
+    /// A history the engine is reading, for the stamp it was asked at.
+    @ObservationIgnored private var reading: [String: (stamp: Stamp, task: Task<ChartData?, Never>)] = [:]
 
     /// One edit, checked against the record the screen showed when it was asked for:
     /// the sheet's pin, taken now, before anything waits.
@@ -423,7 +441,7 @@ final class RecordStore {
             return .refused(message: "Your record changed while this was open, so this was not saved. Close this and enter the value again.", existingId: nil)
         }
         if let erase = seen.erase { return await applyInCloud(edit, erase: erase, seen: seen) }
-        if let problem { return .refused(message: problem, existingId: nil) }
+        if let problem { return .refused(message: problem.words, existingId: nil) }
         // A number read in units the record no longer has, as the cloud session refuses it
         // (cloud.ts dependsOnUnits): the master switch landed while the sheet was open.
         if Self.dependsOnUnits(edit), seen.units != (myData?.unitSystem ?? "si") {
@@ -543,7 +561,7 @@ final class RecordStore {
         guard seen.erase == cloudErase else {
             return .refused("Your record changed while this was open, so this was not saved. Close this and try again.")
         }
-        if seen.erase == nil, let problem { return .refused(problem) }
+        if seen.erase == nil, let problem { return .refused(problem.words) }
         let before = recordJSON
         do {
             // The engine decides whether an original is kept (only in a cloud); off-cloud

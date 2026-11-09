@@ -15,7 +15,10 @@
  * until a test saves it.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ConflictError, createEmptyFile, createMeasurement, MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME, StorageError, toOldShape, type RoadmapFile } from '@roadmap/health-core';
+import { ConflictError, ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
+import { createEmptyFile, createMeasurement, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { toOldShape } from '@roadmap/health-core/blood-tests';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from './roadmap-store';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { BT_TIMELINE_DRAFT_KEY, DRAFTS_CLEARED_EVENT, VITALS_DRAFT_KEY } from '../lib/storage';
@@ -132,6 +135,7 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
   });
 
   it('US-09 AC23: a failed save\'s mirror lifted after another tab\'s erase keeps only the rows the erase did not list', async () => {
+    localStorage.setItem('health_roadmap_backend', 'memory'); // the page's cloud, as connect.ts remembers it (US-06 AC13)
     const cloud = new MemoryCloud();
     const seeded = await RoadmapStore.create(new MemoryAdapter(cloud));
     seeded.addMeasurement('weight', 82, '2026-09-18T00:00:00.000Z');

@@ -19,12 +19,22 @@ if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey || !supabaseJwtSecre
 }
 
 // ---------------------------------------------------------------------------
+// Server auth options (US-09 AC36). supabase-js defaults suit a browser. Off
+// one, every client starts a 30-second token-refresh ticker when it is built
+// and never stops it, and the ticker keeps the client in memory. A client built
+// per request therefore stayed for the life of the process. These clients carry
+// a fixed key or a signed JWT, never an Auth session, so there is nothing to refresh.
+// ---------------------------------------------------------------------------
+
+const SERVER_AUTH = { autoRefreshToken: false } as const;
+
+// ---------------------------------------------------------------------------
 // Admin client — service key, bypasses RLS.
 // Used for user creation, profile lookups, and platform-bot writes (Discord).
 // ---------------------------------------------------------------------------
 
 export const supabaseAdmin = supabaseUrl && supabaseServiceKey
-  ? createClient(supabaseUrl, supabaseServiceKey)
+  ? createClient(supabaseUrl, supabaseServiceKey, { auth: SERVER_AUTH })
   : null;
 
 // ---------------------------------------------------------------------------
@@ -43,6 +53,7 @@ export function createUserClient(userId: string): SupabaseClient {
   );
 
   return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: SERVER_AUTH,
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
 }

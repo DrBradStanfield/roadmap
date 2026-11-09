@@ -43,6 +43,7 @@ import { supabaseAdmin, tryAcquireCronLock } from './supabase.server';
 import { scrubQuestion, SCRUB_TIMEOUT_MS } from './chat-question-scrub.server';
 import { withTimeout } from './cron-helpers.server';
 import { recordServerEvent } from './product-events.server';
+import { safeErrorFields } from './safe-error-fields.server';
 
 const CRON_INTERVAL_MS = 60 * 60 * 1000;
 const TARGET_HOUR_UTC = 4;
@@ -413,7 +414,7 @@ export function startChatPurgeCron(): void {
       await purgeWithLock(todayStr, now);
       lastRunDate = todayStr;
     } catch (error) {
-      console.error('Chat text purge cron error:', error);
+      console.error('Chat text purge cron error:', safeErrorFields(error));
       Sentry.captureException(error, { tags: { feature: 'chat_text_purge_cron' } });
     }
   }, CRON_INTERVAL_MS);

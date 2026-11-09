@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin } from './supabase-client.server';
 import { logAudit } from './supabase-identity.server';
+import { safeErrorFields } from './safe-error-fields.server';
 
 // ---------------------------------------------------------------------------
 // Guest chat session management
@@ -59,14 +60,21 @@ async function cleanupStep(step: 'profile' | 'auth_user', run: () => PromiseLike
   try {
     const { error } = await run();
     if (!error) return;
-    const raw = (error as { code?: unknown }).code;
-    code = typeof raw === 'string' && /^\w{1,32}$/.test(raw) ? raw : 'unknown';
+    code = safeErrorFields(error).code;
   } catch {
     code = 'thrown';
   }
   Sentry.captureException(new Error('Guest session cleanup failed'), {
     tags: { feature: 'guest_chat', subsystem: 'guest_session_cleanup', step, code },
   });
+}
+
+/** Removes the ghost profile and auth user a failed creation made, each
+ *  attempted whatever the other did. A failed step leaves an orphan, so it is
+ *  reported (US-15 AC7c). Deleting a profile that was never written is harmless. */
+async function removeGhost(admin: NonNullable<typeof supabaseAdmin>, sessionId: string): Promise<void> {
+  await cleanupStep('profile', () => admin.from('profiles').delete().eq('id', sessionId));
+  await cleanupStep('auth_user', () => admin.auth.admin.deleteUser(sessionId));
 }
 
 /**
@@ -119,7 +127,7 @@ export async function getOrCreateGuestSession(
   });
 
   if (authError || !authUser?.user) {
-    console.error('Failed to create guest auth user:', authError);
+    console.error('Failed to create guest auth user:', safeErrorFields(authError));
     throw new Error('Failed to create guest session');
   }
 
@@ -130,7 +138,8 @@ export async function getOrCreateGuestSession(
     .upsert({ id: sessionId, email: guestEmail, is_guest: true }, { onConflict: 'id' });
 
   if (profileError) {
-    console.error('Failed to create guest profile:', profileError);
+    await removeGhost(supabaseAdmin, sessionId); // US-15 AC7d
+    console.error('Failed to create guest profile:', safeErrorFields(profileError));
     throw new Error('Failed to create guest session');
   }
 
@@ -141,13 +150,8 @@ export async function getOrCreateGuestSession(
     .single();
 
   if (sessionError || !newSession) {
-    // Clean up both the ghost profile and auth user, each attempted whatever
-    // the other did. A failed step leaves an orphan, so it is reported (US-15 AC7c).
-    // A local const: the null check above does not narrow the import inside closures.
-    const admin = supabaseAdmin;
-    await cleanupStep('profile', () => admin.from('profiles').delete().eq('id', sessionId));
-    await cleanupStep('auth_user', () => admin.auth.admin.deleteUser(sessionId));
-    console.error('Failed to create guest session:', sessionError);
+    await removeGhost(supabaseAdmin, sessionId);
+    console.error('Failed to create guest session:', safeErrorFields(sessionError));
     throw new Error('Failed to create guest session');
   }
 

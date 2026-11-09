@@ -8,7 +8,8 @@
 # authored by DrBradStanfield, no 'hold' label) → opens the veto issue (native email to Brad) → waits 30 min →
 # re-verifies (sha unchanged, still open, no 'hold') → if the branch is behind
 # main, merges main into it via the API and re-runs 'test' on the new head
-# (US-46 AC5; up to 3 rounds) → merges at that exact sha → dispatches deploy.yml, which runs its own gate job (the
+# (US-46 AC5; up to 3 rounds) → merges at that exact sha → dispatches pages.yml
+# (AC15, AC16) and deploy.yml, which runs its own gate job (the
 # 'production' environment itself has had no wait timer or reviewer since
 # 2026-09-02). Total path to production ≈ 35 min, up to ~80 min when the
 # branch is behind main, two veto emails.
@@ -277,7 +278,23 @@ jobs:
           step="merged; dispatching deploy.yml (merge already happened)"
           # GITHUB_TOKEN-caused events don't trigger workflows, so dispatch
           # the deploy explicitly (its gate still applies; it has no wait timer).
-          gh workflow run deploy.yml -R "${GITHUB_REPOSITORY}" --ref main -f surfaces=all
+          # Pages too (US-46 AC15): without a Pages run for this commit, deploy's
+          # pages-smoke checks the previous Pages build. A failed dispatch does
+          # not hold the deploy; a failed or slow Pages run does, since
+          # pages-smoke waits for it, and so does a cancelled one that no newer
+          # Pages run on main replaced (AC16). pages_sha names the merge commit,
+          # because main may move on before pages-smoke runs.
+          pages=""
+          gh workflow run pages.yml -R "${GITHUB_REPOSITORY}" --ref main \
+            || pages=" Dispatching pages.yml failed, so the Pages smoke checked the previous Pages build."
+          # Before the merge shows, merge_commit_sha is GitHub's test merge: use it only once merged.
+          # The merged state can lag the merge call: up to 3 reads, 2 s apart (US-46 AC16).
+          for i in 1 2 3; do
+            [ "${i}" -eq 1 ] || sleep 2
+            merge_sha=$(pr_json | jq -r 'select(.merged == true) | .merge_commit_sha // empty') || merge_sha=""
+            [ -z "${merge_sha}" ] || break
+          done
+          gh workflow run deploy.yml -R "${GITHUB_REPOSITORY}" --ref main -f surfaces=all -f pages_sha="${merge_sha}"
           finished=1
           gh issue close "${issue}" -R "${GITHUB_REPOSITORY}" \
-            --comment "Merged ${HEAD_SHA} and dispatched deploy.yml (its notification email follows; it has no wait timer)."
+            --comment "Merged ${HEAD_SHA} and dispatched deploy.yml (its notification email follows; it has no wait timer).${pages}"

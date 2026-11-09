@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  ConflictError, createEmptyFile, LostUpdateError, MemoryAdapter, RecordShapeError, ROADMAP_FILE_NAME,
-  SchemaTooNewError, StorageError,
-} from '@roadmap/health-core';
+import { ConflictError, LostUpdateError, ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
+import { createEmptyFile } from '@roadmap/health-core/roadmap-file';
+import { MemoryAdapter } from '@roadmap/health-core/memory-adapter';
+import { RecordShapeError, SchemaTooNewError } from '@roadmap/health-core/migrate';
 import { LocalStorageAdapter } from '../src/storage';
 import { WebDavAdapter } from '../src/storage/webdav';
 import { liftLocalInto, migrateLocalInto, prepareSwitch, reportConnectFailure } from './connect';
@@ -199,5 +199,16 @@ describe('US-09 AC6c: local console lines are fixed, never the raw error', () =>
     const warn = warnSpy();
     await expect(prepareSwitch('self-host')).rejects.toThrow(/could not be reached/);
     expect(warn.mock.calls).toEqual([['Copy-down before switch failed']]);
+  });
+});
+
+// US-09 AC1a (2026-11-06): a failed OAuth code exchange is said on the page,
+// in a fixed line. Before, the page opened as if nothing had been tried.
+describe('US-09 AC1a: a failed connect returns a fixed line for the page', () => {
+  it.each([['dropbox', 'Dropbox'], ['google-drive', 'Google Drive']] as const)('%s', (backend, label) => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const privateText = 'Synthetic Person appointment.pdf';
+    const line = reportConnectFailure(new Error(privateText), backend);
+    expect(line).toBe(`${label} did not connect, so nothing changed. Please try again.`);
   });
 });

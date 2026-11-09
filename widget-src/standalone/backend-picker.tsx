@@ -19,7 +19,7 @@ import { GitHubAdapter, WebDavAdapter } from '../src/storage';
 import { adapterFor, finishFormConnect, forgetBackend, logOff, prepareSwitch, PROVIDER_LABELS, useBusyRun, type Backend } from './connect';
 import { trackProductEvent } from '../src/lib/server-api';
 import { useModalDialog } from './use-dialog';
-import { PLAN_STORAGE_CTA, PLAN_STORAGE_NOTICE } from '../src/lib/storage-notice';
+import { PICKER_TITLE, PLAN_STORAGE_NOTICE } from '../src/lib/storage-notice';
 
 /* Minimal brand marks (Brad OK'd logos). Inline so no asset fetches. */
 const LOGOS: Record<string, React.ReactNode> = {
@@ -173,7 +173,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
   return createPortal(
     <dialog
       className="hr-modal"
-      aria-label={PLAN_STORAGE_CTA}
+      aria-label={PICKER_TITLE}
       ref={dialogRef}
       onCancel={(e) => { e.preventDefault(); onCloseRef.current(); }}
       onClick={(e) => { if (e.target === e.currentTarget) onCloseRef.current(); }}
@@ -185,7 +185,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
 
         {step === 'list' && (
           <>
-            <h2>{PLAN_STORAGE_CTA}</h2>
+            <h2 tabIndex={-1} data-initial-focus>{PICKER_TITLE}</h2>
             {current === 'local' && <p className="hr-modal-sub">{PICKER_GUEST_LEAD}</p>}
             <p className="hr-modal-sub">{PLAN_STORAGE_NOTICE}</p>
             {OPTIONS.map((o, i) => (

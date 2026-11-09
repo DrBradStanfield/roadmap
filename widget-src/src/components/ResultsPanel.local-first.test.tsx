@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { statTiles } from '@roadmap/health-core';
+import { statTiles } from '@roadmap/health-core/stat-tiles';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
-import { calculateHealthResults } from '@roadmap/health-core';
+import { calculateHealthResults } from '@roadmap/health-core/calculations';
 
 const mocks = vi.hoisted(() => ({
   getReportHtml: vi.fn(),
@@ -15,7 +15,7 @@ vi.mock('../lib/roadmap-data', () => mocks);
 vi.mock('../lib/server-api', () => ({ trackABConversion: mocks.trackABConversion, trackProductEvent: vi.fn() }));
 vi.mock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: true }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
-import { ResultsPanel } from './ResultsPanel';
+import { PlanHost as ResultsPanel } from '../testing/plan-host';
 
 const results = calculateHealthResults({ heightCm: 175, sex: 'male' });
 

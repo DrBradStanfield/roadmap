@@ -2,7 +2,7 @@
 title: "Run your health plan from the command line"
 description: "Two commands in this repo read your health-roadmap.json and write to it: one prints your plan offline, one files a new value."
 slug: "command-line"
-updated: "2026-10-21"
+updated: "2026-11-09"
 stories: ["US-30", "US-31", "US-33"]
 ---
 
@@ -26,7 +26,7 @@ Every command below uses that copy. Swap in your real path when you are ready.
 
 ## Install
 
-You need Node 20.10 or newer. Check with `node --version`. Then:
+You need Node 22 or newer. Check with `node --version`. Then:
 
 `git clone https://github.com/DrBradStanfield/roadmap.git`
 
@@ -74,7 +74,7 @@ It answers with what it wrote and the id of the new row:
 
 `Added weight 67.8 kg on 2026-08-25 — new row e8ab7e79-a2b3-4d30-903f-1a4f0fc40901`
 
-Core metrics are stored in SI units. Give a value in the other system and add `--unit`, and it converts before storing: `--value 120 --unit mg/dL` on LDL lands as 3.1 mmol/L. Leave `--date` off and it uses today. A future date is refused, and so is a value outside the plausible range for that metric, with the range in the message.
+Core metrics are stored in SI units. Give a value in the other system and add `--unit`, and it converts before storing: `--value 120 --unit mg/dL` on LDL lands as 3.1 mmol/L. Leave `--date` off and it uses today. A future date is refused, and so is a value outside the plausible range for that metric, with the range in the message. A blood test given with `--test` meets its own plausible range where the app keeps one (glucose, ferritin, TSH and others): `--test glucose --value 5.5 --unit mg/dL` is refused, because 5.5 mg/dL is 0.31 mmol/L, almost certainly a typing or unit mistake. `get-plan.ts --from-values` refuses it the same way.
 
 ## When the day is already taken
 

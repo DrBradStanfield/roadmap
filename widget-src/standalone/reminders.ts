@@ -42,7 +42,7 @@ import { Sentry } from '../src/lib/sentry';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
 import type { Backend } from './connect';
-import type { FileReminderOptIn } from '@roadmap/health-core';
+import type { FileReminderOptIn } from '@roadmap/health-core/roadmap-file';
 
 const REMINDERS_API_URL = 'https://health-tool-app.fly.dev/api/reminders-v2';
 

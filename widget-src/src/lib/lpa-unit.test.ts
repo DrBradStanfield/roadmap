@@ -2,7 +2,9 @@
 // US-05 AC2: which unit Lp(a)'s field opens in. US-05 AC3: which saved Lp(a)
 // rows the page asks about.
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { ApiMeasurement, MeasurementSource, UnitSystem } from '@roadmap/health-core';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
+import type { MeasurementSource } from '@roadmap/health-core/validation';
+import type { UnitSystem } from '@roadmap/health-core/units';
 import { effectiveLpaUnit, keepLpaAsIs, lpaRowsToCheck } from './lpa-unit';
 import { LPA_CHECK_KEPT_KEY, stopLocalHealthWrites } from './storage';
 

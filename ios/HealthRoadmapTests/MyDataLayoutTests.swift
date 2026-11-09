@@ -58,7 +58,7 @@ final class MyDataLayoutTests: XCTestCase {
         XCTAssertEqual(pressure.sources.first?.url.host(), "doi.org")
     }
 
-    /// US-58 AC7 (Brad 2026-10-31): each Apple Health page (heart rate, resting heart rate, sleep,
+    /// US-58 AC7 (Brad 2026-10-31): each Apple Health page (resting heart rate, sleep,
     /// VO2 max, steps) finds its guide in the engine's My data by its snake-case `guideKey`, the
     /// guide `MyDataView` hands `LiveHealthPage` for the foot of the page.
     func testEveryAppleHealthPageFindsItsGuide_US58_AC7() throws {
@@ -66,9 +66,9 @@ final class MyDataLayoutTests: XCTestCase {
         let empty = try record(engine)
         let shown = try engine.blocking { [now] in try $0.myData(recordJSON: empty, now: now, deviceId: "test") }
         let guides = try XCTUnwrap(shown.guides)
-        XCTAssertEqual(LiveMetric.allCases.map(\.guideKey), ["heart_rate", "resting_heart_rate", "sleep", "vo2_max", "steps"])
-        let titles: [LiveMetric: String] = [.heartRate: "Heart rate", .restingHeartRate: "Resting heart rate", .sleep: "Sleep", .vo2Max: "VO2 max", .steps: "Steps"]
-        let headings: [LiveMetric: String] = [.heartRate: "How to read it", .restingHeartRate: "How to read it", .sleep: "How to sleep well",
+        XCTAssertEqual(LiveMetric.allCases.map(\.guideKey), ["resting_heart_rate", "sleep", "vo2_max", "steps"])
+        let titles: [LiveMetric: String] = [.restingHeartRate: "Resting heart rate", .sleep: "Sleep", .vo2Max: "VO2 max", .steps: "Steps"]
+        let headings: [LiveMetric: String] = [.restingHeartRate: "How to read it", .sleep: "How to sleep well",
                                               .vo2Max: "How to get a good estimate", .steps: "How to add steps"]
         for metric in LiveMetric.allCases {
             let guide = try XCTUnwrap(guides[metric.guideKey], metric.rawValue)
@@ -370,6 +370,56 @@ final class MyDataLayoutTests: XCTestCase {
             let none = try await drawsRed(MyDataView.valueRow(plain, tint: .blue, card: card))
             XCTAssertFalse(none, "an ungraded value is drawn plain (card: \(card))")
         }
+    }
+
+    /// US-62 AC8a (Brad 2026-11-09): a trend's vertical range is at least ±5% of the latest value,
+    /// so 0.57 to 0.58 draws nearly flat while a real change fills the line. The same cases as
+    /// health-core's trend-range.test.ts, which tests the web's `trendRange`.
+    func testATrendsRangeIsAtLeastFivePercentEachWay_US62_AC8a() {
+        let fill = { (points: [Double]) in
+            let (low, high) = Sparkline.range(points)
+            return (points.max()! - points.min()!) / (high - low)
+        }
+        let waist = Sparkline.range([0.57, 0.58])
+        XCTAssertEqual(waist.high - waist.low, 0.058, accuracy: 1e-9, "±5% of 0.58")
+        XCTAssertEqual((waist.low + waist.high) / 2, 0.575, accuracy: 1e-9, "about the points' middle")
+        XCTAssertLessThan(fill([0.57, 0.58]), 0.2, "a tiny change draws nearly flat")
+        XCTAssertTrue(Sparkline.range([100, 92, 85]) == (85, 100), "a real change keeps its full height")
+        XCTAssertEqual(fill([100, 92, 85]), 1)
+        let a1c = Sparkline.range([42, 41]), rising = Sparkline.range([41, 42])
+        XCTAssertEqual(a1c.high - a1c.low, 4.1, accuracy: 1e-9, "read from the latest point")
+        XCTAssertEqual(rising.high - rising.low, 4.2, accuracy: 1e-9)
+        XCTAssertTrue(Sparkline.range([5, 5, 5]) == (4.75, 5.25), "equal points across the middle")
+        XCTAssertTrue(Sparkline.range([0, 0]) == (-0.5, 0.5), "all zeros over a span of one")
+    }
+
+    /// US-62 AC8a: the band a row's trend is drawn over is its ink, capped at 0.8 x its width and
+    /// centred, the web's `trendBand`. While the baselines arrive one at a time it can be no band
+    /// at all (the last above the first), and then there is none: a backwards range would trap.
+    func testARowsTrendBandIsCappedAndCentred_US62_AC8a() throws {
+        XCTAssertEqual(ValueRow.trendBand(capTop: 5, baseline: 32, width: 56), 5...32)
+        let capped = try XCTUnwrap(ValueRow.trendBand(capTop: 5, baseline: 85, width: 56))
+        XCTAssertEqual(capped.upperBound - capped.lowerBound, 44.8, accuracy: 1e-9)
+        XCTAssertEqual((capped.lowerBound + capped.upperBound) / 2, 45, accuracy: 1e-9, "centred on the ink")
+        XCTAssertNil(ValueRow.trendBand(capTop: 30, baseline: 10, width: 56), "the last baseline not yet read")
+        XCTAssertNil(ValueRow.trendBand(capTop: 17 - 12, baseline: 0, width: 56), "only the first baseline read")
+        XCTAssertNil(ValueRow.trendBand(capTop: 5, baseline: 9, width: 56), "no room inside the padding")
+        XCTAssertNil(ValueRow.trendBand(capTop: 5, baseline: .nan, width: 56))
+    }
+
+    /// US-62 AC8a, #1002 R1: under Bold Text the label draws bold, so the room its longest word asks
+    /// for (which decides whether the trend keeps its place) is measured bold. Measured regular, a
+    /// word that only just fit could break mid-word at XL to XXXL. (The cap height comes from the same
+    /// font, but San Francisco's is the same in both weights, so there is nothing to assert there.)
+    func testARowMeasuresItsLabelBoldUnderBoldText_US62_AC8a() {
+        for size in [DynamicTypeSize.xLarge, .xxLarge, .xxxLarge] {
+            let regular = ValueRow.bodyFont(size, .regular), bold = ValueRow.bodyFont(size, .bold)
+            XCTAssertEqual(ValueRow.bodyFont(size, nil).fontName, regular.fontName, "no setting measures regular")
+            XCTAssertGreaterThan(ValueRow.longestWord("Triglycerides", font: bold), ValueRow.longestWord("Triglycerides", font: regular), "\(size)")
+        }
+        let font = ValueRow.bodyFont(.xxxLarge, .bold)
+        XCTAssertEqual(ValueRow.longestWord("Apolipoprotein-B level", font: font),
+                       ceil(("Apolipoprotein-" as NSString).size(withAttributes: [.font: font]).width), "a hyphen ends a word")
     }
 
     /// US-12 AC21: a value printed as a limit the rule leaves ungraded says the web's note where its

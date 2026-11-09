@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 /**
  * US-20 AC6, the phone's bottom tab bar, as the person sees the whole widget:
- * three tabs (My data, My plan, Chat) pick one panel each; arrow keys move
- * between them; each tab keeps its own scroll position; the bar is sticky inside
+ * three tabs (My health, Chat, Account; US-62 AC16, AC34) pick one panel each;
+ * arrow keys move between them; each tab keeps its own scroll position; the bar is sticky inside
  * the widget, opaque, never fixed to the viewport; the chat's draft survives a
- * switch. US-20 AC2: crossing the breakpoint mid-session never crashes. US-20
- * AC7: the storage button sits in a top bar seen from every tab. jsdom ignores
+ * switch. US-20 AC2: crossing the breakpoint mid-session never crashes. US-62
+ * AC34: Sign in and Settings live in the Account tab, not on a row. jsdom ignores
  * media queries, so the phone CSS is checked as text here and by computed style
  * in tools/webkit-verify.mjs.
  */
@@ -26,7 +26,16 @@ vi.mock('../lib/chat-api', async original => ({
   ...(await original<typeof import('../lib/chat-api')>()),
   listConversations: () => Promise.resolve(null), getChatGate: () => null,
 }));
+// Where the record lives: this browser unless a test connects a cloud (US-62 AC34's card order).
+const backend = vi.hoisted(() => ({ kind: 'local' as 'local' | 'cloud' }));
+vi.mock('../lib/roadmap-data', async original => ({
+  ...(await original<typeof import('../lib/roadmap-data')>()),
+  getBackendKind: () => backend.kind,
+}));
 import { HealthTool } from './HealthTool';
+import { GuestContext } from '../lib/storage-notice';
+// standalone/app.tsx marks a true guest (no provider to reconnect) once per page load.
+const AsGuest = ({ children }: { children: React.ReactNode }) => <GuestContext.Provider value>{children}</GuestContext.Provider>;
 
 const stops: Array<() => void> = [];
 let phone = true;
@@ -38,10 +47,11 @@ function turn(toPhone: boolean) {
     for (const h of [...heard]) h.listener({ matches: h.q.includes('max-width') ? phone : !phone });
   });
 }
-const scrollTo = vi.fn((_x: number, y: number) => { scrollY = y; });
+const scrollTo = vi.fn((x: number | ScrollToOptions, y?: number) => { scrollY = typeof x === 'object' ? x.top! : y!; });
 
 beforeEach(async () => {
   phone = true;
+  backend.kind = 'local';
   scrollY = 0;
   scrollTo.mockClear();
   localStorage.clear(); sessionStorage.clear();
@@ -75,90 +85,109 @@ afterEach(async () => {
 
 async function renderPhone(storageBar?: React.ReactNode) {
   const view = render(<HealthTool storageBar={storageBar} />);
-  await waitFor(() => expect(view.container.querySelector('.health-results-panel .suggestion-title')).not.toBeNull());
+  await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
   return view;
 }
 const panelOf = (view: ReturnType<typeof render>, tab: HTMLElement) =>
   view.container.querySelector<HTMLElement>(`[id="${tab.getAttribute('aria-controls')}"]`)!;
 
 describe('US-20 AC6: the bottom tab bar', () => {
-  it('three tabs, in the iPhone\'s words; each controls one panel and only the active panel shows', async () => {
+  // US-62 AC16, AC34: My health and Chat in the iPhone's words, then Account; the plan's cards sit in My health's topics.
+  it('three tabs; each controls one panel and only the active panel shows', async () => {
     const view = await renderPhone();
     const bar = view.getByRole('tablist');
     const tabs = within(bar).getAllByRole('tab');
-    expect(tabs.map((t) => t.textContent)).toEqual(['My data', 'My plan', 'Chat']);
+    expect(tabs.map((t) => t.textContent)).toEqual(['My health', 'Chat', 'Account']);
     for (const tab of tabs) {
       const panel = panelOf(view, tab);
       expect(panel.getAttribute('role')).toBe('tabpanel');
       expect(panel.getAttribute('aria-labelledby')).toBe(tab.id);
     }
-    const [data, plan, chat] = tabs;
-    expect(panelOf(view, data).querySelector('.health-input-panel')).not.toBeNull();
-    expect(panelOf(view, plan).querySelector('.health-results-panel')).not.toBeNull();
+    const [health, chat, account] = tabs;
+    expect(panelOf(view, health).querySelector('.health-input-panel .mh-sections .suggestion-card')).not.toBeNull();
     expect(panelOf(view, chat).querySelector('.chat-embed')).not.toBeNull();
+    // Every tab draws the same icon style: one 24-unit stroked svg, hidden from screen readers.
+    for (const tab of tabs) expect(tab.querySelector('svg.hr-tab-icon[viewBox="0 0 24 24"][aria-hidden="true"]')).not.toBeNull();
 
     const shown = () => tabs.filter((t) => !panelOf(view, t).hidden).map((t) => t.textContent);
     const selected = () => tabs.filter((t) => t.getAttribute('aria-selected') === 'true').map((t) => t.textContent);
-    expect(shown()).toEqual(['My data']);
-    expect(selected()).toEqual(['My data']);
-
-    fireEvent.click(plan);
-    expect(shown()).toEqual(['My plan']);
-    expect(selected()).toEqual(['My plan']);
-    expect(plan.className).toContain('hr-tab--active');
+    expect(shown()).toEqual(['My health']);
+    expect(selected()).toEqual(['My health']);
 
     fireEvent.click(chat);
     expect(shown()).toEqual(['Chat']);
     expect(selected()).toEqual(['Chat']);
+    expect(chat.className).toContain('hr-tab--active');
+
+    fireEvent.click(account);
+    expect(shown()).toEqual(['Account']);
+    expect(selected()).toEqual(['Account']);
+    expect(panelOf(view, account).querySelector('.mh-settings')).not.toBeNull();
+
+    fireEvent.click(health);
+    expect(shown()).toEqual(['My health']);
   });
 
   it('arrow keys move along the tabs and wrap; Home and End jump; focus follows; one tab stop', async () => {
     const view = await renderPhone();
     const bar = view.getByRole('tablist');
-    const [data, plan, chat] = within(bar).getAllByRole('tab');
-    expect([data, plan, chat].map((t) => t.tabIndex)).toEqual([0, -1, -1]);
+    const [health, chat, account] = within(bar).getAllByRole('tab');
+    expect([health, chat, account].map((t) => t.tabIndex)).toEqual([0, -1, -1]);
 
-    fireEvent.keyDown(data, { key: 'ArrowRight' });
-    expect(plan.getAttribute('aria-selected')).toBe('true');
-    expect(document.activeElement).toBe(plan);
-    expect([data, plan, chat].map((t) => t.tabIndex)).toEqual([-1, 0, -1]);
-
-    fireEvent.keyDown(plan, { key: 'ArrowRight' });
-    fireEvent.keyDown(chat, { key: 'ArrowRight' }); // wraps
-    expect(data.getAttribute('aria-selected')).toBe('true');
-    expect(document.activeElement).toBe(data);
-
-    fireEvent.keyDown(data, { key: 'ArrowLeft' }); // wraps back
+    fireEvent.keyDown(health, { key: 'ArrowRight' });
     expect(chat.getAttribute('aria-selected')).toBe('true');
-    fireEvent.keyDown(chat, { key: 'Home' });
-    expect(data.getAttribute('aria-selected')).toBe('true');
-    fireEvent.keyDown(data, { key: 'End' });
-    expect(chat.getAttribute('aria-selected')).toBe('true');
-    expect(panelOf(view, chat).hidden).toBe(false);
+    expect(document.activeElement).toBe(chat);
+    expect([health, chat, account].map((t) => t.tabIndex)).toEqual([-1, 0, -1]);
+
+    fireEvent.keyDown(chat, { key: 'ArrowRight' });
+    expect(account.getAttribute('aria-selected')).toBe('true');
+    expect(document.activeElement).toBe(account); // Account's panel takes no focus from its tab (US-62 AC34)
+    fireEvent.keyDown(account, { key: 'ArrowRight' }); // wraps
+    expect(health.getAttribute('aria-selected')).toBe('true');
+    expect(document.activeElement).toBe(health);
+
+    fireEvent.keyDown(health, { key: 'ArrowLeft' }); // wraps back
+    expect(account.getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(account, { key: 'Home' });
+    expect(health.getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(health, { key: 'End' });
+    expect(account.getAttribute('aria-selected')).toBe('true');
+    expect(panelOf(view, account).hidden).toBe(false);
   });
 
-  it('each tab keeps its own scroll position; a first visit opens at the widget\'s top', async () => {
+  // Instant, not the theme's smooth scroll: a smooth restore slid from the top for a second (live test 2026-11-06).
+  const at = (top: number) => ({ top, behavior: 'instant' });
+  it('each tab keeps its own scroll position, restored at once; a first visit opens at its panel\'s top', async () => {
     const view = await renderPhone();
+    const [health, chat] = within(view.getByRole('tablist')).getAllByRole('tab');
+    let chatTop = 250; // the chat panel's top, relative to the viewport, under the page's title block
+    vi.spyOn(panelOf(view, chat), 'getBoundingClientRect').mockImplementation(() => ({ top: chatTop } as DOMRect));
+
+    scrollY = 900; // down My health
+    fireEvent.click(chat); // never visited: its panel fills the screen, from its top (design review 2026-11-06)
+    expect(scrollTo).toHaveBeenLastCalledWith(at(1150));
+
+    scrollY = 1500; chatTop = -350; // down the chat
+    fireEvent.click(health);
+    expect(scrollTo).toHaveBeenLastCalledWith(at(900));
+    fireEvent.click(chat);
+    expect(scrollTo).toHaveBeenLastCalledWith(at(1500));
+  });
+
+  // Live test 2026-11-06: the card ended 3-5px under the bar, sized from the header plus a constant.
+  it('the chat card is sized from its own measured top and the bar\'s height, so it ends at the bar', async () => {
+    const view = await renderPhone();
+    const [, chat] = within(view.getByRole('tablist')).getAllByRole('tab');
+    const panel = panelOf(view, chat);
+    vi.spyOn(panel, 'getBoundingClientRect').mockImplementation(() => ({ top: 250 } as DOMRect));
+    vi.spyOn(panel.querySelector('.chat-embed')!, 'getBoundingClientRect').mockImplementation(() => ({ top: 267 } as DOMRect));
+    vi.spyOn(view.container.querySelector('.hr-tabbar')!, 'getBoundingClientRect').mockImplementation(() => ({ height: 51 } as DOMRect));
+    fireEvent.click(chat);
     const root = view.container.querySelector<HTMLElement>('.health-tool')!;
-    let widgetTop = -300; // the widget's top, relative to the viewport
-    vi.spyOn(root, 'getBoundingClientRect').mockImplementation(() => ({ top: widgetTop } as DOMRect));
-    const [data, plan] = within(view.getByRole('tablist')).getAllByRole('tab');
-
-    scrollY = 900; // down the form
-    fireEvent.click(plan); // never visited: to the widget's top
-    expect(scrollTo).toHaveBeenLastCalledWith(0, 600);
-
-    scrollY = 1500; widgetTop = -900; // down the plan
-    fireEvent.click(data);
-    expect(scrollTo).toHaveBeenLastCalledWith(0, 900);
-    fireEvent.click(plan);
-    expect(scrollTo).toHaveBeenLastCalledWith(0, 1500);
-
-    // The widget's top on screen: a first visit leaves the page where it is.
-    scrollTo.mockClear();
-    widgetTop = 40;
-    fireEvent.click(within(view.getByRole('tablist')).getByRole('tab', { name: 'Chat' }));
-    expect(scrollTo).not.toHaveBeenCalled();
+    expect(root.style.getPropertyValue('--hr-chat-top')).toBe('17px'); // no theme header here: the card's own inset
+    expect(root.style.getPropertyValue('--hr-tabbar-h')).toBe('51px');
+    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
+    expect(css).toMatch(/height: calc\(100svh - var\(--hr-chat-top, 0px\) - var\(--hr-tabbar-h, 51px\) - 12px\)/);
   });
 
   it('the bar lives inside the widget, sticky, opaque, never fixed; the old fixed plan button is gone', async () => {
@@ -185,25 +214,24 @@ describe('US-20 AC6: the bottom tab bar', () => {
     const view = await renderPhone();
     const tabs = within(view.getByRole('tablist'));
     fireEvent.click(tabs.getByRole('tab', { name: 'Chat' }));
-    const box = view.getByPlaceholderText('Ask a follow-up…') as HTMLTextAreaElement;
+    const box = view.getByPlaceholderText('Ask a question') as HTMLTextAreaElement;
     fireEvent.change(box, { target: { value: 'What about my LDL?' } });
-    fireEvent.click(tabs.getByRole('tab', { name: 'My data' }));
+    fireEvent.click(tabs.getByRole('tab', { name: 'My health' }));
     fireEvent.click(tabs.getByRole('tab', { name: 'Chat' }));
-    expect(view.getByPlaceholderText('Ask a follow-up…')).toBe(box);
+    expect(view.getByPlaceholderText('Ask a question')).toBe(box);
     expect(box.value).toBe('What about my LDL?');
   });
 
   it('US-20 AC2: crossing the breakpoint mid-session never crashes, and the tab survives', async () => {
     const view = await renderPhone();
-    fireEvent.click(within(view.getByRole('tablist')).getByRole('tab', { name: 'My plan' }));
-    turn(false); // widened past 768px: the desktop columns
+    fireEvent.click(within(view.getByRole('tablist')).getByRole('tab', { name: 'Chat' }));
+    turn(false); // widened past 768px: the desktop column
     expect(view.queryByRole('tablist')).toBeNull();
-    expect(view.container.querySelector('.health-tool-content .health-results-panel')).not.toBeNull();
+    expect(view.container.querySelector('.health-tool-content .health-tool-main .mh-sections')).not.toBeNull();
     turn(true); // and back
-    const plan = within(view.getByRole('tablist')).getByRole('tab', { name: 'My plan' });
-    expect(plan.getAttribute('aria-selected')).toBe('true');
-    expect(panelOf(view, plan).hidden).toBe(false);
-    expect(panelOf(view, plan).querySelector('.health-results-panel')).not.toBeNull();
+    const chat = within(view.getByRole('tablist')).getByRole('tab', { name: 'Chat' });
+    expect(chat.getAttribute('aria-selected')).toBe('true');
+    expect(panelOf(view, chat).hidden).toBe(false);
   });
 
   it('desktop has no tab bar and no tab panels', async () => {
@@ -215,25 +243,191 @@ describe('US-20 AC6: the bottom tab bar', () => {
   });
 });
 
-describe('US-20 AC7: the top bar', () => {
-  it('on a phone the storage button sits above the panels, seen from every tab', async () => {
+// US-62 AC34 (option A, Brad 2026-11-09): a phone has no row for Sign in and Settings; the
+// Account tab holds them. Amends US-20 AC7 and US-62 AC16, AC24, AC32.
+describe('US-62 AC34: the Account tab', () => {
+  const tabNamed = (view: ReturnType<typeof render>, name: string) => within(view.getByRole('tablist')).getByRole('tab', { name });
+
+  it('My health draws no controls on its title line; its title stays, for screen readers and the landings', async () => {
     const view = await renderPhone(<button type="button">Sign in</button>);
-    const signIn = view.getByRole('button', { name: 'Sign in' });
-    expect(signIn.parentElement?.className).toBe('hr-top-bar');
-    expect(signIn.closest('[role="tabpanel"]')).toBeNull();
-    for (const name of ['My data', 'My plan', 'Chat']) {
-      fireEvent.click(within(view.getByRole('tablist')).getByRole('tab', { name }));
-      expect(signIn.closest('[hidden]')).toBeNull();
-    }
-    expect(view.getAllByRole('button', { name: 'Sign in' })).toHaveLength(1); // not in the input header too
-    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8').replace(/\s+/g, ' ');
-    // The cards' 10px gutter, and the header's layout, so a long reconnect label wraps.
-    expect(css).toContain('.hr-top-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; padding: 8px 10px 0; font-size: 12px; }');
+    const header = view.container.querySelector<HTMLElement>('.mh-header')!;
+    expect(header.querySelector('h2.mh-title')?.textContent).toBe('My health');
+    expect(header.querySelectorAll('button')).toHaveLength(0);
+    expect(view.queryByRole('button', { name: 'Settings' })).toBeNull();
+    expect(view.queryByRole('button', { name: 'Sign in' })).toBeNull(); // not until Account shows
+    expect(view.container.querySelector('.hr-top-bar')).toBeNull();
+    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
+    const phone = css.slice(css.lastIndexOf('@media (max-width: 768px)'));
+    expect(phone).toMatch(/\.mh-header\s*\{\s*display:\s*contents;/); // no row, no gap
   });
 
-  it('without a storage button, no top bar', async () => {
+  // Brad 2026-11-09: one sign-in, the storage card's button. The title line holds only what the
+  // storage bar draws there (on a phone, no Sign in: standalone/storage-bar.test.tsx).
+  const guestCard = ({ hasData }: { hasData: boolean }) => (hasData
+    ? <div className="hr-sync"><button type="button" className="hr-sync-btn hr-sync-btn-full">Keep my record in Dropbox or Google Drive</button></div>
+    : null);
+
+  it('signed out: Account holds Settings\' parts under its heading, the storage card\'s button the one sign-in; no Done', async () => {
+    const view = render(<HealthTool syncControl={guestCard} />);
+    await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
+    const account = tabNamed(view, 'Account');
+    fireEvent.click(account);
+    const panel = panelOf(view, account);
+    const sheet = panel.querySelector<HTMLElement>('.mh-settings')!;
+    const heading = within(sheet).getByRole('heading', { name: 'Account' });
+    expect(heading.closest('.mh-settings-head')!.querySelectorAll('button')).toHaveLength(0);
+    expect(view.queryByRole('button', { name: 'Sign in' })).toBeNull();
+    expect(within(sheet).getByRole('button', { name: 'Keep my record in Dropbox or Google Drive' })).toBeTruthy();
+    expect(within(sheet).getByRole('button', { name: /Switch units/ })).toBeTruthy();
+    expect(within(sheet).getByRole('button', { name: 'Delete all my data' })).toBeTruthy();
+    expect(within(sheet).queryByRole('button', { name: 'Done' })).toBeNull();
+    expect(document.activeElement).not.toBe(heading); // the tab keeps the focus
+    // Inside the widget's Clarity mask and its erase lock.
+    expect(sheet.closest('[data-clarity-mask="true"]')).not.toBeNull();
+    expect(sheet.closest('fieldset.health-form-lock')).not.toBeNull();
+    // Escape is not a way out of a tab: nothing closes.
+    fireEvent.keyDown(within(sheet).getByRole('button', { name: 'Delete all my data' }), { key: 'Escape' });
+    expect(account.getAttribute('aria-selected')).toBe('true');
+    expect(panel.querySelector('.mh-settings')).not.toBeNull();
+    // The card keeps the storage button's filled style there (US-62 AC35: no Settings rule flattens it).
+    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
+    expect(css).not.toMatch(/\.mh-settings \.hr-sync \.hr-sync-btn,\s*\.mh-foot-storage/);
+  });
+
+  it('a new guest with nothing entered still finds the sign-in in Account, and no pitch on My health', async () => {
+    localStorage.clear();
+    await initRoadmapStore(new LocalStorageAdapter());
+    const view = render(<HealthTool syncControl={guestCard} />);
+    const signIn = () => view.queryByRole('button', { name: 'Keep my record in Dropbox or Google Drive' });
+    await waitFor(() => expect(view.container.querySelector('.health-input-panel')).not.toBeNull());
+    expect(view.container.querySelector('.hr-sync')).toBeNull(); // nothing to save yet (US-09 AC5)
+    fireEvent.click(tabNamed(view, 'Account'));
+    expect(signIn()!.closest('.mh-settings')).not.toBeNull();
+    fireEvent.click(tabNamed(view, 'My health'));
+    expect(view.container.querySelector('.hr-sync')).toBeNull();
+  });
+
+  it('signed in: Account says where the record lives, as text, on its title line and shows the storage card', async () => {
+    const card = () => <div className="hr-sync">Your health record lives in your Dropbox</div>;
+    const view = render(<HealthTool storageBar={<span className="hr-storage-state">Synced to Dropbox</span>} syncControl={card} />);
+    await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
+    const account = tabNamed(view, 'Account');
+    fireEvent.click(account);
+    const sheet = panelOf(view, account).querySelector<HTMLElement>('.mh-settings')!;
+    expect(sheet.querySelector('.mh-settings-head .mh-header-actions')?.textContent).toBe('Synced to Dropbox');
+    expect([...view.container.querySelectorAll('.hr-sync')].map((c) => !!c.closest('.mh-settings'))).toEqual([true]); // one card, one picker
+  });
+
+  it('a sync problem shows atop My health on a phone, not only in Account; desktop keeps it on the title line', async () => {
+    const problem = <button type="button" className="action-btn-small">Sign in to Google again</button>;
+    const view = render(<HealthTool syncAlert={problem} />);
+    await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
+    const shown = view.getByRole('button', { name: 'Sign in to Google again' });
+    expect(shown.closest('.mh-header')).not.toBeNull();
+    expect(shown.closest('[hidden]')).toBeNull();
+    turn(false);
+    expect(view.queryByRole('button', { name: 'Sign in to Google again' })).toBeNull(); // desktop: the storage bar says it
+  });
+
+  it('a half-typed reminder email survives a tab switch: Account stays mounted', async () => {
+    const view = render(<HealthTool remindersSection={<input aria-label="Email for your reminders" />} />);
+    await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
+    fireEvent.click(tabNamed(view, 'Account'));
+    fireEvent.change(view.getByRole('textbox', { name: 'Email for your reminders' }), { target: { value: 'half@exa' } });
+    fireEvent.click(tabNamed(view, 'Chat'));
+    fireEvent.click(tabNamed(view, 'Account'));
+    expect((view.getByRole('textbox', { name: 'Email for your reminders' }) as HTMLInputElement).value).toBe('half@exa');
+  });
+
+  it('a guest\'s storage card sits at the foot of My health, and moves to Account while it shows: one at a time', async () => {
+    const card = () => <div className="hr-sync">Keep my record in Dropbox or Google Drive</div>;
+    const view = render(<HealthTool storageBar={<button type="button">Sign in</button>} syncControl={card} />);
+    await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
+    const cards = () => [...view.container.querySelectorAll('.hr-sync')];
+    expect(cards()).toHaveLength(1);
+    expect(cards()[0].closest('.mh-foot-storage')?.hasAttribute('hidden')).toBe(false);
+    fireEvent.click(tabNamed(view, 'Account'));
+    expect(cards()).toHaveLength(1);
+    expect(cards()[0].closest('.mh-settings')).not.toBeNull();
+    fireEvent.click(tabNamed(view, 'Chat'));
+    expect(cards()).toHaveLength(1);
+    // Mounted in the hidden My health, so the picker it hosts still opens from a banner or the upload.
+    expect(cards()[0].closest('.mh-foot-storage')).not.toBeNull();
+  });
+
+  // Brad 2026-11-09: a guest's sign-in heads Account; a connected record's card stays low.
+  const settingsOrder = (view: ReturnType<typeof render>) => {
+    const sheet = [...view.container.querySelectorAll<HTMLElement>('.mh-settings')].find((el) => !el.closest('[hidden]'))!;
+    return [...sheet.children].map((el) => (el.matches('.mh-settings-head') ? 'title'
+      : el.matches('.hr-sync') ? 'storage'
+        : el.querySelector('.basic-info-units, [aria-label^="Switch units"]') || el.matches('.basic-info-section, .about-you-card') ? 'about'
+          : el.matches('.delete-data-section') ? 'delete' : 'other'));
+  };
+
+  it('a guest\'s storage card comes first in Account, straight under the title, before About you (US-62 AC34)', async () => {
+    const view = render(<AsGuest><HealthTool syncControl={guestCard} /></AsGuest>);
+    await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
+    fireEvent.click(tabNamed(view, 'Account'));
+    const order = settingsOrder(view);
+    expect(order.slice(0, 3)).toEqual(['title', 'storage', 'about']);
+    expect(order.indexOf('storage')).toBeLessThan(order.indexOf('delete'));
+    expect(order.filter((p) => p === 'storage')).toHaveLength(1);
+    expect(view.getByRole('button', { name: 'Keep my record in Dropbox or Google Drive' }).closest('.mh-settings')).not.toBeNull();
+  });
+
+  it('a new guest\'s storage card also comes first in Account (US-62 AC34)', async () => {
+    localStorage.clear();
+    await initRoadmapStore(new LocalStorageAdapter());
+    const view = render(<AsGuest><HealthTool syncControl={guestCard} /></AsGuest>);
+    await waitFor(() => expect(view.container.querySelector('.health-input-panel')).not.toBeNull());
+    fireEvent.click(tabNamed(view, 'Account'));
+    expect(settingsOrder(view).slice(0, 2)).toEqual(['title', 'storage']);
+  });
+
+  it('a connected record keeps its storage card low in Account, after About you (US-62 AC34)', async () => {
+    backend.kind = 'cloud';
+    const card = () => <div className="hr-sync">Your health record lives in your Dropbox</div>;
+    const view = render(<HealthTool storageBar={<span className="hr-storage-state">Synced to Dropbox</span>} syncControl={card} />);
+    await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
+    fireEvent.click(tabNamed(view, 'Account'));
+    const order = settingsOrder(view);
+    expect(order[1]).toBe('about');
+    expect(order.indexOf('storage')).toBeGreaterThan(order.indexOf('about'));
+    expect(order.indexOf('storage')).toBeLessThan(order.indexOf('delete'));
+  });
+
+  it('a reconnect keeps its storage card low in Account, after About you: its title line holds the reconnect (US-62 AC34)', async () => {
+    // A reconnect: the record waits on this device (backend local), but it is not a guest.
+    const card = () => <div className="hr-sync"><button type="button" className="hr-sync-btn">Sign in to Dropbox again</button></div>;
+    const reconnect = <button type="button" className="action-btn-small">Sign in to Dropbox again</button>;
+    const view = render(<HealthTool storageBar={reconnect} syncAlert={reconnect} syncControl={card} />);
+    await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
+    fireEvent.click(tabNamed(view, 'Account'));
+    const order = settingsOrder(view);
+    expect(order[1]).toBe('about');
+    expect(order.indexOf('storage')).toBeGreaterThan(order.indexOf('about'));
+    expect(order.indexOf('storage')).toBeLessThan(order.indexOf('delete'));
+  });
+
+  it('desktop Settings keep the storage card after About you, guest or not (US-62 AC34)', async () => {
+    phone = false;
+    const view = render(<AsGuest><HealthTool storageBar={<button type="button">Sign in</button>} syncControl={guestCard} /></AsGuest>);
+    await waitFor(() => expect(view.container.querySelector('.mh-sections .suggestion-title')).not.toBeNull());
+    fireEvent.click(view.getByRole('button', { name: 'Settings' }));
+    const order = settingsOrder(view);
+    expect(order[1]).toBe('about');
+    expect(order.indexOf('storage')).toBeGreaterThan(order.indexOf('about'));
+  });
+
+  it('Delete all my data in Account lands on My health, its title focused', async () => {
+    vi.stubGlobal('confirm', () => true);
     const view = await renderPhone();
-    expect(view.container.querySelector('.hr-top-bar')).toBeNull();
+    const account = tabNamed(view, 'Account');
+    fireEvent.click(account);
+    fireEvent.click(view.getByRole('button', { name: 'Delete all my data' }));
+    await waitFor(() => expect(tabNamed(view, 'My health').getAttribute('aria-selected')).toBe('true'));
+    await waitFor(() => expect(document.activeElement).toBe(view.container.querySelector('.mh-title')));
+    expect(panelOf(view, account).hidden).toBe(true);
   });
 });
 

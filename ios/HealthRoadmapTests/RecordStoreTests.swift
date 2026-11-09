@@ -274,11 +274,12 @@ final class RecordStoreTests: XCTestCase {
         guard case .planned = store.plan else { return XCTFail("the edit's one call planned the new record") }
 
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
-        window.rootViewController = UIHostingController(rootView: PlanView(store: store, showMyData: {}))
+        window.rootViewController = UIHostingController(rootView: MyHealthHost.view(store: store, engine: engine))
         window.makeKeyAndVisible()
         try await Task.sleep(for: .milliseconds(300))
         window.isHidden = true
-        XCTAssertEqual(try doors(), "", "the Plan tab draws the stored plan and asks the engine nothing")
+        // Only its two worked-out rows' series (US-73 AC7): no plan of its own.
+        XCTAssertEqual(try doors().split(separator: " ").filter { $0 != "historyJson" }, [], "My health draws the stored plan and plans nothing itself")
     }
 
     /// Codex R1, adversary R1: the plan reads the date (ages, screening due dates), so a return
@@ -318,20 +319,6 @@ final class RecordStoreTests: XCTestCase {
     private func suggestionIds(_ plan: PlanState?) -> [String] {
         guard case .planned(_, let sections, _) = plan else { return [] }
         return sections.flatMap(\.cards).flatMap(\.suggestions).map(\.id)
-    }
-
-    /// Adversary R3: a record that cannot be read shows its problem on the Plan tab, as
-    /// My data does, never "Your plan needs a few details". Read from the screen's body:
-    /// unit tests have no accessibility tree to search.
-    func testThePlanTabShowsWhyARecordCannotBeOpened() throws {
-        try Data("not a record".utf8).write(to: file)
-        let store = try store()
-        let problem = try XCTUnwrap(store.problem)
-        var shown = ""
-        dump(PlanView(store: store, showMyData: {}).body, to: &shown)
-        XCTAssertTrue(shown.contains("Your record could not be opened"), shown)
-        XCTAssertTrue(shown.contains(String(reflecting: problem)), shown) // dump quotes and escapes it
-        XCTAssertFalse(shown.contains("needs a few details"), shown)
     }
 
     func testTheRecordIsKeptOutOfBackups() throws {
@@ -382,7 +369,7 @@ final class RecordStoreTests: XCTestCase {
     /// explained in plain words, never the JavaScript exception's text.
     func testAnUnreadableRecordIsExplainedWithoutTheEnginesExceptionText_US25_AC6b() throws {
         try Data("{\"schemaVersion\": 1, \"measurements\": [".utf8).write(to: file)
-        let problem = try XCTUnwrap(try store().problem)
+        let problem = try XCTUnwrap(try store().problem?.words)
         for developerText in ["SyntaxError", "TypeError", "JSON Parse", "engine failed", "EOF"] {
             XCTAssertFalse(problem.contains(developerText), problem)
         }
@@ -393,10 +380,10 @@ final class RecordStoreTests: XCTestCase {
     /// plain call and a settled door alike; an exception's text stays hidden.
     func testTheEnginesWordsForThePersonStayVisible_US25_AC6b() throws {
         try Data("[]".utf8).write(to: file)
-        let notRecord = try XCTUnwrap(try store().problem)
+        let notRecord = try XCTUnwrap(try store().problem?.words)
         XCTAssertTrue(notRecord.hasSuffix("nothing will be saved over it. This file is not a health record."), notRecord)
         try Data("{\"schemaVersion\": 999, \"measurements\": []}".utf8).write(to: file)
-        let tooNew = try XCTUnwrap(try store().problem)
+        let tooNew = try XCTUnwrap(try store().problem?.words)
         XCTAssertTrue(tooNew.hasSuffix("A newer version of Health Roadmap wrote this record. Update the app to open it."), tooNew)
         let engine = try HealthEngine()
         XCTAssertThrowsError(try engine.blocking { try $0.eraseOnPhone(recordJSON: "[]", historyJSON: nil, now: .now, deviceId: "test") }) {
@@ -405,6 +392,35 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertThrowsError(try engine.blocking { try $0.eraseOnPhone(recordJSON: "{\"hello\": 1}", historyJSON: nil, now: .now, deviceId: "test") }) {
             XCTAssertEqual($0.localizedDescription, "Something went wrong inside the app.")
         }
+    }
+
+    /// #923 (the web's US-65 AC7): only a record the app refuses "could not be opened"; a file
+    /// that would not read, which may be fine, "did not load" and says to open the app again.
+    func testOnlyARefusedRecordSaysItCouldNotBeOpened_US65_AC7() throws {
+        let refusals: [Data] = [Data("not a record".utf8), Data("[]".utf8), Data("{\"schemaVersion\": 999, \"measurements\": []}".utf8), Data([0xFF, 0xFE, 0x00, 0xD8])]
+        for bytes in refusals {
+            try bytes.write(to: file)
+            let problem = try XCTUnwrap(try store().problem)
+            XCTAssertEqual(problem.heading, "Your record could not be opened", problem.words)
+            XCTAssertTrue(problem.words.hasPrefix("Your saved record could not be opened, so nothing will be saved over it."), problem.words)
+            XCTAssertFalse(problem.words.contains("open it again"), problem.words)
+        }
+
+        try Data("{}".utf8).write(to: file)
+        try FileManager.default.setAttributes([.posixPermissions: 0o000], ofItemAtPath: file.path(percentEncoded: false))
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: file.path(percentEncoded: false)) }
+        let unread = try XCTUnwrap(try store().problem)
+        XCTAssertEqual(unread.heading, "Your record did not load", unread.words)
+        XCTAssertTrue(unread.words.hasPrefix("Your saved record did not load, so nothing will be saved over it."), unread.words)
+        XCTAssertTrue(unread.words.hasSuffix("Close the app and open it again to try again."), unread.words)
+
+        // An exception that is not a refusal is a fault in the app, not in the record: reopening
+        // may not mend it, so the line says what to do if it keeps happening (PR 1051 review R3).
+        let fault = RecordProblem(HealthEngine.EngineError.callFailed("TypeError: undefined is not an object"))
+        XCTAssertFalse(fault.refused)
+        XCTAssertEqual(fault.heading, "Your record did not load")
+        XCTAssertTrue(fault.words.hasSuffix("Close the app and open it again; if this keeps happening, contact us."), fault.words)
+        XCTAssertTrue(RecordProblem.refuses(HealthEngine.EngineError.callFailed("RecordShapeError: Not a health-roadmap.json")))
     }
 
     /// US-54 AC5b, AC5c (break-it pass 2026-10-30): a future birth month and an

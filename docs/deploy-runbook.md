@@ -312,8 +312,14 @@ Moved out of CLAUDE.md 2026-09-24 (entropy pass). `.env` has all of them.
   `health-tool-edu`: the gateway's chat routes trust whoever holds the secret
   (both apps share the Fly organisation's private network). The code also
   requires `CHAT_SURFACE=brand`.
-- **GitHub Actions**: deploy secrets live ONLY in the gated `production`
-  environment; ANTHROPIC_API_KEY (spend-capped) is the only repo secret.
+- **GitHub Actions** secrets, by where they live (names only). Repo level:
+  CLAUDE_CODE_OAUTH_TOKEN (claude-review.yml); ANTHROPIC_API_KEY was deleted
+  2026-11-09, as no workflow used it. `production` environment
+  (gated; deploy.yml): FLY_DEPLOY_TOKEN_EDU, FLY_DEPLOY_TOKEN_PROD,
+  SENTRY_AUTH_TOKEN, SHOPIFY_CLI_PARTNERS_TOKEN_EDU and
+  SHOPIFY_CLI_PARTNERS_TOKEN_PROD. `engine-signing` environment
+  (engine-release.yml): ENGINE_SIGNING_KEY. A tamper response rotates all of
+  them.
 
 ## Hosted MCP (health-tool-edu)
 

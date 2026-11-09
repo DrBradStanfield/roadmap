@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { LAB_ARCHIVE_FLAG } from '@roadmap/health-core';
+import { LAB_ARCHIVE_FLAG } from '@roadmap/health-core/document-rows';
 import {
   synthesizeLabArchiveEntries,
   unarchivedOriginals,
   connectorDocumentEntries,
 } from './archive-payloads';
-import type { FileResult } from '../components/ReviewTable';
+import type { FileResult } from './upload-pipeline';
 
 const blob = () => new Blob(['x'], { type: 'application/pdf' });
 

@@ -97,8 +97,7 @@ struct OnboardingView: View {
     @ViewBuilder private func page(_ step: OnboardingStep) -> some View {
         switch step {
         case .health:
-            Self.healthPage(connecting: connecting, allow: { Task { await allowHealth() } },
-                            notNow: { healthAsked = true; advance(from: .health) })
+            Self.healthPage(connecting: connecting, allow: { Task { await allowHealth() } })
         case .sex:
             // A tap is the answer: it saves and moves on, so the step has no Continue (Brad 2026-10-23).
             OnboardingPage(symbol: "person.fill", tint: .accentColor, title: "What is your sex?",
@@ -183,7 +182,9 @@ struct OnboardingView: View {
     }
 
     /// The Apple Health page (AC3), built here so TextSizeLayoutTests lays out the real one.
-    static func healthPage(connecting: Bool, allow: @escaping () -> Void, notNow: @escaping () -> Void) -> some View {
+    /// One button, Continue, and Apple's sheet always follows (App Review 5.1.1(iv), 2026-11-09):
+    /// a person who does not want to share says so in Apple's sheet.
+    static func healthPage(connecting: Bool, allow: @escaping () -> Void) -> some View {
         OnboardingPage(symbol: "heart.fill", tint: .pink, title: "Use your Apple Health data",
              detail: "So you type less. Your sex, birth date, height, weight, waist and blood pressure go only into your record, on this iPhone or in your own cloud. Values you add here are saved back to Apple Health.",
              progress: nil, spread: true) {
@@ -196,14 +197,12 @@ struct OnboardingView: View {
             }
         } actions: {
             AppleAsksNext()
-            primary(connecting ? "Connecting…" : "Connect Apple Health", id: "onboarding.allow", action: allow)
-                .disabled(connecting)
-            secondary("Not now", id: "onboarding.notNow", action: notNow)
+            primary(connecting ? "Connecting…" : "Continue", id: "onboarding.allow", action: allow)
                 .disabled(connecting)
         }
     }
 
-    /// The last thing read before the tap: the two taps Apple's sheet asks for (AC3).
+    /// The last thing read before the tap: what Apple's sheet asks next (AC3; words Brad 2026-11-09).
     /// A hint, never a switch: no app can turn that sheet's switches on. In the accent
     /// green, not pink: red read as something wrong (Brad 2026-10-25). Primary text on the
     /// 12% wash; the icon in the accent clears 3:1 on it in both modes. Above the buttons,
@@ -310,12 +309,6 @@ struct OnboardingView: View {
     private static func primary(_ title: String, id: String, action: @escaping () -> Void) -> some View {
         Button(title, action: action)
             .buttonStyle(.accent)
-            .accessibilityIdentifier(id)
-    }
-
-    private static func secondary(_ title: String, id: String, action: @escaping () -> Void) -> some View {
-        Button(title, action: action)
-            .padding(.top, 4)
             .accessibilityIdentifier(id)
     }
 
@@ -456,14 +449,8 @@ struct OnboardingView: View {
         // A box the person left alone saves nothing, whatever its units show (AC6). A typed
         // one that cannot be read or converted stays on its screen.
         case .height:
-            let height = answers.height
-            guard height.edited else { return .unchanged }
-            let edit: RecordEdit? = if height.us {
-                height.feetInches.map { .feetInches(feet: $0.feet, inches: $0.inches) }
-            } else {
-                await savedValue(.height).map { .profile(height: $0) }
-            }
-            return edit.map(Change.edit) ?? .stay
+            guard answers.height.edited else { return .unchanged }
+            return await answers.height.edit(recordUnits: recordUnits(.height), convert: store.convert).map(Change.edit) ?? .stay
         case .weight:
             // Health's year-old weight, left as it is, is confirmed as today's: an Apple Health
             // row in the row's own kilograms, never the rounded display, never written back (AC3b).
@@ -558,9 +545,9 @@ struct OnboardingView: View {
     }
 
     /// Built once: the wheels redraw on every tick.
-    static let appleAsksNextWords = "Next, Apple asks for access. Turn everything on, then tap **Allow**."
+    static let appleAsksNextWords = "Next, Apple asks which data to share."
     /// The five US-56 readings, named on the Apple Health page (adversary R5).
-    static let liveLine = "It also shows your heart rate, sleep, VO2 max and steps here, never in your record."
+    static let liveLine = "It also shows your resting heart rate, sleep, VO2 max and steps here, never in your record."
     private static let birthYears = DayText.birthYears(now: .now)
 
     /// What each box takes as typed: whole feet, whole inches (centimetres and weight take `.value`).

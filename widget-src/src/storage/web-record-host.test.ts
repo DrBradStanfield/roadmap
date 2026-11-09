@@ -6,7 +6,8 @@
  * tests pin what each tier does; these pin which tier a store gets.
  */
 import { afterEach, describe, expect, it } from 'vitest';
-import { MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME } from '@roadmap/health-core';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { PENDING_MIRROR_KEY, webRecordHost } from './web-record-host';
 

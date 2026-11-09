@@ -4,6 +4,7 @@
  * conditional router, main LLM). Split out of youtube-bot.server.ts (issue
  * #429), which re-exports its public names.
  */
+import * as Sentry from '@sentry/react-router';
 import { classifyMessage, isUnreadableAnswer, shouldFireRouter } from './chat-classifier.server';
 import { routeQuery, sanitizeForRouter, type RouterResult } from './chat-router.server';
 import { SILENT_ON_YOUTUBE } from '../../packages/health-core/src/models';
@@ -25,6 +26,7 @@ import {
   CHANNEL_ID,
   COMMENT_MAX_AGE_DAYS,
   MIN_WORDS,
+  FOLLOWUP_MIN_WORDS,
   CRISIS,
   MAX_CHANNEL_REPLIES_PER_THREAD,
 } from './youtube-bot-config.server';
@@ -39,11 +41,11 @@ interface FilterResult {
   reason?: string;
 }
 
-export function wordCount(text: string): number {
+function wordCount(text: string): number {
   return text.trim().split(/\s+/).length;
 }
 
-export function ageInDays(publishedAt: string): number {
+function ageInDays(publishedAt: string): number {
   return (Date.now() - new Date(publishedAt).getTime()) / (24 * 60 * 60_000);
 }
 
@@ -57,12 +59,19 @@ export function loadVideoBody(videoId: string): { entry: BlogIndexEntry; body: s
   return { entry, body: stripFrontmatter(fullContent) };
 }
 
+/** The comment's word count when it is under the floor, or null when it may go on.
+ *  A short crisis or emergency comment always goes on, top-level or follow-up, so it
+ *  gets the chat's emergency reply (US-15 AC39 review N5, AC56). */
+function belowWordFloor(text: string, floor: number): number | null {
+  const words = wordCount(text);
+  return words < floor && !CRISIS.test(text) ? words : null;
+}
+
 export function filterThread(thread: YouTubeThread): FilterResult {
   if (thread.canReply === false) return { pass: false, reason: 'cannot reply' };
   if (!thread.text || !thread.text.trim()) return { pass: false, reason: 'empty' };
-  const words = wordCount(thread.text);
-  // A short crisis or emergency comment still gets the chat's emergency reply (US-15 AC39 review N5).
-  if (words < MIN_WORDS && !CRISIS.test(thread.text)) return { pass: false, reason: `too short (${words} words)` };
+  const words = belowWordFloor(thread.text, MIN_WORDS);
+  if (words !== null) return { pass: false, reason: `too short (${words} words)` };
 
   // Don't reply to Brad's own comments
   if (thread.authorChannelId && CHANNEL_ID && thread.authorChannelId === CHANNEL_ID) {
@@ -91,6 +100,14 @@ export function filterThread(thread: YouTubeThread): FilterResult {
 //      (classifier skip or SKIP_NO_REPLY with the follow-up posture block).
 // ---------------------------------------------------------------------------
 
+/** The same hygiene gates as a top-level comment, with the shorter follow-up word
+ *  floor: the gate's name when the follow-up is skipped, or null. */
+function followUpHygiene(reply: YouTubeReply): 'stale' | 'too-short' | null {
+  if (ageInDays(reply.publishedAt) > COMMENT_MAX_AGE_DAYS) return 'stale';
+  if (belowWordFloor(reply.text, FOLLOWUP_MIN_WORDS) !== null) return 'too-short';
+  return null;
+}
+
 type FollowUpDecision = { skip: string } | { candidate: YouTubeReply };
 
 export function assessThreadFollowUp(p: {
@@ -116,7 +133,10 @@ export function assessThreadFollowUp(p: {
   );
   if (candidates.length === 0) return { skip: 'no-addressed-followup' };
 
-  return { candidate: candidates[0] }; // oldest first — one follow-up per thread per tick
+  // The oldest that passes the hygiene gates, one follow-up per thread per tick. A short
+  // or stale reply is passed over, so a later crisis reply in the thread is still seen (AC56).
+  const passing = candidates.find(r => followUpHygiene(r) === null);
+  return passing ? { candidate: passing } : { skip: followUpHygiene(candidates[0])! };
 }
 
 /** Rebuild the thread as chat history for the main LLM: top-level comment,
@@ -189,12 +209,33 @@ export function completionOutcome(completion: ChatCompletionResult, latencyMs: n
   }
   if (completion.isFallback) {
     const failureMode = completion.failureMode ?? 'unknown';
+    tickFallbacks.set(failureMode, (tickFallbacks.get(failureMode) ?? 0) + 1);
     return { posted: false, skipReason: `main-LLM failure (${failureMode})`, isFallback: true, failureMode };
   }
   const replyText = completion.content.trim();
   // SKIP_NO_REPLY is still a real, deliberate model decision — worth keeping as training signal.
   if (replyText === 'SKIP_NO_REPLY') return { posted: false, skipReason: 'main-LLM returned SKIP_NO_REPLY' };
   return { posted: true, replyText };
+}
+
+/** Main-LLM fallbacks this tick, by failure mode (US-15 AC58). Ticks never overlap within a process (runTick). */
+const tickFallbacks = new Map<string, number>();
+
+/**
+ * One bounded Sentry warning for the tick's main-LLM fallbacks, then a fresh
+ * count (US-15 AC58). A fallback is unclaimed and retried every tick, so an
+ * alert per comment, as the web chat sends per question, would repeat for each
+ * failing comment every 30 minutes; one per tick is at most 48 a day per machine. Counts
+ * and failure modes only, never a comment or a reply.
+ */
+export function reportTickFallbacks(): void {
+  if (tickFallbacks.size === 0) return;
+  const byMode = Object.fromEntries(tickFallbacks);
+  tickFallbacks.clear();
+  const count = Object.values(byMode).reduce((a, b) => a + b, 0);
+  Sentry.captureMessage('YouTube bot: main-LLM fallbacks this tick', {
+    level: 'warning', tags: { feature: 'youtube-bot', subsystem: 'main-llm', platform: 'youtube' }, extra: { count, byMode },
+  });
 }
 
 /** Only a main-LLM failure is retried next tick; skips, silent classifier skips and refusals keep the claim. */

@@ -7,10 +7,10 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { render, cleanup, fireEvent, act, within } from '@testing-library/react';
-import {
-  bloodTestRows, createCoreRow, createEmptyFile, planBloodTestMove,
-  type ApiMeasurement, type RoadmapFile,
-} from '@roadmap/health-core';
+import { bloodTestRows, createCoreRow } from '@roadmap/health-core/blood-tests';
+import { createEmptyFile, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { planBloodTestMove } from '@roadmap/health-core/record-edits';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { BatchDateCell, BloodTestTimeline } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
 import { MOVE_CHANGED, MOVE_LPA, MOVE_TYPED, useMoveTest } from './MoveTestPanel';

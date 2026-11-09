@@ -9,7 +9,8 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from '@testing-library/react';
-import type { ApiMeasurement, UnitSystem } from '@roadmap/health-core';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
+import type { UnitSystem } from '@roadmap/health-core/units';
 import { StartingInfoVitals } from './StartingInfoVitals';
 
 afterEach(() => { cleanup(); localStorage.clear(); });

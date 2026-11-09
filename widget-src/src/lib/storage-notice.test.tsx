@@ -8,6 +8,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, fireEvent, cleanup } from '@testing-library/react';
 import {
   OPEN_PICKER_EVENT,
+  PICKER_TITLE,
   PLAN_STORAGE_CTA,
   PLAN_STORAGE_NOTICE,
   StorageSentence,
@@ -46,7 +47,9 @@ describe('US-09 AC5 — locked copy', () => {
     expect(PLAN_STORAGE_NOTICE).toContain('Our server never stores your health record.');
     expect(PLAN_STORAGE_NOTICE).not.toMatch(/never stores it\b/);
     expect(UPLOAD_STORAGE_NOTICE).toContain('Our server never stores them.');
-    expect(PLAN_STORAGE_CTA).toBe('Where do you want to keep your health record?');
+    // US-62 AC34 (Brad 2026-11-09): the button names where the record goes; the picker keeps the question.
+    expect(PLAN_STORAGE_CTA).toBe('Keep my record in Dropbox or Google Drive');
+    expect(PICKER_TITLE).toBe('Where do you want to keep your health record?');
   });
 
   it('pins the approved sentence word for word', () => {

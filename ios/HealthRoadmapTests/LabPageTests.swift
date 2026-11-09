@@ -35,6 +35,29 @@ final class LabPageTests: XCTestCase {
         XCTAssertEqual(ChartPoint.points(history).map(\.limit), [true, false])
     }
 
+    /// #922 (US-12 AC20a): a blood pressure half printed as a limit is drawn hollow, off its line, as
+    /// the web draws it; the other half and the exact pair stay solid points on theirs.
+    func testABloodPressureHalfPrintedAsALimitIsDrawnHollow_US12_AC20a() throws {
+        let engine = try HealthEngine()
+        let fresh = try engine.blocking { [now] in try $0.newRecord(now: now, deviceId: "test", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!) }
+        var file = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(fresh.utf8)) as? [String: Any])
+        let half = { (id: String, metric: String, value: Double, day: String, extra: [String: Any]) -> [String: Any] in
+            ["id": id, "metricType": metric, "value": value, "unit": "mmHg", "recordedAt": "\(day)T00:00:00.000Z",
+             "createdAt": "\(day)T09:00:00.000Z", "source": "manual", "status": "active", "correctsId": NSNull()].merging(extra) { $1 }
+        }
+        file["measurements"] = [half("s1", "systolic_bp", 125, "2026-10-02", ["comparator": "<"]), half("d1", "diastolic_bp", 78, "2026-10-02", [:]),
+                                half("s2", "systolic_bp", 120, "2026-10-20", [:]), half("d2", "diastolic_bp", 80, "2026-10-20", [:])]
+        let text = String(decoding: try JSONSerialization.data(withJSONObject: file), as: UTF8.self)
+        let now = self.now
+        let history = try engine.blocking { [now] in try $0.history(recordJSON: text, metric: "blood_pressure", now: now, deviceId: "test") }
+        XCTAssertEqual(history.rows.map(\.value), ["120/80", "< 125/78"])
+        let points = ChartPoint.points(history)
+        let limited = try XCTUnwrap(points.first { $0.series == "Systolic" && $0.value == 125 })
+        XCTAssertTrue(limited.limit, "the systolic limit is hollow, off the line")
+        XCTAssertEqual(limited.label, "< 125", "VoiceOver reads it as printed")
+        XCTAssertEqual(points.filter(\.limit).count, 1, "the diastolic half and the exact pair stay solid")
+    }
+
     func testASeriesInMoreThanOneUnitListsEachUnitAndDrawsNoChart_US25_AC25() throws {
         let engine = try HealthEngine()
         let text = try record(engine, labs: [lab("z1", "zinc_custom", 12, "µmol/L", "2026-09-01"), lab("z2", "zinc_custom", 80, "µg/dL", "2026-10-01")])

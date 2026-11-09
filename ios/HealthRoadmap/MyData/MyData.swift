@@ -1,6 +1,6 @@
 import Foundation
 
-/// What the My data tab shows (US-25 AC5), as the engine writes it
+/// My health's rows and forms (US-25 AC5, US-73), as the engine writes it
 /// (`MyData` in ios/engine/my-data.ts). Values are already in the user's units.
 struct MyData: Decodable {
     struct Profile: Decodable {
@@ -120,6 +120,50 @@ struct MyData: Decodable {
     /// Each metric's input range by unit ("si", "conventional", Lp(a)'s own), what a typed
     /// "1,234" is read against (US-02 AC7); nil from an older engine. Read leniently.
     let inputRanges: Lenient<[String: [String: InputRange]]>?
+    /// The letters and scan results listed at the foot of My health (US-73 AC12); nil from an
+    /// older engine, which lists none. Read leniently, so a bad list never blanks My data.
+    var documents: Lenient<Documents>? = nil
+
+    /// The engine's `documentShelf` (ios/engine/documents.ts): scan results, then letters and
+    /// every other document, each newest first; never a lab report's archive row.
+    /// Read row by row: a row this app cannot read drops only itself (review R1).
+    struct Documents: Decodable, Sendable {
+        let scans: [Document]
+        let others: [Document]
+        var isEmpty: Bool { scans.isEmpty && others.isEmpty }
+
+        private enum CodingKeys: String, CodingKey { case scans, others }
+
+        init(from decoder: Decoder) throws {
+            let list = try decoder.container(keyedBy: CodingKeys.self)
+            scans = (try? list.decode([Lenient<Document>].self, forKey: .scans))?.compactMap(\.value) ?? []
+            others = (try? list.decode([Lenient<Document>].self, forKey: .others))?.compactMap(\.value) ?? []
+        }
+    }
+
+    struct Document: Decodable, Sendable, Identifiable, Hashable {
+        struct Original: Decodable, Sendable, Hashable {
+            /// The file's name in the cloud, "2026-09-14 Cardiology follow-up.pdf".
+            let name: String
+            let mimeType: String
+        }
+
+        let id: String
+        let title: String
+        /// "Clinic Letter", as the web's badge says it.
+        let typeLabel: String
+        /// YYYY-MM-DD; nil when the document gave none.
+        let day: String?
+        /// The extracted markdown.
+        let content: String
+        let sourceFileName: String?
+        /// The original in the person's cloud; nil for a text-only row.
+        let original: Original?
+
+        /// The day as the row shows it, kept on one line (at large text "14 / Sep 2026" broke
+        /// mid-date), or the web's "Date unknown".
+        var dayText: String { day.map { DayText.short($0).replacingOccurrences(of: " ", with: "\u{00A0}") } ?? "Date unknown" }
+    }
 
     struct InputRange: Decodable, Sendable {
         let min: Double
@@ -206,6 +250,9 @@ enum RecordEdit: Encodable, Equatable {
     /// A new value for a lab test the record holds, by its series key, in the unit the sheet showed,
     /// on a day, YYYY-MM-DD: health-core's lab add, the web's too (US-25 AC25).
     case labAdd(series: String, value: Double, day: String, unit: String)
+    /// A value for any blood test by name (US-73 AC8), the add sheet's: the engine finds a core or
+    /// catalogue test by the name or keeps a new one in `unit`, as the web's general add does.
+    case labAddName(name: String, value: Double, day: String, unit: String)
     /// Readings from Apple Health; the engine decides what lands (US-25 AC13).
     case appleHealth([HealthSample])
     /// Lab results from Health Records, as they came; the engine decides what lands (US-72).
@@ -239,7 +286,7 @@ enum RecordEdit: Encodable, Equatable {
     }
 
     private enum Key: String, CodingKey {
-        case kind, alcohol, sex, birthYear, birthMonth, height, heightFeet, heightInches, systolic, diastolic, replace, seenIds, unitSystem, unit, metric, value, day, id, extractionJson, refs, reportDay, samples, part, edits, today, seen, series, records
+        case kind, alcohol, sex, birthYear, birthMonth, height, heightFeet, heightInches, systolic, diastolic, replace, seenIds, unitSystem, unit, name, metric, value, day, id, extractionJson, refs, reportDay, samples, part, edits, today, seen, series, records
     }
 
     func encode(to encoder: Encoder) throws {
@@ -285,6 +332,13 @@ enum RecordEdit: Encodable, Equatable {
         case .labAdd(let series, let value, let day, let unit):
             try json.encode("labAdd", forKey: .kind)
             try json.encode(series, forKey: .series)
+            try json.encode(value, forKey: .value)
+            try json.encode(day, forKey: .day)
+            try json.encode(unit, forKey: .unit)
+        case .labAddName(let name, let value, let day, let unit):
+            // The engine's labAddName. The one place that builds it.
+            try json.encode("labAddName", forKey: .kind)
+            try json.encode(name, forKey: .name)
             try json.encode(value, forKey: .value)
             try json.encode(day, forKey: .day)
             try json.encode(unit, forKey: .unit)

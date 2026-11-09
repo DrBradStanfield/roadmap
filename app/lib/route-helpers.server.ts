@@ -7,6 +7,7 @@ import * as Sentry from '@sentry/react-router';
 import { authenticate } from '../shopify.server';
 import { getOrCreateSupabaseUser, createUserClient } from './supabase.server';
 import { verifyAppProxySignature } from './local-first-route.server';
+import { safeErrorFields } from './safe-error-fields.server';
 
 /**
  * The Shopify customer ID from the app proxy request — the ONE reader of
@@ -48,7 +49,7 @@ export async function getCustomerInfo(
       lastName: customer.lastName || null,
     };
   } catch (error) {
-    console.error('Error looking up customer info:', error);
+    console.error('Error looking up customer info:', safeErrorFields(error));
     return null;
   }
 }
@@ -151,7 +152,7 @@ export async function getCustomerOrders(
     }
     return lines.join('\n');
   } catch (error) {
-    console.error('Error fetching customer orders:', error);
+    console.error('Error fetching customer orders:', safeErrorFields(error));
     Sentry.captureException(error, { tags: { feature: 'customer_orders_chat' } });
     return '';
   }
@@ -179,7 +180,7 @@ export async function checkSubscriptionFromTags(
     const tags: string[] = result?.data?.customer?.tags ?? [];
     return tags.includes(APPSTLE_SUBSCRIBER_TAG) ? 'subscriber' : 'free';
   } catch (error) {
-    console.error('Error checking subscription tags:', error);
+    console.error('Error checking subscription tags:', safeErrorFields(error));
     return 'free'; // Fail safe — default to free tier
   }
 }

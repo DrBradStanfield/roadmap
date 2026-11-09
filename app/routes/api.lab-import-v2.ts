@@ -10,6 +10,7 @@ import { createQuotaCounter, DAY_MS, machineFiles } from '../lib/rate-limiter';
 import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '../lib/local-first-route.server';
 import { SMALL_BODY_CAP } from '../lib/capped-body.server';
 import { activeBatches, armSweep, MAX_ACTIVE_BATCHES, type BatchPollResult } from '../lib/lab-batches.server';
+import { safeErrorFields } from '../lib/safe-error-fields.server';
 
 /**
  * Lab extraction for the LOCAL-FIRST storefront page (Phase 4 "thin server
@@ -120,7 +121,7 @@ async function answerPoll(batchId: string, pollToken: string | null): Promise<Re
       { status: result.status, results: result.results?.map(r => withRefusalsItReads(withDaysItReads(r, batch.days), batch.refusedRows)), completed: result.completed, total: result.total },
     );
   } catch (error) {
-    console.error('Batch poll error (v2):', error);
+    console.error('Batch poll error (v2):', safeErrorFields(error));
     return Response.json({ status: 'processing', completed: 0, total: batch.totalFiles });
   }
 }
@@ -182,7 +183,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     return extractOneFile(validation.data, () => ({ remaining: ipQuota.remaining(ip) }));
   } catch (error) {
-    console.error('Lab import error (v2):', error);
+    console.error('Lab import error (v2):', safeErrorFields(error));
     Sentry.captureException(error, { tags: { feature: 'lab_import_v2' } });
     return Response.json({ success: false, error: 'Failed to process request' }, { status: 500 });
   }

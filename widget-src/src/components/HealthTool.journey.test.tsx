@@ -19,19 +19,13 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, fireEvent, waitFor, within, act, type RenderResult } from '@testing-library/react';
-import {
-  formatDisplayValue,
-  localDay,
-  MemoryAdapter,
-  MemoryCloud,
-  ROADMAP_FILE_NAME,
-  toCanonicalValue,
-  toOldShape,
-  type FileLabValue,
-  type FileMeasurement,
-  type ProposedEdit,
-  type RoadmapFile,
-} from '@roadmap/health-core';
+import { formatDisplayValue, toCanonicalValue } from '@roadmap/health-core/units';
+import { localDay } from '@roadmap/health-core/merge';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import { toOldShape } from '@roadmap/health-core/blood-tests';
+import type { FileLabValue, FileMeasurement, RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { REMOTE_CHANGED_EVENT, RoadmapStore, type CorrectStatus } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import {
@@ -79,6 +73,13 @@ vi.mock('./ChatEmbed', () => ({
   },
 }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
+// Once the onboarding is done the plan's tiles sit on their rows' pages (US-62 AC26):
+// the tiles the plan hands My health are what it read.
+const planSeen = vi.hoisted(() => ({ tiles: [] as Array<{ label: string; value: string; unit: string; key: string }> }));
+vi.mock('./ResultsPanel', async (importOriginal) => {
+  const real = await importOriginal<typeof import('./ResultsPanel')>();
+  return { ...real, usePlanView: (options: Parameters<typeof real.usePlanView>[0]) => { planSeen.tiles = options.tiles; return real.usePlanView(options); } };
+});
 vi.mock('./UploadModal', () => ({
   UploadModal: ({ onStart, onComplete }: { onStart: () => Promise<void>; onComplete: () => Promise<void> }) => {
     upload.onStart = onStart;
@@ -88,6 +89,7 @@ vi.mock('./UploadModal', () => ({
 }));
 
 import { ERASE_DONE, HealthTool } from './HealthTool';
+import { deleteButton, openSettings } from '../testing/settings';
 
 const TODAY = localDay(new Date());
 const RIGHT_DAY = '2026-08-15';
@@ -227,9 +229,14 @@ function savePdf(view: RenderResult) {
   press(pdf);
   fireEvent.click(pdf);
 }
-/** The LDL figure on the plan. */
+/** The LDL figure on the plan: its tile on the page (the onboarding's, or the PDF's), else the tile the plan holds. */
 const ldlTile = (container: HTMLElement) => Array.from(container.querySelectorAll('.stat-card'))
-  .find((c) => c.querySelector('.stat-label')?.textContent === 'LDL Cholesterol')?.querySelector('.stat-value')?.textContent;
+  .find((c) => c.querySelector('.stat-label')?.textContent === 'LDL Cholesterol')?.querySelector('.stat-value')?.textContent
+  ?? (container.ownerDocument === document ? planLdl() : undefined);
+const planLdl = () => {
+  const tile = planSeen.tiles.find((t) => t.label === 'LDL Cholesterol');
+  return tile && `${tile.value} ${tile.unit}`;
+};
 /** The LDL the chat is told about: its current value and its newest dated point. */
 function ldlInChat() {
   const history = (chat.context?.measurementHistory as Record<string, Array<{ value: number }>> | undefined)?.ldl ?? [];
@@ -756,6 +763,7 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
     const view = render(<HealthTool />);
     const rule = 'Your birth month cannot be in the future.';
     const shownRule = () => [...view.container.querySelectorAll('.error-message')].filter((e) => e.textContent === rule);
+    await waitFor(() => openSettings(view.container)); // About you sits in Settings (US-62 AC24)
     await shown(view.container, '.about-row');
     openAboutYou(view.container);
 
@@ -1187,7 +1195,7 @@ describe('US-03 AC3: a first-time value the form was built again without', () =>
     await wait(600);
     expect(await rowsOf('waist')).toEqual([]);
 
-    fireEvent.click(view.getByRole('tab', { name: 'My plan' })); // Save as PDF is on the plan tab
+    // Save as PDF sits at the foot of My health, the tab already shown (US-62 AC26).
     savePdf(view);
     await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, TODAY]]));
   });
@@ -1706,7 +1714,7 @@ describe('US-11: an erase made here', () => {
     const view = await secondVisit();
     const release = adapter.hold();
     vi.spyOn(window, 'alert').mockImplementation(() => {});
-    fireEvent.click(view.getByRole('button', { name: 'Delete All My Data' }));
+    fireEvent.click(deleteButton());
     await adapter.reached;
     typeInto(draftInput(vitalsMatrix(view.container), 'Waist Circumference'), '90');
     leaveVitals(view.container); // the matrix commits as you leave it
@@ -1728,7 +1736,7 @@ describe('US-11: an erase made here', () => {
     expect([localStorage.getItem(VITALS_DRAFT_KEY), localStorage.getItem(BT_TIMELINE_DRAFT_KEY)]).not.toContain(null);
 
     vi.spyOn(window, 'alert').mockImplementation(() => {});
-    fireEvent.click(view.getByRole('button', { name: 'Delete All My Data' }));
+    fireEvent.click(deleteButton());
     await waitFor(() => expect(window.alert).toHaveBeenCalled());
     await wait(50);
     expect([chat.context?.weightKg, chat.context?.ldlC]).toEqual([undefined, undefined]);
@@ -1739,11 +1747,11 @@ describe('US-11: an erase made here', () => {
   // US-17 AC1b: the reminder cancel succeeds, the erase goes ahead, and the
   // alert is the normal one.
   it('the reminder cancel succeeds: the alert says the record is deleted', async () => {
-    const view = await returningGuest();
+    await returningGuest();
     setPreEraseHook(async () => {});
     try {
       vi.spyOn(window, 'alert').mockImplementation(() => {});
-      fireEvent.click(view.getByRole('button', { name: 'Delete All My Data' }));
+      fireEvent.click(deleteButton());
       await waitFor(() => expect(window.alert).toHaveBeenCalledWith(ERASE_DONE));
       expect(await loadAllHistory()).toEqual([]);
     } finally {
@@ -1991,7 +1999,9 @@ describe('US-05 AC3: the Lp(a) check, over the real record', () => {
 // for a press held 1.2 s (adversary R1): the press decides now.
 describe('US-04 AC1 / US-05 AC2: the Units pill held while a value is being corrected', () => {
   const UNIT_FIRST = 'Not saved: choose the unit first, then type the value.';
-  const pill = (view: RenderResult) => view.getByRole('button', { name: /Switch units/ });
+  // The pill sits in Settings since US-62 AC24, opened by a click that moves no focus; the
+  // cell's editor stays open under it, as it does under the onboarding's Starting Info pill.
+  const pill = (view: RenderResult) => { openSettings(view.container); return view.getByRole('button', { name: /Switch units/ }); };
 
   it('85 typed in kg, the pill held 200 ms: nothing written, and the cell says to choose the unit first', async () => {
     const view = await returningGuest();

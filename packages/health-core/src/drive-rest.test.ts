@@ -455,6 +455,15 @@ describe('documents: refused by default, written only on opt-in', () => {
     expect(await (await adapter.readDocument('Lab results/2026-01-01 Blood test results.pdf')).text()).toBe('pdf bytes');
   });
 
+  it('US-73 AC12 (#979): a document missing from Drive is a StorageError whose reason is not-found', async () => {
+    new FakeDrive().install();
+    const adapter = new DriveAdapter('token', { documents: 'write' });
+    const failure = await adapter.readDocument('Lab results/2026-01-01 Gone.pdf').then(() => null, (e: unknown) => e);
+    expect(failure).toBeInstanceOf(StorageError);
+    expect((failure as StorageError).reason).toBe('not-found');
+    expect((failure as Error).message).toBe('Google Drive document not found.');
+  });
+
   it('US-52 AC13d (R4): an opted-in write files into the folder that holds the record, not the first folder of that name', async () => {
     const drive = new FakeDrive();
     drive.install();

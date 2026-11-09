@@ -159,7 +159,7 @@ describe('engine portability (ios/architecture.md D4)', () => {
   it('opens, edits, saves and erases a record session in an empty context, every device need met by the host', async () => {
     const ctx = vm.createContext({});
     vm.runInContext(await bundle(null, "export { RecordSession } from './record-session'; export { MemoryAdapter, MemoryCloud } from './memory-adapter';"), ctx);
-    const { RecordSession, MemoryAdapter, MemoryCloud } = (ctx as { Engine: typeof import('./index') }).Engine;
+    const { RecordSession, MemoryAdapter, MemoryCloud } = (ctx as { Engine: typeof import('./record-session') & typeof import('./memory-adapter') }).Engine;
     const store = new MemoryAdapter(new MemoryCloud());
     const host = {
       tier: 'cloud' as const, store, deviceId: () => 'phone', clock: { now: () => Date.parse('2026-10-21T10:00:00.000Z') },

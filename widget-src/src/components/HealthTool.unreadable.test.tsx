@@ -6,7 +6,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, waitFor } from '@testing-library/react';
-import { createEmptyFile, createMeasurement } from '@roadmap/health-core';
+import { createEmptyFile, createMeasurement } from '@roadmap/health-core/roadmap-file';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { flushRoadmapStore, getUnreadableCount, initRoadmapStore, loadLatestMeasurementsSync, saveChangedMeasurements } from '../lib/roadmap-data';

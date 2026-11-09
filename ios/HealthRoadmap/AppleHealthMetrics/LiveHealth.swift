@@ -12,7 +12,7 @@ import UIKit
 final class LiveHealth {
     /// Health exists on this device. False on an iPad without Health: no card shows (AC13).
     let available: Bool
-    /// Apple's sheet would still show for the five types: My data shows the Turn On row
+    /// Apple's sheet would still show for the four types: My data shows the Turn On row
     /// (AC4, AC5). Nil until the first check.
     private(set) var needsAccess: Bool?
     /// Each metric's latest reading; a metric with none is left out (AC6).
@@ -50,15 +50,22 @@ final class LiveHealth {
         self.calendar = calendar
         self.kept = kept
         history = LiveHistory(folder: kept?.deletingLastPathComponent())
+        // Heart rate is no longer shown, so no longer read or kept: its history goes once (US-73).
+        if kept != nil { Task { [history] in await history.forgetDropped() } }
         available = store.isAvailable
         guard available else { return }
         // Read here, so the first frame has the cards; the first read updates them (AC15).
         // A file that is missing, damaged or another version is no file.
         if let kept, let data = try? Data(contentsOf: kept), let file = try? JSONDecoder().decode(KeptCards.self, from: data),
-           file.version == KeptCards.current, !file.cards.isEmpty {
-            cards = file.cards
-            needsAccess = false
-            hasRead = true
+           file.version == KeptCards.current {
+            // A metric no longer shown (heart rate, US-73) is left out, and the file kept without it.
+            let shown = file.shown
+            if shown.count < file.cards.count { keep(shown) }
+            if !shown.isEmpty {
+                cards = shown
+                needsAccess = false
+                hasRead = true
+            }
         }
         // A locked phone's read keeps what was drawn; the unlock reads again (AC13). A new day or
         // a new time zone reads again too, so "Today" and the days move (N5).
@@ -168,7 +175,17 @@ final class LiveHealth {
     private struct KeptCards: Codable {
         static let current = 1
         var version = current
-        let cards: [LiveMetric: LiveCard]
+        /// By metric name, so a file holding one the app no longer shows still reads.
+        let cards: [String: LiveCard]
+
+        init(cards: [LiveMetric: LiveCard]) {
+            self.cards = Dictionary(uniqueKeysWithValues: cards.map { ($0.key.rawValue, $0.value) })
+        }
+
+        /// The metrics the app shows.
+        var shown: [LiveMetric: LiveCard] {
+            Dictionary(uniqueKeysWithValues: cards.compactMap { key, card in LiveMetric(rawValue: key).map { ($0, card) } })
+        }
     }
 
     /// The cards' readings, off the main thread, each metric on its own: its newest sample
@@ -232,18 +249,15 @@ final class LiveHealth {
         }
         let from = calendar.date(byAdding: .day, value: -29, to: calendar.startOfDay(for: newest)) ?? newest
         let days = try await days(store, metric, from: from, to: now)
-        // Heart rate's card is its newest sample; its trend is the days' averages.
-        let sample = metric.aggregation == .range ? latest.value.map { (value: $0, date: latest.date) } : nil
-        let card = LiveMaths.card(days: days, latest: sample, today: now, calendar: calendar)
+        let card = LiveMaths.card(days: days, today: now, calendar: calendar)
         let held = days.filter { $0.value != nil }
         guard let card, LiveMaths.readsBack(held.map(\.start), today: now, calendar: calendar) else { return card }
         // The last seven, however old, may be further back (AC14). A read-back that fails or
-        // finds nothing more keeps the first card: heart rate's would otherwise lose its
-        // trend, since its newest sample makes a card from no days (Codex R2, 2026-10-26).
+        // finds nothing more keeps the first card (Codex R2, 2026-10-26).
         let back = calendar.date(byAdding: .day, value: -400, to: from) ?? from
         let older = try await self.days(store, metric, from: back, to: now)
         guard older.filter({ $0.value != nil }).count > held.count else { return card }
-        return LiveMaths.card(days: older, latest: sample, today: now, calendar: calendar) ?? card
+        return LiveMaths.card(days: older, today: now, calendar: calendar) ?? card
     }
 
     /// The first instant a page reads: `back` days before today, or the day of the card's

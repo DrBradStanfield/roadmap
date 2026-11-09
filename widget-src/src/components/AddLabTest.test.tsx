@@ -7,7 +7,9 @@
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, fireEvent, cleanup, waitFor } from '@testing-library/react';
-import { addLabValue as addRecordLabValue, createEmptyFile, labUnitRefusalLine, type FileLabValue } from '@roadmap/health-core';
+import { addLabValue as addRecordLabValue } from '@roadmap/health-core/record-edits';
+import { createEmptyFile, type FileLabValue } from '@roadmap/health-core/roadmap-file';
+import { labUnitRefusalLine } from '@roadmap/health-core/lab-series';
 
 afterEach(cleanup);
 
@@ -28,7 +30,8 @@ vi.mock('../lib/server-api', () => ({
 
 import { AddLabTest } from './AddLabTest';
 import { AdditionalLabRows } from './AdditionalLabRows';
-import { reportedToCanonical, type ApiMeasurement } from '@roadmap/health-core';
+import { reportedToCanonical } from '@roadmap/health-core/units';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { validateTypedValue } from '../lib/blood-test-cell';
 
 beforeEach(() => {
@@ -260,6 +263,15 @@ describe('US-21 phase 2 — AddLabTest', () => {
     });
   });
 
+  it('US-21 AC26 — a catalogued value past its plausible range shows why and saves nothing', async () => {
+    const { getByLabelText, getByRole, onAdded, findByText } = openForm();
+    fireEvent.change(getByLabelText('Test'), { target: { value: 'potassium' } });
+    fireEvent.change(getByLabelText('Value'), { target: { value: '42' } });
+    fireEvent.click(getByRole('button', { name: /^save$/i }));
+    expect(await findByText('Potassium above 20 mmol/L is almost certainly a typing or unit mistake: check the number and its unit.')).toBeTruthy();
+    expect(onAdded).not.toHaveBeenCalled();
+  });
+
   it('Save is disabled until a test and a parseable value are entered', () => {
     const { getByLabelText, getByRole } = openForm();
     const save = getByRole('button', { name: /^save$/i }) as HTMLButtonElement;
@@ -393,10 +405,45 @@ describe('US-66 AC6 — a core test typed under "Other"', () => {
     expect(trackProductEvent).not.toHaveBeenCalled(); // the value never enters telemetry
   });
 
+  it('an out-of-range Lp(a) in mg/L names its mg/L range, never the mg/dL one', async () => {
+    const utils = render(<AddLabTest onAdded={vi.fn()} labValues={[]} coreValues={[]} onCorrect={vi.fn()} />);
+    fireEvent.click(utils.getByRole('button', { name: /add a blood test/i }));
+    fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });
+    fireEvent.change(utils.getByLabelText('Test name'), { target: { value: 'Lp(a)' } });
+    fireEvent.change(utils.getByLabelText('Unit'), { target: { value: 'mg/L' } });
+    fireEvent.change(utils.getByLabelText('Value'), { target: { value: '5000' } });
+    fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+    expect(await utils.findByText('Max 3000 mg/L')).toBeTruthy();
+  });
+
   it('US-66 AC8 — the core rows the form reads are never listed as extra rows', () => {
     const { queryByText, getByRole } = render(<AdditionalLabRows labValues={[]} coreValues={[core]} onAdded={vi.fn()} />);
     expect(getByRole('button', { name: /add a blood test/i })).toBeTruthy();
     expect(queryByText(/ldl/i)).toBeNull();
+  });
+});
+
+// US-25 AC25: a value page's "+ Add a value" adds to its own series, whatever the general add refuses.
+describe('US-25 AC25: a value page adds to its own series', () => {
+  it('adds to a series a lab import saved with no unit (INR)', async () => {
+    holding({ id: 'i1', metricName: 'INR', value: 1.1, unit: '', recordedAt: '2026-01-01T00:00:00.000Z', createdAt: '2026-01-01T00:00:00.000Z', source: 'lab_import' });
+    const onAdded = vi.fn();
+    const { getByText, getByLabelText } = render(<AddLabTest onAdded={onAdded} labValues={[]} coreValues={[]} preset={{ metricName: 'INR', unit: '' }} />);
+    fireEvent.click(getByText('+ Add a value'));
+    fireEvent.change(getByLabelText(/value/i), { target: { value: '1.2' } });
+    fireEvent.click(getByText(/^save$/i));
+    await waitFor(() => expect(onAdded).toHaveBeenCalled());
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'INR', unit: '', value: 1.2, day: todayIso, existingSeries: true });
+  });
+
+  it('adds to a kept-apart lab series named like a vital (Weight)', async () => {
+    holding({ id: 'w1', metricName: 'Weight', value: 70, unit: 'kg', recordedAt: '2026-01-01T00:00:00.000Z', createdAt: '2026-01-01T00:00:00.000Z', source: 'lab_import' });
+    const onAdded = vi.fn();
+    const { getByText, getByLabelText } = render(<AddLabTest onAdded={onAdded} labValues={[]} coreValues={[]} preset={{ metricName: 'Weight', unit: 'kg' }} />);
+    fireEvent.click(getByText('+ Add a value'));
+    fireEvent.change(getByLabelText(/value/i), { target: { value: '71' } });
+    fireEvent.click(getByText(/^save$/i));
+    await waitFor(() => expect(onAdded).toHaveBeenCalled());
   });
 });
 

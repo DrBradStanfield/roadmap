@@ -9,7 +9,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, within } from '@testing-library/react';
 import { useState, type MutableRefObject } from 'react';
-import type { ApiMeasurement, UnitSystem } from '@roadmap/health-core';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
+import type { UnitSystem } from '@roadmap/health-core/units';
 import { StartingInfoVitals, type VitalsPrefillFn } from './StartingInfoVitals';
 import { press, pressMouse, pressWithoutFocus, releaseMouse } from '../testing/matrix-gestures';
 

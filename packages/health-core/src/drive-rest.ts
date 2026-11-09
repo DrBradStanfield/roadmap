@@ -78,7 +78,7 @@ const PROVIDER = 'Google Drive';
 
 /** `fetch` with this module's provider name already bound, so no call site can
  *  hand `fetchOrFail` the wrong one. Reach for this, never the bare global. */
-const request = (url: string | URL, init?: RequestInit & { timeoutMs?: number }): Promise<Response> => fetchOrFail(PROVIDER, url, init);
+const request = (url: string | URL, init?: Parameters<typeof fetchOrFail>[2]): Promise<Response> => fetchOrFail(PROVIDER, url, init);
 
 async function fail(what: string, res: Response): Promise<never> {
   throw new StorageError(`${PROVIDER} ${what} failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
@@ -193,7 +193,7 @@ export function driveCreateFile(
     // minutes sending. Scale the bound with the bytes so the upload is judged
     // on the provider's silence, not on the user's connection.
     timeoutMs: Math.min(300_000, 30_000 + Math.round(body.size / 10_000) * 1_000),
-    signal,
+    signal, mayHaveWritten: true, // a create with no answer may have landed (US-09 AC43)
   });
 }
 
@@ -216,7 +216,7 @@ export async function driveUploadDocument(accessToken: string, name: string, byt
  *  at `fetchOrFail`'s 30-second bound. */
 export async function driveDownloadDocument(accessToken: string, name: string, parentId: string): Promise<Blob> {
   const id = await driveFindFileId(accessToken, name, parentId);
-  if (!id) throw new StorageError(`${PROVIDER} document not found.`);
+  if (!id) throw new StorageError(`${PROVIDER} document not found.`, undefined, undefined, undefined, 'not-found');
   const res = await fetch(`${DRIVE_API}/files/${id}?alt=media`, { headers: auth(accessToken) });
   if (!res.ok) throw new StorageError(`${PROVIDER} document read failed (${res.status}).`, undefined, undefined, res.status);
   return res.blob();
@@ -228,7 +228,7 @@ async function driveUpdateFile(accessToken: string, fileId: string, json: string
     method: 'PATCH',
     headers: { ...auth(accessToken), 'Content-Type': 'application/json' },
     body: json,
-    signal,
+    signal, mayHaveWritten: true,
   });
   if (!res.ok) await fail('write', res);
   return JSON.stringify([fileId, String((await jsonBody<{ version?: string }>(res)).version ?? '')]);

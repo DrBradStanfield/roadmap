@@ -9,7 +9,9 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { act, fireEvent, render, waitFor } from '@testing-library/react';
-import { readScreening, ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
+import { readScreening } from '@roadmap/health-core/input-form';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { flushRoadmapStore, saveScreening } from '../lib/roadmap-data';

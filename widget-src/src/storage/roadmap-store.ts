@@ -24,59 +24,31 @@
  *  - Medication-history chart annotations use explicit change types saved at write time.
  */
 import { sha256Blob } from '../lib/archive-payloads';
-import {
-  type AddLabValueRequest,
-  type AddLabValueResult,
-  type BulkRow,
-  LiveRefresh,
-  addLabValue as addRecordLabValue,
-  RecordSession,
-  bulkAppendValues,
-  birthInFuture,
-  placeMeasurement,
-  saveDocuments,
-  documentView,
-  type DocumentPayload,
-  type MoveKeep,
-  type MoveRejection,
-  type MovePlan,
-  setReminderOptIn,
-  setScreening,
-  stampProfile,
-  upsertMedication,
-  upsertSupplement,
-  medicationChanges,
-  computeReminderSchedule,
-  correctValue as correctRecordValue,
-  moveBloodTest as moveRecordBloodTest,
-  planBloodTestMove,
-  diffInputsToMeasurements,
-  fileProfileToApi,
-  fileScreeningRows,
-  isClinicalDay,
-  latestActivePerMetric,
-  localDay,
-  measurementsToInputs,
-  PREFILL_FIELDS,
-  type ApiMeasurement,
-  type ApiMedication,
-  type ApiScreening,
-  type FileDocument,
-  type FileReminderOptIn,
-  type FileSupplement,
-  type HealthInputs,
-  type LabUnitRefusal,
-  type LpaUnit,
-  type MeasurementRefusal,
-  type MeasurementSource,
-  type Comparator,
-  type ReminderScheduleItem,
-  type RoadmapFile,
-  type RoadmapProfile,
-} from '@roadmap/health-core';
-import { bloodTableReport, inputRangeFault, isAlcoholAnswer, isCoreRow, isReadableRow, readableView, ROADMAP_DOC, ROADMAP_FILE_NAME, type FileLabValue, type FileMeasurement } from '@roadmap/health-core';
-import { currentValueRows } from '@roadmap/health-core/blood-tests';
-import { type EraseResult, type EraseSteps, type RecordHost, type StorageAdapter } from '@roadmap/health-core';
+import { type AddLabValueRequest, type AddLabValueResult, type BulkRow, addLabValue as addRecordLabValue, bulkAppendValues, placeMeasurement, type MoveKeep, type MoveRejection, type MovePlan, correctValue as correctRecordValue, moveBloodTest as moveRecordBloodTest, planBloodTestMove, type LabUnitRefusal, type MeasurementRefusal } from '@roadmap/health-core/record-edits';
+import { LiveRefresh } from '@roadmap/health-core/live-refresh';
+import { RecordSession, saveRecordInto, type EraseResult, type EraseSteps } from '@roadmap/health-core/record-session';
+import { birthInFuture, type MeasurementSource, inputRangeFault } from '@roadmap/health-core/validation';
+import { saveDocuments, documentView, type DocumentPayload } from '@roadmap/health-core/document-save';
+import { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertSupplement } from '@roadmap/health-core/state-edits';
+import { medicationChanges } from '@roadmap/health-core/medication-annotations';
+import { computeReminderSchedule, type ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
+import { diffInputsToMeasurements, measurementsToInputs, PREFILL_FIELDS, type ApiMeasurement, type ApiMedication, type ApiScreening } from '@roadmap/health-core/mappings';
+import { fileProfileToApi, fileScreeningRows } from '@roadmap/health-core/file-inputs';
+import { isClinicalDay, latestActivePerMetric } from '@roadmap/health-core/measurement-history';
+import { localDay } from '@roadmap/health-core/merge';
+import type { FileDocument, FileReminderOptIn, FileSupplement, RoadmapFile, RoadmapProfile, FileLabValue, FileMeasurement } from '@roadmap/health-core/roadmap-file';
+import { type HealthInputs, isAlcoholAnswer } from '@roadmap/health-core/types';
+import type { LpaUnit } from '@roadmap/health-core/units';
+import type { Comparator } from '@roadmap/health-core/lab-limits';
+import { bloodTableReport, isCoreRow, currentValueRows } from '@roadmap/health-core/blood-tests';
+import { egfrSeries, whtrSeries, type EgfrPoint, type WhtrPoint } from '@roadmap/health-core/plan';
+import { isReadableRow, readableView } from '@roadmap/health-core/readable-rows';
+import { ROADMAP_DOC } from '@roadmap/health-core/roadmap-doc';
+import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/adapter';
+
+/** The worked-out series My health's rows read (US-62 AC21). */
+export interface DerivedSeries { whtr: WhtrPoint[]; egfr: EgfrPoint[] }
+import type { RecordHost } from '@roadmap/health-core/record-host';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { webRecordHost } from './web-record-host';
 import { Sentry } from '../lib/sentry';
@@ -91,7 +63,7 @@ export { ROADMAP_DOC };
  *  the modules that import it from the store. */
 export { PENDING_MIRROR_KEY, SYNC_PENDING_EVENT, REMOTE_CHANGED_EVENT, markSyncPending, beginRoadmapLogOff, isSyncPending } from './web-record-host';
 /** Defined in health-core's record session, which makes the erase. */
-export { ERASE_UNREACHABLE } from '@roadmap/health-core';
+export { ERASE_UNREACHABLE } from '@roadmap/health-core/record-session';
 
 // --- App-facing shapes (moved here from api.ts; the data ones come from health-core) ---
 
@@ -161,12 +133,14 @@ export type AddMeasurementResult =
 /** How a correction ended. `changed`: the value named is not there any
  *  more, or another row has replaced it (another device, a connector).
  *  `invalid`: the record does not take that number (outside the metric's
- *  range). `error`: no record is open. */
-export type CorrectStatus = 'ok' | 'changed' | 'invalid' | 'error';
+ *  range). `refused`: a lab value past its plausible range, in the engine's
+ *  words, which the page shows as the iPhone and MCP do (US-21 AC26).
+ *  `error`: no record is open. */
+export type CorrectStatus = 'ok' | 'changed' | 'invalid' | 'error' | { refused: string };
 /** How a blood test move ended (US-04 AC5), as a correction does. `changed`:
  *  the test on that day is not what the page showed. `invalid` carries the
  *  record's refusal, for the page to say. */
-export type MoveOutcome = { status: Exclude<CorrectStatus, 'invalid'> } | { status: 'invalid'; refusal: MoveRejection };
+export type MoveOutcome = { status: Exclude<Extract<CorrectStatus, string>, 'invalid'> } | { status: 'invalid'; refusal: MoveRejection };
 /** A birth month in the future that a save refused (US-54 AC5b): the pair judged. */
 export interface BirthRefusal { birthYear: number; birthMonth: number | undefined }
 /** A profile save: refused by the erase, or saved with any birth month it refused. */
@@ -376,6 +350,14 @@ export class RoadmapStore {
     return activeOnly(this.view.labValues).filter((row) => !isCoreRow(row)) as ApiLabValue[];
   }
 
+  /** My health's worked-out rows (US-62 AC21), the iPhone's series: each day's
+   *  waist over the current height, and each day's eGFR, lab or calculated. The
+   *  profile is the screen's (`shown`): an answer typed is read before its save lands. */
+  loadDerivedSeries(shown: Partial<Pick<RoadmapFile['profile'], 'heightCm' | 'sex' | 'birthYear' | 'birthMonth'>>, now = new Date()): DerivedSeries {
+    const file = { ...this.view, profile: { ...this.view.profile, ...shown } };
+    return { whtr: whtrSeries(file), egfr: egfrSeries(file, now) };
+  }
+
   /** Non-tombstoned documents — the ONE place the deleted-filter invariant lives. */
   private liveDocuments(): FileDocument[] {
     return this.view.documents.filter((d) => !d.deleted);
@@ -405,7 +387,10 @@ export class RoadmapStore {
   correctValue(id: string, newValue: number, erase?: string): CorrectStatus {
     if (this.refuses(erase)) return 'error';
     const result = correctRecordValue(this.file, { id, newValue, now: new Date().toISOString() });
-    if (!result.ok) return result.reason === 'not-found' || result.reason === 'not-active' ? 'changed' : 'invalid';
+    if (!result.ok) {
+      if (result.reason === 'not-found' || result.reason === 'not-active') return 'changed';
+      return result.reason === 'invalid-value' ? { refused: result.message } : 'invalid';
+    }
     this.session.edit(() => result.file, erase);
     return 'ok';
   }
@@ -616,6 +601,16 @@ export class RoadmapStore {
   /** Force-persist any pending changes (call before navigation). */
   flush(): Promise<void> {
     return this.session.flush();
+  }
+
+  /** Leaving this cloud (US-09 AC2g): merge the working copy, saved or still
+   *  waiting to save, into this device's copy, which the new connect lifts.
+   *  A cloud session saves to the device only when a save fails, so after a
+   *  failed connect the page's later saves reach the old cloud alone. */
+  async copyToDevice(): Promise<void> {
+    if (this.host.tier !== 'cloud') return;
+    const ctx = { deviceId: this.host.deviceId(), now: new Date(this.host.clock.now()).toISOString() };
+    await saveRecordInto(this.host.mirror.adapter, this.file, ctx);
   }
 
   /** Re-read the record and merge what came back (US-34); see the session. */

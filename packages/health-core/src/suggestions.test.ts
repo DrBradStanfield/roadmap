@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { generateSuggestions, weightMedicationTrigger, lipidMarkerFor, joinWithAnd } from './suggestions';
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { screeningForm } from './input-form';
-import { LIPID_TREATMENT_TARGETS, NON_HDL_THRESHOLDS, type UnitSystem } from './units';
+import { HBA1C_THRESHOLDS, LIPID_TREATMENT_TARGETS, NON_HDL_THRESHOLDS, type UnitSystem } from './units';
 import type { HealthInputs, HealthResults, MedicationInputs, SuggestionInputs, ScreeningInputs } from './types';
 import {
   canIncreaseGlp1Dose, shouldSuggestGlp1Switch, canIncreaseDose, shouldSuggestSwitch, getCurrentPotency, gradedDose,
@@ -359,6 +359,16 @@ describe('generateSuggestions', () => {
       const bpSuggestion = suggestions.find(s => s.id === 'bp-crisis');
       expect(bpSuggestion).toBeDefined();
       expect(bpSuggestion?.priority).toBe('urgent');
+    });
+
+    // US-07 AC12 (Brad, 2026-11-02): no symptoms, recheck after 5 minutes and call your doctor if
+    // it is still that high; with symptoms, call the local emergency number (NHLBI).
+    it.each([[185, 100], [150, 125]])('the crisis card at %i/%i says recheck, then doctor, or emergency with symptoms (US-07 AC12)', (sys, dia) => {
+      const { inputs, results } = createTestData({ systolicBp: sys, diastolicBp: dia });
+      const card = generateSuggestions(inputs, results).find(s => s.id === 'bp-crisis');
+      expect(card?.description).toBe(`Your BP of ${sys}/${dia} mmHg is dangerously high. If you have no symptoms, rest and recheck it after 5 minutes; if it is still 180/120 or higher (either number), call your doctor. If you have chest, back or belly pain, shortness of breath, numbness or weakness, a change in vision, difficulty speaking or a sudden severe headache, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).`);
+      expect(card?.reason).toContain('wait 5 minutes and check again');
+      expect(card?.references?.map(r => r.url)).toContain('https://www.nhlbi.nih.gov/health/high-blood-pressure/symptoms');
     });
 
     it('generates stage 2 suggestion for BP >= 140/90', () => {
@@ -778,10 +788,10 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'fiber')?.category).toBe('nutrition');
     });
 
-    it('suppresses fiber suggestion when lipid-diet is active', () => {
+    it('keeps the fiber suggestion when lipid-diet is active (Brad 2026-11-05)', () => {
       const { inputs, results } = createTestData({ ldlC: 4.0 }); // above borderline (3.36)
       const suggestions = generateSuggestions(inputs, results);
-      expect(suggestions.find(s => s.id === 'fiber')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'fiber')).toBeDefined();
       expect(suggestions.find(s => s.id === 'lipid-diet')).toBeDefined();
     });
 
@@ -828,6 +838,30 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'low-salt')).toBeUndefined();
     });
+
+    // US-07 AC13 (Brad, 2026-11-02; gate and pregnancy 2026-11-09): a potassium-enriched salt substitute,
+    // with its exclusions, only with a current eGFR of 45 or more (the high-potassium card's gate).
+    const SUBSTITUTE = ' A potassium-enriched salt substitute can also help cut sodium, but not if you are pregnant, have kidney disease or diabetes, have been told to limit potassium, or take a potassium-sparing diuretic, a potassium supplement, an ACE inhibitor or an ARB, unless your doctor agrees.';
+    const SALT = 'Aim for less than 1,500mg of sodium daily. Most excess sodium comes from processed foods. Reducing sodium can help lower blood pressure.';
+    it.each([
+      ['no eGFR', undefined, SALT],
+      ['eGFR 45', 45, SALT + SUBSTITUTE],
+      ['eGFR 90', 90, SALT + SUBSTITUTE],
+      ['eGFR 44', 44, SALT],
+      ['eGFR 20', 20, SALT],
+    ])('low salt with %s: the salt substitute line shows only with a current eGFR of 45 or more (US-07 AC13)', (_name, eGFR, text) => {
+      const { inputs, results } = createTestData({ systolicBp: 125, diastolicBp: 75 }, { age: 50, eGFR });
+      const suggestions = generateSuggestions(inputs, results);
+      const card = suggestions.find(s => s.id === 'low-salt');
+      expect(card?.description).toBe(text);
+      // The same gate as the high-potassium card.
+      expect(suggestions.some(s => s.id === 'high-potassium')).toBe(text !== SALT);
+      expect(card?.reason).toContain('NICE also advises against them for older people.');
+      expect(card?.reason).toContain('shows the suggestion only with a current eGFR of 45 or more');
+      expect(card?.references?.map(r => r.url)).toEqual(expect.arrayContaining([
+        'https://doi.org/10.1056/NEJMoa2105675', 'https://doi.org/10.1016/j.jacc.2025.07.010',
+      ]));
+    });
   });
 
   describe('Lipid-lowering diet suggestion', () => {
@@ -857,11 +891,11 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'fiber')).toBeDefined();
     });
 
-    it('shows lipid-diet and hides fiber at LDL 2.0, above the 1.4 optimal line (US-07 AC5)', () => {
+    it('shows lipid-diet, and fiber still, at LDL 2.0, above the 1.4 optimal line (US-07 AC5)', () => {
       const { inputs, results } = createTestData({ ldlC: 2.0 });
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'lipid-diet')).toBeDefined();
-      expect(suggestions.find(s => s.id === 'fiber')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'fiber')).toBeDefined();
     });
 
     it.each([
@@ -1270,17 +1304,70 @@ describe('generateSuggestions', () => {
 
     // US-07 AC5: the sentence reads true at exactly the target.
     it.each([
-      { name: 'LDL 1.4', values: { ldlC: 1.4 }, text: 'Your LDL-c is 1.4 mmol/L; the treatment target is below 1.4 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor.' },
-      { name: 'ApoB 0.5', values: { apoB: 0.5 }, text: 'Your ApoB is 0.50 g/L; the treatment target is below 0.50 g/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor.' },
+      { name: 'LDL 1.4', values: { ldlC: 1.4 }, text: 'Your LDL-c is 1.4 mmol/L; the treatment target is below 1.4 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Don\'t start a statin if you are pregnant or planning a pregnancy.' },
+      { name: 'ApoB 0.5', values: { apoB: 0.5 }, text: 'Your ApoB is 0.50 g/L; the treatment target is below 0.50 g/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Don\'t start a statin if you are pregnant or planning a pregnancy.' },
     ])('med-statin at exactly the target, $name, shows and reads true (US-07 AC5)', ({ values, text }) => {
       const { inputs, results } = createTestData(values);
       expect(generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin')?.description).toBe(text);
     });
 
+    // US-07 AC14 (wording Brad 2026-11-09): every card for someone already on a statin says when to stop.
+    it.each([
+      ['med-statin-dose', { statin: { drug: 'pravastatin', dose: null }, ezetimibe: 'yes' }],
+      ['med-statin-increase', { statin: { drug: 'pravastatin', dose: 20 }, ezetimibe: 'yes' }],
+      ['med-statin-switch', { statin: { drug: 'atorvastatin', dose: 80 }, ezetimibe: 'yes' }],
+    ] as const)('%s ends with the pregnancy line for people on a statin (US-07 AC14)', (id, meds) => {
+      const { inputs, results } = createTestData({ ldlC: 3.0 });
+      expect(generateSuggestions(inputs, results, 'si', meds as MedicationInputs).find(s => s.id === id)?.description)
+        .toMatch(/ If you become pregnant, most people should stop their statin: talk to your doctor\. If you are planning a pregnancy, NICE advises stopping 3 months before trying to conceive\.$/);
+    });
+
+  // US-07 AC14 (Brad, 2026-11-02): "no statins in pregnancy", on the card itself, sourced in its reason.
+    it('the statin card says not to start one in pregnancy, and its reason cites the FDA and NICE (US-07 AC14)', () => {
+      const { inputs, results } = createTestData({ ldlC: 3.0 });
+      const card = generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin');
+      expect(card?.description).toMatch(/ Don't start a statin if you are pregnant or planning a pregnancy\.$/);
+      expect(card?.reason).toContain('The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive.');
+      expect(card?.reason).not.toContain('Statins are not used in pregnancy');
+      expect(card?.references?.map(r => r.url)).toEqual(expect.arrayContaining([
+        'https://www.fda.gov/drugs/drug-safety-and-availability/fda-requests-removal-strongest-warning-against-using-cholesterol-lowering-statins-during-pregnancy',
+        'https://www.nice.org.uk/guidance/ng238/chapter/Recommendations',
+      ]));
+    });
+
+    // US-07 AC14 (Brad 2026-11-09): on a statin, the ezetimibe and PCSK9 inhibitor cards also say when to
+    // stop the statin, after their own pregnancy line; statin-intolerant people do not get the statin line.
+    const ON_STATIN_LINE = ' If you become pregnant, most people should stop their statin: talk to your doctor. If you are planning a pregnancy, NICE advises stopping 3 months before trying to conceive.';
+    const UNSTUDIED = ' Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.';
+    it.each([
+      ['med-ezetimibe', { statin: { drug: 'atorvastatin', dose: 20 } }, true],
+      ['med-pcsk9i', { statin: { drug: 'atorvastatin', dose: 80 }, ezetimibe: 'yes', statinEscalation: 'not_tolerated' }, true],
+      ['med-pcsk9i', { statin: { drug: 'not_tolerated', dose: null } }, false],
+      ['med-ezetimibe', { statin: { drug: 'not_tolerated', dose: null }, pcsk9i: 'yes' }, false],
+    ] as const)('%s carries the on-statin pregnancy line only on a statin (%j) (US-07 AC14)', (id, meds, onStatin) => {
+      const { inputs, results } = createTestData({ ldlC: 3.0 });
+      const text = generateSuggestions(inputs, results, 'si', meds as MedicationInputs).find(s => s.id === id)?.description ?? '';
+      expect(text.endsWith(onStatin ? UNSTUDIED + ON_STATIN_LINE : UNSTUDIED)).toBe(true);
+    });
+
+    // US-06 AC20 (Brad 2026-11-09): each drug's pregnancy line, worded from its US label (8.1).
+    it.each([
+      ['med-pcsk9i', { statin: { drug: 'not_tolerated', dose: null } }, ' Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.', ['cd61e902-166d-4aa6-9f3c-a18c1008d07e', '7bcfbac2-e8ac-4569-8edc-bcde3b1fd172']],
+      ['med-ezetimibe', { statin: { drug: 'not_tolerated', dose: null }, pcsk9i: 'yes' }, ' Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.', ['174e45e0-45bb-48b7-9e60-8f6cfc1d22bb']],
+      ['med-ezetimibe', { statin: { drug: 'atorvastatin', dose: 20 } }, ' Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.', ['174e45e0-45bb-48b7-9e60-8f6cfc1d22bb']],
+      ['med-bempedoic-acid', { statin: { drug: 'not_tolerated', dose: null }, pcsk9i: 'yes', ezetimibe: 'yes' }, ' Not recommended in pregnancy; talk to your doctor if you are pregnant or planning to be.', ['88d06d89-a3da-40b4-b273-8f4f7d56c4c9']],
+    ] as const)('%s ends with its label-based pregnancy line and cites the label (US-06 AC20)', (id, meds, line, setids) => {
+      const { inputs, results } = createTestData({ ldlC: 3.0 });
+      const card = generateSuggestions(inputs, results, 'si', meds as MedicationInputs).find(s => s.id === id);
+      expect(card?.description).toContain(line);
+      expect(card?.reason).toMatch(/pregnan/);
+      for (const setid of setids) expect(card?.references?.map(r => r.url)).toContain(`https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=${setid}`);
+    });
+
     it('med-statin at exactly the non-HDL target of 1.6 shows (US-07 AC5)', () => {
       const { inputs, results } = createTestData({}, { nonHdlCholesterol: 1.6 });
       expect(generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin')?.description)
-        .toBe('Your non-HDL cholesterol is 1.6 mmol/L; the treatment target is below 1.6 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor.');
+        .toBe('Your non-HDL cholesterol is 1.6 mmol/L; the treatment target is below 1.6 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Don\'t start a statin if you are pregnant or planning a pregnancy.');
     });
 
     it.each([
@@ -1422,7 +1509,7 @@ describe('generateSuggestions', () => {
     });
 
     // Lung
-    it('suggests lung screening for smoker 50+ with 20+ pack-years (USPSTF 2021)', () => {
+    it('suggests lung screening for smoker 50+ with 20+ pack-years (ACS 2023)', () => {
       const { inputs, results } = createTestData({ birthYear: 1970, birthMonth: 1 }, { age: 56 });
       const scr: ScreeningInputs = { lungSmokingHistory: 'current_smoker', lungPackYears: 25 };
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
@@ -1456,6 +1543,60 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
       expect(suggestions.find(s => s.id === 'screening-lung')).toBeUndefined();
       expect(screeningForm(60, 'male', scr).flatMap((s) => s.groups.flatMap((g) => g.fields.map((f) => ('key' in f ? f.key : ''))))).not.toContain('lung_screening');
+    });
+
+    it('US-07 AC1f: an abnormal lung CT keeps its follow-up card when pack-years drop below 20 (Brad 2026-11-03)', () => {
+      const { inputs, results } = createTestData({ birthYear: 1966, birthMonth: 1 }, { age: 60 });
+      const abnormal: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 15, lungScreening: 'annual_ldct', lungLastDate: '2025-01', lungResult: 'abnormal' };
+      const lung = (scr: ScreeningInputs) => generateSuggestions(inputs, results, 'si', undefined, scr).filter(s => s.id.startsWith('screening-lung'));
+      const followup = lung(abnormal);
+      expect(followup.map(s => s.id)).toEqual(['screening-lung-followup']);
+      expect(followup[0].priority).toBe('urgent');
+      expect(lung({ ...abnormal, lungFollowupStatus: 'scheduled' }).map(s => s.title)).toEqual(['Lung follow-up scheduled']);
+      // Below 20 with a normal result: no start, overdue or up-to-date card.
+      expect(lung({ ...abnormal, lungResult: 'normal' })).toEqual([]);
+      expect(lung({ ...abnormal, lungScreening: 'not_yet_started' })).toEqual([]);
+      // A completed follow-up with no date has no card below 20 (no routine fallback).
+      expect(lung({ ...abnormal, lungFollowupStatus: 'completed' })).toEqual([]);
+      // Review of commit 5, R1: a dated completed follow-up ends it below 20 too (no "resume annual LDCT" card);
+      // at 25 pack-years the post-follow-up card still shows.
+      const done: ScreeningInputs = { ...abnormal, lungFollowupStatus: 'completed', lungFollowupDate: '2025-04' };
+      expect(lung(done)).toEqual([]);
+      expect(lung({ ...done, lungPackYears: 25 }).map(s => s.id)).toEqual(['screening-lung-followup']);
+      expect(lung({ ...abnormal, lungLastDate: undefined, lungFollowupStatus: 'completed', lungFollowupDate: '2025-03' })).toEqual([]);
+    });
+
+    it('US-07 AC1g: past 80, an abnormal lung CT keeps its follow-up card; routine screening stops (Brad 2026-11-03)', () => {
+      const { inputs, results } = createTestData({ birthYear: 1945, birthMonth: 1 }, { age: 81 });
+      const abnormal: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 25, lungScreening: 'annual_ldct', lungLastDate: '2025-01', lungResult: 'abnormal', lungFollowupStatus: 'not_organized' };
+      const lung = (scr: ScreeningInputs) => generateSuggestions(inputs, results, 'si', undefined, scr).filter(s => s.id.startsWith('screening-lung'));
+      expect(lung(abnormal).map(s => [s.id, s.priority])).toEqual([['screening-lung-followup', 'urgent']]);
+      expect(lung({ ...abnormal, lungResult: 'normal', lungFollowupStatus: undefined })).toEqual([]);
+      expect(lung({ ...abnormal, lungScreening: undefined, lungLastDate: undefined, lungResult: undefined, lungFollowupStatus: undefined })).toEqual([]);
+      // Review of commit 5, R1: at 82 a completed follow-up ends it, no "resume annual LDCT" card.
+      const { inputs: i82, results: r82 } = createTestData({ birthYear: 1944, birthMonth: 1 }, { age: 82 });
+      expect(generateSuggestions(i82, r82, 'si', undefined, { ...abnormal, lungFollowupStatus: 'completed', lungFollowupDate: '2025-04' })
+        .filter(s => s.id.startsWith('screening-lung'))).toEqual([]);
+    });
+
+    it('US-07 AC1e: no quit window, as ACS 2023 (Brad 2026-11-03): the plan and the roadmap text screen former smokers however long ago they quit', () => {
+      const { inputs, results } = createTestData({ birthYear: 1950, birthMonth: 1 }, { age: 76 });
+      const scr: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 20 };
+      expect(generateSuggestions(inputs, results, 'si', undefined, scr).find(s => s.id === 'screening-lung')).toBeDefined();
+      const root = join(dirname(fileURLToPath(import.meta.url)), '../../..');
+      const html = readFileSync(join(root, 'roadmap_text.html'), 'utf8');
+      const lung = html.slice(html.indexOf('Lung Cancer:'), html.indexOf('Prostate Cancer:'));
+      expect(lung).toContain('Have a smoking history of 20 pack-years or more, whether they still smoke or have quit.');
+      const ev = SUGGESTION_EVIDENCE['screening-lung'];
+      expect(ev.reason).toContain('however long ago they quit');
+      expect(ev.reason).toContain('the plan keeps that follow-up until it is done, even past age 80 or below 20 pack-years');
+      expect(lung).toContain('If an earlier scan found something that needs follow-up, finish that follow-up with your doctor.');
+      expect(ev.guidelines).toEqual(['ACS 2023', 'USPSTF 2021']);
+      expect(ev.references.map(r => r.url)).toContain('https://doi.org/10.3322/caac.21811');
+      expect(lung).not.toMatch(/15 years/);
+      expect(html).toContain('November 2026: Lung cancer screening now follows the American Cancer Society');
+      expect(lung).toContain('After Age 80:');
+      expect(readFileSync(join(root, 'health_roadmap_algorithm.md'), 'utf8')).toMatch(/does not ask when someone quit[^\n]*American Cancer Society/);
     });
 
     // Prostate
@@ -2087,6 +2228,7 @@ describe('generateSuggestions', () => {
       reasons: string[];
     }
     const HBA1C = 'prediabetic HbA1c';
+    const HBA1C_DIABETIC = 'diabetic-range HbA1c';
     const TG = 'elevated triglycerides';
     const BP = 'elevated blood pressure';
     const APOB = 'elevated ApoB';
@@ -2135,11 +2277,11 @@ describe('generateSuggestions', () => {
       { name: 'BMI 28.5, unknown waist, no marker', weightKg: 90.3, on: true, reasons: [] },
       { name: 'BMI 28.5, healthy waist, no marker', weightKg: 90.3, waistCm: 83.7, on: false, reasons: [] },
       { name: "BMI 28.6, WHtR 0.47, no marker (Brad's ruling 1)", weightKg: 90.6, waistCm: 83.7, on: false, reasons: [] },
-      { name: 'BMI 28.6, WHtR 0.47, HbA1c, TG and BP raised (group 2)', weightKg: 90.6, waistCm: 83.7, hba1c: 48, triglycerides: 2, systolicBp: 140, diastolicBp: 90, on: true, reasons: [HBA1C, TG, BP] },
+      { name: 'BMI 28.6, WHtR 0.47, HbA1c, TG and BP raised (group 2)', weightKg: 90.6, waistCm: 83.7, hba1c: 48, triglycerides: 2, systolicBp: 140, diastolicBp: 90, on: true, reasons: [HBA1C_DIABETIC, TG, BP] },
       { name: 'BMI 29.9, WHtR 0.52', weightKg: 94.7, waistCm: 92.6, on: true, reasons: [WAIST] },
       { name: 'BMI 30.0, WHtR 0.40', weightKg: 95.1, waistCm: 71.2, on: true, reasons: [] },
       { name: 'BMI 30.5, healthy waist, no marker', weightKg: 96.6, waistCm: 83.7, on: true, reasons: [] },
-      { name: 'BMI 35.0 with every marker raised', weightKg: 111, waistCm: 106.8, hba1c: 48, triglycerides: 2, systolicBp: 140, diastolicBp: 90, apoB: 1.5, on: true, reasons: [HBA1C, TG, BP, APOB, WAIST] },
+      { name: 'BMI 35.0 with every marker raised', weightKg: 111, waistCm: 106.8, hba1c: 48, triglycerides: 2, systolicBp: 140, diastolicBp: 90, apoB: 1.5, on: true, reasons: [HBA1C_DIABETIC, TG, BP, APOB, WAIST] },
     ];
     const inputsOf = ({ name: _n, on: _o, reasons: _r, ...values }: Row): HealthInputs => ({ heightCm: 178, sex: 'male', birthYear: 1980, ...values });
 
@@ -2177,6 +2319,10 @@ describe('generateSuggestions', () => {
       { name: 'no reason', bmi: 30.5, inputs: {}, text: `With a BMI of 30.5${TAIL}` },
       { name: 'a whole-number BMI prints as the tile shows it', bmi: 31, inputs: {}, text: `With a BMI of 31${TAIL}` },
       { name: 'one reason', bmi: 26, whr: 0.46, inputs: { hba1c: 40 }, text: `With a BMI of 26 and prediabetic HbA1c${TAIL}` },
+      // Brad 2026-11-06: a diabetic-range HbA1c is named as such, at the urgent card's line.
+      { name: 'a diabetic-range HbA1c', bmi: 26, whr: 0.46, inputs: { hba1c: 50 }, text: `With a BMI of 26 and diabetic-range HbA1c${TAIL}` },
+      { name: 'HbA1c at the diabetic line', bmi: 26, whr: 0.46, inputs: { hba1c: HBA1C_THRESHOLDS.diabetes }, text: `With a BMI of 26 and diabetic-range HbA1c${TAIL}` },
+      { name: 'HbA1c just under the diabetic line', bmi: 26, whr: 0.46, inputs: { hba1c: 47.4 }, text: `With a BMI of 26 and prediabetic HbA1c${TAIL}` },
       {
         name: 'three reasons',
         bmi: 26,
@@ -3285,7 +3431,7 @@ describe('non-HDL is compared unrounded and rounded only for display (US-07 AC5,
     const results = planOf(total, hdlC);
     expect(ids(results).includes('med-statin')).toBe(above);
     expect(ids(results).includes('lipid-diet')).toBe(above);
-    expect(ids(results).includes('fiber')).toBe(!above);
+    expect(ids(results).includes('fiber')).toBe(true);
   });
 
   it.each([
@@ -3401,7 +3547,7 @@ describe('US-06 AC8: the dose cards', () => {
       category: 'medication',
       priority: 'attention',
       title: 'Add your statin dose',
-      description: "Your LDL-c is 3.0 mmol/L; the treatment target is below 1.4 mmol/L. Your statin dose isn't recorded, and your next step depends on it. A higher dose or a more potent statin may help. Add your current dose to see which.",
+      description: "Your LDL-c is 3.0 mmol/L; the treatment target is below 1.4 mmol/L. Your statin dose isn't recorded, and your next step depends on it. A higher dose or a more potent statin may help. Add your current dose to see which. If you become pregnant, most people should stop their statin: talk to your doctor. If you are planning a pregnancy, NICE advises stopping 3 months before trying to conceive.",
       reason: 'Statin strength depends on both the drug and the dose. Doubling a statin dose typically lowers LDL by a further 6–7% (the "rule of 6"), and rosuvastatin 40mg gives the largest reduction (~63%). Which step comes next depends on the dose you take now.',
     });
     expect(statinDose!.guidelines).toEqual(increase!.guidelines);

@@ -1,5 +1,7 @@
 # Git workflow: one worktree, one branch, one PR per session
 
+Handover at the 2026-11-09 Claude account switch (state, open PRs, lessons): [handover-2026-11-09.md](handover-2026-11-09.md).
+
 Brad, 2026-10-31: worktrees are fine "so long as everything is properly committed, PRs, pushed". Roadmap PR #389
 set the rule; PR 415 added the enforcement. Binding rule: CLAUDE.md § Development Rules. Story: US-64.
 
@@ -29,22 +31,29 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    main checkout's `node_modules`, `widget-src/node_modules` and `packages/health-core/node_modules` (kept in
    `~/Library/Caches/claude-worktree-packages/`, outside the repo, and linked in), so tools find their packages,
    and `npm ci` or `rm -rf node_modules/` there touches only the clone, never the main checkout (a direct link let
-   it wipe them, 2026-11-01). The first command in a new worktree takes about 10 s; a deleted clone comes back on
-   the next command; the clone's workspace links (`@roadmap/health-core`, `health-tool-widget`) point at the
+   it wipe them, 2026-11-01). `worktree-new.sh` makes them before it prints the path (about 15 s), so a subagent
+   that works in the worktree by absolute path from the main checkout, where the hook never fires for it, has them
+   too (US-64 AC21); a deleted clone comes back on the next command run inside; the clone's workspace links (`@roadmap/health-core`, `health-tool-widget`) point at the
    worktree's own folders; cleanup deletes the clones. Other gitignored inputs (`.env`,
    `health-roadmap.json`, exports) are not in a worktree: read them from the main checkout by absolute path, and
    write new outputs in the worktree (cleanup copies them back). Bash writes (`sed -i`, `>`, `cp`) into the main
    checkout are not blocked by the hook: don't.
 3. **Every turn ends landed**: commit your own changes, `git push -u origin claude/<name>`, and have a PR
    open (`gh pr create`; `--draft` while Brad is still deciding). The Stop hook blocks the turn's end, once,
-   until this is true.
+   until this is true. **Add the `hold` label** (`gh pr edit <n> --add-label hold`) to any PR that waits on Brad,
+   on more fixes or a review, or whose merge order you are managing (shared files, a deploy in flight):
+   auto-ship merges any `claude/` PR 30 minutes after a Claude Review approval and a green `test` unless it
+   carries `hold` (PRs 677 and 734 merged early, 2026-11-02/03; PR 850 mid-deploy, 2026-11-05). Remove it, or
+   merge with it on, when you merge by hand.
 4. **Merge** it yourself when the work is done and its gates have passed (CI green on the PR, adversary +
    Codex where required, clinical citation numbering). The project settings allow exactly
    `gh pr merge <n> --merge --match-head-commit <sha>` and deny `--admin`, `--squash`, `--rebase` and `--auto`;
    the push guard refuses any other form (Brad 2026-11-01): the sha must be 7-40 hex, each option once, no
    `-d`/`--delete-branch` (it deletes with no merged check, so that stays Brad's), and no merge or write to main through `gh api`. It is a
-   policy guard, not a complete one: a gh alias, another tool or the web UI is invisible to it. Nothing on
-   GitHub enforces the reviews, so you do.
+   policy guard, not a complete one: a gh alias, another tool or the web UI is invisible to it. GitHub itself
+   refuses only a force-push to `main` or deleting it (the ruleset below); nothing on GitHub enforces the
+   reviews, so you do. Before merging, file a `review-note` issue for every finding
+   left open, or a draft private security advisory for a security or privacy one (docs/review-format.md).
    **The merge gate is CI green on the PR's head** (US-64 AC9, Brad 2026-11-04). CI tested the PR merged with
    main as main stood at the PR's last push, which is what a local `test:all` tested too, so a full local run
    is never a gate: while working, run only the tests your change touches (`npx vitest related <changed files>
@@ -61,19 +70,26 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    script proves the work reached `main` by ancestry. Only Brad's account merges to `main` by hand, his
    sessions included; contributors get no write access (Brad 2026-11-04). Brad's account merges
    workflow-file PRs.
-5. **Deploy** only merged code: the CI Deploy always builds main's tip. Run it once per batch of merges, not
+5. **Deploy** only merged code (and, after a merge that touches `roadmap_text.html`, publish the changed section to
+   drstanfield.com/pages/roadmap through the Admin API, backup first, then run `node tools/roadmap-page-drift.mjs`
+   until it prints IN SYNC; report it with the deploy. The page is published by hand, so it drifts silently: US-64
+   AC16): the CI Deploy always builds main's tip. Run it once per batch of merges, not
    once per PR (auto-ship still deploys each merge it makes). A manual release follows
    docs/deploy-runbook.md step 0: `bash tools/release-checkout.sh` from the main checkout makes a detached
    checkout of exactly `origin/main` outside the repo (it refuses a folder that exists, or a dirty result).
 6. **Finish**: ExitWorktree (`keep`), then from the main checkout `git pull --ff-only` and
    `bash tools/worktree-done.sh <name>`. It refuses unless everything is pushed and merged (or the PR is closed),
    copies the worktree's own gitignored outputs back into the main checkout, logs included (never the package
-   links or build and cache output, the iOS engine bundle among them; `.claude/` files are listed, not copied,
+   links or build and cache output, among them what `ios/scripts/build-engine.mjs` writes: the engine bundle, its
+   `health-engine.json` sidecar and `ios/HealthRoadmapTests/Fixtures/`, all gitignored, so an iOS build never keeps
+   a worktree; a tracked change always does; `.claude/` files are listed, not copied,
    and go with the worktree; it never overwrites: a differing file keeps the worktree for you to resolve),
    removes the package links (only those paths, never another link), the worktree, its package clones and its
    local branch.
    `bash tools/worktree-done.sh --all` does the same for every unlocked worktree under `.claude/worktrees/` not
-   used in the last day, skipping the rest.
+   used in the last day, skipping the rest. Every session start lists each merged worktree still on disk with the
+   exact `bash tools/worktree-done.sh <name>` line (US-64 AC21; 56 had piled up by 2026-11-06): run it when no
+   session is still in that worktree.
 
 **One owner per PR.** Whoever opens a PR merges or closes it (with a note on where the work went), or names
 it in the final message as still open and why.
@@ -147,11 +163,15 @@ deploy, repeated for every PR after each conflict. A batch pays one 3 min CI run
 | Main-checkout edit block | `.claude/hooks/worktree-guard.cjs` (PreToolUse Edit/Write/NotebookEdit) | Denies edits to the main checkout's tracked or new files whatever the session's cwd (symlink- and case-proof; the hook finds the main checkout from its own place); untracked gitignored outputs are allowed, never under `.claude/`; Bash writes are not covered |
 | Package clones | same script (PreToolUse Bash, SessionStart) | In a worktree under `.claude/worktrees/`, links each `node_modules` folder to the worktree's own clone outside the repo; replaces an old link into the main checkout (the link only); SessionStart deletes clones whose worktree is gone. `node .claude/hooks/worktree-guard.cjs --pkg-cache-dir <worktree>` prints a worktree's clone folder |
 | Turn-end landing check | same script (Stop) | Blocks once while the worktree has uncommitted, unpushed, or un-PR'd work; fails open if `gh` is missing |
-| Session-start audit | same script (SessionStart) | Lists local worktrees with unlanded work and uncommitted files in the main checkout |
+| Session-start audit | same script (SessionStart) | Lists local worktrees with unlanded work and uncommitted files in the main checkout, then merged worktrees not yet removed, each with its `worktree-done` line, or marked in use (no line) when changed in the last day |
 | Push guard | `.claude/hooks/git-push-guard.cjs` | No force pushes or deletes, except `git push origin --delete claude/<name>` once that branch's tip on origin is already in `origin/main` (checked live, fails closed; Brad 2026-11-02), and any other delete is Brad's; a `claude/` branch never pushes to `main` (that is the PR's job); a push to `main` is refused while `origin/main` is ahead; `gh pr merge` only as `--merge --match-head-commit <sha>` |
+| GitHub ruleset on `main` | Settings → Rules → Rulesets, "main: no force-push, no deletion" (id 26809362, Brad 2026-11-09) | GitHub refuses a non-fast-forward push to the default branch and deleting it, from anyone, with no bypass. Ordinary pushes and merges are unaffected (`engine-release.yml` pushes to `main` fast-forward). It is the hard backstop; the push guard is best-effort on top: parsing bash text never closes every spelling (PRs 805 and 930, three rounds each). To rewrite `main` on purpose, Brad turns the ruleset off, pushes, and turns it back on |
 | Merge permissions | `.claude/settings.json` `permissions` | Allows the one merge form, denies `--admin`/`--squash`/`--rebase`/`--auto` (without the allow rule, auto mode blocks every merge) |
 | Stranded-branch watch | `.github/workflows/stranded-branch-watch.yml` | Issue for a branch with unmerged commits, no PR, idle 20h+ |
 | Stale-PR watch | `.github/workflows/stale-pr-watch.yml` | One refreshed issue listing open PRs idle 48h+ (drafts 7 days+), daily. These two watches are the only exception to Brad's Claude-app-only notification rule (Brad 2026-11-01) |
+| Test worker cap | both `vitest.config.ts` (`scripts/test-workers.mjs`) | Every local vitest run, targeted ones too, takes max(2, cpus/4) workers unless a `--maxWorkers` flag says otherwise; CI unchanged (US-71 AC5) |
+| Simulator guard | `.claude/hooks/simulator-guard.cjs` (PreToolUse Bash) | Refuses `xcodebuild test` without `-parallel-testing-enabled NO`, and a simulator boot, create or clone while 2 are booted (`ALLOW_EXTRA_SIMULATOR=1` for demos); best effort, fails open if the check errors (US-71 AC6) |
+| File-size ratchet | `scripts/file-size-ratchet.test.ts`, `scripts/file-size-baseline.json` | A production file over 500 lines never grows; a new one starts at 500 or under; shrinking lowers the baseline (`node scripts/file-size-baseline.mjs --write`); raising a number by hand is caught only by review (US-64 AC23) |
 | Live-write gate | `tools/write-gate.mjs` | Live writes only from the main checkout or a session worktree, at exactly `origin/main` with no tracked change |
 | Deploy | `deploy.yml` (CI, `ref: main`); `tools/release-checkout.sh` (manual, docs/deploy-runbook.md step 0) | Only merged code ships |
 
@@ -216,6 +236,12 @@ Tests: `tests/worktree-guard.test.ts`, `tests/git-push-guard.test.ts` (runs `.cl
   (`bash tools/...`) is fine.
 - The push guard refuses a Bash command naming `git` and `push` that it cannot tokenize (an unbalanced quote,
   as in a heredoc with an apostrophe). Put such text in a file instead.
+- **"fatal: stash failed" on the first merge in a worktree made seconds ago** (US-64 AC20): macOS tags each new
+  file (`com.apple.provenance`) a second or two after git writes it, which changes its ctime, and `git merge`'s
+  internal `git stash create` trips on that. `merge-batch.mjs` merges with `core.trustctime=false`. That is safe
+  only because its `git status` check, which does trust ctime, refuses an unclean tree first, and only git writes
+  the tree after it: an edit can keep its mtime (`touch -r`, `cp -p`, `rsync -t`). By hand, run `git status`
+  first, then `git -c core.trustctime=false merge ...`, or rerun once the tagging is done.
 - Hooks load from the session's settings at start; a hook change applies to new sessions.
 - A full local `npm run test:all` is never a merge gate (CI is, step 4); run it only when you want the whole
   suite on this Mac. It takes a machine-wide lock so one full local run happens at a time (US-71). It lives at

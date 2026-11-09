@@ -5,7 +5,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, render } from '@testing-library/react';
-import { createEmptyFile, ROADMAP_FILE_NAME } from '@roadmap/health-core';
+import { createEmptyFile } from '@roadmap/health-core/roadmap-file';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 let LocalStorageAdapter: typeof import('../src/storage').LocalStorageAdapter;
 import { BloodTestTimeline } from '../src/components/BloodTestTimeline';
 import { StartingInfoVitals } from '../src/components/StartingInfoVitals';

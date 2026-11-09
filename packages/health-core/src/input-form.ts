@@ -12,7 +12,7 @@
 import { lipidCascade, weightCascade } from './medication-cascades';
 import { stampInstant } from './merge';
 import type { MedicationSave } from './state-edits';
-import { LIPID_DIET_ADVICE, lipidTargetSentence, weightMedIntro, type LipidMarker, type WeightMedicationTrigger } from './suggestions';
+import { LIPID_MEDS_IN_STEPS, lipidTargetSentence, weightMedIntro, type LipidMarker, type WeightMedicationTrigger } from './suggestions';
 import {
   BEMPEDOIC_ACID_OPTIONS, EZETIMIBE_OPTIONS, GLP1_DRUGS, GLP1_NAMES, METFORMIN_OPTIONS, PCSK9I_OPTIONS,
   LUNG_PACK_YEARS, SCREENING_FOLLOWUP_INFO, SGLT2I_DRUGS, SGLT2I_NAMES, STATIN_DRUGS, STATIN_NAMES,
@@ -61,7 +61,7 @@ export const MEDICATION_TEXT = {
   ezetimibeLabel: 'On Ezetimibe 10mg?',
   ezetimibeHint: (lipid: string) => `Ezetimibe works differently — it blocks cholesterol absorption in the intestine, adding ~20% more ${lipid} reduction.`,
   bempedoicAcidLabel: 'Bempedoic acid',
-  bempedoicAcidHint: 'Bempedoic acid lowers cholesterol production via a different pathway than statins, and can be used alongside them.',
+  bempedoicAcidHint: 'Bempedoic acid lowers cholesterol production via a different pathway than statins. It is an option when a statin is not tolerated.',
   pcsk9iLabel: 'On a PCSK9 inhibitor?',
   pcsk9iHint: (lipid: string) => `PCSK9 inhibitors help your body clear ${lipid} from the blood. They can reduce ${lipid} by ~50%.`,
   statinEscalationLabel: { increase: 'Tried increasing statin dose?', switch: 'Tried switching to a more potent statin?' },
@@ -172,30 +172,33 @@ function lipidSection(meds: MedicationInputs, basis: MedicationBasis): FormSecti
   }
 
   // Progressive disclosure opens the plan's next step; a step that holds a
-  // recorded value always shows (US-06 AC7).
+  // recorded value always shows (US-06 AC7). The steps show in the plan's
+  // order: with the statin not tolerated, the PCSK9 inhibitor comes before
+  // ezetimibe, and bempedoic acid comes last (US-06 AC20).
   const groups: FormGroup[] = [{ id: 'statin', title: '', notes: [], fields: statin }];
-  if (cascade.ezetimibeReached || meds.ezetimibe !== undefined) {
-    groups.push({ id: 'ezetimibe', title: '', notes: [], fields: [{ ...ezetimibeField, hint: T.ezetimibeHint(lipidName) }] });
-  }
-  if (cascade.bempedoicAcidReached || meds.bempedoicAcid !== undefined) {
-    groups.push({ id: 'bempedoic_acid', title: '', notes: [], fields: [{ ...bempedoicField, hint: T.bempedoicAcidHint }] });
-  }
+  const ezetimibeGroups: FormGroup[] = cascade.ezetimibeReached || meds.ezetimibe !== undefined
+    ? [{ id: 'ezetimibe', title: '', notes: [], fields: [{ ...ezetimibeField, hint: T.ezetimibeHint(lipidName) }] }] : [];
+  const pcsk9iGroups: FormGroup[] = cascade.pcsk9iReached || meds.pcsk9i !== undefined
+    ? [{ id: 'pcsk9i', title: '', notes: [], fields: [{ ...pcsk9iField, hint: T.pcsk9iHint(lipidName) }] }] : [];
   const step = cascade.escalation;
+  const escalationGroups: FormGroup[] = [];
   if (step || meds.statinEscalation !== undefined) {
     const value = meds.statinEscalation || 'not_yet';
-    groups.push({ id: 'statin_escalation', title: '', notes: [], fields: [{
+    escalationGroups.push({ id: 'statin_escalation', title: '', notes: [], fields: [{
       kind: 'choice', key: 'statin_escalation', label: step ? T.statinEscalationLabel[step] : T.escalationRecorded,
       options: optionsShowing(escalationOptions(step), value), value,
       ...(step ? { hint: T.statinEscalationHint[step](lipidName) } : null),
     }] });
   }
-  if (cascade.pcsk9iReached || meds.pcsk9i !== undefined) {
-    groups.push({ id: 'pcsk9i', title: '', notes: [], fields: [{ ...pcsk9iField, hint: T.pcsk9iHint(lipidName) }] });
+  if (statinDrug === 'not_tolerated') groups.push(...pcsk9iGroups, ...ezetimibeGroups, ...escalationGroups);
+  else groups.push(...ezetimibeGroups, ...escalationGroups, ...pcsk9iGroups);
+  if (cascade.bempedoicAcidReached || meds.bempedoicAcid !== undefined) {
+    groups.push({ id: 'bempedoic_acid', title: '', notes: [], fields: [{ ...bempedoicField, hint: T.bempedoicAcidHint }] });
   }
   // It recommends only while the plan shows a step's card: with every step
   // answered the marker stays elevated and the plan shows none.
   const intro = cascade.suggest.length === 0 ? T.lipidNeutral
-    : `${lipidTargetSentence(marker!, basis.unitFor)} ${LIPID_DIET_ADVICE} Medications can also be added in steps.`;
+    : `${lipidTargetSentence(marker!, basis.unitFor)} ${LIPID_MEDS_IN_STEPS}`;
   return { id: 'lipid-medications', title: T.lipidTitle, intro, groups };
 }
 
@@ -372,6 +375,24 @@ export function anyScreeningEligible(age: number, sex: string | undefined): bool
     || (sex === 'male' && age >= 45);
 }
 
+/**
+ * The LDCT question opens at 20 pack-years, or once it has any answer (or LDCT data is recorded),
+ * so an abnormal result's follow-up can be closed below 20, and "Not yet started" below 20 keeps
+ * the question to pick LDCT again (US-07 AC1f).
+ */
+export function lungScreeningAsked(scr: ScreeningInputs): boolean {
+  return (scr.lungPackYears !== undefined && scr.lungPackYears >= LUNG_PACK_YEARS)
+    || !!scr.lungScreening || !!scr.lungLastDate || !!scr.lungResult;
+}
+
+/**
+ * The lung questions show from 50 to 80, and past 80 for an abnormal CT or any stored LDCT answer, so the
+ * follow-up can be closed and a changed answer put back (US-07 AC1g).
+ */
+export function lungGroupShown(age: number, scr: ScreeningInputs): boolean {
+  return age >= 50 && (age <= 80 || !!scr.lungScreening || scr.lungResult === 'abnormal');
+}
+
 /** DEXA applies to women from 50 and men from 70. */
 export function dexaEligible(age: number, sex: string | undefined): boolean {
   return (sex === 'female' && age >= 50) || (sex === 'male' && age >= 70);
@@ -429,13 +450,12 @@ export function screeningForm(age: number | undefined, sex: string | undefined, 
         ? { id: 'cervical', title: 'Cervical', notes: [], fields: started('cervical', 'cervical_method', L.method, O.cervical_method, L.lastScreening) }
         : { id: 'cervical', title: 'Cervical', notes: [X.cervicalStop], fields: [] });
     }
-    if (age >= 50 && age <= 80) {
+    if (lungGroupShown(age, scr)) {
       const history = str('lung_smoking_history');
       const fields = [choice('lung_smoking_history', L.smokingHistory, O.lung_smoking_history)];
       if (history === 'former_smoker' || history === 'current_smoker') {
         fields.push({ kind: 'number', key: 'lung_pack_years', label: X.packYearsLabel, hint: X.packYearsHint, value: str('lung_pack_years'), min: 0, max: 200 });
-        const packYears = scr.lungPackYears;
-        if (packYears !== undefined && packYears >= LUNG_PACK_YEARS) {
+        if (lungScreeningAsked(scr)) {
           fields.push(choice('lung_screening', L.lungScreening, O.lung_screening));
           if (str('lung_screening') === 'annual_ldct') fields.push(month('lung_last_date', L.lastLdct), ...resultChain('lung', 'annual_ldct'));
         }

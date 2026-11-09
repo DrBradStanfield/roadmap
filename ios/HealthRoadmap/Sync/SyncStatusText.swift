@@ -10,7 +10,7 @@ enum SyncStatusText {
         case .onPhone: "On this iPhone only"
         case .connecting: "Connecting to \(provider.label)…"
         case .saving: "Saving to \(provider.label)…"
-        case .synced: "Synced with \(provider.label)"
+        case .synced: "Synced to \(provider.label)"
         case .problem: "Not synced"
         }
     }

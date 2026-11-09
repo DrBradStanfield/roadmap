@@ -16,14 +16,7 @@
  * dev/privacy audience can live with that; the Git Data blob API would lift the
  * cap later if needed. See the implementation build log.
  */
-import {
-  ConflictError,
-  StorageError,
-  fetchOrFail,
-  type ReadResult,
-  type StorageAdapter,
-  type WriteResult,
-} from '@roadmap/health-core';
+import { ConflictError, StorageError, fetchOrFail, timeoutDeadline, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { getJson, setJson, safeRemoveItem } from '../lib/storage';
 import { encodeStoragePath, legacyDocumentUrl } from './storage-path';
 import { bytesToBase64, base64ToBytes } from '../lib/base64';
@@ -72,12 +65,17 @@ export class GitHubAdapter implements StorageAdapter {
    */
   async accountEmail(): Promise<string | null> {
     if (!this.config?.token) throw new StorageError('GitHub is not connected.');
-    const res = await fetch(`${API}/user/emails`, { headers: this.headers(), signal: AbortSignal.timeout(10_000) });
-    if (res.status === 403 || res.status === 404) return null;
-    if (!res.ok) throw new StorageError(`GitHub email read failed (${res.status}).`);
-    const emails = (await res.json()) as Array<{ email: string; primary: boolean; verified: boolean }>;
-    const primary = emails.find((e) => e.primary && e.verified) ?? emails.find((e) => e.verified);
-    return primary ? primary.email.toLowerCase() : null;
+    const deadline = timeoutDeadline(10_000);
+    try {
+      const res = await fetch(`${API}/user/emails`, { headers: this.headers(), signal: deadline.signal });
+      if (res.status === 403 || res.status === 404) return null;
+      if (!res.ok) throw new StorageError(`GitHub email read failed (${res.status}).`);
+      const emails = (await res.json()) as Array<{ email: string; primary: boolean; verified: boolean }>;
+      const primary = emails.find((e) => e.primary && e.verified) ?? emails.find((e) => e.verified);
+      return primary ? primary.email.toLowerCase() : null;
+    } finally {
+      deadline.clear();
+    }
   }
 
   /**
