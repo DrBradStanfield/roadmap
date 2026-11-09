@@ -1,1 +1,1362 @@
-[]
+[
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[251] raw_quote shares no number with its body_line: - **Warning signs:** see a doctor promptly if reflux comes with trouble swallowing, weight loss, ...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[252] raw_quote shares no number with its body_line: - **Warning signs:** see a doctor promptly if reflux comes with trouble swallowing, weight loss, ...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<12\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Children under 12 should take them only on medical advice. In infants, an alginate formula did not reduce reflux ev...\" | \"**Children:** under 12, use only on medical advice [2]. In 20 infants given Gaviscon Infant or placebo in milk, reflu...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2 day/week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The GOOD trial was a 14-day multicenter randomized double-blind double-dummy non-inferiority trial in general practic...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "token \"6 day/week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The GOOD trial was a 14-day multicenter randomized double-blind double-dummy non-inferiority trial in general practic...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2 day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Primary endpoint:** mean time to the first 24-hour heartburn-free period was 2.0 days for both (2.0 +/- 2.2 for G...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "token \"47.8 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a double-blind placebo-controlled trial, 424 adults with GERD symptoms took alginate-antacid chewable tablets or p...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "token \"63\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Time to the first acid reflux was longer with the alginate-antacid (63 vs. 14 minutes; P = .01) [11].\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "token \"32.8\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Deraman et al. (2020):** 26 obese adults (mean BMI 32.8) took a single dose of Gaviscon Advance or a non-alginate a...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≥7 day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Complete resolution of heartburn for at least 7 days in a row was more common with the combination (56.7% vs. 25.7%...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Warning signs:** see a doctor promptly if reflux comes with trouble swallowing, weight loss, bleeding, vomiting o...\"",
+  "reason": "Ruling 17 emergency line (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK): a house safety line, no source quote (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Warning signs:** see a doctor promptly if reflux comes with trouble swallowing, weight loss, bleeding, vomiting o...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Warning signs:** see a doctor promptly if reflux comes with trouble swallowing, weight loss, bleeding, vomiting o...\"",
+  "reason": "Ruling 17 emergency line (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK): a house safety line, no source quote (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Warning signs:** see a doctor promptly if reflux comes with trouble swallowing, weight loss, bleeding, vomiting o...\"",
+  "reason": "Ruling 17 emergency line (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK): a house safety line, no source quote (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "token \"150 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Carotenoids:** in 6 healthy women given fiber at 0.15 g per kg of body weight with a meal, pectin, guar and algin...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "token \"20\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Children:** under 12, use only on medical advice [2]. In 20 infants given Gaviscon Infant or placebo in milk, reflu...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "token \"400\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In the EU, alginic acid and its sodium, potassium, ammonium and calcium salts are authorized food additives E 400 to ...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10 mL\", \"4 x/day\": Brad has not made a video on this topic; this is a summary of the evidence, not his view. In the stomach, alginates f...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10 mL\", \"4 x/day\": The GOOD trial was a 14-day multicenter randomized double-blind double-dummy non-inferiority trial in general practic...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2.3\": Secondary endpoints: omeprazole gave more heartburn-free days by day 7 (3.7 +/- 2.3 vs. 3.1 +/- 2.1; P = 0.02), and o...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20 mg/day\": Pizzorni et al. (2022): in a non-inferiority randomized trial, 50 patients with LPR took magnesium alginate (Gastrotu...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"4 x/day\": The UK label dose of Gaviscon Advance for adults and children 12 years and over is 5 to 10 mL after meals and at bedt...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10 mL\", \"4 x/day\": Moderate episodic heartburn | Gaviscon 10 mL four times daily for 14 days | Non-inferior to omeprazole 20 mg a day [5] |",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20 mg\": NERD on omeprazole | Sodium alginate 30 mL four times a day added to omeprazole 20 mg | Complete heartburn resolution...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20 mg/day\": Laryngopharyngeal reflux | Magnesium alginate 20 mL three times daily for 2 months | Non-inferior to omeprazole 20 mg...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "alginates-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20 mg\": In the GOOD trial, Gaviscon was non-inferior to omeprazole 20 mg for reaching a 24-hour heartburn-free period in mode...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"12\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- At 21 or 30 g a day, 10 of 12 healthy volunteers reported side effects; 9 g a day caused minimal side effects [8].\" | \"Not every study agrees. In 12 healthy volunteers taking up to 30 g a day for a week at each dose, blood pressure did ...\" | \"In a dose-escalation study, 12 healthy people took 3, 9, 21 and 30 g a day for a week at each dose. Ten reported side...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"5.39 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2011 meta-analysis pooled 11 double-blind trials in 387 people taking 4 to 24 g a day. Compared with placebo, argin...\" | \"| Blood pressure | 4 to 24 g/day | Varied | Systolic 5.39 mmHg lower [2] |\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"131 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A single 6 g drink lowered systolic pressure in 9 healthy men aged 19 to 38 (123 versus 131 mmHg) [22].\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1500 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Arginine alone:** A 2019 meta-analysis of 10 trials in 540 men with mild to moderate erectile dysfunction found tha...\" | \"| Erectile dysfunction | 1,500 to 5,000 mg/day | Varied | Improved mild to moderate ED [24] |\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Studies with a benefit:** In 16 older male cyclists, a supplement of arginine with antioxidants raised the anaerobi...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"562 sec\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 9 healthy men, a drink with 6 g of L-arginine taken 1 hour before exercise extended time to exhaustion in severe e...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"30\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 30 young male athletes who did resistance training, a drink with 3 g of L-arginine HCl and 8 g of L-citrulline mal...\" | \"In 30 healthy young men, a single 10 g dose raised TSH by 10% at 24 hours compared with placebo. It also raised growt...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"604 sec\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a crossover trial of 25 people with stable coronary artery disease, 6 g of arginine a day for 3 days lengthened tr...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"647 sec\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a crossover trial of 25 people with stable coronary artery disease, 6 g of arginine a day for 3 days lengthened tr...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1660 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Severe COVID-19 (hospital) | 1.66 g twice daily | In hospital | Less respiratory support at 10 days [44] |\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3 x/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Sickle cell pain (hospital) | 100 mg/kg three times daily | 5 days | Less opioid use in the first trial only [46][4...\" | \"| After a heart attack | 3 g three times daily | 6 months | More deaths; do not use [1] |\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Signs of high potassium include weakness, palpitations, a slow, weak or irregular pulse, chest pain and trouble breat...\"",
+  "reason": "Ruling 17 emergency line (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK): a house safety line, no source quote (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Signs of high potassium include weakness, palpitations, a slow, weak or irregular pulse, chest pain and trouble breat...\"",
+  "reason": "Ruling 17 emergency line (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK): a house safety line, no source quote (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Signs of high potassium include weakness, palpitations, a slow, weak or irregular pulse, chest pain and trouble breat...\"",
+  "reason": "Ruling 17 emergency line (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK): a house safety line, no source quote (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"9\": A single 6 g drink lowered systolic pressure in 9 healthy men aged 19 to 38 (123 versus 131 mmHg) [22].",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"9\": In a double-blind trial of 50 men with organic erectile dysfunction, 5 g a day for 6 weeks gave a subjective improvem...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"9\": In 9 healthy men, a drink with 6 g of L-arginine taken 1 hour before exercise extended time to exhaustion in severe e...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"19\": In a crossover trial of 19 young adults, a single 1.5 g dose of inositol-stabilized arginine silicate improved total ...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"8000 mg/day\": Raynaud's phenomenon is a passing loss of blood supply to the fingers and toes. In primary Raynaud's, a double-blind ...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"30000 mg/day\": Colorectal tumours: In 60 people with colorectal cancer and 60 with colorectal adenomas, 30 g a day for 3 days lowere...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3000 mg\": The longer trial points the other way. In the NO-PAIN trial, 133 people with claudication took 3 g of arginine a day ...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"38\": First trial: In 38 children with sickle cell disease admitted for 56 pain episodes, L-arginine at 100 mg/kg three tim...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"21\": Follow-up trial: A phase 2 trial of intravenous arginine randomized 108 patients aged 3 to 21 and did not meet its pr...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"6\": Meta-analyses show arginine lowers blood pressure (see Section 3) [2][3]. People who take blood pressure medicines or...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "token \"40 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Collagen products fall into three groups: undenatured collagen, gelatin and collagen hydrolysate [4]. They are used a...\" | \"**Undenatured type II collagen:** In a knee osteoarthritis trial, 40 mg a day of undenatured type II collagen for 180...\" | \"| Knee osteoarthritis | 40 mg/day | 180 days | Undenatured type II collagen | Lugo [10] |\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≥50\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Collagen hydrolysate trials:** In a 6-month trial of 200 adults aged at least 50 with joint pain, collagen hydrolys...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "token \"90 day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a trial in adults with knee osteoarthritis, 10 g of enzymatic hydrolysed collagen daily for 90 days was compared w...\" | \"| Knee osteoarthritis | 10 g/day | 90 days | Enzymatic hydrolysed collagen | Trč [13] |\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "token \"49\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In an older Czech study of 108 women with postmenopausal osteoporosis treated with calcitonin for 24 weeks, the 49 wh...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "token \"72.2\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In older men with sarcopenia (mean age 72.2) who did 12 weeks of resistance training three times a week, 15 g a day o...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "token \"4.2 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In older men with sarcopenia (mean age 72.2) who did 12 weeks of resistance training three times a week, 15 g a day o...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2.9 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In older men with sarcopenia (mean age 72.2) who did 12 weeks of resistance training three times a week, 15 g a day o...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "token \"16.5\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In older men with sarcopenia (mean age 72.2) who did 12 weeks of resistance training three times a week, 15 g a day o...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "token \"7.3\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In older men with sarcopenia (mean age 72.2) who did 12 weeks of resistance training three times a week, 15 g a day o...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "token \"35\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Skin elasticity:** In 69 women aged 35 to 55, 2.5 g or 5.0 g a day for 8 weeks improved skin elasticity compared wi...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "token \"55\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Skin elasticity:** In 69 women aged 35 to 55, 2.5 g or 5.0 g a day for 8 weeks improved skin elasticity compared wi...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Skin hydration:** In a small trial in South Korea, 3 g of collagen peptide daily for 12 weeks improved skin hydrati...\" | \"| Skin hydration and elasticity | 3 g/day | 12 weeks | Collagen peptide | Choi [24] |\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "token \"79.8 ng/mL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Collagen levels in IBD:** People with ulcerative colitis and Crohn's disease had lower blood levels of collagen IV ...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "token \"9.5 mcg/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Bones store lead, which can be released from them [8]. A small blinded test of three organic chicken broths found lea...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "token \"7.01 mcg/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Bones store lead, which can be released from them [8]. A small blinded test of three organic chicken broths found lea...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.89 mcg/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Bones store lead, which can be released from them [8]. A small blinded test of three organic chicken broths found lea...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2500 mg/day\": Wrinkles: In women aged 45 to 65, 2.5 g a day of a specific collagen peptide (VERISOL) for 8 weeks reduced eye wrinkl...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2500 mg/day\": Nails: In an open-label study without a placebo group, 25 participants took 2.5 g a day of a specific collagen peptid...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2500 mg/day\": Eye wrinkles | 2.5 g/day | 8 weeks | Collagen peptides (VERISOL) | Proksch [22] |",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2500 mg/day\": Brittle nails (open-label) | 2.5 g/day | 24 weeks | Collagen peptides (VERISOL) | Hexsel [26] |",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "changed_tokens[2] number cited to a primary study without its abstract in reach: It is mostly water. USDA FoodData Central lists 94.99 g of water and 19 kcal per 100 g [2], and a...",
+  "reason": "The number comes from the cited trial's open full text or a non-PubMed public source held in extra_raw, not from its PubMed abstract; a fresh adversary checked it (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "changed_tokens[94] raw_quote shares no number with its body_line: Most of the energy comes from carbohydrate. Per 100 g, USDA lists 3.71 g of carbohydrate (2.61 g ...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "changed_tokens[100] raw_quote shares no number with its body_line: **Kalman 2012 (n=12):** Twelve exercise-trained men lost about 1.7 kg (~2% of body mass) in 60 mi...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "changed_tokens[101] raw_quote shares no number with its body_line: **Saat 2002 (n=8, heat):** Eight men exercised in the heat until they lost 2.78% of body weight, ...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "changed_tokens[102] raw_quote shares no number with its body_line: **Saat 2002 (n=8, heat):** Eight men exercised in the heat until they lost 2.78% of body weight, ...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "changed_tokens[104] raw_quote shares no number with its body_line: **Saat 2002 (n=8, heat):** Eight men exercised in the heat until they lost 2.78% of body weight, ...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "changed_tokens[107] raw_quote shares no number with its body_line: **Ismail 2007 (n=10, heat):** Ten men ran for 90 minutes at 32.06 degrees C to lose 3% of body we...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "changed_tokens[115] raw_quote shares no number with its body_line: **Bell and Spriet 2026 (n=8):** Eight recreational athletes lost 1.36% of body mass cycling, then...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "changed_tokens[117] raw_quote shares no number with its body_line: **Bell and Spriet 2026 (n=8):** Eight recreational athletes lost 1.36% of body mass cycling, then...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "changed_tokens[128] raw_quote shares no number with its body_line: **Patel 2018 (n=8):** Four men and four women with no history of kidney stones drank 2L of coconu...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "changed_tokens[141] raw_quote shares no number with its body_line: **Blood pressure:** The two small studies ran for one to two weeks; one used 150 mL a day [14][15...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "changed_tokens[143] raw_quote shares no number with its body_line: In the exercise trials, coconut water was well tolerated, though one trial found more bloating an...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"1 day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Case reports link heavy intake to hyperkalemia with paralysis and dangerous heart rhythms [30][31][32]. Even if you...\" | \"No safe daily amount has been set. The authors of the Sri Lankan case wrote that there is not enough evidence on safe...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Case reports link heavy intake to hyperkalemia with paralysis and dangerous heart rhythms [30][31][32]. Even if you...\" | \"High potassium often causes no symptoms. When it does, they may include chest pain, difficulty breathing, nausea or v...\"",
+  "reason": "Ruling 17 emergency line (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK): a house safety line, no source quote (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Case reports link heavy intake to hyperkalemia with paralysis and dangerous heart rhythms [30][31][32]. Even if you...\" | \"High potassium often causes no symptoms. When it does, they may include chest pain, difficulty breathing, nausea or v...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Case reports link heavy intake to hyperkalemia with paralysis and dangerous heart rhythms [30][31][32]. Even if you...\" | \"High potassium often causes no symptoms. When it does, they may include chest pain, difficulty breathing, nausea or v...\"",
+  "reason": "Ruling 17 emergency line (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK): a house safety line, no source quote (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Case reports link heavy intake to hyperkalemia with paralysis and dangerous heart rhythms [30][31][32]. Even if you...\" | \"High potassium often causes no symptoms. When it does, they may include chest pain, difficulty breathing, nausea or v...\"",
+  "reason": "Ruling 17 emergency line (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK): a house safety line, no source quote (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"1.1 g/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Most of the energy comes from carbohydrate. Per 100 g, USDA lists 3.71 g of carbohydrate (2.61 g of it sugars and 1.1...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"11.9 min\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Kalman 2012 (n=12):** Twelve exercise-trained men lost about 1.7 kg (~2% of body mass) in 60 minutes on a treadmill...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"12.8 min\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Kalman 2012 (n=12):** Twelve exercise-trained men lost about 1.7 kg (~2% of body mass) in 60 minutes on a treadmill...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"2.78 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Saat 2002 (n=8, heat):** Eight men exercised in the heat until they lost 2.78% of body weight, then drank 120% of t...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"75 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Saat 2002 (n=8, heat):** Eight men exercised in the heat until they lost 2.78% of body weight, then drank 120% of t...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"73 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Saat 2002 (n=8, heat):** Eight men exercised in the heat until they lost 2.78% of body weight, then drank 120% of t...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"80 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Saat 2002 (n=8, heat):** Eight men exercised in the heat until they lost 2.78% of body weight, then drank 120% of t...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"58 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Ismail 2007 (n=10, heat):** Ten men ran for 90 minutes at 32.06 degrees C to lose 3% of body weight [10]. Rehydrati...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"68 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Ismail 2007 (n=10, heat):** Ten men ran for 90 minutes at 32.06 degrees C to lose 3% of body weight [10]. Rehydrati...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"69 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Ismail 2007 (n=10, heat):** Ten men ran for 90 minutes at 32.06 degrees C to lose 3% of body weight [10]. Rehydrati...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"966.6 sec\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Peart 2017 (n=10):** Ten men cycled for 60 minutes and then rode a 10 km time trial, drinking either water or cocon...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"208.7 mL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Peart 2017 (n=10):** Ten men cycled for 60 minutes and then rode a 10 km time trial, drinking either water or cocon...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"1.36 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Bell and Spriet 2026 (n=8):** Eight recreational athletes lost 1.36% of body mass cycling, then drank 150% of it as...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"530 mL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Bell and Spriet 2026 (n=8):** Eight recreational athletes lost 1.36% of body mass cycling, then drank 150% of it as...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"170 mL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Bell and Spriet 2026 (n=8):** Eight recreational athletes lost 1.36% of body mass cycling, then drank 150% of it as...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \"150 mL/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Blood pressure:** The two small studies ran for one to two weeks; one used 150 mL a day [14][15]. Coconut water doe...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "token \">8 week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In the exercise trials, coconut water was well tolerated, though one trial found more bloating and stomach upset than...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "body line has no entry quoting \"8\": Saat 2002 (n=8, heat): Eight men exercised in the heat until they lost 2.78% of body weight, then drank 120% of the f...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "body line has no entry quoting \"8\": Patel 2018 (n=8): Four men and four women with no history of kidney stones drank 2L of coconut water or tap water dai...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2000 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Citrulline is efficiently absorbed by transporters in the small intestine, and the gut and liver do not take it up [2...\" | \"In 8 healthy men, single doses of 2 to 15 g caused no side effects, and the authors judged short-term use safe and we...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1.17 hour\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Citrulline is efficiently absorbed by transporters in the small intestine, and the gut and liver do not take it up [2...\" | \"- Plasma arginine peaked 1.17 to 2.29 hours after single doses [3].\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2.29 hour\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Citrulline is efficiently absorbed by transporters in the small intestine, and the gut and liver do not take it up [2...\" | \"- Plasma arginine peaked 1.17 to 2.29 hours after single doses [3].\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"589 sec\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a crossover trial of 10 healthy men, 6 g a day of citrulline for 7 days improved tolerance to severe-intensity cyc...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"9\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a crossover trial of 20 healthy young adults (9 women), 100 mg/kg a day for 10 days did not lengthen time to exhau...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"19.8 min\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a crossover trial of 20 healthy young adults (9 women), 100 mg/kg a day for 10 days did not lengthen time to exhau...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"30\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In 30 young male lifters, a drink with 3 g of arginine and 8 g of citrulline malate did not change biceps perfusion...\" | \"A 2019 meta-analysis of 12 studies (198 people) found a small benefit of a single citrulline dose for strength and po...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \">10\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In a double-blind trial in recreationally active men and women, 8 g of citrulline malate did not increase repetitio...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"60\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 44 adults aged 60 to 73 on an exercise programme, 6 weeks of citrulline improved walking speed compared with place...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"73\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 44 adults aged 60 to 73 on an exercise programme, 6 weeks of citrulline improved walking speed compared with place...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤2 hour\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2020 meta-analysis of 13 trials (206 people) found that citrulline taken up to 2 hours before exercise reduced rati...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"48\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2020 meta-analysis of 13 trials (206 people) found that citrulline taken up to 2 hours before exercise reduced rati...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"4.1 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A 2019 meta-analysis of 8 trials (10 data sets of 12 to 34 people, 3 to 9 g a day for 1 to 17 weeks) found that sys...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2.75 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A 2019 meta-analysis of 8 trials (10 data sets of 12 to 34 people, 3 to 9 g a day for 1 to 17 weeks) found that sys...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"16\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 16 overweight young men, 6 g a day for 14 days had no effect at rest but blunted the rise in aortic blood pressure...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.07 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 16 overweight young men, 6 g a day for 14 days had no effect at rest but blunted the rise in aortic blood pressure...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 25 postmenopausal women with hypertension, 10 g a day for 4 weeks raised serum arginine and brachial flow-mediated...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"56.67 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a trial in heart failure with preserved ejection fraction, 15 patients took 3 g a day of citrulline malate and 15 ...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"47.67 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a trial in heart failure with preserved ejection fraction, 15 patients took 3 g a day of citrulline malate and 15 ...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"50 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In mice given L-citrulline (50 to 100 mg/kg) for 10 days after blood flow to the brain was blocked, it prevented neur...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"35.19 umol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Serum citrulline was lower in 35 unmedicated people with major depression than in 36 healthy controls (31.58 vs 35.19...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤15000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 8 healthy men, single doses of 2 to 15 g caused no side effects, and the authors judged short-term use safe and we...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "token \"13000 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Stomach discomfort is the side effect most often reported: 14.63% of men had it after 8 g of citrulline malate in one...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"8\": Citrulline is efficiently absorbed by transporters in the small intestine, and the gut and liver do not take it up [2...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20\": In a crossover trial of 20 healthy young adults (9 women), 100 mg/kg a day for 10 days did not lengthen time to exhau...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"25\", \"10000 mg/day\": In 25 postmenopausal women with hypertension, 10 g a day for 4 weeks raised serum arginine and brachial flow-mediated...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"21\": In 21 men aged 65 to 80, 10 g of citrulline added to 15 g of whey protein did not increase leg blood flow or muscle m...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"35\": In 35 outpatients with systolic heart failure, 20 took 3 g a day of citrulline for 4 months and 15 took no supplement...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"21\": A 2013 review describes citrulline as stimulating muscle protein synthesis through the mTOR pathway [2]. In 8 healthy...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20\": Exercise, multi-day | 6 g a day, or 100 mg/kg a day, of L-citrulline | 7 to 10 days | Better exercise tolerance in on...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"8\": In 8 healthy men, single doses of 2 to 15 g caused no side effects, and the authors judged short-term use safe and we...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "manuka-honey-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[15] number cited to a primary study without its abstract in reach: There is no good public evidence on which grade to choose. Higher grades carry more MGO [18]. The...",
+  "reason": "The number comes from the cited trial's open full text or a non-PubMed public source held in extra_raw, not from its PubMed abstract; a fresh adversary checked it (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "manuka-honey-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[33] number cited to a primary study without its abstract in reach: A pilot trial in Poland randomised 30 adults with GERD, 15 to each group, to manuka honey or a pl...",
+  "reason": "The number comes from the cited trial's open full text or a non-PubMed public source held in extra_raw, not from its PubMed abstract; a fresh adversary checked it (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "manuka-honey-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[34] number cited to a primary study without its abstract in reach: A pilot trial in Poland randomised 30 adults with GERD, 15 to each group, to manuka honey or a pl...",
+  "reason": "The number comes from the cited trial's open full text or a non-PubMed public source held in extra_raw, not from its PubMed abstract; a fresh adversary checked it (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "manuka-honey-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[35] number cited to a primary study without its abstract in reach: A pilot trial in Poland randomised 30 adults with GERD, 15 to each group, to manuka honey or a pl...",
+  "reason": "The number comes from the cited trial's open full text or a non-PubMed public source held in extra_raw, not from its PubMed abstract; a fresh adversary checked it (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "manuka-honey-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[61] number cited to a primary study without its abstract in reach: **GERD:** 5 g, three times a day, fasting in the morning and between main meals, for 4 weeks, wit...",
+  "reason": "The number comes from the cited trial's open full text or a non-PubMed public source held in extra_raw, not from its PubMed abstract; a fresh adversary checked it (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "manuka-honey-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[62] number cited to a primary study without its abstract in reach: **GERD:** 5 g, three times a day, fasting in the morning and between main meals, for 4 weeks, wit...",
+  "reason": "The number comes from the cited trial's open full text or a non-PubMed public source held in extra_raw, not from its PubMed abstract; a fresh adversary checked it (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "manuka-honey-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[65] number cited to a primary study without its abstract in reach: There is no good public evidence for choosing a grade by use. The GERD trial used honey with at l...",
+  "reason": "The number comes from the cited trial's open full text or a non-PubMed public source held in extra_raw, not from its PubMed abstract; a fresh adversary checked it (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "manuka-honey-benefits-forms-dosing-and-side-effects",
+  "match": "token \"150 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Dihydroxyacetone (DHA)** is not the omega-3 fat docosahexaenoic acid. It slowly converts to MGO in stored honey, so...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "manuka-honey-benefits-forms-dosing-and-side-effects",
+  "match": "token \"135\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A double-blind trial randomised 135 school children aged 12-15 years in India to manuka honey, raw honey or 0.2% chlo...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "manuka-honey-benefits-forms-dosing-and-side-effects",
+  "match": "token \"10 mL/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A double-blind trial randomised 135 school children aged 12-15 years in India to manuka honey, raw honey or 0.2% chlo...\" | \"**Oral rinse (plaque and gingivitis):** The trial used 10 ml twice daily for 21 days; chlorhexidine worked better [31].\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "manuka-honey-benefits-forms-dosing-and-side-effects",
+  "match": "token \">10 week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Fructose matters for blood fats. Over 10 weeks, fructose-sweetened drinks raised apoCIII and postprandial triglycerid...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "manuka-honey-benefits-forms-dosing-and-side-effects",
+  "match": "token \"31 day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2011 commentary raised the concern that MGO in manuka honey may delay wound healing in diabetic patients [9]. The s...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "manuka-honey-benefits-forms-dosing-and-side-effects",
+  "match": "token \"43 day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2011 commentary raised the concern that MGO in manuka honey may delay wound healing in diabetic patients [9]. The s...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "manuka-honey-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2\": Constipation: There is no good public evidence on manuka honey for constipation in people. Two lines of indirect evid...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "pqq-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[144] number cited to a primary study without its abstract in reach: Most trials gave 20 mg of PQQ disodium salt a day; the two mnemoPQQ trials gave 21.5 mg a day [7]...",
+  "reason": "The number comes from the cited trial's open full text or a non-PubMed public source held in extra_raw, not from its PubMed abstract; a fresh adversary checked it (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "pqq-benefits-forms-dosing-and-side-effects",
+  "match": "token \"17\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In an open-label trial, 17 adults took 20 mg of PQQ a day for 8 weeks [34]. All six Profile of Mood States measures i...\" | \"| Nakano et al., 2012 (mood and sleep) [34] | 20 mg | 8 weeks | Open label, 17 adults | Mood and sleep scores improved |\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "pqq-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.3 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a crossover study, 10 adults (5 women, 5 men) drank PQQ in a fruit-flavored drink [28]. After a single 0.2 mg/kg d...\" | \"| Harris et al., 2013 (inflammation) [28] | 0.3 mg/kg | 76 hours | Crossover, 10 adults | Lower CRP and IL-6 |\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "pqq-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≥1000\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Mice fed a chemically defined diet with no PQQ grew poorly, failed to reproduce and became osteolathyritic, with fria...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "pqq-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≥300\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Mice fed a chemically defined diet with no PQQ grew poorly, failed to reproduce and became osteolathyritic, with fria...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "pqq-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤20 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- United States, 2016 (Nascent): the FDA had no questions about Nascent's conclusion that PQQ disodium salt is GRAS i...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "pqq-benefits-forms-dosing-and-side-effects",
+  "match": "token \"500 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In rats, the median lethal dose of BioPQQ was 1000 to 2000 mg/kg in males and 500 to 1000 mg/kg in females [4]. In a ...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "pqq-benefits-forms-dosing-and-side-effects",
+  "match": "token \"100 mg/kg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In rats, the median lethal dose of BioPQQ was 1000 to 2000 mg/kg in males and 500 to 1000 mg/kg in females [4]. In a ...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC7",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host pubchem.ncbi.nlm.nih.gov: [14] NIH PubChem. L-arginine hydrochloride (CID 66250), computed properties. https://pubchem.ncbi...",
+  "reason": "Public government or health-body source (NIH PubChem, USDA FoodData Central, CDC, American Cancer Society, openFDA) cited by URL; not on the masters host list (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC7",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host pubchem.ncbi.nlm.nih.gov: [15] NIH PubChem. L-arginine (CID 6322), computed properties. https://pubchem.ncbi.nlm.nih.gov/co...",
+  "reason": "Public government or health-body source (NIH PubChem, USDA FoodData Central, CDC, American Cancer Society, openFDA) cited by URL; not on the masters host list (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC7",
+  "handle": "arginine-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host fdc.nal.usda.gov: [54] USDA FoodData Central. https://fdc.nal.usda.gov/",
+  "reason": "Public government or health-body source (NIH PubChem, USDA FoodData Central, CDC, American Cancer Society, openFDA) cited by URL; not on the masters host list (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC7",
+  "handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Product Context",
+  "reason": "Product line corrected to docs/products.md v9 (10 g collagen; 12.5 g was v8), on Brad's always-ask list (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC7",
+  "handle": "coconut-water-benefits-nutrition-hydration-and-side-effects",
+  "match": "report says product mentions 1 -> 1, recomputed 3 -> 0",
+  "reason": "Product mentions fall because the false 99 mg potassium claim (v9 has none, docs/products.md) was removed; on Brad's always-ask list (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC7",
+  "handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Endogenous Production",
+  "reason": "False positive: the heading names the body's own production of citrulline, not a product (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC7",
+  "handle": "manuka-honey-benefits-forms-dosing-and-side-effects",
+  "match": "product mentions rose 0 -> 1",
+  "reason": "False positive: 'the omega-3 fat docosahexaenoic acid' (a chemistry note) matches the Omega-3 product pattern (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC7",
+  "handle": "manuka-honey-benefits-forms-dosing-and-side-effects",
+  "match": "report says product mentions 0 -> 0, recomputed 0 -> 1",
+  "reason": "False positive: 'the omega-3 fat docosahexaenoic acid' (a chemistry note) matches the Omega-3 product pattern (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC7",
+  "handle": "manuka-honey-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host cdc.gov: [1] Centers for Disease Control and Prevention. Preventing botulism. https://www.cdc.gov/botulism...",
+  "reason": "Public government or health-body source (NIH PubChem, USDA FoodData Central, CDC, American Cancer Society, openFDA) cited by URL; not on the masters host list (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC7",
+  "handle": "manuka-honey-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host cancer.org: [6] American Cancer Society. Food Safety During Cancer Treatment. https://www.cancer.org/cancer/s...",
+  "reason": "Public government or health-body source (NIH PubChem, USDA FoodData Central, CDC, American Cancer Society, openFDA) cited by URL; not on the masters host list (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC7",
+  "handle": "manuka-honey-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host api.fda.gov: [26] U.S. Food and Drug Administration. 510(k) clearances for MediHoney dressings with active man...",
+  "reason": "Public government or health-body source (NIH PubChem, USDA FoodData Central, CDC, American Cancer Society, openFDA) cited by URL; not on the masters host list (masters-resource-1, 2026-11-09).",
+  "date": "2026-11-09",
+  "by": "orchestrator"
+ }
+]
