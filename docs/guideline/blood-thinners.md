@@ -73,7 +73,7 @@ Drug labels use creatinine clearance instead, from a formula such as Cockcroft-G
 
 ## What helps
 
-**Take it exactly as prescribed.** Every DOAC label carries a boxed warning that stopping early, without another anticoagulant in its place, raises the risk of clots and stroke [18][21]. Never double a missed dose to catch up [16][18]. For warfarin, call your doctor [16]; for a DOAC, follow your leaflet or ask your pharmacist. Do not lower your dose yourself.
+**Take it exactly as prescribed.** Every DOAC label carries a boxed warning that stopping early, without another anticoagulant in its place, raises the risk of clots and stroke [18][21]. For a missed warfarin dose, never double up; call your doctor [16]. For a DOAC the rules differ by medicine: follow your leaflet or ask your pharmacist [18]. Do not lower your dose yourself.
 
 **Tell everyone who treats you**, including your dentist and pharmacist, and talk to your prescriber before any surgery or dental work [18].
 

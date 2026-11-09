@@ -32,67 +32,67 @@
   {
    "topic": "high-cholesterol",
    "headings": ["LDL Cholesterol (mmol/L)", "Non-HDL Cholesterol (mmol/L)", "ApoB (g/L)", "Lp(a) (nmol/L)", "On-Treatment Lipid Targets", "Atherogenic Lipid Hierarchy", "4b. Dietary Interventions for Elevated Lipids (`lipid-diet`)", "5. Cholesterol Medication Cascade", "Statin Potency Table (BPAC 2021)"],
-   "handles": [],
+   "handles": ["high-cholesterol"],
    "terms": ["cholesterol", "ldl", "apob", "statin", "ezetimibe"]
   },
   {
    "topic": "heart-disease-risk",
    "headings": ["ApoB (g/L)", "Lp(a) (nmol/L)", "Lp(a)", "Atherogenic Lipid Hierarchy", "Blood Pressure (mmHg)", "Blood Pressure Tiers"],
-   "handles": [],
+   "handles": ["heart-disease-risk"],
    "terms": ["risk", "calcium", "apob", "lp(a)", "aspirin"]
   },
   {
    "topic": "weight",
    "headings": ["BMI", "Composite Assessment (BMI + Waist-to-Height Ratio)", "Waist-to-Height Ratio", "6. Weight & Diabetes Medication Cascade"],
-   "handles": [],
+   "handles": ["weight"],
    "terms": ["bmi", "weight", "waist", "obesity", "glp-1"]
   },
   {
    "topic": "high-blood-pressure",
    "headings": ["Blood Pressure (mmHg)", "Blood Pressure Tiers"],
-   "handles": [],
+   "handles": ["high-blood-pressure"],
    "terms": ["blood pressure", "hypertension", "systolic", "salt", "potassium"]
   },
   {
    "topic": "type-2-diabetes-and-prediabetes",
    "headings": ["HbA1c (mmol/mol IFCC)", "HbA1c Tiers", "Why Fasting Glucose and Fasting Insulin Are Not Included", "6. Weight & Diabetes Medication Cascade"],
-   "handles": [],
+   "handles": ["type-2-diabetes-and-prediabetes"],
    "terms": ["diabetes", "a1c", "metformin", "sglt2", "glp-1"]
   },
   {
    "topic": "kidney-health",
    "headings": ["eGFR (CKD-EPI 2021, Race-Free)", "eGFR (mL/min/1.73m^2)"],
-   "handles": [],
+   "handles": ["kidney-health"],
    "terms": ["kidney", "egfr", "creatinine", "cystatin", "albumin"]
   },
   {
    "topic": "blood-thinners",
    "headings": [],
-   "handles": [],
+   "handles": ["blood-thinners"],
    "terms": ["warfarin", "anticoagulant", "apixaban", "inr", "aspirin"]
   },
   {
    "topic": "osteoarthritis",
    "headings": [],
-   "handles": [],
+   "handles": ["osteoarthritis"],
    "terms": ["osteoarthritis", "knee", "glucosamine", "joint", "arthroplasty"]
   },
   {
    "topic": "cancer-screening",
    "headings": ["8. Cancer Screening"],
-   "handles": [],
+   "handles": ["cancer-screening"],
    "terms": ["cancer screening", "colonoscopy", "mammogram", "PSA", "cervical screening"]
   },
   {
    "topic": "bone-health",
    "headings": ["DEXA-Specific"],
-   "handles": [],
+   "handles": ["bone-health"],
    "terms": ["osteoporosis", "bone density", "DEXA", "bisphosphonate", "fracture"]
   },
   {
    "topic": "dementia",
    "headings": [],
-   "handles": [],
+   "handles": ["dementia"],
    "terms": ["dementia", "Alzheimer", "memory", "cognitive impairment", "lecanemab"]
   }
  ]

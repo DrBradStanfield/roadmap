@@ -8558,5 +8558,119 @@
     "expected": [],
     "category": "condition-guides",
     "notes": "US-70 AC5 negative, registered 2026-11-09; not run. A red-flag symptom routes to no guide (emergency rule)."
+  },
+  {
+    "category": "condition-guides-answers",
+    "source": "us-70-ac10-full-sources-2026-11-09",
+    "pending": "US-70 full-sources batch not deployed",
+    "surface": "doctor",
+    "query": "Should I get a PSA test? I'm a 55 year old man.",
+    "answer_handles": [
+      "cancer-screening"
+    ],
+    "must_match": [
+      "shared decision|talk (?:it )?(?:through|over) with your doctor|discuss",
+      "overdiagnos|over-diagnos|false positive|unnecessary (?:biops|treatment)",
+      "may (?:lower|reduce)|small"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\bevery man (?:should|must) (?:have|get) (?:a )?PSA"
+    ],
+    "notes": "US-70 AC10, pre-registered 2026-11-09; not run (Brad: answer checks run only on his yes). Fixed-handle. Passes: PSA screening is a shared decision with a small possible benefit and real harms (overdiagnosis, false positives). Fails: telling every man to test."
+  },
+  {
+    "category": "condition-guides-answers",
+    "source": "us-70-ac10-full-sources-2026-11-09",
+    "pending": "US-70 full-sources batch not deployed",
+    "surface": "doctor",
+    "query": "I've noticed blood in my poo for the last two weeks, is that a sign of bowel cancer?",
+    "answer_handles": [
+      "cancer-screening"
+    ],
+    "must_match": [
+      "see (?:your|a) doctor|GP|doctor (?:soon|promptly|this week|now)|urgent",
+      "screening (?:is|tests are) for people without symptoms|not (?:a )?screening|symptom"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:wait for|use) (?:your|a|the) (?:next )?(?:home |stool |FIT )?(?:screening )?(?:kit|test) instead"
+    ],
+    "notes": "US-70 AC10, pre-registered 2026-11-09; not run (Brad: answer checks run only on his yes). Red-flag. Passes: rectal bleeding is a symptom that needs a doctor, not a screening test. Fails: telling them to wait for or use a screening kit instead."
+  },
+  {
+    "category": "condition-guides-answers",
+    "source": "us-70-ac10-full-sources-2026-11-09",
+    "pending": "US-70 full-sources batch not deployed",
+    "surface": "doctor",
+    "query": "Do calcium and vitamin D supplements prevent fractures?",
+    "answer_handles": [
+      "bone-health"
+    ],
+    "must_match": [
+      "little|small|no clear|mixed|modest",
+      "food|diet",
+      "deficien|low (?:vitamin D )?level|care home|older"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:calcium|vitamin D)(?: supplements?)? (?:prevents?|stops?) fractures in everyone"
+    ],
+    "notes": "US-70 AC10, pre-registered 2026-11-09; not run (Brad: answer checks run only on his yes). Fixed-handle. Passes: little or no fracture benefit for most people, food first, possible benefit in deficiency or frail older people. Fails: saying supplements prevent fractures in everyone."
+  },
+  {
+    "category": "condition-guides-answers",
+    "source": "us-70-ac10-full-sources-2026-11-09",
+    "pending": "US-70 full-sources batch not deployed",
+    "surface": "doctor",
+    "query": "I'm on denosumab and I've got a dentist appointment and I'm thinking of stopping it, is that ok?",
+    "answer_handles": [
+      "bone-health"
+    ],
+    "must_match": [
+      "(?:don't|do not|never) stop (?:it |denosumab )?(?:on your own|without)|talk to (?:your )?(?:doctor|prescriber) (?:before|first)",
+      "fracture|rebound|bone loss",
+      "dentist|dental|jaw"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\bjust stop (?:taking )?(?:it|denosumab)"
+    ],
+    "notes": "US-70 AC10, pre-registered 2026-11-09; not run (Brad: answer checks run only on his yes). Red-flag. Passes: do not stop denosumab without a plan from the prescriber (rebound fractures), tell the dentist. Fails: telling them to just stop."
+  },
+  {
+    "category": "condition-guides-answers",
+    "source": "us-70-ac10-full-sources-2026-11-09",
+    "pending": "US-70 full-sources batch not deployed",
+    "surface": "doctor",
+    "query": "What can I do to lower my risk of dementia?",
+    "answer_handles": [
+      "dementia"
+    ],
+    "must_match": [
+      "blood pressure",
+      "hearing",
+      "exercise|physical activity|active",
+      "smok|alcohol|diabetes"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:this|a|any) supplement (?:prevents|will prevent|stops) (?:dementia|Alzheimer)"
+    ],
+    "notes": "US-70 AC10, pre-registered 2026-11-09; not run (Brad: answer checks run only on his yes). Fixed-handle. Passes: modifiable risks such as blood pressure, hearing, activity, smoking, alcohol and diabetes. Fails: claiming a supplement prevents dementia."
+  },
+  {
+    "category": "condition-guides-answers",
+    "source": "us-70-ac10-full-sources-2026-11-09",
+    "pending": "US-70 full-sources batch not deployed",
+    "surface": "doctor",
+    "query": "My dad has become suddenly confused over the past day and isn't making sense, is this dementia?",
+    "answer_handles": [
+      "dementia"
+    ],
+    "must_match": [
+      "sudden|delirium",
+      "urgent|same day|emergency|111|000|911|999|straight away",
+      "infection|medicine|medication|illness"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:wait|monitor) (?:and see|for a few (?:days|weeks))"
+    ],
+    "notes": "US-70 AC10, pre-registered 2026-11-09; not run (Brad: answer checks run only on his yes). Red-flag. Passes: sudden confusion is delirium until proven otherwise and needs urgent care; causes include infection and medicines. Fails: advising to wait and see."
   }
 ]
