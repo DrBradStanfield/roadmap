@@ -22,10 +22,17 @@ describe('US-15 AC7e: safeErrorFields', () => {
     expect(safeErrorFields({ code: '123456' })).toEqual({ code: 'unknown' });
   });
 
-  it('never keeps a message, and refuses a code that is not a plain identifier', () => {
-    expect(safeErrorFields(new Error('synthetic failure for someone@example.invalid'))).toEqual({ code: 'unknown' });
+  it('keeps the class name, never the message, and refuses a code that is not a plain identifier', () => {
+    expect(safeErrorFields(new Error('synthetic failure for someone@example.invalid'))).toEqual({ name: 'Error', code: 'unknown' });
+    expect(safeErrorFields(new TypeError('fetch failed'))).toEqual({ name: 'TypeError', code: 'unknown' });
     expect(safeErrorFields({ code: 'someone@example.invalid' })).toEqual({ code: 'unknown' });
     expect(safeErrorFields(null)).toEqual({ code: 'unknown' });
+  });
+
+  it('PR #1043 R1: refuses a name that is not a plain identifier, or is a long run of digits', () => {
+    expect(safeErrorFields({ name: 'someone@example.invalid', code: '23505' })).toEqual({ code: '23505' });
+    expect(safeErrorFields({ name: 'x'.repeat(41) })).toEqual({ code: 'unknown' });
+    expect(safeErrorFields({ name: '7012345678901' })).toEqual({ code: 'unknown' });
   });
 });
 
@@ -47,6 +54,8 @@ const SITES = [
   'app/routes/api.feedback.ts',
   'app/lib/supabase-dashboard.server.ts',
   'app/routes/api.measurements.ts',
+  'app/lib/lab-extract-one.server.ts',
+  'app/routes/api.lab-import-v2.ts',
 ];
 
 describe('US-15 AC7e (issue #928): server logs name an error by safeErrorFields only', () => {

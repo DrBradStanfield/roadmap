@@ -1,20 +1,21 @@
 /**
  * US-09 AC37: the Google Drive OAuth code exchange has a deadline, as the
- * Dropbox one has since AC1a. The deadline is 15 seconds, longer than the
- * server's own 10 for Google, so the browser does not give up on an exchange
- * the server is still finishing (issue #977). Its reply is used only when it
- * holds an access token and a finite expiry, as Dropbox's is (issue #924). The page awaits the exchange before it draws
+ * Dropbox one has since AC1a. The page awaits the exchange before it draws
  * anything, so an exchange endpoint that accepts the request and never answers
- * left the loading skeleton up for good. Now it fails at 10 seconds as a
+ * left the loading skeleton up for good. Now it fails at 15 seconds as a
  * `StorageError` ("Google Drive did not answer"), which the page reports as a
- * failed connect, and nothing is kept. A dead network fails the same way, not
- * as a bare `TypeError`. Real adapter; synthetic HTTP and a fake clock, no
- * live provider.
+ * failed connect, and nothing is kept. 15 seconds is longer than the server's
+ * own limit for Google (`GOOGLE_TIMEOUT_MS`, 10), so the browser does not give
+ * up on a code the server is still spending (issue #977). A dead network fails
+ * the same way, not as a bare `TypeError`. The reply is used only when it
+ * holds an access token and a finite expiry, as Dropbox's is (issue #924).
+ * Real adapter; synthetic HTTP and a fake clock, no live provider.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { StorageError } from '@roadmap/health-core/adapter';
 import { failureTags } from '../lib/error-diagnostics';
 import { DRIVE_FILE_SCOPE, GoogleDriveAdapter } from './drive';
+import { GOOGLE_TIMEOUT_MS } from '../../../app/routes/api.google-token';
 
 const CONFIG = {
   clientId: 'test-client-id',
@@ -96,6 +97,10 @@ describe('US-09 AC37: the Google Drive code exchange has a deadline', () => {
     expect(fetchMock.mock.calls[0][0]).toBe(CONFIG.exchangeUrl);
     expect(local.has(TOKENS_KEY)).toBe(false);
     expect(local.has(CONFIG_KEY)).toBe(false);
+  });
+
+  it('issue #977: the browser waits at least 5 seconds longer than the server waits for Google', () => {
+    expect(EXCHANGE_MS - GOOGLE_TIMEOUT_MS).toBeGreaterThanOrEqual(5_000);
   });
 
   it('a dead network fails as a StorageError too, not a bare TypeError', async () => {

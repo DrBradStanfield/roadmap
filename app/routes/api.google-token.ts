@@ -22,8 +22,9 @@ import { ALLOWED_ORIGINS, BODY_TOO_LARGE, corsHeaders, getClientIp, parseSimpleR
  */
 
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
-// Google gets this long to answer before the exchange fails (US-09 AC31).
-const GOOGLE_TIMEOUT_MS = 10_000;
+// Google gets this long to answer before the exchange fails (US-09 AC31). The
+// browser waits longer for this route (drive.ts, issue #977; its test checks).
+export const GOOGLE_TIMEOUT_MS = 10_000;
 
 // Generous: a real user exchanges ~once an hour; connects are rare.
 const allowRequest = createRateLimiter(30, 60_000, 10 * 60_000);
