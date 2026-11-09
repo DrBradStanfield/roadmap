@@ -221,7 +221,7 @@ The UK label dose of Gaviscon Advance for adults and children 12 years and over 
 - **Tablets:** chew thoroughly, then drink half a glass of water or other liquid [38][40].
 - **Other medicines:** leave a 2-hour gap between an alginate product and other medicines, including iron [2]. Some medicines need a longer gap (see Drug Interactions).
 - **Review:** if symptoms do not improve after 7 days, see your doctor [2].
-- **Warning signs:** see a doctor promptly if reflux comes with trouble swallowing, weight loss, bleeding, vomiting or anemia. The ACG guideline calls these alarm symptoms and advises an endoscopy as soon as feasible. Chest pain should be checked for heart disease before it is put down to reflux [28].
+- **Warning signs:** see a doctor promptly if reflux comes with trouble swallowing, weight loss, bleeding, vomiting or anemia. The ACG guideline calls these alarm symptoms and advises an endoscopy as soon as feasible. Chest pain should be checked for heart disease before it is put down to reflux [28]. Sudden or severe chest pain, especially with breathlessness, sweating or pain spreading to the arm or jaw, needs emergency care now (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ### How to Read a Supplement Label
 
