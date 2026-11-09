@@ -1137,10 +1137,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       setMedications([]);
       setScreenings([]);
       setSupplements([]);
-      setProfileProposal(null);
-      setMedUndo(null);
-      markEraseShown(getEraseIdentity());
-      setShownErase(getEraseIdentity());
+      showErase(getEraseIdentity());
       // A refusal of this erase's own leftovers is not news (adversary R3).
       refusedFor.current = getEraseIdentity();
       longitudinalDebounce.cancel();
@@ -1159,7 +1156,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       window.alert(result.error || 'Failed to delete data. Please try again.');
     }
     return result.success;
-  }, [longitudinalDebounce, profileDebounce]);
+  }, [longitudinalDebounce, profileDebounce, showErase]);
 
   // One field's new value, from the form or the chat. A weight or waist
   // keeps the unit its caller converted it from (typedIn). One update per

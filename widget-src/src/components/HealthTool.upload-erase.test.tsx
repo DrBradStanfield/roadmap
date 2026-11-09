@@ -11,14 +11,15 @@
  * the lab read, the upload bundle) and the chat's own UI are stubbed.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, cleanup, fireEvent, waitFor, act, screen } from '@testing-library/react';
+import { render, fireEvent, waitFor, act, screen } from '@testing-library/react';
 import { createEmptyFile, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, deleteUserData, loadAllHistorySync, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, deleteUserData, loadAllHistorySync, flushRoadmapStore } from '../lib/roadmap-data';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { deleteButton } from '../testing/settings';
+import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -49,9 +50,7 @@ const resumeButton = () => screen.queryByRole('button', { name: /Ready for revie
 
 /** A guest with a plan, the upload read and its review showing, then hidden. */
 async function reviewReadThenHidden() {
-  await initRoadmapStore(new LocalStorageAdapter());
-  await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 178 }, {});
-  await addMeasurement('weight', 82, '2026-09-01');
+  await seedGuest({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 178 }, [['weight', 82]]);
   render(<HealthTool />);
   await wait(600);
   fireEvent.click(await screen.findByRole('button', { name: 'Upload lab results' }));
@@ -63,30 +62,19 @@ async function reviewReadThenHidden() {
   expect(resumeButton()).not.toBeNull();
 }
 
+useHealthToolLifecycle();
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(() => () => {});
-  localStorage.clear();
-  sessionStorage.clear();
-  vi.stubGlobal('matchMedia', (q: string) => ({
-    matches: q.includes('min-width'), media: q, addEventListener() {}, removeEventListener() {},
-  }));
-  Element.prototype.scrollIntoView ??= () => {};
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(extraction as Awaited<ReturnType<typeof labImport>>);
-  Object.assign(window, { HealthUpload: {
+  vi.stubGlobal('HealthUpload', {
     extractFromPdf: vi.fn(async () => ({ pages: [{ type: 'text', content: 'synthetic' }], truncated: false })),
     isPdf: () => true, isZip: () => false, isImage: () => false,
-  } });
+  });
 });
-afterEach(async () => {
-  cleanup();
-  await flushRoadmapStore();
-  vi.resetAllMocks();
-  vi.restoreAllMocks();
-  vi.unstubAllGlobals();
-  vi.useRealTimers();
-});
+// Registered after the lifecycle, so it runs first: real timers before its flush.
+afterEach(() => { vi.useRealTimers(); });
 
 describe('US-16 AC2c: an upload review read before an erase ends with it', () => {
   it("this tab's erase: the hidden review is gone, and nothing from it can reach the erased record", async () => {
