@@ -21,8 +21,9 @@ struct ChartPoint: Identifiable {
         return history.rows.filter(\.isActive).flatMap { row -> [ChartPoint] in
             guard let date = DayText.date(row.day) else { return [] }
             if history.metric == MyData.bloodPressure {
-                return [("Systolic", row.systolic), ("Diastolic", row.diastolic)].compactMap { series, text in
-                    text.flatMap(Double.init).map { ChartPoint(id: row.id + series, date: date, value: $0, series: series) }
+                // A half printed as a limit is drawn as a lab limit is: hollow, off its line (US-12 AC20a).
+                return [("Systolic", row.systolic, row.systolicLimit), ("Diastolic", row.diastolic, row.diastolicLimit)].compactMap { series, text, limit in
+                    text.flatMap(Double.init).map { ChartPoint(id: row.id + series, date: date, value: $0, series: series, limit: limit != nil, label: limit) }
                 }
             }
             if let bound = row.bound {

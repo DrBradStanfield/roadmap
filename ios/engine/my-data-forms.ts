@@ -77,6 +77,10 @@ export interface HistoryRow {
   /** A blood pressure's halves, a dash's place null (blood-pressure.ts). */
   systolic?: string | null;
   diastolic?: string | null;
+  /** A blood pressure's half printed as a limit, as read ("< 125"); absent for an exact half
+   *  (US-12 AC20a, #922). The chart draws that half hollow, out of its line. */
+  systolicLimit?: string;
+  diastolicLimit?: string;
   /** A blood pressure's active row ids, which a replace sends back as `seenIds`. */
   pairIds?: string[];
   /** A lab result printed as a limit (US-12 AC20): its bound in the row's unit, where the

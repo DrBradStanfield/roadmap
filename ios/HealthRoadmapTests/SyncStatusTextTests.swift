@@ -10,7 +10,7 @@ final class SyncStatusTextTests: XCTestCase {
     }
 
     func testConnectedNamesTheCloudAndNeverClaimsTheDataStayed() {
-        XCTAssertEqual(SyncStatusText.headline(.synced(.now), provider: .dropbox), "Synced with Dropbox")
+        XCTAssertEqual(SyncStatusText.headline(.synced(.now), provider: .dropbox), "Synced to Dropbox")
         XCTAssertEqual(SyncStatusText.headline(.saving, provider: .googleDrive), "Saving to Google Drive…")
         XCTAssertTrue(SyncStatusText.myDataFooter(provider: .dropbox, earlier: .dropbox).contains("Dropbox"))
     }

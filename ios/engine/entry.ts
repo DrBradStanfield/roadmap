@@ -19,6 +19,8 @@ import { readUnitChoices } from './unit-choices';
 import { phoneReminders } from './reminders';
 import { installShim, type Natives } from './shim';
 import { NOT_OPEN, open } from './cloud';
+import { failed } from './cloud-adapters';
+import { StorageError } from '../../packages/health-core/src/adapter';
 import { documentShelf } from './documents';
 
 // The web APIs the cloud adapters need, over Swift's natives (shim.ts). Absent
@@ -193,14 +195,28 @@ export function labSearchJson(text: string): string {
 
 /** A listed document's original from the person's cloud, as bytes (US-73 AC12; the web's "View
  *  original file", US-14): the document page's door, optional like labSearchJson. By the document's
- *  id, so only a file the record names is read. Rejects when no cloud is open, the record names no
- *  original for it, or the cloud cannot give it. */
+ *  id, so only a file the record names is read. Rejects with the failure JSON Swift reads (review R6
+ *  of PR 972): kind "not-open" when no cloud is open, "no-original" when the record names none for
+ *  it, else the cloud's own failure, classed as a save's is (`failed`: sign-in, unreachable...). */
 export async function documentOriginal(id: string): Promise<ArrayBuffer> {
   const at = open;
-  if (!at) throw new Error(NOT_OPEN);
+  if (!at) throw new Error(JSON.stringify({ kind: 'not-open', detail: NOT_OPEN }));
   const doc = at.session.file.documents.find((d) => d.id === id && !d.deleted);
-  if (!doc?.fileRef) throw new Error('This document has no original in your cloud.');
-  return (await at.host.store.readDocument(doc.fileRef)).arrayBuffer();
+  if (!doc?.fileRef) throw new Error(JSON.stringify({ kind: 'no-original', detail: 'This document has no original in your cloud.' }));
+  try {
+    return await (await at.host.store.readDocument(doc.fileRef)).arrayBuffer();
+  } catch (error) {
+    if (originalGone(error)) throw new Error(JSON.stringify({ kind: 'no-original', detail: 'This document\'s original is not in your cloud.' }));
+    throw new Error(failed(at.provider, error));
+  }
+}
+
+/** The cloud no longer holds the original (PR 1051 review R1): any 404; Dropbox answers a download
+ *  of a missing path 409 (path/not_found; dropbox-rest.ts `dropboxDownload` keeps the status, not
+ *  the body, so every download 409 counts); Drive finds no file of that name (drive-rest.ts
+ *  `driveDownloadDocument`, which sets no status, so its words are read). */
+function originalGone(error: unknown): boolean {
+  return error instanceof StorageError && (error.status === 404 || error.status === 409 || /document not found/i.test(error.message));
 }
 // Chat and lab upload (US-52): app-doors.ts.
 export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson, chatDeleteJson, settledJson, labReviewJson, labSaveSummaryJson } from './app-doors';
