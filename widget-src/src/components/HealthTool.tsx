@@ -43,7 +43,6 @@ import {
   getInitialInputsSync,
   getEraseIdentity,
   getShownErase,
-  markEraseShown,
   clearOffFileAfterErase,
   flushRoadmapStoreSync,
   loadLatestMeasurementsSync,
@@ -58,7 +57,6 @@ import {
   saveScreening,
   saveSupplement,
   deleteSupplementApi,
-  deleteUserData,
   getBackendKind,
   getUnreadableCount,
 } from '../lib/roadmap-data';
@@ -72,11 +70,12 @@ import { createRemoteChangeRelay } from '../lib/remote-replay';
 import { debounceSave, cancelListSave, flushListSaves, type ListSaves } from '../lib/list-saves';
 import { useRecordState } from '../hooks/useRecordState';
 import { useOnboarding } from '../hooks/useOnboarding';
+import { useErase } from '../hooks/useErase';
 import { useTabs } from '../hooks/useTabs';
 import { useUnits } from '../hooks/useUnits';
 import { useLongitudinalSave, countedCorrection } from '../hooks/useLongitudinalSave';
 import { useChatEdits } from './ChatEdits';
-import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
+import { WRITE_REFUSED } from '../lib/erase-copy';
 
 /** After a medication or screening save, failed or not, the chat copy takes
  *  the lists the store holds (US-15 AC10). Never the form's: a failed save
@@ -157,7 +156,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // the form holds that value. The journey redesign deletes it: it rebuilds
   // these fields on the matrices' draft model.
   const typedIn = useRef<Partial<Record<keyof HealthInputs, { value: unknown; unit: UnitSystem }>>>({});
-  const [isDeleting, setIsDeleting] = useState(false);
   const medSaveTimers = useRef<ListSaves>(new Map());
   const screeningSaveTimers = useRef<ListSaves>(new Map());
   const isFirstSaveRef = useRef(true);
@@ -220,35 +218,16 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     return result;
   }, [refreshLabValues]);
 
-  // The erase the screen shows, marked on the store, which refuses every
-  // write while it holds another (US-16 AC2a). The chat's banners (a profile
-  // proposal, a medication Undo) go when the screen moves to another erase,
-  // this tab's or another device's, even with post-erase rows. A re-read that
-  // brings no erase keeps them.
-  // The same erase as React state: the upload modal is keyed on it, so an
-  // erase ends a review read before it (US-16 AC2c).
-  const [shownErase, setShownErase] = useState(getShownErase);
-  const showErase = useCallback((erase: string) => {
-    if (erase === getShownErase()) return;
-    markEraseShown(erase);
-    setShownErase(erase);
-    clearChatEdits();
-  }, []);
-  // The store holds an erase the screen does not show yet: this tab's erase
-  // still writing or failed to write, or another device's erase whose re-read
-  // has not landed (the relay never holds an erase, US-11 AC6). The screen's
-  // values are pre-erase then, so no banner is made or answered.
-  const eraseUnshown = useCallback(() => getEraseIdentity() !== getShownErase(), []);
-  // True while this tab's erase runs.
-  const erasingRef = useRef(false);
-  const refusedFor = useRef(''); // the erase whose refusal was last said
+  // The erase the screen shows, and this tab's own erase (hooks/useErase.ts).
+  // The chat's banners (a profile proposal, a medication Undo) go when the
+  // screen moves to another erase, this tab's or another device's, even with
+  // post-erase rows. A re-read that brings no erase keeps them.
+  const { shownErase, erasing: isDeleting, showErase, eraseUnshown, refusalIsNews, eraseAll } = useErase(() => clearChatEdits());
   // A save the store refused. Outside this tab's own erase, which throws the
   // change away anyway, say so and show the record the store holds; that also
   // releases a remote change the relay held behind the edit (US-34 AC4).
   const writeRefused = useCallback(() => {
-    // One alert per erase, however many saves it refuses (adversary R5).
-    if (erasingRef.current || refusedFor.current === getEraseIdentity()) return;
-    refusedFor.current = getEraseIdentity();
+    if (!refusalIsNews()) return;
     window.alert(WRITE_REFUSED);
     clearAnswered(); // the record re-read is not an answer given here (US-62 AC13)
     void applyRemoteRef.current();
@@ -697,51 +676,24 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     cell?.focus({ preventScroll: true });
   }, [revealCell]);
 
-  const handleDeleteData = useCallback(async () => {
-    const confirmed = window.confirm(ERASE_CONFIRM);
-    if (!confirmed) return false;
-
-    setIsDeleting(true);
-    erasingRef.current = true;
-    const before = getEraseIdentity();
-    const result = await deleteUserData();
-    erasingRef.current = false;
-    setIsDeleting(false);
-
-    // An erase whose write failed still leaves the erased copy in the store,
-    // which retries it: the screen shows that copy too (US-16 AC2a). A
-    // refused erase moved nothing, whatever else the screen is behind.
-    if (result.success || getEraseIdentity() !== before) {
-      clearLocalStorage();
-      // The matrices' drafts and the Lp(a) check's answers too, on the device
-      // and on screen: a failed write's store holds the erased copy. Stored
-      // originals go by the session's rule, never by the page (US-11 AC6).
-      clearOffFileAfterErase();
-      setInputs({});
-      clearForErase();
-      // Cleared here too: a re-read during the write may have shown this
-      // erase already, and showErase then clears nothing (adversary R1).
-      clearChatEdits();
-      showErase(getEraseIdentity());
-      // A refusal of this erase's own leftovers is not news (adversary R3).
-      refusedFor.current = getEraseIdentity();
-      cancelPendingSave();
-      profileDebounce.cancel();
-      // A save the form scheduled before the erase is pre-erase (US-16 AC2a).
-      for (const timers of [medSaveTimers, screeningSaveTimers, supSaveTimers]) {
-        for (const { timer } of timers.current.values()) clearTimeout(timer);
-        timers.current.clear();
-      }
-      previousInputsRef.current = {};
+  // "Delete all my data": once the erase moves, the screen forgets the old
+  // record, on the device and on screen. The matrices' drafts and the Lp(a)
+  // check's answers too: a failed write's store holds the erased copy. Stored
+  // originals go by the session's rule, never by the page (US-11 AC6).
+  const handleDeleteData = useCallback(() => eraseAll(() => {
+    clearLocalStorage();
+    clearOffFileAfterErase();
+    setInputs({});
+    clearForErase();
+    cancelPendingSave();
+    profileDebounce.cancel();
+    // A save the form scheduled before the erase is pre-erase (US-16 AC2a).
+    for (const timers of [medSaveTimers, screeningSaveTimers, supSaveTimers]) {
+      for (const { timer } of timers.current.values()) clearTimeout(timer);
+      timers.current.clear();
     }
-    if (result.success) {
-      const done = result.chatErased ? ERASE_DONE : result.chatUnread ? ERASE_DONE_CHAT_UNREAD : ERASE_DONE_CHAT_PENDING;
-      window.alert(result.warning ? `${done}\n\n${result.warning}` : done);
-    } else {
-      window.alert(result.error || ERASE_FAILED);
-    }
-    return result.success;
-  }, [cancelPendingSave, profileDebounce, showErase]);
+    previousInputsRef.current = {};
+  }), [eraseAll, cancelPendingSave, profileDebounce]);
 
   // One field's new value, from the form or the chat. A weight or waist
   // keeps the unit its caller converted it from (typedIn). One update per
