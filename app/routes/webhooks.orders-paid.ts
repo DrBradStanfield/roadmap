@@ -12,6 +12,7 @@ import { authenticate } from '../shopify.server';
 import { addMessageCredits, getUserIdByCustomerId, logAudit, recordUnprovenPaidOrder } from '../lib/supabase.server';
 import { VARIANT_CREDIT_MAP } from '../lib/message-packs';
 import { cappedRequest, WEBHOOK_BODY_CAP } from '../lib/capped-body.server';
+import { safeErrorFields } from '../lib/safe-error-fields.server';
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   // The library reads the whole body before its HMAC check (US-09 AC25).
@@ -80,7 +81,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       console.log(`Added ${creditAmount} message credits for user ${userId} (order ${order.id})`);
     }
   } catch (error) {
-    console.error('Error processing orders/paid webhook:', error);
+    console.error('Error processing orders/paid webhook:', safeErrorFields(error));
     Sentry.captureException(error, { tags: { feature: 'message_credits' } });
     return new Response(null, { status: 500 });
   }

@@ -44,3 +44,44 @@ describe('US-62 AC30: My health styles', () => {
     expect(base).not.toMatch(/clip:/);
   });
 });
+
+describe('US-62 AC35: the Account tab design', () => {
+  const standalone = readFileSync(resolve(__dirname, '../../standalone/standalone.css'), 'utf8');
+
+  it('(a) no Settings rule flattens the storage button into a heading: it keeps its fill, 44px, on desktop too', () => {
+    for (const [sel, body] of [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)]) {
+      if (/\.mh-settings[^,]*\.hr-sync-btn/.test(sel)) expect(body, sel).not.toMatch(/background:\s*none/);
+    }
+    const desktop = blocks(/^\s*\.mh-settings \.hr-sync \.hr-sync-btn-full\s*$/m).join('');
+    expect(desktop).toMatch(/min-height:\s*44px/);
+    expect(desktop).toMatch(/width:\s*auto/); // a control hugs its words on desktop
+    // The base style is the filled teal button.
+    expect(/\.hr-sync-btn\s*\{[^}]*background:\s*var\(--color-brand-text\)/.test(standalone)).toBe(true);
+  });
+
+  it('(b) a phone\'s Account is grouped cards on the page grey: no outer card, white 12px groups, one heading style', () => {
+    const sheet = blocks(/^\s*\.mh-account \.mh-settings\s*$/m).join('');
+    expect(sheet).toMatch(/background:\s*none/);
+    expect(sheet).toMatch(/box-shadow:\s*none/);
+    const group = blocks(/\.mh-account \.mh-settings > \.hr-sync\b/).join('');
+    expect(group).toMatch(/background:\s*#fff/);
+    expect(group).toMatch(/border-radius:\s*12px/);
+    // The group list names every kind of part: the storage card, units, About you's rows, reminders, delete.
+    const groupSel = [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)].find(([sel]) => /\.mh-account \.mh-settings > \.hr-sync\b/.test(sel))![1];
+    for (const part of ['> .section-card > .basic-info-units', '.prefill-fields-wrapper', '.hr-reminders-section > .hr-sync', '> .delete-data-section']) {
+      expect(groupSel).toContain(part);
+    }
+    // About you's and the reminders' headings share one rule: one heading style above their cards.
+    const headingSel = [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)].find(([sel]) => /\.mh-account .*\.hr-reminders-heading/.test(sel));
+    expect(headingSel?.[1]).toMatch(/\.mh-account \.about-card \.hr-section-card-header/);
+    expect(headingSel?.[2]).toMatch(/padding:\s*0 16px/);
+    // Delete all my data is the iPhone's destructive row: centred red words, 44px, no underline.
+    const del = blocks(/\.mh-account \.delete-data-link/).join('');
+    expect(del).toMatch(/min-height:\s*44px/);
+    expect(del).toMatch(/text-decoration:\s*none/);
+  });
+
+  it('(c) the hero hides while a phone shows Chat or Account (the tab bar marks the page)', () => {
+    expect(standalone.replace(/\s+/g, ' ')).toContain('html[data-hr-tab="chat"] .hr-hero, html[data-hr-tab="account"] .hr-hero { display: none; }');
+  });
+});

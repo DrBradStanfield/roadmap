@@ -19,6 +19,7 @@ import { buildReminderV2EmailHtml, sendReminderEmail } from './email.server';
 import { tryAcquireCronLock } from './supabase.server';
 import { buildUnsubscribeUrl, getOptinsBatch, inQuietPeriod, purgeTombstones, recordSent, type ReminderV2Optin } from './reminder-v2.server';
 import { recordServerEvent } from './product-events.server';
+import { safeErrorFields } from './safe-error-fields.server';
 
 const CRON_INTERVAL_MS = 60 * 60 * 1000; // hourly tick
 const TARGET_HOUR_UTC = 8;               // same morning window as the v1 reminder cron
@@ -86,7 +87,7 @@ export function startReminderV2Cron(): void {
       });
       console.log(`Reminder v2 cron: completed, sent ${count} emails`);
     } catch (error) {
-      console.error('Reminder v2 cron error:', error);
+      console.error('Reminder v2 cron error:', safeErrorFields(error));
       Sentry.captureException(error, { tags: { feature: 'reminder_v2_cron' } });
     }
   }, CRON_INTERVAL_MS);

@@ -18,6 +18,7 @@ import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin, tryAcquireCronLock } from './supabase.server';
 import { sendEmail, escapeHtml } from './email.server';
 import { withTimeout, nzNowParts } from './cron-helpers.server';
+import { safeErrorFields } from './safe-error-fields.server';
 
 const CRON_INTERVAL_MS = 60 * 60_000; // hourly check
 const TARGET_HOUR_NZ = 2;
@@ -57,7 +58,7 @@ export function startYouTubeBotSummaryCron(): void {
 
       await runSummary(now);
     } catch (err) {
-      console.error('YouTube bot summary cron error:', err);
+      console.error('YouTube bot summary cron error:', safeErrorFields(err));
       Sentry.captureException(err, { tags: { feature: 'youtube-bot-summary' } });
     }
   }, CRON_INTERVAL_MS);
