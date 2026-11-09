@@ -578,7 +578,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // The first-time vitals fields' and the PSA's save, queued and debounced (hooks/useLongitudinalSave).
   const {
     handleSaveLongitudinal, scheduleLongitudinalSave, flushLongitudinalSave, commitPsa, stagePendingSave,
-    longitudinalDebounce, isSavingLongitudinal, fieldsSaved, psaDate, setPsaDate,
+    cancelPendingSave, flushPendingSave, isSavingLongitudinal, fieldsSaved, psaDate, setPsaDate,
   } = useLongitudinalSave({
     inputs, setInputs, history, unitOverrides, unitSystem, reloadValues,
     flushPendingProfileSave, typedIn, isFirstSaveRef,
@@ -632,7 +632,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // lab rows and both matrices, then the profile and the rest.
   const handleUploadComplete = useCallback(async () => {
     // A field the user left has its save waiting (500 ms): it lands first.
-    longitudinalDebounce.flush();
+    flushPendingSave();
     const erase = getEraseIdentity(); // read with the record, in one turn
     const result = await reloadValues();
     if (result) {
@@ -668,7 +668,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     // Another device erased the record (US-16 AC2a / US-09): a chat banner
     // left standing would write pre-erase values into the erased record.
     showErase(erase);
-  }, [reloadValues, longitudinalDebounce, showErase]);
+  }, [reloadValues, flushPendingSave, showErase]);
 
   // Something wrote to the record under us — another device, or an AI
   // connector through MCP (US-34). The store has already re-read and merged;
@@ -841,7 +841,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       showErase(getEraseIdentity());
       // A refusal of this erase's own leftovers is not news (adversary R3).
       refusedFor.current = getEraseIdentity();
-      longitudinalDebounce.cancel();
+      cancelPendingSave();
       profileDebounce.cancel();
       // A save the form scheduled before the erase is pre-erase (US-16 AC2a).
       for (const timers of [medSaveTimers, screeningSaveTimers, supSaveTimers]) {
@@ -857,7 +857,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       window.alert(result.error || ERASE_FAILED);
     }
     return result.success;
-  }, [longitudinalDebounce, profileDebounce, showErase]);
+  }, [cancelPendingSave, profileDebounce, showErase]);
 
   // One field's new value, from the form or the chat. A weight or waist
   // keeps the unit its caller converted it from (typedIn). One update per
