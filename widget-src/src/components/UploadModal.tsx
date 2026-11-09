@@ -2,8 +2,7 @@ import { checkLabImportQuota } from '../lib/upload-api';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { IMPORT_LIMITS } from '@roadmap/health-core/import-hints';
-import { METRIC_LABELS } from '@roadmap/health-core/mappings';
-import { UNDATED_PREVIOUS, unreadLines, uploadLimitSignal, zipMemberName } from '@roadmap/health-core/lab-extraction';
+import { UNDATED_PREVIOUS, uploadLimitSignal, zipMemberName } from '@roadmap/health-core/lab-extraction';
 import type { UnitSystem, MetricType } from '@roadmap/health-core/units';
 import { comparatorOf } from '@roadmap/health-core/lab-limits';
 import type { DocumentPayload } from '@roadmap/health-core/document-save';
@@ -17,9 +16,10 @@ import { labUnitRefusalLine } from '@roadmap/health-core/lab-series';
 import { useLpaUnit } from '../lib/lpa-unit';
 import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable } from './ReviewTable';
+import { FileNotices, NotSaved } from './UploadNotices';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FloatingUploadIndicator } from './FloatingUploadIndicator';
-import { UploadError, KEY_ERROR_MESSAGES, BATCH_THRESHOLD, MAX_FILE_SIZE, shortName, hasValues, processBatch, processPipeline, type FileNotice, type FileNoticeReason, type ReadInput, type DocumentToSave, type ReviewedValue, type ReviewedLabValue, type FileResult } from '../lib/upload-pipeline';
+import { UploadError, KEY_ERROR_MESSAGES, BATCH_THRESHOLD, MAX_FILE_SIZE, shortName, hasValues, processBatch, processPipeline, type FileNotice, type ReadInput, type DocumentToSave, type ReviewedValue, type ReviewedLabValue, type FileResult } from '../lib/upload-pipeline';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries } from '../lib/archive-payloads';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
@@ -70,41 +70,9 @@ interface UploadModalProps {
   onOpen: () => void;
 }
 
-const FILE_NOTICE_TEXT: Record<Exclude<FileNoticeReason, 'valuesDropped'>, string> = {
-  openFailed: 'Could not open it. It may be password-protected, damaged, or not a PDF, photo or .docx file.',
-  tooLarge: `Too large to read. The limit is ${IMPORT_LIMITS.websiteFileMb} MB per file.`,
-  truncated: 'This file is long, so only its first part was read.',
-  documentOnly: 'Filed as a document. No blood test values found.',
-  noValues: 'No blood test values found.',
-  serverError: 'Our server could not read it. Please try again.',
-  limitError: 'Not read. The daily upload limit was reached.',
-  refused: 'Not read. Claude declined to read this file, so trying again will not help.',
-  tooLong: 'Not read. The file is too long to read in one go.',
-  picturesOnly: 'This Word file holds pictures, not text. Save it as a PDF, or upload a photo of the page.',
-};
-const BYOK_NOTICE_TEXT: Partial<Record<FileNoticeReason, string>> = {
-  serverError: 'Not read. Anthropic could not be reached or could not read it. Please try again.',
-  limitError: 'Not read. Your Anthropic key hit its rate limit. Wait a minute and try again.',
-};
 const MAX_FILES = IMPORT_LIMITS.websiteFiles; // also the server's per-IP daily limit (US-12 AC17)
 const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
 const OVER_LIMIT_TEXT = `Not read. It is over the ${MAX_FILES}-file limit for one upload. Upload it separately.`;
-
-function noticeText({ reason, count = 1, unread = [], text }: FileNotice): string {
-  if (text) return text;
-  if (reason === 'valuesDropped') {
-    // Each value that names its test is named, with why; the rest are counted (US-12 AC19).
-    const { lines, otherCount } = unreadLines({ droppedValueCount: count, unreadValues: unread });
-    const text = lines.map(l => `${l.label}: ${l.reason}, not saved.`);
-    if (otherCount > 0) text.push(`${otherCount} ${text.length ? 'other ' : ''}value${otherCount === 1 ? '' : 's'} could not be read.`);
-    return text.join(' ');
-  }
-  return (!SHOPIFY_SURFACE && BYOK_NOTICE_TEXT[reason]) || FILE_NOTICE_TEXT[reason];
-}
-
-/** A file's short name, or its whole path when another listed file shares the short one. */
-const noticeName = (name: string, notices: FileNotice[]) =>
-  notices.some(n => n.name !== name && shortName(n.name) === shortName(name)) ? name : shortName(name);
 
 /** US-12 AC10: one run's counts, integers only. Never a name, unit or value.
  *  `docx` is how many of the picked files were .docx (AC13); `values` holds
@@ -121,38 +89,6 @@ function trackUploadOutcome(picked: number, withValues: number, docx: number, no
     ...Object.fromEntries(UPLOAD_OUTCOME_KEYS.filter(k => counts[k]).map(k => [k, Math.min(counts[k]!, UPLOAD_OUTCOME_MAX)])),
     ...(limitUngradedTests.length ? { limitUngradedTests } : null),
   });
-}
-
-/** Values the extractor refused rather than guessed, each with why (US-12 AC15).
- *  No unit to pick: a user sure it was a blood test types it in the table. */
-function NotSaved({ results }: { results: FileResult[] }) {
-  const rows = results.flatMap(r => (r.refusedValues ?? []).map(v => ({ ...v, fileName: r.fileName })));
-  if (rows.length === 0) return null;
-  return (
-    <div className="upload-file-notices">
-      <p className="upload-file-notices-title">Not saved. If one was a blood test, add it to your blood test table after saving:</p>
-      <ul aria-label="Values not saved">
-        {rows.map((v, i) => (
-          <li key={i}><span className="upload-file-notice-name">{shortName(v.fileName)}</span> {METRIC_LABELS[v.metric as MetricType] ?? v.metric} {`${v.value} ${v.unit}`.trim()}. {v.reason}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-/** The files a run did not fully read, each with its reason (US-12 AC9). */
-function FileNotices({ notices }: { notices: FileNotice[] }) {
-  if (notices.length === 0) return null;
-  return (
-    <div className="upload-file-notices">
-      <p className="upload-file-notices-title">Check these files:</p>
-      <ul aria-label="Files to check">
-        {notices.map((n, i) => (
-          <li key={i}><span className="upload-file-notice-name">{noticeName(n.name, notices)}</span> {noticeText(n)}</li>
-        ))}
-      </ul>
-    </div>
-  );
 }
 
 /** One session's save outcome (US-12 AC6c). The saved counts add up across a
