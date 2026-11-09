@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryAdapter } from '@roadmap/health-core';
+import { MemoryAdapter } from '@roadmap/health-core/memory-adapter';
 
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: vi.fn() }));

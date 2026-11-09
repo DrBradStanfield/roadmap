@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { toCanonicalValue, type ApiMeasurement, type UnitSystem } from '@roadmap/health-core';
+import { toCanonicalValue, type UnitSystem } from '@roadmap/health-core/units';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { activeRowIndex, routeTasksToSaves, slotOf, type SaveTask } from './matrix-save';
 
 /** One cell's values on a day, the rows it expects under them (none named:

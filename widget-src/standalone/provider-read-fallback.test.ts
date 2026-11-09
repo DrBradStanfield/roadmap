@@ -2,7 +2,8 @@
  * All records and HTTP responses are synthetic; no live provider is used.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ConflictError, ROADMAP_FILE_NAME, StorageError, createEmptyFile, type StorageAdapter } from '@roadmap/health-core';
+import { ConflictError, ROADMAP_FILE_NAME, StorageError, type StorageAdapter } from '@roadmap/health-core/adapter';
+import { createEmptyFile } from '@roadmap/health-core/roadmap-file';
 import { GitHubAdapter } from '../src/storage/github';
 import { WebDavAdapter } from '../src/storage/webdav';
 import { LocalStorageAdapter, isSyncPending } from '../src/storage';

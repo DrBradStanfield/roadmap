@@ -1,65 +1,19 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef, useId, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  calculateHealthResults,
-  unreadableNote,
-  knownMinorOf,
-  medicinesShown,
-  weightMedicationTrigger,
-  lipidMarkerFor,
-  validateHealthInputs,
-  planInputsFrom,
-  type SuggestionInputs,
-  getValidationErrors,
-  convertValidationErrorsToUnits,
-  detectUnitSystem,
-  PREFILL_FIELDS,
-  hasUnsavedProfileEdits,
-  LONGITUDINAL_FIELDS,
-  BLOOD_TEST_METRICS,
-  VITAL_METRICS,
-  FIELD_TO_METRIC,
-  medicationsToInputs,
-  mergeLongitudinalInputs,
-  screeningsToInputs,
-  chatContextOf,
-  computeFormStage,
-  opensFullForm,
-  statTiles,
-  medicationForm,
-  screeningForm,
-  FIELD_METRIC_MAP,
-  METRIC_TO_FIELD,
-  localDay,
-  dayOf,
-  withLabEgfr,
-  withPsaMeasurement,
-  newestUsablePsa,
-  labEgfrOf,
-  toCanonicalValue,
-  VITALS_INPUT_FIELDS,
-  chatMedicationChange,
-  unsavedProfile,
-  type AlcoholAnswer,
-  type HealthInputs,
-  type UnitSystem,
-  type MetricType,
-  type ApiMeasurement,
-  type ApiMedication,
-  type ApiScreening,
-  type ChatContextPayload,
-  type ChatMedicationRow,
-  type ProposedEdit,
-  type ProposedFieldEdit,
-  type ProposedMedicationEdit,
-  type ProposedProfileEdit,
-  type FormStage,
-  type RecordHoldings,
-  isSex,
-  formatHeightDisplay,
-  birthRefusedMessage,
-  inputRangeFault,
-} from '@roadmap/health-core';
+import { calculateHealthResults, knownMinorOf } from '@roadmap/health-core/calculations';
+import { unreadableNote } from '@roadmap/health-core/readable-rows';
+import { medicinesShown, weightMedicationTrigger, lipidMarkerFor } from '@roadmap/health-core/suggestions';
+import { validateHealthInputs, getValidationErrors, convertValidationErrorsToUnits, birthRefusedMessage, inputRangeFault } from '@roadmap/health-core/validation';
+import { planInputsFrom, withLabEgfr, labEgfrOf } from '@roadmap/health-core/plan';
+import { type SuggestionInputs, type AlcoholAnswer, type HealthInputs, isSex } from '@roadmap/health-core/types';
+import { detectUnitSystem, toCanonicalValue, type UnitSystem, type MetricType, formatHeightDisplay } from '@roadmap/health-core/units';
+import { PREFILL_FIELDS, hasUnsavedProfileEdits, LONGITUDINAL_FIELDS, BLOOD_TEST_METRICS, VITAL_METRICS, FIELD_TO_METRIC, medicationsToInputs, mergeLongitudinalInputs, screeningsToInputs, computeFormStage, opensFullForm, FIELD_METRIC_MAP, METRIC_TO_FIELD, withPsaMeasurement, type ApiMeasurement, type ApiMedication, type ApiScreening, type FormStage, type RecordHoldings } from '@roadmap/health-core/mappings';
+import { chatContextOf, type ChatContextPayload } from '@roadmap/health-core/chat-context';
+import { statTiles } from '@roadmap/health-core/stat-tiles';
+import { medicationForm, screeningForm } from '@roadmap/health-core/input-form';
+import { localDay, dayOf } from '@roadmap/health-core/merge';
+import { newestUsablePsa } from '@roadmap/health-core/measurement-history';
+import { VITALS_INPUT_FIELDS, chatMedicationChange, unsavedProfile, type ChatMedicationRow, type ProposedEdit, type ProposedFieldEdit, type ProposedMedicationEdit, type ProposedProfileEdit } from '@roadmap/health-core/chat-edits';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { MoveTestApi } from './MoveTestPanel';
 import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';

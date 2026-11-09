@@ -11,7 +11,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act } from 'react';
 import { renderHook } from '@testing-library/react';
-import { buildChatContextJson, type ApiMeasurement, type ApiMedication, type ApiScreening, type ChatContextPayload } from '@roadmap/health-core';
+import { buildChatContextJson, type ChatContextPayload } from '@roadmap/health-core/chat-context';
+import type { ApiMeasurement, ApiMedication, ApiScreening } from '@roadmap/health-core/mappings';
 import {
   clearLocalStorage, loadFromLocalStorage, loadGuestInputs, patchMirror, saveToLocalStorage, saveUnitPreference,
   MIRROR_CHANGED_EVENT, MIRROR_KEY,

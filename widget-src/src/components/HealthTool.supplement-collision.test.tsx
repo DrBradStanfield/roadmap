@@ -5,7 +5,8 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, waitFor } from '@testing-library/react';
-import { ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { flushRoadmapStore, initRoadmapStore, saveSupplement } from '../lib/roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';

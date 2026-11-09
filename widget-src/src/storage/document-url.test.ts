@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { buildDocumentRef } from '@roadmap/health-core';
+import { buildDocumentRef } from '@roadmap/health-core/document-path';
 import { GitHubAdapter } from './github';
 import { WebDavAdapter } from './webdav';
 

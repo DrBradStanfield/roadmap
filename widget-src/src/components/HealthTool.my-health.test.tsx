@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { act, render, waitFor, fireEvent, within, type RenderResult } from '@testing-library/react';
-import type { Suggestion } from '@roadmap/health-core';
+import type { Suggestion } from '@roadmap/health-core/types';
 import {
   addMeasurement,
   bulkSaveDocuments,

@@ -24,35 +24,9 @@
  * check-to-upload gap of one PATCH round trip remains; verify-after-write
  * catches a writer who lands inside it.
  */
-import {
-  ConflictError,
-  driveCreateFile,
-  driveCreateFolder,
-  driveDownloadDocument,
-  driveDownloadJson,
-  driveEnsureSubfolder,
-  driveFileIsLive,
-  driveFileVersion,
-  driveFindFileId,
-  driveFindFolder,
-  driveUpdateIfVersion,
-  driveUploadDocument,
-  fetchOrFail,
-  readDriveRecord,
-  splitDocumentRef,
-  DRIVE_API,
-  DRIVE_FOLDER_NAME,
-  ROADMAP_FILE_NAME,
-  sleepUntilAborted,
-  catchUpAfterFailure,
-  StorageError,
-  jsonBody,
-  timeoutDeadline,
-  type ReadResult,
-  type StorageAdapter,
-  type WriteResult,
-  writeDriveRecord,
-} from '@roadmap/health-core';
+import { ConflictError, fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, jsonBody, timeoutDeadline, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
+import { driveCreateFile, driveCreateFolder, driveDownloadDocument, driveDownloadJson, driveEnsureSubfolder, driveFileIsLive, driveFileVersion, driveFindFileId, driveFindFolder, driveUpdateIfVersion, driveUploadDocument, readDriveRecord, DRIVE_API, DRIVE_FOLDER_NAME, writeDriveRecord } from '@roadmap/health-core/drive-rest';
+import { splitDocumentRef } from '@roadmap/health-core/document-path';
 import { getJson, setJson, safeRemoveItem } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
 

@@ -1,5 +1,7 @@
 import { createRoot } from 'react-dom/client';
-import { isStorageFailure, RecordShapeError, SchemaTooNewError, StorageError } from '@roadmap/health-core';
+import { isStorageFailure } from '@roadmap/health-core/sync-manager';
+import { RecordShapeError, SchemaTooNewError } from '@roadmap/health-core/migrate';
+import { StorageError } from '@roadmap/health-core/adapter';
 
 /**
  * A record this build refuses (US-65 AC5): a newer schema, not a record, or

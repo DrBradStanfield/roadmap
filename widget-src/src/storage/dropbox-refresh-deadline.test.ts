@@ -8,7 +8,7 @@
  * fake clock, no live provider.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core';
+import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
 import { DropboxAdapter } from './dropbox';
 
 const CONFIG = { clientId: 'test-app-key', redirectUri: 'https://example.com/' };

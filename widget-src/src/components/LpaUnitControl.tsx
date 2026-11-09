@@ -5,7 +5,7 @@
 // move and select, wrapping at either end.
 
 import { useRef, type KeyboardEvent } from 'react';
-import { LPA_UNITS, type LpaUnit } from '@roadmap/health-core';
+import { LPA_UNITS, type LpaUnit } from '@roadmap/health-core/units';
 
 const STEP: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
 

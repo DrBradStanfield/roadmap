@@ -13,7 +13,10 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
-import { CURRENT_SCHEMA_VERSION, localDay, migrateFile, ROADMAP_FILE_NAME, rowRootIds, type RoadmapFile } from '@roadmap/health-core';
+import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { localDay, rowRootIds } from '@roadmap/health-core/merge';
+import { migrateFile } from '@roadmap/health-core/migrate';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveDocuments, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';

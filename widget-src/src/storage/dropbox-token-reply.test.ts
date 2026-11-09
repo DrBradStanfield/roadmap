@@ -5,7 +5,7 @@
  * Synthetic replies; no network.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { StorageError } from '@roadmap/health-core';
+import { StorageError } from '@roadmap/health-core/adapter';
 import { DropboxAdapter } from './dropbox';
 
 const CONFIG = { clientId: 'test-app-key', redirectUri: 'https://example.com/' };

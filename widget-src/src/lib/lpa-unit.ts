@@ -3,7 +3,9 @@
 // choice (`profile.lpaUnit`), so it follows the user across devices.
 
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
-import { isLpaUnit, recordLpaUnit, type ApiMeasurement, type LpaUnit, type UnitSystem } from '@roadmap/health-core';
+import { isLpaUnit, recordLpaUnit } from '@roadmap/health-core/cell-unit';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
+import type { LpaUnit, UnitSystem } from '@roadmap/health-core/units';
 import { getLpaUnit, setLpaUnit } from './roadmap-data';
 import { trackProductEvent } from './server-api';
 import { getJson, localHealthWritesStopped, LPA_CHECK_KEPT_KEY, safeGetItem, setJson } from './storage';

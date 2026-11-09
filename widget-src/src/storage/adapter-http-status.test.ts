@@ -7,7 +7,7 @@
  * which the capture drops, so every one of them read `httpStatus=none`.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ROADMAP_FILE_NAME } from '@roadmap/health-core';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { DropboxAdapter } from './dropbox';
 import { GoogleDriveAdapter, DRIVE_FILE_SCOPE } from './drive';
 import { failureTags } from '../lib/error-diagnostics';

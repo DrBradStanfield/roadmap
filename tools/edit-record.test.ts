@@ -11,7 +11,9 @@ import { chmodSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSyn
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { bloodTestRows, createEmptyFile, createMeasurement, mergeLongitudinalInputs, type RoadmapFile } from '@roadmap/health-core';
+import { bloodTestRows } from '@roadmap/health-core/blood-tests';
+import { createEmptyFile, createMeasurement, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { mergeLongitudinalInputs } from '@roadmap/health-core/mappings';
 import { RoadmapStore } from '../widget-src/src/storage/roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../packages/health-core/src/adapter';

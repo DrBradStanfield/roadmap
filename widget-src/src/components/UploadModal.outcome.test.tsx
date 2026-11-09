@@ -4,7 +4,7 @@
  * plain reason, and each run sends one count-only `upload_outcome` event.
  * Same harness shape as UploadModal.session.test.tsx.
  */
-import { zipMemberName } from '@roadmap/health-core';
+import { zipMemberName } from '@roadmap/health-core/lab-extraction';
 import { UPLOAD_OUTCOME_KEYS } from '@roadmap/health-core/product-events';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';

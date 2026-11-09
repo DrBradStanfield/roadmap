@@ -16,7 +16,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, waitFor, fireEvent, type RenderResult } from '@testing-library/react';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import {
   addMeasurement,
   flushRoadmapStore,

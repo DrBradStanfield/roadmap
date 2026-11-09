@@ -11,7 +11,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, configure, fireEvent, render, waitFor, within } from '@testing-library/react';
-import { toOldShape } from '@roadmap/health-core';
+import { toOldShape } from '@roadmap/health-core/blood-tests';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveLabValues, correctValue, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';

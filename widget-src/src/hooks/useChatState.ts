@@ -17,7 +17,9 @@ import {
   type ChatPending,
 } from '../lib/chat-api';
 import { postSync, postInputSync, subscribeSync, generateInstanceId } from '../lib/chat-sync';
-import { cutText, type ChatContextPayload, type ProposedEdit } from '@roadmap/health-core';
+import { cutText } from '@roadmap/health-core/chat-history';
+import type { ChatContextPayload } from '@roadmap/health-core/chat-context';
+import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { confirmSubscriptionChange, type SubscriptionCard, type SubscriptionResult } from '../lib/subscription-card';
 
 /** A subscription change card under an answer (US-59): idle, sending, or closed with its outcome. */

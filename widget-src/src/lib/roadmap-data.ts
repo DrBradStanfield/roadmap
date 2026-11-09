@@ -1,30 +1,20 @@
 /** Local-first health records and client-side reports, on every widget surface. */
-import {
-  type AddLabValueRequest,
-  type AddLabValueResult,
-  type ApiMeasurement,
-  type LabUnitRefusal,
-  dayOf,
-  type MoveKeep,
-  type MoveRejection,
-  type FileReminderOptIn,
-  type HealthInputs,
-  type LpaUnit,
-  type MetricType,
-  type MovePlan,
-  labUnitForEvent,
-  labUnitTaken,
-  type ReminderScheduleItem,
-  knownMinorOf,
-  resolveLabCatalogEntry,
-} from '@roadmap/health-core';
-import { MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
+import type { AddLabValueRequest, AddLabValueResult, LabUnitRefusal, MoveKeep, MoveRejection, MovePlan } from '@roadmap/health-core/record-edits';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
+import { dayOf } from '@roadmap/health-core/merge';
+import type { FileReminderOptIn } from '@roadmap/health-core/roadmap-file';
+import type { HealthInputs } from '@roadmap/health-core/types';
+import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
+import { labUnitForEvent, MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
+import { labUnitTaken, resolveLabCatalogEntry } from '@roadmap/health-core/lab-catalog';
+import type { ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
+import { knownMinorOf } from '@roadmap/health-core/calculations';
 import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
 import { SHOPIFY_SURFACE } from './build-flags';
-import type { StorageAdapter } from '@roadmap/health-core';
+import type { StorageAdapter } from '@roadmap/health-core/adapter';
 import type {
   AddMeasurementResult,
   ApiDocument,

@@ -11,7 +11,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Blob as NodeBlob } from 'node:buffer';
-import { DRIVE_FOLDER_NAME } from '@roadmap/health-core';
+import { DRIVE_FOLDER_NAME } from '@roadmap/health-core/drive-rest';
 import { GoogleDriveAdapter } from './drive';
 
 const CHAT = 'chat-history.json';

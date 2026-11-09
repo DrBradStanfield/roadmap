@@ -7,7 +7,8 @@
  * (R1). Synthetic data only.
  */
 import { afterEach, describe, expect, it } from 'vitest';
-import { buildChatContextJson, type ApiMeasurement } from '@roadmap/health-core';
+import { buildChatContextJson } from '@roadmap/health-core/chat-context';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { loadGuestInputs, saveToLocalStorage, MIRROR_KEY } from './storage';
 
 const row = (id: string, value: number, day: string): ApiMeasurement =>

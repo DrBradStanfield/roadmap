@@ -6,7 +6,10 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { render, cleanup, fireEvent, act, within } from '@testing-library/react';
-import { localDay, parseProposedEdit, PROPOSE_FIELD_EDIT_TOOL, type ApiMeasurement, type MetricType, type ProposedFieldEdit, type UnitSystem } from '@roadmap/health-core';
+import { localDay } from '@roadmap/health-core/merge';
+import { parseProposedEdit, PROPOSE_FIELD_EDIT_TOOL, type ProposedFieldEdit } from '@roadmap/health-core/chat-edits';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
+import type { MetricType, UnitSystem } from '@roadmap/health-core/units';
 import type { MutableRefObject } from 'react';
 import { BloodTestTimeline, ValueCell, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { press, pressMouse, pressWithoutFocus, releaseMouse, showPage, typeInto } from '../testing/matrix-gestures';

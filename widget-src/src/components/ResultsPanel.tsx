@@ -3,18 +3,11 @@
 // has no column of its own since phase 5; usePlanView builds what InputPanel draws.
 import React, { createContext, useCallback, useContext, useState, useRef, useEffect, useId, useMemo } from 'react';
 import { flushSync } from 'react-dom';
-import type { HealthResults, Suggestion } from '@roadmap/health-core';
-import {
-  type SuggestionEvidence,
-  statTileText,
-  type StatTile,
-  planSections,
-  topicSections,
-  type FormSection,
-  type PlanCard,
-  type TopicCard,
-  type TopicLayout,
-} from '@roadmap/health-core';
+import type { HealthResults, Suggestion } from '@roadmap/health-core/types';
+import type { SuggestionEvidence } from '@roadmap/health-core/evidence';
+import { statTileText, type StatTile } from '@roadmap/health-core/stat-tiles';
+import { planSections, topicSections, type PlanCard, type TopicCard, type TopicLayout } from '@roadmap/health-core/plan-sections';
+import type { FormSection } from '@roadmap/health-core/input-form';
 // US-61 AC5: called only under SHOPIFY_SURFACE, so the Pages build drops the module.
 import { usProductSections, type UsPlanSection, type UsProduct, type UsProductBlock, type UsSuggestion } from '@roadmap/health-core/us-products';
 import { getReportHtml, sendGuestReport, getReportEmailCaptured, markReportEmailCaptured } from '../lib/roadmap-data';

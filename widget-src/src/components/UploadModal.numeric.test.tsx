@@ -3,7 +3,9 @@
 // Only extraction, archive bytes and telemetry are synthetic boundaries.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { createEmptyFile, ROADMAP_FILE_NAME, toOldShape, type RoadmapFile } from '@roadmap/health-core';
+import { createEmptyFile, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import { toOldShape } from '@roadmap/health-core/blood-tests';
 import { UploadModal } from './UploadModal';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { flushRoadmapStore, initRoadmapStore } from '../lib/roadmap-data';

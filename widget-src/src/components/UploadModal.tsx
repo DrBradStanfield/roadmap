@@ -1,19 +1,25 @@
 import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota } from '../lib/upload-api';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { IMPORT_LIMITS, METRIC_LABELS, UNDATED_PREVIOUS, UNIT_DEFS, reportedToCanonical, unreadLines, uploadLimitSignal, zipMemberName, comparatorOf, type DocumentPayload, type UnreadLabValue, type LabUnitRefusal, type MeasurementRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
+import { IMPORT_LIMITS } from '@roadmap/health-core/import-hints';
+import { METRIC_LABELS } from '@roadmap/health-core/mappings';
+import { UNDATED_PREVIOUS, unreadLines, uploadLimitSignal, zipMemberName, type UnreadLabValue, resolveLabValues } from '@roadmap/health-core/lab-extraction';
+import { UNIT_DEFS, reportedToCanonical, type UnitSystem, type MetricType } from '@roadmap/health-core/units';
+import { comparatorOf } from '@roadmap/health-core/lab-limits';
+import type { DocumentPayload } from '@roadmap/health-core/document-save';
+import type { LabUnitRefusal, MeasurementRefusal } from '@roadmap/health-core/record-edits';
 import { bloodTestKeyOf } from '@roadmap/health-core/blood-tests';
-import { resolveLabValues } from '@roadmap/health-core/lab-extraction';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { LabImportResult, PageContent, UploadErrorCode, UploadHistory } from '../lib/api-types';
 import { measurementRefusalLine } from '../lib/lab-value-labels';
-import { labUnitRefusalLine } from '@roadmap/health-core';
+import { labUnitRefusalLine } from '@roadmap/health-core/lab-series';
 import { useLpaUnit } from '../lib/lpa-unit';
 import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, type ReviewedLabValue } from './ReviewTable';
 import { ErrorBoundary } from './ErrorBoundary';
+import { FloatingUploadIndicator } from './FloatingUploadIndicator';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries } from '../lib/archive-payloads';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
@@ -53,7 +59,7 @@ const BYOK_ERROR_MESSAGES: Partial<Record<UploadErrorCode, string>> = {
   network: 'Could not reach Anthropic. Check your connection and try again.',
 };
 
-type ModalState = 'select' | 'processing' | 'review' | 'done' | 'error';
+export type ModalState = 'select' | 'processing' | 'review' | 'done' | 'error';
 
 interface UploadModalProps {
   unitSystem: UnitSystem;
@@ -73,32 +79,6 @@ interface UploadModalProps {
   /** Visibility does not end the session or discard review drafts. */
   open: boolean;
   onOpen: () => void;
-}
-
-/** Floating indicator shown when modal is hidden during processing.
- *  Portaled to body for the same reason as the modal — position:fixed must
- *  resolve against the viewport, not the transform'd .health-tool ancestor. */
-function FloatingUploadIndicator({ progress, state, onClick }: {
-  progress: { current: number; total: number; fileName: string };
-  state: ModalState | 'saving';
-  onClick: () => void;
-}) {
-  const label = state === 'error' ? 'Upload needs attention. Click to open'
-    : state === 'saving' ? 'Saving health records. Click to open'
-    : state === 'done' ? 'Health records saved. Click to open'
-    : state === 'review' ? 'Ready for review. Click to open'
-    : 'Processing health records...';
-  return createPortal((
-    <div className="floating-upload-indicator" onClick={onClick} role="button" tabIndex={0}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}>
-      <div className="floating-upload-text">{label}</div>
-      {state === 'processing' && (
-        <div className="floating-upload-bar">
-          <div className="floating-upload-fill upload-progress-fill--smooth" style={{ width: `${progress.current}%` }}>&nbsp;</div>
-        </div>
-      )}
-    </div>
-  ), document.body);
 }
 
 const BATCH_THRESHOLD = 20; // Use batch API for 20+ files; pipeline for fewer

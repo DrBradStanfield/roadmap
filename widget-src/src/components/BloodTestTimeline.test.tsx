@@ -7,7 +7,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { render, cleanup, fireEvent, act, within } from '@testing-library/react';
 import { useState } from 'react';
-import { localDay, toCanonicalValue, type ApiMeasurement } from '@roadmap/health-core';
+import { localDay } from '@roadmap/health-core/merge';
+import { toCanonicalValue } from '@roadmap/health-core/units';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { BloodTestTimeline, ValueCell } from './BloodTestTimeline';
 import { hidePage, pickDraftDate, press, pressMouse, pressWithoutFocus, releaseMouse, showPage, typeInto, typeWithoutTap } from '../testing/matrix-gestures';
 import { slotOf, type Refused, type SaveTask } from '../lib/matrix-save';

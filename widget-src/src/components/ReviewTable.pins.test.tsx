@@ -9,7 +9,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
-import type { ApiMeasurement } from '@roadmap/health-core';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { ApiLabValue } from '../lib/api-types';
 import { ReviewTable, type FileResult } from './ReviewTable';
 

@@ -10,7 +10,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
-import type { ApiMeasurement } from '@roadmap/health-core';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { ApiLabValue } from '../lib/api-types';
 import { a11yTextWithDigits } from '../testing/a11y-text';
 import { ReviewTable, type FileResult } from './ReviewTable';

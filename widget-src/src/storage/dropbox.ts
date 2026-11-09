@@ -17,23 +17,8 @@
  *
  * Brad supplies the app key (client id) via DropboxConfig; there is no secret.
  */
-import {
-  dropboxDownload,
-  dropboxListFolder,
-  dropboxRead,
-  dropboxUploadDocument,
-  dropboxWrite,
-  DROPBOX_TOKEN_URL,
-  fetchOrFail,
-  ROADMAP_FILE_NAME,
-  sleepUntilAborted,
-  catchUpAfterFailure,
-  StorageError,
-  timeoutDeadline,
-  type ReadResult,
-  type StorageAdapter,
-  type WriteResult,
-} from '@roadmap/health-core';
+import { dropboxDownload, dropboxListFolder, dropboxRead, dropboxUploadDocument, dropboxWrite, DROPBOX_TOKEN_URL } from '@roadmap/health-core/dropbox-rest';
+import { fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, timeoutDeadline, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { getJson, setJson, safeRemoveItem } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
 

@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
-import { MemoryAdapter, ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
+import { MemoryAdapter } from '@roadmap/health-core/memory-adapter';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { openAboutYou } from '../testing/health-tool-harness';
 import { deleteButton } from '../testing/settings';
 

@@ -4,32 +4,16 @@
 // value's page (ValuePage). Phone and desktop alike.
 
 import { memo, useId, useLayoutEffect, useRef, useState } from 'react';
-import {
-  type ApiMeasurement,
-  type CellUnit,
-  type EgfrPoint,
-  type StatTile,
-  type WhtrPoint,
-  type Comparator,
-  type GradeStatus,
-  type Grading,
-  type MetricType,
-  type RowTargetPlan,
-  BLOOD_TEST_METRICS,
-  METRIC_LABELS,
-  METRIC_TO_FIELD,
-  cellLabel,
-  gradeWords,
-  labSeriesRows,
-  limitText,
-  limitUngraded,
-  pressureStatus,
-  recentTrend,
-  rowTarget,
-  valueStatus,
-  LIMIT_NOT_GRADED,
-  WHTR_TARGET,
-} from '@roadmap/health-core';
+import { type ApiMeasurement, BLOOD_TEST_METRICS, METRIC_LABELS, METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
+import { type CellUnit, cellLabel } from '@roadmap/health-core/cell-unit';
+import type { EgfrPoint, WhtrPoint } from '@roadmap/health-core/plan';
+import type { StatTile } from '@roadmap/health-core/stat-tiles';
+import { type Comparator, limitText, LIMIT_NOT_GRADED } from '@roadmap/health-core/lab-limits';
+import { type GradeStatus, gradeWords, limitUngraded, pressureStatus, valueStatus } from '@roadmap/health-core/row-grade';
+import { type Grading, type RowTargetPlan, rowTarget } from '@roadmap/health-core/row-target';
+import { type MetricType, WHTR_TARGET } from '@roadmap/health-core/units';
+import { labSeriesRows } from '@roadmap/health-core/lab-series';
+import { recentTrend } from '@roadmap/health-core/recent-trend';
 import { savedCellText, trendGeometry } from '../lib/blood-test-cell';
 import { monthYear, pressureReadings, readingsOf, type DayReading } from '../lib/my-data-rows';
 import { SectionIcon, type SectionKey } from './icons';

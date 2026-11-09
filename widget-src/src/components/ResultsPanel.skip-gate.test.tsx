@@ -8,9 +8,9 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { statTiles } from '@roadmap/health-core';
+import { statTiles } from '@roadmap/health-core/stat-tiles';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
-import { calculateHealthResults } from '@roadmap/health-core';
+import { calculateHealthResults } from '@roadmap/health-core/calculations';
 
 const mocks = vi.hoisted(() => ({
   getReportHtml: vi.fn(),
