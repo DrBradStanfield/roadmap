@@ -61,7 +61,7 @@ Trials have used several forms. The largest prevention trial used liquid drops o
 
 ### Quality Considerations
 
-Dietary supplements are not approved by the US Food and Drug Administration before they are sold, and the rules for making them are less strict than those for drugs [3]. Independent testing services such as consumerlab.com can help you check product quality.
+Dietary supplements are not approved by the US Food and Drug Administration before they are sold, and the rules for making them are less strict than those for drugs [3]. Independent testing services can help you check product quality.
 
 ## 3. Evidence for Health Benefits
 

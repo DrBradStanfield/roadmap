@@ -362,7 +362,7 @@ Green tea is itself a dietary source of catechins. The following table compares 
 
 ### Lead in Tea
 
-Green tea extracts may contain elemental impurities, a group that includes heavy metals like lead, though the USP review found no evidence that they caused liver injury [21]. For independent product testing, see consumerlab.com.
+Green tea extracts may contain elemental impurities, a group that includes heavy metals like lead, though the USP review found no evidence that they caused liver injury [21]. Look for a product that an independent lab has tested.
 
 ## 8. References
 

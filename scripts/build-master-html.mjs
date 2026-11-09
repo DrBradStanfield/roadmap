@@ -407,8 +407,8 @@ const handlesOf = (meta) => [meta.url, meta.commerceUrl].filter(Boolean).map((u)
 // drstanfield.com product page loses everything from the sentence holding that
 // link to its end, and goes whole when nothing comes before it. Caveat
 // sentences in the dropped part stay (see caveatsOf).
-const COMMERCE_DROP_HEADING = /^(?:current view\b|current evidence position\b|brad['\u2019]s videos on this topic$|product (?:mention|note)\b)|\bmicrovitamin\b|\bsleep by dr brad\b|\bdr brad stanfield['\u2019]s products?\b/i;
-const PRODUCT_LINK = /\[[^\]]*\]\(https?:\/\/(?:www\.)?drstanfield\.com\/products\/[a-z0-9-]+\/?\)/i;
+const COMMERCE_DROP_HEADING = /^(?:current view\b|current evidence position\b|brad['\u2019]s videos on this topic$|product (?:mention|note|context)\b)|\bmicrovitamin\b|\bsleep by dr brad\b|\bdr brad stanfield['\u2019]s products?\b/i;
+const PRODUCT_LINK = /\[[^\]]*\]\(https?:\/\/(?:www\.)?(?:drstanfield|microvitamin)\.com\/products\/[a-z0-9-]+\/?\)/i;
 const SENTENCE_END = /[.!?](?:\*\*?|\))?\s+/g;
 // Pointers to the dropped sections, and unlinked product sentences, go too, so the
 // sentences left still read: "(see the Current view above)", "; Brad's view is in the Current view.",

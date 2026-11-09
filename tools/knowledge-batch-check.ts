@@ -44,7 +44,7 @@
  *   order, or a red flag without the exact emergency line (guideErrors, shared with knowledge-lint.ts). AC7's reference
  *   checks run on each guide too (citations, link text, identifiers for --check-ids, abstract files for new PubMed
  *   lines), with guide hosts: PubMed, doi.org, NIH ODS, DailyMed, accessdata.fda.gov, the sites the guide's own
- *   `sources:` names, and Brad's video posts; never ConsumerLab.
+ *   `sources:` names, and Brad's video posts; never a licensed testing site.
  *
  *   npx tsx tools/knowledge-batch-check.ts --print-schema
  *   npx tsx tools/knowledge-batch-check.ts --example <handle>
@@ -56,6 +56,8 @@ import { homedir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseFrontmatter } from "../app/lib/frontmatter";
+import { EVIDENCE_OPENING, isScope, validateExceptions } from "./knowledge-master-rules";
+export { validateExceptions };
 
 export type Status = "PASS" | "FAIL" | "WARN";
 export interface Exception { check: string; handle: string; match: string; reason: string; by: string; date: string }
@@ -295,7 +297,9 @@ export function validDate(s: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
 }
 const SOURCE_KEYS = ["name", "url", "checked", "fingerprint"];
-export const SOURCE_NAMES = ["consumerlab", "nih-ods", "brad-video", "pubmed"];
+export const SOURCE_NAMES = ["nih-ods", "brad-video", "pubmed"];
+// The licensed supplement-testing site, built from parts so this public repo never spells it (Brad 2026-11-09).
+const TESTER = ["Consumer", "Lab"].join("");
 const jsonOf = (v: string): unknown => { try { return JSON.parse(v); } catch { return undefined; } };
 
 /** Shape errors of one master frontmatter value (US-50 AC1), or null. `value` is the text after `key:` on its line. */
@@ -327,7 +331,6 @@ const quoteSource = (q: string) => {
 /** The master's view heading (US-50 AC1), shared with knowledge-lint.ts; group 1 is set for a Current view. */
 export const VIEW_HEADING = /^##\s+(?:(Current view \(reviewed [^)]+\))|Current evidence position)\s*$/;
 /** The contract's first sentence of a Current evidence position (claude_business docs/roadmap-chat/knowledge-refresh/master-writer-contract.md). */
-export const EVIDENCE_OPENING = "Brad has not made a video on this topic; this is a summary of the evidence, not his view.";
 /** Frontmatter keys that appear more than once. */
 export const duplicateKeys = (front: string) => {
   const keys = front.split(/\r?\n/).map((l) => /^([A-Za-z_][\w-]*):/.exec(l)?.[1]).filter((k): k is string => !!k);
@@ -695,7 +698,7 @@ export const productMentions = (body: string) =>
     .replace(OMEGA_GENERIC, (m, at: number, str: string) => (brandNear(str, at, m.length) ? m : ""))
     .match(PRODUCT_RE) ?? []).length;
 
-const BANNED = ["Top Pick", "What CL Found", "ConsumerLab approved", "CL Approved", "Approved Quality"];
+const BANNED = ["Top Pick", "What CL Found", `${TESTER} approved`, "CL Approved", "Approved Quality"];
 const BRAND_RANKING = /\b(?:best|top|#1|number one|top[- ]rated|highest[- ]rated)\s+brands?\b|\bbrand rankings?\b|\bbrands?,? ranked\b|\branked (?:the )?brands?\b/i;
 
 // ---------- git helpers ----------
@@ -887,7 +890,10 @@ function checkMasterBody(c: Ctx, m: Check, raw: RawSet | null, isPost: (h: strin
       (GUIDANCE.test(sn) && v.some((n) => n.kind === "POSITION"));
   };
   for (const [, u] of c.newBody.matchAll(/\]\(([^)\s]+)\)/g)) if (!/^[a-z]+:/i.test(u) && MASTER_RAW.test(u)) m.fails.push(`${c.handle}: the body links a repo file (${u}); cite a position as "(Brad's current guidance, <D Mon YYYY>)"`);
-  if (isView) for (const sn of said) if (!supported(sn)) m.fails.push(`${c.handle}: Current view sentence has no current_view_basis entry for this exact sentence with a verbatim POST:<the linked post>: or POSITION:<path>: quote (6 words or 30 characters): ${clip(sn, 100)}`);
+  const scope = isView ? said.filter((sn) => !supported(sn) && isScope(sn, c.handle)) : [];
+  if (scope.length > 1) m.fails.push(`${c.handle}: a Current view holds more than one uncited scope sentence: ${clip(scope[1], 100)}`);
+  if (scope.length && said.every((sn) => scope.includes(sn))) m.fails.push(`${c.handle}: a Current view holds only a scope sentence`);
+  if (isView) for (const sn of said) if (!supported(sn) && sn !== scope[0]) m.fails.push(`${c.handle}: Current view sentence has no current_view_basis entry for this exact sentence with a verbatim POST:<the linked post>: or POSITION:<path>: quote (6 words or 30 characters): ${clip(sn, 100)}`);
   if (view && !isView) for (const sn of said) if (postsIn(sn).length || /\(Brad['’]s current guidance/.test(sn)) m.fails.push(`${c.handle}: a Current evidence position cites Brad (a post link or his current guidance): ${clip(sn, 100)}`);
   const videos = secs.filter((s) => /^##\s+Brad['’]s videos on this topic\s*$/.test(s.line));
   if (videos.length !== 1) { m.fails.push(`${c.handle}: needs one "## Brad's videos on this topic" section (found ${videos.length})`); return; }
@@ -1199,7 +1205,7 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, info: PairIn
       }
     }
     if (!hits.size) return fail(partial ? `raw_quote: its numbers are not whole tokens in the raw: ${line}` : `raw_quote is not in the raw file: ${line}`);
-    // A number whose own sentence cites a PubMed record must be quoted from that record's abstract, not ConsumerLab or NIH text.
+    // A number whose own sentence cites a PubMed record must be quoted from that record's abstract, not licensed-source or NIH text.
     const ok = new Set<string>();
     for (const [tok, ms] of hits) {
       const cited = c.type === "reference" ? citedForEntry(entry.body_line, tok, c.newBody, lineTokens) : null;
@@ -1380,11 +1386,11 @@ function referenceCheck(body: string, tag: string, ac7: Check) {
   ac7.infos.push(`${tag} ${defs.size} references, ${cited.size} cited`);
 }
 
-const ALLOWED_HOSTS = ["consumerlab.com", "ods.od.nih.gov", "pubmed.ncbi.nlm.nih.gov", "doi.org"];
+const ALLOWED_HOSTS = ["ods.od.nih.gov", "pubmed.ncbi.nlm.nih.gov", "doi.org", "dailymed.nlm.nih.gov", "accessdata.fda.gov", "medlineplus.gov"];
 /** A condition guide's reference hosts (US-70 AC2): public records, plus the guideline and label sites its own `sources:` names. */
 function guideHosts(text: string): string[] {
   const sources: unknown = parseFrontmatter(text)?.sources;
-  const named = Array.isArray(sources) ? sources.map((x: { url?: unknown }) => hostOf(String(x?.url ?? ""))).filter((h) => h && !/(^|\.)consumerlab\.com$/.test(h)) : [];
+  const named = Array.isArray(sources) ? sources.map((x: { url?: unknown }) => hostOf(String(x?.url ?? ""))).filter((h) => h && !new RegExp(`(^|\\.)${TESTER.toLowerCase()}\\.com$`).test(h)) : [];
   return ["ods.od.nih.gov", "pubmed.ncbi.nlm.nih.gov", "doi.org", "dailymed.nlm.nih.gov", "accessdata.fda.gov", ...named];
 }
 const URL_RE = /https?:\/\/[^\s)\]>]+/g;
@@ -1603,18 +1609,6 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
   return { results, rows, baseSha };
 }
 
-const EXCEPTION_CHECKS = ["AC2", "AC4", "AC7"];
-export function validateExceptions(x: unknown): string[] {
-  if (!Array.isArray(x)) return ["exceptions file must be a JSON array"];
-  const e: string[] = [];
-  x.forEach((v, i) => {
-    const r = (v ?? {}) as Record<string, unknown>;
-    if (!EXCEPTION_CHECKS.includes(r.check as string)) e.push(`[${i}].check must be one of ${EXCEPTION_CHECKS.join("|")}`);
-    for (const k of ["handle", "match", "reason", "date"]) if (typeof r[k] !== "string" || !(r[k] as string).trim()) e.push(`[${i}].${k} must be a non-empty string`);
-    if (r.by !== "orchestrator" && r.by !== "Brad") e.push(`[${i}].by must be "orchestrator" or "Brad"`);
-  });
-  return e;
-}
 
 /** A batch report must not sit under docs/blog or on any file the batch checks. */
 export function validateOut(outRel: string, handles: string[]): string | null {

@@ -252,7 +252,7 @@ The dose depends on the form (powder or extract) and the condition. The table li
 
 ### Quality Markers
 
-Shogaols are used as quality-control markers for ginger products [3]. Independent testing services such as consumerlab.com and Labdoor publish product test results.
+Shogaols are used as quality-control markers for ginger products [3]. Independent testing services such as Labdoor publish product test results.
 
 ## 5. Safety and Side Effects
 

@@ -6,487 +6,367 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["coconut water", "electrolytes", "potassium", "sodium", "magnesium", "calcium", "hydration", "blood pressure", "hypertension", "kidney", "diabetes", "blood sugar", "cholesterol", "ldl", "hdl", "triglycerides", "gut health", "inflammation", "exercise", "weight loss", "heart health", "cardiovascular"]
-summary: "Reference on coconut water: natural electrolyte drink for hydration, blood pressure support, exercise recovery. High potassium (400-500 mg/cup); low calorie. Caution: hyperkalemia risk in kidney disease, diabetes, or on ACE inhibitors/potassium-sparing diuretics. Always discuss with your doctor."
+summary: "Coconut water is mostly water, rich in potassium and low in calories. Small trials found it rehydrates about as well as a sports drink after exercise, and one trial suggests it may help ulcerative colitis. Talk to your doctor first if you have kidney disease or take medicines that raise potassium."
+reviewed: "2026-11-10"
+sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/20032881/","checked":"2026-11-09","fingerprint":"sha256:b120b86e2ea45daa4e059a1a7411eafaf3e9e5527da714ccc880597588ff309d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/26243942/","checked":"2026-11-09","fingerprint":"sha256:668da9daed1843a60c849031be07869841cdc4652f2ee23e5abfe8f91c8161b0"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/40361585/","checked":"2026-11-09","fingerprint":"sha256:6643af0e5405090fe0e92b3d401332e7a0308269a85f323662473fe814ece349"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33241361/","checked":"2026-11-09","fingerprint":"sha256:3881ca663e41a7d5e536849623eabeb77fd3aba17d338ae27da572514de442f5"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22257640/","checked":"2026-11-09","fingerprint":"sha256:15a768cbb77fc7461b01da576c89fc6c72db5e4e8c3c4649e090c7d0d763a665"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/27768399/","checked":"2026-11-09","fingerprint":"sha256:f44bd60fa9b1c2f4dd2f2b775a9b4b6cecfc1c503ef87920fd7325f6a2a3bf25"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/7163850/","checked":"2026-11-09","fingerprint":"sha256:bf1163fda3b03277d4331487b3ee03cf2eb77e3f3ef742fd92763c15c0ea9cb4"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/8463517/","checked":"2026-11-09","fingerprint":"sha256:8726dadb487348225fb766520625058d0aab7448de4c9cc27cb1947b652d050c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/17883020/","checked":"2026-11-09","fingerprint":"sha256:18cb452d318eaabcae66cd8944e99dd3a3d4e2996890e3b0a7cffb40273a91bf"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/12056182/","checked":"2026-11-09","fingerprint":"sha256:d4f3959392813ba62d7a251e09a35e294a25ce50a9cd82e54e9aa29dee9d4d89"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/37755860/","checked":"2026-11-09","fingerprint":"sha256:4f76c55052ff1ee6872908d379bd04702cf7569388112f0a72d7d6aa673f43ae"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/41359932/","checked":"2026-11-09","fingerprint":"sha256:006236a7cf926cc51c16693850fb0261cdd9574d1f643330bac84c70ae3f6d51"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/15892382/","checked":"2026-11-09","fingerprint":"sha256:3515630511aecb4f049023f1440eb2ce1aec16102ea125658e8445b8355de3c8"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/39221800/","checked":"2026-11-09","fingerprint":"sha256:b4646fc83f7766a1d092a601483e6adf3410fc8e2f20bfbef5753fb41f380e16"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23558164/","checked":"2026-11-09","fingerprint":"sha256:6326b559f4114b3ef4f0094b8b204d054ad6f749081f9fb09d47dab59463d683"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18809454/","checked":"2026-11-09","fingerprint":"sha256:18c5fb2e89ba71cf0f90501b4efda20e935114d6639fdb7355466e59d7c92d0a"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22576019/","checked":"2026-11-09","fingerprint":"sha256:ef067683de935b17478f80f0108a83d21619ebe939685cca03b486e691564f50"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30515390/","checked":"2026-11-09","fingerprint":"sha256:9fe708b3673ae60443cb2e8ea009489c8f53e70241b63fe1242b43e51b030b8c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23489503/","checked":"2026-11-09","fingerprint":"sha256:bf0ec30870ea18f05a2a0e381aa627001df80303b3e7ce679c5e3672030d0450"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/1496708/","checked":"2026-11-09","fingerprint":"sha256:68d8e0294bce3d387334100e657cae2e1b36ef9babd02b4f9a1c8fcfe7f337b1"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/34313978/","checked":"2026-11-09","fingerprint":"sha256:b5c191758013e29c2bf4681d39f5e2a6da7686fbff39b963aca63a49a9a72c4e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/38278200/","checked":"2026-11-09","fingerprint":"sha256:2a0b8ef39c46d6e08a3ccb7a621263df39c5cab8a8ba99ecc6e519d7156f52de"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/10674546/","checked":"2026-11-09","fingerprint":"sha256:b793095535e11ebed0a7787760d474b4166b885a6afab0cc1d6e084e361afa6d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11447514/","checked":"2026-11-09","fingerprint":"sha256:92c734754238752f855d2f495a96683e2a9c647390d3db488e71b82095d28fe4"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/21771462/","checked":"2026-11-09","fingerprint":"sha256:d57128c149d9b45a227ab83e6be7880f0c6c598a13d02954a731f145e5d4558f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30844154/","checked":"2026-11-09","fingerprint":"sha256:05b692a4d351e7a3ac1db3172add66855a2e384928fd7b7c6498485e57f67df2"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30002937/","checked":"2026-11-09","fingerprint":"sha256:601afbe0c9861ff6f8ee9ded5c49e8870ba2d039e984382a753ad1bca3b353b7"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23124410/","checked":"2026-11-09","fingerprint":"sha256:f076411598a9b341a170cf87c6935e69488da61d9b64e0afdd362ab599647695"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24550410/","checked":"2026-11-09","fingerprint":"sha256:13e89e997a21ab157f3218daa7eac45d061e2226d58b48ba4ff99b857de94602"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/37625503/","checked":"2026-11-09","fingerprint":"sha256:aee96f3172da0a816121f84fdf4d64c01754aa2e6abeaf71761c108bdead844d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33548470/","checked":"2026-11-09","fingerprint":"sha256:290e61c9f32319e242c21fd741dfae031bfda4fe147d7af739f22cedc85b67ef"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28961189/","checked":"2026-11-09","fingerprint":"sha256:39c41bc82b97ac16b53481f7fa91ec994fe2e378489a4885fac126859a283c12"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/38975685/","checked":"2026-11-09","fingerprint":"sha256:515985ade8f4099b055643df72c5ef040bf6ba112328c899cd2a7ce88e6f33c1"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33350928/","checked":"2026-11-09","fingerprint":"sha256:7bc6b4df9bd3b7db6ce794b38fc3090ac6332cb0cdba151e51ae1d06a259b550"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28700090/","checked":"2026-11-09","fingerprint":"sha256:5b6cd502dcf67a0b7a47a6f7c35ef46a8d1dc88eab4f9a51fcaf3a868170f4da"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/39338557/","checked":"2026-11-09","fingerprint":"sha256:a864cacc5118cc3bb9885832c4846fd415f03d3114f119b0b3a12c89d6fe82e7"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/coconut-water-benefits-nutrition-hydration-and-side-effects](https://drstanfield.com/blogs/articles/coconut-water-benefits-nutrition-hydration-and-side-effects)*
 
+## Current evidence position
+
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. In small crossover trials in fit young adults, coconut water rehydrated people after exercise about as well as a sports drink or plain water [6][7][11][12][13], and in the trials that measured performance it did not improve it [6][7][12]. One double-blind trial found that 400 mL a day for 8 weeks, added to standard treatment, brought more people with mild to moderate ulcerative colitis into remission than placebo (53.1% vs 28.3%) [24]; the blood pressure, kidney stone, cholesterol and blood sugar claims rest on very small human studies or on rats [14][17][18][20]. Coconut water is rich in potassium [2], and case reports describe dangerous hyperkalemia after heavy intake, most clearly in a man with kidney failure who took spironolactone and losartan [30]. It does not hold the sodium and glucose of an oral rehydration solution, so it is not a treatment for dehydration from diarrhoea [9][22].
+
+## Key safety points
+
+- Spironolactone and other potassium-sparing diuretics, ACE inhibitors, ARBs and NSAIDs can raise potassium; with a potassium-rich diet this may cause severe hyperkalemia [19][29]. Ask your doctor before drinking coconut water regularly.
+- Kidney disease and diabetes raise the risk of hyperkalemia, more so with medicines that raise potassium [19][23][30]. Coconut water should not be used for rehydration when kidney function is impaired [22].
+- Case reports link heavy intake to hyperkalemia with paralysis and dangerous heart rhythms [30][31][32]. Even if you are healthy, do not drink very large amounts in one day, such as during long exercise. For sudden muscle weakness or an irregular heartbeat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- It is not an oral rehydration solution: do not use it for severe dehydration or cholera [9][22].
+- In one case report, a newborn had low sodium and seizures after the mother drank large amounts during labour [36].
+- Coconut allergy is uncommon, but about half of reactions after eating coconut in one clinic met the criteria for anaphylaxis [33][34].
+- In one trial, people felt more bloated and had more stomach upset with coconut water than with a sports drink [6].
+- Do not drink coconut water that tastes or smells off: a man died after drinking spoiled water from a coconut kept out of the fridge for a month [37].
+
+## Brad's videos on this topic
+
+None yet.
+
 ## 1. Overview
 
-Coconut water is the clear to slightly cloudy liquid endosperm found inside immature (green) coconuts of the coconut palm (*Cocos nucifera*). It comprises approximately 95% water along with small amounts of sugars, electrolytes, amino acids, vitamins, minerals, and phytohormones such as cytokinins, yielding a low caloric content of approximately 18-22 kcal per 100 mL (41-51 kcal per 240 mL serving) for 100% pure coconut water without additives [1][2][3]. Harvested primarily from young green coconuts in tropical regions such as Southeast Asia, the Pacific Islands, and parts of Latin America, coconut water has been consumed traditionally as a refreshing beverage and for rehydration after physical exertion or illness due to its balanced electrolyte profile, particularly high potassium levels exceeding 250 mg per 100 mL [2][4][5].
+Coconut water is the liquid endosperm of the coconut (*Cocos nucifera*), a mix of sugars, vitamins, minerals, amino acids and plant hormones [1]. It is also used as a growth supplement in plant tissue culture [1].
 
-Coconut water is very different from coconut milk, which is made from the pressed meat of mature coconuts and contains significant amounts of fat from coconut oils [6]. While coconut water is nearly fat-free and relatively low in calories compared to fruit juices, coconut milk is a high-fat, calorie-dense product used primarily in cooking.
+It is mostly water. USDA FoodData Central lists 94.99 g of water and 19 kcal per 100 g [2], and an Indian analysis measured 95 to 97 g of moisture per 100 g [3]. The same analysis found coconut water slightly acidic (pH 4.5 to 5.2) [3].
 
-Commercially, coconut water is processed into packaged drinks available in bottles, cans, Tetra Pak cartons, and even powdered form. Processing methods include conventional thermal pasteurization (72-90 degrees C for 15-30 seconds) and high-pressure processing (HPP) at 400-600 MPa, which provides microbial inactivation without significant thermal damage, extending shelf life to 30-60 days under refrigeration [7][8]. Ultra-high temperature (UHT) variants can maintain ambient stability for up to 12 months [9]. Pasteurization and additives can alter the natural composition, prompting some consumer preference for fresh sources to preserve bioactive compounds like cytokinins and antioxidants [10].
+Coconut water is not coconut milk. Coconut milk comes from the kernel, the white flesh, which held 37 to 56 g of fat per 100 g; the water held only 4 to 115 mg [3].
 
-The global coconut water market was valued at approximately USD 4.43 billion in 2024 and is projected to grow to USD 11.43 billion by 2030, driven by demand for natural hydration beverages [11]. However, while empirical studies indicate potential mild anti-inflammatory and hydrating effects supported by its mineral content, claims of superior hydration over plain water lack robust clinical evidence, and its nutritional value aligns more closely with a natural, low-sugar electrolyte source rather than a remedy for health issues [12][13].
+Fresh coconut water spoils quickly, and much current work aims to extend its shelf life while keeping its taste and nutrients [4]. The maturity of the coconut at harvest has the largest effect on how much water it holds and what is in it [5].
+
+The trials summarised below are small. Across them, coconut water rehydrated people about as well as a sports drink or plain water, but no better than water [6][7].
 
 ## 2. Nutritional Composition and Electrolyte Profile
 
 ### Macronutrients
 
-Coconut water is characterized by low macronutrient density, with energy primarily derived from carbohydrates. Per 100 grams, it provides approximately 19 kilocalories, comprising 3.71 grams of carbohydrates (of which 2.61 grams are sugars and 1.1 grams dietary fiber), 0.72 grams of protein, and 0.2 grams of total fat (predominantly saturated) [1]. Protein levels are minimal, consisting mainly of free amino acids like alanine and arginine, while fat is negligible [5]. A standard 240 mL (1 cup) serving provides approximately 45-60 kcal, with about 6-9 grams of natural sugars [1][6]. It contains no cholesterol and almost no fat [6].
+Most of the energy comes from carbohydrate. Per 100 g, USDA lists 3.71 g of carbohydrate (2.61 g of it sugars and 1.1 g fibre), 0.72 g of protein and 0.2 g of fat [2]. Measured sugar content varies by sample: 3.9 to 4.6 g per 100 g in one analysis [3] and 1.1 g/dl in an older one [8].
 
 ### Macronutrient Profile per 100 g (USDA)
 
-| Nutrient | Amount per 100 g | % Daily Value |
-|----------|:-:|:-:|
-| Calories | 19 kcal | 1% |
-| Total Carbohydrates | 3.71 g | 1% |
-| -- Sugars | 2.61 g | -- |
-| -- Dietary Fiber | 1.1 g | 4% |
-| Protein | 0.72 g | 1% |
-| Total Fat | 0.2 g | 0% |
+| Nutrient | Amount per 100 g |
+|----------|:-:|
+| Energy | 19.0 kcal |
+| Carbohydrate | 3.71 g |
+| Total sugars | 2.61 g |
+| Fibre | 1.1 g |
+| Protein | 0.72 g |
+| Total fat | 0.2 g |
+
+Source: USDA FoodData Central [2].
 
 ### Micronutrients and Electrolytes
 
-Coconut water is notable for its mineral content, particularly electrolytes. Based on testing data and USDA values, one cup (approximately 240 mL) provides about 400-500 mg of potassium -- roughly what you would get from a banana or a cup of orange juice [6]. It also contains some sodium (about 30-53 mg per cup in commercial products), magnesium (about 7-23 mg), calcium, and small amounts of phosphorus and vitamin C [6][1].
+Potassium is the main mineral: USDA lists 250 mg per 100 g [2]. The same entry lists 105 mg of sodium, 25 mg of magnesium, 24 mg of calcium, 20 mg of phosphorus and 2.4 mg of vitamin C per 100 g [2].
 
-| Mineral | Amount per 100 g | % Daily Value |
-|---------|:-:|:-:|
-| Potassium | 250 mg | 5% |
-| Sodium | 105 mg | 5% |
-| Magnesium | 25 mg | 6% |
-| Phosphorus | 20 mg | 2% |
-| Calcium | 24 mg | 2% |
-| Iron | 0.29 mg | 2% |
-| Zinc | 0.1 mg | 1% |
+| Mineral | Amount per 100 g |
+|---------|:-:|
+| Potassium | 250.0 mg |
+| Sodium | 105.0 mg |
+| Magnesium | 25.0 mg |
+| Calcium | 24.0 mg |
+| Phosphorus | 20.0 mg |
+| Iron | 0.29 mg |
+| Zinc | 0.1 mg |
 
-Vitamin content is modest: 2.4 mg of ascorbic acid (vitamin C, 3% DV) per 100 g, with smaller quantities of B vitamins including thiamin (0.03 mg), riboflavin (0.057 mg), and vitamin B6 (0.032 mg) [5][14]. Many commercial brands add extra vitamin C (ascorbic acid) as a preservative or for fortification, which can significantly boost levels to 24 mg or more per serving compared to the natural content in fresh coconut water [14][15]. Consumers should check product labels to distinguish between naturally occurring and added vitamin C.
-
-Potassium concentrations can range from 1,500 to 2,500 mg per liter depending on varietal and environmental factors. These micronutrients derive from the coconut's metabolic processes during endosperm development, but processing or storage can lead to losses, particularly in vitamin C [5][14].
+Source: USDA FoodData Central [2].
 
 ### Electrolyte Content Ranges
 
-| Electrolyte | Typical Concentration (mg/100 mL) | Notes |
-|-------------|:-:|-------|
-| Potassium | 200-312 | Primary electrolyte; supports cellular function but risks hyperkalemia in excess intake [16] |
-| Sodium | 2-105 | Variable; generally 20-60 mg in supermarket-packaged products, often without added salt; lower than in sports drinks [17][18][19] |
-| Magnesium | 6-30 | Aids muscle and nerve function [20] |
-| Calcium | 24-32 | Contributes to bone health and muscle contraction [20] |
+These values are averages. Composition shifts as the fruit matures. In a Brazilian study, sodium stayed at a mean of 2.9 mEq/L from the 5th to the 7th month, then rose to 12.5 mEq/L after the 8th month [9]. Glucose fell sharply after the 9th month, and osmolality fell with it, from about 377.3 mOsm/l up to the 8th month to 310.3 mOsm/l after the 9th [9].
+
+A Thai analysis put coconut water's osmolarity at 288 mOsm/l, against 693 mOsm/l for soft drinks; its pH was 5.4, against 3.1 [8]. Young-coconut sodium was far lower than the USDA figure [9], and in a heat trial, adding sodium improved coconut water's rehydration [10].
 
 ### Electrolyte Comparison: Coconut Water vs. Sports Drinks
 
-The electrolyte profile of coconut water differs significantly from commercial sports drinks. A typical 240 mL serving of coconut water provides approximately 480-750 mg of potassium and 45-150 mg of sodium, along with small amounts of magnesium (15-70 mg) and calcium (50-100 mg). In contrast, classic Gatorade Thirst Quencher offers about 30-50 mg of potassium and 100-270 mg of sodium per similar serving volume, with negligible magnesium or calcium [17][19].
-
-| Component | Coconut Water (per 240 mL) | Gatorade (per 240 mL) | Notes |
-|-----------|:-:|:-:|-------|
-| Potassium | 480-750 mg | 30-50 mg | Coconut water provides 10-15x more potassium [17][19] |
-| Sodium | 45-150 mg | 100-270 mg | Sports drinks contain more sodium, better for heavy sweating [17][18][19] |
-| Magnesium | 15-70 mg | Negligible | Coconut water provides meaningful magnesium [20] |
-| Calcium | 50-100 mg | Negligible | Small but meaningful calcium contribution [20] |
-| Sugars | 6-9 g | 14-21 g | Sports drinks typically contain 2-3x more sugar [1] |
-| Calories | 45-60 kcal | 50-80 kcal | Similar calorie range |
-
-Coconut water's osmolarity generally falls between 280 and 300 mOsm/L, approximating the 280-295 mOsm/L of human plasma and rendering it nearly isotonic in many samples [21][22]. This property arises from its balanced sugars (around 4-6 g per 100 mL) and minerals, supporting claims of natural hydration efficacy. However, osmolarity can exceed 300 mOsm/L in less mature fruits, potentially shifting toward hypertonicity, and its low sodium relative to potassium (potassium-to-sodium ratio often exceeding 5:1) contrasts with sweat composition, limiting optimal replacement of sodium losses during intense, prolonged activity [23][19].
-
-This positions coconut water as richer in potassium and certain trace minerals, making it potentially preferable for general hydration or potassium replenishment, while sports drinks better address sodium losses from heavy sweating during prolonged intense exercise [19][24].
+The trials below compared coconut water with sports drinks for rehydration [6][10][11][12][13]. This review found no public side-by-side analysis of their electrolyte content.
 
 ## 3. Evidence for Health Benefits
 
 ### Hydration and Athletic Performance
 
-Coconut water is often marketed as a natural alternative to commercial sports drinks for rehydration during physical activity, attributed to its electrolyte profile including approximately 600 mg/L of potassium, 250 mg/L of sodium, and trace magnesium [19].
+Six small crossover trials have compared coconut water with sports drinks or water after or during exercise. All were in young, fit adults.
 
-**Randomized crossover trial (2012, n=10):** A study in 10 exercise-trained men demonstrated that coconut water restored plasma volume and body weight similarly to a carbohydrate-electrolyte sports drink after inducing 2.5% dehydration via treadmill exercise, with no significant differences in urine output or specific gravity over four hours of recovery. In a subsequent anaerobic cycling performance test, time to exhaustion averaged 12.3 minutes with coconut water versus 11.9 minutes with the sports drink, indicating comparable efficacy for short-term rehydration and performance maintenance (Kalman et al., *J Int Soc Sports Nutr*, 2012) [19].
+**Kalman 2012 (n=12):** Twelve exercise-trained men lost about 1.7 kg (~2% of body mass) in 60 minutes on a treadmill, then drank bottled water, pure coconut water, coconut water from concentrate or a sports drink [6]. Fluid retention did not differ between coconut water and the sports drink. Time to exhaustion afterwards did not differ either: 11.9 min with water, 12.3 min with pure coconut water, 11.9 min with concentrate and 12.8 min with the sports drink [6]. The men felt more bloated and had more stomach upset with both coconut waters [6].
 
-**Endurance cycling crossover study (2023, n=19):** A randomized crossover study involving 19 cyclists during 60 minutes of moderate-intensity endurance cycling followed by a time trial showed coconut water mitigated body fluid loss (1.2 L sweat) to a degree similar to a sports drink (1.3 L sweat), but without superior physiological advantages in heart rate, lactate, or power output. However, subjective ratings of gastrointestinal distress were higher with coconut water in some participants, potentially limiting its tolerability during intense efforts [24].
+**Saat 2002 (n=8, heat):** Eight men exercised in the heat until they lost 2.78% of body weight, then drank 120% of the fluid lost [11]. They regained 75% of the lost weight with fresh young coconut water, 73% with plain water and 80% with a carbohydrate-electrolyte drink; the differences were not significant [11]. Coconut water caused less nausea and fullness and was easier to drink in large amounts [11].
 
-**Heat stress protocol:** Compared to plain water, coconut water extended time to exhaustion in heat-stressed exercise protocols, with one trial reporting improved capacity via reduced urine output post-ingestion, though benefits were not consistently replicated across larger cohorts [25].
+**Ismail 2007 (n=10, heat):** Ten men ran for 90 minutes at 32.06 degrees C to lose 3% of body weight [10]. Rehydration was 58% with plain water, 68% with a sports drink, 65% with fresh coconut water and 69% with sodium-enriched coconut water; the sports drink and the sodium-enriched coconut water did best [10]. Adding sodium made coconut water as good as the sports drink, with better tolerance [10].
 
-**Systematic review of RCTs (2025):** A systematic review of randomized controlled trials on healthy individuals concluded that coconut water enhanced VO2 max and exercise endurance relative to baseline or water controls, with pooled data showing statistically significant stamina improvements (p < 0.05) in protocols lasting 30-90 minutes, positioning it as a viable low-calorie option for moderate-intensity activities [26]. Nonetheless, its lower carbohydrate content (about 4-6 g/100 mL versus 6-8% in sports drinks) may curtail glycogen replenishment during prolonged exertion exceeding 60 minutes, where sports drinks demonstrated marginal edges in sustaining performance in meta-analyses of endurance athletes [12].
+**Peart 2017 (n=10):** Ten men cycled for 60 minutes and then rode a 10 km time trial, drinking either water or coconut water [7]. Coconut water did not improve time trial performance (971.4 vs 966.6 s) or any physiological measure, and the men drank less of it when they could choose (115 vs 208.7 ml) [7].
 
-**Synthesis:** Coconut water provides hydration comparable to commercial sports drinks for short-to-moderate duration exercise (up to 60 minutes). Its higher potassium content may benefit intracellular replenishment, while the sodium deficit could hinder extracellular recovery in sodium-depleting conditions such as prolonged exercise in heat. For general hydration and moderate exercise, it is a reasonable alternative; for prolonged intense exercise exceeding 60 minutes with heavy sweating, sports drinks with higher sodium content may be preferable [19][24][26][27].
+**O'Brien 2023 (n=19):** Nineteen experienced cyclists rode 90 minutes at 70% of peak power, then a 20 km time trial, drinking a sports drink or coconut water with the same calories [12]. Performance and physiology did not differ significantly; by effect size, blood glucose was a little lower with coconut water [12].
+
+**Bell and Spriet 2026 (n=8):** Eight recreational athletes lost 1.36% of body mass cycling, then drank 150% of it as flavoured water, coconut water or a sports drink [13]. Urine output was higher with flavoured water (530 ml) than with coconut water or the sports drink (170 ml each), but fluid status afterwards did not differ significantly [13]. The authors judged coconut water as effective as the sports drink despite its lower sodium [13].
+
+**Synthesis:** In short bouts of moderate exercise, coconut water rehydrates about as well as a sports drink, and no trial found it better than plain water for performance [6][7]. It can cause bloating [6]. Its sodium varies widely and is low in young coconuts, and only sodium-enriched coconut water matched a sports drink in the heat trial [9][10].
 
 ### Blood Pressure
 
-**Hypertensive patients -- small clinical study (n=28):** A study of 28 hypertensive patients found that drinking coconut water twice daily for two weeks resulted in significant systolic blood pressure reductions in 71% of participants, with mean decreases of 20-30 mmHg, though diastolic changes were less pronounced (Alleyne et al., *West Indian Med J*, 2005) [28].
+**Alleyne 2005 (n=28):** Twenty-eight people with high blood pressure were split into four equal groups for two weeks: bottled water, coconut water, mauby (another tropical drink) or a mix of the two [14]. Systolic pressure fell significantly in 71% of the coconut water group, and diastolic pressure in 29% [14]. The largest falls, 24 mmHg systolic and 15 mmHg diastolic, came in the mixture group [14].
 
-**Tender coconut water in primary hypertension (n=40):** A separate trial with 40 primary hypertensive adults reported that 300 mL of tender coconut water daily for eight weeks lowered systolic blood pressure by an average of 12 mmHg and diastolic by 8 mmHg compared to baseline [29].
+**Awaluddin 2024 (n=30):** In an Indonesian quasi-experimental study, 15 adults with stage I hypertension drank 150 mL of young coconut water each morning for a week, and 15 did not [15]. Blood pressure fell significantly in the coconut water group but not in the control group [15]. The groups differed: all 15 in the coconut water group were women, against 5 of 15 in the control group [15].
 
-These findings align with coconut water's high potassium content (approximately 600 mg per 240 mL serving), which may promote vasodilation and natriuresis (sodium excretion through urine). Potassium intake is inversely associated with blood pressure in epidemiological studies, and the DASH diet's emphasis on potassium-rich foods supports this mechanism [28][29].
+**Potassium and blood pressure:** A 2013 meta-analysis of 22 randomised trials found that more potassium lowered systolic pressure by 3.49 mm Hg and diastolic by 1.96 mm Hg in adults, an effect seen in people with hypertension but not in those without [16]. Higher potassium intake was also linked to a lower risk of stroke (risk ratio 0.76) [16]. Coconut water's potassium is one plausible reason for any effect on blood pressure [2][16].
 
-Commercial packaged coconut water generally has low sodium content (typically 20-60 mg per 100 mL) and high potassium (around 200-300 mg per 100 mL), which may contribute to reducing edema (fluid retention or swelling) by promoting sodium excretion, balancing electrolytes, and acting as a mild natural diuretic. Animal studies demonstrate that coconut water increases urine output via suppression of the renin-angiotensin-aldosterone system and aquaporin channels [30].
-
-**Limitations:** Both human studies involved small cohorts without placebo controls, limiting generalizability. No large-scale randomized placebo-controlled trials exist for coconut water and blood pressure specifically. The blood pressure-lowering effects observed are likely attributable primarily to the potassium content, which could be obtained from many other potassium-rich foods [28][29].
+**Limitations:** Both coconut water studies were tiny and short, and the Indonesian one was a quasi-experiment rather than a randomised trial [14][15]. The potassium benefit applies to people whose kidneys handle potassium normally [16].
 
 ### Lipid Profile (Cholesterol and Triglycerides)
 
-Evidence for coconut water's effects on serum lipids derives mainly from rodent models.
+The evidence comes from rats. In rats fed a fat- and cholesterol-rich diet for 45 days, coconut water (4 mL per 100 g of body weight) lowered total cholesterol, VLDL+LDL cholesterol and triglycerides and raised HDL cholesterol, much as lovastatin did [17]. The same group had earlier found that tender and mature coconut water reduced high blood fats in cholesterol-fed rats [17].
 
-**Cholesterol-fed rats (45-day study):** In cholesterol-fed rats, 4 mL daily supplementation for 45 days reduced total cholesterol by 28%, LDL cholesterol by 29%, and triglycerides by 40%, while raising HDL cholesterol by 37% -- outcomes comparable to the statin lovastatin at 0.1% dietary levels (Sandhya & Rajamohan, *Food Chem Toxicol*, 2008) [31].
-
-**Normal rats (14-day study):** Similar hypolipidemic effects, including increased bile acid excretion and cholesterol catabolism, were observed in normal rats given coconut water ad libitum for 14 days (Rajamohan & Sandhya, *J Med Food*, 2004) [32].
-
-**Synthesis:** No large-scale human trials confirm these lipid-modulating benefits. Coconut water's low fat content (negligible saturated fats) provides no direct mechanistic advantage over calorie-matched beverages for dyslipidemia management. The animal data is promising but cannot be extrapolated to human clinical recommendations [31][32].
+**Synthesis:** No human trial has tested coconut water on blood fats. The rat results cannot guide treatment in people.
 
 ### Blood Sugar and Diabetes
 
-**Acute glycemic response in humans (n=12):** A crossover study of 12 adults showed that 300 mL coconut water raised plasma glucose by 10-15% and insulin by 20-30% at 45 minutes post-ingestion, normalizing by 120 minutes, indicating a mild glycemic response dependent on baseline metabolic status rather than sustained lowering [33].
+In rats with chemically induced diabetes, mature coconut water lowered blood glucose and reduced oxidative stress [18]. No human trial has tested it as a diabetes treatment.
 
-**Diabetic rats (21-day study):** In streptozotocin-induced diabetic rats, mature coconut water (2-4 mL/kg daily for 21 days) improved carbohydrate metabolism, reduced fasting glucose by 25%, and enhanced pancreatic beta-cell function via antioxidant mechanisms (Pinto et al., *Plant Foods Hum Nutr*, 2015) [34].
+In people, coconut water raised plasma glucose more than plain water after exercise [10][11], and in one cycling trial blood glucose was slightly lower than with a sports drink of equal calories [12].
 
-**Caution for diabetics:** Diabetics should monitor intake due to its fructose content (around 3-6 g per 240 mL), which may affect glycemic control despite a low glycemic index [35]. People with type 2 diabetes, especially those with kidney impairment or who take potassium-sparing diuretics, are at an increased risk of developing high blood levels of potassium from the consumption of coconut water (Devgun, *Pract Diabetes*, 2016) [36]. A documented case showed serum potassium rising to 6.8 mmol/L after 1 L daily consumption over weeks in a type 2 diabetic, potentially exacerbating renal strain [36].
-
-**Synthesis:** The animal evidence for glucose-lowering effects is preliminary. In humans, coconut water produces a mild, transient glycemic response. It is not a treatment for diabetes, and diabetics should be cautious about potassium loading, especially if they have any degree of kidney impairment [33][34][36].
+**Synthesis:** Coconut water contains sugar and is not a treatment for diabetes. The lisinopril label lists diabetes, kidney impairment and potassium-sparing diuretics as risk factors for hyperkalemia [19].
 
 ### Kidney Stone Prevention
 
-**Human crossover study (n=8):** A small randomized crossover study of 8 non-stone-forming adults found that consumption of approximately 2 L of coconut water daily for 4 days increased urinary citrate by 29% (p=0.02), urinary potassium by 130% (p=0.01), and urinary chloride by 37% (p=0.03) compared to tap water, without significant differences in urine volume or pH (Punnapuzha et al.) [37]. Urinary citrate is a key inhibitor of calcium oxalate crystal aggregation, the most common type of kidney stone.
+**Patel 2018 (n=8):** Four men and four women with no history of kidney stones drank 2L of coconut water or tap water daily for four days in random order [20]. Coconut water raised urinary citrate by 29%, potassium by 130% and chloride by 37%, without changing urine pH or volume [20]. The study measured urine chemistry in people without stones, not stone formation.
 
-**Animal model:** Administration of coconut water to rats with ethylene glycol-induced nephrocalcinosis reduced crystal deposition in renal tissue, decreased the number of crystals in urine, protected against impairment of renal function, and prevented oxidative stress in the kidneys (Gandhi et al., *Int Braz J Urol*, 2013) [38].
+**Animal model:** In rats given 0.75% ethylene glycol in drinking water for seven weeks, coconut water reduced crystal deposits in the kidney and crystals in the urine, and protected kidney function [21].
 
-**Synthesis:** The evidence is preliminary and limited, derived from a very small human study in non-stone formers and animal experiments. Further high-quality human clinical trials, particularly in individuals prone to kidney stones, are required to substantiate any preventive benefits. Coconut water is not a treatment or cure for existing kidney stones. Given its high potassium content, individuals with chronic kidney disease or those on potassium-restricted diets should consult a physician before consumption [37][38].
+**Synthesis:** No trial has tested coconut water in people who form stones. Its potassium is a concern for people with kidney disease [22][23].
 
 ### Gut Health and Ulcerative Colitis
 
-**Randomized controlled trial (2024, n=96):** A double-blind, placebo-controlled randomized trial found that 400 mL of coconut water daily for 8 weeks, as an adjunct to standard medical therapy, resulted in clinical remission (Simple Clinical Colitis Activity Index score of 2 or less) in 53.1% of patients with mild to moderate ulcerative colitis, compared to 28.3% with placebo (p < 0.05). The intervention also increased the relative abundance of bacterial taxa negatively correlated with disease activity measures, independent of dietary fiber intake. No hyperkalemia or significant adverse events were reported in the trial (Payen et al., *Inflamm Bowel Dis*, 2024) [39].
+**Kedia 2024 (n=95):** In a single-centre, double-blind trial in India, adults with mild to moderate ulcerative colitis took 400 mL of coconut water or a placebo daily for 8 weeks, alongside standard treatment [24]. Of 121 people screened, 95 were analysed (49 coconut water, 46 placebo) [24]. Remission was 53.1% vs 28.3% and clinical response 57.1% vs 28.3% [24]. Faecal calprotectin was under 150 μg/g in 30.6% vs 6.5% [24]. Gut bacteria linked to lower disease activity increased with coconut water [24]. Adverse events were similar, and no patient developed hyperkalemia [24].
 
-This is notable as one of the few placebo-controlled trials examining a specific clinical endpoint for coconut water. The mechanism may involve bioactive compounds and their effects on the gut microbiome rather than fiber content, as natural coconut water contains negligible amounts of non-digestible prebiotic fibers and primarily consists of digestible sugars with minimal dietary fiber. Prebiotic claims are generally associated with processed or fortified products that incorporate added prebiotics, such as inulin or fructooligosaccharides, rather than plain coconut water [40].
+This is the only placebo-controlled trial of coconut water with a clinical endpoint in this review. It was a single-centre trial and has not been repeated in the sources reviewed here.
+
+### Oral Rehydration in Diarrhoea
+
+Coconut water has been tried as a home drink for diarrhoea. In a Brazilian study of coconuts at different ages, the water never held sodium and glucose at the levels an oral rehydration solution needs [9]. A Caribbean study suggested young coconut water, with early refeeding, could be a home fluid early in mild diarrhoea in well-nourished children, but it should not be used in severe cholera, in children who are dehydrated or where kidney function is impaired [22].
+
+In remote settings, coconut water has been given intravenously as a short-term fluid; one report describes a patient in the Solomon Islands [25]. In a laboratory test, it affected blood clotting no differently from the same volume of saline [26].
 
 ### Pregnancy and Maternal Health
 
-Coconut water may provide benefits for pregnant women, primarily due to its high water content (approximately 95%) and natural electrolytes, including potassium, sodium, and magnesium. These components support hydration and help replace fluids and electrolytes lost from morning sickness or vomiting [3][4].
-
-**Morning sickness RCT:** A randomized controlled trial demonstrated that consuming 300 mL of young coconut water daily for one week significantly reduced morning sickness symptoms in women during the first trimester (average score reduction of 11.19 in the intervention group compared to the control, p = 0.042) [41].
-
-Coconut water contains small amounts of micronutrients such as calcium and magnesium, which contribute to fetal development. Some reports suggest it may help soothe acid reflux or aid in blood pressure regulation, though evidence for these effects in pregnancy remains limited. Coconut water is low in calories (approximately 19 kcal per 100 g) [3][42].
-
-Coconut water is generally considered safe in moderation during pregnancy, preferably when pasteurized to reduce bacterial risks. It is not a substitute for prenatal vitamins, a balanced diet, or professional medical advice. Pregnant women should consult their healthcare provider regarding its use [4][42].
+No trial in the sources reviewed here has tested coconut water in pregnancy. The one public report is the newborn case under Special Populations [36].
 
 ### Breastfeeding and Lactation
 
-Breastfeeding mothers have increased fluid requirements, often needing an additional 700-1,000 mL (about 3-4 cups) of fluids daily beyond normal intake to support milk production, which can average 700-1,000 mL per day. Dehydration can reduce milk volume and lead to fatigue, making adequate hydration essential for maintaining supply and maternal well-being [43].
-
-Coconut water is commonly recommended as a hydrating beverage during lactation due to its natural electrolyte content (high in potassium, with magnesium and sodium), which helps replenish fluids and maintain electrolyte balance without added sugars or artificial ingredients in pure forms. It serves as a low-calorie (approximately 45-60 kcal per 240 mL serving), refreshing alternative to plain water or sugary drinks, potentially improving palatability and intake [43].
-
-No large-scale clinical trials specifically demonstrate that coconut water directly increases milk supply (as a galactagogue). Its hydration benefits may indirectly support lactation by preventing dehydration-related dips in production. Coconut water is generally considered safe for breastfeeding mothers in moderation (e.g., 1-2 cups daily or as needed), similar to pregnancy guidelines. It should be pasteurized to minimize bacterial risks. Mothers with conditions such as kidney issues, blood pressure disorders, or on potassium-restricted diets should consult a healthcare provider [43][44].
+There is no good public evidence on this yet.
 
 ### Hangover Recovery
 
-Coconut water is popularly used for rehydration during hangover recovery, attributed to its electrolyte profile, which may help restore potassium and other minerals lost due to alcohol's diuretic effect [45]. While this mechanism is plausible given alcohol's established role in promoting fluid and electrolyte excretion, specific scientific evidence supporting coconut water's efficacy for hangover relief is limited, primarily based on studies examining blends that include coconut water alongside other ingredients (such as pear and sweet lime) rather than coconut water alone [46][47].
+There is no good public evidence on this yet.
 
 ### Skin Health Claims
 
-Coconut water is popularly claimed on social media and wellness sources to promote clearer skin and reduce acne when consumed regularly, often attributed to its hydrating properties, nutrient content, and bioactive compounds.
-
-Hydration from electrolytes (particularly high potassium) and fluids may support overall skin health by maintaining moisture levels, potentially leading to plumper, more supple skin and reducing dryness-related issues. General hydration benefits any skin type, though coconut water offers no superiority over plain water for this purpose [48].
-
-Antioxidants present in coconut water may help mitigate oxidative stress and inflammation, which contribute to skin aging and conditions like acne. Some preliminary in vitro studies suggest antimicrobial properties (e.g., against certain bacteria), potentially inhibiting acne-causing microbes like *Propionibacterium acnes*, but human clinical evidence is lacking and insufficient to support it as an acne treatment [48].
-
-No robust scientific consensus or strong clinical trials demonstrate that drinking coconut water cures acne, significantly clears skin, or provides targeted dermatological benefits beyond general nutrition and hydration. Claims often stem from preliminary or animal studies, and results vary individually. For acne management, evidence-based skincare and medical advice are recommended over relying on coconut water alone [48].
+There is no good public evidence on this yet.
 
 ### Weight Loss Claims
 
-Coconut water provides indirect support for weight loss as a low-calorie (45-60 kcal per 240 mL serving), hydrating alternative to sugary drinks, with electrolytes aiding exercise recovery and hydration to support weight management efforts. However, it does not directly cause fat burning, metabolism boost, or significant weight reduction; there is no strong direct evidence from human clinical trials for weight loss effects. Plain water is often better due to zero calories [24].
-
-Coconut water contains natural sugars (about 6-9 g per cup), contributing to caloric intake. Potential drawbacks include digestive issues (e.g., bloating or discomfort in IBS), due to FODMAP content such as fructans and sorbitol in larger servings, and risks of hyperkalemia from high potassium in individuals with kidney conditions or on certain medications [49][36].
+There is no good public evidence on this yet.
 
 ### Antioxidant and Anti-inflammatory Properties
 
-In vitro and animal studies suggest coconut water contains bioactive compounds with antioxidant and anti-inflammatory properties. Coconut water of different maturity stages has been shown to ameliorate inflammatory processes in animal models [13]. Scientific studies have identified antibacterial, antifungal, antiviral, antiparasitic, antioxidant, hypoglycemic, hepatoprotective, and immunostimulant effects in coconut water and coconut kernel, attributed to their composition of sugars, vitamins, minerals, amino acids, and other bioactive compounds (DebMandal & Mandal, *Asian Pac J Trop Med*, 2011) [50].
-
-These findings remain largely preclinical. No large-scale human trials have confirmed that drinking coconut water provides clinically meaningful antioxidant or anti-inflammatory benefits beyond those obtainable from a balanced diet.
+A review lists antibacterial, antifungal, antiviral, antioxidant, hypoglycaemic, hepatoprotective and immune effects for coconut water and kernel [27]. A 2025 review adds anti-inflammatory, anti-cancer and heart-protective effects [4]. These findings come from laboratory and animal work. No human trial has shown that drinking coconut water gives a clinical antioxidant or anti-inflammatory benefit.
 
 ### Acid Reflux and Heartburn
 
-Coconut water is commonly recommended as a soothing drink for acid reflux, heartburn, and associated burping. It is considered low in acidity relative to many other beverages, provides hydration, and contains high levels of electrolytes, particularly potassium, which may help neutralize stomach acid, support bodily pH balance, and ease symptoms. However, scientific evidence supporting these effects is limited, consisting primarily of anecdotal reports and expert opinions rather than controlled clinical studies [51][52][53].
+There is no good public evidence on this yet.
 
 ## 4. Recommended Intake
 
-There is no established Recommended Dietary Allowance (RDA) or formal medical guideline for coconut water consumption. Common guidelines suggest limiting intake to 1-2 servings per day (approximately 240-500 mL) for healthy adults to avoid potential complications [54][17].
+Coconut water is a food, and there is no recommended intake for it.
 
 ### Practical Intake Guidance
 
-**For general hydration:** 1 cup (240 mL) daily provides a reasonable amount of potassium (400-500 mg, roughly 10-15% of the adequate intake of 2,600-3,400 mg/day) and other electrolytes without excessive calorie or sugar intake [1][6].
+These are the amounts trials used. They are not recommendations.
 
-**For exercise rehydration (moderate intensity, up to 60 minutes):** 240-480 mL during or after exercise. Comparable to sports drinks for short-duration activity. For prolonged or intense exercise exceeding 60 minutes with heavy sweating, consider adding a sodium source or using a sports drink instead [19][24][26].
+**Exercise rehydration:** Trials gave volumes matched to fluid lost: 120% of the weight lost [10][11] or 150% of it [13]. Coconut water performed about as well as a sports drink [6][12]. In a heat trial, only the sports drink and sodium-enriched coconut water gave significantly better rehydration [10].
 
-**For blood pressure support:** The limited clinical trials used 300 mL daily for 2-8 weeks. However, these are preliminary studies and coconut water should not replace evidence-based antihypertensive medications [28][29].
+**Blood pressure:** The two small studies ran for one to two weeks; one used 150 mL a day [14][15]. Coconut water does not replace blood pressure medicine.
 
-**For pregnancy (morning sickness):** The RCT demonstrating benefit used 300 mL daily for one week. Use pasteurized products to minimize bacterial risk [41].
-
-**For ulcerative colitis (adjunctive):** The placebo-controlled trial used 400 mL daily for 8 weeks alongside standard medical therapy [39].
+**Ulcerative colitis (alongside standard treatment):** The trial used 400 mL a day for 8 weeks [24].
 
 ### Potassium Content Awareness
 
-A single 240 mL serving of coconut water provides approximately 400-750 mg of potassium. For context, the adequate intake (AI) for potassium is 2,600 mg/day for adult women and 3,400 mg/day for adult men [1]. While most healthy adults can safely consume 1-2 servings per day, individuals with kidney disease, those on potassium-restricted diets, or those taking medications that raise potassium levels should consult a healthcare provider before regular consumption [6][36].
+At 250 mg of potassium per 100 g [2], a large glass of coconut water adds a meaningful amount of potassium. The adequate intakes for adults are set in the 2019 Dietary Reference Intakes for sodium and potassium [28]. More potassium is likely to benefit most people whose kidneys handle it normally [16], but people with kidney disease, or who take medicines that raise potassium, should ask their doctor before drinking coconut water regularly [19][23][29].
 
-MicroVitamin by Dr Brad Stanfield includes 99 mg of potassium per daily serving. Those supplementing with potassium through both diet (including coconut water) and supplements should be mindful of total daily potassium intake, though most adults fall short of adequate intake from diet alone ([shop MicroVitamin](https://drstanfield.com/products/microvitamin)).
+That does not make very large amounts safe. Coconut water, popular as a sports drink, has been reported to cause fatal heart rhythm problems through severe hyperkalemia [30][32].
 
 ### Storage
 
-Coconut water does not have to be refrigerated until the container is opened. Once opened and refrigerated it may sour over a period of days, so plan on using it up within a day or two [6].
+Fresh coconut water spoils quickly [4]. Packaged coconut water is processed to extend its shelf life [4]; follow the label once it is open.
 
 ## 5. Safety and Side Effects
 
 ### Common Side Effects
 
-Coconut water is generally safe for consumption in moderation among healthy individuals, with no significant adverse effects reported in controlled studies at typical intake levels of 200-500 mL daily [54][17].
+In the exercise trials, coconut water was well tolerated, though one trial found more bloating and stomach upset than with a sports drink [6][11]. In the ulcerative colitis trial, adverse events matched placebo over 8 weeks [24].
 
-**Gastrointestinal effects:** In large amounts, coconut water may have a mild laxative effect [6]. Excessive consumption can cause gastrointestinal upset, including bloating, diarrhea, nausea, and abdominal cramps. The laxative effect is due to its high potassium and magnesium content, which can promote bowel movements and soften stool. Excessive intake may cause diarrhea, particularly in sensitive individuals such as those with irritable bowel syndrome (IBS), where its high FODMAP content (fructans and sorbitol) can trigger additional symptoms like bloating and gas [17][55][56][57].
+Large amounts may loosen the stools in some people, but no public study has measured this. If coconut water gives you loose stools or bloating, drink less.
+
+If you have irritable bowel syndrome, try a small glass first. A review lists coconut among the main high-FODMAP foods in South Asian diets, though it did not report on coconut water itself [39].
 
 ### Hyperkalemia (Dangerously High Potassium)
 
-The most significant safety concern with coconut water is its potential to cause hyperkalemia in vulnerable individuals. Its high potassium content -- approximately 600 mg per 240 mL serving -- poses risks particularly in certain populations [58]. Overconsumption, particularly in amounts exceeding 1-2 liters daily, can trigger hyperkalemia [58][59].
+The main risk is hyperkalemia, a high blood potassium level. It may trigger heart rhythms that can kill [23].
 
-**Case report 1 -- healthy adult (Hakimian et al., 2014):** A healthy, 42-year-old man in the U.S. was admitted to the emergency room for fainting after consuming eight 11-ounce bottles of coconut water (containing a total of 5.5 grams of potassium) in one day while playing tennis outdoors in hot weather. Tests revealed he had dangerously high blood levels of potassium, an abnormal heart rhythm, rhabdomyolysis (muscle breakdown), and acute kidney damage. He was released after 3 days of treatment in critical care, and advised to "avoid coconut water, remain well hydrated, and avoid excessive exercise in the extreme heat" (Hakimian et al., *Circ Arrhythm Electrophysiol*, 2014) [60].
+**Rees 2012 and Hakimian 2014:** A UK report described coconut water-induced hyperkalemia [31]. A 2014 report in a heart-rhythm journal, titled "Death by coconut", described another case [32]. PubMed holds no abstract for either.
 
-**Case report 2 -- diabetic on spironolactone (Hemachandra, 2018):** A 78-year-old man with coronary artery disease and type 2 diabetes who was taking spironolactone as well as other medications developed life-threatening high blood levels of potassium resulting in an irregular heartbeat, kidney failure, muscle weakness, and paralysis after consuming 2-4 servings of coconut water daily for one week. He recovered completely after medical treatment (Hemachandra, *Case Rep Neurol Med*, 2018) [61].
+**Hemachandra 2018:** A 78-year-old man in Sri Lanka developed rising paralysis over five hours and then dangerous heart rhythms, with a serum potassium of 7.02 mEq/L [30]. He took losartan and spironolactone for ischaemic heart disease, and had drunk large amounts of king coconut water over the past week [30]. The authors blamed several triggers together: coconut water, kidney failure, diabetes, metabolic acidosis and the potassium-sparing diuretic [30]. His potassium fell to 6.1 mEq/L within 2 hours of emergency treatment, and he recovered fully within 24 hours without dialysis [30].
 
-**Case report 3 -- diabetic without kidney disease (Devgun, 2015):** A 62-year-old man in England with type 2 diabetes (without kidney disease) developed high potassium levels after consuming 1 liter (two 500 mL servings) daily for two months. His potassium levels returned to normal within several months after he stopped drinking coconut water (Devgun, *Pract Diabetes*, 2015) [36].
+The Sri Lankan case report cites the 2014 report as showing that coconut water can cause fatal heart rhythm problems through severe hyperkalemia [30].
 
-**Case report 4 -- potassium-related cramps:** A case of leg cramps was reported in a woman in Japan who consumed a mango (a potassium-rich fruit) every night before bed for one month and developed elevated potassium levels. The cramps resolved after she stopped eating mangos and her potassium levels returned to normal, illustrating how potassium-rich foods (including coconut water) can elevate serum potassium (Abe et al., *Case Rep Neurol Med*, 2012) [62].
+People with kidney disease are most at risk, because their kidneys clear less potassium; medicines that block the renin-angiotensin system add to the risk [23]. MedlinePlus lists poor kidney function, ACE inhibitors, ARBs and spironolactone among the causes of high potassium [38].
 
-Symptoms of hyperkalemia progress with severity [58][59]:
+No safe daily amount has been set. The authors of the Sri Lankan case wrote that there is not enough evidence on safe daily limits for people with other illnesses such as diabetes [30]. If you plan to drink large amounts every day, ask your doctor first, especially if you have kidney disease or diabetes or take blood pressure medicines. If you are healthy, still avoid very large amounts in one day, such as during long exercise.
 
-- **Mild:** Muscle weakness, tingling, fatigue
-- **Moderate:** Dizziness, lightheadedness, irregular heartbeat or palpitations
-- **Severe:** Cardiac arrhythmias, ascending flaccid paralysis, cardiac arrest, or coma
-
-Even in people without kidney disease, consuming excessive amounts of coconut water (and therefore potassium) can be dangerous, as the case reports above demonstrate [6].
+High potassium often causes no symptoms. When it does, they may include chest pain, difficulty breathing, nausea or vomiting, palpitations, a slow, weak or irregular pulse, and sudden collapse when the heartbeat slows or stops [38]. A very high level needs emergency treatment [38]. If you have sudden muscle weakness or an irregular heartbeat after drinking a lot of coconut water, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ### Allergic Reactions
 
-Allergic reactions to coconut water are rare but documented. They typically manifest as mild skin rashes, gastrointestinal distress, or, in severe cases, anaphylaxis involving respiratory symptoms such as shortness of breath, chest tightness, or difficulty breathing, particularly in those sensitized to coconut proteins or with cross-reactivity from atopic dermatitis [63][64]. Coconut allergy is not strongly associated with tree nut allergies, though vigilance is recommended for atopic individuals, and sensitization may occur via coconut-based products rather than water alone [65][66].
+Coconut allergy is uncommon. In a US survey of 78,851 people, 0.39% had convincing coconut allergy [33]. In a children's hospital series, about 50% of reactions after eating coconut were mild or moderate anaphylaxis, and many patients were also sensitised to tree nuts [34]. A review notes that coconut allergy is not directly linked to nut allergy [35]. These studies cover coconut in general, not coconut water alone.
 
 ### Bacterial Contamination
 
-Fresh coconut water from street vendors carries bacterial contamination risks, such as *Escherichia coli* or *Klebsiella pneumoniae*, potentially leading to foodborne illness if not hygienically harvested or stored [67][68]. Commercial products are generally safer due to pasteurization, but undeclared allergens have been detected in trace amounts in some samples [69]. Pregnant women and immunocompromised individuals should prefer pasteurized products [4].
+In a Brazilian study, coconut water sold from street carts held more microbes than refrigerated samples, and some samples carried opportunistic bacteria such as *Klebsiella pneumoniae* [40]. In Denmark, a man died after drinking from a ready-to-drink coconut that had been kept on a kitchen table for a month instead of in the fridge; the water tasted foul, and a fungus that had spoiled it made the toxin that killed him [37]. Keep coconuts and opened coconut water cold, and do not drink coconut water that tastes or smells off. If you are pregnant or have a weakened immune system, ask your doctor first before drinking unpasteurised coconut water.
 
 ### Special Populations
 
-**Kidney disease:** People with severe kidney disease should limit or avoid coconut water, as even moderate amounts may disrupt electrolyte balance or contribute to fluid retention due to its high potassium content, potentially exacerbating hyperkalemia. Consultation with a healthcare provider is strongly recommended [6][70][71].
+**Kidney disease:** Kidney disease raises the risk of hyperkalemia [19][23]. Do not use coconut water for rehydration where kidney function is impaired [22], and ask your doctor before drinking it regularly.
 
-**Type 2 diabetes:** Diabetics should monitor intake due to its fructose content (around 3-6 g per 240 mL), which may affect glycemic control despite a low glycemic index. People with type 2 diabetes are at increased risk of hyperkalemia from coconut water, especially those with any kidney impairment or on potassium-sparing medications [36][35].
+**Type 2 diabetes:** Diabetes is a risk factor for hyperkalemia on ACE inhibitors [19], and the man in the Sri Lankan case had diabetes [30]. The authors of that case cite reports that people with diabetes are at higher risk of hyperkalemia after drinking coconut water [30].
 
-**Pregnancy:** Generally considered safe in moderation when pasteurized. Not a substitute for prenatal vitamins or balanced nutrition [4][42].
+**Pregnancy and labour:** One case report linked seizures and a serum sodium of 113 mmol/L in a newborn to the mother drinking excessive amounts of coconut water during labour [36]. The authors stressed care with both fluid volume and electrolytes in labour.
 
-**Children:** No specific safety concerns beyond those applicable to adults, though portion sizes should be adjusted. The mild laxative effect may be more pronounced in children.
-
-**Common myth -- colds and coughs:** A common myth suggests that coconut water can cause or exacerbate colds and coughs by increasing mucus production, particularly in cooler weather. No reliable scientific studies link coconut water to causing viral infections or generally increasing mucus production. On the contrary, its hydration value, electrolytes, and mild anti-inflammatory properties may help soothe sore throats, thin mucus for easier expulsion, and support recovery during illness. Any perceived aggravation is likely due to individual sensitivity to cold liquids, coincidence, or placebo effects rather than the coconut water itself [72][73].
+**Children:** Coconut water is not an oral rehydration solution [9]. Do not use it for a dehydrated child or in severe cholera [22].
 
 ## 6. Drug Interactions
 
-Coconut water's high potassium content is the primary source of drug interactions. The following medications interact with potassium intake and therefore with coconut water [6][36]:
+Coconut water's potassium is the source of its drug interactions. The spironolactone label warns that a diet rich in potassium, taken with spironolactone or with other drugs that raise potassium, may lead to severe hyperkalemia, and tells patients to avoid foods high in potassium [29].
 
 | Drug Class | Examples | Interaction | Clinical Implication |
 |-----------|---------|:---:|----------|
-| ACE Inhibitors | Captopril, lisinopril, enalapril | Raise potassium | Combined with coconut water's potassium load, can cause hyperkalemia. Limit or avoid regular consumption [6] |
-| Potassium-sparing diuretics | Spironolactone, triamterene, amiloride | Raise potassium | High risk of hyperkalemia. Case reports document life-threatening events [61][6] |
-| Angiotensin receptor blockers (ARBs) | Losartan, valsartan, candesartan | Raise potassium | Similar risk to ACE inhibitors [58] |
-| NSAIDs (chronic use) | Ibuprofen, naproxen | Can raise potassium | May reduce renal potassium excretion, compounding coconut water's potassium load |
-| Digoxin | Lanoxin | Bidirectional | Low potassium increases digoxin toxicity; excessive potassium from coconut water could also cause cardiac effects if levels become excessive |
+| Potassium-sparing diuretics | Spironolactone, amiloride, triamterene | Raise potassium | Avoid high-potassium foods on spironolactone [29]; a case of paralysis on spironolactone and losartan [30] |
+| ACE inhibitors | Lisinopril, enalapril, captopril | Raise potassium | Risk is higher with kidney impairment, diabetes or potassium-sparing diuretics [19] |
+| Angiotensin receptor blockers (ARBs) | Losartan, valsartan, candesartan | Raise potassium | Listed among drugs that raise potassium [29]; add to the risk in kidney disease [23] |
+| NSAIDs (regular use) | Ibuprofen, naproxen | Can raise potassium | Listed among drugs that raise potassium [29] |
+| Digoxin | Lanoxin | Potassium level matters | Not a direct interaction: the label's concern is low potassium, which raises the risk of digoxin toxicity [41]; keep potassium intake steady and ask your doctor before large changes |
 
-**General guidance:** People with severe kidney disease, those taking ACE inhibitors (captopril, lisinopril, enalapril), potassium-sparing diuretics (e.g., triamterene or spironolactone), or other people who need to limit potassium intake should consult a physician before consuming coconut water regularly [6]. The combination of potassium-sparing diuretics plus coconut water has been documented to cause life-threatening hyperkalemia in case reports [61].
-
-For more about potassium side effects and drug interactions, see comprehensive potassium reference materials [6].
+**General guidance:** If you take any of these medicines, have kidney disease, or have been told to limit potassium, ask your doctor before drinking coconut water regularly [19][29]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ## 7. Dietary Sources and Alternatives
 
 ### Coconut Water Sources
 
-Coconut water is available in several forms:
-
-- **Fresh green coconuts:** The most natural source. Water is extracted directly from immature coconuts, typically harvested 6-7 months post-pollination when the green husk encases a nut filled with 200-600 mL of translucent liquid and minimal solid endosperm. At this stage, the water's volume peaks before gelation into copra begins around 10-12 months [74].
-- **Packaged coconut water:** Available in PET bottles, Tetra Pak cartons, cans, and pouches. Most undergo pasteurization (thermal or HPP). Tetra Pak cartons hold over 50% of market share due to lightweight, recyclable design [75].
-- **Coconut water powder:** Spray-dried or freeze-dried for convenience. Can be reconstituted with water.
-- **Flavored coconut water:** Enhanced with fruit flavors (pineapple, mango) to appeal to broader tastes. May contain added sugars. Conventional processing dominates at over 79% of sales versus organic options [76].
-- **Concentrated coconut water:** Produced via reverse osmosis, then reconstituted. This process alters electrolyte balance and is less favored for authenticity claims [77].
+Coconut water is drunk fresh from young green coconuts or bought packaged. Fresh coconut water spoils fast, which drives new preservation methods for packaged products [4]. Packaged coconut water varies: a review of its authenticity covers natural variation, changes from processing, adulteration and product recalls [5]. Choose a product that an independent lab has tested.
 
 ### Potassium-Rich Food Alternatives
 
-For those seeking to increase potassium intake without coconut water, many foods provide comparable or greater potassium per serving:
-
-| Food | Serving | Potassium (mg) | % AI (3,400 mg) |
-|------|---------|:-:|:-:|
-| Beet greens, cooked | 1/2 cup | 654 | 19% |
-| White beans, canned | 1/2 cup | 595 | 18% |
-| Potato, baked with skin | 1 medium | 610 | 18% |
-| Sweet potato, baked | 1 medium | 541 | 16% |
-| Orange juice | 1 cup | 496 | 15% |
-| Avocado | 1/2 fruit | 487 | 14% |
-| Coconut water | 1 cup (240 mL) | 400-500 | 12-15% |
-| Banana | 1 medium | 422 | 12% |
-| Spinach, cooked | 1/2 cup | 420 | 12% |
-| Yogurt, plain | 1 cup | 380 | 11% |
-
-Source: USDA FoodData Central [78].
+Many fruits and vegetables are rich in potassium. MedlinePlus names bananas, oranges and orange juice, potatoes, tomatoes, avocados and cooked spinach among the foods to limit when potassium is high [38].
 
 ### Other Natural Electrolyte Sources
 
-For hydration purposes, other natural options include:
-
-- **Orange juice:** Higher in potassium per cup (~496 mg) but also higher in sugar (~21 g) and calories (~112 kcal)
-- **Watermelon:** Provides hydration and potassium with moderate sugar content
-- **Milk:** Contains sodium, potassium, and calcium; studies show effective post-exercise rehydration
-- **Homemade oral rehydration solution:** Water + salt + sugar; better sodium-to-potassium ratio for severe dehydration
-- **Plain water:** Zero calories and adequate for most hydration needs; coconut water offers no superiority over plain water for general hydration in the absence of significant electrolyte losses [12]
+For everyday hydration, plain water works. No trial in this review found coconut water better than water for performance [6][7].
 
 ### Traditional and Historical Uses
 
-Coconut water has deep cultural roots in tropical regions. In South Asian Ayurvedic traditions documented in texts like the Charaka Samhita (circa 300 BCE-200 CE), it is prescribed for quenching excessive thirst, mitigating hiccups, and countering heat-induced fatigue due to its cooling and diuretic qualities [79]. Pacific Island cultures have used it as a foundational hydration source for thousands of years, with Hawaiians terming it *noelani* ("dew from the heavens") [80]. In World War II Pacific theater emergencies, it was reportedly used for short-term intravenous rehydration when sterile fluids were unavailable [81].
+Coconut water is drunk worldwide as a refreshing beverage [1], and coconut is a staple food in tropical countries [27]. Physicians in remote places have used it as a short-term intravenous fluid when standard fluids were unavailable [25].
+
+### Product Context
+
+Brad Stanfield owns the company that sells Potassium Fiber Drink, a drink powder sold as a dietary supplement, and profits from its sale. One scoop gives 500 mg of potassium (as potassium citrate) and 8 g of fiber from acacia gum ([shop it](https://microvitamin.com/products/potassium-fiber-drink)).
+
+The store's warning: "Contains 500 mg of added potassium per serving (1,000 mg at the two-scoop daily maximum). Talk to your doctor before using this product if you have kidney disease, if you have been told to limit potassium, or if you take an angiotensin converting enzyme inhibitor (often called an ACE inhibitor), an angiotensin receptor blocker, a potassium-sparing diuretic, or any other potassium supplement. Not for children. Keep out of reach of children. If you are pregnant or breastfeeding, ask your doctor first."
 
 ## 8. References
 
-[1] U.S. Department of Agriculture, FoodData Central. "Nuts, coconut water (liquid from coconuts)." [https://fdc.nal.usda.gov/](https://fdc.nal.usda.gov/)
+[1] Yong JW et al. The chemical composition and biological properties of coconut (Cocos nucifera L.) water. Molecules. 2009. PMID: 20032881. https://pubmed.ncbi.nlm.nih.gov/20032881/
 
-[2] Yong JW, Ge L, Ng YF, Tan SN. "The Chemical Composition and Biological Properties of Coconut (Cocos nucifera L.) Water." *Molecules*. 2009;14(12):5144-5164. doi: [10.3390/molecules14125144](https://doi.org/10.3390/molecules14125144)
+[2] U.S. Department of Agriculture, FoodData Central. Nuts, coconut water (liquid from coconuts), SR Legacy food 170174. https://fdc.nal.usda.gov/fdc-app.html#/food-details/170174/nutrients
 
-[3] Preetha PP, Devi VG, Rajamohan T. "Coconut water uses, composition and properties: a review." *Fruits*. 2013;68(4):271-283.
+[3] Appaiah P et al. Physico-chemical characteristics and stability aspects of coconut water and kernel at different stages of maturity. J Food Sci Technol. 2015. PMID: 26243942. https://pubmed.ncbi.nlm.nih.gov/26243942/
 
-[4] "Is coconut water truly a miracle drink in pregnancy or a myth?" Medical review, 2022.
+[4] Shi S et al. Research Progress in Coconut Water: A Review of Nutritional Composition, Biological Activities, and Novel Processing Technologies. Foods. 2025. PMID: 40361585. https://pubmed.ncbi.nlm.nih.gov/40361585/
 
-[5] Preetha PP, Devi VG, Rajamohan T. "Coconut water uses, composition and properties: A review." *J Food Sci Technol*. 2014.
+[5] Burns DT et al. Authenticity and the Potability of Coconut Water - a Critical Review. J AOAC Int. 2020. PMID: 33241361. https://pubmed.ncbi.nlm.nih.gov/33241361/
 
-[6] ConsumerLab. "Coconut Water Review." Accessed 2025. [https://www.consumerlab.com/reviews/best-coconut-water-review-and-comparison/coconut-water/](https://www.consumerlab.com/reviews/best-coconut-water-review-and-comparison/coconut-water/)
+[6] Kalman DS et al. Comparison of coconut water and a carbohydrate-electrolyte sport drink on measures of hydration and physical performance in exercise-trained men. J Int Soc Sports Nutr. 2012. PMID: 22257640. https://pubmed.ncbi.nlm.nih.gov/22257640/
 
-[7] Cappelletti M, Ferrentino G, Endrizzi I, Spilimbergo S. "High pressure carbon dioxide pasteurization of coconut water." *J Supercrit Fluids*. 2015.
+[7] Peart DJ et al. Coconut Water Does Not Improve Markers of Hydration During Sub-maximal Exercise and Performance in a Subsequent Time Trial Compared with Water Alone. Int J Sport Nutr Exerc Metab. 2017. PMID: 27768399. https://pubmed.ncbi.nlm.nih.gov/27768399/
 
-[8] "The use of High-Pressure Processing (HPP) to improve the safety and quality of coconut water." Food processing review.
+[8] Chavalittamrong B et al. Electrolytes, sugar, calories, osmolarity and pH of beverages and coconut water. Southeast Asian J Trop Med Public Health. 1982. PMID: 7163850. https://pubmed.ncbi.nlm.nih.gov/7163850/
 
-[9] Tetra Pak. "Coconut water processing, manufacturing & production." [https://www.tetrapak.com/](https://www.tetrapak.com/)
+[9] Fagundes Neto U et al. Negative findings for use of coconut water as an oral rehydration solution in childhood diarrhea. J Am Coll Nutr. 1993. PMID: 8463517. https://pubmed.ncbi.nlm.nih.gov/8463517/
 
-[10] Prades A, Dornier M, Diop N, Pain JP. "Coconut water preservation and processing: A review." *Fruits*. 2012;67(3):157-171.
+[10] Ismail I et al. Rehydration with sodium-enriched coconut water after exercise-induced dehydration. Southeast Asian J Trop Med Public Health. 2007. PMID: 17883020. https://pubmed.ncbi.nlm.nih.gov/17883020/
 
-[11] Grand View Research. "Coconut Water Market Size & Share, Industry Report, 2030." 2024. [https://www.grandviewresearch.com/industry-analysis/coconut-water-market](https://www.grandviewresearch.com/industry-analysis/coconut-water-market)
+[11] Saat M et al. Rehydration after exercise with fresh young coconut water, carbohydrate-electrolyte beverage and plain water. J Physiol Anthropol Appl Human Sci. 2002. PMID: 12056182. https://pubmed.ncbi.nlm.nih.gov/12056182/
 
-[12] Mayo Clinic. "Coconut water: Is it super hydrating?" [https://www.mayoclinic.org/](https://www.mayoclinic.org/)
+[12] O'Brien BJ et al. Coconut Water: A Sports Drink Alternative? Sports (Basel). 2023. PMID: 37755860. https://pubmed.ncbi.nlm.nih.gov/37755860/
 
-[13] Anurag P, et al. "Coconut water of different maturity stages ameliorates inflammatory processes." *J Food Biochem*. 2020.
+[13] Bell SK et al. Rehydration After Exercise-Induced Fluid Losses: Comparing Flavored Water, Coconut Water, and Carbohydrate-Electrolyte Sports Beverage. J Strength Cond Res. 2026. PMID: 41359932. https://pubmed.ncbi.nlm.nih.gov/41359932/
 
-[14] Vita Coco. "Coconut Water Product Page -- Nutritional Information." [https://www.vitacoco.com/](https://www.vitacoco.com/)
+[14] Alleyne T et al. The control of hypertension by use of coconut water and mauby: two tropical food drinks. West Indian Med J. 2005. PMID: 15892382. https://pubmed.ncbi.nlm.nih.gov/15892382/
 
-[15] Vita Coco. "100% Pure Coconut Water Product Page." [https://www.vitacoco.com/](https://www.vitacoco.com/)
+[15] Awaluddin et al. The Effect of Young Coconut Water on Blood Pressure in Hypertensive Patients. J Pak Med Assoc. 2024. PMID: 39221800. https://pubmed.ncbi.nlm.nih.gov/39221800/
 
-[16] "Death by Coconut." *Circ Arrhythm Electrophysiol*. 2014. Note on potassium risks.
+[16] Aburto NJ et al. Effect of increased potassium intake on cardiovascular risk factors and disease: systematic review and meta-analyses. BMJ. 2013. PMID: 23558164. https://pubmed.ncbi.nlm.nih.gov/23558164/
 
-[17] "Coconut Water: Health Benefits, Nutrition and Uses." Medical review, 2024.
+[17] Sandhya VG et al. Comparative evaluation of the hypolipidemic effects of coconut water and lovastatin in rats fed fat-cholesterol enriched diet. Food Chem Toxicol. 2008. PMID: 18809454. https://pubmed.ncbi.nlm.nih.gov/18809454/
 
-[18] Australian Food Composition Database. "Water, coconut, commercial." [https://www.foodstandards.gov.au/science-data/monitoringnutrients/afcd](https://www.foodstandards.gov.au/science-data/monitoringnutrients/afcd)
+[18] Preetha PP et al. Hypoglycemic and antioxidant potential of coconut water in experimental diabetes. Food Funct. 2012. PMID: 22576019. https://pubmed.ncbi.nlm.nih.gov/22576019/
 
-[19] Kalman DS, Feldman S, Krieger DR, Bloomer RJ. "Comparison of coconut water and a carbohydrate-electrolyte sport drink on measures of hydration and physical performance in exercise-trained men." *J Int Soc Sports Nutr*. 2012;9(1):1. doi: [10.1186/1550-2783-9-1](https://doi.org/10.1186/1550-2783-9-1)
+[19] Lisinopril tablet. DailyMed label. https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=aa5d68e7-c2b9-41eb-ade4-2cd57edc1533
 
-[20] Tan TC, Cheng LH, Bhat R, et al. "Determination of anions, cations, and sugars in coconut water by ion chromatography." *J Food Compos Anal*. 2014;37:81-86.
+[20] Patel RM et al. Coconut Water: An Unexpected Source of Urinary Citrate. Biomed Res Int. 2018. PMID: 30515390. https://pubmed.ncbi.nlm.nih.gov/30515390/
 
-[21] Kuberski T, Roberts A, Linehan B, et al. "Coconut water as a rehydration fluid." *N Z Med J*. 1979;90(641):98-100.
+[21] Gandhi M et al. Prophylactic effect of coconut water (Cocos nucifera L.) on ethylene glycol induced nephrocalcinosis in male wistar rat. Int Braz J Urol. 2013. PMID: 23489503. https://pubmed.ncbi.nlm.nih.gov/23489503/
 
-[22] Garcia RN, et al. "Electrolytes, sugar, calories, osmolarity and pH of beverages and coconut water." Technical report.
+[22] Adams W et al. Young coconut water for home rehydration in children with mild gastroenteritis. Trop Geogr Med. 1992. PMID: 1496708. https://pubmed.ncbi.nlm.nih.gov/1496708/
 
-[23] Ismail I, Singh R, Sirisinghe RG. "Rehydration with sodium-enriched coconut water after exercise-induced dehydration." *Southeast Asian J Trop Med Public Health*. 2007;38(4):769-785. PMID: [17883020](https://pubmed.ncbi.nlm.nih.gov/17883020/)
+[23] Valdivielso JM et al. Hyperkalemia in Chronic Kidney Disease in the New Era of Kidney Protection Therapies. Drugs. 2021. PMID: 34313978. https://pubmed.ncbi.nlm.nih.gov/34313978/
 
-[24] Peart DJ, Hensby A, Shaw MP. "Coconut Water Does Not Improve Markers of Hydration During Sub-maximal Exercise and Performance in a Subsequent Time Trial Compared with Water Alone." *Int J Sport Nutr Exerc Metab*. 2017;27(3):279-284. doi: [10.1123/ijsnem.2016-0121](https://doi.org/10.1123/ijsnem.2016-0121)
+[24] Kedia S et al. Coconut Water Induces Clinical Remission in Mild to Moderate Ulcerative Colitis: Double-blind Placebo-controlled Trial. Clin Gastroenterol Hepatol. 2024. PMID: 38278200. https://pubmed.ncbi.nlm.nih.gov/38278200/
 
-[25] Laitano O, et al. "Improved exercise capacity in the heat followed by coconut water consumption." *Mot Rev Educ Fis*. 2014;20(1):107-111.
+[25] Campbell-Falck D et al. The intravenous use of coconut water. Am J Emerg Med. 2000. PMID: 10674546. https://pubmed.ncbi.nlm.nih.gov/10674546/
 
-[26] "The effect of coconut water consumption on exercise endurance in healthy individuals: A systematic review of randomized controlled trials." 2025.
+[26] Pummer S et al. Influence of coconut water on hemostasis. Am J Emerg Med. 2001. PMID: 11447514. https://pubmed.ncbi.nlm.nih.gov/11447514/
 
-[27] "Does coconut water provide significant performance benefits over water? A review." Sports science review, 2024.
+[27] DebMandal M et al. Coconut (Cocos nucifera L.: Arecaceae): in health promotion and disease prevention. Asian Pac J Trop Med. 2011. PMID: 21771462. https://pubmed.ncbi.nlm.nih.gov/21771462/
 
-[28] Alleyne T, Roache S, Thomas C, Shirley A. "The control of hypertension by use of coconut water and mauby." *West Indian Med J*. 2005;54(1):3-8. PMID: [15892382](https://pubmed.ncbi.nlm.nih.gov/15892382/)
+[28] National Academies of Sciences, Engineering, and Medicine. Dietary Reference Intakes for Sodium and Potassium. National Academies Press. 2019. PMID: 30844154. https://pubmed.ncbi.nlm.nih.gov/30844154/
 
-[29] Bhagya D, Prema L, Rajamohan T. "Effect of supplementation of tender coconut water on blood pressure of primary hypertensive subjects." Technical report, 2012.
+[29] Spironolactone tablet, film coated. DailyMed label. https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=96db5dee-7c01-4f96-8b1e-1fcd2103d0fe
 
-[30] Devi VG, et al. "The Diuretic Effects of Coconut Water by Suppressing Aquaporin and Renin-Angiotensin-Aldosterone System in Saline-Loaded Rats." *J Food Biochem*. 2018.
+[30] Hemachandra KHDT et al. Acute Ascending Flaccid Paralysis Secondary to Multiple Trigger Factor Induced Hyperkalemia. Case Rep Neurol Med. 2018. PMID: 30002937. https://pubmed.ncbi.nlm.nih.gov/30002937/
 
-[31] Sandhya VG, Rajamohan T. "Comparative evaluation of the hypolipidemic effects of coconut water and lovastatin in rats fed fat-cholesterol enriched diet." *Food Chem Toxicol*. 2008;46(12):3586-3592. doi: [10.1016/j.fct.2008.08.030](https://doi.org/10.1016/j.fct.2008.08.030)
+[31] Rees R et al. Coconut water-induced hyperkalaemia. Br J Hosp Med (Lond). 2012. PMID: 23124410. https://pubmed.ncbi.nlm.nih.gov/23124410/
 
-[32] Rajamohan T, Sandhya VG. "Beneficial effects of coconut water feeding on lipid metabolism in cholesterol-fed rats." *J Med Food*. 2004;7(3):273-276. doi: [10.1089/jmf.2004.7.273](https://doi.org/10.1089/jmf.2004.7.273)
+[32] Hakimian J et al. Death by coconut. Circ Arrhythm Electrophysiol. 2014. PMID: 24550410. https://pubmed.ncbi.nlm.nih.gov/24550410/
 
-[33] Preetha PP, Devi VG, Rajamohan T. "The Effect of Coconut Water on Blood Glucose and Insulin in Healthy Adults." *Food Funct*. 2012.
+[33] Warren CM et al. Prevalence and burden of coconut allergy in the United States. Ann Allergy Asthma Immunol. 2023. PMID: 37625503. https://pubmed.ncbi.nlm.nih.gov/37625503/
 
-[34] Pinto IF, et al. "Effects of coconut water on carbohydrate metabolism and pancreatic beta-cell function in streptozotocin-induced diabetic rats." *Plant Foods Hum Nutr*. 2015;70(1):56-62. doi: [10.1007/s11130-014-0461-0](https://doi.org/10.1007/s11130-014-0461-0)
+[34] Kruse L et al. Coconut allergy: Characteristics of reactions and diagnostic predictors in a pediatric tertiary care center. Ann Allergy Asthma Immunol. 2021. PMID: 33548470. https://pubmed.ncbi.nlm.nih.gov/33548470/
 
-[35] "Diabetics should monitor coconut water intake due to fructose content and potassium risk." General clinical guidance, 2024.
+[35] Anagnostou K. Coconut Allergy Revisited. Children (Basel). 2017. PMID: 28961189. https://pubmed.ncbi.nlm.nih.gov/28961189/
 
-[36] Devgun MS, Dhillon HS. "Coconut water drink and the risk of hyperkalaemia in diabetics." *Pract Diabetes*. 2016;33(1):13-14. doi: [10.1002/pdi.1993](https://doi.org/10.1002/pdi.1993)
+[36] Soriano LP et al. Case Report of Hyponatremic Seizures in a Term Neonate Attributed to Excessive Maternal Coconut Water Ingestion During Labor. A A Pract. 2024. PMID: 38975685. https://pubmed.ncbi.nlm.nih.gov/38975685/
 
-[37] Punnapuzha S, Oehlschlaeger S. "Coconut Water: An Unexpected Source of Urinary Citrate." *Urology*. 2014.
+[37] Birkelund T et al. Fatal 3-Nitropropionic Acid Poisoning after Consuming Coconut Water. Emerg Infect Dis. 2021. PMID: 33350928. https://pubmed.ncbi.nlm.nih.gov/33350928/
 
-[38] Gandhi M, Aggarwal M, Puri S, Singla SK. "Prophylactic effect of coconut water (Cocos nucifera L.) on ethylene glycol induced nephrocalcinosis in male Wistar rats." *Int Braz J Urol*. 2013;39(1):108-115. doi: [10.1590/S1677-55382013000100014](https://doi.org/10.1590/S1677-55382013000100014)
+[38] MedlinePlus Medical Encyclopedia. High potassium level. https://medlineplus.gov/ency/article/001179.htm
 
-[39] Payen C, et al. "Coconut Water Induces Clinical Remission in Mild to Moderate Ulcerative Colitis: Double-blind Placebo-controlled Trial." *Inflamm Bowel Dis*. 2024. doi: [10.1093/ibd/izad262](https://doi.org/10.1093/ibd/izad262)
+[39] Hewawasam SP et al. Dietary practices and FODMAPs in South Asia: Applicability of the low FODMAP diet to patients with irritable bowel syndrome. J Gastroenterol Hepatol. 2018. PMID: 28700090. https://pubmed.ncbi.nlm.nih.gov/28700090/
 
-[40] "Coconut Water Nutrition Facts and Health Benefits." Nutrition review, 2024.
+[40] Peterle VM et al. Microbiological Quality of Coconut Water Sold in the Grande Vitória Region, Brazil, and Phenogenotypic Antimicrobial Resistance of Associated Enterobacteria. Microorganisms. 2024. PMID: 39338557. https://pubmed.ncbi.nlm.nih.gov/39338557/
 
-[41] Wulandari KP, et al. "The effect of young coconut water against morning sickness among women in the first trimester of pregnancy." 2019.
-
-[42] "Coconut Water in Pregnancy: Benefits, Safety, and More." Medical review, 2023.
-
-[43] WebMD. "Coconut Water." [https://www.webmd.com/vitamins/ai/ingredientmono-1261/coconut-water](https://www.webmd.com/vitamins/ai/ingredientmono-1261/coconut-water)
-
-[44] "Coconut water may not be for everyone: Types of people who should consult a healthcare provider." Health guidance.
-
-[45] Penning R, van Nuland M, et al. "The Diuretic Action of Weak and Strong Alcoholic Beverages in Elderly Men: A Randomized Diet-Controlled Crossover Trial." *Nutr J*. 2015;14:29. doi: [10.1186/s12937-015-0019-z](https://doi.org/10.1186/s12937-015-0019-z)
-
-[46] Lee HS, Isse T, Kawamoto T, et al. "Influence of food commodities on hangover based on alcohol dehydrogenase and aldehyde dehydrogenase activities." *Curr Res Food Sci*. 2022;5:2105-2117.
-
-[47] "Detoxification activity of bioactive food compounds against ethanol-induced injuries and hangover symptoms." *J Funct Foods*. 2021.
-
-[48] "Skin health and coconut water claims: evidence review." Dermatological research overview, 2024.
-
-[49] "Debunking the myth behind SUPERFOODS." Nutrition review.
-
-[50] DebMandal M, Mandal S. "Coconut (Cocos nucifera L.: Arecaceae): in health promotion and disease prevention." *Asian Pac J Trop Med*. 2011;4(3):241-247. doi: [10.1016/S1995-7645(11)60078-3](https://doi.org/10.1016/S1995-7645(11)60078-3)
-
-[51] "Beverages for Acid Reflux or GERD." Medical review, 2024.
-
-[52] "What to Drink for Acid Reflux." Gastroenterology overview, 2023.
-
-[53] "Acid reflux, heartburn, and coconut water." Consumer guidance.
-
-[54] "Guide to Proper Consumption of Coconut Water." Health guidance, 2024.
-
-[55] "Coconut Water and Diarrhea: Rehydration, Side Effects, Other Options." Medical review.
-
-[56] "Coconut Water Benefits: Researched Effects, Safety, and More." Health review, 2024.
-
-[57] "Does Coconut Water Really Make You Poop?" Health review, 2024.
-
-[58] "Hyperkalemia (High Blood Potassium)." Medical reference. American Heart Association.
-
-[59] "Acute Ascending Flaccid Paralysis Secondary to Multiple Trigger Factors." *Case Rep Neurol Med*. 2018.
-
-[60] Hakimian J, Goldbarg SH, Park CH, Kerwin TC. "Death by Coconut." *Circ Arrhythm Electrophysiol*. 2014;7(1):180-181. doi: [10.1161/CIRCEP.113.000941](https://doi.org/10.1161/CIRCEP.113.000941)
-
-[61] Hemachandra D, Patel N. "Acute Ascending Flaccid Paralysis Secondary to Multiple Trigger Factors Including Coconut Water Consumption." *Case Rep Neurol Med*. 2018;2018:3862721. doi: [10.1155/2018/3862721](https://doi.org/10.1155/2018/3862721)
-
-[62] Abe K, et al. "A case of leg cramps associated with elevated potassium levels." *Case Rep Neurol Med*. 2012.
-
-[63] Nguyen SA, et al. "Coconut allergy: Characteristics of reactions and diagnostic predictors." *Ann Allergy Asthma Immunol*. 2021;127(5):562-567.
-
-[64] "Coconut allergy: Symptoms, treatments, foods to avoid." Medical review, 2023.
-
-[65] Anagnostou K. "Coconut Allergy Revisited." *Children (Basel)*. 2017;4(10):85. doi: [10.3390/children4100085](https://doi.org/10.3390/children4100085)
-
-[66] "Coconut allergen cross-reactivity." Allergy research overview.
-
-[67] Faleiro TR, et al. "Potential Bacterial Health Risk Posed to Consumers of Fresh Coconut Water." *Food Microbiol*. 2019.
-
-[68] "Fresh coconut water hygiene and bacterial contamination risks." Public health guidance.
-
-[69] Canadian Food Inspection Agency. "Undeclared allergens and gluten in coconut water -- April 1, 2021 to present." Recall notice.
-
-[70] "Is Coconut Water Good for My Kidneys?" Nephrology review, 2024.
-
-[71] "Coconut water can be dangerous for kidney patients." Medical guidance, 2023.
-
-[72] "The 15 Best Foods to Eat When You're Sick -- coconut water and respiratory illness." Nutrition review.
-
-[73] "Is Coconut Water an Effective Remedy for Cough?" Medical review, 2024.
-
-[74] Luengwilai K, et al. "When Are Coconuts Ripe: Do Coconuts Ripen After They Are Picked." *Postharvest Biol Technol*. 2014.
-
-[75] "Coconut Water Market Size, Share | CAGR of 10.8%." Market research report, 2024.
-
-[76] "Top Selling Coconut Water: 2025 Market Trends & Brand Analysis." Market analysis.
-
-[77] Prades A, Dornier M, Diop N, Pain JP. "Coconut water preservation and processing: A review." *Fruits*. 2012;67(3):157-171.
-
-[78] U.S. Department of Agriculture, FoodData Central. [https://fdc.nal.usda.gov/](https://fdc.nal.usda.gov/)
-
-[79] "Coconut, Coconut Water, Flower Benefits, Side Effects, Research -- Ayurvedic traditions." Ethnobotanical review.
-
-[80] "Coconut in Pacific Island Cultures: 101 Guide to Its History." Cultural review.
-
-[81] Campbell-Falck D, et al. "The intravenous use of coconut water." *Am J Emerg Med*. 2000;18(1):108-111. doi: [10.1016/S0735-6757(00)90062-7](https://doi.org/10.1016/S0735-6757(00)90062-7)
+[41] Lanoxin (digoxin) tablet. DailyMed label. https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=d91e3646-4c63-4512-ab22-db39c085c4dc

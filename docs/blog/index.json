@@ -3421,7 +3421,8 @@
     "publishedAt": "2025-07-19T04:04:17Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/pqq-supplement-guide",
     "type": "reference",
-    "summary": "Reference on PQQ (pyrroloquinoline quinone): memory, brain health, energy, mood, sleep, muscle, cholesterol. Studied in middle-aged and older adults. Typical 20 mg/day. Evidence limited and mostly industry-funded. Always discuss with your doctor."
+    "summary": "PQQ topic master. Brad does not take it because the human evidence is unconvincing. Small, mostly industry-linked trials at about 20 mg a day report modest effects. Talk to your doctor first if pregnant, breastfeeding or with kidney disease.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "Exercise is the Closest Thing We Have to the Fountain of Youth",
@@ -4195,7 +4196,8 @@
     "publishedAt": "2025-05-20T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/l-citrulline-benefits-forms-dosing",
     "type": "reference",
-    "summary": "Reference on L-citrulline: blood pressure, erectile dysfunction, exercise performance. Best evidence in adults with elevated BP and men with mild ED. Pure form preferred over citrulline malate. Doses 1.5-6 g/day. Always discuss with your doctor."
+    "summary": "L-citrulline: Brad does not recommend it or any nitric oxide supplement; he suggests rocket and other nitrate-rich vegetables. Trials show little exercise benefit and a small, inconsistent blood pressure effect. Talk to your doctor first if you take blood pressure drugs, nitrates or sildenafil.",
+    "reviewed": "2026-11-09"
   },
   {
     "title": "Maca: Benefits, Forms, Dosing, and Side Effects",
@@ -4694,7 +4696,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/beetroot-nitrate-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on beetroot (beet juice): blood pressure, exercise endurance. For hypertension or heart disease. Juice or concentrate, 300-600 mg nitrate/day, 2-3 hrs before exercise. Nitrate content varies by product. Always discuss with your doctor."
+    "summary": "Beetroot juice supplies nitrate, which lowered blood pressure in some trials and helped endurance in non-elite exercisers. Nitrate varies widely by product. Brad prefers rocket salad to beetroot supplements. Talk to your doctor first if you take blood pressure medicines or form kidney stones.",
+    "reviewed": "2026-11-09"
   },
   {
     "title": "Black Seed Oil: Benefits, Forms, Dosing, and Side Effects",
@@ -4785,7 +4788,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/bone-broth-collagen-guide",
     "type": "reference",
-    "summary": "Reference on bone broth: joint pain, skin wrinkles, muscle mass, sleep (glycine). Most evidence is for collagen peptides, not broth directly. Liquid/powder/capsule; 2-3 cups/day for joints. High sodium content; caution in kidney disease. Always discuss with your doctor."
+    "summary": "Bone broth reference. No trials test broth itself; claims rest on collagen trials (2.5 to 15 g a day) for joints, skin, bone and muscle. Broth gave significantly lower collagen amino acids than a 20 g dose. Poor calcium source; lead low. Ask your doctor first if you take spironolactone or levodopa.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "Calcium: Benefits, Best Forms, Dosing, and Side Effects",
@@ -4928,7 +4932,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/coconut-water-nutrition-hydration",
     "type": "reference",
-    "summary": "Reference on coconut water: natural electrolyte drink for hydration, blood pressure support, exercise recovery. High potassium (400-500 mg/cup); low calorie. Caution: hyperkalemia risk in kidney disease, diabetes, or on ACE inhibitors/potassium-sparing diuretics. Always discuss with your doctor."
+    "summary": "Coconut water is mostly water, rich in potassium and low in calories. Small trials found it rehydrates about as well as a sports drink after exercise, and one trial suggests it may help ulcerative colitis. Talk to your doctor first if you have kidney disease or take medicines that raise potassium.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "CoQ10 (Ubiquinol): Benefits, Best Forms, Dosing, and Side Effects",
@@ -6443,7 +6448,8 @@
     "publishedAt": "2025-04-29T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/manuka-honey-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on manuka honey: wound healing, acid reflux (GERD), antibacterial, dry eye, oral health. UMF 15+ for therapeutic use; 1-2 tsp/day general wellness, 5g three times daily for GERD. Avoid in infants. Always discuss with your doctor."
+    "summary": "Topic master on manuka honey: UMF grading, MGO, and trial evidence for burns, wounds, GERD, cough, dry mouth and dry eye. Brad's view covers ordinary honey for cold cough. Never give honey to a baby under 1. Talk to your doctor first if you have diabetes, a honey allergy or a weak immune system.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "NAD Boosters (NMN, NR, NADH): Benefits, Forms, Dosing, and Side Effects",
@@ -6718,7 +6724,8 @@
     "publishedAt": "2025-04-22T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/arginine-benefits-dosing-safety",
     "type": "reference",
-    "summary": "Reference on L-arginine: blood pressure, erectile dysfunction, heart failure, exercise endurance. Forms: L-arginine HCl (deduct 17% for free arginine), Nitrosigine. Doses 4-15 g/day; contraindicated post-heart attack. Always discuss with your doctor."
+    "summary": "Topic master on L-arginine. Brad does not recommend it or other nitric oxide supplements; he eats rocket. Trials show small blood pressure falls and mixed exercise and erectile results. Do not take it after a heart attack. Talk to your doctor first if you take blood pressure medicines.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "Cholesterol-Lowering Supplements: Benefits, Evidence, Dosing, and Side Effects",
@@ -10817,7 +10824,8 @@
     "publishedAt": "2024-01-22T10:04:17Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/alginate-supplements-acid-reflux",
     "type": "reference",
-    "summary": "Reference on alginates (Gaviscon, sodium alginate): heartburn, acid reflux, GERD, throat reflux. Safe in pregnancy. Liquid, chewable, or capsule; 200–1000 mg after meals up to 4x daily. Separate from meds 2h. Always discuss with your doctor."
+    "summary": "Reference on alginates (Gaviscon, sodium alginate) for heartburn, GERD and throat reflux. Meta-analyses disagree on how much they beat placebo or antacids. Take 2 hours apart from other medicines. Talk to your doctor first if on a low-salt diet, with kidney disease or on regular medicines.",
+    "reviewed": "2026-11-09"
   },
   {
     "title": "African Mango: Benefits, Forms, Dosing, and Side Effects",

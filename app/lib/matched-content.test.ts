@@ -131,14 +131,14 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
   // masters their room too (the re-check: 197 of 1,140 pairs with one between,
   // 42 with it first, dropped a master whole).
   const LITHIUM = 'lithium-benefits-forms-dosing-and-side-effects';
-  // US-50 masters-new-7 (2026-10-25): probiotics became a master; masters-new-13 (2026-10-26): weight loss did too, so beetroot (about 63K, held from the masters plan) stands in.
-  const BIG_POST = 'beetroot-benefits-forms-dosing-and-side-effects';
+  // US-50 masters-new-7 (2026-10-25): probiotics became a master; masters-new-13 (2026-10-26): weight loss did too; masters-resource-1 (2026-11-10): beetroot did too, so the largest non-master post (about 36K) stands in.
+  const BIG_POST = 'breaking-reduce-dementia-risk-45-percent';
   const warfarin = (content: string | null) => {
     expect(content).toMatch(/^#+ Warfarin and Vitamin K Antagonists$/m);
     expect(content).toContain('Vitamin K can have a serious and potentially dangerous interaction with warfarin');
   };
 
-  it('[lithium, beetroot post, vitamin K]: vitamin K loads with its warfarin lines', () => {
+  it('[lithium, big post, vitamin K]: vitamin K loads with its warfarin lines', () => {
     const { content, skipped } = loadMatchedContent([LITHIUM, BIG_POST, K]);
     expect(skipped).not.toContain(K);
     expect(skipped).not.toContain(LITHIUM);
@@ -146,7 +146,7 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
     warfarin(content);
   });
 
-  it('[beetroot post, vitamin C, B vitamins]: a non-master first leaves both masters their room', () => {
+  it('[big post, vitamin C, B vitamins]: a non-master first leaves both masters their room', () => {
     const C = 'vitamin-c-benefits-forms-dosing-and-side-effects';
     const B = 'b-vitamins-benefits-forms-dosing-and-side-effects';
     const { content, skipped } = loadMatchedContent([BIG_POST, C, B]);
@@ -160,16 +160,16 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
   it('a non-master that fits alongside the later masters\' reserve still loads', () => {
     const { content, skipped } = loadMatchedContent([BIG_POST, LITHIUM]);
     expect(skipped).toEqual([]);
-    expect(content).toContain('title: Beetroot: Benefits');
+    expect(content).toContain('title: BREAKING! Reduce Dementia Risk By 45%');
     expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
   });
 
-  // US-50 masters-new-1 (2026-10-23): vitamin A became a master; masters-new-17 (2026-10-26): mangosteen did too, so l-citrulline (about 60K, held from the masters plan) stands in.
-  it('[vitamin K, l-citrulline post, lithium]: a master shrinks so the post after it loads too (review S1)', async () => {
-    const A = 'l-citrulline-benefits-forms-dosing-and-side-effects';
+  // US-50 masters-new-1 (2026-10-23): vitamin A became a master; masters-new-17 (2026-10-26): mangosteen did too; masters-resource-1 (2026-11-10): l-citrulline did too, so the big post stands in.
+  it('[vitamin K, big post, lithium]: a master shrinks so the post after it loads too (review S1)', async () => {
+    const A = BIG_POST;
     expect(index.find(e => e.handle === A) && isMaster(index.find(e => e.handle === A)!)).toBe(false);
     // Vitamin K grown so the three do not fit whole together.
-    const { content, skipped } = (await loaderWith(grow({ [K]: MAX_BLOG_CHARS - 40_000 })))([K, A, LITHIUM]);
+    const { content, skipped } = (await loaderWith(grow({ [K]: MAX_BLOG_CHARS - 20_000 })))([K, A, LITHIUM]);
     expect(skipped).toEqual([]);
     expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
     expect(content!.split('\n\n---\n\n')[0]).toContain('Internal note, do not quote');
