@@ -56,6 +56,8 @@ import { homedir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseFrontmatter } from "../app/lib/frontmatter";
+import { EVIDENCE_OPENING, isScope, validateExceptions } from "./knowledge-master-rules";
+export { validateExceptions };
 
 export type Status = "PASS" | "FAIL" | "WARN";
 export interface Exception { check: string; handle: string; match: string; reason: string; by: string; date: string }
@@ -329,13 +331,6 @@ const quoteSource = (q: string) => {
 /** The master's view heading (US-50 AC1), shared with knowledge-lint.ts; group 1 is set for a Current view. */
 export const VIEW_HEADING = /^##\s+(?:(Current view \(reviewed [^)]+\))|Current evidence position)\s*$/;
 /** The contract's first sentence of a Current evidence position (claude_business docs/roadmap-chat/knowledge-refresh/master-writer-contract.md). */
-export const EVIDENCE_OPENING = "Brad has not made a video on this topic; this is a summary of the evidence, not his view.";
-/** A Current view may hold ONE uncited scope sentence saying what Brad's source does not cover (Brad 2026-11-10, rulings B5
- *  and B8: "The video discusses ordinary honey; Brad has not spoken about manuka specifically."). A fixed shape, so it can
- *  carry no advice: an optional "<The|Brad's> <video|post> <discusses|is about> <1-2 words>; ", then "<Brad|he> has not
- *  spoken about <topic>" with an optional " specifically" or " itself". The topic, hyphenated, must start the handle. */
-export const SCOPE_SENTENCE = /^(?:(?:The|Brad's) (?:video|post) (?:discusses|is about) [a-z]+(?: [a-z]+)?; )?(?:Brad|[Hh]e) has not spoken about ([a-z]+(?: (?!specifically\.|itself\.)[a-z]+)?)(?: specifically| itself)?\.$/;
-const isScope = (sn: string, handle: string) => { const t = SCOPE_SENTENCE.exec(sn)?.[1]; const h = t?.replace(/ /g, "-"); return !!h && (handle === h || handle.startsWith(`${h}-`)); };
 /** Frontmatter keys that appear more than once. */
 export const duplicateKeys = (front: string) => {
   const keys = front.split(/\r?\n/).map((l) => /^([A-Za-z_][\w-]*):/.exec(l)?.[1]).filter((k): k is string => !!k);
@@ -1614,18 +1609,6 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
   return { results, rows, baseSha };
 }
 
-const EXCEPTION_CHECKS = ["AC2", "AC4", "AC7"];
-export function validateExceptions(x: unknown): string[] {
-  if (!Array.isArray(x)) return ["exceptions file must be a JSON array"];
-  const e: string[] = [];
-  x.forEach((v, i) => {
-    const r = (v ?? {}) as Record<string, unknown>;
-    if (!EXCEPTION_CHECKS.includes(r.check as string)) e.push(`[${i}].check must be one of ${EXCEPTION_CHECKS.join("|")}`);
-    for (const k of ["handle", "match", "reason", "date"]) if (typeof r[k] !== "string" || !(r[k] as string).trim()) e.push(`[${i}].${k} must be a non-empty string`);
-    if (r.by !== "orchestrator" && r.by !== "Brad") e.push(`[${i}].by must be "orchestrator" or "Brad"`);
-  });
-  return e;
-}
 
 /** A batch report must not sit under docs/blog or on any file the batch checks. */
 export function validateOut(outRel: string, handles: string[]): string | null {
