@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef, useId, type ReactNode } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { calculateHealthResults, knownMinorOf } from '@roadmap/health-core/calculations';
 import { unreadableNote } from '@roadmap/health-core/readable-rows';
@@ -21,7 +21,7 @@ import { InputPanel, type PlanBasis } from './InputPanel';
 import { OpenEvidenceContext, usePlanView } from './ResultsPanel';
 import { PersonButton } from './SettingsSheet';
 import { MyHealth, type FormSlots } from './MyHealth';
-import { revealAndFocus, stickyTop } from '../lib/reveal';
+import { revealAndFocus } from '../lib/reveal';
 import { CHAT_BUBBLES } from './icons';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
 import { ChatEmbed } from './ChatEmbed';
@@ -80,6 +80,7 @@ import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { createRemoteChangeRelay } from '../lib/remote-replay';
 import { debounceSave, cancelListSave, flushListSaves, type ListSaves } from '../lib/list-saves';
 import { useRecordState } from '../hooks/useRecordState';
+import { useTabs } from '../hooks/useTabs';
 import { useChatEdits } from './ChatEdits';
 import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
 
@@ -914,9 +915,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   isMobileRef.current = isMobile;
   const isWideDesktop = useIsWideDesktop(1200);
   const floatingChat = !isMobile && !isWideDesktop && reached === 4;
-  const [activeTab, setActiveTab] = useState<TabId>('health');
-  const tabIds = useId();
   const rootRef = useRef<HTMLDivElement>(null);
+  // The phone's three tabs, each keeping its own scroll (hooks/useTabs, US-20 AC6).
+  const { activeTab, selectTab, tabIds } = useTabs(rootRef);
 
   // US-62 AC4: the redesign's denominator, once per tab, with the layout chosen
   // at mount (a later resize does not change it). Shopify only, like every event.
@@ -956,38 +957,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const egfrFromLab = !!(results?.eGFRFromLab || results?.limits?.labEgfr);
   const egfrDay = egfrFromLab ? planInputs.labEgfrDate : results?.eGFR !== undefined ? planInputs.creatinineDay ?? localDay(new Date()) : undefined;
   const egfrCurrent = egfrDay ? { day: egfrDay, source: egfrFromLab ? 'lab' as const : 'calculated' as const } : null;
-
-  // US-20 AC6: each tab keeps its own scroll position. The page scrolls, not
-  // the panel, so leaving a tab records the page's offset and coming back
-  // restores it; a tab not yet visited opens at the widget's top.
-  const activeTabRef = useRef(activeTab);
-  activeTabRef.current = activeTab;
-  const scrollByTab = useRef<Partial<Record<TabId, number>>>({});
-  const scrollOnSwitch = useRef(false);
-  const selectTab = useCallback((tab: TabId) => {
-    if (tab === activeTabRef.current) return;
-    scrollByTab.current[activeTabRef.current] = window.scrollY;
-    scrollOnSwitch.current = true;
-    setActiveTab(tab);
-  }, []);
-  useLayoutEffect(() => {
-    if (!scrollOnSwitch.current) return;
-    scrollOnSwitch.current = false;
-    const saved = scrollByTab.current[activeTab];
-    // A first visit opens at the tab's panel, just under the theme's sticky header. The chat's
-    // card is sized to the screen left between its own top (the header, then the card's measured
-    // inset in its panel) and the tab bar (styles.css, --hr-chat-top, --hr-tabbar-h).
-    const sticky = stickyTop();
-    const panel = document.getElementById(panelDomId(tabIds, activeTab));
-    const card = panel?.querySelector('.chat-embed');
-    const inset = panel && card ? card.getBoundingClientRect().top - panel.getBoundingClientRect().top : 0;
-    rootRef.current?.style.setProperty('--hr-chat-top', `${Math.round(sticky + inset)}px`);
-    rootRef.current?.style.setProperty('--hr-tabbar-h', `${Math.round(rootRef.current.querySelector('.hr-tabbar')?.getBoundingClientRect().height ?? 51)}px`);
-    const top = (panel?.getBoundingClientRect().top ?? 0) - sticky;
-    // At once: the theme's smooth scrolling would slide the page from the top.
-    if (saved !== undefined) window.scrollTo({ top: saved, behavior: 'instant' });
-    else if (top !== 0) window.scrollTo({ top: window.scrollY + top, behavior: 'instant' });
-  }, [activeTab]);
 
   // US-16 AC2 on a phone: after a chat edit switches to My data, the filled
   // cell (a matrix's highlighted cell, or the plain field) is scrolled to the
