@@ -1557,8 +1557,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const personButton = <PersonButton onClick={toggleSettings} buttonRef={personRef} open={settingsOpen}/>;
   // Where the record lives (US-09): in Settings, and for a guest also at My health's foot (orchestrator
   // 2026-11-06). One place at a time: one picker. A phone's Account shows it before any data (its button
-  // is the tab's one sign-in, US-62 AC34). A tab switch remounts SyncControl and shuts an open picker,
-  // so nothing may call selectTab() while the picker is open.
+  // is the tab's one sign-in, US-62 AC34). A tab switch remounts SyncControl and shuts an open picker;
+  // the chat hand-off's selectTab('health') can do that mid-pick (accepted: the lift finishes on its own).
   const storageCard = syncControl?.({ hasData: plan.planned || (isMobile && settingsShown), attention: plan.attention });
 
   const myHealthProps = {
