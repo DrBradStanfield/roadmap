@@ -3,10 +3,11 @@ import { opensFullForm, type FormStage, type RecordHoldings } from '@roadmap/hea
 import { ONBOARDING_STEPS } from '@roadmap/health-core/product-events';
 import { getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
+import { safeGetItem, safeSetItem } from '../lib/storage';
 
 /** US-62 AC31: this browser has pressed "Your plan is ready."'s Got it. A UI flag only, never in the record. */
 const PLAN_READY_SEEN_KEY = 'hr_plan_ready_seen';
-const planReadySeen = (): boolean => { try { return localStorage.getItem(PLAN_READY_SEEN_KEY) === '1'; } catch { return false; } };
+const planReadySeen = (): boolean => safeGetItem(PLAN_READY_SEEN_KEY) === '1';
 
 /**
  * The onboarding of the record the screen shows (US-62 AC12, AC13, AC31).
@@ -45,7 +46,6 @@ interface RecordOnboarding {
 
 export interface Onboarding {
   reached: FormStage;
-  opened: FormStage;
   epoch: number;
   fullForm: boolean;
   aboutYouLow: boolean;
@@ -91,19 +91,19 @@ export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded
   });
 
   const markAnswered = useCallback(() => { ref.current!.answered = true; }, []);
-  const clearAnswered = useCallback(() => { if (ref.current) ref.current.answered = false; }, []);
+  const clearAnswered = useCallback(() => { ref.current!.answered = false; }, []);
   const isComplete = useCallback(() => stageRef.current === 4, []);
   const profileLeft = useCallback(() => {
     if (stageRef.current === 4) setMovedLow(ref.current!.epoch);
   }, []);
   const dismissPlanReady = useCallback(() => {
     trackProductEvent('plan_ready_dismissed');
-    try { localStorage.setItem(PLAN_READY_SEEN_KEY, '1'); } catch { /* private mode: gone for this visit only */ }
+    safeSetItem(PLAN_READY_SEEN_KEY, '1'); // private mode: gone for this visit only
     setPlanReadyFor(null);
   }, []);
 
   return {
-    reached, opened, epoch, fullForm,
+    reached, epoch, fullForm,
     aboutYouLow: opened === 4 || movedLow === epoch,
     planReady: planReadyFor === epoch,
     isComplete, markAnswered, clearAnswered, profileLeft, dismissPlanReady,

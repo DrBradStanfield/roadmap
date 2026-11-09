@@ -287,6 +287,26 @@ describe('US-62 AC25: the last answer lands on My health, once per record (D1)',
   });
 });
 
+describe('US-62 AC13: another writer\'s change clears an answer given here', () => {
+  it('US-62 AC13: a height retyped here, then another device finishing the record, sends no step and shows no plan-ready card', async () => {
+    await saveChangedMeasurements({ heightCm: 170 }, {});
+    await addMeasurement('weight', 70, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(sexQuestion(view)).toBeTruthy()); // stage 2
+    // An answer given here that raises nothing: the mark is set and not spent.
+    type(q(view, '#heightCm'), '171');
+    leave(q(view, '#heightCm'));
+    await settle(700);
+    await anotherWriter({ sex: 'female', birthYear: 1980, birthMonth: 3 });
+    await waitFor(() => expect(fullForm(view)).toBe(true), { timeout: 3000 });
+    await settle(50);
+    expect(calls('onboarding_step')).toEqual([]);
+    expect(calls('onboarding_done')).toEqual([]);
+    expect(q(view, '.mh-ready')).toBeNull();
+  });
+});
+
 describe('US-62 AC12, AC31 (D6, Brad 2026-11-10: keep it): another device fills the last answer', () => {
   it('US-62 AC12: the form opens, About you stays at the top until it is focused and left, and no plan-ready card shows', async () => {
     await saveChangedMeasurements({ heightCm: 170, sex: 'female' }, {});

@@ -71,7 +71,7 @@ import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { createRemoteChangeRelay } from '../lib/remote-replay';
 import { debounceSave, cancelListSave, flushListSaves, type ListSaves } from '../lib/list-saves';
 import { useRecordState } from '../hooks/useRecordState';
-import { useOnboarding, type Onboarding } from '../hooks/useOnboarding';
+import { useOnboarding } from '../hooks/useOnboarding';
 import { useTabs } from '../hooks/useTabs';
 import { useUnits } from '../hooks/useUnits';
 import { useLongitudinalSave, countedCorrection } from '../hooks/useLongitudinalSave';
@@ -132,11 +132,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // The relay is created once; the load path it calls changes identity on
   // most renders, so it is reached through a ref (US-34 AC4).
   const applyRemoteRef = useRef<() => void>(() => {});
-  // The onboarding (set below, once the stage is known), for the relay and the refused save.
-  const onboardingRef = useRef<Onboarding | null>(null);
   const remoteRelay = useRef(
     createRemoteChangeRelay(() => {
-      onboardingRef.current?.clearAnswered(); // another writer's change is no answer given here (US-62 AC13)
+      clearAnswered(); // another writer's change is no answer given here (US-62 AC13)
       trackProductEvent('remote_change_applied', { backend: getBackendKind() });
       void applyRemoteRef.current();
     }),
@@ -252,7 +250,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     if (erasingRef.current || refusedFor.current === getEraseIdentity()) return;
     refusedFor.current = getEraseIdentity();
     window.alert(WRITE_REFUSED);
-    onboardingRef.current?.clearAnswered(); // the record re-read is not an answer given here (US-62 AC13)
+    clearAnswered(); // the record re-read is not an answer given here (US-62 AC13)
     void applyRemoteRef.current();
   }, []);
   const afterListSave = useCallback((saved: boolean) => {
@@ -346,13 +344,16 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const onboarding = useOnboarding(formStage, {
     saved: previousMeasurements, medications, screenings, supplements, documents: documentHistory, labValues: labValueHistory,
   }, hasApiResponse);
-  onboardingRef.current = onboarding;
-  const { reached, epoch, fullForm, aboutYouLow, markAnswered, isComplete } = onboarding;
+  // The callbacks are stable (the hook's `[]` deps), so the relay and the refused
+  // save, made on the first render above, call them after it commits.
+  const {
+    reached, epoch, fullForm, aboutYouLow, planReady,
+    markAnswered, clearAnswered, isComplete, profileLeft, dismissPlanReady: leavePlanReady,
+  } = onboarding;
   // A matrix's weight cell is the one matrix edit that can answer a step (US-62 AC13).
   const markMatrixWeight = useCallback((e: React.SyntheticEvent) => {
     if ((e.target as HTMLElement).closest?.('.bt-vitals-card [data-metric="weight"]')) markAnswered();
   }, [markAnswered]);
-  const leavePlanReady = onboarding.dismissPlanReady;
   const dismissPlanReady = useCallback(() => {
     leavePlanReady();
     // The focus stays on the page, not lost with the button.
@@ -961,7 +962,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     onDelete: async () => { if (await handleDeleteData()) { plan.onErased(); closeSettings(); } },
     isDeleting,
     storageAtFoot: getBackendKind() === 'local',
-    onPlanReadyDismiss: onboarding.planReady ? dismissPlanReady : undefined,
+    onPlanReadyDismiss: planReady ? dismissPlanReady : undefined,
     healthDocuments: documentHistory,
     onDocumentDeleted: dropDocument,
   };
@@ -1012,7 +1013,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     reached,
     fullForm,
     aboutYouLow,
-    onProfileLeft: onboarding.profileLeft,
+    onProfileLeft: profileLeft,
     setShowUploadModal,
     planBasis,
     grading,
