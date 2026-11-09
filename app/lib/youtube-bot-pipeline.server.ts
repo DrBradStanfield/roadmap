@@ -218,14 +218,14 @@ export function completionOutcome(completion: ChatCompletionResult, latencyMs: n
   return { posted: true, replyText };
 }
 
-/** Main-LLM fallbacks this tick, by failure mode (US-15 AC58). Ticks never overlap (runTick). */
+/** Main-LLM fallbacks this tick, by failure mode (US-15 AC58). Ticks never overlap within a process (runTick). */
 const tickFallbacks = new Map<string, number>();
 
 /**
  * One bounded Sentry warning for the tick's main-LLM fallbacks, then a fresh
  * count (US-15 AC58). A fallback is unclaimed and retried every tick, so an
  * alert per comment, as the web chat sends per question, would repeat for each
- * failing comment every 30 minutes; one per tick is at most 48 a day. Counts
+ * failing comment every 30 minutes; one per tick is at most 48 a day per machine. Counts
  * and failure modes only, never a comment or a reply.
  */
 export function reportTickFallbacks(): void {
