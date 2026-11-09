@@ -5253,7 +5253,7 @@ input[type="number"] {
 }
 .md-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 44px 104px;
+  grid-template-columns: minmax(0, 1fr) 56px 104px;
   column-gap: 12px;
   min-height: 60px;
 }
@@ -5284,7 +5284,6 @@ input[type="number"] {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 1 1 auto;
   min-width: 0;
 }
 .md-row-label {
@@ -5298,9 +5297,17 @@ input[type="number"] {
 }
 .md-row-trend {
   display: block;
-  flex: 0 0 44px;
-  width: 44px;
-  height: 18px;
+  width: 56px;
+}
+/* Below 390px the trend keeps its old 44px, so a target and its date stay on one line
+   ("Target <120/80 · Aug 2026" at 375px, US-62 AC8a). The row reads the width from here. */
+@media (max-width: 389px) {
+  .md-row {
+    grid-template-columns: minmax(0, 1fr) 44px 104px;
+  }
+  .md-row-trend {
+    width: 44px;
+  }
 }
 .md-row-reading {
   display: flex;

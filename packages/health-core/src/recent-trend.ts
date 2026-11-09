@@ -23,3 +23,15 @@ export function trendWindow(now: Date): <T>(oldestFirst: T[], dayOf: (reading: T
 export function recentTrend<T extends { day: string }>(readings: T[], now = new Date()): T[] {
   return trendWindow(now)([...readings].reverse(), r => r.day);
 }
+
+/** The vertical range a small trend line is drawn over (US-62 AC8a, Brad 2026-11-09):
+ *  its points' lowest to highest, widened about their middle to at least ±5% of the
+ *  latest (last) point, so 0.57 to 0.58 draws nearly flat while a real change still
+ *  fills the line. Points that all equal zero keep a span of one. The iPhone's
+ *  Sparkline (ValueRow.swift `Sparkline.range`) is its twin, tested on the same cases. */
+export function trendRange(points: number[]): { low: number; high: number } {
+  const low = Math.min(...points), high = Math.max(...points);
+  const span = Math.max(high - low, 0.1 * Math.abs(points[points.length - 1])) || 1;
+  const middle = (low + high) / 2;
+  return { low: middle - span / 2, high: middle + span / 2 };
+}
