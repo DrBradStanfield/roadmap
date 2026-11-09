@@ -128,6 +128,32 @@ describe('US-15 AC16/AC17 — streaming state in useChatState', () => {
   });
 });
 
+// US-15 AC57: a send that fails takes the question off the thread, so it goes
+// back in the box. Before, the box was cleared at send and never refilled, and
+// the question was gone (@robertaustinbell's untangle audit, bug 8).
+describe('US-15 AC57 — a failed send puts the question back in the box', () => {
+  it('the question returns to an empty box', async () => {
+    const { hook, sending } = await startSend();
+    expect(hook.result.current.state.inputText).toBe('');
+    await act(async () => { send.resolve!({ result: null, error: { error: 'Network error' } }); await sending; });
+    expect(hook.result.current.state.inputText).toBe('What about ApoB?');
+    expect(hook.result.current.state.error).toBe('Network error');
+  });
+
+  it('something typed while it was sending is kept', async () => {
+    const { hook, sending } = await startSend();
+    act(() => hook.result.current.actions.handleInputChange('And LDL?'));
+    await act(async () => { send.resolve!({ result: null, error: { error: 'Network error' } }); await sending; });
+    expect(hook.result.current.state.inputText).toBe('And LDL?');
+  });
+
+  it('a send that succeeds leaves the box empty', async () => {
+    const { hook, sending } = await startSend();
+    await act(async () => { send.resolve!({ result: { conversationId: 'c1', messageId: null, content: 'ApoB counts.' }, error: null }); await sending; });
+    expect(hook.result.current.state.inputText).toBe('');
+  });
+});
+
 // US-15 AC38: a run_roadmap round's first call often streams a preamble ("Let
 // me run those numbers…") or a premature verdict. The status line between the
 // calls clears it, so the answer fills an empty bubble and nothing flashes.
