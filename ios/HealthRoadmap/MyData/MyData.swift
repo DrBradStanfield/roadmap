@@ -120,6 +120,50 @@ struct MyData: Decodable {
     /// Each metric's input range by unit ("si", "conventional", Lp(a)'s own), what a typed
     /// "1,234" is read against (US-02 AC7); nil from an older engine. Read leniently.
     let inputRanges: Lenient<[String: [String: InputRange]]>?
+    /// The letters and scan results listed at the foot of My health (US-73 AC12); nil from an
+    /// older engine, which lists none. Read leniently, so a bad list never blanks My data.
+    var documents: Lenient<Documents>? = nil
+
+    /// The engine's `documentShelf` (ios/engine/documents.ts): scan results, then letters and
+    /// every other document, each newest first; never a lab report's archive row.
+    /// Read row by row: a row this app cannot read drops only itself (review R1).
+    struct Documents: Decodable, Sendable {
+        let scans: [Document]
+        let others: [Document]
+        var isEmpty: Bool { scans.isEmpty && others.isEmpty }
+
+        private enum CodingKeys: String, CodingKey { case scans, others }
+
+        init(from decoder: Decoder) throws {
+            let list = try decoder.container(keyedBy: CodingKeys.self)
+            scans = (try? list.decode([Lenient<Document>].self, forKey: .scans))?.compactMap(\.value) ?? []
+            others = (try? list.decode([Lenient<Document>].self, forKey: .others))?.compactMap(\.value) ?? []
+        }
+    }
+
+    struct Document: Decodable, Sendable, Identifiable, Hashable {
+        struct Original: Decodable, Sendable, Hashable {
+            /// The file's name in the cloud, "2026-09-14 Cardiology follow-up.pdf".
+            let name: String
+            let mimeType: String
+        }
+
+        let id: String
+        let title: String
+        /// "Clinic Letter", as the web's badge says it.
+        let typeLabel: String
+        /// YYYY-MM-DD; nil when the document gave none.
+        let day: String?
+        /// The extracted markdown.
+        let content: String
+        let sourceFileName: String?
+        /// The original in the person's cloud; nil for a text-only row.
+        let original: Original?
+
+        /// The day as the row shows it, kept on one line (at large text "14 / Sep 2026" broke
+        /// mid-date), or the web's "Date unknown".
+        var dayText: String { day.map { DayText.short($0).replacingOccurrences(of: " ", with: "\u{00A0}") } ?? "Date unknown" }
+    }
 
     struct InputRange: Decodable, Sendable {
         let min: Double

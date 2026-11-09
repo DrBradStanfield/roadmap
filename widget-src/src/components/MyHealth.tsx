@@ -5,9 +5,9 @@
 // person button. The form's parts come from InputPanel (`FormSlots`); the plan's
 // from usePlanView.
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { isLabArchiveDocument, TOPICS, type ApiMeasurement, type StatTile, type TopicId } from '@roadmap/health-core';
+import { byNewestDocument, DOCUMENT_TYPE_LABELS, isLabArchiveDocument, TOPICS, type ApiMeasurement, type StatTile, type TopicId } from '@roadmap/health-core';
 import { DocumentLightbox } from './DocumentLightbox';
-import { DOCUMENT_TYPE_LABELS, formatDocumentDate } from '../lib/document-format';
+import { formatDocumentDate } from '../lib/document-format';
 import type { ApiDocument, ApiLabValue } from '../lib/api-types';
 import { revealAndFocus, stickyTop } from '../lib/reveal';
 import { trackProductEvent } from '../lib/server-api';
@@ -326,7 +326,7 @@ function HealthRecordsSection({ documents, onDeleted }: { documents: ApiDocument
         <section className="health-records-section">
           <h3 className="results-section-title" {...anchor}>Scan Results</h3>
           <div className="health-records-list">
-            {scanResults.map(doc => (
+            {[...scanResults].sort(byNewestDocument).map(doc => (
               <button
                 key={doc.id}
                 className="health-record-item"
@@ -344,7 +344,7 @@ function HealthRecordsSection({ documents, onDeleted }: { documents: ApiDocument
         <section className="health-records-section">
           <h3 className="results-section-title" {...(scanResults.length > 0 ? {} : anchor)}>Documents</h3>
           <div className="health-records-list">
-            {otherDocs.map(doc => (
+            {[...otherDocs].sort(byNewestDocument).map(doc => (
               <button
                 key={doc.id}
                 className="health-record-item"

@@ -332,8 +332,8 @@ export {
 
 // v2 document paths — the organised-archive scheme (folders + date-first names)
 export {
-  buildDocumentRef,
-  DOCUMENT_FOLDERS,
+  buildDocumentRef, byNewestDocument,
+  DOCUMENT_FOLDERS, DOCUMENT_TYPE_LABELS,
   extensionOf,
   LAB_ARCHIVE_TITLE,
   sanitizeTitle,

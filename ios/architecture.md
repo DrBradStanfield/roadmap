@@ -287,7 +287,11 @@ A signature means "the key holder approved this bundle", nothing more.
   arity and argument names) and `EngineBridgeContractTests` (outside the contract and the
   self-test list, in the bundled engine with its arity, and no Swift call to it but through
   `optionalCall`). First: `labSearchJson(text)`, the add sheet's name search (health-core
-  `labSearch`, US-73 AC8), read in Swift as `HealthEngine.labSearch`.
+  `labSearch`, US-73 AC8), read in Swift as `HealthEngine.labSearch`. Second (2026-11-09, US-73
+  AC12): `documentOriginal(id)`, the first that answers a Promise, of an ArrayBuffer; Swift reaches it
+  through `optionalCall`'s async form (`read:`), and `bridge.test.ts` freezes its arguments and checks it
+  refuses with no cloud open (its bytes answer is pinned in `cloud.test.ts`). Beside it, a sixth
+  optional field: `screenJson`'s `myData.documents`.
   **Schema 3 (Brad 2026-11-02, US-66 AC15):** a record holding a core blood row is
   `schemaVersion` 3, so the engine's `schemaVersion` fact becomes 3. Build 3 bundles a
   schema-2 engine: it refuses a moved record with its "update the app" path (US-65 AC5) and
@@ -1877,6 +1881,21 @@ The review prompt waits for a plan card on screen (US-25 AC10). The tour's three
 the tab in Brad's words (US-57, approved 2026-11-05). Clarity's screen is "My health", with two
 new events, "Jump pill tapped" and "Blood test added" (D9, Brad 2026-11-05). Sleep and Fitness
 read Apple Health in their own view, so a live refresh never rebuilds the list.
+
+**Documents at the foot (2026-11-09, US-73 AC12, the web's `HealthRecordsSection`).** The letters
+and scan results the app files are listed after the sections: "Scan results", then "Documents",
+newest first by health-core's `byNewestDocument`, the web's order too (Brad 2026-11-09). The engine
+builds the list (`engine/documents.ts` `documentShelf`, `myData.documents`):
+live rows only, never a lab archive row (health-core `isLabArchiveDocument`), with the web's kind
+labels, now health-core's `DOCUMENT_TYPE_LABELS`. A row pushes `DocumentPage`: the markdown drawn as
+SwiftUI text by `DocumentText` (no web view; links lose their target, since the words come from an
+uploaded file), and "View original file", which reads the original by document id through the
+optional door `documentOriginal` (`RecordStore.original(of:)`, only with a cloud open) into a
+temporary file for Quick Look, removed when the preview closes; the read is cancelled if the page
+goes, and `DocumentPage.sweep` clears leftovers when a page opens. Only the web's passive kinds open
+(`DocumentPage.previewName`, mirroring `file-kinds.ts` `VIEWABLE_TYPES`, US-14 AC3). The engine
+completes legacy rows with the web's defaults and Swift decodes the list row by row (review R1). No delete on the phone yet: the engine has no
+document delete door, and the web's delete is its store's own tombstone (Brad's call).
 
 ## Phases
 

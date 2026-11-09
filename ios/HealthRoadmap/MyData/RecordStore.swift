@@ -62,7 +62,7 @@ final class RecordStore {
     /// Where the record is kept.
     let file: URL
     let deviceId: String
-    private let engine: HealthEngine
+    let engine: HealthEngine  // not private: RecordStore+Documents.swift reads it
 
     /// What the screen showed when an edit began: the erase it was at (nil on the
     /// phone's file) and its units. A sheet pins it as it opens (`pinsRecord`),

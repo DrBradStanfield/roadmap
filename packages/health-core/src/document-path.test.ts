@@ -1,7 +1,38 @@
 import { describe, it, expect } from 'vitest';
-import { buildDocumentRef, DOCUMENT_FOLDERS, extensionOf, sanitizeTitle } from './document-path';
+import { buildDocumentRef, byNewestDocument, DOCUMENT_FOLDERS, extensionOf, sanitizeTitle } from './document-path';
 import { DOCUMENT_TYPES } from './validation';
 import { localDay } from './merge';
+
+describe('byNewestDocument (US-14 AC8, US-73 AC12)', () => {
+  const order = (docs: Array<{ id: string; documentDate?: string | null; createdAt?: string | null }>) => [...docs].sort(byNewestDocument).map((d) => d.id);
+
+  it('on one date, the later filed first by instant, whatever the offset or precision', () => {
+    // 20:00 at +13:00 is 07:00Z, earlier than 08:30Z, though its text sorts later.
+    expect(order([
+      { id: 'auckland', documentDate: '2026-09-14', createdAt: '2026-10-01T20:00:00+13:00' },
+      { id: 'utc', documentDate: '2026-09-14', createdAt: '2026-10-01T08:30:00Z' },
+    ])).toEqual(['utc', 'auckland']);
+    // One instant at two precisions ties, though the texts differ.
+    expect(byNewestDocument(
+      { documentDate: '2026-09-14', createdAt: '2026-10-01T08:00:00Z' },
+      { documentDate: '2026-09-14', createdAt: '2026-10-01T08:00:00.000Z' },
+    )).toBe(0);
+  });
+
+  it('an absent or unreadable filing stamp counts as the oldest, and two such tie', () => {
+    expect(order([
+      { id: 'none', documentDate: '2026-09-14' },
+      { id: 'garbled', documentDate: '2026-09-14', createdAt: 'yesterday' },
+      { id: 'stamped', documentDate: '2026-09-14', createdAt: '2026-10-01T08:00:00Z' },
+    ])[0]).toBe('stamped');
+    expect(byNewestDocument({ documentDate: null, createdAt: 'x' }, { documentDate: null })).toBe(0);
+  });
+
+  it('a legacy row with no date is undated, after every dated one', () => {
+    expect(order([{ id: 'legacy' }, { id: 'old', documentDate: '2020-01-01' }, { id: 'new', documentDate: '2026-01-01' }]))
+      .toEqual(['new', 'old', 'legacy']);
+  });
+});
 
 describe('DOCUMENT_FOLDERS', () => {
   it('maps every DocumentType to a folder', () => {
