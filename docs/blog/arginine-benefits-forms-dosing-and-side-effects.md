@@ -6,47 +6,56 @@ publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["arginine", "l-arginine", "l-arginine hcl", "arginine silicate inositol", "nitrosigine", "nitric oxide", "blood pressure", "hypertension", "cardiovascular", "heart health", "heart attack", "exercise", "muscle", "erectile dysfunction", "cognitive", "brain health", "diabetes", "insulin resistance", "migraine", "inflammation", "citrulline", "creatinine", "kidney"]
-summary: "Reference on L-arginine: blood pressure, erectile dysfunction, heart failure, exercise endurance. Forms: L-arginine HCl (deduct 17% for free arginine), Nitrosigine. Doses 4-15 g/day; contraindicated post-heart attack. Always discuss with your doctor."
+summary: "Topic master on L-arginine. Brad does not recommend it or other nitric oxide supplements; he eats rocket. Trials show small blood pressure falls and mixed exercise and erectile results. Do not take it after a heart attack. Talk to your doctor first if you take blood pressure medicines."
+reviewed: "2026-11-09"
+sources: [{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/this-2-food-beats-every-nitric-oxide-supplement","checked":"2026-11-09","fingerprint":"publishedAt:2026-03-18T06:11:43Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-truth-about-nitric-oxide-supplements-nitralis","checked":"2026-11-09","fingerprint":"publishedAt:2026-02-25T02:32:08Z"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/16391217/","checked":"2026-11-09","fingerprint":"sha256:0cc82457f1037d10b3bcf370609c8de043b67bb81cd2e9bedb9559df11434019"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22137067/","checked":"2026-11-09","fingerprint":"sha256:c4c1c451a4e35b516a144ebae3b5deaebce7e8930cabe6d5165f59ac3661803a"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/34967840/","checked":"2026-11-09","fingerprint":"sha256:5639e1fcb3e038ef304b4fdc35bbd0dc0bcdf2d441b26d5aa1787dfcc2b88a3f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/17592080/","checked":"2026-11-09","fingerprint":"sha256:2e33af830e3e408405acc8b8b4b9d6d182dfeac02872f1a710b18b34bf2492db"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31616773/","checked":"2026-11-09","fingerprint":"sha256:a8a41cca91e819066c39de55bceeeadc3e64949110260de3467eb48eeb6b2e79"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/36200327/","checked":"2026-11-09","fingerprint":"sha256:2d7d5d0cb68da70e5ed538498bf6c144e57c6957d56413fa16cac908fe3313d3"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/25542661/","checked":"2026-11-09","fingerprint":"sha256:ac17f436f3d2f94468d243674c8fa9ff3d2df3d06a01e2f5be24c26cb4394483"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/15350985/","checked":"2026-11-09","fingerprint":"sha256:8557e88fb7ab252932cd77aac81e34ac6a1ba8217256ba3d9af8da89600336ab"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/41194845/","checked":"2026-11-09","fingerprint":"sha256:c1c106a74c4ec786b7c81114effb943a6d9c4c1cf7af824280576a669f768023"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/29680982/","checked":"2026-11-09","fingerprint":"sha256:5f10fccdb02dbbbb3659f986660b937f1cdfa69e3e13567ad107192b0783662c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/9806879/","checked":"2026-11-09","fingerprint":"sha256:3f118be14b2437fd193cfa40b545c102f7169d245ff58925f36a0f2fd6a7540b"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/35691183/","checked":"2026-11-09","fingerprint":"sha256:13f4382e5da014d082832b0d0cb04a4708c35ed16c20cac47c996c0cbde3bf1f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/8925582/","checked":"2026-11-09","fingerprint":"sha256:7ba54d84fd6f273bd0fc5736a9c4a2bc165190e65e8eb7aa0492a85c59720645"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/34959823/","checked":"2026-11-09","fingerprint":"sha256:9bc1bafcb7cdbba1f38090b2c010680a9c33d9fbf24f75709ffd52b4df72cb26"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/10716474/","checked":"2026-11-09","fingerprint":"sha256:ec3a9bdeba5118729796117dfea9a7ed2dbf23c6cd11cc750e1ebaafc9d3b1b5"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11077135/","checked":"2026-11-09","fingerprint":"sha256:925d11afdeae6e8ab1d181c921cc6f60eaa779db834ff3a7b96516d824ee1245"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11755284/","checked":"2026-11-09","fingerprint":"sha256:3ec12002a0b916002789822297f3f9e8253fbb3e9bb38858673255712f4deb88"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/10737151/","checked":"2026-11-09","fingerprint":"sha256:6a5d217d4fba38af27cdf7d1c586a2d2c2f01b2ce75520fd81d669fc6ec48715"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/20724562/","checked":"2026-11-09","fingerprint":"sha256:094a8e3da963a1ed71b6f612ba306effd33f0184a83647547ba4a3aca2126c9d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/10233492/","checked":"2026-11-09","fingerprint":"sha256:7c7089e90cddbbe3febba694f6bcb491ad8f66fa689040b45d36a09bca744948"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30770070/","checked":"2026-11-09","fingerprint":"sha256:7d36c958c9aff4b090783069e2c97fd28486354289018f4d2c855092aedab818"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31326304/","checked":"2026-11-09","fingerprint":"sha256:e0f4f4185e5e06a534931abe17c0825bdf3a1e9fd378cbcc191700de0ed0a1f9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33587304/","checked":"2026-11-09","fingerprint":"sha256:0efc130afbb894e92eaff456250dec51b9788f159d3052b37df6d90b503aa710"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/38745327/","checked":"2026-11-09","fingerprint":"sha256:2b5c521861ae584031457ab1ec124a95e85207573f0e47cbb0c961dd93d9c724"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11554217/","checked":"2026-11-09","fingerprint":"sha256:32c7f3b8c9acdc367def1d706dc03fa0ec199da90ee7232847d05ff805c35962"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/12701823/","checked":"2026-11-09","fingerprint":"sha256:3de1f3a9cd06c2b42b87bb2e11037fc8cacb654909c48f5a1a566b39f3aa6c8d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/1815764/","checked":"2026-11-09","fingerprint":"sha256:70af0b4687e56d8b09b70ef8807d7d72402b6a999724f9fd6dcecb34e0ebbb46"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/9041947/","checked":"2026-11-09","fingerprint":"sha256:932c32c34c42bed3347c0f0320812f82e31fc4de79afc2adcc7c7d9544b13726"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/38345088/","checked":"2026-11-09","fingerprint":"sha256:f44803d6ab34486ba2f006eb2da2fb53aec12ec4b21610617d037b4a69bd1d87"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24919719/","checked":"2026-11-09","fingerprint":"sha256:af6588867053004e2719fb1d6238b66113642eb6e2d05d2098b14c9886f56af1"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/9454908/","checked":"2026-11-09","fingerprint":"sha256:bb9da10128828e3886e2ec6847fb96c9f827288b15efdb38945739269015008e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/8310409/","checked":"2026-11-09","fingerprint":"sha256:194e59ce504fd24e2233d6ff4b089ae56189fcafd8911feefb403c18f741896f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18094424/","checked":"2026-11-09","fingerprint":"sha256:5641fe57e7f6535a0194ddc9ec5a713bcda5cbce47f2e08dde35cf13104afd9f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24453997/","checked":"2026-11-09","fingerprint":"sha256:9cab57cbb310ec54d0766e688233669c62ced387a59a6008c438de7cb1ea77b5"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/20331847/","checked":"2026-11-09","fingerprint":"sha256:4092095442f7023cd3ad24958df71d58481efa6f54df36a1e82eaf5c21c56b67"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/29544063/","checked":"2026-11-09","fingerprint":"sha256:8b314b62c956c841453b0c440f111e32d6e0f36ab31c44d860f1403689a82dcb"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/35859621/","checked":"2026-11-09","fingerprint":"sha256:3e55f25ff7dee617b5d3b3f29c944d35398146a81845221b2b3bba5954a1c690"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/32370176/","checked":"2026-11-09","fingerprint":"sha256:cd9a3b8e7a2b6345b81ffc44d85e0784d96805ffe8eb67ed9ab7644fdc81b80f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/40733000/","checked":"2026-11-09","fingerprint":"sha256:1647b227ecbdf2a72407541da942bf38e31c8425b1a3d2712cc66560d07f37e6"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/35498050/","checked":"2026-11-09","fingerprint":"sha256:44dc2c8c8e11f5693c3a4c0cc7d7fb85b00e2ec918a6593ee8fe5d009b305fb9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/34522871/","checked":"2026-11-09","fingerprint":"sha256:5797e955e53ca54b6528dd711f31e46e652861ac0daec48380a4a84943f0ea63"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/36120704/","checked":"2026-11-09","fingerprint":"sha256:95f4bad79f98df860b12ab650b1ff053a78857ff9c46e37d86ab289c3c58b55b"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23645695/","checked":"2026-11-09","fingerprint":"sha256:f111fb4bb5ed9900dd6e0add925d700b41aa34c35922fd3100892daec6a34539"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/40270092/","checked":"2026-11-09","fingerprint":"sha256:42aaec930900b423e68ff1d82314c58fc633ad5d242101e75ea057b377fea06e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31977835/","checked":"2026-11-09","fingerprint":"sha256:83672cc3d7c25d5859f3eb897ad19ce8678deff4b8ece272c6c8ec399298b766"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/29212068/","checked":"2026-11-09","fingerprint":"sha256:7d48c3fa6ae5e0e085f5ac2cba9bac5ede2f7bf67f4d0b77e9f47610c17c6e7f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33426939/","checked":"2026-11-09","fingerprint":"sha256:c1ce951b7c8599184bfc5b277d74c2709bbb06f944824d96b3b54398f4ddb092"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/6262023/","checked":"2026-11-09","fingerprint":"sha256:900492f5f5af53ea6d4f82418ba642e6afd46ae57b207b001d1242011bd9e15a"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/4295376/","checked":"2026-11-09","fingerprint":"sha256:4a8e396dd70a678b7f7b80282542af25c3cdf149ce7657bfe471d016bae4c739"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/32824835/","checked":"2026-11-09","fingerprint":"sha256:5ff08586be17af06dfa670120d6b90900c8289cfbfcf8cd15ed3ce99fb9e6491"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/arginine-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/arginine-benefits-forms-dosing-and-side-effects)*
 
+## Current view (reviewed 9 November 2026)
+
+Brad does not recommend L-arginine, or any other nitric oxide supplement, and does not sell one; when people ask, his answer is dietary: nitrate-rich vegetables such as rocket (arugula) (Brad's current guidance, 10 Aug 2026). He notes that L-arginine supplements raise arginine levels in the blood, but in human studies this has not reliably translated into better athletic performance or higher nitric oxide levels ([Brad, 18 Mar 2026](https://drstanfield.com/blogs/articles/this-2-food-beats-every-nitric-oxide-supplement)). The studies he cites are mixed: one found that acute L-arginine improved high-intensity exercise tolerance, while others found no effect on nitric oxide production, performance or muscle blood flow ([Brad, 25 Feb 2026](https://drstanfield.com/blogs/articles/the-truth-about-nitric-oxide-supplements-nitralis)). L-citrulline, which the body converts to L-arginine, raises blood arginine more than L-arginine itself, but its exercise results have also been underwhelming ([Brad, 18 Mar 2026](https://drstanfield.com/blogs/articles/this-2-food-beats-every-nitric-oxide-supplement)). The nitric oxide booster Brad takes himself is rocket: at about 4.8 mg of nitrate per gram, a salad of about 63 grams reaches the 300 mg of nitrate considered a minimum for health effects ([Brad, 18 Mar 2026](https://drstanfield.com/blogs/articles/this-2-food-beats-every-nitric-oxide-supplement)).
+
+## Key safety points
+
+- Do not take arginine after a heart attack. In a trial after a first heart attack, 6 people (8.6%) taking arginine died over 6 months versus none on placebo, and the authors concluded it should not be recommended [1].
+- If you take blood pressure medicines, check with your doctor first. Arginine lowered blood pressure in trials, so it may add to their effect [2][3].
+- Heart failure, angina and leg artery disease need a doctor's care. In leg artery disease, 3 g a day for 6 months did worse than placebo [4].
+- Arginine pills have caused pill esophagitis, an inflamed or ulcerated gullet [5][6][7].
+- At 21 or 30 g a day, 10 of 12 healthy volunteers reported side effects; 9 g a day caused minimal side effects [8].
+- Arginine can raise blood creatinine, a kidney test, without kidney damage [9]. Rare case reports link it to acute pancreatitis [10].
+
+## Brad's videos on this topic
+
+- 18 Mar 2026, [This $2 Food Beats Every Nitric Oxide Supplement](https://drstanfield.com/blogs/articles/this-2-food-beats-every-nitric-oxide-supplement): L-arginine raises blood arginine but has not reliably improved performance or nitric oxide; Brad gets his nitrate from a rocket salad instead.
+- 25 Feb 2026, [The Truth About Nitric Oxide Supplements (Nitralis®)](https://drstanfield.com/blogs/articles/the-truth-about-nitric-oxide-supplements-nitralis): L-arginine and L-citrulline have not reliably improved performance; nitrate from vegetables or a well-dosed beetroot juice has the better blood pressure evidence. Superseded on beetroot products: Brad's current guidance recommends no nitric oxide supplement, beetroot powder included, and favours rocket.
+
 ## 1. Overview
 
-L-arginine, commonly referred to as arginine, is a semi-essential (conditionally essential) amino acid that serves as the primary substrate for the synthesis of nitric oxide (NO), a potent vasodilator produced by the enzyme nitric oxide synthase (eNOS) [1][2]. Nitric oxide, working through the second messenger cyclic guanosine monophosphate (cGMP), relaxes vascular smooth muscle, increases arterial blood flow, and plays a central role in endothelial function, blood pressure regulation, and cardiovascular homeostasis [1][2].
+L-arginine is an amino acid. Besides building proteins, the body uses it to make nitric oxide, urea, polyamines, proline, glutamate, creatine and agmatine [11]. Arginine is made and broken down in several organs, including the liver, small intestine and kidney [11].
 
-In adults, arginine is classified as semi-essential because it is synthesized endogenously from citrulline in the kidneys at rates sufficient to meet baseline needs under normal physiological conditions [2]. However, during periods of rapid growth (infancy, adolescence), critical illness, trauma, sepsis, or severe burns, endogenous synthesis may be insufficient, making exogenous intake essential [2]. Arginine is also a precursor to creatine, polyamines (involved in cell proliferation), agmatine, and urea (via the urea cycle), and it stimulates the release of growth hormone, insulin, and prolactin [1][2].
+Nitric oxide relaxes blood vessels by creating a messenger molecule called cGMP [12]. Most arginine supplements rest on one idea: more arginine should mean more nitric oxide and better blood flow. The trials below test that idea for heart and circulation problems, blood pressure, sexual function, exercise, cognition, wound healing, cancer, COVID-19 and sickle cell pain. Results are mixed. In one long trial in leg artery disease, arginine raised blood arginine but did not raise measures of nitric oxide availability [4].
 
-The hypothesis underlying most arginine supplementation is straightforward: providing extra arginine as substrate will increase nitric oxide production and, in turn, enhance blood flow to various tissues. However, clinical results have been mixed. In some pharmaceutical research leading up to the development of sildenafil (Viagra), increasing nitric oxide levels directly was not effective; rather, increasing sensitivity to nitric oxide by inhibiting its breakdown (via phosphodiesterase-5 inhibition) proved to be the key mechanism [1]. The body may accommodate to chronically elevated background levels of nitric oxide, limiting the benefit of arginine supplementation in well-nourished individuals [1].
-
-Arginine has been studied for a wide range of conditions relating to blood flow, including congestive heart failure, angina, intermittent claudication, high blood pressure, sexual dysfunction, Raynaud's phenomenon, exercise performance, cognitive function, wound healing, sickle cell disease, and cancer [1]. This article reviews the clinical evidence for each of these indications, alongside dosing, safety, drug interactions, and dietary sources.
+A single 10 g dose also raised growth hormone at 24 hours in young men [13].
 
 ## 2. Forms and Bioavailability
 
 ### L-Arginine HCl (Hydrochloride)
 
-The vast majority of arginine supplements contain L-arginine in the form of L-arginine hydrochloride (L-arginine HCl). The hydrochloride (HCl) moiety makes up approximately 17% of the molecular weight of this compound [1]. Some product labels include the HCl portion in the stated amount of L-arginine, while others do not. Regardless of what the front label states, if the Supplement Facts panel lists L-arginine HCl, consumers should deduct approximately 17% from the listed amount to determine the quantity of free (active) L-arginine they are receiving [1].
-
-For example, a supplement listing 1,000 mg of L-arginine HCl delivers approximately 830 mg of free L-arginine.
+Most arginine supplements contain L-arginine hydrochloride (HCl). The HCl salt has a molecular weight of 210.66, against 174.20 for free L-arginine [14][15]. So the hydrochloride part makes up about 17% of the weight. If the Supplement Facts panel lists L-arginine HCl, 1,000 mg of it supplies about 830 mg of L-arginine. Some heart failure trials gave the HCl form and stated the dose that way [16].
 
 ### Arginine Silicate Inositol (ASI / Nitrosigine)
 
-Inositol-stabilized arginine silicate, also referred to as arginine silicate inositol or ASI, is available under the branded ingredient name Nitrosigine. Silicon is believed to improve the bioavailability of arginine [1]. ASI is promoted primarily for cognitive function and exercise performance, though human evidence remains limited (see Section 3: Cognition) [1].
+Inositol-stabilized arginine silicate (ASI) is described as an exercise aid that raises nitric oxide [17]. The one trial of it in this review is a single-dose cognition study (see Section 3).
 
 ### Arginine Alpha-Ketoglutarate (AAKG)
 
-Arginine alpha-ketoglutarate is a salt of arginine combined with alpha-ketoglutarate, a Krebs cycle intermediate. It is commonly found in pre-workout supplements marketed for nitric oxide production and muscle "pumps." However, clinical evidence for benefits beyond those of standard L-arginine is lacking.
+Arginine alpha-ketoglutarate is a salt of arginine and alpha-ketoglutarate. None of the trials reviewed here tested it.
 
 ### Practical Considerations for Purchasing
 
-L-arginine is a hygroscopic compound, meaning it readily absorbs moisture from the air [1]. If sold as uncoated tablets and exposed to humidity, tablets may become crumbly and disintegrate over time. A reader reported to ConsumerLab that taking 3 grams (3 tablets) daily of an L-arginine product "burns the inside of my mouth and tongue" after the tablets had become crumbly, owing to the acidity of L-arginine [1].
-
-To avoid this issue:
-- **Capsules** are generally preferred over tablets, as they protect the hygroscopic arginine from moisture [1].
-- **Powder** forms put L-arginine in direct contact with the mouth and esophagus, but this is less problematic when the powder is properly mixed and diluted in water, as it passes through the esophagus more quickly [1].
-- All L-arginine products should be stored in tightly closed containers with desiccant packets to prevent moisture absorption [1].
-
-Be aware that even with capsules, at least 15 cases of esophagitis (inflammation of the esophagus) have been reported with L-arginine capsules (see Section 5: Safety and Side Effects) [1].
+Choose a product that an independent lab has tested. Arginine pills have caused pill esophagitis (see Section 5) [5].
 
 ## 3. Evidence for Benefits
 
@@ -54,335 +63,327 @@ Be aware that even with capsules, at least 15 cases of esophagitis (inflammation
 
 **Important: Congestive heart failure is a life-threatening condition. Do not attempt to treat it with arginine except under physician supervision.**
 
-Several small clinical trials have demonstrated that arginine at doses of 5 to 15 grams per day may improve both subjective symptoms and objective measures of heart function in patients with congestive heart failure (Hambrecht et al., *J Am Coll Cardiol*, 2000) [1]. The proposed mechanism involves improved endothelial function and increased nitric oxide-mediated vasodilation, which reduces afterload on the failing heart.
+In a randomized crossover trial of 15 people with moderate to severe heart failure, 5.6 to 12.6 g a day of L-arginine HCl for 6 weeks raised forearm blood flow during exercise. Six-minute walk distance was longer on arginine (422 versus 390 m) and quality-of-life scores were better [16]. The authors said further studies were needed to confirm the benefit.
+
+In 40 people with severe heart failure, 8 g a day for 4 weeks improved blood vessel lining (endothelial) function about as much as daily handgrip training, and the two together appeared to add to each other [18]. This trial measured artery responses, not symptoms.
 
 ### Angina
 
 **Important: Angina is a life-threatening condition. Do not attempt to treat it with arginine except under physician supervision.**
 
-Clinical studies have demonstrated improvements in exercise tolerance -- though not heart function per se -- in patients with angina taking 6 grams of arginine per day (Bednarz et al., *Int J Cardiol*, 2000) [1]. A separate study found decreased symptoms of angina when patients consumed 6.6 grams of arginine daily from a fortified food bar that also contained vitamins and minerals (Maxwell et al., *J Am Coll Cardiol*, 2002) [1].
+In a crossover trial of 25 people with stable coronary artery disease, 6 g of arginine a day for 3 days lengthened treadmill exercise from 604 to 647 seconds. It did not change ST-segment depression, the ECG sign of reduced blood flow to the heart [19].
+
+In 36 people with stable angina, two arginine-enriched food bars a day for 2 weeks raised treadmill exercise time by 20% over placebo and improved quality-of-life scores. They did not change ECG signs of ischemia or the time to angina onset [20]. The bars also contained other nutrients, so the effect cannot be put down to arginine alone.
 
 ### Intermittent Claudication
 
 **Important: Intermittent claudication involves insufficient blood flow to the legs and can be a sign of peripheral arterial disease. Do not attempt to treat it with arginine except under physician supervision.**
 
-A study found that 2 weeks of treatment with 6.6 grams of arginine daily (from a fortified food bar with vitamins and minerals) improved pain-free walking distance by 66% in patients with intermittent claudication (Maxwell et al., *Vasc Med*, 2000) [1]. However, a longer (6-month) and methodologically stronger study found that 3 grams of arginine per day was actually less effective than placebo (Wilson et al., *Circulation*, 2007) [1]. This suggests any benefit from arginine for claudication may be limited to short-term use, and the lower dose used in the longer study (3 g vs 6.6 g) may also explain the discrepancy.
+In a 2-week trial in 41 people with claudication, two arginine-enriched food bars a day increased pain-free walking distance by 66% and total walking distance by 23% [21]. One bar a day did not.
+
+The longer trial points the other way. In the NO-PAIN trial, 133 people with claudication took 3 g of arginine a day or placebo for 6 months. Walking distance improved in both groups, but less with arginine than with placebo (11.5% versus 28.3%) [4]. The authors concluded that long-term arginine is not useful in peripheral arterial disease and titled the paper "no benefit and possible harm".
 
 ### High Blood Pressure
 
-A meta-analysis of 11 small clinical studies including 387 participants (72% of whom had high blood pressure) found that L-arginine supplementation lowered blood pressure compared to placebo (Dong et al., *Am Heart J*, 2011) [1]:
+A 2011 meta-analysis pooled 11 double-blind trials in 387 people taking 4 to 24 g a day. Compared with placebo, arginine lowered systolic blood pressure by 5.39 mmHg and diastolic by 2.66 mmHg [2].
 
-- **Dose range:** 4 to 24 grams per day (average: 9 grams)
-- **Duration:** 2 to 24 weeks (median: 4 weeks)
-- **Systolic blood pressure reduction:** 5.39 mmHg (statistically significant)
-- **Diastolic blood pressure reduction:** 2.66 mmHg (statistically significant)
+A larger 2022 meta-analysis of 22 trials found similar falls: 6.40 mmHg systolic and 2.64 mmHg diastolic [3]. In its dose-response analysis, the effective dose for systolic pressure was 4 g a day or more. There were no significant changes with doses over 9 g a day, in trials lasting more than 24 days, or in people with obesity [3].
 
-However, the authors noted that longer, higher-quality studies are needed to confirm these results. The individual studies were small, and the heterogeneity of doses and durations limits the strength of the conclusion [1].
+Not every study agrees. In 12 healthy volunteers taking up to 30 g a day for a week at each dose, blood pressure did not change [8].
 
-For context, a 5 mmHg reduction in systolic blood pressure is clinically meaningful at the population level, associated with approximately 7% reduction in cardiovascular mortality. However, whether arginine produces consistent, sustained reductions in blood pressure with long-term use remains uncertain.
+A single 6 g drink lowered systolic pressure in 9 healthy men aged 19 to 38 (123 versus 131 mmHg) [22].
 
 ### Sexual Dysfunction in Men (Erectile Dysfunction)
 
-Arginine has been hypothesized to improve erectile function by increasing nitric oxide levels and blood flow to the penis during arousal. However, as noted above, pharmaceutical research during the development of Viagra found that directly increasing nitric oxide was less effective than increasing sensitivity to nitric oxide -- the body may simply accommodate to higher background levels [1].
+**Arginine alone:** In a double-blind trial of 50 men with organic erectile dysfunction, 5 g a day for 6 weeks gave a subjective improvement in 9 of 29 men (31%) on arginine and 2 of 17 on placebo. Objective measures did not change. All nine men who improved had low nitric oxide markers in their urine at the start [23].
 
-Nevertheless, some clinical evidence supports a modest benefit:
+A 2019 meta-analysis of 10 trials in 540 men with mild to moderate erectile dysfunction found that 1,500 to 5,000 mg a day improved erectile dysfunction compared with placebo or no treatment (odds ratio 3.37). Side effects occurred in 8.3% on arginine and 2.3% on placebo, and none were severe [24].
 
-**Arginine alone:** A double-blind, placebo-controlled trial of 50 men with erectile dysfunction found that 5 grams of arginine per day for 6 weeks produced improvement in approximately 33% of participants, compared to 11% improvement in the placebo group (Chen et al., *BJU Int*, 1999) [1]. While statistically suggestive, the effect was modest and the sample size was small.
+**Arginine plus tadalafil:** In a double-blind trial in 108 men with diabetes and mild to moderate erectile dysfunction, daily arginine plus tadalafil raised erectile function scores and total testosterone more than either drug alone [25].
 
-**Arginine plus tadalafil (Cialis):** An 8-week double-blind study among 108 diabetic men in Egypt tested the combination of arginine (5 grams daily) with the prescription drug tadalafil (10 mg daily). Scores on the International Index of Erectile Function (IIEF) improved as follows (El Taieb et al., *J Sex Med*, 2019) [1]:
-- **Placebo + placebo:** 26% improvement
-- **Arginine + placebo:** 52% improvement
-- **Tadalafil + placebo:** 63% improvement
-- **Arginine + tadalafil (combination):** 83% improvement
-
-Testosterone levels also increased significantly more with the combination therapy (144%) compared to arginine alone (60%) or tadalafil alone (93%), though the mechanism for this testosterone increase is unclear. The study did not report side effects, which is a notable limitation [1].
-
-**Lower doses are ineffective:** Studies using 1.5 grams per day or less have not shown benefit for erectile dysfunction [1].
+A 2021 meta-analysis of 4 trials (373 men) agreed: the combination beat either alone, a PDE5 inhibitor alone beat arginine alone, and the combination did not add side effects [26].
 
 ### Sexual Dysfunction in Women
 
-**L-arginine alone:** A study in Iran among 32 women with mild-to-severe major depressive disorder found that 1 gram of L-arginine taken twice daily (2 grams/day total) for 4 weeks did not improve sexual function or mood compared to placebo (Torkaman et al., *BMC Psychiatry*, 2024) [1].
+**L-arginine alone:** In a trial in women with major depressive disorder, 1 g of L-arginine twice a day for 4 weeks improved lubrication and orgasm scores compared with baseline, but not compared with placebo. Depression scores fell in both groups [27].
 
-**L-arginine combination product (ArginMax for Women):** A small double-blind trial of 77 women with decreased libido tested ArginMax for Women (a combination formula containing 2.5 grams of an L-arginine proprietary blend along with Panax ginseng, Ginkgo biloba extract, damiana, and various vitamins and minerals) versus placebo for 4 weeks (Ito et al., *J Sex Marital Ther*, 2001) [1]. Results were as follows:
-- **Increased sexual desire:** 70%+ of ArginMax group vs 40%+ of placebo group (statistically significant)
-- **Satisfaction with sex life:** 74% vs 37%
-- **Improved frequency of orgasms:** 47% vs 30%
-- **Improved clitoral sensation:** 53% vs 35%
-
-No significant side effects were reported. However, because ArginMax contains multiple active ingredients beyond L-arginine, it is not possible to attribute the benefits specifically to arginine [1].
+**Combination product:** In 77 women, a supplement combining L-arginine with ginseng, ginkgo, damiana, vitamins and minerals improved satisfaction with sex life in 73.5% after 4 weeks, against 37.2% on placebo. No significant side effects were noted [28]. Because the product had several active ingredients, the effect cannot be put down to arginine.
 
 ### Raynaud's Phenomenon
 
-Because L-arginine serves as the substrate for nitric oxide synthesis and nitric oxide relaxes blood vessels, arginine has been promoted for Raynaud's phenomenon (episodic vasospasm of the fingers and toes in response to cold or stress) [1].
+Raynaud's phenomenon is a passing loss of blood supply to the fingers and toes. Case reports describe oral arginine reversing finger tissue death (necrosis) in two people with severe Raynaud's and easing symptoms in two more [29].
 
-A few case reports and preliminary studies have suggested benefit in certain individuals (Rembold et al., *Mol Cell Biochem*, 2003) [1]. A very small study found that 4 grams of L-arginine taken twice daily (8 grams/day total) was helpful for Raynaud's phenomenon associated with systemic sclerosis (secondary Raynaud's), but not for primary Raynaud's phenomenon (Agostoni et al., *Int J Clin Lab Res*, 1991) [1]. Critically, this study did not include a placebo group, so it is not possible to determine whether L-arginine was truly responsible for the improvement [1].
+In one study, arginine improved finger blood vessel responses in people whose Raynaud's was due to systemic sclerosis [30]. In primary Raynaud's, a double-blind crossover trial of 8 g a day for 28 days found no effect [31].
 
-A subsequent study using the same dose (8 grams/day) that did include a placebo arm found no benefit for primary Raynaud's phenomenon (Khan et al., *Arthritis Rheum*, 1997) [1].
-
-**Conclusion:** Evidence does not support the use of L-arginine for primary Raynaud's phenomenon. There is very limited and uncontrolled evidence suggesting possible benefit in secondary Raynaud's associated with systemic sclerosis.
+**Conclusion:** The evidence does not support arginine for primary Raynaud's. For Raynaud's due to systemic sclerosis, the evidence is limited to one study and case reports.
 
 ### Pressure Ulcers (Bed Sores)
 
-Arginine supplementation has shown possible benefit for treating pressure ulcers, though it has been studied primarily in combination with other vitamins and minerals rather than as a standalone intervention [1].
+The 2024 Cochrane review found that supplements with arginine and micronutrients may not increase the number of healed pressure ulcers, but may slightly reduce ulcer area (by 15.8%; 2 studies, 231 people; low-certainty evidence). Evidence on combined protein, arginine, zinc and antioxidant supplements was very uncertain [32].
 
-A Cochrane review of 4 randomized trials found that arginine-containing nutritional supplements were associated with improvement in some parameters of wound healing, although there was no statistically significant improvement in ulcer size (Langer et al., *Cochrane Database Syst Rev*, 2014) [1]. Notably, one study among patients who were not malnourished found no benefit compared to placebo, suggesting that any wound-healing effect may be limited to malnourished individuals [1].
+The earlier 2014 review found no clear evidence that nutritional interventions help prevent or treat pressure ulcers [33].
 
 ### Cancer
 
-The relationship between arginine and cancer is complex and potentially bidirectional.
+**Breast cancer:** In 96 women, 30 g of L-arginine a day for 3 days before chemotherapy did not change the overall response rate (77% versus 71% on placebo). In tumours less than 6 cm across, better tissue responses were more common with arginine (88% versus 52%) [34].
 
-**Potential benefits (immune modulation):**
-- In women with breast cancer, 30 grams of L-arginine taken for 3 days prior to chemotherapy did not improve the overall response rate to treatment compared to placebo. However, in the subset of women whose tumors were smaller than 6 cm, the response rate was significantly higher in the arginine group (88% vs 52% with placebo) (Heys et al., *Int J Oncol*, 1998) [1].
-- The same dose (30 grams) significantly improved certain immune responses in women with breast cancer (Brittenden et al., *Surgery*, 1994) [1].
-- In patients with colorectal tumors, 30 grams of L-arginine slowed tumor activity in non-cancerous tumors and decreased a marker of tumor progression in cancerous tumors (Ma et al., *Clin Cancer Res*, 2007) [1].
+The same 3-day dose raised the activity of natural killer cells by 81% and lymphokine-activated killer cells by 107% [35].
 
-**Important safety concern -- arginine-dependent cancers:** Certain types of cancer are especially dependent on arginine for growth, including melanoma and hepatocellular carcinoma (liver cancer). Drug treatments that break down and eliminate arginine are being actively investigated as therapies for these cancers (Phillips et al., *Cancer Res Treat*, 2013) [1]. For patients with melanoma or hepatocellular carcinoma, arginine supplementation would not be advisable and could theoretically promote tumor growth [1].
+**Colorectal tumours:** In 60 people with colorectal cancer and 60 with colorectal adenomas, 30 g a day for 3 days lowered markers of cell growth in adenomas [36]. This measured markers, not cancer outcomes.
+
+**Arginine-dependent cancers:** Some cancers, including melanoma and hepatocellular carcinoma (a liver cancer), lose an enzyme that makes arginine and come to depend on arginine from outside. Drugs that break down arginine are in clinical trials for these cancers [37]. The sources reviewed here do not show whether arginine supplements affect these cancers, so people with cancer should ask their cancer doctor first.
 
 ### Exercise Endurance and Recovery
 
-L-arginine is widely promoted as a key ingredient in "nitric oxide" supplements marketed for increasing muscle size, exercise performance, and recovery. The clinical evidence is modest at best, with benefits limited to recreational and older athletes, and no demonstrated effect in trained athletes or young, active individuals [1].
+**Studies with a benefit:** In 16 older male cyclists, a supplement of arginine with antioxidants raised the anaerobic threshold by 16.7% at week 1 and 14.2% at week 3, with no change in VO2 max [38].
 
-**Positive studies:**
+In 9 healthy men, a drink with 6 g of L-arginine taken 1 hour before exercise extended time to exhaustion in severe exercise (707 versus 562 seconds) [22].
 
-A study from UCLA found that a supplement containing 5.2 grams of a blend of L-arginine and L-citrulline (Niteworks by Herbalife, which also included large doses of vitamins C and E) increased the time older male cyclists (aged 50-73) could exercise before reaching the anaerobic threshold -- the point at which lactic acid begins accumulating in muscles (Chen et al., *J Int Soc Sports Nutr*, 2010) [1]. The rationale for including antioxidant vitamins was that they may prevent nitric oxide inactivation by oxygen free radicals [1].
+**Studies without a benefit:** In 20 young adults, arginine did not improve muscle recovery after a hard resistance session [39].
 
-A study by British researchers found that a beverage containing 6 grams of L-arginine improved stamina in healthy, recreationally active young men. Compared to placebo, the arginine beverage permitted an extra two minutes or so of intense exercise before exhaustion (Bailey et al., *J Appl Physiol*, 2010) [1].
+In 30 young male athletes who did resistance training, a drink with 3 g of L-arginine HCl and 8 g of L-citrulline malate did not change biceps blood flow, muscle size or muscle pump [40].
 
-**Negative studies:**
+**Meta-analysis, disputed:** A 2020 meta-analysis of 15 studies found arginine improved aerobic performance tests (standardized mean difference 0.84) and anaerobic tests (0.24) [41].
 
-A study in Brazil among healthy, active young men and women found that a single dose of 6 grams of L-arginine dissolved in water taken one hour before high-intensity resistance exercise did not decrease muscle fatigue, muscle soreness, blood lactate levels, or levels of creatine kinase (a marker of muscle damage) compared to placebo (Andrade et al., *Appl Physiol Nutr Metab*, 2018) [1].
+A 2025 comment argued that the analysis made errors common in sports nutrition meta-analyses, which distort pooled effects [42]. Treat these pooled figures with caution.
 
-A study in Germany among young men who regularly practiced resistance exercise found no statistically significant increase in muscle perfusion (blood flow) or muscle size after exercise from consuming a pre-workout drink providing 2.5 grams of L-arginine and 5.6 grams of L-citrulline compared to a placebo drink (Burkle et al., *JISSN*, 2022) [1].
-
-**Synthesis:** L-arginine at 5-6 grams per day may modestly increase exercise endurance in recreational athletes and older adults, but it does not appear to improve performance, muscle size, or recovery from resistance exercise in trained or young active individuals [1].
+**Summary:** Single studies show small gains in some groups, and others show none. In Brad's reading, higher blood arginine has not reliably translated into better performance [12].
 
 ### Cognition in Healthy Adults
 
-A small study among 16 healthy young adults (average age 21) tested 1.5 grams of inositol-stabilized arginine silicate (ASI/Nitrosigine) before a cognitive test battery (Gills et al., *Nutrients*, 2021) [1]. Compared to results without ASI:
-- Overall cognitive scores improved only slightly versus a slight decrease in the placebo group
-- Immediate memory showed somewhat larger improvement compared to a slight decrease in the placebo group
-- No improvements were observed in visuospatial skills, processing speed, language, attention, or recognition memory
-
-The study was very small (n=16), and the clinical significance of the findings is minimal [1].
+In a crossover trial of 19 young adults, a single 1.5 g dose of inositol-stabilized arginine silicate improved total scores on a cognitive test battery and immediate memory 60 minutes later. Other areas of cognition did not change [17]. One small, single-dose study cannot show a lasting benefit.
 
 ### Mild Cognitive Impairment in Elderly
 
-A study in Italy among frail, hypertensive elderly individuals (average age 78 years) with mild cognitive impairment tested 1.66 grams of L-arginine (as Bioarginina by Farmaceutici Damor S.p.A.) taken twice daily (3.32 grams/day total) for 4 weeks (Mone et al., *Front Cardiovasc Med*, 2022) [1]. Key findings:
-- Cognitive function improved by approximately 2 points on a 0-30 scale compared to baseline
-- This improvement was statistically significant compared to the placebo group, which showed no change
-- However, scores among the arginine group remained within the diagnostic range for mild cognitive impairment
-
-This study suggests a modest but clinically limited benefit in a specific high-risk population (frail, hypertensive elderly with MCI) [1].
+In frail older adults with high blood pressure and cognitive impairment, 4 weeks of oral L-arginine gave better Montreal Cognitive Assessment scores than placebo (35 completed on arginine, 37 on placebo) [43]. The trial was small and short.
 
 ### COVID-19
 
-A small, company-funded study in Italy among 90 men and women hospitalized with severe COVID-19 pneumonia tested oral L-arginine (1.6 grams as Bioarginina, Farmaceutici Damor S.p.A.) or placebo twice daily (3.2 grams/day total), started within 15 days of symptom onset (average 8 days), in addition to standard care (Fiorentino et al., *EClinicalMedicine*, 2021) [1]. Key findings at 10 days:
-- **Reduced need for respiratory support:** 71.1% of L-arginine patients vs 44.4% of placebo patients
-- **Shorter hospital stays:** 25 days vs 46 days (statistically significant)
-- **Lower mortality:** 6.3% vs 20.8%
-- **No difference** in time to negative COVID-19 test (RT-PCR for SARS-CoV-2)
-- No significant difference in respiratory support reduction at day 20, which the researchers attributed to the greater number of arginine patients who had already been discharged by that time
+In people hospitalized with severe COVID-19, 1.66 g of L-arginine twice a day was added to standard care. In an interim analysis of the first 101 patients, respiratory support had been reduced at 10 days in 71.1% on arginine and 44.4% on placebo, but there was no significant difference at 20 days. Median hospital stay was 25 days on arginine and 46 days on placebo [44]. No serious adverse events were put down to arginine. Both the arginine and the placebo were provided by a pharmaceutical company [44]. These are interim results from one trial.
 
-While the results are striking, the study was small (n=90), company-funded, and has not been independently replicated. The findings should be interpreted cautiously [1].
+A correction to the paper was published in 2022 [45].
 
 ### Sickle Cell Disease (Vaso-Occlusive Episodes)
 
-Arginine may help reduce pain and opioid use during vaso-occlusive crises in patients with sickle cell disease, though benefits may be limited to those who are deficient in arginine [1].
+**First trial:** In 38 children with sickle cell disease admitted for 56 pain episodes, L-arginine at 100 mg/kg three times a day for 5 days (or until discharge) cut total opioid use by 54% and lowered pain scores at discharge (1.9 versus 3.9). Hospital stay did not differ significantly. No drug-related adverse events were seen [46].
 
-**Initial study:** A study among 36 children with sickle cell disease hospitalized for vaso-occlusive episodes tested 100 mg of arginine per kg of body weight (given orally or by IV) three times daily for 5 days alongside standard IV opioid analgesics (Morris et al., *Haematologica*, 2013) [1]. Results:
-- **Opioid use reduced by 54%** compared to placebo plus standard opioids
-- **Pain at discharge reduced by 2 points** on a 0-10 scale
-- No difference in length of hospitalization
-
-**Follow-up study:** A subsequent, slightly larger study by the same research group among 87 children, teens, and young adults hospitalized for vaso-occlusive episodes used the same dosing regimen (Morris et al., *Am J Hematol*, 2025) [1]. Results:
-- **No significant reduction** in opioid use, time-to-crisis resolution, or pain scores in the overall group
-- **Exception:** In children and teens who had low blood levels of arginine at hospital admission (<60 mcmol/L), opioid use was reduced by approximately 50% compared to the placebo group
-
-This finding -- that arginine benefits were limited to those with low arginine levels -- is consistent with the broader pattern seen across arginine research: supplementation appears most helpful when there is an underlying deficiency [1].
+**Follow-up trial:** A phase 2 trial of intravenous arginine randomized 108 patients aged 3 to 21 and did not meet its primary end point: opioid use, time to crisis resolution and pain scores were similar across groups [47]. In a post hoc analysis of children aged 5 to 16, opioid use was nearly double on placebo, reaching significance in those with plasma arginine less than 60 μM. Arginine was low at presentation in 79% of patients [47].
 
 ### Arginine in Combination with Citrulline
 
-L-citrulline is an amino acid that is converted into L-arginine in the body and is sometimes added to L-arginine supplements. Despite considerable marketing hype, clinical studies of L-citrulline for exercise performance and cardiovascular uses have shown only modest benefit at best, with some studies showing no benefit [1]. Only one small study has suggested that L-citrulline benefits men with mild erectile dysfunction, and studies on brain function benefits have been limited to animal models [1].
-
-### Other Potential Uses
-
-Preliminary evidence from small or uncontrolled studies suggests arginine may have applications in [1]:
-- AIDS-related wasting
-- Common colds
-- Necrotizing enterocolitis
-- Intolerance to nitrate medications
-- Post-surgical recovery
-- Improving kidney function in kidney transplant patients treated with cyclosporine
-- Senile dementia
-
-These indications lack sufficient evidence to draw firm conclusions and should not be relied upon for clinical decision-making.
+L-citrulline is an amino acid the body converts to L-arginine. Oral L-citrulline raises blood citrulline and arginine, but evidence that it improves blood vessel widening or muscle blood flow is scarce and inconsistent. Some studies report better exercise performance and recovery [48]. Brad notes that L-citrulline raises blood arginine more than L-arginine itself, but its performance results have been underwhelming [12].
 
 ## 4. Recommended Dosing
 
 ### Dosing by Indication
 
-Based on clinical studies showing some efficacy, the following dosage ranges have been used [1]:
+No dose is established for any use. These are the doses trials used:
 
-| Condition | Dose | Duration | Notes |
-|-----------|------|----------|-------|
-| Congestive heart failure | 5-15 g/day | Ongoing | Physician supervision required |
-| Angina | 6-6.6 g/day | Ongoing | Physician supervision required |
-| Intermittent claudication | 6.6 g/day | Short-term only | May not be effective long-term (Wilson 2007) |
-| High blood pressure | 4-24 g/day (average 9 g) | 2-24 weeks | Meta-analysis median: 4 weeks |
-| Erectile dysfunction (men) | 5 g/day | 4-6 weeks | 1.5 g/day is NOT effective |
-| Sexual dysfunction (women) | 2.5-6 g/day | 4+ weeks | Best evidence is with combination products |
-| Exercise endurance | 5-6 g/day | Ongoing | Effective in recreational athletes only |
-| Mild cognitive impairment (elderly) | 3.3 g/day | 4 weeks | Tested in frail, hypertensive elderly |
-| Sickle cell vaso-occlusive crisis | 100 mg/kg, 3x daily | 5 days | Benefit limited to arginine-deficient patients |
+| Use | Trial dose | Length | Result |
+|-----|-----------|--------|--------|
+| Heart failure | 5.6 to 12.6 g/day (HCl) | 6 weeks | Longer walk distance [16] |
+| Heart failure | 8 g/day | 4 weeks | Better artery function [18] |
+| Stable angina | 6 g/day | 3 days | Longer treadmill time [19] |
+| Claudication | 3 g/day | 6 months | Worse than placebo [4] |
+| Blood pressure | 4 to 24 g/day | Varied | Systolic 5.39 mmHg lower [2] |
+| Blood pressure | 4 g/day or more | Varied | Systolic 6.40 mmHg lower; no significant change over 9 g/day [3] |
+| Erectile dysfunction | 1,500 to 5,000 mg/day | Varied | Improved mild to moderate ED [24] |
+| Sexual function in women with depression | 1 g twice daily | 4 weeks | No better than placebo [27] |
+| Exercise | 6 g single dose | 1 hour before | Longer time to exhaustion [22] |
+| Severe COVID-19 (hospital) | 1.66 g twice daily | In hospital | Less respiratory support at 10 days [44] |
+| Sickle cell pain (hospital) | 100 mg/kg three times daily | 5 days | Less opioid use in the first trial only [46][47] |
+| After a heart attack | 3 g three times daily | 6 months | More deaths; do not use [1] |
 
 ### Reading Supplement Labels
 
-As noted in Section 2, if a supplement contains L-arginine HCl, deduct approximately 17% from the listed amount to determine the amount of free L-arginine. If a product lists 1,000 mg of L-arginine HCl, the actual free arginine is approximately 830 mg [1].
+If a product lists L-arginine HCl, about 17% of that weight is hydrochloride, so 1,000 mg of L-arginine HCl supplies about 830 mg of L-arginine [14][15].
 
 ### Timing
 
-No specific timing recommendations have been established in clinical trials. For exercise, pre-workout supplementation (30-60 minutes before exercise) is the most common approach. For cardiovascular indications, dividing the daily dose into 2-3 portions taken throughout the day is typical in the clinical literature.
+Exercise trials gave a single dose about 1 hour before testing [22][17].
+
+Longer trials split the daily amount. One gave 1.66 g twice a day [44].
+
+Another gave 3 g three times a day [1].
 
 ## 5. Safety and Side Effects
 
 ### General Tolerability
 
-In clinical trials, oral arginine in healthy individuals has not been associated with serious adverse effects other than occasional mild stomach upset [1]. At very high doses (21-30 grams per day), nausea, vomiting, and diarrhea have been reported (Evans et al., *J Nutr Biochem*, 2004) [1].
+In a dose-escalation study, 12 healthy people took 3, 9, 21 and 30 g a day for a week at each dose. Ten reported side effects when they started 21 g a day (five people) or 30 g a day (five people). The authors judged 9 g a day enough to raise blood arginine with minimal side effects [8].
+
+In the erectile dysfunction meta-analysis, side effects occurred in 8.3% on arginine and 2.3% on placebo, and none were severe [24].
+
+Hospital trials in sickle cell pain and COVID-19 reported no drug-related or serious adverse events put down to arginine [46][44].
 
 ### Esophagitis (Esophageal Inflammation)
 
-At least 15 cases of esophagitis have been reported with L-arginine capsules [1]. Two notable cases:
-
-**Case 1:** A 40-year-old woman in Canada who ingested two large 500 mg capsules of L-arginine before going to bed developed esophagitis (O'Donnell et al., *ACG Case Rep J*, 2019) [1].
-
-**Case 2:** A 13-year-old boy in Japan developed esophagitis after taking two capsules filled with an L-arginine solution in the morning and four capsules before sleep with only a small cup of water (Tanaka et al., *Pediatr Int*, 2022) [1]. The researchers attributed the esophagitis to:
-- The relatively large size of the capsules, contributing to adhesion in the esophagus
-- An unusually high pH (11.12) of the solution inside the capsules
-- Lying down after taking the capsules
-- Insufficient water intake when swallowing the capsules
-
-**Prevention:** All pills, particularly capsules (which may be more likely to adhere to the esophageal lining than tablets), should be taken with copious amounts of water. Additional water should be consumed before swallowing the pill. Capsules should not be taken while lying down or immediately before lying down, so that gravity can facilitate passage [1].
+Arginine pills can cause pill esophagitis. A 2019 case report described a 40-year-old woman who developed it after taking L-arginine, selenium and vitamin E supplements; the authors found 6 earlier reports of L-arginine-induced esophagitis [5]. Later reports describe arginine supplement esophagitis in an adolescent boy [6] and an arginine pill esophageal ulcer [7]. Pill esophagitis can be serious: cases have led to hospital admission, and some to bleeding or penetration through the gullet wall [5].
 
 ### Stomach Acid and Esophageal Reflux
 
-A test-tube study showed that exposing rat stomach wall cells to L-arginine solution (10 mmol/L) increased acid secretion (Kitay et al., *Cell Physiol Biochem*, 2017) [1]. Although esophageal reflux has not been reported in clinical studies at doses up to 30 grams per day (Evans et al., *J Nutr Biochem*, 2004) [1], it may be prudent for individuals with peptic ulcers or esophageal reflux to use caution when taking arginine. Additionally, individuals taking NSAIDs (aspirin, ibuprofen) might increase their risk of developing ulcers if they also take arginine [1].
+In rat stomach glands, L-arginine (10 mM) switched on acid secretion. The authors suggested this could raise the risk of acid-related disease [49]. This has not been tested in people.
 
 ### Acute Myocardial Infarction -- CONTRAINDICATED
 
-Arginine should NOT be taken by people who have had a recent heart attack. A study demonstrated an increase in deaths in post-myocardial infarction patients taking 9 grams of arginine daily compared to those who received placebo (Schulman et al., *JAMA*, 2006) [1]. This is a critical safety concern: arginine is contraindicated in the acute post-MI setting.
+Do not take arginine after a heart attack. The VINTAGE MI trial gave 153 people arginine (goal dose 3 g three times a day) or placebo for 6 months after a first heart attack. Arginine did not improve vascular stiffness or heart pumping. Six people (8.6%) on arginine died, against none on placebo, and the safety committee closed enrollment. The authors concluded that L-arginine should not be recommended after acute myocardial infarction [1].
+
+In leg artery disease, 3 g a day for 6 months did worse than placebo on walking distance [4].
 
 ### Blood Pressure Effects
 
-Arginine may cause a mild reduction in blood pressure. While studies have not shown a consistent hypotensive effect, caution is warranted when combining arginine with blood pressure-lowering medications or supplements (see Section 6: Drug Interactions) [1].
+Meta-analyses show arginine lowers blood pressure (see Section 3) [2][3]. People who take blood pressure medicines or have low blood pressure should check with their doctor first (see Section 6).
 
 ### Thyroid-Stimulating Hormone (TSH)
 
-A study among healthy adult men (ages 18-39) found that a single dose of 10 grams of arginine mixed in water caused approximately 10% higher blood TSH levels after 24 hours compared to placebo (2.19 vs 1.99 mIU/L) (Apolzan et al., *Nutrition*, 2022) [1]. However:
-- TSH levels remained within the normal range for both groups
-- The authors did not determine whether this slight increase affected thyroid hormones T3 or T4
-- This was a single-dose study; it is unclear whether chronic arginine use would affect thyroid function long-term
-
-The difference is small and probably not clinically meaningful for most individuals [1].
+In 30 healthy young men, a single 10 g dose raised TSH by 10% at 24 hours compared with placebo. It also raised growth hormone and, slightly, blood glucose [13]. The study did not test long-term use.
 
 ### Insulin Sensitivity
 
-Arginine may improve the body's response to insulin. While this could be a benefit for some, it could cause problems in individuals taking diabetes medications by potentiating their blood sugar-lowering effects [1].
+Arginine has been said to improve insulin sensitivity. A 2023 meta-analysis of 12 trials found no significant effect on fasting blood sugar, insulin, HbA1c or insulin resistance, and the authors could not confirm a benefit in humans [50].
+
+A single 10 g dose raised blood glucose by 5% at 1.5 hours [13].
 
 ### Pancreatitis
 
-Arginine has been shown to induce acute pancreatitis in animal models, and two human case reports exist [1]:
-
-**Case 1:** A 16-year-old boy in Turkey taking 500 mg of arginine daily (along with 10 mg of zinc, which may enhance the effect of arginine) for more than 5 months developed abdominal pain with serum amylase rising to 310 U/L (normal range: 25-90 U/L) [1].
-
-**Case 2:** A 28-year-old man in Belgium who had taken a protein powder formula containing 1.2 grams of arginine for 18 months developed epigastric pain and loss of appetite. His serum lipase was 1,393 U/L (normal: <60 U/L). Other causes of pancreatitis were ruled out. He was treated with intravenous hydration and discharged after 3 days. After stopping arginine, he had no recurrence at 6-month follow-up and serum lipase returned to normal (Binet et al., *Clin J Gastroenterol*, 2018) [1].
-
-While rare, these cases suggest that clinicians and patients should be aware of this potential adverse effect.
+Arginine causes acute pancreatitis in mice. A 2018 report described a young man with mild acute pancreatitis after taking a protein powder containing arginine, with other causes ruled out; the authors called it the second human case [10].
 
 ### Herpes Simplex Virus
 
-It has been speculated that consuming arginine-rich foods or supplementing with arginine may trigger outbreaks in people with herpes simplex virus (HSV -- cold sores or genital herpes). This has not been proven in human studies [1]. The speculation is based on laboratory evidence showing that:
-- HSV requires arginine to replicate in cell culture
-- Arginine deficiency suppresses HSV replication in infected cells in test tubes (Griffith et al., *Chemotherapy*, 1981; Becker et al., *J Gen Virol*, 1967) [1]
-
-Until more is known, it may be prudent for people trying to prevent herpes outbreaks to consider avoiding arginine supplementation and limiting intake of foods high in arginine (such as chocolate, peanuts, other nuts, and seeds) [1].
+In tissue culture, the herpes simplex virus needs arginine to replicate, and lysine blocks this [51][52]. The authors of the 1981 study suggested that people prone to herpes outbreaks should avoid excess arginine [51]. This advice rests on laboratory data; it has not been tested in people.
 
 ### Migraines
 
-Due to its role in nitric oxide production, it has been theorized that arginine might trigger (or conversely, prevent or reduce the severity of) migraines, which can be affected by both constriction and dilation of blood vessels in the brain (Chaliha et al., *Nutrients*, 2020) [1]. However, there do not appear to be any published clinical trials on the effects of L-arginine supplementation specifically in people with migraine [1].
+A 2020 review proposed that L-arginine might reduce migraine risk, based on a hypothesis about blood flow in the brain [53]. It is a hypothesis paper, not a trial.
 
 ### Creatinine Elevation (Not Kidney Damage)
 
-L-arginine does not appear to harm the kidneys, but it can raise blood levels of creatinine -- a standard kidney injury marker -- by a mechanism unrelated to kidney damage. Arginine increases creatine synthesis, and creatine is metabolized to creatinine [1].
-
-A case report describes a physically active 65-year-old man taking 1 gram of L-arginine daily for several years who showed slightly elevated creatinine despite otherwise normal results on all kidney function tests. His creatinine returned to normal after stopping L-arginine for one week (Hwang et al., *Cureus*, 2025) [1].
-
-This is important because elevated creatinine from arginine supplementation could be misinterpreted as kidney dysfunction, potentially leading to unnecessary medical investigations.
+A 2025 case report described a 65-year-old man taking L-arginine whose blood creatinine was raised while cystatin C, another kidney marker, was normal. After he stopped arginine, his creatinine returned to normal and cystatin C did not change [9]. The authors concluded that arginine can cause an artificial rise in creatinine.
 
 ## 6. Drug Interactions
 
+If you take prescription medicines, check with your doctor or pharmacist before starting.
+
 ### Antihypertensive Medications
 
-Because arginine may cause mild blood pressure reductions, it should be used cautiously with blood pressure-lowering drugs [1]:
+Arginine lowered blood pressure in trials [2][3], so it may add to the effect of blood pressure medicines such as ACE inhibitors, angiotensin receptor blockers and beta-blockers. No trial in this review tested the combination directly.
 
-| Drug Class | Examples | Concern |
-|-----------|---------|---------|
-| ACE inhibitors | Captopril, enalapril, lisinopril | Additive blood pressure reduction |
-| Beta-blockers | Metoprolol, propranolol | Additive blood pressure reduction |
-| Angiotensin receptor blockers (ARBs) | Losartan, valsartan | Additive blood pressure reduction |
-| PDE5 inhibitors | Tadalafil (Cialis), sildenafil (Viagra) | Potentially additive hypotension |
-
-Regarding PDE5 inhibitors specifically: a systematic review found no increased risk of low blood pressure reported in the published literature for combined use of arginine and PDE5 inhibitors (Xu et al., *Andrologia*, 2021) [1]. However, a consumer reported experiencing significant dizziness while driving that required hospitalization when taking L-arginine along with tadalafil (dose not specified) [1]. Caution is warranted.
+PDE5 inhibitors such as tadalafil amplify the effect of the nitric oxide the body already makes [12]. A 2021 meta-analysis found that arginine with a PDE5 inhibitor did not cause more side effects than the PDE5 inhibitor alone [26].
 
 ### Diabetes Medications
 
-Arginine may improve insulin sensitivity, which could potentiate the blood sugar-lowering effects of diabetes medications. Individuals on insulin, sulfonylureas, or other hypoglycemic agents should monitor blood glucose more closely if they begin arginine supplementation [1].
-
-### NSAIDs
-
-Individuals taking non-steroidal anti-inflammatory drugs (aspirin, ibuprofen, naproxen) may face an increased risk of developing ulcers if they also take arginine, due to arginine's potential to increase gastric acid secretion [1].
-
-### Potassium-Sparing Diuretics
-
-Amiloride and spironolactone reduce renal magnesium excretion. While not a direct arginine interaction, the blood pressure-lowering effects of arginine combined with diuretics should be monitored.
-
-### Nitrate Medications
-
-Some evidence suggests arginine may help with intolerance to nitrate medications (e.g., nitroglycerin), though this has not been well studied [1].
+Older advice warned that arginine might add to the effect of diabetes medicines by improving insulin sensitivity. A 2023 meta-analysis found no effect on blood sugar control [50]. If you take diabetes medicines, check with your doctor before starting.
 
 ## 7. Dietary Sources
 
-Arginine is found in a wide range of protein-rich foods. Most adults consuming adequate protein obtain sufficient arginine from diet alone.
-
-### Top Food Sources
-
-| Food | Serving | Arginine (mg) |
-|------|---------|:---:|
-| Turkey breast, roasted | 3 oz (85g) | 1,620 |
-| Pork loin, roasted | 3 oz (85g) | 1,400 |
-| Chicken breast, roasted | 3 oz (85g) | 1,390 |
-| Pumpkin seeds (pepitas) | 1 oz (28g) | 1,175 |
-| Soybeans, roasted | 1/2 cup | 1,100 |
-| Salmon, cooked | 3 oz (85g) | 1,200 |
-| Peanuts, dry roasted | 1 oz (28g) | 870 |
-| Walnuts | 1 oz (28g) | 650 |
-| Almonds | 1 oz (28g) | 530 |
-| Spirulina, dried | 1 tbsp (7g) | 450 |
-| Lentils, cooked | 1/2 cup | 400 |
-| Chickpeas, cooked | 1/2 cup | 390 |
-| Eggs | 1 large | 380 |
-| Dairy (milk, yogurt, cheese) | 1 cup / 1 oz | 200-500 |
-
-Source: USDA FoodData Central.
-
-### Practical Notes
-
-- **Protein-rich diets supply ample arginine.** A typical Western diet provides 4-6 grams of arginine per day from food alone [2]. Deficiency in well-nourished adults is rare.
-- **Nuts, seeds, and legumes** are the richest plant-based sources.
-- **Animal proteins** (turkey, pork, chicken, fish) provide the highest absolute amounts per serving.
-- **The arginine-to-lysine ratio** in foods has been discussed in the context of herpes simplex virus (see Section 5). Foods high in arginine relative to lysine include chocolate, peanuts, and most nuts/seeds. Foods high in lysine relative to arginine include dairy, fish, and poultry.
+Arginine is one of the building blocks of protein [11]. This review did not verify food values; USDA FoodData Central lists the arginine content of individual foods [54].
 
 ## 8. References
 
-[1] ConsumerLab. "L-Arginine Supplements Review." Accessed 2026. [https://www.consumerlab.com/reviews/l-arginine-supplements-review/arginine/](https://www.consumerlab.com/reviews/l-arginine-supplements-review/arginine/). Studies cited within: Hambrecht et al., *J Am Coll Cardiol* 2000; Bednarz et al., *Int J Cardiol* 2000; Maxwell et al., *J Am Coll Cardiol* 2002; Maxwell et al., *Vasc Med* 2000; Wilson et al., *Circulation* 2007; Dong et al., *Am Heart J* 2011; Rembold et al., *Mol Cell Biochem* 2003; Agostoni et al., *Int J Clin Lab Res* 1991; Khan et al., *Arthritis Rheum* 1997; Chen et al., *BJU Int* 1999; El Taieb et al., *J Sex Med* 2019; Torkaman et al., *BMC Psychiatry* 2024; Ito et al., *J Sex Marital Ther* 2001; Langer et al., *Cochrane Database Syst Rev* 2014; Heys et al., *Int J Oncol* 1998; Brittenden et al., *Surgery* 1994; Ma et al., *Clin Cancer Res* 2007; Phillips et al., *Cancer Res Treat* 2013; Chen et al., *J Int Soc Sports Nutr* 2010; Bailey et al., *J Appl Physiol* 2010; Andrade et al., *Appl Physiol Nutr Metab* 2018; Burkle et al., *JISSN* 2022; Gills et al., *Nutrients* 2021; Mone et al., *Front Cardiovasc Med* 2022; Fiorentino et al., *EClinicalMedicine* 2021; Morris et al., *Haematologica* 2013; Morris et al., *Am J Hematol* 2025; Evans et al., *J Nutr Biochem* 2004; Chaliha et al., *Nutrients* 2020; O'Donnell et al., *ACG Case Rep J* 2019; Tanaka et al., *Pediatr Int* 2022; Kitay et al., *Cell Physiol Biochem* 2017; Schulman et al., *JAMA* 2006; Apolzan et al., *Nutrition* 2022; Binet et al., *Clin J Gastroenterol* 2018; Griffith et al., *Chemotherapy* 1981; Becker et al., *J Gen Virol* 1967; Xu et al., *Andrologia* 2021; Hwang et al., *Cureus* 2025.
+[1] Schulman SP et al. L-arginine therapy in acute myocardial infarction: the Vascular Interaction With Age in Myocardial Infarction (VINTAGE MI) randomized clinical trial. JAMA. 2006. PMID: 16391217. https://pubmed.ncbi.nlm.nih.gov/16391217/
 
-[2] Wu G, Morris SM Jr. "Arginine metabolism: nitric oxide and beyond." *Biochem J*. 1998;336(Pt 1):1-17. [https://pubmed.ncbi.nlm.nih.gov/9806879/](https://pubmed.ncbi.nlm.nih.gov/9806879/)
+[2] Dong JY et al. Effect of oral L-arginine supplementation on blood pressure: a meta-analysis of randomized, double-blind, placebo-controlled trials. Am Heart J. 2011. PMID: 22137067. https://pubmed.ncbi.nlm.nih.gov/22137067/
+
+[3] Shiraseb F et al. Effect of l-Arginine Supplementation on Blood Pressure in Adults: A Systematic Review and Dose-Response Meta-analysis of Randomized Clinical Trials. Adv Nutr. 2022. PMID: 34967840. https://pubmed.ncbi.nlm.nih.gov/34967840/
+
+[4] Wilson AM et al. L-arginine supplementation in peripheral arterial disease: no benefit and possible harm. Circulation. 2007. PMID: 17592080. https://pubmed.ncbi.nlm.nih.gov/17592080/
+
+[5] O'Donnell C et al. Pill-Induced Esophagitis From Intake of Dietary Supplements. ACG Case Rep J. 2019. PMID: 31616773. https://pubmed.ncbi.nlm.nih.gov/31616773/
+
+[6] Tanaka T et al. L-arginine supplement-induced esophagitis in an adolescent boy. Pediatr Int. 2022. PMID: 36200327. https://pubmed.ncbi.nlm.nih.gov/36200327/
+
+[7] Gallego Pérez B et al. L-Arginine pill induced esophageal ulcer: causes not reported previously esophagitis for pills [Article in Spanish]. Farm Hosp. 2014. PMID: 25542661. https://pubmed.ncbi.nlm.nih.gov/25542661/
+
+[8] Evans RW et al. Biochemical responses of healthy subjects during dietary supplementation with L-arginine. J Nutr Biochem. 2004. PMID: 15350985. https://pubmed.ncbi.nlm.nih.gov/15350985/
+
+[9] Hwang M et al. L-arginine Results in an Artificial Increase in Creatinine. Cureus. 2025. PMID: 41194845. https://pubmed.ncbi.nlm.nih.gov/41194845/
+
+[10] Binet Q et al. The second case of a young man with L-arginine-induced acute pancreatitis. Clin J Gastroenterol. 2018. PMID: 29680982. https://pubmed.ncbi.nlm.nih.gov/29680982/
+
+[11] Wu G et al. Arginine metabolism: nitric oxide and beyond. Biochem J. 1998. PMID: 9806879. https://pubmed.ncbi.nlm.nih.gov/9806879/
+
+[12] Stanfield B. "This $2 Food Beats Every Nitric Oxide Supplement." drstanfield.com, 18 Mar 2026. [https://drstanfield.com/blogs/articles/this-2-food-beats-every-nitric-oxide-supplement](https://drstanfield.com/blogs/articles/this-2-food-beats-every-nitric-oxide-supplement)
+
+[13] Apolzan JW et al. Effects of acute arginine supplementation on neuroendocrine, metabolic, cardiovascular, and mood outcomes in younger men: A double-blind, placebo-controlled trial. Nutrition. 2022. PMID: 35691183. https://pubmed.ncbi.nlm.nih.gov/35691183/
+
+[14] NIH PubChem. L-arginine hydrochloride (CID 66250), computed properties. https://pubchem.ncbi.nlm.nih.gov/compound/66250
+
+[15] NIH PubChem. L-arginine (CID 6322), computed properties. https://pubchem.ncbi.nlm.nih.gov/compound/6322
+
+[16] Rector TS et al. Randomized, double-blind, placebo-controlled study of supplemental oral L-arginine in patients with heart failure. Circulation. 1996. PMID: 8925582. https://pubmed.ncbi.nlm.nih.gov/8925582/
+
+[17] Gills JL et al. Acute Inositol-Stabilized Arginine Silicate Improves Cognitive Outcomes in Healthy Adults. Nutrients. 2021. PMID: 34959823. https://pubmed.ncbi.nlm.nih.gov/34959823/
+
+[18] Hambrecht R et al. Correction of endothelial dysfunction in chronic heart failure: additional effects of exercise training and oral L-arginine supplementation. J Am Coll Cardiol. 2000. PMID: 10716474. https://pubmed.ncbi.nlm.nih.gov/10716474/
+
+[19] Bednarz B et al. Effects of oral L-arginine supplementation on exercise-induced QT dispersion and exercise tolerance in stable angina pectoris. Int J Cardiol. 2000. PMID: 11077135. https://pubmed.ncbi.nlm.nih.gov/11077135/
+
+[20] Maxwell AJ et al. Randomized trial of a medical food for the dietary management of chronic, stable angina. J Am Coll Cardiol. 2002. PMID: 11755284. https://pubmed.ncbi.nlm.nih.gov/11755284/
+
+[21] Maxwell AJ et al. Nutritional therapy for peripheral arterial disease: a double-blind, placebo-controlled, randomized trial of HeartBar. Vasc Med. 2000. PMID: 10737151. https://pubmed.ncbi.nlm.nih.gov/10737151/
+
+[22] Bailey SJ et al. Acute L-arginine supplementation reduces the O2 cost of moderate-intensity exercise and enhances high-intensity exercise tolerance. J Appl Physiol (1985). 2010. PMID: 20724562. https://pubmed.ncbi.nlm.nih.gov/20724562/
+
+[23] Chen J et al. Effect of oral administration of high-dose nitric oxide donor L-arginine in men with organic erectile dysfunction: results of a double-blind, randomized, placebo-controlled study. BJU Int. 1999. PMID: 10233492. https://pubmed.ncbi.nlm.nih.gov/10233492/
+
+[24] Rhim HC et al. The Potential Role of Arginine Supplements on Erectile Dysfunction: A Systemic Review and Meta-Analysis. J Sex Med. 2019. PMID: 30770070. https://pubmed.ncbi.nlm.nih.gov/30770070/
+
+[25] El Taieb M et al. Daily Oral l-Arginine Plus Tadalafil in Diabetic Patients with Erectile Dysfunction: A Double-Blinded, Randomized, Controlled Clinical Trial. J Sex Med. 2019. PMID: 31326304. https://pubmed.ncbi.nlm.nih.gov/31326304/
+
+[26] Xu Z et al. Comparison of efficacy and safety of daily oral L-arginine and PDE5Is alone or combination in treating erectile dysfunction: A systematic review and meta-analysis of randomised controlled trials. Andrologia. 2021. PMID: 33587304. https://pubmed.ncbi.nlm.nih.gov/33587304/
+
+[27] Torkaman P et al. Effect of l-arginine compared to placebo on sexual function in women with major depressive disorder: a randomized controlled trial. BMC Psychiatry. 2024. PMID: 38745327. https://pubmed.ncbi.nlm.nih.gov/38745327/
+
+[28] Ito TY et al. A double-blind placebo-controlled study of ArginMax, a nutritional supplement for enhancement of female sexual function. J Sex Marital Ther. 2001. PMID: 11554217. https://pubmed.ncbi.nlm.nih.gov/11554217/
+
+[29] Rembold CM et al. Oral L-arginine can reverse digital necrosis in Raynaud's phenomenon. Mol Cell Biochem. 2003. PMID: 12701823. https://pubmed.ncbi.nlm.nih.gov/12701823/
+
+[30] Agostoni A et al. L-arginine therapy in Raynaud's phenomenon?. Int J Clin Lab Res. 1991. PMID: 1815764. https://pubmed.ncbi.nlm.nih.gov/1815764/
+
+[31] Khan F et al. Oral L-arginine supplementation and cutaneous vascular responses in patients with primary Raynaud's phenomenon. Arthritis Rheum. 1997. PMID: 9041947. https://pubmed.ncbi.nlm.nih.gov/9041947/
+
+[32] Langer G et al. Nutritional interventions for preventing and treating pressure ulcers. Cochrane Database Syst Rev. 2024. PMID: 38345088. https://pubmed.ncbi.nlm.nih.gov/38345088/
+
+[33] Langer G et al. Nutritional interventions for preventing and treating pressure ulcers. Cochrane Database Syst Rev. 2014. PMID: 24919719. https://pubmed.ncbi.nlm.nih.gov/24919719/
+
+[34] Heys SD et al. Potentiation of the response to chemotherapy in patients with breast cancer by dietary supplementation with L-arginine: results of a randomised controlled trial. Int J Oncol. 1998. PMID: 9454908. https://pubmed.ncbi.nlm.nih.gov/9454908/
+
+[35] Brittenden J et al. L-arginine stimulates host defenses in patients with breast cancer. Surgery. 1994. PMID: 8310409. https://pubmed.ncbi.nlm.nih.gov/8310409/
+
+[36] Ma Q et al. L-arginine reduces cell proliferation and ornithine decarboxylase activity in patients with colorectal adenoma and adenocarcinoma. Clin Cancer Res. 2007. PMID: 18094424. https://pubmed.ncbi.nlm.nih.gov/18094424/
+
+[37] Phillips MM et al. Targeting arginine-dependent cancers with arginine-degrading enzymes: opportunities and challenges. Cancer Res Treat. 2013. PMID: 24453997. https://pubmed.ncbi.nlm.nih.gov/24453997/
+
+[38] Chen S et al. Arginine and antioxidant supplement on performance in elderly male cyclists: a randomized controlled trial. J Int Soc Sports Nutr. 2010. PMID: 20331847. https://pubmed.ncbi.nlm.nih.gov/20331847/
+
+[39] Andrade WB et al. l-Arginine supplementation does not improve muscle function during recovery from resistance exercise. Appl Physiol Nutr Metab. 2018. PMID: 29544063. https://pubmed.ncbi.nlm.nih.gov/29544063/
+
+[40] Bürkle F et al. New perspectives for investigating muscular perfusion response after dietary supplement intake: an exploratory, randomized, double-blind, placebo-controlled crossover trial in healthy young athletes using contrast-enhanced ultrasound (CEUS). J Int Soc Sports Nutr. 2022. PMID: 35859621. https://pubmed.ncbi.nlm.nih.gov/35859621/
+
+[41] Viribay A et al. Effects of Arginine Supplementation on Athletic Performance Based on Energy Metabolism: A Systematic Review and Meta-Analysis. Nutrients. 2020. PMID: 32370176. https://pubmed.ncbi.nlm.nih.gov/32370176/
+
+[42] Trexler ET. Common Errors in Sports Nutrition Meta-Analyses Lead to Distortion of Pooled Effect Estimates. Comment on Viribay et al. Effects of Arginine Supplementation on Athletic Performance Based on Energy Metabolism: A Systematic Review and Meta-Analysis. Nutrients 2020, 12, 1300. Nutrients. 2025. PMID: 40733000. https://pubmed.ncbi.nlm.nih.gov/40733000/
+
+[43] Mone P et al. L-Arginine Improves Cognitive Impairment in Hypertensive Frail Older Adults. Front Cardiovasc Med. 2022. PMID: 35498050. https://pubmed.ncbi.nlm.nih.gov/35498050/
+
+[44] Fiorentino G et al. Effects of adding L-arginine orally to standard therapy in patients with COVID-19: A randomized, double-blind, placebo-controlled, parallel-group trial. Results of the first interim analysis. EClinicalMedicine. 2021. PMID: 34522871. https://pubmed.ncbi.nlm.nih.gov/34522871/
+
+[45] Fiorentino G et al. Corrigendum to "Effects of adding L-arginine orally to standard therapy in patients with COVID-19: A randomized, double-blind, placebo-controlled, parallel-group trial. Results of the first interim analysis.". EClinicalMedicine. 2022. PMID: 36120704. https://pubmed.ncbi.nlm.nih.gov/36120704/
+
+[46] Morris CR et al. A randomized, placebo-controlled trial of arginine therapy for the treatment of children with sickle cell disease hospitalized with vaso-occlusive pain episodes. Haematologica. 2013. PMID: 23645695. https://pubmed.ncbi.nlm.nih.gov/23645695/
+
+[47] Morris CR et al. Arginine Therapy for Pain in Sickle Cell Disease: A Phase-2 Randomized, Placebo-Controlled Trial. Am J Hematol. 2025. PMID: 40270092. https://pubmed.ncbi.nlm.nih.gov/40270092/
+
+[48] Gonzalez AM et al. Effects of Citrulline Supplementation on Exercise Performance in Humans: A Review of the Current Literature. J Strength Cond Res. 2020. PMID: 31977835. https://pubmed.ncbi.nlm.nih.gov/31977835/
+
+[49] Kitay AM et al. Activation of Secretagogue Independent Gastric Acid Secretion via Endothelial Nitric Oxide Synthase Stimulation in Rats. Cell Physiol Biochem. 2017. PMID: 29212068. https://pubmed.ncbi.nlm.nih.gov/29212068/
+
+[50] Karimi E et al. Effects of L-arginine supplementation on biomarkers of glycemic control: a systematic review and meta-analysis of randomised clinical trials. Arch Physiol Biochem. 2023. PMID: 33426939. https://pubmed.ncbi.nlm.nih.gov/33426939/
+
+[51] Griffith RS et al. Relation of arginine-lysine antagonism to herpes simplex growth in tissue culture. Chemotherapy. 1981. PMID: 6262023. https://pubmed.ncbi.nlm.nih.gov/6262023/
+
+[52] Becker Y et al. The role of arginine in the replication of herpes simplex virus. J Gen Virol. 1967. PMID: 4295376. https://pubmed.ncbi.nlm.nih.gov/4295376/
+
+[53] Chaliha DR et al. A Paradoxical Vasodilatory Nutraceutical Intervention for Prevention and Attenuation of Migraine-A Hypothetical Review. Nutrients. 2020. PMID: 32824835. https://pubmed.ncbi.nlm.nih.gov/32824835/
+
+[54] USDA FoodData Central. https://fdc.nal.usda.gov/
