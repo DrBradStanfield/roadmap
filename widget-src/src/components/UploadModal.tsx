@@ -19,7 +19,7 @@ import { useLpaUnit } from '../lib/lpa-unit';
 import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, type ReviewedLabValue } from './ReviewTable';
 import { ErrorBoundary } from './ErrorBoundary';
-import { FloatingUploadIndicator, type ModalState } from './FloatingUploadIndicator';
+import { FloatingUploadIndicator } from './FloatingUploadIndicator';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries } from '../lib/archive-payloads';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
@@ -58,6 +58,8 @@ const BYOK_ERROR_MESSAGES: Partial<Record<UploadErrorCode, string>> = {
   server_error: 'Anthropic could not read these files. Please try again.',
   network: 'Could not reach Anthropic. Check your connection and try again.',
 };
+
+export type ModalState = 'select' | 'processing' | 'review' | 'done' | 'error';
 
 interface UploadModalProps {
   unitSystem: UnitSystem;

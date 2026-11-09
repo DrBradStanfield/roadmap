@@ -15,7 +15,7 @@
     "widget-src/src/components/BloodTestTimeline.tsx": 1129,
     "tools/chat-audit-pull.ts": 1076,
     "packages/health-core/src/record-edits.ts": 1029,
-    "widget-src/src/components/UploadModal.tsx": 997,
+    "widget-src/src/components/UploadModal.tsx": 999,
     "packages/health-core/src/mcp-import.ts": 959,
     "widget-src/src/components/ResultsPanel.tsx": 920,
     "packages/health-core/src/merge.ts": 893,

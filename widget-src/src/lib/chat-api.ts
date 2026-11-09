@@ -84,7 +84,7 @@ export interface ChatListResult {
  * fields are the server's contract. The guest session token is stored and
  * sent back, so it is checked rather than trusted (US-15 AC6b).
  */
-interface ChatReply {
+export interface ChatReply {
   success?: boolean;
   error?: string;
   isGuest?: boolean;
@@ -353,7 +353,7 @@ export async function sendMessage(
     // off before `done` is not retried (US-15 AC16): the server finishes and
     // stores the turn after a disconnect, so a retry would store it twice.
     const data = response.ok && !(response.headers.get('content-type') ?? '').includes('application/json')
-      ? await readChatStream<ChatReply>(response, onDelta)
+      ? await readChatStream(response, onDelta)
       : await parseJsonResponse<ChatReply>(response);
 
     // Persist guest session token if returned

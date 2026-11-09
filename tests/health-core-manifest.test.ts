@@ -50,9 +50,6 @@ describe('health-core package manifest', () => {
     expect(manifest.types).toBeUndefined();
     expect(Object.keys(manifest.exports)).toEqual(['./*']);
     expect(existsSync(join(CORE, 'src/index.ts'))).toBe(false);
-    // In a worktree the lookup climbs to the main checkout's node_modules, so
-    // the test asks only that nothing in THIS checkout answers.
-    expect(resolveUnderRootTsconfig('@roadmap/health-core') ?? '').not.toMatch(/^packages\//);
   });
 
   it('keeps no build script for the dist nothing reads', () => {

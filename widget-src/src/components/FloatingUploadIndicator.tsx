@@ -1,6 +1,5 @@
 import { createPortal } from 'react-dom';
-
-export type ModalState = 'select' | 'processing' | 'review' | 'done' | 'error';
+import type { ModalState } from './UploadModal';
 
 /** Floating indicator shown when modal is hidden during processing.
  *  Portaled to body for the same reason as the modal — position:fixed must

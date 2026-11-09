@@ -1,4 +1,4 @@
-import type { ChatDelta } from './chat-api';
+import type { ChatDelta, ChatReply } from './chat-api';
 
 /**
  * Read an NDJSON answer (US-15 AC16): hand each delta to `onDelta` and return
@@ -7,7 +7,7 @@ import type { ChatDelta } from './chat-api';
  * that is not `{"type":…` returns null, as a non-JSON reply always has.
  * A stream that ends without `done` throws, so the caller reports a network error.
  */
-export async function readChatStream<Reply>(response: Response, onDelta: (delta: ChatDelta) => void): Promise<Reply | null> {
+export async function readChatStream(response: Response, onDelta: (delta: ChatDelta) => void): Promise<ChatReply | null> {
   if (!response.body) return null;
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
