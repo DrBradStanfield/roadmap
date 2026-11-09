@@ -21,7 +21,7 @@ import { formatValue } from '@roadmap/health-core/lab-limits';
 import { weightCascade, lipidCascade } from '@roadmap/health-core/medication-cascades';
 import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
 import { dayOf, localDay } from '@roadmap/health-core/merge';
-import { MEDICATION_TEXT, SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, optionsShowing, escalationOptions, doseOptions, medicationWrites, screeningWrites, readScreening, followupDateLabel, dexaEligible } from '@roadmap/health-core/input-form';
+import { anyScreeningEligible, MEDICATION_TEXT, SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, optionsShowing, escalationOptions, doseOptions, medicationWrites, screeningWrites, readScreening, followupDateLabel, dexaEligible } from '@roadmap/health-core/input-form';
 import { formatShortDate, MONTHS_FULL } from '../lib/constants';
 import { BloodTestTimeline, useLiveRegion, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
@@ -1794,11 +1794,14 @@ export function InputPanel({
     );
   };
 
-  const renderScreening = (place: Placement) => (
-    <ScreeningQuestions place={place} form={form} screenings={screenings} onScreeningChange={onScreeningChange}
-                        psaDate={psaDate} onPsaDateChange={onPsaDateChange} onPsaCommit={onPsaCommit} bloodTestHistory={bloodTestHistory}
-                        planBasis={planBasis} writeScreening={writeScreening} renderScreeningDateInput={renderScreeningDateInput}/>
-  );
+  // Null, not an empty element, when no screening applies: My health draws a topic for any element (US-62 AC17).
+  const renderScreening = (place: Placement) => {
+    const age = planBasis?.age;
+    if (age === undefined || !anyScreeningEligible(age, inputs.sex)) return null;
+    return <ScreeningQuestions place={place} form={form} screenings={screenings} onScreeningChange={onScreeningChange}
+                               psaDate={psaDate} onPsaDateChange={onPsaDateChange} onPsaCommit={onPsaCommit} bloodTestHistory={bloodTestHistory}
+                               age={age} writeScreening={writeScreening} renderScreeningDateInput={renderScreeningDateInput}/>;
+  };
 
   const renderBoneDensity = (place: Placement) => {
     const age = planBasis?.age;

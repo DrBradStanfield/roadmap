@@ -128,6 +128,12 @@ describe('US-62 AC17: the sections, in the iPhone\'s order', () => {
     }
     expect(view.container.querySelector('h2.mh-title')?.textContent).toBe('My health');
   });
+
+  it('a 25-year-old, too young for any screening, has no Cancer screening section', async () => {
+    const view = await show(() => seedGuest({ sex: 'male', heightCm: 180, birthYear: new Date().getFullYear() - 25, birthMonth: 1, unitSystem: 'si' }, [['weight', 80]], [], DAY));
+    expect(topics(view).length).toBeGreaterThan(0); // the plan is drawn
+    expect(topics(view)).not.toContain('screening');
+  });
 });
 
 describe('US-62 AC18: every suggestion drawn exactly once', () => {

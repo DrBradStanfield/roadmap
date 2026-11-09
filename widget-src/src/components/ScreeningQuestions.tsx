@@ -2,7 +2,6 @@
 import { CommitTickButton } from './CommitTickButton';
 import { interceptHistory, optionElements, type FormKit } from './form-kit';
 import type { Placement } from './MyHealth';
-import type { PlanBasis } from './InputPanel';
 import type { ReactNode } from 'react';
 import type { ScreeningInputs } from '@roadmap/health-core/types';
 import { blockBadNumericKeys, blockNonIntegerKeys } from '../lib/blood-test-cell';
@@ -12,7 +11,7 @@ import { formatGradedOrLimit } from '@roadmap/health-core/lab-limits';
 import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
 import { dayOf, localDay } from '@roadmap/health-core/merge';
 import { newestUsablePsa } from '@roadmap/health-core/measurement-history';
-import { SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, readScreening, followupName, followupDateLabel, anyScreeningEligible, lungGroupShown, lungScreeningAsked } from '@roadmap/health-core/input-form';
+import { SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, readScreening, followupName, followupDateLabel, lungGroupShown, lungScreeningAsked } from '@roadmap/health-core/input-form';
 
 interface ScreeningQuestionsProps {
   place: Placement;
@@ -23,21 +22,19 @@ interface ScreeningQuestionsProps {
   onPsaDateChange: (day: string) => void;
   onPsaCommit: (now: boolean) => void;
   bloodTestHistory: ApiMeasurement[];
-  planBasis: PlanBasis | null;
+  /** The plan's age, from the validated birth year (January when no month). */
+  age: number;
   /** Sends one screening answer and the clears it implies. */
   writeScreening: (scr: ScreeningInputs, key: string, value: string) => void;
   /** A screening's month and year pickers. */
   renderScreeningDateInput: (scr: ScreeningInputs, key: string, label: string, options?: { futureOnly?: boolean }) => ReactNode;
 }
 
-// Cancer screening: shown when the plan has an age.
+// Cancer screening, for an age with a screening due. The caller checks both,
+// so My health draws no empty Screening topic (US-62 AC17).
 export function ScreeningQuestions(props: ScreeningQuestionsProps) {
-  const { place, form, screenings, onScreeningChange, psaDate, onPsaDateChange, onPsaCommit, bloodTestHistory, planBasis, writeScreening, renderScreeningDateInput } = props;
+  const { place, form, screenings, onScreeningChange, psaDate, onPsaDateChange, onPsaCommit, bloodTestHistory, age, writeScreening, renderScreeningDateInput } = props;
   const { inputs, rawInputs, setRawInputs, errors, updateField, readable, unreadable, range, typeIn, blurOnWheel, settleOnEnter, autoSaveGate, rangeWait } = form;
-
-  // The plan's age, from the validated birth year (January when no month)
-  const age = planBasis?.age;
-  if (age === undefined) return null;
 
   const sex = inputs.sex;
   const scr = screeningsToInputs(screenings);
@@ -87,8 +84,6 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
       </>
     );
   };
-
-  if (!anyScreeningEligible(age, sex)) return null;
 
   return (
     <div className="section-card">
