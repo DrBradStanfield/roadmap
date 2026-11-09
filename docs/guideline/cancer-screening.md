@@ -12,14 +12,14 @@ thresholds: [{"ref":"PSA_THRESHOLDS.normal","value":4}]
 
 # Cancer Screening: Which Tests You Need, and What They Can and Cannot Do
 
-*Written from US, NZ, Australian and UK guidance, the main trials, NHS pages, Brad's posts and the Health Roadmap algorithm.*
+*Written from US, NZ, Australian and UK guidance, trials, NHS pages, Brad's posts and the health tool.*
 
 ## In short
 
-- Screening tests people with no symptoms. Trials show that four kinds lower deaths from their cancer: bowel (stool test or colonoscopy), breast (mammogram), cervical (HPV or smear test) and lung (low-dose CT for heavy smokers) [1][2][3][4].
-- PSA screening lowers prostate cancer deaths a little and causes real harms, so it is a personal decision [5][6].
+- Screening tests people with no symptoms. Trials and large studies show that four kinds lower deaths from their cancer: bowel (stool test, sigmoidoscopy or colonoscopy), breast (mammogram), cervical (HPV or smear test) and lung (low-dose CT for heavy smokers) [1][2][3][4].
+- PSA screening may lower prostate cancer deaths a little and causes real harms, so it is a personal decision [5][6].
 - For people without symptoms, the evidence is too thin to judge skin checks by a doctor, no trial has shown that multi-cancer blood tests save lives, and radiologists advise against full-body MRI [7][8][9].
-- Screening finds some cancers that would never have caused harm (overdiagnosis), and it does not lower deaths from all causes in the trials [2][6].
+- Screening finds some cancers that would never have caused harm (overdiagnosis); in trials, mammography and PSA screening did not lower deaths from all causes [2][6].
 - Symptoms are not screening. A new lump, bleeding or a lasting cough needs a doctor, whatever your last test showed [10][11][12].
 - Brad's view: do the proven screening first, and be wary of trendy tests without evidence [13][14].
 
@@ -27,7 +27,7 @@ thresholds: [{"ref":"PSA_THRESHOLDS.normal","value":4}]
 
 - Coughing up more than a few spots or streaks of blood, or coughing blood with trouble breathing, a racing heart or chest or upper back pain: call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [15].
 - Bleeding from your bottom that will not stop, or a lot of blood, such as red toilet water or clots: go to an emergency department or call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [16].
-- After a colonoscopy, heavy or worsening bleeding from your bottom, severe stomach pain that is getting worse, chest pain, or vomiting you cannot stop: go to an emergency department, without driving yourself, or call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [17].
+- After a colonoscopy, heavy or worsening bleeding from your bottom, severe, worsening stomach pain, chest pain, or vomiting you cannot stop: go to an emergency department, without driving yourself, or call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [17].
 - After a biopsy, or at any time, very fast breathing, confusion or slurred speech, blue, pale or blotchy skin, a rash that does not fade when pressed, or feeling very hot or cold and shivery may be sepsis: call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [18].
 
 ## What it is
@@ -42,11 +42,11 @@ A screening test looks for cancer, or for changes that can become cancer, in peo
 - It finds cancers that would never have harmed you. A UK review estimated that 11% of breast cancers found in invited women are overdiagnosed [19].
 - It brings false alarms. In the main lung CT trial, 96.4% of positive scans were false alarms [4].
 
-**Average risk.** These schedules do not apply to people with Lynch syndrome, familial adenomatous polyposis, inflammatory bowel disease, past bowel cancer or past adenomas (precancerous polyps) [22], or with a family history of bowel cancer [23].
+**Average risk.** These schedules do not apply to people with Lynch syndrome, familial adenomatous polyposis, inflammatory bowel disease, past bowel cancer or past adenomas (precancerous polyps) [20], or with a family history of bowel cancer [21].
 
 ## Your numbers
 
-The Health Roadmap shows screening cards by age and sex (Brad's current guidance, 9 Nov 2026). With no sex on record, only bowel and lung screening show.
+The Health Roadmap shows screening cards by age and sex (the health tool's rules, 9 Nov 2026). With no sex on record, only bowel and lung screening show.
 
 | Screening | Plan shows it | Extra rule |
 |---|---|---|
@@ -63,32 +63,32 @@ A pack-year is one pack a day for one year [13].
 
 **After an abnormal result** (the health tool): an urgent card shows until the follow-up is organised, then a reminder to keep the appointment. Once it is done, the next test is due 3 years after a positive stool test and colonoscopy, or after polyps on colonoscopy; 1 year after an abnormal HPV or smear test; and at the usual interval for breast and lung.
 
-**PSA.** The plan treats 4.0 ng/mL as the upper limit of normal and flags a PSA above 4.0 ng/mL for attention, even if you chose not to screen (the health tool). NZ and Australian labs print PSA in µg/L, the same number. A PSA result may not be accurate, and a high PSA does not mean cancer; an enlarged prostate also raises it [24]. Finasteride and dutasteride, taken for an enlarged prostate, cut PSA by about half, so a result under 4.0 can hide a high one: tell your doctor if you take one [25][26]. For 48 hours before the test, do not ejaculate, exercise hard or cycle, and wait 4 to 6 weeks after a urine infection [24].
+**PSA.** The plan treats 4.0 ng/mL as the upper limit of normal and flags a PSA above 4.0 ng/mL for attention, even if you chose not to screen (the health tool). NZ and Australian labs print PSA in µg/L, the same number. A PSA result may not be accurate, and a high PSA does not mean cancer; an enlarged prostate also raises it [22]. Finasteride and dutasteride, taken for an enlarged prostate, cut PSA by about half, so a result under 4.0 can hide a high one: tell your doctor if you take one [23][24]. For 48 hours before the test, do not ejaculate, exercise hard or cycle, and wait 4 to 6 weeks after a urine infection [22].
 
 ## What helps
 
 **Bowel cancer.**
-- **Who.** The US Task Force strongly recommends screening at 50 to 75, and recommends it at 45 to 49 [22]. The American Cancer Society reaffirmed starting at 45 in 2026 [27]. The American College of Physicians says start at 50, and to consider not screening at 45 to 49 [28]. From 76 to 85, the decision is individual; people never screened gain the most [22].
-- **Stool test (FIT) or colonoscopy.** In a 10-year trial, inviting people to a stool test every 2 years was as good as inviting them to one colonoscopy for preventing bowel cancer death (0.24% against 0.22% died of it), and more people took part when offered the stool test (39.9% against 31.8%) [29]. Colonoscopy has rare serious harms: about 3 bowel tears and 15 major bleeds per 10,000 [1].
-- **Stool DNA test.** The American Cancer Society lists it as a preferred stool test every 3 years [27]; the American College of Physicians advises against it [28].
-- **Blood test for bowel cancer.** It finds fewer precancers and early cancers than stool tests, so the American Cancer Society advises it only for people who decline the preferred tests [27].
-- **After a positive stool test.** You need a colonoscopy. In 70,124 people with a positive FIT, waiting more than 10 months went with more cancers and more advanced cancers [30]. The American Cancer Society advises within 6 months [27].
+- **Who.** The US Task Force strongly recommends screening at 50 to 75, and recommends it at 45 to 49 [20]. The American Cancer Society reaffirmed starting at 45 in 2026 [25]. The American College of Physicians says start at 50, and to consider not screening at 45 to 49 [26]. From 76 to 85, the decision is individual; people never screened gain the most [20].
+- **Stool test (FIT) or colonoscopy.** In a 10-year trial, inviting people to a stool test every 2 years was as good as inviting them to one colonoscopy for preventing bowel cancer death (0.24% against 0.22% died of it), and more people took part when offered the stool test (39.9% against 31.8%) [27]. Colonoscopy has rare serious harms: about 3 bowel tears and 15 major bleeds per 10,000 [1].
+- **Stool DNA test.** The American Cancer Society lists it as a preferred stool test every 3 years [25]; the American College of Physicians advises against it [26].
+- **Blood test for bowel cancer.** It finds fewer precancers and early cancers than stool tests, so the American Cancer Society advises it only for people who decline the preferred tests [25].
+- **After a positive stool test.** You need a colonoscopy. In 70,124 people with a positive FIT, waiting more than 10 months went with more, and more advanced, cancers [28]. The American Cancer Society advises within 6 months [25].
 
 **Breast cancer.**
-- **Who.** The US Task Force recommends a mammogram every 2 years from 40 to 74 [31]. The American Cancer Society offers yearly mammograms as a choice at 40 to 44, yearly at 45 to 54, then every 1 to 2 years [32].
+- **Who.** The US Task Force recommends a mammogram every 2 years from 40 to 74 [29]. The American Cancer Society offers yearly mammograms as a choice at 40 to 44, yearly at 45 to 54, then every 1 to 2 years [30].
 - **Benefit by age.** In a meta-analysis of trials, mammography prevented about 3 breast cancer deaths per 10,000 women over 10 years at ages 39 to 49 (not statistically significant), 8 at 50 to 59, 21 at 60 to 69 and 13 at 70 to 74 [2]. It cut advanced cancer at 50 and over, not at 39 to 49 [2].
-- **Yearly or every 2 years.** Yearly screening raises false alarms (61% against 42% of women over 10 years) and biopsies (7% against 5%) [21].
-- **Dense breasts.** Evidence is insufficient to judge extra ultrasound or MRI after a normal mammogram [31].
+- **Yearly or every 2 years.** Yearly screening raises false alarms (61% against 42% of women over 10 years) and biopsies (7% against 5%) [31].
+- **Dense breasts.** Evidence is insufficient to judge extra ultrasound or MRI after a normal mammogram [29].
 
 **Cervical cancer.**
-- **Which test.** HPV testing protects better than smear tests: in four trials of 176,464 women, it led to 40% fewer invasive cervical cancers [20].
-- **Self-test.** A swab you take yourself is as accurate as a clinician's sample when the lab uses a PCR-based HPV test [33].
+- **Which test.** HPV testing protects better than smear tests: in four trials of 176,464 women, it led to 40% fewer invasive cervical cancers [32].
+- **Self-test.** A swab you take yourself is about as accurate as a clinician's sample when the lab uses a PCR-based HPV test [33].
 - **Schedule.** The American Cancer Society prefers an HPV test every 5 years from 25 to 65 [34]. The US Task Force starts at 21 with smears every 3 years, and from 30 allows HPV every 5 years [3]. Most people can stop after 65 with normal past results, and after a hysterectomy that removed the cervix, if it was not for precancer or cancer [3][35].
 
 **Prostate cancer.**
 - **The benefit.** Screening men aged 55 to 69 may prevent about 1.3 prostate cancer deaths and 3 cases of spread cancer per 1000 men over about 13 years [5]. In the largest European trial, after 23 years, prostate cancer deaths were 13% lower with screening: one death prevented for every 456 men invited, and for every 12 men diagnosed [36].
 - **The harms.** For every 1000 men screened, about 1 more is admitted with sepsis, 3 more need pads for leaking urine, and 25 more report erection problems [6]. After prostate removal, about 1 in 5 men have lasting urine leakage and 2 in 3 have lasting erection problems [5].
-- **Age.** The US Task Force advises against PSA screening from 70 [5]. The American Cancer Society suggests the conversation start at 50, or at 45 for Black men and men whose father or brother had prostate cancer before 65 [32].
+- **Age.** The US Task Force advises against PSA screening from 70 [5]. The American Cancer Society suggests the conversation start at 50, or at 45 for Black men and men whose father or brother had prostate cancer before 65 [30].
 
 **Lung cancer.**
 - **The evidence.** In the US trial of 53,454 heavy smokers, low-dose CT lowered lung cancer deaths by 20% and deaths from any cause by 6.7%, compared with chest X-ray [4].
@@ -98,62 +98,62 @@ A pack-year is one pack a day for one year [13].
 
 **Multi-cancer blood tests.** These look for cancer DNA in the blood. In a study of 6,621 adults aged 50 or over, a cancer signal showed in 1.4%; only 38% of those had cancer [8]. No trial has yet shown that these tests lower deaths [8].
 
-**Lower your risk.** Brad points to the causes of cancer you can change: not smoking, avoiding alcohol, a healthy weight, sun protection, exercise and the HPV vaccine [40].
+**Lower your risk.** Brad lists the causes of cancer you can change: not smoking, avoiding alcohol, a healthy weight, sun protection, exercise and the HPV vaccine [39].
 
 ## Medicines
 
 No medicine or supplement replaces screening, and trials do not support supplements to prevent cancer. Evidence and safety for each: [vitamin D](https://drstanfield.com/blogs/articles/vitamin-d-benefits-forms-dosing-and-side-effects), [vitamin E](https://drstanfield.com/blogs/articles/vitamin-e-benefits-forms-dosing-and-side-effects), [vitamin A and beta-carotene](https://drstanfield.com/blogs/articles/vitamin-a-benefits-forms-dosing-and-side-effects), [selenium](https://drstanfield.com/blogs/articles/selenium-benefits-forms-dosing-and-side-effects) and [multivitamins](https://drstanfield.com/blogs/articles/multivitamins-benefits-evidence-dosing-and-side-effects).
-- **Beta-carotene and vitamin E.** The US Task Force recommends against both for preventing cancer [41]. In smokers, beta-carotene raised lung cancer by 18% [42]. In healthy men, vitamin E 400 IU a day raised prostate cancer by 17% [43].
-- **Vitamin D.** In the VITAL trial, 2,000 IU a day for 5.3 years did not lower cancer (hazard ratio 0.96); a 17% drop in cancer deaths was not statistically significant [44].
-- **Multivitamins, selenium and other single nutrients.** Evidence is insufficient to say whether they prevent cancer [41]. Selenium did not prevent prostate cancer in the same trial [43].
+- **Beta-carotene and vitamin E.** The US Task Force recommends against both for preventing cancer [40]. In smokers, beta-carotene raised lung cancer by 18% [41]. In healthy men, vitamin E 400 IU a day raised prostate cancer by 17% [42].
+- **Vitamin D.** In the VITAL trial, 2,000 IU a day for 5.3 years did not lower cancer (hazard ratio 0.96); a 17% drop in cancer deaths was not statistically significant [43].
+- **Multivitamins, selenium and other single nutrients.** Evidence is insufficient to say whether they prevent cancer [40]. Selenium did not prevent prostate cancer in the same trial [42].
 
 ## Brad's view (reviewed 9 Nov 2026)
 
 - **Proven screening first.** Brad says people miss proven tests while the internet focuses on full-body MRI [13]. He names bowel screening, mammograms, cervical screening and lung screening in select people as proven [14].
 - **More testing is not always better.** He points to South Korea, where thyroid ultrasound screening raised diagnoses more than 7-fold with no change in deaths [13].
-- **Bowel.** He tells patients not to wait until 50 to start, and calls a stool test (FIT) a great starting point from 45 [45]. He plans his own first stool test at 35, a personal choice he does not recommend to patients [13][45].
+- **Bowel.** He tells patients not to wait until 50 to start, and calls a stool test (FIT) a great starting point from 45 [44]. He plans his own first stool test at 35, a personal choice he does not recommend to patients [13][44].
 - **Breast.** He gives the American Cancer Society schedule, and notes a UK analysis projecting 150 to 300 lives saved by mammograms for each life lost to radiation [13]. Family history may mean starting earlier [13].
 - **Prostate.** He calls the PSA test "a genuine, agonising call" that weighs a small chance of living longer against a real chance of treatment harm, and says the decision is yours, not your doctor's [14].
 - **Multi-cancer blood tests.** He reports that the NHS trial of the Galleri test missed its main goal in 2026, and leaves the choice to you [14].
 - **Full-body MRI.** He had one, and it was normal. He agrees with radiologists who advise against them: they often find unclear things, and no data show they help people live longer [9]. Doctors should not recommend them, he says, but should not block a fully informed person [14].
-- **Symptoms.** If you are under 50 and have had bowel symptoms for more than a couple of weeks, ask your doctor about bowel cancer, and do not accept "you're too young" [45].
+- **Symptoms.** If you are under 50 and have had bowel symptoms for more than a couple of weeks, ask your doctor about bowel cancer, and do not accept "you're too young" [44].
 
 ## Who needs extra care
 
-- **Family history or inherited genes.** A parent, sibling or child with bowel cancer or an advanced polyp before 60, or two at any age: US guidance advises colonoscopy every 5 years from 40, or 10 years before the youngest's diagnosis if earlier. See your doctor [54]. Some women with a strong family history or a BRCA gene change need breast MRI too [32]. Men with a faulty BRCA2 gene and over 40 should see their doctor about prostate checks [46].
+- **Family history or inherited genes.** A parent, sibling or child with bowel cancer or an advanced polyp before 60, or two at any age: US guidance advises colonoscopy every 5 years from 40, or 10 years before the youngest's diagnosis if earlier. See your doctor [45]. Some women with a strong family history or a BRCA gene change need breast MRI too [30]. Men with a faulty BRCA2 gene and over 40 should see their doctor about prostate checks [46].
 - **Weakened immune system** (such as HIV, a transplant or immune-suppressing medicine). The usual cervical schedule, including stopping at 65, does not apply: ask your doctor [3].
 - **Past skin cancer.** The Task Force verdict on skin checks does not cover you; ask about regular checks [7].
 - **Pregnancy and breastfeeding.** Tell the screening service, and ask your doctor about timing; these schedules assume you are not pregnant.
-- **People with serious illness or older age.** Bowel and breast screening help most in those likely to live 10 years or more [27][32].
+- **People with serious illness or older age.** Bowel and breast screening help most in those likely to live 10 years or more [25][30].
 - **Under 18.** Screening does not apply; talk to their doctor about any worry.
 
 ## When to see your doctor
 
-- Any bowel cancer symptom: a change in your bowel habit that is not usual for you, blood in your poo, tummy pain or a lump, or losing weight without trying [10]. Black or dark red poo, or bloody diarrhoea, needs an urgent appointment [16].
-- A lump or swelling in your breast, chest or armpit, or any change in your breasts or nipples that is not normal for you [11].
+- Any bowel cancer symptom: a change in your usual bowel habit, blood in your poo, tummy pain or a lump, or losing weight without trying [10]. Black or dark red poo, or bloody diarrhoea, needs an urgent appointment [16].
+- A lump or swelling in your breast, chest or armpit, or any unusual change in your breasts or nipples [11].
 - A cough for more than 3 weeks, or other lung symptoms; coughing up a small streak of blood needs an urgent appointment [12][15].
-- Any bleeding from the vagina after menopause, even once or only a little [47].
-- A mole that changes size, shape or colour, is painful, itchy, bleeding or crusty; a new mark that does not go away after a few weeks, including on a palm or sole; or a dark area under a nail not caused by injury [39].
+- Any bleeding from the vagina after menopause, even once or only a little, needs an urgent appointment [47].
+- A mole that changes size, shape or colour, is painful, itchy, bleeding or crusty; a new mark that does not go away after a few weeks, including on a palm or sole; or a dark area under a nail not caused by injury [48].
 - Trouble peeing, blood in your urine or semen, or worry about your prostate cancer risk [46].
 - A fever, or feeling hot, cold or shivery, after a colonoscopy: call the hospital that did it or your doctor the same day [17].
-- A positive or abnormal screening result: book the follow-up test soon [30].
+- A positive or abnormal screening result: book the follow-up test soon [28].
 
 ## Where guidelines differ
 
 | | Brad's roadmap | New Zealand | Australia | United States | United Kingdom (England) |
 |---|---|---|---|---|---|
-| Bowel | 35 to 75 | Free FIT every 2 years, 58 to 74; 56 to 74 in 8 districts since Sep 2026, nationwide by mid-2027 [48] | Free stool test every 2 years, 45 to 74 [23] | 45 to 75; 76 to 85 individual [22]; ACS 45 [27]; ACP 50 [28] | FIT every 2 years, 50 to 74 [49] |
-| Breast | 40+; 45+ recommended | Free mammogram every 2 years, 45 to 69; 70 to 74 being added [50] | | Every 2 years, 40 to 74 [31]; ACS yearly 45 to 54 [32] | Every 3 years, 50 to 71st birthday [51] |
-| Cervical | 25 to 65 | | Every 5 years, 25 to 74; self-test option [52] | ACS HPV every 5 years, 25 to 65 [34]; Task Force from 21 [3] | Every 5 years, 25 to 64 [35] |
-| Prostate | 45+; shared decision | | | Individual decision 55 to 69; against from 70 [5]; ACS talk from 50 [32] | No routine PSA testing [24] |
-| Lung | 50 to 80; 20 pack-years; no quit limit | | 50 to 70; 30 pack-years; smoking now or quit within 10 years [53] | 50 to 80; 20 pack-years; quit within 15 years [37]; ACS no quit limit [38] | |
+| Bowel | 35 to 75 | Free FIT every 2 years, 58 to 74; 56 to 74 in 8 districts since Sep 2026, nationwide by mid-2027 [49] | Free stool test every 2 years, 45 to 74 [21] | 45 to 75; 76 to 85 individual [20]; ACS 45 [25]; ACP 50 [26] | FIT every 2 years, 50 to 74 [50] |
+| Breast | 40+; 45+ recommended | Free mammogram every 2 years, 45 to 69; 70 to 74 being added [51] | | Every 2 years, 40 to 74 [29]; ACS yearly 45 to 54 [30] | Every 3 years, 50 to 71st birthday [52] |
+| Cervical | 25 to 65 | | Every 5 years, 25 to 74; self-test option [53] | ACS HPV every 5 years, 25 to 65 [34]; Task Force from 21 [3] | Every 5 years, 25 to 64 [35] |
+| Prostate | 45+; shared decision | | | Individual decision 55 to 69; against from 70 [5]; ACS talk from 50 [30] | No routine PSA testing [22] |
+| Lung | 50 to 80; 20 pack-years; no quit limit | | 50 to 70; 30 pack-years; smoking now or quit within 10 years [54] | 50 to 80; 20 pack-years; quit within 15 years [37]; ACS no quit limit [38] | |
 | Skin checks | Sunscreen card only | | | Evidence insufficient [7] | |
 
-Blank cells: no national source verified.
+Blank: no national source verified.
 
 ## Common questions
 
-**Which cancer tests do I need?** At average risk: bowel screening from 45 and mammograms from 40 (US) or your programme's ages, HPV tests from 25, low-dose CT at 50 to 80 for heavy smokers, and a PSA talk for men from 50 [22][31][34][37][32].
+**Which cancer tests do I need?** At average risk: bowel screening from 45 and mammograms from 40 (US) or your programme's ages, HPV tests from 25, low-dose CT at 50 to 80 for heavy smokers, and a PSA talk for men from 50 [20][29][34][37][30].
 
 ## References
 
@@ -195,31 +195,31 @@ Blank cells: no national source verified.
 
 [19] Independent UK Panel on Breast Cancer Screening. The benefits and harms of breast cancer screening. Lancet. 2012;380(9855):1778-86. PMID: 23117178.
 
-[20] Ronco G et al. Efficacy of HPV-based screening for prevention of invasive cervical cancer. Lancet. 2014;383(9916):524-32. PMID: 24192252.
+[20] US Preventive Services Task Force. Screening for Colorectal Cancer. JAMA. 2021;325(19):1965-1977. PMID: 34003218.
 
-[21] Nelson HD et al. Harms of Breast Cancer Screening. Ann Intern Med. 2016;164(4):256-67. PMID: 26756737.
+[21] healthdirect Australia. Bowel cancer screening. https://www.healthdirect.gov.au/bowel-cancer-screening
 
-[22] US Preventive Services Task Force. Screening for Colorectal Cancer. JAMA. 2021;325(19):1965-1977. PMID: 34003218.
+[22] NHS. PSA testing. https://www.nhs.uk/conditions/prostate-cancer/psa-testing/
 
-[23] healthdirect Australia. Bowel cancer screening. https://www.healthdirect.gov.au/bowel-cancer-screening
+[23] PROSCAR (finasteride) tablet label. DailyMed. https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=6f988153-fc74-4ca4-b29a-111f750c4a4b
 
-[24] NHS. PSA testing. https://www.nhs.uk/conditions/prostate-cancer/psa-testing/
+[24] AVODART (dutasteride) capsule label. DailyMed. https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=960797b3-09b1-4d6a-8ece-8b5d918e93e4
 
-[25] PROSCAR (finasteride) tablet label. DailyMed. https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=6f988153-fc74-4ca4-b29a-111f750c4a4b
+[25] Wolf AMD et al. Colorectal cancer screening: an update to the American Cancer Society guideline, 2026. CA Cancer J Clin. 2026;76(3):e70083. PMID: 42200680.
 
-[26] AVODART (dutasteride) capsule label. DailyMed. https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=960797b3-09b1-4d6a-8ece-8b5d918e93e4
+[26] Qaseem A et al. Screening for Colorectal Cancer in Asymptomatic Average-Risk Adults. Ann Intern Med. 2023;176(8):1092-1100. PMID: 37523709.
 
-[27] Wolf AMD et al. Colorectal cancer screening: an update to the American Cancer Society guideline, 2026. CA Cancer J Clin. 2026;76(3):e70083. PMID: 42200680.
+[27] Castells A et al. Effect of invitation to colonoscopy versus faecal immunochemical test screening on colorectal cancer mortality (COLONPREV). Lancet. 2025;405(10486):1231-1239. PMID: 40158525.
 
-[28] Qaseem A et al. Screening for Colorectal Cancer in Asymptomatic Average-Risk Adults. Ann Intern Med. 2023;176(8):1092-1100. PMID: 37523709.
+[28] Corley DA et al. Association Between Time to Colonoscopy After a Positive Fecal Test Result and Risk of Colorectal Cancer and Cancer Stage at Diagnosis. JAMA. 2017;317(16):1631-1641. PMID: 28444278.
 
-[29] Castells A et al. Effect of invitation to colonoscopy versus faecal immunochemical test screening on colorectal cancer mortality (COLONPREV). Lancet. 2025;405(10486):1231-1239. PMID: 40158525.
+[29] US Preventive Services Task Force. Screening for Breast Cancer. JAMA. 2024;331(22):1918-1930. PMID: 38687503.
 
-[30] Corley DA et al. Association Between Time to Colonoscopy After a Positive Fecal Test Result and Risk of Colorectal Cancer and Cancer Stage at Diagnosis. JAMA. 2017;317(16):1631-1641. PMID: 28444278.
+[30] American Cancer Society. Guidelines for the Early Detection of Cancer. https://www.cancer.org/cancer/screening/american-cancer-society-guidelines-for-the-early-detection-of-cancer.html
 
-[31] US Preventive Services Task Force. Screening for Breast Cancer. JAMA. 2024;331(22):1918-1930. PMID: 38687503.
+[31] Nelson HD et al. Harms of Breast Cancer Screening. Ann Intern Med. 2016;164(4):256-67. PMID: 26756737.
 
-[32] American Cancer Society. Guidelines for the Early Detection of Cancer. https://www.cancer.org/cancer/screening/american-cancer-society-guidelines-for-the-early-detection-of-cancer.html
+[32] Ronco G et al. Efficacy of HPV-based screening for prevention of invasive cervical cancer. Lancet. 2014;383(9916):524-32. PMID: 24192252.
 
 [33] Arbyn M et al. Detecting cervical precancer and reaching underscreened women by using HPV testing on self samples. BMJ. 2018;363:k4823. PMID: 30518635.
 
@@ -233,34 +233,34 @@ Blank cells: no national source verified.
 
 [38] Wolf AMD et al. Screening for lung cancer. CA Cancer J Clin. 2024;74(1):50-81. PMID: 37909877.
 
-[39] NHS. Melanoma skin cancer: symptoms. https://www.nhs.uk/conditions/melanoma-skin-cancer/symptoms/
+[39] Brad Stanfield. Why avoiding cancer is now easier than ever. 2024. https://drstanfield.com/blogs/articles/avoiding-cancer-easier-ever
 
-[40] Brad Stanfield. Why avoiding cancer is now easier than ever. 2024. https://drstanfield.com/blogs/articles/avoiding-cancer-easier-ever
+[40] US Preventive Services Task Force. Vitamin, Mineral, and Multivitamin Supplementation to Prevent Cardiovascular Disease and Cancer. JAMA. 2022;327(23):2326-2333. PMID: 35727271.
 
-[41] US Preventive Services Task Force. Vitamin, Mineral, and Multivitamin Supplementation to Prevent Cardiovascular Disease and Cancer. JAMA. 2022;327(23):2326-2333. PMID: 35727271.
+[41] Alpha-Tocopherol, Beta Carotene Cancer Prevention Study Group. The effect of vitamin E and beta carotene on the incidence of lung cancer and other cancers in male smokers. N Engl J Med. 1994;330(15):1029-35. PMID: 8127329.
 
-[42] Alpha-Tocopherol, Beta Carotene Cancer Prevention Study Group. The effect of vitamin E and beta carotene on the incidence of lung cancer and other cancers in male smokers. N Engl J Med. 1994;330(15):1029-35. PMID: 8127329.
+[42] Klein EA et al. Vitamin E and the risk of prostate cancer: SELECT. JAMA. 2011;306(14):1549-56. PMID: 21990298.
 
-[43] Klein EA et al. Vitamin E and the risk of prostate cancer: SELECT. JAMA. 2011;306(14):1549-56. PMID: 21990298.
+[43] Manson JE et al. Vitamin D Supplements and Prevention of Cancer and Cardiovascular Disease. N Engl J Med. 2019;380(1):33-44. PMID: 30415629.
 
-[44] Manson JE et al. Vitamin D Supplements and Prevention of Cancer and Cardiovascular Disease. N Engl J Med. 2019;380(1):33-44. PMID: 30415629.
+[44] Brad Stanfield. What's causing colon cancer to rise so fast. 2026. https://drstanfield.com/blogs/articles/whats-causing-colon-cancer-to-rise-so-fast
 
-[45] Brad Stanfield. What's causing colon cancer to rise so fast. 2026. https://drstanfield.com/blogs/articles/whats-causing-colon-cancer-to-rise-so-fast
+[45] Rex DK et al. Colorectal Cancer Screening: US Multi-Society Task Force recommendations. Gastroenterology. 2017;153(1):307-323. PMID: 28600072.
 
 [46] NHS. Prostate cancer: symptoms. https://www.nhs.uk/conditions/prostate-cancer/symptoms/
 
 [47] NHS. Post-menopausal bleeding. https://www.nhs.uk/conditions/post-menopausal-bleeding/
 
-[48] Health New Zealand. Bowel screening. https://www.healthnz.govt.nz/keeping-healthy/cancer-screening/bowel-screening
+[48] NHS. Melanoma skin cancer: symptoms. https://www.nhs.uk/conditions/melanoma-skin-cancer/symptoms/
 
-[49] NHS. Bowel cancer screening. https://www.nhs.uk/conditions/bowel-cancer-screening/
+[49] Health New Zealand. Bowel screening. https://www.healthnz.govt.nz/keeping-healthy/cancer-screening/bowel-screening
 
-[50] Health New Zealand. Breast screening. https://www.healthnz.govt.nz/keeping-healthy/cancer-screening/breast-screening
+[50] NHS. Bowel cancer screening. https://www.nhs.uk/conditions/bowel-cancer-screening/
 
-[51] NHS. Breast screening: when you'll be invited and who should go. https://www.nhs.uk/conditions/breast-screening-mammogram/when-youll-be-invited-and-who-should-go/
+[51] Health New Zealand. Breast screening. https://www.healthnz.govt.nz/keeping-healthy/cancer-screening/breast-screening
 
-[52] healthdirect Australia. Cervical screening test. https://www.healthdirect.gov.au/cervical-screening-test
+[52] NHS. Breast screening: when you'll be invited and who should go. https://www.nhs.uk/conditions/breast-screening-mammogram/when-youll-be-invited-and-who-should-go/
 
-[53] healthdirect Australia. Lung cancer screening. https://www.healthdirect.gov.au/lung-cancer-screening
+[53] healthdirect Australia. Cervical screening test. https://www.healthdirect.gov.au/cervical-screening-test
 
-[54] Rex DK et al. Colorectal Cancer Screening: US Multi-Society Task Force recommendations. Gastroenterology. 2017;153(1):307-323. PMID: 28600072.
+[54] healthdirect Australia. Lung cancer screening. https://www.healthdirect.gov.au/lung-cancer-screening
