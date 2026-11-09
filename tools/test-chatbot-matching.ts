@@ -50,9 +50,8 @@
  *                             sees it (lower case, straight quotes, no markdown * or _). For a claim a
  *                             phrase list cannot pin down, such as whose order a first step belongs to.
  *                             A regex that does not compile exits the harness before any API call.
- *   surface?: 'doctor' | 'brand'  answer check only: adds app/lib/chat-posture-<surface>.md after the
- *                             products block, where production's buildSystemBlocks puts it. Omitted =
- *                             no posture block (the harness's behaviour before 2026-10-07).
+ *   surface?: 'doctor' | 'brand' | 'youtube'  answer check only: the posture block, or for 'youtube'
+ *                             the YouTube bot's whole prompt, with youtube_video (tools/chatbot-surfaces.ts).
  *   user_context?: object      answer check only: the raw payload a widget sends as the chat's context
  *                             (chatContextOf's shape: form fields, unitSystem, medications, screenings).
  *                             It goes through production's resolveChatContext, and the answer call
@@ -133,6 +132,7 @@ import { toolOnlyAck, type ProposedEdit, type ProposedProfileEdit } from '../pac
 import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content';
 import { routerView, routerIndexBlock, preferMasters, ROUTER_SUMMARY_MAX_CHARS } from '../app/lib/router-view';
 import type { BlogIndexEntry } from '../app/lib/blog-index.server';
+import { loadPostures, loadYouTubeVideos, youtubeTurn, type YouTubeVideo } from './chatbot-surfaces';
 import { parseRouterReply } from '../app/lib/router-reply';
 import { buildSystemBlocks, EMPTY_CHAT_CONTEXT, resolveChatContext } from '../app/lib/chat.server';
 import { healthInputSchema } from '../packages/health-core/src/validation';
@@ -385,7 +385,8 @@ interface TestQuery {
   must_not_match?: string[];   // regexes the answer must not match (see the header)
   max_length_chars?: number;   // answer must be at most this many characters
   answer_handles?: string[];   // fixed-handle answer check, no `expected` (see the header)
-  surface?: 'doctor' | 'brand'; // answer check adds that surface's posture block (see the header)
+  surface?: 'doctor' | 'brand' | 'youtube'; // answer check adds that surface's posture block (see the header)
+  youtube_video?: string;      // with surface 'youtube': the video's companion post (see the header)
   user_context?: unknown;      // answer check sends this widget payload as the user's data (see the header)
   expect_no_plan?: true;       // user_context makes no plan: no usable height (see the header)
   expect_roadmap_run?: boolean; // the answer must (true) or must not (false) call run_roadmap (see the header)
@@ -422,17 +423,10 @@ if (unknownForbidden.length > 0) {
   console.error(`must_not_route names handles not in the index: ${unknownForbidden.join(', ')}`);
   process.exit(1);
 }
-// A surface the harness cannot load would score an answer with no posture at all.
-const POSTURES = new Map<string, string>();
-for (const q of ALL_QUERIES) {
-  if (q.surface === undefined || POSTURES.has(q.surface)) continue;
-  const file = path.join(REPO_ROOT, 'app/lib', `chat-posture-${q.surface}.md`);
-  if (!['doctor', 'brand'].includes(q.surface) || !fs.existsSync(file)) {
-    console.error(`unknown surface "${q.surface}" on: ${q.query}`);
-    process.exit(1);
-  }
-  POSTURES.set(q.surface, fs.readFileSync(file, 'utf-8'));
-}
+// A surface the harness cannot load, or a YouTube fixture production could never send, would score a prompt production never builds.
+const POSTURES = loadPostures(REPO_ROOT, ALL_QUERIES);
+const YOUTUBE_VIDEOS = loadYouTubeVideos(ALL_QUERIES);
+for (const problem of [POSTURES, YOUTUBE_VIDEOS]) if (typeof problem === 'string') { console.error(problem); process.exit(1); }
 // A payload that makes no plan, or silently loses a key or a value, would score a context the fixture never meant.
 const CONTEXT_KEYS = new Set([...Object.keys(healthInputSchema.shape), 'unitSystem', 'medications', 'screenings', 'measurementHistory']);
 const USER_CONTEXTS = new Map<TestQuery, string>();
@@ -567,20 +561,25 @@ async function checkAnswer(q: TestQuery, matchedHandles: string[] = []): Promise
   const { query, surface, max_length_chars: maxLengthChars } = q;
   const mustMention = q.must_mention ?? [];
   const mustNotMention = q.must_not_mention ?? [];
-  const matchedContent = loadMatchedContent(matchedHandles).content;
+  const video = (YOUTUBE_VIDEOS as Map<TestQuery, YouTubeVideo>).get(q);
+  const youtube = video && youtubeTurn(video, matchedHandles, query, q.history ?? [], FULL_INDEX);
+  const matchedContent = youtube ? youtube.matchedContent : loadMatchedContent(matchedHandles).content;
   // Production order (buildSystemBlocks): products, then the surface posture, then articles.
-  const base = surface ? `${ANSWER_SYSTEM_CONTEXT}\n\n---\n\n${POSTURES.get(surface)}` : ANSWER_SYSTEM_CONTEXT;
+  const base = surface ? `${ANSWER_SYSTEM_CONTEXT}\n\n---\n\n${(POSTURES as Map<string, string>).get(surface)}` : ANSWER_SYSTEM_CONTEXT;
   const userContextJson = USER_CONTEXTS.get(q);
-  const system = userContextJson !== undefined
-    ? buildSystemBlocks(userContextJson, { surfaceContext: surface && POSTURES.get(surface), blogArticles: matchedContent || null })
+  // The YouTube bot's platform context sits where the widget's user data does (runPipeline).
+  const platformContext = youtube ? youtube.platformContext : userContextJson;
+  const system = platformContext !== undefined
+    ? buildSystemBlocks(platformContext, { surfaceContext: surface && (POSTURES as Map<string, string>).get(surface), blogArticles: matchedContent || null })
     : matchedContent
       ? `${base}\n\n---\n\n## Referenced Blog Articles\n\n${matchedContent}`
       : base;
-  const messages = [...q.history ?? [], { role: 'user' as const, content: query }];
+  const messages = youtube ? youtube.messages : [...q.history ?? [], { role: 'user' as const, content: query }];
   const body = {
     ...modelParams(ANSWER_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system,
-    tools: chatToolsFor(messages), // as production: the tools change what the model writes
+    // As production: the tools change what the model writes. The YouTube bot has none (US-15 AC19).
+    ...(video ? {} : { tools: chatToolsFor(messages) }),
   };
 
   // One Messages call; a 429 waits and retries once. As production (callAnthropicWithUsage): thinking makes an answer take 10-20 s.

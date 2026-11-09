@@ -238,7 +238,10 @@ const MetricRow = memo(function MetricRow({ row, onOpen }: { row: RowModel; onOp
     measure();
     const watch = new ResizeObserver(measure);
     watch.observe(block);
-    return () => watch.disconnect();
+    // A web font swapping in moves the ink without always resizing the block (#1002 R2).
+    let live = true;
+    document.fonts?.ready.then(() => { if (live) measure(); });
+    return () => { live = false; watch.disconnect(); };
   }, []);
   return (
     <li>
