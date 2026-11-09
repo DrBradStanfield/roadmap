@@ -11,9 +11,10 @@ customers are told.
 2. **Create the table.** Paste the `chat_question_archive` section of
    `supabase/rls-policies.sql` into the Supabase SQL editor and run it. The
    section ends with `NOTIFY pgrst, 'reload schema'`.
-3. **Ship the erase-dialog wording.** `git apply docs/chat-question-archive/erase-copy.patch`
-   changes item 6 of the erase dialog and the text shown after an erase, with
-   their tests. Run `npm run test:all`, commit, deploy.
+3. **Ship the erase-dialog wording.** Done 2026-10-31 (commit ce5676ed, Brad:
+   "switch it on. go live"): item 6 of the erase dialog and the text shown after
+   an erase name the kept question copy (`widget-src/src/lib/erase-copy.ts`).
+   The held patch is deleted.
 4. **Publish the policies.** `node -r dotenv/config scripts/build-privacy-page.mjs connector --publish`,
    the same with `app`, and the guides (`node scripts/publish-guides.mjs --publish`):
    where-your-data-lives and find-your-record describe the copy. Update the

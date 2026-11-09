@@ -57,7 +57,8 @@ vi.mock('./UploadModal', () => ({ UploadModal: ({ onComplete, history }: { onCom
   return null;
 } }));
 
-import { ERASE_DONE_CHAT_UNREAD, HealthTool, WRITE_REFUSED } from './HealthTool';
+import { HealthTool } from './HealthTool';
+import { ERASE_DONE_CHAT_UNREAD, WRITE_REFUSED } from '../lib/erase-copy';
 import { deleteButton } from '../testing/settings';
 
 /** The guest's record as this browser holds it, after every pending save. */

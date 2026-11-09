@@ -88,7 +88,8 @@ vi.mock('./UploadModal', () => ({
   },
 }));
 
-import { ERASE_DONE, HealthTool } from './HealthTool';
+import { HealthTool } from './HealthTool';
+import { ERASE_DONE } from '../lib/erase-copy';
 import { deleteButton, openSettings } from '../testing/settings';
 
 const TODAY = localDay(new Date());
