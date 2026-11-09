@@ -8,6 +8,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act } from 'react';
 import { render, renderHook, cleanup } from '@testing-library/react';
+import { sendMessage } from '../lib/chat-api';
 import type { SyncMessage } from '../lib/chat-sync';
 
 const sync = vi.hoisted(() => ({ handler: undefined as undefined | ((m: SyncMessage) => void) }));
@@ -46,7 +47,7 @@ async function replyLandsHere() {
   await act(async () => { send.resolve!({ result: { conversationId: 'c1', messageId: null, content: 'LDL too.' }, error: null }); });
 }
 
-beforeEach(() => { vi.useFakeTimers(); });
+beforeEach(() => { vi.useFakeTimers(); vi.mocked(sendMessage).mockClear(); });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 describe('US-15 AC17a — another tab\'s pending reply expires', () => {
@@ -134,5 +135,28 @@ describe('US-15 AC17a — another tab\'s pending reply expires', () => {
     fromOtherTab(true);
     act(() => { vi.advanceTimersByTime(REMOTE_PENDING_MS); });
     expect(hook.result.current.state.isLoading).toBe(false);
+  });
+});
+
+describe('US-15 AC17b: this tab\'s own send ends only with its own reply', () => {
+  it('US-15 AC17b: another tab saying its reply ended does not unlock this tab\'s send, so no second send starts', async () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    await sendHere(hook);
+    expect(sendMessage).toHaveBeenCalledOnce();
+    fromOtherTab(false); // the other tab's own send, started at the same moment, ended
+    expect(hook.result.current.state.isLoading).toBe(true);
+    await sendHere(hook);
+    expect(sendMessage).toHaveBeenCalledOnce();
+    await replyLandsHere();
+    expect(hook.result.current.state.isLoading).toBe(false);
+  });
+
+  it('US-15 AC17b: a send that throws before the request frees the chat and puts the question back', async () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false, guestInputs: () => { throw new Error('synthetic context failure'); } }));
+    await sendHere(hook);
+    expect(hook.result.current.state.isLoading).toBe(false);
+    expect(hook.result.current.state.inputText).toBe('And LDL?');
+    expect(hook.result.current.state.error).toBeTruthy();
+    expect(hook.result.current.state.messages).toEqual([]);
   });
 });
