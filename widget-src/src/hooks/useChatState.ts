@@ -4,6 +4,7 @@
  * UI-only state (isExpanded, showThreads, etc.) stays in the consuming component.
  */
 
+import { Sentry } from '../lib/sentry';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   listConversations,
@@ -172,12 +173,14 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         setConversations(payload.conversations);
         setActiveConversationId(payload.activeConversationId);
         setMessages(payload.messages);
-        setIsLoading(payload.isLoading);
-        isLoadingRef.current = payload.isLoading; // a load landing before the re-render says what this message said (US-15 AC7a)
+        // This tab's own send ends only with its own reply (US-15 AC17b).
+        const loading = payload.isLoading || ownSendRef.current;
+        setIsLoading(loading);
+        isLoadingRef.current = loading; // a load landing before the re-render says what this message said (US-15 AC7a)
         clearTimeout(remotePending);
         // The expiry never ends this tab's own send.
         if (payload.isLoading) remotePending = setTimeout(() => { if (!ownSendRef.current) { setIsLoading(false); isLoadingRef.current = false; } }, REMOTE_PENDING_MS);
-        setIsLocalSender(false);
+        if (!ownSendRef.current) setIsLocalSender(false);
         setError(payload.error);
         return;
       }
@@ -286,6 +289,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
     setMessages(optimisticMessages);
     setInputText('');
+    inputTextRef.current = ''; // the box is empty now, before the re-render (US-15 AC57)
     postInputSync(instanceId, '');
     setIsLoading(true);
     setIsLocalSender(true);
@@ -312,14 +316,20 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     // reader runs here, so each message carries what is saved now, even a save
     // made after the page loaded (US-15 AC10). None degrades to the empty context.
     ownSendRef.current = true;
-    const { result, error: sendError } = await sendMessage(
+    // A throw before the request (reading the plan for context) is a failed
+    // send like any other: the chat frees and the question goes back (US-15 AC17b).
+    const { result, error: sendError } = await (async () => sendMessage(
       trimmed,
       currentConvId,
       guestInputs?.() ?? null,
       messagesRef.current,
       handleDelta,
       Boolean(onProposeEditRef.current),
-    );
+    ))().catch(() => {
+      // A fixed message: the thrown error can quote the saved plan, which holds health values.
+      Sentry.captureMessage('Chat context read failed', { tags: { feature: 'chat' } });
+      return { result: null, error: { error: 'Something went wrong. Please try again.' } };
+    });
     ownSendRef.current = false;
     const approach = endStream();
     // Another thread was opened while the reply was in flight (US-15 AC7a): it stays
