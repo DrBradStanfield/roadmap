@@ -54,7 +54,8 @@ interface UploadModalProps {
   metricUnitOverrides?: Partial<Record<MetricType, UnitSystem>>;
   onToggleFieldUnit?: (field: string) => void;
   history: UploadHistory;
-  onComplete: () => void;
+  /** The page's re-read; a partial save waits for it before a retry (US-12 AC6c). */
+  onComplete: () => void | Promise<void>;
   onStart?: () => Promise<void>;
   onClose: () => void;
   /** `erase`: the erase the page showed as the save began (US-16 AC2a). */
@@ -154,6 +155,19 @@ function FileNotices({ notices }: { notices: FileNotice[] }) {
   );
 }
 
+/** One session's save outcome (US-12 AC6c). The saved counts add up across a
+ *  retry, which finishes what the first Save began; the rest are the last
+ *  attempt's. `unstored`: originals the cloud would not store behind details it
+ *  already holds (US-14 AC4). The refusals are lab rows in a unit the record
+ *  does not know for that test, and core values it refused: each is named, as
+ *  a dropped value must never be silent (US-21 phase 3, US-35 AC17). */
+interface SaveOutcome {
+  values: number; labValues: number; documents: number;
+  skippedValues: number; skippedLabValues: number; errors: number; unstored: number;
+  refusedLabUnits: LabUnitRefusal[]; refusedMeasurements: MeasurementRefusal[];
+}
+const NO_OUTCOME: SaveOutcome = { values: 0, labValues: 0, documents: 0, skippedValues: 0, skippedLabValues: 0, errors: 0, unstored: 0, refusedLabUnits: [], refusedMeasurements: [] };
+
 export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, age, sex, grading, open, onOpen }: UploadModalProps) {
   const [state, setState] = useState<ModalState>('select');
   const [files, setFiles] = useState<File[]>([]);
@@ -165,18 +179,8 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   const [results, setResults] = useState<FileResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [notices, setNotices] = useState<FileNotice[]>([]);
-  const [savedCount, setSavedCount] = useState(0);
-  const [skippedMeasurements, setSkippedMeasurements] = useState(0);
-  const [skippedLabValues, setSkippedLabValues] = useState(0);
-  const [saveErrorCount, setSaveErrorCount] = useState(0);
-  const [savedDocCount, setSavedDocCount] = useState(0);
-  const [savedLabCount, setSavedLabCount] = useState(0);
-  // Originals the cloud would not store behind details it already holds (US-14 AC4).
-  const [unstoredCount, setUnstoredCount] = useState(0);
-  // US-21 phase 3: lab rows the record would not store because it does not know
-  // that unit for that test. Shown by name — a dropped value must never be silent.
-  const [refusedLabUnits, setRefusedLabUnits] = useState<LabUnitRefusal[]>([]);
-  const [refusedMeasurements, setRefusedMeasurements] = useState<MeasurementRefusal[]>([]);
+  const [outcome, setOutcome] = useState(NO_OUTCOME);
+  const { values: savedCount, labValues: savedLabCount, documents: savedDocCount, skippedValues: skippedMeasurements, skippedLabValues, errors: saveErrorCount, unstored: unstoredCount, refusedLabUnits, refusedMeasurements } = outcome;
   // Lp(a)'s refusal names its range in the unit its field shows (US-05 AC2).
   const [lpaUnit] = useLpaUnit(unitSystem);
   const [isSaving, setIsSaving] = useState(false);
@@ -195,15 +199,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     setError(null);
     setNotices([]);
     setProgress({ current: 0, total: 0, fileName: '' });
-    setSavedCount(0);
-    setSkippedMeasurements(0);
-    setSkippedLabValues(0);
-    setSaveErrorCount(0);
-    setSavedDocCount(0);
-    setSavedLabCount(0);
-    setUnstoredCount(0);
-    setRefusedLabUnits([]);
-    setRefusedMeasurements([]);
+    setOutcome(NO_OUTCOME);
   }, []);
 
   // Closing active work only hides it. Drafts and pending saves remain mounted.
@@ -421,9 +417,10 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     savingRef.current = true;
     setIsSaving(true);
     setError(null);
-    // The last save's refusals belong to it: never beside a new error.
-    setRefusedLabUnits([]);
-    setRefusedMeasurements([]);
+    // The last attempt's skips, errors and refusals belong to it: never beside a
+    // new error. What it saved stays, and this attempt adds to it.
+    const prior = { ...NO_OUTCOME, values: outcome.values, labValues: outcome.labValues, documents: outcome.documents };
+    setOutcome(prior);
     const erase = getShownErase(); // the record this save was asked for
     try {
       // Save core measurements, additional lab values, and documents in parallel
@@ -484,16 +481,16 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         labValuePayloads.length > 0 ? bulkSaveLabValues(labValuePayloads).catch(failed('labValues', { saved: [], skippedDuplicates: 0, errorCount: labValuePayloads.length, refused: [] })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] }),
       ]);
 
-      setSavedCount(savedValues.saved.length);
-      setSkippedMeasurements(savedValues.skippedDuplicates);
-      setSkippedLabValues(savedLabValues.skippedDuplicates);
-      setRefusedLabUnits(savedLabValues.refused);
-      setRefusedMeasurements(savedValues.refused);
       const saveErrors = savedValues.errorCount + savedLabValues.errorCount + savedDocs.errorCount;
-      setSaveErrorCount(saveErrors);
-      setSavedDocCount(savedDocs.saved.length);
-      setUnstoredCount(savedDocs.unstored ?? 0);
-      setSavedLabCount(savedLabValues.saved.length);
+      const next: SaveOutcome = {
+        values: prior.values + savedValues.saved.length,
+        labValues: prior.labValues + savedLabValues.saved.length,
+        documents: prior.documents + savedDocs.saved.length,
+        skippedValues: savedValues.skippedDuplicates, skippedLabValues: savedLabValues.skippedDuplicates,
+        errors: saveErrors, unstored: savedDocs.unstored ?? 0,
+        refusedLabUnits: savedLabValues.refused, refusedMeasurements: savedValues.refused,
+      };
+      setOutcome(next);
       // A save error keeps the review open for retry (US-12 AC6). Skipped
       // values and refusals are settled outcomes, reported on the done screen;
       // a skip does not establish that the reviewed value is already saved.
@@ -509,13 +506,15 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       }
 
       if (!saveFailed) {
-        trackProductEvent('upload_saved', { count: totalSaved });
+        trackProductEvent('upload_saved', { count: next.values + next.labValues + next.documents });
         setState('done');
         onComplete();
       } else {
         // Stay in review: a second Save retries idempotently (values dedup on
-        // skippedDuplicates, documents on contentHash).
-        if (totalSaved > 0) onComplete();
+        // skippedDuplicates, documents on contentHash). Save stays busy until the
+        // page has read back what saved, so the retry does not send it again; a
+        // failed re-read is not a failed save, so its error is not this one's.
+        if (totalSaved > 0) await Promise.resolve(onComplete()).catch(() => {});
         setError(threw ? 'Some items could not be saved. Please try again.' : 'Failed to save. Please try again.');
       }
     } catch {
@@ -524,7 +523,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       savingRef.current = false;
       setIsSaving(false);
     }
-  }, [onComplete, onScreeningUpdate, history.documents]);
+  }, [onComplete, onScreeningUpdate, history.documents, outcome]);
 
   // One report can refuse the same test on several dates; the user needs it
   // named once. A note says what to look for instead, where there is one, and
