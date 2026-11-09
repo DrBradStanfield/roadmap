@@ -1137,6 +1137,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       setMedications([]);
       setScreenings([]);
       setSupplements([]);
+      // Cleared here too: a re-read during the write may have shown this
+      // erase already, and showErase then clears nothing (adversary R1).
+      setProfileProposal(null);
+      setMedUndo(null);
       showErase(getEraseIdentity());
       // A refusal of this erase's own leftovers is not news (adversary R3).
       refusedFor.current = getEraseIdentity();

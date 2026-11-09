@@ -108,7 +108,9 @@ describe('US-16 AC2c: an upload review read before an erase ends with it', () =>
   it("another device's erase, once this tab shows it: the hidden review is gone", async () => {
     await reviewReadThenHidden();
     // deleteUserData is the erase as another writer of this record makes it;
-    // the page learns of it through its re-read, as from another device.
+    // the page learns of it through its re-read, as from another device, or
+    // through a refused save of its own, which re-reads too (WRITE_REFUSED).
+    vi.stubGlobal('alert', () => {});
     await act(async () => { await deleteUserData(); });
     act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
     await wait(1500);
