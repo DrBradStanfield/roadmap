@@ -1,6 +1,32 @@
 import QuickLook
 import SwiftUI
 
+/// The letters and scan results at the foot of My health, as the web lists them (US-73 AC12,
+/// HealthRecordsSection): "Scan results", then "Documents", each with a topic's heading and a row
+/// each, newest first; a heading only when it has a row; a row opens its page.
+struct DocumentSections: View {
+    let store: RecordStore
+    let documents: MyData.Documents
+
+    var body: some View {
+        section(.scanResults(), anchor: "documents.scans", documents.scans, showsType: false)
+        section(.documents(), anchor: "documents.others", documents.others, showsType: true)
+    }
+
+    @ViewBuilder
+    private func section(_ title: SectionTitle, anchor: String, _ documents: [MyData.Document], showsType: Bool) -> some View {
+        if !documents.isEmpty {
+            TopicHeading(title, anchor: anchor)
+            Section {
+                ForEach(documents) { document in
+                    NavigationLink { DocumentPage(store: store, document: document) } label: { DocumentRow(document: document, showsType: showsType) }
+                }
+            }
+            .listSectionSpacing(.compact)
+        }
+    }
+}
+
 /// A letter's or scan result's row at the foot of My health (US-73 AC12): its title, then its day,
 /// and under Documents its kind, as the web's row shows its badge (HealthRecordsSection).
 struct DocumentRow: View {

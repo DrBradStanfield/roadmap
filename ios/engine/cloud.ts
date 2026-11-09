@@ -95,7 +95,7 @@ interface Open {
   unflushed: number;
 }
 
-let open: Open | null = null;
+export let open: Open | null = null; // read by entry.ts documentOriginal (US-73 AC12); written only here
 /** The newest open or close asked for. An open that finishes after a newer
  *  open or a close began is out of date: it closes itself and rejects, so two
  *  opens racing never leave one session orphaned and the other shown. */
@@ -200,7 +200,7 @@ function refuse(reason: string, message: string): Refusal {
   return { ok: false, reason, message };
 }
 
-const NOT_OPEN = 'The cloud record is not open.';
+export const NOT_OPEN = 'The cloud record is not open.';
 const ERASED = 'Your record was erased on another device, so this was not saved.';
 
 /** Take `next` as the session's working copy: on the phone first, marked for the
@@ -375,20 +375,6 @@ async function saveOneDocument(
     if (refusal) return refusal;
   }
   return answer(JSON.stringify(at.session.file));
-}
-
-/**
- * A listed document's original, read from the person's cloud for My health's
- * document page (US-73 AC12; the web's "View original file", US-14). By the
- * document's id, so only a file the record names is read. Rejects when no cloud
- * is open, the record names no original for it, or the cloud cannot give it.
- */
-export async function originalOf(id: string): Promise<ArrayBuffer> {
-  const at = open;
-  if (!at) throw new Error(NOT_OPEN);
-  const doc = at.session.file.documents.find((d) => d.id === id && !d.deleted);
-  if (!doc?.fileRef) throw new Error('This document has no original in your cloud.');
-  return (await at.host.store.readDocument(doc.fileRef)).arrayBuffer();
 }
 
 /** `file` with the plan's rows committed. The commit writes in place (it pushes rows
