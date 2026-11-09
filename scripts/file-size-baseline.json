@@ -7,7 +7,7 @@
   "files": {
     "tools/knowledge-batch-check.ts": 1724,
     "tools/codex-review.mjs": 1699,
-    "widget-src/src/components/HealthTool.tsx": 1638,
+    "widget-src/src/components/HealthTool.tsx": 1598,
     "packages/health-core/src/suggestions.ts": 1251,
     "packages/health-core/src/lab-extraction.ts": 1166,
     "widget-src/src/components/InputPanel.tsx": 1141,
