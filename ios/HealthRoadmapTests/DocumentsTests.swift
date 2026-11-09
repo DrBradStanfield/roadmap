@@ -73,6 +73,16 @@ final class DocumentsTests: XCTestCase {
         ])
     }
 
+    /// Design review: a first heading that repeats the page's title is not drawn twice, and a table
+    /// too wide for the screen reads as one block per row, every value kept.
+    func testTheRepeatedTitleIsDroppedAndAWideTableStacks_US73_AC12() {
+        XCTAssertEqual(DocumentText.blocks("# Cardiology follow-up\nSeen.", title: "cardiology follow-up "), [.paragraph("Seen.")])
+        XCTAssertEqual(DocumentText.blocks("# Summary\nSeen.", title: "Cardiology follow-up").first, .heading(level: 1, text: "Summary"))
+        let stacked = DocumentText.stacked([["Test", "Result", "Range"], ["LDL cholesterol", "2.4 mmol/L", "<3.0"]])
+        XCTAssertEqual(stacked.map(\.name), ["LDL cholesterol"])
+        XCTAssertEqual(stacked.map(\.rest), ["Result 2.4 mmol/L · Range <3.0"])
+    }
+
     /// Words from an uploaded file never open anything: a link keeps its text and loses its target.
     func testALinkInADocumentIsPlainText_US73_AC12() {
         let text = DocumentText.inline("See [the clinic](https://example.test/x) and **bold**")
@@ -100,6 +110,7 @@ final class DocumentsTests: XCTestCase {
             XCTFail("read with no cloud open")
         } catch {}
         let folder = FileManager.default.temporaryDirectory.appending(path: "Documents \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
         let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
         let outcome = await store.original(of: "doc-1")

@@ -151,8 +151,9 @@ struct MyData: Decodable {
         /// The original in the person's cloud; nil for a text-only row.
         let original: Original?
 
-        /// The day as the row shows it, or the web's "Date unknown".
-        var dayText: String { day.map(DayText.short) ?? "Date unknown" }
+        /// The day as the row shows it, kept on one line (at large text "14 / Sep 2026" broke
+        /// mid-date), or the web's "Date unknown".
+        var dayText: String { day.map { DayText.short($0).replacingOccurrences(of: " ", with: "\u{00A0}") } ?? "Date unknown" }
     }
 
     struct InputRange: Decodable, Sendable {

@@ -37,34 +37,35 @@ struct DocumentPage: View {
                     Text(document.title).font(.title2.bold())
                     Text(document.dayText).foregroundStyle(.secondary)
                     if let file = document.sourceFileName {
-                        Label(file, systemImage: "doc").font(.footnote).foregroundStyle(.secondary)
+                        Text(file).font(.footnote).foregroundStyle(.secondary)
+                    }
+                    // Up here, not under the letter: at large text the letter runs several screens (design review).
+                    if document.original != nil {
+                        Button(action: openOriginal) {
+                            HStack(spacing: 8) {
+                                Label("View original file", systemImage: "doc.viewfinder")
+                                if opening { ProgressView() }
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .disabled(opening)
+                        .padding(.top, 6)
                     }
                 }
                 .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 8, leading: 4, bottom: 8, trailing: 4))
+                .listRowInsets(EdgeInsets(top: 8, leading: 4, bottom: 0, trailing: 4))
             }
             if !document.content.isEmpty {
-                Section { DocumentText(markdown: document.content).padding(.vertical, 6) }
-            }
-            if document.original != nil {
-                Section {
-                    Button(action: openOriginal) {
-                        HStack {
-                            Label("View original file", systemImage: "doc.viewfinder")
-                            Spacer()
-                            if opening { ProgressView() }
-                        }
-                    }
-                    .disabled(opening)
-                } footer: {
-                    if let problem { Text(problem) }
-                }
+                Section { DocumentText(markdown: document.content, title: document.title).padding(.vertical, 6) }
             }
         }
         .listStyle(.insetGrouped)
         .contentMargins(.top, 0, for: .scrollContent)
         .navigationTitle(document.typeLabel)
         .navigationBarTitleDisplayMode(.inline)
+        // An alert, not a footer: a footer under the letter sat behind the tab bar (design review).
+        .messageAlert("Original not opened", $problem)
         .quickLookPreview($preview)
         .onChange(of: preview) { old, _ in Self.remove(old) }
         .onDisappear { Self.remove(preview) }
@@ -123,6 +124,8 @@ struct DocumentPage: View {
 /// words come from an uploaded file, so nothing in them opens anything.
 struct DocumentText: View {
     let markdown: String
+    /// The page's title: a first heading that only repeats it is not drawn again.
+    var title: String? = nil
 
     enum Block: Equatable {
         case heading(level: Int, text: String)
@@ -135,7 +138,7 @@ struct DocumentText: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            ForEach(Array(Self.blocks(markdown).enumerated()), id: \.offset) { _, block in
+            ForEach(Array(Self.blocks(markdown, title: title).enumerated()), id: \.offset) { _, block in
                 switch block {
                 case .heading(let level, let text):
                     Text(Self.inline(text)).font(level <= 1 ? .title3.bold() : level == 2 ? .headline : .subheadline.bold())
@@ -145,19 +148,30 @@ struct DocumentText: View {
                 case .numbered(let number, let text):
                     HStack(alignment: .firstTextBaseline, spacing: 8) { Text(number).monospacedDigit(); Text(Self.inline(text)) }
                 case .table(let rows):
-                    ScrollView(.horizontal) {
+                    // Columns when they fit; else one block per row, so no value is ever cut off (design review).
+                    ViewThatFits(in: .horizontal) {
                         Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 6) {
                             ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
                                 GridRow {
                                     ForEach(Array(row.enumerated()), id: \.offset) { _, cell in
-                                        Text(Self.inline(cell)).fontWeight(index == 0 ? .semibold : nil)
+                                        Text(Self.inline(cell)).fontWeight(index == 0 ? .semibold : nil).fixedSize()
                                     }
                                 }
                                 if index == 0 { Divider() }
                             }
                         }
-                        .font(.subheadline)
+                        VStack(alignment: .leading, spacing: 8) {
+                            ForEach(Array(Self.stacked(rows).enumerated()), id: \.offset) { _, row in
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(Self.inline(row.name)).fontWeight(.semibold)
+                                    Text(Self.inline(row.rest)).foregroundStyle(.secondary)
+                                }
+                                // Wraps in full: ViewThatFits otherwise cut the last line to "Ran…".
+                                .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
                     }
+                    .font(.subheadline)
                 case .paragraph(let text):
                     Text(Self.inline(text))
                 }
@@ -167,7 +181,30 @@ struct DocumentText: View {
         .textSelection(.enabled)
     }
 
-    /// The markdown's blocks, line by line as the web's renderer splits them.
+    /// A table as stacked rows for a narrow screen: each body row's first cell, then its other
+    /// cells, each after its header ("Result 2.4 mmol/L · Range <3.0").
+    static func stacked(_ rows: [[String]]) -> [(name: String, rest: String)] {
+        guard let header = rows.first else { return [] }
+        return rows.dropFirst().map { row in
+            let rest = row.dropFirst().enumerated().map { index, cell in
+                let label = index + 1 < header.count ? header[index + 1] : ""
+                return label.isEmpty ? cell : "\(label) \(cell)"
+            }
+            return (row.first ?? "", rest.joined(separator: " · "))
+        }
+    }
+
+    /// The markdown's blocks, line by line as the web's renderer splits them; a first heading
+    /// that only repeats `title` is left out.
+    static func blocks(_ markdown: String, title: String?) -> [Block] {
+        let all = blocks(markdown)
+        if let title, case .heading(_, let text) = all.first,
+           text.trimmingCharacters(in: .whitespaces).caseInsensitiveCompare(title.trimmingCharacters(in: .whitespaces)) == .orderedSame {
+            return Array(all.dropFirst())
+        }
+        return all
+    }
+
     static func blocks(_ markdown: String) -> [Block] {
         var blocks: [Block] = []
         var paragraph: [String] = []
