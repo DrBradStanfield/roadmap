@@ -145,14 +145,35 @@ final class OnboardingUITests: XCTestCase {
         }
         // On iOS 27.2 Don't Allow ends the long sheet, and asking whether it is hittable throws
         // ("Activation point invalid"): scroll until its frame is on screen, then tap that point.
-        let dontAllow = sheet.buttons["UIA.Health.DoNotAllow.Button"].exists
-            ? sheet.buttons["UIA.Health.DoNotAllow.Button"].firstMatch : sheet.buttons["Don’t Allow"].firstMatch
-        let screen = sheet.windows.firstMatch.frame
-        for _ in 0..<12 where !(dontAllow.exists && screen.contains(dontAllow.frame) && !dontAllow.frame.isEmpty) { sheet.swipeUp() }
-        tap(dontAllow, in: sheet)
+        // On a loaded Mac the button drops out of the tree for a moment while the sheet settles: an
+        // element's `frame` then fails the test outright ("No matches found", #999), even straight
+        // after `exists` said yes. So its frame is read from a snapshot, which throws instead; it
+        // is found afresh before each tap, and tapped once more if the first tap did not take.
+        // A snapshot's frame is in the sheet's window, not the screen: measured on iOS 27.0, the
+        // window starts 62 pt down and the button read 766 by snapshot, 828 by `frame`.
+        let dontAllow = sheet.buttons.matching(NSPredicate(format: "identifier == %@ OR label == %@", "UIA.Health.DoNotAllow.Button", "Don’t Allow")).firstMatch
+        let frame = { (try? dontAllow.snapshot())?.frame ?? .null }
+        let window = sheet.windows.firstMatch
+        let inWindow = CGRect(origin: .zero, size: window.frame.size)
+        for _ in 0..<12 {
+            let spot = frame()
+            if !spot.isEmpty && inWindow.contains(spot) { break }
+            sheet.swipeUp()
+        }
         // Apple then says access can be turned on later; its OK closes the sheet.
         let ok = sheet.buttons["OK"].firstMatch
-        if ok.waitForExistence(timeout: 30) { tap(ok, in: sheet) }
+        for attempt in 1...2 {
+            _ = dontAllow.waitForExistence(timeout: 15)
+            let spot = frame()
+            guard !spot.isEmpty else {
+                if attempt == 2 { XCTFail("Apple's Health sheet has no Don't Allow") }
+                sheet.swipeUp()
+                continue
+            }
+            window.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: spot.midX, dy: spot.midY)).tap()
+            if ok.waitForExistence(timeout: 30) || !dontAllow.exists { break }
+        }
+        if ok.exists { tap(ok, in: sheet) }
         app.activate()
     }
 

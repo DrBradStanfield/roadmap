@@ -313,6 +313,24 @@ final class TextSizeLayoutTests: XCTestCase {
         XCTAssertNotNil(try inkAndRed(long.frame(width: se.width, height: 240), at: .large).red, "at the default size the trend stays")
     }
 
+    /// US-62 AC8a, #1002 R1: under Bold Text the label is measured bold, as it is drawn. On an SE at
+    /// XXXL, Thyroglobulin fits beside the trend in regular but not in bold: bold drops the trend and
+    /// keeps the word on one line. Measured regular, the trend stayed with less room than the bold word
+    /// asks for, so a word that only just fits could break mid-word.
+    func testBoldTextMeasuresTheLabelBoldBeforeKeepingTheTrend_US62_AC8a() throws {
+        guard #available(iOS 18, *) else { throw XCTSkip("Text.Layout.isTruncated needs iOS 18") }
+        let se = screens[0].size
+        let list = { (weight: LegibilityWeight) in
+            List { ValueRow(label: "Thyroglobulin", value: "4.2", unit: "ng/mL", day: "2026-07-14", previous: "3.9", trend: [1, 2, 3], tint: .red) }
+                .listStyle(.insetGrouped).environment(\.legibilityWeight, weight)
+        }
+        let texts = try drawnTexts(in: list(.bold), at: .extraExtraExtraLarge, screen: se)
+        XCTAssertEqual(texts.cut, 0, "no words end in …")
+        XCTAssertEqual(texts.lines, 1, "bold Thyroglobulin keeps its line")
+        XCTAssertNil(try inkAndRed(list(.bold).frame(width: se.width, height: 240), at: .extraExtraExtraLarge).red, "bold: the trend gives way")
+        XCTAssertNotNil(try inkAndRed(list(.regular).frame(width: se.width, height: 240), at: .extraExtraExtraLarge).red, "regular: the trend fits")
+    }
+
     /// The height `view` takes when offered `room`: more than `room` means it runs off screen.
     private func taken(by view: some View, in room: CGSize, at category: UIContentSizeCategory) throws -> CGSize {
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
