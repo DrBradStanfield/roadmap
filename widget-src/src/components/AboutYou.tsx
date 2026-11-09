@@ -12,7 +12,7 @@ import { identityFieldRange, isBirthYearClearlyInvalid } from '@roadmap/health-c
 import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
 
 /** About you's rows (US-62 AC12). */
-export type AboutKey = 'height' | 'sex' | 'birth' | 'alcohol';
+type AboutKey = 'height' | 'sex' | 'birth' | 'alcohol';
 
 /** A height for the feet and inches boxes to show: one there is, and not the
  *  one they just wrote themselves (US-02 AC11). */
@@ -47,7 +47,7 @@ export function useHeightPair(heightCm: number | undefined, unitSystem: UnitSyst
   return { heightFeet, setHeightFeet, heightInches, setHeightInches, typedHeightCm };
 }
 
-export type HeightPair = ReturnType<typeof useHeightPair>;
+type HeightPair = ReturnType<typeof useHeightPair>;
 
 // Imperial height, feet then inches: could some inches still bring it in range ("1" may be 10 or 11)?
 const heightMayFit = (feet: string, inches: string, inFeet: boolean) => {
@@ -345,8 +345,7 @@ interface AboutRowsProps {
   editors: Record<AboutKey, ReactNode>;
 }
 
-/** About you's rows (US-62 AC12); each row's editor is the field itself, with its why-line.
- *  Low, About you is rows, as on the iPhone (US-62 AC12): label left, value
+/** Low, About you is rows, as on the iPhone (US-62 AC12): label left, value
  *  right, a tap opens the field itself in the row's place. The onboarding's
  *  boxes never turn into rows under someone typing. A missing or refused
  *  answer opens its field, which stays open while it is typed in, until Done.

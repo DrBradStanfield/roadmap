@@ -901,8 +901,6 @@ export function InputPanel({
     );
   };
 
-  // ── Section render functions (shared closure state, not separate components) ──
-
   // About you's fields: the onboarding's boxes and, low, the rows' editors (AboutYou.tsx).
   const heightField = (
     <HeightField form={form} pair={heightPair} unitSystem={unitSystem} onUnitSystemChange={onUnitSystemChange}
@@ -914,6 +912,8 @@ export function InputPanel({
     <BirthFields form={form} yearShown={yearShown} monthByPointer={monthByPointer} yearJumped={yearJumped}
       onOnboardingDone={onOnboardingDone} aboutYouLow={aboutYouLow} reached={reached}/>
   );
+
+  // ── Section render functions (shared closure state, not separate components) ──
 
   // data-unit-control="all": a press here closes every open saved-value editor
   // unsaved (US-05 AC2, US-04 AC1).
