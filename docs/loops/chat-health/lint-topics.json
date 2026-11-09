@@ -68,13 +68,13 @@
   {
    "topic": "blood-thinners",
    "headings": [],
-   "handles": ["blood-thinners"],
+   "handles": [],
    "terms": ["warfarin", "anticoagulant", "apixaban", "inr", "aspirin"]
   },
   {
    "topic": "osteoarthritis",
    "headings": [],
-   "handles": ["osteoarthritis"],
+   "handles": [],
    "terms": ["osteoarthritis", "knee", "glucosamine", "joint", "arthroplasty"]
   },
   {
@@ -92,7 +92,7 @@
   {
    "topic": "dementia",
    "headings": [],
-   "handles": ["dementia"],
+   "handles": [],
    "terms": ["dementia", "Alzheimer", "memory", "cognitive impairment", "lecanemab"]
   }
  ]

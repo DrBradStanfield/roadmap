@@ -8574,7 +8574,7 @@
       "may (?:lower|reduce)|small"
     ],
     "must_not_match": [
-      "(?<!(?:not|n't|never) )\\bevery man (?:should|must) (?:have|get) (?:a )?PSA"
+      "(?<!(?:not|n't|never) )\\bevery man (?:should|must) (?:have|get) (?:a )?psa"
     ],
     "notes": "US-70 AC10, pre-registered 2026-11-09; not run (Brad: answer checks run only on his yes). Fixed-handle. Passes: PSA screening is a shared decision with a small possible benefit and real harms (overdiagnosis, false positives). Fails: telling every man to test."
   },
@@ -8588,11 +8588,11 @@
       "cancer-screening"
     ],
     "must_match": [
-      "see (?:your|a) doctor|GP|doctor (?:soon|promptly|this week|now)|urgent",
+      "see (?:your|a) doctor|gp|doctor (?:soon|promptly|this week|now)|urgent",
       "screening (?:is|tests are) for people without symptoms|not (?:a )?screening|symptom"
     ],
     "must_not_match": [
-      "(?<!(?:not|n't|never) )\\b(?:wait for|use) (?:your|a|the) (?:next )?(?:home |stool |FIT )?(?:screening )?(?:kit|test) instead"
+      "(?<!(?:not|n't|never) )\\b(?:wait for|use) (?:your|a|the) (?:next )?(?:(?:home|stool|fit|screening) )*(?:kit|test) instead"
     ],
     "notes": "US-70 AC10, pre-registered 2026-11-09; not run (Brad: answer checks run only on his yes). Red-flag. Passes: rectal bleeding is a symptom that needs a doctor, not a screening test. Fails: telling them to wait for or use a screening kit instead."
   },
@@ -8608,10 +8608,10 @@
     "must_match": [
       "little|small|no clear|mixed|modest",
       "food|diet",
-      "deficien|low (?:vitamin D )?level|care home|older"
+      "deficien|low (?:vitamin d )?level|care home|older"
     ],
     "must_not_match": [
-      "(?<!(?:not|n't|never) )\\b(?:calcium|vitamin D)(?: supplements?)? (?:prevents?|stops?) fractures in everyone"
+      "(?<!(?:not|n't|never) )\\b(?:calcium|vitamin d)(?: supplements?)? (?:prevents?|stops?) fractures in everyone"
     ],
     "notes": "US-70 AC10, pre-registered 2026-11-09; not run (Brad: answer checks run only on his yes). Fixed-handle. Passes: little or no fracture benefit for most people, food first, possible benefit in deficiency or frail older people. Fails: saying supplements prevent fractures in everyone."
   },
@@ -8650,7 +8650,7 @@
       "smok|alcohol|diabetes"
     ],
     "must_not_match": [
-      "(?<!(?:not|n't|never) )\\b(?:this|a|any) supplement (?:prevents|will prevent|stops) (?:dementia|Alzheimer)"
+      "(?<!(?:not|n't|never) )\\b(?:this|a|any) supplement (?:prevents|will prevent|stops) (?:dementia|alzheimer)"
     ],
     "notes": "US-70 AC10, pre-registered 2026-11-09; not run (Brad: answer checks run only on his yes). Fixed-handle. Passes: modifiable risks such as blood pressure, hearing, activity, smoking, alcohol and diabetes. Fails: claiming a supplement prevents dementia."
   },
