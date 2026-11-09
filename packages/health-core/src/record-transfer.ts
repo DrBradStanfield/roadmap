@@ -27,18 +27,25 @@ function ctxOf(host: RecordHost): SyncContext {
  */
 export async function liftDeviceCopy(host: CloudHost): Promise<'lifted' | 'empty' | 'unreadable'> {
   let body: unknown;
+  let version: string | null;
   try {
-    ({ body } = await host.mirror.adapter.read(ROADMAP_FILE_NAME));
+    ({ body, version } = await host.mirror.adapter.read(ROADMAP_FILE_NAME));
   } catch {
     return 'unreadable';
   }
-  if (body == null) return 'empty';
+  // The revision lifted, for the new cloud's first session to compare: a copy
+  // another tab writes after this read is taken in there (liftMissed, #974).
+  if (body == null) {
+    host.mirror.lifted?.set('');
+    return 'empty';
+  }
   try {
     await saveRecordInto(host.store, body, ctxOf(host));
   } catch (error) {
     host.mirror.pending.set();
     throw error;
   }
+  host.mirror.lifted?.set(version ?? '');
   return 'lifted';
 }
 

@@ -5992,6 +5992,13 @@ input[type="number"] {
 .supplement-add.mh-add-test:first-child {
   border-top: 0;
 }
+/* 16px or iOS zooms the page on focus, and the zoom moved the list under the finger (US-62 AC30e);
+   each option a 44px target. */
+.supplement-add.mh-add-test input,
+.mh-add-test .supplement-dropdown-item {
+  min-height: 44px;
+  font-size: 16px;
+}
 .mh-add-test .alr-add-btn,
 .mh-add-test .alr-add-btn:hover {
   width: 100%;
@@ -6064,6 +6071,10 @@ input[type="number"] {
 }
 .mh-settings .delete-data-section {
   margin-top: 16px;
+  text-align: left;
+}
+.mh-settings .delete-data-link {
+  font-size: 14px;
 }
 .mh-settings .about-card .health-section-title {
   font-size: 13px;
@@ -6083,6 +6094,7 @@ input[type="number"] {
 }
 /* Inside Settings the card is one more group of the sheet, not a box in a box. */
 .mh-settings .hr-sync {
+  gap: 8px 12px;
   box-shadow: none;
   padding-left: 0;
   padding-right: 0;
@@ -6105,8 +6117,14 @@ input[type="number"] {
 .mh-foot .feedback-btn:hover {
   text-decoration: underline;
 }
-/* Account's card keeps the storage button's own filled style: there it is the one sign-in (US-62 AC34). */
-:not(.mh-account) > .mh-settings .hr-sync .hr-sync-btn,
+/* Settings keep the storage button's own filled style, a control, not a heading (US-62 AC35a):
+   on desktop it hugs its words; Account's spans the card, the one sign-in (AC34). */
+.mh-settings .hr-sync .hr-sync-btn-full {
+  width: auto;
+  min-height: 44px;
+  padding: 0 18px;
+  font-size: 15px;
+}
 .mh-foot-storage .hr-sync .hr-sync-btn {
   width: auto;
   min-height: 44px;
@@ -6119,8 +6137,78 @@ input[type="number"] {
   text-align: left;
 }
 .mh-account .hr-sync .hr-sync-btn {
+  width: 100%;
+  text-wrap: balance;
   min-height: 44px;
   font-size: 16px;
+}
+/* A phone's Account is the iPhone's inset grouped list (US-62 AC35b, MyDataView.swift settingsList):
+   no outer card, each part a white 12px group on the page grey, a quiet heading above its group. */
+.mh-account .mh-settings {
+  background: none;
+  box-shadow: none;
+  padding: 8px 0 16px;
+}
+.mh-account .mh-settings-head {
+  padding: 0 16px; /* the title, the headings and the rows share one left edge */
+}
+.mh-account .mh-settings > .hr-sync,
+.mh-account .mh-settings > .section-card > .basic-info-units,
+.mh-account .mh-settings .about-card .prefill-fields-wrapper,
+.mh-account .mh-settings .hr-reminders-section > .hr-sync,
+.mh-account .mh-settings > .delete-data-section {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: none;
+  padding: 12px 16px;
+}
+.mh-account .mh-settings > .hr-sync,
+.mh-account .mh-settings > .delete-data-section {
+  margin-top: 16px;
+}
+.mh-account .mh-settings > .hr-sync {
+  padding: 16px;
+}
+.mh-account .mh-settings > .section-card {
+  margin-top: 16px;
+  background: none;
+}
+.mh-account .mh-settings > .section-card > .basic-info-units {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+}
+.mh-account .mh-settings .about-card .health-section {
+  padding: 0;
+}
+.mh-account .mh-settings .about-card .prefill-fields-wrapper {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.mh-account .about-card .hr-section-card-header,
+.mh-account .hr-reminders-heading {
+  padding: 0 16px;
+  margin: 8px 0 6px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.mh-account .hr-reminders-heading {
+  font-weight: 600;
+}
+.mh-account .hr-reminders-section {
+  margin: 16px 0 0;
+}
+.mh-account .about-card .basic-info-units {
+  margin: 0;
+}
+.mh-account .mh-settings > .delete-data-section {
+  padding: 0;
+}
+.mh-account .delete-data-link {
+  width: 100%;
+  min-height: 44px;
+  font-size: 16px;
+  text-decoration: none;
 }
 /* The latest value leads the page, large, as the iPhone's metric page (design review 2026-11-06). */
 .md-page-latest {

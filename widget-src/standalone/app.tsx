@@ -92,7 +92,7 @@ async function main() {
   // Before the first await (US-22 AC13): an OAuth return rewrites the URL.
   const fromEmail = takeEmailFlag();
   const { resolved, refused } = await resolveBackend();
-  const { backend, reconnect } = await startOnBackend(resolved, initRoadmapStore).catch(showLoadFailure);
+  const { backend, reconnect } = await startOnBackend(resolved, initRoadmapStore).catch((error) => showLoadFailure(error, refused));
   const state = storageState(backend, reconnect);
   const emailLanding = await emailLandingApplies(fromEmail, state);
   // "Delete all my data" must also delete the reminder row on Brad's server,

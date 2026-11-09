@@ -18,6 +18,7 @@ import { unauthenticated } from '../shopify.server';
 import { tryAcquireCronLock, type CronLockName } from './supabase.server';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { withTimeout, nzNowParts } from './cron-helpers.server';
+import { safeErrorFields } from './safe-error-fields.server';
 
 const CRON_INTERVAL_MS = 60 * 60 * 1000;
 // 3am NZ. DST-aware via nzNowParts (Pacific/Auckland through Intl) and
@@ -104,7 +105,7 @@ export function startTrendingCron(): void {
       const ranked = await computeAndWriteTrending();
       console.log(`Trending cron: completed, wrote ${ranked.length} entries`);
     } catch (error) {
-      console.error('Trending cron error:', error);
+      console.error('Trending cron error:', safeErrorFields(error));
       Sentry.captureException(error, { tags: { feature: 'trending_cron' } });
     }
   }, CRON_INTERVAL_MS);

@@ -13,7 +13,7 @@
  */
 import { deadlineSignal } from './adapter';
 import { isCoreRow, labRowSlot } from './blood-tests';
-import { dayOf } from './merge';
+import { dayOf, localDay } from './merge';
 import { stampProfile } from './state-edits';
 import { labSlotKey } from './lab-catalog';
 import { latestActivePerMetric } from './measurement-history';
@@ -474,7 +474,7 @@ async function runImport(
   const deadline = Date.now() + surface.budgetMs;
   const signal = deadlineSignal(deadline);
   const file = await sync.load(signal);
-  const latestDay = options.latestDay ?? dayOf(now);
+  const latestDay = options.latestDay ?? localDay(now);
 
   if (request.commit) {
     const opened = await surface.open(request.commit, file, now, deadline);

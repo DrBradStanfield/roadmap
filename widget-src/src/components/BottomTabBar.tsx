@@ -1,4 +1,4 @@
-import type { KeyboardEvent, ReactNode } from 'react';
+import { useLayoutEffect, type KeyboardEvent, type ReactNode } from 'react';
 import { CHAT_BUBBLES } from './icons';
 
 export type TabId = 'health' | 'chat' | 'account';
@@ -39,6 +39,12 @@ export function BottomTabBar({ activeTab, onTabChange, idPrefix }: {
   onTabChange: (tab: TabId) => void;
   idPrefix: string;
 }) {
+  // US-62 AC35c: the page knows the tab, so the hero above the widget tops My health only. Before
+  // the tab's scroll restore (a parent's layout effect), so it measures the page as it will stand.
+  useLayoutEffect(() => {
+    document.documentElement.setAttribute('data-hr-tab', activeTab);
+    return () => document.documentElement.removeAttribute('data-hr-tab');
+  }, [activeTab]);
   // Arrow keys move along the tabs and wrap; Home and End jump to the ends.
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const at = TABS.findIndex((t) => t.id === activeTab);

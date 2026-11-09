@@ -4,10 +4,10 @@
 // through the slots this hands its `children`.
 import { SectionIcon } from './icons';
 import { flushSync } from 'react-dom';
-import { Fragment, useState, useEffect, useLayoutEffect, useMemo, useRef, type MutableRefObject, type ReactNode } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, type MutableRefObject, type ReactNode } from 'react';
 import { InfoTooltip } from './InfoTooltip';
 import { openHistoryLightbox } from '../lib/roadmap-data';
-import { SEXES, type HealthInputs, type HealthResults, type ScreeningInputs, STATIN_NAMES, STATIN_DRUGS, EZETIMIBE_OPTIONS, PCSK9I_OPTIONS, BEMPEDOIC_ACID_OPTIONS, SUPPLEMENT_OPTIONS, GLP1_NAMES, GLP1_DRUGS, SGLT2I_NAMES, SGLT2I_DRUGS, METFORMIN_OPTIONS, type MedicationInputs } from '@roadmap/health-core/types';
+import { SEXES, type HealthInputs, type HealthResults, type ScreeningInputs, STATIN_NAMES, STATIN_DRUGS, EZETIMIBE_OPTIONS, PCSK9I_OPTIONS, BEMPEDOIC_ACID_OPTIONS, GLP1_NAMES, GLP1_DRUGS, SGLT2I_NAMES, SGLT2I_DRUGS, METFORMIN_OPTIONS, type MedicationInputs } from '@roadmap/health-core/types';
 import type { CorrectFn, Refused, SaveTask } from '../lib/matrix-save';
 import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, mayStillFit, type Grading } from '../lib/blood-test-cell';
 import { useRangeWait } from '../lib/useRangeWait';
@@ -27,7 +27,7 @@ import { weightCascade, lipidCascade } from '@roadmap/health-core/medication-cas
 import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
 import { dayOf, localDay } from '@roadmap/health-core/merge';
 import { newestUsablePsa } from '@roadmap/health-core/measurement-history';
-import { MEDICATION_TEXT, SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, SUPPLEMENT_TEXT, SUPPLEMENT_DOSE_UNITS, optionsShowing, escalationOptions, doseOptions, medicationWrites, screeningWrites, readScreening, followupName, followupDateLabel, anyScreeningEligible, dexaEligible, lungGroupShown, lungScreeningAsked, customSupplementAdd, customSupplementMatch, type FormOption } from '@roadmap/health-core/input-form';
+import { MEDICATION_TEXT, SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, optionsShowing, escalationOptions, doseOptions, medicationWrites, screeningWrites, readScreening, followupName, followupDateLabel, anyScreeningEligible, dexaEligible, lungGroupShown, lungScreeningAsked, type FormOption } from '@roadmap/health-core/input-form';
 import { formatShortDate, MONTHS_FULL } from '../lib/constants';
 import { BloodTestTimeline, useLiveRegion, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
@@ -39,6 +39,7 @@ import { useLpaUnit } from '../lib/lpa-unit';
 import { type RowContext, type ValueSubject } from './MyDataRows';
 import { ValuePage } from './ValuePage';
 import { AddLabTest } from './AddLabTest';
+import { SupplementsSection } from './SupplementsSection';
 import type { FormSlots, Placement } from './MyHealth';
 
 /** The history-state key a phone value page's entry carries (US-62 AC10). */
@@ -2251,179 +2252,6 @@ export function InputPanel({
     );
   };
 
-  // ── Supplements section (logged-in only) ��─
-  const [supplementSearch, setSupplementSearch] = useState('');
-  const [supplementDoseDrafts, setSupplementDoseDrafts] = useState<Record<string, string | undefined>>({});
-  const [showSupplementDropdown, setShowSupplementDropdown] = useState(false);
-  // "+ Add another supplement" opens the search in its place (Brad 2026-11-09, as Add a blood test).
-  const [addingSupplement, setAddingSupplement] = useState(false);
-  const supplementDropdownRef = useRef<HTMLDivElement>(null);
-  const supplementSearchRef = useRef<HTMLInputElement>(null);
-  const supplementAddRef = useRef<HTMLButtonElement>(null);
-  /** Back to the "+ Add another supplement" row, the focus on it when asked. */
-  const closeSupplementAdd = (refocus: boolean) => {
-    setShowSupplementDropdown(false);
-    flushSync(() => setAddingSupplement(false));
-    if (refocus) supplementAddRef.current?.focus();
-  };
-
-  // An erase clears off-file drafts too, including one under a later reused key.
-  useEffect(() => {
-    const drop = () => setSupplementDoseDrafts({});
-    window.addEventListener(DRAFTS_CLEARED_EVENT, drop);
-    return () => window.removeEventListener(DRAFTS_CLEARED_EVENT, drop);
-  }, []);
-
-  useEffect(() => {
-    if (!showSupplementDropdown) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (supplementDropdownRef.current && !supplementDropdownRef.current.contains(e.target as Node)) {
-        setShowSupplementDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showSupplementDropdown]);
-
-  const renderSupplements = () => {
-
-    const activeSupplements = supplements.filter(s => s.status === 'active');
-    const allOptions = SUPPLEMENT_OPTIONS.filter(
-      opt => !activeSupplements.some(s => s.supplementKey === opt.key),
-    );
-    const filteredOptions = supplementSearch
-      ? allOptions.filter(opt => opt.name.toLowerCase().includes(supplementSearch.toLowerCase()))
-      : allOptions;
-    const trimmedSearch = supplementSearch.trim();
-    // A typed name with no exact preset match can always be added as a custom
-    // supplement — this must NOT be gated on filteredOptions having matches, or
-    // a supplement matching no preset can never be added.
-    // A name already taken is hidden too, as a preset is: re-adding it would clear its dose (US-06 AC1a).
-    const canAddCustomSupplement = !!trimmedSearch
-      && !allOptions.some(o => o.name.toLowerCase() === trimmedSearch.toLowerCase())
-      && customSupplementMatch(trimmedSearch, supplements)?.status !== 'active';
-
-    const addSupplement = (key: string, name: string, defaultDose?: number, defaultUnit?: string) => {
-      setSupplementDoseDrafts(prev => ({ ...prev, [key]: undefined }));
-      onSupplementChange(key, name, defaultDose ?? null, defaultUnit ?? null);
-      setSupplementSearch('');
-      closeSupplementAdd(true); // the focus back on the row, not lost to the page (AC30c)
-    };
-
-    return (
-      <div className="section-card">
-        <section className="health-section" aria-label={SUPPLEMENT_TEXT.title}>
-          {/* Active supplements list */}
-          {activeSupplements.map(s => (
-            <Fragment key={s.supplementKey}>
-              <div className="supplement-row">
-                <span className="supplement-name">{s.supplementName}</span>
-                <input
-                  type="number"
-                  className="supplement-dose"
-                  placeholder="Dose"
-                  min={Number.MIN_VALUE}
-                  max={99999}
-                  step="any"
-                  onKeyDown={blockBadNumericKeys}
-                  value={supplementDoseDrafts[s.supplementKey] ?? s.doseValue ?? ''}
-                  aria-invalid={supplementDoseDrafts[s.supplementKey] !== undefined || undefined}
-                  aria-describedby={supplementDoseDrafts[s.supplementKey] !== undefined ? `supplement-dose-error-${s.supplementKey}` : undefined}
-                  onChange={e => {
-                    const raw = e.target.value;
-                    const val = raw ? parseLocalisedNumber(raw) ?? null : null;
-                    // Autosave bypasses native form validation. Keep invalid drafts
-                    // out of the accepted row, including badInput's empty value.
-                    const invalid = e.target.validity.badInput || (raw !== '' && (val === null || val <= 0 || val > 99999));
-                    setSupplementDoseDrafts(prev => ({ ...prev, [s.supplementKey]: invalid ? raw : undefined }));
-                    if (invalid) return;
-                    onSupplementChange(s.supplementKey, s.supplementName, val, s.doseUnit);
-                  }}
-                />
-                <select
-                  className="supplement-unit"
-                  value={s.doseUnit ?? ''}
-                  onChange={e => onSupplementChange(s.supplementKey, s.supplementName, s.doseValue, e.target.value || null)}
-                >
-                  <option value="">Unit</option>
-                  {SUPPLEMENT_DOSE_UNITS.map(unit => <option key={unit} value={unit}>{unit}</option>)}
-                </select>
-                <button
-                  type="button"
-                  className="supplement-remove"
-                  onClick={() => onSupplementDelete(s.supplementKey)}
-                  title="Remove"
-                >
-                  ×
-                </button>
-              </div>
-              {supplementDoseDrafts[s.supplementKey] !== undefined && (
-                <span className="error-message" id={`supplement-dose-error-${s.supplementKey}`} role="alert">Enter a dose greater than 0 and no more than 99999. This dose was not saved.</span>
-              )}
-            </Fragment>
-          ))}
-
-          {/* Add other supplement: a row like Add a blood test, its search behind it. */}
-          <div className="supplement-add mh-add-test" ref={supplementDropdownRef} onBlur={e => {
-            // Focus leaving the search and its list empty, by Tab or a tap elsewhere: back to the row (#985).
-            // Escape in either goes back too, the focus on the row (keydown below).
-            if (addingSupplement && !supplementSearch.trim() && !e.currentTarget.contains(e.relatedTarget as Node | null)) closeSupplementAdd(false);
-          }} onKeyDown={e => { if (e.key === 'Escape' && addingSupplement) { setSupplementSearch(''); closeSupplementAdd(true); } }}>
-            {!addingSupplement ? (
-              <button ref={supplementAddRef} type="button" className="alr-add-btn" onClick={() => {
-                // Shown and focused inside the tap itself, so a phone opens its keyboard (US-01 AC6).
-                flushSync(() => setAddingSupplement(true));
-                supplementSearchRef.current?.focus();
-              }}>
-                + Add another supplement
-              </button>
-            ) : (<>
-            <input
-              ref={supplementSearchRef}
-              type="text"
-              placeholder={SUPPLEMENT_TEXT.addPlaceholder}
-              value={supplementSearch}
-              maxLength={100}
-              onFocus={() => setShowSupplementDropdown(true)}
-              onChange={e => {
-                setSupplementSearch(e.target.value);
-                setShowSupplementDropdown(true);
-              }}
-            />
-            {showSupplementDropdown && (filteredOptions.length > 0 || canAddCustomSupplement) && (
-              // A press in the list keeps the focus in the search, so its blur never closes it first.
-              <div className="supplement-dropdown" onMouseDown={e => e.preventDefault()}>
-                {filteredOptions.slice(0, 8).map(opt => (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    className="supplement-dropdown-item"
-                    onClick={() => addSupplement(opt.key, opt.name, opt.defaultDose, opt.defaultUnit)}
-                  >
-                    {opt.name}
-                  </button>
-                ))}
-                {canAddCustomSupplement && (
-                  <button
-                    type="button"
-                    className="supplement-dropdown-item supplement-custom"
-                    onClick={() => {
-                      const { supplementKey, supplementName } = customSupplementAdd(trimmedSearch, supplements);
-                      addSupplement(supplementKey, supplementName);
-                    }}
-                  >
-                    + Add "{trimmedSearch}"
-                  </button>
-                )}
-              </div>
-            )}
-            </>)}
-          </div>
-        </section>
-      </div>
-    );
-  };
-
   const aboutCard = (
     <div key="about" ref={aboutRef} className={`section-card about-card${aboutYouLow ? ' md-about-you' : ''}`}
          onBlurCapture={aboutYouLow ? undefined : leaveProfile}
@@ -2473,7 +2301,7 @@ export function InputPanel({
     lipidMedications: renderLipidMedications,
     screening: renderScreening,
     boneDensity: renderBoneDensity,
-    supplements: renderSupplements,
+    supplements: () => <SupplementsSection supplements={supplements} onSupplementChange={onSupplementChange} onSupplementDelete={onSupplementDelete}/>,
   });
 }
 

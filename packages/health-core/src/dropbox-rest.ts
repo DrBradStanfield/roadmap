@@ -157,6 +157,7 @@ export async function dropboxUploadDocument(accessToken: string, ref: string, by
   const arg = { path: `/${ref}`, mode: { '.tag': 'overwrite' }, autorename: false, mute: true };
   const res = await request(UPLOAD_URL, {
     timeoutMs: 300_000,
+    mayHaveWritten: true, // an upload with no answer may have landed (US-09 AC13d)
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,

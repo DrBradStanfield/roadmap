@@ -235,6 +235,10 @@ describe('US-06 AC13: a cloud page keeps a change its stalled save had not lande
     expect(onDevice().medications.find(m => m.medicationKey === 'glp1')?.doseValue).toBe(1.7);
     expect(isSyncPending()).toBe(true);
     expect(cloudDose(cloud)).toBe(1);
+    // The next load runs on the remembered provider; a MemoryAdapter stands in
+    // for it, so it is remembered under that id (a load on a provider this
+    // browser does not use leaves the marker alone, #974).
+    localStorage.setItem(BACKEND_KEY, 'memory');
     await initRoadmapStore(new MemoryAdapter(cloud));
     await flushRoadmapStore();
     expect(cloudDose(cloud)).toBe(1.7);

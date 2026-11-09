@@ -7,6 +7,7 @@ import { recordFeedbackSubmission } from '../lib/product-events.server';
 import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
 import { getCustomerId } from '../lib/route-helpers.server';
 import { createRateLimiter } from '../lib/rate-limiter';
+import { safeErrorFields } from '../lib/safe-error-fields.server';
 
 // 3 submissions per hour per IP — the same limiter every other route uses.
 const checkFeedbackRateLimit = createRateLimiter(3, 60 * 60_000, 10 * 60_000);
@@ -57,7 +58,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     return Response.json({ success: true });
   } catch (error) {
-    console.error('Error processing feedback:', error);
+    console.error('Error processing feedback:', safeErrorFields(error));
     Sentry.captureException(error);
     return Response.json({ success: false, error: 'Server error' }, { status: 500 });
   }

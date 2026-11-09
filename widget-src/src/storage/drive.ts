@@ -27,6 +27,7 @@
 import { ConflictError, fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, jsonBody, timeoutDeadline, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { driveCreateFile, driveCreateFolder, driveDownloadDocument, driveDownloadJson, driveEnsureSubfolder, driveFileIsLive, driveFileVersion, driveFindFileId, driveFindFolder, driveUpdateIfVersion, driveUploadDocument, readDriveRecord, DRIVE_API, DRIVE_FOLDER_NAME, writeDriveRecord } from '@roadmap/health-core/drive-rest';
 import { splitDocumentRef } from '@roadmap/health-core/document-path';
+import { codeGrantReply } from './drive-token-reply';
 import { getJson, setJson, safeRemoveItem } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
 
@@ -330,12 +331,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
         codeVerifier: claimed.verifier,
         redirectUri: config.redirectUri,
       }),
-      timeoutMs: 10_000,
+      timeoutMs: 15_000, // past the server's 10 s for Google (issue #977)
     });
-    if (!res.ok) {
-      throw new StorageError(`Google Drive connect failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
-    }
-    const json = (await res.json()) as { accessToken: string; refreshToken?: string; expiresIn: number; idToken?: string };
+    const json = await codeGrantReply(res);
     setJson(TOKENS_KEY, {
       accessToken: json.accessToken,
       refreshToken: json.refreshToken,
@@ -663,7 +661,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
           headers: { ...(await this.authHeaders()), 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: FOLDER_NAME }),
         });
-        if (!res.ok) return; // refused: not done, so tried again (US-09 AC40)
+        if (this.stored?.folderId !== folderId || (!res.ok && res.status !== 404)) return; // replaced, or refused: retried; a gone folder is done (US-09 AC40)
       }
       this.stored = { ...(this.stored ?? {}), folderName: FOLDER_NAME };
       setJson(CONFIG_KEY, this.stored);

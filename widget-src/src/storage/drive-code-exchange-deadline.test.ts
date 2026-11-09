@@ -2,16 +2,20 @@
  * US-09 AC37: the Google Drive OAuth code exchange has a deadline, as the
  * Dropbox one has since AC1a. The page awaits the exchange before it draws
  * anything, so an exchange endpoint that accepts the request and never answers
- * left the loading skeleton up for good. Now it fails at 10 seconds as a
+ * left the loading skeleton up for good. Now it fails at 15 seconds as a
  * `StorageError` ("Google Drive did not answer"), which the page reports as a
- * failed connect, and nothing is kept. A dead network fails the same way, not
- * as a bare `TypeError`. Real adapter; synthetic HTTP and a fake clock, no
- * live provider.
+ * failed connect, and nothing is kept. 15 seconds is longer than the server's
+ * own limit for Google (`GOOGLE_TIMEOUT_MS`, 10), so the browser does not give
+ * up on a code the server is still spending (issue #977). A dead network fails
+ * the same way, not as a bare `TypeError`. The reply is used only when it
+ * holds an access token and a finite expiry, as Dropbox's is (issue #924).
+ * Real adapter; synthetic HTTP and a fake clock, no live provider.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { StorageError } from '@roadmap/health-core/adapter';
 import { failureTags } from '../lib/error-diagnostics';
 import { DRIVE_FILE_SCOPE, GoogleDriveAdapter } from './drive';
+import { GOOGLE_TIMEOUT_MS } from '../../../app/routes/api.google-token';
 
 const CONFIG = {
   clientId: 'test-client-id',
@@ -22,7 +26,7 @@ const CONFIG = {
 const TOKENS_KEY = 'health_roadmap_gdrive_tokens';
 const CONFIG_KEY = 'health_roadmap_gdrive';
 const PKCE_KEY = 'health_roadmap_gdrive_pkce';
-const EXCHANGE_MS = 10_000;
+const EXCHANGE_MS = 15_000;
 
 let local: Map<string, string>;
 const replaceState = vi.fn();
@@ -30,12 +34,13 @@ const replaceState = vi.fn();
 /** Each request gets `answer`'s reply. 'stall' hangs until the request's
  *  signal aborts, as a browser fetch does; with no signal it hangs for good.
  *  'offline' rejects as a dead network does. 'ok' is a good exchange. */
-function endpoint(answer: 'stall' | 'offline' | 'ok') {
+function endpoint(answer: 'stall' | 'offline' | 'ok' | { body: string }) {
   const fetchMock = vi.fn((_url: string, init: RequestInit = {}) => {
     if (answer === 'offline') return Promise.reject(new TypeError('Failed to fetch'));
     if (answer === 'ok') {
       return Promise.resolve(new Response(JSON.stringify({ accessToken: 'a', refreshToken: 'r', expiresIn: 3600 }), { status: 200 }));
     }
+    if (typeof answer === 'object') return Promise.resolve(new Response(answer.body, { status: 200 }));
     return new Promise<Response>((_resolve, reject) => {
       init.signal?.addEventListener('abort', () => reject(init.signal?.reason), { once: true });
     });
@@ -83,7 +88,7 @@ beforeEach(() => {
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('US-09 AC37: the Google Drive code exchange has a deadline', () => {
-  it('an exchange that never answers fails at 10 seconds and keeps nothing', async () => {
+  it('an exchange that never answers fails at 15 seconds, after the server\'s 10, and keeps nothing', async () => {
     const fetchMock = endpoint('stall');
     const failure = await failureAt(GoogleDriveAdapter.completeRedirect(CONFIG), EXCHANGE_MS);
     expect(failure).toBeInstanceOf(StorageError);
@@ -92,6 +97,10 @@ describe('US-09 AC37: the Google Drive code exchange has a deadline', () => {
     expect(fetchMock.mock.calls[0][0]).toBe(CONFIG.exchangeUrl);
     expect(local.has(TOKENS_KEY)).toBe(false);
     expect(local.has(CONFIG_KEY)).toBe(false);
+  });
+
+  it('issue #977: the browser waits at least 5 seconds longer than the server waits for Google', () => {
+    expect(EXCHANGE_MS - GOOGLE_TIMEOUT_MS).toBeGreaterThanOrEqual(5_000);
   });
 
   it('a dead network fails as a StorageError too, not a bare TypeError', async () => {
@@ -110,5 +119,31 @@ describe('US-09 AC37: the Google Drive code exchange has a deadline', () => {
     expect(adapter?.isConnected()).toBe(true);
     expect(JSON.parse(local.get(TOKENS_KEY) ?? '{}')).toMatchObject({ accessToken: 'a', refreshToken: 'r' });
     expect(replaceState).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('US-09 AC37: the Google Drive code exchange reply is checked (issue #924)', () => {
+  const INCOMPLETE = 'Google Drive sent an incomplete sign-in reply. Please reconnect.';
+  it.each([
+    ['no access token', JSON.stringify({ refreshToken: 'r', expiresIn: 3600 })],
+    ['an empty access token', JSON.stringify({ accessToken: '', expiresIn: 3600 })],
+    ['an expiry that is not a number', JSON.stringify({ accessToken: 'a', expiresIn: '3600' })],
+    ['no expiry', JSON.stringify({ accessToken: 'a', refreshToken: 'r' })],
+    ['JSON null', 'null'],
+    ['a body that is not JSON', '<html>wifi sign-in</html>'],
+  ])('a 200 with %s fails as a StorageError and keeps nothing', async (_name, body) => {
+    endpoint({ body });
+    const failure = await GoogleDriveAdapter.completeRedirect(CONFIG).catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(StorageError);
+    expect((failure as Error).message).toBe(INCOMPLETE);
+    expect(local.has(TOKENS_KEY)).toBe(false);
+    expect(local.has(CONFIG_KEY)).toBe(false);
+  });
+
+  it('control: a reply without a refresh token or ID token still connects', async () => {
+    endpoint({ body: JSON.stringify({ accessToken: 'a', expiresIn: 3600 }) });
+    const adapter = await GoogleDriveAdapter.completeRedirect(CONFIG);
+    expect(adapter?.isConnected()).toBe(true);
+    expect(JSON.parse(local.get(TOKENS_KEY) ?? '{}')).toMatchObject({ accessToken: 'a' });
   });
 });
