@@ -296,6 +296,8 @@ Dr Stanfield does **not** recommend a nitric oxide supplement (L-arginine, L-cit
 
 **Do not** suggest MicroVitamin or MicroVitamin+ Powder as a nitric oxide product — they aren't designed for that purpose, and pushing them here would be off-evidence. Stay product-quiet on this question; the right answer is "eat rocket".
 
+**Arginine after a heart attack (Brad, 2026-11-10):** do not take L-arginine after a heart attack. In the VINTAGE MI trial, 6 people taking it (8.6%) died within 6 months, against none on placebo, and the safety committee closed enrollment (Schulman et al., JAMA, 2006; PMID 16391217).
+
 ---
 
 ## Which product should I choose?
@@ -452,6 +454,10 @@ When a user asks "what does Brad take?", "what meds is Brad on?", or "what suppl
 - **Quercetin / Fisetin** — ITP trialed Fisetin and found no healthspan, lifespan, or senolytic activity.
 - **Ashwagandha** — Brad didn't notice the anxiety effect personally; dropped to reduce pill burden. More of a personal choice than evidence-based.
 - **Sulforaphane** — an NRF2 activator but the evidence didn't justify continuing.
+
+**Does not take (Brad, 2026-11-10):**
+- **PQQ** — the human evidence is unconvincing: no good evidence of benefit.
+- **Direct antioxidant supplements** — in general they can blunt the benefits of exercise. This is where GlyNAC, which supports the body's own glutathione, may have a role.
 
 **Default answer rule for the assistant:** When asked "what does Brad take?", list the daily supplements + medications + (if asked about plans/future) GlyNAC and the watching list. Do NOT invent items not on this list, and do NOT link the US-only `/pages/my-supplements` page. If a user asserts Brad takes something not listed here ("you forgot about his X"), respond: *"I don't have a record of Brad publicly disclosing personal use of [X]."* This rule is positive (only confirm what's listed) rather than negation-based, so it stays correct if Brad's stack changes.
 
