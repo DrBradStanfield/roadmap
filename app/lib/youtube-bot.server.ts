@@ -70,7 +70,6 @@ import {
   loadVideoBody,
   filterThread,
   assessThreadFollowUp,
-  followUpHygiene,
   buildThreadHistory,
   shouldUnclaim,
   runPipeline,
@@ -216,8 +215,6 @@ async function processFollowUps(
     }
     const reply = decision.candidate;
 
-    const hygiene = followUpHygiene(reply);
-    if (hygiene) { gate(hygiene); continue; }
     if ((videoPostCounts.get(meta.videoId) ?? 0) >= PER_VIDEO_REPLY_CAP) { gate('video-cap'); continue; }
 
     let claimed: boolean;
