@@ -95,7 +95,7 @@ The three right-hand boxes are arrays in the user's own `health-roadmap.json`, n
 <a id="perf"></a>
 ## 2 · Performance: parallel extraction + LLM workers
 
-The widget runs a producer/consumer pipeline (`processPipeline()` in `UploadModal.tsx`). **3 parallel pdf.js extractors** feed a queue; **5 LLM workers** drain it. Wall-clock for a 12-file ZIP drops from \~50s (concurrency 1) to \~12s (the longest-LLM-call + queue drain). Verified live in Chrome DevTools: max 5 concurrent `/api/lab-import-v2` calls in flight.
+The widget runs a producer/consumer pipeline (`processPipeline()` in `lib/upload-pipeline.ts`). **3 parallel pdf.js extractors** feed a queue; **5 LLM workers** drain it. Wall-clock for a 12-file ZIP drops from \~50s (concurrency 1) to \~12s (the longest-LLM-call + queue drain). Verified live in Chrome DevTools: max 5 concurrent `/api/lab-import-v2` calls in flight.
 
 **Shipped: 3 extractors + 5 LLM workers in parallel**
 
@@ -123,7 +123,7 @@ Bracket under the bars, from 0s to the end of File 4's LLM call: **total ≈ 25s
 
 ### A separate path: Anthropic Batch API for 20+ files
 
-The widget routes uploads of `≥ BATCH_THRESHOLD` files through `processBatch()` → Anthropic Batch API instead of the interactive pipeline. This is **50% cheaper per call** but **async with up to 24h SLA** (typically minutes). Used for bulk historical imports (ZIP of a decade of lab reports), not the common 1–5 file case. Polled via `/api/lab-import-v2?batchId=<id>`; poll state is per Fly machine, a miss 404s and the client falls back.
+The widget routes uploads of `≥ BATCH_THRESHOLD` files through `processBatch()` (`lib/upload-pipeline.ts`) → Anthropic Batch API instead of the interactive pipeline. This is **50% cheaper per call** but **async with up to 24h SLA** (typically minutes). Used for bulk historical imports (ZIP of a decade of lab reports), not the common 1–5 file case. Polled via `/api/lab-import-v2?batchId=<id>`; poll state is per Fly machine, a miss 404s and the client falls back.
 
 <a id="states"></a>
 ## 3 · Upload modal state machine

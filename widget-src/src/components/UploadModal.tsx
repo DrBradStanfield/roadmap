@@ -1,9 +1,9 @@
-import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota } from '../lib/upload-api';
+import { checkLabImportQuota } from '../lib/upload-api';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { IMPORT_LIMITS } from '@roadmap/health-core/import-hints';
 import { METRIC_LABELS } from '@roadmap/health-core/mappings';
-import { UNDATED_PREVIOUS, unreadLines, uploadLimitSignal, zipMemberName, type UnreadLabValue } from '@roadmap/health-core/lab-extraction';
+import { UNDATED_PREVIOUS, unreadLines, uploadLimitSignal, zipMemberName } from '@roadmap/health-core/lab-extraction';
 import type { UnitSystem, MetricType } from '@roadmap/health-core/units';
 import { comparatorOf } from '@roadmap/health-core/lab-limits';
 import type { DocumentPayload } from '@roadmap/health-core/document-save';
@@ -11,7 +11,7 @@ import type { LabUnitRefusal, MeasurementRefusal } from '@roadmap/health-core/re
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
-import type { LabImportResult, PageContent, UploadErrorCode, UploadHistory } from '../lib/api-types';
+import type { UploadErrorCode, UploadHistory } from '../lib/api-types';
 import { measurementRefusalLine } from '../lib/lab-value-labels';
 import { labUnitRefusalLine } from '@roadmap/health-core/lab-series';
 import { useLpaUnit } from '../lib/lpa-unit';
@@ -19,28 +19,16 @@ import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable } from './ReviewTable';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FloatingUploadIndicator } from './FloatingUploadIndicator';
-import { offerCoreExtras, type DocumentToSave, type ReviewedValue, type ReviewedLabValue, type FileResult } from '../lib/upload-pipeline';
+import { UploadError, KEY_ERROR_MESSAGES, BATCH_THRESHOLD, MAX_FILES, MAX_FILE_SIZE, shortName, hasValues, processBatch, processPipeline, type FileNotice, type FileNoticeReason, type ReadInput, type DocumentToSave, type ReviewedValue, type ReviewedLabValue, type FileResult } from '../lib/upload-pipeline';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries } from '../lib/archive-payloads';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
 import { recordFailure } from '../lib/error-diagnostics';
 import { openBackendPicker, UPLOAD_STORAGE_NOTICE } from '../lib/storage-notice';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
-import { isDocx, isLegacyDoc } from '../lib/file-kinds';
+import { isDocx } from '../lib/file-kinds';
 import type { HealthUploadAPI } from '../upload-entry';
 
-class UploadError extends Error {
-  constructor(message: string, public code: UploadErrorCode) {
-    super(message);
-  }
-}
-
-/** The Pages build's own key or its account, not the file, so "try again"
- *  never helps: each says what to check (US-12 AC9). */
-const KEY_ERROR_MESSAGES = {
-  key_refused: 'Anthropic refused your API key. Check the key in the "Ask about your plan" panel.',
-  no_credit: 'Your Anthropic account has no credit. Check its billing, then try again.',
-};
 /** Upload-level failures only: `refused` and `too_long` are one file's notice (FILE_NOTICE_TEXT). */
 const UPLOAD_ERROR_MESSAGES: Partial<Record<UploadErrorCode, string>> = {
   ...KEY_ERROR_MESSAGES,
@@ -81,38 +69,6 @@ interface UploadModalProps {
   onOpen: () => void;
 }
 
-const BATCH_THRESHOLD = 20; // Use batch API for 20+ files; pipeline for fewer
-const POLL_INTERVAL = 5000;
-const FAKE_TICK_INTERVAL = 500;
-const EXTRACT_TIMEOUT = 30_000;
-// Max LLM calls in flight at once. Tier 2 ceiling (80K output tokens/min)
-// comfortably absorbs 5 concurrent lab-report extractions (~500-1500 output
-// tokens each). Scan/letter markdown conversion (~4K tokens) can overflow:
-// fetchAnthropicRaw() does not retry a 429, so that file fails as a server error.
-const LLM_CONCURRENCY = 5;
-// Parallel pdf.js extractors. Extraction is CPU-bound on the main thread,
-// so 3 workers keep the queue feeding 5 LLM workers without UI jank.
-const EXTRACT_CONCURRENCY = 3;
-
-/** Rotating status messages shown during batch processing */
-const PROGRESS_MESSAGES = [
-  'Analyzing health records...',
-  'Reading clinical data...',
-  'Extracting medical information...',
-  'Processing documents...',
-  'Identifying blood test values...',
-  'Reviewing scan results...',
-];
-
-const MAX_FILES = IMPORT_LIMITS.websiteFiles; // also the server's per-IP daily limit (US-12 AC17)
-const MAX_FILE_SIZE = IMPORT_LIMITS.websiteFileMb * 1024 * 1024; // the connector's hint names this number
-
-/** Why a file was not fully read (US-12 AC9). Each is also its `upload_outcome` count. */
-type FileNoticeReason = Exclude<UploadOutcomeKey, 'picked' | 'withValues' | 'docx' | 'undatedPrevious' | 'unitsGuessed' | 'unitsRefused' | 'valuesLimit' | 'valuesLimitUngraded'>;
-/** `name` is the file's whole path, its identity; the list shows it short (`noticeName`).
- *  `count` is how many the notice stands for (values dropped), `unread` the ones that
- *  name their test (US-12 AC19); `text` overrides the reason's. */
-interface FileNotice { name: string; reason: FileNoticeReason; count?: number; unread?: UnreadLabValue[]; text?: string }
 const FILE_NOTICE_TEXT: Record<Exclude<FileNoticeReason, 'valuesDropped'>, string> = {
   openFailed: 'Could not open it. It may be password-protected, damaged, or not a PDF, photo or .docx file.',
   tooLarge: `Too large to read. The limit is ${IMPORT_LIMITS.websiteFileMb} MB per file.`,
@@ -131,7 +87,6 @@ const BYOK_NOTICE_TEXT: Partial<Record<FileNoticeReason, string>> = {
 };
 const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
 const OVER_LIMIT_TEXT = `Not read. It is over the ${MAX_FILES}-file limit for one upload. Upload it separately.`;
-const LEGACY_DOC_TEXT = 'Word .doc files cannot be read. Save it as a PDF or .docx, then upload that.';
 
 function noticeText({ reason, count = 1, unread = [], text }: FileNotice): string {
   if (text) return text;
@@ -145,71 +100,9 @@ function noticeText({ reason, count = 1, unread = [], text }: FileNotice): strin
   return (!SHOPIFY_SURFACE && BYOK_NOTICE_TEXT[reason]) || FILE_NOTICE_TEXT[reason];
 }
 
-const shortName = (fileName: string) => fileName.split('/').pop() || fileName;
 /** A file's short name, or its whole path when another listed file shares the short one. */
 const noticeName = (name: string, notices: FileNotice[]) =>
   notices.some(n => n.name !== name && shortName(n.name) === shortName(name)) ? name : shortName(name);
-const hasValues = (r: FileResult) => r.values.length + r.additionalValues.length > 0;
-function withTimeout<T>(work: Promise<T>): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('timeout')), EXTRACT_TIMEOUT); });
-  return Promise.race([work, timeout]).finally(() => clearTimeout(timer));
-}
-
-/** One file to read. A ZIP member's `fileName` is its ZIP's name, then its
- *  path (`labs.zip/results.pdf`): two ZIPs can hold one path, and the name is
- *  the document's `sourceFileName`, stable across uploads of the same ZIP. */
-interface ReadInput { fileName: string; getFile: () => Promise<File> }
-
-/** Reads one file's pages (pdf.js, image resize or .docx text), with the file they came
- *  from: its original travels with its result. A file that will not open, or
- *  has no pages, is noted and gives none; it is never silently dropped. The
- *  size limit is checked here too: a small ZIP can hold a member past it. */
-async function readPages(upload: HealthUploadAPI, { fileName: name, getFile }: ReadInput, notices: FileNotice[]): Promise<{ pages: PageContent[]; file?: File }> {
-  try {
-    const file = await getFile();
-    if (file.size > MAX_FILE_SIZE) {
-      notices.push({ name, reason: 'tooLarge' });
-      return { pages: [] };
-    }
-    if (upload.isPdf(file)) {
-      const { pages, truncated } = await withTimeout(upload.extractFromPdf(file));
-      if (truncated) notices.push({ name, reason: 'truncated' });
-      if (pages.length > 0) return { pages, file };
-    } else if (upload.isImage(file)) {
-      return { pages: [{ type: 'image', content: await withTimeout(upload.resizeImage(file, 1200)), mimeType: 'image/jpeg' }], file };
-    } else if (isDocx(file)) {
-      const { text, truncated, picturesOnly } = await withTimeout(upload.docxToText(await file.arrayBuffer()));
-      if (truncated) notices.push({ name, reason: 'truncated' });
-      if (text) return { pages: [{ type: 'text', content: text }], file };
-      if (picturesOnly) {
-        notices.push({ name, reason: 'picturesOnly' });
-        return { pages: [] };
-      }
-    } else if (isLegacyDoc(file)) {
-      notices.push({ name, reason: 'openFailed', text: LEGACY_DOC_TEXT });
-      return { pages: [] };
-    }
-  } catch { /* noted below: the reason is the user's, the error is pdf.js's */ }
-  notices.push({ name, reason: 'openFailed' });
-  return { pages: [] };
-}
-
-/** A file the server read, as a review row; values its parse refused are named (US-12 AC9). */
-function readResult(fileName: string, result: LabImportResult, notices: FileNotice[]): FileResult {
-  if (result.droppedValueCount) notices.push({ name: fileName, reason: 'valuesDropped', count: result.droppedValueCount, unread: result.unreadValues });
-  return { fileName, reportDate: result.reportDate, ...offerCoreExtras(result), document: result.document ?? undefined };
-}
-
-/** The notice for a file's own error code; anything else is a server error. */
-const UNREAD_REASONS: Partial<Record<UploadErrorCode, FileNoticeReason>> = { rate_limit: 'limitError', refused: 'refused', too_long: 'tooLong' };
-
-/** A file the server did not read, named with why: the daily limit, a refusal, a cut-off answer, or anything else. */
-function unreadResult(fileName: string, errorCode: UploadErrorCode | undefined, error: string, notices: FileNotice[]): FileResult {
-  const keyError = errorCode === 'key_refused' || errorCode === 'no_credit' ? `Not read. ${KEY_ERROR_MESSAGES[errorCode]}` : undefined;
-  notices.push({ name: fileName, reason: (errorCode && UNREAD_REASONS[errorCode]) || 'serverError', text: keyError });
-  return { fileName, reportDate: null, values: [], additionalValues: [], error };
-}
 
 /** US-12 AC10: one run's counts, integers only. Never a name, unit or value.
  *  `docx` is how many of the picked files were .docx (AC13); `values` holds
@@ -514,178 +407,6 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       }
     }
   };
-
-  /**
-   * Pipeline: producer extracts files (ZIP blob → pdf.js → pages), consumer
-   * sends pages to LLM one at a time. Extraction runs ahead of LLM calls —
-   * while file 1 is in the LLM (~5s), files 2-4 are being extracted client-side.
-   */
-  async function processPipeline(
-    upload: HealthUploadAPI,
-    allInputs: ReadInput[],
-    abort: AbortController,
-    updateProgress: (p: { current: number; total: number; fileName: string }) => void,
-    us: UnitSystem,
-    notices: FileNotice[],
-  ): Promise<FileResult[]> {
-    const totalFiles = allInputs.length;
-    const queue: Array<{ fileName: string; pages: PageContent[]; file?: File }> = [];
-    const allResults: FileResult[] = [];
-    let completedCount = 0;
-    let activeWorkers = 0;
-    let feedingDone = false;
-    let resolveAll: (() => void) | null = null;
-    const allDone = new Promise<void>(resolve => { resolveAll = resolve; });
-
-    function checkDone() {
-      if (abort.signal.aborted) queue.length = 0;
-      if (feedingDone && activeWorkers === 0 && queue.length === 0) {
-        resolveAll?.();
-      }
-    }
-
-    function tryStartWorker() {
-      while (activeWorkers < LLM_CONCURRENCY && queue.length > 0) {
-        if (abort.signal.aborted) break;
-        activeWorkers++;
-        const item = queue.shift()!;
-        updateProgress({ current: Math.round((completedCount / totalFiles) * 100), total: 100, fileName: shortName(item.fileName) });
-
-        // Send to LLM
-        labImport(item.pages, us).then(({ result, error: importError, errorCode }) => {
-          allResults.push(result
-            ? { ...readResult(item.fileName, result, notices), file: item.file }
-            : unreadResult(item.fileName, errorCode, importError || 'Extraction failed', notices));
-        }).catch(() => {
-          allResults.push(unreadResult(item.fileName, undefined, 'Processing failed', notices));
-        }).finally(() => {
-          completedCount++;
-          activeWorkers--;
-          updateProgress({
-            current: Math.round((completedCount / totalFiles) * 100),
-            total: 100,
-            fileName: `Processed ${completedCount} of ${totalFiles}`,
-          });
-          tryStartWorker();
-          checkDone();
-        });
-      }
-    }
-
-    // Producer: a pool of extractors in parallel. Sequential extraction starved
-    // LLM workers (extraction ~2s vs LLM ~5s); EXTRACT_CONCURRENCY parallel
-    // extractors keep the LLM queue full.
-    let extractIndex = 0;
-    async function extractWorker() {
-      while (extractIndex < allInputs.length) {
-        if (abort.signal.aborted) break;
-        const input = allInputs[extractIndex++];
-        const { pages, file } = await readPages(upload, input, notices);
-        if (abort.signal.aborted) return;
-        if (pages.length > 0) {
-          queue.push({ fileName: input.fileName, pages, file });
-          tryStartWorker();
-        }
-      }
-    }
-
-    await Promise.all(
-      Array.from({ length: Math.min(EXTRACT_CONCURRENCY, allInputs.length) }, () => extractWorker()),
-    );
-
-    feedingDone = true;
-    checkDone();
-
-    await allDone;
-    if (allResults.length === 0 && !abort.signal.aborted) {
-      throw new UploadError('No readable files found.', 'no_files');
-    }
-    return allResults;
-  }
-
-  /** Batch: send all files in one request, poll for results. For 20+ files. */
-  async function processBatch(
-    upload: HealthUploadAPI,
-    queue: ReadInput[],
-    abort: AbortController,
-    updateProgress: (p: { current: number; total: number; fileName: string }) => void,
-    notices: FileNotice[],
-  ): Promise<FileResult[]> {
-    const allFiles: Array<{ fileName: string; pages: PageContent[] }> = [];
-    const originals: Array<File | undefined> = []; // by position in allFiles
-    for (let i = 0; i < queue.length; i++) {
-      if (abort.signal.aborted) break;
-      const { fileName } = queue[i];
-      updateProgress({ current: Math.round((i / queue.length) * 30), total: 100, fileName: `Reading ${shortName(fileName)}...` });
-      const { pages, file } = await readPages(upload, queue[i], notices);
-      if (pages.length > 0) {
-        allFiles.push({ fileName, pages });
-        originals.push(file);
-      }
-    }
-
-    if (abort.signal.aborted) return [];
-    if (allFiles.length === 0) throw new UploadError('No readable files found.', 'no_files');
-
-    updateProgress({ current: 33, total: 100, fileName: `Analyzing ${allFiles.length} files...` });
-
-    const { batchId, error: batchError, errorCode: batchErrorCode } = await labImportBatch(allFiles, abort.signal);
-    if (abort.signal.aborted) return [];
-    if (!batchId) throw new UploadError(batchError || 'Failed to start processing', batchErrorCode || 'server_error');
-
-    const fileNames = allFiles.map(f => shortName(f.fileName));
-    let fakeProgress = 35;
-    let realCompleted = 0;
-    let tickCount = 0;
-
-    const fakeTimer = setInterval(() => {
-      if (abort.signal.aborted) return;
-      tickCount++;
-      fakeProgress += (90 - fakeProgress) * 0.015;
-      const realPct = allFiles.length > 0 ? (realCompleted / allFiles.length) * 100 : 0;
-      const displayPct = Math.max(fakeProgress, realPct);
-      const statusMsg = PROGRESS_MESSAGES[Math.floor(tickCount / 8) % PROGRESS_MESSAGES.length];
-      const fileName = fileNames[Math.floor(tickCount / 3) % fileNames.length];
-      const msg = realCompleted > 0
-        ? `Processed ${realCompleted} of ${allFiles.length} — ${fileName}`
-        : `${statusMsg} ${fileName}`;
-      updateProgress({ current: Math.round(displayPct), total: 100, fileName: msg });
-    }, FAKE_TICK_INTERVAL);
-
-    try {
-      const maxPollTime = Date.now() + 10 * 60_000;
-      while (!abort.signal.aborted) {
-        await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
-        if (abort.signal.aborted) break;
-        if (Date.now() > maxPollTime) throw new UploadError('Processing timed out.', 'timeout');
-
-        const poll = await pollBatchStatus(batchId);
-        realCompleted = poll.completed;
-        if (poll.error) throw new UploadError(poll.error, poll.errorCode || 'server_error');
-
-        if (poll.status === 'ended' && poll.results) {
-          clearInterval(fakeTimer);
-          updateProgress({ current: 100, total: 100, fileName: 'All files processed!' });
-          // Each result names its request's position, so a lost or failed one
-          // is reported against its own file, never "Unknown file" (US-12 AC9).
-          // An old server (the deploy window) sends no index, only the order,
-          // which says nothing when the counts differ: then every file is unread.
-          const indexed = poll.results.some(r => typeof r.index === 'number');
-          const byIndex = new Map(indexed || poll.results.length === allFiles.length
-            ? poll.results.map((r, i) => [indexed ? r.index : i, r]) : []);
-          return allFiles.map(({ fileName }, i) => {
-            const r = byIndex.get(i);
-            return r && !('errorCode' in r)
-              ? { ...readResult(fileName, r, notices), file: originals[i] }
-              : unreadResult(fileName, r?.errorCode, 'Extraction failed', notices);
-          });
-        }
-      }
-      return [];
-    } finally {
-      clearInterval(fakeTimer);
-    }
-  }
 
   const handleCancel = () => { resetSession(); };
 
