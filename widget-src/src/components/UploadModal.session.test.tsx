@@ -262,6 +262,21 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(screen.queryByText(/not added/)).toBeNull();
     expect(trackProductEvent).toHaveBeenCalledWith('upload_saved', { count: 2 });
   });
+  it('US-12 AC6c: an original filed again on the retry counts once', async () => {
+    // Attempt 1 files the original metadata-only (its blob write fell back) while the
+    // values throw; the retry files the same original again, and the record holds one.
+    const payload = { documentType: 'pathology_report', title: 'Blood test results', documentDate: '2024-06-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'test.pdf' };
+    vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([payload]).mockReturnValueOnce([payload]);
+    vi.mocked(bulkSaveMeasurements).mockRejectedValueOnce(new Error('synthetic measurement failure'));
+    vi.mocked(bulkSaveDocuments).mockResolvedValueOnce({ saved: [{ ...archivedLetter, id: 'meta' }], errorCount: 0 })
+      .mockResolvedValueOnce({ saved: [{ ...archivedLetter, id: 'full' }], errorCount: 0 });
+    render(<Harness />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByText('Some items could not be saved. Please try again.');
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(screen.getByText(/Saved 1 blood test value, 1 document$/)).toBeTruthy();
+  });
   it('US-12 AC6c: Save stays busy until the page has read back a partial save', async () => {
     originalFailsOnce();
     const reread = deferred<void>();

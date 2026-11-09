@@ -157,16 +157,16 @@ function FileNotices({ notices }: { notices: FileNotice[] }) {
 
 /** One session's save outcome (US-12 AC6c). The saved counts add up across a
  *  retry, which finishes what the first Save began; the rest are the last
- *  attempt's. `unstored`: originals the cloud would not store behind details it
+ *  attempt's. Documents count by file name: a retry may file an original again. `unstored`: originals the cloud would not store behind details it
  *  already holds (US-14 AC4). The refusals are lab rows in a unit the record
  *  does not know for that test, and core values it refused: each is named, as
  *  a dropped value must never be silent (US-21 phase 3, US-35 AC17). */
 interface SaveOutcome {
-  values: number; labValues: number; documents: number;
+  values: number; labValues: number; documents: string[];
   skippedValues: number; skippedLabValues: number; errors: number; unstored: number;
   refusedLabUnits: LabUnitRefusal[]; refusedMeasurements: MeasurementRefusal[];
 }
-const NO_OUTCOME: SaveOutcome = { values: 0, labValues: 0, documents: 0, skippedValues: 0, skippedLabValues: 0, errors: 0, unstored: 0, refusedLabUnits: [], refusedMeasurements: [] };
+const NO_OUTCOME: SaveOutcome = { values: 0, labValues: 0, documents: [], skippedValues: 0, skippedLabValues: 0, errors: 0, unstored: 0, refusedLabUnits: [], refusedMeasurements: [] };
 
 export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, age, sex, grading, open, onOpen }: UploadModalProps) {
   const [state, setState] = useState<ModalState>('select');
@@ -180,7 +180,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   const [error, setError] = useState<string | null>(null);
   const [notices, setNotices] = useState<FileNotice[]>([]);
   const [outcome, setOutcome] = useState(NO_OUTCOME);
-  const { values: savedCount, labValues: savedLabCount, documents: savedDocCount, skippedValues: skippedMeasurements, skippedLabValues, errors: saveErrorCount, unstored: unstoredCount, refusedLabUnits, refusedMeasurements } = outcome;
+  const { values: savedCount, labValues: savedLabCount, documents: { length: savedDocCount }, skippedValues: skippedMeasurements, skippedLabValues, errors: saveErrorCount, unstored: unstoredCount, refusedLabUnits, refusedMeasurements } = outcome;
   // Lp(a)'s refusal names its range in the unit its field shows (US-05 AC2).
   const [lpaUnit] = useLpaUnit(unitSystem);
   const [isSaving, setIsSaving] = useState(false);
@@ -485,7 +485,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       const next: SaveOutcome = {
         values: prior.values + savedValues.saved.length,
         labValues: prior.labValues + savedLabValues.saved.length,
-        documents: prior.documents + savedDocs.saved.length,
+        documents: [...new Set([...prior.documents, ...savedDocs.saved.map(d => d.sourceFileName ?? d.id)])],
         skippedValues: savedValues.skippedDuplicates, skippedLabValues: savedLabValues.skippedDuplicates,
         errors: saveErrors, unstored: savedDocs.unstored ?? 0,
         refusedLabUnits: savedLabValues.refused, refusedMeasurements: savedValues.refused,
@@ -506,15 +506,15 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       }
 
       if (!saveFailed) {
-        trackProductEvent('upload_saved', { count: next.values + next.labValues + next.documents });
+        trackProductEvent('upload_saved', { count: next.values + next.labValues + next.documents.length });
         setState('done');
         onComplete();
       } else {
         // Stay in review: a second Save retries idempotently (values dedup on
         // skippedDuplicates, documents on contentHash). Save stays busy until the
-        // page has read back what saved, so the retry does not send it again; a
-        // failed re-read is not a failed save, so its error is not this one's.
-        if (totalSaved > 0) await Promise.resolve(onComplete()).catch(() => {});
+        // page has read back what saved, so the retry does not send it again. A
+        // failed re-read is reported, tag only, and is not this save's error.
+        if (totalSaved > 0) await Promise.resolve(onComplete()).catch(err => { Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'reread' } }); });
         setError(threw ? 'Some items could not be saved. Please try again.' : 'Failed to save. Please try again.');
       }
     } catch {
