@@ -99,7 +99,7 @@ The widget runs a producer/consumer pipeline (`processPipeline()` in `lib/upload
 
 **Shipped: 3 extractors + 5 LLM workers in parallel**
 
-EXTRACT_CONCURRENCY=3, LLM_CONCURRENCY=5 in UploadModal.tsx. Extractors keep the queue feeding 5 LLM workers without UI jank.
+EXTRACT_CONCURRENCY=3, LLM_CONCURRENCY=5 in lib/upload-pipeline.ts. Extractors keep the queue feeding 5 LLM workers without UI jank.
 
 *Drawn as a timeline chart on an axis marked 0s · 5s · 10s · 15s · 20s · 25s (0s at x=80, 25s at x=900). Each file has an "extract" bar and an "LLM call" bar; the bars are drawn one after another — each file's LLM call starts where the previous file's ends. Raw bar x-ranges below. The bars date from the earlier "pipelined, concurrency 1" version of this chart (commit 60ed42c2); only the title and subtitle were updated for the shipped 5-worker design, so the bars show the old serial schedule, not the shipped one.*
 
@@ -112,7 +112,7 @@ EXTRACT_CONCURRENCY=3, LLM_CONCURRENCY=5 in UploadModal.tsx. Extractors keep the
 
 Bracket under the bars, from 0s to the end of File 4's LLM call: **total ≈ 25s for 4 files**
 
-`LLM_CONCURRENCY = 5` + `EXTRACT_CONCURRENCY = 3` in `UploadModal.tsx`. The producer is a worker pool over a shared `extractIndex` (safe on single-threaded JS); the consumer is `tryStartWorker()` draining the queue with up to 5 LLM calls in flight.
+`LLM_CONCURRENCY = 5` + `EXTRACT_CONCURRENCY = 3` in `lib/upload-pipeline.ts`. The producer is a worker pool over a shared `extractIndex` (safe on single-threaded JS); the consumer is `tryStartWorker()` draining the queue with up to 5 LLM calls in flight.
 
 ### Why 5 + 3
 
