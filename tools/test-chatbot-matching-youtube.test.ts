@@ -16,6 +16,8 @@ import { REPO_ROOT, tsxSpawn } from './test-helpers';
 interface Entry { query: string; category: string; surface?: string; youtube_video?: string; history?: unknown[] }
 const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as Entry[];
 const cases = all.filter(q => q.category === 'youtube-followup');
+const VIDEO_ID = (JSON.parse(readFileSync(join(REPO_ROOT, 'docs/blog/index.json'), 'utf-8')) as Array<{ handle: string; youtube?: string }>)
+  .find(e => e.handle === cases[0].youtube_video)!.youtube!.match(/(?:v=|youtu\.be\/)([\w-]{11})/)![1];
 const POSTURE_START = readFileSync(join(REPO_ROOT, 'app/lib/chat-posture-doctor.md'), 'utf-8').trim().slice(0, 120);
 
 describe('test-chatbot-matching surface "youtube" (US-15 AC56)', () => {
@@ -59,6 +61,12 @@ describe('test-chatbot-matching surface "youtube" (US-15 AC56)', () => {
         expect(body.tools).toBeUndefined();
         // The thread as runPipeline sends it: the original comment, the bot's reply, then the follow-up.
         expect(body.messages.map((m: { role: string }) => m.role)).toEqual(['user', 'assistant', 'user']);
+        // The comment itself, raw, as production sends it: only history turns carry a "Name: " prefix.
+        expect(cases.map(c => c.query)).toContain(body.messages[2].content);
+        expect(body.messages[2].content).not.toMatch(/^Viewer: /);
+        expect(body.messages[0].content).toMatch(/^Viewer: /);
+        // The real video's link, as production fills {{VIDEO_URL}}.
+        expect(system).toContain(`https://youtu.be/${VIDEO_ID}`);
       }
     } finally {
       rmSync(dir, { recursive: true, force: true });

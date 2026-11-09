@@ -50,15 +50,8 @@
  *                             sees it (lower case, straight quotes, no markdown * or _). For a claim a
  *                             phrase list cannot pin down, such as whose order a first step belongs to.
  *                             A regex that does not compile exits the harness before any API call.
- *   surface?: 'doctor' | 'brand' | 'youtube'  answer check only: adds app/lib/chat-posture-<surface>.md
- *                             after the products block, where production's buildSystemBlocks puts it.
- *                             Omitted = no posture block (the harness's behaviour before 2026-10-07).
- *                             'youtube' is the YouTube bot's prompt, built as runPipeline builds it:
- *                             production's buildYouTubePlatformContext for youtube_video's post (its
- *                             follow-up block when history is given), the doctor posture, articles
- *                             through preferMasters keeping that post, buildConversationMessages, and
- *                             no tools. Needs youtube_video; never takes user_context.
- *   youtube_video?: string     with surface 'youtube': the blog handle of the video's companion post.
+ *   surface?: 'doctor' | 'brand' | 'youtube'  answer check only: the posture block, or for 'youtube'
+ *                             the YouTube bot's whole prompt, with youtube_video (tools/chatbot-surfaces.ts).
  *   user_context?: object      answer check only: the raw payload a widget sends as the chat's context
  *                             (chatContextOf's shape: form fields, unitSystem, medications, screenings).
  *                             It goes through production's resolveChatContext, and the answer call
@@ -138,11 +131,10 @@ import { chatToolsFor, withRoadmapRound, type ChatContentBlock } from '../packag
 import { toolOnlyAck, type ProposedEdit, type ProposedProfileEdit } from '../packages/health-core/src/chat-edits';
 import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content';
 import { routerView, routerIndexBlock, preferMasters, ROUTER_SUMMARY_MAX_CHARS } from '../app/lib/router-view';
-import { loadBlogIndex, type BlogIndexEntry } from '../app/lib/blog-index.server';
-import { buildYouTubePlatformContext, loadedHandles } from '../app/lib/youtube-context';
-import { stripFrontmatter } from '../app/lib/frontmatter';
+import type { BlogIndexEntry } from '../app/lib/blog-index.server';
+import { loadPostures, loadYouTubeVideos, youtubeTurn, type YouTubeVideo } from './chatbot-surfaces';
 import { parseRouterReply } from '../app/lib/router-reply';
-import { buildConversationMessages, buildSystemBlocks, EMPTY_CHAT_CONTEXT, resolveChatContext } from '../app/lib/chat.server';
+import { buildSystemBlocks, EMPTY_CHAT_CONTEXT, resolveChatContext } from '../app/lib/chat.server';
 import { healthInputSchema } from '../packages/health-core/src/validation';
 import { PRODUCTS_BLOCK_FILES, productsBlockText } from '../app/lib/chat-products-block';
 
@@ -431,34 +423,10 @@ if (unknownForbidden.length > 0) {
   console.error(`must_not_route names handles not in the index: ${unknownForbidden.join(', ')}`);
   process.exit(1);
 }
-// A surface the harness cannot load would score an answer with no posture at all.
-const POSTURES = new Map<string, string>();
-for (const q of ALL_QUERIES) {
-  if (q.surface === undefined || POSTURES.has(q.surface)) continue;
-  // The YouTube bot answers under the doctor posture (runPipeline).
-  const file = path.join(REPO_ROOT, 'app/lib', `chat-posture-${q.surface === 'youtube' ? 'doctor' : q.surface}.md`);
-  if (!['doctor', 'brand', 'youtube'].includes(q.surface) || !fs.existsSync(file)) {
-    console.error(`unknown surface "${q.surface}" on: ${q.query}`);
-    process.exit(1);
-  }
-  POSTURES.set(q.surface, fs.readFileSync(file, 'utf-8'));
-}
-// A YouTube entry must name a post with a body, as loadVideoBody needs; the bot sends no user data.
-const YOUTUBE_VIDEOS = new Map<TestQuery, { entry: BlogIndexEntry; body: string }>();
-for (const q of ALL_QUERIES) {
-  if ((q.surface === 'youtube') !== (q.youtube_video !== undefined) || (q.surface === 'youtube' && q.user_context !== undefined)) {
-    console.error(`surface "youtube" needs youtube_video and takes no user_context, and only it takes youtube_video, on: ${q.query}`);
-    process.exit(1);
-  }
-  if (q.youtube_video === undefined) continue;
-  const entry = loadBlogIndex().find(a => a.handle === q.youtube_video);
-  const raw = entry && loadBlogArticle(entry.handle);
-  if (!entry || !raw) {
-    console.error(`youtube_video "${q.youtube_video}" is not a post with a body, on: ${q.query}`);
-    process.exit(1);
-  }
-  YOUTUBE_VIDEOS.set(q, { entry, body: stripFrontmatter(raw) });
-}
+// A surface the harness cannot load, or a YouTube fixture production could never send, would score a prompt production never builds.
+const POSTURES = loadPostures(REPO_ROOT, ALL_QUERIES);
+const YOUTUBE_VIDEOS = loadYouTubeVideos(ALL_QUERIES);
+for (const problem of [POSTURES, YOUTUBE_VIDEOS]) if (typeof problem === 'string') { console.error(problem); process.exit(1); }
 // A payload that makes no plan, or silently loses a key or a value, would score a context the fixture never meant.
 const CONTEXT_KEYS = new Set([...Object.keys(healthInputSchema.shape), 'unitSystem', 'medications', 'screenings', 'measurementHistory']);
 const USER_CONTEXTS = new Map<TestQuery, string>();
@@ -593,26 +561,20 @@ async function checkAnswer(q: TestQuery, matchedHandles: string[] = []): Promise
   const { query, surface, max_length_chars: maxLengthChars } = q;
   const mustMention = q.must_mention ?? [];
   const mustNotMention = q.must_not_mention ?? [];
-  const video = YOUTUBE_VIDEOS.get(q);
-  // As runPipeline: an older post gives way to its masters, but the video's own post stays (US-50 AC14).
-  const handles = video ? preferMasters(matchedHandles, FULL_INDEX, query, { keep: [video.entry.handle] }).handles : matchedHandles;
-  const matched = loadMatchedContent(handles);
-  const matchedContent = matched.content;
+  const video = (YOUTUBE_VIDEOS as Map<TestQuery, YouTubeVideo>).get(q);
+  const youtube = video && youtubeTurn(video, matchedHandles, query, q.history ?? [], FULL_INDEX);
+  const matchedContent = youtube ? youtube.matchedContent : loadMatchedContent(matchedHandles).content;
   // Production order (buildSystemBlocks): products, then the surface posture, then articles.
-  const base = surface ? `${ANSWER_SYSTEM_CONTEXT}\n\n---\n\n${POSTURES.get(surface)}` : ANSWER_SYSTEM_CONTEXT;
+  const base = surface ? `${ANSWER_SYSTEM_CONTEXT}\n\n---\n\n${(POSTURES as Map<string, string>).get(surface)}` : ANSWER_SYSTEM_CONTEXT;
   const userContextJson = USER_CONTEXTS.get(q);
   // The YouTube bot's platform context sits where the widget's user data does (runPipeline).
-  const platformContext = video
-    ? buildYouTubePlatformContext('harness-video', video.entry, video.body, loadedHandles(handles, matched), (q.history ?? []).length > 0)
-    : userContextJson;
+  const platformContext = youtube ? youtube.platformContext : userContextJson;
   const system = platformContext !== undefined
-    ? buildSystemBlocks(platformContext, { surfaceContext: surface && POSTURES.get(surface), blogArticles: matchedContent || null })
+    ? buildSystemBlocks(platformContext, { surfaceContext: surface && (POSTURES as Map<string, string>).get(surface), blogArticles: matchedContent || null })
     : matchedContent
       ? `${base}\n\n---\n\n## Referenced Blog Articles\n\n${matchedContent}`
       : base;
-  const messages = video
-    ? buildConversationMessages(q.history ?? [], query)
-    : [...q.history ?? [], { role: 'user' as const, content: query }];
+  const messages = youtube ? youtube.messages : [...q.history ?? [], { role: 'user' as const, content: query }];
   const body = {
     ...modelParams(ANSWER_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system,
