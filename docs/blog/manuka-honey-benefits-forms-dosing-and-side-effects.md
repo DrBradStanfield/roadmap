@@ -15,14 +15,14 @@ sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/26176586/","ch
 
 ## Current view (reviewed 9 November 2026)
 
-In his video on cold remedies, Brad points to an Oxford team's pooled analysis of 14 randomised trials, in which honey improved combined symptom scores, cough frequency and cough severity compared with usual care ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)). He quotes the Oxford researchers' advice that honey is cheap and widely available, so it is worth trying before visiting your GP ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)). His practical step is around a teaspoon of honey before bedtime ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)). Honey will not shorten a cold the way zinc lozenges can, but it may improve comfort and sleep ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)). The best dose is not known, and neither is whether raw honey differs from processed honey ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)).
+In his video on cold remedies, Brad points to an Oxford team's pooled analysis of 14 randomised trials, in which honey improved combined symptom scores, cough frequency and cough severity compared with usual care ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)). He quotes researcher Joseph Lee, who said honey is cheap and widely available, so it is worth trying before visiting your GP; that advice is about ordinary honey, not manuka ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)). His practical step is around a teaspoon of honey before bedtime ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)). Honey will not shorten a cold the way zinc lozenges can, but it may improve comfort and sleep ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)). The best dose is not known, and neither is whether raw honey differs from processed honey ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)).
 
 ## Key safety points
 
-- Never give honey of any kind, manuka included, to a child younger than 1 year: honey is the best-known source of infant botulism [1][2].
-- People allergic to honey should avoid all honey. Reactions are very rare but can include anaphylaxis, and some people who react to honey also react to bee venom or weed pollen [3][4][5].
+- Never give honey of any kind, manuka included, to a child younger than 1 year [1]. Infant botulism is the most prominent health risk linked to honey [2].
+- If honey has ever given you an allergic reaction, avoid every kind, manuka included. Honey allergy is very rare but can be serious [3], with anaphylaxis reported [4][5]; some people who react are also sensitised to bee venom or weed pollen [4][5].
 - During cancer treatment or with a weak immune system, choose commercial, heat-treated honey and avoid raw honey or honeycomb [6][2].
-- Put only sterile, medical-grade honey dressings on wounds; food honey can carry bacteria and fungi [7][2]. Serious burns need medical care right away, and no household remedy should go on a severe burn [41]. Ask your doctor or nurse first before using a honey dressing on a deep burn or a heavily bleeding wound.
+- Put only sterile, medical-grade honey dressings on wounds, and never put food honey in your eyes: food honey can carry bacteria and fungi [7][2]. Serious burns need medical care right away, and no household remedy should go on a severe burn [41]. Ask your doctor or nurse first before using a honey dressing on a deep burn or a heavily bleeding wound.
 - With diabetes, count honey as sugar [8][42], and ask your doctor before using manuka honey on a wound: the evidence on MGO and diabetic wound healing conflicts [9][10][11].
 - Large amounts (50 to 100 g) can cause loose stools, probably because some of the fructose is not absorbed [12].
 
@@ -64,7 +64,7 @@ The UMF Honey Association tests four markers, and its quality mark appears only 
 | UMF 20+ | 826 | >200 | 500 | <40 |
 | UMF 25+ | 1197 | >200 | 500 | <40 |
 
-Source: UMF Honey Association [18]. The page lays out its table without clear column labels, and it shows the same DHA level for UMF 20+ and UMF 25+; an earlier version of this article gave a higher DHA level for UMF 25+. Check the current values on the association's site.
+Source: UMF Honey Association [18]. The association lists the same DHA level for UMF 20+ and UMF 25+. Check the current values on its site.
 
 ### Choosing a UMF Grade
 
@@ -120,7 +120,7 @@ A 2015 Cochrane review identified 26 eligible trials (total of 3011 participants
 
 A pilot trial in Poland randomised 30 adults with GERD, 15 to each group, to manuka honey or a placebo of artificial honey [21]. Each batch of honey held at least 400 mg/kg of methylglyoxal, and participants took a unit dose of 5 g, three times a day, fasting in the morning and between main meals, for 4 weeks [21]. Mean ages were 54.9 years in the manuka group and 59.1 years in the placebo group [21].
 
-Symptoms improved in 86.7% and 100% of the manuka group at 2 and 4 weeks, against 26.7% and 40% of the placebo group [21]. On endoscopy, 73.3% of the manuka group improved; the abstract says improvement in the placebo group was much lower, and that histology confirmed the results [21]. The full text marks statistical significance at p < .05 [21]. Among participants taking no reflux medicines, only those on manuka honey improved [21].
+Symptoms improved in 86.7% and 100% of the manuka group at 2 and 4 weeks, against 26.7% and 40% of the placebo group [21]. On endoscopy, 73.3% of the manuka group improved; the abstract says improvement in the placebo group was much lower, and that histology confirmed the results [21]. Among participants taking no reflux medicines, only those on manuka honey improved [21].
 
 The authors call it a pilot study before testing in a larger population [21]. It compared manuka honey with artificial honey, not with ordinary honey, so it cannot say whether the effect is specific to manuka.
 
@@ -142,7 +142,7 @@ There is no good public evidence on manuka honey for ordinary sore throats yet.
 
 **Constipation:** There is no good public evidence on manuka honey for constipation in people. Two lines of indirect evidence exist. In rats, an enema of MGO raised faecal water content and caused visceral hypersensitivity [30]. In 20 healthy volunteers, 100 g of honey caused loose stools in six and 50 g caused them in three, probably because of incomplete fructose absorption [12].
 
-**H. pylori:** There is no good public evidence on manuka honey for *H. pylori* infection yet.
+**H. pylori:** There is no good public evidence on manuka honey for *H. pylori* infection yet. Do not use manuka honey in place of treatment for *H. pylori* or a stomach ulcer; see your doctor.
 
 ### Oral Health: Plaque and Gingivitis
 
@@ -156,7 +156,9 @@ A single-blinded trial randomised 42 elderly patients with dry mouth to a manuka
 
 A meta-analysis of five randomised controlled trials with 288 adult participants found that, compared with controls, manuka honey improved the Ocular Surface Disease Index, Standard Patient Evaluation of Eye Dryness, tear evaporation rate, ocular surface staining and daily use of lubricant drops [33]. No serious adverse events were reported, except for temporary stinging and redness; the authors say limitations of the included studies affect the reliability of this conclusion [33].
 
-In one of these trials, 114 people with dry eye from meibomian gland dysfunction added Optimel gel (98 per cent *Leptospermum* honey) or Optimel drops (16 per cent *Leptospermum* honey) to conventional therapy [34]. Both reduced the need for lubricants, the drops most, and temporary redness and stinging were the only adverse effects [34].
+In one of these trials, an open-label study, 114 people with dry eye from meibomian gland dysfunction added Optimel gel (98 per cent *Leptospermum* honey) or Optimel drops (16 per cent *Leptospermum* honey) to conventional therapy [34]. Both reduced the need for lubricants, the drops most, and temporary redness and stinging were the only adverse effects [34].
+
+That trial used commercial honey eye products made for the purpose [34]. Food honey can carry bacteria and fungi [2], so never put it in your eyes.
 
 ### Blepharitis (Eyelid Infection)
 
@@ -204,11 +206,11 @@ In 20 healthy volunteers, six reported loose stools after 100 g of honey and thr
 
 ### Sugar and Metabolic Considerations
 
-Honey is mostly sugar [8], so people with high blood sugar, including those with diabetes, should count it as sugar. MedlinePlus lists 1 tbsp (15 mL) of honey among the foods with about 15 grams of carbohydrate used to treat low blood sugar in diabetes [42].
+A meta-analysis of 18 controlled trials (N = 1105 participants) found that honey reduced fasting glucose (MD = -0.20 mmol/L), total cholesterol (MD = -0.18 mmol/L), LDL cholesterol (MD = -0.16 mmol/L) and fasting triglycerides (MD = -0.13 mmol/L), and increased HDL cholesterol (MD = 0.07 mmol/L), mostly with low certainty of evidence [38]. The authors say honey may improve glycemic control and lipid levels when consumed within a healthy dietary pattern [38].
 
-Fructose matters for blood fats. Over 10 weeks, fructose-sweetened drinks raised apoCIII and postprandial triglyceride-rich particles more than glucose-sweetened drinks [36], and a review suggests that eating less fructose and fructose-containing sugars may lower triglycerides [37]. Those studies used fructose drinks, not honey.
+Fructose matters for blood fats. Over 10 weeks, fructose-sweetened drinks raised apoCIII and postprandial triglyceride-rich particles more than glucose-sweetened drinks [36], and a review suggests that eating less fructose and fructose-containing sugars may lower triglycerides [37]. Those studies used fructose drinks, not honey. The difference from the honey trials may reflect the amount eaten.
 
-A meta-analysis of 18 controlled trials (N = 1105 participants) found that honey reduced fasting glucose (MD = -0.20 mmol/L), total cholesterol (MD = -0.18 mmol/L), LDL cholesterol (MD = -0.16 mmol/L) and fasting triglycerides (MD = -0.13 mmol/L), and increased HDL cholesterol (MD = 0.07 mmol/L), mostly with low certainty of evidence [38]. The authors say honey may improve glycemic control and lipid levels when consumed within a healthy dietary pattern [38]. The difference from the fructose studies may reflect the amount eaten.
+Honey is mostly sugar [8], so if you have diabetes or raised blood sugar, count it as sugar. MedlinePlus lists 1 tbsp (15 mL) of honey among the foods with about 15 grams of carbohydrate used to treat low blood sugar in diabetes [42].
 
 In rats, 4-week intragastric MG administration impaired glucose tolerance and adipose tissue insulin sensitivity [39]. Whether eating manuka honey does the same in people is not known.
 
@@ -230,7 +232,7 @@ Do not feed honey to a child who is younger than 1 year old, and do not give pro
 
 ### Allergy
 
-Honey allergy is a very rare, but serious health condition [3]. In a report of six patients with systemic reactions after eating honey, three had anaphylaxis, four had high specific IgE for honey bee venom, and two of five had also had anaphylaxis from bee stings [4]. A 5-year-old sensitised to Compositae weed pollen had anaphylaxis after eating artisanal honey [5]. People who are allergic to honey should avoid all honey, manuka included, and products made with it.
+Honey allergy is a very rare, but serious health condition [3]. In a report of six patients with systemic reactions after eating honey, three had anaphylaxis, four had high specific IgE for honey bee venom, and two of five had also had anaphylaxis from bee stings [4]. A 5-year-old sensitised to Compositae weed pollen had anaphylaxis after eating artisanal honey [5]. If honey has ever given you an allergic reaction, avoid every kind, manuka included, and foods that contain it.
 
 ### Microbial Contamination
 
@@ -250,7 +252,7 @@ There is no good public evidence on drug interactions specific to manuka honey. 
 
 **Acid-reducing medicines:** There is no good public evidence on taking manuka honey with proton pump inhibitors or other reflux medicines. Ask your doctor before stopping or changing a prescribed reflux medicine.
 
-**Antibiotics:** Manuka honey has antibacterial activity in the laboratory [16]. Do not use it in place of an antibiotic your doctor has prescribed.
+**Antibiotics:** Manuka honey has antibacterial activity in the laboratory [16]. Do not use it in place of an antibiotic your doctor has prescribed, including treatment for *H. pylori*.
 
 ## 8. Dietary Sources and Comparison with Other Honeys
 
