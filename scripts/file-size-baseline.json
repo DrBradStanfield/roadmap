@@ -8,7 +8,7 @@
     "tools/knowledge-batch-check.ts": 1724,
     "tools/codex-review.mjs": 1699,
     "packages/health-core/src/suggestions.ts": 1251,
-    "widget-src/src/components/HealthTool.tsx": 937,
+    "widget-src/src/components/HealthTool.tsx": 923,
     "packages/health-core/src/lab-extraction.ts": 1166,
     "widget-src/src/components/BloodTestTimeline.tsx": 1129,
     "widget-src/src/components/InputPanel.tsx": 1128,

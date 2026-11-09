@@ -71,16 +71,6 @@ import { useLongitudinalSave, countedCorrection } from '../hooks/useLongitudinal
 import { useChatEdits } from './ChatEdits';
 import { WRITE_REFUSED } from '../lib/erase-copy';
 
-/** After a medication or screening save, failed or not, the chat copy takes
- *  the lists the store holds (US-15 AC10). Never the form's: a failed save
- *  would leave a row the record lacks, and a re-read inside the debounce
- *  would put the old list back with nothing to undo it. */
-async function mirrorSavedLists(): Promise<void> {
-  const result = await loadLatestMeasurements();
-  if (result) patchMirror({ medications: result.medications, screenings: result.screenings });
-}
-
-/** The same rows, value for value: a re-read that changed nothing keeps the old array. */
 /** The onboarding's answers (US-62 AC13): only an edit to one of them counts as a step. */
 const ONBOARDING_FIELDS: ReadonlyArray<keyof HealthInputs> = ['heightCm', 'weightKg', 'sex', 'birthMonth', 'birthYear'];
 
@@ -214,15 +204,11 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     clearAnswered(); // the record re-read is not an answer given here (US-62 AC13)
     void applyRemoteRef.current();
   }, []);
-  const afterListSave = useCallback((saved: boolean) => {
-    if (!saved) writeRefused();
-    return mirrorSavedLists();
-  }, [writeRefused]);
   // The medication, screening and supplement saves (hooks/useListSaves).
   const {
     handleMedicationChange, handleScreeningChange, handleSupplementChange, handleSupplementDelete,
-    flushAll: flushListSavesNow, dropAll: dropListSaves, medicationWaiting,
-  } = useListSaves({ patchMedication, patchScreening, patchSupplement, stopSupplement }, afterListSave, writeRefused);
+    flushListSaves, dropListSaves, medicationWaiting,
+  } = useListSaves({ patchMedication, patchScreening, patchSupplement, stopSupplement }, writeRefused);
 
   // The RoadmapStore is authoritative. Never replay the retired v1 cache into it.
   useEffect(() => {
@@ -395,7 +381,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       stagePendingSave();
       // The waiting medication, screening and supplement saves, each with the
       // erase it was made against, so the write below holds them (US-06 AC13).
-      flushListSavesNow();
+      flushListSaves();
       flushRoadmapStoreSync();
     };
     const onUnload = () => stage(true);
