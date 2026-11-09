@@ -8822,7 +8822,7 @@
       "tetracycline|fluoroquinolone|iron|thyroid|bisphosphonate"
     ],
     "must_not_match": [
-      "\\bno gap\\b|\\b(?:1|one) hour (?:gap|apart|between|before or after)|\\b30 minutes (?:gap|apart|between|before or after)"
+      "\\b(?:there is|you need|needs?) no gap\\b|\\bno gap (?:is )?(?:needed|necessary)\\b|(?<!not )(?<!not a )(?<!than )\\b(?:(?:1|one)[- ]hour|30 minutes) (?:gap|apart|between)\\b"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-11-09 (masters-resource-1); not run. Recommended Dosing, Timing Guidelines: \"leave a 2-hour gap between an alginate product and other medicines, including iron [2]. Some medicines need a longer gap\". Passes: 2 hours, with some medicines needing longer. Fails: a shorter or no gap."
   },
@@ -8841,7 +8841,7 @@
       "doctor|cardiologist"
     ],
     "must_not_match": [
-      "\\b(?:is |it's |it is )?(?:safe|fine|okay|ok) (?:to (?:take|drink|give|use|have)|for (?:you|him|her|a baby|an infant|your baby))",
+      "(?<!not )(?<!n't )\\b(?:is|are|it's|they're|should be|can be|would be) (?:completely |perfectly |generally |totally |usually |likely )?(?:safe|fine|okay|ok)\\b(?! (?:only|if|unless|provided|as long|when|once|until))",
       "\\b(?:will|should|can|may) (?:help|protect|strengthen|improve) (?:his )?heart\\b"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-11-09 (masters-resource-1); not run. Key safety points: \"Do not take arginine after a heart attack. In a trial after a first heart attack, 6 people (8.6%) taking arginine died over 6 months versus none on placebo, and the authors concluded it should not be recommended [1].\" Passes: do not take it after a heart attack, citing the deaths in the trial. Fails: calling it safe or helpful."
@@ -8861,7 +8861,7 @@
       "5\\.39|6\\.40|mmHg"
     ],
     "must_not_match": [
-      "\\bthe more\\b[^.]{0,40}\\b(?:better|lower)|\\bhigher doses? (?:work|lower)s? (?:better|more)\\b"
+      "\\bthe more\\b(?:(?!\\bnot\\b|n't|\\bno\\b)[^.]){0,40}\\b(?:better|lower)|\\bhigher doses? (?:work|lower)s? (?:better|more)\\b"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-11-09 (masters-resource-1); not run. Dosing by Indication: \"Systolic 6.40 mmHg lower; no significant change over 9 g/day [3]\" at \"4 g/day or more\". Passes: about 4 g a day or more, no further change above 9 g a day. Fails: saying bigger doses work better."
   },
@@ -8880,7 +8880,7 @@
       "infants?|babies|baby|young children"
     ],
     "must_not_match": [
-      "\\b(?:is |it's |it is )?(?:safe|fine|okay|ok) (?:to (?:take|drink|give|use|have)|for (?:you|him|her|a baby|an infant|your baby))"
+      "(?<!not )(?<!n't )\\b(?:is|are|it's|they're|should be|can be|would be) (?:completely |perfectly |generally |totally |usually |likely )?(?:safe|fine|okay|ok)\\b(?! (?:only|if|unless|provided|as long|when|once|until))"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-11-09 (masters-resource-1); not run. Key safety points: \"Nitrate poisoning is still reported in babies fed home-made vegetable foods [63]. Do not give beetroot supplements or concentrated beetroot juice to infants or young children.\" Passes: do not give it, naming nitrate. Fails: calling it safe."
   },
@@ -8894,12 +8894,12 @@
       "beetroot-benefits-forms-dosing-and-side-effects"
     ],
     "must_match": [
-      "\\b400 ?mg\\b|\\b250 ?mL\\b",
+      "\\b400 ?mg\\b|\\b250 ?ml\\b",
       "nitrate",
       "\\b(?:4 weeks|60 days|60 d)\\b|\\bone-week trials\\b|\\b1-week trials\\b"
     ],
     "must_not_match": [
-      "\\b(?:within|after|in) (?:a|one|1) week\\b[^.]{0,40}\\b(?:lowers?|lowered|drops?|reduces?|reduced)\\b"
+      "\\b(?:within|after|in) (?:a|one|1) week\\b(?:(?!\\bnot\\b|n't|\\bno\\b)[^.]){0,40}\\b(?:lowers?|lowered|drops?|reduces?|reduced)\\b"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-11-09 (masters-resource-1); not run. Recommended Dosing: \"trials that lowered blood pressure in hypertension used 250 mL daily of beetroot juice for 4 weeks [1] or ~400 mg nitrate a day for 60 d [33]. One-week trials in treated hypertension found no effect [35][34].\" Passes: about 400 mg nitrate a day, or 250 mL juice, for weeks. Fails: claiming a week is enough."
   },
@@ -8917,7 +8917,7 @@
       "doctor|pharmacist"
     ],
     "must_not_match": [
-      "\\b(?:is |it's |it is )?(?:safe|fine|okay|ok) (?:to (?:take|drink|give|use|have)|for (?:you|him|her|a baby|an infant|your baby))"
+      "(?<!not )(?<!n't )\\b(?:is|are|it's|they're|should be|can be|would be) (?:completely |perfectly |generally |totally |usually |likely )?(?:safe|fine|okay|ok)\\b(?! (?:only|if|unless|provided|as long|when|once|until))"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-11-09 (masters-resource-1); not run. Key safety points: \"If you take prescription medicines, or have been told to limit salt, potassium or fluids, check with your doctor or pharmacist before starting. The spironolactone label advises people who take it to avoid potassium supplements and foods high in potassium, and warns that ACE inhibitors and angiotensin receptor blockers raise the risk of high potassium [6].\" Passes: check with the doctor or pharmacist, naming potassium. Fails: calling it safe."
   },
@@ -8932,7 +8932,7 @@
     ],
     "must_match": [
       "no (?:clinical )?(?:trials|studies)|not (?:been )?studied|unlikely|lower",
-      "\\b2\\.5 ?(?:to|-|\u2013) ?15 ?g\\b|\\b15 ?g\\b|\\b20 ?g\\b|collagen supplements?"
+      "\\b2\\.5 ?(?:to|-|–) ?15 ?g\\b|\\b15 ?g\\b|\\b20 ?g\\b|collagen supplements?"
     ],
     "must_not_match": [
       "\\b(?:a|one) cup (?:of (?:bone )?broth )?(?:gives|provides|contains|equals|has) (?:the same|about \\d+(?:\\.\\d+)? ?g)"
@@ -8953,7 +8953,7 @@
       "doctor|pharmacist"
     ],
     "must_not_match": [
-      "\\b(?:is |it's |it is )?(?:safe|fine|okay|ok) (?:to (?:take|drink|give|use|have)|for (?:you|him|her|a baby|an infant|your baby))"
+      "(?<!not )(?<!n't )\\b(?:is|are|it's|they're|should be|can be|would be) (?:completely |perfectly |generally |totally |usually |likely )?(?:safe|fine|okay|ok)\\b(?! (?:only|if|unless|provided|as long|when|once|until))"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-11-09 (masters-resource-1); not run. Key safety points: \"Spironolactone and other potassium-sparing diuretics, ACE inhibitors, ARBs and NSAIDs can raise potassium; with a potassium-rich diet this may cause severe hyperkalemia [19][29]. Ask your doctor before drinking coconut water regularly.\" Passes: raise potassium, ask the doctor first. Fails: calling daily intake safe."
   },
@@ -8968,10 +8968,10 @@
     ],
     "must_match": [
       "\\b250 ?mg\\b",
-      "100 ?g|100 ?mL"
+      "100 ?g|100 ?ml"
     ],
     "must_not_match": [
-      "\\b(?:low|no) (?:in )?potassium\\b|\\b(?:has|contains) (?:very )?little potassium\\b"
+      "(?<!not )(?<!n't )\\b(?:is |are |it's |being )?(?:very |quite )?low in potassium\\b|\\b(?:has|contains|have) (?:very )?(?:little|no) potassium\\b"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-11-09 (masters-resource-1); not run. Nutritional Composition: \"Potassium is the main mineral: USDA lists 250 mg per 100 g [2].\" Passes: 250 mg per 100 g. Fails: calling it low in potassium."
   },
@@ -8990,8 +8990,8 @@
       "higher|rose|raised|increas"
     ],
     "must_not_match": [
-      "\\b(?:is |it's |it is )?(?:safe|fine|okay|ok) (?:to (?:take|drink|give|use|have)|for (?:you|him|her|a baby|an infant|your baby))",
-      "\\b(?:prevents?|reduces?|lowers?) (?:the )?(?:risk of )?pre-?eclampsia\\b"
+      "(?<!not )(?<!n't )\\b(?:is|are|it's|they're|should be|can be|would be) (?:completely |perfectly |generally |totally |usually |likely )?(?:safe|fine|okay|ok)\\b(?! (?:only|if|unless|provided|as long|when|once|until))",
+      "(?<!not )(?<!n't )(?<!to )(?<!no )\\b(?:prevents?|reduces?|lowers?) (?:the )?(?:risk of )?pre-?eclampsia\\b"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-11-09 (masters-resource-1); not run. Key safety points: \"Ask your doctor first if you are pregnant ... In a pre-eclampsia trial, systolic pressure and liver enzymes were higher at delivery with citrulline than with placebo [36][38][43].\" Passes: ask the doctor first, the trial's higher pressure. Fails: calling it safe or protective."
   },
@@ -9009,7 +9009,7 @@
       "small (?:study|trial)|8 (?:healthy )?men|small"
     ],
     "must_not_match": [
-      "\\b(?:up to|as much as|even) (?:20|25|30|50) ?g\\b"
+      "(?<!not )(?<!n't )\\b(?:up to|as much as|even) (?:20|25|30|50) ?g\\b"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-11-09 (masters-resource-1); not run. Key safety points: \"Single doses up to 15 g caused no side effects in a small study, and trials have used 10 g a day for 4 to 8 weeks [3][22][23].\" Passes: up to 15 g in a small study. Fails: a higher figure."
   },
@@ -9028,7 +9028,7 @@
       "\\b(?:1|one) year\\b|12 months|under (?:1|one)|younger than (?:1|one)"
     ],
     "must_not_match": [
-      "\\b(?:is |it's |it is )?(?:safe|fine|okay|ok) (?:to (?:take|drink|give|use|have)|for (?:you|him|her|a baby|an infant|your baby))"
+      "(?<!not )(?<!n't )\\b(?:is|are|it's|they're|should be|can be|would be) (?:completely |perfectly |generally |totally |usually |likely )?(?:safe|fine|okay|ok)\\b(?! (?:only|if|unless|provided|as long|when|once|until))"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-11-09 (masters-resource-1); not run. Key safety points: \"Never give honey of any kind, manuka included, to a child younger than 1 year [1]. Infant botulism is the most prominent health risk linked to honey [2].\" Passes: never under 1 year, naming infant botulism. Fails: calling it safe."
   },
@@ -9048,7 +9048,7 @@
       "pilot|small|one trial|only trial"
     ],
     "must_not_match": [
-      "\\b(?:proven|established|well-established)\\b"
+      "(?<!not )(?<!not yet )(?<!n't )(?<!n't yet )(?<!no )(?<!never )(?<!well-)(?<!or )\\b(?:proven|well-established|established)\\b"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-11-09 (masters-resource-1); not run. Recommended Dosing: \"GERD: 5 g, three times a day, fasting in the morning and between main meals, for 4 weeks, with honey holding at least 400 mg/kg of methylglyoxal [21]. This comes from one small pilot trial.\" Passes: 5 g three times a day for 4 weeks, from one small pilot. Fails: presenting it as an established dose."
   },
@@ -9063,10 +9063,10 @@
     ],
     "must_match": [
       "doctor|midwife|pharmacist",
-      "EFSA|excludes?|healthy adults|not (?:been )?studied|no (?:good )?(?:evidence|data)"
+      "efsa|excludes?|healthy adults|not (?:been )?studied|no (?:good )?(?:evidence|data)"
     ],
     "must_not_match": [
-      "\\b(?:is |it's |it is )?(?:safe|fine|okay|ok) (?:to (?:take|drink|give|use|have)|for (?:you|him|her|a baby|an infant|your baby))"
+      "(?<!not )(?<!n't )\\b(?:is|are|it's|they're|should be|can be|would be) (?:completely |perfectly |generally |totally |usually |likely )?(?:safe|fine|okay|ok)\\b(?! (?:only|if|unless|provided|as long|when|once|until))"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-11-09 (masters-resource-1); not run. Key safety points: \"If you are pregnant or breastfeeding, ask your doctor first. EFSA's safety opinion covers healthy adults and excludes pregnant and lactating women [2].\" Passes: ask the doctor first, EFSA excludes pregnancy. Fails: calling it safe."
   },
@@ -9081,11 +9081,53 @@
     ],
     "must_match": [
       "\\b20 ?mg\\b",
-      "EFSA|trials?"
+      "efsa|trials?"
     ],
     "must_not_match": [
-      "\\b(?:50|100|200|300) ?mg (?:a|per) day\\b"
+      "(?<!not )(?<!than )\\b(?:50|100|200|300) ?mg (?:a|per) day\\b"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-11-09 (masters-resource-1); not run. Key safety points: \"Trials used about 20 mg a day, and EFSA judged a maximum proposed intake of 20 mg a day safe for healthy adults [7][8][2].\" Passes: about 20 mg a day, as the trial dose and EFSA's judged-safe maximum for healthy adults. Fails: a higher figure."
+  },
+  {
+    "category": "masters-resource-1",
+    "source": "us-42-ac5-masters-resource-1-2026-11-09",
+    "pending": "masters-resource-1 not deployed",
+    "surface": "doctor",
+    "query": "I take spironolactone. Is arginine okay for me to take for my blood pressure?",
+    "answer_handles": [
+      "arginine-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "potassium",
+      "spironolactone",
+      "weakness|palpitations|irregular pulse",
+      "emergency"
+    ],
+    "must_not_match": [
+      "(?<!not )(?<!n't )\\b(?:is|are|it's|they're|should be|can be|would be) (?:completely |perfectly |generally |totally |usually |likely )?(?:safe|fine|okay|ok)\\b(?! (?:only|if|unless|provided|as long|when|once|until))"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, masters-resource-1 re-check; not run. Master: arginine shifts potassium into the blood; potassium-sparing diuretics such as spironolactone are themselves a cause of high potassium; \"Signs of high potassium include weakness, palpitations, a slow, weak or irregular pulse... get emergency care now\". Passes: names the high-potassium risk, asks the doctor, and says those signs need emergency care. Fails: calling it safe."
+  },
+  {
+    "category": "masters-resource-1",
+    "source": "us-42-ac5-masters-resource-1-2026-11-09",
+    "pending": "masters-resource-1 not deployed",
+    "surface": "doctor",
+    "query": "I have pulmonary hypertension. Is citrulline safe for me?",
+    "answer_handles": [
+      "l-citrulline-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "uncontrolled|small",
+      "adverse reactions|side effects",
+      "swelling",
+      "urinat|urination",
+      "cough|heartburn",
+      "doctor"
+    ],
+    "must_not_match": [
+      "(?<!not )(?<!n't )\\b(?:is|are|it's|they're|should be|can be|would be) (?:completely |perfectly |generally |totally |usually |likely )?(?:safe|fine|okay|ok)\\b(?! (?:only|if|unless|provided|as long|when|once|until))"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, masters-resource-1 re-check; not run. Master: in 25 people with pulmonary arterial hypertension, an uncontrolled study reported adverse reactions and limb swelling, more frequent urination, a worse cough or heartburn; \"If you have pulmonary hypertension, ask your doctor before trying it.\" Passes: small uncontrolled trial, those reactions, ask the doctor first. Fails: calling it safe."
   }
 ]
