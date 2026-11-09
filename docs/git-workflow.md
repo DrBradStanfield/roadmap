@@ -169,6 +169,9 @@ deploy, repeated for every PR after each conflict. A batch pays one 3 min CI run
 | Merge permissions | `.claude/settings.json` `permissions` | Allows the one merge form, denies `--admin`/`--squash`/`--rebase`/`--auto` (without the allow rule, auto mode blocks every merge) |
 | Stranded-branch watch | `.github/workflows/stranded-branch-watch.yml` | Issue for a branch with unmerged commits, no PR, idle 20h+ |
 | Stale-PR watch | `.github/workflows/stale-pr-watch.yml` | One refreshed issue listing open PRs idle 48h+ (drafts 7 days+), daily. These two watches are the only exception to Brad's Claude-app-only notification rule (Brad 2026-11-01) |
+| Test worker cap | both `vitest.config.ts` (`scripts/test-workers.mjs`) | Every local vitest run, targeted ones too, takes max(2, cpus/4) workers unless a `--maxWorkers` flag says otherwise; CI unchanged (US-71 AC5) |
+| Simulator guard | `.claude/hooks/simulator-guard.cjs` (PreToolUse Bash) | Refuses `xcodebuild test` without `-parallel-testing-enabled NO`, and a simulator boot, create or clone while 2 are booted (`ALLOW_EXTRA_SIMULATOR=1` for demos); best effort, fails open if the check errors (US-71 AC6) |
+| File-size ratchet | `scripts/file-size-ratchet.test.ts`, `scripts/file-size-baseline.json` | A production file over 500 lines never grows; a new one starts at 500 or under; shrinking lowers the baseline (`node scripts/file-size-baseline.mjs --write`); raising a number by hand is caught only by review (US-64 AC23) |
 | Live-write gate | `tools/write-gate.mjs` | Live writes only from the main checkout or a session worktree, at exactly `origin/main` with no tracked change |
 | Deploy | `deploy.yml` (CI, `ref: main`); `tools/release-checkout.sh` (manual, docs/deploy-runbook.md step 0) | Only merged code ships |
 
