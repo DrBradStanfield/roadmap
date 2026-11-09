@@ -5,11 +5,9 @@
 // person button. The form's parts come from InputPanel (`FormSlots`); the plan's
 // from usePlanView.
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { isLabArchiveDocument, TOPICS, type ApiMeasurement, type StatTile, type TopicId } from '@roadmap/health-core';
+import { byNewestDocument, DOCUMENT_TYPE_LABELS, isLabArchiveDocument, TOPICS, type ApiMeasurement, type StatTile, type TopicId } from '@roadmap/health-core';
 import { DocumentLightbox } from './DocumentLightbox';
-// Newest first, the iPhone's order too (Brad 2026-11-09, US-14 AC8).
-import { byNewestDocument } from '@roadmap/health-core';
-import { DOCUMENT_TYPE_LABELS, formatDocumentDate } from '../lib/document-format';
+import { formatDocumentDate } from '../lib/document-format';
 import type { ApiDocument, ApiLabValue } from '../lib/api-types';
 import { revealAndFocus, stickyTop } from '../lib/reveal';
 import { trackProductEvent } from '../lib/server-api';

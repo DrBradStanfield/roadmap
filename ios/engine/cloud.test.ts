@@ -1283,6 +1283,18 @@ describe('documents from "Add medical records" (US-52 AC13d)', () => {
     await expect(engine.documentOriginal(row.id)).rejects.toThrow('not open');
   });
 
+  it('US-73 AC12 (review R5): a document deleted on another device no longer reads its original', async () => {
+    const { dropbox, engine, erase } = await opened();
+    const answer = JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1')) as Answer;
+    const [row] = (JSON.parse(answer.record) as RoadmapFile).documents;
+    expect(await engine.cloudFlush()).toBe('saved');
+    const elsewhere = dropbox.record;
+    elsewhere.documents[0].deleted = true;
+    dropbox.put(elsewhere);
+    expect(await engine.cloudRefresh()).toBe('changed');
+    await expect(engine.documentOriginal(row.id)).rejects.toThrow('no original');
+  });
+
   it('refuses a document save for a lab report, and a cloud save with no session open', async () => {
     const { engine } = await phone(new FakeDropbox());
     const record = engine.newRecordJson(NOW, 'ios-1', 'en-NZ', 'Pacific/Auckland');

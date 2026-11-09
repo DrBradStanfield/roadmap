@@ -14,7 +14,7 @@
  */
 import type { DocumentType } from './validation';
 import { isCalendarDay } from './measurement-history';
-import { localDay } from './merge';
+import { localDay, stampInstant } from './merge';
 
 /**
  * Title of the row the website's upload writes for a lab PDF it archives
@@ -47,18 +47,27 @@ export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
 /**
  * The Documents list's order, on the web and the iPhone (Brad 2026-11-09; US-14 AC8,
  * US-73 AC12): the newest document date first, an undated one last, and on one date
- * the later filed first. A comparator for `sort` on a copy.
+ * the later filed first, by instant (`stampInstant`: offsets and precision never reorder
+ * them); a filing stamp that is absent or unreadable counts as the oldest. A legacy row's
+ * missing date is undated. A comparator for `sort` on a copy.
  */
 export function byNewestDocument(
-  a: { documentDate: string | null; createdAt?: string | null },
-  b: { documentDate: string | null; createdAt?: string | null },
+  a: { documentDate?: string | null; createdAt?: string | null },
+  b: { documentDate?: string | null; createdAt?: string | null },
 ): number {
-  if (a.documentDate !== b.documentDate) {
-    if (a.documentDate === null) return 1;
-    if (b.documentDate === null) return -1;
-    return b.documentDate.localeCompare(a.documentDate);
+  const [dayA, dayB] = [a.documentDate || null, b.documentDate || null];
+  if (dayA !== dayB) {
+    if (dayA === null) return 1;
+    if (dayB === null) return -1;
+    return dayB.localeCompare(dayA);
   }
-  return (b.createdAt ?? '').localeCompare(a.createdAt ?? '');
+  const [filedA, filedB] = [filedAt(a.createdAt), filedAt(b.createdAt)];
+  return filedA === filedB ? 0 : filedB > filedA ? 1 : -1;
+}
+
+function filedAt(stamp: string | null | undefined): number {
+  const at = stampInstant(stamp);
+  return Number.isNaN(at) ? -Infinity : at;
 }
 
 /** Longest file name we'll generate (excluding folder), extension included. */

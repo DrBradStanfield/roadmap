@@ -44,10 +44,26 @@ final class DocumentsTests: XCTestCase {
         XCTAssertEqual(shelf.others[0].dayText, "Date unknown")
     }
 
-    /// An older engine sends no `documents`; a malformed list reads as none, never a blank My data.
-    func testAMissingOrMalformedListNeverBlanksMyData_US73_AC12() throws {
-        let decoded = try JSONDecoder().decode(Lenient<MyData.Documents>.self, from: Data(#"{"scans": 3}"#.utf8))
-        XCTAssertNil(decoded.value)
+    /// An older engine sends no `documents`; a malformed list reads as empty, and a row this app
+    /// cannot read (no title, a day that is no text) drops only itself (review R1).
+    func testAMalformedListOrRowNeverHidesTheOthers_US73_AC12() throws {
+        let decoded = try JSONDecoder().decode(MyData.Documents.self, from: Data(#"{"scans": 3}"#.utf8))
+        XCTAssertTrue(decoded.isEmpty)
+        let good = #"{"id":"good","title":"Letter","typeLabel":"Clinic Letter","day":"2026-09-14","content":"x","sourceFileName":null,"original":null}"#
+        let untitled = #"{"id":"untitled","typeLabel":"Clinic Letter","day":null,"content":"","sourceFileName":null,"original":null}"#
+        let badDay = #"{"id":"bad","title":"T","typeLabel":"Document","day":5,"content":"","sourceFileName":null,"original":null}"#
+        let mixed = try JSONDecoder().decode(MyData.Documents.self, from: Data("{\"scans\":[\(badDay)],\"others\":[\(untitled),\(good)]}".utf8))
+        XCTAssertEqual(mixed.scans.map(\.id), [])
+        XCTAssertEqual(mixed.others.map(\.id), ["good"])
+    }
+
+    /// Review R1: a legacy row with no title or date, beside valid measurements, still draws My data
+    /// and the other documents, through the engine's own screen.
+    func testALegacyRowDrawsBesideTheOthers_US73_AC12() throws {
+        let shelf = try XCTUnwrap(screen([["id": "legacy", "type": "clinic_letter"], Self.document("valid", date: "2026-09-14")]).documents?.value)
+        XCTAssertEqual(shelf.others.map(\.id), ["valid", "legacy"])
+        XCTAssertEqual(shelf.others[1].title, "")
+        XCTAssertEqual(shelf.others[1].dayText, "Date unknown")
     }
 
     func testThePageDrawsTheWebsMarkdownBlocks_US73_AC12() {
@@ -90,15 +106,45 @@ final class DocumentsTests: XCTestCase {
         XCTAssertTrue(text.runs.allSatisfy { $0.link == nil })
     }
 
-    /// Only passive kinds open in Quick Look; an SVG or a web page can carry script (US-14 AC3).
-    func testOnlyAPDFPhotoOrPlainTextOpensInQuickLook_US73_AC12() {
-        let original = { (name: String, type: String) in MyData.Document.Original(name: name, mimeType: type) }
-        XCTAssertTrue(DocumentPage.previewable(original("2026-09-14 Letter.pdf", "application/pdf")))
-        XCTAssertTrue(DocumentPage.previewable(original("2026-05-01 Chest X-ray.jpg", "image/jpeg")))
-        XCTAssertTrue(DocumentPage.previewable(original("Scan", "image/png")))
-        XCTAssertFalse(DocumentPage.previewable(original("Diagram.svg", "image/svg+xml")))
-        XCTAssertFalse(DocumentPage.previewable(original("Letter.html", "text/html")))
-        XCTAssertFalse(DocumentPage.previewable(original("Notes.docx", "")))
+    /// Only the web's passive kinds open in Quick Look (file-kinds.ts VIEWABLE_TYPES, US-14 AC3): by
+    /// the extension, a stated type agreeing; a name with none takes its type's (review R4).
+    func testOnlyTheWebsPassiveKindsOpenInQuickLook_US73_AC12() {
+        let name = { (file: String, type: String) in DocumentPage.previewName(MyData.Document.Original(name: file, mimeType: type)) }
+        XCTAssertEqual(name("2026-09-14 Letter.pdf", "application/pdf"), "2026-09-14 Letter.pdf")
+        XCTAssertEqual(name("2026-05-01 Chest X-ray.jpg", "image/jpeg"), "2026-05-01 Chest X-ray.jpg")
+        XCTAssertEqual(name("Scan.HEIC", ""), "Scan.HEIC")
+        XCTAssertEqual(name("Scan", "image/png"), "Scan.png")
+        XCTAssertEqual(name("Letter.pdf", "application/octet-stream"), "Letter.pdf")
+        XCTAssertNil(name("Diagram.svg", "image/svg+xml"))
+        XCTAssertNil(name("Letter.html", "text/html"))
+        XCTAssertNil(name("Notes.txt", "text/plain"))
+        XCTAssertNil(name("Notes.docx", ""))
+        XCTAssertNil(name("Letter", ""))
+        // A passive name over a stated type that is not its own does not open.
+        XCTAssertNil(name("Letter.pdf", "text/html"))
+    }
+
+    /// Review R2: leaving the page while the original is read writes nothing.
+    func testLeavingDuringTheReadWritesNothing_US73_AC12() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Originals \(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let original = MyData.Document.Original(name: "Letter.pdf", mimeType: "application/pdf")
+        let read = Task { @MainActor in
+            await DocumentPage.fetch(original, in: folder) {
+                try? await Task.sleep(for: .seconds(2))
+                return .file(Data("%PDF".utf8))
+            }
+        }
+        read.cancel()
+        let outcome = await read.value
+        XCTAssertNil(outcome)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.path))
+        // Not left: the copy is written, and a sweep removes every copy.
+        let kept = await DocumentPage.fetch(original, in: folder) { .file(Data("%PDF".utf8)) }
+        guard case .preview(let url)? = kept else { return XCTFail("no preview") }
+        XCTAssertEqual(try Data(contentsOf: url), Data("%PDF".utf8))
+        DocumentPage.sweep(folder)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.path))
     }
 
     /// The original is read through the engine's optional door, which this app's engine has: with

@@ -25,7 +25,9 @@ struct DocumentRow: View {
 struct DocumentPage: View {
     let store: RecordStore
     let document: MyData.Document
-    @State private var opening = false
+    /// The read of the original under way: cancelled when the page goes, so nothing is written
+    /// or shown after (review R2).
+    @State private var reading: Task<Void, Never>?
     /// The original, written to a temporary file for Quick Look; removed when the preview closes.
     @State private var preview: URL?
     @State private var problem: String?
@@ -44,12 +46,12 @@ struct DocumentPage: View {
                         Button(action: openOriginal) {
                             HStack(spacing: 8) {
                                 Label("View original file", systemImage: "doc.viewfinder")
-                                if opening { ProgressView() }
+                                if reading != nil { ProgressView() }
                             }
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
-                        .disabled(opening)
+                        .disabled(reading != nil)
                         .padding(.top, 6)
                     }
                 }
@@ -68,46 +70,86 @@ struct DocumentPage: View {
         .messageAlert("Original not opened", $problem)
         .quickLookPreview($preview)
         .onChange(of: preview) { old, _ in Self.remove(old) }
-        .onDisappear { Self.remove(preview) }
+        // Copies a closed app left behind go when a page opens with none of its own (review R2).
+        .onAppear { if preview == nil, reading == nil { Self.sweep() } }
+        .onDisappear { reading?.cancel() }
     }
 
     private func openOriginal() {
         guard let original = document.original else { return }
-        guard Self.previewable(original) else {
-            problem = "This kind of file cannot be shown on the iPhone. Open it from your cloud storage."
-            return
-        }
         problem = nil
-        opening = true
-        Task {
-            defer { opening = false }
-            switch await store.original(of: document.id) {
-            case .file(let data):
-                do { preview = try Self.write(data, named: original.name) } catch { problem = Self.couldNotLoad }
-            case .noCloud: problem = "The original is kept in your cloud storage. Connect it in Sync to open it here."
-            case .failed: problem = Self.couldNotLoad
+        let id = document.id
+        reading = Task {
+            defer { reading = nil }
+            let opened = await Self.fetch(original) { [store] in await store.original(of: id) }
+            switch opened {
+            case .preview(let url)?:
+                if Task.isCancelled { Self.remove(url) } else { preview = url }
+            case .problem(let words)?: problem = words
+            case nil: break
             }
+        }
+    }
+
+    /// What tapping "View original file" comes to.
+    enum Opened: Equatable {
+        case preview(URL)
+        case problem(String)
+    }
+
+    /// Reads the original and writes it for Quick Look. Nil when the page went away during the
+    /// read (its task cancelled): nothing is written (review R2).
+    static func fetch(_ original: MyData.Document.Original, in folder: URL = originals,
+                      read: () async -> RecordStore.Original) async -> Opened? {
+        guard let name = previewName(original) else {
+            return .problem("This kind of file cannot be shown on the iPhone. Open it from your cloud storage.")
+        }
+        let result = await read()
+        guard !Task.isCancelled else { return nil }
+        switch result {
+        case .file(let data):
+            guard let url = try? write(data, named: name, in: folder) else { return .problem(couldNotLoad) }
+            return .preview(url)
+        case .noCloud: return .problem("The original is kept in your cloud storage. Connect it in Sync to open it here.")
+        case .failed: return .problem(couldNotLoad)
         }
     }
 
     /// The web's words for an original that would not load (DocumentLightbox).
     static let couldNotLoad = "Could not load the original file from your cloud storage."
 
-    /// A passive kind Quick Look draws without running anything: a PDF, a photo or plain text.
-    /// Never an SVG or a web page, which can carry script (the web's rule, US-14 AC3).
-    static func previewable(_ original: MyData.Document.Original) -> Bool {
-        let named = UTType(filenameExtension: (original.name as NSString).pathExtension)
-        guard let type = named ?? UTType(mimeType: original.mimeType), !type.conforms(to: .svg), !type.conforms(to: .html) else { return false }
-        return type.conforms(to: .pdf) || type.conforms(to: .image) || type.conforms(to: .plainText)
+    /// The web's passive kinds (file-kinds.ts VIEWABLE_TYPES, US-14 AC3): only these open, by the
+    /// file's extension, never an SVG or a web page, which can carry script.
+    static let viewableExtensions: Set<String> = ["pdf", "png", "jpg", "jpeg", "heic"]
+
+    /// The name Quick Look reads the original under, or nil when it may not open. As on the web,
+    /// the extension must be a passive kind and a stated type must agree with it; a name with no
+    /// extension takes its type's own (review R4).
+    static func previewName(_ original: MyData.Document.Original) -> String? {
+        let file = (original.name as NSString).lastPathComponent
+        let stated = original.mimeType.split(separator: ";").first.map { $0.trimmingCharacters(in: .whitespaces).lowercased() } ?? ""
+        let statedType = stated.isEmpty || stated == "application/octet-stream" ? nil : UTType(mimeType: stated)
+        var ext = (file as NSString).pathExtension.lowercased()
+        var name = file
+        if ext.isEmpty, let own = statedType?.preferredFilenameExtension?.lowercased() {
+            ext = own
+            name = "\(file.isEmpty ? "document" : file).\(own)"
+        }
+        guard viewableExtensions.contains(ext) else { return nil }
+        if let statedType, statedType != UTType(filenameExtension: ext) { return nil }
+        return name
     }
 
-    /// The bytes in a folder of their own under the app's temporary directory, under the file's own
-    /// name (Quick Look reads the kind from it), protected while the phone is locked.
-    static func write(_ data: Data, named name: String) throws -> URL {
-        let folder = FileManager.default.temporaryDirectory.appending(path: "originals/\(UUID().uuidString)", directoryHint: .isDirectory)
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    /// Where the copies Quick Look reads live, each in a folder of its own.
+    static var originals: URL { FileManager.default.temporaryDirectory.appending(path: "originals", directoryHint: .isDirectory) }
+
+    /// The bytes in a folder of their own under `folder`, under the file's own name (Quick Look
+    /// reads the kind from it), protected while the phone is locked.
+    static func write(_ data: Data, named name: String, in folder: URL = originals) throws -> URL {
+        let own = folder.appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: own, withIntermediateDirectories: true)
         let file = (name as NSString).lastPathComponent
-        let url = folder.appending(path: file.isEmpty ? "document" : file)
+        let url = own.appending(path: file.isEmpty ? "document" : file)
         try data.write(to: url, options: [.atomic, .completeFileProtection])
         return url
     }
@@ -116,6 +158,11 @@ struct DocumentPage: View {
     private static func remove(_ url: URL?) {
         guard let url else { return }
         try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+    }
+
+    /// Every copy left in `folder`.
+    static func sweep(_ folder: URL = originals) {
+        try? FileManager.default.removeItem(at: folder)
     }
 }
 

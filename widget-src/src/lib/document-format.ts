@@ -1,5 +1,3 @@
-export { DOCUMENT_TYPE_LABELS } from '@roadmap/health-core';
-
 /** Format a YYYY-MM-DD date string for display. */
 export function formatDocumentDate(dateStr: string | null): string {
   if (!dateStr) return 'Date unknown';

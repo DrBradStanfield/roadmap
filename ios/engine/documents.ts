@@ -4,7 +4,7 @@
 // archive row (its values are the record), scan results apart from the rest.
 import { byNewestDocument, DOCUMENT_TYPE_LABELS } from '../../packages/health-core/src/document-path';
 import { documentView, isLabArchiveDocument, type DocumentView } from '../../packages/health-core/src/document-save';
-import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import type { FileDocument, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 
 /** One document as its row and its page show it. */
 export interface ShownDocument {
@@ -29,12 +29,23 @@ export interface DocumentShelf {
 
 export function documentShelf(file: RoadmapFile): DocumentShelf {
   const live = file.documents
-    .filter((d) => !d.deleted)
+    .filter((d) => !d.deleted && typeof d.id === 'string')
+    .map(complete)
     .map((d) => ({ ...documentView(d), mimeType: d.mimeType }))
     .filter((d) => !isLabArchiveDocument(d))
     .sort(byNewestDocument);
   const scan = (d: { documentType: string }) => d.documentType === 'scan_result';
   return { scans: live.filter(scan).map(shownDocument), others: live.filter((d) => !scan(d)).map(shownDocument) };
+}
+
+/** A legacy row may lack fields the schema now names (review R1): read as the web's
+ *  defaults, so one old row never breaks the screen or blanks the list. The stored row
+ *  is not changed. */
+function complete(d: FileDocument): FileDocument {
+  return {
+    ...d, title: d.title ?? '', type: d.type ?? 'other', date: d.date ?? null, extractedText: d.extractedText ?? '',
+    fileRef: d.fileRef ?? '', mimeType: d.mimeType ?? '', addedAt: d.addedAt ?? '',
+  };
 }
 
 function shownDocument(d: DocumentView & { mimeType: string }): ShownDocument {

@@ -126,10 +126,19 @@ struct MyData: Decodable {
 
     /// The engine's `documentShelf` (ios/engine/documents.ts): scan results, then letters and
     /// every other document, each newest first; never a lab report's archive row.
+    /// Read row by row: a row this app cannot read drops only itself (review R1).
     struct Documents: Decodable, Sendable {
         let scans: [Document]
         let others: [Document]
         var isEmpty: Bool { scans.isEmpty && others.isEmpty }
+
+        private enum CodingKeys: String, CodingKey { case scans, others }
+
+        init(from decoder: Decoder) throws {
+            let list = try decoder.container(keyedBy: CodingKeys.self)
+            scans = (try? list.decode([Lenient<Document>].self, forKey: .scans))?.compactMap(\.value) ?? []
+            others = (try? list.decode([Lenient<Document>].self, forKey: .others))?.compactMap(\.value) ?? []
+        }
     }
 
     struct Document: Decodable, Sendable, Identifiable, Hashable {

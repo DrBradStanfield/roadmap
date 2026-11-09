@@ -59,6 +59,25 @@ describe('My health documents (US-73 AC12)', () => {
     expect(others[1]).toMatchObject({ original: null, sourceFileName: null });
   });
 
+  // Review R1 (Codex, adversary): a legacy row missing fields the schema now names never breaks
+  // the screen or hides the other rows; each missing field reads as the web's default.
+  it('a legacy row with no title, date, text or file still draws beside valid measurements and the other rows', () => {
+    const legacy = { id: 'legacy', type: 'clinic_letter' } as unknown as FileDocument;
+    const untyped = { id: 'untyped', title: 'Old note', date: '2024-01-01' } as unknown as FileDocument;
+    const record = {
+      ...newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+      measurements: [{ id: 'w1', metricType: 'weight', value: 80, recordedAt: '2026-10-01', createdAt: '2026-10-01T08:00:00Z', source: 'manual', status: 'active', correctsId: null }],
+      documents: [legacy, untyped, doc('valid', { date: '2026-09-14' })],
+    };
+    const screen = JSON.parse(screenJson(JSON.stringify(record), NOW, 'phone', '{}')) as {
+      myData: { vitals: Array<{ metric: string; latest: { value: string } | null }>; documents: { others: Array<Record<string, unknown>> } };
+    };
+    expect(screen.myData.vitals.find((row) => row.metric === 'weight')?.latest?.value).toBe('80.0');
+    expect(screen.myData.documents.others.map((d) => d.id)).toEqual(['valid', 'untyped', 'legacy']);
+    expect(screen.myData.documents.others[2]).toEqual({ id: 'legacy', title: '', typeLabel: 'Clinic Letter', day: null, content: '', sourceFileName: null, original: null });
+    expect(screen.myData.documents.others[1]).toMatchObject({ title: 'Old note', typeLabel: 'Document', content: '' });
+  });
+
   it('an empty record lists none', () => {
     expect(shelf([])).toEqual({ scans: [], others: [] });
   });
