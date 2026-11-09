@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act } from 'react';
 import { render, renderHook, cleanup } from '@testing-library/react';
 import { sendMessage } from '../lib/chat-api';
+import { Sentry } from '../lib/sentry';
 import type { SyncMessage } from '../lib/chat-sync';
 
 const sync = vi.hoisted(() => ({ handler: undefined as undefined | ((m: SyncMessage) => void) }));
@@ -24,6 +25,7 @@ vi.mock('../lib/chat-api', () => ({
   loadConversation: vi.fn(), deleteConversation: vi.fn(),
 }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
+vi.mock('../lib/sentry', () => ({ Sentry: { captureMessage: vi.fn(), captureException: vi.fn() } }));
 vi.mock('../lib/observe-visibility', () => ({ observeVisibility: () => () => {} }));
 vi.mock('../components/FeedbackForm', () => ({ FeedbackForm: () => null }));
 vi.mock('../components/ChatKeyGate', () => ({ ChatKeyGate: () => null }));
@@ -158,5 +160,6 @@ describe('US-15 AC17b: this tab\'s own send ends only with its own reply', () =>
     expect(hook.result.current.state.inputText).toBe('And LDL?');
     expect(hook.result.current.state.error).toBeTruthy();
     expect(hook.result.current.state.messages).toEqual([]);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('Chat context read failed', { tags: { feature: 'chat' } });
   });
 });

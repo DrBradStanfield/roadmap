@@ -4,6 +4,7 @@
  * UI-only state (isExpanded, showThreads, etc.) stays in the consuming component.
  */
 
+import { Sentry } from '../lib/sentry';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   listConversations,
@@ -324,7 +325,11 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       messagesRef.current,
       handleDelta,
       Boolean(onProposeEditRef.current),
-    ))().catch(() => ({ result: null, error: { error: 'Something went wrong. Please try again.' } }));
+    ))().catch(() => {
+      // A fixed message: the thrown error can quote the saved plan, which holds health values.
+      Sentry.captureMessage('Chat context read failed', { tags: { feature: 'chat' } });
+      return { result: null, error: { error: 'Something went wrong. Please try again.' } };
+    });
     ownSendRef.current = false;
     const approach = endStream();
     // Another thread was opened while the reply was in flight (US-15 AC7a): it stays
