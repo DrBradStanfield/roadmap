@@ -286,6 +286,8 @@ Older advice warned that arginine might raise the risk of stomach ulcers in peop
 
 Arginine shifts potassium out of cells into the blood [56]. In a 1978 report, two people with severe liver disease and moderate kidney impairment developed life-threatening high blood potassium (hyperkalemia) during and just after an arginine infusion. Both had recently taken spironolactone, a potassium-sparing diuretic, and one died of a heart rhythm disturbance [56]. In people with insulin-dependent diabetes, an arginine infusion raised blood potassium to abnormal levels in 9 of 14 [57]. These reports involved arginine given into a vein, not oral supplements. Potassium-sparing diuretics and ACE inhibitors are themselves common causes of high blood potassium [58]. If you take one of these medicines, or have kidney disease, liver disease or diabetes, ask your doctor before taking arginine.
 
+Signs of high potassium include weakness, palpitations, a slow, weak or irregular pulse, chest pain and trouble breathing [60]. If you have any of these, get emergency care now: call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+
 ### Nitrate Medications
 
 Nitrates such as nitroglycerin are nitric oxide donors [55]. The sildenafil (Viagra) label says sildenafil strengthens the blood pressure-lowering effect of nitrates, so the two must not be taken together [55]. Sildenafil also widens blood vessels and briefly lowered blood pressure in healthy volunteers [55]. Arginine is taken to raise nitric oxide, and it lowered blood pressure in trials [2][3]. No trial in this review tested arginine with nitrates. If you take a nitrate, or a PDE5 inhibitor such as sildenafil or tadalafil, ask your doctor or pharmacist before taking arginine.
@@ -421,3 +423,5 @@ There is no good public evidence on this yet.
 [58] Ponce SP et al. Drug-induced hyperkalemia. Medicine (Baltimore). 1985. PMID: 2865667. https://pubmed.ncbi.nlm.nih.gov/2865667/
 
 [59] Kikendall JW. Pill esophagitis. J Clin Gastroenterol. 1999. PMID: 10372925. https://pubmed.ncbi.nlm.nih.gov/10372925/
+
+[60] MedlinePlus. High potassium level. US National Library of Medicine. https://medlineplus.gov/ency/article/001179.htm
