@@ -9,7 +9,6 @@ import { stopReminderV2Cron } from './lib/reminder-v2-cron.server';
 import { stopTrendingCron } from './lib/trending-cron.server';
 import { stopDiscordBot } from './lib/discord-bot.server';
 import { stopYouTubeBot } from './lib/youtube-bot.server';
-import { stopYouTubeBotSummaryCron } from './lib/youtube-bot-summary-cron.server';
 import { stopChatPurgeCron } from './lib/chat-purge-cron.server';
 import { isUnservedProbe } from './lib/route-miss.server';
 
@@ -26,7 +25,6 @@ process.on('SIGTERM', () => {
   stopTrendingCron();
   stopDiscordBot();
   stopYouTubeBot();
-  stopYouTubeBotSummaryCron();
   stopChatPurgeCron();
   setTimeout(() => {
     console.log('Graceful shutdown complete');

@@ -34,7 +34,7 @@ Each worker **auto-starts on module import** at the bottom of its own file; [ent
 
 - [reminder-v2-cron.server.ts](../../app/lib/reminder-v2-cron.server.ts) — daily; emails due reminders from `reminder_optin_v2`
 - [trending-cron.server.ts](../../app/lib/trending-cron.server.ts) — daily; trending articles → shop metafield
-- [youtube-bot.server.ts](../../app/lib/youtube-bot.server.ts) (+ summary cron) — 30-min comment auto-replier
+- [youtube-bot.server.ts](../../app/lib/youtube-bot.server.ts) — 30-min comment auto-replier
 - [discord-bot.server.ts](../../app/lib/discord-bot.server.ts) — gateway WebSocket (gated on token + `FLY_APP_NAME`)
 
 > **The v1 reminder cron is gone.** `reminder-cron.server.ts` and its `cleanupGuestProfiles()` were retired (commit `e97fa24`) — that cleanup used to cascade-delete guest profiles *and their chat*, which would have destroyed the chat history the business decided to keep. It was deployed before the data purge for exactly that reason.

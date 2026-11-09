@@ -78,7 +78,7 @@ function uploadRefusal(text: string): Error {
   }
   if (summary.startsWith('path/insufficient_space')) {
     // "Nothing was written" goes in the hint: SyncManager swaps the hint when an earlier attempt may have landed.
-    return new StorageError(`${PROVIDER} is full`, 'Nothing was written. Free up space in Dropbox, then try again.', undefined, 409);
+    return new StorageError(`${PROVIDER} is full`, 'Nothing was written. Free up space in Dropbox, then try again.', undefined, 409, 'storage-full');
   }
   return new StorageError(`${PROVIDER} write failed (409): ${text}`, undefined, undefined, 409);
 }

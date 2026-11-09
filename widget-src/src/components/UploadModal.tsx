@@ -2,8 +2,7 @@ import { checkLabImportQuota } from '../lib/upload-api';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { IMPORT_LIMITS } from '@roadmap/health-core/import-hints';
-import { METRIC_LABELS } from '@roadmap/health-core/mappings';
-import { UNDATED_PREVIOUS, unreadLines, uploadLimitSignal, zipMemberName } from '@roadmap/health-core/lab-extraction';
+import { UNDATED_PREVIOUS, uploadLimitSignal, zipMemberName } from '@roadmap/health-core/lab-extraction';
 import type { UnitSystem, MetricType } from '@roadmap/health-core/units';
 import { comparatorOf } from '@roadmap/health-core/lab-limits';
 import type { DocumentPayload } from '@roadmap/health-core/document-save';
@@ -17,9 +16,10 @@ import { labUnitRefusalLine } from '@roadmap/health-core/lab-series';
 import { useLpaUnit } from '../lib/lpa-unit';
 import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable } from './ReviewTable';
+import { FileNotices, NotSaved } from './UploadNotices';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FloatingUploadIndicator } from './FloatingUploadIndicator';
-import { UploadError, KEY_ERROR_MESSAGES, BATCH_THRESHOLD, MAX_FILE_SIZE, shortName, hasValues, processBatch, processPipeline, type FileNotice, type FileNoticeReason, type ReadInput, type DocumentToSave, type ReviewedValue, type ReviewedLabValue, type FileResult } from '../lib/upload-pipeline';
+import { UploadError, KEY_ERROR_MESSAGES, BATCH_THRESHOLD, MAX_FILE_SIZE, shortName, hasValues, processBatch, processPipeline, type FileNotice, type ReadInput, type DocumentToSave, type ReviewedValue, type ReviewedLabValue, type FileResult } from '../lib/upload-pipeline';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries } from '../lib/archive-payloads';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
@@ -29,7 +29,7 @@ import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { isDocx } from '../lib/file-kinds';
 import type { HealthUploadAPI } from '../upload-entry';
 
-/** Upload-level failures only: `refused` and `too_long` are one file's notice (FILE_NOTICE_TEXT). */
+/** Upload-level failures only: `refused` and `too_long` are one file's notice (UploadNotices.tsx). */
 const UPLOAD_ERROR_MESSAGES: Partial<Record<UploadErrorCode, string>> = {
   ...KEY_ERROR_MESSAGES,
   rate_limit: 'Daily upload limit reached. You can upload more tomorrow.',
@@ -54,7 +54,8 @@ interface UploadModalProps {
   metricUnitOverrides?: Partial<Record<MetricType, UnitSystem>>;
   onToggleFieldUnit?: (field: string) => void;
   history: UploadHistory;
-  onComplete: () => void;
+  /** The page's re-read; a partial save waits for it before a retry (US-12 AC6c). */
+  onComplete: () => void | Promise<void>;
   onStart?: () => Promise<void>;
   onClose: () => void;
   /** `erase`: the erase the page showed as the save began (US-16 AC2a). */
@@ -69,41 +70,9 @@ interface UploadModalProps {
   onOpen: () => void;
 }
 
-const FILE_NOTICE_TEXT: Record<Exclude<FileNoticeReason, 'valuesDropped'>, string> = {
-  openFailed: 'Could not open it. It may be password-protected, damaged, or not a PDF, photo or .docx file.',
-  tooLarge: `Too large to read. The limit is ${IMPORT_LIMITS.websiteFileMb} MB per file.`,
-  truncated: 'This file is long, so only its first part was read.',
-  documentOnly: 'Filed as a document. No blood test values found.',
-  noValues: 'No blood test values found.',
-  serverError: 'Our server could not read it. Please try again.',
-  limitError: 'Not read. The daily upload limit was reached.',
-  refused: 'Not read. Claude declined to read this file, so trying again will not help.',
-  tooLong: 'Not read. The file is too long to read in one go.',
-  picturesOnly: 'This Word file holds pictures, not text. Save it as a PDF, or upload a photo of the page.',
-};
-const BYOK_NOTICE_TEXT: Partial<Record<FileNoticeReason, string>> = {
-  serverError: 'Not read. Anthropic could not be reached or could not read it. Please try again.',
-  limitError: 'Not read. Your Anthropic key hit its rate limit. Wait a minute and try again.',
-};
 const MAX_FILES = IMPORT_LIMITS.websiteFiles; // also the server's per-IP daily limit (US-12 AC17)
 const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
 const OVER_LIMIT_TEXT = `Not read. It is over the ${MAX_FILES}-file limit for one upload. Upload it separately.`;
-
-function noticeText({ reason, count = 1, unread = [], text }: FileNotice): string {
-  if (text) return text;
-  if (reason === 'valuesDropped') {
-    // Each value that names its test is named, with why; the rest are counted (US-12 AC19).
-    const { lines, otherCount } = unreadLines({ droppedValueCount: count, unreadValues: unread });
-    const text = lines.map(l => `${l.label}: ${l.reason}, not saved.`);
-    if (otherCount > 0) text.push(`${otherCount} ${text.length ? 'other ' : ''}value${otherCount === 1 ? '' : 's'} could not be read.`);
-    return text.join(' ');
-  }
-  return (!SHOPIFY_SURFACE && BYOK_NOTICE_TEXT[reason]) || FILE_NOTICE_TEXT[reason];
-}
-
-/** A file's short name, or its whole path when another listed file shares the short one. */
-const noticeName = (name: string, notices: FileNotice[]) =>
-  notices.some(n => n.name !== name && shortName(n.name) === shortName(name)) ? name : shortName(name);
 
 /** US-12 AC10: one run's counts, integers only. Never a name, unit or value.
  *  `docx` is how many of the picked files were .docx (AC13); `values` holds
@@ -122,37 +91,18 @@ function trackUploadOutcome(picked: number, withValues: number, docx: number, no
   });
 }
 
-/** Values the extractor refused rather than guessed, each with why (US-12 AC15).
- *  No unit to pick: a user sure it was a blood test types it in the table. */
-function NotSaved({ results }: { results: FileResult[] }) {
-  const rows = results.flatMap(r => (r.refusedValues ?? []).map(v => ({ ...v, fileName: r.fileName })));
-  if (rows.length === 0) return null;
-  return (
-    <div className="upload-file-notices">
-      <p className="upload-file-notices-title">Not saved. If one was a blood test, add it to your blood test table after saving:</p>
-      <ul aria-label="Values not saved">
-        {rows.map((v, i) => (
-          <li key={i}><span className="upload-file-notice-name">{shortName(v.fileName)}</span> {METRIC_LABELS[v.metric as MetricType] ?? v.metric} {`${v.value} ${v.unit}`.trim()}. {v.reason}</li>
-        ))}
-      </ul>
-    </div>
-  );
+/** One session's save outcome (US-12 AC6c). The saved counts add up across a
+ *  retry, which finishes what the first Save began; the rest are the last
+ *  attempt's. Documents count by content, else name: a retry may refile one. `unstored`: originals the cloud would not store behind details it
+ *  already holds (US-14 AC4). The refusals are lab rows in a unit the record
+ *  does not know for that test, and core values it refused: each is named, as
+ *  a dropped value must never be silent (US-21 phase 3, US-35 AC17). */
+interface SaveOutcome {
+  values: number; labValues: number; documents: string[];
+  skippedValues: number; skippedLabValues: number; errors: number; unstored: number;
+  refusedLabUnits: LabUnitRefusal[]; refusedMeasurements: MeasurementRefusal[];
 }
-
-/** The files a run did not fully read, each with its reason (US-12 AC9). */
-function FileNotices({ notices }: { notices: FileNotice[] }) {
-  if (notices.length === 0) return null;
-  return (
-    <div className="upload-file-notices">
-      <p className="upload-file-notices-title">Check these files:</p>
-      <ul aria-label="Files to check">
-        {notices.map((n, i) => (
-          <li key={i}><span className="upload-file-notice-name">{noticeName(n.name, notices)}</span> {noticeText(n)}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
+const NO_OUTCOME: SaveOutcome = { values: 0, labValues: 0, documents: [], skippedValues: 0, skippedLabValues: 0, errors: 0, unstored: 0, refusedLabUnits: [], refusedMeasurements: [] };
 
 export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, age, sex, grading, open, onOpen }: UploadModalProps) {
   const [state, setState] = useState<ModalState>('select');
@@ -165,18 +115,8 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   const [results, setResults] = useState<FileResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [notices, setNotices] = useState<FileNotice[]>([]);
-  const [savedCount, setSavedCount] = useState(0);
-  const [skippedMeasurements, setSkippedMeasurements] = useState(0);
-  const [skippedLabValues, setSkippedLabValues] = useState(0);
-  const [saveErrorCount, setSaveErrorCount] = useState(0);
-  const [savedDocCount, setSavedDocCount] = useState(0);
-  const [savedLabCount, setSavedLabCount] = useState(0);
-  // Originals the cloud would not store behind details it already holds (US-14 AC4).
-  const [unstoredCount, setUnstoredCount] = useState(0);
-  // US-21 phase 3: lab rows the record would not store because it does not know
-  // that unit for that test. Shown by name — a dropped value must never be silent.
-  const [refusedLabUnits, setRefusedLabUnits] = useState<LabUnitRefusal[]>([]);
-  const [refusedMeasurements, setRefusedMeasurements] = useState<MeasurementRefusal[]>([]);
+  const [outcome, setOutcome] = useState(NO_OUTCOME);
+  const { values: savedCount, labValues: savedLabCount, documents: { length: savedDocCount }, skippedValues: skippedMeasurements, skippedLabValues, errors: saveErrorCount, unstored: unstoredCount, refusedLabUnits, refusedMeasurements } = outcome;
   // Lp(a)'s refusal names its range in the unit its field shows (US-05 AC2).
   const [lpaUnit] = useLpaUnit(unitSystem);
   const [isSaving, setIsSaving] = useState(false);
@@ -195,15 +135,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     setError(null);
     setNotices([]);
     setProgress({ current: 0, total: 0, fileName: '' });
-    setSavedCount(0);
-    setSkippedMeasurements(0);
-    setSkippedLabValues(0);
-    setSaveErrorCount(0);
-    setSavedDocCount(0);
-    setSavedLabCount(0);
-    setUnstoredCount(0);
-    setRefusedLabUnits([]);
-    setRefusedMeasurements([]);
+    setOutcome(NO_OUTCOME);
   }, []);
 
   // Closing active work only hides it. Drafts and pending saves remain mounted.
@@ -421,9 +353,10 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     savingRef.current = true;
     setIsSaving(true);
     setError(null);
-    // The last save's refusals belong to it: never beside a new error.
-    setRefusedLabUnits([]);
-    setRefusedMeasurements([]);
+    // The last attempt's skips, errors and refusals belong to it: never beside a
+    // new error. What it saved stays, and this attempt adds to it.
+    const prior = { ...NO_OUTCOME, values: outcome.values, labValues: outcome.labValues, documents: outcome.documents };
+    setOutcome(prior);
     const erase = getShownErase(); // the record this save was asked for
     try {
       // Save core measurements, additional lab values, and documents in parallel
@@ -484,16 +417,16 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         labValuePayloads.length > 0 ? bulkSaveLabValues(labValuePayloads).catch(failed('labValues', { saved: [], skippedDuplicates: 0, errorCount: labValuePayloads.length, refused: [] })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] }),
       ]);
 
-      setSavedCount(savedValues.saved.length);
-      setSkippedMeasurements(savedValues.skippedDuplicates);
-      setSkippedLabValues(savedLabValues.skippedDuplicates);
-      setRefusedLabUnits(savedLabValues.refused);
-      setRefusedMeasurements(savedValues.refused);
       const saveErrors = savedValues.errorCount + savedLabValues.errorCount + savedDocs.errorCount;
-      setSaveErrorCount(saveErrors);
-      setSavedDocCount(savedDocs.saved.length);
-      setUnstoredCount(savedDocs.unstored ?? 0);
-      setSavedLabCount(savedLabValues.saved.length);
+      const next: SaveOutcome = {
+        values: prior.values + savedValues.saved.length,
+        labValues: prior.labValues + savedLabValues.saved.length,
+        documents: [...new Set([...prior.documents, ...savedDocs.saved.map(d => d.contentHash ?? d.sourceFileName ?? d.id)])],
+        skippedValues: savedValues.skippedDuplicates, skippedLabValues: savedLabValues.skippedDuplicates,
+        errors: saveErrors, unstored: savedDocs.unstored ?? 0,
+        refusedLabUnits: savedLabValues.refused, refusedMeasurements: savedValues.refused,
+      };
+      setOutcome(next);
       // A save error keeps the review open for retry (US-12 AC6). Skipped
       // values and refusals are settled outcomes, reported on the done screen;
       // a skip does not establish that the reviewed value is already saved.
@@ -508,14 +441,16 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         }
       }
 
+      const reread = () => Promise.resolve(onComplete()).catch(err => { Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'reread' } }); });
       if (!saveFailed) {
-        trackProductEvent('upload_saved', { count: totalSaved });
+        trackProductEvent('upload_saved', { count: next.values + next.labValues + next.documents.length });
         setState('done');
-        onComplete();
+        void reread();
       } else {
         // Stay in review: a second Save retries idempotently (values dedup on
-        // skippedDuplicates, documents on contentHash).
-        if (totalSaved > 0) onComplete();
+        // skippedDuplicates, documents on contentHash). Save stays busy until the
+        // page has read back what saved, so the retry does not send it again; a failed re-read is only reported.
+        if (totalSaved > 0) await reread();
         setError(threw ? 'Some items could not be saved. Please try again.' : 'Failed to save. Please try again.');
       }
     } catch {
@@ -524,7 +459,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       savingRef.current = false;
       setIsSaving(false);
     }
-  }, [onComplete, onScreeningUpdate, history.documents]);
+  }, [onComplete, onScreeningUpdate, history.documents, outcome]);
 
   // One report can refuse the same test on several dates; the user needs it
   // named once. A note says what to look for instead, where there is one, and

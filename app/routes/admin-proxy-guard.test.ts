@@ -27,14 +27,12 @@ vi.mock('../lib/supabase.server', () => ({
   createABTest: mocks.job, updateABTestStatus: mocks.job, getABTestResults: mocks.job,
 }));
 vi.mock('../lib/trending-cron.server', () => ({ computeAndWriteTrending: mocks.job }));
-vi.mock('../lib/youtube-bot-summary-cron.server', () => ({ runYouTubeBotSummaryOnce: mocks.job }));
 
 import * as app from './app';
 import * as appIndex from './app._index';
 import * as auth from './auth.$';
 import * as abTesting from './app.ab-testing';
 import * as trending from './app.trending-test';
-import * as youtube from './app.youtube-bot-summary-test';
 
 const SIGNED = '?logged_in_customer_id=&path_prefix=%2Fapps%2Fhealth-tool-1&shop=x.myshopify.com&timestamp=1780000000&signature=' + 'a'.repeat(64);
 const ADMIN = '?embedded=1&hmac=abc&host=aG9zdA&shop=x.myshopify.com&timestamp=1780000000';
@@ -62,8 +60,6 @@ const ENTRY_POINTS: [string, string, Handler | undefined, 'GET' | 'POST'][] = [
   ['/app/ab-testing action', '/app/ab-testing', abTesting.action as Handler, 'POST'],
   ['/app/trending-test loader', '/app/trending-test', trending.loader as Handler, 'GET'],
   ['/app/trending-test action', '/app/trending-test', trending.action as Handler, 'POST'],
-  ['/app/youtube-bot-summary-test loader', '/app/youtube-bot-summary-test', youtube.loader as Handler, 'GET'],
-  ['/app/youtube-bot-summary-test action', '/app/youtube-bot-summary-test', youtube.action as Handler, 'POST'],
 ];
 
 describe.each(ENTRY_POINTS)('%s', (_name, url, handler, method) => {
@@ -113,8 +109,7 @@ describe('one guarded admin authenticator (US-09 AC24)', () => {
   });
 
   it('every route that uses the admin authenticator is covered above', () => {
-    const covered = new Set(['app.tsx', 'app._index.tsx', 'auth.$.tsx', 'app.ab-testing.tsx', 'app.trending-test.tsx',
-      'app.youtube-bot-summary-test.tsx']);
+    const covered = new Set(['app.tsx', 'app._index.tsx', 'auth.$.tsx', 'app.ab-testing.tsx', 'app.trending-test.tsx']);
     const users = sourceFiles(ROUTES_DIR)
       .filter((f) => /authenticateAdmin|authenticateOwnerAdmin|runAdminTrigger/.test(readFileSync(f, 'utf8')))
       .map((f) => path.relative(ROUTES_DIR, f));
@@ -127,5 +122,15 @@ describe('one guarded admin authenticator (US-09 AC24)', () => {
       expect(RAW_ADMIN.test(src), src).toBe(true);
     }
     expect(RAW_ADMIN.test('await authenticate.public.appProxy(request)')).toBe(false);
+  });
+});
+
+// US-28 AC5 (Brad 2026-11-10): the daily YouTube bot summary email and its admin trigger are deleted.
+describe('the YouTube bot summary email is gone (US-28 AC5)', () => {
+  it('no source file in app/ names the summary cron, its trigger route or its lock', () => {
+    const offenders = sourceFiles(APP_DIR)
+      .filter((f) => /youtube-bot-summary|YouTubeBotSummary|youtube_bot_summary|YOUTUBE_BOT_SUMMARY/.test(readFileSync(f, 'utf8')))
+      .map((f) => path.relative(APP_DIR, f));
+    expect(offenders).toEqual([]);
   });
 });

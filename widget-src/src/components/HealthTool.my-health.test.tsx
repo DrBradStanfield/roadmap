@@ -128,6 +128,24 @@ describe('US-62 AC17: the sections, in the iPhone\'s order', () => {
     }
     expect(view.container.querySelector('h2.mh-title')?.textContent).toBe('My health');
   });
+
+  it('a 25-year-old, too young for any screening, has no Cancer screening section', async () => {
+    const view = await show(() => seedGuest({ sex: 'male', heightCm: 180, birthYear: new Date().getFullYear() - 25, birthMonth: 1, unitSystem: 'si' }, [['weight', 80]], [], DAY));
+    expect(topics(view).length).toBeGreaterThan(0); // the plan is drawn
+    expect(topics(view)).not.toContain('screening');
+  });
+
+  it('with no lipid value and nothing elevated, no cholesterol medicine questions (US-06 AC5 hidden mode)', async () => {
+    const view = await show(() => seedGuest({ sex: 'male', heightCm: 180, birthYear: 1975, birthMonth: 1, unitSystem: 'si' }, [['weight', 80]], [], DAY));
+    expect(topics(view).length).toBeGreaterThan(0); // the plan is drawn
+    expect(view.container.querySelector('#statin-name')).toBeNull();
+  });
+
+  it('with no weight, HbA1c or triglycerides and the trigger off, no weight or diabetes medicine questions (US-06 AC5 hidden mode)', async () => {
+    const view = await show(() => seedGuest({ sex: 'male', heightCm: 180, birthYear: 1975, birthMonth: 1, unitSystem: 'si' }, [['ldl', 2.8]], [], DAY));
+    expect(topics(view).length).toBeGreaterThan(0); // the plan is drawn
+    expect(view.container.querySelector('#glp1-name')).toBeNull();
+  });
 });
 
 describe('US-62 AC18: every suggestion drawn exactly once', () => {

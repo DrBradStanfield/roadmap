@@ -183,6 +183,8 @@ describe('US-09 AC35: a 409 from Dropbox is a conflict only when the file moved'
     expect(failure).toBeInstanceOf(StorageError);
     expect(failure).not.toBeInstanceOf(ConflictError);
     expect((failure as StorageError).status).toBe(409);
+    // US-09 AC38 (#979): typed, so the iPhone reads the reason, not these words.
+    expect((failure as StorageError).reason).toBe('storage-full');
     expect(describeStorageFailure(failure, 'The record in Dropbox')).toEqual({
       message: 'Dropbox is full',
       hint: 'Nothing was written. Free up space in Dropbox, then try again.',

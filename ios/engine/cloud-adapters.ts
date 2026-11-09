@@ -235,11 +235,11 @@ function failureKind(error: unknown): 'sign-in' | 'too-new' | 'storage-full' | '
   return 'unreachable';
 }
 
-/** health-core's full Dropbox (dropbox-rest.ts, US-09 AC35/AC38): its only
- *  StorageError with these words, which the save keeps when it rewraps the
- *  error after an earlier write may have landed. */
+/** health-core's full Dropbox (dropbox-rest.ts, US-09 AC35/AC38), by its typed reason (#979). The save
+ *  rewraps the error after an earlier write may have landed (sync-manager.ts), so its cause counts too. */
 function dropboxFull(error: unknown): boolean {
-  return error instanceof StorageError && error.message === 'Dropbox is full';
+  const full = (e: unknown) => e instanceof StorageError && e.reason === 'storage-full';
+  return full(error) || (error instanceof StorageError && full(error.cause));
 }
 
 /** A cloud failure as the JSON Swift reads: its kind, and health-core's words for it. */
