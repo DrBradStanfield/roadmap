@@ -1283,6 +1283,27 @@ describe('documents from "Add medical records" (US-52 AC13d)', () => {
     await expect(engine.documentOriginal(row.id)).rejects.toThrow('not open');
   });
 
+  it('US-73 AC12 (PR 972 review R6): a refused original says why, as failure JSON Swift reads', async () => {
+    const { dropbox, engine, state, erase } = await opened();
+    const answer = JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1')) as Answer;
+    const [row] = (JSON.parse(answer.record) as RoadmapFile).documents;
+    const kindOf = async (read: Promise<ArrayBuffer>) => {
+      const error = await read.then(() => null, (e: Error) => e);
+      return (JSON.parse(error!.message) as { kind: string }).kind;
+    };
+    expect(await kindOf(engine.documentOriginal('no-such-id'))).toBe('no-original');
+    const answerOf = dropbox.answer.bind(dropbox);
+    dropbox.answer = () => ({ status: 500, headers: {}, body: 'internal_error' });
+    expect(await kindOf(engine.documentOriginal(row.id))).toBe('unreachable');
+    state.signedOut = true;
+    dropbox.answer = () => ({ status: 401, headers: {}, body: 'invalid_access_token' });
+    expect(await kindOf(engine.documentOriginal(row.id))).toBe('sign-in');
+    state.signedOut = false;
+    dropbox.answer = answerOf;
+    await engine.cloudClose(false);
+    expect(await kindOf(engine.documentOriginal(row.id))).toBe('not-open');
+  });
+
   it('US-73 AC12 (review R5): a document deleted on another device no longer reads its original', async () => {
     const { dropbox, engine, erase } = await opened();
     const answer = JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1')) as Answer;

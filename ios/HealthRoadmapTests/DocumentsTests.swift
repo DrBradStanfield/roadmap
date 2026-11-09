@@ -161,13 +161,40 @@ final class DocumentsTests: XCTestCase {
         do {
             _ = try await engine.documentOriginal(id: "doc-1")
             XCTFail("read with no cloud open")
-        } catch {}
+        } catch {
+            XCTAssertEqual(RecordStore.failure(error), .opening, "the engine's not-open rejection (review R6)")
+        }
         let folder = FileManager.default.temporaryDirectory.appending(path: "Documents \(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
         let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
         let outcome = await store.original(of: "doc-1")
         XCTAssertEqual(outcome, .noCloud)
+    }
+
+    /// PR 972 review R6: each way an original fails to load says what happened and what to do,
+    /// read from the engine's failure JSON; anything unclassed reads as unreachable.
+    func testEachFailureSaysWhy_US73_AC12() async throws {
+        let failed = { (json: String) in RecordStore.failure(HealthEngine.EngineError.callFailed(json)) }
+        XCTAssertEqual(failed(#"{"kind":"not-open","detail":"x"}"#), .opening)
+        XCTAssertEqual(failed(#"{"kind":"no-original","detail":"x"}"#), .missing)
+        XCTAssertEqual(failed(#"{"kind":"sign-in","detail":"x"}"#), .signIn)
+        XCTAssertEqual(failed(#"{"kind":"unreachable","detail":"x"}"#), .unreachable)
+        XCTAssertEqual(failed("The cloud record is not open."), .unreachable, "an older engine's plain words")
+        XCTAssertEqual(RecordStore.failure(CancellationError()), .unreachable)
+
+        let original = MyData.Document.Original(name: "Letter.pdf", mimeType: "application/pdf")
+        let said = { (failure: RecordStore.Failure) async in await DocumentPage.fetch(original) { .failed(failure) } }
+        let signIn = await said(.signIn)
+        XCTAssertEqual(signIn, .problem("Your cloud storage needs you to sign in again. Sign in from Sync, then try again."))
+        let unreachable = await said(.unreachable)
+        XCTAssertEqual(unreachable, .problem("Your cloud storage could not be reached. Check your connection, then try again."))
+        let opening = await said(.opening)
+        XCTAssertEqual(opening, .problem("Your record is still opening from your cloud storage. Try again in a moment."))
+        let missing = await said(.missing)
+        XCTAssertEqual(missing, .problem("This document's original is no longer in your cloud storage."))
+        let unavailable = await said(.unavailable)
+        XCTAssertEqual(unavailable, .problem(DocumentPage.couldNotLoad))
     }
 
     /// The preview's copy lives in its own folder under the app's temporary directory, by its own name.

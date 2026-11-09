@@ -136,7 +136,18 @@ struct DocumentPage: View {
             guard let url = try? write(data, named: name, in: folder) else { return .problem(couldNotLoad) }
             return .preview(url)
         case .noCloud: return .problem("The original is kept in your cloud storage. Connect it in Sync to open it here.")
-        case .failed: return .problem(couldNotLoad)
+        case .failed(let failure): return .problem(words(failure))
+        }
+    }
+
+    /// What each failure says (PR 972 review R6): what happened, and what to do.
+    static func words(_ failure: RecordStore.Failure) -> String {
+        switch failure {
+        case .signIn: "Your cloud storage needs you to sign in again. Sign in from Sync, then try again."
+        case .unreachable: "Your cloud storage could not be reached. Check your connection, then try again."
+        case .opening: "Your record is still opening from your cloud storage. Try again in a moment."
+        case .missing: "This document's original is no longer in your cloud storage."
+        case .unavailable: couldNotLoad
         }
     }
 

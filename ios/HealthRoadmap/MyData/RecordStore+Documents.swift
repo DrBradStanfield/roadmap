@@ -8,12 +8,43 @@ extension RecordStore {
     enum Original: Equatable {
         case file(Data)
         case noCloud
-        case failed
+        case failed(Failure)
+    }
+
+    /// Why an original did not load (PR 972 review R6), from the engine's failure JSON.
+    enum Failure: Equatable {
+        /// The cloud refused the sign-in.
+        case signIn
+        /// No network, or the cloud did not answer.
+        case unreachable
+        /// The cloud record is still opening.
+        case opening
+        /// The record names no original for this document (deleted on another device, say).
+        case missing
+        /// This engine has no door for originals, or the cloud gave nothing.
+        case unavailable
     }
 
     func original(of id: String) async -> Original {
         guard cloudErase != nil else { return .noCloud }
-        guard let data = try? await engine.documentOriginal(id: id), !data.isEmpty else { return .failed }
-        return .file(data)
+        do {
+            guard let data = try await engine.documentOriginal(id: id), !data.isEmpty else { return .failed(.unavailable) }
+            return .file(data)
+        } catch {
+            return .failed(Self.failure(error))
+        }
+    }
+
+    /// The engine's rejection, read as `SyncProblem` reads a save's: the door's own kinds first.
+    nonisolated static func failure(_ error: Error) -> Failure {
+        if case HealthEngine.EngineError.callFailed(let message) = error,
+           let object = (try? JSONSerialization.jsonObject(with: Data(message.utf8))) as? [String: Any] {
+            switch object["kind"] as? String {
+            case "not-open": return .opening
+            case "no-original": return .missing
+            default: break
+            }
+        }
+        return SyncProblem(error).kind == .signIn ? .signIn : .unreachable
     }
 }
