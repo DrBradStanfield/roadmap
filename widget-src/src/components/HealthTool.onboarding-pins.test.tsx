@@ -196,10 +196,11 @@ describe('US-62 AC13: a step answered in this tab by an upload or the chat count
 
 describe('US-62 AC13: what a refused write\'s re-read raises is not counted', () => {
   // A real refusal comes with an erase (the store refuses a write under another
-  // erase identity, record-session `refuses`), whose re-read starts a new record.
-  // The refusal is forced here, on the same record, so the re-read raises the
-  // stage and only the cleared answeredHere keeps it from counting.
-  it('US-62 AC13: a refused height save re-reads a record another writer completed: the form opens, no onboarding_step, no onboarding_done, no plan-ready card', async () => {
+  // erase identity, record-session `refuses`), whose re-read starts a new record,
+  // where countedTo counts nothing anyway. So the state below is unreachable in
+  // production today: the refusal is forced on the same record, so the re-read
+  // raises the stage and only the cleared answeredHere keeps it from counting.
+  it('US-62 AC13 (guard): if a refused write\'s re-read ever raised the stage on the same record, nothing would be counted', async () => {
     const alert = vi.fn();
     vi.stubGlobal('alert', alert);
     await saveChangedMeasurements({ heightCm: 170 }, {});
@@ -246,11 +247,13 @@ describe('US-62 AC13, AC31: an erase in this tab starts the onboarding again', (
     expect(q(view, '.mh-ready')).toBeNull();
   });
 
-  // KNOWN LATENT BUG D1: the weight's once-only landing (InputPanel's
-  // hasLandedOnMyHealth; StartingInfoVitals' landedRef for the matrix) is spent
-  // per mount, never reset per record, so after an erase in this tab the next
-  // record's last-answer weight does not land. Flip to `it` once fixed.
-  it.fails('US-62 AC25 (D1): Shopify build, weight last, erase, weight last again on the new record: the second landing still happens', async () => {
+});
+
+describe('US-62 AC25: the last answer lands on My health, once per record (D1)', () => {
+  /** A record finished here with the weight last (the landing spent), erased
+   *  here, then a new record another writer fills to all but the weight, and
+   *  its weight typed: the onboarding ends here again. */
+  async function weightLastTwice(): Promise<RenderResult> {
     await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
     await flushRoadmapStore();
     const view = await open();
@@ -266,6 +269,21 @@ describe('US-62 AC13, AC31: an erase in this tab starts the onboarding again', (
     expect(landed()).toBe(false);
     type(q(view, '#weightKg'), '105');
     await waitFor(() => expect(q(view, '.mh-ready')).toBeTruthy()); // the onboarding did end here again
+    return view;
+  }
+
+  it('US-62 AC25: weight last, erase, weight last again: the first record lands, and the new record ends with its plan-ready card', async () => {
+    await weightLastTwice();
+  });
+
+  // KNOWN LATENT BUG D1: InputPanel's hasLandedOnMyHealth, the #weightKg
+  // field's once-only landing, is spent per mount, never reset per record, so
+  // after an erase in this tab the next record's last-answer weight does not
+  // land. StartingInfoVitals' landedRef (the matrix weight) has the same
+  // pattern and is not driven here. Flip to `it` once fixed; the setup's
+  // checkpoints pass in the test above.
+  it.fails('US-62 AC25 (D1): Shopify build, weight last, erase, weight last again on the new record: the second landing still happens', async () => {
+    await weightLastTwice();
     await waitFor(() => expect(landed()).toBe(true), { timeout: 1000 });
   });
 });
@@ -277,6 +295,9 @@ describe('US-62 AC12, AC31 (D6, a product question): another device fills the la
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(q(view, '#birthMonth')).toBeTruthy()); // stage 3
+    // An answer given here that raises nothing (the month without the year), so the checks below can fail.
+    fireEvent.change(q(view, '#birthMonth')!, { target: { value: '5' } });
+    expect(fullForm(view)).toBe(false);
     await anotherWriter({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, { heightCm: 170, sex: 'female' });
     await waitFor(() => expect(fullForm(view)).toBe(true), { timeout: 3000 });
     await settle(50);
