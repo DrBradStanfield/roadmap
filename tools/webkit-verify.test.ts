@@ -65,7 +65,7 @@ describe('US-62 AC8: WebKit rows gate', () => {
 
 describe('US-62 AC16, AC27: WebKit desktop gate', () => {
   const valid = {
-    viewportWidth: 1440, viewportHeight: 900, documentWidth: 1440, scrolled: 1154,
+    viewportWidth: 1440, viewportHeight: 900, documentWidth: 1440, scrolled: 2000, topicsTop: -1120,
     nav: { links: 9, position: 'sticky', topAfter: 24, right: 244, current: 1 }, topicsLeft: 284, pillsShown: false,
     select: { appearance: 'none', paddingRight: 36, backgroundImage: 'url("data:image/svg+xml,…")' }, unitSelect: { paddingRight: 20 },
     chatColumn: true, floatingChat: false, smallTargets: [] as string[], chatCardTop: 52, firstCardTop: 52,
@@ -79,6 +79,7 @@ describe('US-62 AC16, AC27: WebKit desktop gate', () => {
       [{ nav: null }, 'section list missing'],
       [{ nav: { ...valid.nav, position: 'static' } }, 'not sticky'],
       [{ scrolled: 0 }, 'did not scroll'],
+      [{ topicsTop: 120 }, 'too little'],
       [{ nav: { ...valid.nav, topAfter: -400 } }, 'left the screen'],
       [{ nav: { ...valid.nav, current: 0 } }, 'one current'],
       [{ nav: { ...valid.nav, right: 300 } }, 'overlaps'],
@@ -105,13 +106,16 @@ describe('US-62 AC16, AC27: WebKit desktop gate', () => {
 // read 0 when the runner was still loading or still scrolling.
 describe('US-62 AC16: the desktop scroll is measured once it has happened', () => {
   // A fake page: the topics' top moves toward its target at `speed` px per ms.
-  function fakePage({ speed = Infinity, scrolls = true, top = 880 } = {}) {
-    const state = { top, target: 880, wheels: 0 };
+  // A wheel takes effect `lag` ms after it is sent.
+  function fakePage({ speed = Infinity, scrolls = true, top = 880, lag = 0 } = {}) {
+    const state = { top, target: 880, wheels: 0, lagLeft: Infinity, rests: [] as number[] };
     return {
       state,
       readTop: async () => Math.round(state.top),
-      wheel: async () => { state.wheels += 1; if (scrolls) state.target = state.top - 2000; },
+      wheel: async () => { state.wheels += 1; if (scrolls) state.lagLeft = lag; },
+      atRest: async () => { state.rests.push(Math.round(state.top)); },
       sleep: async (ms: number) => {
+        if (state.lagLeft !== Infinity) { state.lagLeft -= ms; if (state.lagLeft < 0) { state.target = state.top - 2000; state.lagLeft = Infinity; } }
         const step = speed * ms;
         state.top = Math.abs(state.target - state.top) <= step ? state.target : state.top + Math.sign(state.target - state.top) * step;
       },
@@ -128,6 +132,14 @@ describe('US-62 AC16: the desktop scroll is measured once it has happened', () =
   it('measures from where the page came to rest before the wheel', async () => {
     // Still settling from load (top 1200 heading to 880) when the check starts.
     expect(await wheelDistance(fakePage({ speed: 1, top: 1200 }))).toBe(2000);
+  });
+  it('waits for a scroll that starts late (a wheel taking effect after 1.5s)', async () => {
+    expect(await wheelDistance(fakePage({ lag: 1500 }))).toBe(2000);
+  });
+  it('reads the page state at rest, just before the wheel', async () => {
+    const page = fakePage({ speed: 1, top: 1200 });
+    await wheelDistance(page);
+    expect(page.state.rests).toEqual([880]);
   });
   it('reads 0 for a page that does not scroll, with one wheel and no retry, so the gate fails', async () => {
     const page = fakePage({ scrolls: false });

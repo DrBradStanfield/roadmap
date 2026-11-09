@@ -165,6 +165,8 @@ export function assertDesktopLayout(data) {
   assert(data.nav && data.nav.links >= 3, 'section list missing');
   assert.equal(data.nav.position, 'sticky', 'section list is not sticky');
   assert(data.scrolled > 0, `the page did not scroll (no overflow to test; before the wheel: ${JSON.stringify(data.scrollState)})`);
+  // Only a page scrolled past the topics' start shows the list sticks (a broken sticky would have left the screen).
+  assert(data.topicsTop < 0, `the page scrolled too little to test the sticky list (topics top ${data.topicsTop})`);
   assert(data.nav.topAfter >= 0 && data.nav.topAfter < data.viewportHeight, 'section list left the screen when the page scrolled');
   assert.equal(data.nav.current, 1, 'not exactly one current section');
   assert(data.nav.right <= data.topicsLeft, 'section list overlaps the topics');
@@ -227,10 +229,25 @@ export async function settleTop({ readTop, sleep }) {
 
 // US-62 AC16: how far one wheel moves the topics, from rest to rest. The theme scrolls
 // a wrapper that ignores scrollTop in WebKit, so it is a wheel, read by the topics' top.
-export async function wheelDistance({ readTop, wheel, sleep }) {
+// atRest runs just before the wheel. A wheel's effect may start late (it returns before
+// the page scrolls), so the topics get 3s to start moving; 0 if they never do.
+export async function wheelDistance({ readTop, wheel, sleep, atRest }) {
   const before = await settleTop({ readTop, sleep });
+  await atRest?.();
   await wheel();
-  return before - await settleTop({ readTop, sleep });
+  let top = before;
+  for (let waited = 0; waited < 3000 && top === before; waited += 50) {
+    await sleep(50);
+    top = await readTop();
+  }
+  return top === before ? 0 : before - await settleTop({ readTop, sleep });
+}
+
+// Passed directly to Playwright's evaluate: an element's rounded top; a missing one is named.
+function topOf(selector) {
+  const el = document.querySelector(selector);
+  if (!el) throw new Error(`${selector} is missing`);
+  return Math.round(el.getBoundingClientRect().top);
 }
 
 // Passed directly to Playwright's evaluate: what would take the wheel, read before it,
@@ -262,6 +279,7 @@ export function collectDesktopLayout() {
       current: nav.querySelectorAll('[aria-current="location"]').length,
     },
     topicsLeft: rect(document.querySelector('.mh-topics')).left,
+    topicsTop: Math.round(rect(document.querySelector('.mh-topics')).top),
     pillsShown: !!pills && rect(pills).height > 0,
     select: select && { appearance: select.appearance || select.webkitAppearance, paddingRight: parseFloat(select.paddingRight), backgroundImage: select.backgroundImage },
     unitSelect: unit && { paddingRight: parseFloat(unit.paddingRight) },
@@ -330,13 +348,14 @@ async function inspect(browser, deviceName, viewport) {
       console.log(`${deviceName}: My health verified`, JSON.stringify(phone));
     } else {
       // The theme's scripts have run (goto waits only for the DOM), as for a person who scrolls.
-      await page.waitForLoadState('load', { timeout: 15000 }).catch(() => {});
-      const scrollState = await page.evaluate(collectScrollState, MOUSE_Y);
+      const loaded = await page.waitForLoadState('load', { timeout: 15000 }).then(() => true, () => false);
       await page.mouse.move(viewport.width / 2, MOUSE_Y);
+      let scrollState;
       const scrolled = await wheelDistance({
-        readTop: () => page.evaluate(() => Math.round(document.querySelector('.mh-topics')?.getBoundingClientRect().top ?? NaN)),
+        readTop: () => page.evaluate(topOf, '.mh-topics'),
         wheel: () => page.mouse.wheel(0, 2000), // a person's scroll, down the topics
         sleep,
+        atRest: async () => { scrollState = { loaded, ...await page.evaluate(collectScrollState, MOUSE_Y) }; },
       });
       const layout = { ...await page.evaluate(collectDesktopLayout), scrolled, scrollState };
       assertDesktopLayout(layout);
@@ -349,7 +368,7 @@ async function inspect(browser, deviceName, viewport) {
     // Measured once the page has stopped moving (a slow CI runner, a theme's smooth scrolling):
     // its Back link's top still. A page that settles in the wrong place still fails.
     await settleTop({
-      readTop: () => page.evaluate(() => Math.round(document.querySelector('.md-page:not(.mh-settings) .md-back')?.getBoundingClientRect().top ?? NaN)),
+      readTop: () => page.evaluate(topOf, '.md-page:not(.mh-settings) .md-back'),
       sleep,
     });
     const valuePage = await page.evaluate(collectValuePage);
