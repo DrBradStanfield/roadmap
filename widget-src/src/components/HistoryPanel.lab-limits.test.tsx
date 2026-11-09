@@ -3,7 +3,7 @@
 // left out of the line, and its tooltip reads with its symbol.
 import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, render, waitFor } from '@testing-library/react';
-import { LIMIT_NOT_GRADED } from '@roadmap/health-core';
+import { LIMIT_NOT_GRADED } from '@roadmap/health-core/lab-limits';
 const { charts } = vi.hoisted(() => ({ charts: [] as any[] }));
 vi.mock('chart.js', () => ({
   Chart: class { static register() {} constructor(_canvas: unknown, config: unknown) { charts.push(config); } destroy() {} update() {} },

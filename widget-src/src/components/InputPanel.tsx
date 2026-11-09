@@ -7,7 +7,7 @@ import { flushSync } from 'react-dom';
 import { Fragment, useState, useEffect, useLayoutEffect, useMemo, useRef, type MutableRefObject, type ReactNode } from 'react';
 import { InfoTooltip } from './InfoTooltip';
 import { openHistoryLightbox } from '../lib/roadmap-data';
-import { SEXES } from '@roadmap/health-core';
+import { SEXES, type HealthInputs, type HealthResults, type ScreeningInputs, STATIN_NAMES, STATIN_DRUGS, EZETIMIBE_OPTIONS, PCSK9I_OPTIONS, BEMPEDOIC_ACID_OPTIONS, SUPPLEMENT_OPTIONS, GLP1_NAMES, GLP1_DRUGS, SGLT2I_NAMES, SGLT2I_DRUGS, METFORMIN_OPTIONS, type MedicationInputs } from '@roadmap/health-core/types';
 import type { CorrectFn, Refused, SaveTask } from '../lib/matrix-save';
 import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, mayStillFit, type Grading } from '../lib/blood-test-cell';
 import { useRangeWait } from '../lib/useRangeWait';
@@ -18,74 +18,16 @@ import { DRAFTS_CLEARED_EVENT, loadFromLocalStorage } from '../lib/storage';
 const interceptHistory = (metric: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
   if (openHistoryLightbox(metric)) e.preventDefault();
 };
-import type { FormStage, HealthInputs, HealthResults, ScreeningInputs, WeightMedicationTrigger, LipidMarker } from '@roadmap/health-core';
-import {
-  type UnitSystem,
-  fromCanonicalValue,
-  toCanonicalValue,
-  getDisplayLabel,
-  getDisplayRange,
-  identityFieldRange,
-  UNIT_DEFS,
-  hasUnitChoice,
-  FIELD_METRIC_MAP,
-  medicationsToInputs,
-  screeningsToInputs,
-  type ApiMeasurement,
-  formatValue,
-  formatGradedOrLimit,
-  type ApiMedication,
-  type ApiScreening,
-  STATIN_NAMES,
-  STATIN_DRUGS,
-  EZETIMIBE_OPTIONS,
-  PCSK9I_OPTIONS,
-  BEMPEDOIC_ACID_OPTIONS,
-  SUPPLEMENT_OPTIONS,
-  cmToFeetInches,
-  feetInchesToCm,
-  formatHeightDisplay,
-  GLP1_NAMES,
-  GLP1_DRUGS,
-  weightCascade,
-  lipidCascade,
-  LIPID_MEDS_IN_STEPS,
-  lipidTargetSentence,
-  weightMedIntro,
-  bpTargetFor,
-  METRIC_TO_FIELD,
-  VITAL_METRICS,
-  SGLT2I_NAMES,
-  SGLT2I_DRUGS,
-  METFORMIN_OPTIONS,
-  isBirthYearClearlyInvalid,
-  parseLocalisedNumber,
-  dayOf,
-  newestUsablePsa,
-  localDay,
-  MEDICATION_TEXT,
-  SCREENING_TEXT,
-  SCREENING_OPTIONS,
-  SCREENING_LABELS,
-  SUPPLEMENT_TEXT,
-  SUPPLEMENT_DOSE_UNITS,
-  optionsShowing,
-  escalationOptions,
-  doseOptions,
-  medicationWrites,
-  screeningWrites,
-  readScreening,
-  followupName,
-  followupDateLabel,
-  anyScreeningEligible,
-  dexaEligible,
-  lungGroupShown,
-  lungScreeningAsked,
-  customSupplementAdd,
-  customSupplementMatch,
-  type FormOption,
-  type MedicationInputs,
-} from '@roadmap/health-core';
+import { type FormStage, FIELD_METRIC_MAP, medicationsToInputs, screeningsToInputs, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD, VITAL_METRICS } from '@roadmap/health-core/mappings';
+import { type WeightMedicationTrigger, type LipidMarker, LIPID_MEDS_IN_STEPS, lipidTargetSentence, weightMedIntro } from '@roadmap/health-core/suggestions';
+import { type UnitSystem, fromCanonicalValue, toCanonicalValue, getDisplayLabel, getDisplayRange, UNIT_DEFS, hasUnitChoice, cmToFeetInches, feetInchesToCm, formatHeightDisplay, bpTargetFor } from '@roadmap/health-core/units';
+import { identityFieldRange, isBirthYearClearlyInvalid } from '@roadmap/health-core/validation';
+import { formatValue, formatGradedOrLimit } from '@roadmap/health-core/lab-limits';
+import { weightCascade, lipidCascade } from '@roadmap/health-core/medication-cascades';
+import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
+import { dayOf, localDay } from '@roadmap/health-core/merge';
+import { newestUsablePsa } from '@roadmap/health-core/measurement-history';
+import { MEDICATION_TEXT, SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, SUPPLEMENT_TEXT, SUPPLEMENT_DOSE_UNITS, optionsShowing, escalationOptions, doseOptions, medicationWrites, screeningWrites, readScreening, followupName, followupDateLabel, anyScreeningEligible, dexaEligible, lungGroupShown, lungScreeningAsked, customSupplementAdd, customSupplementMatch, type FormOption } from '@roadmap/health-core/input-form';
 import { formatShortDate, MONTHS_FULL } from '../lib/constants';
 import { BloodTestTimeline, useLiveRegion, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
@@ -2365,8 +2307,7 @@ export function InputPanel({
       setSupplementDoseDrafts(prev => ({ ...prev, [key]: undefined }));
       onSupplementChange(key, name, defaultDose ?? null, defaultUnit ?? null);
       setSupplementSearch('');
-      setShowSupplementDropdown(false);
-      setAddingSupplement(false);
+      closeSupplementAdd(true); // the focus back on the row, not lost to the page (AC30c)
     };
 
     return (
@@ -2423,7 +2364,11 @@ export function InputPanel({
           ))}
 
           {/* Add other supplement: a row like Add a blood test, its search behind it. */}
-          <div className="supplement-add mh-add-test" ref={supplementDropdownRef}>
+          <div className="supplement-add mh-add-test" ref={supplementDropdownRef} onBlur={e => {
+            // Focus leaving the search and its list empty, by Tab or a tap elsewhere: back to the row (#985).
+            // Escape in either goes back too, the focus on the row (keydown below).
+            if (addingSupplement && !supplementSearch.trim() && !e.currentTarget.contains(e.relatedTarget as Node | null)) closeSupplementAdd(false);
+          }} onKeyDown={e => { if (e.key === 'Escape' && addingSupplement) { setSupplementSearch(''); closeSupplementAdd(true); } }}>
             {!addingSupplement ? (
               <button ref={supplementAddRef} type="button" className="alr-add-btn" onClick={() => {
                 // Shown and focused inside the tap itself, so a phone opens its keyboard (US-01 AC6).
@@ -2435,11 +2380,6 @@ export function InputPanel({
             ) : (<>
             <input
               ref={supplementSearchRef}
-              onKeyDown={e => { if (e.key === 'Escape') { setSupplementSearch(''); closeSupplementAdd(true); } }}
-              onBlur={e => {
-                // Left empty, by Tab or a tap elsewhere: back to the row. A press in its own list keeps it.
-                if (!supplementSearch.trim() && !supplementDropdownRef.current?.contains(e.relatedTarget as Node | null)) closeSupplementAdd(false);
-              }}
               type="text"
               placeholder={SUPPLEMENT_TEXT.addPlaceholder}
               value={supplementSearch}

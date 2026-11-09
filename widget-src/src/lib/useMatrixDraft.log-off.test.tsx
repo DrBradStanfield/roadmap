@@ -7,7 +7,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
-import type { ApiMeasurement } from '@roadmap/health-core';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { Refused, SaveTask } from './matrix-save';
 import { StartingInfoVitals } from '../components/StartingInfoVitals';
 import { VITALS_DRAFT_KEY } from './storage';

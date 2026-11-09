@@ -13,7 +13,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render, waitFor, fireEvent, act } from '@testing-library/react';
-import type { ProposedMedicationEdit } from '@roadmap/health-core';
+import type { ProposedMedicationEdit } from '@roadmap/health-core/chat-edits';
 import { addMeasurement, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, loadMedicationHistory } from '../lib/roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';

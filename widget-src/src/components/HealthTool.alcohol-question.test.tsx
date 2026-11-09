@@ -7,7 +7,8 @@
  */
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
-import { ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
@@ -167,7 +168,6 @@ it('US-60 AC3 (Brad 2026-11-01): a drinker\'s "I\'ve stopped" saves \'none\' thr
 const stub = (phone: boolean) => vi.stubGlobal('matchMedia', (q: string) => ({
   matches: q.includes('max-width') ? phone : !phone, media: q, addEventListener() {}, removeEventListener() {},
 }));
-const panel = (root: HTMLElement) => root.querySelector<HTMLElement>('.health-input-panel')!;
 
 it('US-60 AC4 (Brad 2026-11-02): mid-onboarding there is no Alcohol row, and "I still drink" names no section, on desktop and a phone', async () => {
   // No birth date yet: the onboarding is not done, so Starting Info shows its boxes. A saved
@@ -206,7 +206,7 @@ it('US-60 AC4 with US-62 AC12: once the birth date finishes the onboarding and i
     expect(view.container.querySelector('.md-about-you')).toBeNull(); // still typing
     act(() => year.blur());
     // About you goes to Settings once the onboarding is done (US-62 AC24, AC25).
-    await waitFor(() => expect(view.container.querySelector('.about-card')).toBeNull());
+    await waitFor(() => expect(view.container.querySelector('.mh-page .about-card')).toBeNull()); // a phone's Account keeps Settings mounted
     openSettings(view.container);
     const about = await waitFor(() => { const a = view.container.querySelector<HTMLElement>('.md-about-you'); expect(a).not.toBeNull(); return a!; });
     expect(within(about).getByText('Alcohol')).toBeTruthy();
@@ -229,7 +229,7 @@ it('US-60 AC4, AC4b (Brad 2026-11-02): About you\'s rows hold an Alcohol row tha
     expect(row.textContent).toBe('AlcoholNot answered');
     expect(view.container.querySelector('#alcohol')).toBeNull();
     fireEvent.click(row);
-    const group = within(panel(view.container)).getByRole('group', { name: 'Alcohol' });
+    const group = within(view.container.querySelector<HTMLElement>('.mh-settings')!).getByRole('group', { name: 'Alcohol' }); // a phone's Account tab (US-62 AC34)
     expect(group.id).toBe('alcohol');
     const button = (name: string) => within(group).getByRole('button', { name });
     expect([button("I don't drink"), button('I drink')].map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'false']);

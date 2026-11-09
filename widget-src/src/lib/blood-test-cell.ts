@@ -2,33 +2,24 @@
 // review matrix. Anything that touches React state stays in the consuming
 // components; everything here is data → data.
 
-import {
-  commaQuestion,
-  parseLocalisedNumber,
-  rangeFault,
-  rangeMessage,
-  cellRange,
-  cellToSI,
-  limitCellText,
-  statusOf,
-  trendRange,
-  type CellUnit,
-  type MetricType,
-  type ValidationRange,
-} from '@roadmap/health-core';
+import { commaQuestion, parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
+import { rangeFault, type MetricType, type ValidationRange } from '@roadmap/health-core/units';
+import { rangeMessage, cellRange, cellToSI, limitCellText, type CellUnit } from '@roadmap/health-core/cell-unit';
+import { statusOf, type GradeStatus } from '@roadmap/health-core/row-grade';
+import { trendRange } from '@roadmap/health-core/recent-trend';
 
 import type React from 'react';
 
-import type { GradeStatus } from '@roadmap/health-core';
 
 // Whom a value is graded for (null: a known minor, US-07 AC6) lives in
 // health-core beside rowTarget, which reads it too.
-export type { Grading } from '@roadmap/health-core';
-import type { Grading } from '@roadmap/health-core';
+export type { Grading } from '@roadmap/health-core/row-target';
+import type { Grading } from '@roadmap/health-core/row-target';
 
 // The unit a cell is shown and typed in, and its conversions, live in health-core
 // (cell-unit.ts), which the iPhone app reads too.
-export { type CellUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel, cellNumber, comparatorSymbol } from '@roadmap/health-core';
+export { type CellUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel, cellNumber } from '@roadmap/health-core/cell-unit';
+export { comparatorSymbol } from '@roadmap/health-core/lab-limits';
 
 // Keystroke filters (US-02 AC4). Most of our numeric cells are type="text"
 // (for inputMode/pattern control), and even type="number" doesn't reject

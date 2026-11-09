@@ -9,7 +9,9 @@
  * gone up yet, and it says "changed" only when something actually did.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME, type RoadmapFile, type StorageAdapter } from '@roadmap/health-core';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/adapter';
+import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 // The tool the connector actually calls — deep-imported, as the servers do.
 import { updateProfile } from '../../../packages/health-core/src/mcp-tools';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from './roadmap-store';

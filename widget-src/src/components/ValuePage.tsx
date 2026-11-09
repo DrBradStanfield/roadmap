@@ -6,28 +6,16 @@
 // is the grid's own AddLabTest. No save path of its own.
 
 import { lazy, Suspense, useEffect, useId, useMemo, useRef, useState, type MutableRefObject } from 'react';
-import {
-  type ApiMeasurement,
-  type CellUnit,
-  type MetricType,
-  type StatTile,
-  METRIC_LABELS,
-  PRESSURE_ORDER,
-  cellFromSI,
-  cellLabel,
-  cellText,
-  cellToSI,
-  localDay,
-  groupLabValues,
-  limitText,
-  limitUngraded,
-  LIMIT_NOT_GRADED,
-  pressureInverted,
-  pressureStatus,
-  rowTarget,
-  savedLabText,
-  valueStatus,
-} from '@roadmap/health-core';
+import { type ApiMeasurement, METRIC_LABELS } from '@roadmap/health-core/mappings';
+import { type CellUnit, cellFromSI, cellLabel, cellText, cellToSI } from '@roadmap/health-core/cell-unit';
+import type { MetricType } from '@roadmap/health-core/units';
+import type { StatTile } from '@roadmap/health-core/stat-tiles';
+import { PRESSURE_ORDER, pressureInverted } from '@roadmap/health-core/validation';
+import { localDay } from '@roadmap/health-core/merge';
+import { groupLabValues, savedLabText } from '@roadmap/health-core/lab-series';
+import { limitText, LIMIT_NOT_GRADED } from '@roadmap/health-core/lab-limits';
+import { limitUngraded, pressureStatus, valueStatus } from '@roadmap/health-core/row-grade';
+import { rowTarget } from '@roadmap/health-core/row-target';
 import { blockBadNumericKeys, blockNonIntegerKeys, readTypedValue, sameAsSaved, savedCellText, validateTypedValue } from '../lib/blood-test-cell';
 import { activeRowIndex, slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import { pressureReadings, readingsOf, type DayReading } from '../lib/my-data-rows';
@@ -35,6 +23,7 @@ import { chartTimestamp, formatShortDate } from '../lib/constants';
 import { getShownErase } from '../lib/roadmap-data';
 import { ErrorBoundary } from './ErrorBoundary';
 import { scrollToTop } from '../lib/reveal';
+import { useIsMobile } from '../lib/useIsMobile';
 import { ValueCell, saveErrorText, useLiveRegion } from './BloodTestTimeline';
 import { AddLabTest } from './AddLabTest';
 import { LAB_EGFR, isLabEgfr, pressureText, subjectKey, tintOf, type RowContext, type ValueSubject } from './MyDataRows';
@@ -135,6 +124,8 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
   // The ideal weight tile says the weight page's target: the line would say it twice.
   const targetShown = target?.bare && !pageTiles.some(t => t.key === 'ibw');
   const pointer = window.matchMedia?.('(pointer: fine)').matches ? 'Click' : 'Tap';
+  // A phone has no Settings button: its Account tab holds the units (US-62 AC34).
+  const unitsHome = useIsMobile() ? 'Account' : 'Settings';
 
   return (
     <section className="md-page" aria-labelledby={titleId} ref={pageRef}>
@@ -194,7 +185,7 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
         </ul>
       )}
       {metric && <p className="md-page-hint">{pointer} a value to correct it.</p>}
-      {subject.kind !== 'lab' && <p className="md-page-hint">To change units, use Settings or All results as a table.</p>}
+      {subject.kind !== 'lab' && <p className="md-page-hint">To change units, use {unitsHome} or All results as a table.</p>}
       {messages}
     </section>
   );

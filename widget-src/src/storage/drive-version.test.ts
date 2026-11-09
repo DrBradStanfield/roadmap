@@ -11,15 +11,10 @@
  * could overwrite another's row and never notice (verified 2026-09-09).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  ConflictError,
-  createEmptyFile,
-  createMeasurement,
-  ROADMAP_DOC,
-  ROADMAP_FILE_NAME,
-  SyncManager,
-  type RoadmapFile,
-} from '@roadmap/health-core';
+import { ConflictError, ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import { createEmptyFile, createMeasurement, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { ROADMAP_DOC } from '@roadmap/health-core/roadmap-doc';
+import { SyncManager } from '@roadmap/health-core/sync-manager';
 import { GoogleDriveAdapter } from './drive';
 
 const FILE_ID = 'file-1';

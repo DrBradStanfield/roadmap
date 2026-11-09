@@ -9,7 +9,9 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, waitFor } from '@testing-library/react';
-import { MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME, type RoadmapFile, type WriteResult } from '@roadmap/health-core';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { ROADMAP_FILE_NAME, type WriteResult } from '@roadmap/health-core/adapter';
+import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import {
   addMeasurement, flushRoadmapStore, initRoadmapStore, loadAllHistory, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveScreening,
   saveSupplement,

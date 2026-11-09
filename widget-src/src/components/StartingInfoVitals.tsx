@@ -18,33 +18,14 @@
 // the matrix's `Sparkline`, `NumericInputCell`, `DraftDateCell`, and `UnitChip`.
 
 import { useEffect, useId, useMemo, useRef, useState, type MutableRefObject } from 'react';
-import {
-  type ApiMeasurement,
-  type FormStage,
-  type HealthInputs,
-  type MetricType,
-  type UnitSystem,
-  toCanonicalValue,
-  fromCanonicalValue,
-  formatDisplayValue,
-  getDisplayLabel,
-  parseLocalisedNumber,
-  bpStatus,
-  comparatorOf,
-  limitText,
-  limitUngraded,
-  pressureStatus,
-  valueStatus,
-  LIMIT_NOT_GRADED,
-  type Comparator,
-  type GradeContext,
-  type PressureReading,
-  type GradeStatus,
-  bpTargetFor,
-  rowTarget,
-  PRESSURE_ORDER,
-  pressureInverted,
-} from '@roadmap/health-core';
+import type { ApiMeasurement, FormStage } from '@roadmap/health-core/mappings';
+import type { HealthInputs } from '@roadmap/health-core/types';
+import { type MetricType, type UnitSystem, toCanonicalValue, fromCanonicalValue, formatDisplayValue, getDisplayLabel, bpTargetFor } from '@roadmap/health-core/units';
+import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
+import { bpStatus, limitUngraded, pressureStatus, valueStatus, type GradeContext, type PressureReading, type GradeStatus } from '@roadmap/health-core/row-grade';
+import { comparatorOf, limitText, LIMIT_NOT_GRADED, type Comparator } from '@roadmap/health-core/lab-limits';
+import { rowTarget } from '@roadmap/health-core/row-target';
+import { PRESSURE_ORDER, pressureInverted } from '@roadmap/health-core/validation';
 import type { PlanBasis } from './InputPanel';
 import { slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import {

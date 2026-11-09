@@ -39,8 +39,6 @@ import {
   POLL_INTERVAL_MS,
   DAILY_REPLY_CAP,
   PER_VIDEO_REPLY_CAP,
-  COMMENT_MAX_AGE_DAYS,
-  FOLLOWUP_MIN_WORDS,
   FOLLOWUP_THREADS_PER_TICK,
   CHANNEL_ID,
   CLIENT_ID,
@@ -69,14 +67,13 @@ import {
   fetchRecentPostedThreads,
 } from './youtube-bot-store.server';
 import {
-  wordCount,
-  ageInDays,
   loadVideoBody,
   filterThread,
   assessThreadFollowUp,
   buildThreadHistory,
   shouldUnclaim,
   runPipeline,
+  reportTickFallbacks,
   type PipelineOutcome,
 } from './youtube-bot-pipeline.server';
 
@@ -91,6 +88,7 @@ export {
   completionOutcome,
   shouldUnclaim,
   runPipeline,
+  reportTickFallbacks,
 } from './youtube-bot-pipeline.server';
 
 // ---------------------------------------------------------------------------
@@ -164,6 +162,7 @@ async function runTick(): Promise<void> {
   try {
     await tick();
   } finally {
+    reportTickFallbacks();
     tickInFlight = false;
   }
 }
@@ -219,9 +218,6 @@ async function processFollowUps(
     }
     const reply = decision.candidate;
 
-    // Same hygiene gates as top-level, with the shorter follow-up word floor.
-    if (ageInDays(reply.publishedAt) > COMMENT_MAX_AGE_DAYS) { gate('stale'); continue; }
-    if (wordCount(reply.text) < FOLLOWUP_MIN_WORDS) { gate('too-short'); continue; }
     if ((videoPostCounts.get(meta.videoId) ?? 0) >= PER_VIDEO_REPLY_CAP) { gate('video-cap'); continue; }
 
     let claimed: boolean;

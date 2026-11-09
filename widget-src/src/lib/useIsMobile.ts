@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 
 function useMatchMedia(query: string): boolean {
+  // No matchMedia (jsdom) reads as no match: a desktop.
   const [matches, setMatches] = useState(() =>
-    typeof window !== 'undefined' && window.matchMedia(query).matches
+    typeof window !== 'undefined' && !!window.matchMedia?.(query).matches
   );
 
   useEffect(() => {
+    if (!window.matchMedia) return;
     const mql = window.matchMedia(query);
     const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
     mql.addEventListener('change', handler);

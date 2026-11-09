@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryAdapter, MemoryCloud, type ChatHistoryFile } from '@roadmap/health-core';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import type { ChatHistoryFile } from '@roadmap/health-core/chat-history';
 import { ChatHistoryStore } from './chat-history-store';
 import { LocalStorageAdapter, NAMED_FILE_PREFIX } from './local-storage-adapter';
 import { RoadmapStore } from './roadmap-store';

@@ -4,7 +4,7 @@
 // change to the rule it names is made in the adapter, a change the existing
 // tests that use it still pass with.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core';
+import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
 import { LocalStorageAdapter, NAMED_FILE_PREFIX } from './local-storage-adapter';
 
 const RECORD_KEY = 'health_roadmap_file_v2';

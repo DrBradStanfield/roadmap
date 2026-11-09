@@ -2,7 +2,8 @@
 // one reading per day, newest first, and the row's "Oct 2026" date (the
 // trend's window is health-core's `recentTrend`). Data in, data out.
 
-import { comparatorOf, type ApiMeasurement, type Comparator } from '@roadmap/health-core';
+import { comparatorOf, type Comparator } from '@roadmap/health-core/lab-limits';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { activeRowIndex } from './matrix-save';
 
 /** One day's active value: a metric's row, or a blood pressure's two halves. */

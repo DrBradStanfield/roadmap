@@ -8,7 +8,9 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, waitFor, act } from '@testing-library/react';
-import { buildChatContextJson, calculateEGFR, type ChatContextPayload, type HealthResults } from '@roadmap/health-core';
+import { buildChatContextJson, type ChatContextPayload } from '@roadmap/health-core/chat-context';
+import { calculateEGFR } from '@roadmap/health-core/calculations';
+import type { HealthResults } from '@roadmap/health-core/types';
 import { useHealthToolLifecycle } from '../testing/health-tool-harness';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveLabValues, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';

@@ -11,7 +11,8 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
-import { buildChatContextJson, localDay } from '@roadmap/health-core';
+import { buildChatContextJson } from '@roadmap/health-core/chat-context';
+import { localDay } from '@roadmap/health-core/merge';
 import { loadGuestInputs } from '../lib/storage';
 import { addMeasurement, flushRoadmapStore, saveScreening } from '../lib/roadmap-data';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';

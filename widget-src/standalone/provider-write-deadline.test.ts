@@ -2,7 +2,10 @@
  * Real adapters, store and sync manager; synthetic HTTP only, no live provider.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ROADMAP_DOC, ROADMAP_FILE_NAME, StorageError, SyncManager, createEmptyFile } from '@roadmap/health-core';
+import { ROADMAP_DOC } from '@roadmap/health-core/roadmap-doc';
+import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
+import { SyncManager } from '@roadmap/health-core/sync-manager';
+import { createEmptyFile } from '@roadmap/health-core/roadmap-file';
 import { GitHubAdapter } from '../src/storage/github';
 import { WebDavAdapter } from '../src/storage/webdav';
 import { LocalStorageAdapter, isSyncPending } from '../src/storage';

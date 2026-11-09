@@ -5,7 +5,8 @@
  * them; roadmap-store.ts re-exports them for the modules that import them
  * from there.
  */
-import { ROADMAP_FILE_NAME, type RecordHost, type StorageAdapter } from '@roadmap/health-core';
+import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/adapter';
+import type { RecordHost } from '@roadmap/health-core/record-host';
 import {
   LocalStorageAdapter,
   clearLocalNamedFiles,

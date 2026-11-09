@@ -19,19 +19,13 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, fireEvent, waitFor, within, act, type RenderResult } from '@testing-library/react';
-import {
-  formatDisplayValue,
-  localDay,
-  MemoryAdapter,
-  MemoryCloud,
-  ROADMAP_FILE_NAME,
-  toCanonicalValue,
-  toOldShape,
-  type FileLabValue,
-  type FileMeasurement,
-  type ProposedEdit,
-  type RoadmapFile,
-} from '@roadmap/health-core';
+import { formatDisplayValue, toCanonicalValue } from '@roadmap/health-core/units';
+import { localDay } from '@roadmap/health-core/merge';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import { toOldShape } from '@roadmap/health-core/blood-tests';
+import type { FileLabValue, FileMeasurement, RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { REMOTE_CHANGED_EVENT, RoadmapStore, type CorrectStatus } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import {

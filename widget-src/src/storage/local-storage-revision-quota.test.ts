@@ -11,7 +11,7 @@
  * the revision's suffix length is chosen, not drawn.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ConflictError, ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core';
+import { ConflictError, ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
 import { LocalStorageAdapter } from './local-storage-adapter';
 
 const BODY = 'health_roadmap_file_v2';

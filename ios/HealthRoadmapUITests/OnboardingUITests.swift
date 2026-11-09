@@ -143,17 +143,62 @@ final class OnboardingUITests: XCTestCase {
         guard sheet.cells["UIA.Health.AuthSheet.AllCategoryButton"].waitForExistence(timeout: 40) else {
             return XCTFail("Apple's Health sheet never appeared after Continue")
         }
+        if !declineInSheet(sheet) && sheet.windows.firstMatch.exists {
+            XCTFail("Apple's Health sheet stayed up after Don't Allow")
+        }
+        app.activate()
+    }
+
+    /// Taps Don't Allow in Apple's Health sheet, then the OK Apple shows after it, if it shows;
+    /// says whether it did.
+    @MainActor @discardableResult
+    private func declineInSheet(_ sheet: XCUIApplication) -> Bool {
         // On iOS 27.2 Don't Allow ends the long sheet, and asking whether it is hittable throws
         // ("Activation point invalid"): scroll until its frame is on screen, then tap that point.
-        let dontAllow = sheet.buttons["UIA.Health.DoNotAllow.Button"].exists
-            ? sheet.buttons["UIA.Health.DoNotAllow.Button"].firstMatch : sheet.buttons["Don’t Allow"].firstMatch
-        let screen = sheet.windows.firstMatch.frame
-        for _ in 0..<12 where !(dontAllow.exists && screen.contains(dontAllow.frame) && !dontAllow.frame.isEmpty) { sheet.swipeUp() }
-        tap(dontAllow, in: sheet)
-        // Apple then says access can be turned on later; its OK closes the sheet.
+        // On a loaded Mac the button drops out of the tree for a moment while the sheet settles: an
+        // element's `frame` then fails the test outright ("No matches found", #999), even straight
+        // after `exists` said yes. So its frame is read from a snapshot, which throws instead; it
+        // is found afresh before each tap, and tapped once more if the first tap did not take.
+        // A snapshot's frame is not in screen points (iOS 27.0: the button read 766 by snapshot, 828
+        // by `frame`, the window 62 pt down; ios/architecture.md), so a button's place is read against
+        // the window's own snapshot, at each look, as the sheet may still be sliding up. Scrolled off
+        // (at large text the sheet is long) the button reads an infinite frame and `exists` says no.
+        // An element's own `tap` fails in Apple's sheet, so a button is tapped at the point it reports.
+        let dontAllow = sheet.buttons.matching(NSPredicate(format: "identifier == %@ OR label == %@", "UIA.Health.DoNotAllow.Button", "Don’t Allow")).firstMatch
+        let window = sheet.windows.firstMatch
+        /// Where `button` is on screen, when it is in `window`'s view: its snapshot moved by the
+        /// window's screen frame less the window's own snapshot (62 pt on iOS 27.0, measured).
+        let onScreen = { (button: XCUIElement, window: XCUIElement) -> CGRect? in
+            guard let box = try? window.snapshot().frame, let frame = try? button.snapshot().frame, !frame.isEmpty,
+                  box.contains(frame) else { return nil }
+            let screen = window.frame
+            return frame.offsetBy(dx: screen.minX - box.minX, dy: screen.minY - box.minY)
+        }
+        // From the sheet's own origin, the screen's: a window can close under the tap (Apple's OK).
+        let tap = { (spot: CGRect) in
+            sheet.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: spot.midX, dy: spot.midY)).tap()
+        }
+        // Apple then says access can be turned on later; its OK, in a window of its own, closes the sheet.
         let ok = sheet.buttons["OK"].firstMatch
-        if ok.waitForExistence(timeout: 30) { tap(ok, in: sheet) }
-        app.activate()
+        let okWindow = sheet.windows.containing(.button, identifier: "OK").firstMatch
+        // A missing button is no sign the tap took (#999), so only Apple's OK ends the tries; a sheet
+        // that closed without one leaves no window to search.
+        for attempt in 1...2 where !ok.exists && window.exists {
+            var spot = onScreen(dontAllow, window)
+            for _ in 0..<12 where spot == nil && window.exists {
+                sheet.swipeUp()
+                spot = onScreen(dontAllow, window)
+            }
+            guard let spot else {
+                if attempt == 2 && window.exists { XCTFail("Apple's Health sheet has no Don't Allow") }
+                continue
+            }
+            tap(spot)
+            _ = ok.waitForExistence(timeout: 30)
+        }
+        guard let spot = onScreen(ok, okWindow) else { return false }
+        tap(spot)
+        return true
     }
 
     @MainActor
@@ -582,13 +627,7 @@ final class OnboardingUITests: XCTestCase {
             _ = all.waitForExistence(timeout: 40)
         }
         XCTAssertTrue(all.exists, "Apple's Health sheet appears")
-        let dontAllow = sheet.buttons["Don’t Allow"].firstMatch
-        for _ in 0..<8 where !dontAllow.isHittable { sheet.swipeUp() }
-        tap(dontAllow, in: sheet)
-        // Apple then says access can be turned on later; its OK closes the sheet.
-        let ok = sheet.buttons["OK"].firstMatch
-        XCTAssertTrue(ok.waitForExistence(timeout: 30), "Apple's note after Don't Allow")
-        tap(ok, in: sheet)
+        XCTAssertTrue(declineInSheet(sheet), "Apple's note after Don't Allow")
         app.activate()
         app.buttons["Done"].firstMatch.tap()
 
@@ -610,13 +649,6 @@ final class OnboardingUITests: XCTestCase {
             _ = settings.wait(for: .runningForeground, timeout: 90)
         }
         XCTAssertEqual(settings.state, .runningForeground, "Settings opens")
-    }
-
-    /// Taps a button of Apple's sheet at the screen point it reports: its own `tap` fails there.
-    @MainActor
-    private func tap(_ button: XCUIElement, in sheet: XCUIApplication) {
-        let frame = button.frame
-        sheet.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: frame.midX, dy: frame.midY)).tap()
     }
 
     /// "Delete all my data" brings the questions back, not the welcome screen (AC7).

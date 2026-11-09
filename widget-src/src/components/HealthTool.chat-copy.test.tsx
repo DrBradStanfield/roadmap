@@ -12,7 +12,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, waitFor, act } from '@testing-library/react';
-import type { ApiMedication } from '@roadmap/health-core';
+import type { ApiMedication } from '@roadmap/health-core/mappings';
 import { loadFromLocalStorage, loadGuestInputs, saveToLocalStorage, MIRROR_CHANGED_EVENT } from '../lib/storage';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';

@@ -8,8 +8,9 @@
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, fireEvent, cleanup, within } from '@testing-library/react';
-import type { ApiMeasurement } from '@roadmap/health-core';
-import { ReviewTable, type FileResult } from './ReviewTable';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
+import { ReviewTable } from './ReviewTable';
+import type { FileResult } from '../lib/upload-pipeline';
 import type { ApiDocument } from '../lib/api-types';
 
 // The record's profile.lpaUnit (US-05 AC2), in memory.

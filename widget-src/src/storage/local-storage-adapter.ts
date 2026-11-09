@@ -11,14 +11,7 @@
 import {
   DOC_KEY_PREFIX, localHealthWritesStopped, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem, stopLocalHealthWrites,
 } from '../lib/storage';
-import {
-  ConflictError,
-  ROADMAP_FILE_NAME,
-  StorageError,
-  type ReadResult,
-  type StorageAdapter,
-  type WriteResult,
-} from '@roadmap/health-core';
+import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 
 // The roadmap file keeps its ORIGINAL keys (existing users' device data lives
 // under them); other named files (chat-history.json, …) get namespaced keys.

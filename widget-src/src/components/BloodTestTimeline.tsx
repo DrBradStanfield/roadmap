@@ -3,28 +3,14 @@
 // Values stored in SI canonical throughout; inputs converted on commit.
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type ReactElement } from 'react';
-import {
-  type ApiMeasurement,
-  type Comparator,
-  type UnitSystem,
-  type LpaUnit,
-  type MetricType,
-  type HealthInputs,
-  healthInputSchema,
-  toCanonicalValue,
-  BLOOD_TEST_METRICS,
-  METRIC_TO_FIELD,
-  METRIC_LABELS,
-  reportedToCanonical,
-  UNIT_DEFS,
-  formatLabValue,
-  rowTarget,
-  type GradeStatus,
-  LIMIT_NOT_GRADED,
-  limitUngraded,
-  savedLabText,
-  savedStatus,
-} from '@roadmap/health-core';
+import { type ApiMeasurement, BLOOD_TEST_METRICS, METRIC_TO_FIELD, METRIC_LABELS } from '@roadmap/health-core/mappings';
+import { type Comparator, LIMIT_NOT_GRADED } from '@roadmap/health-core/lab-limits';
+import { type UnitSystem, type LpaUnit, type MetricType, toCanonicalValue, reportedToCanonical, UNIT_DEFS } from '@roadmap/health-core/units';
+import type { HealthInputs } from '@roadmap/health-core/types';
+import { healthInputSchema } from '@roadmap/health-core/validation';
+import { formatLabValue, savedLabText } from '@roadmap/health-core/lab-series';
+import { rowTarget } from '@roadmap/health-core/row-target';
+import { type GradeStatus, limitUngraded, savedStatus } from '@roadmap/health-core/row-grade';
 import { formatShortDate, MONTHS_SHORT } from '../lib/constants';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 import { useDraftMirror, useMatrixDraft } from '../lib/useMatrixDraft';

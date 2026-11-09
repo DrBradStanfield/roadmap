@@ -17,19 +17,10 @@
  * them. The BYOK chat is a "your plan" assistant grounded in the user's own
  * data; for the full cited experience the copy points at drstanfield.com.
  */
-import {
-  buildChatContextJson,
-  chatToolsFor,
-  MINOR_CHAT_RULE,
-  NO_PLAN_CHAT_RULE,
-  NO_SEX_CHAT_RULE,
-  LIMIT_CHAT_RULE,
-  MAX_HISTORY_MESSAGES,
-  toolOnlyAck,
-  withRoadmapRound,
-  type ChatTurnMessage,
-  type ProposedEdit,
-} from '@roadmap/health-core';
+import { buildChatContextJson, MINOR_CHAT_RULE, NO_PLAN_CHAT_RULE, NO_SEX_CHAT_RULE, LIMIT_CHAT_RULE } from '@roadmap/health-core/chat-context';
+import { chatToolsFor, withRoadmapRound, type ChatTurnMessage } from '@roadmap/health-core/run-roadmap';
+import { MAX_HISTORY_MESSAGES } from '@roadmap/health-core/chat-history';
+import { toolOnlyAck, type ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { modelParams } from '@roadmap/health-core/models';
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import * as Sentry from '@sentry/react';

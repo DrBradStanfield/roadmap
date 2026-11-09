@@ -4,7 +4,8 @@
 // Cases from the review rounds on PR #152 (branch austin-batch-2026-10-19).
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
-import { ReviewTable, type FileResult } from './ReviewTable';
+import { ReviewTable } from './ReviewTable';
+import type { FileResult } from '../lib/upload-pipeline';
 
 beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-15T12:00:00Z')); });
 afterEach(() => { cleanup(); vi.useRealTimers(); });

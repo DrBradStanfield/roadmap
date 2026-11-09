@@ -4,7 +4,8 @@
 // parts (reminders, the record, Delete all my data) as HealthTool passes them.
 // Imported by tests only.
 import type { ReactNode } from 'react';
-import type { HealthResults, StatTile } from '@roadmap/health-core';
+import type { HealthResults } from '@roadmap/health-core/types';
+import type { StatTile } from '@roadmap/health-core/stat-tiles';
 import { OpenEvidenceContext, PlanCardList, QuickStats, usePlanView } from '../components/ResultsPanel';
 import type { AlcoholQuestion } from '../components/AlcoholQuestion';
 

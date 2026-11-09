@@ -84,3 +84,22 @@ describe('US-27 AC3: one tick at a time', () => {
     expect(tokenCalls()).toBe(2);
   });
 });
+
+// US-15 AC58: the tick's fallback count goes to Sentry as one warning when the tick ends.
+describe('US-15 AC58: the fallback warning goes out when the tick ends', () => {
+  it('a counted fallback is reported once the tick finishes, not before', async () => {
+    const Sentry = await import('@sentry/react-router');
+    const { completionOutcome } = await import('./youtube-bot-pipeline.server');
+    vi.mocked(Sentry.captureMessage).mockClear();
+    completionOutcome({ content: '', isFallback: true, failureMode: 'empty-response' } as Parameters<typeof completionOutcome>[0], 1);
+    const warned = () => vi.mocked(Sentry.captureMessage).mock.calls.filter(([m]) => m === 'YouTube bot: main-LLM fallbacks this tick');
+
+    (await import('./youtube-bot.server')).startYouTubeBot();
+    await vi.advanceTimersByTimeAsync(FIRST_TICK_MS);
+    expect(warned()).toHaveLength(0); // the tick is still waiting on Google
+    releases.forEach((release) => release());
+    await vi.advanceTimersByTimeAsync(0);
+    expect(warned()).toHaveLength(1);
+    expect(warned()[0][1]).toMatchObject({ extra: { count: 1, byMode: { 'empty-response': 1 } } });
+  });
+});

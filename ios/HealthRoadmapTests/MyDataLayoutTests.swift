@@ -407,6 +407,21 @@ final class MyDataLayoutTests: XCTestCase {
         XCTAssertNil(ValueRow.trendBand(capTop: 5, baseline: .nan, width: 56))
     }
 
+    /// US-62 AC8a, #1002 R1: under Bold Text the label draws bold, so the room its longest word asks
+    /// for (which decides whether the trend keeps its place) is measured bold. Measured regular, a
+    /// word that only just fit could break mid-word at XL to XXXL. (The cap height comes from the same
+    /// font, but San Francisco's is the same in both weights, so there is nothing to assert there.)
+    func testARowMeasuresItsLabelBoldUnderBoldText_US62_AC8a() {
+        for size in [DynamicTypeSize.xLarge, .xxLarge, .xxxLarge] {
+            let regular = ValueRow.bodyFont(size, .regular), bold = ValueRow.bodyFont(size, .bold)
+            XCTAssertEqual(ValueRow.bodyFont(size, nil).fontName, regular.fontName, "no setting measures regular")
+            XCTAssertGreaterThan(ValueRow.longestWord("Triglycerides", font: bold), ValueRow.longestWord("Triglycerides", font: regular), "\(size)")
+        }
+        let font = ValueRow.bodyFont(.xxxLarge, .bold)
+        XCTAssertEqual(ValueRow.longestWord("Apolipoprotein-B level", font: font),
+                       ceil(("Apolipoprotein-" as NSString).size(withAttributes: [.font: font]).width), "a hyphen ends a word")
+    }
+
     /// US-12 AC21: a value printed as a limit the rule leaves ungraded says the web's note where its
     /// grade would be; an older engine sends none.
     @MainActor

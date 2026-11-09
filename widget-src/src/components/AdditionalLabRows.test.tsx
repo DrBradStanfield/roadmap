@@ -181,7 +181,7 @@ describe('US-04 AC1 — a lab matrix says its cells\' messages', () => {
 describe('US-21 AC26 — a refused lab correction says why, in the engine\'s words', () => {
   it('a sodium corrected to 30 mmol/L shows the plausibility refusal, through the real store', async () => {
     const { RoadmapStore } = await import('../storage/roadmap-store');
-    const { MemoryAdapter } = await import('@roadmap/health-core');
+    const { MemoryAdapter } = await import('@roadmap/health-core/memory-adapter');
     const store = await RoadmapStore.create(new MemoryAdapter());
     const added = store.addLabValue({ metricName: 'sodium', unit: 'mmol/L', value: 141, day: '2026-05-12' });
     expect(added?.ok).toBe(true);

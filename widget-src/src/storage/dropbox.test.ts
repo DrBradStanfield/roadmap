@@ -13,17 +13,11 @@
  * file's 'rev', even if the existing file has been deleted."
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { createEmptyFile, createMeasurement, type RoadmapFile } from '@roadmap/health-core';
+import { createEmptyFile, createMeasurement, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { DropboxAdapter } from './dropbox';
-import { SyncManager } from '@roadmap/health-core';
+import { SyncManager } from '@roadmap/health-core/sync-manager';
 import { ROADMAP_DOC } from './roadmap-store';
-import {
-  ConflictError,
-  ROADMAP_FILE_NAME,
-  type ReadResult,
-  type StorageAdapter,
-  type WriteResult,
-} from '@roadmap/health-core';
+import { ConflictError, ROADMAP_FILE_NAME, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 
 const CONFIG = { clientId: 'test-app-key', redirectUri: 'https://example.com/' };
 

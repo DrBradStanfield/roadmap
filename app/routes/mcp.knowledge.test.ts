@@ -383,7 +383,7 @@ describe('US-41 AC11 — only what is public under Brad\'s name: video articles 
 
   it('serves the two sets and nothing else', () => {
     // US-70: condition guides are guidelines too, so the connector serves none of them (AC11 unchanged).
-    expect(notServed.filter((e) => e.type === 'guideline').map((e) => e.handle).sort()).toEqual(['blood-thinners', 'diet', 'exercise', 'heart-disease-risk', 'high-blood-pressure', 'high-cholesterol', 'kidney-health', 'osteoarthritis', 'sleep', 'type-2-diabetes-and-prediabetes', 'weight']);
+    expect(notServed.filter((e) => e.type === 'guideline').map((e) => e.handle).sort()).toEqual(['blood-thinners', 'bone-health', 'cancer-screening', 'dementia', 'diet', 'exercise', 'heart-disease-risk', 'high-blood-pressure', 'high-cholesterol', 'kidney-health', 'osteoarthritis', 'sleep', 'type-2-diabetes-and-prediabetes', 'weight']);
     expect(notServed.every((e) => e.type === 'guideline' || (e.type === 'reference' && !e.reviewed))).toBe(true);
     expect(index.filter(isServed).every((e) => (e.type ?? 'article') === 'article' || (e.type === 'reference' && !!e.reviewed))).toBe(true);
   });
