@@ -29,6 +29,10 @@ export interface DeviceMirror {
    *  it cannot wait for the cloud save (US-06 AC13). */
   sync?: SyncStorage;
   pending: { get(): boolean; set(): void; clear(): void };
+  /** The device copy's revision a connect's lift uploaded ('' for none), kept
+   *  until the new cloud's first session opens (US-06 AC13, #974). Absent: no
+   *  lift is recorded (the iPhone). */
+  lifted?: { get(): string | null; set(revision: string): void; clear(): void };
   /** True once this device has logged off: no write may recreate the record
    *  here (US-09 AC2c). */
   writesStopped(): boolean;
@@ -106,3 +110,19 @@ export type RecordHost =
       eraseFence(): string | null;
     })
   | (HostBase & { tier: 'cloud'; mirror: DeviceMirror; sync?: never });
+
+/**
+ * At a session's open: a device copy written after the connect's lift read it
+ * (another tab's departure, US-06 AC13) is marked for this session to take in,
+ * whatever became of the shared marker meanwhile: an old-cloud tab's save may
+ * have cleared it (#974). Once the new cloud is remembered, no old-cloud tab
+ * clears the marker again (RecordSession.releaseMarker). The record goes.
+ */
+export function liftMissed(mirror: DeviceMirror, copyRevision: string | null | undefined): boolean {
+  const lifted = mirror.lifted?.get();
+  if (lifted == null) return false;
+  mirror.lifted!.clear();
+  if ((copyRevision ?? '') === lifted) return false;
+  mirror.pending.set();
+  return true;
+}

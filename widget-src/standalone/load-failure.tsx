@@ -13,7 +13,7 @@ function isRefusal(error: unknown): boolean {
     || (error instanceof StorageError && error.cause instanceof SyntaxError);
 }
 
-const NEWER_SCHEMA_LINE = 'A newer version of Health by Dr Brad wrote this record. Reload the page to get that version. Nothing was written.';
+const NEWER_SCHEMA_LINE = 'A newer version of Health by Dr Brad wrote this record. Reload the page to get that version; if this stays, the newer version is not on the web yet. Nothing was written.';
 
 /**
  * US-65 AC7: a record the app refuses at load (US-65 AC5), or any other

@@ -10,7 +10,7 @@ import { ConflictError, ROADMAP_FILE_NAME, type StorageAdapter } from './adapter
 import { buildErasedFile } from './erase';
 import { CLOCK_KEYS, mergeFiles } from './merge';
 import { SchemaTooNewError } from './migrate';
-import type { DeviceMirror, RecordHost, SyncStorage } from './record-host';
+import { liftMissed, type DeviceMirror, type RecordHost, type SyncStorage } from './record-host';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { CURRENT_SCHEMA_VERSION, stableStringify, type RoadmapFile } from './roadmap-file';
 import { SyncManager, type SyncContext } from './sync-manager';
@@ -194,10 +194,10 @@ export class RecordSession {
       // same guards as one taken in later (US-06 AC13).
       session.releaseErasedCopy(mirror, true);
     }
-    // A previous cloud session failed to save and mirrored its changes
-    // on-device (see saveLoop()'s catch). Merge them in now and schedule a
-    // save to lift them up; the marker clears only once a cloud save succeeds.
-    if (mirror?.pending.get()) {
+    // A previous cloud session failed to save and mirrored its changes on-device
+    // (saveLoop()'s catch), or a write missed the connect's lift: merge them in and
+    // schedule a save to lift them up; the marker clears once a cloud save does.
+    if (mirror && (liftMissed(mirror, copySeen) || mirror.pending.get())) {
       // Fault-tolerant like the mirror-WRITE side: an unreadable mirror must
       // not brick the load — continue on the cloud file. What happens to the
       // marker depends on WHY it was unreadable (see the catch below). A plain

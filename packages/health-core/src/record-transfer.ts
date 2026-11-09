@@ -33,21 +33,19 @@ export async function liftDeviceCopy(host: CloudHost): Promise<'lifted' | 'empty
   } catch {
     return 'unreadable';
   }
-  if (body == null) return 'empty';
+  // The revision lifted, for the new cloud's first session to compare: a copy
+  // another tab writes after this read is taken in there (liftMissed, #974).
+  if (body == null) {
+    host.mirror.lifted?.set('');
+    return 'empty';
+  }
   try {
     await saveRecordInto(host.store, body, ctxOf(host));
   } catch (error) {
     host.mirror.pending.set();
     throw error;
   }
-  // Another tab wrote the device copy while this upload ran (US-06 AC13): the
-  // marker carries that write to the new cloud's first load, even when the
-  // tab's own old-cloud save landed and cleared it (#974).
-  try {
-    if ((await host.mirror.adapter.read(ROADMAP_FILE_NAME)).version !== version) host.mirror.pending.set();
-  } catch {
-    host.mirror.pending.set();
-  }
+  host.mirror.lifted?.set(version ?? '');
   return 'lifted';
 }
 

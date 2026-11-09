@@ -24,7 +24,7 @@ function recordWith(change: Record<string, unknown>): string {
 
 // Issue #929: the web names a page reload, not an app update (US-25 AC6b is the model).
 // main() still rejects with the core error, whose words the CLI and MCP keep.
-const NEWER_ON_WEB = 'A newer version of Health by Dr Brad wrote this record. Reload the page to get that version. Nothing was written.';
+const NEWER_ON_WEB = 'A newer version of Health by Dr Brad wrote this record. Reload the page to get that version; if this stays, the newer version is not on the web yet. Nothing was written.';
 
 /** [label, stored bytes, the page's words, the rejection's words] */
 const UNREADABLE: Array<[string, string, string, string]> = [

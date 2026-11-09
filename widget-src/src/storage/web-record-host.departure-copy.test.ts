@@ -299,25 +299,77 @@ describe('a cloud tab left open while another tab switches this browser to anoth
     const { fresh, release, lifting } = await liftHeld();
     add(tabB, 'late', 81);
     tabB.flushSync(); // tab B goes away while the lift runs
-    await tabB.flush(); // and its old-cloud save lands first
+    await tabB.flush(); // and its old-cloud save lands first, clearing the marker
     release();
     expect(await lifting).toBe('lifted');
     expect(await cloudIds(fresh)).toEqual(['base']);
-    expect(isSyncPending()).toBe(true);
     localStorage.setItem(BACKEND_KEY, 'dropbox');
     const first = await RecordSession.open(webRecordHost(new NewProvider(fresh)));
     expect(ids(first.file)).toEqual(['base', 'late']);
   });
 
-  it("keeps the marker when that old-cloud save lands after the new provider is remembered (#974, US-06 AC13)", async () => {
+  /** Tab B's old cloud, whose saves wait for `releaseOld`. */
+  function heldOldCloud() {
     let releaseOld!: () => void;
     const oldGate = new Promise<void>((resolve) => { releaseOld = resolve; });
-    const tabB = await switchStarted((cloud) => new (class extends MemoryAdapter {
+    const adapter = (cloud: MemoryCloud) => new (class extends MemoryAdapter {
       async write(...args: Parameters<MemoryAdapter['write']>): Promise<WriteResult> {
         await oldGate;
         return super.write(...args);
       }
-    })(cloud));
+    })(cloud);
+    return { adapter, releaseOld: () => releaseOld() };
+  }
+
+  it("sends the write when that old-cloud save clears the marker after the lift ends, before the new provider is remembered (#974 review)", async () => {
+    const old = heldOldCloud();
+    const tabB = await switchStarted(old.adapter);
+    const { fresh, release, lifting } = await liftHeld();
+    add(tabB, 'late', 81);
+    tabB.flushSync(); // tab B goes away while the lift runs; its save is held
+    release();
+    expect(await lifting).toBe('lifted');
+    old.releaseOld();
+    await tabB.flush(); // the old-cloud save lands in the gap, and covers the copy
+    expect(isSyncPending()).toBe(false);
+    localStorage.setItem(BACKEND_KEY, 'dropbox');
+    const first = await RecordSession.open(webRecordHost(new NewProvider(fresh)));
+    expect(ids(first.file)).toEqual(['base', 'late']);
+    await first.flush();
+    expect(await cloudIds(fresh)).toEqual(['base', 'late']);
+  });
+
+  it("sends a write made after a lift that found no device copy (#974 review)", async () => {
+    const tabB = await RecordSession.open(webRecordHost(new MemoryAdapter(new MemoryCloud())));
+    const fresh = new MemoryCloud();
+    const host = webRecordHost(new NewProvider(fresh));
+    if (host.tier !== 'cloud') throw new Error('cloud host expected');
+    expect(await liftDeviceCopy(host)).toBe('empty');
+    add(tabB, 'late', 81);
+    tabB.flushSync();
+    await tabB.flush(); // its old-cloud save lands and clears the marker
+    expect(isSyncPending()).toBe(false);
+    localStorage.setItem(BACKEND_KEY, 'dropbox');
+    const first = await RecordSession.open(webRecordHost(new NewProvider(fresh)));
+    expect(ids(first.file)).toEqual(['late']);
+  });
+
+  it("control: a lift no write followed takes nothing in at the first load, and leaves no record", async () => {
+    await switchStarted();
+    const fresh = new MemoryCloud();
+    const host = webRecordHost(new NewProvider(fresh));
+    if (host.tier !== 'cloud') throw new Error('cloud host expected');
+    expect(await liftDeviceCopy(host)).toBe('lifted');
+    localStorage.setItem(BACKEND_KEY, 'dropbox');
+    await RecordSession.open(webRecordHost(new NewProvider(fresh)));
+    expect(isSyncPending()).toBe(false);
+    expect(localStorage.getItem('health_roadmap_lifted_revision')).toBeNull();
+  });
+
+  it("keeps the marker when that old-cloud save lands after the new provider is remembered (#974, US-06 AC13)", async () => {
+    const old = heldOldCloud();
+    const releaseOld = old.releaseOld;
+    const tabB = await switchStarted(old.adapter);
     const { fresh, release, lifting } = await liftHeld();
     add(tabB, 'late', 81);
     tabB.flushSync(); // tab B goes away while the lift runs; its save is held
