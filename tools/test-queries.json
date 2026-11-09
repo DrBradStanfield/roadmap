@@ -8677,7 +8677,6 @@
   {
     "category": "condition-guides-answers",
     "source": "us-70-ac10-full-sources-2026-11-09",
-    "pending": "US-70 full-sources batch not deployed",
     "surface": "doctor",
     "query": "Should I get a PSA test? I'm a 55 year old man.",
     "answer_handles": [
@@ -8696,7 +8695,6 @@
   {
     "category": "condition-guides-answers",
     "source": "us-70-ac10-full-sources-2026-11-09",
-    "pending": "US-70 full-sources batch not deployed",
     "surface": "doctor",
     "query": "I've noticed blood in my poo for the last two weeks, is that a sign of bowel cancer?",
     "answer_handles": [
@@ -8714,7 +8712,6 @@
   {
     "category": "condition-guides-answers",
     "source": "us-70-ac10-full-sources-2026-11-09",
-    "pending": "US-70 full-sources batch not deployed",
     "surface": "doctor",
     "query": "Do calcium and vitamin D supplements prevent fractures?",
     "answer_handles": [
@@ -8733,7 +8730,6 @@
   {
     "category": "condition-guides-answers",
     "source": "us-70-ac10-full-sources-2026-11-09",
-    "pending": "US-70 full-sources batch not deployed",
     "surface": "doctor",
     "query": "I'm on denosumab and I've got a dentist appointment and I'm thinking of stopping it, is that ok?",
     "answer_handles": [
@@ -8752,7 +8748,6 @@
   {
     "category": "condition-guides-answers",
     "source": "us-70-ac10-full-sources-2026-11-09",
-    "pending": "US-70 full-sources batch not deployed",
     "surface": "doctor",
     "query": "What can I do to lower my risk of dementia?",
     "answer_handles": [
@@ -8772,7 +8767,6 @@
   {
     "category": "condition-guides-answers",
     "source": "us-70-ac10-full-sources-2026-11-09",
-    "pending": "US-70 full-sources batch not deployed",
     "surface": "doctor",
     "query": "My dad has become suddenly confused over the past day and isn't making sense, is this dementia?",
     "answer_handles": [
