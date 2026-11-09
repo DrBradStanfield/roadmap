@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react-router';
+import { safeErrorFields } from './safe-error-fields.server';
 
 const KLAVIYO_BASE = 'https://a.klaviyo.com/api';
 const KLAVIYO_REVISION = '2024-10-15';
@@ -86,7 +87,7 @@ export async function subscribeToKlaviyo(data: KlaviyoProfileData): Promise<void
     }
 
   } catch (error) {
-    console.warn('Klaviyo subscription error:', error);
+    console.warn('Klaviyo subscription error:', safeErrorFields(error));
     Sentry.captureException(error, { tags: { feature: 'klaviyo' } });
   }
 }

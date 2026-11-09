@@ -6,6 +6,7 @@ import * as Sentry from '@sentry/react-router';
 import { getCachedKlaviyoCaptureStats, type KlaviyoCaptureStats } from './klaviyo.server';
 import { supabaseAdmin } from './supabase-client.server';
 import { getActiveABTests, type ABCountRow } from './supabase-ab.server';
+import { safeErrorFields } from './safe-error-fields.server';
 
 // ---------------------------------------------------------------------------
 // Dashboard analytics — aggregate stats for the Shopify admin dashboard.
@@ -173,7 +174,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     getCachedKlaviyoCaptureStats().then(
       (value) => ({ ok: true as const, value }),
       (error) => {
-        console.error('Klaviyo dashboard stats error:', error);
+        console.error('Klaviyo dashboard stats error:', safeErrorFields(error));
         Sentry.captureException(error, { tags: { feature: 'klaviyo_dashboard' } });
         return { ok: false as const };
       },
