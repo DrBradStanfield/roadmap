@@ -82,7 +82,6 @@ import { useLongitudinalSave, countedCorrection } from '../hooks/useLongitudinal
 import { useChatEdits } from './ChatEdits';
 import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
 
-
 /** After a medication or screening save, failed or not, the chat copy takes
  *  the lists the store holds (US-15 AC10). Never the form's: a failed save
  *  would leave a row the record lacks, and a re-read inside the debounce
@@ -163,8 +162,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     setPreviousMeasurements, setHistory, setLabValueHistory,
     applyLists, clearForErase, patchMedication, patchScreening, patchSupplement, stopSupplement, dropDocument,
   } = useRecordState(() => mountRead.current?.result?.previousMeasurements ?? []);
-  // The prostate section's PSA day (YYYY-MM-DD); null until one is picked, so today (US-06 AC15).
-  const [psaDate, setPsaDate] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   // US-54 AC5b: the birth month a save refused, in words, until the next birth edit.
   const [birthRefused, setBirthRefused] = useState<string | null>(null);
@@ -581,9 +578,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // The first-time vitals fields' and the PSA's save, queued and debounced (hooks/useLongitudinalSave).
   const {
     handleSaveLongitudinal, scheduleLongitudinalSave, flushLongitudinalSave, commitPsa, stagePendingSave,
-    longitudinalDebounce, isSavingLongitudinal, fieldsSaved,
+    longitudinalDebounce, isSavingLongitudinal, fieldsSaved, psaDate, setPsaDate,
   } = useLongitudinalSave({
-    inputs, setInputs, history, unitOverrides, unitSystem, psaDate, setPsaDate, reloadValues,
+    inputs, setInputs, history, unitOverrides, unitSystem, reloadValues,
     flushPendingProfileSave, typedIn, isFirstSaveRef,
   });
   // Stage only queued edits, with the erase they were made against, then flush

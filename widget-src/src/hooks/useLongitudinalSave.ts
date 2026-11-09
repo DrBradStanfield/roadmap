@@ -30,8 +30,6 @@ interface LongitudinalSaveDeps {
   history: ApiMeasurement[];
   unitOverrides: Record<string, UnitSystem>;
   unitSystem: UnitSystem;
-  psaDate: string | null;
-  setPsaDate: (day: string | null) => void;
   reloadValues: () => Promise<unknown>;
   flushPendingProfileSave: (erase?: string) => Promise<boolean>;
   /** The unit each first-time weight or waist was typed in (US-03 AC3). */
@@ -40,7 +38,7 @@ interface LongitudinalSaveDeps {
 }
 
 export function useLongitudinalSave({
-  inputs, setInputs, history, unitOverrides, unitSystem, psaDate, setPsaDate, reloadValues,
+  inputs, setInputs, history, unitOverrides, unitSystem, reloadValues,
   flushPendingProfileSave, typedIn, isFirstSaveRef,
 }: LongitudinalSaveDeps) {
   const [isSavingLongitudinal, setIsSavingLongitudinal] = useState(false);
@@ -49,6 +47,8 @@ export function useLongitudinalSave({
   // Counts the first-time vitals fields' saves, so InputPanel closes the
   // fields a save emptied.
   const [fieldsSaved, setFieldsSaved] = useState(0);
+  // The prostate section's PSA day (YYYY-MM-DD); null until one is picked, so today (US-06 AC15).
+  const [psaDate, setPsaDate] = useState<string | null>(null);
   // The PSA row was committed since its last save (US-06 AC15).
   const psaCommittedRef = useRef(false);
 
@@ -164,6 +164,7 @@ export function useLongitudinalSave({
     const run = savesRef.current.then(save);
     savesRef.current = run.catch(() => {});
     return run;
+    // setInputs and the refs are stable; flushPendingProfileSave is read from the render that last rebuilt this, as before the move.
   }, [inputs, history, unitOverrides, unitSystem, psaDate, reloadValues]);
 
   // Auto-save on blur / Enter for InputPanel longitudinal fields. The
@@ -207,6 +208,6 @@ export function useLongitudinalSave({
 
   return {
     handleSaveLongitudinal, scheduleLongitudinalSave, flushLongitudinalSave, commitPsa, stagePendingSave,
-    longitudinalDebounce, isSavingLongitudinal, fieldsSaved,
+    longitudinalDebounce, isSavingLongitudinal, fieldsSaved, psaDate, setPsaDate,
   };
 }
