@@ -20,6 +20,7 @@ import { phoneReminders } from './reminders';
 import { installShim, type Natives } from './shim';
 import { NOT_OPEN, open } from './cloud';
 import { failed } from './cloud-adapters';
+import { StorageError } from '../../packages/health-core/src/adapter';
 import { documentShelf } from './documents';
 
 // The web APIs the cloud adapters need, over Swift's natives (shim.ts). Absent
@@ -205,8 +206,17 @@ export async function documentOriginal(id: string): Promise<ArrayBuffer> {
   try {
     return await (await at.host.store.readDocument(doc.fileRef)).arrayBuffer();
   } catch (error) {
+    if (originalGone(error)) throw new Error(JSON.stringify({ kind: 'no-original', detail: 'This document\'s original is not in your cloud.' }));
     throw new Error(failed(at.provider, error));
   }
+}
+
+/** The cloud no longer holds the original (PR 1051 review R1): any 404; Dropbox answers a download
+ *  of a missing path 409 (path/not_found; dropbox-rest.ts `dropboxDownload` keeps the status, not
+ *  the body, so every download 409 counts); Drive finds no file of that name (drive-rest.ts
+ *  `driveDownloadDocument`, which sets no status, so its words are read). */
+function originalGone(error: unknown): boolean {
+  return error instanceof StorageError && (error.status === 404 || error.status === 409 || /document not found/i.test(error.message));
 }
 // Chat and lab upload (US-52): app-doors.ts.
 export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson, chatDeleteJson, settledJson, labReviewJson, labSaveSummaryJson } from './app-doors';

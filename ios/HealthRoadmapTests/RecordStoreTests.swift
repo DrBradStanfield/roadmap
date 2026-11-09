@@ -414,8 +414,12 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertTrue(unread.words.hasPrefix("Your saved record did not load, so nothing will be saved over it."), unread.words)
         XCTAssertTrue(unread.words.hasSuffix("Close the app and open it again to try again."), unread.words)
 
-        // An exception that is not a refusal is a fault in the app, not in the record.
-        XCTAssertFalse(RecordProblem.refuses(HealthEngine.EngineError.callFailed("TypeError: undefined is not an object")))
+        // An exception that is not a refusal is a fault in the app, not in the record: reopening
+        // may not mend it, so the line says what to do if it keeps happening (PR 1051 review R3).
+        let fault = RecordProblem(HealthEngine.EngineError.callFailed("TypeError: undefined is not an object"))
+        XCTAssertFalse(fault.refused)
+        XCTAssertEqual(fault.heading, "Your record did not load")
+        XCTAssertTrue(fault.words.hasSuffix("Close the app and open it again; if this keeps happening, contact us."), fault.words)
         XCTAssertTrue(RecordProblem.refuses(HealthEngine.EngineError.callFailed("RecordShapeError: Not a health-roadmap.json")))
     }
 

@@ -76,9 +76,15 @@ struct RecordProblem: Equatable, Sendable {
 
     init(_ error: Error) {
         refused = Self.refuses(error)
-        words = refused
-            ? "Your saved record could not be opened, so nothing will be saved over it. \(error.localizedDescription)"
-            : "Your saved record did not load, so nothing will be saved over it. \(error.localizedDescription) Close the app and open it again to try again."
+        let reason = error.localizedDescription
+        if refused {
+            words = "Your saved record could not be opened, so nothing will be saved over it. \(reason)"
+        } else if case HealthEngine.EngineError.callFailed = error {
+            // A fault inside the app, not the record: opening it again may not mend it (PR 1051 review R3).
+            words = "Your saved record did not load, so nothing will be saved over it. \(reason) Close the app and open it again; if this keeps happening, contact us."
+        } else {
+            words = "Your saved record did not load, so nothing will be saved over it. \(reason) Close the app and open it again to try again."
+        }
     }
 
     /// A refusal: the engine's own (`Refusal`), its not-JSON or not-a-record exception, read by
