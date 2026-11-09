@@ -23,6 +23,13 @@ describe('US-62 AC30: My health styles', () => {
     expect(rows).toMatch(/padding-bottom:\s*4px\s*!important/);
   });
 
+  it('AC30e: the supplement search is 16px, so iOS does not zoom on focus, and beats the old 13px rule', () => {
+    expect(blocks(/^\s*\.supplement-add input\s*$/).join('')).toMatch(/font-size:\s*13px/); // the base rule, one class
+    const add = blocks(/\.supplement-add\.mh-add-test input/).join(''); // two classes: wins on specificity
+    expect(add).toMatch(/font-size:\s*16px/);
+    expect(blocks(/\.mh-add-test \.supplement-dropdown-item/).join('')).toMatch(/min-height:\s*44px/);
+  });
+
   it('AC32, AC34: a phone draws no title, still there for screen readers, and no header row; desktop keeps it', () => {
     const phone = css.slice(css.lastIndexOf('@media (max-width: 768px)'));
     const title = /\.mh-title\s*\{([^}]*)\}/.exec(phone)![1];

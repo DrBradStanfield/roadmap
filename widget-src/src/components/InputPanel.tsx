@@ -2260,6 +2260,8 @@ export function InputPanel({
   const supplementDropdownRef = useRef<HTMLDivElement>(null);
   const supplementSearchRef = useRef<HTMLInputElement>(null);
   const supplementAddRef = useRef<HTMLButtonElement>(null);
+  /** A finger is down on the list and has not scrolled it (a scroll is a pointercancel). */
+  const supplementTouch = useRef(false);
   /** Back to the "+ Add another supplement" row, the focus on it when asked. */
   const closeSupplementAdd = (refocus: boolean) => {
     setShowSupplementDropdown(false);
@@ -2276,13 +2278,15 @@ export function InputPanel({
 
   useEffect(() => {
     if (!showSupplementDropdown) return;
-    const handleClickOutside = (e: MouseEvent) => {
+    // On pointerdown, whose target is the element under the finger: a touch's
+    // mousedown comes later, where WebKit's tap adjustment puts it (US-62 AC30e).
+    const handleClickOutside = (e: PointerEvent) => {
       if (supplementDropdownRef.current && !supplementDropdownRef.current.contains(e.target as Node)) {
         setShowSupplementDropdown(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
   }, [showSupplementDropdown]);
 
   const renderSupplements = () => {
@@ -2308,6 +2312,10 @@ export function InputPanel({
       onSupplementChange(key, name, defaultDose ?? null, defaultUnit ?? null);
       setSupplementSearch('');
       closeSupplementAdd(true); // the focus back on the row, not lost to the page (AC30c)
+    };
+    const addCustomSupplement = () => {
+      const { supplementKey, supplementName } = customSupplementAdd(trimmedSearch, supplements);
+      addSupplement(supplementKey, supplementName);
     };
 
     return (
@@ -2389,10 +2397,30 @@ export function InputPanel({
                 setSupplementSearch(e.target.value);
                 setShowSupplementDropdown(true);
               }}
+              onKeyDown={e => {
+                // Return adds the exact match, else the list's first option, else the typed name (AC30e).
+                if (e.key !== 'Enter' || e.nativeEvent.isComposing || !trimmedSearch) return;
+                e.preventDefault();
+                const pick = filteredOptions.find(o => o.name.toLowerCase() === trimmedSearch.toLowerCase()) ?? filteredOptions[0];
+                if (pick) addSupplement(pick.key, pick.name, pick.defaultDose, pick.defaultUnit);
+                else if (canAddCustomSupplement) addCustomSupplement();
+              }}
             />
             {showSupplementDropdown && (filteredOptions.length > 0 || canAddCustomSupplement) && (
               // A press in the list keeps the focus in the search, so its blur never closes it first.
-              <div className="supplement-dropdown" onMouseDown={e => e.preventDefault()}>
+              // A tap chooses from its touchend, whose target is the option under the finger. Its
+              // default prevented, no mousedown or click follows to land where WebKit's tap
+              // adjustment or the closing keyboard puts it (iPhone: nothing was added, AC30e).
+              <div className="supplement-dropdown" onMouseDown={e => e.preventDefault()}
+                onPointerDown={e => { supplementTouch.current = e.pointerType === 'touch'; }}
+                onPointerCancel={() => { supplementTouch.current = false; }}
+                onTouchEnd={e => {
+                  const option = (e.target as Element).closest('button');
+                  if (!supplementTouch.current || !option) return;
+                  supplementTouch.current = false;
+                  e.preventDefault();
+                  option.click();
+                }}>
                 {filteredOptions.slice(0, 8).map(opt => (
                   <button
                     key={opt.key}
@@ -2407,10 +2435,7 @@ export function InputPanel({
                   <button
                     type="button"
                     className="supplement-dropdown-item supplement-custom"
-                    onClick={() => {
-                      const { supplementKey, supplementName } = customSupplementAdd(trimmedSearch, supplements);
-                      addSupplement(supplementKey, supplementName);
-                    }}
+                    onClick={addCustomSupplement}
                   >
                     + Add "{trimmedSearch}"
                   </button>
