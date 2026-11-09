@@ -1606,6 +1606,11 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
   `project.xcworkspace/xcshareddata/swiftpm/Package.resolved`.
 - `HealthRoadmapUITests/`: XCUITest on the simulator (US-54); each test needs a fresh
   install, and the app is launched with `--ui-testing` so Clarity never starts.
+  Apple's Health sheet (#999, iOS 27.0, measured 2026-11-09): under load its Don't Allow drops
+  out of the tree for a moment, and reading an element's `frame` then fails the test, so
+  `declineInSheet` reads a snapshot, which throws instead. A snapshot's frame is not in screen
+  points (the button read 766 by snapshot, 828 by `frame`; the sheet's window starts 62 pt down,
+  98 at system XXXL), so the helper places it against the window's own snapshot at each look.
 - `HealthRoadmap/`: the SwiftUI app, one folder per feature:
   - `App/`: the entry point (`AppParts` makes the engine and the record once),
     `RootView` (the tabs: My data, My plan, Chat; and the first-run cover),

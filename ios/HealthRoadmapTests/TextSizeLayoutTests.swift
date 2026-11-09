@@ -62,14 +62,14 @@ final class TextSizeLayoutTests: XCTestCase {
 
     /// How `view`'s texts were drawn, once settled, in a window of `screen` at `category`:
     /// the draws, those cut short with "…" (SwiftUI's own `Text.Layout.isTruncated`), and the
-    /// most lines one text took. `weight` .bold is Bold Text.
+    /// most lines one text took. `weight`, when set, overrides the system's Bold Text.
     @available(iOS 18.0, *)
-    private func drawnTexts(in view: some View, at category: UIContentSizeCategory, screen: CGSize, weight: UILegibilityWeight = .regular) throws -> TruncationProbe.Log {
+    private func drawnTexts(in view: some View, at category: UIContentSizeCategory, screen: CGSize, weight: UILegibilityWeight? = nil) throws -> TruncationProbe.Log {
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
         let window = UIWindow(windowScene: scene)
         window.frame = CGRect(origin: .zero, size: screen)
         window.traitOverrides.preferredContentSizeCategory = category
-        window.traitOverrides.legibilityWeight = weight
+        if let weight { window.traitOverrides.legibilityWeight = weight }
         let probe = TruncationProbe()
         window.rootViewController = UIHostingController(rootView: view.textRenderer(probe))
         window.makeKeyAndVisible()
@@ -256,14 +256,14 @@ final class TextSizeLayoutTests: XCTestCase {
     }
 
     /// The rows (in points) holding `view`'s words (grey or black) and its red, and the red's
-    /// width, drawn in light mode at the window's top left at `category`, bold under `weight` .bold.
-    private func inkAndRed(_ view: some View, at category: UIContentSizeCategory, weight: UILegibilityWeight = .regular) throws -> (ink: ClosedRange<CGFloat>?, red: ClosedRange<CGFloat>?, redWidth: CGFloat?) {
+    /// width, drawn in light mode at the window's top left at `category`; `weight`, when set, overrides the system's Bold Text.
+    private func inkAndRed(_ view: some View, at category: UIContentSizeCategory, weight: UILegibilityWeight? = nil) throws -> (ink: ClosedRange<CGFloat>?, red: ClosedRange<CGFloat>?, redWidth: CGFloat?) {
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
         let window = UIWindow(windowScene: scene)
         window.frame = CGRect(origin: .zero, size: CGSize(width: phone.width, height: 300))
         window.overrideUserInterfaceStyle = .light
         window.traitOverrides.preferredContentSizeCategory = category
-        window.traitOverrides.legibilityWeight = weight
+        if let weight { window.traitOverrides.legibilityWeight = weight }
         let host = UIHostingController(rootView: view.fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).background(.white))
         host.safeAreaRegions = []
