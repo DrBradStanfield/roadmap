@@ -318,7 +318,7 @@ Thin wrapper around the Anthropic API using direct `fetch` (no SDK). `extractOrC
 Current file-by-file inventory: docs/reference.md. The upload feature spans
 `app/routes/api.lab-import-v2.ts`, `app/lib/anthropic.server.ts`,
 `packages/health-core/src/{lab-extraction,document-path,record-edits,import-hints}.ts`,
-`widget-src/src/lib/{pdf-extract,docx-extract,zip-extract,image-resize,upload-api,byok-upload,archive-payloads}.ts`,
+`widget-src/src/lib/{pdf-extract,docx-extract,zip-extract,image-resize,upload-api,byok-upload,archive-payloads,upload-pipeline,review-matrix,review-dates}.ts`,
 `widget-src/src/components/{UploadModal,ReviewTable}.tsx`, and
 `widget-src/src/storage/roadmap-store.ts`. Connector: `app/lib/mcp-import.server.ts` + `packages/health-core/src/mcp-tools.ts`.
 
