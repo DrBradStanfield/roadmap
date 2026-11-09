@@ -281,7 +281,7 @@ A slot that already holds an active row with the *same displayed value* is alrea
 
 An upload can land on a `(metric, day)` slot that an active row already holds. The usual author of that row is a **connected AI assistant writing through the MCP connector**, which slots one value per metric per day the same way. v1 dropped the document's number and showed an "Already saved" badge; v2 shows the disagreement and lets the person settle it (**US-32 AC24**).
 
-The review table is a date × metric matrix (`buildMatrixModel()` in `ReviewTable.tsx`). Each upload value meets whatever holds its cell:
+The review table is a date × metric matrix (`buildMatrixModel()` in `lib/review-matrix.ts`). Each upload value meets whatever holds its cell:
 
 | Slot state | What the reviewer sees | What saves |
 |---|---|---|
