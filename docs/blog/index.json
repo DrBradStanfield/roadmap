@@ -10881,8 +10881,129 @@
     ],
     "publishedAt": "",
     "type": "guideline",
-    "summary": "Anticoagulants and antiplatelets: warfarin, apixaban (Eliquis), rivaroxaban, dabigatran, aspirin and clopidogrel; who needs them, INR, bleeding risks, interactions with food, medicines and supplements, and procedures. Built from labels and guidelines.",
-    "reviewed": "2026-11-02",
+    "summary": "Warfarin, Eliquis and other blood thinners: who needs them, the INR, bleeding signs, interactions with food, medicines and supplements, and procedures.",
+    "reviewed": "2026-11-09",
+    "kind": "condition"
+  },
+  {
+    "title": "Bone Health: Osteoporosis, Bone Density Scans and Fracture Prevention",
+    "handle": "bone-health",
+    "url": "https://drstanfield.com/blogs/articles/bone-health",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "osteoporosis",
+      "osteopenia",
+      "bone density",
+      "DEXA scan",
+      "DXA",
+      "T-score",
+      "FRAX",
+      "fracture risk",
+      "broken hip",
+      "brittle bones",
+      "calcium supplements",
+      "vitamin D",
+      "vitamin K2",
+      "weight training for bones",
+      "falls",
+      "alendronate",
+      "Fosamax",
+      "bisphosphonate",
+      "zoledronic acid",
+      "denosumab",
+      "Prolia",
+      "stopping Prolia",
+      "romosozumab",
+      "teriparatide",
+      "drug holiday",
+      "jaw osteonecrosis"
+    ],
+    "publishedAt": "",
+    "type": "guideline",
+    "summary": "Weak bones and fracture risk: who needs a bone scan, T-scores and FRAX, calcium and vitamin D, strength training, falls, and bone medicines with their rare risks and how to stop denosumab safely.",
+    "reviewed": "2026-11-09",
+    "kind": "condition"
+  },
+  {
+    "title": "Cancer Screening: Which Tests You Need, and What They Can and Cannot Do",
+    "handle": "cancer-screening",
+    "url": "https://drstanfield.com/blogs/articles/cancer-screening",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "cancer screening",
+      "which cancer tests do I need",
+      "bowel cancer screening",
+      "colonoscopy",
+      "FIT test",
+      "Cologuard",
+      "mammogram",
+      "dense breasts",
+      "pap smear",
+      "HPV self-test",
+      "PSA test",
+      "lung cancer screening",
+      "skin check",
+      "Galleri",
+      "full-body MRI",
+      "family history of cancer"
+    ],
+    "publishedAt": "",
+    "type": "guideline",
+    "summary": "Which cancer screening tests adults need by age and sex, what screening can and cannot do, newer tests such as multi-cancer blood tests, and who is at higher risk.",
+    "reviewed": "2026-11-09",
+    "kind": "condition"
+  },
+  {
+    "title": "Dementia: Lowering Your Risk, Memory Problems and Alzheimer's Treatment",
+    "handle": "dementia",
+    "url": "https://drstanfield.com/blogs/articles/dementia",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "dementia",
+      "Alzheimer's",
+      "memory loss",
+      "forgetfulness",
+      "mild cognitive impairment",
+      "MCI",
+      "memory test",
+      "cognitive decline",
+      "brain fog",
+      "prevent dementia",
+      "dementia risk",
+      "APOE e4",
+      "Alzheimer's blood test",
+      "p-tau217",
+      "lecanemab",
+      "Leqembi",
+      "donanemab",
+      "Kisunla",
+      "ARIA",
+      "donepezil",
+      "Aricept",
+      "memantine",
+      "rivastigmine",
+      "galantamine",
+      "vascular dementia",
+      "Lewy body dementia",
+      "delirium",
+      "sudden confusion",
+      "shingles vaccine dementia",
+      "hearing aids dementia",
+      "ginkgo",
+      "lion's mane",
+      "omega-3 memory",
+      "B vitamins memory"
+    ],
+    "publishedAt": "",
+    "type": "guideline",
+    "summary": "Memory problems and dementia: lowering your risk, getting assessed, mild cognitive impairment, Alzheimer's blood tests, the medicines including anti-amyloid antibodies, what supplement trials show, and sudden confusion as an emergency.",
+    "reviewed": "2026-11-09",
     "kind": "condition"
   },
   {
@@ -11045,8 +11166,8 @@
     ],
     "publishedAt": "",
     "type": "guideline",
-    "summary": "Heart attack and stroke risk: who to screen, risk scores, coronary calcium (CAC) scoring, ApoB and Lp(a), blood pressure, aspirin, and what to do at each risk level. Built from ESC and AHA/ACC prevention guidelines and primary studies, plus Brad's risk framework.",
-    "reviewed": "2026-11-02",
+    "summary": "Heart attack and stroke risk: who to screen, risk scores, coronary calcium (CAC) scoring, ApoB and Lp(a), blood pressure, aspirin, and what to do at each risk level.",
+    "reviewed": "2026-11-09",
     "kind": "condition"
   },
   {
@@ -11078,12 +11199,13 @@
       "amlodipine",
       "diuretic",
       "beta-blocker",
-      "resistant hypertension"
+      "resistant hypertension",
+      "spironolactone"
     ],
     "publishedAt": "",
     "type": "guideline",
-    "summary": "Hypertension: how to measure at home, targets, salt, potassium, weight, exercise and alcohol, when medicine is needed (ACE inhibitors, ARBs, amlodipine, diuretics), and supplements that move blood pressure. Built from ESC, ACC/AHA and NICE guidance plus Brad's view.",
-    "reviewed": "2026-11-02",
+    "summary": "Hypertension: how to measure at home, targets, salt, potassium, weight, exercise and alcohol, when medicine is needed (ACE inhibitors, ARBs, amlodipine, diuretics), and supplements that move blood pressure.",
+    "reviewed": "2026-11-09",
     "kind": "condition"
   },
   {
@@ -11095,15 +11217,12 @@
     ],
     "keywords": [
       "high cholesterol",
-      "cholesterol",
       "LDL",
-      "LDL-C",
       "HDL",
       "non-HDL",
       "ApoB",
       "triglycerides",
       "lipid panel",
-      "lipids",
       "familial hypercholesterolemia",
       "Lp(a)",
       "statin",
@@ -11122,12 +11241,15 @@
       "plant sterols",
       "LDL target",
       "statin side effects",
-      "statin muscle pain"
+      "statin muscle pain",
+      "high triglycerides",
+      "fish oil",
+      "icosapent ethyl"
     ],
     "publishedAt": "",
     "type": "guideline",
-    "summary": "High cholesterol: what LDL, non-HDL and ApoB mean, targets by risk, lifestyle, statins, ezetimibe, bempedoic acid and PCSK9 drugs, supplements, and when to test Lp(a). Brad's divergence: treat to a low ApoB and LDL early. Built from ESC/EAS and AHA/ACC guidelines and primary trials.",
-    "reviewed": "2026-11-02",
+    "summary": "What LDL, non-HDL and ApoB mean, targets, lifestyle, cholesterol medicines, triglycerides, supplements and Lp(a). Brad's divergence: aim for a low ApoB and LDL early.",
+    "reviewed": "2026-11-09",
     "kind": "condition"
   },
   {
@@ -11171,8 +11293,8 @@
     ],
     "publishedAt": "",
     "type": "guideline",
-    "summary": "Kidney function: eGFR, creatinine, cystatin C and urine albumin (ACR), CKD stages, what protects the kidneys, kidney medicines (ACE inhibitors, ARBs, SGLT2 inhibitors), and which supplements and painkillers need care. Built from KDIGO and NICE guidance plus Brad's view.",
-    "reviewed": "2026-11-02",
+    "summary": "Kidney function: eGFR, creatinine, cystatin C and urine albumin (ACR), CKD stages, what protects the kidneys, kidney medicines (ACE inhibitors, ARBs, SGLT2 inhibitors), and which supplements and painkillers need care.",
+    "reviewed": "2026-11-09",
     "kind": "condition"
   },
   {
@@ -11200,17 +11322,14 @@
       "PRP",
       "NSAIDs",
       "paracetamol",
-      "exercise therapy",
       "weight loss",
       "knee replacement",
-      "hip replacement",
-      "arthroplasty",
-      "stiffness"
+      "hip replacement"
     ],
     "publishedAt": "",
     "type": "guideline",
-    "summary": "Joint wear: what osteoarthritis is, exercise and weight loss as first treatment, pain relief, supplements (glucosamine, collagen), injections, and when knee or hip replacement is worth it. Built from OARSI, NICE and ACR guidance and trials.",
-    "reviewed": "2026-11-02",
+    "summary": "Joint wear: what osteoarthritis is, exercise and weight loss as first treatment, pain relief, supplements (glucosamine, collagen), injections, and when knee or hip replacement is worth it.",
+    "reviewed": "2026-11-09",
     "kind": "condition"
   },
   {
@@ -11294,8 +11413,8 @@
     ],
     "publishedAt": "",
     "type": "guideline",
-    "summary": "Blood sugar, A1c and fasting glucose cut-offs, prediabetes and how to reverse it, insulin resistance (HOMA-IR), diet and exercise, and drugs: metformin, SGLT2 inhibitors, GLP-1 drugs. Built from ADA and NICE standards, trials and Brad's framework.",
-    "reviewed": "2026-11-02",
+    "summary": "Blood sugar, A1c and fasting glucose cut-offs, prediabetes and how to reverse it, insulin resistance (HOMA-IR), diet, exercise, supplements and drugs.",
+    "reviewed": "2026-11-09",
     "kind": "condition"
   },
   {
@@ -11328,12 +11447,13 @@
       "fat loss",
       "bariatric",
       "protein target",
-      "ideal body weight"
+      "ideal body weight",
+      "metabolic syndrome"
     ],
     "publishedAt": "",
     "type": "guideline",
     "summary": "Weight and obesity: what BMI, waist and body fat tell you, a diet and exercise plan that keeps muscle, and when GLP-1 drugs (semaglutide, tirzepatide) help, with label doses, side effects and low-dose use. Built from obesity guidelines, drug labels and trials, plus Brad's framework.",
-    "reviewed": "2026-11-02",
+    "reviewed": "2026-11-09",
     "kind": "condition"
   }
 ]
