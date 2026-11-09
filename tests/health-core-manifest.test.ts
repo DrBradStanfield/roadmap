@@ -42,9 +42,9 @@ describe('health-core package manifest', () => {
     expect(resolveUnderRootTsconfig('@roadmap/health-core/units')).toBe('packages/health-core/src/units.ts');
   });
 
-  // The one-file barrel (index.ts) was every feature's conflict point: 162
-  // commits in 30 days. Callers import the module that owns the name; a bare
-  // import must fail to resolve so the barrel cannot quietly come back.
+  // US-64 AC24: the one-file barrel (index.ts) was every feature's conflict
+  // point (110 commits in 30 days, 162 counting merges). Callers import the
+  // module that owns the name; with no root entry the barrel cannot come back.
   it('has no package-root entry: a bare @roadmap/health-core import does not resolve', () => {
     expect(manifest.main).toBeUndefined();
     expect(manifest.types).toBeUndefined();

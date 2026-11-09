@@ -28,7 +28,7 @@ export async function readChatStream(response: Response, onDelta: (delta: ChatDe
       first = false;
       // A fixed message: V8 quotes the offending input in its SyntaxError, and
       // a corrupted line can hold answer or thinking text, which must not
-      // reach the Sentry capture below (the server scrubs the same case).
+      // reach the caller's Sentry capture in chat-api.ts (the server scrubs the same case).
       let event;
       try { event = JSON.parse(line); } catch { throw new Error('Chat stream line was not JSON'); }
       if (event.type === 'done') {
