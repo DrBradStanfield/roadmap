@@ -83,6 +83,17 @@ function uploadRefusal(text: string): Error {
   return new StorageError(`${PROVIDER} write failed (409): ${text}`, undefined, undefined, 409);
 }
 
+/** Return quietly when a 409 means "nothing at this path", else throw. Dropbox
+ *  answers 409 for every endpoint error, so only a `not_found` summary is
+ *  absence; any other (a locked, restricted or malformed path, an unreadable
+ *  body) is a failure, never an empty record or a delete that "worked". The
+ *  body is read once: the iPhone engine's Response has no `clone()`. */
+async function expectNotFound(res: Response, what: string): Promise<void> {
+  const summary = errorSummary(await res.text());
+  if (summary !== null && /^path(_lookup)?\/not_found\b/.test(summary)) return;
+  throw new StorageError(`${PROVIDER} ${what} failed (409): ${summary ?? 'unreadable reply'}`, undefined, undefined, 409);
+}
+
 /** A Dropbox `path` argument: an `id:…` from a listing as is, else a folder-relative name. */
 function pathArg(ref: string): string {
   return ref.startsWith('id:') ? ref : `/${ref}`;
@@ -107,7 +118,10 @@ function download(accessToken: string, ref: string, signal?: AbortSignal): Promi
  */
 export async function dropboxRead(accessToken: string, fileName: string, signal?: AbortSignal): Promise<ReadResult> {
   const res = await download(accessToken, fileName, signal);
-  if (res.status === 409) return { body: null, version: null }; // path/not_found
+  if (res.status === 409) {
+    await expectNotFound(res, 'read');
+    return { body: null, version: null };
+  }
   if (!res.ok) throw new StorageError(`${PROVIDER} read failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
   const meta = parseApiResult(res);
   const text = await res.text();
@@ -186,7 +200,10 @@ export async function dropboxListFolder(accessToken: string, folder: string, sig
       body: JSON.stringify(body),
       signal,
     });
-    if (res.status === 409 && url === LIST_URL) return []; // path/not_found
+    if (res.status === 409 && url === LIST_URL) {
+      await expectNotFound(res, 'list');
+      return [];
+    }
     if (!res.ok) throw new StorageError(`${PROVIDER} list failed (${res.status})`, undefined, undefined, res.status);
     const page = await jsonBody<{ entries?: Array<Record<string, unknown>>; cursor?: string; has_more?: boolean }>(res);
     for (const entry of page.entries ?? []) {
@@ -212,7 +229,8 @@ async function dropboxDelete(accessToken: string, fileName: string, signal?: Abo
     body: JSON.stringify({ path: `/${fileName}` }),
     signal,
   });
-  if (!res.ok && res.status !== 409) throw new StorageError(`${PROVIDER} delete failed (${res.status})`, undefined, undefined, res.status);
+  if (res.status === 409) return expectNotFound(res, 'delete');
+  if (!res.ok) throw new StorageError(`${PROVIDER} delete failed (${res.status})`, undefined, undefined, res.status);
 }
 
 /**
