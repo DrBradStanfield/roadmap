@@ -19,7 +19,7 @@ Brad does not recommend L-citrulline, or any other nitric oxide supplement, and 
 
 ## Key safety points
 
-- L-citrulline may lower blood pressure. Ask your doctor or pharmacist first if you take blood pressure medicines, nitrates such as nitroglycerin, or erectile dysfunction drugs such as sildenafil or tadalafil; no trial has tested citrulline alone with these medicines [6][18][41]. One small 2-week trial of a multi-ingredient drink in men using PDE5 inhibitors reported no adverse events [44].
+- L-citrulline may lower blood pressure. Ask your doctor or pharmacist first if you take blood pressure medicines, nitrates such as nitroglycerin, or erectile dysfunction drugs such as sildenafil or tadalafil; no trial has tested citrulline alone with these medicines [6][18][41]. One small 14-day trial of a multi-ingredient drink in men using PDE5 inhibitors reported no adverse events [44].
 - If you have low blood pressure, or surgery planned, talk to your doctor first for the same reason [6][18].
 - Trials in pulmonary hypertension and heart failure were small and short, and the kidney does most of the conversion to arginine [3][25][26][33]. Ask your doctor first if you have one of these conditions or kidney disease [40].
 - Ask your doctor first if you are pregnant, breastfeeding, buying for a child or have diabetes. In a pre-eclampsia trial, systolic pressure and liver enzymes were higher at delivery with citrulline than with placebo, and in a trial in adolescents, blood glucose and insulin resistance rose [36][38][43].
@@ -169,7 +169,7 @@ No trial has compared citrulline with arginine for erectile dysfunction. The cas
 
 **Libido:**
 
-In a 2-week crossover pilot trial in 20 men with sexual dysfunction who kept using PDE5 inhibitors, desire frequency scores improved while they took a four-ingredient drink that included 800 mg a day of L-citrulline [44]. Because the drink held other ingredients, the effect of citrulline alone is unknown.
+In a crossover pilot trial in 20 men with sexual dysfunction who kept using PDE5 inhibitors, desire frequency scores improved while they took a four-ingredient drink that included 800 mg a day of L-citrulline for 14 days [44]. Because the drink held other ingredients, the effect of citrulline alone is unknown.
 
 **Limitations:**
 
@@ -199,7 +199,7 @@ In rats fed a fructose diet for 4 weeks, citrulline prevented high blood triglyc
 
 In a double-blind trial in 42 adolescents with abdominal obesity and fatty liver (MAFLD), 22 took 6 g a day of L-citrulline and 20 took placebo for 8 weeks. In the citrulline group, liver fat, LDL cholesterol and total cholesterol fell, but HDL cholesterol also fell, and body weight, blood glucose and insulin resistance (HOMA-IR) rose [43].
 
-**Synthesis:** The evidence is one rat study and one small 8-week trial in adolescents with a mixed result: less liver fat, but higher blood glucose and insulin resistance [30][43].
+**Synthesis:** The evidence is one rat study [30] and one small human trial. That trial, in adolescents, lasted 8 weeks and had a mixed result: less liver fat, but higher blood glucose and insulin resistance [43].
 
 ### Ammonia Clearance and Urea Cycle Support
 
