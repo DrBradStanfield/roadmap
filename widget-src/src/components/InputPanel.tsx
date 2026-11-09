@@ -6,22 +6,21 @@ import { SectionIcon } from './icons';
 import { flushSync } from 'react-dom';
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, type MutableRefObject, type ReactNode } from 'react';
 import { InfoTooltip } from './InfoTooltip';
-import { SEXES, type HealthInputs, type HealthResults, type ScreeningInputs, GLP1_NAMES, GLP1_DRUGS, SGLT2I_NAMES, SGLT2I_DRUGS, METFORMIN_OPTIONS, type MedicationInputs } from '@roadmap/health-core/types';
+import { SEXES, type HealthInputs, type HealthResults, type ScreeningInputs, type MedicationInputs } from '@roadmap/health-core/types';
 import type { CorrectFn, Refused, SaveTask } from '../lib/matrix-save';
 import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, mayStillFit, type Grading } from '../lib/blood-test-cell';
 import { useRangeWait } from '../lib/useRangeWait';
 import type { ApiLabValue, ApiSupplement } from '../lib/api-types';
 import { DRAFTS_CLEARED_EVENT, loadFromLocalStorage } from '../lib/storage';
 
-import { type FormStage, FIELD_METRIC_MAP, medicationsToInputs, screeningsToInputs, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD, VITAL_METRICS } from '@roadmap/health-core/mappings';
-import { type WeightMedicationTrigger, type LipidMarker, weightMedIntro } from '@roadmap/health-core/suggestions';
+import { type FormStage, FIELD_METRIC_MAP, screeningsToInputs, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD, VITAL_METRICS } from '@roadmap/health-core/mappings';
+import { type WeightMedicationTrigger, type LipidMarker } from '@roadmap/health-core/suggestions';
 import { type UnitSystem, fromCanonicalValue, toCanonicalValue, getDisplayLabel, getDisplayRange, UNIT_DEFS, hasUnitChoice, cmToFeetInches, feetInchesToCm, formatHeightDisplay, bpTargetFor } from '@roadmap/health-core/units';
 import { identityFieldRange, isBirthYearClearlyInvalid } from '@roadmap/health-core/validation';
 import { formatValue } from '@roadmap/health-core/lab-limits';
-import { weightCascade } from '@roadmap/health-core/medication-cascades';
 import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
 import { dayOf, localDay } from '@roadmap/health-core/merge';
-import { anyScreeningEligible, MEDICATION_TEXT, SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, optionsShowing, escalationOptions, doseOptions, medicationWrites, screeningWrites, readScreening, followupDateLabel, dexaEligible } from '@roadmap/health-core/input-form';
+import { anyScreeningEligible, SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, medicationWrites, screeningWrites, readScreening, followupDateLabel, dexaEligible } from '@roadmap/health-core/input-form';
 import { formatShortDate, MONTHS_FULL } from '../lib/constants';
 import { BloodTestTimeline, useLiveRegion, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
@@ -38,6 +37,7 @@ import type { FormSlots, Placement } from './MyHealth';
 import { interceptHistory, optionElements, type FormKit } from './form-kit';
 import { ScreeningQuestions } from './ScreeningQuestions';
 import { LipidMedications } from './LipidMedications';
+import { WeightMedications } from './WeightMedications';
 
 /** The history-state key a phone value page's entry carries (US-62 AC10). */
 const VALUE_PAGE_STATE = 'hrValuePage';
@@ -1478,155 +1478,7 @@ export function InputPanel({
 
     if (!weightCascadeMode && !hasAnyWeightInput) return null;
 
-    const medInputs = medicationsToInputs(medications);
-    const cascade = weightCascade(medInputs);
-
-    const glp1Drug = medInputs.glp1?.drug ?? 'none';
-    const glp1Dose = medInputs.glp1?.dose ?? null;
-    const availableGlp1Doses = GLP1_DRUGS[glp1Drug]?.doses ?? [];
-    const sglt2iDrug = medInputs.sglt2i?.drug ?? 'none';
-    const sglt2iDose = medInputs.sglt2i?.dose ?? null;
-    const availableSglt2iDoses = SGLT2I_DRUGS[sglt2iDrug]?.doses ?? [];
-
-    // ── Shared medication dropdowns ──
-
-    const glp1Dropdown = (
-      <div className="health-field">
-        <label htmlFor="glp1-name">{MEDICATION_TEXT.glp1Label}</label>
-        {weightCascadeMode && <p className="med-step-hint">{cascade.suggest.includes('glp1-dose') ? MEDICATION_TEXT.doseHint : MEDICATION_TEXT.glp1Hint}</p>}
-        <div className="statin-selection-row">
-          <select
-            id="glp1-name"
-            value={glp1Drug}
-            onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'glp1', e.target.value)}
-          >
-            {optionElements(optionsShowing(GLP1_NAMES, glp1Drug))}
-          </select>
-          {availableGlp1Doses.length > 0 && (
-            <select
-              id="glp1-dose"
-              value={glp1Dose ?? ''}
-              onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'glp1_dose', e.target.value)}
-            >
-              {optionElements(optionsShowing(doseOptions(availableGlp1Doses), glp1Dose === null ? '' : String(glp1Dose), 'Add dose'))}
-            </select>
-          )}
-        </div>
-        {place.on('glp1', 'glp1_dose')}
-      </div>
-    );
-
-    const sglt2iDropdown = (
-      <div className="health-field">
-        <label htmlFor="sglt2i-name">{MEDICATION_TEXT.sglt2iLabel}</label>
-        {weightCascadeMode && <p className="med-step-hint">{MEDICATION_TEXT.sglt2iHint}</p>}
-        <div className="statin-selection-row">
-          <select
-            id="sglt2i-name"
-            value={sglt2iDrug}
-            onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'sglt2i', e.target.value)}
-          >
-            {optionElements(optionsShowing(SGLT2I_NAMES, sglt2iDrug))}
-          </select>
-          {availableSglt2iDoses.length > 0 && (
-            <select
-              id="sglt2i-dose"
-              value={sglt2iDose ?? ''}
-              onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'sglt2i_dose', e.target.value)}
-            >
-              {optionElements(optionsShowing(doseOptions(availableSglt2iDoses), sglt2iDose === null ? '' : String(sglt2iDose), 'Add dose'))}
-            </select>
-          )}
-        </div>
-        {place.on('sglt2i', 'sglt2i_dose')}
-      </div>
-    );
-
-    const metforminDropdown = (
-      <div className="health-field">
-        <label htmlFor="metformin">{MEDICATION_TEXT.metforminLabel}</label>
-        {weightCascadeMode && <p className="med-step-hint">{MEDICATION_TEXT.metforminHint}</p>}
-        <select
-          id="metformin"
-          value={medInputs.metformin || 'none'}
-          onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'metformin', e.target.value)}
-        >
-          {optionElements(optionsShowing(METFORMIN_OPTIONS, medInputs.metformin || 'none'))}
-        </select>
-        {place.on('metformin')}
-      </div>
-    );
-
-    const neutral = MEDICATION_TEXT.weightNeutral;
-
-    // ── Flat mode: all fields visible independently ──
-    if (!weightCascadeMode) {
-      return (
-        <div className="section-card">
-          <section className="health-section">
-            <h4 className="mh-group-label">{MEDICATION_TEXT.weightTitle}</h4>
-            <p className="health-section-desc">{neutral}</p>
-            {glp1Dropdown}
-            {sglt2iDropdown}
-            {metforminDropdown}
-          </section>
-        </div>
-      );
-    }
-
-    // ── Cascade mode: progressive disclosure, the plan's own steps and words ──
-    // Progressive disclosure opens the plan's next step; a step that
-    // holds a recorded value always shows (US-06 AC7).
-    const step = cascade.escalation;
-    const showEscalation = !!step || medInputs.glp1Escalation !== undefined;
-
-    return (
-      <div className="section-card">
-      <section className="health-section medication-cascade">
-        <h4 className="mh-group-label">{MEDICATION_TEXT.weightTitle}</h4>
-        <p className="health-section-desc">
-          {/* It recommends only while the plan shows a step's card: with every
-              step answered the trigger stays on and the plan shows none. */}
-          {cascade.suggest.length === 0 ? neutral : weightMedIntro(planBasis!.bmi!, weightMedTrigger.reasons)}
-        </p>
-
-        {glp1Dropdown}
-
-        {showEscalation && (
-          <div className="health-field med-step-enter">
-            <label htmlFor="glp1-escalation">
-              {step ? MEDICATION_TEXT.glp1EscalationLabel[step] : MEDICATION_TEXT.escalationRecorded}
-            </label>
-            {step && (
-              <p className="med-step-hint">
-                {MEDICATION_TEXT.glp1EscalationHint[step]}
-              </p>
-            )}
-            <select
-              id="glp1-escalation"
-              value={medInputs.glp1Escalation || 'not_yet'}
-              onChange={e => writeMedication(medInputs, weightCascadeMode, 'glp1_escalation', e.target.value)}
-            >
-              {optionElements(optionsShowing(escalationOptions(step), medInputs.glp1Escalation || 'not_yet'))}
-            </select>
-            {place.on('glp1_escalation')}
-          </div>
-        )}
-
-        {(cascade.sglt2iReached || medInputs.sglt2i !== undefined) && (
-          <div className="med-step-enter">
-            {sglt2iDropdown}
-          </div>
-        )}
-
-        {(cascade.metforminReached || medInputs.metformin !== undefined) && (
-          <div className="med-step-enter">
-            {metforminDropdown}
-          </div>
-        )}
-      </section>
-      </div>
-    );
+    return <WeightMedications place={place} writeMedication={writeMedication} medications={medications} planBasis={planBasis}/>;
   };
 
   // Null, not an empty element, when no screening applies: My health draws a topic for any element (US-62 AC17).

@@ -140,6 +140,12 @@ describe('US-62 AC17: the sections, in the iPhone\'s order', () => {
     expect(topics(view).length).toBeGreaterThan(0); // the plan is drawn
     expect(view.container.querySelector('#statin-name')).toBeNull();
   });
+
+  it('with no weight, HbA1c or triglycerides and the trigger off, no weight or diabetes medicine questions (US-06 AC5 hidden mode)', async () => {
+    const view = await show(() => seedGuest({ sex: 'male', heightCm: 180, birthYear: 1975, birthMonth: 1, unitSystem: 'si' }, [['ldl', 2.8]], [], DAY));
+    expect(topics(view).length).toBeGreaterThan(0); // the plan is drawn
+    expect(view.container.querySelector('#glp1-name')).toBeNull();
+  });
 });
 
 describe('US-62 AC18: every suggestion drawn exactly once', () => {
