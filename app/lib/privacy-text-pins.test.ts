@@ -1,6 +1,6 @@
 /**
  * US-15 (what chat leaves behind) and US-32 (the report_feedback guard's limits): pins the
- * privacy sentences ruled for PR 1223 round 2, so a later edit cannot quietly restore an
+ * privacy sentences ruled for PR 1223 round 2 (the saved-chat answer itself waits for C1), so a later edit cannot quietly restore an
  * overclaim. Static checks on the prompt files, the guides and the reminders disclosure.
  */
 import { describe, it, expect } from 'vitest';
@@ -11,24 +11,12 @@ const system = read('app/lib/chat-system-prompt.md');
 const doctor = read('app/lib/chat-posture-doctor.md');
 const reminders = read('widget-src/standalone/reminders-control.tsx');
 
-const SAVED_CHAT_ANSWER =
-  "Your health record and tool-page chats are saved in your own storage, not on our server. Our server keeps the text of each chat question for 30 days. If the question is about your health, it also keeps a copy with no end date, to improve the chatbot, after an automatic step tries to remove details that identify you. 'Where your health data lives' lists what it keeps and for how long.";
-
 const GUARD =
   'It refuses a report that looks like it holds a value, an email or a phone number. It can miss one, and it cannot spot a diagnosis written in words, so read the report before you agree.';
 
-describe('the saved-chat answer says what the server keeps (US-15)', () => {
-  it('the system prompt scripts the ruled answer', () => {
-    expect(system).toContain(`*"${SAVED_CHAT_ANSWER}"*`);
-  });
-
-  it('the old answer, which said nothing reaches the server, is gone', () => {
-    expect(system).not.toContain("It's never kept in a Dr Brad account, so your health data stays yours.");
-    expect(system).not.toContain('Yes — your conversations are saved to your own storage.');
-  });
-
-  it('the store-account instruction stays', () => {
-    expect(system).toContain('never to a Dr Brad / MicroVitamin server account');
+describe('the store-account instruction stays (US-15)', () => {
+  it('account questions still go to the store account page, never chat or health data', () => {
+    expect(system).toContain('do NOT point users to account.microvitamin.com for chat or health data');
   });
 });
 
@@ -57,6 +45,21 @@ describe('the feedback guard states its limits in every guide (US-32)', () => {
   it('where-your-data-lives agrees and says it can miss one', () => {
     const guide = read('docs/guides/where-your-data-lives.md');
     expect(guide).toContain('The tool refuses a report that looks like it holds a value, an email or a phone number. It can miss one,');
+  });
+});
+
+describe('the guide says which chats create an account row (US-15 AC7b)', () => {
+  const guide = read('docs/guides/where-your-data-lives.md');
+  it('the tool page chat runs as if you were not signed in', () => {
+    expect(guide).toContain("the tool page's chat still runs as if you were not");
+  });
+  it('the bubble and the embed are both named, and the account row is what stays', () => {
+    expect(guide).toContain('Where the chat bubble or the chatbot embed appears on other pages');
+    expect(guide).toContain('The daily job and Delete All My Data do not remove your account row.');
+  });
+  it('the names sentence does not tie updates to each read', () => {
+    expect(guide).toContain('Our server updates your names from your store account from time to time.');
+    expect(guide).not.toContain('Later messages keep the names up to date');
   });
 });
 
