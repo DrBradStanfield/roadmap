@@ -465,6 +465,11 @@ final class FakeHealthStore: HealthStoreClient {
 
     func anchorData(_ kind: HealthKind) -> Data { Data("\(kind.rawValue)-\(served[kind] ?? 0)".utf8) }
 
+    /// The anchor each read of a kind started from (US-72 AC10: a Connect after an erase reads from nil).
+    private(set) var sampleAnchors: [HealthKind: [Data?]] = [:]
+    /// Every read of any kind, vitals and lab results.
+    var reads: Int { sampleAnchors.values.reduce(0) { $0 + $1.count } + recordReads }
+
     func samples(of kind: HealthKind, after anchor: Data?) async throws -> HealthBatch {
         if locked { throw HealthStoreError.locked }
         // HealthKit answers later: another refresh can be asked for meanwhile.
@@ -473,6 +478,7 @@ final class FakeHealthStore: HealthStoreClient {
         let batch = pending[kind] ?? []
         pending[kind] = nil
         served[kind, default: 0] += 1
+        sampleAnchors[kind, default: []].append(anchor)
         return HealthBatch(samples: batch, anchor: anchorData(kind))
     }
 
@@ -489,9 +495,19 @@ final class FakeHealthStore: HealthStoreClient {
 
     private(set) var observed: [HealthKind] = []
     private(set) var onChange: (@MainActor () async -> Void)?
+    private(set) var observeCalls = 0
     func observe(_ kinds: [HealthKind], onChange: @escaping @MainActor () async -> Void) {
+        observeCalls += 1
         observed = kinds
         self.onChange = onChange
+    }
+
+    /// US-72 AC10 (pending Brad's yes): the erase stops every observer query and background delivery.
+    private(set) var stops = 0
+    func stopObserving() {
+        stops += 1
+        observed = []
+        onChange = nil
     }
 
     /// How many times the app asked Health to delete its own samples (US-25 AC16).
@@ -502,6 +518,15 @@ final class FakeHealthStore: HealthStoreClient {
         if deleteFails { throw HealthStoreError.locked }
         ownDeletes += 1
         saved = []
+    }
+
+    /// Pending Brad (k2): the sync ids a remote erase asked Health to delete, one list per call,
+    /// taken from the written-versions memory (never a query by source).
+    private(set) var deletedSyncIds: [[String]] = []
+    func deleteSamples(syncIds: [String]) async throws {
+        if deleteFails { throw HealthStoreError.locked }
+        deletedSyncIds.append(syncIds.sorted())
+        saved.removeAll { syncIds.contains($0.syncId) }
     }
 }
 

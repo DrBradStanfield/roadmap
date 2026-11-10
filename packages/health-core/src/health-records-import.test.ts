@@ -301,15 +301,13 @@ describe('US-72 AC3: the day', () => {
     expect(file.labValues.map((m) => m.recordedAt)).toEqual(['2026-10-19T00:00:00.000Z', '2026-10-18T00:00:00.000Z']);
   });
 
-  it('AC3, AC10: an `issued` later than now, unreadable, or before the erase does not land', () => {
-    const erased: RoadmapFile = { ...empty(), meta: { ...empty().meta, erasedAt: '2026-10-22T00:00:00.000Z' } };
-    const { file, counts } = run(erased, [
+  it('AC3: an `issued` later than now or unreadable does not land', () => {
+    const { file, counts } = run(empty(), [
       rec({ ...APPLE_SAMPLE_DSTU2, id: 'a', issued: '2026-11-02T09:30:00Z' }, { fhirVersion: DSTU2 }),
       rec({ ...APPLE_SAMPLE_DSTU2, id: 'b', issued: '2026-02-30T09:30:00Z' }, { fhirVersion: DSTU2 }),
-      rec({ ...APPLE_SAMPLE_DSTU2, id: 'c' }, { fhirVersion: DSTU2 }),
       rec({ ...APPLE_SAMPLE_DSTU2, id: 'd', issued: '2026-10-23T09:30:00Z' }, { fhirVersion: DSTU2 }),
     ]);
-    expect(counts).toMatchObject({ added: 1, notRead: 3 });
+    expect(counts).toMatchObject({ added: 1, notRead: 2 });
     expect(file.labValues.map((m) => m.recordedAt)).toEqual(['2026-10-23T09:30:00.000Z']);
   });
 
@@ -956,52 +954,12 @@ describe('US-72 AC9: the import wins a conflict', () => {
   });
 });
 
-describe('US-72 AC10: erase, and the person\'s re-import', () => {
-  const erasedAt = '2026-10-22T00:00:00.000Z';
-  const erasedFile = (): RoadmapFile => ({ ...empty(), meta: { ...empty().meta, erasedAt } });
-  /** Before the erase (LDL, 21 Oct) and after it (HDL, 23 Oct). */
-  const batch = () => [rec(obs(R4_LDL)), rec(obs(DSTU2_HDL, { effectiveDateTime: '2026-10-23' }), { fhirVersion: DSTU2 })];
-  /** Settings' re-import row (design A1): the only caller that passes `reimport: true`. */
-  const reimport = (file: RoadmapFile, records: ClinicalRecordInput[], now = LATER) =>
-    importHealthRecords(file, records, { now, reimport: true } as Parameters<typeof importHealthRecords>[2]);
-
-  it('AC10: without reimport, a result drawn before the record\'s erase does not land; one drawn after does', () => {
-    const { file, counts } = run(erasedFile(), batch());
-    expect(counts).toMatchObject({ added: 1, notRead: 1 });
-    expect(file.labValues.map((m) => m.metricName)).toEqual(['hdl']);
-  });
-
-  it('AC10: with reimport, results drawn before and after the erase both land', () => {
-    const { file, counts } = reimport(erasedFile(), batch());
-    expect(counts).toEqual({ added: 2, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
-    expect(file.labValues.map((m) => [m.metricName, m.recordedAt.slice(0, 10), m.status, m.source])).toEqual([
-      ['ldl', '2026-10-21', 'active', 'health_records'], ['hdl', '2026-10-23', 'active', 'health_records'],
-    ]);
-  });
-
-  it('AC10, AC5: the same batch again with reimport is already in the record: no new rows, no flips', () => {
-    const first = reimport(erasedFile(), batch());
-    const { file, counts } = reimport(first.file, batch());
-    expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 2, notRead: 0 });
-    expect(file.labValues).toEqual(first.file.labValues);
-    expect(file.labValues.every((m) => m.status === 'active')).toBe(true);
-  });
-
-  it('AC10, AC9: a re-imported result corrects another value typed for that day after the erase; the same value appends nothing', () => {
-    const typed = appendMeasurement(erasedFile(), { metricType: 'ldl', value: 3.1, recordedAt: '2026-10-21', now: NOW });
-    if (!typed.ok) throw new Error('setup');
-    const theirs = typed.file.labValues[0];
-    const { file, counts } = reimport(typed.file, [rec(obs(R4_LDL))]);
-    expect(counts).toEqual({ added: 0, corrected: 1, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
-    expect(file.labValues.map((m) => [m.value, m.status, m.source, m.correctsId])).toEqual([
-      [3.1, 'entered-in-error', 'manual', null], [4.6, 'active', 'health_records', theirs.id],
-    ]);
-
-    const same = appendMeasurement(erasedFile(), { metricType: 'ldl', value: 4.6, recordedAt: '2026-10-21', now: NOW });
-    if (!same.ok) throw new Error('setup');
-    const kept = reimport(same.file, [rec(obs(R4_LDL))]);
-    expect(kept.counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 1, notRead: 0 });
-    expect(kept.file).toBe(same.file);
+describe('US-72 AC10: erase (pending Brad\'s yes, 2026-11-11)', () => {
+  it('US-25 AC13, US-72 AC10: a result drawn before the record\'s erase lands (a Connect after an erase reads everything)', () => {
+    const erased: RoadmapFile = { ...empty(), meta: { ...empty().meta, erasedAt: '2026-10-22T00:00:00.000Z' } };
+    const { file, counts } = run(erased, [rec(obs(R4_LDL)), rec(obs(DSTU2_HDL, { effectiveDateTime: '2026-10-23' }), { fhirVersion: DSTU2 })]);
+    expect(counts).toMatchObject({ added: 2, notRead: 0 });
+    expect(file.labValues.map((m) => m.metricName).sort()).toEqual(['hdl', 'ldl']);
   });
 });
 

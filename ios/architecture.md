@@ -672,10 +672,15 @@ exact list matched to `types.ts` in the spike).
   Otherwise a scale re-sync would undo a user's correction every time.
 - **A sample deleted in the Health app is ignored.** The row stays. The record is
   append-only (FHIR; Brad 2026-09-24): we never remove or retract a value.
-- After taking in an erase, the importer skips samples older than the erase. The import
-  anchor is kept outside the record. Since 2026-11-11 (pending Brad's yes) this erase rule
-  covers vitals only (`device-import.ts`); lab results from Health Records follow US-72 AC10:
-  a result drawn before the erase comes back when the person asks for it in Settings.
+- *Superseded 2026-11-11 (pending Brad's yes):* after taking in an erase, the importer skips
+  samples older than the erase. The import anchor is kept outside the record.
+- **An erase disconnects Apple Health (2026-11-11, pending Brad's yes; US-72 AC10).** A local
+  erase, or a newer erase taken in from another device on the same record source, disconnects
+  Health and resets every import anchor, vitals and lab results alike. The first open of a
+  record (a new cloud included) adopts its erase as seen and never disconnects. One stored
+  value holds the erase seen and its source; a pure gate decides keep, disconnect or adopt.
+  Order on a local erase: the record mark, the erase, then the disconnect. Connect reads
+  everything from the start; the importers keep no erase rule. Anchors stay outside the record.
 - Merge orders rows by when they were written, not when they were measured. Rules such as
   "the latest reading of the day wins across devices" would need the sample time in the
   record and a merge change: merge-class work, adversary plus Codex.

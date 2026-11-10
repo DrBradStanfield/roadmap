@@ -2,7 +2,8 @@
 // Health) become appended rows, under the record's own rules. The importer
 // fills an empty day or replaces a day its own source holds; it never
 // supersedes a value a person typed or corrected, never imports a reading
-// twice, and skips what the record's erase removed.
+// twice. No erase rule filters a reading: an erase disconnects Apple Health
+// and a Connect reads everything (US-72 AC10, pending Brad's yes).
 import { describe, expect, it } from 'vitest';
 import { importDeviceSamples, type DeviceSample } from './device-import';
 import { appendMeasurement, correctValue } from './record-edits';
@@ -218,14 +219,16 @@ describe('importDeviceSamples: blood pressure is one reading', () => {
 });
 
 describe('importDeviceSamples: what is refused', () => {
-  it('skips readings measured before the record\'s erase', () => {
+  // Pending Brad's yes (2026-11-11): the erase rule leaves the importer.
+  it('US-25 AC13, US-72 AC10: a reading measured before the record\'s erase lands (a Connect after an erase reads everything)', () => {
     const erased: RoadmapFile = { ...empty(), meta: { ...empty().meta, eraseEpoch: 1, erasedAt: '2026-10-21T00:00:00.000Z' } };
     const result = run(erased, [
-      sample({ externalId: 'hk-old', measuredAt: '2026-10-21T12:59:59+13:00' }),
+      sample({ externalId: 'hk-old', measuredAt: '2026-10-20T12:59:59+13:00' }),
       sample({ externalId: 'hk-new', measuredAt: '2026-10-21T13:00:01+13:00' }),
     ]);
-    expect(result.skipped.erased).toBe(1);
-    expect(result.file.measurements.map((row) => row.externalId)).toEqual(['hk-new']);
+    expect(result.added).toBe(2);
+    expect(result.skipped).not.toHaveProperty('erased');
+    expect(result.file.measurements.map((row) => row.externalId).sort()).toEqual(['hk-new', 'hk-old']);
   });
 
   it('skips a value outside the app\'s range, a metric it does not track, a future day and a bad time', () => {
