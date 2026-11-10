@@ -2022,7 +2022,7 @@ As an iPhone user who shares lab results from Health, I see how many results cam
   The sheet ends with "Your results stay in Apple Health. You can add any of them by hand from Blood tests." (D2.)
 - AC4 (engine): the engine splits `notRead` into these reasons, each a count, and the total stays the same. master/austin builds this, with a test for each reason.
 - AC5 (privacy): the counts and reasons stay on the phone, in the app's own memory (like the import's anchor), never in the record, the server, logs or an event. The existing "health records imported" event is unchanged.
-- AC6 (the erase rule): the "dated before you erased" reason follows the erase rule that master/austin is redesigning (Brad: someone who erased can import again). If that rule changes, this row changes or goes with it.
+- AC6 (the erase rule): Brad 2026-11-11: "Delete all my data" also disconnects Apple Health and resets its bookmark; Connect reads everything again. If master/austin's survey confirms nothing else needs the import's erase check, that check is deleted and the "Dated before you erased your record" reason goes from AC3 and AC4. The final reason list comes from master/austin before the screen is built.
 - AC7 (web): no web twin. The web has no Apple Health, and its lab upload already shows a review of every value before saving (US-12).
 - **Decisions for Brad (drafts; nothing is final until he approves the exact words):**
   - D1, where it shows. (a, recommended) the Settings line always, plus a one-time notice on My health after the person's own act: a background import never pops anything up. (b) The Settings line only. (c) A notice after every import that changes something.
