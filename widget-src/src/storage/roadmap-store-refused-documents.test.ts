@@ -97,3 +97,21 @@ it('a refused document save keeps an original a live row still names (US-11 AC1a
   const reread = await RoadmapStore.create(new LocalStorageAdapter());
   expect((await reread.readDocumentFile(ref)).size).toBe(pdf().size);
 });
+
+it('a refused document save keeps an original another tab saved after this tab took the erase in (US-11 AC1a)', async () => {
+  const { other, adapter, page } = await twoTabs();
+  const held = adapter.hold();
+  const pending = page.bulkSaveDocuments(upload('Lipids'));
+  await held.reached;
+  vi.setSystemTime(new Date('2026-11-10T10:01:00.000Z'));
+  expect((await other.deleteAllData()).success).toBe(true);
+  expect(await page.refreshFromRemote()).toBe(true); // this tab's copy now holds no documents
+  // Only then does the other tab save the same letter: same name, same ref.
+  vi.setSystemTime(new Date('2026-11-10T10:02:00.000Z'));
+  const { saved } = await other.bulkSaveDocuments(upload('Lipids'));
+  await other.flush();
+  const ref = saved[0].fileRef!;
+  held.release();
+  expect(await pending).toEqual({ saved: [], errorCount: 1 });
+  expect(blobKeys()).toEqual([DOC_PREFIX + ref]);
+});

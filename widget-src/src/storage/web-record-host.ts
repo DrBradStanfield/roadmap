@@ -9,6 +9,7 @@ import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/ada
 import type { RecordHost } from '@roadmap/health-core/record-host';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { liveOriginals } from '@roadmap/health-core/record-session';
+import { ROADMAP_DOC } from '@roadmap/health-core/roadmap-doc';
 import {
   LocalStorageAdapter,
   clearLocalNamedFiles,
@@ -93,11 +94,19 @@ export function isSyncPending(): boolean {
 }
 
 /** A refused document save: on the device tier, the originals it wrote go,
- *  unless a live row of `file` names one, so none outlives the refusal
- *  (US-11 AC1a). A cloud is left alone: its adapters cannot delete (AC5). */
+ *  unless a live row names one, in `file` or in the device record read now
+ *  (another tab may have saved since), so none outlives the refusal
+ *  (US-11 AC1a). A record that cannot be read names everything: nothing goes.
+ *  A cloud is left alone: its adapters cannot delete (AC5). */
 export function dropRefusedOriginals(host: RecordHost, file: RoadmapFile, written: ReadonlyArray<{ fileRef: string }>): void {
   if (host.tier !== 'device') return;
-  const live = liveOriginals(file);
+  let live: Set<string>;
+  try {
+    const stored = ROADMAP_DOC.migrate(host.sync.readSync(ROADMAP_FILE_NAME).body, { deviceId: getDeviceId(), now: new Date().toISOString() });
+    live = new Set([...liveOriginals(file), ...liveOriginals(stored)]);
+  } catch {
+    return;
+  }
   for (const { fileRef } of written) if (fileRef && !live.has(fileRef)) safeRemoveItem(DOC_KEY_PREFIX + fileRef);
 }
 
