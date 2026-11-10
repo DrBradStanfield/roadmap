@@ -54,7 +54,7 @@ export interface PlanView {
 }
 
 /** New or changed suggestions glow for 3s, then fade, once the plan has settled (3s after mount). */
-function useHighlights(suggestions: Suggestion[] | undefined): Highlights {
+export function useHighlights(suggestions: Suggestion[] | undefined): Highlights {
   const [highlighted, setHighlighted] = useState<Set<string>>(NO_HIGHLIGHTS);
   const [fadingOut, setFadingOut] = useState<Set<string>>(NO_HIGHLIGHTS);
   const baselineRef = useRef<Map<string, { title: string; description: string }>>(new Map());
