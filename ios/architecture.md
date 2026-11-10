@@ -1640,8 +1640,10 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
     `Engine/` as `HealthEngine+<Feature>.swift` (`+Cloud`, `+Erase`). Both are extensions of
     `HealthEngine`; the core doors (plan, My data, edits) stay in `HealthEngine.swift`. This is
     the split the files already follow (two of each), so neither moves.
-  - `LabUpload/`: "Add medical records" (US-52). `LabUploadSheet` (the flow) and
-    `LabUploadExplainer`, `DocumentScanner`, `EngineLabDoors` (the engine doors it calls),
+  - `LabUpload/`: "Add medical records" (US-52). `LabUploadSheet` (the flow), its one
+    named state `LabUploadFlow` (a pure `transition`, AC8b), `LabReportSave` (a report's
+    defaults, its save plan and the one save that its Save and Save all both run),
+    `LabSaveAllViews`, and `LabUploadExplainer`, `DocumentScanner`, `EngineLabDoors` (the engine doors it calls),
     `LabUploadClient` (the server's extraction), `LabReview` and `LabReviewView` (the
     engine's answers and their screen), `LabReadingDiagram`, `LabFileReader` and `ZipReader`.
   - `EngineUpdates/`: over-the-air engines (D3, AC18). `EngineRelease` (pins, bridge,
