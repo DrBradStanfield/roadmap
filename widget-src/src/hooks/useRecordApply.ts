@@ -67,7 +67,8 @@ interface Later {
  * the record is read once and the change counted once (survey R8). The page's
  * own save reads the values only (`ownSave`) and leaves a hold as it is
  * (READ_POLICY). Narrower reads sit outside the table: the lab rows alone
- * (useRecordReads refreshLabValues) after a lab value added by hand.
+ * (useRecordReads refreshLabValues) after a lab value added by hand, and when
+ * the upload modal opens or closes (HealthTool).
  *
  * The page listens from its first commit (a layout effect). A change
  * announced before the page has shown its first read waits for it, then
@@ -158,13 +159,11 @@ export function useRecordApply(args: {
     return read;
   }));
 
-  // The page's own save: the values, lab rows, both matrices and the chat mirror, nothing else (US-34 AC4a).
-  const ownSave = useCallback((): Promise<void> => latest.current.reloadValues().then(() => {}), []);
-
   const signal = useCallback((reason: ReadReason): Promise<void> | void => {
     const { later } = latest.current;
     const policy = READ_POLICY[reason];
-    if (policy.read === 'values') return ownSave();
+    // The page's own save: the values, lab rows, both matrices and the chat mirror, nothing else (US-34 AC4a).
+    if (policy.read === 'values') return latest.current.reloadValues().then(() => {});
     // Not while the user is mid-typing: the re-read replaces the form's
     // inputs, and a remote change landing on a half-entered height would take
     // those keystrokes with it. The relay HOLDS it: the next profile save
@@ -178,7 +177,10 @@ export function useRecordApply(args: {
     if (policy.relay === 'arrive') return relay.arrived(getEraseIdentity() === getShownErase() && (later().profileDirty() || !!latest.current.units.pending()));
     if (policy.spends) later().clearAnswered(true); // a refusal: not an answer given here (US-62 AC13); spends a waiting landing (AC25b)
     return relay.reread();
-  }, [relay, ownSave]);
+  }, [relay]);
+
+  // The page's own save re-reads through the table; awaiting it types the read as Promise<void> with no cast.
+  const ownSave = useCallback(async () => { await signal('own-save'); }, [signal]);
 
   const { loaded } = args;
   useLayoutEffect(() => { if (loaded) relay.loaded(); }, [loaded, relay]);

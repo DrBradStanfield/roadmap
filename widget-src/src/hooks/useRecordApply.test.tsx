@@ -64,7 +64,8 @@ async function observe(reason: ReadReason, held: boolean): Promise<Seen> {
     expect(counted()).toBe(0); // held
   }
   vi.clearAllMocks();
-  await act(async () => { await hook.result.current.signal(reason); });
+  // own-save goes in where the page calls it (ownSave), so its rows test the page's path through the table.
+  await act(async () => { await (reason === 'own-save' ? hook.result.current.ownSave() : hook.result.current.signal(reason)); });
   await settle();
   const seen = {
     reads: fx.reloadValues.mock.calls.length,
