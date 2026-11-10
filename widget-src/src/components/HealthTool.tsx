@@ -111,13 +111,13 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // The relay is created once; the load path it calls changes identity on
   // most renders, so it is reached through a ref (US-34 AC4).
   const applyRemoteRef = useRef<() => void>(() => {});
-  const remoteRelay = useRef(
+  const [remoteRelay] = useState(() =>
     createRemoteChangeRelay(() => {
       clearAnswered(); // another writer's change is no answer given here (US-62 AC13)
       trackProductEvent('remote_change_applied', { backend: getBackendKind() });
       void applyRemoteRef.current();
     }),
-  ).current;
+  );
 
   // Filled by each matrix with its commit, so a lab upload commits both
   // drafts before its own save (US-03 AC5).
@@ -181,17 +181,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       mountRead.current = null;
       const { erase, result } = first ?? { erase: getEraseIdentity(), result: await loadLatestMeasurements() };
       showErase(erase);
-
       if (hasSavedRecord(result)) {
-        // Apply saved unit preference
-        applySavedUnitSystem(result.inputs.unitSystem);
-        setInputs(result.inputs);
-        markSaved(result.inputs);
+        showRecord(result);
         setPreviousMeasurements(result.previousMeasurements);
-        if (result.previousMeasurements.length > 0) {
-          isFirstSaveRef.current = false;
-        }
-        applyLists(result);
+        if (result.previousMeasurements.length > 0) isFirstSaveRef.current = false;
         // Every measurement, for both matrices (fire-and-forget, so it
         // doesn't block the first render).
         loadHistory();
@@ -372,8 +365,17 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
 
   // Refresh state after upload bulk save (lab values + documents): the values,
   // lab rows and both matrices, then the profile and the rest.
+  // The record shown in one step, load and every re-read: units, form, saved copy, lists (US-34 AC7).
+  // `form` builds the form from the one shown, for a re-read that keeps what is being typed.
+  const showRecord = useCallback((result: LatestMeasurementsResult, form: (shown: Partial<HealthInputs>) => Partial<HealthInputs> = () => result.inputs) => {
+    applySavedUnitSystem(result.inputs.unitSystem);
+    setInputs(form);
+    markSaved(result.inputs);
+    applyLists(result);
+  }, [applySavedUnitSystem, markSaved, applyLists]);
+
   const handleUploadComplete = useCallback(async () => {
-    // A field the user left has its save waiting (500 ms): it lands first.
+    // A field the user left has its save waiting (500 ms): it starts now; its own re-read follows.
     flushPendingSave();
     const erase = getEraseIdentity(); // read with the record, in one turn
     const result = await reloadValues();
@@ -394,7 +396,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       // device's drafts (US-11 AC6, Codex R4).
       const typing = document.activeElement?.id as keyof HealthInputs | undefined;
       const sameRecord = erase === getShownErase();
-      setInputs(prev => {
+      showRecord(result, prev => {
         if (!sameRecord) return result.inputs;
         const next: Partial<HealthInputs> = typing && LONGITUDINAL_FIELDS.includes(typing) && prev[typing] !== undefined
           ? { ...result.inputs, [typing]: prev[typing] }
@@ -404,13 +406,11 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
         }
         return next;
       });
-      markSaved(result.inputs);
-      applyLists(result);
     }
     // Another device erased the record (US-16 AC2a / US-09): a chat banner
     // left standing would write pre-erase values into the erased record.
     showErase(erase);
-  }, [reloadValues, flushPendingSave, showErase]);
+  }, [reloadValues, flushPendingSave, showErase, showRecord]);
 
   // Something wrote to the record under us — another device, or an AI
   // connector through MCP (US-34). The store has already re-read and merged;

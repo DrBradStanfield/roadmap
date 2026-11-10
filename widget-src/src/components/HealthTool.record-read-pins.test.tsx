@@ -16,6 +16,7 @@ import { act, cleanup, fireEvent, render, waitFor, type RenderResult } from '@te
 import { type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { localDay } from '@roadmap/health-core/merge';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import { formatDisplayValue } from '@roadmap/health-core/units';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
@@ -219,5 +220,21 @@ describe('US-34 AC4: a change held behind an unsaved profile edit, then a refuse
     await waitFor(() => expect(calls('remote_change_applied')).toHaveLength(1), { timeout: 3000 });
     await settle(300);
     expect(calls('remote_change_applied')).toHaveLength(1);
+  });
+});
+
+describe('US-34 AC7: a unit system another device chose shows here at once', () => {
+  // Brad 2026-11-10 (survey R1): the record's unit system is one fact. The
+  // page applied it at load but not on a remote change, so the form held the
+  // new system while every value still showed in the old one.
+  it('US-34 AC7: the phone switches the record to US units; this page shows the weight in lb without a reload', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3, unitSystem: 'si' }, {});
+    await addMeasurement('weight', 70, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await open();
+    const weightRow = () => q(view, '.bt-vitals-card [data-metric="weight"]')?.textContent ?? '';
+    await waitFor(() => expect(weightRow()).toContain(formatDisplayValue('weight', 70, 'si')));
+    await anotherWriter(() => saveChangedMeasurements({ unitSystem: 'conventional' }, { unitSystem: 'si' }));
+    await waitFor(() => expect(weightRow()).toContain(formatDisplayValue('weight', 70, 'conventional')), { timeout: 3000 });
   });
 });
