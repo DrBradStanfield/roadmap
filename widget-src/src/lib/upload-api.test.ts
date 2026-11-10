@@ -189,9 +189,10 @@ describe('US-12 AC10: the quota preflight says why it refused', () => {
     stubFetch(() => jsonResponse({ allowed: false, remaining: 0 }));
     expect(await checkLabImportQuota()).toEqual({ allowed: false, remaining: 0, reason: 'quota' });
   });
-  it('a 5xx is the preflight unavailable, not the limit', async () => {
+  // Review R2 (adversary, Codex): a failed preflight is not the limit, so it passes, as a network error does; the POST enforces.
+  it('a 5xx lets the upload proceed: the POST enforces the limit', async () => {
     stubFetch(() => jsonResponse({ error: 'x' }, 503));
-    expect(await checkLabImportQuota()).toEqual({ allowed: false, remaining: 0, reason: 'unavailable' });
+    expect(await checkLabImportQuota()).toEqual({ allowed: true, remaining: 0 });
   });
   it('a 200 that allows passes the remaining count through', async () => {
     stubFetch(() => jsonResponse({ allowed: true, remaining: 12 }));

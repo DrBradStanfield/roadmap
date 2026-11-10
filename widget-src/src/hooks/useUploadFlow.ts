@@ -178,7 +178,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       const quota = await checkLabImportQuota();
       if (abort.signal.aborted) return;
       if (!quota.allowed) {
-        // Only the daily limit names and counts the files; no key or a failed preflight says its message alone.
+        // Only the daily limit names and counts the files; no key says its message alone.
         if (quota.reason === 'quota') {
           failUnread('limitError');
           finish([]);
@@ -200,7 +200,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       // A ZIP that will not open, or holds nothing readable, is itself the file named.
       const inputs: ReadInput[] = [];
       names = [];
-      for (const zip of zipFiles) {
+      for (const [i, zip] of zipFiles.entries()) {
         if (abort.signal.aborted) break;
         updateProgress({ current: 0, total: 100, fileName: `Opening ${zip.name}...` });
         const entries = await upload.getZipEntries(zip).catch(() => null);
@@ -212,10 +212,11 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
         for (const { name, entry } of entries) {
           inputs.push({ fileName: zipMemberName(zip.name, name), getFile: async () => new File([await entry.async('blob')], shortName(name)) });
         }
+        // A Cancel counts each listed ZIP by its members, each ZIP not yet opened and each other file as one.
+        dispatch({ type: 'listed', run, picked: seen() + inputs.length + (zipFiles.length - i - 1) + otherFiles.length });
       }
       inputs.push(...otherFiles.map(file => ({ fileName: file.name, getFile: async () => file })));
       names.push(...inputs.map(i => i.fileName));
-      if (zipFiles.length > 0) dispatch({ type: 'listed', run, picked: seen() });
       // A ZIP opens into more than the window counted: past MAX_FILES the server
       // refuses the whole batch, so the rest are named and sent nowhere (US-12 AC17).
       for (const { fileName } of inputs.splice(MAX_FILES)) runNotices.push({ name: fileName, reason: 'limitError', text: OVER_LIMIT_TEXT });

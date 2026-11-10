@@ -40,7 +40,7 @@ export type RunCounts = { picked: number; docx: number };
  *   `cancelledRead`: the counts and notices of a read Cancel stopped, for its
  *   one `upload_outcome` (US-12 AC10); a new pick or a reset drops it.
  * - reading: the files are being read. `counts` start as the pick's; `listed`
- *   sets `picked` once ZIP members are known. Cancel returns to picking; a refusal
+ *   sets `picked` as each ZIP's members are known. Cancel returns to picking; a refusal
  *   or failure goes to readFailed; a finished read goes to reviewing.
  * - readFailed: the dropzone again, with the read's message. A new pick reads again.
  * - reviewing: the review table. Save goes to saving.

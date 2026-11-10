@@ -18,7 +18,7 @@ import type { FileResult } from '../lib/upload-pipeline';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
 vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
-vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
+vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn(), PROXY_PATH: '/apps/synthetic', parseJsonResponse: vi.fn() }));
 vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), attachOriginals: vi.fn(async results => results), synthesizeLabArchiveEntries: vi.fn(() => []) }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -800,16 +800,26 @@ describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 2
   });
 
   // Review R1 (adversary F1): only the server's daily limit is a quota refusal.
-  it.each([
-    { shopify: false, refusal: { allowed: false, remaining: 0, reason: 'no-key', message: 'Synthetic connect-your-key message.' }, shown: 'Synthetic connect-your-key message.' },
-    { shopify: true, refusal: { allowed: false, remaining: 0, reason: 'unavailable' }, shown: 'Daily upload limit reached. You can upload more tomorrow.' },
-  ] as const)('US-12 AC10: a $refusal.reason refusal (Shopify build: $shopify) names no file and sends no upload_outcome', async ({ shopify, refusal, shown }) => {
-    build.shopify = shopify;
-    vi.mocked(checkLabImportQuota).mockResolvedValueOnce(refusal);
+  it('US-12 AC10: a no-key refusal (Pages build) names no file and sends no upload_outcome', async () => {
+    build.shopify = false;
+    vi.mocked(checkLabImportQuota).mockResolvedValueOnce({ allowed: false, remaining: 0, reason: 'no-key', message: 'Synthetic connect-your-key message.' });
     render_(); pick(pdf('a.pdf'), pdf('b.pdf'));
-    await screen.findByText(shown);
+    await screen.findByText('Synthetic connect-your-key message.');
     expect(screen.queryByRole('list', { name: 'Files to check' })).toBeNull();
     expect(sent()).toEqual([]);
+  });
+
+  // Review R2 (adversary, Codex): a failed preflight passes, as a network error does; the POST enforces the limit.
+  it('US-12 AC10: a 5xx quota check lets the upload proceed', async () => {
+    const real = await vi.importActual<typeof import('../lib/upload-api')>('../lib/upload-api');
+    vi.mocked(checkLabImportQuota).mockImplementationOnce(real.checkLabImportQuota);
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 503 })));
+    try {
+      render_(); pick(pdf('a.pdf'));
+      await screen.findByDisplayValue('3.9');
+    } finally { vi.unstubAllGlobals(); }
+    expect(screen.queryByText('Daily upload limit reached. You can upload more tomorrow.')).toBeNull();
+    expect(sent()).toEqual([{ picked: 1, withValues: 1 }]);
   });
 
   // Review R1 (Codex R1): an oversize file never stands in for a readable one of the same name.
@@ -863,6 +873,19 @@ describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 2
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 3, cancelled: 1 });
+  });
+
+  // Review R2 (adversary, Codex): a ZIP counts by its members as soon as it is listed, not when every ZIP is.
+  it('US-12 AC10 (U9): Cancel while a second ZIP is still opening counts the first by its members and the second as one', async () => {
+    const getZipEntries = vi.fn((f: File) => f.name === 'first.zip'
+      ? Promise.resolve(['m1.pdf', 'm2.pdf', 'm3.pdf'].map(name => ({ name, entry: { async: async () => new Blob([name]) } })))
+      : new Promise<unknown[]>(() => {}));
+    zipBundle(getZipEntries);
+    render_(); pick(zip('first.zip'), zip('second.zip'));
+    await waitFor(() => expect(getZipEntries).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(sent()).toHaveLength(1));
+    expect(sent()[0]).toEqual({ picked: 4, cancelled: 1 });
   });
 
   it('US-12 AC10 (U9): Cancel on the review sends nothing more: the read already counted', async () => {

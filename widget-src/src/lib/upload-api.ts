@@ -24,7 +24,7 @@ const LAB_IMPORT_V2_URL = `${PROXY_PATH}/api/lab-import-v2`;
 export async function checkLabImportQuota(): Promise<QuotaCheck> {
   try {
     const response = await fetch(LAB_IMPORT_V2_URL);
-    if (!response.ok) return { allowed: false, remaining: 0, reason: 'unavailable' };
+    if (!response.ok) return { allowed: true, remaining: 0 }; // optimistic — the POST enforces
     const data = await parseJsonResponse<{ allowed: boolean; remaining: number }>(response);
     if (data && !data.allowed) return { allowed: false, remaining: data.remaining, reason: 'quota' };
     return { allowed: true, remaining: data?.remaining ?? 0 };
