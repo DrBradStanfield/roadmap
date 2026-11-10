@@ -157,7 +157,7 @@ interface InputPanelProps {
   aboutYouLow: boolean;
   /** The focus left the Starting Info card: HealthTool moves About you low if all four answers hold. */
   onProfileLeft?: () => void;
-  onDraftsChanged?: () => void; // the matrix drafts changed: HealthTool checks again whether the record's units still wait (US-04 AC1)
+  onMatrixHolds?: (matrix: 'vitals' | 'blood', holds: boolean) => void; // a matrix's own draft holds typed text, or no longer: HealthTool holds the record's units meanwhile (US-04 AC1)
   setShowUploadModal?: (show: boolean) => void;
   /** What the plan was computed from. Null until there is a plan (no valid
    *  sex or height). */
@@ -186,7 +186,7 @@ export function InputPanel({
   bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
   formStage, reached, fullForm, aboutYouLow, onProfileLeft,
   setShowUploadModal, planBasis, grading,
-  onOnboardingDone, revealCell = null, onDraftsChanged,
+  onOnboardingDone, revealCell = null, onMatrixHolds,
 }: InputPanelProps) {
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
   // Number boxes holding text the browser could not read ("175,500" gives "" with
@@ -281,7 +281,7 @@ export function InputPanel({
   // (US-62 AC11). Each grid reports what it keeps.
   const [draftedVitals, setDraftedVitals] = useState(false);
   const [draftedBlood, setDraftedBlood] = useState(false);
-  useEffect(() => { onDraftsChanged?.(); }, [draftedVitals, draftedBlood, onDraftsChanged]);
+  const holds = (matrix: 'vitals' | 'blood', set: (h: boolean) => void) => (h: boolean) => { set(h); onMatrixHolds?.(matrix, h); };
   const unsavedCue = (shown: boolean) => !tableShown && shown && (
     <button type="button" className="md-unsaved" onClick={() => showTable(true)}>Unsaved values: review</button>
   );
@@ -874,7 +874,7 @@ export function InputPanel({
         onSave={onSaveBloodTestBatch}
         onCorrectValue={onCorrectValue}
         onDraftValue={onDraftValue}
-        onHoldsText={setDraftedVitals}
+        onHoldsText={holds('vitals', setDraftedVitals)}
         formStage={formStage}
         plan={planBasis}
         knownMinor={knownMinor}
@@ -1001,7 +1001,7 @@ export function InputPanel({
       onCorrectValue={onCorrectValue}
       move={move.headers}
       onDraftValue={onDraftValue}
-      onHoldsText={setDraftedBlood}
+      onHoldsText={holds('blood', setDraftedBlood)}
       isSaving={isSavingLongitudinal}
       grading={grading}
       onUploadClick={() => setShowUploadModal?.(true)}

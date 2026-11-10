@@ -54,10 +54,21 @@ describe('US-04 AC1: a matrix draft kept on the device holds the units, whatever
     localStorage.setItem(BT_TIMELINE_DRAFT_KEY, JSON.stringify({ draft: { values: { ldl: '3.5' } }, backfills: {}, meta: {} }));
     const view = render(<Page />);
     act(() => hook.offerUnits('conventional'));
-    act(() => hook.onDraftsChanged()); // a matrix mounted again, reporting before it restored its draft
+    act(() => hook.onMatrixHolds('blood', false)); // no matrix on the page reports a draft: the kept one still holds
     expect(view.container.querySelector('output')?.textContent).toBe('si');
     localStorage.removeItem(BT_TIMELINE_DRAFT_KEY); // the draft committed
-    act(() => hook.onDraftsChanged());
+    act(() => hook.onMatrixHolds('blood', false));
+    expect(view.container.querySelector('output')?.textContent).toBe('conventional');
+  });
+});
+
+describe('US-04 AC1: a draft this page holds keeps the units held, whatever is kept on the device (PR 1135 Codex R2)', () => {
+  it('US-04 AC1: a matrix reporting a draft holds a remote switch with nothing kept and no field focused; its draft emptied, the switch applies', () => {
+    const view = render(<Page />);
+    act(() => hook.onMatrixHolds('vitals', true));
+    act(() => hook.offerUnits('conventional'));
+    expect(view.container.querySelector('output')?.textContent).toBe('si');
+    act(() => hook.onMatrixHolds('vitals', false));
     expect(view.container.querySelector('output')?.textContent).toBe('conventional');
   });
 });

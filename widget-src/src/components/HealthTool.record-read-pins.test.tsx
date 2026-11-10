@@ -22,7 +22,7 @@ import { formatDisplayValue, toCanonicalValue } from '@roadmap/health-core/units
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
-import { loadFromLocalStorage } from '../lib/storage';
+import { BT_TIMELINE_DRAFT_KEY, loadFromLocalStorage } from '../lib/storage';
 import { trackABConversion } from '../lib/server-api';
 import { openAboutYou } from '../testing/health-tool-harness';
 import { WRITE_REFUSED } from '../lib/erase-copy';
@@ -332,6 +332,7 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
   it('US-04 AC1, US-34 AC7: a draft held across a turn of the phone keeps the units held: the LDL saves as mmol/L (PR 1135 B1)', async () => {
     await siRecord();
     const view = await open();
+    await settle(50); // About you's opened rows take the focus a frame later (AboutYou's open); a leave would commit the draft
     typeInto(await ldlDraft(view), '3.5');
     act(() => { (document.activeElement as HTMLElement | null)?.blur(); }); // the focus off, the draft holding text
     await toConventional();
@@ -341,6 +342,24 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
     await settle(50);
     turn(false);
     await settle(50);
+    typeInto(await ldlDraft(view), '3.5');
+    press(q(view, '.alr-add-btn') as HTMLElement);
+    await waitFor(async () => expect(await activeLdl()).toHaveLength(1), { timeout: 3000 });
+    expect(await activeLdl()).toEqual([3.5]);
+  });
+
+  it('US-04 AC1, US-34 AC7: a draft this tab holds keeps the units held after another tab empties the kept copy (PR 1135 Codex R2)', async () => {
+    await siRecord();
+    const first = await open();
+    typeInto(await ldlDraft(first), '3.5');
+    first.unmount(); // the draft stays on the device, unsaved
+    const view = await open(); // this tab restores it
+    await settle(50); // About you's opened rows take the focus a frame later; a leave would commit the draft
+    expect((await ldlDraft(view)).value).toBe('3.5');
+    localStorage.removeItem(BT_TIMELINE_DRAFT_KEY); // another tab emptied its copy, which shares the key
+    await toConventional();
+    await settle(50);
+    expect((await ldlRow(view)).textContent).toContain('mmol/L'); // held
     typeInto(await ldlDraft(view), '3.5');
     press(q(view, '.alr-add-btn') as HTMLElement);
     await waitFor(async () => expect(await activeLdl()).toHaveLength(1), { timeout: 3000 });
