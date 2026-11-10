@@ -87,6 +87,7 @@ interface EmailCaptureState {
   state: GuestEmailState; setState: (s: GuestEmailState) => void; gateSkipped: boolean;
   /** The box's typing, kept here without a re-render, so the box moving (the full form opening) keeps it. */
   draft: React.MutableRefObject<string>;
+  sending: React.MutableRefObject<boolean>; // US-18 AC7: one send at a time, kept here for the same reason.
 }
 
 function useEmailCaptureState(): EmailCaptureState {
@@ -98,18 +99,17 @@ function useEmailCaptureState(): EmailCaptureState {
     () => (getReportEmailCaptured() ? 'captured' : gateSkipped ? 'skipped' : 'idle'),
   );
   const draft = useRef('');
-  return { state, setState, gateSkipped, draft };
+  const sending = useRef(false);
+  return { state, setState, gateSkipped, draft, sending };
 }
 
 /** The box's own typing, in the PDF box, so a keystroke re-renders the box alone. */
-function useGuestEmailCapture(printReport: () => Promise<void>, { state, setState, gateSkipped, draft }: EmailCaptureState): GuestEmailHook {
+function useGuestEmailCapture(printReport: () => Promise<void>, { state, setState, gateSkipped, draft, sending }: EmailCaptureState): GuestEmailHook {
   const [email, setTyped] = useState(() => draft.current);
   const setEmail = (value: string) => { draft.current = value; setTyped(value); };
   const [emailError, setEmailError] = useState('');
   const helperText = LOCAL_FIRST_EMAIL_HELPER;
-  // US-18 AC7: one send at a time. The button is disabled while sending, but
-  // Enter in the box (either copy of it) reaches here too.
-  const sending = useRef(false);
+  // US-18 AC7: the button is disabled while sending, but Enter reaches here too.
 
   const handleSubmit = async () => {
     if (sending.current) return;
