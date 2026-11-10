@@ -1,11 +1,10 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useReducer, useRef, useCallback, useEffect } from 'react';
 import { checkLabImportQuota } from '../lib/upload-api';
 import { IMPORT_LIMITS } from '@roadmap/health-core/import-hints';
 import { UNDATED_PREVIOUS, uploadLimitSignal, zipMemberName } from '@roadmap/health-core/lab-extraction';
 import type { UnitSystem } from '@roadmap/health-core/units';
 import { comparatorOf } from '@roadmap/health-core/lab-limits';
 import type { DocumentPayload } from '@roadmap/health-core/document-save';
-import type { LabUnitRefusal, MeasurementRefusal } from '@roadmap/health-core/record-edits';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
@@ -17,23 +16,16 @@ import { Sentry } from '../lib/sentry';
 import { recordFailure } from '../lib/error-diagnostics';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { isDocx } from '../lib/file-kinds';
+import { transition, savedSoFar, INITIAL_UPLOAD, NO_OUTCOME, type SaveOutcome, type Progress } from '../lib/upload-flow-state';
 
 /**
- * The upload flow, one named phase at a time (US-12).
- *
- * - picking: the dropzone. A pick with a file under the size limit starts a read.
- * - reading: the files are being read. Cancel returns to picking; a refusal
- *   or failure goes to readFailed; a finished read goes to reviewing.
- * - readFailed: the dropzone again, with the read's message. A new pick reads again.
- * - reviewing: the review table. Save goes to saving.
- * - saving: the save is writing. It ends in done, or in saveFailed.
- * - saveFailed: the review stays open, with the save's message. Save retries.
- * - done: everything saved.
- *
- * Discard returns any phase but saving to picking. Close does so only from
- * picking, readFailed and done; elsewhere it only hides the work.
+ * The upload flow (US-12): one `UploadState` union, each phase carrying its
+ * own data, changed only by dispatching an event through the pure
+ * `transition` (lib/upload-flow-state.ts, its phases and rules). This hook
+ * owns the side effects: the read and the save, abort, product events,
+ * Sentry, the writes and the re-read.
  */
-export type UploadPhase = 'picking' | 'reading' | 'readFailed' | 'reviewing' | 'saving' | 'saveFailed' | 'done';
+export type { UploadPhase } from '../lib/upload-flow-state';
 
 /** Upload-level failures only: `refused` and `too_long` are one file's notice (UploadNotices.tsx). */
 const UPLOAD_ERROR_MESSAGES: Partial<Record<UploadErrorCode, string>> = {
@@ -74,19 +66,7 @@ function trackUploadOutcome(picked: number, withValues: number, docx: number, no
   });
 }
 
-/** One session's save outcome (US-12 AC6c). The saved counts add up across a
- *  retry, which finishes what the first Save began; the rest are the last
- *  attempt's. Documents count by content, else name: a retry may refile one. `unstored`: originals the cloud would not store behind details it
- *  already holds (US-14 AC4). The refusals are lab rows in a unit the record
- *  does not know for that test, and core values it refused: each is named, as
- *  a dropped value must never be silent (US-21 phase 3, US-35 AC17). */
-interface SaveOutcome {
-  values: number; labValues: number; documents: string[];
-  skippedValues: number; skippedLabValues: number; unstored: number;
-  refusedLabUnits: LabUnitRefusal[]; refusedMeasurements: MeasurementRefusal[];
-}
-const NO_OUTCOME: SaveOutcome = { values: 0, labValues: 0, documents: [], skippedValues: 0, skippedLabValues: 0, unstored: 0, refusedLabUnits: [], refusedMeasurements: [] };
-const NO_PROGRESS = { current: 0, total: 0, fileName: '' };
+const NO_PROGRESS: Progress = { current: 0, total: 0, fileName: '' };
 
 export interface UploadFlowOptions {
   unitSystem: UnitSystem;
@@ -100,16 +80,18 @@ export interface UploadFlowOptions {
 }
 
 export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClose, onScreeningUpdate }: UploadFlowOptions) {
-  const [phase, setPhase] = useState<UploadPhase>('picking');
-  const [files, setFiles] = useState<File[]>([]);
-  // Connect-first gate: skipped stays through a cancel; close and discard reset it (US-12 AC4).
+  const [state, dispatch] = useReducer(transition, INITIAL_UPLOAD);
+  const { phase, notices } = state;
+  // The view's fields, empty where the phase carries none.
+  const files = state.phase === 'reading' || state.phase === 'readFailed' ? state.files : [];
+  const progress = state.phase === 'reading' ? state.progress : NO_PROGRESS;
+  const results = 'results' in state ? state.results : [];
+  const outcome = 'outcome' in state ? state.outcome : NO_OUTCOME;
+  const readError = state.phase === 'readFailed' ? state.message : null;
+  const saveError = state.phase === 'saveFailed' ? state.message : null;
+  // Connect-first gate: plain view state, not a phase, so it outlives phases.
+  // Skipped stays through a cancel; close and discard reset it (US-12 AC4).
   const [skipArchive, setSkipArchive] = useState(false);
-  const [progress, setProgress] = useState(NO_PROGRESS);
-  const [results, setResults] = useState<FileResult[]>([]);
-  const [readError, setReadError] = useState<string | null>(null); // readFailed's message
-  const [saveError, setSaveError] = useState<string | null>(null); // saveFailed's message
-  const [notices, setNotices] = useState<FileNotice[]>([]);
-  const [outcome, setOutcome] = useState(NO_OUTCOME);
   // The read's claim, taken synchronously: two picks in one render see it.
   const abortRef = useRef<AbortController | null>(null);
   // The save's claim, taken synchronously: a double Save, or Discard in the same render, sees it.
@@ -117,34 +99,33 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
   useEffect(() => () => { abortRef.current?.abort(); }, []);
   const [loadUploadBundle] = useState(createUploadBundleLoader);
 
-  const resetSession = useCallback(() => {
+  const abortRead = () => {
     abortRef.current?.abort();
     abortRef.current = null;
-    setPhase('picking');
-    setFiles([]);
-    setResults([]);
-    setReadError(null);
-    setSaveError(null);
-    setNotices([]);
-    setProgress(NO_PROGRESS);
-    setOutcome(NO_OUTCOME);
+  };
+
+  const cancel = useCallback(() => {
+    abortRead();
+    dispatch({ type: 'cancel' });
   }, []);
 
   // Closing active work only hides it. Drafts and pending saves remain mounted.
   const close = useCallback(() => {
     if (!savingRef.current && (phase === 'picking' || phase === 'done' || phase === 'readFailed')) {
-      resetSession();
+      abortRead();
+      dispatch({ type: 'close' });
       setSkipArchive(false);
     }
     onClose();
-  }, [phase, onClose, resetSession]);
+  }, [phase, onClose]);
 
   const discard = useCallback(() => {
     if (savingRef.current) return;
-    resetSession();
+    abortRead();
+    dispatch({ type: 'discard' });
     setSkipArchive(false);
     onClose();
-  }, [onClose, resetSession]);
+  }, [onClose]);
 
   const read = async (filesToProcess: File[], tooLarge: FileNotice[], docx: number) => {
     // Claim synchronously: React state alone cannot guard two selections in
@@ -152,16 +133,8 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     if (abortRef.current || savingRef.current || filesToProcess.length === 0) return;
     const abort = new AbortController();
     abortRef.current = abort;
-    setPhase('reading');
-    setReadError(null);
-    setProgress({ current: 0, total: 100, fileName: 'Preparing upload...' });
-    const updateProgress = (p: { current: number; total: number; fileName: string }) => {
-      if (!abort.signal.aborted) setProgress(p);
-    };
-    const failRead = (message: string) => {
-      setReadError(message);
-      setPhase('readFailed');
-      abortRef.current = null;
+    const updateProgress = (progress: Progress) => {
+      if (!abort.signal.aborted) dispatch({ type: 'progress', progress });
     };
 
     const fileCount = filesToProcess.length;
@@ -179,6 +152,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
         else runNotices.push({ name, reason });
       }
     };
+    // Counts the run, then hands its notices to the transition.
     const finish = (finished: FileResult[]) => {
       let withValues = 0;
       const values = { undatedPrevious: 0, unitsGuessed: 0, unitsRefused: 0 };
@@ -192,7 +166,6 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
         values.unitsRefused += r.refusedValues?.length ?? 0;
       }
       const { limitUngradedTests, ...limits } = uploadLimitSignal(finished.filter(r => !r.error));
-      setNotices(runNotices);
       trackUploadOutcome(tooLarge.length + names.length, withValues, docx, runNotices, { ...values, ...limits }, limitUngradedTests);
     };
 
@@ -200,7 +173,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       const quota = await checkLabImportQuota();
       if (abort.signal.aborted) return;
       if (!quota.allowed) {
-        failRead(quota.message ?? 'Daily upload limit reached. You can upload more tomorrow.');
+        dispatch({ type: 'readFailed', message: quota.message ?? 'Daily upload limit reached. You can upload more tomorrow.', notices: runNotices });
         return;
       }
       await onStart?.();
@@ -239,7 +212,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       if (inputs.length === 0 || abort.signal.aborted) {
         if (!abort.signal.aborted) {
           finish([]);
-          failRead('No readable files found.');
+          dispatch({ type: 'readFailed', message: 'No readable files found.', notices: runNotices });
         }
         return;
       }
@@ -256,10 +229,8 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
         ? await attachOriginals(allResults)
         : allResults.map(r => ({ ...r, file: undefined }));
       if (abort.signal.aborted) return;
-      abortRef.current = null;
       finish(attached);
-      setResults(attached);
-      setPhase('reviewing');
+      dispatch({ type: 'read', results: attached, notices: runNotices });
     } catch (err) {
       if (!abort.signal.aborted) {
         const code = err instanceof UploadError ? err.code : 'unknown';
@@ -270,9 +241,15 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
         trackProductEvent('upload_extract_failed');
         failUnread(code === 'rate_limit' ? 'limitError' : 'serverError');
         finish([]);
-        failRead((err instanceof UploadError && ((!SHOPIFY_SURFACE && BYOK_ERROR_MESSAGES[err.code]) || UPLOAD_ERROR_MESSAGES[err.code]))
-          || 'An error occurred while processing files. Please try again.');
+        dispatch({
+          type: 'readFailed', notices: runNotices,
+          message: (err instanceof UploadError && ((!SHOPIFY_SURFACE && BYOK_ERROR_MESSAGES[err.code]) || UPLOAD_ERROR_MESSAGES[err.code]))
+            || 'An error occurred while processing files. Please try again.',
+        });
       }
+    } finally {
+      // The one place the read's claim is released; a newer read keeps its own.
+      if (abortRef.current === abort) abortRef.current = null;
     }
   };
 
@@ -283,9 +260,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     const valid = fileArray.filter(f => f.size <= MAX_FILE_SIZE);
     const tooLarge = fileArray.filter(f => f.size > MAX_FILE_SIZE).map(f => ({ name: f.name, reason: 'tooLarge' as const }));
     const docx = fileArray.filter(isDocx).length;
-    setFiles(valid);
-    setReadError(null);
-    setNotices(tooLarge);
+    dispatch({ type: 'picked', files: valid, notices: tooLarge });
     if (valid.length > 0) void read(valid, tooLarge, docx);
     else if (tooLarge.length > 0) trackUploadOutcome(tooLarge.length, 0, docx, tooLarge);
   };
@@ -298,17 +273,11 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
   }) => {
     if (savingRef.current) return;
     savingRef.current = true;
-    setPhase('saving');
-    setSaveError(null);
-    // The last attempt's skips, errors and refusals belong to it: never beside a
-    // new error. What it saved stays, and this attempt adds to it.
-    const prior = { ...NO_OUTCOME, values: outcome.values, labValues: outcome.labValues, documents: outcome.documents };
-    setOutcome(prior);
+    dispatch({ type: 'saveStarted' });
+    // What earlier attempts saved stays, and this attempt adds to it.
+    const prior = savedSoFar(outcome);
     const erase = getShownErase(); // the record this save was asked for
-    const failSave = (message: string) => {
-      setSaveError(message);
-      setPhase('saveFailed');
-    };
+    const failSave = (message: string) => dispatch({ type: 'saveFailed', message });
     try {
       // Save core measurements, additional lab values, and documents in parallel
       const measurements = selectedValues.map(v => ({
@@ -377,7 +346,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
         unstored: savedDocs.unstored ?? 0,
         refusedLabUnits: savedLabValues.refused, refusedMeasurements: savedValues.refused,
       };
-      setOutcome(next);
+      dispatch({ type: 'saveWritten', outcome: next });
       // A save error keeps the review open for retry (US-12 AC6). Skipped
       // values and refusals are settled outcomes, reported on the done screen;
       // a skip does not establish that the reviewed value is already saved.
@@ -397,7 +366,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       const reread = () => { try { return Promise.resolve(onComplete()).catch(reportReread); } catch (err) { reportReread(err); return Promise.resolve(); } };
       if (!saveFailed) {
         trackProductEvent('upload_saved', { count: next.values + next.labValues + next.documents.length });
-        setPhase('done');
+        dispatch({ type: 'saved' });
         void reread();
       } else {
         // Stay in review: a second Save retries idempotently (values dedup on
@@ -416,6 +385,6 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
   return {
     phase, files, notices, progress, results, outcome, readError, saveError,
     skipArchive, skipConnect: () => setSkipArchive(true),
-    pick, cancel: resetSession, close, discard, save,
+    pick, cancel, close, discard, save,
   };
 }
