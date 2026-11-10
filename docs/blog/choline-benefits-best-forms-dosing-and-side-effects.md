@@ -21,7 +21,7 @@ Brad thinks most adults probably eat too little choline and that a supplement to
 
 - Choline precursors taken with Alzheimer's medicines such as donepezil, rivastigmine or galantamine are said to raise acetylcholine more than either alone [55]. If you take one of these medicines, check with your doctor before adding a choline supplement.
 - If you are pregnant or planning to be, talk to your doctor or midwife before starting a choline supplement; the form studied in pregnancy is phosphatidylcholine [96][97].
-- Alpha-GPC prescriptions were linked to a higher 10-year stroke risk in a large South Korean cohort; the study shows an association, not proof of cause [22].
+- Alpha-GPC prescriptions were linked to a higher 10-year stroke risk in a large South Korean cohort; the study shows an association, not proof of cause [22]. Risk rose with longer use; if you plan to take it long term, or have cardiovascular risk, talk to your doctor first.
 - Choline bitartrate raised TMAO and platelet reactivity in healthy adults, and alpha-GPC raised TMAO, in short studies [18][106]. Higher TMAO has been linked to heart attack, stroke and death [77], but a genetic study suggests the link with heart disease and stroke may not be causal [104]. If you have heart disease, talk to your doctor before taking high doses.
 - The upper limit for adults is 3,500 mg of choline a day, lower for children; the limits are based on low blood pressure and fishy body odor [93].
 - High intakes are also associated with vomiting, heavy sweating and salivation, and liver toxicity [93].
@@ -132,7 +132,7 @@ In a controlled feeding study, pregnant women in their third trimester were rand
 
 The feeding study was funded in part by the Egg Nutrition Center and the Beef Checkoff, which had no role in the trial [58].
 
-In a North Carolina trial, 140 pregnant women took supplemental phosphatidylcholine (750 mg) or a corn oil placebo from 18 weeks of pregnancy to 90 days after birth. Their infants did no better on memory, language or overall development at 10 and 12 months [100].
+In a North Carolina trial, 140 pregnant women took 750 mg of choline a day, as about 5 g of phosphatidylcholine, or a corn oil placebo from 18 weeks of pregnancy to 90 days after birth. Their infants did no better on memory, language or overall development at 10 and 12 months [100].
 
 A 2025 systematic review of four randomized trials and five observational studies judged the evidence insufficient to support or refute the idea that more choline in pregnancy improves child development [101]. It came out before the 2026 Colorado trial below.
 
@@ -324,7 +324,7 @@ In a 2-month study, choline bisulfate supplying about 450 mg of choline a day ra
 
 ### Alpha-GPC and Stroke Risk
 
-A South Korean cohort study followed about 12 million adults aged 50 or older. People prescribed alpha-GPC during 2006 to 2008 were more likely to have a stroke from 2009 to 2018 than matched nonusers (adjusted HR 1.43, 95% CI 1.41 to 1.46), and risk rose with greater use in a dose-response pattern [22]. The study shows an association, not cause and effect. TMAO was not measured. In atherosclerosis-prone mice, alpha-GPC promoted atherosclerosis [112]. Higher TMAO was linked to first stroke in a separate study of patients with high blood pressure [79]. If you have had a stroke or have high cardiovascular risk, talk to your doctor before taking alpha-GPC [22].
+A South Korean cohort study followed about 12 million adults aged 50 or older. People prescribed alpha-GPC during 2006 to 2008 were more likely to have a stroke from 2009 to 2018 than matched nonusers (adjusted HR 1.43, 95% CI 1.41 to 1.46), and risk rose with greater use in a dose-response pattern [22]. The study shows an association, not cause and effect. TMAO was not measured. In atherosclerosis-prone mice, alpha-GPC promoted atherosclerosis [112]. Higher TMAO was linked to first stroke in a separate study of patients with high blood pressure [79]. Risk rose with longer use, so the caution grows with how long you plan to take it: if you have had a stroke, have high cardiovascular risk, or plan to take alpha-GPC long term, talk to your doctor first [22].
 
 ### Choline and Mortality
 

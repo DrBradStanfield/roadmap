@@ -221,7 +221,7 @@ There is no good public evidence on this yet.
 
 ### Glaucoma (Nicotinamide)
 
-In a small 2-month trial in people with treated open-angle glaucoma, nicotinamide with pyruvate improved more visual field test points than placebo [80]. That trial used 1,000 to 3,000 mg of nicotinamide a day [80], and at 3,000 mg a day nicotinamide can cause nausea, vomiting and signs of liver toxicity [12]. High-dose nicotinamide is not advised outside clinical trials or in people with liver disease. Ask your eye doctor before trying it.
+In a small 2-month trial in people with treated open-angle glaucoma, nicotinamide with pyruvate improved more visual field test points than placebo [80]. That trial used 1,000 to 3,000 mg of nicotinamide a day [80]. High-dose nicotinamide is not advised outside clinical trials or in people with liver disease: the American Glaucoma Society and the American Academy of Ophthalmology issued a 2025 position statement on nicotinamide for glaucoma [129], and NIH reports signs of liver toxicity at 3,000 mg a day [12]. Ask your eye doctor before trying it.
 
 ### Brittle Nails and Hair (Biotin)
 
@@ -718,3 +718,5 @@ No upper limit has been set because of its low potential for toxicity [17]. It i
 [127] Feldman S et al. Primary progressive multiple sclerosis to be treated with ocrelizumab: a mistaken case of cobalamin deficiency. BMJ Case Rep. 2019. PMID: 31092497. https://pubmed.ncbi.nlm.nih.gov/31092497/
 
 [128] Silva B et al. Reversible dementia, psychotic symptoms and epilepsy in a patient with vitamin B(12) deficiency. BMJ Case Rep. 2019. PMID: 31092496. https://pubmed.ncbi.nlm.nih.gov/31092496/
+
+[129] Shukla AG et al. American Glaucoma Society-American Academy of Ophthalmology Position Statement on Nicotinamide Use for Glaucoma Neuroprotection. Ophthalmol Glaucoma. 2025. PMID: 39800263. https://pubmed.ncbi.nlm.nih.gov/39800263/

@@ -213,7 +213,7 @@ Like NR, NMN raises blood NAD+ in trials (Yi et al., *Geroscience*, 2023; Morifu
 
 **Blood pressure:** A 2026 meta-analysis of 10 trials with 349 participants found a small fall in diastolic blood pressure on NMN, of 2.15 mmHg; systolic pressure fell only in people aged 60 and over. The authors call the evidence preliminary (Zhang et al., *Nutrients*, 2026) [60].
 
-### Anti-Aging Claims: NMN
+### Claims About Slowing Aging: NMN
 
 The central claim driving NMN's popularity is that it counters age-related decline by restoring NAD+ levels. A 2016 mouse study found that NMN improved energy metabolism, physical activity, and insulin sensitivity (Mills et al., *Cell Metab*, 2016) [14] ([Brad, 9 Apr 2026](https://drstanfield.com/blogs/articles/new-study-says-i-was-wrong-about-nmn-and-nr)).
 
@@ -315,7 +315,7 @@ On the liver specifically: high doses of niacin (nicotinic acid) can cause mild 
 
 Animal and laboratory research raises a theoretical concern that raising NAD+ may help some cancers grow or spread [4][88].
 
-**Practical recommendation:** Because of the animal findings below, if you have cancer, talk to your oncologist before taking an NAD booster [4].
+**Practical recommendation:** Brad would not take NR or NMN himself ([Brad, 29 Oct 2026](https://drstanfield.com/blogs/articles/nr-in-parkinsons-what-the-nopark-trial-found)). The concern rests on animal findings; if you have cancer or are on cancer treatment, talk to your oncologist before taking an NAD booster [4].
 
 **Mouse study on breast cancer:** In a mouse model of triple-negative breast cancer, NR supplementation significantly increased how often cancer developed and how often it spread to the brain (Maric et al., *Biosens Bioelectron*, 2023) [4].
 

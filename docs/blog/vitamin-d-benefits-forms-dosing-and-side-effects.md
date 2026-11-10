@@ -207,7 +207,7 @@ Brad notes a meta-analysis in which supplements improved symptoms in people with
 
 **No cognitive benefit in other trials:** A 2-year trial in older adults with mild to moderate deficiency found no improvement in cognition [72]. In D-Health, 60,000 IU a month for 5 years neither helped nor harmed cognition [73].
 
-**Long-term use and dementia:** In Taiwanese records, older adults without dementia who took vitamin D3 supplements on more than 146 days a year were 1.8 times as likely to develop dementia as non-users [74]. This is an observational finding, and the authors caution against prolonged vitamin D use in people with Alzheimer's disease [74].
+**Long-term use and dementia:** In Taiwanese insurance records, older adults without dementia who used prescription calcitriol, the active hormone form of vitamin D, at a high cumulative dose (more than 146 capsules of 0.25 mcg a year) were 1.8 times as likely to develop dementia as non-users [74]. The abstract calls this vitamin D3 supplements, but the methods describe calcitriol prescriptions, so the finding cannot be applied to ordinary D3 supplements [74]. This is an observational finding, and the authors caution against prolonged vitamin D use in people with Alzheimer's disease [74].
 
 **Synthesis:** Low vitamin D is linked with dementia in observational studies, but most trials of supplements have not improved cognition.
 
@@ -306,11 +306,11 @@ Brad follows the 2024 Endocrine Society guideline ([Brad, 16 Oct 2025](https://d
 
 **No routine testing, no target level:** The guideline acknowledges we don't know what optimal levels of vitamin D are, so it abandoned its earlier thresholds for insufficiency and deficiency and advises against routine screening ([Brad, 18 Apr 2025](https://drstanfield.com/blogs/articles/this-study-proved-we-were-wrong-about-vitamin-d)). A test makes sense when risk factors point toward checking ([Brad, 16 Oct 2025](https://drstanfield.com/blogs/articles/new-vitamin-d-study-on-telomeres-and-aging)). Brad does not order vitamin D tests for otherwise healthy patients; since the TARGET-D trial he offers testing after a heart attack as an option, not a must (see Cardiovascular Disease) ([Brad, 3 Dec 2025](https://drstanfield.com/blogs/articles/this-vitamin-d-study-forced-me-to-change-my-view)).
 
-**Children and teens (1 to 18 years):** The guideline suggests vitamin D for this age group [9]. Brad notes it may help prevent rickets and respiratory infections ([Brad, 18 Apr 2025](https://drstanfield.com/blogs/articles/this-study-proved-we-were-wrong-about-vitamin-d)).
+**Children and teens (1 to 18 years):** The guideline suggests vitamin D for this age group [9]. Brad notes it may help prevent rickets and respiratory infections ([Brad, 18 Apr 2025](https://drstanfield.com/blogs/articles/this-study-proved-we-were-wrong-about-vitamin-d)). In Brad's summary of the guideline, children up to 18 should get about 1,500 IU a day ([Brad, 18 Apr 2025](https://drstanfield.com/blogs/articles/this-study-proved-we-were-wrong-about-vitamin-d)).
 
-**Pregnancy:** The guideline suggests vitamin D in pregnancy [9]. The RDA is 600 IU a day and the upper limit 4,000 IU a day [1]. Talk to your doctor before taking more than the RDA in pregnancy.
+**Pregnancy:** The guideline suggests vitamin D in pregnancy [9]. The RDA is 600 IU a day and the upper limit 4,000 IU a day [1]. In Brad's summary of the guideline, the benefits came with doses around 3,000 IU a day ([Brad, 18 Apr 2025](https://drstanfield.com/blogs/articles/this-study-proved-we-were-wrong-about-vitamin-d)); the guideline itself says the best dose remains unclear [9]. Talk to your doctor before taking more than the RDA in pregnancy.
 
-**Prediabetes:** The guideline suggests vitamin D for people with high-risk prediabetes [9]. In the main trial, 4,000 IU a day did not significantly reduce diabetes [62].
+**Prediabetes:** The guideline suggests vitamin D for people with high-risk prediabetes [9]. In the main trial, 4,000 IU a day did not significantly reduce diabetes [62]. In Brad's summary, the trials averaged about 3,500 IU a day ([Brad, 18 Apr 2025](https://drstanfield.com/blogs/articles/this-study-proved-we-were-wrong-about-vitamin-d)); the guideline says the optimal dose remains unclear [9].
 
 **Older adults (75+):** The guideline suggests vitamin D after age 75 [9]. The RDA is 800 IU a day over 70 [1]. Its review found a very small reduction in mortality in this age group [10]. The calcium RDA for adults ranges from 1,000 to 1,200 mg, depending on age [114].
 

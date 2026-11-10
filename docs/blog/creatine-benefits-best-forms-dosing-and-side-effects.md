@@ -251,7 +251,7 @@ There is no established dose of BCAAs for muscle. Doses used in the trials above
 
 **ISSN position:** Short- and long-term use, up to 30 g a day for 5 years, has been safe and well tolerated in healthy people and in a number of patient groups from infants to older adults [1].
 
-**EFSA:** In 2004, a European Food Safety Authority panel judged that up to 3 g a day of high-purity supplemental creatine, close to the amount the body normally turns over each day, is unlikely to pose any risk [122][123]. The panel also advised avoiding high loading doses, because the evidence left doubts about their safety for the kidneys [122].
+**EFSA:** In 2004, a European Food Safety Authority panel judged that up to 3 g a day of high-purity supplemental creatine, close to the amount the body normally turns over each day, is unlikely to pose any risk [122][123]. The panel also advised avoiding high loading doses, because the evidence left doubts about their safety for the kidneys [122]. Brad recommends 5 g a day without loading [2], and the ISSN found no harm in healthy people at up to 30 g a day for 5 years [1].
 
 **Side effects across trials:** In 684 randomised trials with more than 12,800 people, side effects were infrequent, mostly mild, and did not rise in a clinically meaningful way with dose or duration [87].
 
