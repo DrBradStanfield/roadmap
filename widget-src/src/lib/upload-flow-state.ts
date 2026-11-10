@@ -16,7 +16,16 @@ export const NO_OUTCOME: SaveOutcome = { values: 0, labValues: 0, documents: [],
 
 /** What earlier attempts saved. The last attempt's skips, errors and refusals
  *  belong to it: never beside a new error. */
-export const savedSoFar = (o: SaveOutcome): SaveOutcome => ({ ...NO_OUTCOME, values: o.values, labValues: o.labValues, documents: o.documents });
+const savedSoFar = (o: SaveOutcome): SaveOutcome => ({ ...NO_OUTCOME, values: o.values, labValues: o.labValues, documents: o.documents });
+
+/** One attempt added to the session: saved counts add up, documents by key
+ *  once; skips, unstored and refusals are the attempt's own. */
+const withAttempt = (o: SaveOutcome, attempt: SaveOutcome): SaveOutcome => ({
+  ...attempt,
+  values: o.values + attempt.values,
+  labValues: o.labValues + attempt.labValues,
+  documents: [...new Set([...o.documents, ...attempt.documents])],
+});
 
 export type Progress = { current: number; total: number; fileName: string };
 
@@ -32,64 +41,82 @@ export type Progress = { current: number; total: number; fileName: string };
  * - saveFailed: the review stays open, with the save's message. Save retries.
  * - done: everything saved. `results` stays for the "Not saved" list.
  *
- * Discard returns any phase but saving to picking. Close does so only from
- * picking, readFailed and done; elsewhere it only hides the work.
+ * `run` names one read: its progress, result or failure lands only on its own
+ * run, and a Cancel only on the run it was shown beside, even once that read
+ * has finished. Discard returns any phase but saving to picking. Close does
+ * so only from picking, readFailed and done; elsewhere it only hides the work.
  */
-export type UploadState =
+type PhaseState =
   | { phase: 'picking'; notices: FileNotice[] }
-  | { phase: 'reading'; files: File[]; notices: FileNotice[]; progress: Progress }
-  | { phase: 'readFailed'; files: File[]; notices: FileNotice[]; message: string }
-  | { phase: 'reviewing'; results: FileResult[]; notices: FileNotice[]; outcome: SaveOutcome }
+  | { phase: 'reading'; run: number; files: File[]; notices: FileNotice[]; progress: Progress }
+  | { phase: 'readFailed'; run: number; files: File[]; notices: FileNotice[]; message: string }
+  | { phase: 'reviewing'; run: number; results: FileResult[]; notices: FileNotice[]; outcome: SaveOutcome }
   | { phase: 'saving'; results: FileResult[]; notices: FileNotice[]; outcome: SaveOutcome }
   | { phase: 'saveFailed'; results: FileResult[]; notices: FileNotice[]; outcome: SaveOutcome; message: string }
   | { phase: 'done'; results: FileResult[]; notices: FileNotice[]; outcome: SaveOutcome };
+/** `skipArchive`: the connect-first gate was skipped (US-12 AC4). View state
+ *  beside the phase: a cancel keeps it; a close or discard that resets clears it. */
+export type UploadState = PhaseState & { skipArchive: boolean };
 export type UploadPhase = UploadState['phase'];
 
 export type UploadEvent =
-  | { type: 'picked'; files: File[]; notices: FileNotice[] }
-  | { type: 'progress'; progress: Progress }
-  | { type: 'readFailed'; message: string; notices: FileNotice[] }
-  | { type: 'read'; results: FileResult[]; notices: FileNotice[] }
-  | { type: 'cancel' }
+  | { type: 'picked'; run: number; files: File[]; notices: FileNotice[] }
+  | { type: 'progress'; run: number; progress: Progress }
+  | { type: 'readFailed'; run: number; message: string; notices: FileNotice[] }
+  | { type: 'read'; run: number; results: FileResult[]; notices: FileNotice[] }
+  | { type: 'cancel'; run: number }
   | { type: 'close' }
   | { type: 'discard' }
+  | { type: 'skipConnect' }
   | { type: 'saveStarted' }
-  | { type: 'saveWritten'; outcome: SaveOutcome }
-  | { type: 'saved' }
-  | { type: 'saveFailed'; message: string };
+  | { type: 'saved'; attempt: SaveOutcome }
+  | { type: 'saveFailed'; message: string; attempt?: SaveOutcome };
 
-export const INITIAL_UPLOAD: UploadState = { phase: 'picking', notices: [] };
+export const INITIAL_UPLOAD: UploadState = { phase: 'picking', notices: [], skipArchive: false };
+const PREPARING: Progress = { current: 0, total: 100, fileName: 'Preparing upload...' };
 
 /** The only way the flow changes. An event a phase does not take returns the
  *  same object, so React skips the render. */
 export function transition(state: UploadState, event: UploadEvent): UploadState {
+  const { skipArchive } = state;
+  const ownRun = 'run' in state && 'run' in event && state.run === event.run;
   switch (event.type) {
     case 'picked':
       if (state.phase !== 'picking' && state.phase !== 'readFailed') return state;
       return event.files.length > 0
-        ? { phase: 'reading', files: event.files, notices: event.notices, progress: { current: 0, total: 100, fileName: 'Preparing upload...' } }
-        : { phase: 'picking', notices: event.notices };
+        ? { phase: 'reading', run: event.run, files: event.files, notices: event.notices, progress: PREPARING, skipArchive }
+        : { phase: 'picking', notices: event.notices, skipArchive };
     case 'progress':
-      return state.phase === 'reading' ? { ...state, progress: event.progress } : state;
+      return state.phase === 'reading' && ownRun ? { ...state, progress: event.progress } : state;
     case 'readFailed':
-      return state.phase === 'reading' ? { phase: 'readFailed', files: state.files, notices: event.notices, message: event.message } : state;
+      return state.phase === 'reading' && ownRun
+        ? { phase: 'readFailed', run: state.run, files: state.files, notices: event.notices, message: event.message, skipArchive }
+        : state;
     case 'read':
-      return state.phase === 'reading' ? { phase: 'reviewing', results: event.results, notices: event.notices, outcome: NO_OUTCOME } : state;
+      return state.phase === 'reading' && ownRun
+        ? { phase: 'reviewing', run: state.run, results: event.results, notices: event.notices, outcome: NO_OUTCOME, skipArchive }
+        : state;
     case 'cancel':
-      return state.phase === 'reading' ? INITIAL_UPLOAD : state;
+      return ownRun && (state.phase === 'reading' || state.phase === 'readFailed' || state.phase === 'reviewing')
+        ? { ...INITIAL_UPLOAD, skipArchive }
+        : state;
     case 'close':
       return state.phase === 'picking' || state.phase === 'readFailed' || state.phase === 'done' ? INITIAL_UPLOAD : state;
     case 'discard':
       return state.phase === 'saving' ? state : INITIAL_UPLOAD;
+    case 'skipConnect':
+      return skipArchive ? state : { ...state, skipArchive: true };
     case 'saveStarted':
       return state.phase === 'reviewing' || state.phase === 'saveFailed'
-        ? { phase: 'saving', results: state.results, notices: state.notices, outcome: savedSoFar(state.outcome) }
+        ? { phase: 'saving', results: state.results, notices: state.notices, outcome: savedSoFar(state.outcome), skipArchive }
         : state;
-    case 'saveWritten':
-      return state.phase === 'saving' ? { ...state, outcome: event.outcome } : state;
     case 'saved':
-      return state.phase === 'saving' ? { phase: 'done', results: state.results, notices: state.notices, outcome: state.outcome } : state;
+      return state.phase === 'saving'
+        ? { phase: 'done', results: state.results, notices: state.notices, outcome: withAttempt(state.outcome, event.attempt), skipArchive }
+        : state;
     case 'saveFailed':
-      return state.phase === 'saving' ? { ...state, phase: 'saveFailed', message: event.message } : state;
+      return state.phase === 'saving'
+        ? { ...state, phase: 'saveFailed', message: event.message, outcome: event.attempt ? withAttempt(state.outcome, event.attempt) : state.outcome }
+        : state;
   }
 }
