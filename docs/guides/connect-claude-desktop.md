@@ -14,7 +14,7 @@ This guide is for people who have the tool installed on a computer and are comfo
 
 A short, fixed list of tools, and nothing else:
 
-Read your record. Everything in the file: profile, measurements, blood tests, medications, supplements, screenings, documents. Claude can ask for one test or one date range instead of the lot.
+Read your record. Everything in the file: profile, measurements, blood tests, medications, supplements, screenings, documents. Claude can ask for one test, or only the results since a date, instead of the lot.
 
 Compute your plan. The same plan the web tool shows, worked out offline from your file, with the reason and the citations behind every suggestion.
 
