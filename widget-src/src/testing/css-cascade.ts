@@ -8,9 +8,13 @@
  * What it models: top-level rules and rules in top-level @media (width, hover, pointer,
  * print, screen, prefers-reduced-motion); the declared value as written, with no inheritance,
  * no var() resolution and no computed values; `padding`/`margin` shorthands for their four
- * physical sides. Other shorthand/longhand pairs (inset, background, text-decoration, the
- * logical padding/margin sides) are not modelled: a matching rule that declares one of them
- * beside the asked property throws, so a test fails loudly instead of passing wrongly.
+ * physical sides. Other shorthand/longhand pairs are not modelled. For these families a
+ * matching rule that declares the other member beside the asked property throws, so a test
+ * fails loudly instead of passing wrongly: the logical padding/margin sides (-block, -inline,
+ * -start, -end); inset vs top/right/bottom/left; background vs background-color/-image;
+ * text-decoration vs its -line/-style/-color; font vs font-size; grid and grid-template beside
+ * grid-template-columns; border-radius vs its four corner longhands. Pairs outside this list
+ * are not checked.
  * Pseudo-classes jsdom cannot hold are given to named elements through `states`.
  */
 import { readFileSync } from 'node:fs';
@@ -130,10 +134,11 @@ function splitTop(text: string, sep: RegExp): string[] {
 
 /** padding-top and the like also take their value from the `padding` shorthand. */
 const BOX = /^(padding|margin)-(top|right|bottom|left)$/;
-function sideOf(shorthand: string, side: string): string {
+type Side = 'top' | 'right' | 'bottom' | 'left';
+function sideOf(shorthand: string, side: Side): string {
   const v = splitTop(shorthand, /\s/);
   const [top, right = top, bottom = top, left = right] = v;
-  return { top, right, bottom, left }[side]!;
+  return { top, right, bottom, left }[side];
 }
 
 interface Decl { name: string; value: string; important: boolean }
@@ -169,8 +174,14 @@ function unmodelled(property: string): string[] {
   if (property === 'inset') return ['top', 'right', 'bottom', 'left', 'inset-block', 'inset-inline'];
   if (property === 'background') return ['background-color', 'background-image'];
   if (property === 'background-color' || property === 'background-image') return ['background'];
-  if (property === 'text-decoration') return ['text-decoration-line'];
-  if (property === 'text-decoration-line') return ['text-decoration'];
+  if (property === 'text-decoration') return ['text-decoration-line', 'text-decoration-style', 'text-decoration-color'];
+  if (['text-decoration-line', 'text-decoration-style', 'text-decoration-color'].includes(property)) return ['text-decoration'];
+  if (property === 'font-size') return ['font'];
+  if (property === 'font') return ['font-size'];
+  if (property === 'grid-template-columns') return ['grid-template', 'grid'];
+  const corners = ['top-left', 'top-right', 'bottom-right', 'bottom-left'].map(c => `border-${c}-radius`);
+  if (property === 'border-radius') return corners;
+  if (corners.includes(property)) return ['border-radius'];
   return [];
 }
 
@@ -199,7 +210,7 @@ export function cascaded(el: Element, property: string, screen: number | Screen,
       if (rule.media && !mediaApplies(rule.media, width, hover)) continue;
       const body = parseBody(rule.body);
       const decls = body.flatMap(d => d.name === property ? [d]
-        : box && d.name === box[1] ? [{ ...d, value: sideOf(d.value, box[2]) }] : []);
+        : box && d.name === box[1] ? [{ ...d, value: sideOf(d.value, box[2] as Side) }] : []);
       const sibling = body.find(d => siblings.includes(d.name));
       if (decls.length === 0 && !sibling) continue;
       const matching = rule.selectors.filter(sel => !sel.includes('::') && el.matches(asMatched(sel)));

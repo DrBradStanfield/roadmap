@@ -84,6 +84,7 @@ describe('US-20 AC8: on a phone the vitals inputs are 16px, so iOS does not zoom
     expect(cascaded(input, 'color', { width: PHONE, states: [[parent, [':focus-within']]] }, rules)).toBe('green');
     // A sibling shorthand the resolver does not model fails loudly.
     expect(() => cascaded(input, 'background', PHONE, parseRules('.bt-input { background-color: red }'))).toThrow(/does not model background-color/);
+    expect(() => cascaded(input, 'font-size', PHONE, parseRules('.bt-input { font: inherit }'))).toThrow(/does not model font beside font-size/);
     parent.remove();
   });
 });
