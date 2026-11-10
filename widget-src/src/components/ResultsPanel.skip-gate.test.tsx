@@ -82,6 +82,18 @@ describe('US-44 AC2 — gate skipped: Save as PDF straight away, nothing persist
   });
 });
 
+// Brad 2026-11-10 ("drop the wait"): the window opens inside the click, so a slow
+// save cannot let a popup blocker refuse it. The fields are still saved (US-03 AC3).
+describe('US-08 — Save as PDF saves the typed values without waiting for the save', () => {
+  it('a save that never resolves: the print window still opens, and the save was called once', async () => {
+    const onSaveLongitudinal = vi.fn(() => new Promise<unknown>(() => {}));
+    const view = showPlan({ hasUnsavedLongitudinal: true, onSaveLongitudinal });
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await waitFor(() => expect(print).toHaveBeenCalledOnce());
+    expect(onSaveLongitudinal).toHaveBeenCalledOnce();
+  });
+});
+
 describe('US-44 AC3/AC4 — the optional reminders line', () => {
   it('renders once, labelled, with no mailing-list notice (Brad 2026-11-02) and no storage sentence (US-09 AC5)', () => {
     const view = showPlan();

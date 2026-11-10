@@ -61,7 +61,7 @@ interface PlanPrint {
   printing: boolean;
   /** Build the report and open its window; the capture's print calls this directly. */
   printReport: (at: PdfButton) => Promise<void>;
-  /** Save as PDF: saves the pending values first, one press at a time. */
+  /** Save as PDF: starts the pending values' save without waiting for it, one press at a time. */
   handlePrint: (at: PdfButton) => Promise<void>;
   /** An erase forgets the window this record opened. */
   forget: () => void;
@@ -71,7 +71,8 @@ interface PlanPrint {
  * Save as PDF's state (US-18 AC6, US-09 AC19). Its states, each its own flag because
  * they overlap:
  * - idle: nothing running (`printStatus` 'idle').
- * - saving the pending values: Save as PDF awaits onSaveLongitudinal (`printStatus` 'loading').
+ * - Save as PDF running (`printStatus` 'loading'): it starts onSaveLongitudinal without
+ *   waiting, then builds the report.
  * - building the report: the hidden copy drawn inside the click while getReportHtml
  *   copies it (`printing`, synchronous; still 'loading' under Save as PDF).
  * - the last window refused at a button (`pdfBlocked`): the last try's outcome, emptied
@@ -104,11 +105,10 @@ export function usePlanPrint(hasPlan: boolean, hasUnsavedLongitudinal?: boolean,
   const handlePrint = async (at: PdfButton) => {
     if (printStatus === 'loading') return;
     setPrintStatus('loading');
-    setPdfBlocked(null); // before the save's await, for the same reason
-    // Include pending longitudinal values in the locally generated report.
-    if (hasUnsavedLongitudinal && onSaveLongitudinal) {
-      try { await onSaveLongitudinal(); } catch { /* proceed with saved data */ }
-    }
+    // US-03 AC3: the press saves what the fields hold, but never waits for it (Brad
+    // 2026-11-10): the report copies the page as drawn, and the window must open
+    // inside the click or a popup blocker refuses it.
+    if (hasUnsavedLongitudinal && onSaveLongitudinal) onSaveLongitudinal().catch(() => { /* a failed save never stops the PDF */ });
     await printReport(at);
     setPrintStatus('idle');
   };
