@@ -22,11 +22,19 @@ echo "$*" | tr "\\n" " " >> "$STATE.calls"; echo >> "$STATE.calls"
 [ -n "\${GH_FAIL:-}" ] && exit 1
 [ -n "\${GH_SLEEP:-}" ] && exec /bin/sleep "$GH_SLEEP" # one process, as the real gh is
 n=$(cat "$STATE" 2>/dev/null || echo 0)
+# Poll and rate-limit calls answer with fixture JSON, run through the script's own --jq filter as gh would.
+jqf=; prev=
+for a in "$@"; do [ "$prev" = --jq ] && jqf=$a; prev=$a; done
+json() { printf '%s\\n' "$1" | jq -r "$jqf"; }
+poll_n() { n=$((n+1)); echo $n > "$STATE"; [ "$n" = "\${FAIL_AT:-}" ] && exit 1; [ $n -ge "\${DONE_AT:-2}" ]; }
 case "$*" in
-  *rate_limit*) echo "\${RL_LEFT:-4000} \${RL_RESET:-0}" ;;
-  *actions/runs/*) n=$((n+1)); echo $n > "$STATE"; [ $n -ge "\${DONE_AT:-2}" ] && echo done || echo in_progress ;;
+  *rate_limit*) json "{\\"resources\\":{\\"core\\":{\\"remaining\\":\${RL_CORE:-4000},\\"reset\\":\${RL_RESET:-0}},\\"graphql\\":{\\"remaining\\":\${RL_GQL:-4000},\\"reset\\":\${RL_RESET:-0}}}}" ;;
+  *actions/runs/*) if poll_n; then json '{"status":"completed"}'; else json "{\\"status\\":\\"\${RUN_STATUS:-in_progress}\\"}"; fi ;;
   *"conclusion,headSha,jobs"*) [ -n "\${JOBS_FAIL:-}" ] && exit 1; echo "conclusion=$CONCLUSION"; echo "head=abc123"; echo "job deploy=$CONCLUSION" ;;
-  *statusCheckRollup*) n=$((n+1)); echo $n > "$STATE"; [ $n -ge "\${DONE_AT:-2}" ] && echo done || echo pending ;;
+  *statusCheckRollup*) pend='[{"__typename":"CheckRun","name":"t","workflowName":"CI","status":"IN_PROGRESS","conclusion":""}]'
+    [ -n "\${ROLLUP:-}" ] && pend=$ROLLUP
+    if poll_n; then json '{"statusCheckRollup":[{"__typename":"CheckRun","name":"t","workflowName":"CI","status":"COMPLETED","conclusion":"SUCCESS"}]}'
+    else json "{\\"statusCheckRollup\\":$pend}"; fi ;;
   *"pass="*) [ -n "\${CHECKS_FAIL:-}" ] && exit 1; echo "pass=3 fail=$FAILS skipped=0 pending=0"; [ "$FAILS" = 0 ] || echo "failed: \${FAILNAME:-test}" ;;
   *headRefOid*) [ -n "\${VIEW_FAIL:-}" ] && exit 1; echo "head=abc123"; echo "state=OPEN mergeable=MERGEABLE mergeState=CLEAN" ;;
 esac
@@ -134,10 +142,71 @@ describe('wait-run.sh (US-64 AC26)', () => {
     }
   });
   it('sleeps until the reset when under 200 requests are left, saying so once', () => {
-    const r = run(['deploy', '123'], { RL_LEFT: '50', RL_RESET: '1001000' });
+    const r = run(['deploy', '123'], { RL_CORE: '50', RL_RESET: '1001000' });
     expect(r.status).toBe(0);
     expect(r.sleeps).toEqual([1005]);
     expect(r.stderr).toContain('GitHub rate limit low (50 left); sleeping 1005s until it resets');
     expect(r.stdout).toContain('conclusion=success');
+  });
+  it('checks only the budget its mode spends: core for deploy, graphql for pr', () => {
+    expect(run(['deploy', '123'], { RL_GQL: '50', RL_RESET: '1001000' }).sleeps).toEqual([60]);
+    expect(run(['pr', '42'], { RL_CORE: '50', RL_RESET: '1001000' }).sleeps).toEqual([60]);
+    const r = run(['pr', '42'], { RL_GQL: '50', RL_RESET: '1001000' });
+    expect(r.sleeps).toEqual([1005]);
+    expect(r.stdout).toContain('pass=3 fail=0');
+  });
+  it('never sleeps past the time limit for a far-off reset', () => {
+    const r = run(['deploy', '123'], { RL_CORE: '50', RL_RESET: '2000000', WAIT_RUN_MAX_MIN: '10' });
+    expect(r.sleeps).toEqual([600]);
+    expect(r.stderr).toContain('sleeping 600s');
+  });
+  it('reads the rate limit after a gh error, not only every 10th poll', () => {
+    const rl = (env: Record<string, string>) =>
+      run(['deploy', '123'], { DONE_AT: '5', ...env }).calls.filter((c) => c.includes('rate_limit')).length;
+    expect(rl({})).toBe(1);
+    expect(rl({ FAIL_AT: '3' })).toBe(2);
+  });
+  // Fixture JSON runs through the script's own jq filters, so these pin what counts as finished.
+  const pending = (status: string, conclusion = '') =>
+    JSON.stringify([{ __typename: 'CheckRun', name: 't', workflowName: 'CI', status, conclusion }]);
+  const pollsTwice = (args: string[], env: Record<string, string>) => run(args, env).sleeps.length === 1;
+  it('deploy: a run "waiting" (or queued) is still pending', () => {
+    for (const s of ['waiting', 'queued', 'in_progress', 'requested', 'pending']) {
+      expect(pollsTwice(['deploy', '123'], { RUN_STATUS: s })).toBe(true);
+    }
+  });
+  it('pr: a check run in any status but COMPLETED is pending, and so is STALE or an unknown conclusion', () => {
+    for (const s of ['QUEUED', 'IN_PROGRESS', 'WAITING', 'PENDING', 'REQUESTED']) {
+      expect(pollsTwice(['pr', '42'], { ROLLUP: pending(s) })).toBe(true);
+    }
+    for (const c of ['STALE', 'STARTUP_FAILURE', '']) {
+      expect(pollsTwice(['pr', '42'], { ROLLUP: pending('COMPLETED', c) })).toBe(true);
+    }
+    for (const c of ['SUCCESS', 'FAILURE', 'NEUTRAL', 'SKIPPED', 'CANCELLED', 'TIMED_OUT', 'ACTION_REQUIRED']) {
+      expect(pollsTwice(['pr', '42'], { ROLLUP: pending('COMPLETED', c), FAILS: '0' })).toBe(false);
+    }
+  });
+  it('pr: a commit status PENDING or EXPECTED is pending; SUCCESS, ERROR or FAILURE is not', () => {
+    const status = (state: string) => JSON.stringify([{ __typename: 'StatusContext', context: 'ci/x', state }]);
+    expect(pollsTwice(['pr', '42'], { ROLLUP: status('PENDING') })).toBe(true);
+    expect(pollsTwice(['pr', '42'], { ROLLUP: status('EXPECTED') })).toBe(true);
+    for (const s of ['SUCCESS', 'ERROR', 'FAILURE']) expect(pollsTwice(['pr', '42'], { ROLLUP: status(s) })).toBe(false);
+  });
+  it('pr: an empty or null rollup (no checks yet) is pending', () => {
+    expect(pollsTwice(['pr', '42'], { ROLLUP: '[]' })).toBe(true);
+    expect(pollsTwice(['pr', '42'], { ROLLUP: 'null' })).toBe(true);
+  });
+  it('pr: only the newest attempt of a check counts, as gh pr checks dedupes', () => {
+    const run2 = (a: string, b: string) => JSON.stringify([
+      { __typename: 'CheckRun', name: 't', workflowName: 'CI', startedAt: '2026-11-10T10:00:00Z', status: 'COMPLETED', conclusion: a },
+      { __typename: 'CheckRun', name: 't', workflowName: 'CI', startedAt: '2026-11-10T11:00:00Z', status: b === 'X' ? 'IN_PROGRESS' : 'COMPLETED', conclusion: b },
+    ]);
+    expect(pollsTwice(['pr', '42'], { ROLLUP: run2('STALE', 'SUCCESS') })).toBe(false);
+    expect(pollsTwice(['pr', '42'], { ROLLUP: run2('SUCCESS', 'X') })).toBe(true);
+    const twoNames = JSON.stringify([
+      { __typename: 'CheckRun', name: 'a', workflowName: 'CI', status: 'COMPLETED', conclusion: 'SUCCESS' },
+      { __typename: 'CheckRun', name: 'b', workflowName: 'CI', status: 'QUEUED', conclusion: '' },
+    ]);
+    expect(pollsTwice(['pr', '42'], { ROLLUP: twoNames })).toBe(true);
   });
 });

@@ -14,7 +14,8 @@
 # 5000/hour REST limit (US-64 AC26). Each poll is ONE gh call: deploy reads the run over REST, pr reads the checks
 # over GraphQL (a separate budget). Polls every WAIT_RUN_INTERVAL seconds (default 60, never less), every 120 s
 # after 10 min and every 300 s after 30 min. Every 10th poll, and after a gh error, it reads `gh api rate_limit`
-# (free); with under 200 left it sleeps until the reset instead of polling. Plain POSIX sh plus perl (macOS ships
+# (free); with under 200 left in the budget its mode spends (core for deploy, graphql for pr) it sleeps until the
+# reset instead of polling. Plain POSIX sh plus perl (macOS ships
 # it) for the per-call limit, and gh's own --jq (no jq needed). Run it in the background (run_in_background) so
 # the session is woken when it ends.
 set -u
@@ -29,6 +30,7 @@ case "$mode" in
   *) echo "usage: sh tools/wait-run.sh deploy <run-id> | pr <number>" >&2; exit 2 ;;
 esac
 [ "$interval" -ge 60 ] || interval=60
+budget=core; [ "$mode" = pr ] && budget=graphql
 
 start=$(date +%s); errors=0; polls=0
 # Every gh call gets WAIT_RUN_GH_TIMEOUT seconds (default 60; perl's alarm, since macOS has no `timeout`), so a
@@ -39,12 +41,12 @@ give_up_if_late() {
   waited=$(( $(date +%s) - start ))
   if [ "$waited" -ge "$max_s" ]; then echo "gave up after $((waited / 60)) min; still not finished" >&2; exit 3; fi
 }
-# Sleep one interval, longer the longer we have waited. If the REST or GraphQL budget is nearly spent, sleep until
-# it resets instead, never past the time limit.
+# Sleep one interval, longer the longer we have waited. If this mode's budget is nearly spent, sleep until it
+# resets instead, never past the time limit.
 nap() {
   polls=$((polls + 1))
   if [ $((polls % 10)) -eq 1 ] || [ "$errors" -gt 0 ]; then
-    low=$(gh api rate_limit --jq '[.resources.core, .resources.graphql] | min_by(.remaining) | "\(.remaining) \(.reset)"' 2>/dev/null)
+    low=$(gh api rate_limit --jq ".resources.$budget"' | "\(.remaining) \(.reset)"' 2>/dev/null)
     left=${low% *}; reset=${low#* }
     case "$left$reset" in ''|*[!0-9]*) ;; *)
       if [ "$left" -lt 200 ]; then
@@ -78,12 +80,15 @@ poll() {
 
 # One REST request per poll.
 run_state() { gh api "repos/{owner}/{repo}/actions/runs/$id" --jq 'if .status == "completed" then "done" else .status end'; }
-# One GraphQL query per poll. No checks yet = still pending; a wrong number or no network is a gh error. A check run
-# pends until COMPLETED, a commit status while PENDING or EXPECTED (as `gh pr checks` buckets them).
+# One GraphQL query per poll. No checks yet = still pending; a wrong number or no network is a gh error. Mirrors
+# `gh pr checks` (cli/cli pkg/cmd/pr/checks/aggregate.go, v2.102): keep the newest check per status context or per
+# name/workflow (gh also keys on the run's event, which this JSON lacks), take its state (a status's state, else a
+# completed run's conclusion, else the run's status), and count it pending unless gh gives that state a bucket.
 pr_state() {
-  gh pr view "$id" --json statusCheckRollup --jq '.statusCheckRollup |
-    if length > 0 and all(((.status // "COMPLETED") == "COMPLETED") and .state != "PENDING" and .state != "EXPECTED")
-    then "done" else "pending" end'
+  gh pr view "$id" --json statusCheckRollup --jq '[.statusCheckRollup // [] | group_by(.context // "\(.name)/\(.workflowName)")
+    | .[] | max_by(.startedAt) | if (.state // "") != "" then .state elif .status == "COMPLETED" then .conclusion else .status end]
+    | if length > 0 and all(IN("SUCCESS", "SKIPPED", "NEUTRAL", "ERROR", "FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "CANCELLED"))
+      then "done" else "pending" end'
 }
 
 if [ "$mode" = deploy ]; then
