@@ -77,7 +77,7 @@ export const ERASE_UNREACHABLE = 'Your cloud storage could not be reached, so no
 
 /** The stored originals of the documents still live in `file`: an erase
  *  leaves these (US-09 AC20, AC23; US-11 AC6). */
-export function liveOriginals(file: RoadmapFile): Set<string> {
+function liveOriginals(file: RoadmapFile): Set<string> {
   return new Set(file.documents.filter((d) => !d.deleted && d.fileRef).map((d) => d.fileRef));
 }
 

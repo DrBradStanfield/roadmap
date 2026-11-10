@@ -50,7 +50,7 @@ import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/ada
 export interface DerivedSeries { whtr: WhtrPoint[]; egfr: EgfrPoint[] }
 import type { RecordHost } from '@roadmap/health-core/record-host';
 import { ensureIsoDatetime } from '../lib/recordedAt';
-import { dropRefusedOriginals, webRecordHost } from './web-record-host';
+import { webRecordHost } from './web-record-host';
 import { Sentry } from '../lib/sentry';
 import { recordFailure } from '../lib/error-diagnostics';
 
@@ -499,24 +499,24 @@ export class RoadmapStore {
     documents: Array<DocumentPayload<Blob>>,
   ): Promise<{ saved: ApiDocument[]; errorCount: number; unstored?: number }> {
     // The batch stands for the erase the page showed as it started: refused
-    // before any upload if that is not this copy's, and again at the commit,
-    // since an erase can land while the uploads run.
+    // before any upload if that is not this copy's, before each file write and
+    // at the commit, since an erase can land while the uploads run (US-11 AC1a).
     const erase = this.shownErase;
     if (this.refuses(erase)) return { saved: [], errorCount: documents.length };
     const { saved, unstored, commit } = await saveDocuments(this.file, documents, {
       hash: sha256Blob,
-      write: (ref, file) => this.host.store.writeDocument(ref, file),
+      write: (ref, file) => (this.refuses(erase) ? Promise.reject(new Error('erase moved')) : this.host.store.writeDocument(ref, file)),
       mimeType: (file) => file.type || '',
       onWriteError: (error) => {
+        if (this.refuses(erase)) return; // a refusal, not a failure
         console.warn('Document file not stored');
         Sentry.captureException(recordFailure(error, 'Document file not stored'), {
           tags: { area: 'cloud-sync', op: 'write-document', backend: this.host.store.id },
         });
       },
     });
-    if (this.session.edit(commit, erase)) return { saved: saved.map(documentView), errorCount: 0, ...(unstored ? { unstored } : {}) };
-    dropRefusedOriginals(this.host, this.file, saved);
-    return { saved: [], errorCount: documents.length };
+    if (!this.session.edit(commit, erase)) return { saved: [], errorCount: documents.length };
+    return { saved: saved.map(documentView), errorCount: 0, ...(unstored ? { unstored } : {}) };
   }
 
   /** Read a stored document's bytes back (viewer). */

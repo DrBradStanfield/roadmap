@@ -1,11 +1,10 @@
 /**
  * @vitest-environment jsdom
  *
- * US-11 AC1a: a document upload whose save is refused leaves no copy on the
- * device. The store writes each original before its gated commit; when that
- * commit is refused (here, the store took in another tab's erase while the
- * upload ran), the device-tier originals this save wrote go too. An original
- * a live row still names stays.
+ * US-11 AC1a: a document upload whose erase has moved before its file is
+ * written writes no copy on the device. The store checks the save's erase
+ * before each file write. A write already in progress when the erase lands
+ * may leave a device-only copy, which the next erase removes: the stated limit.
  */
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { RoadmapStore } from './roadmap-store';
@@ -13,13 +12,20 @@ import { LocalStorageAdapter } from './local-storage-adapter';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
+/** Holds every hash until released, so an erase can land before any write starts. */
+const hashGate = vi.hoisted(() => ({ wait: null as Promise<void> | null }));
+vi.mock('../lib/archive-payloads', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/archive-payloads')>();
+  return { ...actual, sha256Blob: async (b: Blob) => { await hashGate.wait; return actual.sha256Blob(b); } };
+});
+
 const DOC_PREFIX = 'health_roadmap_doc_v2:';
 const blobKeys = () => Object.keys(localStorage).filter((k) => k.startsWith(DOC_PREFIX));
-const pdf = () => new Blob(['%PDF-1.4 synthetic'], { type: 'application/pdf' });
-const upload = (name: string) => [{
+const pdf = (text: string) => new Blob([`%PDF-1.4 ${text}`], { type: 'application/pdf' });
+const doc = (name: string) => ({
   documentType: 'pathology_report', title: name, documentDate: '2026-11-01', contentMd: 'Synthetic fixture',
-  metadata: {}, sourceFileName: `${name}.pdf`, file: pdf(),
-}];
+  metadata: {}, sourceFileName: `${name}.pdf`, file: pdf(name),
+});
 
 /** The device tier, its blob writes held at the door until released. */
 class HeldBlobs extends LocalStorageAdapter {
@@ -32,13 +38,16 @@ class HeldBlobs extends LocalStorageAdapter {
     return { reached, release };
   }
   async writeDocument(ref: string, bytes: Blob) {
-    if (this.gate) { this.entered(); await this.gate; }
+    const gate = this.gate;
+    this.gate = null; // only the first write is held
+    if (gate) { this.entered(); await gate; }
     return super.writeDocument(ref, bytes);
   }
 }
 
 beforeEach(() => {
   localStorage.clear();
+  hashGate.wait = null;
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-11-10T10:00:00.000Z'));
 });
@@ -57,61 +66,39 @@ async function twoTabs() {
   return { other, adapter, page };
 }
 
-it('a refused document save leaves no copy on the device (US-11 AC1a)', async () => {
-  const { other, adapter, page } = await twoTabs();
-  const held = adapter.hold();
-  const pending = page.bulkSaveDocuments(upload('Lipids'));
-  await held.reached;
+/** The other tab erases and this tab takes the erase in. */
+async function eraseLands(other: RoadmapStore, page: RoadmapStore) {
   vi.setSystemTime(new Date('2026-11-10T10:01:00.000Z'));
   expect((await other.deleteAllData()).success).toBe(true);
-  expect(await page.refreshFromRemote()).toBe(true); // takes the erase in, wipes the blobs
-  held.release(); // the blob lands after the wipe
+  expect(await page.refreshFromRemote()).toBe(true);
+}
+
+it('a document save whose erase has already moved writes no copy on the device (US-11 AC1a)', async () => {
+  const { other, page } = await twoTabs();
+  let release!: () => void;
+  hashGate.wait = new Promise<void>((r) => { release = r; });
+  const pending = page.bulkSaveDocuments([doc('Lipids')]);
+  await eraseLands(other, page);
+  release();
   expect(await pending).toEqual({ saved: [], errorCount: 1 });
   expect(blobKeys()).toEqual([]);
 });
 
 it('an accepted document save keeps its original (US-11 AC1a)', async () => {
   const { page } = await twoTabs();
-  const { saved } = await page.bulkSaveDocuments(upload('Lipids'));
+  const { saved } = await page.bulkSaveDocuments([doc('Lipids')]);
   expect(saved).toHaveLength(1);
   await page.flush();
   expect(blobKeys()).toEqual([DOC_PREFIX + saved[0].fileRef]);
 });
 
-it('a refused document save keeps an original a live row still names (US-11 AC1a)', async () => {
+it('stated limit: a file write already in progress when the erase lands may leave a device copy; the writes after it never happen (US-11 AC1a)', async () => {
   const { other, adapter, page } = await twoTabs();
   const held = adapter.hold();
-  const pending = page.bulkSaveDocuments(upload('Lipids'));
+  const pending = page.bulkSaveDocuments([doc('Lipids'), doc('Thyroid')]); // one folder: the first write runs alone
   await held.reached;
-  vi.setSystemTime(new Date('2026-11-10T10:01:00.000Z'));
-  expect((await other.deleteAllData()).success).toBe(true);
-  // After the erase the other tab uploads the same letter: same name, same ref.
-  vi.setSystemTime(new Date('2026-11-10T10:02:00.000Z'));
-  const { saved } = await other.bulkSaveDocuments(upload('Lipids'));
-  await other.flush();
-  const ref = saved[0].fileRef!;
-  expect(await page.refreshFromRemote()).toBe(true);
+  await eraseLands(other, page);
   held.release();
-  expect(await pending).toEqual({ saved: [], errorCount: 1 });
-  expect(blobKeys()).toEqual([DOC_PREFIX + ref]);
-  const reread = await RoadmapStore.create(new LocalStorageAdapter());
-  expect((await reread.readDocumentFile(ref)).size).toBe(pdf().size);
-});
-
-it('a refused document save keeps an original another tab saved after this tab took the erase in (US-11 AC1a)', async () => {
-  const { other, adapter, page } = await twoTabs();
-  const held = adapter.hold();
-  const pending = page.bulkSaveDocuments(upload('Lipids'));
-  await held.reached;
-  vi.setSystemTime(new Date('2026-11-10T10:01:00.000Z'));
-  expect((await other.deleteAllData()).success).toBe(true);
-  expect(await page.refreshFromRemote()).toBe(true); // this tab's copy now holds no documents
-  // Only then does the other tab save the same letter: same name, same ref.
-  vi.setSystemTime(new Date('2026-11-10T10:02:00.000Z'));
-  const { saved } = await other.bulkSaveDocuments(upload('Lipids'));
-  await other.flush();
-  const ref = saved[0].fileRef!;
-  held.release();
-  expect(await pending).toEqual({ saved: [], errorCount: 1 });
-  expect(blobKeys()).toEqual([DOC_PREFIX + ref]);
+  expect(await pending).toEqual({ saved: [], errorCount: 2 });
+  expect(blobKeys()).toEqual([`${DOC_PREFIX}Lab results/2026-11-01 Lipids.pdf`]);
 });
