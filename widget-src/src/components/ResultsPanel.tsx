@@ -568,6 +568,9 @@ function useHighlights(suggestions: Suggestion[] | undefined): Highlights {
     }
     // Nothing new or changed, nothing glowing: no new state, so no re-render.
     if (next.size === 0) {
+      // A change undone mid-glow ends the glow; the same empty set skips a re-render.
+      setHighlighted(NO_HIGHLIGHTS);
+      setFadingOut(NO_HIGHLIGHTS);
       baselineRef.current = currentMap;
       return;
     }

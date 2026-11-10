@@ -75,3 +75,15 @@ it('US-07 AC3: a suggestion on a row glows teal too, then fades', () => {
   view.rerender(<div className="health-tool"><RowSuggestions suggestions={[s]} highlights={{ highlighted: new Set(), fadingOut: new Set() }}/></div>);
   expect(line.classList.contains('suggestion-highlight')).toBe(false);
 });
+
+it.each([['glows', 1000], ['fades', 3200]])('US-07 AC3: a change undone while its card %s ends the glow', (_, undoAt) => {
+  vi.useFakeTimers();
+  const view = render(host(BEFORE));
+  act(() => { vi.advanceTimersByTime(3100); }); // the plan has settled
+  view.rerender(host(AFTER));
+  expect(view.container.querySelector('.suggestion-highlight')).not.toBeNull();
+  act(() => { vi.advanceTimersByTime(undoAt); });
+  view.rerender(host(BEFORE)); // undone: nothing is new against the settled plan
+  act(() => { vi.advanceTimersByTime(10_000); });
+  expect(view.container.querySelector('.suggestion-highlight, .suggestion-fade-out')).toBeNull();
+});
