@@ -97,20 +97,20 @@ function withCell<K extends string>(
  * cell's slots on that day, by metric (null: empty). `latestDay(key)`: the
  * last day the page shows a value for it. `cellOf(key)`: the cell a key is
  * typed into, when one cell takes two (a blood pressure's halves); its keys
- * share one expectation. `shownUnit(key)`: the unit the page shows a key in
- * as the matrix mounts, which stamps a restored cell kept before cells
- * carried their unit. It is a best guess: the unit the page shows at the
- * first mount after this deploy, which is this device's preference, the unit
- * its last visit showed, unless another tab or the record changed it since.
+ * share one expectation. `legacyUnit(key)`: the unit a restored cell kept
+ * before cells carried their unit is stamped with as it is restored: this
+ * device's units as the page started, before the record's applied
+ * (useUnits' `startUnitOf`). A best guess: the units its last visit showed,
+ * unless another tab changed this device's since the cell was typed.
  */
 export function useMatrixDraft<K extends string>(storageKey: string, record: {
   onScreen: (column: string, key: K) => boolean;
   rowsUnder: (day: string, key: K) => Expected;
   latestDay: (key: K) => string | undefined;
   cellOf?: (key: K) => string;
-  shownUnit?: (key: K) => CellUnit | undefined;
+  legacyUnit?: (key: K) => CellUnit | undefined;
 }) {
-  const { onScreen, rowsUnder, latestDay, cellOf = (key: K) => key, shownUnit } = record;
+  const { onScreen, rowsUnder, latestDay, cellOf = (key: K) => key, legacyUnit } = record;
   const idOf = ([column, key]: CellRef<K>) => `${column ?? 'new'}|${cellOf(key)}`;
   const [state, setState] = useState<MatrixDraft<K>>(() => {
     const kept = loadDraft<K>(storageKey);
@@ -119,7 +119,7 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
     for (const [column, cells] of [[null, kept.draft.values] as const, ...Object.entries(kept.backfills)]) {
       for (const [key, typed] of Object.entries(isObject(cells) ? cells : {}) as Array<[K, unknown]>) {
         const id = idOf([column, key]);
-        const unit = shownUnit?.(key);
+        const unit = legacyUnit?.(key);
         if (typed && unit && !meta[id]?.unit) meta[id] = { ...meta[id], unit };
       }
     }
@@ -198,18 +198,16 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
     /** A unit chosen on this page says what the numbers typed are in (US-05
      *  AC2): every cell of `key` the user typed by hand on this load of the
      *  page, in `from`, the unit shown until now, is read in `to` from here
-     *  on, its text kept; with `everyCell`, every cell of `key` in `from`
-     *  (the blood tests other than Lp(a), Brad 2026-10-13). Every other cell
-     *  keeps its stamp and its quantity, its number shown again in the new
-     *  unit (adversary R2, clinical ruling): for Lp(a), one the chat filled,
-     *  one restored from the device; one typed in another unit, and one with
-     *  no unit kept, which stays without. A save takes a cell out of the
-     *  draft, its mark with it. */
-    restamp: (key: K, from: CellUnit, to: CellUnit, everyCell = false) => setState((s) => {
+     *  on, its text kept. Every other cell keeps its stamp and its quantity,
+     *  its number shown again in the new unit (adversary R2, clinical
+     *  ruling): one the chat filled, one restored from the device, one typed
+     *  in another unit, and one with no unit kept, which stays without. A
+     *  save takes a cell out of the draft, its mark with it. */
+    restamp: (key: K, from: CellUnit, to: CellUnit) => setState((s) => {
       const meta = { ...s.meta };
       for (const column of [null, ...Object.keys(s.backfills)]) {
         const id = idOf([column, key]);
-        if (meta[id]?.unit === from && (everyCell || meta[id]?.byHand === PAGE)) meta[id] = { ...meta[id], unit: to };
+        if (meta[id]?.unit === from && meta[id]?.byHand === PAGE) meta[id] = { ...meta[id], unit: to };
       }
       return { ...s, meta };
     }),

@@ -22,7 +22,7 @@ import { formatDisplayValue, toCanonicalValue } from '@roadmap/health-core/units
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
-import { BT_TIMELINE_DRAFT_KEY, loadFromLocalStorage } from '../lib/storage';
+import { BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY, loadFromLocalStorage } from '../lib/storage';
 import { trackABConversion } from '../lib/server-api';
 import { openAboutYou } from '../testing/health-tool-harness';
 import { WRITE_REFUSED } from '../lib/erase-copy';
@@ -415,6 +415,42 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
     it('another tab set this device to US units, the record still SI: it saves 3.5 mmol/L', async () => {
       await loadAndCommit('conventional', 'si');
       expect(await activeLdl()).toEqual([3.5]);
+    });
+    // Adversary R4 (PR 1147): a cell kept before cells carried their unit is
+    // read in the units this device showed before the record applied, not
+    // the record's, which the matrix may mount after.
+    it('kept with no unit, this device in SI, the record in US units: it saves 3.5 mmol/L', async () => {
+      await completeRecord();
+      await saveChangedMeasurements({ unitSystem: 'conventional' }, {});
+      await flushRoadmapStore();
+      localStorage.setItem(BT_TIMELINE_DRAFT_KEY, JSON.stringify({ draft: { values: { ldl: '3.5' } }, backfills: {}, meta: {} }));
+      localStorage.setItem('health_roadmap_unit_system', 'si');
+      const view = await open();
+      await settle(50); // About you's opened rows take the focus a frame later; a leave would commit the draft
+      press(await ldlDraft(view));
+      press(q(view, '.alr-add-btn') as HTMLElement);
+      await waitFor(async () => expect(await activeLdl()).toHaveLength(1), { timeout: 3000 });
+      expect(await activeLdl()).toEqual([3.5]);
+    });
+    // Adversary R3 (PR 1147): the vitals too. A weight kept before 2026-09-24 has no unit.
+    it('a weight kept with no unit, this device in US units, the record in SI: 180 saves as 180 lb', async () => {
+      await completeRecord();
+      await saveChangedMeasurements({ unitSystem: 'si' }, {});
+      await flushRoadmapStore();
+      localStorage.setItem(VITALS_DRAFT_KEY, JSON.stringify({ draft: { values: { weight: '180' } }, backfills: {}, meta: {} }));
+      localStorage.setItem('health_roadmap_unit_system', 'conventional');
+      const view = await open();
+      await settle(50);
+      const cell = await waitFor(() => {
+        const input = q(view, '.bt-vitals-card [data-metric="weight"] .bt-cell-draft input');
+        if (!input) throw new Error('no weight draft cell');
+        return input as HTMLElement;
+      });
+      press(cell);
+      press(q(view, '.alr-add-btn') as HTMLElement);
+      await waitFor(async () => expect(await activeWeights()).toHaveLength(2), { timeout: 3000 });
+      const today = (await activeWeights()).find(([, day]) => day === TODAY)!;
+      expect(today[0]).toBeCloseTo(toCanonicalValue('weight', 180, 'conventional'), 1);
     });
   });
 

@@ -31,7 +31,7 @@ const history = [
 
 function timeline() {
   const view = render(
-    <BloodTestTimeline bloodTestHistory={history} unitSystem="si" unitOverrides={{}} onToggleFieldUnit={() => {}} unitChoices={0}
+    <BloodTestTimeline bloodTestHistory={history} unitSystem="si" unitOverrides={{}} onToggleFieldUnit={() => {}}
       onSaveBatch={vi.fn().mockResolvedValue(new Map())} onCorrectValue={vi.fn().mockResolvedValue('ok')} onDraftValue={() => {}}
       isSaving={false} grading={{ sex: 'male' }} hasApiResponse/>,
   );

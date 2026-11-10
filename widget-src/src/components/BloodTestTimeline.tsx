@@ -38,6 +38,7 @@ import {
 import { keepLpaAsIs, lpaRowsToCheck, type LpaCheck } from '../lib/lpa-unit';
 import { trackProductEvent } from '../lib/server-api';
 import { NumericInputCell } from './NumericInputCell';
+import { BackfillCell, DraftCell } from './MatrixInputCells';
 import { CommitTickButton } from './CommitTickButton';
 import { DraftDateCell } from './DraftDateCell';
 import { LpaUnitControl } from './LpaUnitControl';
@@ -124,9 +125,9 @@ export interface BloodTestTimelineProps {
   unitSystem: UnitSystem;
   unitOverrides: Record<string, UnitSystem>;
   onToggleFieldUnit: (field: string) => void;
-  /** Counts the unit choices made on this page (useUnits): a change of unit
-   *  with no new count came from the record. */
-  unitChoices: number;
+  /** This device's unit for a field as the page started, before the
+   *  record's applied (useUnits): a draft cell kept with no unit was typed in it. */
+  startUnitOf?: (field: string) => UnitSystem;
   /** Save the typed values, one task per day. Resolves with what was
    *  refused, slot by slot; those cells are kept for a retry. */
   onSaveBatch: (tasks: SaveTask[]) => Promise<Refused>;
@@ -175,7 +176,7 @@ export const SAME_SLOT = 'This test already has a value on that day in another c
 const MONTH_LABELS = MONTHS_SHORT.map(m => m.label);
 
 export function BloodTestTimeline({
-  bloodTestHistory, unitSystem, unitOverrides, onToggleFieldUnit, unitChoices,
+  bloodTestHistory, unitSystem, unitOverrides, onToggleFieldUnit, startUnitOf,
   onSaveBatch, onCorrectValue, move, onDraftValue, isSaving, grading, onUploadClick, uploadDisabled, loginUrl,
   hasApiResponse, flushRef, prefillRef, onHoldsText,
 }: BloodTestTimelineProps) {
@@ -191,7 +192,7 @@ export function BloodTestTimeline({
   const {
     holdsText,
     draft, backfills, type, setDate: setDraftDate, unitOf, lpaUnitOf, restamp, expected, clashes, taken, lends, settle, refusal,
-  } = useMatrixDraft<MetricType>(BT_TIMELINE_DRAFT_KEY, { onScreen, rowsUnder, latestDay, shownUnit: m => (m === 'lpa' ? undefined : unitOverrides[METRIC_TO_FIELD[m]] ?? unitSystem) });
+  } = useMatrixDraft<MetricType>(BT_TIMELINE_DRAFT_KEY, { onScreen, rowsUnder, latestDay, legacyUnit: m => (m === 'lpa' ? undefined : startUnitOf?.(METRIC_TO_FIELD[m])) });
   // On a phone the grid sits hidden under rows: tell the page it holds typed text (US-62 AC11).
   useEffect(() => { onHoldsText?.(holdsText); }, [holdsText]);
   const [activeCell, setActiveCell] = useState<string | null>(null);
@@ -219,8 +220,8 @@ export function BloodTestTimeline({
   }, [typedDays, onHeld]);
 
   // The units typed cells are read and shown in, Lp(a)'s own included (lib/useBloodDraftUnits).
-  const { lpaUnit, pickLpaUnit, fieldUnit, typedUnit, unreadable, shownText } = useBloodDraftUnits({
-    rows: ROWS, unitSystem, unitOverrides, unitChoices, unitOf, lpaUnitOf, restamp,
+  const { lpaUnit, pickLpaUnit, toggleUnit, fieldUnit, typedUnit, unreadable, shownText, checkOf } = useBloodDraftUnits({
+    unitSystem, unitOverrides, onToggleFieldUnit, unitOf, lpaUnitOf, restamp,
   });
 
   // Per-metric SI series (oldest → newest) + lastSi for trend column.
@@ -441,7 +442,7 @@ export function BloodTestTimeline({
                   <div className="bt-name-label">{row.label}</div>
                   {row.metric === 'lpa'
                     ? <LpaUnitControl unit={lpaUnit} onChange={pickLpaUnit}/>
-                    : <UnitChip label={cellLabel(row.metric, display)} onToggle={() => onToggleFieldUnit(row.field)}/>}
+                    : <UnitChip label={cellLabel(row.metric, display)} onToggle={() => toggleUnit(row.metric, row.field)}/>}
                   {ref && <div className="bt-ref-label">{ref}</div>}
                 </div>
                 {columns.map((c, colIdx) => {
@@ -455,6 +456,7 @@ export function BloodTestTimeline({
                         display={display}
                         grading={grading}
                         value={shownText(null, row.metric, row.field, typed)}
+                        validationResult={checkOf(null, row.metric, row.field, typed)}
                         valueSI={cells.find(cell => cell.column === null && cell.metric === row.metric)?.si ?? undefined}
                         error={unreadable(null, row.metric, row.field, typed) ?? (clashes(row.metric) || taken(row.metric) ? SAME_SLOT : refusal([null, row.metric]))}
                         active={activeCell === cellId}
@@ -475,6 +477,7 @@ export function BloodTestTimeline({
                         metric={row.metric}
                         display={display}
                         value={shownText(c.date, row.metric, row.field, typed)}
+                        validationResult={checkOf(c.date, row.metric, row.field, typed)}
                         error={unreadable(c.date, row.metric, row.field, typed) ?? (c.date === draft.date && clashes(row.metric) ? SAME_SLOT : refusal([c.date, row.metric]))}
                         active={activeCell === cellId}
                         onFocus={() => setActiveCell(cellId)}
@@ -1013,89 +1016,5 @@ export function ValueCell({
     >
       {shown}
     </button>
-  );
-}
-
-interface DraftCellProps {
-  metric: MetricType;
-  display: CellUnit;
-  grading: Grading;
-  value: string;
-  /** What the cell saves, graded instead of its shown text (an Lp(a) cell
-   *  typed in another unit, US-05 AC2). */
-  valueSI?: number;
-  /** Why the typed value cannot be saved as it stands (`SAME_SLOT`). */
-  error?: string | null;
-  active: boolean;
-  onFocus: () => void;
-  onBlur: () => void;
-  onEnter: () => void;
-  onChange: (v: string) => void;
-}
-
-function DraftCell({ metric, display, grading, value, valueSI, error, active, onFocus, onBlur, onEnter, onChange }: DraftCellProps) {
-  return (
-    <NumericInputCell
-      metric={metric}
-      display={display}
-      grading={grading}
-      value={value}
-      valueSI={valueSI}
-      externalError={error}
-      onChange={onChange}
-      wrapperClass="bt-cell-input bt-cell-draft"
-      active={active}
-      placeholder="—"
-      onFocus={onFocus}
-      onBlur={onBlur}
-      onKeyDown={e => {
-        blockBadNumericKeys(e);
-        if (e.key === 'Enter') { e.preventDefault(); onEnter(); }
-      }}
-    />
-  );
-}
-
-interface BackfillCellProps {
-  metric: MetricType;
-  display: CellUnit;
-  value: string;
-  /** Why the typed value cannot be saved as it stands (`SAME_SLOT`). */
-  error?: string | null;
-  /** The typed text's own check when it was typed in another unit (see
-   *  NumericInputCell); omit to check the shown text. */
-  validationResult?: string | null;
-  active: boolean;
-  onFocus: () => void;
-  onBlur: () => void;
-  onEnter: () => void;
-  onChange: (v: string) => void;
-  /** Appends `bt-cell-pinned` (the 2nd-from-right column highlight). The
-   *  blood-test matrix never pins a backfill cell; the vitals matrix does. */
-  pinned?: boolean;
-}
-
-// Exported so StartingInfoVitals reuses the identical empty-slot input cell
-// (one source of truth for backfill styling + key handling across both matrices).
-export function BackfillCell({ metric, display, value, error, validationResult, active, onFocus, onBlur, onEnter, onChange, pinned }: BackfillCellProps) {
-  return (
-    <NumericInputCell
-      metric={metric}
-      display={display}
-      value={value}
-      externalError={error}
-      validationResult={validationResult}
-      onChange={onChange}
-      wrapperClass={`bt-cell-backfill${pinned ? ' bt-cell-pinned' : ''}`}
-      inputClass="bt-input bt-input-backfill"
-      active={active}
-      placeholder="—"
-      onFocus={onFocus}
-      onBlur={onBlur}
-      onKeyDown={e => {
-        blockBadNumericKeys(e);
-        if (e.key === 'Enter') { e.preventDefault(); onEnter(); }
-      }}
-    />
   );
 }

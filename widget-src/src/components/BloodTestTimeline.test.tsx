@@ -245,7 +245,7 @@ describe('US-04 / US-05 AC2 — a unit switch while correcting LDL', () => {
       remote.flip = () => toggle('ldlC');
       return (
         <>
-          <BloodTestTimeline bloodTestHistory={rows} unitSystem={system} unitOverrides={overrides} onToggleFieldUnit={toggle} unitChoices={0}
+          <BloodTestTimeline bloodTestHistory={rows} unitSystem={system} unitOverrides={overrides} onToggleFieldUnit={toggle}
             onSaveBatch={vi.fn().mockResolvedValue(new Map())} onCorrectValue={onCorrectValue} onDraftValue={noop}
             isSaving={false} grading={{}} hasApiResponse/>
           <button type="button" data-unit-control="all" onClick={() => { setSystem(other(system)); setOverrides({}); }}>Units</button>
@@ -629,7 +629,7 @@ function matrix(rows: ApiMeasurement[] = [], onSaveBatch: Mock = vi.fn().mockRes
   const onCorrectValue = vi.fn();
   const page = (recorded: ApiMeasurement[]) => (
     <>
-      <BloodTestTimeline bloodTestHistory={recorded} unitSystem="si" unitOverrides={{}} onToggleFieldUnit={noop} unitChoices={0}
+      <BloodTestTimeline bloodTestHistory={recorded} unitSystem="si" unitOverrides={{}} onToggleFieldUnit={noop}
         onSaveBatch={onSaveBatch} onCorrectValue={onCorrectValue} onDraftValue={onDraftValue}
         isSaving={false} grading={{}} hasApiResponse/>
       <button type="button">Elsewhere</button>
@@ -818,7 +818,7 @@ describe('US-03 — the draft', () => {
     expect(first.onSaveBatch).toHaveBeenCalledTimes(1);
     // The same device, read while the save is still running: the draft is there.
     const whileSaving = render(<BloodTestTimeline bloodTestHistory={[]} unitSystem="si" unitOverrides={{}}
-      onToggleFieldUnit={noop} unitChoices={0} onSaveBatch={vi.fn()} onDraftValue={noop} isSaving={false} grading={{}} hasApiResponse/>);
+      onToggleFieldUnit={noop} onSaveBatch={vi.fn()} onDraftValue={noop} isSaving={false} grading={{}} hasApiResponse/>);
     const ldl = within(whileSaving.container).getByText('LDL Cholesterol').closest('.bt-row')!;
     expect((ldl.querySelector('.bt-cell-draft input') as HTMLInputElement).value).toBe('3.2');
     whileSaving.unmount();
@@ -1038,7 +1038,7 @@ describe('US-07 AC5: a lipid cell shows its plain value, coloured by the plan\'s
   const cellOf = (metric: string, value: number, unitOverrides: Record<string, 'si' | 'conventional'> = {}) => {
     const view = render(
       <BloodTestTimeline bloodTestHistory={history([[metric, value, '2026-09-01']])} unitSystem="si" unitOverrides={unitOverrides}
-        onToggleFieldUnit={noop} unitChoices={0} onSaveBatch={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={noop} isSaving={false} grading={{}} hasApiResponse/>,
+        onToggleFieldUnit={noop} onSaveBatch={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={noop} isSaving={false} grading={{}} hasApiResponse/>,
     );
     const r = Array.from(view.container.querySelectorAll('.bt-row')).find((row) => row.querySelector('.bt-cell-value .bt-value-num'))!;
     return [r.querySelector('.bt-ref-label')?.textContent, r.querySelector('.bt-value-num')?.textContent, r.querySelector('.bt-cell-value .bt-status-tick')?.className];

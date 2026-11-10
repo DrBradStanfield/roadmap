@@ -2,13 +2,14 @@
 /**
  * US-04 AC1, US-34 AC7, US-05 AC2: every blood-test draft cell carries the
  * unit it was typed in. A unit chosen on this page says what the numbers
- * typed are in (Brad, 2026-10-13): a switch here re-reads every typed cell of
- * the fields it changes, typed by hand, filled by the chat or restored. A unit
- * system that comes from the record re-reads none: each cell keeps its
- * quantity, shown in the new unit. (Lp(a)'s own rule: BloodTestTimeline.lpa.test.tsx.)
+ * typed are in (Brad, 2026-10-13): a row's own chip re-reads the cells of its
+ * test typed by hand on this load of the page, as Lp(a)'s control does. Every
+ * other cell keeps its quantity, shown in the new unit: one the chat filled,
+ * one restored, and every cell through the page's pill, another surface's
+ * chip or a unit system the record brings. (Lp(a): BloodTestTimeline.lpa.test.tsx.)
  */
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
-import { render, cleanup, act } from '@testing-library/react';
+import { render, cleanup, act, within } from '@testing-library/react';
 import { useState, type MutableRefObject } from 'react';
 import { toCanonicalValue, type UnitSystem } from '@roadmap/health-core/units';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
@@ -34,24 +35,26 @@ function history(rows: Array<[string, number, string]>): ApiMeasurement[] {
   }));
 }
 
-/** The matrix as HealthTool keeps it: the global pill and each chip are
- *  choices made here (useUnits counts them); `remote` is a unit system the
- *  record brings, which is not. */
-function page(rows: ApiMeasurement[] = []) {
+/** The matrix as HealthTool keeps it. The page's pill and the upload
+ *  review's chip (`elsewhere`) switch units outside the matrix; `fromRecord`
+ *  is a unit system the record brings. `start`: this device's units before
+ *  the record applied (useUnits' `startUnitOf`). */
+function page(rows: ApiMeasurement[] = [], start?: UnitSystem, mountedIn: UnitSystem = 'si') {
   const onSaveBatch: Mock = vi.fn().mockResolvedValue(new Map());
   const prefillRef: MutableRefObject<BloodTestPrefillFn | null> = { current: null };
-  const remote = { to: (_: UnitSystem) => {} };
+  const outside = { remote: (_: UnitSystem) => {}, toggle: (_: string) => {} };
   function Page() {
-    const [system, setSystem] = useState<UnitSystem>('si');
+    const [system, setSystem] = useState<UnitSystem>(mountedIn);
     const [overrides, setOverrides] = useState<Record<string, UnitSystem>>({});
-    const [choices, setChoices] = useState(0);
-    remote.to = (unit) => setSystem(unit);
-    const toggle = (field: string) => { setOverrides((o) => ({ ...o, [field]: other(o[field] ?? system) })); setChoices((n) => n + 1); };
+    const toggle = (field: string) => setOverrides((o) => ({ ...o, [field]: other(o[field] ?? system) }));
+    outside.remote = (unit) => setSystem(unit);
+    outside.toggle = toggle;
     return (
       <>
-        <BloodTestTimeline bloodTestHistory={rows} unitSystem={system} unitOverrides={overrides} onToggleFieldUnit={toggle} unitChoices={choices}
+        <BloodTestTimeline bloodTestHistory={rows} unitSystem={system} unitOverrides={overrides} onToggleFieldUnit={toggle}
+          startUnitOf={start && (() => start)}
           onSaveBatch={onSaveBatch} onDraftValue={() => {}} isSaving={false} grading={{}} hasApiResponse prefillRef={prefillRef}/>
-        <button type="button" data-unit-control="all" onClick={() => { setSystem(other(system)); setOverrides({}); setChoices((n) => n + 1); }}>Units</button>
+        <button type="button" data-unit-control="all" onClick={() => { setSystem(other(system)); setOverrides({}); }}>Units</button>
         <button type="button">Elsewhere</button>
       </>
     );
@@ -65,17 +68,21 @@ function page(rows: ApiMeasurement[] = []) {
   const click = (el: HTMLElement) => { pressMouse(el); releaseMouse(el); };
   const pill = () => click(view.getByRole('button', { name: 'Units' }));
   const chip = () => click(row('LDL Cholesterol').querySelector('.bt-unit-chip') as HTMLElement);
-  const fromRecord = (unit: UnitSystem) => act(() => remote.to(unit));
+  /** LDL's unit toggled on another surface (the upload review's chip). */
+  const elsewhere = () => act(() => outside.toggle('ldlC'));
+  const fromRecord = (unit: UnitSystem) => act(() => outside.remote(unit));
   /** Into the matrix, and out: the gesture that commits the draft (US-03 AC5). */
   const leave = async () => { press(ldl()); press(view.getByRole('button', { name: 'Elsewhere' })); await wait(0); };
   /** What the commit saved, by metric and day, in SI. */
-  const saved = () => Object.assign({}, ...(onSaveBatch.mock.calls[0][0] as SaveTask[]).map((t) => Object.fromEntries(Object.entries(t.values).map(([m, v]) => [`${m}@${t.date}`, v]))));
-  return { view, cell, ldl, pill, chip, fromRecord, leave, saved, prefillRef };
+  const saved = (): Record<string, number> => Object.assign({}, ...(onSaveBatch.mock.calls[0][0] as SaveTask[])
+    .map((t) => Object.fromEntries(Object.entries(t.values).map(([m, v]) => [`${m}@${t.date}`, v]))));
+  return { row, cell, ldl, pill, chip, elsewhere, fromRecord, leave, saved, prefillRef };
 }
+/** The draft column's saved value for `metric` (the saved column here is 2026-08-15). */
+const draftValue = (saved: Record<string, number>, metric = 'ldl') =>
+  Object.entries(saved).find(([k]) => k.startsWith(`${metric}@`) && k !== `${metric}@2026-08-15`)![1];
 
-describe('US-04 AC1, US-05 AC2: a unit chosen here re-reads every typed blood-test cell of the fields it changes (Brad, 2026-10-13)', () => {
-  // A press on the page's pill, outside the matrix, commits a hand-typed
-  // draft first (useSaveOnLeave); the row's own chip, inside it, does not.
+describe('US-04 AC1, US-05 AC2: a row\'s chip re-reads the cells typed by hand on this load (Brad, 2026-10-13)', () => {
   it('3.5 typed by hand in mmol/L, then its chip: it reads 3.5 mg/dL and saves so', async () => {
     const p = page();
     typeInto(p.ldl(), '3.5');
@@ -93,31 +100,60 @@ describe('US-04 AC1, US-05 AC2: a unit chosen here re-reads every typed blood-te
     expect(p.ldl().value).toBe('3.5');
     expect(p.cell('HDL Cholesterol').value).toBe('1.2');
     await p.leave();
-    const saved = p.saved();
-    expect(Object.entries(saved).find(([k]) => k.startsWith('ldl@'))![1]).toBeCloseTo(mgdl(3.5), 6);
-    expect(Object.entries(saved).find(([k]) => k.startsWith('hdl@'))![1]).toBe(1.2);
+    expect(draftValue(p.saved())).toBeCloseTo(mgdl(3.5), 6);
+    expect(draftValue(p.saved(), 'hdl')).toBe(1.2);
   });
 
-  it('a value the chat filled is re-read too: 3.5 mmol/L filled, then the pill, saves 3.5 mg/dL', async () => {
+  it('a value the chat filled keeps its quantity through the chip: 3.5 mmol/L shows in mg/dL and saves 3.5', async () => {
     const p = page();
     act(() => { p.prefillRef.current!('ldl', 3.5, 'si', null); });
-    p.pill();
-    expect(p.ldl().value).toBe('3.5');
+    p.chip();
+    expect(p.ldl().value).toBe(shownInMgdl);
     await p.leave();
-    expect(Object.values(p.saved())).toEqual([expect.closeTo(mgdl(3.5), 6)]);
+    expect(Object.values(p.saved())).toEqual([3.5]);
   });
 
-  it('a restored draft and a restored saved column\'s empty cell are re-read too', async () => {
+  it('a restored draft and a restored saved column\'s empty cell keep theirs through the chip', async () => {
     restore({ draft: { values: { ldl: '3.5' } }, backfills: { '2026-08-15': { ldl: '2.5' } },
       meta: { 'new|ldl': { unit: 'si', typedOn: 'an earlier load' }, '2026-08-15|ldl': { unit: 'si', typedOn: 'an earlier load' } } });
     const p = page(history([['hdl', 1.2, '2026-08-15']]));
-    p.pill();
-    expect(p.ldl().value).toBe('3.5');
+    p.chip();
+    expect(p.ldl().value).toBe(shownInMgdl);
     await p.leave();
-    const saved = p.saved();
-    expect(Object.keys(saved)).toHaveLength(2);
-    expect(saved['ldl@2026-08-15']).toBeCloseTo(mgdl(2.5), 6);
-    expect(Object.entries(saved).find(([k]) => k !== 'ldl@2026-08-15')![1]).toBeCloseTo(mgdl(3.5), 6);
+    expect(p.saved()['ldl@2026-08-15']).toBe(2.5);
+    expect(draftValue(p.saved())).toBe(3.5);
+  });
+});
+
+describe('US-04 AC1, US-34 AC7: a unit switched outside the matrix re-reads no blood-test draft', () => {
+  // A press outside the matrix is leaving it (useSaveOnLeave): the pill
+  // commits a hand-typed draft first, in the unit it was typed in.
+  it('the page\'s pill commits 3.5 typed by hand in mmol/L first, as 3.5 mmol/L', async () => {
+    const p = page();
+    typeInto(p.ldl(), '3.5');
+    p.pill();
+    await wait(0);
+    expect(Object.values(p.saved())).toEqual([3.5]);
+  });
+
+  it('the pill keeps a chat-filled value\'s quantity, and a restored cell\'s: shown in mg/dL, saved as mmol/L', async () => {
+    restore({ draft: { values: {} }, backfills: { '2026-08-15': { ldl: '2.5' } }, meta: { '2026-08-15|ldl': { unit: 'si', typedOn: 'an earlier load' } } });
+    const p = page(history([['hdl', 1.2, '2026-08-15']]));
+    act(() => { p.prefillRef.current!('ldl', 3.5, 'si', null); });
+    p.pill();
+    expect(p.ldl().value).toBe(shownInMgdl);
+    await p.leave();
+    expect(p.saved()['ldl@2026-08-15']).toBe(2.5);
+    expect(draftValue(p.saved())).toBe(3.5);
+  });
+
+  it('LDL\'s chip on another surface (the upload review) keeps a hand-typed draft\'s quantity', async () => {
+    const p = page();
+    typeInto(p.ldl(), '3.5');
+    p.elsewhere();
+    expect(p.ldl().value).toBe(shownInMgdl);
+    await p.leave();
+    expect(Object.values(p.saved())).toEqual([3.5]);
   });
 });
 
@@ -138,9 +174,8 @@ describe('US-04 AC1, US-34 AC7: a unit system from the record keeps every blood-
     typeInto(p.cell('LDL Cholesterol', '.bt-cell-backfill input'), '2.5');
     p.fromRecord('conventional');
     await p.leave();
-    const saved = p.saved();
-    expect(saved['ldl@2026-08-15']).toBe(2.5);
-    expect(Object.entries(saved).find(([k]) => k !== 'ldl@2026-08-15')![1]).toBe(3.5);
+    expect(p.saved()['ldl@2026-08-15']).toBe(2.5);
+    expect(draftValue(p.saved())).toBe(3.5);
   });
 
   it('a chip click after the record\'s switch re-reads in the unit chosen: 3.5 mmol/L shown in mg/dL, then mmol/L, saves 3.5 mmol/L', async () => {
@@ -153,13 +188,51 @@ describe('US-04 AC1, US-34 AC7: a unit system from the record keeps every blood-
     expect(Object.values(p.saved())).toEqual([3.5]);
   });
 
+  // Codex R2 (PR 1147): a cell shown in another unit is checked as it is
+  // saved, its text in the unit it was typed in. 12.9 mmol/L, the bound,
+  // shows "499" mg/dL, over the 498 mg/dL bound, and saves.
+  it('a restored LDL of 12.9 mmol/L shown as 499 mg/dL says nothing is wrong, in the draft and a saved column, and saves 12.9', async () => {
+    restore({ draft: { values: { ldl: '12.9' } }, backfills: { '2026-08-15': { ldl: '12.9' } },
+      meta: { 'new|ldl': { unit: 'si' }, '2026-08-15|ldl': { unit: 'si' } } });
+    const p = page(history([['hdl', 1.2, '2026-08-15']]));
+    p.fromRecord('conventional');
+    const backfill = p.cell('LDL Cholesterol', '.bt-cell-backfill input');
+    expect(p.ldl().value).toBe(cellText('ldl', 12.9, 'conventional'));
+    expect(backfill.value).toBe(cellText('ldl', 12.9, 'conventional'));
+    expect(within(p.row('LDL Cholesterol')).queryByText(/Max/)).toBeNull();
+    expect(p.ldl().getAttribute('aria-invalid')).toBe('false');
+    expect(backfill.getAttribute('aria-invalid')).toBe('false');
+    await p.leave();
+    expect(p.saved()['ldl@2026-08-15']).toBe(12.9);
+    expect(draftValue(p.saved())).toBe(12.9);
+  });
+
+  it('one out of range in its own unit still says so after the switch: 13 mmol/L, in the draft and a saved column', () => {
+    restore({ draft: { values: { ldl: '13' } }, backfills: { '2026-08-15': { ldl: '13' } },
+      meta: { 'new|ldl': { unit: 'si' }, '2026-08-15|ldl': { unit: 'si' } } });
+    const p = page(history([['hdl', 1.2, '2026-08-15']]));
+    p.fromRecord('conventional');
+    expect(p.ldl().getAttribute('aria-invalid')).toBe('true');
+    expect(p.cell('LDL Cholesterol', '.bt-cell-backfill input').getAttribute('aria-invalid')).toBe('true');
+  });
+
   // Legacy: a cell kept before cells carried their unit is stamped as it is
-  // restored, with the unit the page shows then (this device's preference).
-  it('a draft kept with no unit is read in the unit shown when it is restored: the record\'s switch later keeps 3.5 mmol/L', async () => {
+  // restored, with the units this device showed before the record applied.
+  it('a draft kept with no unit is read in this device\'s starting unit: the record\'s switch later keeps 3.5 mmol/L', async () => {
     restore({ draft: { values: { ldl: '3.5' } }, backfills: {}, meta: {} });
-    const p = page();
+    const p = page([], 'si');
     expect(p.ldl().value).toBe('3.5');
     p.fromRecord('conventional');
+    expect(p.ldl().value).toBe(shownInMgdl);
+    await p.leave();
+    expect(Object.values(p.saved())).toEqual([3.5]);
+  });
+
+  // Adversary R4 (PR 1147): the matrix mounts once the whole form opens,
+  // which can be after the record's units applied.
+  it('mounted after the record brought US units, a draft kept with no unit is still read in this device\'s starting SI', async () => {
+    restore({ draft: { values: { ldl: '3.5' } }, backfills: {}, meta: {} });
+    const p = page([], 'si', 'conventional');
     expect(p.ldl().value).toBe(shownInMgdl);
     await p.leave();
     expect(Object.values(p.saved())).toEqual([3.5]);

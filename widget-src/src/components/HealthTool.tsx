@@ -143,7 +143,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
 
   const rootRef = useRef<HTMLDivElement>(null);
   // The unit system and each field's own unit (hooks/useUnits, US-05); the record's, held while a field has the focus (hooks/useHeldUnits).
-  const { unitSystem, unitOverrides, unitChoices, metricUnitOverrides, handleToggleFieldUnit, handleUnitSystemChange, showUnits, offerUnits } = useUnits(setInputs, rootRef);
+  const { unitSystem, unitOverrides, startUnitOf, metricUnitOverrides, handleToggleFieldUnit, handleUnitSystemChange, showUnits, offerUnits } = useUnits(setInputs, rootRef);
 
   // The page's reads of the record: the values, both matrices, the lab rows (hooks/useRecordReads).
   const { reloadValues, refreshLabValues, loadHistory } = useRecordReads({ setPreviousMeasurements, setHistory, setLabValueHistory });
@@ -737,7 +737,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     errors: birthRefused ? { ...errors, birthMonth: birthRefused } : errors,
     unitSystem,
     onUnitSystemChange: handleUnitSystemChange,
-    unitOverrides, unitChoices,
+    unitOverrides, startUnitOf,
     onToggleFieldUnit: handleToggleFieldUnit,
     previousMeasurements,
     bloodTestHistory,

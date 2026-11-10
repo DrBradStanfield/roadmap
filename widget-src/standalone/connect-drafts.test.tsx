@@ -56,7 +56,7 @@ const save = vi.fn(async () => new Map());
 function matrices() {
   return render(<>
     <BloodTestTimeline bloodTestHistory={[]} unitSystem="si" unitOverrides={{}}
-      onToggleFieldUnit={noop} unitChoices={0} onSaveBatch={save} onDraftValue={noop}
+      onToggleFieldUnit={noop} onSaveBatch={save} onDraftValue={noop}
       isSaving={false} grading={null} hasApiResponse={true}/>
     <StartingInfoVitals vitalsHistory={[]} unitSystem="si" unitOverrides={{}}
       onToggleFieldUnit={noop} onSave={save} onDraftValue={noop} formStage={3}

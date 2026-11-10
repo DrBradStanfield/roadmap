@@ -3,9 +3,9 @@
 // (useMatrixDraft's stamp), so a unit system the record brings, at load or
 // from another device, never re-reads a number already typed: the cell keeps
 // its quantity, shown in the new unit. A unit chosen on this page says what
-// the numbers typed are in (Brad, 2026-10-13).
+// the numbers typed are in (Brad, 2026-10-13), for the cells typed by hand on
+// this load of the page only: a row's own unit control re-reads them.
 
-import { useLayoutEffect, useRef } from 'react';
 import type { LpaUnit, MetricType, UnitSystem } from '@roadmap/health-core/units';
 import { type CellUnit, cellText, cellToSI, readTypedValue, validateTypedValue } from './blood-test-cell';
 import { useLpaUnit } from './lpa-unit';
@@ -16,46 +16,35 @@ const UNCLEAR_UNIT = 'Re-enter this value: its unit is unclear after an update.'
 
 type Cell = CellRef<MetricType>;
 
-export function useBloodDraftUnits({ rows, unitSystem, unitOverrides, unitChoices, unitOf, lpaUnitOf, restamp }: {
-  rows: Array<{ metric: MetricType; field: string }>;
+export function useBloodDraftUnits({ unitSystem, unitOverrides, onToggleFieldUnit, unitOf, lpaUnitOf, restamp }: {
   unitSystem: UnitSystem;
   unitOverrides: Record<string, UnitSystem>;
-  /** Counts the unit choices made on this page (useUnits). */
-  unitChoices: number;
+  onToggleFieldUnit: (field: string) => void;
   unitOf: (cell: Cell) => UnitSystem | undefined;
   lpaUnitOf: (cell: Cell) => LpaUnit | undefined;
-  restamp: (key: MetricType, from: CellUnit, to: CellUnit, everyCell?: boolean) => void;
+  restamp: (key: MetricType, from: CellUnit, to: CellUnit) => void;
 }) {
   // Lp(a) has three units on its own control, kept in the record (US-05 AC2);
   // every other field, the two-way toggle.
   const [lpaUnit, chooseLpaUnit] = useLpaUnit(unitSystem);
-  // "Type 40, click mg/dL" is 40 mg/dL. Only an Lp(a) number typed by hand
-  // on this page is re-read; one the chat filled or the device restored keeps
-  // its quantity (useMatrixDraft's `restamp`).
+  const fieldUnit = (field: string): CellUnit => (field === 'lpa' ? lpaUnit : unitOverrides[field] ?? unitSystem);
+  // "Type 40, click mg/dL" is 40 mg/dL: a row's own unit control re-reads
+  // the numbers typed by hand on this page. One the chat filled or the device
+  // restored keeps its quantity (useMatrixDraft's `restamp`), and so does
+  // every cell through the page's pill, which commits the cells typed by hand
+  // first (useSaveOnLeave), or another surface's chip (the upload review).
   const pickLpaUnit = (unit: LpaUnit) => {
     restamp('lpa', lpaUnit, unit);
     chooseLpaUnit(unit);
   };
-  const fieldUnit = (field: string): CellUnit => (field === 'lpa' ? lpaUnit : unitOverrides[field] ?? unitSystem);
-  // Every other test's cell is re-read by a unit choice here that changes its
-  // field's unit (the page's pill or the row's chip), whether typed by hand,
-  // filled by the chat or restored: its stamp moves from the unit shown to
-  // the one chosen. A change with no new choice counted came from the record,
-  // and moves none.
-  const units = () => rows.map(r => fieldUnit(r.field));
-  const shown = useRef({ unitChoices, units: units() });
-  useLayoutEffect(() => {
-    const was = shown.current;
-    shown.current = { unitChoices, units: units() };
-    if (was.unitChoices === unitChoices) return;
-    rows.forEach(({ metric }, i) => {
-      if (metric !== 'lpa' && was.units[i] !== shown.current.units[i]) restamp(metric, was.units[i], shown.current.units[i], true);
-    });
-  }, [unitChoices, unitSystem, unitOverrides]);
+  const toggleUnit = (metric: MetricType, field: string) => {
+    restamp(metric, fieldUnit(field), fieldUnit(field) === 'si' ? 'conventional' : 'si');
+    onToggleFieldUnit(field);
+  };
   // The unit a typed cell is read in: the one it was typed in. An Lp(a) cell
   // restored from before that was kept has none: its value waits to be typed
   // again, never guessed (US-05 AC2). Every other cell is stamped as it is
-  // restored (useMatrixDraft's `shownUnit`); the field's unit stands in only
+  // restored (useMatrixDraft's `legacyUnit`); the field's unit stands in only
   // if a stamp is missing.
   const typedUnit = (column: string | null, metric: MetricType, field: string): CellUnit | undefined =>
     metric === 'lpa' ? lpaUnitOf([column, metric]) : unitOf([column, metric]) ?? fieldUnit(field);
@@ -74,5 +63,13 @@ export function useBloodDraftUnits({ rows, unitSystem, unitOverrides, unitChoice
     const n = unit ? readTypedValue(metric, typed, unit) : undefined;
     return !unit || unit === fieldUnit(field) || n === undefined ? typed : cellText(metric, cellToSI(metric, n, unit), fieldUnit(field));
   };
-  return { lpaUnit, pickLpaUnit, fieldUnit, typedUnit, unreadable, shownText };
+  // The cell's own check (NumericInputCell's `validationResult`): a cell
+  // shown in another unit is judged as it saves, its text in the unit it was
+  // typed in, never the rounded number shown: 12.9 mmol/L shows "499" mg/dL,
+  // over the 498 mg/dL bound (Codex R2, PR 1147). So it skips the check of
+  // the text shown (null), and `unreadable`, the cell's error, says what is
+  // wrong. Undefined: the cell checks the text it shows, which is as typed.
+  const checkOf = (column: string | null, metric: MetricType, field: string, typed: string) =>
+    (shownText(column, metric, field, typed) === typed ? undefined : null);
+  return { lpaUnit, pickLpaUnit, toggleUnit, fieldUnit, typedUnit, unreadable, shownText, checkOf };
 }

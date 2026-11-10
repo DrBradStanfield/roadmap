@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { toCanonicalValue, type UnitSystem } from '@roadmap/health-core/units';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
-import { buildColumns, bpPairReady, vitalsCellsOf } from './StartingInfoVitals';
+import { buildColumns } from './StartingInfoVitals';
+import { bpPairReady, vitalsCellsOf } from '../lib/vitals-cells';
 import { routeVitalsEdit } from './ChatEdits';
 
 // `buildColumns` is the one genuinely new pure helper introduced when the

@@ -94,7 +94,7 @@ interface InputPanelProps {
   onUnitSystemChange: (system: UnitSystem) => void;
   unitOverrides: Record<string, UnitSystem>;
   onToggleFieldUnit: (field: string) => void;
-  unitChoices: number; // the unit switches made here (useUnits), for the blood-test matrix
+  startUnitOf: (field: string) => UnitSystem; // this device's units before the record's (useUnits), for kept drafts with no unit
   previousMeasurements: ApiMeasurement[];
   bloodTestHistory: ApiMeasurement[];
   /** Full vitals history (weight / waist / sys-BP / dia-BP). Same source
@@ -175,7 +175,7 @@ interface InputPanelProps {
 
 export function InputPanel({
   children, inputs, effectiveInputs, onChange: updateField, errors: allErrors, unitSystem, onUnitSystemChange,
-  unitOverrides, onToggleFieldUnit, unitChoices,
+  unitOverrides, onToggleFieldUnit, startUnitOf,
   previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
   onCorrectValue, moveTest, onDraftValue,
   medications, onMedicationChange,
@@ -880,7 +880,7 @@ export function InputPanel({
         onOnboardingDone={onOnboardingDone}
         withoutWeight={weightInProfile}
         unitOverrides={unitOverrides}
-        onToggleFieldUnit={onToggleFieldUnit}
+        onToggleFieldUnit={onToggleFieldUnit} startUnitOf={startUnitOf}
         prefillRef={vitalsPrefillRef}
         flushRef={vitalsFlushRef}
       />
@@ -995,7 +995,7 @@ export function InputPanel({
       bloodTestHistory={bloodTestHistory}
       unitSystem={unitSystem}
       unitOverrides={unitOverrides}
-      onToggleFieldUnit={onToggleFieldUnit} unitChoices={unitChoices}
+      onToggleFieldUnit={onToggleFieldUnit} startUnitOf={startUnitOf}
       onSaveBatch={onSaveBloodTestBatch}
       onCorrectValue={onCorrectValue}
       move={move.headers}
