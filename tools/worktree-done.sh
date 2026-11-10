@@ -20,7 +20,9 @@ set -u
 MAIN="$(cd "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")" && pwd -P)"
 # Each worktree's package clones (worktree-guard.cjs linkPackages), kept outside the repo; the guard names the folder.
 GUARD="$(cd "$(dirname "$0")/.." && pwd)/.claude/hooks/worktree-guard.cjs"
-PACKAGE_DIRS="node_modules widget-src/node_modules packages/health-core/node_modules"   # as worktree-guard.cjs
+# The package folders, one per line, from the guard's own list (the one copy).
+PACKAGE_DIRS="$(node "$GUARD" --package-dirs </dev/null 2>/dev/null)" && [ -n "$PACKAGE_DIRS" ] \
+  || { echo "REFUSED: could not read the package folder list from $GUARD; nothing removed." >&2; exit 1; }
 # --prune: a remote branch deleted on GitHub must not still count as "pushed".
 git -C "$MAIN" fetch -q --prune origin || { echo "REFUSED: git fetch failed; nothing removed." >&2; exit 1; }
 
@@ -97,10 +99,10 @@ finish() { # $1 = worktree path, $2 = 1 to unlock a locked worktree; prints one 
   # Remove the package links worktree-guard.cjs made: only those paths, only when they point at the worktree's
   # clones or (older ones) the main checkout, and only the link (no trailing slash). Never delete links broadly:
   # a tracked link is the work itself.
-  for rel in $PACKAGE_DIRS; do
-    [ -L "$WT/$rel" ] || continue
+  while IFS= read -r rel; do
+    [ -n "$rel" ] && [ -L "$WT/$rel" ] || continue
     case "$(readlink "$WT/$rel")" in "$MAIN/$rel"|"$CLONES/$rel") rm -f "$WT/$rel";; esac
-  done
+  done <<< "$PACKAGE_DIRS"
   git -C "$MAIN" worktree unlock "$WT" 2>/dev/null
   if ! git -C "$MAIN" worktree remove "$WT"; then
     [ -z "$WASLOCKED" ] || git -C "$MAIN" worktree lock --reason "session worktree (re-locked by worktree-done)" "$WT" 2>/dev/null
