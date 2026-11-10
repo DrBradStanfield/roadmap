@@ -26,7 +26,7 @@ Correct a value. Fix a number that went in wrong.
 
 Change four things about you. Your sex, your birth year, your birth month and your height, because your plan is worked out from those. Nothing else about you is writable.
 
-Report a problem. If a tool refuses something you reasonably expected, ask Claude to report it. The program on your computer holds no key to anything, so it cannot file anything itself: it hands you a prefilled link to a public issue on the project's GitHub, carrying its description of the problem and nothing about you. Nothing is filed until you open that link and press the button. (The hosted connectors, Claude on the web and ChatGPT, do file it themselves. Their guides say so.)
+Report a problem. If a tool refuses something you reasonably expected, ask Claude to report it. The program on your computer holds no key to anything, so it cannot file anything itself: it hands you a prefilled link to a public issue on the project's GitHub, carrying its description of the problem. It refuses a report that holds a value, an email or a phone number. It cannot spot a diagnosis written in words, so read the report before you agree. Nothing is filed until you open that link and press the button. (The hosted connectors, Claude on the web and ChatGPT, do file it themselves. Their guides say so.)
 
 File results from a document. Give Claude a lab PDF or a photo of a result sheet and it reads the file itself, then hands the program the values it read. The program checks each one against the record's catalogue, units and ranges, shows you the candidates, and files only what you confirm. The candidates wait in the program's memory between the two steps, so a restart loses them and Claude reads the file again.
 
