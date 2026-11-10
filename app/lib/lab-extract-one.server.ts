@@ -13,15 +13,18 @@ import { safeErrorFields } from './safe-error-fields.server';
 
 /**
  * One file's extraction and its answer, shared with the iPhone app's route
- * (US-52 AC7). `extra` adds the caller's own fields to a success.
+ * (US-52 AC7). `extra` adds the caller's own fields to a success. The app
+ * passes `oneDeadline`: the phone gives up after 120 s idle, so its call never
+ * retries a timed-out attempt and answers inside about 61 s (US-52 AC7c).
  */
-export async function extractOneFile(data: LabImportRequest, extra: () => object = () => ({})): Promise<Response> {
+export async function extractOneFile(data: LabImportRequest, extra: () => object = () => ({}), opts: { oneDeadline?: true } = {}): Promise<Response> {
   const { pages, ownDates, undatedPrev, refusedRows } = data;
   try {
     // One deadline for the file's calls: a malformed answer's re-send gets what
     // is left. A timed-out HTTP attempt is still retried once in a fresh window
     // (fetchAnthropicRaw), kept for capacity blips; ~46 s answers make it rare (US-15 AC34).
-    const result = await extractOrClassify(pages, { timeoutMs: 60_000 });
+    // Not on the app's route (US-52 AC7c).
+    const result = await extractOrClassify(pages, { timeoutMs: 60_000, ...opts });
     return Response.json({ success: true, data: withRefusalsItReads(withDaysItReads(result, { ownDates, undatedPrev }), refusedRows), ...extra() });
   } catch (error) {
     // Declined or cut off: its own answer, so the widget does not say "try

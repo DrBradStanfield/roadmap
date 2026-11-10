@@ -619,7 +619,33 @@ describe('US-52 AC7: lab import', () => {
     expect(json.success).toBe(true);
     expect(json.data.values.map((v: { metric: string }) => v.metric)).toEqual(['ldl', 'hba1c']);
     expect(json.data.refusedValues).toHaveLength(1);
-    expect(mocks.extract).toHaveBeenCalledWith(body.pages, { timeoutMs: 60_000 });
+    expect(mocks.extract).toHaveBeenCalledWith(body.pages, { timeoutMs: 60_000, oneDeadline: true });
+  });
+
+  // US-52 AC7c: the phone gives up after 120 s idle; the web's retry of a
+  // timed-out attempt made the worst case 60 + 1 + 60 s (Brad's 18-file import).
+  it('US-52 AC7c: a timed-out extraction is not retried; the phone gets a 500 well inside its limit', async () => {
+    const real = await vi.importActual<typeof import('./anthropic.server')>('./anthropic.server');
+    mocks.extract.mockImplementation(real.extractOrClassify);
+    process.env.ANTHROPIC_API_KEY = 'test-key-dummy';
+    await registered();
+    const timeouts = vi.spyOn(AbortSignal, 'timeout');
+    // The model never answers: each attempt runs to its own timeout in fake time.
+    const fetchMock = vi.fn(async () => {
+      vi.setSystemTime(Date.now() + (timeouts.mock.calls.at(-1)![0] as number));
+      throw new DOMException('signal timed out', 'TimeoutError');
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const start = Date.now();
+    try {
+      const res = await appLabImport(signed('/api/app/v1/lab-import', body), store);
+      expect(res.status).toBe(500);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(Date.now() - start).toBeLessThan(100_000);
+    } finally {
+      vi.unstubAllGlobals();
+      vi.useRealTimers();
+    }
   });
 
   it('refuses an invalid body after the gate, without a model call', async () => {

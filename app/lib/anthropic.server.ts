@@ -107,10 +107,12 @@ function readExtraction(result: AnthropicResult, mode: DocumentPromptMode): Unif
  * deadline for both calls, the re-send getting what is left, so the
  * connector's import (US-35 AC5, AC10) cannot be run past its tool-call
  * budget; it also passes `httpAttempts: 1` so a hung call fails fast.
+ * `oneDeadline` puts the HTTP retries on that deadline too: a timed-out attempt
+ * is not retried, and a capacity retry gets what is left (US-52 AC7c).
  */
 export async function extractOrClassify(
   pages: PageContent[],
-  opts: { timeoutMs?: number; httpAttempts?: number; documentMode?: DocumentPromptMode } = {},
+  opts: { timeoutMs?: number; httpAttempts?: number; oneDeadline?: true; documentMode?: DocumentPromptMode } = {},
 ): Promise<UnifiedExtractionResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
@@ -130,7 +132,7 @@ export async function extractOrClassify(
   };
 
   for (let call = 1; ; call++) {
-    const parsed = readExtraction(await fetchAnthropicRaw(apiKey, body, left(), opts.httpAttempts), documentMode);
+    const parsed = readExtraction(await fetchAnthropicRaw(apiKey, body, left(), opts.httpAttempts, readJson, opts.oneDeadline && until), documentMode);
     if (parsed) return parsed;
     // A fixed message and no `cause`: Sentry serialises it (api.lab-import-v2).
     if (call >= 2) throw new Error('extraction returned malformed JSON');
@@ -326,13 +328,16 @@ interface ReadControl { began(): void; idle: AbortController }
  * result; a retryable network or timeout error is retried only while nothing
  * has been read (`began` not called).
  * `maxAttempts` below the default turns the inner retry off for a caller whose own deadline cannot absorb it (US-35 AC5).
+ * `deadline` (epoch ms) bounds the retries too: each attempt gets what is left, and none starts past it (US-52 AC7c).
  */
 async function fetchAnthropicRaw(
   apiKey: string, body: Record<string, unknown>, timeoutMs = 60_000, maxAttempts = RETRY_MAX_ATTEMPTS,
-  read: (response: Response, control: ReadControl) => Promise<AnthropicResult> = readJson,
+  read: (response: Response, control: ReadControl) => Promise<AnthropicResult> = readJson, deadline?: number,
 ): Promise<AnthropicResult> {
+  const left = () => (deadline === undefined ? Infinity : deadline - Date.now());
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     let began = false;
+    const retry = () => attempt < maxAttempts && left() > RETRY_DELAY_MS;
     const idle = new AbortController();
     try {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -343,11 +348,11 @@ async function fetchAnthropicRaw(
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify(body),
-        signal: AbortSignal.any([AbortSignal.timeout(timeoutMs), idle.signal]),
+        signal: AbortSignal.any([AbortSignal.timeout(Math.min(timeoutMs, left())), idle.signal]),
       });
 
       if (!response.ok) {
-        if (RETRYABLE_STATUSES.has(response.status) && attempt < maxAttempts) {
+        if (RETRYABLE_STATUSES.has(response.status) && retry()) {
           // Discard provider bodies: errors may echo uploaded or chat content.
           await response.body?.cancel();
           console.warn(`Anthropic API ${response.status} on attempt ${attempt}/${maxAttempts}, retrying after ${RETRY_DELAY_MS}ms`);
@@ -369,7 +374,7 @@ async function fetchAnthropicRaw(
 
       return await read(response, { began: () => { began = true; }, idle });
     } catch (err) {
-      if (!began && isNetworkOrTimeoutError(err) && attempt < maxAttempts) {
+      if (!began && isNetworkOrTimeoutError(err) && retry()) {
         const e = err as Error;
         console.warn(`Anthropic API ${e.name} on attempt ${attempt}/${maxAttempts}: ${e.message} — retrying after ${RETRY_DELAY_MS}ms`);
         await sleep(RETRY_DELAY_MS);

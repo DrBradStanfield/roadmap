@@ -8,7 +8,7 @@
  * statuses retry, which throw immediately, which get silenced from Sentry)
  * is verified without any real network calls or real delays.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 
 vi.mock('@sentry/react-router', () => ({
   captureException: vi.fn(),
@@ -26,6 +26,7 @@ process.env.ANTHROPIC_API_KEY = 'sk-test-dummy';
 import * as Sentry from '@sentry/react-router';
 import { callAnthropicWithUsage, extractOrClassify, ExtractionStopError } from './anthropic.server';
 import { classifyChatError } from './chat.server';
+import { sleep } from './cron-helpers.server';
 
 const REAL_FETCH = global.fetch;
 
@@ -260,6 +261,52 @@ describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  // US-52 AC7c: the iPhone app's route. Its retries share the call's one
+  // deadline, so the worst case stays near 61 s, inside the phone's 120 s.
+  describe('US-52 AC7c: oneDeadline', () => {
+    const timedOut = () => new DOMException('signal timed out', 'TimeoutError');
+    let timeouts: MockInstance<typeof AbortSignal.timeout>;
+    beforeEach(() => {
+      vi.useFakeTimers();
+      timeouts = vi.spyOn(AbortSignal, 'timeout');
+      vi.mocked(sleep).mockImplementation(async (ms: number) => { vi.advanceTimersByTime(ms); });
+    });
+    afterEach(() => {
+      timeouts.mockRestore();
+      vi.mocked(sleep).mockReset().mockResolvedValue(undefined);
+      vi.useRealTimers();
+    });
+    /** An attempt that runs to its own timeout in fake time. */
+    const hangs = async () => { vi.advanceTimersByTime(timeouts.mock.calls.at(-1)![0]); throw timedOut(); };
+
+    it('does not retry a timed-out attempt, and fails inside 100 s', async () => {
+      const fetchMock = vi.fn(hangs);
+      global.fetch = fetchMock as unknown as typeof fetch;
+      const start = Date.now();
+      await expect(extractOrClassify([{ type: 'text', content: 'x' }], { timeoutMs: 60_000, oneDeadline: true })).rejects.toMatchObject({ name: 'TimeoutError' });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(Date.now() - start).toBeLessThan(100_000);
+    });
+
+    it('still retries a capacity error, with only what is left of the deadline', async () => {
+      const fetchMock = vi.fn()
+        .mockImplementationOnce(async () => { vi.advanceTimersByTime(10_000); return errResponse(529); })
+        .mockResolvedValueOnce(anthropicMessage(validUnifiedJson));
+      global.fetch = fetchMock as unknown as typeof fetch;
+      await extractOrClassify([{ type: 'text', content: 'x' }], { timeoutMs: 60_000, oneDeadline: true });
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(timeouts.mock.calls.map(([ms]) => ms)).toEqual([60_000, 49_000]);
+    });
+
+    it('the website keeps its retry of a timed-out attempt, in a fresh window', async () => {
+      const fetchMock = vi.fn(hangs);
+      global.fetch = fetchMock as unknown as typeof fetch;
+      await expect(extractOrClassify([{ type: 'text', content: 'x' }], { timeoutMs: 60_000 })).rejects.toMatchObject({ name: 'TimeoutError' });
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(timeouts.mock.calls.map(([ms]) => ms)).toEqual([60_000, 60_000]);
+    });
   });
 
   it('documentMode metadata asks for no transcription and caps the answer; the website’s full prompt is unchanged (AC5)', async () => {
