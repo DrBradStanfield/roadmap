@@ -47,25 +47,15 @@ only, and a row may be added after its work ships. Brad holds the full list.
 3. Name the check that stops the copy coming back in `durability_check`.
    A fix without one gets `none`, and that is worth a follow-up: at this
    repo's pace, an unchecked copy tends to return.
-4. Regenerate the counts below.
 
 ### Counts
 
-On 2026-11-10, from `leads.csv`:
+Count from the file; no copy is kept here, since every fix PR would have to
+edit it and two PRs would collide:
 
-| Section | done | partial | not started | cannot tell | Total |
-| --- | --- | --- | --- | --- | --- |
-| bug leads | 6 | 1 | 2 | 0 | 9 |
-| S1 tools, scripts, CI | 3 | 0 | 10 | 0 | 13 |
-| S2 server | 0 | 1 | 13 | 0 | 14 |
-| S3 cloud storage and sync | 1 | 1 | 9 | 0 | 11 |
-| S4 privacy scrub and vocabularies | 0 | 1 | 8 | 0 | 9 |
-| S5 clinical rules | 0 | 0 | 8 | 1 | 9 |
-| S6 record edits and iPhone engine | 0 | 0 | 9 | 0 | 9 |
-| S7 web data layer, upload, standalone | 4 | 0 | 7 | 1 | 12 |
-| S8 web big components | 3 | 3 | 5 | 0 | 11 |
-| S9 health-core entry points | 1 | 0 | 0 | 0 | 1 |
-| **All** | 18 | 7 | 71 | 2 | 98 |
+```bash
+python3 -c "import csv,collections;print(collections.Counter(r['status'] for r in csv.DictReader(open('docs/untangle/leads.csv'))))"
+```
 
 ## state-leads.csv
 
