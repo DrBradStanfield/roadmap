@@ -11,7 +11,7 @@ import { isLpaUnit } from '@roadmap/health-core/cell-unit';
 import { localDay } from '@roadmap/health-core/merge';
 import type { LpaUnit, UnitSystem } from '@roadmap/health-core/units';
 import type { CellUnit } from './blood-test-cell';
-import { BT_TIMELINE_DRAFT_KEY, DRAFTS_CLEARED_EVENT, VITALS_DRAFT_KEY, localHealthWritesStopped, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
+import { DRAFTS_CLEARED_EVENT, localHealthWritesStopped, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
 import type { SaveTask } from './matrix-save';
 
 type Typed<K extends string> = Partial<Record<K, string>>;
@@ -23,8 +23,8 @@ type Expected = SaveTask['expected'];
 const PAGE = Math.random().toString(36).slice(2);
 
 /** What a draft keeps about a typed cell beside its text: the unit it was
- *  typed in, where a unit switch keeps the quantity (the vitals and Lp(a),
- *  US-05; an Lp(a) cell keeps its unit's label, AC2); the
+ *  typed in, so a unit system the record brings never re-reads it (US-04
+ *  AC1; an Lp(a) cell keeps its unit's label, US-05 AC2); the
  *  rows the page showed under its slots when the user began typing there,
  *  kept until the cell is emptied, never retaken by typing again (US-03 AC2);
  *  the load of the page it was typed on, by the user or the chat; the load
@@ -68,15 +68,6 @@ function loadDraft<K extends string>(storageKey: string): MatrixDraft<K> | null 
   }
 }
 
-/** Whether either matrix keeps typed text on this device, read where it is
- *  kept, so a matrix mounted again (a phone turned) cannot report it empty
- *  before it restores its draft (useHeldUnits). None is kept while local
- *  health writes are stopped (US-09 AC2e). */
-export const draftsHoldText = () => [BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY].some((key) => {
-  const kept = loadDraft(key);
-  return !!kept && holdsText(kept);
-});
-
 /** `state` with one key of a cell set to `typed`, the cell's meta (`id`)
  *  made by `meta` from what it was. A cell with nothing typed in it leaves
  *  the draft, meta and all. */
@@ -106,19 +97,36 @@ function withCell<K extends string>(
  * cell's slots on that day, by metric (null: empty). `latestDay(key)`: the
  * last day the page shows a value for it. `cellOf(key)`: the cell a key is
  * typed into, when one cell takes two (a blood pressure's halves); its keys
- * share one expectation.
+ * share one expectation. `shownUnit(key)`: the unit the page shows a key in
+ * as the matrix mounts, which stamps a restored cell kept before cells
+ * carried their unit. It is a best guess: the unit the page shows at the
+ * first mount after this deploy, which is this device's preference, the unit
+ * its last visit showed, unless another tab or the record changed it since.
  */
 export function useMatrixDraft<K extends string>(storageKey: string, record: {
   onScreen: (column: string, key: K) => boolean;
   rowsUnder: (day: string, key: K) => Expected;
   latestDay: (key: K) => string | undefined;
   cellOf?: (key: K) => string;
+  shownUnit?: (key: K) => CellUnit | undefined;
 }) {
-  const [state, setState] = useState<MatrixDraft<K>>(() => loadDraft<K>(storageKey) ?? EMPTY);
-  const { onScreen, rowsUnder, latestDay, cellOf = (key: K) => key } = record;
+  const { onScreen, rowsUnder, latestDay, cellOf = (key: K) => key, shownUnit } = record;
+  const idOf = ([column, key]: CellRef<K>) => `${column ?? 'new'}|${cellOf(key)}`;
+  const [state, setState] = useState<MatrixDraft<K>>(() => {
+    const kept = loadDraft<K>(storageKey);
+    if (!kept) return EMPTY;
+    const meta = { ...kept.meta };
+    for (const [column, cells] of [[null, kept.draft.values] as const, ...Object.entries(kept.backfills)]) {
+      for (const [key, typed] of Object.entries(isObject(cells) ? cells : {}) as Array<[K, unknown]>) {
+        const id = idOf([column, key]);
+        const unit = shownUnit?.(key);
+        if (typed && unit && !meta[id]?.unit) meta[id] = { ...meta[id], unit };
+      }
+    }
+    return { ...kept, meta };
+  });
   const date = dayOf(state);
   const { values } = state.draft;
-  const idOf = ([column, key]: CellRef<K>) => `${column ?? 'new'}|${cellOf(key)}`;
   const metaOf = (cell: CellRef<K>): CellMeta | undefined => state.meta[idOf(cell)];
   /** A draft cell whose slots hold other rows on the page than it expects
    *  (US-03 AC2): shown as the clash, and never standing in for the record.
@@ -190,16 +198,18 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
     /** A unit chosen on this page says what the numbers typed are in (US-05
      *  AC2): every cell of `key` the user typed by hand on this load of the
      *  page, in `from`, the unit shown until now, is read in `to` from here
-     *  on, its text kept. Every other cell keeps its stamp and its quantity,
-     *  its number shown again in the new unit (adversary R2, clinical
-     *  ruling): one the chat filled, one restored from the device, one typed
-     *  in another unit, and one with no unit kept, which stays without. A
-     *  save takes a cell out of the draft, its mark with it. */
-    restamp: (key: K, from: CellUnit, to: CellUnit) => setState((s) => {
+     *  on, its text kept; with `everyCell`, every cell of `key` in `from`
+     *  (the blood tests other than Lp(a), Brad 2026-10-13). Every other cell
+     *  keeps its stamp and its quantity, its number shown again in the new
+     *  unit (adversary R2, clinical ruling): for Lp(a), one the chat filled,
+     *  one restored from the device; one typed in another unit, and one with
+     *  no unit kept, which stays without. A save takes a cell out of the
+     *  draft, its mark with it. */
+    restamp: (key: K, from: CellUnit, to: CellUnit, everyCell = false) => setState((s) => {
       const meta = { ...s.meta };
       for (const column of [null, ...Object.keys(s.backfills)]) {
         const id = idOf([column, key]);
-        if (meta[id]?.unit === from && meta[id]?.byHand === PAGE) meta[id] = { ...meta[id], unit: to };
+        if (meta[id]?.unit === from && (everyCell || meta[id]?.byHand === PAGE)) meta[id] = { ...meta[id], unit: to };
       }
       return { ...s, meta };
     }),

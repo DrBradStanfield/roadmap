@@ -26,7 +26,8 @@ import { BT_TIMELINE_DRAFT_KEY, loadFromLocalStorage } from '../lib/storage';
 import { trackABConversion } from '../lib/server-api';
 import { openAboutYou } from '../testing/health-tool-harness';
 import { WRITE_REFUSED } from '../lib/erase-copy';
-import { press, typeInto } from '../testing/matrix-gestures';
+import { press, pressMouse, releaseMouse, typeInto } from '../testing/matrix-gestures';
+import { cellText } from '../lib/blood-test-cell';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -110,7 +111,7 @@ const activeWeights = async () => (await recordOnDisk()).measurements
 /** The tool, once the record has loaded, with About you's rows opened (US-62 AC12). */
 async function open(): Promise<RenderResult> {
   const view = render(<HealthTool />);
-  await waitFor(() => expect(view.container.querySelector('#heightCm') ?? (openAboutYou(view.container), view.container.querySelector('.about-row'))).toBeTruthy());
+  await waitFor(() => expect(view.container.querySelector('#heightCm, #heightFeet') ?? (openAboutYou(view.container), view.container.querySelector('.about-row'))).toBeTruthy());
   await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
   openAboutYou(view.container);
   return view;
@@ -251,9 +252,10 @@ describe('US-34 AC7: a unit system another device chose shows here at once', () 
 });
 
 describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes the meaning of a number being typed', () => {
-  // Brad 2026-11-10: the record's unit system is held while anything is being
-  // typed (the focus in a field, or a matrix draft holding text) and applies
-  // once the page is clean. PR 1135's reviewers found both scenarios below.
+  // Brad 2026-11-10: the record's unit system is held while a field has the
+  // focus, and applies once it is left. A matrix draft cell carries the unit
+  // it was typed in, so it keeps its quantity, shown in the new unit, with no
+  // hold. PR 1135's reviewers found both scenarios below.
   const weightRow = (view: RenderResult) => q(view, '.bt-vitals-card [data-metric="weight"]')?.textContent ?? '';
   const lb180 = () => toCanonicalValue('weight', 180, 'conventional');
   /** Scenario A: a first-time weight typed in lb; the phone switches the record to SI mid-number. */
@@ -312,7 +314,7 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
     await waitFor(async () => expect((await ldlRow(view)).textContent).toContain('mg/dL'), { timeout: 3000 });
   });
 
-  it('US-04 AC1, US-34 AC7: a draft holding text with the focus elsewhere holds the units too, until it commits', async () => {
+  it('US-04 AC1, US-34 AC7: a draft holding text with the focus elsewhere keeps its quantity: US units show at once, and it saves as mmol/L', async () => {
     await siRecord();
     const first = await open();
     typeInto(await ldlDraft(first), '3.5');
@@ -322,14 +324,14 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
     expect(document.activeElement?.matches('input, select, textarea')).toBe(false); // no field has the focus
     await toConventional();
     await settle(50);
-    expect((await ldlRow(view)).textContent).toContain('mmol/L'); // held
-    typeInto(await ldlDraft(view), '3.5');
+    expect((await ldlDraft(view)).value).toBe(cellText('ldl', 3.5, 'conventional')); // US units at once, the quantity kept
+    press(await ldlDraft(view)); // into the cell, nothing typed: a number typed now would be in mg/dL
     press(q(view, '.alr-add-btn') as HTMLElement);
     await waitFor(async () => expect(await activeLdl()).toEqual([3.5]), { timeout: 3000 });
     await waitFor(async () => expect((await ldlRow(view)).textContent).toContain('mg/dL'), { timeout: 3000 });
   });
 
-  it('US-04 AC1, US-34 AC7: a draft held across a turn of the phone keeps the units held: the LDL saves as mmol/L (PR 1135 B1)', async () => {
+  it('US-04 AC1, US-34 AC7: a draft across a remote switch and a turn of the phone keeps its quantity: the LDL saves as mmol/L (PR 1135 B1)', async () => {
     await siRecord();
     const view = await open();
     await settle(50); // About you's opened rows take the focus a frame later (AboutYou's open); a leave would commit the draft
@@ -337,18 +339,18 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
     act(() => { (document.activeElement as HTMLElement | null)?.blur(); }); // the focus off, the draft holding text
     await toConventional();
     await settle(50);
-    expect((await ldlRow(view)).textContent).toContain('mmol/L'); // held
+    expect((await ldlDraft(view)).value).toBe(cellText('ldl', 3.5, 'conventional')); // US units at once, the quantity kept
     turn(true); // the form moves into the phone's tab: InputPanel mounts again
     await settle(50);
     turn(false);
     await settle(50);
-    typeInto(await ldlDraft(view), '3.5');
+    press(await ldlDraft(view)); // into the cell, nothing typed
     press(q(view, '.alr-add-btn') as HTMLElement);
     await waitFor(async () => expect(await activeLdl()).toHaveLength(1), { timeout: 3000 });
     expect(await activeLdl()).toEqual([3.5]);
   });
 
-  it('US-04 AC1, US-34 AC7: a draft this tab holds keeps the units held after another tab empties the kept copy (PR 1135 Codex R2)', async () => {
+  it('US-04 AC1, US-34 AC7: a draft this tab holds keeps its quantity after another tab empties the kept copy (PR 1135 Codex R2)', async () => {
     await siRecord();
     const first = await open();
     typeInto(await ldlDraft(first), '3.5');
@@ -359,11 +361,61 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
     localStorage.removeItem(BT_TIMELINE_DRAFT_KEY); // another tab emptied its copy, which shares the key
     await toConventional();
     await settle(50);
-    expect((await ldlRow(view)).textContent).toContain('mmol/L'); // held
-    typeInto(await ldlDraft(view), '3.5');
+    expect((await ldlDraft(view)).value).toBe(cellText('ldl', 3.5, 'conventional')); // US units at once, the quantity kept
+    press(await ldlDraft(view)); // into the cell, nothing typed: a number typed now would be in mg/dL
     press(q(view, '.alr-add-btn') as HTMLElement);
     await waitFor(async () => expect(await activeLdl()).toHaveLength(1), { timeout: 3000 });
     expect(await activeLdl()).toEqual([3.5]);
+  });
+
+  // Brad 2026-10-13: a unit chosen here says what the numbers typed are in
+  // (useUnits counts the choice; the matrix re-reads its typed cells).
+  it('US-05 AC2: 3.5 typed into LDL, then its own chip to mg/dL: it reads 3.5 mg/dL and saves so', async () => {
+    await siRecord();
+    const view = await open();
+    await settle(50); // About you's opened rows take the focus a frame later; a leave would commit the draft
+    typeInto(await ldlDraft(view), '3.5');
+    const chip = (await ldlRow(view)).querySelector('.bt-unit-chip') as HTMLElement;
+    pressMouse(chip); releaseMouse(chip);
+    expect((await ldlDraft(view)).value).toBe('3.5');
+    press(await ldlDraft(view));
+    press(q(view, '.alr-add-btn') as HTMLElement);
+    await waitFor(async () => expect(await activeLdl()).toHaveLength(1), { timeout: 3000 });
+    expect((await activeLdl())[0]).toBeCloseTo(toCanonicalValue('ldl', 3.5, 'conventional'), 6);
+  });
+
+  // A draft kept from an earlier visit carries the unit it was typed in. The
+  // record's system at load, and a preference another tab set, never re-read it.
+  describe('US-04 AC1, US-34 AC7: a kept LDL draft typed in mmol/L saves as mmol/L, whatever the units at load', () => {
+    const keptDraft = () => localStorage.setItem(BT_TIMELINE_DRAFT_KEY, JSON.stringify({
+      draft: { values: { ldl: '3.5' } }, backfills: {}, meta: { 'new|ldl': { unit: 'si', typedOn: 'an earlier load' } },
+    }));
+    async function loadAndCommit(preference: 'si' | 'conventional', recorded: 'si' | 'conventional') {
+      await completeRecord();
+      await saveChangedMeasurements({ unitSystem: recorded }, {});
+      await flushRoadmapStore();
+      keptDraft();
+      localStorage.setItem('health_roadmap_unit_system', preference);
+      const view = await open();
+      await settle(50); // About you's opened rows take the focus a frame later; a leave would commit the draft
+      press(await ldlDraft(view)); // into the cell, nothing typed
+      press(q(view, '.alr-add-btn') as HTMLElement); // and out: the draft commits
+      await waitFor(async () => expect(await activeLdl()).toHaveLength(1), { timeout: 3000 });
+      return view;
+    }
+    it('the record switched to US units since: it shows in mg/dL and saves 3.5 mmol/L', async () => {
+      const view = await loadAndCommit('si', 'conventional');
+      expect((await ldlRow(view)).textContent).toContain('mg/dL');
+      expect(await activeLdl()).toEqual([3.5]);
+    });
+    it('another tab set this device to US units too (Codex): it saves 3.5 mmol/L', async () => {
+      await loadAndCommit('conventional', 'conventional');
+      expect(await activeLdl()).toEqual([3.5]);
+    });
+    it('another tab set this device to US units, the record still SI: it saves 3.5 mmol/L', async () => {
+      await loadAndCommit('conventional', 'si');
+      expect(await activeLdl()).toEqual([3.5]);
+    });
   });
 
   it('US-11 AC6: a remote erase while a field is focused still applies at once: the form empties, and the erased record\'s units show', async () => {

@@ -54,7 +54,7 @@ function Page({ onMove, unitSystem, bloodTestHistory, labValues }: {
   const api = { preview: (from: string, to: string) => planBloodTestMove(file, from, to, { now: NOW, latestDay: '2026-10-30' }), move: onMove };
   const move = useMoveTest({ api, unitSystem, unitOverrides: {}, bloodTestHistory, labValues });
   return <>
-    <BloodTestTimeline bloodTestHistory={bloodTestHistory} unitSystem={unitSystem} unitOverrides={{}} onToggleFieldUnit={() => {}}
+    <BloodTestTimeline bloodTestHistory={bloodTestHistory} unitSystem={unitSystem} unitOverrides={{}} onToggleFieldUnit={() => {}} unitChoices={0}
       onSaveBatch={vi.fn().mockResolvedValue(new Map())} onCorrectValue={vi.fn().mockResolvedValue('ok')} move={move.headers}
       onDraftValue={() => {}} isSaving={false} grading={{}} hasApiResponse/>
     {move.panel}

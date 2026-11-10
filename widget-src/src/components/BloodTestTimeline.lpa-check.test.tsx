@@ -64,7 +64,7 @@ function matrix(rows: ApiMeasurement[] = [typedRow()], unitSystem: UnitSystem = 
   const onCorrectValue: Mock = vi.fn().mockResolvedValue('ok');
   const prefillRef: MutableRefObject<BloodTestPrefillFn | null> = { current: null };
   const page = (recorded: ApiMeasurement[]) => (
-    <BloodTestTimeline bloodTestHistory={recorded} unitSystem={unitSystem} unitOverrides={{}} onToggleFieldUnit={() => {}}
+    <BloodTestTimeline bloodTestHistory={recorded} unitSystem={unitSystem} unitOverrides={{}} onToggleFieldUnit={() => {}} unitChoices={0}
       onSaveBatch={onSaveBatch} onCorrectValue={onCorrectValue} onDraftValue={() => {}}
       isSaving={false} grading={{}} hasApiResponse prefillRef={prefillRef}/>
   );

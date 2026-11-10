@@ -142,8 +142,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const [chatPrefetch, setChatPrefetch] = useState<ChatPrefetch | null>(null);
 
   const rootRef = useRef<HTMLDivElement>(null);
-  // The unit system and each field's own unit (hooks/useUnits, US-05); the record's, held while anything is typed (hooks/useHeldUnits).
-  const { unitSystem, unitOverrides, metricUnitOverrides, handleToggleFieldUnit, handleUnitSystemChange, showUnits, offerUnits, onMatrixHolds } = useUnits(setInputs, rootRef);
+  // The unit system and each field's own unit (hooks/useUnits, US-05); the record's, held while a field has the focus (hooks/useHeldUnits).
+  const { unitSystem, unitOverrides, unitChoices, metricUnitOverrides, handleToggleFieldUnit, handleUnitSystemChange, showUnits, offerUnits } = useUnits(setInputs, rootRef);
 
   // The page's reads of the record: the values, both matrices, the lab rows (hooks/useRecordReads).
   const { reloadValues, refreshLabValues, loadHistory } = useRecordReads({ setPreviousMeasurements, setHistory, setLabValueHistory });
@@ -737,7 +737,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     errors: birthRefused ? { ...errors, birthMonth: birthRefused } : errors,
     unitSystem,
     onUnitSystemChange: handleUnitSystemChange,
-    unitOverrides,
+    unitOverrides, unitChoices,
     onToggleFieldUnit: handleToggleFieldUnit,
     previousMeasurements,
     bloodTestHistory,
@@ -772,7 +772,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     reached,
     fullForm,
     aboutYouLow,
-    onProfileLeft: profileLeft, onMatrixHolds,
+    onProfileLeft: profileLeft,
     setShowUploadModal,
     planBasis,
     grading,

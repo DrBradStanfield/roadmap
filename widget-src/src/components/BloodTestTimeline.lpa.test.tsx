@@ -59,7 +59,7 @@ function matrix({ unitSystem = 'si' as UnitSystem, rows = [] as ApiMeasurement[]
   const prefillRef: MutableRefObject<BloodTestPrefillFn | null> = { current: null };
   const view = render(
     <>
-      <BloodTestTimeline bloodTestHistory={rows} unitSystem={unitSystem} unitOverrides={{}} onToggleFieldUnit={onToggleFieldUnit}
+      <BloodTestTimeline bloodTestHistory={rows} unitSystem={unitSystem} unitOverrides={{}} onToggleFieldUnit={onToggleFieldUnit} unitChoices={0}
         onSaveBatch={onSaveBatch} onCorrectValue={onCorrectValue} onDraftValue={() => {}} isSaving={false} grading={{}} hasApiResponse prefillRef={prefillRef}/>
       <button type="button">Elsewhere</button>
     </>,
