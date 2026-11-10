@@ -14,7 +14,6 @@ import { existsSync, readFileSync, realpathSync, writeFileSync, writeSync } from
 import { join } from 'node:path';
 import { mainOf, PATTERNS } from './secret-rules.mjs';
 
-const HTML = 'docs/user-stories.html';
 const MD = 'docs/user-stories.md';
 
 // A batch's diff can pass the default 1 MB output cap (ENOBUFS, exit 4).
@@ -267,12 +266,8 @@ function main() {
     if (mergeErr !== null) {
       const unmerged = git('diff', '--name-only', '--diff-filter=U').split('\n').filter(Boolean);
       if (unmerged.length === 0) stop(2, `PR #${pr}: merge failed with no conflicted file; resolve by hand. git said: ${mergeErr || '(nothing)'}`);
-      const other = unmerged.find((f) => f !== HTML && f !== MD);
+      const other = unmerged.find((f) => f !== MD);
       if (other) stop(2, `PR #${pr}: conflict in ${other}; resolve by hand`);
-      if (unmerged.includes(HTML)) {
-        git('rm', '-q', '-f', '--', HTML);
-        note.push('dropped user-stories.html');
-      }
       if (unmerged.includes(MD)) {
         const fixed = resolveStories(readFileSync(MD, 'utf8'));
         if (fixed.fail) stop(2, `PR #${pr}: conflict in ${MD} ${fixed.fail}; resolve by hand`);
@@ -290,11 +285,6 @@ function main() {
       } else {
         git('commit', '-q', '-m', msg);
       }
-    }
-    if (git('ls-files', HTML).trim()) {
-      git('rm', '-q', '--', HTML);
-      git('commit', '-q', '-m', `Drop ${HTML} (untracked since US-64 AC11)`);
-      note.push('dropped user-stories.html');
     }
     console.log(`PR #${pr} ${sha.slice(0, 8)} merged${note.length ? ` (${[...new Set(note)].join('; ')})` : ''}`);
   }

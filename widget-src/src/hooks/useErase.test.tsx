@@ -42,6 +42,15 @@ describe('US-16 AC2a: the erase the screen shows', () => {
     expect(onShown).toHaveBeenCalledTimes(1);
   });
 
+  it('US-16 AC2d: the store mark moves when the new tree commits, not when showErase is asked', () => {
+    const { result } = renderHook(() => useErase(() => {}));
+    store.identity = 'e2';
+    let markAtAsk = '';
+    act(() => { result.current.showErase('e2'); markAtAsk = store.shown; });
+    expect(markAtAsk).toBe('e1'); // asked, not yet on screen: a save asked now keeps e1 and is refused
+    expect(store.shown).toBe('e2'); // committed
+  });
+
   it('eraseUnshown is true while the store holds an erase the screen does not show', () => {
     const { result } = renderHook(() => useErase(() => {}));
     expect(result.current.eraseUnshown()).toBe(false);
@@ -82,7 +91,8 @@ describe('US-16 AC2a: this tab\'s erase', () => {
   it('the chat edits are cleared even when a re-read during the write already showed the erase (adversary R1)', async () => {
     const onShown = vi.fn();
     const { result } = renderHook(() => useErase(onShown));
-    store.next = async () => { store.identity = 'e2'; store.shown = 'e2'; return { success: true, chatErased: true }; };
+    // The re-read shows the erase as the page does, through showErase.
+    store.next = async () => { store.identity = 'e2'; result.current.showErase('e2'); onShown.mockClear(); return { success: true, chatErased: true }; };
     await act(async () => { await result.current.eraseAll(() => {}); });
     expect(onShown).toHaveBeenCalledTimes(1);
   });

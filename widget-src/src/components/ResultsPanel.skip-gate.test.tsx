@@ -27,6 +27,7 @@ vi.mock('../lib/roadmap-data', () => ({
   sendGuestReport: mocks.sendGuestReport,
   getReportEmailCaptured: mocks.getReportEmailCaptured,
   markReportEmailCaptured: mocks.markReportEmailCaptured,
+  getShownErase: () => 'erase-1',
 }));
 vi.mock('../lib/server-api', () => ({ trackABConversion: mocks.trackABConversion, trackProductEvent: mocks.trackProductEvent }));
 vi.mock('../lib/build-flags', () => ({ get SHOPIFY_SURFACE() { return mocks.shopify.value; } }));

@@ -32,6 +32,13 @@ const PKG_CACHE = path.join(process.platform === 'darwin' ? path.join(process.en
   : (process.env.XDG_CACHE_HOME || path.join(process.env.HOME || '/tmp', '.cache')), 'claude-worktree-packages');
 const pkgCacheDir = (wt) => path.join(PKG_CACHE, `${path.basename(wt)}-${require('crypto').createHash('sha1')
   .update(wt.toLowerCase()).digest('hex').slice(0, 12)}`);
+// The package folders linkPackages clones. tools/worktree-done.sh reads them from `--package-dirs`;
+// tools/merge-batch.mjs and tools/worktree-new.sh still keep a copy.
+const PACKAGE_DIRS = ['node_modules', 'widget-src/node_modules', 'packages/health-core/node_modules'];
+if (process.argv[2] === '--package-dirs') {
+  process.stdout.write(PACKAGE_DIRS.join('\n') + '\n');
+  process.exit(0);
+}
 if (process.argv[2] === '--pkg-cache-dir') {
   if (!process.argv[3]) process.exit(1);
   process.stdout.write(pkgCacheDir(fs.realpathSync.native(process.argv[3])) + '\n');
@@ -100,8 +107,7 @@ const landing = (dir) => ({
 // (no trailing slash) matches a link too, so it never shows as untracked, and nothing shared (like
 // .git/info/exclude) is written. Other gitignored inputs (.env, health-roadmap.json) are NOT mirrored: read them
 // from the main checkout (docs/git-workflow.md). tools/worktree-done.sh deletes the worktree's clones.
-// Same design as claude_business's worktree-guard.js (its PR 33).
-const PACKAGE_DIRS = ['node_modules', 'widget-src/node_modules', 'packages/health-core/node_modules'];
+// Same design as claude_business's worktree-guard.js (its PR 33). The folders: PACKAGE_DIRS, above.
 // A clone's links, fixed after the copy. Each is read as it resolved in the main checkout: one into the copied
 // folder itself is kept when relative (`.bin` entries) and dropped when absolute (main's stray
 // `node_modules/node_modules` self-links, left by an old `ln -s`, would load a second React from the main

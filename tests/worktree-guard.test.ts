@@ -355,6 +355,31 @@ describe('worktree-done.sh on a folder that is not a worktree (US-64 AC4)', () =
   });
 });
 
+describe('worktree-done.sh reads the package folders from the guard (US-64 AC4)', () => {
+  it('the guard prints its one list, and worktree-done holds no copy of it', () => {
+    const r = spawnSync('node', [GUARD, '--package-dirs'], { encoding: 'utf8', env: ENV });
+    expect(r.status).toBe(0);
+    expect(r.stdout).toBe('node_modules\nwidget-src/node_modules\npackages/health-core/node_modules\n');
+    expect(readFileSync(DONE, 'utf8')).not.toContain('widget-src/node_modules');
+  });
+  it('refuses, removing nothing, when the guard cannot give the list', () => {
+    const w = newWorktree('noguard').path;
+    for (const body of ['process.exit(3);\n', '']) { // a failing guard, and one that prints nothing
+      const tools = join(S, 'broken-guard');
+      mkdirSync(join(tools, 'tools'), { recursive: true });
+      mkdirSync(join(tools, '.claude/hooks'), { recursive: true });
+      copyFileSync(DONE, join(tools, 'tools/worktree-done.sh'));
+      writeFileSync(join(tools, '.claude/hooks/worktree-guard.cjs'), body);
+      const r = spawnSync('bash', [join(tools, 'tools/worktree-done.sh'), 'noguard'], { cwd: MAIN, encoding: 'utf8', env: ENV });
+      expect(r.status).toBe(1);
+      expect(r.stderr).toMatch(/REFUSED: could not read the package folder list/);
+      expect(existsSync(w)).toBe(true);
+      expect(readlinkSync(join(w, 'node_modules'))).toBe(join(cacheDir(w), 'node_modules'));
+    }
+    expect(done('noguard').status).toBe(0);
+  }, 60_000);
+});
+
 describe('package clones: new worktrees, failures, races and orphans (US-64 AC3, AC4)', () => {
   it('in an older worktree outside .claude/worktrees/, swaps a link into the main checkout and adds nothing', () => {
     const older = join(S, 'older');

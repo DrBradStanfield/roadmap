@@ -19,7 +19,6 @@ const ENV = {
 };
 
 const STORIES = ['# Stories', '', '### US-1', '- AC1 one', '- AC2 two', '- Tests: none', ''].join('\n');
-const HTML_V1 = '<p>v1</p>\n';
 
 let root: string;
 let origin: string;
@@ -78,7 +77,6 @@ beforeEach(() => {
   git(root, 'clone', '-q', origin, seed);
   git(seed, 'checkout', '-q', '-b', 'main');
   write(seed, 'docs/user-stories.md', STORIES);
-  write(seed, 'docs/user-stories.html', HTML_V1);
   write(seed, 'src/a.txt', 'a1\na2\na3\n');
   write(seed, 'src/b.txt', 'b\n');
   git(seed, 'add', '-A');
@@ -112,32 +110,6 @@ describe('merge-batch.mjs (US-64 AC13)', () => {
     expect(git(batch, 'log', '--format=%s', '-n', '8')).toContain(`Merge PR #11 (${a.slice(0, 8)}) into the batch`);
   });
 
-  it('drops docs/user-stories.html when main deleted it and the PR modified it', () => {
-    const sha = pr(21, baseSha, (d) => {
-      write(d, 'docs/user-stories.html', '<p>v2</p>\n');
-      write(d, 'src/b.txt', 'b by 21\n');
-    });
-    advanceMain((d) => rmSync(join(d, 'docs/user-stories.html')));
-    const r = runBatch([`21 ${sha}`]);
-    expect(r.code).toBe(0);
-    expect(existsSync(join(batch, 'docs/user-stories.html'))).toBe(false);
-    expect(git(batch, 'ls-files', 'docs/user-stories.html')).toBe('');
-    expect(readFileSync(join(batch, 'src/b.txt'), 'utf8')).toBe('b by 21\n');
-    expect(git(batch, 'status', '--porcelain')).toBe('');
-  });
-
-  it('removes a tracked docs/user-stories.html a clean merge left behind', () => {
-    // Main already dropped the file; this PR adds it back with no conflict.
-    advanceMain((d) => rmSync(join(d, 'docs/user-stories.html')));
-    const sha = pr(22, git(batch, 'rev-parse', 'origin/main'), (d) => {
-      write(d, 'docs/user-stories.html', '<p>again</p>\n');
-      write(d, 'src/b.txt', 'b by 22\n');
-    });
-    const r = runBatch([`22 ${sha}`]);
-    expect(r.code).toBe(0);
-    expect(git(batch, 'ls-files', 'docs/user-stories.html')).toBe('');
-    expect(readFileSync(join(batch, 'src/b.txt'), 'utf8')).toBe('b by 22\n');
-  });
 
   it('keeps the ACs of two PRs added at the same line, in AC order, and proves the diff', () => {
     const late = pr(31, baseSha, addAc('- AC4 from thirty-one'));
@@ -264,21 +236,6 @@ exec "${real}/git" "$@"
     expect(r.stderr).toBe('');
     expect(r.status).toBe(0);
     expect(existsSync(join(batch, 'src/new.txt'))).toBe(true);
-  });
-
-  it('merges over an ignored local docs/user-stories.html the PR tracks and drops it (US-64 AC17)', () => {
-    const sha = pr(81, baseSha, (d) => write(d, 'docs/user-stories.html', '<p>pr</p>\n'));
-    advanceMain((d) => git(d, 'rm', '-q', 'docs/user-stories.html'));
-    git(batch, 'fetch', '-q', 'origin', 'main');
-    git(batch, 'reset', '-q', '--hard', 'origin/main');
-    write(batch, '.gitignore', 'docs/user-stories.html\n');
-    git(batch, 'add', '.gitignore');
-    git(batch, 'commit', '-q', '-m', 'ignore it');
-    write(batch, 'docs/user-stories.html', '<p>local build</p>\n');
-    const r = runBatch([`81 ${sha}`], true);
-    expect(r.err).toBe('');
-    expect(r.code).toBe(0);
-    expect(git(batch, 'ls-files', 'docs/user-stories.html')).toBe('');
   });
 
   it('exits 4 when a git command fails, apart from a moved head', () => {

@@ -38,7 +38,7 @@ import {
   loadLatestMeasurements,
   hasSavedRecord,
   getInitialInputsSync,
-  getEraseIdentity,
+  getEraseIdentity, getShownErase,
   clearOffFileAfterErase,
   flushRoadmapStoreSync,
   loadLatestMeasurementsSync,
@@ -153,13 +153,13 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     setInputs, reloadValues, applyLists, showUnits, offerUnits, showErase, loaded: hasApiResponse,
     later: () => ({ markSaved, flushPendingSave, profileDirty, clearAnswered }), // declared below
   });
-  // A save the store refused. Outside this tab's own erase, which throws the
-  // change away anyway, say so and show the record the store holds; that also
-  // takes in a remote change the relay held behind the edit (US-34 AC4).
-  const writeRefused = useCallback(() => {
+  // A save the store refused, asked under `erase`. Outside this tab's own erase, say so and show the record the
+  // store holds, which also takes in a change the relay held (US-34 AC4). A save asked of a record the screen has
+  // left spends no landing of the one it shows (US-16 AC2d, US-62 AC25b).
+  const writeRefused = useCallback((erase?: string) => {
     if (!refusalIsNews()) return;
     window.alert(WRITE_REFUSED);
-    void rereadRecord('refused');
+    void rereadRecord(erase === undefined || erase === getShownErase() ? 'refused' : 'left');
   }, [refusalIsNews, rereadRecord]);
   // The medication, screening and supplement saves (hooks/useListSaves).
   const {
@@ -279,8 +279,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
 
   // The saved-value editor's correction, core or lab (US-04, US-21 AC5),
   // then the page re-reads the record.
-  const handleCorrectValue = useCallback<CorrectFn>(async (id, newValue) => {
-    const status = await countedCorrection(id, newValue);
+  const handleCorrectValue = useCallback<CorrectFn>(async (id, newValue, erase) => {
+    const status = await countedCorrection(id, newValue, erase);
     if (status === 'ok') await reloadValues();
     return status;
   }, [reloadValues]);

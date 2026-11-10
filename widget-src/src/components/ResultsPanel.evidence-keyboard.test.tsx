@@ -11,7 +11,7 @@ import { statTiles } from '@roadmap/health-core/stat-tiles';
 import type { HealthInputs } from '@roadmap/health-core/types';
 
 vi.mock('../lib/roadmap-data', () => ({
-  getReportHtml: vi.fn(), sendGuestReport: vi.fn(), getReportEmailCaptured: () => false, markReportEmailCaptured: vi.fn(),
+  getReportHtml: vi.fn(), sendGuestReport: vi.fn(), getReportEmailCaptured: () => false, markReportEmailCaptured: vi.fn(), getShownErase: () => 'erase-1',
 }));
 vi.mock('../lib/server-api', () => ({ trackABConversion: vi.fn(), trackProductEvent: vi.fn() }));
 vi.mock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: false }));

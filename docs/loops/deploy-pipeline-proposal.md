@@ -74,7 +74,7 @@ AUTHOR LOOP (Tier 3 grant, cloud)          REVIEWER (fresh context)
            deploy.yml triggers BOTH loops via the RemoteTrigger API
            (the documented "CD pipeline calls the routine" pattern):
            author verifies its fix live; reviewer verifies independently.
-           Tools: tools/webkit-verify-*.mjs against production URLs
+           Tools: tools/webkit-verify.mjs against production URLs
            (already portable — plain Playwright WebKit, no Mac dependency),
            Sentry read token, product_events counts. Regression → the
            chat-health doctrine applies: measure before/after, and the
