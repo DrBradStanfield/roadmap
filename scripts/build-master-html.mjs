@@ -51,8 +51,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { basename, dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-
-const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+import { escapeHtml as esc } from '../tools/escape-html.mjs';
 
 // drstanfield.com product handle -> microvitamin.com product handle. Its values are the products a card may link.
 const COMMERCE_PRODUCTS = { microvitamin: 'microvitamin', 'microvitamin-powder': 'microvitamin-plus', 'microvitamin-plus': 'microvitamin-plus', sleep: 'sleep', 'potassium-fiber-drink': 'potassium-fiber-drink' };

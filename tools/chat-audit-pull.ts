@@ -28,6 +28,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { escapeHtml } from './escape-html.mjs';
 
 // ---------------------------------------------------------------------------
 // CLI args
@@ -367,15 +368,6 @@ function hashUserToColor(userId: string | null | undefined): string {
   let hash = 0;
   for (let i = 0; i < userId.length; i++) hash = ((hash << 5) - hash + userId.charCodeAt(i)) | 0;
   return USER_PALETTE[Math.abs(hash) % USER_PALETTE.length];
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 // A markdown link [label](url) as an anchor. Web and mail addresses only: a

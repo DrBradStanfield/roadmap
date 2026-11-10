@@ -9,6 +9,7 @@
 //   node scripts/build-privacy-page.mjs [connector|app] [--out file] [--publish]
 import { readFileSync, writeFileSync } from 'node:fs';
 import { requireMergedCode } from '../tools/write-gate.mjs';
+import { escapeHtml as esc } from '../tools/escape-html.mjs';
 
 // `start`: the first line of the public body. `id`: a page that exists; `handle`: found or created.
 const PAGES = {
@@ -19,7 +20,6 @@ const arg = process.argv[2];
 const page = PAGES[arg && !arg.startsWith('--') ? arg : 'connector'];
 if (!page) throw new Error('which page? ' + Object.keys(PAGES).join(' or '));
 const md = readFileSync(new URL(`../docs/${page.md}`, import.meta.url), 'utf8');
-const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const inline = (s) => {
   const held = [];
   let t = s.replace(/`([^`]+)`/g, (_, c) => `\u0000${held.push(`<code>${esc(c)}</code>`) - 1}\u0000`);
