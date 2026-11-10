@@ -52,6 +52,18 @@
  *   during the erase's flush, it is that erase, already heard as `arrived`.
  * - own-failed: only when the store's identity did not move.
  * - arrived: REMOTE_CHANGED's `erase`, when it carries one.
+ *
+ * Known cost: own-end is read as another writer's when it ends at the heard
+ * erase. That stands on this tab's own erase never arriving: the session
+ * holds it before the flush (record-session.ts:362), and adopt announces only
+ * an identity unlike the one it holds (record-session.ts:604, 609). Were an
+ * echo of this tab's erase ever heard, the person would see their erase done,
+ * as without it, plus one extra re-read of the empty record (no visible
+ * change) and one wrong remote_change_applied: one extra read and one count.
+ *
+ * Known limits (no behaviour for them here):
+ * - A heard erase whose read fails stays heard but is not retried on its own; the next arrival or own-start brings the read.
+ * - firstReadFailed keeps the page loading (useRecordApply.ts:188), so `loaded` never comes and a held erase is never read; this predates the machine.
  */
 
 /** The store's erase identity, `[eraseEpoch, erasedAt]` as one string (record-session eraseIdentityOf). */
@@ -120,7 +132,10 @@ const READ: EraseEffect = { type: 'read' };
 const COUNT: EraseEffect = { type: 'count-remote-change' };
 const SAY: EraseEffect = { type: 'say-outcome' };
 
-/** This tab's erase ends at `identity`: another writer's when it is the erase that overtook it. */
+/** This tab's erase ends at `identity`: another writer's when it is the erase that overtook it.
+ *  The evidence this rests on: packages/health-core/src/erase-overtaken.test.ts
+ *  (an erase overtaken in its flush is announced before erase() resolves, at
+ *  the identity the session then reports). */
 function ownEnd(state: EraseState, identity: EraseIdentity): Step {
   const theirs = state.heard === identity;
   const shows = replaces(identity, state.shown);
