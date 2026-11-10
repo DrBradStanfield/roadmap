@@ -40,7 +40,10 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    checkout are not blocked by the hook: don't.
 3. **Every turn ends landed**: commit your own changes, `git push -u origin claude/<name>`, and have a PR
    open (`gh pr create`; `--draft` while Brad is still deciding). The Stop hook blocks the turn's end, once,
-   until this is true. **Add the `hold` label** (`gh pr edit <n> --add-label hold`) to any PR that waits on Brad,
+   until this is true. While a background subagent of your session is still running (Claude Code's
+   `background_tasks`), uncommitted files are skipped: they are its half-written work, never yours to commit; the
+   next turn's end checks again (US-64 AC25). Unpushed
+   commits and a missing PR still block. **Add the `hold` label** (`gh pr edit <n> --add-label hold`) to any PR that waits on Brad,
    on more fixes or a review, or whose merge order you are managing (shared files, a deploy in flight):
    auto-ship merges any `claude/` PR 30 minutes after a Claude Review approval and a green `test` unless it
    carries `hold` (PRs 677 and 734 merged early, 2026-11-02/03; PR 850 mid-deploy, 2026-11-05). Remove it, or
@@ -57,7 +60,9 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    **The merge gate is CI green on the PR's head** (US-64 AC9, Brad 2026-11-04). CI tested the PR merged with
    main as main stood at the PR's last push, which is what a local `test:all` tested too, so a full local run
    is never a gate: while working, run only the tests your change touches (`npx vitest related <changed files>
-   --run`, seconds). GitHub does not re-run CI when main moves, so before merging, `git fetch origin main` and
+   --run`, seconds). Wait for CI with `sh tools/wait-run.sh pr <n>` in the background (it prints pass/fail
+   counts, the head sha and mergeability, exits non-zero on a failure, and gives up after 90 min); never a
+   hand-typed `until gh ...` loop, which hung for hours or was refused by the sandbox (US-64 AC26). GitHub does not re-run CI when main moves, so before merging, `git fetch origin main` and
    compare the files each side changed since they split (`git diff --name-only origin/main...HEAD` and
    `git diff --name-only HEAD...origin/main`). If they share any file other than `docs/user-stories.md` (docs
    count: tests read them), or GitHub says the PR conflicts, merge main in (`git merge --no-edit origin/main`,
@@ -74,7 +79,9 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    drstanfield.com/pages/roadmap through the Admin API, backup first, then run `node tools/roadmap-page-drift.mjs`
    until it prints IN SYNC; report it with the deploy. The page is published by hand, so it drifts silently: US-64
    AC16): the CI Deploy always builds main's tip. Run it once per batch of merges, not
-   once per PR (auto-ship still deploys each merge it makes). A manual release follows
+   once per PR (auto-ship still deploys each merge it makes). Start it with `gh workflow run deploy.yml`, find
+   the run id with `gh run list --workflow deploy.yml --limit 1`, then wait with `sh tools/wait-run.sh deploy
+   <run-id>` in the background: it prints the conclusion, head sha, each job's result and the live healthz code. A manual release follows
    docs/deploy-runbook.md step 0: `bash tools/release-checkout.sh` from the main checkout makes a detached
    checkout of exactly `origin/main` outside the repo (it refuses a folder that exists, or a dirty result).
 6. **Finish**: ExitWorktree (`keep`), then from the main checkout `git pull --ff-only` and

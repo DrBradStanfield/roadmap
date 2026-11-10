@@ -34,13 +34,16 @@ interface LongitudinalSaveDeps {
   flushPendingProfileSave: (erase?: string) => Promise<boolean>;
   /** The unit each first-time weight or waist was typed in (US-03 AC3). */
   typedIn: MutableRefObject<Partial<Record<keyof HealthInputs, { value: unknown; unit: UnitSystem }>>>;
-  isFirstSaveRef: MutableRefObject<boolean>;
+  /** The record held no measurement as the page loaded: read once (US-01 AC7). */
+  firstSave: boolean;
 }
 
 export function useLongitudinalSave({
   inputs, setInputs, history, unitOverrides, unitSystem, reloadValues,
-  flushPendingProfileSave, typedIn, isFirstSaveRef,
+  flushPendingProfileSave, typedIn, firstSave,
 }: LongitudinalSaveDeps) {
+  // The measurement-save conversion is sent once per page load (US-01 AC7).
+  const isFirstSaveRef = useRef(firstSave);
   // How many saves are running: "Saving…" holds until the last one ends (US-03 AC9).
   // A departure's save runs beside a queued one, so a single flag ended early.
   const [savesRunning, setSavesRunning] = useState(0);

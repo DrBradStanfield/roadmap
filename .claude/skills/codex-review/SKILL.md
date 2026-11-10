@@ -19,6 +19,14 @@ cloud sessions and CI never run, request or wait on it (US-40 AC8; Brad,
 2026-10-11: no Codex for loops). `--loop` stays only for a review Brad chooses
 to run himself, under the contract's Tier 3 restrictions.
 
+**How many, and when to start it.** Several Codex runs may go at once (Brad,
+2026-11-10: "You can run multiple codex agents"). Before starting one, check
+`uptime` and `memory_pressure | tail -1`: hold a new run while the load average
+is over about 8 or free memory is under about 20% (macOS swap stays high long
+after use, so swap alone misleads). Start it in the same message as its
+`adversary`, both in the background, never one after the other: the two are
+independent, and waiting for one doubles the wall-clock.
+
 A fresh-context reviewer on a different model, the cross-model analogue of
 the fresh Opus 5.5 adversarial check. It reviews an immutable, symlink-free
 snapshot in a read-only sandbox with the ChatGPT connector layer, images,
