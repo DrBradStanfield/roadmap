@@ -107,7 +107,7 @@ The pooled analyses disagree. The newest and largest, from 2026, found benefits 
 
 **Other 2026 reviews:** An umbrella review of 16 systematic reviews (113 trials, 7,983 people) found collagen consistently linked with better skin, musculoskeletal and osteoarthritis outcomes [33]. A systematic review of 25 skin trials rated most of them at high risk of bias [34]. Brad notes that almost all pooled trials compared collagen with a placebo that had no protein [32].
 
-**Collagen or just more protein?** Few trials compare collagen with the same amount of another protein. Brad counts three and says they lean in favour of collagen, though none is conclusive on its own [32]. His post describes the comparators as casein in the Korean trial and soy protein in the burns trial; the trial abstracts describe them as placebos [32]:
+**Collagen or just more protein?** Few trials compare collagen with the same amount of another protein. Brad counts three and says they lean in favour of collagen, though none is conclusive on its own [32]. His post describes the comparators as casein in the Korean trial and soy protein in the burns trial [32]; the trial abstracts describe them as placebos [35][36]:
 
 - In a Korean trial in 44 healthy adults, 3 g a day of collagen hydrolysate with 2 mg a day of astaxanthin for 12 weeks improved facial elasticity and water loss compared with placebo [35]. Because the collagen group also got astaxanthin, the trial cannot show which ingredient did the work [32].
 - In a small pilot trial in 31 men with burns, a collagen-based supplement healed wounds faster than an isocaloric placebo (see Tendon, Ligament, and Wound Healing) [36]. A burn is very different from normal skin ageing [32].
@@ -178,7 +178,7 @@ In 100 people with type 2 diabetes and high blood pressure, all on their usual m
 
 ### Muscle Mass and Strength
 
-**Compared with whey:** Where trials tested the two head to head, whey raised muscle protein synthesis more than collagen did, in young athletes and in older women [28][29]. For building muscle, whey looks more effective than collagen.
+**Compared with whey:** In young athletes, only whey raised muscle protein synthesis above placebo [28]. In older women, whey raised it more than collagen did [29]. For building muscle, whey looks more effective than collagen.
 
 **Collagen-only trials:**
 

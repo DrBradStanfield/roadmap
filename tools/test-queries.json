@@ -9174,7 +9174,7 @@
       "densit"
     ],
     "must_not_match": [
-      "(?<!not )(?<!no )(?:improv|increas|boost)\\w* (?:hair )?growth(?![^.]{0,60}(?:placebo|not|no (?:difference|better)))"
+      "(?<!\\b(?:no|not|n't|without)\\s(?:\\w+\\s){0,2})(?:improv\\w*|increas\\w*|boost\\w*|better)(?: (?:in|of))? hair growth(?![^.]{0,60}(?:\\bnot\\b|no (?:significant |real )?difference|didn't|same as))"
     ],
     "notes": "US-42 AC5 / US-50 AC5, registered 2026-11-10 (Codex R4, collagen pilot): hair density improved vs placebo (Kalman 2020); growth and breakage did not differ from placebo. Not run: paid runs need Brad's yes and a cost estimate (Brad 2026-11-10)."
   },

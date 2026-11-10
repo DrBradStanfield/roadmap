@@ -91,7 +91,7 @@
   "check": "AC2",
   "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
   "match": "body line has no entry quoting \"90\": In 90 adults aged 40 to 65 with joint discomfort, a hydrolysed chicken type II collagen supplement for 8 weeks reduce...",
-  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-rebuild-pilot, 2026-11-10).",
+  "reason": "The cited abstract gives the two group sizes, not the total; the body states their sum (47 + 43 = 90). A fresh adversary checked it (masters-rebuild-pilot, 2026-11-10).",
   "date": "2026-11-10",
   "by": "orchestrator"
  },
@@ -123,7 +123,7 @@
   "check": "AC2",
   "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
   "match": "body line has no entry quoting \"66\": In 66 healthy but easily fatigued adults, 10 g a day of collagen peptides for 8 weeks lowered fatigue scores on the P...",
-  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-rebuild-pilot, 2026-11-10).",
+  "reason": "The cited abstract gives the two group sizes, not the total; the body states their sum (33 + 33 = 66). A fresh adversary checked it (masters-rebuild-pilot, 2026-11-10).",
   "date": "2026-11-10",
   "by": "orchestrator"
  },
@@ -164,6 +164,14 @@
   "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
   "match": "reference line has unknown host ecfr.gov: [76] US Code of Federal Regulations. 21 CFR 189.5, Prohibited cattle materials. eCFR. https://www...",
   "reason": "Public primary record cited by URL (a university thesis repository, or a government regulation or health-body page); not on the masters host list (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC6",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "unexpected change: tools/test-queries.json",
+  "reason": "This batch registers its own answer checks (US-42 AC5), not run on Brad's 2026-11-10 rule (masters-rebuild-pilot, 2026-11-10).",
   "date": "2026-11-10",
   "by": "orchestrator"
  }
