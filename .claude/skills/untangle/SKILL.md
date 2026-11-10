@@ -126,10 +126,11 @@ a parent that draws a section for any truthy slot draws an empty one
 
 Line counts are a vital sign, not the goal (CLAUDE.md, Code entropy).
 
-`node tools/untangle-measures.mjs <files or folders>` counts some of these:
-size, mode flags, special cases, co-change and fan-in/out. The rest (a
-typical change lands in one place, import direction, unchanged behaviour)
-are still judged by reading and by the tests. Run it on the area before the
+`node tools/untangle-measures.mjs <files or folders>` counts what a regex
+can: size, mode flags (refs, boolean state, timers), special cases,
+co-change and fan-in/out. It cannot see a mode kept as a string, and the
+rest (a typical change lands in one place, import direction, unchanged
+behaviour) are still judged by reading and by the tests. Run it on the area before the
 first PR and after the last, with the same `--since` both times, or the date
 the area's work started. Add `--json` to compare runs. Put both sets of
 numbers in the PR body. They are trend numbers from regexes, not verdicts.
