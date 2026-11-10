@@ -434,6 +434,19 @@ describe('US-09 AC19 — the storage button\'s attention flag', () => {
     await waitFor(() => expect(attention(view)).toBe('false'));
   });
 
+  // Another device's erase once re-read, or this tab's erase whose write failed
+  // but still moved the erase (useErase.test.tsx): the screen shows a new erase
+  // without a successful Delete here. Before, the pulse outlived it.
+  it('skip-gate: any erase the screen shows forgets the opened window, not only a successful Delete here', async () => {
+    const view = showPlan({ syncControl, shownErase: 'e1' });
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await waitFor(() => expect(attention(view)).toBe('true'));
+    view.rerender(plan({ syncControl, shownErase: 'e1' }));
+    expect(attention(view)).toBe('true');
+    view.rerender(plan({ syncControl, shownErase: 'e2' }));
+    expect(attention(view)).toBe('false');
+  });
+
   it('skip-gate: a plan that goes blank mid-edit (height cleared) keeps it on', async () => {
     const view = showPlan({ syncControl });
     fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));

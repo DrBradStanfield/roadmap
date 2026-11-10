@@ -21,9 +21,6 @@ import { ColumnHeader } from './ColumnHeader';
 import { GroupedSuggestionCard, NO_HIGHLIGHTS, QuickStats, SuggestionCard, type Highlights, type OpenEvidence } from './PlanCards';
 import { PlanPdf, storagePulse, useEmailCaptureState, usePlanPrint } from './PlanPdf';
 
-// Stays until HealthTool imports OpenEvidenceContext from PlanCards.
-export { OpenEvidenceContext } from './PlanCards';
-
 /** The plan's view on My health (US-62 AC17-AC26): its cards by topic (health-core's
  *  `topicSections`, with US-61's overlay on Shopify), the new-card highlight, the urgent
  *  banner's target, and the foot. Built once, in HealthTool; InputPanel draws it. */
@@ -52,8 +49,6 @@ export interface PlanView {
   foot: React.ReactNode;
   /** US-09 AC19: the guest has their PDF, so the storage card may pulse. */
   attention: boolean;
-  /** An erase forgets the PDF this tab opened. */
-  onErased: () => void;
   /** The plan as Save as PDF prints it (US-08): drawn, hidden, only while getReportHtml copies it. */
   report: React.ReactNode;
 }
@@ -160,6 +155,8 @@ const DISCLAIMER = 'This tool is for educational purposes only and is not a subs
 
 interface PlanViewOptions {
   results: HealthResults | null;
+  /** The erase the screen shows (useErase): the PDF window and the open reasons are this record's. */
+  shownErase: string;
   isValid: boolean;
   /** The plan's tiles, for the PDF. */
   tiles: StatTile[];
@@ -172,7 +169,7 @@ interface PlanViewOptions {
   alcoholQuestion?: AlcoholQuestion;
 }
 
-export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitudinal, onSaveLongitudinal, showEmailCapture, formStage, alcoholQuestion }: PlanViewOptions): PlanView {
+export function usePlanView({ results, shownErase, isValid, tiles, forms, hasUnsavedLongitudinal, onSaveLongitudinal, showEmailCapture, formStage, alcoholQuestion }: PlanViewOptions): PlanView {
   const highlights = useHighlights(results?.suggestions);
 
   const { printStatus, pdfBlocked, pdfOpened, printing, printReport, handlePrint, forget } = usePlanPrint(!!results, hasUnsavedLongitudinal, onSaveLongitudinal);
@@ -185,6 +182,15 @@ export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitud
     return next;
   }), []);
   const evidence = useMemo(() => ({ opened, toggle: toggleEvidence }), [opened, toggleEvidence]);
+  // US-09 AC19: any erase the screen shows forgets them: this tab's, one whose
+  // write failed but still erased, or another device's once re-read. The email
+  // capture is kept (a same-tab erase keeps its captured view until reload).
+  const [erase, setErase] = useState(shownErase);
+  if (erase !== shownErase) {
+    setErase(shownErase);
+    forget();
+    setOpened(NO_HIGHLIGHTS);
+  }
 
   // US-61 AC5: Brad's products for a known adult in the US, on the Shopify build only.
   const sections = useMemo((): UsPlanSection[] => {
@@ -236,7 +242,7 @@ export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitud
   );
   const foot = <PlanFoot planned={planned}/>;
 
-  return { layout, topics, planned, highlights, alcoholQuestion, urgent, cardIds, evidence, supplementsRef, pdf, foot, attention, onErased: () => { forget(); setOpened(NO_HIGHLIGHTS); }, report };
+  return { layout, topics, planned, highlights, alcoholQuestion, urgent, cardIds, evidence, supplementsRef, pdf, foot, attention, report };
 }
 
 /** My health's foot (US-62 AC26): the disclaimer, feedback, Supercharge and the privacy link. */
