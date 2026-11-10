@@ -1510,6 +1510,16 @@ describe("US-42 AC12 one number in different forms pairs; a different number nev
     pairs(["HR 0·87 (95% CI 0·80 to 0·95)"], ["0.8", "0.87", "0.95", "95 %"]);
     for (const f of ["4·10⁹/L", "4·10^9/L", "4·10⁻³"]) expect(t(f).filter((k) => /^4\.1/.test(k)), f).toEqual([]); // times ten to the power, not 4.10
   });
+  it("reads scientific notation as one number, and only with an exponent (review re-check)", () => {
+    pairs(["4·10⁹/L", "4×10⁹/L", "4 x 10^9/L", "4·10^9"], ["4000000000"]);
+    pairs(["1·5×10⁻³"], ["0.0015"]);
+    pairs(["4·10"], ["4.1"]);
+    pairs(["4 × 10 mg"], ["10 mg", "4"]);
+    pairs(["Ne10"], []);
+    for (const f of ["type 2e", "strain 2e5 grew"]) expect(t(f).filter((k) => /e|00/.test(k)), f).toEqual([]); // a plain "e" is never an exponent
+    const apart = (a: string, b: string) => expect(t(a).filter((k) => t(b).includes(k)), `${a} | ${b}`).toEqual([]);
+    apart("4·10⁹", "4·10⁶"); apart("4·10⁹", "4"); apart("4·10⁹", "10");
+  });
   it("reads a number word opening a sentence before an irregular plural or a short adjective run", () => {
     pairs(["Seventy adults took it.", "Seventy men took it."], ["70"]);
     pairs(["Six healthy adult men took it.", "six healthy adult men", "Six healthy volunteers took it."], ["6"]);

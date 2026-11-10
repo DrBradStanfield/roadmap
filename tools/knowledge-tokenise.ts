@@ -42,7 +42,7 @@ export const UNIT = [
   "mcg", "[µμ]g", "mg", "IU", "mL", "kg", "cm", "g", "hours?", "hrs?", "h", "days?", "d", "weeks?", "wks?", "months?", "mos?", "years?", "yrs?", "y", "minutes?", "mins?", "seconds?", "secs?",
   "(?<=[\\s-])s", // "30-s chair stand", "5 s", but not the "s" of "1990s"
 ].join("|");
-const NUM = "\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d+(?:\\.\\d+)?|\\.\\d+";
+const NUM = "\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d+(?:\\.\\d+)?(?:\\u2061e-?\\d+)?|\\.\\d+"; // \u2061e: an exponent marked by stripNoise
 // Comparator words, longest first, so "no more than" never falls through to "more than".
 const CMP_WORDS = [...["no more than", "not more than", "no less than", "not less than", "up to", "at least", "more than",
   "greater than", "less than", "lower than", "younger than", "older than", "over", "above", "below", "under"].map((w) => w.replace(/ /g, "\\s+")),
@@ -108,7 +108,7 @@ function normUnit(u: string): string {
 }
 
 function normNumber(n: string, unit: string): { value: string; unit: string } {
-  let v = parseFloat(n.replace(/,/g, ""));
+  let v = parseFloat(n.replace(/[,\u2061]/g, ""));
   if (unit === "g") { v = Number((v * 1000).toFixed(6)); unit = "mg"; }
   else if (unit === "mcg" && v >= 1000) { v = Number((v / 1000).toFixed(6)); unit = "mg"; } // "1,000 micrograms" is "1 mg"
   return { value: String(v), unit };
@@ -120,11 +120,16 @@ const MASTER_DATES = new RegExp(`^(?:(?:##\\s+)?Current view \\(reviewed \\d{1,2
 // "aged 45 to 64" and "younger than 55" are years, unless a unit follows ("aged 6 to 12 wks", "older than 72 h").
 const AGED = new RegExp(`\\b(aged|younger\\s+than|older\\s+than)\\s+(\\d+(?:\\.\\d+)?(?:(?:\\s*[-–]\\s*|\\s+(?:to|and|or)\\s+)\\d+(?:\\.\\d+)?)?)(?![\\d.])(?![\\s-]*(?:${UNIT}|w)(?![A-Za-z]))(?!\\s*(?:[-–]|to\\s|and\\s|or\\s)\\s*\\d)`, "gi");
 
+// "4·10⁹", "4 x 10^9", "1·5×10⁻³": one number in e-notation, marked so a plain "2e5" in a word is never read. No exponent, no match.
+const SUP = "⁰¹²³⁴⁵⁶⁷⁸⁹";
+const SCI = new RegExp(`(?<![\\d.,A-Za-z])(\\d+(?:[.·∙⋅]\\d+)?)\\s*[·∙⋅×x*]\\s*10(?:\\^(-?\\d+)|([${SUP}⁻]+))`, "g");
+
 /** Strip everything the tokeniser must ignore, line by line. */
 export function stripNoise(line: string): string {
   return unescapeMd(line)
     .replace(MASTER_DATES, " ")
-    .replace(/(\d)[∙·⋅](?!10(?:\^|[⁰¹²³⁴⁵⁶⁷⁸⁹⁻]))(\d)/g, "$1.$2") // "1·03" is 1.03; "4·10⁹" is not
+    .replace(SCI, (_, m: string, e?: string, sup?: string) => `${m.replace(/[·∙⋅]/, ".")}\u2061e${e ?? [...sup!].map((c) => (c === "⁻" ? "-" : SUP.indexOf(c))).join("")}`)
+    .replace(/(\d)[∙·⋅](\d)/g, "$1.$2") // "1·03" is 1.03
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/https?:\/\/\S+/g, " ")
     .replace(/\b10\.\d{4,9}\/\S+/g, " ")
