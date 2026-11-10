@@ -1,11 +1,13 @@
 // The unit system the page shows (US-05): the saved preference, else one
 // detected from the browser, and each field's own unit where the person
-// switched it (kept on this device). A record's saved unit system wins at load.
-import { useCallback, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+// switched it (kept on this device). A record's saved unit system wins at load
+// and on a re-read, held while anything is being typed (useHeldUnits).
+import { useCallback, useMemo, useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import { FIELD_METRIC_MAP } from '@roadmap/health-core/mappings';
 import { detectUnitSystem, type MetricType, type UnitSystem } from '@roadmap/health-core/units';
 import { getJson, loadUnitPreference, safeRemoveItem, safeSetItem, saveUnitPreference } from '../lib/storage';
+import { useHeldUnits } from './useHeldUnits';
 
 /** This device's per-field unit toggles (lib/lpa-unit.ts reads its old Lp(a) entry). */
 const UNIT_OVERRIDES_KEY = 'health_roadmap_unit_overrides';
@@ -19,7 +21,7 @@ function loadUnitOverrides(): Record<string, UnitSystem> {
   return Object.fromEntries(Object.entries(stored).filter(([, us]) => us === 'si' || us === 'conventional'));
 }
 
-export function useUnits(setInputs: Dispatch<SetStateAction<Partial<HealthInputs>>>) {
+export function useUnits(setInputs: Dispatch<SetStateAction<Partial<HealthInputs>>>, rootRef: RefObject<HTMLElement | null>) {
   // Unit system: load saved preference or auto-detect
   const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => loadUnitPreference() ?? detectUnitSystem());
 
@@ -64,13 +66,15 @@ export function useUnits(setInputs: Dispatch<SetStateAction<Partial<HealthInputs
     return Object.keys(m).length > 0 ? m : undefined;
   }, [unitOverrides]);
 
-  /** The record's own unit system, read at load, wins over this device's. */
+  /** The record's own unit system, read at load or a re-read, wins over this device's. */
   const applySavedUnitSystem = useCallback((unitPref: unknown) => {
     if (unitPref === 'si' || unitPref === 'conventional') {
       setUnitSystem(unitPref);
       saveUnitPreference(unitPref);
     }
   }, []);
+  // Shown at load; offered by a re-read, and held while anything is typed (hooks/useHeldUnits).
+  const { showUnits, offerUnits, onMatrixHolds } = useHeldUnits(applySavedUnitSystem, unitSystem, rootRef);
 
-  return { unitSystem, unitOverrides, metricUnitOverrides, handleToggleFieldUnit, handleUnitSystemChange, applySavedUnitSystem };
+  return { unitSystem, unitOverrides, metricUnitOverrides, handleToggleFieldUnit, handleUnitSystemChange, showUnits, offerUnits, onMatrixHolds };
 }
