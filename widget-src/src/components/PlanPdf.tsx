@@ -176,7 +176,9 @@ interface EmailCaptureState {
   state: GuestEmailState; setState: (s: GuestEmailState) => void; gateSkipped: boolean;
   /** The box's typing, kept here without a re-render, so the box moving (the full form opening) keeps it. */
   draft: React.MutableRefObject<string>;
-  sending: React.MutableRefObject<boolean>; // US-18 AC7: one send at a time, kept here for the same reason.
+  /** US-18 AC7: one send at a time, kept here for the same reason. The claim is the
+   *  send's own token, so an erase (reset) can release it and orphan that send. */
+  sending: React.MutableRefObject<object | null>;
   /** US-09 AC19: an erase the screen shows starts the new record's capture afresh. */
   reset: () => void;
 }
@@ -192,8 +194,8 @@ export function useEmailCaptureState(): EmailCaptureState {
   const [gateSkipped] = useState(getSkipEmailGate);
   const [state, setState] = useState<GuestEmailState>(() => startState(gateSkipped));
   const draft = useRef('');
-  const sending = useRef(false);
-  const reset = () => { setState(startState(gateSkipped)); draft.current = ''; };
+  const sending = useRef<object | null>(null);
+  const reset = () => { setState(startState(gateSkipped)); draft.current = ''; sending.current = null; };
   return { state, setState, gateSkipped, draft, sending, reset };
 }
 
@@ -205,17 +207,25 @@ function useGuestEmailCapture(printReport: () => Promise<void>, { state, setStat
   const helperText = LOCAL_FIRST_EMAIL_HELPER;
   // US-18 AC7: the button is disabled while sending, but Enter reaches here too.
 
+  // US-09 AC19: a send still pending at an erase belongs to the erased record. The
+  // erase releases its claim, so the fresh box can send, and the old send's answer
+  // no longer reaches the box (its setters below go quiet once the claim is gone).
   const handleSubmit = async () => {
     if (sending.current) return;
-    sending.current = true;
+    const claim = {};
+    sending.current = claim;
+    const mine = () => sending.current === claim;
     try {
-      await submit();
+      await submit({
+        setState: (s) => { if (mine()) setState(s); },
+        setEmailError: (e) => { if (mine()) setEmailError(e); },
+      });
     } finally {
-      sending.current = false;
+      if (mine()) sending.current = null;
     }
   };
 
-  const submit = async () => {
+  const submit = async ({ setState, setEmailError }: { setState: (s: GuestEmailState) => void; setEmailError: (e: string) => void }) => {
     const trimmed = email.trim();
     if (!trimmed || !EMAIL_REGEX.test(trimmed)) {
       setEmailError('Please enter a valid email address');

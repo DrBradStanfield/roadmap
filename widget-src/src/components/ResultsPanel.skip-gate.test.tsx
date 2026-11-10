@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { statTiles } from '@roadmap/health-core/stat-tiles';
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { calculateHealthResults } from '@roadmap/health-core/calculations';
 
 const mocks = vi.hoisted(() => ({
@@ -531,6 +531,63 @@ describe('US-09 AC19 — the storage button\'s attention flag', () => {
       await waitFor(() => expect(eraseRecord).toHaveBeenCalledOnce());
       await waitFor(() => expect((view.container.querySelector('#guestEmail') as HTMLInputElement).value).toBe(''));
       expect(view.queryByText('Please enter a valid email address')).toBeNull();
+    });
+
+    // US-09 AC19 + US-18 AC7: a send still pending at the erase belongs to the erased
+    // record. The fresh box sends at once, and the old send's answer changes nothing in it.
+    describe('a send pending at the erase', () => {
+      let settles: ((r: { success: boolean; error?: string }) => void)[];
+      beforeEach(() => {
+        mocks.skip.value = false;
+        settles = [];
+        mocks.sendGuestReport.mockImplementation(() => new Promise((r) => { settles.push(r); }));
+      });
+      const freshEnter = (view: ReturnType<typeof showPlan>, address: string) => {
+        const input = view.container.querySelector('#guestEmail')!;
+        fireEvent.change(input, { target: { value: address } });
+        fireEvent.keyDown(input, { key: 'Enter' });
+      };
+
+      it('pending send, then a Delete: the fresh box\'s Enter sends, and its window opens', async () => {
+        const view = showPlan({ syncControl, onDeleteData: eraseRecord });
+        fillAndCapture(view);
+        await waitFor(() => expect(mocks.sendGuestReport).toHaveBeenCalledTimes(1));
+        expect(print).toHaveBeenCalledOnce();
+        fireEvent.click(deleteButton());
+        await waitFor(() => expect(view.getByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })).toBeTruthy());
+        freshEnter(view, 'next@example.com');
+        await waitFor(() => expect(mocks.sendGuestReport).toHaveBeenCalledTimes(2));
+        expect(mocks.sendGuestReport).toHaveBeenLastCalledWith('next@example.com');
+        expect(print).toHaveBeenCalledTimes(2);
+      });
+
+      it('pending send, then another device\'s erase: the old send succeeding leaves the new box and no pulse', async () => {
+        const view = showPlan({ syncControl, shownErase: 'e1' });
+        fillAndCapture(view);
+        await waitFor(() => expect(mocks.sendGuestReport).toHaveBeenCalledTimes(1));
+        view.rerender(plan({ syncControl, shownErase: 'e2' }));
+        await act(async () => { settles[0]({ success: true }); });
+        expect(view.container.querySelector('#guestEmail')).toBeTruthy();
+        expect(view.getByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })).toBeTruthy();
+        expect(view.queryByRole('button', { name: 'Save as PDF' })).toBeNull();
+        expect(attention(view)).toBe('false');
+      });
+
+      it('pending send, Delete, a new send: the old send failing shows no error and keeps the new send', async () => {
+        const view = showPlan({ syncControl, onDeleteData: eraseRecord });
+        fillAndCapture(view);
+        await waitFor(() => expect(mocks.sendGuestReport).toHaveBeenCalledTimes(1));
+        fireEvent.click(deleteButton());
+        await waitFor(() => expect(view.getByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })).toBeTruthy());
+        freshEnter(view, 'next@example.com');
+        await waitFor(() => expect(mocks.sendGuestReport).toHaveBeenCalledTimes(2));
+        await act(async () => { settles[0]({ success: false, error: 'Old send failed' }); });
+        expect(view.queryByText('Old send failed')).toBeNull();
+        expect(view.getByRole('button', { name: 'Sending...' })).toBeTruthy();
+        await act(async () => { settles[1]({ success: true }); });
+        expect(view.queryByRole('button', { name: 'Save as PDF' })).toBeTruthy();
+        expect(attention(view)).toBe('true');
+      });
     });
 
     it('a cancelled erase keeps the captured view, the pulse and a typed address', async () => {
