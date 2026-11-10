@@ -33,7 +33,7 @@ vi.mock('../lib/storage', () => ({
 
 import { useRecordReads } from './useRecordReads';
 
-const egfrRow = (value: number) => ({ id: `r${value}`, metricKey: 'egfr', value, unit: 'mL/min/1.73m²', recordedAt: '2026-11-01T00:00:00Z' });
+const egfrRow = (value: number) => ({ id: `r${value}`, metricName: 'eGFR', value, unit: 'mL/min/1.73m²', recordedAt: '2026-11-01T00:00:00Z', status: 'active' });
 
 function setup() {
   const setters = { setPreviousMeasurements: vi.fn(), setHistory: vi.fn(), setLabValueHistory: vi.fn() };
