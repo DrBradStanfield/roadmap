@@ -534,7 +534,8 @@ describe('US-09 AC19 — the storage button\'s attention flag', () => {
     });
 
     // US-09 AC19 + US-18 AC7: a send still pending at the erase belongs to the erased
-    // record. The fresh box sends at once, and the old send's answer changes nothing in it.
+    // record. The fresh box sends at once, and the old send's answer changes nothing in the box
+    // on screen (the file's captured mark is H13's, a separate PR).
     describe('a send pending at the erase', () => {
       let settles: ((r: { success: boolean; error?: string }) => void)[];
       beforeEach(() => {
