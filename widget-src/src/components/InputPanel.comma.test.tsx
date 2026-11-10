@@ -28,7 +28,7 @@ const renderPanel = () => {
   const scheduleLongitudinalSave = vi.fn();
   const props = {
     ...myHealth({ settingsOpen: true }), // About you, low, sits in Settings (US-62 AC24)
-    inputs, effectiveInputs: inputs, onChange, errors: {}, unitSystem: 'si' as const, onUnitSystemChange: vi.fn(),
+    inputs, effectiveInputs: inputs, onChange, errors: {}, unitSystem: 'si' as const,
     unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
     labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
     onMedicationChange: vi.fn(), onScreeningChange, supplements: [], onSupplementChange: vi.fn(),

@@ -14,7 +14,7 @@ import { type GradeStatus, limitUngraded, savedStatus } from '@roadmap/health-co
 import { formatShortDate, MONTHS_SHORT } from '../lib/constants';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 import { useDraftMirror, useMatrixDraft } from '../lib/useMatrixDraft';
-import { useBloodDraftUnits } from '../lib/useBloodDraftUnits';
+import { useBloodDraftUnits, type FieldUnitToggle, type UnitSwitchSource } from '../lib/useBloodDraftUnits';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { usePrefillRef } from '../lib/usePrefillRef';
@@ -124,10 +124,11 @@ export interface BloodTestTimelineProps {
   bloodTestHistory: ApiMeasurement[]; // full history, blood-test metrics only
   unitSystem: UnitSystem;
   unitOverrides: Record<string, UnitSystem>;
-  onToggleFieldUnit: (field: string) => void;
+  onToggleFieldUnit: FieldUnitToggle;
   /** This device's unit for a field as the page started, before the
    *  record's applied (useUnits): a draft cell kept with no unit was typed in it. */
   startUnitOf?: (field: string) => UnitSystem;
+  onUnitSwitch?: UnitSwitchSource; // this tab's switch of the unit system (useUnits' `onSwitch`); a page with none leaves it out
   /** Save the typed values, one task per day. Resolves with what was
    *  refused, slot by slot; those cells are kept for a retry. */
   onSaveBatch: (tasks: SaveTask[]) => Promise<Refused>;
@@ -176,7 +177,7 @@ export const SAME_SLOT = 'This test already has a value on that day in another c
 const MONTH_LABELS = MONTHS_SHORT.map(m => m.label);
 
 export function BloodTestTimeline({
-  bloodTestHistory, unitSystem, unitOverrides, onToggleFieldUnit, startUnitOf,
+  bloodTestHistory, unitSystem, unitOverrides, onToggleFieldUnit, startUnitOf, onUnitSwitch,
   onSaveBatch, onCorrectValue, move, onDraftValue, isSaving, grading, onUploadClick, uploadDisabled, loginUrl,
   hasApiResponse, flushRef, prefillRef, onHoldsText,
 }: BloodTestTimelineProps) {
@@ -190,8 +191,7 @@ export function BloodTestTimeline({
   const rowsUnder = (day: string, metric: MetricType) => ({ [metric]: batches.find(b => b.date === day)?.ids[metric] ?? null });
   const latestDay = (metric: MetricType) => [...batches].reverse().find(b => b.values[metric] != null)?.date;
   const {
-    holdsText,
-    draft, backfills, type, setDate: setDraftDate, unitOf, lpaUnitOf, restamp, expected, clashes, taken, lends, settle, refusal,
+    holdsText, draft, backfills, type, setDate: setDraftDate, unitOf, lpaUnitOf, restamp, expected, clashes, taken, lends, settle, refusal,
   } = useMatrixDraft<MetricType>(BT_TIMELINE_DRAFT_KEY, { onScreen, rowsUnder, latestDay, legacyUnit: m => (m === 'lpa' ? undefined : startUnitOf?.(METRIC_TO_FIELD[m])) });
   // On a phone the grid sits hidden under rows: tell the page it holds typed text (US-62 AC11).
   useEffect(() => { onHoldsText?.(holdsText); }, [holdsText]);
@@ -221,7 +221,7 @@ export function BloodTestTimeline({
 
   // The units typed cells are read and shown in, Lp(a)'s own included (lib/useBloodDraftUnits).
   const { lpaUnit, pickLpaUnit, toggleUnit, fieldUnit, typedUnit, unreadable, shownText, checkOf } = useBloodDraftUnits({
-    rows: ROWS, unitSystem, unitOverrides, onToggleFieldUnit, unitOf, lpaUnitOf, restamp,
+    rows: ROWS, unitSystem, unitOverrides, onToggleFieldUnit, onUnitSwitch, unitOf, lpaUnitOf, restamp,
   });
 
   // Per-metric SI series (oldest → newest) + lastSi for trend column.

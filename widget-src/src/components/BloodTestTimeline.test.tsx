@@ -11,7 +11,7 @@ import { localDay } from '@roadmap/health-core/merge';
 import { toCanonicalValue } from '@roadmap/health-core/units';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { BloodTestTimeline, ValueCell } from './BloodTestTimeline';
-import { hidePage, pickDraftDate, press, pressMouse, pressWithoutFocus, releaseMouse, showPage, typeInto, typeWithoutTap } from '../testing/matrix-gestures';
+import { hidePage, pickDraftDate, press, pressMouse, pressWithoutFocus, releaseMouse, showPage, turnFrom, typeInto, typeWithoutTap } from '../testing/matrix-gestures';
 import { slotOf, type Refused, type SaveTask } from '../lib/matrix-save';
 
 beforeEach(() => { vi.useFakeTimers(); });
@@ -230,7 +230,7 @@ describe('US-04 — the saved-value editor', () => {
 describe('US-04 / US-05 AC2 — a unit switch while correcting LDL', () => {
   const UNIT_CHANGED = 'The unit changed, so your edit was not saved. Type it again in the new unit.';
   const UNIT_FIRST = 'Not saved: choose the unit first, then type the value.';
-  const other = (unit: 'si' | 'conventional') => (unit === 'si' ? 'conventional' : 'si');
+  const other = (unit: 'si' | 'conventional'): 'si' | 'conventional' => (unit === 'si' ? 'conventional' : 'si');
   function ldlPage(stored: number, unitSystem: 'si' | 'conventional' = 'si') {
     const onCorrectValue: Mock = vi.fn().mockResolvedValue('ok');
     const rows = history([['ldl', stored, '2026-08-15']]);
@@ -241,7 +241,11 @@ describe('US-04 / US-05 AC2 — a unit switch while correcting LDL', () => {
     function Page() {
       const [system, setSystem] = useState(unitSystem);
       const [overrides, setOverrides] = useState<Record<string, 'si' | 'conventional'>>({});
-      const toggle = (field: string) => setOverrides((o) => ({ ...o, [field]: other(o[field] ?? system) }));
+      const toggle = (field: string) => { // the turn, as useUnits reports it
+        const from = overrides[field] ?? system;
+        setOverrides((o) => ({ ...o, [field]: other(from) }));
+        return { from, to: other(from) };
+      };
       remote.flip = () => toggle('ldlC');
       return (
         <>
@@ -629,7 +633,7 @@ function matrix(rows: ApiMeasurement[] = [], onSaveBatch: Mock = vi.fn().mockRes
   const onCorrectValue = vi.fn();
   const page = (recorded: ApiMeasurement[]) => (
     <>
-      <BloodTestTimeline bloodTestHistory={recorded} unitSystem="si" unitOverrides={{}} onToggleFieldUnit={noop}
+      <BloodTestTimeline bloodTestHistory={recorded} unitSystem="si" unitOverrides={{}} onToggleFieldUnit={turnFrom('si')}
         onSaveBatch={onSaveBatch} onCorrectValue={onCorrectValue} onDraftValue={onDraftValue}
         isSaving={false} grading={{}} hasApiResponse/>
       <button type="button">Elsewhere</button>
@@ -818,7 +822,7 @@ describe('US-03 — the draft', () => {
     expect(first.onSaveBatch).toHaveBeenCalledTimes(1);
     // The same device, read while the save is still running: the draft is there.
     const whileSaving = render(<BloodTestTimeline bloodTestHistory={[]} unitSystem="si" unitOverrides={{}}
-      onToggleFieldUnit={noop} onSaveBatch={vi.fn()} onDraftValue={noop} isSaving={false} grading={{}} hasApiResponse/>);
+      onToggleFieldUnit={turnFrom('si')} onSaveBatch={vi.fn()} onDraftValue={noop} isSaving={false} grading={{}} hasApiResponse/>);
     const ldl = within(whileSaving.container).getByText('LDL Cholesterol').closest('.bt-row')!;
     expect((ldl.querySelector('.bt-cell-draft input') as HTMLInputElement).value).toBe('3.2');
     whileSaving.unmount();
@@ -1039,7 +1043,7 @@ describe('US-07 AC5: a lipid cell shows its plain value, coloured by the plan\'s
   const cellOf = (metric: string, value: number, unitOverrides: Record<string, 'si' | 'conventional'> = {}) => {
     const view = render(
       <BloodTestTimeline bloodTestHistory={history([[metric, value, '2026-09-01']])} unitSystem="si" unitOverrides={unitOverrides}
-        onToggleFieldUnit={noop} onSaveBatch={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={noop} isSaving={false} grading={{}} hasApiResponse/>,
+        onToggleFieldUnit={turnFrom('si')} onSaveBatch={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={noop} isSaving={false} grading={{}} hasApiResponse/>,
     );
     const r = Array.from(view.container.querySelectorAll('.bt-row')).find((row) => row.querySelector('.bt-cell-value .bt-value-num'))!;
     return [r.querySelector('.bt-ref-label')?.textContent, r.querySelector('.bt-value-num')?.textContent, r.querySelector('.bt-cell-value .bt-status-tick')?.className];

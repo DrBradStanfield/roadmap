@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
 import type { HealthInputs } from '@roadmap/health-core/types';
+import type { UnitSystem } from '@roadmap/health-core/units';
 import { PREFILL_FIELDS, hasUnsavedProfileEdits } from '@roadmap/health-core/mappings';
 import { birthRefusedMessage } from '@roadmap/health-core/validation';
 import { getBackendKind, getShownErase, saveChangedMeasurements } from '../lib/roadmap-data';
@@ -53,22 +54,29 @@ export function useProfileSave(args: {
   /** The form is clean: a held remote change may apply (the relay's `saved`). */
   onClean: () => void;
   writeRefused: (erase?: string) => void;
+  /** The units machine (useUnits' `record`): this tab's unsaved switch, and the save that wrote one. */
+  units: { pending: () => UnitSystem | undefined; saved: (system: unknown) => void };
 }): ProfileSave {
-  const { inputs, inputsRef, setInputs, loaded, onClean, writeRefused } = args;
+  const { inputs, inputsRef, setInputs, loaded, onClean, writeRefused, units } = args;
   const saved = useRef<Partial<HealthInputs>>({});
   const [birthRefused, setBirthRefused] = useState<string | null>(null);
 
   // A fresh function each render: the timer runs the one from the render that scheduled it.
   async function flushProfile(erase?: string): Promise<boolean> {
-    if (getBackendKind() === 'local' && localHealthWritesStopped()) return true;
+    // Writes stopped: nothing is saved, so this tab's switch ends, and a change the relay held during it applies (PR 1204).
+    if (getBackendKind() === 'local' && localHealthWritesStopped()) { units.saved(units.pending()); onClean(); return true; }
     const current: Partial<HealthInputs> = {};
     const previous: Partial<HealthInputs> = {};
+    // This tab's unit switch is written even when the copy saved holds it: switched,
+    // the other device writing the same, then switched back, the held change would
+    // otherwise apply the other device's units over this later choice (US-34 AC7a).
+    const switched = units.pending() !== undefined;
     for (const field of PROFILE_FIELDS) {
       if (inputs[field] !== undefined) (current as any)[field] = inputs[field];
-      if (saved.current[field] !== undefined) (previous as any)[field] = saved.current[field];
+      if (saved.current[field] !== undefined && !(switched && field === 'unitSystem')) (previous as any)[field] = saved.current[field];
     }
 
-    const hasChanges = PROFILE_FIELDS.some(f => inputs[f] !== saved.current[f]);
+    const hasChanges = switched || PROFILE_FIELDS.some(f => inputs[f] !== saved.current[f]);
     // Clean (a refused value cleared or put back): a held remote change applies now (N1).
     if (!hasChanges) { onClean(); return true; }
 
@@ -77,6 +85,7 @@ export function useProfileSave(args: {
       writeRefused(erase);
       return false;
     }
+    units.saved(inputs.unitSystem); // written; before onClean: a held change then finds the switch saved
     if (getBackendKind() === 'local' && localHealthWritesStopped()) return true;
     const refused = result.birthRefused;
     // A value out of range was refused (US-02 AC5): it stays in the form, unsaved, its error shown.
@@ -104,11 +113,13 @@ export function useProfileSave(args: {
 
   const profileTimer = useDebouncedSave(500);
   useEffect(() => {
-    if (!loaded) return;
+    // No save runs before the first read is shown (or after it failed): this tab's switch ends at once,
+    // so it never drops the record's later units or holds a remote change (US-34 AC7a, PR 1204).
+    if (!loaded) { units.saved(units.pending()); return; }
     const erase = getShownErase(); // as the edit was made, not as the timer fires
     profileTimer.schedule(() => { void flushProfile(erase); });
     return () => profileTimer.cancel();
-  }, [inputs, loaded, profileTimer]);
+  }, [inputs, loaded, profileTimer, units]);
 
   const markSaved = useCallback((record: Partial<HealthInputs>) => { saved.current = { ...record }; }, []);
   const profileDirty = useCallback(() => hasUnsavedProfileEdits(inputsRef.current, saved.current), [inputsRef]);

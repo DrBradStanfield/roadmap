@@ -42,7 +42,7 @@ function renderPanel(state: State): HTMLElement {
   const inputs = { sex: state.sex, heightCm: 178, birthYear: 1970, birthMonth: 1, ...state.inputs };
   const props = {
     ...MY_HEALTH_PROPS,
-    inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si', onUnitSystemChange: vi.fn(),
+    inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si',
     unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
     labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(),
     medications: medicationRows(state.medications), onMedicationChange: vi.fn(),

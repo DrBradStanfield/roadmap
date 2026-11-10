@@ -44,7 +44,7 @@ describe('US-09 AC5 — one storage line, in the plan\'s storage card', () => {
     const inputs = { sex: 'male' as const, heightCm: 180, weightKg: 80 };
     const props = {
       ...MY_HEALTH_PROPS,
-      inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si' as const, onUnitSystemChange: vi.fn(),
+      inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si' as const,
       unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
       labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
       onMedicationChange: vi.fn(), onScreeningChange: vi.fn(), supplements: [], onSupplementChange: vi.fn(), screenings: [],

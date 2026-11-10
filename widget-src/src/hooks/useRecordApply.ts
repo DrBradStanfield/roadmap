@@ -49,8 +49,7 @@ export function useRecordApply(args: {
   setInputs: Dispatch<SetStateAction<Partial<HealthInputs>>>;
   reloadValues: () => Promise<LatestMeasurementsResult | null>;
   applyLists: ReturnType<typeof useRecordState>['applyLists'];
-  showUnits: ReturnType<typeof useUnits>['showUnits'];
-  offerUnits: ReturnType<typeof useUnits>['offerUnits'];
+  units: ReturnType<typeof useUnits>['record'];
   showErase: ReturnType<typeof useErase>['showErase'];
   /** The page has shown its first read (the load's own state, set after its writes). */
   loaded: boolean;
@@ -62,7 +61,7 @@ export function useRecordApply(args: {
 
   // The record shown in one step, load and every re-read: units, form, saved copy, lists (US-34 AC7).
   // `form` builds the form from the one shown, for a re-read that keeps what is being typed; `units` shows or offers its units.
-  const showRecord = useCallback((result: LatestMeasurementsResult, form: (shown: Partial<HealthInputs>) => Partial<HealthInputs> = () => result.inputs, units = latest.current.showUnits) => {
+  const showRecord = useCallback((result: LatestMeasurementsResult, form: (shown: Partial<HealthInputs>) => Partial<HealthInputs> = () => result.inputs, units = latest.current.units.shown) => {
     const { setInputs, applyLists, later } = latest.current;
     units(result.inputs.unitSystem);
     setInputs(form);
@@ -72,7 +71,7 @@ export function useRecordApply(args: {
 
   // Re-read the record and show it: the values, lab rows and both matrices, then the profile and the rest.
   const apply = useCallback(async () => {
-    const { reloadValues, showErase, showUnits, offerUnits, later } = latest.current;
+    const { reloadValues, showErase, units, later } = latest.current;
     // A field the user left has its save waiting (500 ms): it starts now; its own re-read follows.
     later().flushPendingSave();
     const erase = getEraseIdentity(); // read with the record, in one turn
@@ -94,16 +93,19 @@ export function useRecordApply(args: {
       // device's drafts (US-11 AC6, Codex R4).
       const typing = document.activeElement?.id as keyof HealthInputs | undefined;
       const sameRecord = erase === getShownErase();
+      // This tab's unit switch, still unsaved, rides through too: the save then writes it (US-34 AC7a, H2).
+      const switched = units.pending();
       showRecord(result, prev => {
         if (!sameRecord) return result.inputs;
         const next: Partial<HealthInputs> = typing && LONGITUDINAL_FIELDS.includes(typing) && prev[typing] !== undefined
           ? { ...result.inputs, [typing]: prev[typing] }
           : { ...result.inputs };
+        if (switched) next.unitSystem = switched;
         for (const [field, value] of Object.entries(prev)) {
           if (inputRangeFault(field, value)) (next as Record<string, unknown>)[field] = value;
         }
         return next;
-      }, sameRecord ? offerUnits : showUnits); // another erase's units show at once, never held
+      }, sameRecord ? units.offered : units.shown); // another erase's units show at once, never held
     }
     // Another device erased the record (US-16 AC2a / US-09): a chat banner
     // left standing would write pre-erase values into the erased record.
@@ -130,8 +132,10 @@ export function useRecordApply(args: {
     // An erase from another device (a new erase identity) is never held once
     // the page has shown its first read: it applies then and drops this
     // device's drafts, refused ones included (US-11 AC6); a refused draft
-    // would otherwise hold it for good.
-    if (reason === 'remote') return relay.arrived(getEraseIdentity() === getShownErase() && later().profileDirty());
+    // would otherwise hold it for good. This tab's unsaved unit switch holds it
+    // too: applied now, the record's units would undo it (US-34 AC7a, H2). A
+    // page that cannot save never keeps a switch pending (useProfileSave).
+    if (reason === 'remote') return relay.arrived(getEraseIdentity() === getShownErase() && (later().profileDirty() || !!latest.current.units.pending()));
     if (reason === 'refused') later().clearAnswered(true); // not an answer given here (US-62 AC13); spends a waiting landing (AC25b)
     return relay.reread();
   }, [relay]);
