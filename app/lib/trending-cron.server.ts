@@ -99,10 +99,16 @@ export function startTrendingCron(): void {
         return;
       }
 
+      // Marked while the run goes, so a slow run is not started twice here;
+      // released if it fails, so the next tick re-runs the day (US-28 AC6).
+      // The lock row names this machine, so its re-acquire wins.
       lastRunDate = todayStr;
 
       console.log(`Trending cron: starting daily processing (machine: ${MACHINE_ID})`);
-      const ranked = await computeAndWriteTrending();
+      const ranked = await computeAndWriteTrending().catch((runError: unknown) => {
+        lastRunDate = null;
+        throw runError;
+      });
       console.log(`Trending cron: completed, wrote ${ranked.length} entries`);
     } catch (error) {
       console.error('Trending cron error:', safeErrorFields(error));
