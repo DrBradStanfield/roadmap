@@ -160,9 +160,10 @@ hrefs, CSS text, wrapper tag/id/class), so collisions like `div:empty` show
 before a deploy. Theme scripts are left out, so WebKit on the live page still
 checks after. Every `/apps/health-tool-1` call is a local stub (events, A/B and
 feedback accept; the email box accepts; chat lists nothing; lab import 503s).
-The absolute Brad-server URLs in widget source (the Google token exchange,
-reminders) are rewritten in this dev build only to `/__brad-server/…`, which
-answers 503 locally, and Sentry is off on every loopback host. So no call
+Widget source names Brad's server once, in `standalone/server-origin.ts`
+(the Google token exchange and reminders build their URLs from it). This dev
+build alone rewrites that origin, and any other absolute Brad-server URL, to
+`/__brad-server` (`localiseBradServer`), which answers 503 locally, and Sentry is off on every loopback host. So no call
 reaches Brad's servers. Real third parties still answer: Dropbox and Google
 sign-in, and the live theme's stylesheets. Query switches: `?skip_email_gate=true`
 (`/pages/start`), `?country=NZ` (hides US-61 blocks), `?theme=off`. Never
