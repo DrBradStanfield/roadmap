@@ -33,8 +33,10 @@ interface Later {
  * `signal`, so the one that shows a held change ends the hold: the record is
  * read once and the change counted once (survey R8).
  *
- * The page listens from its first commit (a layout effect), so a change
- * announced before its passive effects run is not lost (survey R2).
+ * The page listens from its first commit (a layout effect). A change
+ * announced before the page has shown its first read waits for it, then
+ * applies (`loaded`): applied at once, the first read would overwrite it
+ * (survey R2).
  *
  * The apply runs through refs, not an effect: the page re-reads in the turn
  * it is told, as before this hook.
@@ -46,10 +48,13 @@ export function useRecordApply(args: {
   showUnits: ReturnType<typeof useUnits>['showUnits'];
   offerUnits: ReturnType<typeof useUnits>['offerUnits'];
   showErase: ReturnType<typeof useErase>['showErase'];
+  /** The page has shown its first read (the load's own state, set after its writes). */
+  loaded: boolean;
   later: () => Later;
 }) {
+  // The latest committed arguments, never ones from a render that did not finish.
   const latest = useRef(args);
-  latest.current = args;
+  useLayoutEffect(() => { latest.current = args; });
 
   // The record shown in one step, load and every re-read: units, form, saved copy, lists (US-34 AC7).
   // `form` builds the form from the one shown, for a re-read that keeps what is being typed; `units` shows or offers its units.
@@ -122,6 +127,9 @@ export function useRecordApply(args: {
     if (reason === 'refused') later().clearAnswered(); // the record re-read is not an answer given here (US-62 AC13)
     return relay.reread();
   }, [relay]);
+
+  const { loaded } = args;
+  useLayoutEffect(() => { if (loaded) relay.loaded(); }, [loaded, relay]);
 
   // Something wrote to the record under us: another device, or an AI
   // connector through MCP (US-34). The store has already re-read and merged.

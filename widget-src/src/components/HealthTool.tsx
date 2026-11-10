@@ -148,7 +148,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const { shownErase, erasing: isDeleting, showErase, eraseUnshown, refusalIsNews, eraseAll } = useErase(() => clearChatEdits());
   // The record shown, at load and on every re-read, and another writer's change held behind an edit (hooks/useRecordApply).
   const { showRecord, signal: rereadRecord, saved: profileClean } = useRecordApply({
-    setInputs, reloadValues, applyLists, showUnits, offerUnits, showErase,
+    setInputs, reloadValues, applyLists, showUnits, offerUnits, showErase, loaded: hasApiResponse,
     later: () => ({ markSaved, flushPendingSave, profileDirty, clearAnswered }), // declared below
   });
   // A save the store refused. Outside this tab's own erase, which throws the
