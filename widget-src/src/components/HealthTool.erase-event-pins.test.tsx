@@ -464,4 +464,67 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
     expect(JSON.stringify([...file.measurements, ...file.labValues])).not.toContain('1.9'); // the correction never landed
     expect(alerts).not.toContain(ERASE_FAILED);
   });
+
+  // fix 4 D2: "arrived for an identity already shown". A save refused in the window (writeRefused, reason
+  // 'refused') shows the new erase before the late REMOTE_CHANGED; that event then re-reads the same record.
+  it('US-16 AC2a, US-34 AC4: a profile save refused there says WRITE_REFUSED once and shows the new record whole; the late REMOTE_CHANGED changes nothing', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new TwoPassCloud(cloud);
+    await initRoadmapStore(adapter);
+    await saveChangedMeasurements(PROFILE, {});
+    await addMeasurement('weight', 82, '2026-09-01');
+    await addMeasurement('ldl', 2.1, '2026-08-15');
+    await flushRoadmapStore();
+    const view = await openPage();
+    showTables(view.container);
+    await waitFor(() => expect(ldlRow(view)!.querySelectorAll('.bt-cell-clickable').length).toBeGreaterThan(0));
+    openAboutYou(view.container);
+    const height = heightShown(view);
+    expect(height).not.toBeNull();
+    expect(height).not.toBe('');
+    const before = getEraseIdentity();
+    const heard: string[] = [];
+    const onRemote = () => { heard.push(getEraseIdentity()); };
+    window.addEventListener(REMOTE_CHANGED_EVENT, onRemote);
+    let afterReread = '';
+    try {
+      await anotherWriterErases(new MemoryAdapter(cloud));
+      const loop = adapter.arm(() => { void addMeasurement('waist', 90, '2026-09-02'); });
+      await addMeasurement('weight', 81, '2026-09-05');
+      let flushed: Promise<void> = Promise.resolve();
+      await act(async () => { flushed = flushRoadmapStore().catch(() => {}); await loop.reached; await drain(); });
+      expect(getEraseIdentity()).not.toBe(before);
+      expect(getShownErase()).toBe(before); // the window
+      expect(heard).toEqual([]);
+
+      // A height typed in the window, the field then left, saves (500 ms) under the old erase: the store refuses it.
+      // (Left: until blur the box shows its own typed text, rawInputs, whatever the record.)
+      fireEvent.change(view.container.querySelector('#heightCm')!, { target: { value: '190' } });
+      fireEvent.blur(view.container.querySelector('#heightCm')!);
+      await settle(700);
+      expect(alerts).toEqual([WRITE_REFUSED]);
+      expect(heard).toEqual([]); // the late event has not come
+      // The refusal's re-read ended the window early: the new record shows whole, nothing of the old.
+      expect(getShownErase()).toBe(getEraseIdentity());
+      expect(ldlRow(view)?.querySelectorAll('.bt-cell-clickable').length ?? 0).toBe(0);
+      expect(heightShown(view) ?? '').toBe('');
+      // 0 so far: a 'refused' re-read counts remote_change_applied only when it ends a hold (READ_POLICY), and none was held.
+      expect(remoteApplied()).toBe(0);
+      afterReread = view.container.innerHTML;
+
+      await act(async () => { loop.release(); await flushed; await drain(); });
+    } finally {
+      window.removeEventListener(REMOTE_CHANGED_EVENT, onRemote);
+    }
+    await settle(50);
+    expect(heard).toEqual([getEraseIdentity()]); // the late REMOTE_CHANGED, heard once
+    expect(alerts).toEqual([WRITE_REFUSED]); // one alert in total
+    // 1 in total, today: the late arrival is not held (its erase is the one shown, the profile clean), so the relay
+    // re-reads and counts it, though it re-reads the record already shown (fix 4 D2, an identity already shown).
+    expect(remoteApplied()).toBe(1);
+    expect(view.container.innerHTML).toBe(afterReread); // nothing visible changes
+    expect(getShownErase()).toBe(getEraseIdentity());
+    const file = (await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile;
+    expect(file.profile.heightCm ?? null).not.toBe(190); // the refused height never landed
+  });
 });
