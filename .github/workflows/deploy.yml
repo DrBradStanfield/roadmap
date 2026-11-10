@@ -221,7 +221,20 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Install Playwright WebKit
-        run: npx playwright install --with-deps webkit
+        # The system packages come from Ubuntu's apt mirror, which now and then
+        # slows to a crawl for one runner (2026-11-10: twice it ate verify-live's
+        # whole time limit after the deploy had finished, so a live deploy went
+        # unverified and its issue stayed open). apt gives up on a stalled
+        # download sooner and retries it, and a failed install is tried again; a new try
+        # keeps the packages already fetched.
+        run: |
+          printf '%s\n' 'Acquire::Retries "5";' 'Acquire::http::Timeout "10";' 'Acquire::https::Timeout "10";' \
+            | sudo tee /etc/apt/apt.conf.d/80-ci-retries > /dev/null
+          for try in 1 2 3; do
+            if npx playwright install --with-deps webkit; then exit 0; fi
+            echo "::warning::Playwright install try ${try} failed"
+          done
+          exit 1
       - name: WebKit smoke — Pages app boots clean
         # NOTE: the script must live INSIDE the workspace — Node resolves
         # 'playwright' relative to the script's path, so /tmp can't see
@@ -358,7 +371,9 @@ jobs:
   verify-live:
     needs: [gate, deploy]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Room for a slow mirror: a healthy run takes about a minute. This job
+    # holds the deploy queue while it runs, so the limit stays finite.
+    timeout-minutes: 30
     permissions:
       contents: read
       issues: write
@@ -372,7 +387,20 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Install Playwright WebKit
-        run: npx playwright install --with-deps webkit
+        # The system packages come from Ubuntu's apt mirror, which now and then
+        # slows to a crawl for one runner (2026-11-10: twice it ate verify-live's
+        # whole time limit after the deploy had finished, so a live deploy went
+        # unverified and its issue stayed open). apt gives up on a stalled
+        # download sooner and retries it, and a failed install is tried again; a new try
+        # keeps the packages already fetched.
+        run: |
+          printf '%s\n' 'Acquire::Retries "5";' 'Acquire::http::Timeout "10";' 'Acquire::https::Timeout "10";' \
+            | sudo tee /etc/apt/apt.conf.d/80-ci-retries > /dev/null
+          for try in 1 2 3; do
+            if npx playwright install --with-deps webkit; then exit 0; fi
+            echo "::warning::Playwright install try ${try} failed"
+          done
+          exit 1
       - name: Live WebKit smoke against production
         run: node tools/webkit-verify.mjs
 
