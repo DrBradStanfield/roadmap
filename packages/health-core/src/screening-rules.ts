@@ -1,7 +1,7 @@
 /**
  * The one screening-rules table (audit A2-1). The rules lived in five copies; each
  * PR moves one copy onto this table, with screening-rules.golden.test.ts proving
- * nothing changed. F reads it (step 3); S, Q, R and M still keep their own copies.
+ * nothing changed. F and S read it (steps 3 and 4); Q, R and M still keep their own copies.
  *   S  plan cards     suggestions.ts (cancer screening and DEXA)
  *   F  form data      input-form.ts screeningForm, screeningWrites
  *   Q  web JSX        ScreeningQuestions.tsx, BoneDensity.tsx
@@ -286,8 +286,8 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
 ];
 
 /** Everything a row names but cannot hold as data, each in one place: the gates (`extraGates`)
- *  and the age-dependent prose (a note's or a card's `ref`). screening-rules.test.ts checks each
- *  against today's code at every age. */
+ *  and the age-dependent prose (a note's or a card's `ref`). screening-rules.test.ts checks the
+ *  gates; the golden pin guards the prose. */
 export const SCREENING_REFS: { readonly [K in GateName]: (s: ScreeningInputs) => boolean }
   & { readonly [K in NoteRef]: (age: number) => string } & { readonly breastStart: (age: number) => CardText } = {
   lungSmoker: (s) => s.lungSmokingHistory === 'former_smoker' || s.lungSmokingHistory === 'current_smoker',
@@ -343,7 +343,7 @@ export const followupTrigger = (r: ScreeningRule): string | undefined => r.resul
 export const chainKeys = (r: ScreeningRule): string[] => (r.result ? [r.result.key, `${r.id}_followup_status`, `${r.id}_followup_date`] : []);
 
 // ---------------------------------------------------------------------------
-// Views: today's shared constants, derived from the table. Only F reads one yet
+// Views: today's shared constants, derived from the table. Only F and S read one yet
 // (screeningFollowupInfo); screening-rules.test.ts proves each deep-equals the constant it replaces.
 // ---------------------------------------------------------------------------
 

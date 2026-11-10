@@ -10,7 +10,7 @@ import { SCREENING_KEYS } from './validation';
 import { REMINDER_CATEGORIES } from './reminders';
 import { SCHEDULE_LABELS, computeReminderSchedule } from './reminder-schedule';
 import { SUGGESTION_EVIDENCE } from './evidence';
-import { SCREENING_OPTIONS, SCREENING_TEXT, screeningForm } from './input-form';
+import { SCREENING_TEXT, screeningForm } from './input-form';
 import { generateSuggestions } from './suggestions';
 import { createEmptyFile } from './roadmap-file';
 
@@ -156,21 +156,13 @@ describe('US-06: A2-1 step 2, the screening-rules table', () => {
     expect(JSON.parse(JSON.stringify(SCREENING_RULES))).toEqual(SCREENING_RULES);
   });
 
-  it('option labels are the form\'s, verbatim and in order (Select... aside)', () => {
-    const form = SCREENING_OPTIONS as Record<string, ReadonlyArray<{ value: string; label: string }>>;
-    const strip = (o: ReadonlyArray<{ value: string; label: string }>) => o.filter((x) => x.value).map(({ value, label }) => ({ value, label }));
-    for (const r of SCREENING_RULES) {
-      expect(r.choice.options.map(({ value, label }) => ({ value, label })), r.id).toEqual(strip(form[r.choice.key]));
-      if (r.result) {
-        const key = r.result.key === 'dexa_result' ? 'dexa_result' : 'result';
-        expect(r.result.options.map(({ value, label }) => ({ value, label })), r.id).toEqual(strip(form[key]));
-      }
-    }
-  });
+  // The option labels and the fixed notes have no second copy since step 3: SCREENING_OPTIONS and
+  // SCREENING_TEXT read them from the table. The golden pin (screening-rules.golden.json: constants
+  // and forms, every option and note) is their guard.
 
-  it('notes are SCREENING_TEXT, verbatim', () => {
-    const texts = SCREENING_RULES.flatMap((r) => r.notes.flatMap((n) => ('text' in n ? [n.text] : [])));
-    expect(texts).toEqual([SCREENING_TEXT.colorectalEarly, SCREENING_TEXT.colorectalIndividual, SCREENING_TEXT.cervicalStop]);
+  it('every fixed note has text (input-form.ts noteText gives \'\' for a missing note)', () => {
+    for (const t of Object.values(SCREENING_TEXT)) if (typeof t === 'string') expect(t.trim(), 'SCREENING_TEXT note').not.toBe('');
+    expect(Object.values(SCREENING_TEXT).filter((t) => typeof t === 'string').length).toBeGreaterThan(0);
   });
 
   it('each row\'s whole card template matches that row\'s golden cards, title and description', () => {
@@ -237,17 +229,7 @@ describe('US-06: A2-1 step 2, SCREENING_REFS match the code they name', () => {
     expect([undefined, LUNG_PACK_YEARS - 1, LUNG_PACK_YEARS].map((p) => lungPackYears({ lungPackYears: p }))).toEqual([false, false, true]);
   });
 
-  it('breastByAge and prostateByAge are SCREENING_TEXT\'s, at every age', () => {
-    for (const age of AGES) {
-      expect(SCREENING_REFS.breastByAge(age), `${age}`).toBe(SCREENING_TEXT.breastByAge(age));
-      expect(SCREENING_REFS.prostateByAge(age), `${age}`).toBe(SCREENING_TEXT.prostateByAge(age));
-    }
-  });
-
-  it('breastStart is the plan\'s breast start card, at every age it shows', () => {
-    for (const age of AGES.filter((a) => a >= 40)) {
-      const card = generateSuggestions({ sex: 'female' } as never, { age } as never, 'si', undefined, {}).find((c) => c.id === 'screening-breast')!;
-      expect({ title: card.title, description: card.description }, `${age}`).toEqual(SCREENING_REFS.breastStart(age));
-    }
-  });
+  // breastByAge, prostateByAge (the form, step 3) and breastStart (the plan card, step 4) have no
+  // second copy left to compare with: SCREENING_TEXT and suggestions.ts read them from here. The
+  // golden pin (screening-rules.golden.json: forms, groups, cards) is their guard.
 });

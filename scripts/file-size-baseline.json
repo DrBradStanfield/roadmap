@@ -7,7 +7,7 @@
   "files": {
     "tools/codex-review.mjs": 1699,
     "tools/knowledge-batch-check.ts": 1526,
-    "packages/health-core/src/suggestions.ts": 1251,
+    "packages/health-core/src/suggestions.ts": 1162,
     "packages/health-core/src/lab-extraction.ts": 1166,
     "widget-src/src/components/InputPanel.tsx": 1099,
     "tools/chat-audit-pull.ts": 1068,

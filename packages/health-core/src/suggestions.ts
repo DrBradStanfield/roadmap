@@ -1,6 +1,7 @@
 import type { HealthInputs, HealthResults, SuggestionInputs, Suggestion, MedicationInputs, ScreeningInputs, UsProductCardId } from './types';
 import { SUGGESTION_EVIDENCE } from './evidence';
-import { LUNG_PACK_YEARS, POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
+import { getPostFollowupDueDate, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
+import { SCREENING_REFS, followupTrigger, inAges, ruleOf, ruleTakes, screeningFollowupInfo, type CardText, type ScreeningRule } from './screening-rules';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
 import { LIMIT_NOT_GRADED, formatLimit, formatValue, limitOf, limitSIText, type Comparator, type InputLimit, type LimitField } from './lab-limits';
 import {
@@ -29,6 +30,9 @@ import {
 
 /** The card whose Dismiss asks "Do you drink alcohol?" (US-60). */
 export const REDUCE_ALCOHOL_ID = 'reduce-alcohol';
+
+/** Each screening's follow-up name and what its abnormal result means, from the table. */
+const FOLLOWUP_INFO = screeningFollowupInfo();
 
 // Supplement card text, in pieces, so each US variant below is the card's own
 // text minus what it drops, never a second copy (US-61 AC3).
@@ -809,9 +813,20 @@ export function generateSuggestions(
   }
 
   // === Cancer screening suggestions ===
+  // Ages, "not started" answers, follow-up triggers and card text are the table's (screening-rules.ts).
   if (screenings && results.age !== undefined) {
     const age = results.age;
     const sex = inputs.sex;
+    const [COLORECTAL, BREAST, CERVICAL, LUNG, PROSTATE, ENDOMETRIAL, DEXA] =
+      (['colorectal', 'breast', 'cervical', 'lung', 'prostate', 'endometrial', 'dexa'] as const).map(ruleOf);
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const monthLabel = (d: Date) => `${months[d.getMonth()]} ${d.getFullYear()}`;
+    /** A row's card text, with `{due}` and lung's `{packYears}` filled in. */
+    const fill = (t: CardText, due = '') => ({
+      title: t.title,
+      description: t.description.replace('{due}', () => due).replace('{packYears}', () => `${screenings.lungPackYears}`),
+    });
+    const notStarted = (r: ScreeningRule, choice: string | undefined) => !choice || choice === r.notStarted;
 
     /** Check if a screening is overdue given its last date and method's interval. */
     function screeningStatus(lastDate: string | undefined, method: string | undefined): 'overdue' | 'upcoming' | 'unknown' {
@@ -822,41 +837,41 @@ export function generateSuggestions(
 
     function nextDueStr(lastDate: string, method: string): string {
       const d = getScreeningNextDueDate(lastDate, method);
-      if (!d) return '';
-      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      return `${months[d.getMonth()]} ${d.getFullYear()}`;
+      return d ? monthLabel(d) : '';
     }
 
-    /** Push overdue/upcoming screening suggestion based on status. */
-    function pushScreeningStatus(
-      idPrefix: string, status: 'overdue' | 'upcoming' | 'unknown',
-      overdueTitle: string, overdueDesc: string,
-      upToDateTitle: string, upToDateDesc: string,
-    ): void {
-      if (status === 'overdue') {
-        suggestions.push({ id: `screening-${idPrefix}-overdue`, category: 'screening', priority: 'attention', title: overdueTitle, description: overdueDesc });
-      } else if (status === 'upcoming') {
-        suggestions.push({ id: `screening-${idPrefix}-upcoming`, category: 'screening', priority: 'info', title: upToDateTitle, description: upToDateDesc });
+    /** Push a row's start card. */
+    function pushStart(r: ScreeningRule, priority: Suggestion['priority']): void {
+      const start = 'ref' in r.cards.start ? SCREENING_REFS[r.cards.start.ref](age) : r.cards.start;
+      suggestions.push({ id: `screening-${r.id}`, category: 'screening', priority, ...fill(start) });
+    }
+
+    /** Push a row's overdue or up-to-date card. */
+    function pushScreeningStatus(r: ScreeningRule, status: 'overdue' | 'upcoming' | 'unknown', due: string): void {
+      if (status === 'overdue' && r.cards.overdue) {
+        suggestions.push({ id: `screening-${r.id}-overdue`, category: 'screening', priority: 'attention', ...fill(r.cards.overdue, due) });
+      } else if (status === 'upcoming' && r.cards.upToDate) {
+        suggestions.push({ id: `screening-${r.id}-upcoming`, category: 'screening', priority: 'info', ...fill(r.cards.upToDate, due) });
       }
     }
 
+    const pushDue = (r: ScreeningRule, lastDate: string, intervalKey: string) =>
+      pushScreeningStatus(r, screeningStatus(lastDate, intervalKey), nextDueStr(lastDate, intervalKey));
+
     /**
-     * Check if a screening has an abnormal result requiring follow-up.
+     * Check if a screening has the result that opens its follow-up (abnormal; DEXA's osteoporosis).
      * Returns a suggestion if follow-up logic applies, or null to fall through to normal overdue/upcoming logic.
      */
     function screeningFollowup(
-      type: string,
-      method: string | undefined,
+      r: ScreeningRule,
+      method: string,
       result: string | undefined,
       followupStatus: string | undefined,
       followupDate: string | undefined,
     ): Suggestion | null {
-      if (!result || result === 'normal' || result === 'awaiting') return null;
-
-      // result === 'abnormal'
-      const methodKey = method ? `${type}_${method}` : `${type}_other`;
-      const info = SCREENING_FOLLOWUP_INFO[methodKey] ?? { followupName: 'follow-up', abnormalMeans: 'abnormal result' };
-      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      if (result !== followupTrigger(r)) return null;
+      const type = r.id;
+      const info = FOLLOWUP_INFO[`${type}_${method}`] ?? { followupName: 'follow-up', abnormalMeans: 'abnormal result' };
 
       if (!followupStatus || followupStatus === 'not_organized') {
         return {
@@ -878,158 +893,79 @@ export function generateSuggestions(
         };
       }
 
-      if (followupStatus === 'completed' && followupDate) {
-        const postInterval = POST_FOLLOWUP_INTERVALS[methodKey] ?? POST_FOLLOWUP_INTERVALS[`${type}_other`] ?? 12;
-        const [year, month] = followupDate.split('-').map(Number);
-        if (year && month) {
-          const nextDue = new Date(year, month - 1 + postInterval);
-          const nextDueLabel = `${months[nextDue.getMonth()]} ${nextDue.getFullYear()}`;
-          if (now > nextDue) {
-            return {
-              id: `screening-${type}-followup`,
-              category: 'screening',
-              priority: 'attention',
-              title: `${type.charAt(0).toUpperCase() + type.slice(1)} screening overdue`,
-              description: `Following your ${info.abnormalMeans}, your next screening was due ${nextDueLabel}. Please schedule your screening.`,
-            };
-          }
+      const nextDue = getPostFollowupDueDate(type, method, 'abnormal', followupStatus, followupDate);
+      if (nextDue) {
+        const nextDueLabel = monthLabel(nextDue);
+        if (now > nextDue) {
           return {
             id: `screening-${type}-followup`,
             category: 'screening',
-            priority: 'info',
-            title: `${type.charAt(0).toUpperCase() + type.slice(1)} screening up to date`,
-            description: `Following your ${info.abnormalMeans}, next screening due ${nextDueLabel}.`,
+            priority: 'attention',
+            title: `${type.charAt(0).toUpperCase() + type.slice(1)} screening overdue`,
+            description: `Following your ${info.abnormalMeans}, your next screening was due ${nextDueLabel}. Please schedule your screening.`,
           };
         }
+        return {
+          id: `screening-${type}-followup`,
+          category: 'screening',
+          priority: 'info',
+          title: `${type.charAt(0).toUpperCase() + type.slice(1)} screening up to date`,
+          description: `Following your ${info.abnormalMeans}, next screening due ${nextDueLabel}.`,
+        };
       }
 
       return null; // Fall through to default logic
     }
 
-    // Colorectal (age 35-75)
-    if (age >= 35 && age <= 75) {
-      if (!screenings.colorectalMethod || screenings.colorectalMethod === 'not_yet_started') {
-        suggestions.push({
-          id: 'screening-colorectal',
-          category: 'screening',
-          priority: 'attention',
-          title: 'Start colorectal cancer screening',
-          description: 'Colorectal screening is recommended. Options include annual FIT testing or colonoscopy every 10 years. Discuss with your doctor.',
-        });
-      } else if (screenings.colorectalLastDate) {
-        const followup = screeningFollowup('colorectal', screenings.colorectalMethod, screenings.colorectalResult, screenings.colorectalFollowupStatus, screenings.colorectalFollowupDate);
-        if (followup) {
-          suggestions.push(followup);
-        } else {
-          const status = screeningStatus(screenings.colorectalLastDate, screenings.colorectalMethod);
-          const due = nextDueStr(screenings.colorectalLastDate, screenings.colorectalMethod);
-          pushScreeningStatus('colorectal', status,
-            'Colorectal screening overdue', `Your next colorectal screening was due ${due}. Please schedule your screening.`,
-            'Colorectal screening up to date', `Next screening due ${due}.`);
-        }
-      }
+    /** A started screening with a date: its follow-up card, else overdue or up to date. */
+    function pushStarted(r: ScreeningRule, method: string, lastDate: string, result: string | undefined,
+      followupStatus: string | undefined, followupDate: string | undefined): void {
+      const followup = screeningFollowup(r, method, result, followupStatus, followupDate);
+      if (followup) suggestions.push(followup);
+      else pushDue(r, lastDate, method);
     }
 
-    // Breast (female, age 40+)
-    if (sex === 'female' && age >= 40) {
-      if (!screenings.breastFrequency || screenings.breastFrequency === 'not_yet_started') {
-        suggestions.push({
-          id: 'screening-breast',
-          category: 'screening',
-          priority: age >= 45 ? 'attention' : 'info',
-          title: 'Start breast cancer screening',
-          description: age >= 45
-            ? 'Mammography is recommended at your age. Discuss with your doctor.'
-            : 'Mammography is optional at your age (40\u201344). Discuss with your doctor.',
-        });
-      } else if (screenings.breastLastDate) {
-        const followup = screeningFollowup('breast', screenings.breastFrequency, screenings.breastResult, screenings.breastFollowupStatus, screenings.breastFollowupDate);
-        if (followup) {
-          suggestions.push(followup);
-        } else {
-          const status = screeningStatus(screenings.breastLastDate, screenings.breastFrequency);
-          const due = nextDueStr(screenings.breastLastDate, screenings.breastFrequency);
-          pushScreeningStatus('breast', status,
-            'Mammogram overdue', `Your next mammogram was due ${due}. Please schedule your screening.`,
-            'Mammogram up to date', `Next mammogram due ${due}.`);
-        }
-      }
+    if (ruleTakes(COLORECTAL, COLORECTAL.cardAges, age, sex)) {
+      if (notStarted(COLORECTAL, screenings.colorectalMethod)) pushStart(COLORECTAL, 'attention');
+      else if (screenings.colorectalLastDate) pushStarted(COLORECTAL, screenings.colorectalMethod!, screenings.colorectalLastDate,
+        screenings.colorectalResult, screenings.colorectalFollowupStatus, screenings.colorectalFollowupDate);
     }
 
-    // Cervical (female, age 25-65)
-    if (sex === 'female' && age >= 25 && age <= 65) {
-      if (!screenings.cervicalMethod || screenings.cervicalMethod === 'not_yet_started') {
-        suggestions.push({
-          id: 'screening-cervical',
-          category: 'screening',
-          priority: 'attention',
-          title: 'Start cervical cancer screening',
-          description: 'HPV testing every 5 years (preferred) or Pap test every 3 years is recommended. Discuss with your doctor.',
-        });
-      } else if (screenings.cervicalLastDate) {
-        const followup = screeningFollowup('cervical', screenings.cervicalMethod, screenings.cervicalResult, screenings.cervicalFollowupStatus, screenings.cervicalFollowupDate);
-        if (followup) {
-          suggestions.push(followup);
-        } else {
-          const status = screeningStatus(screenings.cervicalLastDate, screenings.cervicalMethod);
-          const due = nextDueStr(screenings.cervicalLastDate, screenings.cervicalMethod);
-          pushScreeningStatus('cervical', status,
-            'Cervical screening overdue', `Your next cervical screening was due ${due}. Please schedule your screening.`,
-            'Cervical screening up to date', `Next screening due ${due}.`);
-        }
-      }
+    if (ruleTakes(BREAST, BREAST.cardAges, age, sex)) {
+      if (notStarted(BREAST, screenings.breastFrequency)) pushStart(BREAST, age >= 45 ? 'attention' : 'info');
+      else if (screenings.breastLastDate) pushStarted(BREAST, screenings.breastFrequency!, screenings.breastLastDate,
+        screenings.breastResult, screenings.breastFollowupStatus, screenings.breastFollowupDate);
+    }
+
+    if (ruleTakes(CERVICAL, CERVICAL.cardAges, age, sex)) {
+      if (notStarted(CERVICAL, screenings.cervicalMethod)) pushStart(CERVICAL, 'attention');
+      else if (screenings.cervicalLastDate) pushStarted(CERVICAL, screenings.cervicalMethod!, screenings.cervicalLastDate,
+        screenings.cervicalResult, screenings.cervicalFollowupStatus, screenings.cervicalFollowupDate);
     }
 
     // Lung (age 50-80, smokers with 20+ pack-years — ACS 2023). Below 20 or past 80, an abnormal CT
     // keeps its follow-up card until the follow-up is completed (US-07 AC1f, AC1g; Brad 2026-11-03).
-    const lungSmoker = age >= 50 &&
-        (screenings.lungSmokingHistory === 'former_smoker' || screenings.lungSmokingHistory === 'current_smoker');
-    if (lungSmoker && (age > 80 || screenings.lungPackYears === undefined || screenings.lungPackYears < LUNG_PACK_YEARS)) {
-      const followup = screenings.lungScreening && screenings.lungScreening !== 'not_yet_started' && screenings.lungLastDate
-        && screenings.lungResult === 'abnormal' && screenings.lungFollowupStatus !== 'completed'
-        && screeningFollowup('lung', screenings.lungScreening, screenings.lungResult, screenings.lungFollowupStatus, screenings.lungFollowupDate);
+    const lungSmoker = inAges(LUNG.cardAges, age, sex, LUNG.followupIgnoresUpperAge) && SCREENING_REFS.lungSmoker(screenings);
+    if (lungSmoker && (!inAges(LUNG.cardAges, age, sex) || !SCREENING_REFS.lungPackYears(screenings))) {
+      const followup = screenings.lungScreening && !notStarted(LUNG, screenings.lungScreening) && screenings.lungLastDate
+        && screenings.lungResult === followupTrigger(LUNG) && screenings.lungFollowupStatus !== 'completed'
+        && screeningFollowup(LUNG, screenings.lungScreening, screenings.lungResult, screenings.lungFollowupStatus, screenings.lungFollowupDate);
       if (followup) suggestions.push(followup);
     } else if (lungSmoker) {
-      if (!screenings.lungScreening || screenings.lungScreening === 'not_yet_started') {
-        suggestions.push({
-          id: 'screening-lung',
-          category: 'screening',
-          priority: 'attention',
-          title: 'Start lung cancer screening',
-          description: `With ${screenings.lungPackYears} pack-years of smoking history, annual low-dose CT screening is recommended. Discuss with your doctor.`,
-        });
-      } else if (screenings.lungLastDate) {
-        const followup = screeningFollowup('lung', screenings.lungScreening, screenings.lungResult, screenings.lungFollowupStatus, screenings.lungFollowupDate);
-        if (followup) {
-          suggestions.push(followup);
-        } else {
-          const status = screeningStatus(screenings.lungLastDate, screenings.lungScreening);
-          const due = nextDueStr(screenings.lungLastDate, screenings.lungScreening);
-          pushScreeningStatus('lung', status,
-            'Lung screening overdue', `Your next low-dose CT was due ${due}. Please schedule your screening.`,
-            'Lung screening up to date', `Next low-dose CT due ${due}.`);
-        }
-      }
+      if (notStarted(LUNG, screenings.lungScreening)) pushStart(LUNG, 'attention');
+      else if (screenings.lungLastDate) pushStarted(LUNG, screenings.lungScreening!, screenings.lungLastDate,
+        screenings.lungResult, screenings.lungFollowupStatus, screenings.lungFollowupDate);
     }
 
-    // Prostate (male, age 45+) — shared decision
-    if (sex === 'male' && age >= 45) {
+    // Prostate — shared decision
+    if (ruleTakes(PROSTATE, PROSTATE.cardAges, age, sex)) {
       const psaRaised = screenings.prostatePsaValue !== undefined && screenings.prostatePsaValue > 4.0;
-      if (!screenings.prostateDiscussion || screenings.prostateDiscussion === 'not_yet') {
-        suggestions.push({
-          id: 'screening-prostate',
-          category: 'screening',
-          priority: age >= 50 ? 'info' : 'info',
-          title: 'Discuss prostate cancer screening',
-          description: 'PSA testing is an option after an informed discussion with your doctor. Benefits and risks vary by individual.',
-        });
+      if (notStarted(PROSTATE, screenings.prostateDiscussion)) {
+        pushStart(PROSTATE, 'info');
       } else if (screenings.prostateDiscussion === 'will_screen' && screenings.prostateLastDate) {
         const status = screeningStatus(screenings.prostateLastDate, 'will_screen');
-        const due = nextDueStr(screenings.prostateLastDate, 'will_screen');
         // US-06 AC17 (Brad 2026-11-03): beside "Elevated PSA", "up to date" reads as all clear. Overdue still shows.
-        if (!(psaRaised && status === 'upcoming')) pushScreeningStatus('prostate', status,
-          'PSA test overdue', `Your next PSA test was due ${due}. Please schedule your test.`,
-          'PSA test up to date', `Next PSA test due ${due}.`);
+        if (!(psaRaised && status === 'upcoming')) pushScreeningStatus(PROSTATE, status, nextDueStr(screenings.prostateLastDate, 'will_screen'));
       }
 
       // Elevated PSA warning
@@ -1040,68 +976,43 @@ export function generateSuggestions(
           priority: 'attention',
           title: 'Elevated PSA',
           // A limit prints as printed (US-12 AC20): "> 100.0 ng/mL". A value never as 4.0 (US-06 AC18): "4.04 ng/mL".
-          description: `Your PSA of ${screenings.prostatePsaLimit ? fmtMetric('psa', screenings.prostatePsaLimit.bound, 'si', screenings.prostatePsaLimit.comparator) : `${formatGradedReading('psa', screenings.prostatePsaValue!, 'si')} ng/mL`} is above the typical reference range (\u22644.0). Discuss with your doctor \u2014 elevated PSA can have multiple causes.`,
+          description: `Your PSA of ${screenings.prostatePsaLimit ? fmtMetric('psa', screenings.prostatePsaLimit.bound, 'si', screenings.prostatePsaLimit.comparator) : `${formatGradedReading('psa', screenings.prostatePsaValue!, 'si')} ng/mL`} is above the typical reference range (≤4.0). Discuss with your doctor — elevated PSA can have multiple causes.`,
         });
       }
     }
 
-    // Endometrial — abnormal bleeding (urgent)
-    if (sex === 'female' && age >= 45 && screenings.endometrialAbnormalBleeding === 'yes_need_to_report') {
-      suggestions.push({
-        id: 'screening-endometrial-bleeding',
-        category: 'screening',
-        priority: 'urgent',
-        title: 'Report abnormal uterine bleeding',
-        description: 'Abnormal uterine bleeding should be evaluated by your doctor promptly, especially after menopause.',
-      });
-    }
-
-    // Endometrial — discussion reminder
-    if (sex === 'female' && age >= 45 && (!screenings.endometrialDiscussion || screenings.endometrialDiscussion === 'not_yet')) {
-      suggestions.push({
-        id: 'screening-endometrial',
-        category: 'screening',
-        priority: 'info',
-        title: 'Discuss endometrial cancer awareness',
-        description: 'Women at menopause should be informed about the risks and symptoms of endometrial cancer. Discuss with your doctor.',
-      });
-    }
-
-    // === Bone density (DEXA) screening ===
-    // Separate section from cancer screening — women ≥50, men ≥70
-    const dexaEligible = (sex === 'female' && age >= 50) || (sex === 'male' && age >= 70);
-
-    if (dexaEligible) {
-      if (!screenings.dexaScreening || screenings.dexaScreening === 'not_yet_started') {
+    if (ruleTakes(ENDOMETRIAL, ENDOMETRIAL.cardAges, age, sex)) {
+      // Endometrial — abnormal bleeding (urgent)
+      if (screenings.endometrialAbnormalBleeding === 'yes_need_to_report') {
         suggestions.push({
-          id: 'screening-dexa',
+          id: 'screening-endometrial-bleeding',
           category: 'screening',
-          priority: 'attention',
-          title: 'Consider a DEXA bone density scan',
-          description: 'A DEXA scan measures bone mineral density and can detect osteoporosis before a fracture occurs. Discuss with your doctor.',
+          priority: 'urgent',
+          title: 'Report abnormal uterine bleeding',
+          description: 'Abnormal uterine bleeding should be evaluated by your doctor promptly, especially after menopause.',
         });
-      } else if (screenings.dexaResult === 'osteoporosis') {
+      }
+      // Endometrial — discussion reminder
+      if (notStarted(ENDOMETRIAL, screenings.endometrialDiscussion)) pushStart(ENDOMETRIAL, 'info');
+    }
+
+    // === Bone density (DEXA) screening === Separate section from cancer screening.
+    if (ruleTakes(DEXA, DEXA.cardAges, age, sex)) {
+      if (notStarted(DEXA, screenings.dexaScreening)) {
+        pushStart(DEXA, 'attention');
+      } else if (screenings.dexaResult === followupTrigger(DEXA)) {
         // Osteoporosis — use follow-up pattern
-        const followup = screeningFollowup('dexa', 'dexa_scan', 'abnormal', screenings.dexaFollowupStatus, screenings.dexaFollowupDate);
+        const followup = screeningFollowup(DEXA, 'dexa_scan', screenings.dexaResult, screenings.dexaFollowupStatus, screenings.dexaFollowupDate);
         if (followup) {
           suggestions.push(followup);
         } else if (screenings.dexaLastDate) {
-          const status = screeningStatus(screenings.dexaLastDate, 'dexa_scan');
-          const due = nextDueStr(screenings.dexaLastDate, 'dexa_scan');
-          pushScreeningStatus('dexa', status,
-            'Bone density scan overdue', `Your next DEXA scan was due ${due}. Please schedule your scan.`,
-            'Bone density scan up to date', `Next DEXA scan due around ${due}.`);
+          pushDue(DEXA, screenings.dexaLastDate, 'dexa_scan');
         }
       } else if (screenings.dexaResult === 'awaiting') {
         // Awaiting results — no action needed
       } else if (screenings.dexaLastDate) {
         // Normal or osteopenia — result-based interval
-        const intervalKey = screenings.dexaResult === 'osteopenia' ? 'dexa_osteopenia' : 'dexa_normal';
-        const status = screeningStatus(screenings.dexaLastDate, intervalKey);
-        const due = nextDueStr(screenings.dexaLastDate, intervalKey);
-        pushScreeningStatus('dexa', status,
-          'Bone density scan overdue', `Your next DEXA scan was due ${due}. Please schedule your scan.`,
-          'Bone density scan up to date', `Next DEXA scan due around ${due}.`);
+        pushDue(DEXA, screenings.dexaLastDate, screenings.dexaResult === 'osteopenia' ? 'dexa_osteopenia' : 'dexa_normal');
       }
     }
   }
