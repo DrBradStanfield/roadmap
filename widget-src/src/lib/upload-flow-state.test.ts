@@ -21,7 +21,7 @@ const RUN = 1;
 
 const STATES: Record<UploadPhase, UploadState> = {
   picking: { phase: 'picking', notices: [notice], skipArchive: false },
-  reading: { phase: 'reading', run: RUN, files: [file], notices: [notice], progress, skipArchive: false },
+  reading: { phase: 'reading', run: RUN, files: [file], notices: [notice], counts: { picked: 2, docx: 1 }, progress, skipArchive: false },
   readFailed: { phase: 'readFailed', run: RUN, files: [file], notices: [notice], message: 'No readable files found.', skipArchive: false },
   reviewing: { phase: 'reviewing', run: RUN, results: [result], notices: [notice], outcome: NO_OUTCOME, skipArchive: false },
   saving: { phase: 'saving', results: [result], notices: [notice], outcome, skipArchive: false },
@@ -35,7 +35,8 @@ const attempt: SaveOutcome = { ...NO_OUTCOME, values: 1, documents: ['sha256-a',
 /** `outcome` plus `attempt`: counts add, documents once, the rest the attempt's. */
 const merged: SaveOutcome = { ...NO_OUTCOME, values: 3, labValues: 3, documents: ['sha256-a', 'sha256-b'], skippedValues: 4 };
 const EVENTS: Record<UploadEvent['type'], UploadEvent> = {
-  picked: { type: 'picked', run: 2, files: [file], notices: [] },
+  picked: { type: 'picked', run: 2, files: [file], notices: [], counts: { picked: 1, docx: 0 } },
+  listed: { type: 'listed', run: RUN, picked: 5 },
   progress: { type: 'progress', run: RUN, progress: newProgress },
   readFailed: { type: 'readFailed', run: RUN, message: 'Daily upload limit reached.', notices: [] },
   read: { type: 'read', run: RUN, results: [result], notices: [] },
@@ -51,46 +52,47 @@ const EVENTS: Record<UploadEvent['type'], UploadEvent> = {
 const PREPARING = { current: 0, total: 100, fileName: 'Preparing upload...' };
 const reset: UploadState = INITIAL_UPLOAD;
 const skipped = (phase: UploadPhase): UploadState => ({ ...STATES[phase], skipArchive: true });
-const reading2: UploadState = { phase: 'reading', run: 2, files: [file], notices: [], progress: PREPARING, skipArchive: false };
-/** US-12 AC10 (U9, 2026-11-11): a Cancel that stops a read keeps what the read
- *  held, so the hook counts the cancelled run once. */
-const cancelledRead: UploadState = { phase: 'picking', notices: [], cancelledRead: { files: [file], notices: [notice] }, skipArchive: false };
+const reading2: UploadState = { phase: 'reading', run: 2, files: [file], notices: [], counts: { picked: 1, docx: 0 }, progress: PREPARING, skipArchive: false };
+/** US-12 AC10 (U9, 2026-11-11): a Cancel that stops a read keeps the pick's
+ *  counts and notices, so the hook counts the cancelled run once, on the
+ *  same basis as any other run (an oversize .docx, a ZIP by its members). */
+const cancelledRead: UploadState = { phase: 'picking', notices: [], cancelledRead: { counts: { picked: 2, docx: 1 }, notices: [notice] }, skipArchive: false };
 
 /** The state each event leads to; `same` = ignored, the identical object back. */
 type Next = UploadState | 'same';
 const s = 'same' as const;
 const TABLE: Record<UploadPhase, Record<UploadEvent['type'], Next>> = {
   picking: {
-    picked: reading2, progress: s, readFailed: s, read: s, cancel: s, close: reset, discard: reset,
+    picked: reading2, listed: s, progress: s, readFailed: s, read: s, cancel: s, close: reset, discard: reset,
     skipConnect: skipped('picking'), saveStarted: s, saved: s, saveFailed: s,
   },
   reading: {
-    picked: s, progress: { ...STATES.reading, progress: newProgress } as UploadState,
+    picked: s, listed: { ...STATES.reading, counts: { picked: 5, docx: 1 } } as UploadState, progress: { ...STATES.reading, progress: newProgress } as UploadState,
     readFailed: { phase: 'readFailed', run: RUN, files: [file], notices: [], message: 'Daily upload limit reached.', skipArchive: false },
     read: { phase: 'reviewing', run: RUN, results: [result], notices: [], outcome: NO_OUTCOME, skipArchive: false },
     cancel: cancelledRead, close: s, discard: reset, skipConnect: skipped('reading'), saveStarted: s, saved: s, saveFailed: s,
   },
   readFailed: {
-    picked: reading2, progress: s, readFailed: s, read: s, cancel: reset, close: reset, discard: reset,
+    picked: reading2, listed: s, progress: s, readFailed: s, read: s, cancel: reset, close: reset, discard: reset,
     skipConnect: skipped('readFailed'), saveStarted: s, saved: s, saveFailed: s,
   },
   reviewing: {
-    picked: s, progress: s, readFailed: s, read: s, cancel: reset, close: s, discard: reset, skipConnect: skipped('reviewing'),
+    picked: s, listed: s, progress: s, readFailed: s, read: s, cancel: reset, close: s, discard: reset, skipConnect: skipped('reviewing'),
     saveStarted: { phase: 'saving', results: [result], notices: [notice], outcome: NO_OUTCOME, skipArchive: false },
     saved: s, saveFailed: s,
   },
   saving: {
-    picked: s, progress: s, readFailed: s, read: s, cancel: s, close: s, discard: s, skipConnect: skipped('saving'), saveStarted: s,
+    picked: s, listed: s, progress: s, readFailed: s, read: s, cancel: s, close: s, discard: s, skipConnect: skipped('saving'), saveStarted: s,
     saved: { phase: 'done', results: [result], notices: [notice], outcome: merged, skipArchive: false },
     saveFailed: { phase: 'saveFailed', results: [result], notices: [notice], outcome: merged, message: 'Some items could not be saved. Please try again.', skipArchive: false },
   },
   saveFailed: {
-    picked: s, progress: s, readFailed: s, read: s, cancel: s, close: s, discard: reset, skipConnect: skipped('saveFailed'),
+    picked: s, listed: s, progress: s, readFailed: s, read: s, cancel: s, close: s, discard: reset, skipConnect: skipped('saveFailed'),
     saveStarted: { phase: 'saving', results: [result], notices: [notice], outcome: { ...NO_OUTCOME, values: 2, labValues: 3, documents: ['sha256-a'] }, skipArchive: false },
     saved: s, saveFailed: s,
   },
   done: {
-    picked: s, progress: s, readFailed: s, read: s, cancel: s, close: reset, discard: reset,
+    picked: s, listed: s, progress: s, readFailed: s, read: s, cancel: s, close: reset, discard: reset,
     skipConnect: skipped('done'), saveStarted: s, saved: s, saveFailed: s,
   },
 };
@@ -111,7 +113,7 @@ describe('US-12 AC4, AC6, AC6c — the upload flow transition', () => {
   });
 
   it('a pick without files stays on the dropzone with its notices (oversize only)', () => {
-    const pick: UploadEvent = { type: 'picked', run: 2, files: [], notices: [notice] };
+    const pick: UploadEvent = { type: 'picked', run: 2, files: [], notices: [notice], counts: { picked: 1, docx: 0 } };
     expect(transition(INITIAL_UPLOAD, pick)).toEqual({ phase: 'picking', notices: [notice], skipArchive: false });
     expect(transition(STATES.readFailed, pick)).toEqual({ phase: 'picking', notices: [notice], skipArchive: false });
   });
@@ -120,6 +122,7 @@ describe('US-12 AC4, AC6, AC6c — the upload flow transition', () => {
     const stale = 2;
     it.each<UploadEvent>([
       { type: 'progress', run: stale, progress: newProgress },
+      { type: 'listed', run: stale, picked: 9 },
       { type: 'read', run: stale, results: [result], notices: [] },
       { type: 'readFailed', run: stale, message: 'stale', notices: [] },
       { type: 'cancel', run: stale },
@@ -131,7 +134,7 @@ describe('US-12 AC4, AC6, AC6c — the upload flow transition', () => {
     });
     it('US-12 AC10: a new pick after a cancelled read drops it, so it counts once', () => {
       expect(transition(cancelledRead, EVENTS.picked)).toEqual(reading2);
-      expect(transition(cancelledRead, { type: 'picked', run: 2, files: [], notices: [notice] })).toEqual({ phase: 'picking', notices: [notice], skipArchive: false });
+      expect(transition(cancelledRead, { type: 'picked', run: 2, files: [], notices: [notice], counts: { picked: 1, docx: 0 } })).toEqual({ phase: 'picking', notices: [notice], skipArchive: false });
     });
     it.each(['readFailed', 'reviewing'] as const)('a Cancel from another run leaves %s alone', phase => {
       expect(transition(STATES[phase], { type: 'cancel', run: stale })).toBe(STATES[phase]);

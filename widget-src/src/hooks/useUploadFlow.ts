@@ -16,7 +16,7 @@ import { Sentry } from '../lib/sentry';
 import { recordFailure } from '../lib/error-diagnostics';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { isDocx } from '../lib/file-kinds';
-import { transition, INITIAL_UPLOAD, NO_OUTCOME, type SaveOutcome, type Progress } from '../lib/upload-flow-state';
+import { transition, INITIAL_UPLOAD, NO_OUTCOME, type SaveOutcome, type Progress, type RunCounts } from '../lib/upload-flow-state';
 
 /**
  * The upload flow (US-12): one `UploadState` union, each phase carrying its
@@ -132,7 +132,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     onClose();
   }, [onClose]);
 
-  const read = async (filesToProcess: File[], pickNotices: FileNotice[], docx: number, run: number) => {
+  const read = async (filesToProcess: File[], pickNotices: FileNotice[], { docx }: RunCounts, run: number) => {
     const abort = new AbortController();
     abortRef.current = abort;
     const updateProgress = (progress: Progress) => {
@@ -144,10 +144,13 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     // `names` is every other file seen, by whole path: a ZIP's members once it is listed.
     const runNotices = [...pickNotices];
     let names = filesToProcess.map(f => f.name);
+    /** Every file the run has seen, a ZIP by its members once listed (US-12 AC10). */
+    const seen = () => noticedFiles(pickNotices) + names.length;
     /** The run failed as a whole: each file without a verdict yet gets this one.
-     *  Verdicts are matched one for one, so two files on one path count twice. */
+     *  Verdicts are matched one for one, so two files on one path count twice.
+     *  The pick's own notices name files never read, so they settle none. */
     const failUnread = (reason: 'serverError' | 'limitError') => {
-      const settled = runNotices.filter(n => n.reason !== 'truncated' && n.reason !== 'valuesDropped').map(n => n.name);
+      const settled = runNotices.slice(pickNotices.length).filter(n => n.reason !== 'truncated' && n.reason !== 'valuesDropped').map(n => n.name);
       for (const name of names) {
         const i = settled.indexOf(name);
         if (i >= 0) settled.splice(i, 1);
@@ -168,15 +171,18 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
         values.unitsRefused += r.refusedValues?.length ?? 0;
       }
       const { limitUngradedTests, ...limits } = uploadLimitSignal(finished.filter(r => !r.error));
-      trackUploadOutcome(noticedFiles(pickNotices) + names.length, withValues, docx, runNotices, { ...values, ...limits }, limitUngradedTests);
+      trackUploadOutcome(seen(), withValues, docx, runNotices, { ...values, ...limits }, limitUngradedTests);
     };
 
     try {
       const quota = await checkLabImportQuota();
       if (abort.signal.aborted) return;
       if (!quota.allowed) {
-        failUnread('limitError');
-        finish([]);
+        // Only the daily limit names and counts the files; no key or a failed preflight says its message alone.
+        if (quota.reason === 'quota') {
+          failUnread('limitError');
+          finish([]);
+        }
         dispatch({ type: 'readFailed', run, message: quota.message ?? 'Daily upload limit reached. You can upload more tomorrow.', notices: runNotices });
         return;
       }
@@ -209,6 +215,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       }
       inputs.push(...otherFiles.map(file => ({ fileName: file.name, getFile: async () => file })));
       names.push(...inputs.map(i => i.fileName));
+      if (zipFiles.length > 0) dispatch({ type: 'listed', run, picked: seen() });
       // A ZIP opens into more than the window counted: past MAX_FILES the server
       // refuses the whole batch, so the rest are named and sent nowhere (US-12 AC17).
       for (const { fileName } of inputs.splice(MAX_FILES)) runNotices.push({ name: fileName, reason: 'limitError', text: OVER_LIMIT_TEXT });
@@ -270,11 +277,11 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       ...fileArray.filter(f => f.size > MAX_FILE_SIZE).map(f => ({ name: f.name, reason: 'tooLarge' as const })),
       ...(leftOut > 0 ? [leftOutNotice(leftOut)] : []),
     ];
-    const docx = fileArray.filter(isDocx).length;
+    const counts: RunCounts = { picked: noticedFiles(notices) + valid.length, docx: fileArray.filter(isDocx).length };
     const run = ++lastRun.current;
-    dispatch({ type: 'picked', run, files: valid, notices });
-    if (valid.length > 0) void read(valid, notices, docx, run);
-    else if (notices.length > 0) trackUploadOutcome(noticedFiles(notices), 0, docx, notices);
+    dispatch({ type: 'picked', run, files: valid, notices, counts });
+    if (valid.length > 0) void read(valid, notices, counts, run);
+    else if (notices.length > 0) trackUploadOutcome(counts.picked, 0, counts.docx, notices);
   };
 
   const save = useCallback(async ({ values: selectedValues, documents, labValues, reviewed }: {
@@ -395,7 +402,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
   // A read Cancel stopped, counted once (US-12 AC10): each cancel holds a new object.
   const cancelledRead = state.phase === 'picking' ? state.cancelledRead : undefined;
   useEffect(() => {
-    if (cancelledRead) trackUploadOutcome(cancelledRead.files.length + noticedFiles(cancelledRead.notices), 0, cancelledRead.files.filter(isDocx).length, cancelledRead.notices, { cancelled: 1 });
+    if (cancelledRead) trackUploadOutcome(cancelledRead.counts.picked, 0, cancelledRead.counts.docx, cancelledRead.notices, { cancelled: 1 });
   }, [cancelledRead]);
 
   // A finished save, counted once with the session's totals (US-12 AC10):

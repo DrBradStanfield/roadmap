@@ -205,7 +205,7 @@ describe('US-12 AC10: a refused quota', () => {
     { message: 'Synthetic quota message.', shown: 'Synthetic quota message.' },
     { message: undefined, shown: 'Daily upload limit reached. You can upload more tomorrow.' },
   ])('US-12 AC10: allowed:false (message $message) shows "$shown", tracks no upload_started, one upload_outcome (U6, 2026-11-11), and releases the claim', async ({ message, shown }) => {
-    vi.mocked(checkLabImportQuota).mockResolvedValueOnce({ allowed: false, remaining: 0, ...(message ? { message } : {}) });
+    vi.mocked(checkLabImportQuota).mockResolvedValueOnce({ allowed: false, remaining: 0, reason: 'quota', ...(message ? { message } : {}) });
     render(<Harness />); pick(pdf());
     expect(await screen.findByText(shown)).toBeTruthy();
     expect(screen.getByText('Drop health records here, or click to browse')).toBeTruthy();

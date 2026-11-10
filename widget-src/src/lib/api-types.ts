@@ -173,6 +173,13 @@ export interface ApiDocument {
   contentHash?: string | null;
 }
 
+/** The upload's quota preflight. Only `quota`, the server's daily limit, names
+ *  and counts each file (US-12 AC10); `no-key` (Pages build) and `unavailable`
+ *  (the preflight failed) show their message and nothing else. */
+export type QuotaCheck =
+  | { allowed: true; remaining: number }
+  | { allowed: false; remaining: number; reason: 'quota' | 'no-key' | 'unavailable'; message?: string };
+
 /** `key_refused` and `no_credit` come only from the Pages build's own key (byok-upload).
  *  `refused` and `too_long` mark one file Claude declined or stopped short on (US-15 AC34). */
 export type UploadErrorCode = 'rate_limit' | 'timeout' | 'server_restart' | 'no_files' | 'server_error' | 'network' | 'key_refused' | 'no_credit' | ExtractionStopCode;

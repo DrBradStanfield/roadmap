@@ -784,18 +784,49 @@ describe('US-12 AC5a: Cancel during a batch upload (20+ files) aborts the batch'
 });
 
 // US-12 AC9, AC10 (Brad 2026-11-11, U6 U8 U9): the runs that ended without a
-// count, and the files a pick past 200 left out without a word.
-describe('US-12 AC9, AC10: every run counts, and a pick past 200 says what it left out', () => {
+// count, and the files a pick past 200 left out without a word. Known gap: a
+// page unmounted mid-read sends nothing.
+describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 200 says what it left out', () => {
   type Poll = Awaited<ReturnType<typeof pollBatchStatus>>;
   const LEFT_OUT = (n: number) => `Not read. One upload takes at most 200 files. Upload ${n === 1 ? 'it' : 'them'} separately.`;
 
   it('US-12 AC10 (U6): a refused quota fires one upload_outcome, each file counted under limitError', async () => {
-    vi.mocked(checkLabImportQuota).mockResolvedValueOnce({ allowed: false, remaining: 0 });
+    vi.mocked(checkLabImportQuota).mockResolvedValueOnce({ allowed: false, remaining: 0, reason: 'quota' });
     render_(); pick(pdf('a.pdf'), pdf('b.pdf'), pdf('huge.pdf', 11 * 1024 * 1024));
     await screen.findByText('Daily upload limit reached. You can upload more tomorrow.');
     expect(sent()).toEqual([{ picked: 3, tooLarge: 1, limitError: 2 }]);
     expect(reasonFor('a.pdf')).toBe('Not read. The daily upload limit was reached.');
     expect(extractFromPdf).not.toHaveBeenCalled();
+  });
+
+  // Review R1 (adversary F1): only the server's daily limit is a quota refusal.
+  it.each([
+    { shopify: false, refusal: { allowed: false, remaining: 0, reason: 'no-key', message: 'Synthetic connect-your-key message.' }, shown: 'Synthetic connect-your-key message.' },
+    { shopify: true, refusal: { allowed: false, remaining: 0, reason: 'unavailable' }, shown: 'Daily upload limit reached. You can upload more tomorrow.' },
+  ] as const)('US-12 AC10: a $refusal.reason refusal (Shopify build: $shopify) names no file and sends no upload_outcome', async ({ shopify, refusal, shown }) => {
+    build.shopify = shopify;
+    vi.mocked(checkLabImportQuota).mockResolvedValueOnce(refusal);
+    render_(); pick(pdf('a.pdf'), pdf('b.pdf'));
+    await screen.findByText(shown);
+    expect(screen.queryByRole('list', { name: 'Files to check' })).toBeNull();
+    expect(sent()).toEqual([]);
+  });
+
+  // Review R1 (Codex R1): an oversize file never stands in for a readable one of the same name.
+  it('US-12 AC9 (U6): a quota refusal names a readable file that shares its name with an oversize one', async () => {
+    vi.mocked(checkLabImportQuota).mockResolvedValueOnce({ allowed: false, remaining: 0, reason: 'quota' });
+    render_(); pick(pdf('report.pdf', 11 * 1024 * 1024), pdf('report.pdf'));
+    await screen.findByText('Daily upload limit reached. You can upload more tomorrow.');
+    expect(reasonFor('report.pdf')).toMatch(/^Too large.* \| Not read\. The daily upload limit was reached\.$/);
+    expect(sent()).toEqual([{ picked: 2, tooLarge: 1, limitError: 1 }]);
+  });
+
+  it('US-12 AC9: a whole run that fails names a readable file that shares its name with an oversize one', async () => {
+    vi.mocked(labImportBatch).mockResolvedValue({ batchId: null, error: 'x', errorCode: 'server_error' });
+    render_(); pick(pdf('r0.pdf', 11 * 1024 * 1024), ...Array.from({ length: 20 }, (_, i) => pdf(`r${i}.pdf`)));
+    await screen.findByText('Something went wrong on the server. Please try again.');
+    expect(reasonFor('r0.pdf')).toMatch(/^Too large.* \| Our server could not read it\. Please try again\.$/);
+    expect(sent()).toEqual([{ picked: 21, tooLarge: 1, serverError: 20 }]);
   });
 
   it('US-12 AC10 (U9): Cancel during a read fires one upload_outcome with cancelled: 1, and the read finishing later adds none', async () => {
@@ -810,6 +841,28 @@ describe('US-12 AC9, AC10: every run counts, and a pick past 200 says what it le
     for (const finish of finishReads) finish(withValues);
     await new Promise(r => setTimeout(r, 0));
     expect(sent()).toHaveLength(1);
+  });
+
+  // Review R1 (Codex R2, adversary F2): a cancelled run counts on the pick's basis.
+  it('US-12 AC10 (U9): Cancel counts an oversize .docx as docx and too large', async () => {
+    vi.mocked(labImport).mockImplementation(() => new Promise<Import>(() => {}));
+    const huge = new File(['x'], 'huge.docx');
+    Object.defineProperty(huge, 'size', { value: 11 * 1024 * 1024 });
+    render_(); pick(pdf('a.pdf'), huge);
+    await waitFor(() => expect(labImport).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(sent()).toHaveLength(1));
+    expect(sent()[0]).toEqual({ picked: 2, docx: 1, tooLarge: 1, cancelled: 1 });
+  });
+
+  it('US-12 AC10 (U9): Cancel after a ZIP is listed counts it by its members', async () => {
+    vi.mocked(labImport).mockImplementation(() => new Promise<Import>(() => {}));
+    zipBundle(async () => ['m1.pdf', 'm2.pdf', 'm3.pdf'].map(name => ({ name, entry: { async: async () => new Blob([name]) } })));
+    render_(); pick(zip('scans.zip'));
+    await waitFor(() => expect(labImport).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(sent()).toHaveLength(1));
+    expect(sent()[0]).toEqual({ picked: 3, cancelled: 1 });
   });
 
   it('US-12 AC10 (U9): Cancel on the review sends nothing more: the read already counted', async () => {
@@ -843,7 +896,7 @@ describe('US-12 AC9, AC10: every run counts, and a pick past 200 says what it le
   });
 
   it('US-12 AC9 (U8): the error screen says it too', async () => {
-    vi.mocked(checkLabImportQuota).mockResolvedValueOnce({ allowed: false, remaining: 0 });
+    vi.mocked(checkLabImportQuota).mockResolvedValueOnce({ allowed: false, remaining: 0, reason: 'quota' });
     render_(); pick(...Array.from({ length: 201 }, (_, i) => pdf(`r${i}.pdf`)));
     await screen.findByText('Daily upload limit reached. You can upload more tomorrow.');
     expect(reasonFor('1 more file')).toBe(LEFT_OUT(1));
