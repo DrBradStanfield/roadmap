@@ -1,1 +1,170 @@
-[]
+[
+ {
+  "check": "AC2",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"32\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In 32 healthy volunteers, 3 g a day of collagen peptides for 12 weeks improved hydration and elasticity compared wi...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"53\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In 53 men with sarcopenia (average age 72) doing 12 weeks of resistance training 3 times a week, 15 g a day of coll...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"14\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Collagen has no tryptophan [27], an amino acid the body uses to make serotonin. In people whose depression had lifted...\"",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"40 mg/day\": Undenatured collagen has not been broken down. The best-studied product, UC-II, is type II collagen from chicken ster...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"500 mg\", \"10000 mg\": Hydrolysed collagen (peptides) | Cow, pig, fish [8] | 0.5 to 10 g for skin [11]; 1.2 to 10 g for joints [24][25] | Sk...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"114\", \"2500 mg/day\": In 114 women aged 45 to 65 years, 2.5 g a day of Verisol for 8 weeks raised skin procollagen type I by 65% and elasti...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1000 mg/day\": Of 128 women aged 39 to 59 randomised to a chicken sternal cartilage supplement or placebo, 113 completed. The supple...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2500 mg/day\": In 66 women aged 35 to 55, 2.5 g a day of bovine collagen peptides for 8 weeks improved skin elasticity and hydration...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3000 mg/day\": In 32 healthy volunteers, 3 g a day of collagen peptides for 12 weeks improved hydration and elasticity compared with...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2500 mg/day\": Cellulite: In 105 women aged 24 to 50 with moderate cellulite, 2.5 g a day for 6 months reduced cellulite and skin wa...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2500 mg/day\": Nails: In an open-label study, 25 people took 2.5 g a day of Verisol for 24 weeks. Nail growth rose 12% and broken na...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"90\": In 90 adults aged 40 to 65 with joint discomfort, a hydrolysed chicken type II collagen supplement for 8 weeks reduce...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"100\", \"90 day\": In 100 people with knee osteoarthritis, 10 g a day for 90 days did better than 1.5 g of glucosamine sulfate on severa...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"12 week\": In 88 adults with knee osteoarthritis, 450 mg a day of BiovaFlex for 12 weeks gave no significant gain over placebo i...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"8\": Laser skin recovery: In a pilot study of 8 healthy volunteers having fractional laser treatment, the 4 who took 3 g a...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"66\": In 66 healthy but easily fatigued adults, 10 g a day of collagen peptides for 8 weeks lowered fatigue scores on the P...",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2500 mg/day\": Cellulite | Collagen peptides | 1 to 2.5 g a day [47][46] | 6 months [46] |",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC2",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10000 mg\": Joint pain | Collagen peptides | 1.2 to 10 g [24][25] | 6 months in the positive trial [24] |",
+  "reason": "Tokeniser: the cited public source states this number in a form the checker cannot pair (spelled-out count, value with ± SD, unit spacing or wording, a range, or a per-day phrase). Listed by the per-master fixer; a fresh adversary checked the page's numbers against the abstracts (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC4",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 20 October 2026)",
+  "reason": "The Current view heading carries the new review date, as the master contract requires (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC7",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host mro.massey.ac.nz: [5] Gordon D. The effects of collagen hydrolysate and milk protein on knee pain and skin conditio...",
+  "reason": "Public primary record cited by URL (a university thesis repository, or a government regulation or health-body page); not on the masters host list (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ },
+ {
+  "check": "AC7",
+  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host ecfr.gov: [76] US Code of Federal Regulations. 21 CFR 189.5, Prohibited cattle materials. eCFR. https://www...",
+  "reason": "Public primary record cited by URL (a university thesis repository, or a government regulation or health-body page); not on the masters host list (masters-rebuild-pilot, 2026-11-10).",
+  "date": "2026-11-10",
+  "by": "orchestrator"
+ }
+]
