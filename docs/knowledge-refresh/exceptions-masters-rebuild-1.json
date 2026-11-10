@@ -969,6 +969,14 @@
  },
  {
   "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"48\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Newer trials (2026):** Results are split. In adults aged 45 to 65, selected cognitive and memory markers improved, ...\"",
+  "reason": "Tokeniser: abstract runs 'MethodsForty-eight women' together, so 48 is not read (found-in text changed: Newer trials sentences reordered, ruling 2) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
   "handle": "taurine-benefits-forms-dosing-and-side-effects",
   "match": "body line has no entry quoting \"2000 mg\": Cirrhosis-related muscle cramps: A crossover trial tested taurine in people with chronic liver disease who had three ...",
   "reason": "Tokeniser: source writes \"2 g taurine/d\" (reads 2000 mg/day); body \"2 g of taurine a day\" reads 2000 mg; verbatim quote already entered (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
