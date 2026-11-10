@@ -9160,5 +9160,36 @@
       "potassium fiber is a good"
     ],
     "notes": "US-45 AC2 doctor twin (2026-11-10): the warning covers kidney disease, so the doctor surface never suggests the drink. answer_handles pinned by hand, not a router intersection."
+  },
+  {
+    "category": "masters-rebuild-pilot",
+    "source": "us-42-ac5-masters-rebuild-pilot-2026-11-10",
+    "pending": "masters-rebuild-pilot not deployed",
+    "surface": "doctor",
+    "query": "Does eggshell membrane collagen help hair grow?",
+    "answer_handles": [
+      "collagen-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "densit"
+    ],
+    "must_not_match": [
+      "(?<!not )(?<!no )(?:improv|increas|boost)\\w* (?:hair )?growth(?![^.]{0,60}(?:placebo|not|no (?:difference|better)))"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, registered 2026-11-10 (Codex R4, collagen pilot): hair density improved vs placebo (Kalman 2020); growth and breakage did not differ from placebo. Not run: paid runs need Brad's yes and a cost estimate (Brad 2026-11-10)."
+  },
+  {
+    "category": "masters-rebuild-pilot",
+    "source": "us-42-ac5-masters-rebuild-pilot-2026-11-10",
+    "pending": "masters-rebuild-pilot not deployed",
+    "surface": "doctor",
+    "query": "I'm allergic to eggs. Can I take an eggshell membrane joint supplement?",
+    "answer_handles": [
+      "collagen-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "avoid"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, registered 2026-11-10 (adversary R1, collagen pilot): people with an egg allergy should avoid eggshell-membrane products. Not run: paid runs need Brad's yes and a cost estimate (Brad 2026-11-10)."
   }
 ]
