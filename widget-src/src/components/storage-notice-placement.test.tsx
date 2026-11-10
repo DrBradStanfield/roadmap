@@ -19,7 +19,7 @@ vi.mock('../lib/server-api', async original => ({
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('min-width'), media: q, addEventListener() {}, removeEventListener() {} }));
 
-import { GuestEmailCapture } from './ResultsPanel';
+import { GuestEmailCapture } from './PlanPdf';
 import { InputPanel } from './InputPanel';
 import { MY_HEALTH_PROPS } from '../testing/my-health-props';
 
