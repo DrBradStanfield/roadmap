@@ -59,6 +59,13 @@ needs, then fix the design so most of them go.
    this twice (PRs 1170, 1179). Assert at a width, state or element where the
    value must be absent too.
 5. **Move.** One move per PR, with its pins kept and green.
+   Before you move a literal, find who reads the source as text. A build
+   step, a guard test or a script may match a string where it is spelled,
+   not where it is used, so naming it once can silently unhook that reader.
+   In PR 1201 the dev build rewrote the server URL in source; the new
+   constant no longer matched, so localhost would have called production.
+   CI caught it, two reviews did not. Grep `tools/`, `scripts/`, the vite
+   configs and the tests for the literal first.
 
 ## Implicit state machines
 
