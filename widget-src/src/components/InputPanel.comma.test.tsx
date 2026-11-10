@@ -38,7 +38,7 @@ const renderPanel = () => {
       { id: 's3', screeningKey: 'lung_pack_years', value: '25', updatedAt: '' },
     ],
     onSupplementDelete: vi.fn(), scheduleLongitudinalSave, flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
-    fieldsSaved: 0, hasApiResponse: true, formStage: 4 as const, reached: 4 as const, fullForm: true, wasDone: true, aboutYouLow: true, planBasis: { age: 66 }, grading: {},
+    fieldsSaved: 0, hasApiResponse: true, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: { age: 66 }, grading: {},
   };
   const view = render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />);
   openAboutYou(view.container); // wasDone: About you is rows; open each, so the height box shows (US-62 AC12)

@@ -55,8 +55,18 @@ export interface Onboarding {
   markAnswered: () => void;
   /** A change this tab did not make: another writer's, or a refused save's re-read. */
   clearAnswered: () => void;
-  profileLeft: () => void;
+  /** The focus left About you's card. Says whether it moves low, so the caller can measure before it does. */
+  profileLeft: () => boolean;
   dismissPlanReady: () => void;
+}
+
+/** The onboarding as InputPanel sees it (US-62 AC12, AC13, AC25): this hook's state, and the landing. */
+export interface PanelOnboarding extends Pick<Onboarding, 'reached' | 'fullForm' | 'aboutYouLow'> {
+  /** The first answer the record lacks: 1 height and weight, 2 sex, 3 birth date, 4 none. */
+  stage: FormStage;
+  profileLeft?: Onboarding['profileLeft'];
+  /** The last onboarding answer is in: land at My health's top. Says whether it did (AC13, AC25). */
+  done?: (fromBirth?: boolean) => boolean;
 }
 
 export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded: boolean): Onboarding {
@@ -94,7 +104,9 @@ export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded
   const clearAnswered = useCallback(() => { ref.current!.answered = false; }, []);
   const isComplete = useCallback(() => stageRef.current === 4, []);
   const profileLeft = useCallback(() => {
-    if (stageRef.current === 4) setMovedLow(ref.current!.epoch);
+    if (stageRef.current !== 4) return false;
+    setMovedLow(ref.current!.epoch);
+    return true;
   }, []);
   const dismissPlanReady = useCallback(() => {
     trackProductEvent('plan_ready_dismissed');

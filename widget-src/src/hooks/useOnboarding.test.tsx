@@ -93,7 +93,9 @@ describe('US-62 AC12: About you moves low', () => {
     const view = setup(3);
     view.rerender({ stage: 4 });
     expect(view.result.current.aboutYouLow).toBe(false);
-    act(() => view.result.current.profileLeft());
+    let moved = false;
+    act(() => { moved = view.result.current.profileLeft(); });
+    expect(moved).toBe(true); // D3: InputPanel measures its FLIP only on a move
     expect(view.result.current.aboutYouLow).toBe(true);
     shown.erase = 'erase-2';
     view.rerender({ stage: 1 });
@@ -102,7 +104,9 @@ describe('US-62 AC12: About you moves low', () => {
 
   it('leaving the card before the four answers hold moves nothing', () => {
     const view = setup(3);
-    act(() => view.result.current.profileLeft());
+    let moved = true;
+    act(() => { moved = view.result.current.profileLeft(); });
+    expect(moved).toBe(false);
     expect(view.result.current.aboutYouLow).toBe(false);
   });
 });
