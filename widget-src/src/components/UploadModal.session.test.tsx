@@ -90,7 +90,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     await ready();
   });
   it('claims the session before quota resolves, so rapid selections launch once', async () => {
-    const quota = deferred<{ allowed: boolean; remaining: number }>();
+    const quota = deferred<Awaited<ReturnType<typeof checkLabImportQuota>>>();
     vi.mocked(checkLabImportQuota).mockReturnValue(quota.promise);
     render(<Harness />);
     const picker = document.querySelector('input[type=file]')!;
@@ -102,7 +102,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(labImport).toHaveBeenCalledOnce();
   });
   it.each(['quota', 'draft flush'])('cancels while awaiting %s without later launching', async phase => {
-    const pending = deferred<{ allowed: boolean; remaining: number }>();
+    const pending = deferred<Awaited<ReturnType<typeof checkLabImportQuota>>>();
     const flushing = deferred<void>();
     const onStart = vi.fn(() => flushing.promise);
     if (phase === 'quota') vi.mocked(checkLabImportQuota).mockReturnValue(pending.promise);
@@ -115,7 +115,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(labImport).toHaveBeenCalledOnce();
   });
   it('does not launch after unmount during quota', async () => {
-    const quota = deferred<{ allowed: boolean; remaining: number }>();
+    const quota = deferred<Awaited<ReturnType<typeof checkLabImportQuota>>>();
     vi.mocked(checkLabImportQuota).mockReturnValue(quota.promise);
     const view = render(<Harness />); selectFile(); view.unmount();
     await act(async () => quota.resolve({ allowed: true, remaining: 60 }));
