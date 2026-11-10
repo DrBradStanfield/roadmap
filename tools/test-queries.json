@@ -1509,7 +1509,7 @@
     "category": "conversation-persistence",
     "source": "audit-2026-05-14",
     "must_mention": [
-      "Yes"
+      "your own storage"
     ],
     "must_not_mention": [
       "account.drstanfield.com",
