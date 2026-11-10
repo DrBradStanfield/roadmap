@@ -18,7 +18,6 @@
 // the matrix's `Sparkline`, `NumericInputCell`, `DraftDateCell`, and `UnitChip`.
 
 import { useEffect, useId, useMemo, useRef, useState, type MutableRefObject } from 'react';
-import { getShownErase } from '../lib/roadmap-data';
 import type { ApiMeasurement, FormStage } from '@roadmap/health-core/mappings';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import { type MetricType, type UnitSystem, toCanonicalValue, fromCanonicalValue, formatDisplayValue, getDisplayLabel, bpTargetFor } from '@roadmap/health-core/units';
@@ -41,6 +40,7 @@ import { VITALS_DRAFT_KEY } from '../lib/storage';
 import { BP_DIA_MAX, BP_DIA_MIN, BP_SYS_MAX, BP_SYS_MIN, FIELD_OF, vitalsCellsOf, type VitalsKey } from '../lib/vitals-cells';
 import { describedBy } from '../lib/aria';
 import { useDraftMirror, useMatrixDraft, type CellRef } from '../lib/useMatrixDraft';
+import { useAutoAdvance } from '../lib/useAutoAdvance';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { useRangeWait } from '../lib/useRangeWait';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
@@ -79,9 +79,10 @@ interface StartingInfoVitalsProps {
   plan: Pick<PlanBasis, 'age' | 'idealBodyWeight' | 'heightCm'> | null;
   /** A known minor, plan or no plan: no adult weight or BP target or colour (US-07 AC6). */
   knownMinor?: boolean;
-  /** Called after the user types a valid weight: as the last onboarding
-   *  answer, the person lands at My health's top (US-62 AC25). */
-  onOnboardingDone?: () => boolean;
+  /** The weight cell's answer (`past`: a past day's, which never lands), its ref, and its rest: the landing (US-62 AC25b). */
+  onWeightAnswered?: (past?: boolean) => void;
+  weightRef?: (el: HTMLInputElement | null) => void;
+  rested?: () => void;
   /** The weight is asked beside the height (US-62 AC13): its row is left out, so it shows once. */
   withoutWeight?: boolean;
   /** Per-field unit overrides — clicking the weight/waist chip toggles
@@ -182,7 +183,7 @@ export function buildColumns(rows: ApiMeasurement[]): DateColumn[] {
 
 export function StartingInfoVitals({
   vitalsHistory, unitSystem, onSave, onCorrectValue,
-  onDraftValue, formStage, plan, knownMinor, onOnboardingDone, withoutWeight, unitOverrides, onToggleFieldUnit, startUnitOf,
+  onDraftValue, formStage, plan, knownMinor, onWeightAnswered, weightRef, rested, withoutWeight, unitOverrides, onToggleFieldUnit, startUnitOf,
   prefillRef, flushRef, onHoldsText,
 }: StartingInfoVitalsProps) {
   const rows = withoutWeight ? ROWS.filter(r => r.kind !== 'simple' || r.metric !== 'weight') : ROWS;
@@ -296,26 +297,15 @@ export function StartingInfoVitals({
 
   const scrollRef = useScrollToRightOnMount<HTMLDivElement>([colCount]);
 
+  const advanceToRest = useAutoAdvance(true);
   const setSimpleDraft = (metric: 'weight' | 'waist', typed: string) => {
     type([null, metric], typed, unitFor(metric));
-    const n = parseLocalisedNumber(typed);
-
-    // Weight only: as the last answer, on to My health's top, on the record it was typed on.
-    const erase = getShownErase();
-    if (metric === 'weight' && onOnboardingDone && landedFor.current !== erase && n != null && !validateTypedValue(metric, typed, unitFor(metric)).error) {
-      if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
-      if (/^\d{2,3}$/.test(typed) && n >= 30 && n <= 400) {
-        const couldExtend = /^\d{2}$/.test(typed) && n * 10 <= 400;
-        // The once-only jump is spent only if it happened (not before the last answer).
-        const jump = () => { if (getShownErase() === erase && onOnboardingDone()) landedFor.current = erase; };
-        if (!couldExtend) requestAnimationFrame(jump);
-        else focusTimerRef.current = setTimeout(jump, 800);
-      }
-    }
+    if (metric !== 'weight') return;
+    onWeightAnswered?.();
+    // The weight at rest once complete, for the landing (US-62 AC25b); anything else cancels the wait.
+    const valid = (text: string) => !validateTypedValue(metric, text, unitFor(metric)).error;
+    if (rested) advanceToRest(/^\d{2,3}$/.test(typed) && valid(typed) ? { ambiguous: /^\d{2}$/.test(typed) && valid(`${typed}0`), advance: rested } : null);
   };
-  // Once per record, as InputPanel's weight jump is (US-62 AC25, D1): the erase it landed on.
-  const landedFor = useRef<string | null>(null);
-  const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setBpDraft = (which: 'sys' | 'dia', typed: string) => type([null, which], typed);
 
@@ -493,7 +483,7 @@ export function StartingInfoVitals({
                             active={activeCell === cellId}
                             onChange={v => setSimpleDraft(row.metric, v)}
                             onFocus={() => setActiveCell(cellId)}
-                            onBlur={unmark(cellId)}
+                            onBlur={unmark(cellId)} inputRef={row.metric === 'weight' ? weightRef : undefined}
                             onKeyDown={e => { blockBadNumericKeys(e); if (e.key === 'Enter') { e.preventDefault(); saveNow(); } }}
                           />
                         );
@@ -516,7 +506,7 @@ export function StartingInfoVitals({
                             error={c.col.date === draft.date && clashes(row.metric) ? SAME_SLOT : refusal([c.col.date, row.metric])}
                             pinned={isPinned}
                             active={activeCell === cellId}
-                            onChange={val => setBackfill(c.col.date, row.metric, val)}
+                            onChange={val => { setBackfill(c.col.date, row.metric, val); if (row.metric === 'weight') onWeightAnswered?.(true); }}
                             onFocus={() => setActiveCell(cellId)}
                             onBlur={unmark(cellId)}
                             onEnter={saveNow}

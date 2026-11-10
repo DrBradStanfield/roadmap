@@ -53,10 +53,19 @@ vi.mock('../lib/chat-api', async original => ({
   ...(await original<typeof import('../lib/chat-api')>()),
   listConversations: () => Promise.resolve(null), getChatGate: () => null,
 }));
-const chat = vi.hoisted(() => ({ proposeEdit: null as null | ((edits: ProposedEdit[]) => void) }));
-vi.mock('./ChatEmbed', () => ({
-  ChatEmbed: ({ onProposeEdit }: { onProposeEdit: (edits: ProposedEdit[]) => void }) => { chat.proposeEdit = onProposeEdit; return null; },
-}));
+// `unmuted`: run in the chat's passive effect as the four answers first hold. A child's passive
+// effects run before HealthTool's, after every layout effect of that commit (R3's frame).
+const chat = vi.hoisted(() => ({ proposeEdit: null as null | ((edits: ProposedEdit[]) => void), unmuted: null as null | (() => void) }));
+vi.mock('./ChatEmbed', async () => {
+  const { useEffect } = await import('react');
+  return {
+    ChatEmbed: ({ onProposeEdit, muted }: { onProposeEdit: (edits: ProposedEdit[]) => void; muted: boolean }) => {
+      chat.proposeEdit = onProposeEdit;
+      useEffect(() => { if (!muted) chat.unmuted?.(); }, [muted]);
+      return null;
+    },
+  };
+});
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 // The upload modal: its completion, the page's re-read after an upload's save.
 const upload = vi.hoisted(() => ({ complete: null as null | (() => Promise<void>) }));
@@ -80,6 +89,7 @@ beforeEach(async () => {
   tracked.calls = [];
   refuse.next = false;
   chat.proposeEdit = null;
+  chat.unmuted = null;
   upload.complete = null;
   localStorage.clear(); sessionStorage.clear();
   // A wide desktop: the chat column shows.
@@ -157,6 +167,10 @@ async function eraseHere(view: RenderResult) {
   fireEvent.click(deleteButton());
   await waitFor(() => expect(q(view, '#heightCm')).toBeTruthy());
   await waitFor(() => expect(fullForm(view)).toBe(false));
+  // Closing Settings hands the focus to the person button (or a phone's title) a frame
+  // after the delete resolves. Wait for it, so it never lands mid-answer, as no person
+  // could type that fast (R1: under load it blurred the next weight, which is leaving it).
+  await waitFor(() => expect(document.activeElement?.matches('.mh-person-btn, .mh-title')).toBe(true));
 }
 /** The focus is on the plan-ready heading or My health's title: AC25's landing. */
 const landed = () => !!document.activeElement?.matches('.mh-ready-title, .mh-title');
@@ -332,5 +346,350 @@ describe('US-62 AC12, AC31 (D6, Brad 2026-11-10: keep it): another device fills 
     leave(q(view, '#heightCm'));
     await waitFor(() => expect(q(view, '.mh-page .about-card')).toBeNull());
     expect(q(view, '.mh-ready')).toBeNull();
+  });
+});
+
+describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboarding', () => {
+  /** A desktop that can cross 768px: each cross builds the panels again. */
+  function crossablePhone() {
+    const heard = new Set<{ query: string; listener: (e: { matches: boolean }) => void }>();
+    let phone = false;
+    const matches = (query: string) => (query.includes('max-width') ? phone : !phone);
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      get matches() { return matches(query); },
+      media: query,
+      addEventListener: (_: string, listener: (e: { matches: boolean }) => void) => heard.add({ query, listener }),
+      removeEventListener: (_: string, listener: (e: { matches: boolean }) => void) => {
+        for (const h of heard) if (h.listener === listener) heard.delete(h);
+      },
+    }));
+    return () => act(() => { phone = !phone; for (const h of [...heard]) h.listener({ matches: matches(h.query) }); });
+  }
+  /** The vitals matrix's New-column weight cell (mounted, hidden under the rows once About you is low). */
+  const matrixWeight = (view: RenderResult) => {
+    const row = Array.from(view.container.querySelectorAll('.bt-vitals-card .bt-row'))
+      .find((r) => r.querySelector('.bt-name-label')?.textContent === 'Weight');
+    return row?.querySelector('.bt-cell-draft input') ?? null;
+  };
+  /** A record holding a blood test, so the whole form opens with sex and birth both asked (US-01 AC3). */
+  async function wholeFormWithoutSexOrBirth(): Promise<RenderResult> {
+    await saveChangedMeasurements({ heightCm: 170 }, {});
+    await addMeasurement('weight', 70, '2026-09-01');
+    await addMeasurement('ldl', 3.0, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(q(view, '#birthMonth')).toBeTruthy());
+    expect(fullForm(view)).toBe(true);
+    expect(sexQuestion(view)).toBeTruthy();
+    return view;
+  }
+
+  it('US-62 AC25 (D4): the weight lands, the page crosses 768px, and a weight typed in the matrix on the same record does not land again', async () => {
+    const cross = crossablePhone();
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await flushRoadmapStore();
+    const view = await open();
+    type(q(view, '#weightKg'), '105'); // the last answer (Shopify build)
+    await waitFor(() => expect(landed()).toBe(true));
+    await waitFor(async () => expect(await activeWeights()).toEqual([[105, TODAY]]), { timeout: 2000 });
+    const before = matrixWeight(view);
+    cross(); // a phone: the panels are built again
+    await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
+    const cell = matrixWeight(view)!;
+    expect(cell).not.toBe(before); // a new matrix: its own refs started empty
+    type(cell, '106');
+    await settle(100);
+    expect(landed()).toBe(false);
+    expect(document.activeElement).toBe(cell);
+  });
+
+  it('US-62 AC25b (R3): an ambiguous last weight, then the page crosses 768px during its wait: a later weight does not land', async () => {
+    const cross = crossablePhone();
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await flushRoadmapStore();
+    const view = await open();
+    type(q(view, '#weightKg'), '25'); // ends the onboarding; may become 250: the wait starts
+    cross(); // the focused box unmounts with no blur
+    await waitFor(() => expect(q(view, '#weightKg')).toBeTruthy());
+    await settle(900);
+    expect(landed()).toBe(false);
+    type(q(view, '#weightKg'), '82');
+    await settle(300);
+    expect(landed()).toBe(false);
+  });
+
+  it('US-62 AC25 (D4): a record already complete when first shown never lands: a weight typed in the matrix keeps the focus', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await addMeasurement('weight', 70, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
+    await settle(200); // About you's rows, opened by open(), take their focus first
+    const cell = matrixWeight(view)!;
+    type(cell, '106'); // Shopify build: a weight would land, were it the last answer
+    await settle(100);
+    expect(landed()).toBe(false);
+    expect(document.activeElement).toBe(cell);
+  });
+
+  it('US-62 AC25 (D4, D6): another device completes the record; a weight then typed here does not land, and About you stays at the top', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female' }, {});
+    await addMeasurement('weight', 70, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(q(view, '#birthMonth')).toBeTruthy()); // stage 3
+    await anotherWriter({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, { heightCm: 170, sex: 'female' });
+    await waitFor(() => expect(fullForm(view)).toBe(true), { timeout: 3000 });
+    await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
+    const cell = matrixWeight(view)!;
+    type(cell, '106');
+    await settle(100);
+    expect(landed()).toBe(false);
+    expect(document.activeElement).toBe(cell);
+    expect(q(view, '.mh-page .about-card')).toBeTruthy();
+  });
+
+  it('US-62 AC25 (D4, R2): an onboarding that ends on sex spends its landing: a later matrix weight does not land', async () => {
+    const view = await wholeFormWithoutSexOrBirth();
+    birth(view, '5', '1975'); // the year before sex: asked, but not the last answer
+    await settle(50);
+    const focused = document.activeElement;
+    fireEvent.click(view.getByRole('radio', { name: 'Male' })); // sex last: the onboarding ends here, with no landing (AC31)
+    await waitFor(() => expect(q(view, '.mh-ready')).toBeTruthy());
+    await settle(50);
+    expect(landed()).toBe(false);
+    expect(document.activeElement).toBe(focused);
+    await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
+    await settle(200);
+    const cell = matrixWeight(view)!;
+    type(cell, '106');
+    await settle(100);
+    expect(landed()).toBe(false);
+    expect(document.activeElement).toBe(cell);
+  });
+
+  it('US-62 AC25 (D4, R3): a matrix weight as the last answer lands though its frame fires before the page\'s passive effects; onboarding_done is sent once', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await addMeasurement('waist', 90, '2026-09-01'); // a saved vital: the whole form, the vitals as a matrix
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
+    await settle(200);
+    // Frames held until the chat sees the four answers hold: before the page's passive effects run.
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { frames.push(cb); return frames.length; });
+    const runFrames = () => { for (const cb of frames.splice(0)) cb(0); };
+    chat.unmuted = runFrames;
+    type(matrixWeight(view), '106'); // the weight, the last answer, typed in the matrix (Shopify build)
+    await settle(50);
+    await waitFor(() => { runFrames(); expect(landed()).toBe(true); }); // the landing's frame, then its focus frame
+    expect(calls('onboarding_done')).toHaveLength(1);
+  });
+
+  it('US-62 AC25 (D4): a complete year typed before sex lands nothing and leaves the landing for the year that is the last answer', async () => {
+    const view = await wholeFormWithoutSexOrBirth();
+    birth(view, '5', '1975'); // sex not yet given: not the last answer
+    await settle(50);
+    expect(landed()).toBe(false);
+    type(q(view, '#birthYear'), ''); // cleared to retype
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    await settle(50);
+    expect(landed()).toBe(false);
+    type(q(view, '#birthYear'), '1976'); // now the last answer
+    await waitFor(() => expect(landed()).toBe(true), { timeout: 1000 });
+  });
+
+  it('US-62 AC25 (D4): after an erase in this tab the new record lands on its last answer, whatever the record before did', async () => {
+    const view = await wholeFormWithoutSexOrBirth();
+    birth(view, '5', '1975'); // a year before sex: no landing
+    await settle(50);
+    expect(landed()).toBe(false);
+    await eraseHere(view); // the record never completed
+    act(() => { (document.activeElement as HTMLElement | null)?.blur(); });
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    await settle(50);
+    birth(view); // the year, the new record's last answer
+    await waitFor(() => expect(landed()).toBe(true), { timeout: 1000 });
+  });
+});
+
+describe('US-62 AC25b: the weight or year that ends the onboarding lands once it is complete, while the person is still in it', () => {
+  /** Height, sex and birth on record: the weight in the box is the last answer (Shopify build). */
+  async function weightLast(): Promise<RenderResult> {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await flushRoadmapStore();
+    const view = await open();
+    expect(sexQuestion(view)).toBeNull();
+    return view;
+  }
+  const matrixWeight = (view: RenderResult) => {
+    const row = Array.from(view.container.querySelectorAll('.bt-vitals-card .bt-row'))
+      .find((r) => r.querySelector('.bt-name-label')?.textContent === 'Weight');
+    return row?.querySelector('.bt-cell-draft input') ?? null;
+  };
+
+  it('a: "25" backspaced to "2" waits out its 800 ms with no landing; "82" then lands', async () => {
+    const view = await weightLast();
+    const box = q(view, '#weightKg');
+    type(box, '25'); // complete, but may become 250: the wait starts
+    type(box, '2');
+    await settle(900);
+    expect(landed()).toBe(false);
+    expect(document.activeElement).toBe(box);
+    type(box, '82');
+    await waitFor(() => expect(landed()).toBe(true), { timeout: 500 });
+  });
+
+  it('b: "25" cleared to "" waits out its 800 ms with no landing; "82" then lands', async () => {
+    const view = await weightLast();
+    const box = q(view, '#weightKg');
+    type(box, '25');
+    type(box, '');
+    await settle(900);
+    expect(landed()).toBe(false);
+    expect(document.activeElement).toBe(box);
+    type(box, '82');
+    await waitFor(() => expect(landed()).toBe(true), { timeout: 500 });
+  });
+
+  it('c: a kg matrix weight typed digit by digit, "2", "25", "250", lands once, after "250"', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await addMeasurement('waist', 90, '2026-09-01'); // the whole form, the vitals as a matrix
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
+    await settle(200);
+    const cell = matrixWeight(view)!;
+    type(cell, '2');
+    type(cell, '25');
+    await settle(100);
+    expect(landed()).toBe(false); // "25" may become "250": still waiting
+    type(cell, '250');
+    await waitFor(() => expect(landed()).toBe(true), { timeout: 500 });
+    expect(calls('onboarding_done')).toHaveLength(1);
+  });
+
+  it('d: "25", then the focus leaves the box within 800 ms: no landing, then or for a later weight', async () => {
+    const view = await weightLast();
+    const box = q(view, '#weightKg');
+    type(box, '25');
+    act(() => { (q(view, '#heightCm') as HTMLElement).focus(); }); // another field, before the wait ends
+    await settle(1000);
+    expect(landed()).toBe(false);
+    type(box, '82');
+    await settle(300);
+    expect(landed()).toBe(false);
+    expect(document.activeElement).toBe(box);
+  });
+
+  it('a save refused during the last weight\'s wait spends the landing, though the re-read brings the four answers back', async () => {
+    const alert = vi.fn();
+    vi.stubGlobal('alert', alert);
+    const view = await weightLast();
+    await addMeasurement('weight', 80, '2026-09-01'); // another device's weight; the page is not told yet
+    await flushRoadmapStore();
+    refuse.next = true; // the next profile save is refused
+    type(q(view, '#heightCm'), '171'); // a profile edit: its save runs 500 ms after the last change
+    type(q(view, '#weightKg'), '25'); // the last answer; may become 250: an 800 ms wait
+    await waitFor(() => expect(alert).toHaveBeenCalledWith(WRITE_REFUSED), { timeout: 2000 });
+    expect(landed()).toBe(false); // refused within the wait
+    await settle(900);
+    expect(fullForm(view)).toBe(true); // the re-read holds the four answers, with no keystroke here
+    expect(landed()).toBe(false);
+  });
+
+  it('h: the chat proposing the last weight lands nothing, and a weight typed after does not land', async () => {
+    const view = await weightLast();
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    act(() => chat.proposeEdit!([{ kind: 'field', field: 'weightKg', displayValue: 105, unitSystem: 'si', date: null }]));
+    await waitFor(() => expect(q(view, '.mh-ready')).toBeTruthy()); // the onboarding ended here
+    await settle(300);
+    expect(landed()).toBe(false);
+    act(() => { (document.activeElement as HTMLElement | null)?.blur(); });
+    type(q(view, '#weightKg'), '106');
+    await settle(300);
+    expect(landed()).toBe(false);
+  });
+
+  it('h: an upload completing the record lands nothing, and a weight typed after does not land', async () => {
+    const view = await weightLast();
+    await waitFor(() => expect(upload.complete).toBeTruthy());
+    await act(async () => {
+      await bulkSaveMeasurements([{ metricType: 'weight', value: 80, recordedAt: `${TODAY}T00:00:00.000Z`, source: 'lab_import' }]);
+      await upload.complete!();
+    });
+    await waitFor(() => expect(q(view, '.mh-ready')).toBeTruthy());
+    await settle(300);
+    expect(landed()).toBe(false);
+    await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
+    const cell = matrixWeight(view)!;
+    type(cell, '106');
+    await settle(300);
+    expect(landed()).toBe(false);
+    expect(document.activeElement).toBe(cell);
+  });
+});
+
+describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
+  /** Frames held until run; `syncNext` runs the next one at once, inside the keystroke, before its commit. */
+  function heldFrames() {
+    const frames = new Map<number, FrameRequestCallback>();
+    let id = 0;
+    let sync = false;
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      if (sync) { sync = false; cb(0); return 0; }
+      frames.set(++id, cb);
+      return id;
+    });
+    vi.stubGlobal('cancelAnimationFrame', (h: number) => { frames.delete(h); });
+    return {
+      syncNext: () => { sync = true; },
+      run: () => { const all = [...frames.values()]; frames.clear(); for (const cb of all) cb(0); },
+    };
+  }
+  const weightRow = (view: RenderResult) => Array.from(view.container.querySelectorAll('.bt-vitals-card .bt-row'))
+    .find((r) => r.querySelector('.bt-name-label')?.textContent === 'Weight');
+  /** Height, sex and birth, a waist saved on 2026-09-01, no weight: the vitals as a matrix, the weight the last answer. */
+  async function matrixWeightLast(): Promise<RenderResult> {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await addMeasurement('waist', 90, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(weightRow(view)?.querySelector('.bt-cell-draft input')).toBeTruthy());
+    await settle(200);
+    return view;
+  }
+
+  it('US-62 AC13, AC31 (R2): a weight typed into the empty 09-01 cell and saved counts as the last step, and lands nothing', async () => {
+    const view = await matrixWeightLast();
+    const cell = weightRow(view)!.querySelector('.bt-cell-backfill input')!;
+    type(cell, '80');
+    fireEvent.keyDown(cell, { key: 'Enter' });
+    await waitFor(() => expect(q(view, '.mh-ready')).toBeTruthy(), { timeout: 3000 });
+    expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]);
+    expect(calls('onboarding_done')).toHaveLength(1);
+    await settle(300);
+    expect(landed()).toBe(false);
+  });
+
+  it('US-62 AC25b (R5): the matrix weight\'s rest heard before the commit that ends the onboarding still lands', async () => {
+    const view = await matrixWeightLast();
+    const frames = heldFrames();
+    frames.syncNext(); // the rest's frame fires inside the keystroke, before the stage reaches 4
+    type(weightRow(view)!.querySelector('.bt-cell-draft input'), '106');
+    await waitFor(() => { frames.run(); expect(landed()).toBe(true); }); // the landing's frame, then its focus frame
+  });
+
+  it('US-62 AC25b (R4): "72" ends it, cleared, "72" again with its rest before its commit: lands', async () => {
+    const view = await matrixWeightLast();
+    const frames = heldFrames();
+    const cell = () => weightRow(view)!.querySelector('.bt-cell-draft input');
+    type(cell(), '72'); // ends the onboarding; its rest's frame held
+    type(cell(), ''); // cancels that rest; the stage falls
+    frames.syncNext();
+    type(cell(), '72'); // its rest fires before the stage is 4 again
+    await waitFor(() => { frames.run(); expect(landed()).toBe(true); });
+    expect(calls('onboarding_done')).toHaveLength(1);
   });
 });
