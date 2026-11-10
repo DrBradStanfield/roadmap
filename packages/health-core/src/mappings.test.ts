@@ -603,6 +603,36 @@ describe('screeningsToInputs', () => {
     }
   });
 
+  it.each(LAST)('US-06/US-15 AC11: %s reads the injected now, not the clock (A2-1)', (key, field) => {
+    for (const [now, thisMonth, nextMonth] of CLOCKS) {
+      const at = (value: string) => screeningsToInputs([{ screeningKey: key, value }], new Date(now))[field];
+      expect(at(nextMonth), now).toBeUndefined();
+      expect(at(thisMonth), now).toBe(thisMonth);
+    }
+  });
+
+  // The golden fakes Date.now, so it cannot see a caller that drops its now. Here the clock is real.
+  it('US-06/US-15 AC11: the plan and the reminders pass their injected now (A2-1)', async () => {
+    const { derivePlanInputs } = await import('./plan');
+    const { computeReminderSchedule } = await import('./reminder-schedule');
+    const { createEmptyFile } = await import('./roadmap-file');
+    vi.useRealTimers();
+    const now = new Date('2020-06-15T12:00:00Z');
+    const fileWith = (last: string) => {
+      const file = createEmptyFile({ deviceId: 'now-test', now: '2020-01-01T00:00:00Z' });
+      file.profile = { ...file.profile, sex: 'male', birthYear: 1960, birthMonth: 1 };
+      file.screenings = { ...file.screenings, colorectalMethod: 'fit_annual', colorectalLastDate: last };
+      return file;
+    };
+    const colorectal = (last: string) => computeReminderSchedule(fileWith(last), now).filter((i) => i.category === 'screening_colorectal');
+    // After that now (but long before the real clock): dropped.
+    expect(derivePlanInputs(fileWith('2021-01'), now).screenings.colorectalLastDate).toBeUndefined();
+    expect(colorectal('2021-01')).toEqual([]);
+    // Before it: kept, so the case above sees the date, not a missing row.
+    expect(derivePlanInputs(fileWith('2020-05'), now).screenings.colorectalLastDate).toBe('2020-05');
+    expect(colorectal('2020-05')).toHaveLength(1);
+  });
+
   it('covers every date key: six "last done", five follow-up', async () => {
     const { SCREENING_KEYS } = await import('./validation');
     const dates = SCREENING_KEYS.filter(k => k.endsWith('_date')).sort();

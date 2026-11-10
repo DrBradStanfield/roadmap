@@ -347,7 +347,7 @@ function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleIte
 }
 
 function fileScreenings(file: RoadmapFile, now: Date): ScreeningInputs {
-  return withPsaMeasurement(screeningsToInputs(fileScreeningRows(file.screenings)),
+  return withPsaMeasurement(screeningsToInputs(fileScreeningRows(file.screenings), now),
     newestUsablePsa(currentValueRows(file), now));
 }
 
