@@ -12,6 +12,7 @@ import { Profiler } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, render } from '@testing-library/react';
 import { MetricRows, trendBand, type RowModel } from './MyDataRows';
+import { cascaded } from '../testing/css-cascade';
 
 /** The font's metrics, as the canvas measures "H". */
 const DESCENT = 4, CAP = 11;
@@ -171,16 +172,15 @@ describe('US-62 AC8a: the trend is drawn over the name block\'s ink', () => {
     expect(container.querySelector('linearGradient stop')!.getAttribute('stop-opacity')).toBe('0.125');
   });
 
-  it('sizes the column in CSS, 56 and 44 below 390px, with no height to override the drawn one', async () => {
-    const { readFileSync } = await import('node:fs');
-    const { resolve } = await import('node:path');
-    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
-    const rule = /\n\.md-row-trend\s*\{([^}]*)\}/.exec(css)![1];
-    expect(rule).not.toMatch(/(^|[\s;])height\s*:/);
-    expect(rule).toMatch(/width:\s*56px/);
-    expect(css).toMatch(/\.md-row\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 56px 104px/);
-    const narrow = /@media \(max-width: 389px\) \{([\s\S]*?)\n\}/.exec(css)![1];
-    expect(narrow).toMatch(/\.md-row\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\) 44px 104px;/);
-    expect(narrow).toMatch(/\.md-row-trend\s*\{\s*width:\s*44px;/);
+  it('sizes the column in CSS, 56 and 44 below 390px, with no height to override the drawn one', () => {
+    const { container } = render(<MetricRows rows={[row]} onOpen={() => {}}/>);
+    const rowEl = container.querySelector('.md-row')!;
+    const trend = container.querySelector('.md-row-trend')!;
+    expect(rowEl.contains(trend)).toBe(true);
+    for (const width of [1280, 390, 375]) expect(cascaded(trend, 'height', width)).toBeUndefined();
+    expect(cascaded(trend, 'width', 390)).toBe('56px');
+    expect(cascaded(rowEl, 'grid-template-columns', 390)).toBe('minmax(0, 1fr) 56px 104px');
+    expect(cascaded(rowEl, 'grid-template-columns', 389)).toBe('minmax(0, 1fr) 44px 104px');
+    expect(cascaded(trend, 'width', 389)).toBe('44px');
   });
 });

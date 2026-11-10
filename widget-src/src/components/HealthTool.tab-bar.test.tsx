@@ -6,8 +6,8 @@
  * the widget, opaque, never fixed to the viewport; the chat's draft survives a
  * switch. US-20 AC2: crossing the breakpoint mid-session never crashes. US-62
  * AC34: Sign in and Settings live in the Account tab, not on a row. jsdom ignores
- * media queries, so the phone CSS is checked as text here and by computed style
- * in tools/webkit-verify.mjs.
+ * media queries, so the phone CSS is resolved from styles.css here (testing/css-cascade.ts)
+ * and checked by computed style in tools/webkit-verify.mjs.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -16,6 +16,7 @@ import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-libra
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { cascaded } from '../testing/css-cascade';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async original => ({
@@ -186,8 +187,7 @@ describe('US-20 AC6: the bottom tab bar', () => {
     const root = view.container.querySelector<HTMLElement>('.health-tool')!;
     expect(root.style.getPropertyValue('--hr-chat-top')).toBe('17px'); // no theme header here: the card's own inset
     expect(root.style.getPropertyValue('--hr-tabbar-h')).toBe('51px');
-    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
-    expect(css).toMatch(/height: calc\(100svh - var\(--hr-chat-top, 0px\) - var\(--hr-tabbar-h, 51px\) - 12px\)/);
+    expect(cascaded(panel.querySelector('.chat-embed')!, 'height', 390)).toBe('calc(100svh - var(--hr-chat-top, 0px) - var(--hr-tabbar-h, 51px) - 12px)');
   });
 
   it('the bar lives inside the widget, sticky, opaque, never fixed; the old fixed plan button is gone', async () => {
@@ -200,13 +200,16 @@ describe('US-20 AC6: the bottom tab bar', () => {
       expect(at).toBeGreaterThan(-1);
       return css.slice(at, css.indexOf('}', at));
     };
-    expect(rule('.hr-tabbar')).toContain('position: sticky;');
-    expect(rule('.hr-tabbar')).toContain('bottom: 0;');
-    expect(rule('.hr-tabbar')).toContain('padding-bottom: env(safe-area-inset-bottom, 0px);');
+    const bar = view.container.querySelector('.hr-tabbar')!;
+    expect(cascaded(bar, 'position', 390)).toBe('sticky');
+    expect(cascaded(bar, 'bottom', 390)).toBe('0');
+    expect(cascaded(bar, 'padding-bottom', 390)).toBe('env(safe-area-inset-bottom, 0px)');
     expect(rule('.hr-tabbar')).not.toContain('fixed');
-    expect(rule('.hr-tabbar')).toContain('background: #f8f8fa;'); // opaque: nothing shows through
+    expect(cascaded(bar, 'background', 390)).toBe('#f8f8fa'); // opaque: nothing shows through
     expect(css).not.toContain('backdrop-filter');
-    expect(rule('.hr-tab--active')).toContain('color: var(--color-brand-text);');
+    const active = within(view.getByRole('tablist')).getAllByRole('tab').find(tab => tab.getAttribute('aria-selected') === 'true')!;
+    expect(active.classList.contains('hr-tab--active')).toBe(true);
+    expect(cascaded(active, 'color', 390)).toBe('var(--color-brand-text)');
     expect(css).not.toMatch(/swiper|mobile-view-plan-btn|mobile-tab/i);
   });
 
@@ -256,9 +259,7 @@ describe('US-62 AC34: the Account tab', () => {
     expect(view.queryByRole('button', { name: 'Settings' })).toBeNull();
     expect(view.queryByRole('button', { name: 'Sign in' })).toBeNull(); // not until Account shows
     expect(view.container.querySelector('.hr-top-bar')).toBeNull();
-    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
-    const phone = css.slice(css.lastIndexOf('@media (max-width: 768px)'));
-    expect(phone).toMatch(/\.mh-header\s*\{\s*display:\s*contents;/); // no row, no gap
+    expect(cascaded(header, 'display', 390)).toBe('contents'); // no row, no gap
   });
 
   // Brad 2026-11-09: one sign-in, the storage card's button. The title line holds only what the
