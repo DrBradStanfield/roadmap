@@ -58,6 +58,7 @@ vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 import { HealthTool } from './HealthTool';
+import { deleteButton } from '../testing/settings';
 
 const TODAY = localDay(new Date());
 const calls = (name: string) => tracked.calls.filter(([n]) => n === name).map(([, m]) => m);
@@ -131,11 +132,13 @@ async function completeRecord() {
 }
 const mirror = () => loadFromLocalStorage();
 
-describe('US-01 AC7: the A/B conversion counts a new visitor\'s first saved value', () => {
-  it('US-01 AC7: a new visitor\'s first saved weight sends trackABConversion once; a second save sends none', async () => {
+describe('US-01 AC7: the measurement-save conversion counts a new visitor\'s first measurement save', () => {
+  it('US-01 AC7: a new visitor\'s profile save sends none; the first saved weight sends trackABConversion once; a second save sends none', async () => {
     const view = await open();
     type(q(view, '#heightCm'), '178');
     leave(q(view, '#heightCm'));
+    await settle(700); // the height's profile save has run
+    expect(conversions()).toBe(0);
     await saveWeight(view, '80');
     expect(conversions()).toBe(1);
     await saveWeight(view, '81');
@@ -149,6 +152,23 @@ describe('US-01 AC7: the A/B conversion counts a new visitor\'s first saved valu
     const view = await open();
     await saveWeight(view, '72');
     expect(conversions()).toBe(0);
+  });
+
+  it('US-01 AC7: an erase in the tab does not start it again: the new record\'s first weight sends none', async () => {
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', () => {});
+    const view = await open();
+    type(q(view, '#heightCm'), '178');
+    leave(q(view, '#heightCm'));
+    await saveWeight(view, '80');
+    expect(conversions()).toBe(1);
+    fireEvent.click(deleteButton());
+    await waitFor(async () => expect(await activeWeights()).toEqual([]), { timeout: 3000 });
+    await waitFor(() => expect(q(view, '#heightCm')).toBeTruthy());
+    type(q(view, '#heightCm'), '178');
+    leave(q(view, '#heightCm'));
+    await saveWeight(view, '81');
+    expect(conversions()).toBe(1);
   });
 });
 
@@ -196,7 +216,8 @@ describe('US-34 AC4: a change held behind an unsaved profile edit, then a refuse
     leave(q(view, '#heightCm'));
     await waitFor(() => expect(alert).toHaveBeenCalledWith(WRITE_REFUSED), { timeout: 3000 });
     await waitFor(() => expect((q(view, '#birthYear') as HTMLInputElement).value).toBe('1981'));
-    await settle(1200);
+    await waitFor(() => expect(calls('remote_change_applied')).toHaveLength(1), { timeout: 3000 });
+    await settle(300);
     expect(calls('remote_change_applied')).toHaveLength(1);
   });
 });
