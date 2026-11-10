@@ -10,7 +10,7 @@ import type { HealthInputs } from '@roadmap/health-core/types';
 import { FIELD_METRIC_MAP } from '@roadmap/health-core/mappings';
 import { detectUnitSystem, type MetricType, type UnitSystem } from '@roadmap/health-core/units';
 import { getJson, loadUnitPreference, safeRemoveItem, safeSetItem, saveUnitPreference } from '../lib/storage';
-import { opposite, pendingUnits, seenUnits, transition, type Units, type UnitsEvent } from './units-machine';
+import { heldUnits, opposite, pendingUnits, seenUnits, transition, type Units, type UnitsEvent } from './units-machine';
 
 /** This device's per-field unit toggles (lib/lpa-unit.ts reads its old Lp(a) entry). */
 const UNIT_OVERRIDES_KEY = 'health_roadmap_unit_overrides';
@@ -36,8 +36,7 @@ export function useUnits(setInputs: Dispatch<SetStateAction<Partial<HealthInputs
   // The machine's own copy, read by listeners between renders.
   const machine = useRef(units);
 
-  // Per-field unit overrides (persisted to localStorage). A chip's choice is kept as a unit, never as
-  // "the system's opposite": the record's units then apply over it and leave it (US-34 AC7a, Q4).
+  // Per-field unit overrides (persisted to localStorage).
   const [unitOverrides, setUnitOverrides] = useState(start.overrides);
   const [switchListeners] = useState(() => new Set<UnitSwitchListener>());
 
@@ -64,15 +63,20 @@ export function useUnits(setInputs: Dispatch<SetStateAction<Partial<HealthInputs
     }
   }, [typing, setInputs, switchListeners]);
 
-  // A row's chip: the other unit from the one the person saw (a press holds that).
+  // A field's own unit control: the other unit from the one the person saw (a press holds that).
+  // Returns the turn, for the matrix's re-read of the cells typed by hand. A unit that equals the
+  // system shown follows the system again (US-05 AC2), except while the record's units are held:
+  // they apply a frame later, and the chip's unit is kept through them (US-34 AC7a, Q4).
   const handleToggleFieldUnit = useCallback((field: string) => {
-    const seen = seenUnits(machine.current);
-    setUnitOverrides(prev => {
-      const next = { ...prev, [field]: opposite(prev[field] ?? seen) };
-      safeSetItem(UNIT_OVERRIDES_KEY, JSON.stringify(next));
-      return next;
-    });
-  }, []);
+    const state = machine.current;
+    const from = unitOverrides[field] ?? seenUnits(state);
+    const to = opposite(from);
+    const next = { ...unitOverrides, [field]: to };
+    if (to === state.shown && !heldUnits(state)) delete next[field];
+    setUnitOverrides(next);
+    safeSetItem(UNIT_OVERRIDES_KEY, JSON.stringify(next));
+    return { from, to };
+  }, [unitOverrides]);
 
   // Convert field-keyed overrides to MetricType-keyed for health-core + ResultsPanel.
   // Lp(a) has its own three-unit control (US-05 AC2): an old build's two-way

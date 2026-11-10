@@ -11,7 +11,7 @@ import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, mayStillFit, ty
 import { useRangeWait } from '../lib/useRangeWait';
 import { useAutoAdvance } from '../lib/useAutoAdvance';
 import type { ApiLabValue, ApiSupplement } from '../lib/api-types';
-import type { UnitSwitchSource } from '../lib/useBloodDraftUnits';
+import type { FieldUnitToggle, UnitSwitchSource } from '../lib/useBloodDraftUnits';
 import { loadFromLocalStorage } from '../lib/storage';
 import { useLeaveField, type PanelOnboarding } from '../hooks/useOnboarding';
 
@@ -94,7 +94,7 @@ interface InputPanelProps {
   unitSystem: UnitSystem;
   onUnitSwitch: UnitSwitchSource; // this tab's unit switch (useUnits): the blood-test matrix re-reads its typed cells
   unitOverrides: Record<string, UnitSystem>;
-  onToggleFieldUnit: (field: string) => void;
+  onToggleFieldUnit: FieldUnitToggle;
   startUnitOf: (field: string) => UnitSystem; // this device's units before the record's (useUnits), for kept drafts with no unit
   previousMeasurements: ApiMeasurement[];
   bloodTestHistory: ApiMeasurement[];
@@ -552,7 +552,7 @@ export function InputPanel({
           {hasUnitToggle(field) ? (
             <button
               type="button"
-              className="unit-toggle-pill"
+              className="unit-toggle-pill" data-unit-control
               onClick={(e) => { e.preventDefault(); onToggleFieldUnit(field); }}
               title={`Switch to ${fieldUnit(field) === 'si' ? 'conventional' : 'metric'} units`}
             >
@@ -680,14 +680,14 @@ export function InputPanel({
           </a>
           {/* Whole value column expands the row — Clarity showed users dead-clicking
               the value/unit text expecting exactly that (the 28px + button was the
-              only target). Unit pill stops propagation so toggling stays a toggle. */}
-          <span className="collapsed-field-value" onClick={onExpand} title="Add new value">
+              only target). A press on the unit pill stays a toggle; it reaches the page's unit listeners (hooks/useUnits). */}
+          <span className="collapsed-field-value" onClick={(e) => { if (!(e.target as Element).closest('[data-unit-control]')) onExpand(); }} title="Add new value">
             {displayValue}{' '}
             {hasUnitToggle(field) ? (
               <button
                 type="button"
-                className="unit-toggle-pill"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFieldUnit(field); }}
+                className="unit-toggle-pill" data-unit-control
+                onClick={(e) => { e.preventDefault(); onToggleFieldUnit(field); }}
                 title={`Switch to ${fieldUnit(field) === 'si' ? 'conventional' : 'metric'} units`}
               >
                 {unitLabel}

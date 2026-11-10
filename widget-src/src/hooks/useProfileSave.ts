@@ -63,7 +63,8 @@ export function useProfileSave(args: {
 
   // A fresh function each render: the timer runs the one from the render that scheduled it.
   async function flushProfile(erase?: string): Promise<boolean> {
-    if (getBackendKind() === 'local' && localHealthWritesStopped()) return true;
+    // Writes stopped: nothing is saved, so this tab's switch holds nothing (PR 1204 F4).
+    if (getBackendKind() === 'local' && localHealthWritesStopped()) { units.saved(units.pending()); return true; }
     const current: Partial<HealthInputs> = {};
     const previous: Partial<HealthInputs> = {};
     // This tab's unit switch is written even when the copy saved holds it: switched,
@@ -84,6 +85,7 @@ export function useProfileSave(args: {
       writeRefused(erase);
       return false;
     }
+    units.saved(inputs.unitSystem); // written; before onClean: a held change then finds the switch saved
     if (getBackendKind() === 'local' && localHealthWritesStopped()) return true;
     const refused = result.birthRefused;
     // A value out of range was refused (US-02 AC5): it stays in the form, unsaved, its error shown.
@@ -92,7 +94,6 @@ export function useProfileSave(args: {
     for (const field of PROFILE_FIELDS) {
       if (!kept.has(field)) (saved.current as any)[field] = inputs[field];
     }
-    units.saved(inputs.unitSystem); // before onClean: a held change then finds the switch saved
     if (refused) {
       // US-54 AC5b: the form shows the record's pair again, unless typed over
       // since, so it is clean and a remote change still applies (US-34 AC4).

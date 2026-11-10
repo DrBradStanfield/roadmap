@@ -133,8 +133,11 @@ export function useRecordApply(args: {
     // the page has shown its first read: it applies then and drops this
     // device's drafts, refused ones included (US-11 AC6); a refused draft
     // would otherwise hold it for good. This tab's unsaved unit switch holds it
-    // too: applied now, the record's units would undo it (US-34 AC7a, H2).
-    if (reason === 'remote') return relay.arrived(getEraseIdentity() === getShownErase() && (later().profileDirty() || !!latest.current.units.pending()));
+    // too: applied now, the record's units would undo it (US-34 AC7a, H2). Not
+    // on a page whose first read failed: its saves are off, so the switch would
+    // never save and the hold never end (PR 1204 F4).
+    const { units, loaded } = latest.current;
+    if (reason === 'remote') return relay.arrived(getEraseIdentity() === getShownErase() && (later().profileDirty() || (loaded && !!units.pending())));
     if (reason === 'refused') later().clearAnswered(true); // not an answer given here (US-62 AC13); spends a waiting landing (AC25b)
     return relay.reread();
   }, [relay]);

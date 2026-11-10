@@ -14,7 +14,7 @@ import { type GradeStatus, limitUngraded, savedStatus } from '@roadmap/health-co
 import { formatShortDate, MONTHS_SHORT } from '../lib/constants';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 import { useDraftMirror, useMatrixDraft } from '../lib/useMatrixDraft';
-import { useBloodDraftUnits, type UnitSwitchSource } from '../lib/useBloodDraftUnits';
+import { useBloodDraftUnits, type FieldUnitToggle, type UnitSwitchSource } from '../lib/useBloodDraftUnits';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { usePrefillRef } from '../lib/usePrefillRef';
@@ -124,7 +124,7 @@ export interface BloodTestTimelineProps {
   bloodTestHistory: ApiMeasurement[]; // full history, blood-test metrics only
   unitSystem: UnitSystem;
   unitOverrides: Record<string, UnitSystem>;
-  onToggleFieldUnit: (field: string) => void;
+  onToggleFieldUnit: FieldUnitToggle;
   /** This device's unit for a field as the page started, before the
    *  record's applied (useUnits): a draft cell kept with no unit was typed in it. */
   startUnitOf?: (field: string) => UnitSystem;

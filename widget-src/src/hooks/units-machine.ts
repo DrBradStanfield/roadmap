@@ -17,7 +17,11 @@ import type { UnitSystem } from '@roadmap/health-core/units';
  *   ends (H1), and `saw` is the units shown at the press: the click toggles from them.
  *   `unsaved`: the press began over this tab's unsaved switch (switching).
  * - switching: this tab's pill chose `shown`, and its save has not landed (H2). Offers
- *   are dropped: this press is newer (Q1), and leaving always writes it.
+ *   are dropped: this press is newer (Q1), and leaving always writes it. The relay
+ *   (lib/remote-replay.ts) is the one owner of "a remote change is waiting": it holds
+ *   any remote change while a switch is pending, so switching needs no offer of its own.
+ * `unsaved` and `offered` never meet: a press over a switch drops every offer, and only
+ * `switching` sets `unsaved` (units-machine.test.ts walks every route).
  */
 export type Units =
   | { mode: 'following'; shown: UnitSystem }
@@ -61,9 +65,14 @@ export const pendingUnits = (state: Units): UnitSystem | undefined =>
 /** The units a chip toggles from: the ones the person saw (H1). */
 export const seenUnits = (state: Units): UnitSystem => (state.mode === 'pressing' ? state.saw : state.shown);
 
-/** An offer while nothing is pressed or unsaved: held behind a focused field, else applied. */
-function offer(shown: UnitSystem, system: UnitSystem | undefined, typing: boolean): Step | undefined {
-  if (!system) return undefined;
+/** The record's units waiting for a leave, if any. */
+export const heldUnits = (state: Units): UnitSystem | undefined =>
+  (state.mode === 'holding' || state.mode === 'pressing' ? state.offered : undefined);
+
+/** An offer while nothing is pressed or unsaved: held behind a focused field, else applied.
+ *  A record with no units drops a held offer and leaves this device's units (Codex R2, PR 1204). */
+function offer(shown: UnitSystem, system: UnitSystem | undefined, typing: boolean): Step {
+  if (!system) return stay({ mode: 'following', shown });
   if (typing && system !== shown) return stay({ mode: 'holding', shown, offered: system });
   return applied(system);
 }
@@ -80,13 +89,13 @@ export function transition(state: Units, event: UnitsEvent): Step {
   }
   switch (state.mode) {
     case 'following':
-      if (event.type === 'offered') return offer(state.shown, event.system, event.typing) ?? stay(state);
+      if (event.type === 'offered') return event.system ? offer(state.shown, event.system, event.typing) : stay(state);
       if (event.type === 'pointed') return stay({ mode: 'pressing', shown: state.shown, saw: state.shown });
       if (event.type === 'clicked' && event.control === 'all') return switched(state.shown, opposite(state.shown));
       return stay(state);
     case 'holding':
       switch (event.type) {
-        case 'offered': return offer(state.shown, event.system, event.typing) ?? stay(state);
+        case 'offered': return offer(state.shown, event.system, event.typing);
         case 'left': return event.typing ? stay(state) : applied(state.offered);
         case 'pointed': return stay({ mode: 'pressing', shown: state.shown, saw: state.shown, offered: state.offered });
         case 'clicked': return event.control === 'all' ? switched(state.shown, opposite(state.shown)) : { state, effects: [{ type: 'leaveNextFrame' }] };
@@ -99,8 +108,8 @@ export function transition(state: Units, event: UnitsEvent): Step {
       const after = (): Units => (unsaved ? { mode: 'switching', shown } : offered ? { mode: 'holding', shown, offered } : { mode: 'following', shown });
       switch (event.type) {
         case 'offered':
-          if (!event.system || unsaved) return stay(state);
-          return stay({ mode: 'pressing', shown, saw, ...(event.system === shown ? {} : { offered: event.system }) });
+          if (unsaved) return stay(state);
+          return stay({ mode: 'pressing', shown, saw, ...(!event.system || event.system === shown ? {} : { offered: event.system }) });
         case 'pointed': return saw === shown ? stay(state) : stay({ ...state, saw: shown });
         case 'clicked':
           if (event.control === 'row') return { state: after(), effects: offered && !unsaved ? [{ type: 'leaveNextFrame' }] : [] };

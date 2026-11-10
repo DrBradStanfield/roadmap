@@ -139,6 +139,19 @@ describe('US-34 AC7a: the units machine, every state against every event', () =>
     expect(pendingUnits(state)).toBe(SI);
   });
 
+  it('no reachable state is a press over an unsaved switch that also holds an offer', () => {
+    const key = (s: Units) => JSON.stringify(s);
+    const seen = new Map<string, Units>([[key(following), following]]);
+    for (const state of seen.values()) { // a Map iterates entries added while it runs
+      for (const event of Object.values(E)) {
+        const next = transition(state, event).state;
+        if (!seen.has(key(next))) seen.set(key(next), next);
+      }
+    }
+    expect(seen.size).toBeGreaterThan(8);
+    expect([...seen.values()].filter((s) => s.mode === 'pressing' && s.unsaved && s.offered)).toEqual([]);
+  });
+
   it('pending: only this tab\'s unsaved switch; seen: what the press saw', () => {
     expect([following, holding, pressingHeld, pressingUnsaved, switching].map(pendingUnits)).toEqual([undefined, undefined, undefined, SI, SI]);
     expect(seenUnits({ mode: 'pressing', shown: US, saw: SI })).toBe(SI);

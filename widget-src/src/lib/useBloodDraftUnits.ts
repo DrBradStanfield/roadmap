@@ -18,6 +18,8 @@ import type { CellRef } from './useMatrixDraft';
 const UNCLEAR_UNIT = 'Re-enter this value: its unit is unclear after an update.';
 
 type Cell = CellRef<MetricType>;
+/** A field's own unit toggle (useUnits' `handleToggleFieldUnit`): the turn it made. */
+export type FieldUnitToggle = (field: string) => { from: UnitSystem; to: UnitSystem } | void;
 /** This tab's switch of the unit system, subscribed to (useUnits' `onSwitch`); returns the unsubscribe. */
 export type UnitSwitchSource = (listener: UnitSwitchListener) => () => void;
 
@@ -25,7 +27,7 @@ export function useBloodDraftUnits({ rows, unitSystem, unitOverrides, onToggleFi
   rows: Array<{ metric: MetricType; field: string }>;
   unitSystem: UnitSystem;
   unitOverrides: Record<string, UnitSystem>;
-  onToggleFieldUnit: (field: string) => void;
+  onToggleFieldUnit: FieldUnitToggle;
   onUnitSwitch?: UnitSwitchSource;
   unitOf: (cell: Cell) => UnitSystem | undefined;
   lpaUnitOf: (cell: Cell) => LpaUnit | undefined;
@@ -43,9 +45,12 @@ export function useBloodDraftUnits({ rows, unitSystem, unitOverrides, onToggleFi
     restamp('lpa', lpaUnit, unit);
     chooseLpaUnit(unit);
   };
+  // The re-read turns as the toggle did: from the unit the person saw at the
+  // press, which a record's units landing mid-press do not change (PR 1204 F2).
+  // A page without useUnits (a test's) gives no turn: from the unit shown.
   const toggleUnit = (metric: MetricType, field: string) => {
-    restamp(metric, fieldUnit(field), fieldUnit(field) === 'si' ? 'conventional' : 'si');
-    onToggleFieldUnit(field);
+    const { from, to } = onToggleFieldUnit(field) ?? { from: fieldUnit(field), to: fieldUnit(field) === 'si' ? 'conventional' : 'si' };
+    restamp(metric, from, to);
   };
   // The page's Units or Height pill switches the unit system (useUnits' `onSwitch`):
   // a unit chosen here too (Brad, 2026-11-10, PR 1147 re-check R1). Its press
