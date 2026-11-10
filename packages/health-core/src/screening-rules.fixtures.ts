@@ -364,7 +364,7 @@ export function screeningGolden(setNow: (d: Date) => void) {
   setNow(GOLDEN_NOW);
 
   return {
-    meta: { now: GOLDEN_NOW.toISOString(), edgeNow: EDGE_NOW.toISOString(), tz: process.env.TZ, cases: Object.keys(cases).length },
+    meta: { now: GOLDEN_NOW.toISOString(), edgeNow: EDGE_NOW.toISOString(), tz: Intl.DateTimeFormat().resolvedOptions().timeZone, cases: Object.keys(cases).length },
     constants: {
       SCREENING_MIN_AGE, SCREENING_INTERVALS, POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, LUNG_PACK_YEARS,
       GROUP_COOLDOWNS, SCREENING_OPTIONS, SCREENING_LABELS,
