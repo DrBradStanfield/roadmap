@@ -337,11 +337,10 @@ describe('US-44 AC6 — Save as PDF shows on a phone', () => {
     expect(css).not.toContain('hr-col-header--actions');
   });
 
-  it('styles.css: on a phone the cards keep their 10px side gutter (live 2026-11-01: Sign in sat flush on the screen edge)', () => {
+  it('styles.css: a phone card sets no side margin; the tab panel gives its 16px inset (US-62 AC36)', () => {
     const card = nest('section-card');
     for (const side of ['margin-left', 'margin-right']) {
-      for (const phone of [390, 768]) expect(cascaded(card, side, phone)).toBe('10px');
-      expect(cascaded(card, side, 769)).toBeUndefined(); // a phone's gutter only
+      for (const width of [390, 768, 769]) expect(cascaded(card, side, width)).toBeUndefined();
     }
     for (const side of ['padding-top', 'padding-right', 'padding-bottom', 'padding-left']) {
       for (const phone of [390, 768]) {
