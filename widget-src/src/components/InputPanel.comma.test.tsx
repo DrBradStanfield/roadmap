@@ -41,7 +41,7 @@ const renderPanel = () => {
     fieldsSaved: 0, hasApiResponse: true, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: { age: 66 }, grading: {},
   };
   const view = render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />);
-  openAboutYou(view.container); // wasDone: About you is rows; open each, so the height box shows (US-62 AC12)
+  openAboutYou(view.container); // About you is low, as rows; open each, so the height box shows (US-62 AC12)
   const box = (id: string) => view.container.querySelector<HTMLInputElement>(`#${id}`)!;
   return { ...view, box, onChange, onScreeningChange, scheduleLongitudinalSave };
 };

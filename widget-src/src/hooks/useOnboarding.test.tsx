@@ -102,6 +102,23 @@ describe('US-62 AC12: About you moves low', () => {
     expect(view.result.current.aboutYouLow).toBe(false);
   });
 
+  it('D3: leaving the card when About you is already low says it moves nothing, and changes nothing', () => {
+    const view = setup(4); // complete when first shown: low already
+    const before = view.result.current;
+    let moved = true;
+    act(() => { moved = view.result.current.profileLeft(); });
+    expect(moved).toBe(false);
+    expect(view.result.current).toBe(before); // no re-render: no state changed
+    const later = setup(3);
+    later.rerender({ stage: 4 });
+    let first = false;
+    act(() => { first = later.result.current.profileLeft(); moved = later.result.current.profileLeft(); }); // before the move commits
+    expect([first, moved]).toEqual([true, false]);
+    act(() => { moved = later.result.current.profileLeft(); }); // after it
+    expect(moved).toBe(false);
+    expect(later.result.current.aboutYouLow).toBe(true);
+  });
+
   it('leaving the card before the four answers hold moves nothing', () => {
     const view = setup(3);
     let moved = true;

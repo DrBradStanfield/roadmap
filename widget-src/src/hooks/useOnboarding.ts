@@ -85,6 +85,8 @@ export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded
 
   const [planReadyFor, setPlanReadyFor] = useState<number | null>(null);
   const [movedLow, setMovedLow] = useState<number | null>(null);
+  const low = useRef(false);
+  low.current = opened === 4 || movedLow === epoch;
 
   useEffect(() => {
     const rec = ref.current!;
@@ -104,7 +106,8 @@ export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded
   const clearAnswered = useCallback(() => { ref.current!.answered = false; }, []);
   const isComplete = useCallback(() => stageRef.current === 4, []);
   const profileLeft = useCallback(() => {
-    if (stageRef.current !== 4) return false;
+    if (stageRef.current !== 4 || low.current) return false;
+    low.current = true; // a second leave before the move commits moves nothing either
     setMovedLow(ref.current!.epoch);
     return true;
   }, []);
@@ -116,7 +119,7 @@ export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded
 
   return {
     reached, epoch, fullForm,
-    aboutYouLow: opened === 4 || movedLow === epoch,
+    aboutYouLow: low.current,
     planReady: planReadyFor === epoch,
     isComplete, markAnswered, clearAnswered, profileLeft, dismissPlanReady,
   };
