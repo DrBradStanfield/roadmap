@@ -479,7 +479,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // originals go by the session's rule, never by the page (US-11 AC6).
   const handleDeleteData = useCallback(() => eraseAll(() => {
     clearLocalStorage();
-    clearOffFileAfterErase();
+    clearOffFileAfterErase(); // the second DRAFTS_CLEARED when the write lands; kept, since on a failed write the session clears nothing
     setInputs({});
     clearForErase();
     cancelPendingSave();

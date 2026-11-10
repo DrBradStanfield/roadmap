@@ -10,7 +10,7 @@ import { ConflictError, ROADMAP_FILE_NAME, type StorageAdapter } from './adapter
 import { buildErasedFile } from './erase';
 import { CLOCK_KEYS, mergeFiles } from './merge';
 import { SchemaTooNewError } from './migrate';
-import { liftMissed, type DeviceMirror, type RecordHost, type SyncStorage } from './record-host';
+import { announce, laterChange, liftMissed, type DeviceMirror, type RecordHost, type RemoteChange, type SyncStorage } from './record-host';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { CURRENT_SCHEMA_VERSION, stableStringify, type RoadmapFile } from './roadmap-file';
 import { SyncManager, type SyncContext } from './sync-manager';
@@ -487,7 +487,7 @@ export class RecordSession {
     // The counting is the page's: it fires `remote_change_applied` when it
     // has actually re-rendered. A change of clocks alone is taken in and
     // announced to nobody: there is nothing new to show.
-    if (this.adopt(merged)) this.host.remoteChanged();
+    announce(this.host, this.adopt(merged));
     return true;
   }
 
@@ -511,7 +511,7 @@ export class RecordSession {
         const merged = ROADMAP_DOC.merge(this.current, ROADMAP_DOC.migrate(body, ctx), ctx);
         this.revisionSeen = store.writeSync(ROADMAP_DOC.fileName, merged, version).version;
         this.savedChanges = this.changes;
-        if (this.adopt(merged)) this.host.remoteChanged();
+        announce(this.host, this.adopt(merged));
         return;
       } catch {
         // Another page's write in between: the async save re-reads, merges
@@ -592,13 +592,13 @@ export class RecordSession {
     return { deviceId: this.deviceId, now: new Date(this.host.clock.now()).toISOString() };
   }
 
-  /** Take a merge in as the working copy, and answer whether it brought in
-   *  something a person would see, for the caller to announce. One that
+  /** Take a merge in as the working copy, and answer what it brought in that
+   *  a person would see, for the caller to announce (null: nothing). One that
    *  carries an erase made on another device clears this device's off-file
    *  health data, as the erase clears it where it is made (US-11 AC1, AC6;
    *  one clear for both, O5) — but never the original of a document the
    *  merge keeps (US-09 AC20, AC23). */
-  private adopt(merged: RoadmapFile): boolean {
+  private adopt(merged: RoadmapFile): RemoteChange | null {
     const seen = visibleContentOf(this.current);
     // An erase from elsewhere, a later one at the same epoch included (adversary R6).
     const erasedElsewhere = eraseIdentityOf(merged) !== this.eraseIdentity;
@@ -606,7 +606,7 @@ export class RecordSession {
     this.current = merged;
     // Nor a full pre-erase copy of the record on this device (US-06 AC13).
     if (erasedElsewhere && this.host.tier === 'cloud' && !this.unsaved) this.releaseErasedCopy(this.host.mirror);
-    return visibleContentOf(merged) !== seen;
+    return visibleContentOf(merged) === seen ? null : { erase: erasedElsewhere ? eraseIdentityOf(merged) : null };
   }
 
   /**
@@ -706,7 +706,7 @@ export class RecordSession {
     // find: it stands aside while a write is pending, and the merge below has
     // already taken the change into the working copy (US-34 AC1). Announce it
     // here or the screen stays stale until a reload.
-    let remoteFolded = false;
+    let remoteFolded: RemoteChange | null = null;
     try {
       do {
         this.dirtyDuringPersist = false;
@@ -717,12 +717,12 @@ export class RecordSession {
         this.savedChanges = saving;
         // Fold remote changes back in without dropping edits made during the
         // await; merge is the source of truth for combining the two.
-        if (this.adopt(mergeFiles(this.current, result.file, this.ctx()))) remoteFolded = true;
+        remoteFolded = laterChange(remoteFolded, this.adopt(mergeFiles(this.current, result.file, this.ctx())));
       } while (this.dirtyDuringPersist);
       // Ended before anyone hears of it: a listener that saves again starts a
       // new save, instead of joining this finished one.
       this.running = null;
-      if (remoteFolded) this.host.remoteChanged();
+      announce(this.host, remoteFolded);
       // A skipped (unreadable) mirror holds data this save did NOT include —
       // keep its marker so the next load retries it.
       if (this.host.tier === 'cloud' && !this.mirrorSkipped) this.releaseMarker(this.host.mirror);
@@ -731,7 +731,7 @@ export class RecordSession {
       this.running = null; // as above: ended before the marker is announced
       // A pass that landed before this one failed may have folded a remote
       // change in: the page must still hear of it (adversary R3).
-      if (remoteFolded) this.host.remoteChanged();
+      announce(this.host, remoteFolded);
       // The background cloud save failed — this MUST be observable (unreported,
       // it's silent data-at-risk), and the changes must NOT stay memory-only:
       // mirror the working copy on-device so a page close can't lose it, and
