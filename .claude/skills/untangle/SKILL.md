@@ -53,6 +53,11 @@ needs, then fix the design so most of them go.
 3. **Bugs first.** Each bug lead is its own Lane A PR: AC, failing test, fix.
 4. **Pin before a move.** Before moving code, add tests that pin what the
    caller sees today. They must fail if the moved code is broken or dropped.
+   A converted check must also pin where the value must not apply. When a
+   test moves to a better route (CSS read through the cascade, say), it is
+   easy to keep the positive case and drop the negative. Reviewers caught
+   this twice (PRs 1170, 1179). Assert at a width, state or element where the
+   value must be absent too.
 5. **Move.** One move per PR, with its pins kept and green.
 
 ## Implicit state machines
@@ -67,6 +72,10 @@ type Glow = { phase: 'still' } | { phase: 'glowing'; ids: Set<string> } | { phas
 
 - Change it only through a pure `transition(state, event)`.
 - Test it with a table: each state x event row names the state that follows.
+- A transition table that needs events in a set order has a hidden link. If
+  A reaches C only when event x comes before y, the order is an unwritten
+  rule. Carry the fact on one event (`saved{attempt}`, not `saveWritten`
+  then `saved`), so any order is safe (PR 1181).
 - **Warranted** where async work races: upload, chat send, saves, erase.
 - **Not warranted** for plain view state: a tab, a toggle.
 - **Synchronous claim refs stay.** A ref set in the same turn as a click,
@@ -117,10 +126,19 @@ a parent that draws a section for any truthy slot draws an empty one
 
 Line counts are a vital sign, not the goal (CLAUDE.md, Code entropy).
 
+`node tools/untangle-measures.mjs <files or folders>` counts what a regex
+can: size, mode flags (refs, boolean state, timers), special cases,
+co-change and fan-in/out. It cannot see a mode kept as a string, and the
+rest (a typical change lands in one place, import direction, unchanged
+behaviour) are still judged by reading and by the tests. Run it on the area before the
+first PR and after the last, with the same `--since` both times, or the date
+the area's work started. Add `--json` to compare runs. Put both sets of
+numbers in the PR body. They are trend numbers from regexes, not verdicts.
+
 ## Decision log
 
-The log lives in `docs/untangle/`, one file per area. The folder does not exist
-yet; the first area to keep a log creates it. Write each fix above the
+The log lives in `docs/untangle/`, the ledger every untangle PR updates
+(its README says how). Write each fix above the
 problems it solves, so a reader sees why it exists. The shape (names made up):
 
 ```md
