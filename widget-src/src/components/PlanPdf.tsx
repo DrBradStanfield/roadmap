@@ -36,7 +36,7 @@ export const REMINDER_SIGNUP_DONE = "You're signed up. We'll email you when a ch
 export const PDF_WINDOW_BLOCKED = "The PDF window didn't open. Try Save as PDF again. Some apps' built-in browsers block it.";
 
 /** The button whose print window was refused: the note sits beside it. */
-export type PdfButton = 'bottom' | 'capture';
+type PdfButton = 'bottom' | 'capture';
 
 /** US-18 AC6: always mounted and emptied before each try, so every refusal is announced. */
 function PdfNote({ show }: { show: boolean }) {
@@ -45,7 +45,7 @@ function PdfNote({ show }: { show: boolean }) {
 
 /** Open the print/save-as-PDF window for a built report (shared by the Print
  *  button and, on local-first, the email-capture button). */
-export function openPrintWindow(html: string): boolean {
+function openPrintWindow(html: string): boolean {
   const printWindow = window.open('', '_blank');
   if (!printWindow) return false;
   printWindow.document.write(html);
@@ -54,7 +54,7 @@ export function openPrintWindow(html: string): boolean {
   return true;
 }
 
-export interface PlanPrint {
+interface PlanPrint {
   printStatus: 'idle' | 'loading';
   pdfBlocked: PdfButton | null;
   pdfOpened: boolean;
@@ -117,7 +117,7 @@ export function usePlanPrint(hasPlan: boolean, hasUnsavedLongitudinal?: boolean,
 }
 
 /** Which email box the PDF box holds: the gate (US-18), US-44's reminders, or none once captured. */
-export type EmailBox = 'gate' | 'reminders' | null;
+type EmailBox = 'gate' | 'reminders' | null;
 
 export function emailBox(state: GuestEmailState, gateSkipped: boolean): EmailBox {
   if (state === 'captured') return null;
@@ -128,7 +128,7 @@ export function emailBox(state: GuestEmailState, gateSkipped: boolean): EmailBox
  * The PDF box's mode (US-62 AC26): its email box, and whether the ungated Save as PDF
  * shows. Save as PDF: always on Pages. On Shopify the email capture is the PDF path,
  * so the ungated button shows once captured, on US-44's gate-skipped page, or for a
- * known minor (US-07 AC6). `emailCapture` already excludes a minor.
+ * known minor (US-07 AC6). `emailCapture` already excludes a minor, and implies a plan.
  */
 export function pdfBox({ planned, adult, emailCapture, state, gateSkipped, shopify }: {
   planned: boolean; adult: boolean; emailCapture: boolean; state: GuestEmailState; gateSkipped: boolean; shopify: boolean;

@@ -239,7 +239,6 @@ export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitud
   return { layout, topics, planned, highlights, alcoholQuestion, urgent, cardIds, evidence, supplementsRef, pdf, foot, attention, onErased: () => { forget(); setOpened(NO_HIGHLIGHTS); }, report };
 }
 
-
 /** My health's foot (US-62 AC26): the disclaimer, feedback, Supercharge and the privacy link. */
 function PlanFoot({ planned }: { planned: boolean }) {
   return (
