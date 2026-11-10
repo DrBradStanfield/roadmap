@@ -180,7 +180,6 @@ export type BloodTableReport = ReturnType<typeof bloodTableReport>;
 
 // --- small pure helpers ---
 
-
 function activeOnly<T extends { status: string }>(rows: T[]): T[] {
   return rows.filter((r) => r.status === 'active');
 }
@@ -500,15 +499,16 @@ export class RoadmapStore {
     documents: Array<DocumentPayload<Blob>>,
   ): Promise<{ saved: ApiDocument[]; errorCount: number; unstored?: number }> {
     // The batch stands for the erase the page showed as it started: refused
-    // before any upload if that is not this copy's, and again at the commit,
-    // since an erase can land while the uploads run.
+    // before any upload if that is not this copy's, before each file write and
+    // at the commit, since an erase can land while the uploads run (US-11 AC1a).
     const erase = this.shownErase;
     if (this.refuses(erase)) return { saved: [], errorCount: documents.length };
     const { saved, unstored, commit } = await saveDocuments(this.file, documents, {
       hash: sha256Blob,
-      write: (ref, file) => this.host.store.writeDocument(ref, file),
+      write: (ref, file) => (this.refuses(erase) ? Promise.reject(new Error('erase moved')) : this.host.store.writeDocument(ref, file)),
       mimeType: (file) => file.type || '',
       onWriteError: (error) => {
+        if (this.refuses(erase)) return; // a refusal, not a failure
         console.warn('Document file not stored');
         Sentry.captureException(recordFailure(error, 'Document file not stored'), {
           tags: { area: 'cloud-sync', op: 'write-document', backend: this.host.store.id },
