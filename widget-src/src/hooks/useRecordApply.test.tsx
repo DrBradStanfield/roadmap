@@ -139,6 +139,21 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     expect(hook.result.current.ownSave).toBe(first);
   });
 
+  it('US-34 AC4a: ownSave reads what READ_POLICY[\'own-save\'] says, so a record policy there gives the full read', async () => {
+    const kept = recordApply.READ_POLICY['own-save'];
+    recordApply.READ_POLICY['own-save'] = { read: 'record', relay: 'reread', spends: false };
+    try {
+      const { fx, hook } = setup();
+      await act(async () => { await hook.result.current.ownSave(); });
+      await settle();
+      expect(fx.later.flushPendingSave).toHaveBeenCalledTimes(1);
+      expect(fx.setInputs).toHaveBeenCalledTimes(1);
+      expect(fx.later.markSaved).toHaveBeenCalledWith(RESULT.inputs);
+    } finally {
+      recordApply.READ_POLICY['own-save'] = kept;
+    }
+  });
+
   it('US-11 AC6, US-34 AC4: held, another device\'s erase arrives with the profile still dirty: it applies, ends the hold, counted once', async () => {
     const { fx, hook } = setup();
     fx.later.profileDirty.mockReturnValue(true);
