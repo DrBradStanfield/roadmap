@@ -48,11 +48,11 @@ If you are signed in to this site, the tool page's chat still runs as if you wer
 
 ## The chat bubble on other pages
 
-Where the chat bubble appears on other pages of this site, it works differently. It reads the copy of your record in this browser and sends your saved values with each message, much as the tool page's chat does.
+Where the chat bubble or the chatbot embed appears on other pages of this site, it works differently. It reads the copy of your record in this browser and sends your saved values with each message, much as the tool page's chat does.
 
 Our server stores that chat: your question and the reply, and the reply can quote your values. Your questions are not masked here: numbers stay as you typed them. A daily job blanks each message's text 30 days after that message. The conversation's title, made of the first words of your first question, is blanked 30 days after your last message in that conversation. Our server also keeps a row for each question, as on the tool page. That row holds your question unmasked, with up to four of your earlier questions, and its text is blanked 30 days after the row was made. What stays is the shape: the ids, the times and the token counts. If you delete a conversation in the chat, its messages and title go at once, and its question text is blanked.
 
-If you are not signed in, the chat is tied to a random session id, stored with a scrambled form of your network address. If you are signed in, each message makes our server look up your email address and your first and last name from your store account. The first time, it creates an account row for you in our database with those details, and an audit entry saying it did. Later messages keep the names up to date. The conversation is stored under your account row. The daily job and Delete All My Data do not remove it. It also sends a summary of your recent orders on this store to Anthropic with each message, so the chat can answer questions about them.
+If you are not signed in, the chat is tied to a random session id, stored with a scrambled form of your network address. If you are signed in, each message makes our server look up your email address and your first and last name from your store account. The first time, it creates an account row for you in our database with those details, and an audit entry saying it did. Your names are updated when our server next reads your store account. The conversation is stored under your account row. The daily job and Delete All My Data do not remove your account row. It also sends a summary of your recent orders on this store to Anthropic with each message, so the chat can answer questions about them.
 
 ## The questions we keep
 
@@ -66,7 +66,7 @@ If you connect an AI assistant through our connector, our server reads your reco
 
 What your assistant reads goes to its own company, OpenAI or Anthropic, under that company's policy. If you ask it to import lab files from your Dropbox folder, those files go to Anthropic's API the same way uploads do. The full account is in the [connector privacy notice](https://drstanfield.com/pages/connector-privacy).
 
-If you ask your assistant to report a bug, our server files it as a public issue on the project's GitHub page. It holds the assistant's description of the problem. The tool refuses a report that looks like a health value, but it cannot spot a diagnosis written in words, so read the report before you agree.
+If you ask your assistant to report a bug, our server files it as a public issue on the project's GitHub page. It holds the assistant's description of the problem. The tool refuses a report that looks like it holds a value, an email or a phone number. It can miss one, and it cannot spot a diagnosis written in words, so read the report before you agree.
 
 If you would rather our server never saw your record, the same tools run on your own computer, straight against your file: see [connect Claude](/blogs/guides/connect-claude) and [the command line](/blogs/guides/command-line).
 

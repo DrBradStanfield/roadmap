@@ -1509,10 +1509,10 @@
     "category": "conversation-persistence",
     "source": "audit-2026-05-14",
     "must_mention": [
-      "account.drstanfield.com",
       "Yes"
     ],
     "must_not_mention": [
+      "account.drstanfield.com",
       "screenshot",
       "copy-paste",
       "email it to yourself",
