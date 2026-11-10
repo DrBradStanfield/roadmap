@@ -110,9 +110,10 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
   }, []);
 
   // Closing active work only hides it. Drafts and pending saves remain mounted.
+  // A claimed read is active work even when this render still shows the pick
+  // screen: Close hides it, never aborts it into a stuck reading phase.
   const close = useCallback(() => {
-    if (!savingRef.current && (phase === 'picking' || phase === 'done' || phase === 'readFailed')) {
-      abortRead();
+    if (!savingRef.current && !abortRef.current && (phase === 'picking' || phase === 'done' || phase === 'readFailed')) {
       dispatch({ type: 'close' });
       setSkipArchive(false);
     }
