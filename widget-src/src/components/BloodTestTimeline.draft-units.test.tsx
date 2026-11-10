@@ -74,7 +74,7 @@ function page(rows: ApiMeasurement[] = [], start?: UnitSystem, mountedIn: UnitSy
   /** Into the matrix, and out: the gesture that commits the draft (US-03 AC5). */
   const leave = async () => { press(ldl()); press(view.getByRole('button', { name: 'Elsewhere' })); await wait(0); };
   /** What the commit saved, by metric and day, in SI. */
-  const saved = (): Record<string, number> => Object.assign({}, ...(onSaveBatch.mock.calls[0][0] as SaveTask[])
+  const saved = (call = 0): Record<string, number> => Object.assign({}, ...(onSaveBatch.mock.calls.at(call)![0] as SaveTask[])
     .map((t) => Object.fromEntries(Object.entries(t.values).map(([m, v]) => [`${m}@${t.date}`, v]))));
   return { row, cell, ldl, pill, chip, elsewhere, fromRecord, leave, saved, prefillRef };
 }
@@ -134,6 +134,30 @@ describe('US-04 AC1, US-34 AC7: a unit switched outside the matrix re-reads no b
     p.pill();
     await wait(0);
     expect(Object.values(p.saved())).toEqual([3.5]);
+  });
+
+  // Brad 2026-11-10 (re-check R1, option a): the pill is a unit chosen here
+  // too. A hand-typed cell its press could not commit stays, and is re-read.
+  it('"135" typed in mmol/L, refused, then the pill: it reads 135 mg/dL, says nothing is wrong, and saves so', async () => {
+    const p = page();
+    typeInto(p.ldl(), '135');
+    expect(p.ldl().getAttribute('aria-invalid')).toBe('true');
+    p.pill();
+    await wait(0);
+    expect(p.ldl().value).toBe('135');
+    expect(p.ldl().getAttribute('aria-invalid')).toBe('false');
+    await p.leave();
+    expect(Object.values(p.saved(-1))).toEqual([expect.closeTo(mgdl(135), 6)]);
+  });
+
+  it('a field already in the new unit by its own chip is not re-read: "5300" refused in mg/dL stays mg/dL through the pill to US units', async () => {
+    const p = page();
+    p.chip(); // LDL in mg/dL, the page in SI
+    typeInto(p.ldl(), '5300');
+    p.pill();
+    await wait(0);
+    expect(p.ldl().value).toBe('5300');
+    expect(p.ldl().getAttribute('aria-invalid')).toBe('true'); // still over 498 mg/dL, never read as 5300 mmol/L
   });
 
   it('the pill keeps a chat-filled value\'s quantity, and a restored cell\'s: shown in mg/dL, saved as mmol/L', async () => {

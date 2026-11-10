@@ -384,6 +384,27 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
     expect((await activeLdl())[0]).toBeCloseTo(toCanonicalValue('ldl', 3.5, 'conventional'), 6);
   });
 
+  // Brad 2026-11-10 (PR 1147 re-check R1, option a): the page's Units pill
+  // re-reads a hand-typed cell its press could not commit.
+  it('US-05 AC2: "135" typed into LDL in mmol/L, refused, then the Units pill: it saves 135 mg/dL', async () => {
+    await siRecord();
+    const view = await open();
+    await settle(50); // About you's opened rows take the focus a frame later; a leave would commit the draft
+    typeInto(await ldlDraft(view), '135');
+    const pill = await waitFor(() => {
+      const el = q(view, '.unit-toggle-pill');
+      if (!el) throw new Error('no unit pill');
+      return el as HTMLElement;
+    });
+    pressMouse(pill); releaseMouse(pill);
+    await waitFor(async () => expect((await ldlDraft(view)).getAttribute('aria-invalid')).toBe('false'));
+    expect((await ldlDraft(view)).value).toBe('135');
+    press(await ldlDraft(view));
+    press(q(view, '.alr-add-btn') as HTMLElement);
+    await waitFor(async () => expect(await activeLdl()).toHaveLength(1), { timeout: 3000 });
+    expect((await activeLdl())[0]).toBeCloseTo(toCanonicalValue('ldl', 135, 'conventional'), 6);
+  });
+
   // A draft kept from an earlier visit carries the unit it was typed in. The
   // record's system at load, and a preference another tab set, never re-read it.
   describe('US-04 AC1, US-34 AC7: a kept LDL draft typed in mmol/L saves as mmol/L, whatever the units at load', () => {

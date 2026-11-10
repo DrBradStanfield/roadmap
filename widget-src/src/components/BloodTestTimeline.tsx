@@ -221,7 +221,7 @@ export function BloodTestTimeline({
 
   // The units typed cells are read and shown in, Lp(a)'s own included (lib/useBloodDraftUnits).
   const { lpaUnit, pickLpaUnit, toggleUnit, fieldUnit, typedUnit, unreadable, shownText, checkOf } = useBloodDraftUnits({
-    unitSystem, unitOverrides, onToggleFieldUnit, unitOf, lpaUnitOf, restamp,
+    rows: ROWS, unitSystem, unitOverrides, onToggleFieldUnit, unitOf, lpaUnitOf, restamp,
   });
 
   // Per-metric SI series (oldest → newest) + lastSi for trend column.

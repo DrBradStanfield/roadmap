@@ -4,8 +4,10 @@
 // from another device, never re-reads a number already typed: the cell keeps
 // its quantity, shown in the new unit. A unit chosen on this page says what
 // the numbers typed are in (Brad, 2026-10-13), for the cells typed by hand on
-// this load of the page only: a row's own unit control re-reads them.
+// this load of the page only: a row's own unit control, or the page's Units
+// or Height pill, re-reads them.
 
+import { useEffect, useRef } from 'react';
 import type { LpaUnit, MetricType, UnitSystem } from '@roadmap/health-core/units';
 import { type CellUnit, cellText, cellToSI, readTypedValue, validateTypedValue } from './blood-test-cell';
 import { useLpaUnit } from './lpa-unit';
@@ -16,7 +18,8 @@ const UNCLEAR_UNIT = 'Re-enter this value: its unit is unclear after an update.'
 
 type Cell = CellRef<MetricType>;
 
-export function useBloodDraftUnits({ unitSystem, unitOverrides, onToggleFieldUnit, unitOf, lpaUnitOf, restamp }: {
+export function useBloodDraftUnits({ rows, unitSystem, unitOverrides, onToggleFieldUnit, unitOf, lpaUnitOf, restamp }: {
+  rows: Array<{ metric: MetricType; field: string }>;
   unitSystem: UnitSystem;
   unitOverrides: Record<string, UnitSystem>;
   onToggleFieldUnit: (field: string) => void;
@@ -31,8 +34,7 @@ export function useBloodDraftUnits({ unitSystem, unitOverrides, onToggleFieldUni
   // "Type 40, click mg/dL" is 40 mg/dL: a row's own unit control re-reads
   // the numbers typed by hand on this page. One the chat filled or the device
   // restored keeps its quantity (useMatrixDraft's `restamp`), and so does
-  // every cell through the page's pill, which commits the cells typed by hand
-  // first (useSaveOnLeave), or another surface's chip (the upload review).
+  // every cell through another surface's chip (the upload review).
   const pickLpaUnit = (unit: LpaUnit) => {
     restamp('lpa', lpaUnit, unit);
     chooseLpaUnit(unit);
@@ -41,6 +43,24 @@ export function useBloodDraftUnits({ unitSystem, unitOverrides, onToggleFieldUni
     restamp(metric, fieldUnit(field), fieldUnit(field) === 'si' ? 'conventional' : 'si');
     onToggleFieldUnit(field);
   };
+  // The page's Units or Height pill (`data-unit-control="all"`, InputPanel
+  // and AboutYou) switches the unit system: a unit chosen here too (Brad,
+  // 2026-11-10, PR 1147 re-check R1). Its press leaves the matrix, which
+  // commits the cells typed by hand first (useSaveOnLeave); one it could not
+  // commit (out of range: "135" typed in mmol/L) is re-read in the new unit
+  // on the click, before the switch renders. A field with its own unit keeps
+  // it: an override is always the system's opposite, so it is the new system.
+  // Lp(a) keeps its own rule (US-05 AC2): left out here.
+  const switchSystem = useRef(() => {});
+  switchSystem.current = () => {
+    const to = unitSystem === 'si' ? 'conventional' : 'si';
+    for (const { metric, field } of rows) if (metric !== 'lpa' && fieldUnit(field) !== to) restamp(metric, fieldUnit(field), to);
+  };
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => { if (e.target instanceof Element && e.target.closest('[data-unit-control="all"]')) switchSystem.current(); };
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
+  }, []);
   // The unit a typed cell is read in: the one it was typed in. An Lp(a) cell
   // restored from before that was kept has none: its value waits to be typed
   // again, never guessed (US-05 AC2). Every other cell is stamped as it is

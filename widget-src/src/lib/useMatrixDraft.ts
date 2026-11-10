@@ -101,7 +101,8 @@ function withCell<K extends string>(
  * before cells carried their unit is stamped with as it is restored: this
  * device's units as the page started, before the record's applied
  * (useUnits' `startUnitOf`). A best guess: the units its last visit showed,
- * unless another tab changed this device's since the cell was typed.
+ * unless another tab changed this device's since the cell was typed, or a
+ * load since applied the record's units without mounting the matrix.
  */
 export function useMatrixDraft<K extends string>(storageKey: string, record: {
   onScreen: (column: string, key: K) => boolean;
