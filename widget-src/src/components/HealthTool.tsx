@@ -545,7 +545,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // Leaving the field also lets About you go to Settings (AC12). A weight lands only on the Shopify build,
   // where it used to jump to the email box (US-22), so Pages never takes the focus from a value being
   // typed; the birth year (Brad 2026-11-02) lands on both.
-  const answeredIn = useCallback((field: 'weightKg' | 'birthYear') => answered(field === 'birthYear' || emailCaptureActive), [answered, emailCaptureActive]);
+  const answeredIn = useCallback((field: 'weightKg' | 'birthYear' | null) => answered(field === 'birthYear' || (field === 'weightKg' && emailCaptureActive)), [answered, emailCaptureActive]);
   const landOnMyHealth = useCallback(() => {
     selectTab('health');
     requestAnimationFrame(() => {

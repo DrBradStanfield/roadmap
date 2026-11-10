@@ -79,9 +79,9 @@ interface StartingInfoVitalsProps {
   plan: Pick<PlanBasis, 'age' | 'idealBodyWeight' | 'heightCm'> | null;
   /** A known minor, plan or no plan: no adult weight or BP target or colour (US-07 AC6). */
   knownMinor?: boolean;
-  /** The weight cell's answer, its leaving, and its value at rest: the onboarding's landing (US-62 AC25b). */
-  onWeightAnswered?: () => void;
-  onWeightLeft?: () => void;
+  /** The weight cell's answer (`past`: a past day's, which never lands), its ref, and its rest: the landing (US-62 AC25b). */
+  onWeightAnswered?: (past?: boolean) => void;
+  weightRef?: (el: HTMLInputElement | null) => void;
   rested?: () => void;
   /** The weight is asked beside the height (US-62 AC13): its row is left out, so it shows once. */
   withoutWeight?: boolean;
@@ -183,7 +183,7 @@ export function buildColumns(rows: ApiMeasurement[]): DateColumn[] {
 
 export function StartingInfoVitals({
   vitalsHistory, unitSystem, onSave, onCorrectValue,
-  onDraftValue, formStage, plan, knownMinor, onWeightAnswered, onWeightLeft, rested, withoutWeight, unitOverrides, onToggleFieldUnit, startUnitOf,
+  onDraftValue, formStage, plan, knownMinor, onWeightAnswered, weightRef, rested, withoutWeight, unitOverrides, onToggleFieldUnit, startUnitOf,
   prefillRef, flushRef, onHoldsText,
 }: StartingInfoVitalsProps) {
   const rows = withoutWeight ? ROWS.filter(r => r.kind !== 'simple' || r.metric !== 'weight') : ROWS;
@@ -483,7 +483,7 @@ export function StartingInfoVitals({
                             active={activeCell === cellId}
                             onChange={v => setSimpleDraft(row.metric, v)}
                             onFocus={() => setActiveCell(cellId)}
-                            onBlur={row.metric === 'weight' ? () => { onWeightLeft?.(); unmark(cellId)(); } : unmark(cellId)}
+                            onBlur={unmark(cellId)} inputRef={row.metric === 'weight' ? weightRef : undefined}
                             onKeyDown={e => { blockBadNumericKeys(e); if (e.key === 'Enter') { e.preventDefault(); saveNow(); } }}
                           />
                         );
@@ -506,7 +506,7 @@ export function StartingInfoVitals({
                             error={c.col.date === draft.date && clashes(row.metric) ? SAME_SLOT : refusal([c.col.date, row.metric])}
                             pinned={isPinned}
                             active={activeCell === cellId}
-                            onChange={val => setBackfill(c.col.date, row.metric, val)}
+                            onChange={val => { setBackfill(c.col.date, row.metric, val); if (row.metric === 'weight') onWeightAnswered?.(true); }}
                             onFocus={() => setActiveCell(cellId)}
                             onBlur={unmark(cellId)}
                             onEnter={saveNow}

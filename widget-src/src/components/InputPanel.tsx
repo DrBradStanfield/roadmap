@@ -12,7 +12,7 @@ import { useRangeWait } from '../lib/useRangeWait';
 import { useAutoAdvance } from '../lib/useAutoAdvance';
 import type { ApiLabValue, ApiSupplement } from '../lib/api-types';
 import { loadFromLocalStorage } from '../lib/storage';
-import type { PanelOnboarding } from '../hooks/useOnboarding';
+import { useLeaveField, type PanelOnboarding } from '../hooks/useOnboarding';
 
 import { FIELD_METRIC_MAP, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD, VITAL_METRICS } from '@roadmap/health-core/mappings';
 import { type WeightMedicationTrigger, type LipidMarker } from '@roadmap/health-core/suggestions';
@@ -188,6 +188,7 @@ export function InputPanel({
   // field cancels a pending advance to that target.
   const advanceToWeight = useAutoAdvance();
   const advanceToMyHealth = useAutoAdvance(true);
+  const weightRef = useLeaveField(left); // the weight's box or matrix cell (one shows): leaving it ends a landing (US-62 AC25b)
   const advanceToDiastolic = useAutoAdvance();
   // Shared keydown combos: numeric-only guard (US-02 AC4) + Enter-to-save.
   const onNumericEnter = (e: React.KeyboardEvent<HTMLInputElement>) => { blockBadNumericKeys(e); settleOnEnter(e); autoSaveOnEnterKey(e); };
@@ -566,7 +567,7 @@ export function InputPanel({
         <div className="longitudinal-input-row">
           <input
             type="number"
-            id={field}
+            id={field} ref={field === 'weightKg' ? weightRef : undefined}
             onWheel={blurOnWheel}
             value={rawInputs[field] !== undefined ? rawInputs[field] : toDisplay(field, (inputs[field] as number | undefined) ?? (box ? previous?.value : undefined))}
             onChange={(e) => {
@@ -586,7 +587,6 @@ export function InputPanel({
               if (field === 'weightKg') answered?.('weightKg');
             }}
             onBlur={() => {
-              if (field === 'weightKg') left?.();
               rangeWait.settle();
               if (unreadable[field]) return;
               setRawInputs(prev => { const next = { ...prev }; delete next[field]; return next; });
@@ -849,7 +849,7 @@ export function InputPanel({
         formStage={formStage}
         plan={planBasis}
         knownMinor={knownMinor}
-        onWeightAnswered={answered && (() => answered('weightKg'))} onWeightLeft={left} rested={rested}
+        onWeightAnswered={answered && (past => answered(past ? null : 'weightKg'))} weightRef={weightRef} rested={rested}
         withoutWeight={weightInProfile}
         unitOverrides={unitOverrides}
         onToggleFieldUnit={onToggleFieldUnit} startUnitOf={startUnitOf}

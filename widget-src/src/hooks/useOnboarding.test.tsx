@@ -134,7 +134,7 @@ describe('US-62 AC12: About you moves low', () => {
 
 describe('US-62 AC25b: the landing, decided by the hook from two facts', () => {
   const open = (lands: boolean, settled: boolean): Landing => ({ kind: 'open', lands, settled });
-  const awaiting: Landing = { kind: 'awaiting' };
+  const awaiting = (settled: boolean): Landing => ({ kind: 'awaiting', settled });
   const spent: Landing = { kind: 'spent' };
   const events: Array<[string, LandingEvent]> = [
     ['answered(true)', { type: 'answered', lands: true }],
@@ -143,15 +143,19 @@ describe('US-62 AC25b: the landing, decided by the hook from two facts', () => {
     ['settled(incomplete)', { type: 'settled', complete: false }],
     ['ended', { type: 'ended' }],
     ['left', { type: 'left' }],
+    ['foreign', { type: 'foreign' }],
+    ['completed', { type: 'completed' }],
   ];
   const stay = (s: Landing) => ({ next: s, land: false });
   // f: every state by every event, the land flag included.
   it.each<[string, Landing, Array<{ next: Landing; land: boolean }>]>([
-    ['open(false,false)', open(false, false), [stay(open(true, false)), stay(open(false, false)), stay(open(false, false)), stay(open(false, false)), stay(spent), stay(open(false, false))]],
-    ['open(false,true)', open(false, true), [stay(open(true, false)), stay(open(false, false)), stay(open(false, true)), stay(open(false, true)), stay(spent), stay(open(false, false))]],
-    ['open(true,false)', open(true, false), [stay(open(true, false)), stay(open(false, false)), stay(open(true, true)), stay(open(true, true)), stay(awaiting), stay(open(false, false))]],
-    ['open(true,true)', open(true, true), [stay(open(true, false)), stay(open(false, false)), stay(open(true, true)), stay(open(true, true)), { next: spent, land: true }, stay(open(false, false))]],
-    ['awaiting', awaiting, [stay(awaiting), stay(spent), { next: spent, land: true }, stay(awaiting), stay(awaiting), stay(spent)]],
+    // events: answered(true), answered(false), settled(complete), settled(incomplete), ended, left, foreign, completed
+    ['open(false,false)', open(false, false), [stay(open(true, false)), stay(open(false, false)), stay(open(false, false)), stay(open(false, false)), stay(spent), stay(open(false, false)), stay(open(false, false)), stay(open(false, false))]],
+    ['open(false,true)', open(false, true), [stay(open(true, false)), stay(open(false, false)), stay(open(false, true)), stay(open(false, true)), stay(spent), stay(open(false, false)), stay(open(false, false)), stay(open(false, true))]],
+    ['open(true,false)', open(true, false), [stay(open(true, false)), stay(open(false, false)), stay(open(true, true)), stay(open(true, true)), stay(awaiting(false)), stay(open(false, false)), stay(open(false, false)), stay(open(true, false))]],
+    ['open(true,true)', open(true, true), [stay(open(true, false)), stay(open(false, false)), stay(open(true, true)), stay(open(true, true)), { next: spent, land: true }, stay(open(false, false)), stay(open(false, false)), stay(open(true, true))]],
+    ['awaiting(false)', awaiting(false), [stay(awaiting(false)), stay(spent), { next: spent, land: true }, stay(awaiting(true)), stay(awaiting(false)), stay(spent), stay(awaiting(false)), stay(awaiting(false))]],
+    ['awaiting(true)', awaiting(true), [stay(awaiting(false)), stay(spent), { next: spent, land: true }, stay(awaiting(true)), stay(awaiting(true)), stay(spent), stay(awaiting(true)), { next: spent, land: true }]],
     ['spent', spent, events.map(() => stay(spent))],
   ])('f: %s', (_, from, to) => {
     events.forEach(([name, event], i) => expect([name, transition(from, event)]).toEqual([name, to[i]]));
@@ -215,11 +219,30 @@ describe('US-62 AC25b: the landing, decided by the hook from two facts', () => {
     expect(land).not.toHaveBeenCalled();
   });
 
-  it('a change this tab did not make abandons the landing', () => {
+  it('R1: a change this tab did not make abandons a landing not yet ended here, but not one awaiting its rest', () => {
+    const before = setup(3);
+    act(() => { before.result.current.answered(true); before.result.current.clearAnswered(); before.result.current.rested(); });
+    before.rerender({ stage: 4 }); // its answer is no longer this tab's: nothing ends here
+    expect(land).not.toHaveBeenCalled();
+    const during = setup(3);
+    act(() => during.result.current.answered(true));
+    during.rerender({ stage: 4 }); // ended here: awaiting the weight's rest
+    act(() => { during.result.current.clearAnswered(); during.result.current.rested(); }); // another writer's change during the wait
+    expect(land).toHaveBeenCalledTimes(1);
+  });
+
+  it('R4: a rest heard while the four answers dipped lands once they hold again', () => {
     const view = setup(3);
     act(() => view.result.current.answered(true));
-    view.rerender({ stage: 4 }); // ended here: awaiting the weight's rest
-    act(() => { view.result.current.clearAnswered(); view.result.current.rested(); }); // another writer's change first
+    view.rerender({ stage: 4 }); // "72" ended it: awaiting
+    act(() => view.result.current.answered(true));
+    view.rerender({ stage: 1 }); // cleared: the stage falls
+    act(() => { view.result.current.answered(true); view.result.current.rested(); }); // "72" again, its rest before its commit
     expect(land).not.toHaveBeenCalled();
+    view.rerender({ stage: 4 });
+    expect(land).toHaveBeenCalledTimes(1);
+    view.rerender({ stage: 1 });
+    view.rerender({ stage: 4 });
+    expect(land).toHaveBeenCalledTimes(1);
   });
 });

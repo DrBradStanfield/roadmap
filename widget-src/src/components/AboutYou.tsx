@@ -10,6 +10,7 @@ import { FIELD_METRIC_MAP } from '@roadmap/health-core/mappings';
 import { type UnitSystem, getDisplayRange, cmToFeetInches, feetInchesToCm, formatHeightDisplay } from '@roadmap/health-core/units';
 import { identityFieldRange, isBirthYearClearlyInvalid } from '@roadmap/health-core/validation';
 import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
+import { useLeaveField } from '../hooks/useOnboarding';
 
 /** About you's rows (US-62 AC12). */
 type AboutKey = 'height' | 'sex' | 'birth' | 'alcohol';
@@ -259,6 +260,7 @@ interface BirthFieldsProps {
 
 export function BirthFields(props: BirthFieldsProps) {
   const { form, yearShown, onYearAnswered, onYearLeft, onYearComplete } = props;
+  const yearRef = useLeaveField(onYearLeft);
   /** The birth month was last pressed by a pointer, not a key (US-01 AC6). Set fresh by every gesture. */
   const monthByPointer = useRef(false);
   const { inputs, errors, updateField, typeIn, blurOnWheel, settleOnEnter, rangeWait } = form;
@@ -301,6 +303,7 @@ export function BirthFields(props: BirthFieldsProps) {
             <input
               type="number"
               id="birthYear"
+              ref={yearRef}
               onKeyDown={e => { blockNonIntegerKeys(e); settleOnEnter(e); }}
               onWheel={blurOnWheel}
               value={inputs.birthYear || ''}
@@ -318,7 +321,7 @@ export function BirthFields(props: BirthFieldsProps) {
                   onYearComplete();
                 }
               }}
-              onBlur={() => { onYearLeft?.(); rangeWait.settle(); }}
+              onBlur={rangeWait.settle}
               placeholder=""
               min="1900"
               max={new Date().getFullYear()}
