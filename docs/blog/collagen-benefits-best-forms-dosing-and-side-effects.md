@@ -231,7 +231,7 @@ Skin supplements often pair collagen with hyaluronic acid. In 40 healthy Asian a
 
 **Older dose ranges:** A 2019 analysis described 2.5 to 15 g a day as the effective amounts in the literature [27]. Brad's older posts gave doses in this range.
 
-**Product mention:** Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) contains 12.5 g of collagen peptides per daily scoop, combined with 200 mg of hyaluronic acid.
+**Product mention:** Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) contains 10 g of collagen peptides per daily scoop (version 9; version 8 had 12.5 g), combined with 200 mg of hyaluronic acid.
 
 ## 5. Dietary Sources
 
