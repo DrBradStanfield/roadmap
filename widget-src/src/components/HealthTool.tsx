@@ -279,8 +279,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
 
   // The saved-value editor's correction, core or lab (US-04, US-21 AC5),
   // then the page re-reads the record.
-  const handleCorrectValue = useCallback<CorrectFn>(async (id, newValue) => {
-    const status = await countedCorrection(id, newValue);
+  const handleCorrectValue = useCallback<CorrectFn>(async (id, newValue, erase) => {
+    const status = await countedCorrection(id, newValue, erase);
     if (status === 'ok') await reloadValues();
     return status;
   }, [reloadValues]);

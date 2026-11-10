@@ -59,6 +59,17 @@ describe('US-21 phase 2 — AddLabTest', () => {
     expect(queryByLabelText('Test')).toBeNull();
   });
 
+  it('US-16 AC2d: a save the record refuses with its erase unchanged keeps the form and the value, and asks for a retry', async () => {
+    addLabValue.mockResolvedValue(null);
+    const { getByLabelText, getByRole, findByText, onAdded } = openForm();
+    fireEvent.change(getByLabelText('Test'), { target: { value: 'ggt' } });
+    fireEvent.change(getByLabelText('Value'), { target: { value: '30' } });
+    fireEvent.click(getByRole('button', { name: /^save$/i }));
+    expect(await findByText('Could not save — please try again.')).toBeTruthy();
+    expect((getByLabelText('Value') as HTMLInputElement).value).toBe('30');
+    expect(onAdded).not.toHaveBeenCalled();
+  });
+
   it('a catalogued test fixes its canonical unit and saves under the stable key', async () => {
     const { getByLabelText, getByRole, onAdded, container } = openForm();
     fireEvent.change(getByLabelText('Test'), { target: { value: 'ggt' } });
@@ -117,7 +128,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
       const { findByRole, getByText, onCorrect, queryByLabelText } = duplicate('54');
       fireEvent.click(await findByRole('button', { name: 'Replace 45 µg/L with 54' }));
       expect(getByText('That test already has 45 µg/L for that date.')).toBeTruthy();
-      await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('held1', 54));
+      await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('held1', 54, 'erase-1'));
       await waitFor(() => expect(queryByLabelText('Test')).toBeNull()); // the form closes
       expect(addLabValue).toHaveBeenCalledTimes(1); // no second row was tried
     });
@@ -203,7 +214,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
     fireEvent.change(utils.getByLabelText('Value'), { target: { value: '54' } });
     fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
     fireEvent.click(await utils.findByRole('button', { name: 'Replace 45 µg/L with 54' }));
-    await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('held3', 54));
+    await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('held3', 54, 'erase-1'));
   });
 
   // US-21 AC15 · a refusal reads as the upload summary does: a person never
@@ -388,7 +399,7 @@ describe('US-66 AC6 — a core test typed under "Other"', () => {
     const { findByRole, getByText, onCorrect } = typeLdl('131');
     fireEvent.click(await findByRole('button', { name: 'Replace 116 mg/dL with 131' }));
     expect(getByText('That test already has 116 mg/dL for that date.')).toBeTruthy();
-    await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('core1', reportedToCanonical('ldl', 131, 'mg/dL')!.valueSI));
+    await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('core1', reportedToCanonical('ldl', 131, 'mg/dL')!.valueSI, 'erase-1'));
   });
 
   it('US-21 AC13 — the core value typed again offers no Replace', async () => {

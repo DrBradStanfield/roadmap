@@ -95,6 +95,7 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
     value !== undefined && value >= 0;
 
   const clearNotice = () => { setNotice(null); setHeld(null); };
+  const recordChanged = () => { close(); setNotice(RECORD_CHANGED); };
   const close = () => {
     setOpenAt(null);
     setTestKey(presetKey ?? '');
@@ -126,11 +127,12 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
   // Any change to the form withdraws the offer (clearNotice); Replace still
   // checks, just before it writes, that the form describes the value it names.
   const replace = async (there: Held) => {
-    if (!describes(there)) { clearNotice(); return; }
+    if (!describes(there) || openAt === null) { clearNotice(); return; }
     setSaving(true);
-    const status = await onCorrect!(there.id, stored!);
+    const status = await onCorrect!(there.id, stored!, openAt);
     setSaving(false);
     if (status === 'ok') close();
+    else if (openAt !== getEraseIdentity()) recordChanged();
     else setNotice(saveErrorText(status));
   };
 
@@ -147,8 +149,7 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
       // A value page adds to its own series, whatever its name or unit (US-25 AC25).
       const result = await addLabValue({ metricName, unit, value: value!, day: date, ...(preset ? { existingSeries: true } : null) }, openAt);
       if (!result && openAt !== getEraseIdentity()) { // the record moved to another erase since the form opened
-        close();
-        setNotice(RECORD_CHANGED);
+        recordChanged();
       } else if (!result) {
         setNotice('Could not save — please try again.');
       } else if (result.ok) {

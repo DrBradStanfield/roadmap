@@ -27,7 +27,8 @@ import { migrateFile } from '@roadmap/health-core/migrate';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { flushRoadmapStore, getEraseIdentity, getShownErase, saveSupplement, sendGuestReport } from '../lib/roadmap-data';
+import { addLabValue, flushRoadmapStore, getEraseIdentity, getShownErase, saveSupplement, sendGuestReport } from '../lib/roadmap-data';
+import { localDay } from '@roadmap/health-core/merge';
 import { RECORD_CHANGED } from './AddLabTest';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { WRITE_REFUSED } from '../lib/erase-copy';
@@ -320,6 +321,22 @@ describe('US-16 AC2d: a write asked before an erase is shown does not land in th
     await act(async () => { fireEvent.click(view.container.querySelector('.alr-add-save')!); await drain(); });
     expect(rowsNaming('ferritin')(await onDisk())).toHaveLength(1);
     expect(view.queryByText(RECORD_CHANGED)).toBeNull();
+  });
+
+  it('Add a blood test: a Replace offered before the erase closes the form after it, and writes nothing', async () => {
+    await seedProfile();
+    await addLabValue({ metricName: 'ferritin', unit: 'µg/L', value: 50, day: localDay(new Date()) });
+    await flushRoadmapStore();
+    const view = render(<HealthTool />);
+    await act(async () => { await drain(); });
+    await typeFerritin(view); // 80 on a day that holds 50
+    await act(async () => { fireEvent.click(view.container.querySelector('.alr-add-save')!); await drain(); });
+    expect(view.container.querySelector('.alr-add-save')?.textContent).toMatch(/^Replace/);
+    await anotherDeviceErasesAndPageShowsIt('weight');
+    await act(async () => { fireEvent.click(view.container.querySelector('.alr-add-save')!); await drain(); });
+    expect(view.container.querySelector('.alr-add-save')).toBeNull();
+    expect(view.getByText(RECORD_CHANGED)).toBeTruthy();
+    expect(rowsNaming('ferritin')(await onDisk())).toEqual([]);
   });
 
   // US-62 AC25b: a refused save re-reads and spends a waiting landing. One armed on the old
