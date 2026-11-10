@@ -31,7 +31,6 @@ vi.mock('./connect', () => ({
   // Real behaviour (connect.test.ts pins it); the rest of the module is stubbed.
   storageState: (backend: string, reconnect?: string) =>
     (reconnect ? 'reconnect' : backend === 'local' ? 'guest' : 'cloud'),
-  PROVIDER_LABELS: { 'google-drive': 'Google Drive', dropbox: 'Dropbox', github: 'GitHub', 'self-host': 'your own server' },
   prepareSwitch: vi.fn(),
   liftLocalInto: vi.fn(),
   adapterFor: () => null,
