@@ -283,8 +283,10 @@ const PLAIN_UNITS = SCRUB_UNITS.filter(u => u !== 'in' && u !== '"');
 export const SCRUB_UNIT_PATTERN = alternation(PLAIN_UNITS, unitPattern);
 
 // Bounded parts keep it linear on a long run; a lookbehind would refuse the
-// second of two adjacent addresses (US-09 AC7f).
-const EMAIL_RE = /[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}/g;
+// second of two adjacent addresses (US-09 AC7f). The feedback guard builds its
+// own regex from this source, so both read one rule (US-32 AC58).
+export const EMAIL_SOURCE = String.raw`[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}`;
+const EMAIL_RE = new RegExp(EMAIL_SOURCE, 'g');
 const UNIT_VALUE_RE = new RegExp(
   `\\b${NUMBER}\\s*(?:(?:${SCRUB_UNIT_PATTERN})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
 // A name starts where no letter or digit runs into it ("γ-GT" starts with no
