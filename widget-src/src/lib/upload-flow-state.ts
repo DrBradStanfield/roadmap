@@ -28,12 +28,19 @@ const withAttempt = (o: SaveOutcome, attempt: SaveOutcome): SaveOutcome => ({
 });
 
 export type Progress = { current: number; total: number; fileName: string };
+/** A run's own counts for its `upload_outcome` (US-12 AC10): `picked` every file
+ *  seen, a ZIP by its members once listed; `docx` the picked .docx, oversize too. */
+export type RunCounts = { picked: number; docx: number };
 
 /**
  * The upload flow, one named phase at a time, each carrying its own data (US-12).
  *
- * - picking: the dropzone. `notices`: an oversize-only pick's tooLarge list.
- * - reading: the files are being read. Cancel returns to picking; a refusal
+ * - picking: the dropzone. `notices`: the pick's own when it started no read
+ *   (oversize files, and the files left out past MAX_FILES).
+ *   `cancelledRead`: the counts and notices of a read Cancel stopped, for its
+ *   one `upload_outcome` (US-12 AC10); a new pick or a reset drops it.
+ * - reading: the files are being read. `counts` start as the pick's; `listed`
+ *   sets `picked` as each ZIP's members are known. Cancel returns to picking; a refusal
  *   or failure goes to readFailed; a finished read goes to reviewing.
  * - readFailed: the dropzone again, with the read's message. A new pick reads again.
  * - reviewing: the review table. Save goes to saving.
@@ -47,8 +54,8 @@ export type Progress = { current: number; total: number; fileName: string };
  * so only from picking, readFailed and done; elsewhere it only hides the work.
  */
 type PhaseState =
-  | { phase: 'picking'; notices: FileNotice[] }
-  | { phase: 'reading'; run: number; files: File[]; notices: FileNotice[]; progress: Progress }
+  | { phase: 'picking'; notices: FileNotice[]; cancelledRead?: { counts: RunCounts; notices: FileNotice[] } }
+  | { phase: 'reading'; run: number; files: File[]; notices: FileNotice[]; counts: RunCounts; progress: Progress }
   | { phase: 'readFailed'; run: number; files: File[]; notices: FileNotice[]; message: string }
   | { phase: 'reviewing'; run: number; results: FileResult[]; notices: FileNotice[]; outcome: SaveOutcome }
   | { phase: 'saving'; results: FileResult[]; notices: FileNotice[]; outcome: SaveOutcome }
@@ -60,7 +67,8 @@ export type UploadState = PhaseState & { skipArchive: boolean };
 export type UploadPhase = UploadState['phase'];
 
 export type UploadEvent =
-  | { type: 'picked'; run: number; files: File[]; notices: FileNotice[] }
+  | { type: 'picked'; run: number; files: File[]; notices: FileNotice[]; counts: RunCounts }
+  | { type: 'listed'; run: number; picked: number }
   | { type: 'progress'; run: number; progress: Progress }
   | { type: 'readFailed'; run: number; message: string; notices: FileNotice[] }
   | { type: 'read'; run: number; results: FileResult[]; notices: FileNotice[] }
@@ -84,8 +92,10 @@ export function transition(state: UploadState, event: UploadEvent): UploadState 
     case 'picked':
       if (state.phase !== 'picking' && state.phase !== 'readFailed') return state;
       return event.files.length > 0
-        ? { phase: 'reading', run: event.run, files: event.files, notices: event.notices, progress: PREPARING, skipArchive }
+        ? { phase: 'reading', run: event.run, files: event.files, notices: event.notices, counts: event.counts, progress: PREPARING, skipArchive }
         : { phase: 'picking', notices: event.notices, skipArchive };
+    case 'listed':
+      return state.phase === 'reading' && ownRun ? { ...state, counts: { ...state.counts, picked: event.picked } } : state;
     case 'progress':
       return state.phase === 'reading' && ownRun ? { ...state, progress: event.progress } : state;
     case 'readFailed':
@@ -97,9 +107,9 @@ export function transition(state: UploadState, event: UploadEvent): UploadState 
         ? { phase: 'reviewing', run: state.run, results: event.results, notices: event.notices, outcome: NO_OUTCOME, skipArchive }
         : state;
     case 'cancel':
-      return ownRun && (state.phase === 'reading' || state.phase === 'readFailed' || state.phase === 'reviewing')
-        ? { ...INITIAL_UPLOAD, skipArchive }
-        : state;
+      if (!ownRun) return state;
+      if (state.phase === 'reading') return { phase: 'picking', notices: [], cancelledRead: { counts: state.counts, notices: state.notices }, skipArchive };
+      return state.phase === 'readFailed' || state.phase === 'reviewing' ? { ...INITIAL_UPLOAD, skipArchive } : state;
     case 'close':
       return state.phase === 'picking' || state.phase === 'readFailed' || state.phase === 'done' ? INITIAL_UPLOAD : state;
     case 'discard':

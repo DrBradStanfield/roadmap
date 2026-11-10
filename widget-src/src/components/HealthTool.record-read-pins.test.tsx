@@ -12,7 +12,7 @@
  * profile save made to refuse once when asked.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, waitFor, type RenderResult } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
 import { createRoot } from 'react-dom/client';
 import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { localDay, rowRootIds } from '@roadmap/health-core/merge';
@@ -25,7 +25,7 @@ import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
 import { BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY, loadFromLocalStorage } from '../lib/storage';
 import { trackABConversion } from '../lib/server-api';
-import { openAboutYou } from '../testing/health-tool-harness';
+import { openAboutYou, showTables } from '../testing/health-tool-harness';
 import { WRITE_REFUSED } from '../lib/erase-copy';
 import { press, pressMouse, pressWithoutFocus, releaseMouse, typeInto } from '../testing/matrix-gestures';
 import { cellText } from '../lib/blood-test-cell';
@@ -927,5 +927,120 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
       await waitFor(() => expect((q(view, '#birthYear') as HTMLInputElement).value).toBe('1975'), { timeout: 3000 });
       expect(await pillSays(view)).toBe(METRIC);
     });
+  });
+});
+
+describe('US-34 AC4a: the page\'s own save re-reads the values, and a held change stays held', () => {
+  // Three re-reads went around the relay (useLongitudinalSave's finish, handleCorrectValue,
+  // moveTest.move). They read the values only, never the form, the saved copy, the units or
+  // the lists, and must not take in a change held behind a dirty profile: the save that
+  // cleans the profile applies it, read once more and counted once.
+  /** About you answered, two LDL tests, no weight: the first-time weight field shows (US-62 AC13). */
+  async function recordWithLdl() {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await addMeasurement('ldl', 3.9, '2026-01-10');
+    await addMeasurement('ldl', 2.1, '2026-08-15'); // the latest
+    await flushRoadmapStore();
+  }
+  /** A field of About you; its rows opened again when a save closed them (US-62 AC12). */
+  const field = (view: RenderResult, id: string) => {
+    if (!q(view, `#${id}`)) act(() => openAboutYou(view.container));
+    return (q(view, `#${id}`) as HTMLInputElement).value;
+  };
+  const mirrorOf = (metric: string) => mirror()?.previousMeasurements.find((m) => m.metricType === metric)?.value;
+  /** A height out of range, left: the store refuses it, it stays in its field, and the profile stays dirty (US-02 AC5). */
+  async function heightOutOfRange(view: RenderResult) {
+    type(q(view, '#heightCm'), '400');
+    leave(q(view, '#heightCm'));
+    await settle(700);
+    expect(field(view, 'heightCm')).toBe('400');
+  }
+  /** Another writer changes the birth year: held behind the dirty profile. */
+  async function heldBirthYear(view: RenderResult) {
+    await anotherWriter(() => saveChangedMeasurements({ birthYear: 1981 }, { birthYear: 1980 }));
+    await settle(50);
+    expect(field(view, 'birthYear')).toBe('1980');
+    expect(calls('remote_change_applied')).toEqual([]);
+  }
+  const ldlRow = (view: RenderResult) => Array.from(view.container.querySelectorAll<HTMLElement>('.bt-timeline .bt-row'))
+    .find((r) => r.querySelector('.bt-name-label')?.textContent === 'LDL Cholesterol')!;
+  const OWN_SAVES: Array<[string, (view: RenderResult) => Promise<void>, (view: RenderResult) => void | Promise<void>]> = [
+    ['the first-time weight field\'s save (useLongitudinalSave)', async (view) => {
+      await saveWeight(view, '72');
+      await waitFor(() => expect(mirrorOf('weight')).toBe(72));
+    }, async (view) => {
+      // The save's finish cleared its field: the box is gone, and a later save writes no second weight.
+      expect(q(view, '#weightKg')).toBeNull();
+      expect((await activeWeights()).length).toBe(1);
+    }],
+    ['a correction from the saved-value editor (handleCorrectValue)', async (view) => {
+      const cells = ldlRow(view).querySelectorAll('.bt-cell-clickable');
+      fireEvent.click(cells[cells.length - 1]);
+      const editor = ldlRow(view).querySelector('.bt-cell-correcting input') as HTMLInputElement;
+      fireEvent.change(editor, { target: { value: '1.9' } });
+      fireEvent.keyDown(editor, { key: 'Enter' });
+      await waitFor(() => expect(mirrorOf('ldl')).toBe(1.9), { timeout: 3000 });
+    }, async (view) => {
+      expect(ldlRow(view).textContent).toContain('1.9');
+    }],
+    ['a blood test moved to its day (moveTest.move)', async (view) => {
+      showTables(view.container);
+      const header = Array.from(view.container.querySelectorAll<HTMLElement>('.bt-timeline .bt-cell-movable'))
+        .find((b) => b.querySelector('input')!.value === '2026-08-15')!;
+      fireEvent.change(header.querySelector('input[type="date"]')!, { target: { value: '2025-12-01' } });
+      fireEvent.click(within(view.container.querySelector('.bt-move-panel') as HTMLElement).getByRole('button', { name: 'Move' }));
+      await waitFor(() => expect(mirrorOf('ldl')).toBe(3.9), { timeout: 3000 }); // 2.1 now drawn before 3.9
+    }, async (view) => {
+      expect(Array.from(view.container.querySelectorAll<HTMLInputElement>('.bt-timeline .bt-cell-movable input')).map((i) => i.value))
+        .toContain('2025-12-01');
+    }],
+  ];
+
+  it.each(OWN_SAVES)('US-34 AC4a: %s, nothing held: the values, matrix and chat mirror refresh in one read; the form is left alone', async (_name, save, shows) => {
+    await recordWithLdl();
+    const view = await open();
+    await heightOutOfRange(view);
+    reads.count = 0;
+    await save(view);
+    await settle(50);
+    await shows(view);
+    expect(reads.count).toBe(1);
+    expect(field(view, 'heightCm')).toBe('400'); // the refused height stays in its field
+    expect(calls('remote_change_applied')).toEqual([]);
+  });
+
+  it.each(OWN_SAVES)('US-34 AC4a: %s, a change held: one read, the held profile change still waits, then applies once when the profile is clean', async (_name, save, shows) => {
+    await recordWithLdl();
+    const view = await open();
+    await heightOutOfRange(view);
+    await heldBirthYear(view);
+    reads.count = 0;
+    await save(view);
+    await settle(50);
+    await shows(view);
+    expect(reads.count).toBe(1);
+    expect(field(view, 'birthYear')).toBe('1980'); // still held
+    expect(field(view, 'heightCm')).toBe('400');
+    expect(calls('remote_change_applied')).toEqual([]);
+    // The profile is made clean: the held change applies, counted once, and the record keeps it.
+    type(q(view, '#heightCm'), '171');
+    leave(q(view, '#heightCm'));
+    await waitFor(() => expect(field(view, 'birthYear')).toBe('1981'), { timeout: 3000 });
+    await settle(800);
+    expect(calls('remote_change_applied')).toHaveLength(1);
+    expect((await recordOnDisk()).profile.birthYear).toBe(1981);
+  });
+
+  it('US-34 AC4a (today, follow-up flips): under a hold the chat mirror carries the held profile', async () => {
+    await recordWithLdl();
+    const view = await open();
+    await heightOutOfRange(view);
+    await heldBirthYear(view);
+    await OWN_SAVES[0][1](view); // the first-time weight field's save, and its re-read
+    await settle(50);
+    // The page shows the old birth year; the chat mirror (mirrorRecord writes result.inputs) the held one.
+    expect(field(view, 'birthYear')).toBe('1980');
+    expect(mirror()?.inputs.birthYear).toBe(1981);
+    expect(calls('remote_change_applied')).toEqual([]);
   });
 });
