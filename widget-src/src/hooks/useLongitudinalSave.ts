@@ -30,7 +30,7 @@ interface LongitudinalSaveDeps {
   history: ApiMeasurement[];
   unitOverrides: Record<string, UnitSystem>;
   unitSystem: UnitSystem;
-  reread: () => Promise<unknown> | void;
+  reread: () => Promise<unknown>;
   flushPendingProfileSave: (erase?: string) => Promise<boolean>;
   /** The unit each first-time weight or waist was typed in (US-03 AC3). */
   typedIn: MutableRefObject<Partial<Record<keyof HealthInputs, { value: unknown; unit: UnitSystem }>>>;

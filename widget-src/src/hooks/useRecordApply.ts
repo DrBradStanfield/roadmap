@@ -26,13 +26,18 @@ type ReadPolicy = { read: 'record'; relay: 'arrive' | 'reread'; spends: boolean 
  * unit switch waits, within the shown erase (that test is read in `signal`).
  * A held `remote` does nothing until the save that cleans the profile.
  *
- * | reason   | read   | flushes the waiting save | form        | ends a hold           | clears the answer mark | units       | counts remote_change_applied | erase       |
- * |----------|--------|--------------------------|-------------|-----------------------|------------------------|-------------|------------------------------|-------------|
- * | upload   | record | yes                      | yes         | yes                   | if it ends a hold      | yes         | if it ends a hold            | yes         |
- * | remote   | record | unless held              | unless held | no (it may start one) | unless held            | unless held | unless held                  | unless held |
- * | refused  | record | yes                      | yes         | yes                   | yes (spent)            | yes         | if it ends a hold            | yes         |
- * | left     | record | yes                      | yes         | yes                   | if it ends a hold      | yes         | if it ends a hold            | yes         |
- * | own-save | values | no                       | no          | no                    | no                     | no          | no                           | no          |
+ * | reason   | read   | flushes the waiting save | form        | ends a hold (*)                                                                     | clears the answer mark | units       | counts remote_change_applied | erase       |
+ * |----------|--------|--------------------------|-------------|-------------------------------------------------------------------------------------|------------------------|-------------|------------------------------|-------------|
+ * | upload   | record | yes                      | yes         | yes                                                                                 | if it ends a hold      | yes         | if it ends a hold            | yes         |
+ * | remote   | record | unless held              | unless held | a clean arrival, or another device's erase, ends it; a dirty one starts or keeps it | unless held            | unless held | unless held                  | unless held |
+ * | refused  | record | yes                      | yes         | yes                                                                                 | yes (spent)            | yes         | if it ends a hold            | yes         |
+ * | left     | record | yes                      | yes         | yes                                                                                 | if it ends a hold      | yes         | if it ends a hold            | yes         |
+ * | own-save | values | no                       | no          | no                                                                                  | no                     | no          | no                           | no          |
+ *
+ * (*) Before the page has shown its first read (lib/remote-replay.ts, loading),
+ * no re-read ends a hold: `remote` waits for that read (loading-held), and
+ * upload, refused and left re-read without it, leaving the waiting change for
+ * the first read's showing, which would overwrite it.
  */
 export const READ_POLICY: Record<ReadReason, ReadPolicy> = {
   upload: { read: 'record', relay: 'reread', spends: false },
@@ -53,14 +58,16 @@ interface Later {
 }
 
 /**
- * The record shown on the page, at load and on every re-read (US-34 AC4, AC7).
+ * The record shown on the page, at load and on every whole re-read (US-34 AC4, AC7).
  *
  * Remote changes are idle or held (lib/remote-replay.ts): a change from
  * another writer is held while the profile has an unsaved edit, and the save
- * that carries the edit up (`saved`) applies it. Every re-read goes through
- * `signal`, so a record re-read that shows a held change ends the hold: the
- * record is read once and the change counted once (survey R8). The page's own
- * save reads the values only and leaves a hold as it is (READ_POLICY).
+ * that carries the edit up (`saved`) applies it. Every whole re-read goes
+ * through `signal`, so a record re-read that shows a held change ends the hold:
+ * the record is read once and the change counted once (survey R8). The page's
+ * own save reads the values only (`ownSave`) and leaves a hold as it is
+ * (READ_POLICY). Narrower reads sit outside the table: the lab rows alone
+ * (useRecordReads refreshLabValues) after a lab value added by hand.
  *
  * The page listens from its first commit (a layout effect). A change
  * announced before the page has shown its first read waits for it, then
@@ -87,7 +94,7 @@ export function useRecordApply(args: {
   const latest = useRef(args);
   useLayoutEffect(() => { latest.current = args; });
 
-  // The record shown in one step, load and every re-read: units, form, saved copy, lists (US-34 AC7).
+  // The record shown in one step, load and every whole re-read: units, form, saved copy, lists (US-34 AC7).
   // `form` builds the form from the one shown, for a re-read that keeps what is being typed; `units` shows or offers its units.
   const showRecord = useCallback((result: LatestMeasurementsResult, form: (shown: Partial<HealthInputs>) => Partial<HealthInputs> = () => result.inputs, units = latest.current.units.shown) => {
     const { setInputs, applyLists, later } = latest.current;
@@ -151,11 +158,13 @@ export function useRecordApply(args: {
     return read;
   }));
 
+  // The page's own save: the values, lab rows, both matrices and the chat mirror, nothing else (US-34 AC4a).
+  const ownSave = useCallback((): Promise<void> => latest.current.reloadValues().then(() => {}), []);
+
   const signal = useCallback((reason: ReadReason): Promise<void> | void => {
-    const { later, reloadValues } = latest.current;
+    const { later } = latest.current;
     const policy = READ_POLICY[reason];
-    // The page's own save: the values, lab rows, both matrices and the chat mirror, nothing else (US-34 AC4a).
-    if (policy.read === 'values') return reloadValues().then(() => {});
+    if (policy.read === 'values') return ownSave();
     // Not while the user is mid-typing: the re-read replaces the form's
     // inputs, and a remote change landing on a half-entered height would take
     // those keystrokes with it. The relay HOLDS it: the next profile save
@@ -169,7 +178,7 @@ export function useRecordApply(args: {
     if (policy.relay === 'arrive') return relay.arrived(getEraseIdentity() === getShownErase() && (later().profileDirty() || !!latest.current.units.pending()));
     if (policy.spends) later().clearAnswered(true); // a refusal: not an answer given here (US-62 AC13); spends a waiting landing (AC25b)
     return relay.reread();
-  }, [relay]);
+  }, [relay, ownSave]);
 
   const { loaded } = args;
   useLayoutEffect(() => { if (loaded) relay.loaded(); }, [loaded, relay]);
@@ -185,5 +194,5 @@ export function useRecordApply(args: {
     return () => window.removeEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
   }, [signal]);
 
-  return { showRecord, signal, saved: relay.saved, firstReadFailed };
+  return { showRecord, signal, ownSave, saved: relay.saved, firstReadFailed };
 }

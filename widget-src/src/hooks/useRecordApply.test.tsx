@@ -34,7 +34,7 @@ const RESULT = {
   inputs: { heightCm: 170, birthYear: 1981 }, previousMeasurements: [], medications: [], screenings: [], supplements: [],
 } as unknown as LatestMeasurementsResult;
 
-function setup() {
+function setup(loaded = true) {
   const fx = {
     setInputs: vi.fn(),
     reloadValues: vi.fn(async () => RESULT),
@@ -43,11 +43,11 @@ function setup() {
     showErase: vi.fn(),
     later: { markSaved: vi.fn(), flushPendingSave: vi.fn(), profileDirty: vi.fn(() => false), clearAnswered: vi.fn() },
   };
-  const hook = renderHook(() => useRecordApply({
+  const hook = renderHook(({ loaded }: { loaded: boolean }) => useRecordApply({
     setInputs: fx.setInputs, reloadValues: fx.reloadValues, applyLists: fx.applyLists,
     units: fx.units as unknown as Parameters<typeof useRecordApply>[0]['units'],
-    showErase: fx.showErase, loaded: true, later: () => fx.later,
-  }));
+    showErase: fx.showErase, loaded, later: () => fx.later,
+  }), { initialProps: { loaded } });
   return { fx, hook };
 }
 const settle = () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
@@ -123,12 +123,53 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     let finish!: (r: LatestMeasurementsResult) => void;
     fx.reloadValues.mockImplementationOnce(() => new Promise((r) => { finish = r; }));
     let done = false;
-    act(() => { void (hook.result.current.signal('own-save') as Promise<void>).then(() => { done = true; }); });
+    act(() => { void hook.result.current.ownSave().then(() => { done = true; }); });
     await settle();
     expect(done).toBe(false);
     await act(async () => { finish(RESULT); });
     await settle();
     expect(done).toBe(true);
+  });
+
+  it('US-34 AC4a: ownSave keeps its identity across renders, so a save built on it is not rebuilt each render', () => {
+    const { hook } = setup();
+    const first = hook.result.current.ownSave;
+    hook.rerender({ loaded: true });
+    expect(hook.result.current.ownSave).toBe(first);
+  });
+
+  it('US-11 AC6, US-34 AC4: held, another device\'s erase arrives with the profile still dirty: it applies, ends the hold, counted once', async () => {
+    const { fx, hook } = setup();
+    fx.later.profileDirty.mockReturnValue(true);
+    await act(async () => { await hook.result.current.signal('remote'); });
+    await settle();
+    expect(counted()).toBe(0); // held
+    erase.now = 'erase-2';
+    await act(async () => { await hook.result.current.signal('remote'); });
+    await settle();
+    expect(fx.reloadValues).toHaveBeenCalledTimes(1);
+    expect(fx.showErase).toHaveBeenCalledWith('erase-2');
+    expect(counted()).toBe(1);
+    // The hold is over: the save that cleans the profile reads nothing more.
+    await act(async () => { hook.result.current.saved(); });
+    await settle();
+    expect(fx.reloadValues).toHaveBeenCalledTimes(1);
+    expect(counted()).toBe(1);
+  });
+
+  it('US-34 AC4: before the first read is shown, a reread leaves a waiting change for that read, then it applies once', async () => {
+    const { fx, hook } = setup(false);
+    await act(async () => { await hook.result.current.signal('remote'); });
+    await settle();
+    expect(fx.reloadValues).not.toHaveBeenCalled(); // loading-held
+    await act(async () => { await hook.result.current.signal('upload'); });
+    await settle();
+    expect(fx.reloadValues).toHaveBeenCalledTimes(1);
+    expect(counted()).toBe(0); // the upload's read is not the one the change waits for
+    hook.rerender({ loaded: true });
+    await settle();
+    expect(fx.reloadValues).toHaveBeenCalledTimes(2);
+    expect(counted()).toBe(1);
   });
 
   it('US-34 AC4a (today, fix 4 owns erase events): another device erased between the save and its re-read: the new record\'s values show beside the old form, and nothing is written back', async () => {
