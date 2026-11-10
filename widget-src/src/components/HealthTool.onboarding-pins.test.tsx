@@ -334,3 +334,83 @@ describe('US-62 AC12, AC31 (D6, Brad 2026-11-10: keep it): another device fills 
     expect(q(view, '.mh-ready')).toBeNull();
   });
 });
+
+describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboarding', () => {
+  /** A desktop that can cross 768px: each cross builds the panels again. */
+  function crossablePhone() {
+    const heard = new Set<{ query: string; listener: (e: { matches: boolean }) => void }>();
+    let phone = false;
+    const matches = (query: string) => (query.includes('max-width') ? phone : !phone);
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      get matches() { return matches(query); },
+      media: query,
+      addEventListener: (_: string, listener: (e: { matches: boolean }) => void) => heard.add({ query, listener }),
+      removeEventListener: (_: string, listener: (e: { matches: boolean }) => void) => {
+        for (const h of heard) if (h.listener === listener) heard.delete(h);
+      },
+    }));
+    return () => act(() => { phone = !phone; for (const h of [...heard]) h.listener({ matches: matches(h.query) }); });
+  }
+  /** The vitals matrix's New-column weight cell (mounted, hidden under the rows once About you is low). */
+  const matrixWeight = (view: RenderResult) => {
+    const row = Array.from(view.container.querySelectorAll('.bt-vitals-card .bt-row'))
+      .find((r) => r.querySelector('.bt-name-label')?.textContent === 'Weight');
+    return row?.querySelector('.bt-cell-draft input') ?? null;
+  };
+  /** A record holding a blood test, so the whole form opens with sex and birth both asked (US-01 AC3). */
+  async function wholeFormWithoutSexOrBirth(): Promise<RenderResult> {
+    await saveChangedMeasurements({ heightCm: 170 }, {});
+    await addMeasurement('weight', 70, '2026-09-01');
+    await addMeasurement('ldl', 3.0, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(q(view, '#birthMonth')).toBeTruthy());
+    expect(fullForm(view)).toBe(true);
+    expect(sexQuestion(view)).toBeTruthy();
+    return view;
+  }
+
+  it('US-62 AC25 (D4): the weight lands, the page crosses 768px, and a weight typed in the matrix on the same record does not land again', async () => {
+    const cross = crossablePhone();
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await flushRoadmapStore();
+    const view = await open();
+    type(q(view, '#weightKg'), '105'); // the last answer (Shopify build)
+    await waitFor(() => expect(landed()).toBe(true));
+    await waitFor(async () => expect(await activeWeights()).toEqual([[105, TODAY]]), { timeout: 2000 });
+    cross(); // a phone: the panels are built again
+    await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
+    const cell = matrixWeight(view)!;
+    type(cell, '106');
+    await settle(100);
+    expect(landed()).toBe(false);
+    expect(document.activeElement).toBe(cell);
+  });
+
+  it('US-62 AC25 (D4): a complete year typed before sex lands nothing and leaves the landing for the year that is the last answer', async () => {
+    const view = await wholeFormWithoutSexOrBirth();
+    birth(view, '5', '1975'); // sex not yet given: not the last answer
+    await settle(50);
+    expect(landed()).toBe(false);
+    type(q(view, '#birthYear'), ''); // cleared to retype
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    await settle(50);
+    expect(landed()).toBe(false);
+    type(q(view, '#birthYear'), '1976'); // now the last answer
+    await waitFor(() => expect(landed()).toBe(true), { timeout: 1000 });
+  });
+
+  it('US-62 AC25 (D4): after an erase in this tab the new record lands on its last answer, whatever the record before did', async () => {
+    const view = await wholeFormWithoutSexOrBirth();
+    birth(view, '5', '1975'); // a year before sex: no landing
+    await settle(50);
+    expect(landed()).toBe(false);
+    await eraseHere(view); // the record never completed
+    act(() => { (document.activeElement as HTMLElement | null)?.blur(); });
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    await settle(50);
+    birth(view); // the year, the new record's last answer
+    await waitFor(() => expect(landed()).toBe(true), { timeout: 1000 });
+  });
+});

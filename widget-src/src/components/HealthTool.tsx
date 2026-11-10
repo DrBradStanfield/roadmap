@@ -242,11 +242,11 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   );
   const onboarding = useOnboarding(formStage, {
     saved: previousMeasurements, medications, screenings, supplements, documents: documentHistory, labValues: labValueHistory,
-  }, hasApiResponse);
+  }, hasApiResponse, shownErase);
   // Stable callbacks: the record's re-reads above (useRecordApply's `later`) call them after the first commit.
   const {
     reached, epoch, fullForm, aboutYouLow, planReady,
-    markAnswered, clearAnswered, isComplete, profileLeft, dismissPlanReady: leavePlanReady,
+    markAnswered, clearAnswered, landing, profileLeft, dismissPlanReady: leavePlanReady,
   } = onboarding;
   // A matrix's weight cell is the one matrix edit that can answer a step (US-62 AC13).
   const markMatrixWeight = useCallback((e: React.SyntheticEvent) => {
@@ -543,25 +543,25 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // Email capture and US-23 reminder enrolment require the Shopify server.
   const emailCaptureActive = SHOPIFY_SURFACE;
 
-  // Says whether it acted, so a caller spends its once-only jump only then.
-  // Once the last onboarding answer is in (US-62 AC13), the focus moves to the
-  // "Your plan is ready." card, with no jump (US-62 AC31); with no card, the person
-  // lands at the top of My health, its title (US-62 AC25, orchestrator 2026-11-06). Leaving the
-  // field also lets About you go to Settings (US-62 AC12). A weight lands only
-  // where it used to jump to the email box (the Shopify build, US-22), so the
-  // Pages build never takes the focus from a value being typed; the birth year
-  // (`fromBirth`, Brad 2026-11-02) lands on both.
-  const landOnMyHealth = useCallback((fromBirth = false): boolean => {
-    // Only when the answer was the last one: a first weight is step 1.
-    if (!isComplete() || (!emailCaptureActive && !fromBirth)) return false;
-    selectTab('health');
-    requestAnimationFrame(() => {
-      const ready = rootRef.current?.querySelector<HTMLElement>('.mh-ready-title');
-      if (ready) ready.focus({ preventScroll: true });
-      else revealAndFocus(rootRef.current?.querySelector<HTMLElement>('.mh-title'), 'start', false);
-    });
-    return true;
-  }, [emailCaptureActive, selectTab, isComplete]);
+  // Asked as the answer is typed; what it returns lands, once per record (D4), and says whether it did.
+  // After the last onboarding answer (US-62 AC13) the focus moves to "Your plan is ready."'s heading,
+  // with no jump (AC31); with no card, to My health's title (AC25, orchestrator 2026-11-06). Leaving the
+  // field also lets About you go to Settings (AC12). A weight lands only on the Shopify build, where it
+  // used to jump to the email box (US-22), so Pages never takes the focus from a value being typed; the
+  // birth year (`fromBirth`, Brad 2026-11-02) lands on both.
+  const landOnMyHealth = useCallback((fromBirth = false) => {
+    const land = landing(); // only when the answer was the last one: a first weight is step 1
+    return (): boolean => {
+      if ((!emailCaptureActive && !fromBirth) || !land()) return false;
+      selectTab('health');
+      requestAnimationFrame(() => {
+        const ready = rootRef.current?.querySelector<HTMLElement>('.mh-ready-title');
+        if (ready) ready.focus({ preventScroll: true });
+        else revealAndFocus(rootRef.current?.querySelector<HTMLElement>('.mh-title'), 'start', false);
+      });
+      return true;
+    };
+  }, [emailCaptureActive, selectTab, landing]);
 
   // Memoised so the UploadModal's matrix doesn't rebuild on unrelated
   // HealthTool re-renders (typing, mobile-tab switches, etc.).
@@ -688,7 +688,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     vitalsFlushRef,
     bloodTestPrefillRef,
     vitalsPrefillRef,
-    onboarding: { stage: formStage, reached, fullForm, aboutYouLow, profileLeft, done: landOnMyHealth },
+    onboarding: { stage: formStage, reached, fullForm, aboutYouLow, profileLeft, landing: landOnMyHealth },
     setShowUploadModal,
     planBasis,
     grading,

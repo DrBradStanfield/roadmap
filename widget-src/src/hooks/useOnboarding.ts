@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { opensFullForm, type FormStage, type RecordHoldings } from '@roadmap/health-core/mappings';
 import { ONBOARDING_STEPS } from '@roadmap/health-core/product-events';
-import { getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { safeGetItem, safeSetItem } from '../lib/storage';
 
@@ -12,8 +11,9 @@ const planReadySeen = (): boolean => safeGetItem(PLAN_READY_SEEN_KEY) === '1';
 /**
  * The onboarding of the record the screen shows (US-62 AC12, AC13, AC31).
  *
- * One state per record, keyed on the erase the screen shows: an erase (this
- * tab's or another device's, once shown) starts every part of it again.
+ * One state per record, keyed on the erase the screen shows (HealthTool's
+ * React state, D5): an erase (this tab's or another device's, once shown)
+ * starts every part of it again.
  *
  * - `reached`: the highest stage this record has shown. It only rises, so
  *   nothing unlocked goes away while an answer is retyped. Stage 1 asks the
@@ -32,6 +32,9 @@ const planReadySeen = (): boolean => safeGetItem(PLAN_READY_SEEN_KEY) === '1';
  *   record another device completes stays put until then (Brad 2026-11-10, D6).
  * - "Your plan is ready." (`planReady`) shows once, for the record whose
  *   onboarding ended in this tab, until Got it (AC31).
+ * - `landed`: the jump to My health after the last answer happened (AC25).
+ *   Once per record, and spent only when it lands. It lives here, not in the
+ *   fields that ask for it, so a panel remount (the 768px swap) keeps it (D4).
  */
 interface RecordOnboarding {
   erase: string;
@@ -42,6 +45,7 @@ interface RecordOnboarding {
   answered: boolean;
   /** The stage the step count last saw (AC13). */
   counted: FormStage;
+  landed: boolean;
 }
 
 export interface Onboarding {
@@ -50,8 +54,10 @@ export interface Onboarding {
   fullForm: boolean;
   aboutYouLow: boolean;
   planReady: boolean;
-  /** The latest stage, for a call made after the render that changed it. */
-  isComplete: () => boolean;
+  /** Asked as the last answer is typed: the landing on the record shown now. The function
+   *  it returns says whether to land, once per record, only once the four answers hold and
+   *  only while that record is shown; a yes spends it (AC25, D4). */
+  landing: () => () => boolean;
   markAnswered: () => void;
   /** A change this tab did not make: another writer's, or a refused save's re-read. */
   clearAnswered: () => void;
@@ -65,16 +71,16 @@ export interface PanelOnboarding extends Pick<Onboarding, 'reached' | 'fullForm'
   /** The first answer the record lacks: 1 height and weight, 2 sex, 3 birth date, 4 none. */
   stage: FormStage;
   profileLeft?: Onboarding['profileLeft'];
-  /** The last onboarding answer is in: land at My health's top. Says whether it did (AC13, AC25). */
-  done?: (fromBirth?: boolean) => boolean;
+  /** Asked as the last onboarding answer is typed (AC13, AC25): the returned function lands
+   *  at My health's top when the jump fires, once per record, and says whether it did. */
+  landing?: (fromBirth?: boolean) => () => boolean;
 }
 
-export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded: boolean): Onboarding {
+export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded: boolean, erase: string): Onboarding {
   const ref = useRef<RecordOnboarding | null>(null);
-  const erase = getShownErase();
   const was = ref.current;
   if (!was || was.erase !== erase) {
-    ref.current = { erase, epoch: (was?.epoch ?? 0) + 1, reached: stage, opened: stage, fullForm: false, answered: false, counted: stage };
+    ref.current = { erase, epoch: (was?.epoch ?? 0) + 1, reached: stage, opened: stage, fullForm: false, answered: false, counted: stage, landed: false };
   } else if (stage > was.reached) was.reached = stage;
   const now = ref.current!;
   now.fullForm ||= opensFullForm(now.reached, holdings);
@@ -104,7 +110,13 @@ export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded
 
   const markAnswered = useCallback(() => { ref.current!.answered = true; }, []);
   const clearAnswered = useCallback(() => { ref.current!.answered = false; }, []);
-  const isComplete = useCallback(() => stageRef.current === 4, []);
+  const landing = useCallback(() => {
+    const at = ref.current!; // the record as the answer was typed, not as the jump fires
+    return () => {
+      if (ref.current !== at || at.landed || stageRef.current !== 4) return false;
+      return (at.landed = true);
+    };
+  }, []);
   const profileLeft = useCallback(() => {
     if (stageRef.current !== 4 || low.current) return false;
     low.current = true; // a second leave before the move commits moves nothing either
@@ -121,6 +133,6 @@ export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded
     reached, epoch, fullForm,
     aboutYouLow: low.current,
     planReady: planReadyFor === epoch,
-    isComplete, markAnswered, clearAnswered, profileLeft, dismissPlanReady,
+    landing, markAnswered, clearAnswered, profileLeft, dismissPlanReady,
   };
 }

@@ -18,7 +18,6 @@
 // the matrix's `Sparkline`, `NumericInputCell`, `DraftDateCell`, and `UnitChip`.
 
 import { useEffect, useId, useMemo, useRef, useState, type MutableRefObject } from 'react';
-import { getShownErase } from '../lib/roadmap-data';
 import type { ApiMeasurement, FormStage } from '@roadmap/health-core/mappings';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import { type MetricType, type UnitSystem, toCanonicalValue, fromCanonicalValue, formatDisplayValue, getDisplayLabel, bpTargetFor } from '@roadmap/health-core/units';
@@ -79,9 +78,9 @@ interface StartingInfoVitalsProps {
   plan: Pick<PlanBasis, 'age' | 'idealBodyWeight' | 'heightCm'> | null;
   /** A known minor, plan or no plan: no adult weight or BP target or colour (US-07 AC6). */
   knownMinor?: boolean;
-  /** Called after the user types a valid weight: as the last onboarding
-   *  answer, the person lands at My health's top (US-62 AC25). */
-  onOnboardingDone?: () => boolean;
+  /** Asked as the user types a valid weight: as the last onboarding answer, the
+   *  person lands at My health's top, once per record (US-62 AC25, D4). */
+  landing?: () => () => boolean;
   /** The weight is asked beside the height (US-62 AC13): its row is left out, so it shows once. */
   withoutWeight?: boolean;
   /** Per-field unit overrides — clicking the weight/waist chip toggles
@@ -182,7 +181,7 @@ export function buildColumns(rows: ApiMeasurement[]): DateColumn[] {
 
 export function StartingInfoVitals({
   vitalsHistory, unitSystem, onSave, onCorrectValue,
-  onDraftValue, formStage, plan, knownMinor, onOnboardingDone, withoutWeight, unitOverrides, onToggleFieldUnit, startUnitOf,
+  onDraftValue, formStage, plan, knownMinor, landing, withoutWeight, unitOverrides, onToggleFieldUnit, startUnitOf,
   prefillRef, flushRef, onHoldsText,
 }: StartingInfoVitalsProps) {
   const rows = withoutWeight ? ROWS.filter(r => r.kind !== 'simple' || r.metric !== 'weight') : ROWS;
@@ -301,20 +300,16 @@ export function StartingInfoVitals({
     const n = parseLocalisedNumber(typed);
 
     // Weight only: as the last answer, on to My health's top, on the record it was typed on.
-    const erase = getShownErase();
-    if (metric === 'weight' && onOnboardingDone && landedFor.current !== erase && n != null && !validateTypedValue(metric, typed, unitFor(metric)).error) {
+    if (metric === 'weight' && landing && n != null && !validateTypedValue(metric, typed, unitFor(metric)).error) {
       if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
       if (/^\d{2,3}$/.test(typed) && n >= 30 && n <= 400) {
         const couldExtend = /^\d{2}$/.test(typed) && n * 10 <= 400;
-        // The once-only jump is spent only if it happened (not before the last answer).
-        const jump = () => { if (getShownErase() === erase && onOnboardingDone()) landedFor.current = erase; };
-        if (!couldExtend) requestAnimationFrame(jump);
-        else focusTimerRef.current = setTimeout(jump, 800);
+        const land = landing();
+        if (!couldExtend) requestAnimationFrame(land);
+        else focusTimerRef.current = setTimeout(land, 800);
       }
     }
   };
-  // Once per record, as InputPanel's weight jump is (US-62 AC25, D1): the erase it landed on.
-  const landedFor = useRef<string | null>(null);
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setBpDraft = (which: 'sys' | 'dia', typed: string) => type([null, which], typed);

@@ -9,8 +9,8 @@ import { act } from 'react';
 import { renderHook } from '@testing-library/react';
 import type { FormStage, RecordHoldings } from '@roadmap/health-core/mappings';
 
-const shown = vi.hoisted(() => ({ erase: 'erase-1' }));
-vi.mock('../lib/roadmap-data', () => ({ getShownErase: () => shown.erase }));
+// The erase the screen shows: HealthTool's React state (D5).
+const shown = { erase: 'erase-1' };
 const tracked = vi.hoisted(() => ({ calls: [] as Array<[string, unknown]> }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: (name: string, meta?: unknown) => { tracked.calls.push([name, meta]); } }));
 
@@ -18,7 +18,7 @@ import { useOnboarding } from './useOnboarding';
 
 const EMPTY: RecordHoldings = { saved: [], medications: [], screenings: [], supplements: [], documents: [], labValues: [] };
 const setup = (stage: FormStage) => renderHook(
-  ({ stage }: { stage: FormStage }) => useOnboarding(stage, EMPTY, true),
+  ({ stage }: { stage: FormStage }) => useOnboarding(stage, EMPTY, true, shown.erase),
   { initialProps: { stage } },
 );
 
@@ -125,5 +125,31 @@ describe('US-62 AC12: About you moves low', () => {
     act(() => { moved = view.result.current.profileLeft(); });
     expect(moved).toBe(false);
     expect(view.result.current.aboutYouLow).toBe(false);
+  });
+});
+
+describe('US-62 AC25 (D4): the landing at My health, once per record', () => {
+  /** Asks for the landing as an answer is typed, and lands it at once. */
+  const land = (view: ReturnType<typeof setup>) => view.result.current.landing()();
+
+  it('lands once the four answers hold, once per record, and again after an erase', () => {
+    const view = setup(3);
+    expect(land(view)).toBe(false); // not the last answer yet: nothing spent
+    view.rerender({ stage: 4 });
+    expect(land(view)).toBe(true);
+    expect(land(view)).toBe(false); // spent for this record
+    shown.erase = 'erase-2';
+    view.rerender({ stage: 4 });
+    expect(land(view)).toBe(true); // the new record's own landing
+    expect(land(view)).toBe(false);
+  });
+
+  it('a landing asked on one record does not land on the next', () => {
+    const view = setup(4);
+    const asked = view.result.current.landing(); // the weight typed on the first record
+    shown.erase = 'erase-2';
+    view.rerender({ stage: 4 });
+    expect(asked()).toBe(false); // that record was erased before the jump fired
+    expect(land(view)).toBe(true); // and the new record's landing is still there
   });
 });

@@ -12,7 +12,6 @@ import { useRangeWait } from '../lib/useRangeWait';
 import { useAutoAdvance } from '../lib/useAutoAdvance';
 import type { ApiLabValue, ApiSupplement } from '../lib/api-types';
 import { loadFromLocalStorage } from '../lib/storage';
-import { getShownErase } from '../lib/roadmap-data';
 import type { PanelOnboarding } from '../hooks/useOnboarding';
 
 import { FIELD_METRIC_MAP, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD, VITAL_METRICS } from '@roadmap/health-core/mappings';
@@ -174,7 +173,7 @@ export function InputPanel({
   bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
   onboarding, setShowUploadModal, planBasis, grading, revealCell = null,
 }: InputPanelProps) {
-  const { stage: formStage, reached, fullForm, aboutYouLow, profileLeft: onProfileLeft, done: onOnboardingDone } = onboarding;
+  const { stage: formStage, reached, fullForm, aboutYouLow, profileLeft: onProfileLeft, landing } = onboarding;
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
   // Number boxes holding text the browser could not read ("175,500" gives "" with
   // validity.badInput): not a clear, so nothing is written or saved (US-02 AC7).
@@ -185,11 +184,6 @@ export function InputPanel({
     setUnreadable(prev => ({ ...prev, [field]: bad }));
     return !bad;
   };
-  // The weight's jump to My health, once per record (US-62 AC25): the erase
-  // whose record it landed on, so an erase in this tab frees it (D1).
-  const landedFor = useRef<string | null>(null);
-  // The birth year's jump (Brad 2026-11-02): once per record, as the weight's is once.
-  const yearJumped = useRef(false);
   // One auto-advance instance per TARGET, so a new keystroke on any source
   // field cancels a pending advance to that target.
   const advanceToWeight = useAutoAdvance();
@@ -287,8 +281,6 @@ export function InputPanel({
   useEffect(() => {
     // An erase takes About you back to the top: the next record starts again (Codex R2, adversary R4).
     setVitalsLeft(aboutYouLow && !vitalsRef.current?.contains(document.activeElement));
-    // About you's rows unmount as it leaves, which closes every open row.
-    if (!aboutYouLow) yearJumped.current = false;
   }, [aboutYouLow]);
   const vitalPending = (['weightKg', 'waistCm', 'systolicBp', 'diastolicBp'] as const).some(f => inputs[f] !== undefined);
   const vitalsAsRows = aboutYouLow && vitalsLeft && !vitalPending;
@@ -587,14 +579,12 @@ export function InputPanel({
                 return;
               }
               updateField(field, parseAndConvert(field, raw), fieldUnit(field));
-              const erase = getShownErase(); // the record as the weight was typed, not as the jump fires
-              if (field === 'weightKg' && landedFor.current !== erase && onOnboardingDone) {
+              // The weight's jump to My health, once per record (US-62 AC25, D4).
+              if (field === 'weightKg' && landing) {
                 const weightNum = parseLocalisedNumber(raw);
                 if (weightNum !== undefined && /^\d{2,3}$/.test(raw) && weightNum >= r.min && weightNum <= r.max) {
-                  advanceToMyHealth({
-                    ambiguous: /^\d{2}$/.test(raw) && weightNum * 10 <= r.max,
-                    advance: () => requestAnimationFrame(() => { if (getShownErase() === erase && onOnboardingDone()) landedFor.current = erase; }),
-                  });
+                  const land = landing(); // on the record the weight was typed on
+                  advanceToMyHealth({ ambiguous: /^\d{2}$/.test(raw) && weightNum * 10 <= r.max, advance: () => requestAnimationFrame(land) });
                 }
               }
             }}
@@ -785,12 +775,8 @@ export function InputPanel({
   const sexField = <SexField form={form} aboutYouLow={aboutYouLow}/>;
   const birthFields = (
     <BirthFields form={form} yearShown={yearShown.current}
-      // The year's jump, once per record, never a returning user's edit in About you's Birth row (Codex R3).
-      onYearComplete={onOnboardingDone && !aboutYouLow && reached < 4 ? () => {
-        if (yearJumped.current) return;
-        yearJumped.current = true;
-        requestAnimationFrame(() => onOnboardingDone(true));
-      } : undefined}/>
+      // The year's jump (Brad 2026-11-02), once per record (D4), never a returning user's edit in About you's Birth row (Codex R3).
+      onYearComplete={landing && !aboutYouLow && reached < 4 ? () => requestAnimationFrame(landing(true)) : undefined}/>
   );
 
   // ── Section render functions (shared closure state, not separate components) ──
@@ -864,7 +850,7 @@ export function InputPanel({
         formStage={formStage}
         plan={planBasis}
         knownMinor={knownMinor}
-        onOnboardingDone={onOnboardingDone}
+        landing={landing}
         withoutWeight={weightInProfile}
         unitOverrides={unitOverrides}
         onToggleFieldUnit={onToggleFieldUnit} startUnitOf={startUnitOf}
