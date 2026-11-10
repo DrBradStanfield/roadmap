@@ -829,11 +829,11 @@ function loadRaw(rep: Report, o: Options, tag: string, ac2: Check, isPost: (h: s
   return { main, extras, abstracts };
 }
 
-/** A quote hit must not start or end inside a number or word: "7 mg for 12 weeks" is not inside "1.7 mg for 12 weeks". */
+/** A quote hit must not start or end inside a number or word: "7 mg for 12 weeks" is not inside "1.7 mg for 12 weeks", nor "500 mg" inside "1 500 mg". */
 const atBoundary = (hay: string, q: string, i: number) => {
   const alnum = /[\p{L}\d]/u, end = i + q.length;
-  const before = alnum.test(hay[i - 1] ?? "") || (/[.,]/.test(hay[i - 1] ?? "") && /\d/.test(hay[i - 2] ?? ""));
-  const after = alnum.test(hay[end] ?? "") || (/[.,]/.test(hay[end] ?? "") && /\d/.test(hay[end + 1] ?? ""));
+  const before = alnum.test(hay[i - 1] ?? "") || (/[.,]/.test(hay[i - 1] ?? "") && /\d/.test(hay[i - 2] ?? "")) || (/^\d{3}(?!\d)/.test(q) && /(?<![\d.,])\d{1,3} $/.test(hay.slice(Math.max(0, i - 5), i))); // "1 500"
+  const after = alnum.test(hay[end] ?? "") || (/[.,]/.test(hay[end] ?? "") && /\d/.test(hay[end + 1] ?? "")) || (/(?<![\d.,])\d{1,3}$/.test(q) && /^ \d{3}(?![\d])/.test(hay.slice(end, end + 5)));
   return !(alnum.test(q[0]) && before) && !(alnum.test(q[q.length - 1]) && after);
 };
 

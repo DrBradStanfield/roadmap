@@ -1489,6 +1489,18 @@ describe("US-42 AC12 one number in different forms pairs; a different number nev
     pairs(["6 or 12 mg a day", "6 or 12 mg per day"], ["12 mg/day", "6 mg/day"]);
     pairs(["aged 45 to 64", "aged 45-64 years", "aged 45 and 64"], ["45 year", "64 year"]);
   });
+  it("infers years after 'aged', 'younger than' or 'older than' only when no unit follows (review R3)", () => {
+    pairs(["younger than 6 wk", "younger than 6-week"], ["<6 week"]);
+    pairs(["older than 72 h", "older than 72 hours"], [">72 hour"]);
+    pairs(["Infants aged 6 to 12 wks"], ["12 week", "6 week"]);
+    pairs(["aged 45 or 64 kg"], ["45 kg", "64 kg"]);
+    pairs(["aged 48 hours", "aged 48-h"], ["48 hour"]);
+    pairs(["aged 12-mo"], ["12 month"]);
+  });
+  it("keeps the leading comparator on the first number of an 'or' pair (review R5)", () => {
+    pairs(["over 12 or 24 hours"], ["24 hour", ">12 hour"]);
+    pairs(["over 12 to 72 hours"], ["12 hour", "72 hour"]);
+  });
   it("reads every per-day spelling as one /day token", () => {
     pairs(["12 mg a day", "12 mg per day", "12 mg/day", "12 mg/d", "12 mg daily", "12 mg astaxanthin/day", "12 mg astaxanthin/d"], ["12 mg/day"]);
     pairs(["550 mg/d"], ["550 mg/day"]);
@@ -1496,6 +1508,7 @@ describe("US-42 AC12 one number in different forms pairs; a different number nev
   it("reads a middle-dot decimal as a point", () => {
     pairs(["1·03", "1.03"], ["1.03"]);
     pairs(["HR 0·87 (95% CI 0·80 to 0·95)"], ["0.8", "0.87", "0.95", "95 %"]);
+    for (const f of ["4·10⁹/L", "4·10^9/L", "4·10⁻³"]) expect(t(f).filter((k) => /^4\.1/.test(k)), f).toEqual([]); // times ten to the power, not 4.10
   });
   it("reads a number word opening a sentence before an irregular plural or a short adjective run", () => {
     pairs(["Seventy adults took it.", "Seventy men took it."], ["70"]);
@@ -1504,18 +1517,20 @@ describe("US-42 AC12 one number in different forms pairs; a different number nev
     pairs(["Ninety-six subjects took part."], ["96"]);
     pairs(["One study shows benefit.", "One healthy man took it.", "We saw six healthy men."], []);
   });
-  it("reads thousands written with a comma, a space or a thin space as one number", () => {
-    pairs(["4000 IU", "4,000 IU", "4 000 IU", "4 000 IU", "4 000 IU"], ["4000 IU"]);
-    pairs(["12 000 participants"], ["12000"]);
+  it("reads thousands written with a comma as one number; a space never groups digits (review R1)", () => {
+    pairs(["4000 IU", "4,000 IU"], ["4000 IU"]);
+    pairs(["2 500 mg tablets"], ["2", "500 mg"]);
+    pairs(["2\u2009500 mg tablets"], ["2", "500 mg"]);
   });
   it("pairs comparator words with their symbols", () => {
     pairs(["<55 years", "younger than 55", "younger than 55 years"], ["<55 year"]);
     pairs([">65 years", "older than 65"], [">65 year"]);
     pairs(["≥ 20 mg", "20 mg or more"], ["≥20 mg"]);
   });
-  it("skips day-month dates as it skips years", () => {
-    pairs(["On 24 Oct 2026 the trial ended.", "On 24 October the trial ended.", "On October 24, 2026 the trial ended."], []);
-    pairs(["Took 24 mg on 3 May."], ["24 mg"]);
+  it("keeps a number beside a month name: a date is not stripped outside a master's own date positions (review R2, R4)", () => {
+    pairs(["In May 12 participants withdrew.", "By March 12 patients had died."], ["12"]);
+    pairs(["Dec 2 to 4 mg"], ["2 mg", "4 mg"]);
+    pairs(["Up to 4 May cause harm."], ["≤4"]);
     pairs(["Adults aged 24 may benefit."], ["24 year"]);
   });
   it("keeps a different number, unit or magnitude apart", () => {
@@ -1528,6 +1543,10 @@ describe("US-42 AC12 one number in different forms pairs; a different number nev
     apart("6 or 12 mg a day", "60 mg a day"); apart("Seventy adults took it.", "17"); apart("Seventy adults took it.", "Seventeen adults took it.");
     apart("12 mg", "12 mcg"); apart("4,000 IU", "400 IU"); apart("4 000 IU", "400 IU"); apart("<55 years", ">55 years"); apart("younger than 55", "older than 55");
     apart("21.9-y", "21.9 months"); apart("12 mg astaxanthin/day", "12 mg/week");
+    apart("Take 2 500 mg tablets daily.", "2500 mg a day"); apart("1 500 mg", "1500 mg");
+    for (const f of ["2 mg twice/day", "2 mg twice a day", "2 mg twice daily", "2 mg three times a day", "2 mg three times daily", "2 mg every 12 hours"]) apart(f, "2 mg a day");
+    apart("younger than 6 wk", "younger than 6 years"); apart("older than 72 h", "older than 72 years"); apart("Infants aged 6 to 12 wks", "aged 6 to 12");
+    apart("aged 48 hours", "aged 48"); apart("over 12 or 24 hours", "12 hours");
   });
   const addLine = (line: string, quote: string) => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("Take it with food", `${line}\nTake it with food`));
@@ -1539,6 +1558,14 @@ describe("US-42 AC12 one number in different forms pairs; a different number nev
   it("passes a body line whose numbers the quote writes in another form", () => {
     addLine("Participants took 12 mg a day for 12 weeks.", "participants took 12 mg astaxanthin/day over a 12-week period");
     expect(fails(run().AC2)).toEqual([]);
+  });
+  it("fails a quote cropped inside a space-grouped number: '500 mg' cut from '1 500 mg' (review R1)", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("Take it with food", "Adults took 500 mg every day with breakfast.\nTake it with food"));
+    const raw = `${fx("alpha.raw.txt")}\nIn the second arm, adults took 1 500 mg every day with breakfast for a year.`;
+    writeFileSync(join(reports, "alpha.raw.txt"), raw);
+    reps.alpha.raw_sha256 = sha256(raw);
+    reps.alpha.changed_tokens.push({ body_line: "Adults took 500 mg every day with breakfast.", raw_quote: "500 mg every day with breakfast for a year" });
+    expect(fails(run().AC2).join("\n")).toContain("raw_quote: its numbers are not whole tokens in the raw: Adults took 500 mg every day");
   });
   it("fails a body line whose dose differs from the quote's", () => {
     addLine("Participants took 60 mg a day for 12 weeks.", "participants took 12 mg astaxanthin/day over a 12-week period");
@@ -1913,13 +1940,13 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
       });
     });
 
-    it("US-50 AC1 tokeniser: the heading date, a citation date and a video-line date carry no number; nor do other dates (US-42 AC12)", () => {
+    it("US-50 AC1 tokeniser: the heading date, a citation date and a video-line date carry no number; other dates still do", () => {
       expect([...tokenise("## Current view (reviewed 15 October 2026)")]).toEqual([]);
       expect([...tokenise("Current view (reviewed 15 October 2026)")]).toEqual([]); // the heading as a cleaned body line
       expect([...tokenise("He said so ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/x)).")]).toEqual([]);
       expect([...tokenise("- 15 Oct 2026, [Title](https://drstanfield.com/blogs/articles/x): take.")]).toEqual([]);
-      expect([...tokenise("Trials ran from 15 Oct 2026.")]).toEqual([]);
-      expect([...tokenise("## Current view (reviewed 15 October 2026) 5 mg")].sort()).toEqual(["5 mg"]); // not the bare heading
+      expect([...tokenise("Trials ran from 15 Oct 2026.")]).toEqual(["15"]);
+      expect([...tokenise("## Current view (reviewed 15 October 2026) 5 mg")].sort()).toEqual(["15", "5 mg"]); // not the bare heading
     });
     it("US-50 AC1: a master's dates (heading, citation, video line) are not numbers; the happy path passes AC2", () => {
       basisFor(`Short view ([Brad, 15 Oct 2026](${OTHER})).`);

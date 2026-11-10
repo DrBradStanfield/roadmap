@@ -69,7 +69,8 @@ const genericOf = (raw: string | undefined) => (!raw ? "" : raw.toLowerCase().sp
 const canonCmp = (c: string | undefined) => (!c ? "" : /^maximum\b/i.test(c) ? "≤" : CMP_CANON[c.toLowerCase().replace(/\s+/g, " ")] ?? "");
 
 // "150 mg enteric coated, daily", "12 mg astaxanthin/day": "daily", "per day" or "/day" up to three words after a dose unit still means /day.
-const FAR_DAILY = /^(?:\s+(?!and\b|or\b|to\b)[A-Za-z][A-Za-z-]*,?){1,3}(?:\s+(?:daily|per\s+day)|\s*\/\s*d(?:ay)?)\b/i;
+// "2 mg twice daily" or "three times/day" is a frequency, not a daily dose.
+const FAR_DAILY = /^(?:\s+(?!and\b|or\b|to\b|twice\b|thrice\b|times\b)[A-Za-z][A-Za-z-]*,?){1,3}(?:\s+(?:daily|per\s+day)|\s*\/\s*d(?:ay)?)\b/i;
 const FAR_DAILY_UNITS = new Set(["mg", "mcg", "g", "IU", "mL", "kg"]);
 const RANGE_TAIL = new RegExp(`^\\s+(?:to|and|or)\\s+(?:${NUM})\\s*(?:${UNIT})(?![A-Za-z])`, "i");
 const DAILY_NEAR = /^\s+(?:daily|per\s+day|a\s+day|\/\s*day)\b/i;
@@ -113,16 +114,17 @@ function normNumber(n: string, unit: string): { value: string; unit: string } {
   return { value: String(v), unit };
 }
 
-// "24 Oct 2026", "3 May", "October 24, 2026": a date is not a value, like a year; this covers a topic master's heading,
-// citation and video-line dates (US-50). Capitalised only, so "aged 24 may" stays.
-const MONTH_NAME = "(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\\.?(?![A-Za-z])";
-const DATES = new RegExp(`\\b\\d{1,2}(?:st|nd|rd|th)?\\s+${MONTH_NAME}(?:,?\\s+\\d{4}\\b)?|\\b${MONTH_NAME}\\s+\\d{1,2}(?:st|nd|rd|th)?\\b(?![.,]\\d)(?:,?\\s+\\d{4}\\b)?(?![\\s-]*(?:${UNIT})(?![A-Za-z]))`, "g");
+/** Topic-master dates (US-50): the view heading, a "([Brad, 15 Oct 2026](" or "(Brad's current guidance, 15 Oct 2026)" citation, and a "- 15 Oct 2026, [" video line. */
+const MASTER_DATES = new RegExp(`^(?:(?:##\\s+)?Current view \\(reviewed \\d{1,2} ${MONTH} \\d{4}\\)\\s*$|\\s*(?:[-*]\\s+)?\\d{1,2} ${MONTH} \\d{4}(?=, \\[))|(?<=\\(\\[Brad, )\\d{1,2} ${MONTH} \\d{4}(?=\\]\\()|(?<=\\(Brad['’]s current guidance, )\\d{1,2} ${MONTH} \\d{4}(?=\\))`, "g");
+
+// "aged 45 to 64" and "younger than 55" are years, unless a unit follows ("aged 6 to 12 wks", "older than 72 h").
+const AGED = new RegExp(`\\b(aged|younger\\s+than|older\\s+than)\\s+(\\d+(?:\\.\\d+)?(?:(?:\\s*[-–]\\s*|\\s+(?:to|and|or)\\s+)\\d+(?:\\.\\d+)?)?)(?![\\d.])(?![\\s-]*(?:${UNIT}|w)(?![A-Za-z]))(?!\\s*(?:[-–]|to\\s|and\\s|or\\s)\\s*\\d)`, "gi");
 
 /** Strip everything the tokeniser must ignore, line by line. */
 export function stripNoise(line: string): string {
   return unescapeMd(line)
-    .replace(DATES, " ")
-    .replace(/(\d)[∙·⋅](\d)/g, "$1.$2") // "1·03" is 1.03
+    .replace(MASTER_DATES, " ")
+    .replace(/(\d)[∙·⋅](?!10(?:\^|[⁰¹²³⁴⁵⁶⁷⁸⁹⁻]))(\d)/g, "$1.$2") // "1·03" is 1.03; "4·10⁹" is not
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/https?:\/\/\S+/g, " ")
     .replace(/\b10\.\d{4,9}\/\S+/g, " ")
@@ -131,12 +133,10 @@ export function stripNoise(line: string): string {
     .replace(/\[\d+(?:\s*[,–-]\s*\d+)*\]/g, " ")
     .replace(/\b(?:type\s+[12](?:\s*(?:and|or|\/|-)\s*[12])?|stage\s+[1-5])\b/gi, " ") // disease and category names, not values
     .replace(/^\s*(?:[-*+]\s+)?\d+[.)]\s+/, " ")
-    .replace(/(?<![\d.,])\d{1,3}(?:[ \u2009\u202f]\d{3})+(?!\d|[.,]\d)/g, (m) => m.replace(/\D/g, "")) // "4 000" is 4000
     .replace(/\b(micrograms?|microg|[µμ]g|mcg|milligrams?|mg|nanograms?|ng|grams?|g|IU|U)((?:\s+[A-Za-z-]+){0,4})\s+per\s+(?:liters?|litres?|L)\b/gi, "$1/L$2")
     .replace(/([A-Za-z])\s*[∙·⋅]\s*([A-Za-z]+)\s*(?:[-−]|⁻)[1¹]\b/g, "$1/$2") // "g∙kg-1" is g/kg
     .replace(/(\d)\s*-\s*(month|week|hour|year)ly\b/gi, "$1 $2")
-    // "aged 45 to 64" and "younger than 55" are years.
-    .replace(/\b(aged|younger\s+than|older\s+than)\s+(\d+(?:\.\d+)?(?:(?:\s*[-–]\s*|\s+(?:to|and|or)\s+)\d+(?:\.\d+)?)?)(?![\d.])(?!\s*(?:years?|yrs?\b|y\b|months?|mos?\b|weeks?|days?|(?:[-–]|to\s|and\s|or\s)\s*\d))/gi, "$1 $2 years")
+    .replace(AGED, "$1 $2 years")
     .replace(NUMWORD_UNIT, (m, w: string, sp: string) => { const v = wordValue(w); return v === null ? m : `${v}${sp}`; })
     .replace(NUMWORD_OPEN, (m, lead: string, w: string, after: string) => {
       const v = wordValue(w), words = after.trim().split(/\s+/);
@@ -190,9 +190,9 @@ export function tokenCounts(text: string, opts: { keepRefs?: boolean } = {}): Ma
     const s = stripNoise(opts.keepRefs ? line : line.replace(/^\s*>+ /, ""));
     for (const m of s.matchAll(TOKEN_RE())) {
       const unit = m[5] ? normUnit(m[5]) : "";
-      // "over 12 to 72 hours" is a time span, not a comparator; "over 12 hours" is > 12.
-      const lead = m[1]?.toLowerCase();
-      const cmp = m[3] && (lead === "over" || lead === "above") ? "" : canonCmp(m[1] ?? m[4] ?? m[8]) || itemCmp;
+      // "over 12 to 72 hours" is a time span, not a comparator; "over 12 hours" is > 12; "over 12 or 24 hours" is > 12 and 24.
+      const lead = m[1]?.toLowerCase(), or = !!m[3] && /^\S+\s+or\s/i.test(m[0].slice(m[0].indexOf(m[2])));
+      const cmp = m[3] && !or && (lead === "over" || lead === "above") ? "" : canonCmp(m[1] ?? m[4] ?? m[8]) || itemCmp;
       // A digit glued to a hyphen and letters ("5-ASA", "6-MP", "5-HT3") is a name, not a number.
       if (!m[5] && !m[3] && /^-[A-Za-z]/.test(s.slice(m.index! + m[0].length))) continue;
       const gen = genericOf(m[7]);
@@ -203,10 +203,10 @@ export function tokenCounts(text: string, opts: { keepRefs?: boolean } = {}): Ma
       const tail = unit && !m[3] && !gen ? RANGE_TAIL.exec(rest) : null;
       const after = tail ? rest.slice(tail[0].length) : rest;
       const per = m[6] ?? (unit && FAR_DAILY_UNITS.has(unit) && !gen && (FAR_DAILY.test(after) || (tail && DAILY_NEAR.test(after))) ? "daily" : undefined);
-      for (const n of [m[2], m[3]].filter(Boolean) as string[]) {
+      for (const [k, n] of ([m[2], m[3]].filter(Boolean) as string[]).entries()) {
         if (!unit && !cmp && !n.includes(",") && !n.includes(".") && /^(19|20)\d\d$/.test(n)) continue;
         const { value, unit: u } = normNumber(n, comp ?? unit);
-        const key = `${cmp}${u ? `${value} ${u}${suffixOf(per)}${comp ? "" : gen}` : value}`;
+        const key = `${k && or && m[1] ? "" : cmp}${u ? `${value} ${u}${suffixOf(per)}${comp ? "" : gen}` : value}`;
         out.set(key, (out.get(key) ?? 0) + 1);
       }
     }
