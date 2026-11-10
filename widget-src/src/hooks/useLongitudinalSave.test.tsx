@@ -34,7 +34,7 @@ function setup(inputs: Record<string, number> = {}) {
   const reloads: ReturnType<typeof deferred>[] = [];
   const reloadValues = vi.fn(() => { const d = deferred(); reloads.push(d); return d.promise; });
   const hook = renderHook(() => useLongitudinalSave({
-    inputs, setInputs: vi.fn(), history: [], unitOverrides: {}, unitSystem: 'si', reloadValues,
+    inputs, setInputs: vi.fn(), history: [], unitOverrides: {}, unitSystem: 'si', reread: reloadValues,
     flushPendingProfileSave: async () => true,
     typedIn: { current: {} }, firstSave: false,
   }));

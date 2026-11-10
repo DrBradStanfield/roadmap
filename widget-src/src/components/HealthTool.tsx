@@ -281,9 +281,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // then the page re-reads the record.
   const handleCorrectValue = useCallback<CorrectFn>(async (id, newValue, erase) => {
     const status = await countedCorrection(id, newValue, erase);
-    if (status === 'ok') await reloadValues();
+    if (status === 'ok') await rereadRecord('own-save');
     return status;
-  }, [reloadValues]);
+  }, [rereadRecord]);
 
   // A saved blood test moved to the day it was drawn (US-04 AC5), counted by
   // name only; the page re-reads the record as after a correction.
@@ -293,18 +293,18 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       const outcome = await moveBloodTest(from, to, expectedIds, keep);
       if (outcome.status === 'ok') {
         trackProductEvent('blood_test_moved');
-        await reloadValues();
+        await rereadRecord('own-save');
       }
       return outcome;
     },
-  }), [reloadValues]);
+  }), [rereadRecord]);
 
   // The first-time vitals fields' and the PSA's save, queued and debounced (hooks/useLongitudinalSave).
   const {
     handleSaveLongitudinal, scheduleLongitudinalSave, flushLongitudinalSave, commitPsa, stagePendingSave,
     cancelPendingSave, flushPendingSave, isSavingLongitudinal, fieldsSaved, psaDate, setPsaDate,
   } = useLongitudinalSave({
-    inputs, setInputs, history, unitOverrides, unitSystem, reloadValues,
+    inputs, setInputs, history, unitOverrides, unitSystem, reread: () => rereadRecord('own-save'),
     flushPendingProfileSave: flushProfile, typedIn,
     firstSave: previousMeasurements.length === 0, // read once: a record holding a measurement at load sends no conversion (US-01 AC7)
   });
