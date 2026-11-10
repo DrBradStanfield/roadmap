@@ -13,8 +13,10 @@ export const planOf = (suggestions: Suggestion[] | undefined): Plan =>
  * - settling (the first 3 s after mount): nothing glows; each plan becomes the baseline.
  * - still: a plan with ids new or reworded against the baseline glows them; the
  *   first plan after an empty one too (P7, Brad 2026-11-10).
- * - held (the PDF email box pulses, P7): nothing glows; the baseline stays as the
- *   hold found it and the latest plan waits. Released, what is new against it glows.
+ * - held (the cards are hidden, or the PDF email box pulses, P7): nothing glows; the
+ *   baseline is the plan shown when the hold began and the latest plan waits.
+ *   Released, what is new against it glows. A hold begun mid-glow or mid-fade takes
+ *   the glow's plan as the baseline, so a card that glowed never glows again.
  * - glowing(ids) → fading(ids) after 3 s → still after 0.5 s, on the glow's plan.
  *   Another plan restarts the glow against the same baseline; one with nothing new
  *   (a change undone) ends it at once.
@@ -62,7 +64,7 @@ export function transition(state: Glow, event: GlowEvent): Glow {
     case 'glowing':
     case 'fading':
       if (event.type === 'plan') return glowOn(state.baseline, event.plan); // a copy restarts the glow, as before
-      if (event.type === 'hold' && event.on) return { phase: 'held', baseline: state.baseline, plan: state.plan };
+      if (event.type === 'hold' && event.on) return { phase: 'held', baseline: state.plan, plan: state.plan };
       if (event.type === 'glowEnded' && state.phase === 'glowing') return { ...state, phase: 'fading' };
       if (event.type === 'fadeEnded' && state.phase === 'fading') return { phase: 'still', baseline: state.plan };
       return state;
@@ -71,7 +73,7 @@ export function transition(state: Glow, event: GlowEvent): Glow {
 
 /**
  * New or changed suggestions glow for 3 s, then fade for 0.5 s; nothing glows while
- * `held` (the PDF email box pulses: emailPulses in PlanPdf.tsx). The hook only sends
+ * `held` (the cards are hidden, or the PDF email box pulses: usePlanView). The hook only sends
  * events and runs the timers the phase asks for. useState with an updater, not
  * useReducer, so an unchanged state bails out before a render.
  */

@@ -12,7 +12,7 @@ import type { AlcoholQuestion } from '../components/AlcoholQuestion';
 
 const NO_FORMS = { medications: [], screenings: [] };
 
-export function PlanHost({ results, isValid, tiles = [], showEmailCapture, formStage, syncControl, remindersSection, onDeleteData, isDeleting, alcoholQuestion, hasUnsavedLongitudinal, onSaveLongitudinal, shownErase = '' }: {
+export function PlanHost({ results, isValid, tiles = [], showEmailCapture, formStage, syncControl, remindersSection, onDeleteData, isDeleting, alcoholQuestion, hasUnsavedLongitudinal, onSaveLongitudinal, shownErase = '', cardsShown = true }: {
   results: HealthResults | null;
   isValid: boolean;
   tiles?: StatTile[];
@@ -27,10 +27,12 @@ export function PlanHost({ results, isValid, tiles = [], showEmailCapture, formS
   onSaveLongitudinal?: () => Promise<unknown>;
   /** The erase the screen shows: a new one is another device's erase, re-read. */
   shownErase?: string;
+  /** The cards are on screen (HealthTool: the whole form is open). */
+  cardsShown?: boolean;
 }) {
   // A successful Delete here moves the erase, as useErase does.
   const [erased, setErased] = useState(0);
-  const plan = usePlanView({ results, shownErase: `${shownErase}:${erased}`, isValid, tiles, forms: NO_FORMS, showEmailCapture, formStage, alcoholQuestion, hasUnsavedLongitudinal, onSaveLongitudinal });
+  const plan = usePlanView({ results, shownErase: `${shownErase}:${erased}`, isValid, tiles, forms: NO_FORMS, showEmailCapture, formStage, cardsShown, alcoholQuestion, hasUnsavedLongitudinal, onSaveLongitudinal });
   const planned = isValid && !!results;
   return (
     <OpenEvidenceContext.Provider value={plan.evidence}>

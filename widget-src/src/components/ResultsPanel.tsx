@@ -111,10 +111,12 @@ interface PlanViewOptions {
   onSaveLongitudinal?: () => Promise<unknown>;
   showEmailCapture?: boolean;
   formStage?: number;
+  /** The plan's cards are on screen (the onboarding hides them until the whole form opens). */
+  cardsShown: boolean;
   alcoholQuestion?: AlcoholQuestion;
 }
 
-export function usePlanView({ results, shownErase, isValid, tiles, forms, hasUnsavedLongitudinal, onSaveLongitudinal, showEmailCapture, formStage, alcoholQuestion }: PlanViewOptions): PlanView {
+export function usePlanView({ results, shownErase, isValid, tiles, forms, hasUnsavedLongitudinal, onSaveLongitudinal, showEmailCapture, formStage, cardsShown, alcoholQuestion }: PlanViewOptions): PlanView {
   const { printStatus, pdfBlocked, pdfOpened, printing, printReport, handlePrint, forget } = usePlanPrint(!!results, hasUnsavedLongitudinal, onSaveLongitudinal);
 
   const capture = useEmailCaptureState();
@@ -123,8 +125,9 @@ export function usePlanView({ results, shownErase, isValid, tiles, forms, hasUns
   // mailing list). Their PDF is the gate-skipped page's Save as PDF (US-44 AC2).
   const adult = planned && !results.knownMinor;
   const pdfMode = pdfBox({ planned, adult, emailCapture: !!showEmailCapture && adult, state: capture.state, gateSkipped: capture.gateSkipped, shopify: SHOPIFY_SURFACE });
-  // US-07 AC3 (P7): no card glows while the PDF email box pulses.
-  const highlights = useHighlights(results?.suggestions, emailPulses(pdfMode.email, formStage));
+  // US-07 AC3 (P7): no card glows, and the glow learns nothing, while the cards are
+  // hidden or the PDF email box pulses.
+  const highlights = useHighlights(results?.suggestions, !cardsShown || emailPulses(pdfMode.email, formStage));
   const [opened, setOpened] = useState<ReadonlySet<string>>(NO_HIGHLIGHTS);
   const toggleEvidence = useCallback((key: string) => setOpened(was => {
     const next = new Set(was);

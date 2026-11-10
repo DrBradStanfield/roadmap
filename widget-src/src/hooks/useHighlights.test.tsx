@@ -225,6 +225,19 @@ describe('US-07 AC3, P7 (Brad 2026-11-10): nothing glows while the email box pul
     expect(h.result.current.fadingOut).toBe(NO_HIGHLIGHTS);
   });
 
+  it.each([['glow', 1000], ['fade', 3200]])('Codex R2: a card that glowed before a hold begun mid-%s does not glow again on release', (_, at) => {
+    const h = settled();
+    h.show([s('a'), s('b'), s('c')]);
+    tick(at);
+    h.hold(true);
+    h.hold(false);
+    expect(h.result.current.highlighted).toBe(NO_HIGHLIGHTS);
+    h.hold(true);
+    h.show([s('a'), s('b'), s('c'), s('d')]);
+    h.hold(false);
+    expect(h.glowing()).toEqual(['d']);
+  });
+
   it('an email never given: no card ever glows', () => {
     const h = mount([s('a')], true);
     for (const next of [[s('a'), s('b')], [s('c')], [], [s('a'), s('d')]]) {
@@ -275,13 +288,22 @@ describe('US-07 AC3: transition, phase by event', () => {
     ['glowing + glowEnded: fading', glowing, glowEnded, fading],
     ['glowing + plan with more: glowing, same baseline', glowing, plan(P('a', 'b', 'c', 'd')), { phase: 'glowing', baseline: AB, plan: P('a', 'b', 'c', 'd'), ids: ids('c', 'd') }],
     ['glowing + plan undone: still', glowing, plan(AB), still],
-    ['glowing + hold on: held, baseline kept', glowing, on, held],
+    ['glowing + hold on: held, the glow\'s plan the baseline (Codex R2)', glowing, on, { phase: 'held', baseline: ABC, plan: ABC }],
     ['fading + fadeEnded: still on the plan', fading, fadeEnded, { phase: 'still', baseline: ABC }],
     ['fading + plan with more: glowing', fading, plan(P('a', 'b', 'c', 'd')), { phase: 'glowing', baseline: AB, plan: P('a', 'b', 'c', 'd'), ids: ids('c', 'd') }],
     ['fading + plan undone: still', fading, plan(AB), still],
-    ['fading + hold on: held, baseline kept', fading, on, held],
+    ['fading + hold on: held, the glow\'s plan the baseline (Codex R2)', fading, on, { phase: 'held', baseline: ABC, plan: ABC }],
   ])('%s', (_, state, event, next) => {
     expect(transition(state, event)).toEqual(next);
+  });
+
+  // Codex R2 (US-07 AC3): a hold that starts mid-glow or mid-fade starts from what
+  // was shown, so a card that glowed before the hold never glows again on release.
+  it.each<[string, Glow]>([['glow', glowing], ['fade', fading]])('a hold entered mid-%s: released unchanged, nothing glows; released with an edit, only that card', (_, state) => {
+    const entered = transition(state, on);
+    expect(transition(entered, off)).toEqual({ phase: 'still', baseline: ABC });
+    const edited = transition(entered, plan(P('a', 'b', 'c', 'd')));
+    expect(transition(edited, off)).toEqual({ phase: 'glowing', baseline: ABC, plan: P('a', 'b', 'c', 'd'), ids: ids('d') });
   });
 
   it.each<[string, Glow, GlowEvent]>([
