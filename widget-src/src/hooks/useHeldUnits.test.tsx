@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { act, cleanup, render } from '@testing-library/react';
 import { useRef, useState } from 'react';
 import { useHeldUnits } from './useHeldUnits';
-import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
+import { BT_TIMELINE_DRAFT_KEY, DRAFTS_CLEARED_EVENT } from '../lib/storage';
 
 let hook: ReturnType<typeof useHeldUnits> & { choose: (system: string) => void };
 
@@ -69,6 +69,17 @@ describe('US-04 AC1: a draft this page holds keeps the units held, whatever is k
     act(() => hook.offerUnits('conventional'));
     expect(view.container.querySelector('output')?.textContent).toBe('si');
     act(() => hook.onMatrixHolds('vitals', false));
+    expect(view.container.querySelector('output')?.textContent).toBe('conventional');
+  });
+});
+
+describe('US-34 AC7: an erase drops what the matrices last reported (PR 1135 Codex round 3)', () => {
+  it('US-34 AC7: a matrix\'s draft held a switch; the drafts cleared by an erase, with no matrix left to report, the switch applies', () => {
+    const view = render(<Page />);
+    act(() => hook.onMatrixHolds('blood', true));
+    act(() => hook.offerUnits('conventional'));
+    expect(view.container.querySelector('output')?.textContent).toBe('si');
+    act(() => { window.dispatchEvent(new Event(DRAFTS_CLEARED_EVENT)); });
     expect(view.container.querySelector('output')?.textContent).toBe('conventional');
   });
 });

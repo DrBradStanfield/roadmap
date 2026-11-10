@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, type RefObject } from 'react';
 import { draftsHoldText } from '../lib/useMatrixDraft';
+import { DRAFTS_CLEARED_EVENT } from '../lib/storage';
 
 /**
  * The record's unit system on screen, shown or held (US-34 AC7, US-04 AC1).
@@ -48,6 +49,13 @@ export function useHeldUnits(apply: (unitPref: unknown) => void, shown: string, 
   const release = useCallback(() => { if (held.current !== undefined && !typing()) show(held.current); }, [typing, show]);
   const onMatrixHolds = useCallback((matrix: 'vitals' | 'blood', holds: boolean) => { matrices.current[matrix] = holds; release(); }, [release]);
   useEffect(() => { held.current = undefined; }, [shown]);
+  // An erase clears every draft (US-11 AC6) and may unmount the matrices before
+  // they report: what they last said goes with it.
+  useEffect(() => {
+    const cleared = () => { matrices.current = { vitals: false, blood: false }; release(); };
+    window.addEventListener(DRAFTS_CLEARED_EVENT, cleared);
+    return () => window.removeEventListener(DRAFTS_CLEARED_EVENT, cleared);
+  }, [release]);
   // Read after the focus has moved: during focusout it is on the body even when it is going to another field.
   useEffect(() => {
     const root = rootRef.current;
