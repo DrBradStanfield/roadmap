@@ -221,15 +221,13 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Install Playwright WebKit
-        # The system packages come from Ubuntu's apt mirror, which now and then
-        # slows to a crawl for one runner (2026-11-10: twice it ate verify-live's
-        # whole time limit after the deploy had finished, so a live deploy went
-        # unverified and its issue stayed open). apt gives up on a stalled
-        # download sooner and retries it, and a failed install is tried again; a new try
-        # keeps the packages already fetched.
+        # apt's downloads from Ubuntu's mirror sometimes crawl for one runner.
+        # On 2026-11-10 that twice used verify-live's whole limit after the
+        # deploy had finished. The runner image already sets apt's own retry
+        # and timeout (/etc/apt/apt.conf.d/zz-retries), so nothing is set here.
+        # The loop covers an install that fails outright; verify-live's longer
+        # limit covers a crawl.
         run: |
-          printf '%s\n' 'Acquire::Retries "5";' 'Acquire::http::Timeout "10";' 'Acquire::https::Timeout "10";' \
-            | sudo tee /etc/apt/apt.conf.d/80-ci-retries > /dev/null
           for try in 1 2 3; do
             if npx playwright install --with-deps webkit; then exit 0; fi
             echo "::warning::Playwright install try ${try} failed"
@@ -371,8 +369,9 @@ jobs:
   verify-live:
     needs: [gate, deploy]
     runs-on: ubuntu-latest
-    # Room for a slow mirror: a healthy run takes about a minute. This job
-    # holds the deploy queue while it runs, so the limit stays finite.
+    # Room for a crawling apt mirror: a healthy run takes about a minute. This
+    # limit, not the install loop, is what covers a crawl. The job holds the
+    # deploy queue while it runs, so the limit stays finite.
     timeout-minutes: 30
     permissions:
       contents: read
@@ -387,15 +386,13 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Install Playwright WebKit
-        # The system packages come from Ubuntu's apt mirror, which now and then
-        # slows to a crawl for one runner (2026-11-10: twice it ate verify-live's
-        # whole time limit after the deploy had finished, so a live deploy went
-        # unverified and its issue stayed open). apt gives up on a stalled
-        # download sooner and retries it, and a failed install is tried again; a new try
-        # keeps the packages already fetched.
+        # apt's downloads from Ubuntu's mirror sometimes crawl for one runner.
+        # On 2026-11-10 that twice used verify-live's whole limit after the
+        # deploy had finished. The runner image already sets apt's own retry
+        # and timeout (/etc/apt/apt.conf.d/zz-retries), so nothing is set here.
+        # The loop covers an install that fails outright; verify-live's longer
+        # limit covers a crawl.
         run: |
-          printf '%s\n' 'Acquire::Retries "5";' 'Acquire::http::Timeout "10";' 'Acquire::https::Timeout "10";' \
-            | sudo tee /etc/apt/apt.conf.d/80-ci-retries > /dev/null
           for try in 1 2 3; do
             if npx playwright install --with-deps webkit; then exit 0; fi
             echo "::warning::Playwright install try ${try} failed"
