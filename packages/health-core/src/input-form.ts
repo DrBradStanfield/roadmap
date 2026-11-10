@@ -457,7 +457,7 @@ export function screeningForm(age: number | undefined, sex: string | undefined, 
         choice(r.choice.key, L.endometrialDiscussion, selectOf(r.choice.options)),
         choice('endometrial_abnormal_bleeding', L.endometrialBleeding, O.endometrial_abnormal_bleeding),
       ];
-      default: return [];
+      case 'dexa': return []; default: { const exhaustive: never = r.id; return exhaustive; } // a new row fails typecheck
     }
   };
 
