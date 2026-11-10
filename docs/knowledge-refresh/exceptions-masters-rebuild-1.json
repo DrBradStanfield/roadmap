@@ -506,14 +506,6 @@
  {
   "check": "AC2",
   "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
-  "match": "token \"48\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Newer trials (2026):** Results are split. In 40 young adults, 1 week at 20 g a day had no effect on any cognitive t...\"",
-  "reason": "Tokeniser: abstract runs 'MethodsForty-eight women' together, so 48 is not read (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC2",
-  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
   "match": "token \"32\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Older adults:** In 36 perimenopausal and menopausal women, creatine HCl at 1,500 mg a day for 8 weeks improved reac...\"",
   "reason": "Derived: abstract gives groups of n = 15 and n = 17 (32 in all) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
   "by": "orchestrator",
@@ -972,14 +964,6 @@
   "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
   "match": "product mentions rose 3 -> 4",
   "reason": "False positive: reference [36] title 'VITamin D and OmegA-3 TriaL' (VITAL) counts as an Omega-3 mention; product section unchanged at 3 (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC2",
-  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
-  "match": "token \"48\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Newer trials (2026):** Results are split. In adults aged 45 to 65, selected cognitive and memory markers improved, ...\"",
-  "reason": "Tokeniser: abstract runs 'MethodsForty-eight women' together, so 48 is not read (found-in text changed: Newer trials sentences reordered, ruling 2) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
   "by": "orchestrator",
   "date": "2026-11-10"
  },
