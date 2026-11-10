@@ -1,9 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 
 // trending-cron.server.ts imports the Shopify app + Supabase singletons at
 // module load; neither is exercised by these tests, so stub them out.
 vi.mock('../shopify.server', () => ({ unauthenticated: { admin: vi.fn() } }));
 vi.mock('./supabase.server', () => ({ tryAcquireCronLock: vi.fn() }));
+vi.mock('@sentry/react-router', () => ({ captureException: vi.fn() }));
 
 import {
   computeTrending,
@@ -275,5 +276,79 @@ describe('writeTrendingMetafield — commit verification', () => {
     const admin = fakeAdmin({ metafields: [], userErrors: [] });
     await expect(writeTrendingMetafield(admin, 'gid://shopify/Shop/1', payload))
       .rejects.toThrow(/empty metafields/i);
+  });
+});
+
+// US-28 AC6: trending's day is done only once its run has written the
+// metafield. The tick marked the day before computeAndWriteTrending, so a
+// Shopify error left that day's trending list stale until the next day.
+describe('trending cron tick — US-28 AC6: a failed run leaves the day open', () => {
+  const HOUR_MS = 60 * 60 * 1000;
+  let stop: (() => void) | null = null;
+
+  // A Shopify admin that answers each query the run makes with an empty but
+  // well-formed result, and echoes the metafield value back as written.
+  const okAdmin = {
+    graphql: vi.fn(async (query: string, opts?: { variables?: any }) => {
+      let body: unknown;
+      if (query.includes('shopifyqlQuery')) {
+        body = { data: { shopifyqlQuery: { parseErrors: [], tableData: {
+          columns: [{ name: 'landing_page_path' }, { name: 'sessions' }], rows: [],
+        } } } };
+      } else if (query.includes('shop { id }')) {
+        body = { data: { shop: { id: 'gid://shopify/Shop/1' } } };
+      } else {
+        const value = opts?.variables?.metafields?.[0]?.value;
+        body = { data: { metafieldsSet: { userErrors: [], metafields: [
+          { id: 'gid://shopify/Metafield/1', value, updatedAt: '2026-08-28T00:00:00Z' },
+        ] } } };
+      }
+      return { json: async () => body };
+    }),
+  };
+
+  afterEach(() => {
+    stop?.();
+    stop = null;
+    vi.unstubAllEnvs();
+    vi.useRealTimers();
+  });
+
+  it('re-runs the day on the next tick after a failed run, then ends it once a run succeeds', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-27T15:30:00Z')); // 03:30 NZST, 28 Aug
+    vi.resetModules();
+    // Import under NODE_ENV=test so the self-start is a no-op, then pose as
+    // production so the explicit start below runs.
+    const cron = await import('./trending-cron.server');
+    vi.stubEnv('NODE_ENV', 'production');
+    const { unauthenticated } = await import('../shopify.server');
+    const { tryAcquireCronLock } = await import('./supabase.server');
+    const Sentry = await import('@sentry/react-router');
+    const adminMock = vi.mocked(unauthenticated.admin);
+    const lockMock = vi.mocked(tryAcquireCronLock);
+    // The lock row names this machine for today, so its own re-acquire wins.
+    lockMock.mockReset().mockResolvedValue(true);
+    adminMock.mockReset()
+      .mockRejectedValueOnce(new Error('unauthenticated.admin failed'))
+      .mockResolvedValue({ admin: okAdmin } as any);
+    vi.mocked(Sentry.captureException).mockClear();
+    stop = cron.stopTrendingCron;
+
+    cron.startTrendingCron();
+    await vi.advanceTimersByTimeAsync(HOUR_MS); // 04:30: lock won, run fails
+    expect(adminMock).toHaveBeenCalledTimes(1);
+    expect(okAdmin.graphql).not.toHaveBeenCalled();
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1); // still reported
+
+    await vi.advanceTimersByTimeAsync(HOUR_MS); // 05:30: the day is still open
+    expect(lockMock).toHaveBeenCalledTimes(2);
+    expect(adminMock).toHaveBeenCalledTimes(2);
+    const metafieldWrites = okAdmin.graphql.mock.calls.filter(([q]) => q.includes('metafieldsSet'));
+    expect(metafieldWrites).toHaveLength(1);
+
+    await vi.advanceTimersByTimeAsync(HOUR_MS); // 06:30: done for the day
+    expect(lockMock).toHaveBeenCalledTimes(2);
+    expect(adminMock).toHaveBeenCalledTimes(2);
   });
 });
