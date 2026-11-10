@@ -27,7 +27,7 @@ import { BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY, loadFromLocalStorage } from '.
 import { trackABConversion } from '../lib/server-api';
 import { openAboutYou } from '../testing/health-tool-harness';
 import { WRITE_REFUSED } from '../lib/erase-copy';
-import { press, pressMouse, releaseMouse, typeInto } from '../testing/matrix-gestures';
+import { press, pressMouse, pressWithoutFocus, releaseMouse, typeInto } from '../testing/matrix-gestures';
 import { cellText } from '../lib/blood-test-cell';
 import { Sentry } from '../lib/sentry';
 const { scrubEvent: realScrubEvent } = await vi.importActual<typeof import('../lib/sentry')>('../lib/sentry');
@@ -673,5 +673,191 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
     await settle(50);
     // The re-read failed before it showed the record: the page keeps the first read's answer.
     expect((q(view, '#birthYear') as HTMLInputElement).value).toBe('1980');
+  });
+
+  // The units machine (hooks/units-machine.ts; survey H1, H2, H9, 2026-11-10). A unit
+  // control's press commits from the units the person saw at the press, never from a
+  // held system the press released first (H1); this tab's switch is unsaved, and holds
+  // another writer's change, until its save lands (H2); a field that unmounts while it
+  // holds the record's units lets them go (H9).
+  describe('US-34 AC7a: a unit control pressed while the record\'s units are held, and a switch until it is saved', () => {
+    const nextFrame = () => act(async () => { await new Promise((r) => requestAnimationFrame(() => r(undefined))); });
+    const unitPill = (view: RenderResult) => waitFor(() => {
+      const el = view.container.querySelector<HTMLElement>('.unit-toggle-pill[aria-label^="Switch units"]');
+      if (!el) throw new Error('no unit pill');
+      return el;
+    });
+    const pillSays = async (view: RenderResult) => (await unitPill(view)).getAttribute('aria-label');
+    const US = 'Switch units. Current: US';
+    const METRIC = 'Switch units. Current: Metric';
+    const recordUnits = async () => (await recordOnDisk()).profile.unitSystem;
+    const ldlChip = async (view: RenderResult) => (await ldlRow(view)).querySelector('.bt-unit-chip') as HTMLElement;
+    /** An SI record on the page, `typed` in LDL (the cell keeps the focus), and US units held. "135" is out of range in mmol/L, so the press cannot commit it. */
+    async function heldWhileTyping(typed = '135'): Promise<RenderResult> {
+      await siRecord();
+      const view = await open();
+      await settle(50); // About you's opened rows take the focus a frame later; a leave would commit the draft
+      typeInto(await ldlDraft(view), typed);
+      await toConventional();
+      await settle(50);
+      expect(await pillSays(view)).toBe(METRIC); // held
+      return view;
+    }
+    async function pillChoseUs(view: RenderResult) {
+      expect(await pillSays(view)).toBe(US);
+      expect((await ldlDraft(view)).value).toBe('135');
+      expect((await ldlDraft(view)).getAttribute('aria-invalid')).toBe('false'); // 135 mg/dL
+      expect((await ldlChip(view)).textContent).toBe('mg/dL');
+      await settle(700);
+      expect(await recordUnits()).toBe('conventional');
+      expect(await pillSays(view)).toBe(US);
+    }
+
+    it('US-34 AC7a (H1, Chrome order): the pill pressed from a focused LDL with US units held: the press takes the focus, then the click: US units, 135 mg/dL, saved', async () => {
+      const view = await heldWhileTyping();
+      const pill = await unitPill(view);
+      pressMouse(pill);
+      await nextFrame(); // main released the held units here, then the click toggled back from them
+      releaseMouse(pill);
+      await pillChoseUs(view);
+    });
+
+    it('US-34 AC7a (H1, Safari order): the press blurs LDL and nothing takes the focus, then the click: US units, 135 mg/dL, saved', async () => {
+      const view = await heldWhileTyping();
+      const pill = await unitPill(view);
+      pressWithoutFocus(pill);
+      await nextFrame();
+      releaseMouse(pill);
+      await pillChoseUs(view);
+    });
+
+    it('US-34 AC7a (H1): the click arrives two frames after the release (WebKit promises no frame): still US units, 135 mg/dL, saved', async () => {
+      const view = await heldWhileTyping();
+      const pill = await unitPill(view);
+      pressWithoutFocus(pill);
+      await nextFrame();
+      fireEvent.pointerUp(pill);
+      fireEvent.mouseUp(pill);
+      await nextFrame();
+      await nextFrame();
+      expect(await pillSays(view)).toBe(METRIC); // a press not yet resolved releases nothing
+      fireEvent.click(pill);
+      await pillChoseUs(view);
+    });
+
+    it('US-34 AC7a (H1): the Height pill pressed from a focused height box with US units held: ft/in, saved as US units', async () => {
+      await siRecord();
+      const view = await open();
+      await settle(50);
+      act(() => (q(view, '#heightCm') as HTMLElement).focus());
+      await toConventional();
+      await settle(50);
+      expect(q(view, '#heightCm')).toBeTruthy(); // held
+      const pill = q(view, 'label[for="heightCm"] .unit-toggle-pill') as HTMLElement;
+      pressMouse(pill);
+      await nextFrame();
+      releaseMouse(pill);
+      await waitFor(() => expect(q(view, '#heightFeet')).toBeTruthy());
+      await settle(700);
+      expect(await recordUnits()).toBe('conventional');
+      expect(q(view, '#heightFeet')).toBeTruthy();
+    });
+
+    it('US-34 AC7a, US-05 AC2 (H1, a row chip): 3.5 typed into LDL with US units held, then its chip: 3.5 mg/dL, read and saved so; a second press goes to mmol/L', async () => {
+      const view = await heldWhileTyping('3.5');
+      const chip = await ldlChip(view);
+      pressMouse(chip);
+      await nextFrame();
+      releaseMouse(chip);
+      await nextFrame(); // the held US units apply a frame after the chip (Q4)
+      expect((await ldlDraft(view)).value).toBe('3.5');
+      expect((await ldlChip(view)).textContent).toBe('mg/dL');
+      await waitFor(async () => expect(await pillSays(view)).toBe(US));
+      press(await ldlDraft(view));
+      press(q(view, '.alr-add-btn') as HTMLElement);
+      await waitFor(async () => expect(await activeLdl()).toHaveLength(1), { timeout: 3000 });
+      expect((await activeLdl())[0]).toBeCloseTo(toCanonicalValue('ldl', 3.5, 'conventional'), 6);
+      const again = await ldlChip(view);
+      pressMouse(again); releaseMouse(again);
+      expect((await ldlChip(view)).textContent).toBe('mmol/L');
+    });
+
+    it('US-34 AC7a, US-05 AC2: a chip\'s choice is kept as a unit: LDL in mg/dL by its chip, 3.5 typed, US units held, the chip to mmol/L: the held US units apply and LDL stays 3.5 mmol/L', async () => {
+      localStorage.setItem('health_roadmap_unit_overrides', JSON.stringify({ ldlC: 'conventional' }));
+      const view = await heldWhileTyping('3.5');
+      const chip = await ldlChip(view);
+      expect(chip.textContent).toBe('mg/dL');
+      pressMouse(chip);
+      await nextFrame();
+      releaseMouse(chip);
+      await nextFrame();
+      await waitFor(async () => expect(await pillSays(view)).toBe(US));
+      expect((await ldlChip(view)).textContent).toBe('mmol/L');
+      expect((await ldlDraft(view)).value).toBe('3.5');
+      press(await ldlDraft(view));
+      press(q(view, '.alr-add-btn') as HTMLElement);
+      await waitFor(async () => expect(await activeLdl()).toEqual([3.5]), { timeout: 3000 });
+    });
+
+    /** A complete SI record on the page, nothing focused, and the pill clicked to US units. */
+    async function switchedToUs(): Promise<RenderResult> {
+      await siRecord();
+      const view = await open();
+      await settle(50);
+      act(() => { (document.activeElement as HTMLElement | null)?.blur(); });
+      const pill = await unitPill(view);
+      pressMouse(pill); releaseMouse(pill);
+      expect(await pillSays(view)).toBe(US);
+      return view;
+    }
+    const weightRow = (view: RenderResult) => q(view, '.bt-vitals-card [data-metric="weight"]')?.textContent ?? '';
+
+    it('US-34 AC4, AC7a (H2): another writer adds a weight inside the switch\'s 500 ms: US units stay and save, and the weight shows, counted once', async () => {
+      const view = await switchedToUs();
+      await anotherWriter(() => addMeasurement('weight', 72, '2026-10-01'));
+      await settle(800);
+      expect(await pillSays(view)).toBe(US);
+      expect(await recordUnits()).toBe('conventional');
+      await waitFor(() => expect(weightRow(view)).toContain(formatDisplayValue('weight', 72, 'conventional')));
+      expect(calls('remote_change_applied')).toHaveLength(1);
+    });
+
+    it('US-34 AC4, AC7a (H2, Q1): the other device sets SI units inside the window: this tab\'s later US units stay and save', async () => {
+      const view = await switchedToUs();
+      await anotherWriter(() => saveChangedMeasurements({ unitSystem: 'si' }, { unitSystem: 'conventional' }));
+      await settle(800);
+      expect(await pillSays(view)).toBe(US);
+      expect(await recordUnits()).toBe('conventional');
+    });
+
+    it('US-34 AC4, AC7a: switched to US units, the other device writes US, then the pill back to SI before the save: the record and the page read SI', async () => {
+      const view = await switchedToUs();
+      await anotherWriter(() => saveChangedMeasurements({ unitSystem: 'conventional' }, { unitSystem: 'si' }));
+      const pill = await unitPill(view);
+      pressMouse(pill); releaseMouse(pill);
+      expect(await pillSays(view)).toBe(METRIC);
+      await settle(800);
+      expect(await recordUnits()).toBe('si');
+      expect(await pillSays(view)).toBe(METRIC);
+    });
+
+    it('US-34 AC7a (H2): an upload finishes inside the switch\'s 500 ms: its re-read keeps US units, and they save', async () => {
+      const view = await switchedToUs();
+      await waitFor(() => expect(upload.complete).toBeTruthy());
+      await act(async () => { await upload.complete!(); });
+      expect(await pillSays(view)).toBe(US);
+      await settle(800);
+      expect(await recordUnits()).toBe('conventional');
+      expect(await pillSays(view)).toBe(US);
+    });
+
+    it('US-34 AC7a (H9): LDL focused with US units held, then the window turns across 768 px: the field unmounts, and US units show with no other leave', async () => {
+      const view = await heldWhileTyping('3.5');
+      turn(true); // the form moves into the phone's tab: the focused cell unmounts
+      await settle(50);
+      turn(false);
+      await settle(50);
+      expect(await pillSays(view)).toBe(US);
+    });
   });
 });
