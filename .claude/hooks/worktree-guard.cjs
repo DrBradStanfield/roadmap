@@ -32,7 +32,8 @@ const PKG_CACHE = path.join(process.platform === 'darwin' ? path.join(process.en
   : (process.env.XDG_CACHE_HOME || path.join(process.env.HOME || '/tmp', '.cache')), 'claude-worktree-packages');
 const pkgCacheDir = (wt) => path.join(PKG_CACHE, `${path.basename(wt)}-${require('crypto').createHash('sha1')
   .update(wt.toLowerCase()).digest('hex').slice(0, 12)}`);
-// The package folders linkPackages clones. The one list: tools/worktree-done.sh reads it from `--package-dirs`.
+// The package folders linkPackages clones. tools/worktree-done.sh reads them from `--package-dirs`;
+// tools/merge-batch.mjs and tools/worktree-new.sh still keep a copy.
 const PACKAGE_DIRS = ['node_modules', 'widget-src/node_modules', 'packages/health-core/node_modules'];
 if (process.argv[2] === '--package-dirs') {
   process.stdout.write(PACKAGE_DIRS.join('\n') + '\n');
