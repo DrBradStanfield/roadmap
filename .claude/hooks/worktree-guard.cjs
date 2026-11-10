@@ -7,7 +7,9 @@
 //                                 happens in the session's own worktree. Untracked gitignored outputs are allowed.
 //                                 Bash writes (sed -i, >, cp) are NOT covered.
 //   Stop                          in a linked worktree, block ending the turn (once) while work is uncommitted,
-//                                 unpushed, or pushed with neither an open PR nor a merge into origin/main.
+//                                 unpushed, or pushed with neither an open PR nor a merge into origin/main. While a
+//                                 subagent is still running here, uncommitted files are its half-done work: skipped.
+//   SubagentStart|SubagentStop    keep one marker per live subagent in the worktree's git dir (live-agents/<id>).
 //   SessionStart                  report local worktrees holding unlanded work, uncommitted files in the main
 //                                 checkout, and merged worktrees not yet removed (with their worktree-done line,
 //                                 or "in use" when used in the last day).
@@ -185,6 +187,37 @@ if (event === 'PreToolUse') {
     + `edit there, not under ${main}. Workflow: docs/git-workflow.md.` } });
 }
 
+// Live subagents: an orchestrator's background worker edits the same worktree, so its files are uncommitted when the
+// main session ends a turn, and committing them would land half-written work. One empty marker per running subagent
+// in the worktree's git dir (never in the tree, so never committed), removed when it stops. A marker older than 6 h
+// is a crashed session's leftover: ignored and deleted.
+const LIVE_AGENT_TTL = 6 * 36e5;
+const liveAgentsDir = () => path.join(git(top, ['rev-parse', '--absolute-git-dir']), 'live-agents');
+if (event === 'SubagentStart' || event === 'SubagentStop') {
+  const id = String(input.agent_id || '');
+  if (!inWorktree || !/^[A-Za-z0-9_-]{1,128}$/.test(id)) process.exit(0);
+  try {
+    const dir = liveAgentsDir();
+    if (event === 'SubagentStart') { fs.mkdirSync(dir, { recursive: true }); fs.writeFileSync(path.join(dir, id), ''); }
+    else fs.rmSync(path.join(dir, id), { force: true });
+  } catch { /* best effort: with no marker, Stop asks for a commit as before */ }
+  process.exit(0);
+}
+function liveAgents() {
+  let live = 0;
+  try {
+    const dir = liveAgentsDir();
+    for (const f of fs.readdirSync(dir)) {
+      const p = path.join(dir, f);
+      try {
+        if (Date.now() - fs.statSync(p).mtimeMs < LIVE_AGENT_TTL) live += 1;
+        else fs.rmSync(p, { force: true });
+      } catch { /* removed under us */ }
+    }
+  } catch { /* no folder: none running */ }
+  return live;
+}
+
 if (event === 'Stop') {
   if (!inWorktree || input.stop_hook_active) process.exit(0);
   // Heartbeat: a session that ended a turn here is alive; SessionStart reads this file's mtime (a session idle
@@ -195,7 +228,7 @@ if (event === 'Stop') {
   try {
     branch = git(top, ['rev-parse', '--abbrev-ref', 'HEAD']);
     const s = landing(top);
-    if (s.dirty) problems.push(`uncommitted changes:\n${s.dirty.split('\n').slice(0, 15).join('\n')}`);
+    if (s.dirty && !liveAgents()) problems.push(`uncommitted changes:\n${s.dirty.split('\n').slice(0, 15).join('\n')}`);
     if (s.localOnly !== '0') problems.push(`${s.localOnly} commit(s) on ${branch} are not pushed`);
     // Nothing ahead of the last-fetched origin/main means nothing to land; otherwise fetch (a GitHub-side merge).
     if (!problems.length && s.ahead() !== '0') {
