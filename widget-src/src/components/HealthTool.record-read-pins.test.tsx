@@ -13,6 +13,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor, type RenderResult } from '@testing-library/react';
+import { createRoot } from 'react-dom/client';
 import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { localDay, rowRootIds } from '@roadmap/health-core/merge';
 import { migrateFile } from '@roadmap/health-core/migrate';
@@ -45,10 +46,13 @@ vi.mock('../lib/server-api', async original => {
 });
 // The profile save refuses once when asked, as the store refuses a write (US-16 AC2a).
 const refuse = vi.hoisted(() => ({ next: false }));
+// How many times the page re-reads the record (survey R8: a held change applied twice).
+const reads = vi.hoisted(() => ({ count: 0 }));
 vi.mock('../lib/roadmap-data', async original => {
   const real = await original<typeof import('../lib/roadmap-data')>();
   return {
     ...real,
+    loadLatestMeasurements: () => { reads.count++; return real.loadLatestMeasurements(); },
     saveChangedMeasurements: (...args: Parameters<typeof real.saveChangedMeasurements>) => {
       if (refuse.next) { refuse.next = false; return Promise.resolve({ ok: false }); }
       return real.saveChangedMeasurements(...args);
@@ -61,7 +65,31 @@ vi.mock('../lib/chat-api', async original => ({
 }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
-vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
+// Run once as a microtask queued in the first commit. Outside act, React runs the commit's
+// passive effects as their own scheduler task once the commit's task yields; a first render
+// longer than the scheduler's 5 ms slice (a real page's is) makes it yield, so the microtask
+// lands between the page's mount read and its effects, as a store re-read resolving there
+// would (survey R2). `inGap` records that it did, so a test cannot pass without the gap.
+const atMount = vi.hoisted(() => ({ run: null as null | (() => void), effectsRan: false, inGap: false }));
+// The modal's hand-back to the page, captured so a test can finish an upload (US-62 AC13).
+const upload = vi.hoisted(() => ({ complete: null as null | (() => void | Promise<void>) }));
+vi.mock('./UploadModal', async () => {
+  const { useEffect, useLayoutEffect } = await import('react');
+  return {
+    UploadModal: ({ onComplete }: { onComplete: () => void | Promise<void> }) => {
+      upload.complete = onComplete;
+      if (atMount.run) for (const end = performance.now() + 20; performance.now() < end;) { /* a long first render */ }
+      useLayoutEffect(() => {
+        const run = atMount.run;
+        atMount.run = null;
+        if (!run) return;
+        queueMicrotask(() => { atMount.inGap = !atMount.effectsRan; run(); });
+      }, []);
+      useEffect(() => { atMount.effectsRan = true; }, []);
+      return null;
+    },
+  };
+});
 import { HealthTool } from './HealthTool';
 import { deleteButton } from '../testing/settings';
 
@@ -69,6 +97,7 @@ const TODAY = localDay(new Date());
 const calls = (name: string) => tracked.calls.filter(([n]) => n === name).map(([, m]) => m);
 const conversions = () => vi.mocked(trackABConversion).mock.calls.length;
 const stops: Array<() => void> = [];
+const unmounts: Array<() => void> = [];
 /** The window's width as the page's media queries read it: a desktop, until a test turns it into a phone. */
 const viewport = { mobile: false, listeners: new Set<(e: { matches: boolean }) => void>() };
 /** The window resized or turned across 768 px: the page moves its form between the phone's tab and the desktop's column. */
@@ -77,6 +106,8 @@ const turn = (mobile: boolean) => act(() => { viewport.mobile = mobile; for (con
 beforeEach(async () => {
   tracked.calls = [];
   refuse.next = false;
+  Object.assign(atMount, { run: null, effectsRan: false, inGap: false });
+  upload.complete = null;
   vi.mocked(trackABConversion).mockClear();
   localStorage.clear(); sessionStorage.clear();
   viewport.mobile = false;
@@ -96,6 +127,7 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   cleanup();
+  for (const unmount of unmounts.splice(0)) unmount();
   for (const stop of stops.splice(0)) stop();
   await flushRoadmapStore();
   vi.restoreAllMocks(); vi.unstubAllGlobals();
@@ -144,6 +176,63 @@ async function completeRecord() {
   await flushRoadmapStore();
 }
 const mirror = () => loadFromLocalStorage();
+
+// First in the file: after other tests here, React's first commit flushed its effects in the
+// same task (no gap) in trials, and `inGap` would fail these.
+describe('US-34 AC4: a change announced before the page has shown its first read', () => {
+  // Survey R2 (2026-11-10, PR 1155 review R1): the page reads the record as it first renders
+  // and shows that read in its first passive effects. A change announced between the commit
+  // and those effects first found no listener; then, applied at once, it was overwritten by
+  // the stale first read, and an empty first read wiped the chat mirror (US-15 AC10). It is
+  // held until the first read is shown, then applied.
+  /** The tool as a browser renders it: outside act, so the commit's passive effects run in a later task. */
+  async function openUnacted(): Promise<HTMLElement> {
+    const env = globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean };
+    const was = env.IS_REACT_ACT_ENVIRONMENT;
+    env.IS_REACT_ACT_ENVIRONMENT = false;
+    const host = document.body.appendChild(document.createElement('div'));
+    const root = createRoot(host);
+    root.render(<HealthTool />);
+    unmounts.push(() => { root.unmount(); host.remove(); env.IS_REACT_ACT_ENVIRONMENT = was; });
+    await waitFor(() => expect(atMount.effectsRan).toBe(true));
+    expect(atMount.inGap).toBe(true); // the change was announced between the commit and the page's effects
+    return host;
+  }
+  const announceWeight = () => {
+    atMount.run = () => {
+      void addMeasurement('weight', 82, TODAY); // the store takes it at once
+      window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT));
+    };
+  };
+  const mirrorWeight = () => mirror()?.previousMeasurements.find((m) => m.metricType === 'weight')?.value;
+  async function endsOn82(host: HTMLElement) {
+    await waitFor(() => expect(calls('remote_change_applied')).toHaveLength(1), { timeout: 3000 });
+    await waitFor(() => expect(mirrorWeight()).toBe(82));
+    await new Promise((r) => setTimeout(r, 800)); // past the first profile check
+    expect(mirrorWeight()).toBe(82);
+    expect(calls('remote_change_applied')).toHaveLength(1);
+    // The page: a first-time weight field holds the saved weight as its value; the vitals matrix shows it as text.
+    expect((host.querySelector('#weightKg') as HTMLInputElement | null)?.value ?? host.textContent).toContain('82');
+  }
+
+  it('US-34 AC4: a complete record: the weight announced in the gap ends on the page and in the mirror, counted once', async () => {
+    await completeRecord();
+    announceWeight();
+    await endsOn82(await openUnacted());
+  });
+
+  it('US-34 AC4: a record with no profile, only a weight: the weight announced in the gap is not overwritten by the first read', async () => {
+    await addMeasurement('weight', 80, '2026-09-01');
+    await flushRoadmapStore();
+    announceWeight();
+    await endsOn82(await openUnacted());
+  });
+
+  it('US-34 AC4, US-15 AC10: an empty record an assistant writes into in the gap: the mirror is not wiped, and holds the weight', async () => {
+    announceWeight();
+    await endsOn82(await openUnacted());
+  });
+});
 
 describe('US-01 AC7: the measurement-save conversion counts a new visitor\'s first measurement save', () => {
   it('US-01 AC7: a new visitor\'s profile save sends none; the first saved weight sends trackABConversion once; a second save sends none', async () => {
@@ -211,11 +300,11 @@ describe('US-15 AC10, US-34: another writer\'s change reaches the chat mirror', 
 });
 
 describe('US-34 AC4: a change held behind an unsaved profile edit, then a refused write', () => {
-  // Current behaviour (2026-11-10), pinned exactly. The refused save's re-read
-  // (writeRefused) goes around the relay and counts nothing; the form, clean
-  // after it, releases the held change, which re-reads again and counts once.
-  // A later change may fold the two re-reads into one; the count stays 1.
-  it('US-34 AC4: the held change shows after the refused height save re-reads the record; remote_change_applied is sent once today (current behaviour)', async () => {
+  // Survey R8 (2026-11-10): the refused save's re-read shows the held change. It is the
+  // re-read the change waited for, so the record is read once and the change counted as
+  // it shows. Before, the refused re-read went around the relay and counted nothing, and
+  // the clean form then released the held change into a second re-read.
+  it('US-34 AC4: the refused height save\'s re-read shows the held change and counts it as it shows; the record is re-read once', async () => {
     const alert = vi.fn();
     vi.stubGlobal('alert', alert);
     await completeRecord();
@@ -226,12 +315,38 @@ describe('US-34 AC4: a change held behind an unsaved profile edit, then a refuse
     expect((q(view, '#birthYear') as HTMLInputElement).value).toBe('1980'); // held
     expect(calls('remote_change_applied')).toEqual([]);
     refuse.next = true;
+    reads.count = 0;
     leave(q(view, '#heightCm'));
     await waitFor(() => expect(alert).toHaveBeenCalledWith(WRITE_REFUSED), { timeout: 3000 });
     await waitFor(() => expect((q(view, '#birthYear') as HTMLInputElement).value).toBe('1981'));
-    await waitFor(() => expect(calls('remote_change_applied')).toHaveLength(1), { timeout: 3000 });
-    await settle(300);
     expect(calls('remote_change_applied')).toHaveLength(1);
+    await settle(800); // past the profile save the clean form runs
+    expect(calls('remote_change_applied')).toHaveLength(1);
+    expect(reads.count).toBe(1);
+  });
+});
+
+describe('US-34 AC4, US-62 AC13: an upload finishes while a change is held', () => {
+  // PR 1155 review R2: the upload's re-read takes the held change in, so the record is read
+  // once and the change counted once; the upload still answers the step it completes.
+  it('US-34 AC4, US-62 AC13: one re-read, remote_change_applied once, and onboarding_step for the measurements the upload saved', async () => {
+    await saveChangedMeasurements({ heightCm: 170 }, {});
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(upload.complete).toBeTruthy());
+    type(q(view, '#heightCm'), '171'); // an unsaved profile edit, still focused
+    await anotherWriter(() => saveChangedMeasurements({ heightCm: 170, sex: 'female' }, { heightCm: 170 }));
+    expect(calls('remote_change_applied')).toEqual([]); // held
+    reads.count = 0;
+    await act(async () => {
+      await addMeasurement('weight', 80, TODAY); // the upload's save
+      await upload.complete!();
+    });
+    await waitFor(() => expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]));
+    expect(calls('remote_change_applied')).toHaveLength(1);
+    await settle(800); // past the profile save the edit scheduled
+    expect(calls('remote_change_applied')).toHaveLength(1);
+    expect(reads.count).toBe(1);
   });
 });
 
