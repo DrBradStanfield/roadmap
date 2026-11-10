@@ -39,10 +39,12 @@ export function createRemoteChangeRelay<T>(apply: (remote: boolean) => T) {
       state = 'idle';
       apply(true);
     },
-    /** The page re-reads the record for itself (an upload, a refused save): the re-read shows a held change too. */
+    /** The page re-reads the record for itself (an upload, a refused save): the re-read shows a held change too.
+     *  Not before the first read is shown: that read would overwrite this one, so a waiting change waits for it. */
     reread(): T {
-      const remote = state === 'held' || state === 'loading-held';
-      state = loading() ? 'loading' : 'idle';
+      if (loading()) return apply(false);
+      const remote = state === 'held';
+      state = 'idle';
       return apply(remote);
     },
   };

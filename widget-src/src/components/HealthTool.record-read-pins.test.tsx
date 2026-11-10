@@ -29,6 +29,7 @@ import { openAboutYou } from '../testing/health-tool-harness';
 import { WRITE_REFUSED } from '../lib/erase-copy';
 import { press, pressMouse, releaseMouse, typeInto } from '../testing/matrix-gestures';
 import { cellText } from '../lib/blood-test-cell';
+import { Sentry } from '../lib/sentry';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -56,6 +57,18 @@ vi.mock('../lib/roadmap-data', async original => {
     saveChangedMeasurements: (...args: Parameters<typeof real.saveChangedMeasurements>) => {
       if (refuse.next) { refuse.next = false; return Promise.resolve({ ok: false }); }
       return real.saveChangedMeasurements(...args);
+    },
+  };
+});
+// The first read's mirror throws once when asked, as a malformed record would (PR 1155 review F1).
+const failMirror = vi.hoisted(() => ({ next: false, threw: false }));
+vi.mock('../hooks/useRecordReads', async original => {
+  const real = await original<typeof import('../hooks/useRecordReads')>();
+  return {
+    ...real,
+    mirrorRecord: (...args: Parameters<typeof real.mirrorRecord>) => {
+      if (failMirror.next) { Object.assign(failMirror, { next: false, threw: true }); return Promise.reject(new Error('Synthetic test: mirror failed')); }
+      return real.mirrorRecord(...args);
     },
   };
 });
@@ -106,6 +119,7 @@ const turn = (mobile: boolean) => act(() => { viewport.mobile = mobile; for (con
 beforeEach(async () => {
   tracked.calls = [];
   refuse.next = false;
+  Object.assign(failMirror, { next: false, threw: false });
   Object.assign(atMount, { run: null, effectsRan: false, inGap: false });
   upload.complete = null;
   vi.mocked(trackABConversion).mockClear();
@@ -176,6 +190,22 @@ async function completeRecord() {
   await flushRoadmapStore();
 }
 const mirror = () => loadFromLocalStorage();
+/** Another device erases the record, as its deleteUserData writes it, then starts its new record with `profile`; this tab is told. */
+async function eraseFromAnotherDevice(profile: Partial<RoadmapFile['profile']> = {}) {
+  const adapter = new LocalStorageAdapter();
+  const { body, version } = await adapter.read(ROADMAP_FILE_NAME);
+  const now = new Date(Date.now() + 1000).toISOString();
+  const prior = migrateFile(body, { deviceId: 'other-device', now });
+  const erased = migrateFile(null, { deviceId: 'other-device', now });
+  const epoch = (prior.meta.eraseEpoch ?? 0) + 1;
+  erased.schemaVersion = CURRENT_SCHEMA_VERSION;
+  erased.erasedRows = { fromEpoch: epoch, ids: [...new Set(rowRootIds(prior))].sort() };
+  erased.meta.eraseEpoch = epoch;
+  erased.meta.erasedAt = now;
+  if (Object.keys(profile).length) erased.profile = { ...erased.profile, ...profile, updatedAt: now };
+  await adapter.write(ROADMAP_FILE_NAME, erased, version);
+  await act(async () => { window.dispatchEvent(new StorageEvent('storage', { key: null })); });
+}
 
 // First in the file: after other tests here, React's first commit flushed its effects in the
 // same task (no gap) in trials, and `inGap` would fail these.
@@ -594,26 +624,25 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
     await siRecord();
     const view = await open();
     type(q(view, '#heightCm'), '171'); // focused, unsaved
-    // Another device erases the record, as its deleteUserData writes it.
-    const adapter = new LocalStorageAdapter();
-    const { body, version } = await adapter.read(ROADMAP_FILE_NAME);
-    const now = new Date(Date.now() + 1000).toISOString();
-    const prior = migrateFile(body, { deviceId: 'other-device', now });
-    const erased = migrateFile(null, { deviceId: 'other-device', now });
-    const epoch = (prior.meta.eraseEpoch ?? 0) + 1;
-    erased.schemaVersion = CURRENT_SCHEMA_VERSION;
-    erased.erasedRows = { fromEpoch: epoch, ids: [...new Set(rowRootIds(prior))].sort() };
-    erased.meta.eraseEpoch = epoch;
-    erased.meta.erasedAt = now;
     // The erasing device then chose US units in its new record: they show at once, never held.
-    erased.profile = { ...erased.profile, unitSystem: 'conventional', updatedAt: now };
-    await adapter.write(ROADMAP_FILE_NAME, erased, version);
-    await act(async () => { window.dispatchEvent(new StorageEvent('storage', { key: null })); });
+    await eraseFromAnotherDevice({ unitSystem: 'conventional' });
     // The saved answers and the weight go. (The focused height box keeps its own typed
     // text, InputPanel's rawInputs, as before this change.)
     await waitFor(() => expect((q(view, '#birthYear') as HTMLInputElement | null)?.value ?? '').toBe(''), { timeout: 3000 });
     expect(view.queryByRole('radio', { name: 'Female', checked: true })).toBeNull();
     expect(await activeWeights()).toEqual([]);
     expect(q(view, '#heightFeet')).toBeTruthy(); // the height in ft/in, though the cm box had the focus
+  });
+
+  it('US-34 AC4, US-11 AC6 (PR 1155 review F1): the first read fails part-way; a remote erase still applies, and the failure is reported', async () => {
+    await completeRecord();
+    failMirror.next = true; // the first read throws after it has shown the record
+    const view = await open();
+    await waitFor(() => expect(failMirror.threw).toBe(true));
+    await settle(50);
+    await eraseFromAnotherDevice();
+    await waitFor(() => expect((q(view, '#birthYear') as HTMLInputElement | null)?.value ?? '').toBe(''), { timeout: 3000 });
+    expect(view.queryByRole('radio', { name: 'Female', checked: true })).toBeNull();
+    expect(vi.mocked(Sentry.captureException)).toHaveBeenCalledWith(new Error('Synthetic test: mirror failed')); // as the unhandled rejection reached it before
   });
 });

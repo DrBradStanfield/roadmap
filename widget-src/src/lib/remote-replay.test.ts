@@ -96,6 +96,17 @@ describe('US-34 AC4 — createRemoteChangeRelay', () => {
     expect(apply.mock.calls).toEqual([[true]]);
   });
 
+  it('US-34 AC4 (PR 1155 review F2): a re-read the page makes before its first read is shown keeps the waiting change for that read: it applies once the read is shown, counted once', () => {
+    const apply = vi.fn((remote: boolean) => remote);
+    const relay = createRemoteChangeRelay(apply);
+
+    relay.arrived(false);
+    expect(relay.reread()).toBe(false); // the first read, still to come, would overwrite what this shows
+    relay.loaded();
+    relay.saved();
+    expect(apply.mock.calls).toEqual([[false], [true]]);
+  });
+
   it('survey R2: with no change before it, showing the first read applies nothing, and a later change applies at once', () => {
     const apply = vi.fn();
     const relay = createRemoteChangeRelay(apply);
