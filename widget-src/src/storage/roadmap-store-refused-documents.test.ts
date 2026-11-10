@@ -4,11 +4,13 @@
  * US-11 AC1a: a document upload whose erase has moved before its file is
  * written writes no copy on the device. The store checks the save's erase
  * before each file write. A write already in progress when the erase lands
- * may leave a device-only copy, which the next erase removes: the stated limit.
+ * may leave a device-only copy, which a later erase, once the record holds
+ * data again, removes: the stated limit.
  */
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { RoadmapStore } from './roadmap-store';
 import { LocalStorageAdapter } from './local-storage-adapter';
+import { Sentry } from '../lib/sentry';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -48,6 +50,7 @@ class HeldBlobs extends LocalStorageAdapter {
 beforeEach(() => {
   localStorage.clear();
   hashGate.wait = null;
+  vi.clearAllMocks();
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-11-10T10:00:00.000Z'));
 });
@@ -82,6 +85,7 @@ it('a document save whose erase has already moved writes no copy on the device (
   release();
   expect(await pending).toEqual({ saved: [], errorCount: 1 });
   expect(blobKeys()).toEqual([]);
+  expect(Sentry.captureException).not.toHaveBeenCalled();
 });
 
 it('an accepted document save keeps its original (US-11 AC1a)', async () => {
@@ -101,4 +105,11 @@ it('stated limit: a file write already in progress when the erase lands may leav
   held.release();
   expect(await pending).toEqual({ saved: [], errorCount: 2 });
   expect(blobKeys()).toEqual([`${DOC_PREFIX}Lab results/2026-11-01 Lipids.pdf`]);
+  expect(Sentry.captureException).not.toHaveBeenCalled();
+  // A later erase, once the record holds data again, removes that copy.
+  vi.setSystemTime(new Date('2026-11-10T10:02:00.000Z'));
+  page.addMeasurement('weight', 81, '2026-11-10T00:00:00.000Z', page.eraseIdentity);
+  await page.flush();
+  expect((await page.deleteAllData()).success).toBe(true);
+  expect(blobKeys()).toEqual([]);
 });
