@@ -221,7 +221,18 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Install Playwright WebKit
-        run: npx playwright install --with-deps webkit
+        # apt's downloads from Ubuntu's mirror sometimes crawl for one runner.
+        # On 2026-11-10 that twice used verify-live's whole limit after the
+        # deploy had finished. The runner image already sets apt's own retry
+        # and timeout (/etc/apt/apt.conf.d/zz-retries), so nothing is set here.
+        # The loop covers an install that fails outright; verify-live's longer
+        # limit covers a crawl.
+        run: |
+          for try in 1 2 3; do
+            if npx playwright install --with-deps webkit; then exit 0; fi
+            echo "::warning::Playwright install try ${try} failed"
+          done
+          exit 1
       - name: WebKit smoke — Pages app boots clean
         # NOTE: the script must live INSIDE the workspace — Node resolves
         # 'playwright' relative to the script's path, so /tmp can't see
@@ -358,7 +369,10 @@ jobs:
   verify-live:
     needs: [gate, deploy]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Room for a crawling apt mirror: a healthy run takes about a minute. This
+    # limit, not the install loop, is what covers a crawl. The job holds the
+    # deploy queue while it runs, so the limit stays finite.
+    timeout-minutes: 40
     permissions:
       contents: read
       issues: write
@@ -372,7 +386,18 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Install Playwright WebKit
-        run: npx playwright install --with-deps webkit
+        # apt's downloads from Ubuntu's mirror sometimes crawl for one runner.
+        # On 2026-11-10 that twice used verify-live's whole limit after the
+        # deploy had finished. The runner image already sets apt's own retry
+        # and timeout (/etc/apt/apt.conf.d/zz-retries), so nothing is set here.
+        # The loop covers an install that fails outright; verify-live's longer
+        # limit covers a crawl.
+        run: |
+          for try in 1 2 3; do
+            if npx playwright install --with-deps webkit; then exit 0; fi
+            echo "::warning::Playwright install try ${try} failed"
+          done
+          exit 1
       - name: Live WebKit smoke against production
         run: node tools/webkit-verify.mjs
 
