@@ -474,10 +474,10 @@ describe('build-master-html (US-50 AC9)', () => {
   it("US-50 AC9: commerce drops other pointers to the dropped section, such as \"Brad's view above\"", () => {
     const md = MASTER.replace('Magnesium matters, p < 0.05 [1].', "Quercetin is studied as a senolytic [1]. Brad's view above concerns that use against ageing. Other uses are limited (see Brad's view below).");
     const c = build(md, { store: 'commerce' });
-    const text = c.html.replace(/<[^>]+>/g, '');
+    const text = c.html.replace(/<[^>]+>/g, '').replace(/&#39;/g, "'"); // the builder escapes apostrophes
     expect(text).toContain('Quercetin is studied as a senolytic [1]. Other uses are limited.');
     expect(text).not.toMatch(/Brad's view|concerns that use/);
-    expect(build(md, { store: 'edu' }).html).toContain("Brad's view above concerns");
+    expect(build(md, { store: 'edu' }).html).toContain('Brad&#39;s view above concerns');
   });
 
   it('US-50 AC9: adjacent product sentences on separate physical lines all go, not every other one (Codex R1, 2026-11-02)', () => {

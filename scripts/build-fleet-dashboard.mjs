@@ -13,6 +13,7 @@
 import { readFileSync, readdirSync, writeFileSync, existsSync, statSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
+import { escapeHtml as esc } from '../tools/escape-html.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const LOOPS = path.join(ROOT, 'docs', 'loops');
@@ -20,7 +21,6 @@ const OUT = process.argv[2] || path.join(ROOT, 'fleet.html');
 const REPO = 'DrBradStanfield/roadmap';
 const BLOB = `https://github.com/${REPO}/blob/main/docs/loops`;
 
-const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 // --- tiny CSV parser (quoted fields, no embedded newlines) ---
 function parseCsv(text) {

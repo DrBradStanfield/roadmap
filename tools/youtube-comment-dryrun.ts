@@ -33,6 +33,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
+import { escapeHtml } from './escape-html.mjs';
 import { loadBlogIndex, findBlogByVideoId, type BlogIndexEntry } from '../app/lib/blog-index.server';
 import { loadMatchedContent } from '../app/lib/matched-content';
 import { buildYouTubePlatformContext, loadedHandles } from '../app/lib/youtube-context';
@@ -383,10 +384,6 @@ async function runAll(comments: YouTubeComment[], blogPost: BlogPost): Promise<D
 // ---------------------------------------------------------------------------
 // HTML output
 // ---------------------------------------------------------------------------
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
 
 function renderHTML(results: DryRunResult[], blogPost: BlogPost): string {
   const totalComments = results.length;

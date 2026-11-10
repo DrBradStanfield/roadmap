@@ -15,6 +15,8 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { requireMergedCode } from '../tools/write-gate.mjs';
+import { escapeHtml as esc } from '../tools/escape-html.mjs';
+import { norm } from './guide-compare.mjs';
 
 const API = '2025-07';
 const publish = process.argv.includes('--publish');
@@ -49,21 +51,12 @@ const guard = (name, html) => {
 const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", '#39': "'", '#34': '"' };
 const decodeEntities = (s) => s.replace(/&(amp|lt|gt|quot|apos|#39|#34);/g, (_, e) => ENTITIES[e]);
 
-const norm = (s) =>
-  s.replace(/<(\w+)([^>]*?)\s*\/>/g, '<$1$2></$1>') // self-closing -> open+close
-    .replace(/<[^>]+>/g, (tag) => tag.toLowerCase())
-    .replace(/>\s+</g, '><');
-
 const firstDiff = (a, b) => {
   let i = 0;
   while (i < a.length && i < b.length && a[i] === b[i]) i += 1;
   const from = Math.max(0, i - 20);
   return { at: i, live: a.slice(from, from + 120), rendered: b.slice(from, from + 120) };
 };
-
-// The builder escapes every character of prose it puts in the page; the summary
-// is prose too, so it is escaped the same way or an & in a description ships raw.
-const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 const shop = process.env.SHOPIFY_EDU_SHOP;
 const token = process.env.SHOPIFY_EDU_ACCESS_TOKEN;
@@ -105,6 +98,8 @@ for (const file of files) {
   const title = front('title');
   if (!slug || !title) throw new Error(`${file}: no slug or title in front matter`);
   const description = front('description');
+  // The builder escapes every character of prose it puts in the page; the summary
+  // is prose too, so it is escaped the same way or an & in a description ships raw.
   const summary = description ? `<p>${esc(description)}</p>` : null;
 
   const html = render(mdPath);
