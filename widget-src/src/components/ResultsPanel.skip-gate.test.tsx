@@ -33,7 +33,7 @@ vi.mock('../lib/build-flags', () => ({ get SHOPIFY_SURFACE() { return mocks.shop
 vi.mock('../lib/assistant-config', () => ({ getSkipEmailGate: () => mocks.skip.value }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
 import { PlanHost as ResultsPanel } from '../testing/plan-host';
-import { REMINDER_SIGNUP_LABEL, REMINDER_SIGNUP_DONE, GUEST_CAPTURE_BUTTON_LABEL, PDF_WINDOW_BLOCKED } from './ResultsPanel';
+import { REMINDER_SIGNUP_LABEL, REMINDER_SIGNUP_DONE, GUEST_CAPTURE_BUTTON_LABEL, PDF_WINDOW_BLOCKED } from './PlanPdf';
 import { deleteButton } from '../testing/settings';
 
 const results = calculateHealthResults({ heightCm: 175, sex: 'male' });
