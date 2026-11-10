@@ -196,7 +196,7 @@ test. Miss a step = the value silently fails to round-trip.
   and your recommendation with its reason. Never a bare "accept X?" or "see above"; assume he remembers nothing.
 - **Say "I don't know" over guessing** — a confident wrong answer is worse, especially clinically.
 - **Every feature/behavior change includes unit tests**; bug fix = failing test first. A test checks what the
-  caller sees: one that would still pass if every function returned nothing gets thrown out. Run tests in a `worker`.
+  caller sees: one that would still pass if every function returned nothing gets thrown out. Run tests in a `worker-opus`.
 - **Debug from data, not theory** — query live rows/DOM/metafields first;
   read code to explain WHY, not to guess WHAT.
 - **Chatbot regressions:** every real miss becomes a router or tool-use fixture (files, command: docs/reference.md).
@@ -208,19 +208,19 @@ test. Miss a step = the value silently fails to round-trip.
   cause / fix / evidence commit, in the docs/gotchas.md archive. Promote to
   the curated list below ONLY if silent (no error, no test catches it) or
   repo-wide; domain-specific ones go to the owning loop's LEARNINGS.md.
-- **Model delegation (Brad, 2026-09-28):** the main session runs the newest Opus as orchestrator and
-  keeps the calls: clinical logic, merge semantics, FHIR shapes, security, synthesis. Delegated work goes
-  to `worker` (Sonnet 5.5, medium; Brad 2026-10-19 usage audit): test runs, simulator checks, mechanical
-  edits; implementation touching clinical logic, merge/FHIR, security or a live write path, all UI and
-  design work (iOS and web; Brad 2026-10-23), the four /simplify reviewers, and every knowledge-base entry
-  or web page, to `worker-opus` (Opus, medium); every adversarial
-  check to a FRESH `adversary` (Opus, medium). All pinned in `.claude/agents/`. Review rounds capped:
-  one full review + one fix-scoped re-check, then Brad (docs/review-format.md). Full 1M context kept (Brad
-  2026-10-20, no auto-compact cap); Brad compacts or `/clear`s by hand. Spawn them by name, never with a per-call `model`; never set
-  `CLAUDE_CODE_SUBAGENT_MODEL`. Sonnet 5.5 (`general-purpose` + `model: sonnet`, 2026-09-29)
-  does mechanical work: fetching, scraping, tool fixes, data pulls. The newest Haiku is allowed
-  (2026-10-12; first use: customer-service email triage). Opus 5.5 writes every knowledge-base
-  entry and web page. Never a Fable subagent. Loops: docs/loops/LOOP.md.
+- **Model delegation (Brad, 2026-11-10):** the main session runs the newest Fable as orchestrator and
+  keeps the calls: clinical logic, merge semantics, FHIR shapes, security, synthesis. All coding goes to
+  `worker-opus` (Opus, medium): implementation, edits, tests, simulator checks, all UI and design work, the
+  four /simplify reviewers, every knowledge-base entry and web page. `worker` (Sonnet 5.5, medium) only
+  fetches and scrapes. Every adversarial check goes to a FRESH `adversary` (Opus, medium). All pinned in
+  `.claude/agents/`. Fable is never a subagent and never codes first. A Fable main session sends every first
+  attempt to a named agent (likely Opus), uses no forks, and spawns no agent without a fixed model, since those
+  run on Fable. It steps in itself only when a worker stalls: tests still fail, a review refutes the fix, the
+  worker is stuck, or it misread the task. When it steps in, it says in one line what stalled. Review rounds
+  capped: one full review + one fix-scoped re-check, then Brad (docs/review-format.md). Full 1M context kept (Brad
+  2026-10-20, no auto-compact cap); Brad compacts or `/clear`s by hand. Spawn agents by name, never with a per-call
+  `model`; never set `CLAUDE_CODE_SUBAGENT_MODEL`. The newest Haiku is allowed (2026-10-12; first use: customer-service
+  email triage). Loops: docs/loops/LOOP.md.
 - **Every adversarial Claude check gets a Codex one beside it** (Brad, 2026-09-21): a fresh
   Opus 5.5 `adversary` plus Codex on `gpt-6.1-sol`, high effort (default since 2026-10-02).
   `node tools/codex-review.mjs`, skill `codex-review`, contract docs/review-format.md, spec US-40.
