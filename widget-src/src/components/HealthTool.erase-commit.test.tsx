@@ -14,20 +14,19 @@
  * only as the act exits. Each row checks the old tree was still on screen.
  *
  * Each writer the page reaches from a form control has a row; a new one needs
- * one. Not rowed: the value page, which freezes its erase as it opens (AC2a),
- * and the chat's edits, which an unshown erase drops (AC2a).
+ * one. Not rowed: the chat's edits, which an unshown erase drops (AC2a).
  * Whole widget over a REAL RoadmapStore on jsdom's localStorage. Synthetic data only.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { flushSync } from 'react-dom';
-import { render, fireEvent, waitFor, act, screen, type RenderResult } from '@testing-library/react';
+import { render, fireEvent, waitFor, act, screen, within, type RenderResult } from '@testing-library/react';
 import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { rowRootIds } from '@roadmap/health-core/merge';
 import { migrateFile } from '@roadmap/health-core/migrate';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addLabValue, flushRoadmapStore, getEraseIdentity, getShownErase, saveSupplement, sendGuestReport } from '../lib/roadmap-data';
+import { addLabValue, addMeasurement, flushRoadmapStore, getEraseIdentity, getShownErase, saveSupplement, sendGuestReport } from '../lib/roadmap-data';
 import { localDay } from '@roadmap/health-core/merge';
 import { RECORD_CHANGED } from './AddLabTest';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
@@ -162,6 +161,18 @@ async function typeFerritin(view: RenderResult) {
 }
 /** The record's value rows that name `metric` (a core blood test is a flagged lab row, US-66). */
 const rowsNaming = (metric: string) => (file: RoadmapFile) => [...file.measurements, ...file.labValues].filter(v => JSON.stringify(v).includes(`"${metric}"`));
+/** The profile, a weight, and LDL on two days (the latest 2.1 on 2026-08-15). */
+async function seedWithLdl() {
+  await seedProfile();
+  await addMeasurement('ldl', 3.9, '2026-01-10');
+  await addMeasurement('ldl', 2.1, '2026-08-15');
+  await flushRoadmapStore();
+}
+const mdRow = (view: RenderResult, name: string) =>
+  [...view.container.querySelectorAll<HTMLButtonElement>('.md-row')].find(b => b.querySelector('.md-row-label')?.textContent === name)!;
+const valuePage = (view: RenderResult) => view.container.querySelector<HTMLElement>('.mh-page-host .md-page');
+const ldlRow = (view: RenderResult) => [...view.container.querySelectorAll<HTMLElement>('.bt-timeline .bt-row')]
+  .find(r => r.querySelector('.bt-name-label')?.textContent === 'LDL Cholesterol');
 
 const writers: Record<string, Writer> = {
   'the upload review\'s Save': {
@@ -247,6 +258,44 @@ const writers: Record<string, Writer> = {
     onOld: view => view.container.querySelector('.alr-add-save') !== null,
     fire: view => { fireEvent.click(view.container.querySelector('.alr-add-save')!); },
     written: rowsNaming('ferritin'),
+  },
+  // Fix 4 step 1 (untangle): the three writers this table lacked. The value page's Add carries the erase it
+  // froze, or the store's mark (ValuePage AddValue ~292); the matrix's correction and the move carry none and
+  // ride on the store's mark (BloodTestTimeline ~933 onCorrect(opened, newValue); HealthTool moveTest.move).
+  'the value page\'s Add': {
+    seed: seedWithLdl,
+    open: async view => {
+      fireEvent.click(await waitFor(() => mdRow(view, 'LDL Cholesterol')));
+      fireEvent.change(within(valuePage(view)!).getByLabelText(/Value/), { target: { value: '2.2' } });
+    },
+    onOld: view => valuePage(view) !== null,
+    fire: view => { fireEvent.click(valuePage(view)!.querySelector('.md-add-save')!); },
+    written: file => [...file.measurements, ...file.labValues].filter(v => JSON.stringify(v).includes('"ldl"') && JSON.stringify(v).includes('2.2')),
+  },
+  'a correction from the matrix\'s saved-value editor': {
+    seed: seedWithLdl,
+    open: async view => {
+      showTables(view.container);
+      const cells = await waitFor(() => { const c = ldlRow(view)!.querySelectorAll('.bt-cell-clickable'); expect(c.length).toBeGreaterThan(0); return c; });
+      fireEvent.click(cells[cells.length - 1]);
+      fireEvent.change(ldlRow(view)!.querySelector('.bt-cell-correcting input')!, { target: { value: '1.9' } });
+    },
+    onOld: view => ldlRow(view)?.querySelector('.bt-cell-correcting input') != null,
+    fire: view => { fireEvent.keyDown(ldlRow(view)!.querySelector('.bt-cell-correcting input')!, { key: 'Enter' }); },
+    written: file => [...file.measurements, ...file.labValues].filter(v => JSON.stringify(v).includes('"ldl"') && JSON.stringify(v).includes('1.9')),
+  },
+  'a blood test moved to its day': {
+    seed: seedWithLdl,
+    open: async view => {
+      showTables(view.container);
+      const header = await waitFor(() => [...view.container.querySelectorAll<HTMLElement>('.bt-timeline .bt-cell-movable')]
+        .find(b => b.querySelector('input')!.value === '2026-08-15')!);
+      fireEvent.change(header.querySelector('input[type="date"]')!, { target: { value: '2025-12-01' } });
+      await waitFor(() => expect(view.container.querySelector('.bt-move-panel')).not.toBeNull());
+    },
+    onOld: view => view.container.querySelector('.bt-move-panel') !== null,
+    fire: view => { fireEvent.click(within(view.container.querySelector<HTMLElement>('.bt-move-panel')!).getByRole('button', { name: 'Move' })); },
+    written: file => [...file.measurements, ...file.labValues].filter(v => JSON.stringify(v).includes('2025-12-01')),
   },
 };
 
