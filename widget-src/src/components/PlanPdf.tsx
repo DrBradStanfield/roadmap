@@ -1,8 +1,10 @@
 // My health's PDF box (US-62 AC26, US-18, US-44): Save as PDF and the email capture
-// beside it. usePlanView holds the print state and hands the box what it draws.
+// beside it, the print state (usePlanPrint), and the two rules that read the capture:
+// which box shows (pdfBox) and when the storage button pulses (storagePulse).
 import React, { useState, useRef } from 'react';
-import { sendGuestReport, getReportEmailCaptured, markReportEmailCaptured } from '../lib/roadmap-data';
-import { trackABConversion } from '../lib/server-api';
+import { flushSync } from 'react-dom';
+import { getReportHtml, sendGuestReport, getReportEmailCaptured, markReportEmailCaptured } from '../lib/roadmap-data';
+import { trackABConversion, trackProductEvent } from '../lib/server-api';
 import { EMAIL_REGEX } from '../lib/email';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { getSkipEmailGate } from '../lib/assistant-config';
@@ -50,6 +52,104 @@ export function openPrintWindow(html: string): boolean {
   printWindow.document.close();
   printWindow.print();
   return true;
+}
+
+export interface PlanPrint {
+  printStatus: 'idle' | 'loading';
+  pdfBlocked: PdfButton | null;
+  pdfOpened: boolean;
+  printing: boolean;
+  /** Build the report and open its window; the capture's print calls this directly. */
+  printReport: (at: PdfButton) => Promise<void>;
+  /** Save as PDF: saves the pending values first, one press at a time. */
+  handlePrint: (at: PdfButton) => Promise<void>;
+  /** An erase forgets the window this record opened. */
+  forget: () => void;
+}
+
+/**
+ * Save as PDF's state (US-18 AC6, US-09 AC19). Its states, each its own flag because
+ * they overlap:
+ * - idle: nothing running (`printStatus` 'idle').
+ * - saving the pending values: Save as PDF awaits onSaveLongitudinal (`printStatus` 'loading').
+ * - building the report: the hidden copy drawn inside the click while getReportHtml
+ *   copies it (`printing`, synchronous; still 'loading' under Save as PDF).
+ * - the last window refused at a button (`pdfBlocked`): the last try's outcome, emptied
+ *   before each try, and when the plan goes.
+ * - a window opened in this record (`pdfOpened`): sticky until an erase calls `forget`;
+ *   the plan also goes blank mid-edit.
+ * The capture's print runs printReport alone, outside `printStatus`; the two buttons are
+ * never on screen together.
+ */
+export function usePlanPrint(hasPlan: boolean, hasUnsavedLongitudinal?: boolean, onSaveLongitudinal?: () => Promise<unknown>): PlanPrint {
+  const [printStatus, setPrintStatus] = useState<'idle' | 'loading'>('idle');
+  const [pdfBlocked, setPdfBlocked] = useState<PdfButton | null>(null);
+  if (!hasPlan && pdfBlocked) setPdfBlocked(null);
+  const [pdfOpened, setPdfOpened] = useState(false);
+  const [printing, setPrinting] = useState(false);
+  // Emptied first (inside the click) so a repeat refusal is announced again.
+  const printReport = async (at: PdfButton) => {
+    setPdfBlocked(null);
+    // Drawn synchronously, inside the click, so getReportHtml copies it before its first await.
+    flushSync(() => setPrinting(true));
+    const pending = getReportHtml();
+    setPrinting(false);
+    const report = await pending;
+    const opened = report.success && !!report.html && openPrintWindow(report.html);
+    setPdfBlocked(opened ? null : at);
+    if (opened) setPdfOpened(true);
+    else trackProductEvent('pdf_window_blocked');
+  };
+
+  const handlePrint = async (at: PdfButton) => {
+    if (printStatus === 'loading') return;
+    setPrintStatus('loading');
+    setPdfBlocked(null); // before the save's await, for the same reason
+    // Include pending longitudinal values in the locally generated report.
+    if (hasUnsavedLongitudinal && onSaveLongitudinal) {
+      try { await onSaveLongitudinal(); } catch { /* proceed with saved data */ }
+    }
+    await printReport(at);
+    setPrintStatus('idle');
+  };
+
+  return { printStatus, pdfBlocked, pdfOpened, printing, printReport, handlePrint, forget: () => setPdfOpened(false) };
+}
+
+/** Which email box the PDF box holds: the gate (US-18), US-44's reminders, or none once captured. */
+export type EmailBox = 'gate' | 'reminders' | null;
+
+export function emailBox(state: GuestEmailState, gateSkipped: boolean): EmailBox {
+  if (state === 'captured') return null;
+  return gateSkipped ? 'reminders' : 'gate';
+}
+
+/**
+ * The PDF box's mode (US-62 AC26): its email box, and whether the ungated Save as PDF
+ * shows. Save as PDF: always on Pages. On Shopify the email capture is the PDF path,
+ * so the ungated button shows once captured, on US-44's gate-skipped page, or for a
+ * known minor (US-07 AC6). `emailCapture` already excludes a minor.
+ */
+export function pdfBox({ planned, adult, emailCapture, state, gateSkipped, shopify }: {
+  planned: boolean; adult: boolean; emailCapture: boolean; state: GuestEmailState; gateSkipped: boolean; shopify: boolean;
+}): { email: EmailBox; save: boolean } {
+  return {
+    email: emailCapture ? emailBox(state, gateSkipped) : null,
+    save: planned && (!shopify || state === 'captured' || gateSkipped || !adult),
+  };
+}
+
+/**
+ * US-09 AC19: the guest has their PDF (or, on the gate-skipped page, signed up for
+ * reminders, which marks the record captured), so the storage button may pulse. Never
+ * before, so the pulse never competes with the email box. A known minor has no email
+ * box: their Save as PDF counts, as on the gate-skipped page (US-07 AC6). Pages has no
+ * email gate or funnel, even for a record captured on Shopify.
+ */
+export function storagePulse({ shopify, state, gateSkipped, knownMinor, pdfOpened }: {
+  shopify: boolean; state: GuestEmailState; gateSkipped: boolean; knownMinor: boolean; pdfOpened: boolean;
+}): boolean {
+  return shopify && (state === 'captured' || state === 'reminded' || ((gateSkipped || knownMinor) && pdfOpened));
 }
 
 interface GuestEmailHook {
@@ -200,15 +300,14 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
   pdfBlocked?: boolean;
 }) {
   const { email, setEmail, emailError, setEmailError, state, helperText, handleSubmit } = hook;
+  const box = emailBox(state, !!hook.gateSkipped);
 
-  if (state === 'captured') {
-    // Already captured (this submit, or a prior visit via the persisted flag):
-    // the email box is gone and nothing renders here. The ungated "Save as PDF"
-    // button sits beside it in the same PDF box instead.
-    return null;
-  }
+  // Already captured (this submit, or a prior visit via the persisted flag):
+  // the email box is gone and nothing renders here. The ungated "Save as PDF"
+  // button sits beside it in the same PDF box instead.
+  if (!box) return null;
 
-  if (hook.gateSkipped) return <ReminderSignup hook={hook} />;
+  if (box === 'reminders') return <ReminderSignup hook={hook} />;
 
   return (
     <div className={`email-capture no-print${formStage === 4 ? ' field-attention' : ''}`}>
@@ -246,16 +345,13 @@ export function PlanPdf({ planned, adult, emailCapture, formStage, capture, prin
 }) {
   const guestEmailHook = useGuestEmailCapture(onCapturePrint, capture);
   const printLabel = printStatus === 'loading' ? 'Loading...' : 'Save as PDF';
-  // Save as PDF: always on Pages. On Shopify the email capture is the PDF path,
-  // so the ungated button shows once captured, on US-44's gate-skipped page, or
-  // for a known minor.
-  const ungatedPdf = planned && (!SHOPIFY_SURFACE || capture.state === 'captured' || capture.gateSkipped || !adult);
-  const box = emailCapture && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />;
-  if (!box && !ungatedPdf) return null;
+  const mode = pdfBox({ planned, adult, emailCapture, state: capture.state, gateSkipped: capture.gateSkipped, shopify: SHOPIFY_SURFACE });
+  const box = mode.email && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />;
+  if (!box && !mode.save) return null;
   return (
     <div className="mh-pdf">
       {box}
-      {ungatedPdf && (
+      {mode.save && (
         <div className="report-actions no-print">
           <button type="button" className="action-btn" onClick={() => onPrint('bottom')} disabled={printStatus === 'loading'} title="Save your plan as a PDF">
             {printLabel}

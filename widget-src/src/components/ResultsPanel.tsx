@@ -1,16 +1,15 @@
 // The plan's view on My health (US-62 AC17-AC26): usePlanView sorts its cards by
-// topic, holds the print state, the new-card highlight, the PDF's hidden copy and the
-// foot. The cards are PlanCards.tsx; the PDF box and the email capture are PlanPdf.tsx.
+// topic, and holds the new-card highlight, the open reasons, the PDF's hidden copy and
+// the foot. The cards are PlanCards.tsx; the PDF box, its print state and the email
+// capture are PlanPdf.tsx.
 // The plan has no column of its own since phase 5; InputPanel draws what this builds.
 import React, { useCallback, useState, useRef, useEffect, useMemo } from 'react';
-import { flushSync } from 'react-dom';
 import type { HealthResults, Suggestion } from '@roadmap/health-core/types';
 import type { StatTile } from '@roadmap/health-core/stat-tiles';
 import { planSections, topicSections, type TopicCard, type TopicLayout } from '@roadmap/health-core/plan-sections';
 import type { FormSection } from '@roadmap/health-core/input-form';
 // US-61 AC5: called only under SHOPIFY_SURFACE, so the Pages build drops the module.
 import { usProductSections, type UsPlanSection, type UsProduct, type UsSuggestion } from '@roadmap/health-core/us-products';
-import { getReportHtml } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { GuideLink } from './GuideLink';
@@ -20,7 +19,7 @@ import { getMarketCountry } from '../lib/market-country';
 import { observeVisibility } from '../lib/observe-visibility';
 import { ColumnHeader } from './ColumnHeader';
 import { GroupedSuggestionCard, NO_HIGHLIGHTS, QuickStats, SuggestionCard, type Highlights, type OpenEvidence } from './PlanCards';
-import { PlanPdf, openPrintWindow, useEmailCaptureState, type PdfButton } from './PlanPdf';
+import { PlanPdf, storagePulse, useEmailCaptureState, usePlanPrint } from './PlanPdf';
 
 // Stays until HealthTool imports OpenEvidenceContext from PlanCards.
 export { OpenEvidenceContext } from './PlanCards';
@@ -176,41 +175,7 @@ interface PlanViewOptions {
 export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitudinal, onSaveLongitudinal, showEmailCapture, formStage, alcoholQuestion }: PlanViewOptions): PlanView {
   const highlights = useHighlights(results?.suggestions);
 
-  const [printStatus, setPrintStatus] = useState<'idle' | 'loading'>('idle');
-  // US-18 AC6: where the last print window was refused (or its report could
-  // not be built). A window that opens clears it, and so does an erase.
-  const [pdfBlocked, setPdfBlocked] = useState<PdfButton | null>(null);
-  if (!results && pdfBlocked) setPdfBlocked(null);
-  // US-09 AC19: a print window opened in this tab (the gate-skipped page's PDF).
-  // Only an erase forgets it: the plan also goes blank mid-edit.
-  const [pdfOpened, setPdfOpened] = useState(false);
-  // The PDF's copy of the plan is drawn only while it is copied (PlanReport).
-  const [printing, setPrinting] = useState(false);
-  // Emptied first (inside the click) so a repeat refusal is announced again.
-  const printReport = async (at: PdfButton) => {
-    setPdfBlocked(null);
-    // Drawn synchronously, inside the click, so getReportHtml copies it before its first await.
-    flushSync(() => setPrinting(true));
-    const pending = getReportHtml();
-    setPrinting(false);
-    const report = await pending;
-    const opened = report.success && !!report.html && openPrintWindow(report.html);
-    setPdfBlocked(opened ? null : at);
-    if (opened) setPdfOpened(true);
-    else trackProductEvent('pdf_window_blocked');
-  };
-
-  const handlePrint = async (at: PdfButton) => {
-    if (printStatus === 'loading') return;
-    setPrintStatus('loading');
-    setPdfBlocked(null); // before the save's await, for the same reason
-    // Include pending longitudinal values in the locally generated report.
-    if (hasUnsavedLongitudinal && onSaveLongitudinal) {
-      try { await onSaveLongitudinal(); } catch { /* proceed with saved data */ }
-    }
-    await printReport(at);
-    setPrintStatus('idle');
-  };
+  const { printStatus, pdfBlocked, pdfOpened, printing, printReport, handlePrint, forget } = usePlanPrint(!!results, hasUnsavedLongitudinal, onSaveLongitudinal);
 
   const capture = useEmailCaptureState();
   const [opened, setOpened] = useState<ReadonlySet<string>>(NO_HIGHLIGHTS);
@@ -257,13 +222,8 @@ export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitud
     });
   }, [usProducts]);
 
-  // US-09 AC19: the guest has their PDF (or, on the gate-skipped page, signed up
-  // for reminders, which marks the record captured). Never before, so the storage
-  // button's pulse never competes with the email box. A known minor has no email
-  // box: their Save as PDF counts, as on the gate-skipped page (US-07 AC6).
-  const { state: emailState, gateSkipped } = capture;
-  // Pages has no email gate or funnel, even for a record captured on Shopify.
-  const attention = SHOPIFY_SURFACE && (emailState === 'captured' || emailState === 'reminded' || ((!!gateSkipped || !!results?.knownMinor) && pdfOpened));
+  // US-09 AC19: the storage button's pulse.
+  const attention = storagePulse({ shopify: SHOPIFY_SURFACE, state: capture.state, gateSkipped: capture.gateSkipped, knownMinor: !!results?.knownMinor, pdfOpened });
 
   const planned = isValid && !!results;
   // US-07 AC6: a known minor is never asked for an email (either box joins the
@@ -276,7 +236,7 @@ export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitud
   );
   const foot = <PlanFoot planned={planned}/>;
 
-  return { layout, topics, planned, highlights, alcoholQuestion, urgent, cardIds, evidence, supplementsRef, pdf, foot, attention, onErased: () => { setPdfOpened(false); setOpened(NO_HIGHLIGHTS); }, report };
+  return { layout, topics, planned, highlights, alcoholQuestion, urgent, cardIds, evidence, supplementsRef, pdf, foot, attention, onErased: () => { forget(); setOpened(NO_HIGHLIGHTS); }, report };
 }
 
 
