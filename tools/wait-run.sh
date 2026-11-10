@@ -74,11 +74,17 @@ while :; do
   checks=$(gh pr checks "$id" --json name,bucket --jq '
     "pass=\([.[] | select(.bucket == "pass")] | length) fail=\([.[] | select(.bucket == "fail" or .bucket == "cancel")] | length) skipped=\([.[] | select(.bucket == "skipping")] | length) pending=\([.[] | select(.bucket == "pending")] | length)",
     (.[] | select(.bucket == "fail" or .bucket == "cancel") | "failed: \(.name)")' 2>/dev/null)
-  case "$checks" in *" pending=0"*) break ;; esac
+  # Verdicts come only from line 1, the fixed-format summary; check names (outside text) never decide anything.
+  summary=$(printf '%s\n' "$checks" | sed -n '1p')
+  case "$summary" in pass=*" pending=0") break ;; esac
+  # Pending again, or the read failed: wait again, still inside the same time limit.
+  waited=$(( $(date +%s) - start ))
+  if [ "$waited" -ge "$max_s" ]; then echo "gave up after $((waited / 60)) min; still not finished" >&2; exit 3; fi
+  sleep "$interval"
 done
 echo "$checks"
 gh pr view "$id" --json headRefOid,state,mergeable,mergeStateStatus \
   --jq '"head=\(.headRefOid)", "state=\(.state) mergeable=\(.mergeable) mergeState=\(.mergeStateStatus)"' \
   || { echo "could not read the PR's head and mergeability" >&2; exit 1; }
-case "$checks" in *" fail=0 "*) exit 0 ;; esac
+case "$summary" in *" fail=0 skipped="*) exit 0 ;; esac
 exit 1

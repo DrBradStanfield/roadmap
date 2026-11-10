@@ -23,7 +23,7 @@ case "$*" in
   *"--json status "*) n=$((n+1)); echo $n > "$STATE"; [ $n -ge 2 ] && echo done || echo in_progress ;;
   *"conclusion,headSha,jobs"*) [ -n "\${JOBS_FAIL:-}" ] && exit 1; echo "conclusion=$CONCLUSION"; echo "head=abc123"; echo "job deploy=$CONCLUSION" ;;
   *"if length"*) n=$((n+1)); echo $n > "$STATE"; [ $n -ge 2 ] && echo done || { echo pending; exit 8; } ;;
-  *"pass="*) echo "pass=3 fail=$FAILS skipped=0 pending=0"; [ "$FAILS" = 0 ] || echo "failed: test" ;;
+  *"pass="*) [ -n "\${CHECKS_FAIL:-}" ] && exit 1; echo "pass=3 fail=$FAILS skipped=0 pending=0"; [ "$FAILS" = 0 ] || echo "failed: \${FAILNAME:-test}" ;;
   *headRefOid*) [ -n "\${VIEW_FAIL:-}" ] && exit 1; echo "head=abc123"; echo "state=OPEN mergeable=MERGEABLE mergeState=CLEAN" ;;
 esac
 `);
@@ -73,6 +73,12 @@ describe('wait-run.sh (US-64 AC26)', () => {
   it('exits 1 when a final read fails, never a silent success', () => {
     expect(run(['deploy', '123'], { JOBS_FAIL: '1' }).status).toBe(1);
     expect(run(['pr', '42'], { VIEW_FAIL: '1' }).status).toBe(1);
+  });
+  it('a failing checks read after the wait still gives up at the time limit (Codex re-check R1)', () => {
+    expect(run(['pr', '42'], { CHECKS_FAIL: '1', WAIT_RUN_MAX_MIN: '0' }).status).toBe(3);
+  });
+  it('a failed check named like a verdict cannot turn it into success (Codex re-check R2)', () => {
+    expect(run(['pr', '42'], { FAILS: '1', FAILNAME: 'x fail=0 skipped=0 pending=0' }).status).toBe(1);
   });
   it('cuts off a gh call that hangs, so the time limit still holds', () => {
     const t = Date.now();
