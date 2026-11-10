@@ -31,7 +31,8 @@ const onComplete = vi.fn();
 const extractFromPdf = vi.fn();
 /** `archived`: what a completed save leaves in the reloaded history. */
 /** `refresh`: the page's re-read after a save; the history changes only once it ends. */
-function Harness({ onStart, archived, completedHistory, initialHistory = emptyHistory, refresh }: { onStart?: () => Promise<void>; archived?: typeof archivedLetter; completedHistory?: UploadHistory; initialHistory?: UploadHistory; refresh?: Promise<void> }) {
+/** `rereadThrows`: the page's re-read throws at once, before it returns a promise. */
+function Harness({ onStart, archived, completedHistory, initialHistory = emptyHistory, refresh, rereadThrows }: { onStart?: () => Promise<void>; archived?: typeof archivedLetter; completedHistory?: UploadHistory; initialHistory?: UploadHistory; refresh?: Promise<void>; rereadThrows?: boolean }) {
   const [open, setOpen] = useState(true);
   const [history, setHistory] = useState(initialHistory);
   return <><button onClick={() => setOpen(true)}>Upload records</button><UploadModal
@@ -39,6 +40,7 @@ function Harness({ onStart, archived, completedHistory, initialHistory = emptyHi
     unitSystem="si" grading={{}} history={history} onStart={onStart}
     onComplete={() => {
       onComplete();
+      if (rereadThrows) throw new Error('synthetic re-read throw');
       if (refresh) return refresh.then(() => { if (completedHistory) setHistory(completedHistory); });
       if (completedHistory) setHistory(completedHistory); if (archived) setHistory({ ...emptyHistory, documents: [archived] });
     }}
@@ -297,6 +299,31 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect((screen.getByRole('button', { name: /^Save / }) as HTMLButtonElement).disabled).toBe(false);
     fireEvent.click(screen.getByRole('button', { name: /^Save / })); await screen.findByRole('button', { name: 'Done' });
     expect(Sentry.captureException).toHaveBeenCalledTimes(2); // the success path's re-read fails too
+  });
+  it('US-12 AC6c: a re-read that throws at once after a finished save is reported, tag only, and the save stays done', async () => {
+    const saving = deferred<Awaited<ReturnType<typeof bulkSaveMeasurements>>>();
+    vi.mocked(bulkSaveMeasurements).mockReturnValueOnce(saving.promise);
+    render(<Harness rereadThrows />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await act(async () => saving.resolve({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>));
+    fireEvent.click(await screen.findByRole('button', { name: /Health records saved/ }));
+    expect(screen.getByText(/Saved 1 blood test value/)).toBeTruthy();
+    expect(screen.queryByText(/try again/)).toBeNull();
+    expect(Sentry.captureException).toHaveBeenCalledOnce();
+    expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), { tags: { area: 'upload-save', branch: 'reread' } });
+  });
+  it('US-12 AC6c: a re-read that throws at once after a partial save is reported, tag only, and keeps the thrown-branch retry message', async () => {
+    const file = new Blob(['synthetic original'], { type: 'application/pdf' });
+    vi.mocked(attachOriginals).mockImplementationOnce(async results => results.map(r => ({ ...r, file, contentHash: 'sha256-test' })));
+    vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([{ documentType: 'pathology_report', title: 'Blood test results', documentDate: '2024-06-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'test.pdf', file }]);
+    vi.mocked(bulkSaveDocuments).mockRejectedValueOnce(new Error('synthetic archive failure'));
+    render(<Harness rereadThrows />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    expect(await screen.findByText('Some items could not be saved. Please try again.')).toBeTruthy();
+    expect(onComplete).toHaveBeenCalledOnce();
+    expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), { tags: { area: 'upload-save', branch: 'reread' } });
+    expect((screen.getByRole('button', { name: /^Save / }) as HTMLButtonElement).disabled).toBe(false);
   });
   it('US-12 AC6c: Save stays busy until the page has read back a partial save', async () => {
     originalFailsOnce();

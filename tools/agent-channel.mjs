@@ -2,9 +2,12 @@
 // Agent channel (US-63): a Claude Code session on Brad's Mac reads and posts in ONE Discord
 // channel, where it talks with Austin Bell's Hermes agent. Its own bot and token
 // (DISCORD_AGENT_BOT_TOKEN), never the health chatbot's (app/lib/discord-bot.server.ts).
-// Plain fetch to a fixed host, no dependencies. Setup and the session's rules: docs/agent-channel.md
+// Plain fetch to two fixed hosts, each for one purpose (the API with the token; the CDN, without it, for one
+// attachment: agent-channel-files.mjs), no dependencies. Setup and the session's rules: docs/agent-channel.md
 //
 //   node tools/agent-channel.mjs read [--limit N]
+//   node tools/agent-channel.mjs history [--before <message id>] [--limit N]
+//   node tools/agent-channel.mjs fetch <message id> <attachment id>
 //   node tools/agent-channel.mjs post <text>        (or the text on stdin)
 import { randomBytes } from 'node:crypto';
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
@@ -12,6 +15,7 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseEnv } from 'node:util';
+import { attachmentsOf, download, Refused, SNOWFLAKE } from './agent-channel-files.mjs';
 import { isSecretName } from './codex-review-names.mjs';
 import { mainOf, PATTERNS } from './secret-rules.mjs';
 
@@ -24,7 +28,6 @@ export const MAX_CONTENT = 4000;
 const POSTS_PER_HOUR = 10;
 const HOUR = 3_600_000;
 const MIN_SECRET = 8;
-const SNOWFLAKE = /^\d{17,20}$/;
 const BRAD_KEY = 'DISCORD_DrBradStanfield_USER_ID';
 // Also in packages/health-core/src/mcp-feedback.ts and sentry-scrub.ts; copied because plain node cannot import TypeScript.
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/;
@@ -36,9 +39,6 @@ const LOCAL_PATTERNS = { fly_token: '(?<![A-Za-z0-9])(?:FlyV1\\s+)?fm2_[A-Za-z0-
 const SHAPES = Object.entries({ ...PATTERNS, ...LOCAL_PATTERNS }).map(([name, re]) => [name, new RegExp(re)]);
 // Other files whose values are refused, besides the main checkout's root .env*: `~/` is HOME; a folder means its .env* files.
 const OTHER_SECRET_SOURCES = ['~/.fly/config.yml', '~/Documents/claude_business.nosync', '~/Documents/claude_business.nosync/claude-integration'];
-
-/** A refusal: printed on stderr as is, exit 1. Its text never holds a value. */
-class Refused extends Error {}
 
 /**
  * Every value in a .env file (or, with `yaml`, a YAML `key: value` file), as codex-review.mjs collects them:
@@ -144,11 +144,12 @@ const statePath = (home) => join(home, '.health-roadmap', 'agent-channel-state.j
 /** Cursor, post times and counts only: never message text. A broken file stops, never resets the cap. */
 function loadState(home) {
   const path = statePath(home);
-  const base = { cursor: null, post_times: [], reads: 0, messages_read: 0, posts: 0, refused: 0 };
+  const base = { cursor: null, post_times: [], reads: 0, messages_read: 0, posts: 0, refused: 0, history_reads: 0, downloads: 0 };
   if (!existsSync(path)) return base;
   let s;
   try { s = JSON.parse(readFileSync(path, 'utf8')); } catch { s = null; }
-  if (!s || (s.cursor !== null && !SNOWFLAKE.test(s.cursor)) || !Array.isArray(s.post_times) || !s.post_times.every(Number.isFinite)) {
+  const counts = ['history_reads', 'downloads'].every((k) => s?.[k] === undefined || (Number.isInteger(s[k]) && s[k] >= 0));
+  if (!s || !counts || (s.cursor !== null && !SNOWFLAKE.test(s.cursor)) || !Array.isArray(s.post_times) || !s.post_times.every(Number.isFinite)) {
     throw new Refused(`${path} is not a valid state file; delete it to reset (this also resets the post cap)`);
   }
   return { ...base, ...s };
@@ -219,28 +220,46 @@ async function call(cfg, deps, init, query = '') {
   return res.json();
 }
 
-function parseLimit(args) {
-  if (args.length === 0) return 50;
-  const n = Number(args[1]);
-  if (args[0] !== '--limit' || args.length !== 2 || !Number.isInteger(n) || n < 1 || n > 100) throw new Refused('usage: read [--limit N], N from 1 to 100');
-  return n;
+/** `--limit N` for read; also `--before <message id>` for history. Each flag at most once. */
+function parseFlags(cmd, args) {
+  const usage = `usage: ${cmd}${cmd === 'history' ? ' [--before <message id>]' : ''} [--limit N], N from 1 to 100`;
+  const out = { limit: 50, before: null };
+  const seen = new Set();
+  for (let i = 0; i < args.length; i += 2) {
+    const [flag, value] = [args[i], args[i + 1]];
+    if (seen.has(flag) || value === undefined) throw new Refused(usage);
+    seen.add(flag);
+    if (flag === '--limit') {
+      out.limit = Number(value);
+      if (!Number.isInteger(out.limit) || out.limit < 1 || out.limit > 100) throw new Refused(usage);
+    } else if (flag === '--before' && cmd === 'history') {
+      if (!SNOWFLAKE.test(value)) throw new Refused('--before takes a Discord message id (17 to 20 digits)');
+      out.before = value;
+    } else throw new Refused(usage);
+  }
+  return out;
 }
 
-async function read(cfg, deps, limit) {
-  const q = new URLSearchParams({ limit: String(limit) });
-  const cursor = await withState(deps.home, (state) => state.cursor);
-  if (cursor) q.set('after', cursor);
-  const list = await call(cfg, deps, { method: 'GET' }, `?${q}`);
+/** One page of the channel, oldest first, each message as the caller sees it. */
+async function messagesPage(cfg, deps, query) {
+  const list = await call(cfg, deps, { method: 'GET' }, `?${query}`);
   if (!Array.isArray(list)) throw new Refused('Discord answered with something other than a message list');
-  const messages = list
+  return list
     .filter((m) => SNOWFLAKE.test(String(m?.id)))
     .map((m) => {
       const author_id = String(m.author?.id ?? '');
       const webhook_id = m.webhook_id == null ? null : String(m.webhook_id);
       // A webhook can wear any name and avatar, so only Brad's own account, never a webhook, is Brad.
-      return { id: String(m.id), author: String(m.author?.username ?? ''), author_id, webhook_id, is_bot: m.author?.bot === true, is_brad: cfg.brad !== null && author_id === cfg.brad && webhook_id === null, at: String(m.timestamp ?? ''), content: String(m.content ?? '').slice(0, MAX_CONTENT) };
+      return { id: String(m.id), author: String(m.author?.username ?? ''), author_id, webhook_id, is_bot: m.author?.bot === true, is_brad: cfg.brad !== null && author_id === cfg.brad && webhook_id === null, at: String(m.timestamp ?? ''), content: String(m.content ?? '').slice(0, MAX_CONTENT), attachments: attachmentsOf(m) };
     })
     .sort((a, b) => (BigInt(a.id) < BigInt(b.id) ? -1 : 1));
+}
+
+async function read(cfg, deps, { limit }) {
+  const q = new URLSearchParams({ limit: String(limit) });
+  const cursor = await withState(deps.home, (state) => state.cursor);
+  if (cursor) q.set('after', cursor);
+  const messages = await messagesPage(cfg, deps, q);
   await withState(deps.home, (state) => {
     const last = messages.at(-1)?.id;
     if (last && (!state.cursor || BigInt(last) > BigInt(state.cursor))) state.cursor = last;
@@ -248,6 +267,26 @@ async function read(cfg, deps, limit) {
     state.messages_read += messages.length;
   });
   return { untrusted: true, note: UNTRUSTED_NOTE, messages };
+}
+
+/** Pages backwards from `before` (or the newest message). Never reads or moves the cursor: other sessions rely on it. */
+async function history(cfg, deps, { limit, before }) {
+  const q = new URLSearchParams({ limit: String(limit) });
+  if (before) q.set('before', before);
+  // State is checked under the lock before any request, so a damaged file or a held lock sends nothing (AC7, AC9).
+  await withState(deps.home, () => {});
+  const messages = await messagesPage(cfg, deps, q);
+  await withState(deps.home, (state) => { state.history_reads += 1; });
+  return { untrusted: true, note: UNTRUSTED_NOTE, messages, oldest_id: messages[0]?.id ?? null };
+}
+
+/** Downloads one attachment, its URL taken only from the pinned channel's own copy of the message. */
+async function fetchAttachment(cfg, deps, [messageId, attachmentId]) {
+  await withState(deps.home, () => {});
+  const message = await call(cfg, deps, { method: 'GET' }, `/${messageId}`);
+  const out = await download(message, messageId, attachmentId, deps);
+  await withState(deps.home, (state) => { state.downloads += 1; });
+  return out;
 }
 
 async function post(cfg, deps, args) {
@@ -283,13 +322,18 @@ export async function run(argv, deps = {}) {
   };
   const [cmd, ...args] = argv;
   try {
-    if (cmd !== 'read' && cmd !== 'post') throw new Refused('usage: agent-channel.mjs read [--limit N] | post <text>');
-    const limit = cmd === 'read' ? parseLimit(args) : null;
+    if (!['read', 'history', 'fetch', 'post'].includes(cmd)) {
+      throw new Refused('usage: agent-channel.mjs read [--limit N] | history [--before <message id>] [--limit N] | fetch <message id> <attachment id> | post <text>');
+    }
+    const flags = cmd === 'read' || cmd === 'history' ? parseFlags(cmd, args) : null;
     if (cmd === 'post' && args[0]?.startsWith('--')) throw new Refused('post takes no flags: post <text>, or the text on stdin');
+    if (cmd === 'fetch' && (args.length !== 2 || !args.every((a) => SNOWFLAKE.test(a)))) {
+      throw new Refused('usage: fetch <message id> <attachment id>, each a Discord id (17 to 20 digits)');
+    }
     const root = d.root ?? mainOf(dirname(fileURLToPath(import.meta.url)));
     if (!root) throw new Refused("cannot find the main checkout's .env (git rev-parse failed)");
     const cfg = loadConfig(d.env, root, d.home);
-    const out = await (cmd === 'read' ? read(cfg, d, limit) : post(cfg, d, args));
+    const out = await { read: () => read(cfg, d, flags), history: () => history(cfg, d, flags), fetch: () => fetchAttachment(cfg, d, args), post: () => post(cfg, d, args) }[cmd]();
     return { code: 0, stdout: `${JSON.stringify(out, null, 2)}\n`, stderr: '' };
   } catch (e) {
     const why = e instanceof Refused ? e.message : `unexpected ${e?.name ?? 'error'}${e?.code ? ` ${e.code}` : ''}`;

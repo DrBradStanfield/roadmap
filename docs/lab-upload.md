@@ -220,7 +220,7 @@ The upload modal (`UploadModal.tsx`) is a 5-state machine: `'select' | 'processi
 
 ### Post-Save Behavior
 
-`handleUploadComplete` re-reads the store (`loadLatestMeasurements()`). New values appear as "Previous:" labels on longitudinal fields and suggestions recalculate with updated effective inputs.
+The upload's re-read (`hooks/useRecordApply.ts`, `signal('upload')`) re-reads the store (`loadLatestMeasurements()`). New values appear as "Previous:" labels on longitudinal fields and suggestions recalculate with updated effective inputs.
 
 **Important**: Before extraction starts, `onStart` persists any unsaved form values (weight, BP, etc.). Without this, the post-save refresh would wipe unsaved form state. This was a bug caught during E2E testing.
 

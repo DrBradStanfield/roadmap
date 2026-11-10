@@ -19,7 +19,7 @@ vi.mock('../lib/server-api', async original => ({
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('min-width'), media: q, addEventListener() {}, removeEventListener() {} }));
 
-import { GuestEmailCapture } from './ResultsPanel';
+import { GuestEmailCapture } from './PlanPdf';
 import { InputPanel } from './InputPanel';
 import { MY_HEALTH_PROPS } from '../testing/my-health-props';
 
@@ -49,7 +49,7 @@ describe('US-09 AC5 — one storage line, in the plan\'s storage card', () => {
       labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
       onMedicationChange: vi.fn(), onScreeningChange: vi.fn(), supplements: [], onSupplementChange: vi.fn(), screenings: [],
       onSupplementDelete: vi.fn(), scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
-      fieldsSaved: 2, hasApiResponse: true, formStage: 3 as const, reached: 3 as const, fullForm: false, wasDone: false, aboutYouLow: false, planBasis: {}, grading: {},
+      fieldsSaved: 2, hasApiResponse: true, onboarding: { stage: 3 as const, reached: 3 as const, fullForm: false, aboutYouLow: false }, planBasis: {}, grading: {},
     };
     const { container } = render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />);
     expect(container.querySelector('#heightCm')).not.toBeNull();

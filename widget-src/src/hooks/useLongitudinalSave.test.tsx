@@ -36,7 +36,7 @@ function setup(inputs: Record<string, number> = {}) {
   const hook = renderHook(() => useLongitudinalSave({
     inputs, setInputs: vi.fn(), history: [], unitOverrides: {}, unitSystem: 'si', reloadValues,
     flushPendingProfileSave: async () => true,
-    typedIn: { current: {} }, isFirstSaveRef: { current: false },
+    typedIn: { current: {} }, firstSave: false,
   }));
   return { hook, reloads };
 }
