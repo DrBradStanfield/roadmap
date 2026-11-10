@@ -18,7 +18,8 @@ import type { MoveTestApi } from './MoveTestPanel';
 import type { VitalsPrefillFn } from './StartingInfoVitals';
 import type { LatestMeasurementsResult } from '../lib/api-types';
 import { InputPanel, type PlanBasis } from './InputPanel';
-import { OpenEvidenceContext, usePlanView } from './ResultsPanel';
+import { usePlanView } from './ResultsPanel';
+import { OpenEvidenceContext } from './PlanCards';
 import { PersonButton } from './SettingsSheet';
 import { MyHealth, type FormSlots } from './MyHealth';
 import { revealAndFocus } from '../lib/reveal';
@@ -588,10 +589,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   }), [hasLipidInput, hasWeightInput, medications, screenings, planBasis, inputs.sex, unitOverrides, unitSystem]);
 
   const plan = usePlanView({
-    results,
-    isValid,
-    tiles,
-    forms,
+    results, shownErase, isValid, tiles, forms,
     hasUnsavedLongitudinal: hasApiResponse && LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined),
     onSaveLongitudinal: handleSaveLongitudinal,
     showEmailCapture: emailCaptureActive,
@@ -640,7 +638,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     // US-07 AC6: no reminders for a known minor, who is never enrolled and must see no mailing-list box.
     reminders: plan.planned && !results?.knownMinor ? remindersSection : null,
     storageCard,
-    onDelete: async () => { if (await handleDeleteData()) { plan.onErased(); closeSettings(); } },
+    onDelete: async () => { if (await handleDeleteData()) closeSettings(); },
     isDeleting,
     storageAtFoot: getBackendKind() === 'local',
     onPlanReadyDismiss: planReady ? dismissPlanReady : undefined,

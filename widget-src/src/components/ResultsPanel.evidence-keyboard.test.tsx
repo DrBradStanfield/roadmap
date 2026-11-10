@@ -145,3 +145,16 @@ it('Delete all my data closes every opened reason', async () => {
   await waitFor(() => expect(view.container.querySelectorAll('.evidence-content')).toHaveLength(0));
 });
 
+// US-09 AC19: any erase the screen shows (another device's, once re-read, or one
+// whose write failed but still erased) closes them too, not only a successful Delete here.
+it('an erase the screen shows without a Delete here closes every opened reason', () => {
+  const results = calculateHealthResults(inputs)!;
+  const tiles = statTiles(results, { unitSystem: 'si' });
+  const view = render(<ResultsPanel results={results} isValid tiles={tiles} shownErase="e1"/>);
+  fireEvent.click(view.getAllByRole('button', { name: /Why this suggestion\?/ })[0]);
+  view.rerender(<ResultsPanel results={results} isValid tiles={tiles} shownErase="e1"/>);
+  expect(view.container.querySelectorAll('.evidence-content')).toHaveLength(1);
+  view.rerender(<ResultsPanel results={results} isValid tiles={tiles} shownErase="e2"/>);
+  expect(view.container.querySelectorAll('.evidence-content')).toHaveLength(0);
+});
+

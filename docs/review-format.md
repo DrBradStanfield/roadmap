@@ -109,6 +109,12 @@ further round. Review rounds are capped (Brad, 2026-10-19, usage audit): one ful
 re-check scoped to the fix diff and the findings it answers. Anything still unresolved after the
 re-check goes to Brad with both positions; never a third round or a fresh full re-review, with the evidence.
 
+**Value-interpretation paths** (Brad 2026-11-10): code that decides what a typed or stored number means (its
+unit, conversion, rounding, or which row and day it lands on). There, review rounds continue while each round
+finds a real defect, up to five rounds in all (one full review plus four fix-scoped re-checks) or 24 hours from
+the first review, whichever comes first; then anything unresolved goes to Brad with both positions. Every other
+change keeps the cap above.
+
 **Every finding left open gets an owner before merge** (author's duty, Brad 2026-11-06; not a
 reviewer check: the issues are opened after the review, so a reviewer never flags their absence).
 An optional finding, a note, or an out-of-scope defect the reviewer found becomes a GitHub issue
