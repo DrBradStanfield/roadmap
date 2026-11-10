@@ -29,7 +29,7 @@ function titles(documents: ApiDocument[]) {
     labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
     onMedicationChange: vi.fn(), screenings: [], onScreeningChange: vi.fn(), supplements: [], onSupplementChange: vi.fn(), onSupplementDelete: vi.fn(),
     scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false, fieldsSaved: 0,
-    hasApiResponse: false, formStage: 4 as const, reached: 4 as const, fullForm: true, wasDone: true, aboutYouLow: true, planBasis: { age: 56 }, grading: {},
+    hasApiResponse: false, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: { age: 56 }, grading: {},
   };
   const { container } = render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />);
   return [...container.querySelectorAll('.health-records-section')].map(section =>

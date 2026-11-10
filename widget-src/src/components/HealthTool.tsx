@@ -688,15 +688,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     vitalsFlushRef,
     bloodTestPrefillRef,
     vitalsPrefillRef,
-    formStage,
-    reached,
-    fullForm,
-    aboutYouLow,
-    onProfileLeft: profileLeft,
+    onboarding: { stage: formStage, reached, fullForm, aboutYouLow, profileLeft, done: landOnMyHealth },
     setShowUploadModal,
     planBasis,
     grading,
-    onOnboardingDone: landOnMyHealth,
     // On a phone a chat edit opens the grids, so the filled cell shows (US-62 AC11).
     revealCell,
   };
