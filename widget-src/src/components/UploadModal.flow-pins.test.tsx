@@ -236,6 +236,8 @@ describe('US-12 AC4: Cancel from review', () => {
 });
 
 describe('US-12 AC6: Save', () => {
+  // US-12 AC6: upload_saved fires when the session reaches done, so a save into a record
+  // erased before it finished (the erase remounts the window) does not count.
   it('US-12 AC6: a full save shows the done screen and tracks upload_saved with the count', async () => {
     render(<Harness />); await ready();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
