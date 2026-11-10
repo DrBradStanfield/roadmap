@@ -88,7 +88,6 @@ interface HeightFieldProps {
   form: FormKit;
   pair: HeightPair;
   unitSystem: UnitSystem;
-  onUnitSystemChange: (system: UnitSystem) => void;
   toDisplay: (field: string, siValue: number | undefined) => string;
   parseAndConvert: (field: string, value: string) => number | undefined;
   /** No weight typed or saved yet: a complete height moves on to the weight. */
@@ -97,7 +96,7 @@ interface HeightFieldProps {
 }
 
 export function HeightField(props: HeightFieldProps) {
-  const { form, pair, unitSystem, onUnitSystemChange, toDisplay, parseAndConvert, mayAdvanceToWeight, advanceToWeight } = props;
+  const { form, pair, unitSystem, toDisplay, parseAndConvert, mayAdvanceToWeight, advanceToWeight } = props;
   const { inputs, rawInputs, setRawInputs, errors, updateField, readable, unreadable, range, typeIn, blurOnWheel, settleOnEnter, rangeWait } = form;
   const { heightFeet, setHeightFeet, heightInches, setHeightInches, typedHeightCm } = pair;
   // The feet box hands on to the inches box: only leaving the pair shows the error (Codex R2).
@@ -112,7 +111,7 @@ export function HeightField(props: HeightFieldProps) {
           type="button"
           className="unit-toggle-pill"
           data-unit-control="all"
-          onClick={(e) => { e.preventDefault(); onUnitSystemChange(unitSystem === 'si' ? 'conventional' : 'si'); }}
+          onClick={(e) => e.preventDefault()} // the label's own click would focus the box; the switch is hooks/useUnits'
           title={`Switch to ${unitSystem === 'si' ? 'US (in, lbs, mg/dL)' : 'Metric (cm, kg, mmol/L)'}`}
         >
           {unitSystem === 'si' ? 'cm' : 'ft/in'}

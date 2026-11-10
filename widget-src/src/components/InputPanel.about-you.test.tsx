@@ -20,7 +20,7 @@ vi.stubGlobal('matchMedia', (q: string) => ({ matches: !q.includes('max-width'),
 
 const props = (inputs: Partial<HealthInputs>, onChange: (field: keyof HealthInputs, value: unknown) => void, unitSystem: 'si' | 'conventional', settingsOpen = true) => ({
   ...myHealth({ settingsOpen }), // About you, low, sits in Settings (US-62 AC24)
-  inputs, effectiveInputs: inputs, onChange, errors: {}, unitSystem, onUnitSystemChange: vi.fn(),
+  inputs, effectiveInputs: inputs, onChange, errors: {}, unitSystem,
   unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
   labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
   onMedicationChange: vi.fn(), onScreeningChange: vi.fn(), supplements: [], onSupplementChange: vi.fn(), screenings: [],

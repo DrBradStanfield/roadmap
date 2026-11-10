@@ -131,8 +131,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const [chatPrefetch, setChatPrefetch] = useState<ChatPrefetch | null>(null);
 
   const rootRef = useRef<HTMLDivElement>(null);
-  // The unit system and each field's own unit (hooks/useUnits, US-05); the record's, held while a field has the focus (hooks/useHeldUnits).
-  const { unitSystem, unitOverrides, startUnitOf, metricUnitOverrides, handleToggleFieldUnit, handleUnitSystemChange, showUnits, offerUnits } = useUnits(setInputs, rootRef);
+  // The unit system and each field's own unit (hooks/useUnits, US-05); the record's, held while a field has the focus (hooks/units-machine).
+  const { unitSystem, unitOverrides, startUnitOf, metricUnitOverrides, handleToggleFieldUnit, onSwitch, record: units } = useUnits(setInputs, rootRef);
 
   // The page's reads of the record: the values, both matrices, the lab rows (hooks/useRecordReads).
   const { reloadValues, refreshLabValues, loadHistory } = useRecordReads({ setPreviousMeasurements, setHistory, setLabValueHistory });
@@ -150,7 +150,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const { shownErase, erasing: isDeleting, showErase, eraseUnshown, refusalIsNews, eraseAll } = useErase(() => clearChatEdits());
   // The record shown, at load and on every re-read, and another writer's change held behind an edit (hooks/useRecordApply).
   const { showRecord, signal: rereadRecord, saved: profileClean, firstReadFailed } = useRecordApply({
-    setInputs, reloadValues, applyLists, showUnits, offerUnits, showErase, loaded: hasApiResponse,
+    setInputs, reloadValues, applyLists, units, showErase, loaded: hasApiResponse,
     later: () => ({ markSaved, flushPendingSave, profileDirty, clearAnswered }), // declared below
   });
   // A save the store refused, asked under `erase`. Outside this tab's own erase, say so and show the record the
@@ -274,7 +274,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
 
   // The profile's save: height, sex, the birth date, the unit system (hooks/useProfileSave).
   const { flushProfile, profileTimer, markSaved, profileDirty, birthRefused, clearBirthRefused } = useProfileSave({
-    inputs, inputsRef, setInputs, loaded: hasApiResponse, onClean: profileClean, writeRefused,
+    inputs, inputsRef, setInputs, loaded: hasApiResponse, onClean: profileClean, writeRefused, units,
   });
 
   // The saved-value editor's correction, core or lab (US-04, US-21 AC5),
@@ -486,8 +486,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     profileTimer.cancel();
     // A save the form scheduled before the erase is pre-erase (US-16 AC2a).
     dropListSaves();
-    markSaved({});
-  }), [eraseAll, cancelPendingSave, profileTimer, markSaved, dropListSaves]);
+    markSaved({}); units.erased(); // the units shown stay (US-34 AC7a, Q3); held or unsaved ones go
+  }), [eraseAll, cancelPendingSave, profileTimer, markSaved, dropListSaves, units]);
 
   // One field's new value, from the form or the chat. A weight or waist
   // keeps the unit its caller converted it from (typedIn). One update per
@@ -648,7 +648,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     onChange: handleInputChange,
     errors: birthRefused ? { ...errors, birthMonth: birthRefused } : errors,
     unitSystem,
-    onUnitSystemChange: handleUnitSystemChange,
+    onUnitSwitch: onSwitch,
     unitOverrides, startUnitOf,
     onToggleFieldUnit: handleToggleFieldUnit,
     previousMeasurements,

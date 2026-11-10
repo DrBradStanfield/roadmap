@@ -38,7 +38,7 @@ function setup(start: Partial<HealthInputs> = {}) {
     const [inputs, setInputs] = useState<Partial<HealthInputs>>(start);
     const inputsRef = useRef(inputs);
     inputsRef.current = inputs;
-    const save = useProfileSave({ inputs, inputsRef, setInputs, loaded: true, onClean: relay.saved, writeRefused });
+    const save = useProfileSave({ inputs, inputsRef, setInputs, loaded: true, onClean: relay.saved, writeRefused, units: { pending: () => undefined, saved: () => {} } });
     return { save, inputs, setInputs };
   });
   return { view, relay, writeRefused };

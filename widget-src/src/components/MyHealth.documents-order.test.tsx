@@ -24,7 +24,7 @@ function titles(documents: ApiDocument[]) {
   const inputs = { sex: 'female' as const, heightCm: 165, birthYear: 1970, birthMonth: 1 };
   const props = {
     ...myHealth({ healthDocuments: documents }),
-    inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si', onUnitSystemChange: vi.fn(),
+    inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si',
     unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
     labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
     onMedicationChange: vi.fn(), screenings: [], onScreeningChange: vi.fn(), supplements: [], onSupplementChange: vi.fn(), onSupplementDelete: vi.fn(),

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
 import type { HealthInputs } from '@roadmap/health-core/types';
+import type { UnitSystem } from '@roadmap/health-core/units';
 import { PREFILL_FIELDS, hasUnsavedProfileEdits } from '@roadmap/health-core/mappings';
 import { birthRefusedMessage } from '@roadmap/health-core/validation';
 import { getBackendKind, getShownErase, saveChangedMeasurements } from '../lib/roadmap-data';
@@ -53,8 +54,10 @@ export function useProfileSave(args: {
   /** The form is clean: a held remote change may apply (the relay's `saved`). */
   onClean: () => void;
   writeRefused: (erase?: string) => void;
+  /** The units machine (useUnits' `record`): this tab's unsaved switch, and the save that wrote one. */
+  units: { pending: () => UnitSystem | undefined; saved: (system: unknown) => void };
 }): ProfileSave {
-  const { inputs, inputsRef, setInputs, loaded, onClean, writeRefused } = args;
+  const { inputs, inputsRef, setInputs, loaded, onClean, writeRefused, units } = args;
   const saved = useRef<Partial<HealthInputs>>({});
   const [birthRefused, setBirthRefused] = useState<string | null>(null);
 
@@ -63,12 +66,16 @@ export function useProfileSave(args: {
     if (getBackendKind() === 'local' && localHealthWritesStopped()) return true;
     const current: Partial<HealthInputs> = {};
     const previous: Partial<HealthInputs> = {};
+    // This tab's unit switch is written even when the copy saved holds it: switched,
+    // the other device writing the same, then switched back, the held change would
+    // otherwise apply the other device's units over this later choice (US-34 AC7a).
+    const switched = units.pending() !== undefined;
     for (const field of PROFILE_FIELDS) {
       if (inputs[field] !== undefined) (current as any)[field] = inputs[field];
-      if (saved.current[field] !== undefined) (previous as any)[field] = saved.current[field];
+      if (saved.current[field] !== undefined && !(switched && field === 'unitSystem')) (previous as any)[field] = saved.current[field];
     }
 
-    const hasChanges = PROFILE_FIELDS.some(f => inputs[f] !== saved.current[f]);
+    const hasChanges = switched || PROFILE_FIELDS.some(f => inputs[f] !== saved.current[f]);
     // Clean (a refused value cleared or put back): a held remote change applies now (N1).
     if (!hasChanges) { onClean(); return true; }
 
@@ -85,6 +92,7 @@ export function useProfileSave(args: {
     for (const field of PROFILE_FIELDS) {
       if (!kept.has(field)) (saved.current as any)[field] = inputs[field];
     }
+    units.saved(inputs.unitSystem); // before onClean: a held change then finds the switch saved
     if (refused) {
       // US-54 AC5b: the form shows the record's pair again, unless typed over
       // since, so it is clean and a remote change still applies (US-34 AC4).

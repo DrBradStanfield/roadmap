@@ -24,7 +24,7 @@ describe('US-35 AC17 — the PSA input takes the unit table range', () => {
     const onChange = vi.fn();
     const props = {
     ...MY_HEALTH_PROPS,
-      inputs, effectiveInputs: inputs, onChange, errors: {}, unitSystem, onUnitSystemChange: vi.fn(),
+      inputs, effectiveInputs: inputs, onChange, errors: {}, unitSystem,
       // The page's blood-test history holds every saved row, the newest among them.
       unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements, bloodTestHistory: previousMeasurements, vitalsHistory: [],
       labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
@@ -74,7 +74,7 @@ it('on a phone too, the PSA input keeps the unit table range', () => {
   const inputs = { sex: 'male' as const, heightCm: 180, birthYear: 1960, birthMonth: 1 };
   const props = {
     ...MY_HEALTH_PROPS,
-    inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si', onUnitSystemChange: vi.fn(),
+    inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si',
     unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
     labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
     onMedicationChange: vi.fn(), screenings: [{ id: 's1', screeningKey: 'prostate_discussion', value: 'will_screen', updatedAt: '' }],

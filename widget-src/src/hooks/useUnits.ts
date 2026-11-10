@@ -1,15 +1,16 @@
 // The unit system the page shows (US-05): the saved preference, else one
 // detected from the browser, and each field's own unit where the person
-// switched it (kept on this device). A record's saved unit system wins at load
-// and on a re-read, held while a field has the focus (useHeldUnits).
+// switched it (kept on this device). The record's unit system wins at load
+// and on a re-read, held while a field has the focus. The mode lives in one
+// state (hooks/units-machine.ts); this hook sends its events and runs its effects.
 // `startUnitOf(field)`: this device's unit for a field as the page started,
 // before the record's applied: a matrix draft cell kept with no unit was typed in it.
-import { useCallback, useMemo, useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import { FIELD_METRIC_MAP } from '@roadmap/health-core/mappings';
 import { detectUnitSystem, type MetricType, type UnitSystem } from '@roadmap/health-core/units';
 import { getJson, loadUnitPreference, safeRemoveItem, safeSetItem, saveUnitPreference } from '../lib/storage';
-import { useHeldUnits } from './useHeldUnits';
+import { opposite, pendingUnits, seenUnits, transition, type Units, type UnitsEvent } from './units-machine';
 
 /** This device's per-field unit toggles (lib/lpa-unit.ts reads its old Lp(a) entry). */
 const UNIT_OVERRIDES_KEY = 'health_roadmap_unit_overrides';
@@ -23,39 +24,54 @@ function loadUnitOverrides(): Record<string, UnitSystem> {
   return Object.fromEntries(Object.entries(stored).filter(([, us]) => us === 'si' || us === 'conventional'));
 }
 
+const systemOf = (value: unknown): UnitSystem | undefined => (value === 'si' || value === 'conventional' ? value : undefined);
+/** This tab's switch, as the matrix hears it: re-read the cells typed by hand in `from` (lib/useBloodDraftUnits). */
+export type UnitSwitchListener = (from: UnitSystem, to: UnitSystem) => void;
+
 export function useUnits(setInputs: Dispatch<SetStateAction<Partial<HealthInputs>>>, rootRef: RefObject<HTMLElement | null>) {
   // Unit system: load saved preference or auto-detect
   const [start] = useState(() => ({ system: loadUnitPreference() ?? detectUnitSystem(), overrides: loadUnitOverrides() }));
-  const [unitSystem, setUnitSystem] = useState<UnitSystem>(start.system);
   const startUnitOf = useCallback((field: string) => start.overrides[field] ?? start.system, [start]);
+  const [units, setUnits] = useState<Units>({ mode: 'following', shown: start.system });
+  // The machine's own copy, read by listeners between renders.
+  const machine = useRef(units);
 
-  // Per-field unit overrides (persisted to localStorage)
+  // Per-field unit overrides (persisted to localStorage). A chip's choice is kept as a unit, never as
+  // "the system's opposite": the record's units then apply over it and leave it (US-34 AC7a, Q4).
   const [unitOverrides, setUnitOverrides] = useState(start.overrides);
+  const [switchListeners] = useState(() => new Set<UnitSwitchListener>());
 
-  // Toggle a single field's unit override
-  const handleToggleFieldUnit = useCallback((field: string) => {
-    setUnitOverrides(prev => {
-      const current = prev[field] ?? unitSystem;
-      const toggled = current === 'si' ? 'conventional' : 'si';
-      const next = { ...prev };
-      if (toggled === unitSystem) {
-        delete next[field];
-      } else {
-        next[field] = toggled;
+  /** A field in the tool has the focus: an input, select or textarea. Measured as each event is sent. */
+  const typing = useCallback(() => {
+    const active = document.activeElement;
+    return !!active && !!rootRef.current?.contains(active) && active.matches('input, select, textarea');
+  }, [rootRef]);
+
+  const dispatch = useCallback((event: UnitsEvent) => {
+    const { state, effects } = transition(machine.current, event);
+    if (state !== machine.current) { machine.current = state; setUnits(state); }
+    for (const effect of effects) {
+      if (effect.type === 'apply') saveUnitPreference(effect.system);
+      else if (effect.type === 'leaveNextFrame') requestAnimationFrame(() => dispatch({ type: 'left', typing: typing() }));
+      else {
+        const { from, to } = effect;
+        for (const listener of switchListeners) listener(from, to);
+        saveUnitPreference(to);
+        setInputs(prev => ({ ...prev, unitSystem: to }));
+        setUnitOverrides({});
+        safeRemoveItem(UNIT_OVERRIDES_KEY);
       }
+    }
+  }, [typing, setInputs, switchListeners]);
+
+  // A row's chip: the other unit from the one the person saw (a press holds that).
+  const handleToggleFieldUnit = useCallback((field: string) => {
+    const seen = seenUnits(machine.current);
+    setUnitOverrides(prev => {
+      const next = { ...prev, [field]: opposite(prev[field] ?? seen) };
       safeSetItem(UNIT_OVERRIDES_KEY, JSON.stringify(next));
       return next;
     });
-  }, [unitSystem]);
-
-  // Handle unit system change — save to localStorage and to inputs (for cloud sync)
-  const handleUnitSystemChange = useCallback((system: UnitSystem) => {
-    setUnitSystem(system);
-    saveUnitPreference(system);
-    setInputs(prev => ({ ...prev, unitSystem: system }));
-    // Clear per-field overrides when global unit changes
-    setUnitOverrides({});
-    safeRemoveItem(UNIT_OVERRIDES_KEY);
   }, []);
 
   // Convert field-keyed overrides to MetricType-keyed for health-core + ResultsPanel.
@@ -70,15 +86,67 @@ export function useUnits(setInputs: Dispatch<SetStateAction<Partial<HealthInputs
     return Object.keys(m).length > 0 ? m : undefined;
   }, [unitOverrides]);
 
-  /** The record's own unit system, read at load or a re-read, wins over this device's. */
-  const applySavedUnitSystem = useCallback((unitPref: unknown) => {
-    if (unitPref === 'si' || unitPref === 'conventional') {
-      setUnitSystem(unitPref);
-      saveUnitPreference(unitPref);
-    }
-  }, []);
-  // Shown at load; offered by a re-read, and held while a field has the focus (hooks/useHeldUnits).
-  const { showUnits, offerUnits } = useHeldUnits(applySavedUnitSystem, unitSystem, rootRef);
+  // The tool's unit controls (`data-unit-control`; "all" is the Units or Height pill).
+  // The click is heard as it bubbles to the document, after the control's own
+  // handler: a row's chip reads what the person saw while the press still holds it.
+  // The focus leaving a field is read a frame later: during focusout it is on the
+  // body even when it is going to another field. Nothing here cancels a default.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const control = (target: EventTarget | null) => (target instanceof Element && root.contains(target) ? target.closest('[data-unit-control]') : null);
+    const cancel = () => dispatch({ type: 'cancelled', typing: typing() });
+    const onPointerDown = (e: PointerEvent) => { if (control(e.target)) dispatch({ type: 'pointed' }); else cancel(); };
+    const onFocusIn = (e: FocusEvent) => { if (!control(e.target)) cancel(); };
+    const onClick = (e: MouseEvent) => {
+      const pressed = control(e.target);
+      if (pressed) dispatch({ type: 'clicked', control: pressed.getAttribute('data-unit-control') === 'all' ? 'all' : 'row' });
+      else cancel();
+    };
+    const onFocusOut = () => requestAnimationFrame(() => dispatch({ type: 'left', typing: typing() }));
+    document.addEventListener('pointerdown', onPointerDown, true);
+    document.addEventListener('pointercancel', cancel, true);
+    document.addEventListener('focusin', onFocusIn, true);
+    document.addEventListener('click', onClick);
+    root.addEventListener('focusout', onFocusOut);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown, true);
+      document.removeEventListener('pointercancel', cancel, true);
+      document.removeEventListener('focusin', onFocusIn, true);
+      document.removeEventListener('click', onClick);
+      root.removeEventListener('focusout', onFocusOut);
+    };
+  }, [rootRef, dispatch, typing]);
 
-  return { unitSystem, unitOverrides, startUnitOf, metricUnitOverrides, handleToggleFieldUnit, handleUnitSystemChange, showUnits, offerUnits };
+  // H9: a focused field that unmounts sends no focusout. While units are held,
+  // the field with the focus is watched, and its unmounting is a leave. Live only while holding.
+  const holding = units.mode === 'holding';
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!holding || !root) return;
+    let field = document.activeElement;
+    const onFocusIn = (e: FocusEvent) => { field = e.target as Element; };
+    const observer = new MutationObserver(() => { if (field && !field.isConnected) dispatch({ type: 'left', typing: typing() }); });
+    observer.observe(root, { childList: true, subtree: true });
+    root.addEventListener('focusin', onFocusIn);
+    return () => { observer.disconnect(); root.removeEventListener('focusin', onFocusIn); };
+  }, [holding, rootRef, dispatch, typing]);
+
+  /** This tab's switch, for the matrix's typed cells. Returns the unsubscribe. */
+  const onSwitch = useCallback((listener: UnitSwitchListener) => {
+    switchListeners.add(listener);
+    return () => { switchListeners.delete(listener); };
+  }, [switchListeners]);
+
+  /** What the record's read and save tell the units (useRecordApply, useProfileSave, HealthTool's erase). */
+  const record = useMemo(() => ({
+    shown: (system: unknown) => dispatch({ type: 'shown', system: systemOf(system) }),
+    offered: (system: unknown) => dispatch({ type: 'offered', system: systemOf(system), typing: typing() }),
+    saved: (system: unknown) => dispatch({ type: 'saved', system: systemOf(system) }),
+    erased: () => dispatch({ type: 'erased' }),
+    /** This tab's switch the profile save has yet to write: it holds another writer's change (H2). */
+    pending: () => pendingUnits(machine.current),
+  }), [dispatch, typing]);
+
+  return { unitSystem: units.shown, unitOverrides, startUnitOf, metricUnitOverrides, handleToggleFieldUnit, onSwitch, record };
 }

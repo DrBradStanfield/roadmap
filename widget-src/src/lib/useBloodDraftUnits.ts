@@ -9,6 +9,7 @@
 
 import { useEffect, useRef } from 'react';
 import type { LpaUnit, MetricType, UnitSystem } from '@roadmap/health-core/units';
+import type { UnitSwitchListener } from '../hooks/useUnits';
 import { type CellUnit, cellText, cellToSI, readTypedValue, validateTypedValue } from './blood-test-cell';
 import { useLpaUnit } from './lpa-unit';
 import type { CellRef } from './useMatrixDraft';
@@ -17,12 +18,15 @@ import type { CellRef } from './useMatrixDraft';
 const UNCLEAR_UNIT = 'Re-enter this value: its unit is unclear after an update.';
 
 type Cell = CellRef<MetricType>;
+/** This tab's switch of the unit system, subscribed to (useUnits' `onSwitch`); returns the unsubscribe. */
+export type UnitSwitchSource = (listener: UnitSwitchListener) => () => void;
 
-export function useBloodDraftUnits({ rows, unitSystem, unitOverrides, onToggleFieldUnit, unitOf, lpaUnitOf, restamp }: {
+export function useBloodDraftUnits({ rows, unitSystem, unitOverrides, onToggleFieldUnit, onUnitSwitch, unitOf, lpaUnitOf, restamp }: {
   rows: Array<{ metric: MetricType; field: string }>;
   unitSystem: UnitSystem;
   unitOverrides: Record<string, UnitSystem>;
   onToggleFieldUnit: (field: string) => void;
+  onUnitSwitch?: UnitSwitchSource;
   unitOf: (cell: Cell) => UnitSystem | undefined;
   lpaUnitOf: (cell: Cell) => LpaUnit | undefined;
   restamp: (key: MetricType, from: CellUnit, to: CellUnit) => void;
@@ -43,24 +47,18 @@ export function useBloodDraftUnits({ rows, unitSystem, unitOverrides, onToggleFi
     restamp(metric, fieldUnit(field), fieldUnit(field) === 'si' ? 'conventional' : 'si');
     onToggleFieldUnit(field);
   };
-  // The page's Units or Height pill (`data-unit-control="all"`, InputPanel
-  // and AboutYou) switches the unit system: a unit chosen here too (Brad,
-  // 2026-11-10, PR 1147 re-check R1). Its press leaves the matrix, which
-  // commits the cells typed by hand first (useSaveOnLeave); one it could not
-  // commit (out of range: "135" typed in mmol/L) is re-read in the new unit
-  // on the click, before the switch renders. A field with its own unit keeps
-  // it: an override is always the system's opposite, so it is the new system.
+  // The page's Units or Height pill switches the unit system (useUnits' `onSwitch`):
+  // a unit chosen here too (Brad, 2026-11-10, PR 1147 re-check R1). Its press
+  // leaves the matrix, which commits the cells typed by hand first
+  // (useSaveOnLeave); one it could not commit (out of range: "135" typed in
+  // mmol/L) is re-read in the new unit as the switch is made, before it
+  // renders. A field already in the new unit (by its own chip) keeps it.
   // Lp(a) keeps its own rule (US-05 AC2): left out here.
-  const switchSystem = useRef(() => {});
-  switchSystem.current = () => {
-    const to = unitSystem === 'si' ? 'conventional' : 'si';
+  const switchSystem = useRef<UnitSwitchListener>(() => {});
+  switchSystem.current = (_from, to) => {
     for (const { metric, field } of rows) if (metric !== 'lpa' && fieldUnit(field) !== to) restamp(metric, fieldUnit(field), to);
   };
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => { if (e.target instanceof Element && e.target.closest('[data-unit-control="all"]')) switchSystem.current(); };
-    document.addEventListener('click', onClick, true);
-    return () => document.removeEventListener('click', onClick, true);
-  }, []);
+  useEffect(() => onUnitSwitch?.((from, to) => switchSystem.current(from, to)), [onUnitSwitch]);
   // The unit a typed cell is read in: the one it was typed in. An Lp(a) cell
   // restored from before that was kept has none: its value waits to be typed
   // again, never guessed (US-05 AC2). Every other cell is stamped as it is

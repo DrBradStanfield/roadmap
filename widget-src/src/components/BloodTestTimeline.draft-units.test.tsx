@@ -43,6 +43,9 @@ function page(rows: ApiMeasurement[] = [], start?: UnitSystem, mountedIn: UnitSy
   const onSaveBatch: Mock = vi.fn().mockResolvedValue(new Map());
   const prefillRef: MutableRefObject<BloodTestPrefillFn | null> = { current: null };
   const outside = { remote: (_: UnitSystem) => {}, toggle: (_: string) => {} };
+  // The page's switch, as useUnits tells the matrix (`onSwitch`).
+  const switches = new Set<(from: UnitSystem, to: UnitSystem) => void>();
+  const onUnitSwitch = (listener: (from: UnitSystem, to: UnitSystem) => void) => { switches.add(listener); return () => { switches.delete(listener); }; };
   function Page() {
     const [system, setSystem] = useState<UnitSystem>(mountedIn);
     const [overrides, setOverrides] = useState<Record<string, UnitSystem>>({});
@@ -52,9 +55,12 @@ function page(rows: ApiMeasurement[] = [], start?: UnitSystem, mountedIn: UnitSy
     return (
       <>
         <BloodTestTimeline bloodTestHistory={rows} unitSystem={system} unitOverrides={overrides} onToggleFieldUnit={toggle}
-          startUnitOf={start && (() => start)}
+          startUnitOf={start && (() => start)} onUnitSwitch={onUnitSwitch}
           onSaveBatch={onSaveBatch} onDraftValue={() => {}} isSaving={false} grading={{}} hasApiResponse prefillRef={prefillRef}/>
-        <button type="button" data-unit-control="all" onClick={() => { setSystem(other(system)); setOverrides({}); }}>Units</button>
+        <button type="button" data-unit-control="all" onClick={() => {
+          for (const listener of switches) listener(system, other(system));
+          setSystem(other(system)); setOverrides({});
+        }}>Units</button>
         <button type="button">Elsewhere</button>
       </>
     );

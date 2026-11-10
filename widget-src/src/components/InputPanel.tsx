@@ -11,6 +11,7 @@ import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, mayStillFit, ty
 import { useRangeWait } from '../lib/useRangeWait';
 import { useAutoAdvance } from '../lib/useAutoAdvance';
 import type { ApiLabValue, ApiSupplement } from '../lib/api-types';
+import type { UnitSwitchSource } from '../lib/useBloodDraftUnits';
 import { loadFromLocalStorage } from '../lib/storage';
 import { useLeaveField, type PanelOnboarding } from '../hooks/useOnboarding';
 
@@ -91,7 +92,7 @@ interface InputPanelProps {
   onChange: <K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem) => void;
   errors: Record<string, string>;
   unitSystem: UnitSystem;
-  onUnitSystemChange: (system: UnitSystem) => void;
+  onUnitSwitch: UnitSwitchSource; // this tab's unit switch (useUnits): the blood-test matrix re-reads its typed cells
   unitOverrides: Record<string, UnitSystem>;
   onToggleFieldUnit: (field: string) => void;
   startUnitOf: (field: string) => UnitSystem; // this device's units before the record's (useUnits), for kept drafts with no unit
@@ -161,7 +162,7 @@ interface InputPanelProps {
 }
 
 export function InputPanel({
-  children, inputs, effectiveInputs, onChange: updateField, errors: allErrors, unitSystem, onUnitSystemChange,
+  children, inputs, effectiveInputs, onChange: updateField, errors: allErrors, unitSystem, onUnitSwitch,
   unitOverrides, onToggleFieldUnit, startUnitOf,
   previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
   onCorrectValue, moveTest, onDraftValue,
@@ -766,7 +767,7 @@ export function InputPanel({
 
   // About you's fields: the onboarding's boxes and, low, the rows' editors (AboutYou.tsx).
   const heightField = (
-    <HeightField form={form} pair={heightPair} unitSystem={unitSystem} onUnitSystemChange={onUnitSystemChange}
+    <HeightField form={form} pair={heightPair} unitSystem={unitSystem}
       toDisplay={toDisplay} parseAndConvert={parseAndConvert}
       mayAdvanceToWeight={inputs.weightKg === undefined && !hasPreviousValue('weightKg')} advanceToWeight={advanceToWeight}/>
   );
@@ -781,13 +782,12 @@ export function InputPanel({
   // ── Section render functions (shared closure state, not separate components) ──
 
   // data-unit-control="all": a press here closes every open saved-value editor
-  // unsaved (US-05 AC2, US-04 AC1).
+  // unsaved (US-05 AC2, US-04 AC1). Its click switches the units (hooks/useUnits).
   const unitPill = (
     <button
       type="button"
       className="unit-toggle-pill"
       data-unit-control="all"
-      onClick={() => onUnitSystemChange(unitSystem === 'si' ? 'conventional' : 'si')}
       title={`Switch to ${unitSystem === 'si' ? 'US (in, lbs, mg/dL)' : 'Metric (cm, kg, mmol/L)'}`}
       aria-label={`Switch units. Current: ${unitSystem === 'si' ? 'Metric' : 'US'}`}
     >
@@ -967,7 +967,7 @@ export function InputPanel({
       bloodTestHistory={bloodTestHistory}
       unitSystem={unitSystem}
       unitOverrides={unitOverrides}
-      onToggleFieldUnit={onToggleFieldUnit} startUnitOf={startUnitOf}
+      onToggleFieldUnit={onToggleFieldUnit} startUnitOf={startUnitOf} onUnitSwitch={onUnitSwitch}
       onSaveBatch={onSaveBloodTestBatch}
       onCorrectValue={onCorrectValue}
       move={move.headers}

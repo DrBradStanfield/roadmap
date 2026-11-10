@@ -18,7 +18,7 @@ vi.stubGlobal('matchMedia', (q: string) => ({ matches: !q.includes('max-width'),
 const inputs = { sex: 'male' as const, heightCm: 180, birthYear: 1960, birthMonth: 1 };
 const props = (aboutYouLow: boolean) => ({
   ...myHealth({ settingsOpen: true }), // About you, low, sits in Settings (US-62 AC24)
-  inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si' as const, onUnitSystemChange: vi.fn(),
+  inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si' as const,
   unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
   labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
   onMedicationChange: vi.fn(), onScreeningChange: vi.fn(), supplements: [], onSupplementChange: vi.fn(), screenings: [],
