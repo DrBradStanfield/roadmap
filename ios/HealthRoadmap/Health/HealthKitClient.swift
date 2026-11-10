@@ -95,6 +95,26 @@ final class HealthKitClient: HealthStoreClient {
         }
     }
 
+    func deleteSamples(syncIds: [String]) async throws {
+        guard !syncIds.isEmpty else { return }
+        // By our sync ids alone: weight and waist samples carry them, a blood pressure's
+        // correlation does and its halves go with it.
+        let ours = HKQuery.predicateForObjects(withMetadataKey: HKMetadataKeySyncIdentifier, allowedValues: syncIds.map { Self.syncPrefix + $0 })
+        let types: [HKSampleType] = [HKQuantityType(.bodyMass), HKQuantityType(.waistCircumference), HKCorrelationType(.bloodPressure)]
+        var found: [HKObject] = []
+        do {
+            for type in types {
+                for sample in try await HKSampleQueryDescriptor(predicates: [.sample(type: type, predicate: ours)], sortDescriptors: []).result(for: store) {
+                    found.append(sample)
+                    if let pair = sample as? HKCorrelation { found += pair.objects }
+                }
+            }
+            if !found.isEmpty { try await store.delete(found) }
+        } catch let error as HKError where error.code == .errorDatabaseInaccessible {
+            throw HealthStoreError.locked
+        }
+    }
+
     func characteristics() -> HealthCharacteristics {
         // Each throws when not allowed; iOS never says which.
         let sex = (try? store.biologicalSex().biologicalSex).map { value -> String in
@@ -166,6 +186,12 @@ final class HealthKitClient: HealthStoreClient {
             store.execute(query)
             observers.append(query)
         }
+    }
+
+    func stopObserving() {
+        observers.forEach(store.stop)
+        observers = []
+        store.disableAllBackgroundDelivery { _, _ in }
     }
 
     // MARK: Pure parts (tested)

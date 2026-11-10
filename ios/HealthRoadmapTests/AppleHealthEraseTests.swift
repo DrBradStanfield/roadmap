@@ -2,15 +2,13 @@ import UIKit
 import XCTest
 @testable import HealthRoadmap
 
-/// US-72 AC10 (pending Brad's yes, 2026-11-11; ios/architecture.md D6): "Delete all my data"
+/// US-72 AC10 (Brad's yes, 2026-11-11; ios/architecture.md D6): "Delete all my data"
 /// disconnects Apple Health on this iPhone and resets every import anchor, vitals and lab
 /// results alike. While disconnected nothing is read. An erase taken in from another device,
 /// newer than the last one this phone saw on the same record source, disconnects the same
 /// way; a first open or a new source adopts the record's erase and never disconnects. Connect,
 /// the person's own act, reads everything from the start. A batch read before an erase never
 /// lands after it. HealthKit is faked (FakeHealthStore); Dropbox is CloudSyncTests' stub.
-///
-/// Written before the build: these fail (or do not compile) until the design lands.
 @MainActor
 final class AppleHealthEraseTests: XCTestCase {
     private var folder: URL!
@@ -106,7 +104,8 @@ final class AppleHealthEraseTests: XCTestCase {
         return epoch == 0 ? record : erased(record, to: epoch)
     }
 
-    /// Another device's erase of `record`: a higher epoch, its time, and a later clock.
+    /// Another device's erase of `record`: a higher epoch, its time, a later clock, and the rows
+    /// it erased listed, as a real erase lists every row it read (US-09 AC23).
     private func erased(_ record: [String: Any], to epoch: Int, at: Date = Date().addingTimeInterval(-3600)) -> [String: Any] {
         var copy = record
         var meta = record["meta"] as? [String: Any] ?? [:]
@@ -118,7 +117,8 @@ final class AppleHealthEraseTests: XCTestCase {
         copy["meta"] = meta
         copy["measurements"] = [[String: Any]]()
         copy["labValues"] = [[String: Any]]()
-        copy["erasedRows"] = ["fromEpoch": epoch, "ids": [String]()]
+        let rows = (record["measurements"] as? [[String: Any]] ?? []) + (record["labValues"] as? [[String: Any]] ?? [])
+        copy["erasedRows"] = ["fromEpoch": epoch, "ids": rows.compactMap { $0["id"] as? String }]
         return copy
     }
 
@@ -441,7 +441,7 @@ final class AppleHealthEraseTests: XCTestCase {
         // A fresh install: Health connected on the phone's file before the cloud record opens.
         health.pending[.weight] = [Self.morning]
         await app.health.connect()
-        let anchor = try XCTUnwrap(memory.anchor(for: .weight))
+        XCTAssertNotNil(memory.anchor(for: .weight))
 
         await app.sync.start()
         XCTAssertNotNil(app.store.cloudErase, "the cloud record is open")
@@ -449,7 +449,9 @@ final class AppleHealthEraseTests: XCTestCase {
 
         XCTAssertTrue(app.health.connected, "a first open adopts the erase and never disconnects")
         XCTAssertEqual(health.stops, 0)
-        XCTAssertEqual(memory.anchor(for: .weight), anchor)
+        // A refresh after the open moves the anchor on, never back to the start.
+        XCTAssertNotNil(memory.anchor(for: .weight))
+        XCTAssertFalse(health.sampleAnchors[.weight, default: []].dropFirst().contains(nil), "anchors kept: no read from the start")
         XCTAssertEqual(memory.eraseSeen, EraseSeen(epoch: 3, source: "dropbox"))
         // The fresh Connect's row went up and survives the merge with the old erase (createdAt after erasedAt).
         await app.sync.background()
@@ -494,12 +496,11 @@ final class AppleHealthEraseTests: XCTestCase {
         XCTAssertTrue(live.cards.isEmpty)
     }
 
-    // MARK: k2 (pending Brad)
+    // MARK: k2 (Brad 2026-11-11: "limited strictly to readings our app wrote")
 
-    /// Pending Brad (k2): a remote-erase disconnect also deletes the samples this app wrote, only
-    /// those its written-versions memory lists (`forgetWritten`), never a query by source.
-    func testARemoteEraseDeletesOnlyTheSamplesThisAppWrote_US72_AC10_pendingBradK2() async throws {
-        try XCTSkipIf(true, "pending Brad (k2): remove this skip if he says yes")
+    /// A remote-erase disconnect also deletes the samples this app wrote, only those its
+    /// written-versions memory lists (`forgetWritten`), never a query by source.
+    func testARemoteEraseDeletesOnlyTheSamplesThisAppWrote_US72_AC10_k2() async throws {
         dropbox.put(try webRecord())
         let app = try app(cloud: true)
         await app.sync.start()
@@ -518,5 +519,28 @@ final class AppleHealthEraseTests: XCTestCase {
         XCTAssertEqual(health.deletedSyncIds, [written], "exactly the sync ids the memory listed")
         XCTAssertEqual(health.ownDeletes, 0, "never a delete by source")
         XCTAssertNil(defaults.dictionary(forKey: "appleHealth.written"), "and forgotten")
+    }
+
+    /// k2: a sample in Health the app did not write (no sync id in its memory) survives a remote erase.
+    func testARemoteEraseLeavesASampleTheAppDidNotWrite_US72_AC10_k2() async throws {
+        dropbox.put(try webRecord())
+        let app = try app(cloud: true)
+        await app.sync.start()
+        await app.health.connect()
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        await app.health.refresh()
+        let written = health.saved.map(\.syncId).sorted()
+        XCTAssertFalse(written.isEmpty)
+        let theirs = HealthWrite(syncId: "another-app-sample", version: 1, day: "2026-10-02", values: ["weight": 79])
+        health.saved.append(theirs)
+        await app.sync.background()
+
+        dropbox.put(erased(dropbox.record, to: 1))
+        await app.sync.syncNow()
+        await until("the remote erase disconnects Apple Health") { !app.health.connected }
+        await until("the written samples are deleted") { !health.deletedSyncIds.isEmpty }
+
+        XCTAssertEqual(health.deletedSyncIds, [written], "only the app's own sync ids are asked for")
+        XCTAssertEqual(health.saved, [theirs], "the sample the app did not write stays in Health")
     }
 }

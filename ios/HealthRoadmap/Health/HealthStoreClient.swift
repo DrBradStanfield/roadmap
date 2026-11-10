@@ -31,9 +31,14 @@ protocol HealthStoreClient: AnyObject {
     /// Calls `onChange` whenever Health gets new data of these kinds, and new lab results
     /// where `supportsHealthRecords`, in the background too.
     func observe(_ kinds: [HealthKind], onChange: @escaping @MainActor () async -> Void)
+    /// An erase disconnected Apple Health (US-72 AC10): stops every observer query and background delivery.
+    func stopObserving()
     /// "Delete all my data" (US-25 AC16): deletes every sample this app wrote to Health.
     /// Readings other apps and devices wrote stay: they are not ours to delete.
     func deleteOwnSamples() async throws
+    /// Another device's erase (US-72 AC10): deletes the samples with these sync ids, the ones
+    /// this phone remembers writing (`HealthSyncMemory.writtenIds`), never a query by source.
+    func deleteSamples(syncIds: [String]) async throws
     /// Sex and birth month and year for onboarding to preselect (US-54 AC3); `.none`
     /// when not allowed or not set. Read on demand, never stored by this call.
     func characteristics() -> HealthCharacteristics

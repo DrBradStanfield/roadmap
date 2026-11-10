@@ -954,7 +954,7 @@ describe('US-72 AC9: the import wins a conflict', () => {
   });
 });
 
-describe('US-72 AC10: erase (pending Brad\'s yes, 2026-11-11)', () => {
+describe('US-72 AC10: erase (Brad\'s yes, 2026-11-11)', () => {
   it('US-25 AC13, US-72 AC10: a result drawn before the record\'s erase lands (a Connect after an erase reads everything)', () => {
     const erased: RoadmapFile = { ...empty(), meta: { ...empty().meta, erasedAt: '2026-10-22T00:00:00.000Z' } };
     const { file, counts } = run(erased, [rec(obs(R4_LDL)), rec(obs(DSTU2_HDL, { effectiveDateTime: '2026-10-23' }), { fhirVersion: DSTU2 })]);

@@ -412,7 +412,7 @@ final class FakeHealthStore: HealthStoreClient {
     var writable: Set<HealthKind> = Set(HealthKind.allCases)
     /// Saves of these sync ids fail, as HealthKit can refuse one sample.
     var refusing: Set<String> = []
-    private(set) var saved: [HealthWrite] = []
+    var saved: [HealthWrite] = []
     private var served: [HealthKind: Int] = [:]
 
     let isAvailable = true
@@ -502,7 +502,7 @@ final class FakeHealthStore: HealthStoreClient {
         self.onChange = onChange
     }
 
-    /// US-72 AC10 (pending Brad's yes): the erase stops every observer query and background delivery.
+    /// US-72 AC10: the erase stops every observer query and background delivery.
     private(set) var stops = 0
     func stopObserving() {
         stops += 1
@@ -520,7 +520,7 @@ final class FakeHealthStore: HealthStoreClient {
         saved = []
     }
 
-    /// Pending Brad (k2): the sync ids a remote erase asked Health to delete, one list per call,
+    /// k2: the sync ids a remote erase asked Health to delete, one list per call,
     /// taken from the written-versions memory (never a query by source).
     private(set) var deletedSyncIds: [[String]] = []
     func deleteSamples(syncIds: [String]) async throws {

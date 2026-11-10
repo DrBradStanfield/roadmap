@@ -66,6 +66,7 @@ final class CloudSync: CloudPort {
         phone = PhoneFiles(record: store.file, pending: files.pending)
         provider = files.read(files.provider).flatMap(CloudProvider.init(rawValue:))
         if provider != nil { store.marksPending = phone }
+        store.cloudName = provider?.rawValue
         syncedBefore = files.read(files.history).flatMap(CloudProvider.init(rawValue:))
         accountEmail = provider == nil ? nil : files.read(files.email)
         // Queued, not waited for: the engine's queue runs it before any call made after this.
@@ -102,6 +103,7 @@ final class CloudSync: CloudPort {
         accountEmail = signedIn.email
         self.provider = provider
         store.marksPending = phone
+        store.cloudName = provider.rawValue
         await open(firstConnect: first)
     }
 
@@ -179,6 +181,7 @@ final class CloudSync: CloudPort {
         shownSession = nil
         self.provider = nil
         store.marksPending = nil
+        store.cloudName = nil
         let copied = (try? await engine.cloudClose(copyDown: true)) ?? false
         oauth.signOut(provider)
         files.remove(files.provider)

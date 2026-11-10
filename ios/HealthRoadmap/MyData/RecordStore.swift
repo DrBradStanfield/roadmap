@@ -45,6 +45,8 @@ final class RecordStore {
     /// (US-09 AC4). Read when the edit's turn comes: an edit asked for before a first
     /// connect, landing after it, is marked too. Set by CloudSync; nil with no cloud.
     @ObservationIgnored var marksPending: PhoneFiles?
+    /// The connected cloud's name, set by CloudSync with `marksPending`; nil with no cloud.
+    @ObservationIgnored var cloudName: String?
     /// Moves each time "Delete all my data" erases the record here (US-25 AC16),
     /// so a view holding health data outside the record, the open chat, drops it.
     private(set) var erasures = 0 { didSet { forgetCharts() } }
@@ -428,8 +430,15 @@ final class RecordStore {
     /// make it refuse. It still takes the same path: in the cloud, the session, the
     /// merge and the erase guard.
     /// Its turn in line decides "now": the screen is read when the edits before it have landed.
-    func applyNow(_ edit: RecordEdit) async -> ApplyResult {
-        await chain { await self.applyInTurn(edit, as: self.screen) }.value
+    /// `mark`: the record the edit was read from (an Apple Health batch, US-72 AC10); an erase
+    /// since then refuses it in its turn.
+    func applyNow(_ edit: RecordEdit, on mark: Mark? = nil) async -> ApplyResult {
+        await chain {
+            if let mark, !mark.holds(at: self.mark) {
+                return .refused(message: "Your data was deleted since this was read, so it was not saved.", existingId: nil)
+            }
+            return await self.applyInTurn(edit, as: self.screen)
+        }.value
     }
 
     private func applyInTurn(_ edit: RecordEdit, as seen: Screen) async -> ApplyResult {
@@ -617,24 +626,7 @@ final class RecordStore {
         try? await engine.convert(value, metric: metric, from: from, to: to)
     }
 
-    // MARK: Chat edits (US-67)
-
-    /// The record a chat question was asked on, or a chat banner made on (US-67 AC5): the
-    /// cloud erase it showed, its eraseEpoch and this phone's erase count. An erase, here or
-    /// by sync, moves one of them, and what was made before it writes nothing (US-16 AC2a).
-    struct ChatMark: Equatable, Sendable {
-        let erase: String?
-        let epoch: Int?
-        let erasures: Int
-
-        /// Whether `now` is the same record, never erased since. Connecting or disconnecting a
-        /// cloud is not an erase: the cloud erase is compared only while both sides have one.
-        func holds(at now: ChatMark) -> Bool {
-            epoch == now.epoch && erasures == now.erasures && (erase == nil || now.erase == nil || erase == now.erase)
-        }
-    }
-
-    var chatMark: ChatMark { ChatMark(erase: cloudErase, epoch: myData?.eraseEpoch, erasures: erasures) }
+    // MARK: Chat edits (US-67); the record's mark is RecordStore+Mark.swift
 
     /// A chat reply's edits, taken in one turn: the engine's preview against the record now,
     /// and its medication part written at once, as the web's is (US-67 AC3).
@@ -645,7 +637,7 @@ final class RecordStore {
         /// The medication part changed the record.
         let changed: Bool
         /// The record the banners were made on.
-        let mark: ChatMark
+        let mark: Mark
     }
 
     /// What became of a reply's edits: nothing is written or shown when the record was
@@ -656,19 +648,19 @@ final class RecordStore {
         case unreadable
     }
 
-    func takeChatEdits(_ edits: OpaqueJSON, today: String, asked: ChatMark) async -> ChatEditsOutcome {
+    func takeChatEdits(_ edits: OpaqueJSON, today: String, asked: Mark) async -> ChatEditsOutcome {
         let outcome = await chain { () -> ChatEditsOutcome in
-            guard asked.holds(at: self.chatMark) else { return .moved }
+            guard asked.holds(at: self.mark) else { return .moved }
             guard let preview = try? await self.engine.chatEdits(recordJSON: self.recordJSON, edits: edits, now: .now, deviceId: self.deviceId, today: today, units: self.unitChoices.json)
             else { return .unreadable }
             // No medication part, or one the engine refused: nothing is written now. A part with
             // no Undo is still written (US-67 N3).
             guard let meds = preview.medications, meds.refusal == nil else {
-                return .taken(ChatEditsTaken(preview: preview, medications: nil, changed: false, mark: self.chatMark))
+                return .taken(ChatEditsTaken(preview: preview, medications: nil, changed: false, mark: self.mark))
             }
             let before = self.recordJSON
             let result = await self.applyInTurn(.chatEdits(part: .medications, edits: edits, today: today), as: self.screen)
-            return .taken(ChatEditsTaken(preview: preview, medications: result, changed: self.recordJSON != before, mark: self.chatMark))
+            return .taken(ChatEditsTaken(preview: preview, medications: result, changed: self.recordJSON != before, mark: self.mark))
         }.value
         if case .taken(let taken) = outcome, taken.changed { ownSaves += 1 }
         return outcome
@@ -677,9 +669,9 @@ final class RecordStore {
     /// A chat banner's Save or Undo, refused when the record was erased since the banner was
     /// made (`mark`): on the phone an erase leaves `cloudErase` nil, so `applyInTurn`'s check
     /// alone cannot see it. `changed`: the record moved.
-    func applyChatEdit(_ edit: RecordEdit, on mark: ChatMark) async -> (result: ApplyResult, changed: Bool) {
+    func applyChatEdit(_ edit: RecordEdit, on mark: Mark) async -> (result: ApplyResult, changed: Bool) {
         let answer = await chain { () -> (ApplyResult, Bool) in
-            guard mark.holds(at: self.chatMark) else {
+            guard mark.holds(at: self.mark) else {
                 return (.refused(message: "Your data was deleted since the chat suggested this, so it was not saved.", existingId: nil), false)
             }
             let before = self.recordJSON

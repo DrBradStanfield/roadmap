@@ -640,11 +640,12 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   - **Units are kept** (a setting; the web keeps its unit preference through an erase), the
     welcome flag and the AI consent are kept, the sync connection is kept.
   - **Reminders** need no step of their own: the opt-in ends when the epoch moves (D7).
-  - **Apple Health** (merged in the same evening): after the record erase, `AppleHealthSync.
-    eraseOwnSamples` deletes every sample this app wrote (HealthKit's source predicate, kinds
-    it may write) and clears `HealthSyncMemory`'s written versions. The import anchors stay,
-    so other apps' readings from before the erase are not imported again. A refused delete
-    never undoes the record erase; the words say so. Not checked on a real iPhone.
+  - **Apple Health** (merged in the same evening; disconnect 2026-11-11, D6): after the record
+    erase, `AppleHealthSync.erased` disconnects Health and resets every import anchor, then
+    deletes every sample this app wrote (HealthKit's source predicate, kinds it may write) and
+    clears `HealthSyncMemory`'s written versions. Another device's erase disconnects the same
+    way and deletes only the sync ids that memory lists (`deleteSamples(syncIds:)`). A refused
+    delete never undoes the record erase; the words say so. Not checked on a real iPhone.
   - **Export** is the record as shown (`store.recordJSON`) through the share sheet, written by
     the share sheet itself (`RecordExport`, a `DataRepresentation`), so the app keeps no
     stray copy. The website has no "load a file" flow; that would be a web feature.
@@ -672,9 +673,9 @@ exact list matched to `types.ts` in the spike).
   Otherwise a scale re-sync would undo a user's correction every time.
 - **A sample deleted in the Health app is ignored.** The row stays. The record is
   append-only (FHIR; Brad 2026-09-24): we never remove or retract a value.
-- *Superseded 2026-11-11 (pending Brad's yes):* after taking in an erase, the importer skips
+- *Superseded 2026-11-11 (Brad's yes):* after taking in an erase, the importer skips
   samples older than the erase. The import anchor is kept outside the record.
-- **An erase disconnects Apple Health (2026-11-11, pending Brad's yes; US-72 AC10).** A local
+- **An erase disconnects Apple Health (Brad 2026-11-11; US-72 AC10).** A local
   erase, or a newer erase taken in from another device on the same record source, disconnects
   Health and resets every import anchor, vitals and lab results alike. The first open of a
   record (a new cloud included) adopts its erase as seen and never disconnects. One stored
@@ -1376,7 +1377,7 @@ usual path (`applyOnPhone`, or `cloudEdit` with its erase guard): `chatEdits` (p
 `medications` or `review`, the proposals as received, the phone's day) and the engine's own
 Undo edit, passed back as it came. A medication change saves at once with Undo; values,
 height and sex wait in a banner with Save and Not now (`Chat/ChatEdits.swift`). A reply to a
-question asked before an erase, and a banner made before one, write nothing: `RecordStore.ChatMark`
+question asked before an erase, and a banner made before one, write nothing: `RecordStore.Mark`
 (the cloud erase, the eraseEpoch and the phone's erase count) is checked in the write's turn,
 and ChatView drops the banners when it moves (US-16 AC2a).
 

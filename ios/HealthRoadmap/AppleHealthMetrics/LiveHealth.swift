@@ -23,6 +23,8 @@ final class LiveHealth {
     private(set) var wakes = 0
     /// A metric page is on screen, for Clarity's fixed screen name "Apple Health metric" (usage signal).
     var pagesOpen = 0
+    /// False while an erase has Apple Health disconnected: nothing is read (US-72 AC10). AppleHealthSync sets it.
+    @ObservationIgnored var mayRead: @MainActor () -> Bool = { true }
 
     @ObservationIgnored let store: any LiveHealthStore
     @ObservationIgnored let now: @Sendable () -> Date
@@ -93,7 +95,7 @@ final class LiveHealth {
     /// read began under about 2 s before: its answer is as fresh (E1). `force` always runs it
     /// once more (after Apple's sheet, N2). A cancelled read writes nothing (N1).
     func refresh(force: Bool = false) async {
-        guard available else { return }
+        guard available, mayRead() else { return }
         if let started {
             if force || ContinuousClock.now - started >= .seconds(2) { again = true }
             return

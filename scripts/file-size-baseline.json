@@ -22,7 +22,7 @@
     "packages/health-core/src/lab-catalog.ts": 811,
     "tools/knowledge-lint.ts": 811,
     "widget-src/src/components/HealthTool.tsx": 792,
-    "ios/HealthRoadmap/MyData/RecordStore.swift": 798,
+    "ios/HealthRoadmap/MyData/RecordStore.swift": 790,
     "packages/health-core/src/record-session.ts": 783,
     "widget-src/src/storage/drive.ts": 757,
     "widget-src/src/components/StartingInfoVitals.tsx": 744,

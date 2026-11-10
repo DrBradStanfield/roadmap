@@ -3,7 +3,7 @@
 // fills an empty day or replaces a day its own source holds; it never
 // supersedes a value a person typed or corrected, never imports a reading
 // twice. No erase rule filters a reading: an erase disconnects Apple Health
-// and a Connect reads everything (US-72 AC10, pending Brad's yes).
+// and a Connect reads everything (US-72 AC10, Brad's yes 2026-11-11).
 import { describe, expect, it } from 'vitest';
 import { importDeviceSamples, type DeviceSample } from './device-import';
 import { appendMeasurement, correctValue } from './record-edits';
@@ -219,7 +219,7 @@ describe('importDeviceSamples: blood pressure is one reading', () => {
 });
 
 describe('importDeviceSamples: what is refused', () => {
-  // Pending Brad's yes (2026-11-11): the erase rule leaves the importer.
+  // Brad's yes (2026-11-11): the erase rule leaves the importer.
   it('US-25 AC13, US-72 AC10: a reading measured before the record\'s erase lands (a Connect after an erase reads everything)', () => {
     const erased: RoadmapFile = { ...empty(), meta: { ...empty().meta, eraseEpoch: 1, erasedAt: '2026-10-21T00:00:00.000Z' } };
     const result = run(erased, [

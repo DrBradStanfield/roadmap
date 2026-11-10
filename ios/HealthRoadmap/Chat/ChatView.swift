@@ -56,7 +56,7 @@ struct ChatView: View {
             conversationId = UUID().uuidString.lowercased()
         }
         // An erase here or by sync drops an unanswered banner and the Undo (US-67 AC5).
-        .onChange(of: store.chatMark) { edits.follow(store.chatMark) }
+        .onChange(of: store.mark) { edits.follow(store.mark) }
         .onAppear { edits.send = { [analytics] in analytics?.event($0) } }
     }
 
@@ -212,7 +212,7 @@ struct ChatView: View {
         // this turn is dropped, never indexed into the new lines or saved (review R1).
         let erasures = store.erasures
         // The record it is asked on: a reply's edits apply only to it (US-67 AC5).
-        let asked = store.chatMark
+        let asked = store.mark
         turn = Task { await send(question, earlier: earlier, answerIndex: answerIndex, erasures: erasures, asked: asked) }
     }
 
@@ -227,7 +227,7 @@ struct ChatView: View {
         if let question = transcript.stop(), draft.isEmpty { draft = question }
     }
 
-    private func send(_ question: String, earlier: [ChatClient.Turn], answerIndex: Int, erasures: Int, asked: RecordStore.ChatMark) async {
+    private func send(_ question: String, earlier: [ChatClient.Turn], answerIndex: Int, erasures: Int, asked: RecordStore.Mark) async {
         let isNew = earlier.isEmpty
         let conversation = conversationId
         let askedAt = ChatHistoryStore.erasures
