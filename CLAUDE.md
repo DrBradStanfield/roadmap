@@ -208,17 +208,17 @@ test. Miss a step = the value silently fails to round-trip.
   cause / fix / evidence commit, in the docs/gotchas.md archive. Promote to
   the curated list below ONLY if silent (no error, no test catches it) or
   repo-wide; domain-specific ones go to the owning loop's LEARNINGS.md.
-- **Model delegation (Brad, 2026-11-10):** the main session runs the newest Fable as orchestrator and
+- **Model delegation (Brad, 2026-11-10):** the main session runs the newest Opus as orchestrator and
   keeps the calls: clinical logic, merge semantics, FHIR shapes, security, synthesis. All coding goes to
   `worker-opus` (Opus, medium): implementation, edits, writing tests, all UI and design work, the four
   /simplify reviewers, every knowledge-base entry and web page. `runner` (Haiku) runs tests, typechecks and
   builds, pasting failures verbatim. `worker` (Sonnet 5.5, medium) fetches, scrapes and runs simulator checks. Every adversarial check goes to a FRESH `adversary` (Opus, medium). All pinned in
-  `.claude/agents/`. Fable is never a subagent and never codes first. A Fable main session sends every first
-  attempt to a named agent (likely Opus), uses no forks, and spawns no agent without a fixed model, since those
-  run on Fable. It steps in itself only when a worker stalls: tests still fail, a review refutes the fix, the
-  worker is stuck, or it misread the task. When it steps in, it says in one line what stalled. Review rounds
-  capped: one full review + one fix-scoped re-check, then Brad (docs/review-format.md). Full 1M context kept (Brad
-  2026-10-20, no auto-compact cap); Brad compacts or `/clear`s by hand. Spawn agents by name, never with a per-call
+  `.claude/agents/`. Fable runs only as `helper` (read-only, advises, never edits). Call it when Opus is stuck:
+  a fix fails twice, a review still refutes the fix after the re-check, or the main session is unsure of a
+  clinical, merge/FHIR or security call. Brief it with the evidence (failing output, diff, file paths), not your
+  theory; it reads the code itself and returns a diagnosis and a plan, which Opus carries out. Say in one line
+  why you called it. Review rounds capped: one full review + one fix-scoped re-check, then `helper`, then Brad
+  (docs/review-format.md). Full 1M context kept (Brad 2026-10-20, no auto-compact cap); Brad compacts or `/clear`s by hand. Spawn agents by name, never with a per-call
   `model`; never set `CLAUDE_CODE_SUBAGENT_MODEL`. The newest Haiku is allowed (2026-10-12; first use: customer-service
   email triage). Loops: docs/loops/LOOP.md.
 - **Every adversarial Claude check gets a Codex one beside it** (Brad, 2026-09-21): a fresh
