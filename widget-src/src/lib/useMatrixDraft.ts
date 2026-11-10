@@ -11,7 +11,7 @@ import { isLpaUnit } from '@roadmap/health-core/cell-unit';
 import { localDay } from '@roadmap/health-core/merge';
 import type { LpaUnit, UnitSystem } from '@roadmap/health-core/units';
 import type { CellUnit } from './blood-test-cell';
-import { DRAFTS_CLEARED_EVENT, localHealthWritesStopped, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
+import { BT_TIMELINE_DRAFT_KEY, DRAFTS_CLEARED_EVENT, VITALS_DRAFT_KEY, localHealthWritesStopped, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
 import type { SaveTask } from './matrix-save';
 
 type Typed<K extends string> = Partial<Record<K, string>>;
@@ -46,6 +46,7 @@ export type CellRef<K extends string> = [column: string | null, key: K];
 
 const EMPTY = { draft: { values: {} }, backfills: {}, meta: {} };
 const holdsAny = (cells: object) => Object.values(cells).some(Boolean);
+const holdsText = (state: MatrixDraft<string>) => holdsAny(state.draft.values) || holdsAny(state.backfills);
 const isDay = (day: unknown): day is string => typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day);
 const isObject = (v: unknown): v is object => !!v && typeof v === 'object';
 const dayOf = (state: MatrixDraft<string>) => state.draft.date ?? localDay(new Date());
@@ -66,6 +67,15 @@ function loadDraft<K extends string>(storageKey: string): MatrixDraft<K> | null 
     return null;
   }
 }
+
+/** Whether either matrix keeps typed text on this device, read where it is
+ *  kept, so a matrix mounted again (a phone turned) cannot report it empty
+ *  before it restores its draft (useHeldUnits). None is kept while local
+ *  health writes are stopped (US-09 AC2e). */
+export const draftsHoldText = () => [BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY].some((key) => {
+  const kept = loadDraft(key);
+  return !!kept && holdsText(kept);
+});
 
 /** `state` with one key of a cell set to `typed`, the cell's meta (`id`)
  *  made by `meta` from what it was. A cell with nothing typed in it leaves
@@ -124,7 +134,7 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
     // health values back on a device the user meant to leave clean (US-09 AC2e).
     // Removing a draft is always safe, so a stale one does not stay behind.
     if (localHealthWritesStopped()) { safeRemoveItem(storageKey); return; }
-    if (holdsAny(state.draft.values) || holdsAny(state.backfills)) safeSetItem(storageKey, JSON.stringify(state));
+    if (holdsText(state)) safeSetItem(storageKey, JSON.stringify(state));
     else safeRemoveItem(storageKey);
   }, [storageKey, state]);
 
@@ -147,7 +157,7 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
     backfills: state.backfills,
     /** Any typed text kept, valid or not, restored or displaced: what the
      *  phone's "Unsaved values" cue reports (US-62 AC11). */
-    holdsText: holdsAny(state.draft.values) || holdsAny(state.backfills),
+    holdsText: holdsText(state),
     /** What the user typed into a cell, verbatim, and the unit it is in when
      *  a unit switch must keep the quantity. `byHand` false: the chat filled
      *  it, and the user has not typed into it since. */

@@ -111,13 +111,13 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // The relay is created once; the load path it calls changes identity on
   // most renders, so it is reached through a ref (US-34 AC4).
   const applyRemoteRef = useRef<() => void>(() => {});
-  const remoteRelay = useRef(
+  const [remoteRelay] = useState(() =>
     createRemoteChangeRelay(() => {
       clearAnswered(); // another writer's change is no answer given here (US-62 AC13)
       trackProductEvent('remote_change_applied', { backend: getBackendKind() });
       void applyRemoteRef.current();
     }),
-  ).current;
+  );
 
   // Filled by each matrix with its commit, so a lab upload commits both
   // drafts before its own save (US-03 AC5).
@@ -141,8 +141,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const [floatingChatOpen, setFloatingChatOpen] = useState(false);
   const [chatPrefetch, setChatPrefetch] = useState<ChatPrefetch | null>(null);
 
-  // The unit system and each field's own unit (hooks/useUnits, US-05).
-  const { unitSystem, unitOverrides, metricUnitOverrides, handleToggleFieldUnit, handleUnitSystemChange, applySavedUnitSystem } = useUnits(setInputs);
+  const rootRef = useRef<HTMLDivElement>(null);
+  // The unit system and each field's own unit (hooks/useUnits, US-05); the record's, held while anything is typed (hooks/useHeldUnits).
+  const { unitSystem, unitOverrides, metricUnitOverrides, handleToggleFieldUnit, handleUnitSystemChange, showUnits, offerUnits, onMatrixHolds } = useUnits(setInputs, rootRef);
 
   // The page's reads of the record: the values, both matrices, the lab rows (hooks/useRecordReads).
   const { reloadValues, refreshLabValues, loadHistory } = useRecordReads({ setPreviousMeasurements, setHistory, setLabValueHistory });
@@ -181,17 +182,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       mountRead.current = null;
       const { erase, result } = first ?? { erase: getEraseIdentity(), result: await loadLatestMeasurements() };
       showErase(erase);
-
       if (hasSavedRecord(result)) {
-        // Apply saved unit preference
-        applySavedUnitSystem(result.inputs.unitSystem);
-        setInputs(result.inputs);
-        markSaved(result.inputs);
+        showRecord(result);
         setPreviousMeasurements(result.previousMeasurements);
-        if (result.previousMeasurements.length > 0) {
-          isFirstSaveRef.current = false;
-        }
-        applyLists(result);
+        if (result.previousMeasurements.length > 0) isFirstSaveRef.current = false;
         // Every measurement, for both matrices (fire-and-forget, so it
         // doesn't block the first render).
         loadHistory();
@@ -372,8 +366,17 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
 
   // Refresh state after upload bulk save (lab values + documents): the values,
   // lab rows and both matrices, then the profile and the rest.
+  // The record shown in one step, load and every re-read: units, form, saved copy, lists (US-34 AC7).
+  // `form` builds the form from the one shown, for a re-read that keeps what is being typed; `units` shows or offers its units.
+  const showRecord = useCallback((result: LatestMeasurementsResult, form: (shown: Partial<HealthInputs>) => Partial<HealthInputs> = () => result.inputs, units = showUnits) => {
+    units(result.inputs.unitSystem);
+    setInputs(form);
+    markSaved(result.inputs);
+    applyLists(result);
+  }, [showUnits, markSaved, applyLists]);
+
   const handleUploadComplete = useCallback(async () => {
-    // A field the user left has its save waiting (500 ms): it lands first.
+    // A field the user left has its save waiting (500 ms): it starts now; its own re-read follows.
     flushPendingSave();
     const erase = getEraseIdentity(); // read with the record, in one turn
     const result = await reloadValues();
@@ -394,7 +397,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       // device's drafts (US-11 AC6, Codex R4).
       const typing = document.activeElement?.id as keyof HealthInputs | undefined;
       const sameRecord = erase === getShownErase();
-      setInputs(prev => {
+      showRecord(result, prev => {
         if (!sameRecord) return result.inputs;
         const next: Partial<HealthInputs> = typing && LONGITUDINAL_FIELDS.includes(typing) && prev[typing] !== undefined
           ? { ...result.inputs, [typing]: prev[typing] }
@@ -403,14 +406,12 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
           if (inputRangeFault(field, value)) (next as Record<string, unknown>)[field] = value;
         }
         return next;
-      });
-      markSaved(result.inputs);
-      applyLists(result);
+      }, sameRecord ? offerUnits : showUnits); // another erase's units show at once, never held
     }
     // Another device erased the record (US-16 AC2a / US-09): a chat banner
     // left standing would write pre-erase values into the erased record.
     showErase(erase);
-  }, [reloadValues, flushPendingSave, showErase]);
+  }, [reloadValues, flushPendingSave, showErase, showRecord, offerUnits, showUnits]);
 
   // Something wrote to the record under us — another device, or an AI
   // connector through MCP (US-34). The store has already re-read and merged;
@@ -496,7 +497,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   isMobileRef.current = isMobile;
   const isWideDesktop = useIsWideDesktop(1200);
   const floatingChat = !isMobile && !isWideDesktop && reached === 4;
-  const rootRef = useRef<HTMLDivElement>(null);
   // The phone's three tabs, each keeping its own scroll (hooks/useTabs, US-20 AC6).
   const { activeTab, selectTab, tabIds } = useTabs(rootRef);
 
@@ -772,7 +772,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     reached,
     fullForm,
     aboutYouLow,
-    onProfileLeft: profileLeft,
+    onProfileLeft: profileLeft, onMatrixHolds,
     setShowUploadModal,
     planBasis,
     grading,
