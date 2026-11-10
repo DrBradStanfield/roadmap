@@ -56,7 +56,7 @@ On 2026-11-10, from `leads.csv`:
 | Section | done | partial | not started | cannot tell | Total |
 | --- | --- | --- | --- | --- | --- |
 | bug leads | 6 | 1 | 2 | 0 | 9 |
-| S1 tools, scripts, CI | 0 | 0 | 13 | 0 | 13 |
+| S1 tools, scripts, CI | 3 | 0 | 10 | 0 | 13 |
 | S2 server | 0 | 1 | 13 | 0 | 14 |
 | S3 cloud storage and sync | 1 | 1 | 9 | 0 | 11 |
 | S4 privacy scrub and vocabularies | 0 | 1 | 8 | 0 | 9 |
@@ -65,7 +65,7 @@ On 2026-11-10, from `leads.csv`:
 | S7 web data layer, upload, standalone | 2 | 0 | 9 | 1 | 12 |
 | S8 web big components | 3 | 3 | 5 | 0 | 11 |
 | S9 health-core entry points | 1 | 0 | 0 | 0 | 1 |
-| **All** | 13 | 7 | 76 | 2 | 98 |
+| **All** | 16 | 7 | 73 | 2 | 98 |
 
 ## state-leads.csv
 

@@ -123,8 +123,8 @@ and Brad merges them. One at a time, each merge made the rest conflict and re-ru
    (exit 1) on a skipped number not in the list, on skipping every PR, and on a kept PR that shares a commit
    with a skipped one that main lacks (built on its head or a middle commit: skip both, or neither); a skipped
    head it cannot fetch stops it (exit 4). Before anything merges it fetches each head and refuses a moved one
-   (exit 1); then it merges the reviewed head as is (GitHub then marks the PR merged when the batch lands), drops a
-   PR's `docs/user-stories.html` and merges add-only `docs/user-stories.md` conflicts (both sides' `- AC`
+   (exit 1); then it merges the reviewed head as is (GitHub then marks the PR merged when the batch lands), and
+   merges add-only `docs/user-stories.md` conflicts (both sides' `- AC`
    lines, in order). The tool proves that merge changed the stories file by exactly the PR's own lines
    (exit 3 and the merge undone if not), so those conflicts need no reviewer re-check. A repeated AC number or any other conflict stops it (exit 2): fix
    it by hand and get one scoped re-check by a fresh adversary, since the fix is new lines.
