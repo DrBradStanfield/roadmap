@@ -862,14 +862,18 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
 
     // PR 1204 review (Codex R1): the first-time weight box's own pill was no unit control,
     // so the press released the held units and the click toggled from them.
-    it('US-34 AC7a: 180 typed in the weight box in lb, SI held, then the box\'s lbs pill: kg chosen, and 180 lb kept', async () => {
+    it('US-34 AC7a: 60 typed in the weight box in lb, SI held, then the box\'s lbs pill: kg chosen, and 60 lb kept', async () => {
       await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3, unitSystem: 'conventional' }, {});
       await flushRoadmapStore();
       const view = render(<HealthTool />);
       await waitFor(() => expect(q(view, '#weightKg')).toBeTruthy());
-      type(q(view, '#weightKg'), '180');
+      await settle(50); // the page's own focus moves land first
+      // Two digits that could still grow ("60" toward 600 lb): the landing waits 800 ms
+      // (useAutoAdvance), so the box keeps the focus; "180" lands at once and moves it.
+      type(q(view, '#weightKg'), '60');
       await anotherWriter(() => saveChangedMeasurements({ unitSystem: 'si' }, { unitSystem: 'conventional' }));
       await settle(50);
+      expect(document.activeElement?.id).toBe('weightKg');
       const pill = () => q(view, 'label[for="weightKg"] .unit-toggle-pill') as HTMLElement;
       expect(pill().textContent).toBe('lbs'); // held
       pressMouse(pill());
@@ -878,7 +882,7 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
       await nextFrame();
       expect(pill().textContent).toBe('kg');
       await waitFor(async () => expect(await activeWeights()).toHaveLength(1), { timeout: 3000 });
-      expect((await activeWeights())[0][0]).toBeCloseTo(lb180(), 1);
+      expect((await activeWeights())[0][0]).toBeCloseTo(toCanonicalValue('weight', 60, 'conventional'), 1);
     });
 
     // PR 1204 review F3: main's rule. A chip turned back to the system's unit follows the system again.
