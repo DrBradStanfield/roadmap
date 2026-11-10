@@ -15,13 +15,14 @@ const data = vi.hoisted(() => ({
   labReads: [] as Array<{ resolve: (rows: unknown) => void }>,
   latest: null as unknown,
   history: [] as unknown[],
+  syncHistory: [] as unknown[],
 }));
 vi.mock('../lib/roadmap-data', () => ({
   loadLabValues: () => (data.hold
     ? new Promise(resolve => { data.labReads.push({ resolve }); })
     : Promise.resolve(data.labRows)),
   loadAllHistory: async () => data.history,
-  loadAllHistorySync: () => [],
+  loadAllHistorySync: () => data.syncHistory,
   loadLatestMeasurements: async () => data.latest,
 }));
 const mirror = vi.hoisted(() => ({ saved: [] as unknown[][], patches: [] as unknown[], cached: null as unknown }));
@@ -42,7 +43,7 @@ function setup() {
 }
 
 beforeEach(() => {
-  data.labReads = []; data.latest = null; data.history = []; data.hold = true; data.labRows = [];
+  data.labReads = []; data.latest = null; data.history = []; data.hold = true; data.labRows = []; data.syncHistory = [];
   mirror.saved = []; mirror.patches = []; mirror.cached = null;
 });
 
@@ -86,14 +87,20 @@ describe('US-15 AC10: reloadValues', () => {
     data.latest = latest;
     data.history = [{ metricType: 'weight', value: 70 }];
     data.hold = false;
+    data.labRows = [egfrRow(40)];
+    const psa = { id: 'p1', metricType: 'psa', value: 1.2, recordedAt: '2026-10-01T00:00:00Z', status: 'active' };
+    data.syncHistory = [psa];
     let got: unknown;
     await act(async () => { got = await view.result.current.reloadValues(); });
     expect(got).toBe(latest);
     expect(setters.setPreviousMeasurements).toHaveBeenCalledWith(latest.previousMeasurements);
     expect(mirror.saved).toHaveLength(1);
     expect(mirror.saved[0].slice(0, 4)).toEqual([latest.inputs, latest.previousMeasurements, [], []]);
+    // The lab eGFR and the newest usable PSA ride in the mirror too (US-07 AC7).
+    expect(mirror.saved[0][5]).toMatchObject({ labEgfr: 40 });
+    expect(mirror.saved[0][6]).toMatchObject({ id: 'p1', value: 1.2 });
     expect(setters.setHistory).toHaveBeenCalledWith(data.history);
-    expect(setters.setLabValueHistory).toHaveBeenCalledWith([]);
+    expect(setters.setLabValueHistory).toHaveBeenCalledWith([egfrRow(40)]);
   });
 
   it('nothing on record: no values replaced and no mirror written, but labs and history are still read', async () => {
