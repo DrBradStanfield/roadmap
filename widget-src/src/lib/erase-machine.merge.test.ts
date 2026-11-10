@@ -29,15 +29,17 @@ function erased(epoch: number, erasedAt: string | null, lists: boolean): Roadmap
   return file;
 }
 
-/** [pair, this tab's copy, the other writer's copy] */
-const pairs: Array<[string, RoadmapFile, RoadmapFile]> = [
-  ['listed (late) meets unlisted (early), one epoch', erased(1, LATE, true), erased(1, EARLY, false)],
-  ['unlisted (early) meets listed (late), one epoch', erased(1, EARLY, false), erased(1, LATE, true)],
-  ['unlisted (late) meets listed (early), one epoch', erased(1, LATE, false), erased(1, EARLY, true)],
-  ['both listed, one epoch', erased(1, LATE, true), erased(1, EARLY, true)],
-  ['neither listed, one epoch', erased(1, EARLY, false), erased(1, LATE, false)],
-  ['a lower epoch meets a higher', erased(1, LATE, true), erased(2, EARLY, false)],
-  ['a higher epoch meets a lower', erased(2, EARLY, false), erased(1, LATE, true)],
+/** [pair, this tab's copy, the other writer's copy, whose erase the merge keeps].
+ *  A pair the merge settles on this tab's copy is trivial for the own-end case:
+ *  the erase ends at its own identity, and nothing of the other writer's shows. */
+const pairs: Array<[string, RoadmapFile, RoadmapFile, 'theirs' | 'mine (trivial)']> = [
+  ['listed (late) meets unlisted (early), one epoch', erased(1, LATE, true), erased(1, EARLY, false), 'theirs'],
+  ['unlisted (early) meets listed (late), one epoch', erased(1, EARLY, false), erased(1, LATE, true), 'mine (trivial)'],
+  ['unlisted (late) meets listed (early), one epoch', erased(1, LATE, false), erased(1, EARLY, true), 'mine (trivial)'],
+  ['both listed, one epoch', erased(1, LATE, true), erased(1, EARLY, true), 'mine (trivial)'],
+  ['neither listed, one epoch', erased(1, EARLY, false), erased(1, LATE, false), 'theirs'],
+  ['a lower epoch meets a higher', erased(1, LATE, true), erased(2, EARLY, false), 'theirs'],
+  ['a higher epoch meets a lower', erased(2, EARLY, false), erased(1, LATE, true), 'mine (trivial)'],
 ];
 
 function run(state: EraseState, events: EraseEvent[]): EraseState {
@@ -52,9 +54,13 @@ describe('erase machine through the real merge: the screen ends at the store\'s 
     expect(merged.meta.erasedAt).toBe(EARLY);
   });
 
-  describe.each(pairs)('%s', (_pair, mine, theirs) => {
+  describe.each(pairs)('%s (the merge keeps %s)', (_pair, mine, theirs, kept) => {
     const before = eraseIdentityOf(mine);
     const store = eraseIdentityOf(mergeFiles(mine, theirs, OPTS));
+
+    it('the merge keeps the erase named', () => {
+      expect(store).toBe(eraseIdentityOf(kept === 'theirs' ? theirs : mine));
+    });
 
     it('read', () => {
       expect(run(idle(before), [{ type: 'read', identity: store }]).shown).toBe(store);
@@ -79,9 +85,13 @@ describe('erase machine through the real merge: the screen ends at the store\'s 
       const pre = eraseIdentityOf(createEmptyFile({ deviceId: 'dev_base', now: '2026-01-01T00:00:00Z' }));
       const other = eraseIdentityOf(theirs);
       const arrivals: EraseEvent[] = [{ type: 'arrived', identity: other }, ...(store === other || store === before ? [] : [{ type: 'arrived', identity: store } as const])];
-      const state = run(idle(pre), [{ type: 'own-start' }, ...arrivals, { type: 'own-end', identity: store }]);
-      expect(state.phase).toBe('idle');
-      expect(state.shown).toBe(store);
+      const state = run(idle(pre), [{ type: 'own-start' }, ...arrivals]);
+      const end = transition(state, { type: 'own-end', identity: store });
+      expect(end.state.phase).toBe('idle');
+      expect(end.state.shown).toBe(store);
+      // The other writer's rows are read, and its erase counted, exactly when the store ends at it.
+      const fired = end.effects.filter(e => e.type === 'read' || e.type === 'count-remote-change').map(e => e.type);
+      expect(fired).toEqual(store === other ? ['read', 'count-remote-change'] : []);
     });
   });
 });

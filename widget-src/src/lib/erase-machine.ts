@@ -9,12 +9,19 @@
  * yet: useErase and useRecordApply move onto it in a later PR.
  *
  * Phases:
- * - loading: the page has not shown its first read. Another writer's erase
- *   that arrives is held, and read once the page has loaded (US-34 AC4).
+ * - loading: the page has not shown its first read.
  * - idle: the page shows `shown`.
- * - erasing: this tab's erase is writing (from idle, or from loading, taking
- *   the held erase along). Another writer's erase that arrives meanwhile is
- *   kept as `overtaken`, and read at the end if the store ends there.
+ * - erasing: this tab's erase is writing (from idle, or from loading).
+ *
+ * `heard`: another writer's erase that arrived and that nothing has shown
+ * yet. Only an arrival proves another writer, so it is remembered, in every
+ * phase, until something shows it (Fable, round 3). In loading it is read
+ * once the page has loaded (US-34 AC4); in idle its arrival reads at once,
+ * and the read that shows it clears it (a read that fails leaves it heard);
+ * in erasing it waits for the end: an own-end at it shows it and reads its
+ * rows, an own-end at this tab's erase drops it, an own-failed reads it. A
+ * read never feeds `heard`: a read during this tab's erase can report this
+ * tab's own new identity (record-session.ts sets it before the flush).
  *
  * Order: by epoch only, the one order the merge keeps (merge.ts: a higher
  * eraseEpoch wins). Within an epoch the merge's choice is no order on the
@@ -32,38 +39,37 @@
  * `said` holds the erases whose refused save was said: one alert per erase.
  *
  * What the events carry (the hook's contract, PR 2b):
- * - read: the store's identity in the turn the record is shown, after the
- *   read's await, and only when it is still the identity the record was read
- *   under. A read whose identity moved during its await is stale and is not
- *   dispatched: the change that moved it brings its own read. Dispatched
- *   stale, it would move `shown` back within an epoch (the overlapping-reads
- *   test), and the store would refuse every save.
- * - own-end: the store's identity in the turn this tab's erase resolves,
- *   whoever made it. When another writer's erase was taken in during the
- *   erase's flush, it is that erase, already heard as `arrived`.
+ * - read: the store's identity taken before the read's first await, and
+ *   dispatched only when it equals the identity after its last await, in the
+ *   turn the record is shown (useRecordApply.ts:113 takes it before; the
+ *   awaits are useRecordReads.ts:46-53); else the read is dropped: the change
+ *   that moved it brings its own read. Dispatched stale, it would move
+ *   `shown` back within an epoch (the overlapping-reads test), and the store
+ *   would refuse every save.
+ * - own-end: whenever the store's identity moved during this tab's erase,
+ *   whatever result.success says, with the store's identity in the turn the
+ *   erase resolves, whoever made it. When another writer's erase was taken in
+ *   during the erase's flush, it is that erase, already heard as `arrived`.
+ * - own-failed: only when the store's identity did not move.
  * - arrived: REMOTE_CHANGED's `erase`, when it carries one.
  */
 
 /** The store's erase identity, `[eraseEpoch, erasedAt]` as one string (record-session eraseIdentityOf). */
 export type EraseIdentity = string;
 
-interface Ledger {
+export interface EraseState {
+  phase: 'loading' | 'idle' | 'erasing';
   shown: EraseIdentity;
+  heard: EraseIdentity | null;
   said: ReadonlySet<EraseIdentity>;
   counted: ReadonlySet<EraseIdentity>;
 }
 
-export type EraseState = Ledger & (
-  | { phase: 'loading'; held: EraseIdentity | null }
-  | { phase: 'idle' }
-  | { phase: 'erasing'; overtaken: EraseIdentity | null }
-);
-
 export type EraseEvent =
   | { type: 'own-start' }
-  /** This tab's erase moved the record: `identity` is the store's as it resolves. */
+  /** The store's identity moved during this tab's erase: `identity` is the store's as it resolves. */
   | { type: 'own-end'; identity: EraseIdentity }
-  /** This tab's erase was refused and moved nothing. */
+  /** The store's identity did not move during this tab's erase. */
   | { type: 'own-failed' }
   /** REMOTE_CHANGED carried another writer's erase: the identity the store adopted. */
   | { type: 'arrived'; identity: EraseIdentity }
@@ -92,7 +98,7 @@ export type EraseEffect =
 export interface Step { state: EraseState; effects: EraseEffect[] }
 
 export function initialEraseState(shown: EraseIdentity): EraseState {
-  return { phase: 'loading', held: null, shown, said: new Set(), counted: new Set() };
+  return { phase: 'loading', shown, heard: null, said: new Set(), counted: new Set() };
 }
 
 /** The identity's erase epoch; -1, the floor, when it cannot be read. */
@@ -109,21 +115,22 @@ export function epochOf(identity: EraseIdentity): number {
 const replaces = (next: EraseIdentity, prior: EraseIdentity): boolean => next !== prior && epochOf(next) >= epochOf(prior);
 /** The erase kept of two reports: the latest, unless it is at a lower epoch. */
 const keep = (prior: EraseIdentity | null, next: EraseIdentity): EraseIdentity => (prior !== null && epochOf(next) < epochOf(prior) ? prior : next);
-const idle = ({ shown, said, counted }: EraseState): EraseState => ({ phase: 'idle', shown, said, counted });
 const add = (set: ReadonlySet<EraseIdentity>, identity: EraseIdentity) => new Set([...set, identity]);
 const READ: EraseEffect = { type: 'read' };
 const COUNT: EraseEffect = { type: 'count-remote-change' };
 const SAY: EraseEffect = { type: 'say-outcome' };
 
 /** This tab's erase ends at `identity`: another writer's when it is the erase that overtook it. */
-function ownEnd(state: EraseState & { phase: 'erasing' }, identity: EraseIdentity): Step {
-  const theirs = state.overtaken === identity;
+function ownEnd(state: EraseState, identity: EraseIdentity): Step {
+  const theirs = state.heard === identity;
   const shows = replaces(identity, state.shown);
   const counts = theirs && shows && !state.counted.has(identity);
   return {
     state: {
-      ...idle(state),
+      ...state,
+      phase: 'idle',
       shown: shows ? identity : state.shown,
+      heard: null,
       // A refusal of a save asked before the erase is not news (adversary R3).
       said: add(state.said, state.shown),
       counted: counts ? add(state.counted, identity) : state.counted,
@@ -143,35 +150,34 @@ export function transition(state: EraseState, event: EraseEvent): Step {
   const same: Step = { state, effects: [] };
   switch (event.type) {
     case 'read': {
-      // A read inside this tab's erase loses to it; the erase shown, or a lower epoch, shows nothing new.
-      if (state.phase === 'erasing' || !replaces(event.identity, state.shown)) return same;
+      // A read inside this tab's erase loses to it, and leaves `heard` alone.
+      if (state.phase === 'erasing') return same;
+      // In idle the read shows the store's identity: whatever was heard is shown now.
+      const seen = state.phase === 'idle' && state.heard !== null ? { ...state, heard: null } : state;
+      // The erase shown, or a lower epoch, shows nothing new.
+      if (!replaces(event.identity, state.shown)) return seen === state ? same : { state: seen, effects: [] };
       // No erase this tab made reaches a read first: its own-end shows it.
       const counts = !state.counted.has(event.identity);
       return {
-        state: { ...state, shown: event.identity, counted: counts ? add(state.counted, event.identity) : state.counted },
+        state: { ...seen, shown: event.identity, counted: counts ? add(state.counted, event.identity) : state.counted },
         effects: [{ type: 'clear-drafts' }, { type: 'mark-store', identity: event.identity }, ...(counts ? [COUNT] : [])],
       };
     }
     case 'arrived':
-      if (state.phase === 'loading') return { state: { ...state, held: keep(state.held, event.identity) }, effects: [] };
-      if (state.phase === 'erasing') return { state: { ...state, overtaken: keep(state.overtaken, event.identity) }, effects: [] };
-      // Read even when shown: the change can carry another writer's rows. The read shows a new erase.
-      return { state, effects: [READ] };
+      // Heard until something shows it. In idle, read at once, even when shown: the change can carry another writer's rows.
+      return { state: { ...state, heard: keep(state.heard, event.identity) }, effects: state.phase === 'idle' ? [READ] : [] };
     case 'loaded':
-      // During this tab's erase the held erase rides as `overtaken`.
+      // During this tab's erase the heard erase waits for the erase's end.
       if (state.phase !== 'loading') return same;
-      return { state: idle(state), effects: state.held === null ? [] : [READ] };
-    case 'own-start': {
-      if (state.phase === 'erasing') return same;
-      const { shown, said, counted } = state;
-      return { state: { phase: 'erasing', overtaken: state.phase === 'loading' ? state.held : null, shown, said, counted }, effects: [] };
-    }
+      return { state: { ...state, phase: 'idle' }, effects: state.heard === null ? [] : [READ] };
+    case 'own-start':
+      return state.phase === 'erasing' ? same : { state: { ...state, phase: 'erasing' }, effects: [] };
     case 'own-end':
       return state.phase === 'erasing' ? ownEnd(state, event.identity) : same;
     case 'own-failed':
-      // Nothing moved: an erase that overtook it is read, and that read shows it (and counts it).
+      // Nothing moved: a heard erase is read, stays heard until that read shows it (and counts it).
       if (state.phase !== 'erasing') return same;
-      return { state: idle(state), effects: state.overtaken === null ? [SAY] : [READ, SAY] };
+      return { state: { ...state, phase: 'idle' }, effects: state.heard === null ? [SAY] : [READ, SAY] };
     case 'refused':
       // Inside this tab's erase a refusal is no news: the erase throws the change away anyway.
       if (state.phase === 'erasing' || state.said.has(event.askedUnder)) return same;
