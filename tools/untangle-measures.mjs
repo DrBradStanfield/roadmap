@@ -4,32 +4,33 @@
 // regexes, not verdicts: run it before and after an untangle and compare.
 // Usage: node tools/untangle-measures.mjs <path...> [--since 2026-10-01] [--json]
 import { execFileSync } from 'node:child_process';
-import { readFileSync, readdirSync, realpathSync, statSync } from 'node:fs';
+import { lstatSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const CAP = 500;
 const PROD_EXT = new Set(['.ts', '.tsx', '.swift', '.mjs']);
-const MODE_NAME = '\\w*(?:mode|state|phase|status|kind)';
 const LIT = `(?:'[\\w.-]+'|"[\\w.-]+"|\`[\\w.-]+\`)`;
 // Commits touching more files than this are bulk sweeps (renames, lint passes); they would pair everything.
 export const SWEEP_FILES = 40;
 
 export const LEGEND = {
   note: 'Regex counts over comment-stripped source. A trend number to compare before and after, not a verdict.',
-  refFlag: 'untyped useRef(true|false|null|undefined|), or a useRef<...> typed boolean, number or timer: a ref that may hold a mode',
-  boolState: 'useState<boolean>(...) or useState(true|false)',
+  refFlag: 'a useRef<...> whose type names boolean, number or a timer; or an untyped useRef() whose start value is true, false, null, undefined, a number or nothing (so an untyped DOM ref, useRef(null), counts too)',
+  boolState: 'useState<boolean>(...), useState(true|false) or useState(!x)',
   timers: 'setTimeout( calls; clearTimeout is their pair and not counted again',
-  modeCompare: 'a name ending in mode/state/phase/status/kind compared (== or ===) with a string literal, outside a function named *transition (dispatch there is the cure)',
-  specialCases: 'a comparison of any other name with one string literal, inside an if or before a ternary ? (typeof, .type discriminants and document.* skipped)',
-  coChange: `pairs from git log --no-merges, top 3 per file (top 10 overall for one path); skips docs/user-stories.{md,html}, docs/reference.md, scripts/file-size-baseline.json, lockfiles, extensions/*/assets, a file with its own tests, and commits over ${SWEEP_FILES} files`,
+  specialCases: "per line: each ==, ===, != or !== between a name and one string literal (either side), counted when the line has `if (` before it or a ternary `?` (not ?? or ?.) after it; skipped when the name's last part is type, kind, mode, state, phase or status (a union read, the cure), or it is typeof x or document.*",
+  coChange: `pairs from git log --no-merges, top 3 per file (top 10 overall for one path); skips docs/user-stories.{md,html}, docs/reference.md, scripts/file-size-baseline.json, lockfiles, extensions/*/assets and a file with its own tests, then commits still over ${SWEEP_FILES} files; history before a rename is not followed`,
   fanInOut: 'relative import/export-from/import() specifiers only; approximate',
 };
 
+/** One test rule for the measures and for co-change: foo.test.ts, foo.spec.tsx, __tests__/, tests/, FooTests.swift, AppTests/. */
+export function isTestFile(path) {
+  return /\.(test|spec)\.|\/__tests__\/|(^|\/)[^/]*Tests(\.swift|\/)|(^|\/)tests?\//.test(path.split(sep).join('/'));
+}
+
 export function isProductionFile(path) {
-  const p = path.split(sep).join('/');
-  if (!PROD_EXT.has(extname(p)) || p.endsWith('.d.ts')) return false;
-  return !/\.(test|spec)\.|\/__tests__\/|(^|\/)[^/]*Tests(\.swift|\/)|(^|\/)tests?\//.test(p);
+  return PROD_EXT.has(extname(path)) && !path.endsWith('.d.ts') && !isTestFile(path);
 }
 
 /** Drops block and line comments; keeps line count. Crude: a `//` inside a string after a space is cut too. */
@@ -46,53 +47,30 @@ export function size(text) {
 
 const count = (text, re) => (text.match(re) || []).length;
 
-// Every `name ==/=== 'literal'` (either order) in a stretch of text: the compared name and where it ends.
+// Every `name ==/=== 'literal'` (either order) in a line.
 const CMP = new RegExp(`([\\w.$]+)\\s*[!=]==?\\s*${LIT}|${LIT}\\s*[!=]==?\\s*([\\w.$]+)`, 'g');
-function* comparisons(text) {
-  for (const m of text.matchAll(CMP)) yield { name: m[1] ?? m[2], index: m.index, end: m.index + m[0].length };
-}
-const MODE_LIKE = new RegExp(`(^|\\.)${MODE_NAME}$`, 'i');
-// `type` is a union or event discriminant (dispatch on it is the named-state cure); `document.*` is the browser's.
-const SKIP_NAME = /(^|\.)type$|^document\.|^typeof$/;
-
-/** Blanks the body of each function named *transition, so its dispatch is not counted. The body opens at the
- * `{` ending the signature's first line that ends in `{` (so a `{ next: S }` return type on that line is skipped). */
-export function blankTransitions(text) {
-  let out = text;
-  for (const m of text.matchAll(/\b(?:function\s+\w*[tT]ransition\s*[(<]|(?:const|let)\s+\w*[tT]ransition\b[^=\n]*=)/g)) {
-    const open = /\{[ \t]*$/m.exec(text.slice(m.index));
-    if (!open) continue;
-    let i = m.index + open.index + 1;
-    const start = i;
-    for (let depth = 1; i < text.length && depth > 0; i++) depth += text[i] === '{' ? 1 : text[i] === '}' ? -1 : 0;
-    out = out.slice(0, start) + text.slice(start, i - 1).replace(/[^\n]/g, ' ') + out.slice(i - 1);
-  }
-  return out;
-}
+// A union read (`s.phase === 'idle'`) is the named-state cure, not a special case; nor is the browser's own state.
+const SKIP_NAME = /(^|\.)(type|kind|mode|state|phase|status)$|^document\.|^typeof$/i;
 
 export function modeFlags(source) {
   const text = stripComments(source);
   let refFlag = 0;
-  for (const m of text.matchAll(/useRef\s*(<[^\n]*?>)?\(\s*([^)\n]*?)\s*\)/g)) {
-    const [, generic, arg] = m;
-    const flag = generic ? /\b(boolean|number|Timeout|setTimeout|setInterval)\b/.test(generic) : /^(true|false|null|undefined|)$/.test(arg);
+  for (const [, generic, arg] of text.matchAll(/useRef\s*(<[^\n]*?>)?\(\s*([^)\n]*?)\s*\)/g)) {
+    const flag = generic ? /\b(boolean|number|Timeout|setTimeout|setInterval)\b/.test(generic) : /^(true|false|null|undefined|-?\d[\d.]*|)$/.test(arg);
     if (flag) refFlag++;
   }
-  const boolState = count(text, /useState\s*<\s*boolean\s*>\s*\(|useState\s*\(\s*(?:true|false)\s*\)/g);
+  const boolState = count(text, /useState\s*<\s*boolean\s*>\s*\(|useState\s*\(\s*(?:(?:true|false)\s*\)|!)/g);
   const timers = count(text, /\bsetTimeout\s*\(/g);
-  let modeCompare = 0;
-  for (const c of comparisons(blankTransitions(text))) if (MODE_LIKE.test(c.name) && !SKIP_NAME.test(c.name)) modeCompare++;
-  return { refFlag, boolState, timers, modeCompare, total: refFlag + boolState + timers + modeCompare };
+  return { refFlag, boolState, timers, total: refFlag + boolState + timers };
 }
 
 export function specialCases(source) {
   let n = 0;
   for (const line of stripComments(source).split('\n')) {
-    for (const c of comparisons(line)) {
-      if (MODE_LIKE.test(c.name) || SKIP_NAME.test(c.name)) continue;
-      const before = line.slice(0, c.index);
-      if (/typeof\s*\(?\s*$/.test(before)) continue;
-      if (/\bif\s*\(/.test(before) || /\?\s*[^.?]/.test(line.slice(c.end))) n++;
+    for (const m of line.matchAll(CMP)) {
+      const before = line.slice(0, m.index);
+      if (SKIP_NAME.test(m[1] ?? m[2]) || /typeof\s*\(?\s*$/.test(before)) continue;
+      if (/\bif\s*\(/.test(before) || /(^|[^?])\?(?![?.])/.test(line.slice(m.index + m[0].length))) n++;
     }
   }
   return n;
@@ -138,17 +116,16 @@ export function isExcludedFromCoChange(path) {
 }
 
 const stem = (p) => (p.endsWith('.swift') ? p.split('/').pop().replace(/\.swift$/, '') : p.replace(/\.[^./]+$/, ''));
-const isTestPath = (p) => /\.(test|spec)\.[^/]+$|Tests?\.swift$/.test(p);
 // A test's possible subjects: foo.test.ts -> foo; foo.case.test.ts -> foo.case or foo; FooTests.swift -> Foo.
 const testSubjects = (p) => {
-  if (p.endsWith('.swift')) return [stem(p).replace(/Tests?$/, '')];
+  if (p.endsWith('.swift')) return [stem(p).replace(/Tests$/, '')];
   const s = p.replace(/\.(test|spec)\.[^./]+$/, '');
   return [s, s.replace(/\.[^./]+$/, '')];
 };
 /** True when one is the other's own test (foo.ts with foo.test.tsx or foo.case.test.tsx; Foo.swift with FooTests.swift). */
 export function isTestSubjectPair(a, b) {
-  if (isTestPath(a) === isTestPath(b)) return false;
-  const [test, subject] = isTestPath(a) ? [a, b] : [b, a];
+  if (isTestFile(a) === isTestFile(b)) return false;
+  const [test, subject] = isTestFile(a) ? [a, b] : [b, a];
   return testSubjects(test).includes(stem(subject));
 }
 
@@ -188,8 +165,11 @@ export function topPerFile(pairs, files, k = 3) {
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const git = (args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
 
+// Symlinks are never followed (lstat), so a linked folder cannot pull in files from outside the repo.
 function walk(abs, out) {
-  if (statSync(abs).isDirectory()) {
+  const st = lstatSync(abs);
+  if (st.isSymbolicLink()) return;
+  if (st.isDirectory()) {
     for (const name of readdirSync(abs)) if (name !== 'node_modules' && !name.startsWith('.')) walk(join(abs, name), out);
   } else out.push(abs);
 }
@@ -208,6 +188,9 @@ export function parseArgs(argv) {
   if (opts.paths.length === 0) throw new Error('give at least one file or folder');
   return opts;
 }
+
+/** A test for "inside one of these repo-relative targets"; '' is the repo root and holds every file. */
+export const inTargets = (targets) => (f) => targets.some((t) => t === '' || f === t || f.startsWith(`${t}/`));
 
 /** Repo-relative path, or throws when the path leaves the repo. */
 export function insideRepo(root, p) {
@@ -241,7 +224,7 @@ function measure(opts) {
     const fan = f.endsWith('.swift') ? { fanIn: null, testsIn: null, fanOut: null } : fanInOut(f, importMap);
     return { path: f, ...size(text), modeFlags: modeFlags(text), specialCases: specialCases(text), ...fan };
   });
-  const inTarget = (f) => targets.some((t) => f === t || f.startsWith(`${t}/`));
+  const inTarget = inTargets(targets);
   const log = git(['log', `--since=${opts.since}`, '--name-only', '--no-merges', '--format=%x00%H']);
   const commits = parseGitLog(log);
   const sum = (k) => rows.reduce((n, r) => n + (k(r) ?? 0), 0);
@@ -260,11 +243,11 @@ function measure(opts) {
 const pct = (x) => `${Math.round(x * 100)}%`;
 export function formatText(r) {
   const out = [`Untangle measures (since ${r.since}, ${r.commits} commits). ${LEGEND.note}`, ''];
-  out.push('lines  over  ref bool timer modeCmp | special | fanIn tests fanOut  file');
+  out.push('lines  over  ref bool timer | special | fanIn tests fanOut  file');
   for (const f of r.files) {
     const m = f.modeFlags;
     const fan = f.fanIn === null ? '    -     -      -' : `${String(f.fanIn).padStart(5)} ${String(f.testsIn).padStart(5)} ${String(f.fanOut).padStart(6)}`;
-    out.push(`${String(f.lines).padStart(5)}  ${f.overCap ? ' yes' : '    '}  ${String(m.refFlag).padStart(3)} ${String(m.boolState).padStart(4)} ${String(m.timers).padStart(5)} ${String(m.modeCompare).padStart(7)} | ${String(f.specialCases).padStart(7)} | ${fan}  ${f.path}`);
+    out.push(`${String(f.lines).padStart(5)}  ${f.overCap ? ' yes' : '    '}  ${String(m.refFlag).padStart(3)} ${String(m.boolState).padStart(4)} ${String(m.timers).padStart(5)} | ${String(f.specialCases).padStart(7)} | ${fan}  ${f.path}`);
   }
   const t = r.totals;
   out.push('', `Totals: ${t.files} files, ${t.lines} lines, mode flags ${t.modeFlags}, special cases ${t.specialCases}, over ${CAP}: ${t.overCap.join(', ') || 'none'}`);

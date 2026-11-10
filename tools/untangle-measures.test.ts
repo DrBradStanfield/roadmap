@@ -4,6 +4,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { spawnSync } from 'node:child_process';
+import { realpathSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -18,9 +19,13 @@ import {
   topPerFile,
   isProductionFile,
   parseArgs,
+  insideRepo,
+  inTargets,
+  isTestFile,
 } from './untangle-measures.mjs';
 
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), 'untangle-measures.mjs');
+const ROOT = realpathSync(join(dirname(SCRIPT), '..'));
 
 describe('size (US-64 AC29)', () => {
   it('counts lines and flags a file over the 500-line cap', () => {
@@ -31,51 +36,42 @@ describe('size (US-64 AC29)', () => {
 });
 
 describe('modeFlags (US-64 AC29)', () => {
-  it('counts flag refs, boolean state, timers and mode-name comparisons, and skips the rest', () => {
+  it('counts flag refs, boolean state and timers, and skips the rest', () => {
     const src = [
       'const busy = useRef(false);',
+      'const count = useRef(0);',
+      'const held = useRef(null);', // untyped null: counted, as the legend says
       'const t = useRef<ReturnType<typeof setTimeout> | null>(null);',
-      'const el = useRef<HTMLDivElement>(null);', // a DOM ref: not a mode
+      'const el = useRef<HTMLDivElement>(null);', // a typed DOM ref: not a mode
       'const cb = useRef<(() => void) | null>(null);', // a callback ref: not a mode
+      'const list = useRef([]);', // not a flag
       'const [open, setOpen] = useState(false);',
       'const [on, setOn] = useState<boolean>(initial);',
+      'const [shown, setShown] = useState(!saved);',
       'const [n, setN] = useState(0);', // not boolean
       'const id = setTimeout(() => setOpen(false), 200);',
       'clearTimeout(id);',
-      "if (uploadState === 'reviewing') go();",
-      "if ('idle' !== s.phase) go();",
-      "if (e.type === 'saved') go();", // a discriminant: the cure, not a flag
-      "if (document.visibilityState === 'hidden') go();",
-      "// if (mode === 'commented') go();",
+      "if (s.phase === 'idle') go();", // a union read: never a flag
+      '// const x = useRef(false);',
     ].join('\n');
-    expect(modeFlags(src)).toEqual({ refFlag: 2, boolState: 2, timers: 1, modeCompare: 2, total: 7 });
-  });
-
-  it("scores a union's transition 0 and the same comparisons in a component above 0", () => {
-    const checks = ["  if (s.kind === 'open') return { kind: 'awaiting' };", "  if (s.phase !== 'idle') return s;", '  return s;'];
-    const asFunction = ['function transition(s: S, e: E): S {', ...checks, '}'].join('\n');
-    const asArrow = ['const uploadTransition = (s: S, e: E): S => {', ...checks, '};'].join('\n');
-    const inComponent = ['function Panel({ s }: { s: S }) {', ...checks, '}'].join('\n');
-    expect(modeFlags(asFunction).modeCompare).toBe(0);
-    expect(modeFlags(asArrow).modeCompare).toBe(0);
-    const asTyped = ['export function transition(s: S, e: E): { next: S; land: boolean } {', ...checks, '}'].join('\n');
-    expect(modeFlags(asTyped).modeCompare).toBe(0);
-    expect(modeFlags(inComponent).modeCompare).toBe(2);
-    // Code after the transition still counts.
-    expect(modeFlags(`${asFunction}\nif (mode === 'edit') go();`).modeCompare).toBe(1);
+    expect(modeFlags(src)).toEqual({ refFlag: 4, boolState: 3, timers: 1, total: 8 });
   });
 });
 
 describe('specialCases (US-64 AC29)', () => {
-  it('counts an if or ternary testing one literal id, not typeof, discriminants or plain assignments', () => {
+  it('counts an if or ternary testing one literal id, not typeof, union reads, ?? or plain assignments', () => {
     const src = [
       "if (metric === 'lpa') convert();",
       "const label = provider === 'drive' ? 'Google Drive' : 'Dropbox';",
       "if (field === 'sex' || field === 'heightCm') drop();", // two literals: two cases
       "if (typeof v === 'string') parse();",
       "if (e.type === 'answered') next();",
-      "if (status === 'ok') reload();", // mode-like name: counted under modeFlags instead
+      "if (s.phase !== 'idle') return s;", // a union read: the cure
+      "const files = state.phase === 'reading' ? state.files : [];",
+      "if (document.visibilityState === 'hidden') stage();",
       "const isLpa = metric === 'lpa';", // no branch on this line
+      "const lpa = key === 'lpa' ?? fallback;", // ?? is not a ternary
+      "const u = id === 'ldl' && row?.unit;", // ?. is not a ternary
       "/* if (x === 'y') z(); */",
     ].join('\n');
     expect(specialCases(src)).toBe(4);
@@ -118,6 +114,10 @@ describe('fan-in and fan-out (US-64 AC29)', () => {
     expect(isProductionFile('ios/AppTests/StoreTests.swift')).toBe(false);
     expect(isProductionFile('types/global.d.ts')).toBe(false);
     expect(isProductionFile('docs/x.md')).toBe(false);
+    // One rule: every test file the measures skip is a test for co-change too.
+    for (const t of ['a/b.test.ts', 'a/b.spec.tsx', 'a/__tests__/b.ts', 'tests/b.ts', 'ios/AppTests/StoreTests.swift']) {
+      expect([t, isTestFile(t), isProductionFile(t)]).toEqual([t, true, false]);
+    }
   });
 });
 
@@ -184,5 +184,25 @@ describe('CLI (US-64 AC29)', () => {
     expect(() => parseArgs(['tools', '--since', 'HEAD~3'])).toThrow('YYYY-MM-DD');
     expect(() => parseArgs(['tools', '--format=x'])).toThrow('unknown option');
     expect(parseArgs(['tools', '--json', '--since=2026-11-01'])).toEqual({ paths: ['tools'], since: '2026-11-01', json: true });
+  });
+
+  it('treats the repo root as holding every file, and a folder as holding only its own', () => {
+    expect(insideRepo(ROOT, ROOT)).toBe('');
+    expect(inTargets([''])('widget-src/src/a.ts')).toBe(true);
+    expect(inTargets(['tools'])('tools/a.mjs')).toBe(true);
+    expect(inTargets(['tools'])('toolsmith/a.mjs')).toBe(false);
+  });
+
+  it('measures a real file in this repo as one JSON object', () => {
+    const out = spawnSync(process.execPath, [SCRIPT, 'tools/agent-channel.mjs', '--json', '--since', '2026-09-01'], { cwd: ROOT, encoding: 'utf8' });
+    expect(out.status).toBe(0);
+    const r = JSON.parse(out.stdout);
+    expect(r.files.map((f: { path: string }) => f.path)).toEqual(['tools/agent-channel.mjs']);
+    expect(r.files[0]).toMatchObject({ overCap: false, modeFlags: { total: expect.any(Number) }, specialCases: expect.any(Number) });
+    expect(r.files[0].lines).toBeGreaterThan(0);
+    expect(r.totals.files).toBe(1);
+    expect(r.coChange.perFile['tools/agent-channel.mjs'].length).toBeGreaterThan(0);
+    expect(r.coChange.overall.length).toBeGreaterThan(0);
+    expect(Object.keys(r.legend)).toEqual(expect.arrayContaining(['refFlag', 'boolState', 'timers', 'specialCases', 'coChange', 'fanInOut']));
   });
 });
