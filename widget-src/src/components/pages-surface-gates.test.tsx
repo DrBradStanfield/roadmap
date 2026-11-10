@@ -17,7 +17,7 @@ vi.mock('../lib/roadmap-data', () => ({
   getReportHtml: vi.fn(),
   sendGuestReport: vi.fn(),
   getReportEmailCaptured: () => false,
-  markReportEmailCaptured: vi.fn(),
+  markReportEmailCaptured: vi.fn(), getShownErase: () => 'erase-1',
 }));
 vi.mock('../lib/server-api', () => ({
   trackABConversion: vi.fn(),
