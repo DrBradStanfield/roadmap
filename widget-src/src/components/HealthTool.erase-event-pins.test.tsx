@@ -15,8 +15,10 @@
  *   HealthTool.chat-profile.test.tsx "clears the proposal and Undo for
  *   another device's erase" (US-16 AC2a), by refreshFromRemote, not the
  *   storage event.
- * - the guarantee (adopt moves the identity and REMOTE_CHANGED fires in the
- *   same task): roadmap-store-erase-signal.test.ts.
+ * - the guarantee (adopt moves the identity and REMOTE_CHANGED is heard
+ *   exactly once, in the same task but on the two-pass save-loop fold, which
+ *   hears it one pass late by design, state-leads H25):
+ *   roadmap-store-erase-signal.test.ts.
  *
  * The whole widget over a REAL RoadmapStore: jsdom's localStorage for another
  * tab's erase (its real storage event and live refresh), a MemoryCloud for
@@ -38,7 +40,7 @@ import {
 import { BT_TIMELINE_DRAFT_KEY, DRAFTS_CLEARED_EVENT } from '../lib/storage';
 import { trackProductEvent } from '../lib/server-api';
 import { ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
-import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
+import { openAboutYou, seedGuest, showTables, useHealthToolLifecycle } from '../testing/health-tool-harness';
 import { deleteButton } from '../testing/settings';
 
 const chat = vi.hoisted(() => ({
@@ -49,6 +51,8 @@ const chat = vi.hoisted(() => ({
 const first = vi.hoisted(() => ({ gate: null as null | Promise<void> }));
 /** Every erase the page marked as shown (useErase's layout effect), in order. */
 const marks = vi.hoisted(() => ({ shown: [] as string[] }));
+/** How many times the page read the values (useRecordReads reloadValues: an own-save's read), and each correction's answer. */
+const reads = vi.hoisted(() => ({ values: 0, corrections: [] as unknown[] }));
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn(), captureMessage: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -75,7 +79,12 @@ vi.mock('../hooks/useRecordReads', async (importOriginal) => {
 });
 vi.mock('../lib/roadmap-data', async (importOriginal) => {
   const real = await importOriginal<typeof import('../lib/roadmap-data')>();
-  return { ...real, markEraseShown: (identity: string) => { marks.shown.push(identity); real.markEraseShown(identity); } };
+  return {
+    ...real,
+    markEraseShown: (identity: string) => { marks.shown.push(identity); real.markEraseShown(identity); },
+    loadLatestMeasurements: () => { reads.values += 1; return real.loadLatestMeasurements(); },
+    correctValue: async (...args: Parameters<typeof real.correctValue>) => { const status = await real.correctValue(...args); reads.corrections.push(status); return status; },
+  };
 });
 
 import { HealthTool } from './HealthTool';
@@ -359,5 +368,100 @@ describe('US-16 AC2a, US-11 AC6: this tab\'s erase whose write fails (HealthTool
     expect(cleared).toHaveBeenCalledTimes(2);
     expect(getShownErase()).toBe(getEraseIdentity());
     draftGone(view);
+  });
+});
+
+/** A cloud that sends this tab's save round twice: `during` runs as the first record write goes out (an edit
+ *  there makes the second pass), and the second write waits at a gate. */
+class TwoPassCloud extends MemoryAdapter {
+  private script: null | { n: number; during: () => void; entered: () => void; gate: Promise<void> } = null;
+  arm(during: () => void) {
+    let release!: () => void;
+    let entered!: () => void;
+    const reached = new Promise<void>(r => { entered = r; });
+    this.script = { n: 0, during, entered, gate: new Promise<void>(r => { release = r; }) };
+    return { reached, release };
+  }
+  override async write(name: string, body: object, version: string | null, signal?: AbortSignal) {
+    const s = this.script;
+    if (s && name === ROADMAP_FILE_NAME) {
+      s.n += 1;
+      if (s.n === 1) s.during();
+      if (s.n === 2) { s.entered(); await s.gate; }
+    }
+    return super.write(name, body, version, signal);
+  }
+}
+
+const ldlRow = (view: RenderResult) => [...view.container.querySelectorAll<HTMLElement>('.bt-timeline .bt-row')]
+  .find(r => r.querySelector('.bt-name-label')?.textContent === 'LDL Cholesterol');
+const heightShown = (view: RenderResult) => view.container.querySelector<HTMLInputElement>('#heightCm')?.value ?? null;
+
+describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between the erase\'s move and its late REMOTE_CHANGED', () => {
+  // By design (state-leads H25): the fold hears the erase one pass late (roadmap-store-erase-signal.test.ts).
+  // This pins what the page does in that pass: stale but consistent, and nothing written into the erased record.
+  it('the screen keeps the old record whole; a correction asked there is refused and reads nothing; then the erase shows once', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new TwoPassCloud(cloud);
+    await initRoadmapStore(adapter);
+    await saveChangedMeasurements(PROFILE, {});
+    await addMeasurement('weight', 82, '2026-09-01');
+    await addMeasurement('ldl', 2.1, '2026-08-15');
+    await flushRoadmapStore();
+    const view = await openPage();
+    showTables(view.container);
+    const cells = await waitFor(() => { const c = ldlRow(view)!.querySelectorAll('.bt-cell-clickable'); expect(c.length).toBeGreaterThan(0); return c; });
+    fireEvent.click(cells[cells.length - 1]);
+    fireEvent.change(ldlRow(view)!.querySelector('.bt-cell-correcting input')!, { target: { value: '1.9' } });
+    openAboutYou(view.container); // the form's height field shows
+    const height = heightShown(view);
+    expect(height).not.toBeNull();
+    expect(height).not.toBe('');
+    const before = getEraseIdentity();
+    const heard: string[] = [];
+    const onRemote = () => { heard.push(getEraseIdentity()); };
+    window.addEventListener(REMOTE_CHANGED_EVENT, onRemote);
+    try {
+      // Another device erases; this tab's next save folds it in, and an edit made while its first write is out
+      // sends it round again. The second write waits: the window.
+      await anotherWriterErases(new MemoryAdapter(cloud));
+      const loop = adapter.arm(() => { void addMeasurement('waist', 90, '2026-09-02'); });
+      await addMeasurement('weight', 81, '2026-09-05');
+      let flushed: Promise<void> = Promise.resolve();
+      await act(async () => { flushed = flushRoadmapStore().catch(() => {}); await loop.reached; await drain(); });
+
+      // In the window: the store is at the new erase, the page still at the old, and has heard nothing.
+      expect(getEraseIdentity()).not.toBe(before);
+      expect(getShownErase()).toBe(before);
+      expect(heard).toEqual([]);
+      // The old record whole: its saved LDL, its form, and the correction editor still open on it.
+      expect(ldlRow(view)).toBeTruthy();
+      expect(heightShown(view)).toBe(height);
+      expect(ldlRow(view)!.querySelector('.bt-cell-correcting input')).not.toBeNull();
+
+      // A correction asked in the window carries the old erase: refused, and no own-save read follows.
+      const valueReads = reads.values;
+      reads.corrections.length = 0;
+      await act(async () => { fireEvent.keyDown(ldlRow(view)!.querySelector('.bt-cell-correcting input')!, { key: 'Enter' }); await drain(); });
+      expect(reads.corrections).toEqual(['error']); // asked, and refused by the store
+      expect(reads.values).toBe(valueReads);
+      expect(getShownErase()).toBe(before);
+      expect(heard).toEqual([]);
+      expect(ldlRow(view)).toBeTruthy();
+      expect(heightShown(view)).toBe(height);
+
+      await act(async () => { loop.release(); await flushed; await drain(); });
+    } finally {
+      window.removeEventListener(REMOTE_CHANGED_EVENT, onRemote);
+    }
+    await settle(50);
+    // Late, never missed: heard once, at the new erase, and the page shows it whole.
+    expect(heard).toEqual([getEraseIdentity()]);
+    expect(getShownErase()).toBe(getEraseIdentity());
+    expect(ldlRow(view)?.querySelectorAll('.bt-cell-clickable').length ?? 0).toBe(0); // no saved LDL shows
+    expect(heightShown(view) ?? '').not.toBe(height); // nor the old record's form
+    const file = (await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile;
+    expect(JSON.stringify([...file.measurements, ...file.labValues])).not.toContain('1.9'); // the correction never landed
+    expect(alerts).not.toContain(ERASE_FAILED);
   });
 });
