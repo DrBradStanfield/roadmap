@@ -183,7 +183,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       const { erase, result } = first ?? { erase: getEraseIdentity(), result: await loadLatestMeasurements() };
       showErase(erase);
       if (hasSavedRecord(result)) {
-        showRecord(result);
+        showRecord(result, undefined, offerUnits); // a draft kept from an earlier visit holds the units it was typed in (US-34 AC7)
         setPreviousMeasurements(result.previousMeasurements);
         if (result.previousMeasurements.length > 0) isFirstSaveRef.current = false;
         // Every measurement, for both matrices (fire-and-forget, so it

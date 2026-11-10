@@ -22,7 +22,7 @@ import { formatDisplayValue, toCanonicalValue } from '@roadmap/health-core/units
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
-import { BT_TIMELINE_DRAFT_KEY, loadFromLocalStorage } from '../lib/storage';
+import { BT_TIMELINE_DRAFT_KEY, loadFromLocalStorage, saveUnitPreference } from '../lib/storage';
 import { trackABConversion } from '../lib/server-api';
 import { openAboutYou } from '../testing/health-tool-harness';
 import { WRITE_REFUSED } from '../lib/erase-copy';
@@ -325,6 +325,26 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
     expect((await ldlRow(view)).textContent).toContain('mmol/L'); // held
     typeInto(await ldlDraft(view), '3.5');
     press(q(view, '.alr-add-btn') as HTMLElement);
+    await waitFor(async () => expect(await activeLdl()).toEqual([3.5]), { timeout: 3000 });
+    await waitFor(async () => expect((await ldlRow(view)).textContent).toContain('mg/dL'), { timeout: 3000 });
+  });
+
+  it('US-04 AC1, US-34 AC7: an LDL draft kept from an earlier visit in mmol/L, the record since switched to US units, saves as mmol/L at load', async () => {
+    // The record says US units; this device last showed SI, and kept an LDL
+    // draft typed then. The load must not read "3.5" as mg/dL (survey R1's
+    // restored-draft gap, on main before this fix).
+    await completeRecord();
+    await saveChangedMeasurements({ unitSystem: 'conventional' }, {});
+    await flushRoadmapStore();
+    saveUnitPreference('si');
+    localStorage.setItem(BT_TIMELINE_DRAFT_KEY, JSON.stringify({ draft: { values: { ldl: '3.5' } }, backfills: {}, meta: {} }));
+    const view = render(<HealthTool />); // in US units the height shows as feet and inches, so open()'s wait does not fit
+    await settle(50);
+    expect((await ldlDraft(view)).value).toBe('3.5');
+    expect((await ldlRow(view)).textContent).toContain('mmol/L'); // held while the kept draft waits
+    const draft = await ldlDraft(view);
+    act(() => { draft.focus(); });
+    press(q(view, '.alr-add-btn') as HTMLElement); // out of the matrix: the draft commits
     await waitFor(async () => expect(await activeLdl()).toEqual([3.5]), { timeout: 3000 });
     await waitFor(async () => expect((await ldlRow(view)).textContent).toContain('mg/dL'), { timeout: 3000 });
   });
