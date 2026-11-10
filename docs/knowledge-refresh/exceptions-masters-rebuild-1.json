@@ -936,7 +936,7 @@
   "date": "2026-11-10"
  },
  {
-  "check": "AC4",
+  "check": "AC7",
   "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
   "match": "product section changed: ### Creatine in MicroVitamin+ Powder",
   "reason": "Product section: em dash replaced per review (ruling R7); ingredient count updated to products.md v9 (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
@@ -1352,7 +1352,7 @@
   "date": "2026-11-10"
  },
  {
-  "check": "AC4",
+  "check": "AC7",
   "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
   "match": "product section changed: ### Product Mention — MicroVitamin",
   "reason": "Product block edited per review rulings R1, R2, R4 using products.md wording (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
