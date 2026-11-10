@@ -372,7 +372,7 @@ jobs:
     # Room for a crawling apt mirror: a healthy run takes about a minute. This
     # limit, not the install loop, is what covers a crawl. The job holds the
     # deploy queue while it runs, so the limit stays finite.
-    timeout-minutes: 30
+    timeout-minutes: 40
     permissions:
       contents: read
       issues: write
