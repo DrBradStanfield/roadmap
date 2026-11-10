@@ -16,9 +16,11 @@ const store = vi.hoisted(() => ({
   erase: 'e1',
   /** Holds the write on its way until the test opens it. */
   gate: null as null | Promise<void>,
+  /** A local backend whose health writes stopped (lib/storage). */
+  stopped: false,
 }));
 vi.mock('../lib/roadmap-data', () => ({
-  getBackendKind: () => 'cloud',
+  getBackendKind: () => (store.stopped ? 'local' : 'cloud'),
   getShownErase: () => store.erase,
   saveChangedMeasurements: async (current: unknown, previous: unknown, erase?: string) => {
     store.saves.push({ current, previous, erase });
@@ -27,21 +29,21 @@ vi.mock('../lib/roadmap-data', () => ({
   },
 }));
 const mirror = vi.hoisted(() => ({ patches: [] as unknown[] }));
-vi.mock('../lib/storage', () => ({ localHealthWritesStopped: () => false, patchMirror: (p: unknown) => { mirror.patches.push(p); } }));
+vi.mock('../lib/storage', () => ({ localHealthWritesStopped: () => store.stopped, patchMirror: (p: unknown) => { mirror.patches.push(p); } }));
 
 import { useProfileSave } from './useProfileSave';
 
-function setup(start: Partial<HealthInputs> = {}) {
+function setup(start: Partial<HealthInputs> = {}, units = { pending: (): 'si' | 'conventional' | undefined => undefined, saved: vi.fn() }) {
   const relay = { saved: vi.fn() };
   const writeRefused = vi.fn();
   const view = renderHook(() => {
     const [inputs, setInputs] = useState<Partial<HealthInputs>>(start);
     const inputsRef = useRef(inputs);
     inputsRef.current = inputs;
-    const save = useProfileSave({ inputs, inputsRef, setInputs, loaded: true, onClean: relay.saved, writeRefused, units: { pending: () => undefined, saved: () => {} } });
+    const save = useProfileSave({ inputs, inputsRef, setInputs, loaded: true, onClean: relay.saved, writeRefused, units });
     return { save, inputs, setInputs };
   });
-  return { view, relay, writeRefused };
+  return { view, relay, writeRefused, units };
 }
 
 beforeEach(() => {
@@ -49,6 +51,7 @@ beforeEach(() => {
   store.next = { ok: true };
   store.erase = 'e1';
   store.gate = null;
+  store.stopped = false;
   mirror.patches = [];
   vi.useRealTimers();
 });
@@ -71,6 +74,18 @@ describe('US-34 AC4: clean releases a held remote change', () => {
     await act(async () => { await view.result.current.save.flushProfile('e1'); });
     expect(store.saves).toEqual([{ current: { heightCm: 172 }, previous: { heightCm: 170 }, erase: 'e1' }]);
     expect(view.result.current.save.profileDirty()).toBe(false);
+    expect(relay.saved).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('US-34 AC7a: local writes stopped end this tab\'s unit switch', () => {
+  // PR 1204 review R2: nothing can be saved, so the switch is over and a change the relay held during it applies.
+  it('a switch to US units pending: the flush writes nothing, ends the switch and releases the relay', async () => {
+    store.stopped = true;
+    const { view, relay, units } = setup({ unitSystem: 'conventional' }, { pending: () => 'conventional', saved: vi.fn() });
+    await act(async () => { expect(await view.result.current.save.flushProfile()).toBe(true); });
+    expect(store.saves).toEqual([]);
+    expect(units.saved).toHaveBeenCalledWith('conventional');
     expect(relay.saved).toHaveBeenCalledTimes(1);
   });
 });

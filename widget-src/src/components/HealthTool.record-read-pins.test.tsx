@@ -911,5 +911,21 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
       await anotherWriter(() => saveChangedMeasurements({ birthYear: 1975 }, { birthYear: 1980 }));
       await waitFor(() => expect((q(view, '#birthYear') as HTMLInputElement).value).toBe('1975'), { timeout: 3000 });
     });
+
+    // PR 1204 review R3: a page that cannot save never stays switching, which would drop
+    // every later offer and force its own units into each re-read.
+    it('US-34 AC7a: the first read fails part-way, the pill to US units, then another device writes SI: the page shows SI', async () => {
+      await siRecord();
+      failMirror.next = true;
+      const view = await open();
+      await waitFor(() => expect(failMirror.threw).toBe(true));
+      await settle(50);
+      const pill = await unitPill(view);
+      pressMouse(pill); releaseMouse(pill);
+      expect(await pillSays(view)).toBe(US);
+      await anotherWriter(() => saveChangedMeasurements({ unitSystem: 'si', birthYear: 1975 }, { unitSystem: 'conventional', birthYear: 1980 }));
+      await waitFor(() => expect((q(view, '#birthYear') as HTMLInputElement).value).toBe('1975'), { timeout: 3000 });
+      expect(await pillSays(view)).toBe(METRIC);
+    });
   });
 });
