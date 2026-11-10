@@ -13,7 +13,7 @@ import type { useUnits } from './useUnits';
 import type { useErase } from './useErase';
 
 /** Why the page re-reads the record: its own upload, another writer's change (US-34), or a save the store refused. */
-export type ReadReason = 'upload' | 'remote' | 'refused';
+export type ReadReason = 'upload' | 'remote' | 'refused' | 'left'; // left: a refused save of a record no longer shown
 
 /** Hooks the page builds after this one. The cycle is real (a refused save
  *  re-reads; the re-read starts the waiting save; that save can be refused),

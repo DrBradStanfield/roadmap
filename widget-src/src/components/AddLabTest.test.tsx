@@ -21,6 +21,7 @@ const trackProductEvent = vi.fn();
 vi.mock('../lib/roadmap-data', () => ({
   addLabValue: (...args: unknown[]) => addLabValue(...args),
   getShownErase: () => 'erase-1',
+  getEraseIdentity: () => 'erase-1',
 }));
 const realAdd = (input: Parameters<typeof addRecordLabValue>[1]) =>
   addRecordLabValue({ ...createEmptyFile({ deviceId: 'test', now: new Date().toISOString() }), labValues: held }, input, new Date().toISOString());

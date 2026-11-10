@@ -13,7 +13,9 @@
  * (showErase included), and a writer on the old tree fires; React commits
  * only as the act exits. Each row checks the old tree was still on screen.
  *
- * Every writer that takes the shown erase has a row. A new writer needs one.
+ * Each writer the page reaches from a form control has a row; a new one needs
+ * one. Not rowed: the value page, which freezes its erase as it opens (AC2a),
+ * and the chat's edits, which an unshown erase drops (AC2a).
  * Whole widget over a REAL RoadmapStore on jsdom's localStorage. Synthetic data only.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -25,10 +27,11 @@ import { migrateFile } from '@roadmap/health-core/migrate';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { flushRoadmapStore, getEraseIdentity, getShownErase, sendGuestReport } from '../lib/roadmap-data';
+import { flushRoadmapStore, getEraseIdentity, getShownErase, saveSupplement, sendGuestReport } from '../lib/roadmap-data';
+import { RECORD_CHANGED } from './AddLabTest';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { WRITE_REFUSED } from '../lib/erase-copy';
-import { openAboutYou, seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
+import { openAboutYou, seedGuest, showTables, useHealthToolLifecycle } from '../testing/health-tool-harness';
 import { deleteButton } from '../testing/settings';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
@@ -60,8 +63,8 @@ async function onDisk(): Promise<RoadmapFile> {
 }
 
 /** Another device erases the record, as its deleteUserData writes it, and this page's storage is told.
- *  `restart`: it then answers the four questions and a weight again there, so the whole form still shows here. */
-async function anotherDeviceErases(restart = false) {
+ *  `restart`: it then answers the four questions there ('answers'), and a weight too ('weight'), so the whole form still shows here. */
+async function anotherDeviceErases(restart: false | 'answers' | 'weight' = false) {
   const adapter = new LocalStorageAdapter();
   const { body, version } = await adapter.read(ROADMAP_FILE_NAME);
   const now = new Date(Date.now() + 1000).toISOString();
@@ -72,8 +75,8 @@ async function anotherDeviceErases(restart = false) {
   erased.erasedRows = { fromEpoch: epoch, ids: [...new Set(rowRootIds(prior))].sort() };
   erased.meta.eraseEpoch = epoch;
   erased.meta.erasedAt = now;
-  if (restart) {
-    erased.profile = { ...erased.profile, ...PROFILE, updatedAt: now };
+  if (restart) erased.profile = { ...erased.profile, ...PROFILE, updatedAt: now };
+  if (restart === 'weight') {
     const weight = prior.measurements.find(m => m.metricType === 'weight')!;
     erased.measurements = [{ ...weight, id: 'other-device-weight', value: 60, createdAt: now }];
   }
@@ -147,6 +150,7 @@ interface Writer {
 }
 
 const seedProfile = () => seedGuest(PROFILE, [['weight', 101.4]], [['glp1', 'semaglutide_injection', 1]]);
+const lpaUnits = (view: RenderResult) => view.container.querySelector('[role=radiogroup][aria-label="Lp(a) unit"]');
 const heightField = (view: RenderResult) => view.container.querySelector<HTMLInputElement>('#heightCm');
 
 /** "+ Add a blood test", open with a ferritin typed, ready to save. */
@@ -202,7 +206,29 @@ const writers: Record<string, Writer> = {
     open: async view => { await waitFor(() => expect(view.container.querySelector('#glp1-dose')).not.toBeNull()); },
     onOld: view => view.container.querySelector('#glp1-dose') !== null,
     fire: view => { fireEvent.change(view.container.querySelector('#glp1-dose')!, { target: { value: '1.7' } }); leave(); },
-    written: file => file.medications,
+    written: file => file.medications.filter(m => m.doseValue === 1.7),
+  },
+  'a supplement dose, flushed as the page hides': {
+    seed: async () => { await seedProfile(); await saveSupplement('custom_test_supplement', 'Test supplement', 25, 'mg'); await flushRoadmapStore(); },
+    open: async view => { await waitFor(() => expect(view.container.querySelector('.supplement-dose')).not.toBeNull()); },
+    onOld: view => view.container.querySelector('.supplement-dose') !== null,
+    fire: view => { fireEvent.change(view.container.querySelector('.supplement-dose')!, { target: { value: '50' } }); leave(); },
+    written: file => file.supplements.filter(x => x.doseValue === 50),
+  },
+  'a screening answer, flushed as the page hides': {
+    // 178 cm, 101.4 kg, born 1960: the DEXA question shows.
+    seed: seedProfile,
+    open: async view => { await waitFor(() => expect(view.container.querySelector('#dexa-screening')).not.toBeNull()); },
+    onOld: view => view.container.querySelector('#dexa-screening') !== null,
+    fire: view => { fireEvent.change(view.container.querySelector('#dexa-screening')!, { target: { value: 'dexa_scan' } }); leave(); },
+    written: file => (JSON.stringify(file.screenings ?? {}).includes('dexa_scan') ? [file.screenings] : []),
+  },
+  'the Lp(a) unit': {
+    seed: seedProfile,
+    open: async view => { showTables(view.container); await waitFor(() => expect(lpaUnits(view)).not.toBeNull()); },
+    onOld: view => lpaUnits(view) !== null,
+    fire: view => { fireEvent.click([...lpaUnits(view)!.querySelectorAll<HTMLElement>('[role=radio]')].find(b => b.getAttribute('aria-checked') === 'false')!); },
+    written: file => (file.profile.lpaUnit ? [file.profile.lpaUnit] : []),
   },
   'the email capture\'s captured flag': {
     seed: seedProfile,
@@ -251,7 +277,7 @@ describe('US-16 AC2d: a save asked from the old tree, after the erase is read bu
 });
 
 /** Another device's erase, read and shown, the new tree committed. */
-async function anotherDeviceErasesAndPageShowsIt(restart = false) {
+async function anotherDeviceErasesAndPageShowsIt(restart: false | 'answers' | 'weight' = false) {
   const before = getEraseIdentity();
   await act(async () => { await anotherDeviceErases(restart); await drain(); });
   await act(async () => { await drain(); });
@@ -279,12 +305,38 @@ describe('US-16 AC2d: a write asked before an erase is shown does not land in th
     const view = render(<HealthTool />);
     await act(async () => { await drain(); });
     await typeFerritin(view);
-    await anotherDeviceErasesAndPageShowsIt(true);
+    await anotherDeviceErasesAndPageShowsIt('weight');
     // The form survives the erase: the new record has the four answers, so the whole form still shows.
     const save = view.container.querySelector<HTMLButtonElement>('.alr-add-save');
     expect(save).not.toBeNull();
     await act(async () => { fireEvent.click(save!); await drain(); });
     expect(rowsNaming('ferritin')(await onDisk())).toEqual([]);
+    // The form closes, its old value gone, and says why; it does not ask for a retry that cannot succeed.
+    expect(view.container.querySelector('.alr-add-save')).toBeNull();
+    expect(view.queryByText('Could not save — please try again.')).toBeNull();
+    expect(view.getByText(RECORD_CHANGED)).toBeTruthy();
+    // Opened again, it saves into the record now shown.
+    await typeFerritin(view);
+    await act(async () => { fireEvent.click(view.container.querySelector('.alr-add-save')!); await drain(); });
+    expect(rowsNaming('ferritin')(await onDisk())).toHaveLength(1);
+    expect(view.queryByText(RECORD_CHANGED)).toBeNull();
+  });
+
+  // US-62 AC25b: a refused save re-reads and spends a waiting landing. One armed on the old
+  // screen spends nothing of the new record's: it is still said, once (AC2a).
+  it('a list save armed on the old screen and refused after the new record shows leaves the new record\'s landing', async () => {
+    await seedProfile();
+    const view = render(<HealthTool />);
+    await act(async () => { await drain(); });
+    await waitFor(() => expect(view.container.querySelector('#glp1-dose')).not.toBeNull());
+    fireEvent.change(view.container.querySelector('#glp1-dose')!, { target: { value: '1.7' } }); // saves in 300 ms, under the old erase
+    await anotherDeviceErasesAndPageShowsIt('answers'); // the new record lacks only the weight
+    const weight = await waitFor(() => view.container.querySelector<HTMLInputElement>('#weightKg')!);
+    act(() => { weight.focus(); });
+    fireEvent.change(weight, { target: { value: '25' } }); // the last answer; may become 250: an 800 ms wait
+    await act(async () => { await new Promise(r => setTimeout(r, 1200)); });
+    expect(alerts.filter(a => a === WRITE_REFUSED)).toHaveLength(1);
+    expect(document.activeElement?.matches('.mh-ready-title, .mh-title')).toBe(true); // landed
   });
 });
 

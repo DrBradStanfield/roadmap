@@ -20,7 +20,7 @@ import type { Comparator } from '@roadmap/health-core/lab-limits';
 import { bloodTestKeyOf, coreStored } from '@roadmap/health-core/blood-tests';
 import { UnitChip } from './UnitChip';
 import { SAVE_ERRORS, saveErrorText } from './BloodTestTimeline';
-import { addLabValue, getShownErase } from '../lib/roadmap-data';
+import { addLabValue, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { CorrectFn } from '../lib/matrix-save';
 import type { ApiLabValue } from '../lib/api-types';
@@ -30,6 +30,9 @@ interface Held { id: string; slot: string; value: number; unit: string; stored: 
 
 /** The iPhone's words for the same refusal (ios/engine/my-data.ts addSeriesValue). */
 const CORE_ON_LAB_PAGE = 'Add this test from its row in Blood tests.';
+
+/** A form opened on a record the screen no longer shows: it closes, and says so (US-16 AC2d). */
+export const RECORD_CHANGED = 'Not saved: your record changed since you opened this form.';
 
 /** The name typed under "Other" counts only while Other is chosen: "Choose a test…" names no test, so nothing saves (US-21 AC2). */
 const otherName = (testKey: string, customName: string) => (testKey === 'custom' ? customName.trim() : '');
@@ -66,11 +69,12 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
   useEffect(() => () => { if (dirtyRef) dirtyRef.current = false; }, []);
 
   if (!open) {
-    return (
-      <button type="button" className="alr-add-btn" onClick={() => setOpenAt(getShownErase())}>
+    return (<>
+      <button type="button" className="alr-add-btn" onClick={() => { setNotice(null); setOpenAt(getShownErase()); }}>
         {preset ? '+ Add a value' : '+ Add a blood test'}
       </button>
-    );
+      {notice && <div className="alr-add-notice">{notice}</div>}
+    </>);
   }
 
   const entry = LAB_CATALOG.find(e => e.key === testKey);
@@ -131,7 +135,7 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
   };
 
   const save = async () => {
-    if (!canSave) return;
+    if (!canSave || openAt === null) return;
     // A value page for a kept-apart row named like a core test (an old "creatinine" may be urine,
     // US-12 AC11): the add would write the core value, which this page never shows (US-66 AC5).
     if (preset && core) { setNotice(CORE_ON_LAB_PAGE); return; }
@@ -141,8 +145,11 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
       // health-core's one lab add (US-25 AC25): it files the test, refuses a unit the catalogue does
       // not take in the upload summary's words (US-21 AC15), and names a held value on that day.
       // A value page adds to its own series, whatever its name or unit (US-25 AC25).
-      const result = await addLabValue({ metricName, unit, value: value!, day: date, ...(preset ? { existingSeries: true } : null) }, openAt!);
-      if (!result) {
+      const result = await addLabValue({ metricName, unit, value: value!, day: date, ...(preset ? { existingSeries: true } : null) }, openAt);
+      if (!result && openAt !== getEraseIdentity()) { // the record moved to another erase since the form opened
+        close();
+        setNotice(RECORD_CHANGED);
+      } else if (!result) {
         setNotice('Could not save — please try again.');
       } else if (result.ok) {
         trackProductEvent('lab_row_added');

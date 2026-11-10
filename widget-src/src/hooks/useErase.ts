@@ -20,6 +20,12 @@ import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNR
  *
  * `shownErase` is the same erase as React state: the upload modal is keyed
  * on it, so an erase ends a review read before it (US-16 AC2c).
+ *
+ * Three copies of the shown erase, each for a reason: React state (what the
+ * tree renders), the `asked` ref (what showErase last asked for, so a second
+ * ask before the commit is a no-op), and the store's mark, set only once the
+ * tree that shows it commits, so a save asked from the old tree is refused
+ * (US-16 AC2d).
  */
 export interface Erase {
   shownErase: string;
