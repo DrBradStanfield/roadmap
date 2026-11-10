@@ -29,7 +29,7 @@ vi.mock('../lib/server-api', () => ({ trackABConversion: mocks.trackABConversion
 vi.mock('../lib/build-flags', () => ({ get SHOPIFY_SURFACE() { return mocks.shopify.value; } }));
 vi.mock('../lib/assistant-config', () => ({ getSkipEmailGate: () => mocks.skip.value }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
-import { REMINDER_SIGNUP_DONE } from './ResultsPanel';
+import { REMINDER_SIGNUP_DONE, usePlanView } from './ResultsPanel';
 import { PlanHost as ResultsPanel } from '../testing/plan-host';
 
 const results = calculateHealthResults({ heightCm: 175, sex: 'male' });
@@ -41,6 +41,12 @@ function plan(props: Partial<React.ComponentProps<typeof ResultsPanel>> = {}) {
 }
 function showPlan(props: Partial<React.ComponentProps<typeof ResultsPanel>> = {}) {
   return render(plan(props));
+}
+
+/** Draws plan.pdf in one of two places, as My health does (inside the full form, or below it). */
+function MovingPdfHost({ inForm }: { inForm: boolean }) {
+  const plan = usePlanView({ results, isValid: true, tiles: [], forms: { medications: [], screenings: [] }, showEmailCapture: true, formStage: 3 });
+  return inForm ? <div className="in-form">{plan.pdf}</div> : <section className="below-form">{plan.pdf}</section>;
 }
 
 let print: ReturnType<typeof vi.fn>;
@@ -123,6 +129,26 @@ describe('US-18 AC7: the email box sends once per press', () => {
     enter(view.container.querySelector('#guestEmail') as HTMLInputElement);
     await waitFor(() => expect(mocks.sendGuestReport).toHaveBeenCalledTimes(2));
     expect(window.open).toHaveBeenCalledTimes(2);
+  });
+
+  it('the guard holds when the box moves mid-send (the full form opening)', async () => {
+    const settle = pendingSend();
+    const view = render(<MovingPdfHost inForm={false}/>);
+    const first = view.container.querySelector('#guestEmail') as HTMLInputElement;
+    fireEvent.change(first, { target: { value: 'a@example.com' } });
+    enter(first);
+    await waitFor(() => expect(mocks.sendGuestReport).toHaveBeenCalledTimes(1));
+    view.rerender(<MovingPdfHost inForm/>);
+    const moved = view.container.querySelector('.in-form #guestEmail') as HTMLInputElement;
+    expect(moved).not.toBe(first);
+    expect(moved.value).toBe('a@example.com');
+    enter(moved);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(window.open).toHaveBeenCalledTimes(1);
+    expect(mocks.sendGuestReport).toHaveBeenCalledTimes(1);
+    settle({ success: true });
+    await waitFor(() => expect(view.container.querySelector('#guestEmail')).toBeNull());
+    expect(mocks.markReportEmailCaptured).toHaveBeenCalledTimes(1);
   });
 
   it('an invalid address while nothing is pending still says so and sends nothing', () => {
