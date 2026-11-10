@@ -1,6 +1,6 @@
-// The plan's parts on My health (US-62 AC17-AC26): its cards by topic, a
-// suggestion on its row, the tiles under the onboarding, and the foot. The plan
-// has no column of its own since phase 5; usePlanView builds what InputPanel draws.
+// The plan's view on My health (US-62 AC17-AC26): usePlanView sorts its cards by
+// topic, and holds the PDF box and the foot. The cards themselves are PlanCards.tsx.
+// The plan has no column of its own since phase 5; InputPanel draws what this builds.
 import React, { useCallback, useState, useRef, useEffect, useMemo } from 'react';
 import { flushSync } from 'react-dom';
 import type { HealthResults, Suggestion } from '@roadmap/health-core/types';
