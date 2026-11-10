@@ -315,7 +315,7 @@ On the liver specifically: high doses of niacin (nicotinic acid) can cause mild 
 
 Animal and laboratory research raises a theoretical concern that raising NAD+ may help some cancers grow or spread [4][88].
 
-**Practical recommendation:** Brad would not take NR or NMN himself ([Brad, 29 Oct 2026](https://drstanfield.com/blogs/articles/nr-in-parkinsons-what-the-nopark-trial-found)). The concern rests on animal findings; if you have cancer or are on cancer treatment, talk to your oncologist before taking an NAD booster [4].
+**Practical recommendation:** After the NOPARK Parkinson's trial, Brad would not take NR or NMN himself ([Brad, 29 Oct 2026](https://drstanfield.com/blogs/articles/nr-in-parkinsons-what-the-nopark-trial-found)). The concern rests on animal findings; if you have cancer or are on cancer treatment, talk to your oncologist before taking an NAD booster [4].
 
 **Mouse study on breast cancer:** In a mouse model of triple-negative breast cancer, NR supplementation significantly increased how often cancer developed and how often it spread to the brain (Maric et al., *Biosens Bioelectron*, 2023) [4].
 

@@ -49,174 +49,6 @@
  },
  {
   "check": "AC2",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "token \"35 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- The US upper limit for supplemental niacin, which covers nicotinic acid and nicotinamide, is 35 mg a day for adults...\" | \"The doses below are those used in studies, not a recommendation. Brad would not take NR or NMN ([Brad, 29 Oct 2026](h...\" | \"All NAD boosters are sources of vitamin B3. In the United States, the upper limit for vitamin B3 from supplements is ...\"",
-  "reason": "Tokeniser: NIH UL table writes \"35 mg\" with no per-day unit; body says \"35 mg a day\" (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC2",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "body line has no entry quoting \"10 mg\": Dementia (n=19, uncontrolled): In a 3-month open-label study, 25 people with mild to moderate Alzheimer's, vascular o...",
-  "reason": "Tokeniser: source writes \"10 mg/day NADH\"; body says \"10 mg of NADH a day\", which tokenises as 10 mg (quote entered in addendum-2 and addendum-4) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "heading missing from new body: ## Current view (reviewed 20 October 2026)",
-  "reason": "Current view heading carries the new review date (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Chronic Fatigue Syndrome (CFS) — NADH",
-  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Alzheimer's Disease and Cognitive Function — NADH",
-  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Parkinson's Disease — NADH",
-  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Raising NAD+ Levels — Nicotinamide Riboside",
-  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Energy and Physical Performance — Nicotinamide Riboside",
-  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Peripheral Artery Disease — Nicotinamide Riboside",
-  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Alzheimer's Disease — Nicotinamide Riboside",
-  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Cholesterol — Nicotinamide Riboside",
-  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Blood Sugar and Insulin Resistance — Nicotinamide Riboside",
-  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Long COVID — Nicotinamide Riboside",
-  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Raising NAD+ Levels — NMN",
-  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Insulin Sensitivity — NMN",
-  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Exercise Performance — NMN",
-  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Muscle Strength and Physical Function in Older Adults — NMN",
-  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Sleep — NMN",
-  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Anti-Aging Claims — NMN",
-  "reason": "Heading renamed per review (em dash to colon; \"Anti-Aging\" replaced, combined-round ruling 2) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Preclinical Evidence — NMN (Animal Studies)",
-  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Kidney Concerns — NMN",
-  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC2",
   "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
   "match": "changed_tokens[466] raw_quote shares no number with its body_line: - **Bone density loss:** 4,000 and 10,000 IU a day for 3 years lowered forearm bone density compa...",
   "reason": "Tokeniser: lead line 'Even below classic toxicity thresholds' gives every list item a < comparator, so the bullet's numbers never match the quote (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
@@ -617,54 +449,6 @@
  },
  {
   "check": "AC2",
-  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
-  "match": "token \"7.6 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Vascular calcification is one of the risk factors for coronary heart disease because it reduces aortic and arterial e...\"",
-  "reason": "Tokeniser: source writes '7.6 (max = 9.0) years' (abstract and full text), so 7.6 never pairs with years (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC2",
-  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
-  "match": "token \"≥50 mcg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 15 healthy volunteers taking acenocoumarol, a warfarin-like drug, daily MK-7 doses of 10 and 20 mcg lowered the IN...\"",
-  "reason": "Tokeniser: PubMed abstract writes '50 mug/d or more' (mug for µg); full text not in PMC, journal site blocks fetch (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
-  "match": "heading missing from new body: ## Current view (reviewed 20 October 2026)",
-  "reason": "Current view heading carries the new review date (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Vitamin K1 (Phylloquinone) — Plant Sources",
-  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC4",
-  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
-  "match": "heading missing from new body: ### Vitamin K2 (Menaquinones) — Animal and Fermented Sources",
-  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC7",
-  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
-  "match": "product mentions rose 3 -> 4",
-  "reason": "False positive: reference [36] title 'VITamin D and OmegA-3 TriaL' (VITAL) counts as an Omega-3 mention; product section unchanged at 3 (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC2",
   "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
   "match": "token \"76\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- 11 Nov 2025, [Dementia Rates PLUNGED in Study of 1 Million People](https://drstanfield.com/blogs/articles/dementia-...\"",
   "reason": "Tokeniser: body writes 'ages 66 to 76' (bare numbers); the post writes 'aged 66–76', read as years (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
@@ -944,6 +728,262 @@
   "date": "2026-11-10"
  },
  {
+  "check": "AC4",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: #### Middle-Aged and Older Adults",
+  "reason": "Heading removed per review (memory trials regrouped by trial size); trials now under '#### Larger Trials' and '#### Smaller Trials' (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: #### Younger People",
+  "reason": "Heading removed per review (memory trials regrouped by trial size); trials now under '#### Larger Trials' and '#### Smaller Trials' (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: #### Attention in Adolescents",
+  "reason": "Heading removed per review (memory trials regrouped by trial size); trials now under '#### Larger Trials' and '#### Smaller Trials' (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "token \"35 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- The US upper limit for supplemental niacin, which covers nicotinic acid and nicotinamide, is 35 mg a day for adults...\" | \"The doses below are those used in studies, not a recommendation. Brad would not take NR or NMN ([Brad, 29 Oct 2026](h...\" | \"All NAD boosters are sources of vitamin B3. In the United States, the upper limit for vitamin B3 from supplements is ...\"",
+  "reason": "Tokeniser: NIH UL table writes \"35 mg\" with no per-day unit; body says \"35 mg a day\" (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10 mg\": Dementia (n=19, uncontrolled): In a 3-month open-label study, 25 people with mild to moderate Alzheimer's, vascular o...",
+  "reason": "Tokeniser: source writes \"10 mg/day NADH\"; body says \"10 mg of NADH a day\", which tokenises as 10 mg (quote entered in addendum-2 and addendum-4) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 20 October 2026)",
+  "reason": "Current view heading carries the new review date (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Chronic Fatigue Syndrome (CFS) — NADH",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Alzheimer's Disease and Cognitive Function — NADH",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Parkinson's Disease — NADH",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Raising NAD+ Levels — Nicotinamide Riboside",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Energy and Physical Performance — Nicotinamide Riboside",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Peripheral Artery Disease — Nicotinamide Riboside",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Alzheimer's Disease — Nicotinamide Riboside",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Cholesterol — Nicotinamide Riboside",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Blood Sugar and Insulin Resistance — Nicotinamide Riboside",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Long COVID — Nicotinamide Riboside",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Raising NAD+ Levels — NMN",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Insulin Sensitivity — NMN",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Exercise Performance — NMN",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Muscle Strength and Physical Function in Older Adults — NMN",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Sleep — NMN",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Anti-Aging Claims — NMN",
+  "reason": "Heading renamed per review (em dash to colon; \"Anti-Aging\" replaced, combined-round ruling 2) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Preclinical Evidence — NMN (Animal Studies)",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Kidney Concerns — NMN",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[583] number cited to a primary study without its abstract in reach: **Children and teens (1 to 18 years):** The guideline suggests vitamin D for this age group [9]. ...",
+  "reason": "Ruled wording (clean-up ruling 1) joins Brad's post figure and the guideline [9] clause with a semicolon; the figure is quoted verbatim from the post (POST: entry) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
+  "match": "token \"7.6 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Vascular calcification is one of the risk factors for coronary heart disease because it reduces aortic and arterial e...\"",
+  "reason": "Tokeniser: source writes '7.6 (max = 9.0) years' (abstract and full text), so 7.6 never pairs with years (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≥50 mcg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 15 healthy volunteers taking acenocoumarol, a warfarin-like drug, daily MK-7 doses of 10 and 20 mcg lowered the IN...\"",
+  "reason": "Tokeniser: PubMed abstract writes '50 mug/d or more' (mug for µg); full text not in PMC, journal site blocks fetch (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 20 October 2026)",
+  "reason": "Current view heading carries the new review date (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Vitamin K1 (Phylloquinone) — Plant Sources",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Vitamin K2 (Menaquinones) — Animal and Fermented Sources",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
+  "match": "product mentions rose 3 -> 4",
+  "reason": "False positive: reference [36] title 'VITamin D and OmegA-3 TriaL' (VITAL) counts as an Omega-3 mention; product section unchanged at 3 (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"48\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Newer trials (2026):** Results are split. In adults aged 45 to 65, selected cognitive and memory markers improved, ...\"",
+  "reason": "Tokeniser: abstract runs 'MethodsForty-eight women' together, so 48 is not read (found-in text changed: Newer trials sentences reordered, ruling 2) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
   "check": "AC2",
   "handle": "taurine-benefits-forms-dosing-and-side-effects",
   "match": "body line has no entry quoting \"2000 mg\": Cirrhosis-related muscle cramps: A crossover trial tested taurine in people with chronic liver disease who had three ...",
@@ -971,7 +1011,7 @@
   "check": "AC2",
   "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
   "match": "changed_tokens[11] number cited to a primary study without its abstract in reach: - 9 Apr 2026, [The Anti-Aging Supplement Scam (New Evidence)](https://drstanfield.com/blogs/artic...",
-  "reason": "Full-text figure: 4000 ppm target is in the Europe PMC full text of the 2026 ITP paper; cited 2024 abstract (PMID 38041783) lacks it (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "reason": "Full-text figure: 4000 ppm target is in the full text of the cited 2024 paper (PMC10828146); its abstract (PMID 38041783) lacks it (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
   "by": "orchestrator",
   "date": "2026-11-10"
  },
@@ -1080,6 +1120,14 @@
   "date": "2026-11-10"
  },
  {
+  "check": "AC4",
+  "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Storage and Stability",
+  "reason": "Subsection removed per re-check: licensed-source heading with no public evidence of its own (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
   "check": "AC2",
   "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
   "match": "token \"1.3 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad's view is that the dose decides: reaching the recommended intake of a vitamin is one thing, megadosing is an ent...\"",
@@ -1171,7 +1219,7 @@
   "check": "AC2",
   "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
   "match": "body line has no entry quoting \"3000 mg/day\": In a small 2-month trial in people with treated open-angle glaucoma, nicotinamide with pyruvate improved more visual ...",
-  "reason": "NIH 3,000 mg/day figure in sentences that also cite PubMed records (trial [80], AGS-AAO statement [129], ruling 1 wording) whose abstracts lack it (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "reason": "Tokeniser: [80]'s abstract gives \"nicotinamide (1000 to 3000 mg)\" without a per-day token (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
   "by": "orchestrator",
   "date": "2026-11-10"
  },

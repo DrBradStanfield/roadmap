@@ -24,7 +24,7 @@ Brad's view is that the dose decides: reaching the recommended intake of a vitam
 - Too much vitamin B6 can damage nerves, reported even with a 6 mg multivitamin. Health Canada found a possible link to nerve damage at 10 mg a day or more, and Europe's upper limit is 12 mg a day [4][5][6].
 - Biotin can make blood tests read falsely high or low, including thyroid tests (even at over-the-counter doses of 5 to 20 mg a day) and the troponin test for heart attack; an FDA alert warned this can lead to wrong diagnoses and even death. Stop biotin before blood tests and tell your doctor and the lab [7][8][9][124][125].
 - Large amounts of folic acid can correct the anemia of B12 deficiency but not its nerve damage, which may hide the deficiency [10].
-- In diabetic kidney disease, high-dose folic acid, B6 and B12 made kidney function fall faster than placebo and were linked to more heart attacks, strokes and deaths [11].
+- In diabetic kidney disease, high-dose folic acid, B6 and B12 made kidney function fall faster than placebo and were linked to more heart attacks, strokes and deaths [11]. In men, taking high-dose B6 or B12 on their own was linked to more lung cancer [21].
 - High-dose nicotinic acid can injure the liver, more often in extended-release form [12][13].
 - Long-term metformin is linked to low B12, so ask your doctor about B12 testing [14].
 
@@ -59,7 +59,7 @@ The eight B vitamins are:
 
 These vitamins work together. B6, B12 and folate all take part in homocysteine metabolism, and the enzymes that turn tryptophan into niacin depend on riboflavin, B6 and iron [16][12]. Deficiency of one B vitamin often comes with deficiency of others, particularly with poor diet, alcohol use disorder, malabsorption (celiac disease, Crohn's disease, ulcerative colitis) or long-term use of some medicines, such as proton pump inhibitors, metformin and antiepileptic drugs [16][17][10].
 
-A B complex can fill a gap in the diet; taking far more than you need brings risk without proven benefit. The strongest warning comes from a large US cohort: men who took B6 or B12 on its own, rather than in a multivitamin, were linked to roughly 30 to 40 percent more lung cancer. At the highest doses the risk almost doubled (B6 more than 20 mg a day: hazard ratio 1.82, 95% CI 1.25 to 2.65; B12 more than 55 mcg a day: hazard ratio 1.98, 95% CI 1.32 to 2.97), and it was higher still in men who smoked; women showed no link [21]. The trials show little benefit in people who are not deficient. B6, B12 and folic acid lower homocysteine, but a Cochrane review of 15 trials found that lowering homocysteine did not prevent heart attacks or deaths and only slightly reduced strokes [18].
+A B complex can fill a gap in the diet; taking far more than you need brings risk without proven benefit. The strongest warning comes from a large US cohort: men who took B6 or B12 on their own, rather than in a multivitamin, were linked to roughly 30 to 40 percent more lung cancer. At the highest doses the risk almost doubled (B6 more than 20 mg a day: hazard ratio 1.82, 95% CI 1.25 to 2.65; B12 more than 55 mcg a day: hazard ratio 1.98, 95% CI 1.32 to 2.97), and it was higher still in men who smoked; women showed no link [21]. Trials of B-vitamin supplements show little benefit in people who are not deficient. B6, B12 and folic acid lower homocysteine, but a Cochrane review of 15 trials found that lowering homocysteine did not prevent heart attacks or deaths and only slightly reduced strokes [18].
 
 The weaker evidence points the same way. In two Swedish cohorts, high-dose B-vitamin supplements (about 10 times the recommended daily intake) taken on their own were linked to a 27% higher risk of cataract, and the link may be confined to younger people (under 60 years: hazard ratio 1.88, 95% CI 1.47 to 2.39) [20]. Vitamin and mineral supplements do not improve physical performance in people who eat an adequate diet [19].
 
@@ -221,7 +221,7 @@ There is no good public evidence on this yet.
 
 ### Glaucoma (Nicotinamide)
 
-In a small 2-month trial in people with treated open-angle glaucoma, nicotinamide with pyruvate improved more visual field test points than placebo [80]. That trial used 1,000 to 3,000 mg of nicotinamide a day [80]. High-dose nicotinamide is not advised outside clinical trials or in people with liver disease: the American Glaucoma Society and the American Academy of Ophthalmology issued a 2025 position statement on nicotinamide for glaucoma [129], and NIH reports signs of liver toxicity at 3,000 mg a day [12]. Ask your eye doctor before trying it.
+In a small 2-month trial in people with treated open-angle glaucoma, nicotinamide with pyruvate improved more visual field test points than placebo [80]. That trial used 1,000 to 3,000 mg of nicotinamide a day [80]. The American Glaucoma Society and the American Academy of Ophthalmology issued a 2025 position statement on nicotinamide for glaucoma [129]. NIH reports nausea, vomiting and signs of liver toxicity at 3,000 mg a day [12], so high-dose nicotinamide is best avoided outside clinical trials and by people with liver disease. Ask your eye doctor before trying it.
 
 ### Brittle Nails and Hair (Biotin)
 

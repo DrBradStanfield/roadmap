@@ -21,7 +21,7 @@ Two dedicated trials found that high-dose vitamin K2 as MK-7, 360 mcg in one and
 
 - If you take warfarin or a similar blood thinner, keep your vitamin K intake from food and supplements steady [1], and do not start, stop or change a vitamin K supplement without your prescriber or anticoagulation clinic [61].
 - A daily dose of 10 mcg of MK-7 lowered the INR enough to matter in at least 40% of volunteers taking a warfarin-like drug, and the study authors advise avoiding MK-7 supplements on these drugs [2].
-- Vitamin K is not expected to change the effect of apixaban, rivaroxaban or dabigatran [3][73][74][75].
+- Vitamin K is not expected to change the effect of apixaban, rivaroxaban or dabigatran [3], even as a reversal treatment [73][74][75].
 - Orlistat taken with warfarin might cause a significant increase in prothrombin time, and orlistat, bile acid sequestrants and long courses of antibiotics can lower vitamin K status [1].
 - MK-7 is often made from natto, a fermented soybean food, so people with a soy allergy should check the source on the label [4][1].
 - Vitamin K3 (menadione) damaged liver cells in laboratory studies and is no longer used in supplements [1].
@@ -210,9 +210,9 @@ The MK-7 trials below differ in who took part, the dose and what they measured. 
 
 #### Vitamin K1 Cardiovascular Trials
 
-**Bellinge et al. (2021):** A post hoc analysis of a double-blind trial in Western Australia gave people with diabetes and existing coronary calcification 10 mg of K1 or placebo daily for three months. K1 lowered the odds of new calcifying lesions on PET scans in the coronary arteries (OR 0.35, 95% CI 0.16 to 0.78) and the aorta (OR 0.27, 95% CI 0.08 to 0.94) compared with placebo [51].
-
 **Shea et al. (2009):** In a three-year trial in 388 healthy older men and women, calcification progressed 6% less in those with existing coronary calcification who took a multivitamin with 500 mcg of K1 a day than in those given the multivitamin alone [50]. Across all participants, there was no significant difference in coronary artery calcification between the groups [50].
+
+**Bellinge et al. (2021):** A post hoc analysis of a double-blind trial in Western Australia gave people with diabetes and existing coronary calcification 10 mg of K1 or placebo daily for three months. K1 lowered the odds of new calcifying lesions on PET scans in the coronary arteries (OR 0.35, 95% CI 0.16 to 0.78) and the aorta (OR 0.27, 95% CI 0.08 to 0.94) compared with placebo [51].
 
 #### Summary of Cardiovascular Evidence
 
@@ -354,7 +354,7 @@ Guidance for warfarin care stresses consistent dietary vitamin K rather than avo
 
 ### Direct Oral Anticoagulants (DOACs)
 
-Vitamin K intake is not expected to change the effect of the newer blood thinners apixaban, rivaroxaban and dabigatran [3]; the label of each says vitamin K is not expected to affect its anticoagulant activity [73][74][75]. Some foods and supplements, such as St John's wort, can interact with these drugs [65]. If you take prescription medicines, check with your doctor or pharmacist before starting a supplement.
+Vitamin K intake is not expected to change the effect of the newer blood thinners apixaban, rivaroxaban and dabigatran [3]; the label of each says vitamin K is not expected to affect its anticoagulant activity, even as a reversal treatment [73][74][75]. Some foods and supplements, such as St John's wort, can interact with these drugs [65]. If you take prescription medicines, check with your doctor or pharmacist before starting a supplement.
 
 ### Antiplatelet Drugs
 

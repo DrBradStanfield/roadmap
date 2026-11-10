@@ -21,7 +21,7 @@ Brad thinks most adults probably eat too little choline and that a supplement to
 
 - Choline precursors taken with Alzheimer's medicines such as donepezil, rivastigmine or galantamine are said to raise acetylcholine more than either alone [55]. If you take one of these medicines, check with your doctor before adding a choline supplement.
 - If you are pregnant or planning to be, talk to your doctor or midwife before starting a choline supplement; the form studied in pregnancy is phosphatidylcholine [96][97].
-- Alpha-GPC prescriptions were linked to a higher 10-year stroke risk in a large South Korean cohort; the study shows an association, not proof of cause [22]. Risk rose with longer use; if you plan to take it long term, or have cardiovascular risk, talk to your doctor first.
+- Alpha-GPC prescriptions were linked to a higher 10-year stroke risk in a large South Korean cohort; the study shows an association, not proof of cause [22]. Risk rose with greater use; if you plan to take it long term, or have cardiovascular risk, talk to your doctor first.
 - Choline bitartrate raised TMAO and platelet reactivity in healthy adults, and alpha-GPC raised TMAO, in short studies [18][106]. Higher TMAO has been linked to heart attack, stroke and death [77], but a genetic study suggests the link with heart disease and stroke may not be causal [104]. If you have heart disease, talk to your doctor before taking high doses.
 - The upper limit for adults is 3,500 mg of choline a day, lower for children; the limits are based on low blood pressure and fishy body odor [93].
 - High intakes are also associated with vomiting, heavy sweating and salivation, and liver toxicity [93].
@@ -61,12 +61,12 @@ The form of choline affects how well it is absorbed and how much reaches gut bac
 
 | Form | Key Notes |
 |------|------|
-| Lecithin | A substance rich in phosphatidylcholine, made during commercial purification of phospholipids and used as a food emulsifier [93]. |
-| Phosphatidylcholine | The main form of choline in food; about half the choline in the US diet comes this way [93]. Did not raise fasting TMAO in a 4-week trial [18]. The form used in the pregnancy trials that found benefits [96][98]. |
-| CDP-choline (citicoline) | Breaks down quickly to cytidine and choline, which enter the brain separately [72]. A review proposed that it is less prone to conversion to TMA than other forms [20]. |
-| Alpha-GPC (choline alfoscerate) | Raised TMAO after a single dose [106]. Prescribed in South Korea, where a large cohort linked it to higher stroke risk [22]. |
-| Choline bitartrate | Raised fasting TMAO and platelet reactivity in a 4-week trial [18]; absorbed less well than choline from egg yolk phospholipids [25]. |
 | Choline chloride | Used in parenteral nutrition trials and older memory studies [34][40]. |
+| Choline bitartrate | Raised fasting TMAO and platelet reactivity in a 4-week trial [18]; absorbed less well than choline from egg yolk phospholipids [25]. |
+| Alpha-GPC (choline alfoscerate) | Raised TMAO after a single dose [106]. Prescribed in South Korea, where a large cohort linked it to higher stroke risk [22]. |
+| CDP-choline (citicoline) | Breaks down quickly to cytidine and choline, which enter the brain separately [72]. A review proposed that it is less prone to conversion to TMA than other forms [20]. |
+| Phosphatidylcholine | The main form of choline in food; about half the choline in the US diet comes this way [93]. Did not raise fasting TMAO in a 4-week trial [18]. The form used in the pregnancy trials that found benefits [96][98]. |
+| Lecithin | A substance rich in phosphatidylcholine, made during commercial purification of phospholipids and used as a food emulsifier [93]. |
 
 ### Absorption and TMAO Considerations
 
@@ -164,7 +164,9 @@ Brad's advice is to eat eggs, check your prenatal vitamin, and consider a supple
 
 Results are mixed. In two trials in healthy middle-aged and older adults, citicoline improved some memory scores [37][39], and in one trial in adolescent boys it improved attention [44]. Choline chloride did not improve memory in older people [40], and choline bitartrate did not improve memory in students [42].
 
-#### Middle-Aged and Older Adults
+#### Larger Trials
+
+**Egg-based foods in preadolescents (2022).** In 122 children aged 9 to 13, foods made with whole egg powder did not improve executive function during the 9-month intervention compared with placebo; foods with milk powder improved one attention measure [43].
 
 **CDP-choline for memory (2021).** In 100 healthy adults aged 50 to 85 with age-associated memory impairment, citicoline (Cognizin) 500 mg a day for 12 weeks improved episodic memory and composite memory more than placebo [39]. Both were secondary outcomes.
 
@@ -172,17 +174,13 @@ Brad notes that this citicoline trial was run by the company that makes the ingr
 
 **CDP-choline for verbal memory (1996).** In 47 women and 48 men aged 50 to 85 years, citicoline 1,000 mg a day for 3 months improved delayed recall only in those with relatively poor memories. In a crossover study of 32 of these people, 2,000 mg a day for 2 months improved immediate and delayed recall [37].
 
-**Choline chloride for memory in elderly (1980).** In 10 people over age 60, choline chloride 2 g four times a day, taken for 21 days, did not improve memory [40].
-
-#### Attention in Adolescents
-
 **CDP-choline in male adolescents (2019).** In 75 healthy adolescent males, citicoline 250 mg or 500 mg for 28 days improved attention and psychomotor speed compared with placebo, and a higher weight-adjusted dose predicted less impulsivity [44].
 
-#### Younger People
-
-**Egg-based foods in preadolescents (2022).** In 122 children aged 9 to 13, foods made with whole egg powder did not improve executive function during the 9-month intervention compared with placebo; foods with milk powder improved one attention measure [43].
+#### Smaller Trials
 
 **Choline bitartrate in young adults (2016).** In crossover experiments in students, 2.0 to 2.5 g of choline bitartrate did not improve memory about an hour later [42].
+
+**Choline chloride for memory in elderly (1980).** In 10 people over age 60, choline chloride 2 g four times a day, taken for 21 days, did not improve memory [40].
 
 #### Observational Data on Choline and Cognition
 
@@ -324,7 +322,7 @@ In a 2-month study, choline bisulfate supplying about 450 mg of choline a day ra
 
 ### Alpha-GPC and Stroke Risk
 
-A South Korean cohort study followed about 12 million adults aged 50 or older. People prescribed alpha-GPC during 2006 to 2008 were more likely to have a stroke from 2009 to 2018 than matched nonusers (adjusted HR 1.43, 95% CI 1.41 to 1.46), and risk rose with greater use in a dose-response pattern [22]. The study shows an association, not cause and effect. TMAO was not measured. In atherosclerosis-prone mice, alpha-GPC promoted atherosclerosis [112]. Higher TMAO was linked to first stroke in a separate study of patients with high blood pressure [79]. Risk rose with longer use, so the caution grows with how long you plan to take it: if you have had a stroke, have high cardiovascular risk, or plan to take alpha-GPC long term, talk to your doctor first [22].
+A South Korean cohort study followed about 12 million adults aged 50 or older. People prescribed alpha-GPC during 2006 to 2008 were more likely to have a stroke from 2009 to 2018 than matched nonusers (adjusted HR 1.43, 95% CI 1.41 to 1.46), and risk rose with greater use in a dose-response pattern [22]. The study shows an association, not cause and effect. TMAO was not measured. In atherosclerosis-prone mice, alpha-GPC promoted atherosclerosis [112]. Higher TMAO was linked to first stroke in a separate study of patients with high blood pressure [79]. Risk rose with greater use, so the caution grows with how long you plan to take it: if you have had a stroke, have high cardiovascular risk, or plan to take alpha-GPC long term, talk to your doctor first [22].
 
 ### Choline and Mortality
 
