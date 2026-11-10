@@ -71,6 +71,11 @@ describe('US-20 AC8: on a phone the vitals inputs are 16px, so iOS does not zoom
     expect(mediaApplies('(max-width: 768px)', PHONE)).toBe(true);
     expect(mediaApplies('(max-width: 768px)', DESKTOP)).toBe(false);
     expect(mediaApplies('(hover: none) and (pointer: coarse)', PHONE)).toBe(true);
+    expect(mediaApplies('print', DESKTOP)).toBe(false); // print media only on the printed page
+    expect(mediaApplies('print', DESKTOP, false, true)).toBe(true);
+    expect(mediaApplies('screen', DESKTOP, false, true)).toBe(false);
+    // A list joined after another comes later in source order: an equal rival wins.
+    expect(cascaded(input, 'color', PHONE, [...parseRules('.bt-input { color: red }'), ...parseRules('.bt-input { color: green }')])).toBe('green');
     expect(fontSizeAt(input, PHONE)).toBe(16); // the phone guard
     expect(fontSizeAt(input, DESKTOP)).toBe(14);
     // A state is a whole pseudo-class on the element that holds it: :focus is not :focus-within,
