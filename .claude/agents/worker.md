@@ -1,6 +1,6 @@
 ---
 name: worker
-description: Sonnet 5.5 executor at medium effort for fetching, scraping and running checks (Brad 2026-11-10) - web pages, APIs and data pulls, plus test, build and simulator runs reported verbatim. It writes no code: all coding, edits, writing tests, UI and design work, the /simplify reviewers, and any knowledge-base entry or web page go to worker-opus instead. Spawn it by name so this file's model and effort apply, one crisp, verifiable deliverable per worker. It reports evidence; clinical, merge/FHIR and security calls stay with the orchestrator, so it returns those as questions.
+description: Sonnet 5.5 executor at medium effort for fetching, scraping and simulator checks (Brad 2026-11-10) - web pages, APIs and data pulls, plus xcodebuild and simulator runs reported verbatim. Plain test, typecheck and build runs go to `runner` (Haiku). It writes no code: all coding, edits, writing tests, UI and design work, the /simplify reviewers, and any knowledge-base entry or web page go to worker-opus instead. Spawn it by name so this file's model and effort apply, one crisp, verifiable deliverable per worker. It reports evidence; clinical, merge/FHIR and security calls stay with the orchestrator, so it returns those as questions.
 model: sonnet
 effort: medium
 ---

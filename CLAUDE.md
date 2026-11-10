@@ -196,7 +196,7 @@ test. Miss a step = the value silently fails to round-trip.
   and your recommendation with its reason. Never a bare "accept X?" or "see above"; assume he remembers nothing.
 - **Say "I don't know" over guessing** — a confident wrong answer is worse, especially clinically.
 - **Every feature/behavior change includes unit tests**; bug fix = failing test first. A test checks what the
-  caller sees: one that would still pass if every function returned nothing gets thrown out. Run tests in a `worker`.
+  caller sees: one that would still pass if every function returned nothing gets thrown out. Run tests in a `runner`.
 - **Debug from data, not theory** — query live rows/DOM/metafields first;
   read code to explain WHY, not to guess WHAT.
 - **Chatbot regressions:** every real miss becomes a router or tool-use fixture (files, command: docs/reference.md).
@@ -211,8 +211,8 @@ test. Miss a step = the value silently fails to round-trip.
 - **Model delegation (Brad, 2026-11-10):** the main session runs the newest Fable as orchestrator and
   keeps the calls: clinical logic, merge semantics, FHIR shapes, security, synthesis. All coding goes to
   `worker-opus` (Opus, medium): implementation, edits, writing tests, all UI and design work, the four
-  /simplify reviewers, every knowledge-base entry and web page. `worker` (Sonnet 5.5, medium) fetches,
-  scrapes, and runs tests, builds and simulator checks, reporting failures verbatim; it writes no code. Every adversarial check goes to a FRESH `adversary` (Opus, medium). All pinned in
+  /simplify reviewers, every knowledge-base entry and web page. `runner` (Haiku) runs tests, typechecks and
+  builds, pasting failures verbatim. `worker` (Sonnet 5.5, medium) fetches, scrapes and runs simulator checks. Every adversarial check goes to a FRESH `adversary` (Opus, medium). All pinned in
   `.claude/agents/`. Fable is never a subagent and never codes first. A Fable main session sends every first
   attempt to a named agent (likely Opus), uses no forks, and spawns no agent without a fixed model, since those
   run on Fable. It steps in itself only when a worker stalls: tests still fail, a review refutes the fix, the
