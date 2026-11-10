@@ -20,7 +20,7 @@ vi.mock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: false }));
 vi.mock('../lib/assistant-config', () => ({ getSkipEmailGate: () => false }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
 import { PlanHost } from '../testing/plan-host';
-import { RowSuggestions } from './ResultsPanel';
+import { RowSuggestions } from './PlanCards';
 
 const TEAL = 'rgba(0, 163, 139, 0.08)';
 beforeAll(() => {
