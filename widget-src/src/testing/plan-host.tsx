@@ -6,7 +6,8 @@
 import type { ReactNode } from 'react';
 import type { HealthResults } from '@roadmap/health-core/types';
 import type { StatTile } from '@roadmap/health-core/stat-tiles';
-import { OpenEvidenceContext, PlanCardList, QuickStats, usePlanView } from '../components/ResultsPanel';
+import { OpenEvidenceContext, PlanCardList, QuickStats } from '../components/PlanCards';
+import { usePlanView } from '../components/ResultsPanel';
 import type { AlcoholQuestion } from '../components/AlcoholQuestion';
 
 const NO_FORMS = { medications: [], screenings: [] };
