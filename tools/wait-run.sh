@@ -7,9 +7,11 @@
 #   sh tools/wait-run.sh pr <number>       wait until no check is pending; print pass/fail counts, the head sha
 #                                          and mergeability
 #
-# Exit: 0 success; 1 the run or a check failed, or healthz is not 200; 2 usage; 3 gave up (WAIT_RUN_MAX_MIN of
-# wall-clock time, default 90, or 10 gh errors in a row). Polls every WAIT_RUN_INTERVAL seconds (default 30). Plain POSIX sh,
-# gh's own --jq (no jq needed). Run it in the background (run_in_background) so the session is woken when it ends.
+# Exit: 0 success; 1 the run or a check failed, a final read failed, or healthz is not 200; 2 usage; 3 gave up
+# (WAIT_RUN_MAX_MIN of wall-clock time, default 90, or 10 gh errors in a row; each gh call is cut off at 60 s).
+# Polls every WAIT_RUN_INTERVAL seconds (default 30). Plain POSIX sh plus perl (macOS ships it) for the per-call
+# limit, and gh's own --jq (no jq needed). Run it in the background (run_in_background) so the session is woken
+# when it ends.
 set -u
 mode=${1:-}; id=${2:-}
 interval=${WAIT_RUN_INTERVAL:-30}
@@ -23,6 +25,9 @@ case "$mode" in
 esac
 
 start=$(date +%s); errors=0
+# Every gh call gets WAIT_RUN_GH_TIMEOUT seconds (default 60; perl's alarm, since macOS has no `timeout`), so a
+# stuck request counts as a gh error instead of hanging the wait.
+gh() { perl -e 'alarm shift; exec @ARGV' "${WAIT_RUN_GH_TIMEOUT:-60}" gh "$@"; }
 # Poll until `$1` prints "done"; gh errors are retried, not fatal (a network blip must not end the wait).
 poll() {
   while :; do
@@ -33,7 +38,7 @@ poll() {
       errors=$((errors + 1))
       if [ "$errors" -ge 10 ]; then echo "gave up: 10 gh errors in a row" >&2; exit 3; fi
     fi
-    # Wall-clock, so slow gh calls count too. One gh call that hangs is not cut short (macOS has no `timeout`).
+    # Wall-clock, so slow gh calls count too.
     waited=$(( $(date +%s) - start ))
     if [ "$waited" -ge "$max_s" ]; then echo "gave up after $((waited / 60)) min; still not finished" >&2; exit 3; fi
     sleep "$interval"
@@ -51,21 +56,29 @@ pr_state() {
 
 if [ "$mode" = deploy ]; then
   poll run_state
-  gh run view "$id" --json conclusion,headSha,jobs \
-    --jq '"conclusion=\(.conclusion)", "head=\(.headSha)", (.jobs[] | "job \(.name)=\(.conclusion)")'
-  conclusion=$(gh run view "$id" --json conclusion --jq .conclusion)
+  report=$(gh run view "$id" --json conclusion,headSha,jobs \
+    --jq '"conclusion=\(.conclusion)", "head=\(.headSha)", (.jobs[] | "job \(.name)=\(.conclusion)")') \
+    || { echo "could not read the run's result" >&2; exit 1; }
+  echo "$report"
+  conclusion=$(echo "$report" | sed -n 's/^conclusion=//p')
   code=$(curl -sS -m 15 -o /dev/null -w '%{http_code}' "$healthz" 2>/dev/null) || code=000
   echo "healthz=$code ($healthz)"
   [ "$conclusion" = success ] && [ "$code" = 200 ] && exit 0
   exit 1
 fi
 
-poll pr_state
-gh pr checks "$id" --json bucket \
-  --jq '"pass=\([.[] | select(.bucket == "pass")] | length) fail=\([.[] | select(.bucket == "fail" or .bucket == "cancel")] | length) skipped=\([.[] | select(.bucket == "skipping")] | length)"' 2>/dev/null
-gh pr checks "$id" --json name,bucket --jq '.[] | select(.bucket == "fail" or .bucket == "cancel") | "failed: \(.name)"' 2>/dev/null
+# One read gives the counts and the verdict. A check that went back to pending (a re-run or new push between the
+# poll and this read) sends the wait back to polling, within the same time limit.
+while :; do
+  poll pr_state
+  checks=$(gh pr checks "$id" --json name,bucket --jq '
+    "pass=\([.[] | select(.bucket == "pass")] | length) fail=\([.[] | select(.bucket == "fail" or .bucket == "cancel")] | length) skipped=\([.[] | select(.bucket == "skipping")] | length) pending=\([.[] | select(.bucket == "pending")] | length)",
+    (.[] | select(.bucket == "fail" or .bucket == "cancel") | "failed: \(.name)")' 2>/dev/null)
+  case "$checks" in *" pending=0"*) break ;; esac
+done
+echo "$checks"
 gh pr view "$id" --json headRefOid,state,mergeable,mergeStateStatus \
-  --jq '"head=\(.headRefOid)", "state=\(.state) mergeable=\(.mergeable) mergeState=\(.mergeStateStatus)"'
-failed=$(gh pr checks "$id" --json bucket --jq '[.[] | select(.bucket == "fail" or .bucket == "cancel")] | length' 2>/dev/null)
-[ "${failed:-1}" = 0 ] && exit 0
+  --jq '"head=\(.headRefOid)", "state=\(.state) mergeable=\(.mergeable) mergeState=\(.mergeStateStatus)"' \
+  || { echo "could not read the PR's head and mergeability" >&2; exit 1; }
+case "$checks" in *" fail=0 "*) exit 0 ;; esac
 exit 1

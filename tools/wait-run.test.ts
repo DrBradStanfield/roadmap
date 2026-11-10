@@ -17,16 +17,14 @@ beforeAll(() => {
   // Each status/bucket poll bumps a counter: poll 1 is pending, poll 2 on is finished.
   writeFileSync(join(S, 'gh'), `#!/bin/sh
 [ -n "\${GH_FAIL:-}" ] && exit 1
+[ -n "\${GH_SLEEP:-}" ] && exec sleep "$GH_SLEEP" # one process, as the real gh is
 n=$(cat "$STATE" 2>/dev/null || echo 0)
 case "$*" in
   *"--json status "*) n=$((n+1)); echo $n > "$STATE"; [ $n -ge 2 ] && echo done || echo in_progress ;;
-  *"conclusion,headSha,jobs"*) echo "conclusion=$CONCLUSION"; echo "head=abc123"; echo "job deploy=$CONCLUSION" ;;
-  *"--json conclusion "*) echo "$CONCLUSION" ;;
+  *"conclusion,headSha,jobs"*) [ -n "\${JOBS_FAIL:-}" ] && exit 1; echo "conclusion=$CONCLUSION"; echo "head=abc123"; echo "job deploy=$CONCLUSION" ;;
   *"if length"*) n=$((n+1)); echo $n > "$STATE"; [ $n -ge 2 ] && echo done || { echo pending; exit 8; } ;;
-  *"pass="*) echo "pass=3 fail=$FAILS skipped=0" ;;
-  *"failed: "*) [ "$FAILS" = 0 ] || echo "failed: test" ;;
-  *"| length"*) echo "$FAILS" ;;
-  *headRefOid*) echo "head=abc123"; echo "state=OPEN mergeable=MERGEABLE mergeState=CLEAN" ;;
+  *"pass="*) echo "pass=3 fail=$FAILS skipped=0 pending=0"; [ "$FAILS" = 0 ] || echo "failed: test" ;;
+  *headRefOid*) [ -n "\${VIEW_FAIL:-}" ] && exit 1; echo "head=abc123"; echo "state=OPEN mergeable=MERGEABLE mergeState=CLEAN" ;;
 esac
 `);
   writeFileSync(join(S, 'curl'), '#!/bin/sh\nprintf "%s" "$HEALTH"\n');
@@ -71,6 +69,15 @@ describe('wait-run.sh (US-64 AC26)', () => {
   it('gives up with exit 3 after 10 gh errors in a row, never hangs', () => {
     expect(run(['deploy', '123'], { GH_FAIL: '1' }).status).toBe(3);
     expect(run(['pr', '42'], { GH_FAIL: '1' }).status).toBe(3);
+  });
+  it('exits 1 when a final read fails, never a silent success', () => {
+    expect(run(['deploy', '123'], { JOBS_FAIL: '1' }).status).toBe(1);
+    expect(run(['pr', '42'], { VIEW_FAIL: '1' }).status).toBe(1);
+  });
+  it('cuts off a gh call that hangs, so the time limit still holds', () => {
+    const t = Date.now();
+    expect(run(['deploy', '123'], { GH_SLEEP: '30', WAIT_RUN_GH_TIMEOUT: '1', WAIT_RUN_MAX_MIN: '0' }).status).toBe(3);
+    expect(Date.now() - t).toBeLessThan(10_000);
   });
   it('gives up with exit 3 at the time limit', () => {
     expect(run(['deploy', '123'], { WAIT_RUN_MAX_MIN: '0' }).status).toBe(3);
