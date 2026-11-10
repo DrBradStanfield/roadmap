@@ -1,7 +1,7 @@
 /**
- * The one screening-rules table (audit A2-1 step 2). NOTHING READS IT YET: today
- * the rules live in five copies, and each later PR moves one copy onto this table,
- * with screening-rules.golden.test.ts proving nothing changed.
+ * The one screening-rules table (audit A2-1). The rules lived in five copies; each
+ * PR moves one copy onto this table, with screening-rules.golden.test.ts proving
+ * nothing changed. F reads it (step 3); S, Q, R and M still keep their own copies.
  *   S  plan cards     suggestions.ts (cancer screening and DEXA)
  *   F  form data      input-form.ts screeningForm, screeningWrites
  *   Q  web JSX        ScreeningQuestions.tsx, BoneDensity.tsx
@@ -23,14 +23,10 @@
  *   uploadMinAge  M: the permissive "save this screening" gate (with uploadSex).
  *
  * "Data present, so ask" (lungGroupShown and lungScreeningAsked show a lung
- * question past 80 or below 20 pack-years once it has an answer) is NOT here.
- * It will live in the derived ask predicate, as one rule for every row, in the PR
- * that moves F and Q onto this table; it changes behaviour only where today's
- * rows differ, and that PR must show the golden unchanged or name the change.
- * Nor is the cancer section's own gate, anyScreeningEligible (input-form.ts:371-376):
- * it opens from 35 with no upper bound, which the union of groupAges cannot build
- * (colorectal's group stops at 85), so past 85 with no sex the section shows empty.
- * The same PR keeps it as a named carve-out beside this one, or names the change.
+ * question past 80 or below 20 pack-years once it has an answer) stays lung's own
+ * named branch in input-form.ts: as one rule for every row it would open colorectal
+ * past 75, which the golden forbids. The cancer section's own gate is a named
+ * carve-out too, CANCER_SECTION_MIN_AGE below.
  *
  * The three-file check, by row (evidenceKey -> roadmap_text.html section):
  *   colorectal  screening-colorectal  #cancer-screening, "Colorectal Cancer"
@@ -312,17 +308,43 @@ export const SCREENING_REFS: { readonly [K in GateName]: (s: ScreeningInputs) =>
   }),
 };
 
-/** Whether `age` (and `sex`) fall in a row's ages. A sexed range needs a sex. */
-export function inAges(ages: Ages, age: number, sex: string | undefined): boolean {
+/** The cancer section opens from 35 for anyone, with no upper bound (input-form.ts
+ *  anyScreeningEligible). The union of groupAges cannot build it: colorectal's group stops
+ *  at 85, so past 85 with no sex the section shows its intro and no group. Today's behaviour,
+ *  kept by name. */
+export const CANCER_SECTION_MIN_AGE = 35;
+
+/** The row with this id. */
+export const ruleOf = (id: ScreeningId): ScreeningRule => SCREENING_RULES.find((r) => r.id === id)!;
+
+/** Whether `age` (and `sex`) fall in a row's ages. A sexed range needs a sex. `ignoreUpper`
+ *  drops the upper age (lung's group past 80 while it holds an answer). */
+export function inAges(ages: Ages, age: number, sex: string | undefined, ignoreUpper = false): boolean {
   const range = 'female' in ages ? (sex === 'female' || sex === 'male' ? ages[sex] : undefined) : ages;
   if (!range) return false;
   const [min, max] = range;
-  return age >= min && (max === undefined || age <= max);
+  return age >= min && (ignoreUpper || max === undefined || age <= max);
 }
 
+/** Whether a row's ages, with the row's own sex, take this person. */
+export const ruleTakes = (r: ScreeningRule, ages: Ages, age: number, sex: string | undefined): boolean =>
+  (!r.sex || r.sex === sex) && inAges(ages, age, sex);
+
+/** A row's notes at this age: each fixed note below or above its age, and the by-age prose. */
+export const ruleNotes = (r: ScreeningRule, age: number): string[] => r.notes.flatMap((n) => {
+  if ('ref' in n) return [SCREENING_REFS[n.ref](age)];
+  return (n.below !== undefined && age < n.below) || (n.above !== undefined && age > n.above) ? [n.text] : [];
+});
+
+/** A row's result answer that opens its follow-up (abnormal; DEXA's osteoporosis). */
+export const followupTrigger = (r: ScreeningRule): string | undefined => r.result?.options.find((o) => o.followup)?.value;
+
+/** A row's result chain keys: the result, then the follow-up's status and date. */
+export const chainKeys = (r: ScreeningRule): string[] => (r.result ? [r.result.key, `${r.id}_followup_status`, `${r.id}_followup_date`] : []);
+
 // ---------------------------------------------------------------------------
-// Views: today's shared constants, derived from the table. Nothing reads them
-// yet; screening-rules.test.ts proves each deep-equals the constant it replaces.
+// Views: today's shared constants, derived from the table. Only F reads one yet
+// (screeningFollowupInfo); screening-rules.test.ts proves each deep-equals the constant it replaces.
 // ---------------------------------------------------------------------------
 
 type Entry = readonly [key: string, months: number];
@@ -332,7 +354,9 @@ const intervalsOf = (options: readonly (Option & { readonly months?: number })[]
 /** SCREENING_INTERVALS, keyed by the bare method value, in today's key order: each method's own
  *  interval in row order, then a value several rows share ('other': colorectal's and cervical's),
  *  then the result-keyed rows (DEXA: dexa_normal, dexa_osteopenia, then dexa_scan, the interval
- *  before a result). A shared value takes its first row's months and never throws: a throw at load
+ *  before a result). This ordering rule is fitted to today's data, not a principle: a new row or
+ *  method can need a new rule, and the golden test's key-order check is what catches it.
+ *  A shared value takes its first row's months and never throws: a throw at load
  *  blanks the tool. screening-rules.test.ts checks no two rows give one value different months. */
 export function screeningIntervals(rules: readonly ScreeningRule[] = SCREENING_RULES): Record<string, number> {
   const methods = rules.flatMap((r) => (r.followupBy === 'choice' ? r.choice.options : []));
@@ -381,7 +405,7 @@ export function screeningKeys(rules: readonly ScreeningRule[] = SCREENING_RULES)
     r.choice.key,
     ...(r.otherKeys?.afterChoice ?? []),
     ...(r.dateKey ? [r.dateKey] : []),
-    ...(r.result ? [r.result.key, `${r.id}_followup_status`, `${r.id}_followup_date`] : []),
+    ...chainKeys(r),
   ]);
 }
 
