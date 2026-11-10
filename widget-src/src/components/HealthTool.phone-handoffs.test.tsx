@@ -245,6 +245,16 @@ describe('US-16 AC1a on a phone: a chat weight revealed in the vitals matrix wai
     expect(cell.classList.contains('bt-input-active')).toBe(true);
   });
 
+  it('a key other than Tab released on the cell (Escape, Cmd) does not arm it: a tap outside saves nothing', async () => {
+    const cell = await revealChatWeight();
+    fireEvent.keyUp(cell, { key: 'Escape' });
+    fireEvent.keyUp(cell, { key: 'Meta' });
+    tapOutside();
+    await settle();
+    expect(await weights()).toEqual([82]);
+    expect(cell.value).toBe('80');
+  });
+
   it('Save (Enter in the cell) saves it', async () => {
     const cell = await revealChatWeight();
     fireEvent.keyDown(cell, { key: 'Enter' });

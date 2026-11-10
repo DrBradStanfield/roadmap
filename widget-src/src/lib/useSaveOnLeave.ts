@@ -41,6 +41,9 @@ export function useSaveOnLeave(root: RefObject<HTMLElement>, save: () => unknown
     };
     const onFocusIn = (e: FocusEvent) => { if (!within(e)) leave(); };
     const onUse = (e: Event) => { if (within(e)) inside = true; };
+    // Only Tab lands a keyboard user here; an Escape or Cmd released on the
+    // chat's focused cell is not entering it.
+    const onKeyUp = (e: KeyboardEvent) => { if (e.key === 'Tab') onUse(e); };
 
     const listeners = [
       ['pointerdown', onPointerDown],
@@ -48,7 +51,7 @@ export function useSaveOnLeave(root: RefObject<HTMLElement>, save: () => unknown
       ['pointerup', onPointerUp],
       ['focusin', onFocusIn],
       ['input', onUse],
-      ['keyup', onUse],
+      ['keyup', onKeyUp],
     ] as const;
     for (const [type, listener] of listeners) document.addEventListener(type, listener as EventListener, true);
     return () => {
