@@ -50,7 +50,7 @@ import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/ada
 export interface DerivedSeries { whtr: WhtrPoint[]; egfr: EgfrPoint[] }
 import type { RecordHost } from '@roadmap/health-core/record-host';
 import { ensureIsoDatetime } from '../lib/recordedAt';
-import { webRecordHost } from './web-record-host';
+import { dropRefusedOriginals, webRecordHost } from './web-record-host';
 import { Sentry } from '../lib/sentry';
 import { recordFailure } from '../lib/error-diagnostics';
 
@@ -179,7 +179,6 @@ export interface BulkLabValueInput {
 export type BloodTableReport = ReturnType<typeof bloodTableReport>;
 
 // --- small pure helpers ---
-
 
 function activeOnly<T extends { status: string }>(rows: T[]): T[] {
   return rows.filter((r) => r.status === 'active');
@@ -515,8 +514,9 @@ export class RoadmapStore {
         });
       },
     });
-    if (!this.session.edit(commit, erase)) return { saved: [], errorCount: documents.length };
-    return { saved: saved.map(documentView), errorCount: 0, ...(unstored ? { unstored } : {}) };
+    if (this.session.edit(commit, erase)) return { saved: saved.map(documentView), errorCount: 0, ...(unstored ? { unstored } : {}) };
+    dropRefusedOriginals(this.host, this.file, saved);
+    return { saved: [], errorCount: documents.length };
   }
 
   /** Read a stored document's bytes back (viewer). */

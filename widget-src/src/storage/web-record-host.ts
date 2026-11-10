@@ -7,6 +7,8 @@
  */
 import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/adapter';
 import type { RecordHost } from '@roadmap/health-core/record-host';
+import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { liveOriginals } from '@roadmap/health-core/record-session';
 import {
   LocalStorageAdapter,
   clearLocalNamedFiles,
@@ -17,7 +19,7 @@ import {
   stopRoadmapLocalWrites,
 } from './local-storage-adapter';
 import { getDeviceId } from './device-id';
-import { clearOffFileHealthData, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
+import { clearOffFileHealthData, DOC_KEY_PREFIX, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
 import { failureTags, recordFailure, storageCauseClass, storageFailureClass } from '../lib/error-diagnostics';
 
@@ -88,6 +90,15 @@ function clearSyncPending(): void {
 /** True while on-device data is still waiting to reach the cloud. */
 export function isSyncPending(): boolean {
   return safeGetItem(PENDING_MIRROR_KEY) != null;
+}
+
+/** A refused document save: on the device tier, the originals it wrote go,
+ *  unless a live row of `file` names one, so none outlives the refusal
+ *  (US-11 AC1a). A cloud is left alone: its adapters cannot delete (AC5). */
+export function dropRefusedOriginals(host: RecordHost, file: RoadmapFile, written: ReadonlyArray<{ fileRef: string }>): void {
+  if (host.tier !== 'device') return;
+  const live = liveOriginals(file);
+  for (const { fileRef } of written) if (fileRef && !live.has(fileRef)) safeRemoveItem(DOC_KEY_PREFIX + fileRef);
 }
 
 /** The host for `store`: the device tier when it is localStorage itself,
