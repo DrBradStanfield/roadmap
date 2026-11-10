@@ -1509,10 +1509,10 @@
     "category": "conversation-persistence",
     "source": "audit-2026-05-14",
     "must_mention": [
-      "account.drstanfield.com",
       "Yes"
     ],
     "must_not_mention": [
+      "account.drstanfield.com",
       "screenshot",
       "copy-paste",
       "email it to yourself",
@@ -1520,7 +1520,7 @@
       "isn't being saved",
       "is not being saved"
     ],
-    "notes": "Conversations ARE auto-saved (chat-feature.md + supabase.server.ts migrateGuestChat). Logged-in: permanent on account. Guest: saved against ghost session, migrates to real account on signup via sync-embed.liquid line 97. Test runs without user-profile context, so bot sees guest case. Audit conv 6."
+    "notes": "The scripted saved-chat answer in chat-system-prompt.md (Conversation persistence). It is not yet surface-aware (ledger C1); this case follows the answer on main. The retired v1 account and ghost-session model must not come back. Audit conv 6."
   },
   {
     "query": "Can I save this chat?",

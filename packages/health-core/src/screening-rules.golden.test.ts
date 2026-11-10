@@ -39,6 +39,12 @@ describe('US-06, US-07, US-17: A2-1 golden pin of the screening rules', () => {
 
   it('A2-1 golden pin, US-06: SCREENING_MIN_AGE, the intervals, the options and GROUP_COOLDOWNS are unchanged', () => {
     expect(actual.constants).toEqual(golden.constants);
+    // toEqual ignores key order, and the order is behaviour (the fixtures iterate these maps).
+    for (const [name, value] of Object.entries(golden.constants)) {
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        expect(Object.keys((actual.constants as Record<string, unknown>)[name] as object), `${name} key order`).toEqual(Object.keys(value));
+      }
+    }
   });
 
   it('A2-1 golden pin, US-06: isScreeningEligible (the upload gate) says yes at the same ages', () => {

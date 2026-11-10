@@ -7,7 +7,7 @@
   "files": {
     "tools/codex-review.mjs": 1699,
     "tools/knowledge-batch-check.ts": 1526,
-    "packages/health-core/src/suggestions.ts": 1251,
+    "packages/health-core/src/suggestions.ts": 1162,
     "packages/health-core/src/lab-extraction.ts": 1166,
     "widget-src/src/components/InputPanel.tsx": 1099,
     "tools/chat-audit-pull.ts": 1068,
@@ -38,7 +38,7 @@
     "packages/health-core/src/mappings.ts": 635,
     "app/lib/mcp-import.server.ts": 608,
     "app/lib/mcp.server.ts": 608,
-    "packages/health-core/src/input-form.ts": 592,
+    "packages/health-core/src/input-form.ts": 582,
     "packages/health-core/src/chat-edits.ts": 586,
     "ios/engine/my-data.ts": 578,
     "ios/HealthRoadmap/Onboarding/OnboardingView.swift": 571,

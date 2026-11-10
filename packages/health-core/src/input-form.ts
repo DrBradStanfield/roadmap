@@ -12,10 +12,14 @@
 import { lipidCascade, weightCascade } from './medication-cascades';
 import { stampInstant } from './merge';
 import type { MedicationSave } from './state-edits';
+import {
+  CANCER_SECTION_MIN_AGE, SCREENING_REFS, SCREENING_RULES, chainKeys, followupTrigger, inAges, ruleNotes, ruleOf, ruleTakes,
+  screeningFollowupInfo, type ScreeningId, type ScreeningRule,
+} from './screening-rules';
 import { LIPID_MEDS_IN_STEPS, lipidTargetSentence, weightMedIntro, type LipidMarker, type WeightMedicationTrigger } from './suggestions';
 import {
   BEMPEDOIC_ACID_OPTIONS, EZETIMIBE_OPTIONS, GLP1_DRUGS, GLP1_NAMES, METFORMIN_OPTIONS, PCSK9I_OPTIONS,
-  LUNG_PACK_YEARS, SCREENING_FOLLOWUP_INFO, SGLT2I_DRUGS, SGLT2I_NAMES, STATIN_DRUGS, STATIN_NAMES,
+  LUNG_PACK_YEARS, SGLT2I_DRUGS, SGLT2I_NAMES, STATIN_DRUGS, STATIN_NAMES,
   type MedicationInputs, type ScreeningInputs,
 } from './types';
 import type { MetricType, UnitSystem } from './units';
@@ -296,21 +300,20 @@ export function medicationWrites(meds: MedicationInputs, cascadeMode: boolean, f
 // ---------------------------------------------------------------------------
 
 const SELECT: FormOption = { value: '', label: 'Select...' };
+/** A table list as a select's options, Select... first (it clears the answer). */
+const selectOf = (options: ReadonlyArray<{ value: string; label: string }>): FormOption[] => [SELECT, ...options.map(({ value, label }) => ({ value, label }))];
+/** A row's fixed note: the one shown below, or above, an age. */
+const noteText = (id: ScreeningId, side: 'below' | 'above') => ruleOf(id).notes.flatMap((n) => ('text' in n && n[side] !== undefined ? [n.text] : []))[0] ?? '';
 
+/** The notes are the table's (SCREENING_RULES, SCREENING_REFS): the web JSX still reads them here. */
 export const SCREENING_TEXT = {
   title: 'Cancer Screening',
   intro: 'Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.',
-  colorectalEarly: 'Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.',
-  colorectalIndividual: 'Screening is individualized at your age. Discuss with your doctor whether continued screening is appropriate.',
-  breastByAge: (age: number) => age <= 44
-    ? 'Annual mammograms are optional at your age (40–44).'
-    : age <= 54
-      ? 'Annual mammograms are recommended at your age (45–54).'
-      : 'Annual or biennial mammograms are recommended at your age (55+).',
-  cervicalStop: 'Routine cervical screening typically stops at age 65 if you have no history of abnormal results. Discuss with your doctor.',
-  prostateByAge: (age: number) => age < 50
-    ? 'Screening typically starts at 50, but consider at 45 if you are at higher risk (African American or family history).'
-    : 'PSA testing is an option after an informed discussion with your doctor.',
+  colorectalEarly: noteText('colorectal', 'below'),
+  colorectalIndividual: noteText('colorectal', 'above'),
+  breastByAge: SCREENING_REFS.breastByAge,
+  cervicalStop: noteText('cervical', 'above'),
+  prostateByAge: SCREENING_REFS.prostateByAge,
   packYearsLabel: 'Pack-years (packs/day × years smoked)',
   packYearsHint: `Screening recommended if ≥${LUNG_PACK_YEARS} pack-years`,
   psaLabel: 'PSA (ng/mL)',
@@ -319,20 +322,21 @@ export const SCREENING_TEXT = {
   boneIntro: 'DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.',
 } as const;
 
-/** Every screening select's options, the web form's own (Select... first: it clears the answer). */
+/** Every screening select's options: the table's choices and results, and the form's own lists. */
 export const SCREENING_OPTIONS = {
-  colorectal_method: [SELECT, { value: 'fit_annual', label: 'FIT test (annual)' }, { value: 'colonoscopy_10yr', label: 'Colonoscopy (every 10 years)' }, { value: 'other', label: 'Other method' }, { value: 'not_yet_started', label: 'Not yet started' }],
-  breast_frequency: [SELECT, { value: 'annual', label: 'Annual' }, { value: 'biennial', label: 'Every 2 years' }, { value: 'not_yet_started', label: 'Not yet started' }],
-  cervical_method: [SELECT, { value: 'hpv_every_5yr', label: 'HPV test every 5 years (preferred)' }, { value: 'pap_every_3yr', label: 'Pap test every 3 years' }, { value: 'other', label: 'Other method' }, { value: 'not_yet_started', label: 'Not yet started' }],
+  colorectal_method: selectOf(ruleOf('colorectal').choice.options),
+  breast_frequency: selectOf(ruleOf('breast').choice.options),
+  cervical_method: selectOf(ruleOf('cervical').choice.options),
   lung_smoking_history: [SELECT, { value: 'never_smoked', label: 'Never smoked' }, { value: 'former_smoker', label: 'Former smoker' }, { value: 'current_smoker', label: 'Current smoker' }],
-  lung_screening: [SELECT, { value: 'annual_ldct', label: 'Annual low-dose CT' }, { value: 'not_yet_started', label: 'Not yet started' }],
-  prostate_discussion: [SELECT, { value: 'not_yet', label: 'Not yet' }, { value: 'elected_not_to', label: "Yes, and I've elected not to screen" }, { value: 'will_screen', label: 'Yes, and I will screen' }],
-  endometrial_discussion: [SELECT, { value: 'not_yet', label: 'Not yet' }, { value: 'discussed', label: 'Yes, discussed' }],
+  lung_screening: selectOf(ruleOf('lung').choice.options),
+  prostate_discussion: selectOf(ruleOf('prostate').choice.options),
+  endometrial_discussion: selectOf(ruleOf('endometrial').choice.options),
   endometrial_abnormal_bleeding: [SELECT, { value: 'no', label: 'No' }, { value: 'yes_reported', label: 'Yes, reported to doctor' }, { value: 'yes_need_to_report', label: 'Yes, need to report to doctor' }],
-  result: [SELECT, { value: 'normal', label: 'Normal' }, { value: 'abnormal', label: 'Abnormal' }, { value: 'awaiting', label: 'Awaiting results' }],
+  /** The cancer rows' shared result list (screening-rules.test.ts checks each row's). */
+  result: selectOf(ruleOf('colorectal').result!.options),
   followup_status: [SELECT, { value: 'not_organized', label: 'Not yet organized' }, { value: 'scheduled', label: 'Scheduled' }, { value: 'completed', label: 'Completed' }],
-  dexa_screening: [SELECT, { value: 'dexa_scan', label: 'Had a DEXA scan' }, { value: 'not_yet_started', label: 'Not yet started' }],
-  dexa_result: [SELECT, { value: 'normal', label: 'Normal' }, { value: 'osteopenia', label: 'Osteopenia' }, { value: 'osteoporosis', label: 'Osteoporosis' }, { value: 'awaiting', label: 'Awaiting results' }],
+  dexa_screening: selectOf(ruleOf('dexa').choice.options),
+  dexa_result: selectOf(ruleOf('dexa').result!.options),
 } satisfies Record<string, FormOption[]>;
 
 export const SCREENING_LABELS = {
@@ -352,27 +356,27 @@ export const SCREENING_LABELS = {
   dexaFollowupStatus: 'Treatment review status',
 } as const;
 
-/** Each screening type's result answer that opens a follow-up. */
-const FOLLOWUP_TRIGGER: Record<string, string> = {
-  colorectal: 'abnormal', breast: 'abnormal', cervical: 'abnormal', lung: 'abnormal', dexa: 'osteoporosis',
-};
+const FOLLOWUP_INFO = screeningFollowupInfo();
 
-/** The follow-up's name, from its type and method (SCREENING_FOLLOWUP_INFO), capitalised for a label. */
+/** The follow-up's name, from its type and method (the table's follow-ups). */
 export function followupName(type: string, method: string | undefined): string | undefined {
-  return SCREENING_FOLLOWUP_INFO[method ? `${type}_${method}` : `${type}_other`]?.followupName;
+  return FOLLOWUP_INFO[method ? `${type}_${method}` : `${type}_other`]?.followupName;
 }
+
+/** A row's one started method (lung's LDCT, DEXA's scan): only that answer opens its date. */
+const onlyMethod = (r: ScreeningRule) => r.choice.options.find((o) => o.value !== r.notStarted)!.value;
+const LUNG = ruleOf('lung'), DEXA = ruleOf('dexa');
+const CANCER = SCREENING_RULES.filter((r) => r.section === 'cancer-screening');
 
 /** The follow-up date's question: when it was done, or when it is booked. */
 export function followupDateLabel(name: string | undefined, status: string): string {
   return status === 'completed' ? `When was the ${name ?? 'follow-up'} completed?` : `When is the ${name ?? 'follow-up'} scheduled?`;
 }
 
-/** Whether any cancer screening applies at this age and sex (the web shows the card only then). */
+/** Whether any cancer screening applies at this age and sex (the web shows the card only then):
+ *  from the section's own floor, or wherever a group shows. */
 export function anyScreeningEligible(age: number, sex: string | undefined): boolean {
-  return age >= 35
-    || (sex === 'female' && age >= 25)
-    || (age >= 50 && age <= 80)
-    || (sex === 'male' && age >= 45);
+  return age >= CANCER_SECTION_MIN_AGE || CANCER.some((r) => ruleTakes(r, r.groupAges, age, sex));
 }
 
 /**
@@ -381,8 +385,7 @@ export function anyScreeningEligible(age: number, sex: string | undefined): bool
  * the question to pick LDCT again (US-07 AC1f).
  */
 export function lungScreeningAsked(scr: ScreeningInputs): boolean {
-  return (scr.lungPackYears !== undefined && scr.lungPackYears >= LUNG_PACK_YEARS)
-    || !!scr.lungScreening || !!scr.lungLastDate || !!scr.lungResult;
+  return SCREENING_REFS.lungPackYears(scr) || !!scr.lungScreening || !!scr.lungLastDate || !!scr.lungResult;
 }
 
 /**
@@ -390,12 +393,12 @@ export function lungScreeningAsked(scr: ScreeningInputs): boolean {
  * follow-up can be closed and a changed answer put back (US-07 AC1g).
  */
 export function lungGroupShown(age: number, scr: ScreeningInputs): boolean {
-  return age >= 50 && (age <= 80 || !!scr.lungScreening || scr.lungResult === 'abnormal');
+  return inAges(LUNG.groupAges, age, undefined, !!scr.lungScreening || scr.lungResult === 'abnormal');
 }
 
 /** DEXA applies to women from 50 and men from 70. */
 export function dexaEligible(age: number, sex: string | undefined): boolean {
-  return (sex === 'female' && age >= 50) || (sex === 'male' && age >= 70);
+  return ruleTakes(DEXA, DEXA.groupAges, age, sex);
 }
 
 /**
@@ -409,85 +412,76 @@ export function screeningForm(age: number | undefined, sex: string | undefined, 
   const month = (key: string, label: string, when: 'past' | 'future' = 'past'): FormField => ({ kind: 'month', key, label, value: str(key), when });
   const L = SCREENING_LABELS, O = SCREENING_OPTIONS, X = SCREENING_TEXT;
 
-  /** The result, then the follow-up's status and date: shown once the last screening has a date. */
-  const resultChain = (type: string, method: string): FormField[] => {
-    if (!str(`${type}_last_date`)) return [];
-    const result = str(`${type}_result`);
-    const status = str(`${type}_followup_status`);
-    const name = followupName(type, method);
-    const fields: FormField[] = [choice(`${type}_result`, L.result, O.result)];
-    if (result !== FOLLOWUP_TRIGGER[type]) return fields;
-    const statusLabel = `${name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Follow-up'} status`;
-    fields.push(choice(`${type}_followup_status`, statusLabel, O.followup_status));
-    if (status === 'scheduled' || status === 'completed') {
-      fields.push(month(`${type}_followup_date`, followupDateLabel(name, status), status === 'scheduled' ? 'future' : 'past'));
-    }
+  /** The follow-up's status, then its date once booked or done: shown while the result opens it. */
+  const followup = (r: ScreeningRule, method: string): FormField[] => {
+    const [resultKey, statusKey, dateKey] = chainKeys(r);
+    if (str(resultKey) !== followupTrigger(r)) return [];
+    const name = followupName(r.id, method);
+    const status = str(statusKey);
+    const fields = [choice(statusKey, `${name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Follow-up'} status`, O.followup_status)];
+    if (status === 'scheduled' || status === 'completed') fields.push(month(dateKey, followupDateLabel(name, status), status === 'scheduled' ? 'future' : 'past'));
     return fields;
   };
+  /** The result, then its follow-up: shown once the last screening has a date. */
+  const resultChain = (r: ScreeningRule, method: string): FormField[] =>
+    str(r.dateKey!) ? [choice(r.result!.key, L.result, selectOf(r.result!.options)), ...followup(r, method)] : [];
   /** A method question, then the date and result once a method is chosen. */
-  const started = (type: string, methodKey: string, label: string, options: FormOption[], dateLabel: string): FormField[] => {
-    const method = str(methodKey);
-    const fields = [choice(methodKey, label, options)];
-    if (method && method !== 'not_yet_started') fields.push(month(`${type}_last_date`, dateLabel), ...resultChain(type, method));
+  const started = (r: ScreeningRule, label: string, dateLabel: string): FormField[] => {
+    const method = str(r.choice.key);
+    const fields = [choice(r.choice.key, label, selectOf(r.choice.options))];
+    if (method && method !== r.notStarted) fields.push(month(r.dateKey!, dateLabel), ...resultChain(r, method));
     return fields;
+  };
+  /** A cancer group's questions, inside its ask ages. */
+  const asked = (r: ScreeningRule): FormField[] => {
+    switch (r.id) {
+      case 'colorectal': case 'cervical': return started(r, L.method, L.lastScreening);
+      case 'breast': return started(r, L.frequency, L.lastMammogram);
+      case 'lung': {
+        const fields = [choice('lung_smoking_history', L.smokingHistory, O.lung_smoking_history)];
+        if (SCREENING_REFS.lungSmoker(scr)) {
+          fields.push({ kind: 'number', key: 'lung_pack_years', label: X.packYearsLabel, hint: X.packYearsHint, value: str('lung_pack_years'), min: 0, max: 200 });
+          if (lungScreeningAsked(scr)) {
+            fields.push(choice(r.choice.key, L.lungScreening, selectOf(r.choice.options)));
+            if (str(r.choice.key) === onlyMethod(r)) fields.push(month(r.dateKey!, L.lastLdct), ...resultChain(r, onlyMethod(r)));
+          }
+        }
+        return fields;
+      }
+      case 'prostate': {
+        const fields = [choice(r.choice.key, L.prostateDiscussion, selectOf(r.choice.options))];
+        if (str(r.choice.key) === 'will_screen') fields.push({ kind: 'measurement', metric: 'psa', label: X.psaLabel, hint: X.psaHint });
+        return fields;
+      }
+      case 'endometrial': return [
+        choice(r.choice.key, L.endometrialDiscussion, selectOf(r.choice.options)),
+        choice('endometrial_abnormal_bleeding', L.endometrialBleeding, O.endometrial_abnormal_bleeding),
+      ];
+      case 'dexa': return []; default: { const exhaustive: never = r.id; return exhaustive; } // a new row fails typecheck
+    }
   };
 
   const sections: FormSection[] = [];
   if (anyScreeningEligible(age, sex)) {
     const groups: FormGroup[] = [];
-    if (age >= 35 && age <= 85) {
-      groups.push({
-        id: 'colorectal', title: 'Colorectal',
-        notes: [...(age < 45 ? [X.colorectalEarly] : []), ...(age > 75 ? [X.colorectalIndividual] : [])],
-        fields: age <= 75 ? started('colorectal', 'colorectal_method', L.method, O.colorectal_method, L.lastScreening) : [],
-      });
-    }
-    if (sex === 'female' && age >= 40) {
-      groups.push({ id: 'breast', title: 'Breast', notes: [X.breastByAge(age)], fields: started('breast', 'breast_frequency', L.frequency, O.breast_frequency, L.lastMammogram) });
-    }
-    if (sex === 'female' && age >= 25) {
-      groups.push(age <= 65
-        ? { id: 'cervical', title: 'Cervical', notes: [], fields: started('cervical', 'cervical_method', L.method, O.cervical_method, L.lastScreening) }
-        : { id: 'cervical', title: 'Cervical', notes: [X.cervicalStop], fields: [] });
-    }
-    if (lungGroupShown(age, scr)) {
-      const history = str('lung_smoking_history');
-      const fields = [choice('lung_smoking_history', L.smokingHistory, O.lung_smoking_history)];
-      if (history === 'former_smoker' || history === 'current_smoker') {
-        fields.push({ kind: 'number', key: 'lung_pack_years', label: X.packYearsLabel, hint: X.packYearsHint, value: str('lung_pack_years'), min: 0, max: 200 });
-        if (lungScreeningAsked(scr)) {
-          fields.push(choice('lung_screening', L.lungScreening, O.lung_screening));
-          if (str('lung_screening') === 'annual_ldct') fields.push(month('lung_last_date', L.lastLdct), ...resultChain('lung', 'annual_ldct'));
-        }
-      }
-      groups.push({ id: 'lung', title: 'Lung', notes: [], fields });
-    }
-    if (sex === 'male' && age >= 45) {
-      const fields = [choice('prostate_discussion', L.prostateDiscussion, O.prostate_discussion)];
-      if (str('prostate_discussion') === 'will_screen') fields.push({ kind: 'measurement', metric: 'psa', label: X.psaLabel, hint: X.psaHint });
-      groups.push({ id: 'prostate', title: 'Prostate', notes: [X.prostateByAge(age)], fields });
-    }
-    if (sex === 'female' && age >= 45) {
-      groups.push({ id: 'endometrial', title: 'Endometrial', notes: [], fields: [
-        choice('endometrial_discussion', L.endometrialDiscussion, O.endometrial_discussion),
-        choice('endometrial_abnormal_bleeding', L.endometrialBleeding, O.endometrial_abnormal_bleeding),
-      ] });
+    for (const r of CANCER) {
+      // Lung's group stays past 80 while it holds an answer, its questions with it (US-07 AC1g).
+      const lung = r.id === 'lung';
+      if (!(lung ? lungGroupShown(age, scr) : ruleTakes(r, r.groupAges, age, sex))) continue;
+      const fields = lung || ruleTakes(r, r.askAges, age, sex) ? asked(r) : [];
+      groups.push({ id: r.id, title: r.title, notes: ruleNotes(r, age), fields });
     }
     sections.push({ id: 'cancer-screening', title: X.title, intro: X.intro, groups });
   }
 
   if (dexaEligible(age, sex)) {
-    const fields = [choice('dexa_screening', L.dexaScreening, O.dexa_screening)];
-    if (str('dexa_screening') === 'dexa_scan') {
-      fields.push(month('dexa_last_date', L.lastDexa));
-      if (str('dexa_last_date')) fields.push(choice('dexa_result', L.result, O.dexa_result));
-      if (str('dexa_result') === 'osteoporosis') {
-        const status = str('dexa_followup_status');
-        fields.push(choice('dexa_followup_status', L.dexaFollowupStatus, O.followup_status));
-        if (status === 'scheduled' || status === 'completed') {
-          fields.push(month('dexa_followup_date', followupDateLabel('treatment review', status), status === 'scheduled' ? 'future' : 'past'));
-        }
-      }
+    // DEXA's follow-up shows on an osteoporosis result even before the scan's date.
+    const method = str(DEXA.choice.key);
+    const fields = [choice(DEXA.choice.key, L.dexaScreening, selectOf(DEXA.choice.options))];
+    if (method === onlyMethod(DEXA)) {
+      fields.push(month(DEXA.dateKey!, L.lastDexa));
+      if (str(DEXA.dateKey!)) fields.push(choice(DEXA.result!.key, L.result, selectOf(DEXA.result!.options)));
+      fields.push(...followup(DEXA, method));
     }
     sections.push({ id: 'bone-density', title: X.boneTitle, intro: X.boneIntro, groups: [{ id: 'dexa', title: '', notes: [], fields }] });
   }
@@ -500,11 +494,6 @@ export function readScreening(scr: ScreeningInputs, key: string): string {
   return value === undefined || value === null ? '' : String(value);
 }
 
-/** The answers that depend on each earlier answer, cleared when it no longer opens them. */
-function dependents(type: string): string[] {
-  return [`${type}_result`, `${type}_followup_status`, `${type}_followup_date`];
-}
-
 /**
  * What one screening answer writes, in order (the web form's onChange rules):
  * the answer itself, then '' for each later answer it closes, and only for
@@ -515,17 +504,18 @@ function dependents(type: string): string[] {
 export function screeningWrites(scr: ScreeningInputs, key: string, value: string): Array<[string, string]> {
   const writes: Array<[string, string]> = [[key, value]];
   const clear = (...keys: string[]) => { for (const k of keys) if (readScreening(scr, k)) writes.push([k, '']); };
-  const type = key.split('_')[0];
-  if (['colorectal_method', 'breast_frequency', 'cervical_method', 'lung_screening'].includes(key)) {
-    if (value === 'not_yet_started' || value === '') clear(`${type}_last_date`, ...dependents(type));
+  const byChoice = SCREENING_RULES.find((r) => r.choice.key === key);
+  const byResult = SCREENING_RULES.find((r) => r.result?.key === key);
+  if (byChoice?.result && byChoice.dateKey) {
+    // DEXA closes on any answer but its scan; the cancer rows on "Not yet started" or a clear.
+    const closes = byChoice.id === 'dexa' ? value !== onlyMethod(byChoice) : value === byChoice.notStarted || value === '';
+    if (closes) clear(byChoice.dateKey, ...chainKeys(byChoice));
   } else if (key === 'lung_smoking_history') {
-    if (value === 'never_smoked' || value === '') clear('lung_pack_years', 'lung_screening', 'lung_last_date', ...dependents('lung'));
-  } else if (key === 'dexa_screening') {
-    if (value !== 'dexa_scan') clear('dexa_last_date', ...dependents('dexa'));
-  } else if (key.endsWith('_result') && FOLLOWUP_TRIGGER[type]) {
-    if (value !== FOLLOWUP_TRIGGER[type]) clear(`${type}_followup_status`, `${type}_followup_date`);
+    if (value === 'never_smoked' || value === '') clear('lung_pack_years', LUNG.choice.key, LUNG.dateKey!, ...chainKeys(LUNG));
+  } else if (byResult) {
+    if (value !== followupTrigger(byResult)) clear(...chainKeys(byResult).slice(1));
   } else if (key.endsWith('_followup_status')) {
-    if (value === 'not_organized' || value === '') clear(`${type}_followup_date`);
+    if (value === 'not_organized' || value === '') clear(`${key.split('_')[0]}_followup_date`);
   }
   return writes;
 }
