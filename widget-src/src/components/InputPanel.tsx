@@ -13,8 +13,9 @@ import { useAutoAdvance } from '../lib/useAutoAdvance';
 import type { ApiLabValue, ApiSupplement } from '../lib/api-types';
 import { loadFromLocalStorage } from '../lib/storage';
 import { getShownErase } from '../lib/roadmap-data';
+import type { PanelOnboarding } from '../hooks/useOnboarding';
 
-import { type FormStage, FIELD_METRIC_MAP, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD, VITAL_METRICS } from '@roadmap/health-core/mappings';
+import { FIELD_METRIC_MAP, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD, VITAL_METRICS } from '@roadmap/health-core/mappings';
 import { type WeightMedicationTrigger, type LipidMarker } from '@roadmap/health-core/suggestions';
 import { type UnitSystem, fromCanonicalValue, toCanonicalValue, getDisplayLabel, getDisplayRange, UNIT_DEFS, hasUnitChoice, bpTargetFor } from '@roadmap/health-core/units';
 import { identityFieldRange } from '@roadmap/health-core/validation';
@@ -146,18 +147,7 @@ interface InputPanelProps {
   // pre-fill + flash a vitals cell. Non-null on the ref ⇒ the vitals matrix is
   // mounted; HealthTool uses that to route vitals chat edits here vs the field.
   vitalsPrefillRef?: MutableRefObject<VitalsPrefillFn | null>;
-  /** The first answer the record lacks (US-62 AC13): 1 height and weight,
-   *  2 sex, 3 birth date, 4 none. */
-  formStage: FormStage;
-  /** The highest stage reached on this record: what is unlocked stays (US-62 AC13). */
-  reached: FormStage;
-  /** The whole form shows: the onboarding was done, or the record holds more than its answers. */
-  fullForm: boolean;
-  /** About you is its own card of rows at the column's foot (US-62 AC12): a
-   *  returning user's, or once the onboarding's answers are in and left. */
-  aboutYouLow: boolean;
-  /** The focus left the Starting Info card: HealthTool moves About you low if all four answers hold. */
-  onProfileLeft?: () => void;
+  onboarding: PanelOnboarding;
   setShowUploadModal?: (show: boolean) => void;
   /** What the plan was computed from. Null until there is a plan (no valid
    *  sex or height). */
@@ -166,8 +156,6 @@ interface InputPanelProps {
    *  by the validated birth info, plan or no plan: the form withholds its
    *  adult targets, hints and colours (US-07 AC6). */
   grading: Grading;
-  /** The last onboarding answer is in: land at My health's top. Says whether it did (US-62 AC13, AC25). */
-  onOnboardingDone?: (fromBirth?: boolean) => boolean;
   /** A chat edit that filled a grid cell (US-16 AC2): the table opens so the
    *  filled cell shows, phone and desktop. Each new edit is a new object. */
   revealCell?: RevealCell;
@@ -184,10 +172,9 @@ export function InputPanel({
   scheduleLongitudinalSave, flushLongitudinalSave,
   isSavingLongitudinal, fieldsSaved, hasApiResponse,
   bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
-  formStage, reached, fullForm, aboutYouLow, onProfileLeft,
-  setShowUploadModal, planBasis, grading,
-  onOnboardingDone, revealCell = null,
+  onboarding, setShowUploadModal, planBasis, grading, revealCell = null,
 }: InputPanelProps) {
+  const { stage: formStage, reached, fullForm, aboutYouLow, profileLeft: onProfileLeft, done: onOnboardingDone } = onboarding;
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
   // Number boxes holding text the browser could not read ("175,500" gives "" with
   // validity.badInput): not a clear, so nothing is written or saved (US-02 AC7).
@@ -314,9 +301,9 @@ export function InputPanel({
   const leavePending = useRef(false);
   const leaveCard = () => {
     leavePending.current = false;
-    if (formStage !== 4) return; // the move needs all four answers: measure only for it
+    // Measured only for a move (HealthTool's call), still before it: React commits the move after this handler returns.
+    if (!onProfileLeft?.()) return;
     flipFrom.current = new Map([...(panelRef.current?.children ?? [])].map(el => [el, el.getBoundingClientRect().top]));
-    onProfileLeft?.();
   };
   const leaveProfile = (e: React.FocusEvent<HTMLDivElement>) => {
     if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;

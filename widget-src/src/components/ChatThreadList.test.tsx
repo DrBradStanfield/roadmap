@@ -6,10 +6,9 @@
  * when it or its row has focus, and always on a screen with no hover.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { render, fireEvent, cleanup } from '@testing-library/react';
 import { ChatThreadList } from './ChatThreadList';
+import { cascaded, focusOn } from '../testing/css-cascade';
 
 const conversations = [
   { id: 'c1', title: 'Old thread', updatedAt: 'x', createdAt: 'x' },
@@ -52,11 +51,15 @@ describe('US-15 AC46 — the Delete control in the chat History list', () => {
   });
 
   it('US-15 AC46: styles.css shows the Delete control on focus, and always where there is no hover', () => {
-    // jsdom applies no :focus-within or media queries, so this pins the rules.
-    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8').replace(/\s+/g, ' ');
-    const shown = /([^{}]*)\{ opacity: 1; \}/g;
-    const selectors = [...css.matchAll(shown)].map(m => m[1]);
-    expect(selectors.some(s => s.includes('.chat-thread-item:focus-within .chat-thread-delete'))).toBe(true);
-    expect(css).toMatch(/@media \(hover: none\) \{ \.chat-thread-delete \{ opacity: 1; \} \}/);
+    // jsdom applies no :focus-within or media queries, so this resolves the cascade from styles.css.
+    const { view } = list();
+    const del = view.getByRole('button', { name: 'Delete conversation Old thread' });
+    expect(del.closest('.chat-thread-item')).not.toBeNull();
+    const mouse = { width: 1280, hover: true };
+    const row = del.closest('.chat-thread-item')!;
+    expect(cascaded(del, 'opacity', mouse)).toBe('0'); // hidden until the row is hovered or focused
+    expect(cascaded(del, 'opacity', { ...mouse, states: focusOn(row) })).toBe('1'); // the row has focus
+    expect(cascaded(del, 'opacity', { ...mouse, states: focusOn(del) })).toBe('1'); // the control itself has focus
+    expect(cascaded(del, 'opacity', { width: 1280, hover: false })).toBe('1'); // no hover: always shown
   });
 });

@@ -19,6 +19,14 @@ cloud sessions and CI never run, request or wait on it (US-40 AC8; Brad,
 2026-10-11: no Codex for loops). `--loop` stays only for a review Brad chooses
 to run himself, under the contract's Tier 3 restrictions.
 
+**How many, and when to start it.** Several Codex runs may go at once (Brad,
+2026-11-10: "You can run multiple codex agents"). Before starting one, check
+`uptime` and `memory_pressure | tail -1`: hold a new run while the load average
+is over about 8 or free memory is under about 20% (macOS swap stays high long
+after use, so swap alone misleads). Start it in the same message as its
+`adversary`, both in the background, never one after the other: the two are
+independent, and waiting for one doubles the wall-clock.
+
 A fresh-context reviewer on a different model, the cross-model analogue of
 the fresh Opus 5.5 adversarial check. It reviews an immutable, symlink-free
 snapshot in a read-only sandbox with the ChatGPT connector layer, images,
@@ -105,7 +113,11 @@ Whenever the work under review is a specific file (a script, a doc, anything
 gitignored), or the tree holds other sessions' work, run with
 `--subject <file>`, plus `--baseline <file>` for its previous version and
 `--context <path>` for its sources; never a hand-run `codex exec`, which drops
-every protection this wrapper has. Then read the pre-flight `SUBJECT` line on
+every protection this wrapper has. `--context` refuses an instruction file or a
+path inside an instruction folder (AGENTS.md, CLAUDE.md, `.codex/`, `.claude/`,
+docs/review-format.md), and a folder holding one anywhere inside it: `ios/`
+now has a CLAUDE.md, so point `--context` at a subfolder without one, or at
+the specific files. Then read the pre-flight `SUBJECT` line on
 stderr before trusting the verdict: it names the file reviewed, its baseline,
 its size and sha256, and how many other uncommitted files were left out of
 the snapshot. A subject identical to its baseline is `E_SUBJECT_UNCHANGED`;

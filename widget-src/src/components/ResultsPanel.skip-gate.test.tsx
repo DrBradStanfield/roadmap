@@ -35,6 +35,8 @@ vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
 import { PlanHost as ResultsPanel } from '../testing/plan-host';
 import { REMINDER_SIGNUP_LABEL, REMINDER_SIGNUP_DONE, GUEST_CAPTURE_BUTTON_LABEL, PDF_WINDOW_BLOCKED } from './PlanPdf';
 import { deleteButton } from '../testing/settings';
+import { ColumnHeader } from './ColumnHeader';
+import { cascaded, nest } from '../testing/css-cascade';
 
 const results = calculateHealthResults({ heightCm: 175, sex: 'male' });
 
@@ -327,14 +329,28 @@ describe('US-44 AC6 — Save as PDF shows on a phone', () => {
 
   // The chat column's header still hides on a phone; the plan header's actions rule went with the plan column.
   it('styles.css: at 768px the column header hides', () => {
-    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8').replace(/\s+/g, ' ');
-    expect(css).toContain('.hr-col-header { display: none; }');
+    const header = render(<ColumnHeader title="Ask about your plan"/>).container.querySelector('.hr-col-header')!;
+    for (const phone of [390, 768]) expect(cascaded(header, 'display', phone)).toBe('none');
+    expect(cascaded(header, 'display', 769)).toBe('flex');
+    // Text, as an absence: no rule for the plan header's actions survives.
+    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
     expect(css).not.toContain('hr-col-header--actions');
   });
 
   it('styles.css: on a phone the cards keep their 10px side gutter (live 2026-11-01: Sign in sat flush on the screen edge)', () => {
-    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8').replace(/\s+/g, ' ');
-    expect(css).toContain('.section-card { padding: 12px !important; margin-left: 10px; margin-right: 10px; }');
+    const card = nest('section-card');
+    for (const side of ['margin-left', 'margin-right']) {
+      for (const phone of [390, 768]) expect(cascaded(card, side, phone)).toBe('10px');
+      expect(cascaded(card, side, 769)).toBeUndefined(); // a phone's gutter only
+    }
+    for (const side of ['padding-top', 'padding-right', 'padding-bottom', 'padding-left']) {
+      for (const phone of [390, 768]) {
+        expect(cascaded(card, side, phone)).toBe('12px');
+        // !important: the later .section-card--bt { padding: 0 } does not take a phone card's padding.
+        expect(cascaded(nest('section-card section-card--bt'), side, phone)).toBe('12px');
+      }
+      expect(cascaded(card, side, 769)).toBe('24px'); // a desktop card keeps its 24px
+    }
   });
 });
 
@@ -432,6 +448,19 @@ describe('US-09 AC19 — the storage button\'s attention flag', () => {
     expect(attention(view)).toBe('true');
     fireEvent.click(deleteButton());
     await waitFor(() => expect(attention(view)).toBe('false'));
+  });
+
+  // Another device's erase once re-read, or this tab's erase whose write failed
+  // but still moved the erase (useErase.test.tsx): the screen shows a new erase
+  // without a successful Delete here. Before, the pulse outlived it.
+  it('skip-gate: any erase the screen shows forgets the opened window, not only a successful Delete here', async () => {
+    const view = showPlan({ syncControl, shownErase: 'e1' });
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await waitFor(() => expect(attention(view)).toBe('true'));
+    view.rerender(plan({ syncControl, shownErase: 'e1' }));
+    expect(attention(view)).toBe('true');
+    view.rerender(plan({ syncControl, shownErase: 'e2' }));
+    expect(attention(view)).toBe('false');
   });
 
   it('skip-gate: a plan that goes blank mid-edit (height cleared) keeps it on', async () => {

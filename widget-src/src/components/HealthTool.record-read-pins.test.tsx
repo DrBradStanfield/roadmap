@@ -29,6 +29,8 @@ import { openAboutYou } from '../testing/health-tool-harness';
 import { WRITE_REFUSED } from '../lib/erase-copy';
 import { press, pressMouse, releaseMouse, typeInto } from '../testing/matrix-gestures';
 import { cellText } from '../lib/blood-test-cell';
+import { Sentry } from '../lib/sentry';
+const { scrubEvent: realScrubEvent } = await vi.importActual<typeof import('../lib/sentry')>('../lib/sentry');
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -53,9 +55,23 @@ vi.mock('../lib/roadmap-data', async original => {
   return {
     ...real,
     loadLatestMeasurements: () => { reads.count++; return real.loadLatestMeasurements(); },
+    // The lab read fails on every call when asked: a lasting failure of the first read's mirror (PR 1155 review R1).
+    loadLabValues: () => failMirror.always ? Promise.reject(new Error('Synthetic test: lab read failed')) : real.loadLabValues(),
     saveChangedMeasurements: (...args: Parameters<typeof real.saveChangedMeasurements>) => {
       if (refuse.next) { refuse.next = false; return Promise.resolve({ ok: false }); }
       return real.saveChangedMeasurements(...args);
+    },
+  };
+});
+// The first read's mirror throws once when asked, as a malformed record would (PR 1155 review F1).
+const failMirror = vi.hoisted(() => ({ next: false, threw: false, always: false }));
+vi.mock('../hooks/useRecordReads', async original => {
+  const real = await original<typeof import('../hooks/useRecordReads')>();
+  return {
+    ...real,
+    mirrorRecord: (...args: Parameters<typeof real.mirrorRecord>) => {
+      if (failMirror.next) { Object.assign(failMirror, { next: false, threw: true }); return Promise.reject(new Error('Synthetic test: mirror failed')); }
+      return real.mirrorRecord(...args);
     },
   };
 });
@@ -106,9 +122,11 @@ const turn = (mobile: boolean) => act(() => { viewport.mobile = mobile; for (con
 beforeEach(async () => {
   tracked.calls = [];
   refuse.next = false;
+  Object.assign(failMirror, { next: false, threw: false, always: false });
   Object.assign(atMount, { run: null, effectsRan: false, inGap: false });
   upload.complete = null;
   vi.mocked(trackABConversion).mockClear();
+  vi.mocked(Sentry.captureException).mockClear();
   localStorage.clear(); sessionStorage.clear();
   viewport.mobile = false;
   viewport.listeners.clear();
@@ -176,6 +194,29 @@ async function completeRecord() {
   await flushRoadmapStore();
 }
 const mirror = () => loadFromLocalStorage();
+/** What the strict scrubber sends for a capture tagged as useRecordApply tags it: the tags kept, the text replaced. */
+function scrubbed(error: Error) {
+  const [, hint] = vi.mocked(Sentry.captureException).mock.calls.find(([e]) => (e as Error).message === error.message)!;
+  const { tags } = hint as { tags: Record<string, string> };
+  const event = realScrubEvent({ type: undefined, tags, exception: { values: [{ type: 'Error', value: error.message }] } });
+  return { tags: event?.tags, value: event?.exception?.values?.[0].value };
+}
+/** Another device erases the record, as its deleteUserData writes it, then starts its new record with `profile`; this tab is told. */
+async function eraseFromAnotherDevice(profile: Partial<RoadmapFile['profile']> = {}) {
+  const adapter = new LocalStorageAdapter();
+  const { body, version } = await adapter.read(ROADMAP_FILE_NAME);
+  const now = new Date(Date.now() + 1000).toISOString();
+  const prior = migrateFile(body, { deviceId: 'other-device', now });
+  const erased = migrateFile(null, { deviceId: 'other-device', now });
+  const epoch = (prior.meta.eraseEpoch ?? 0) + 1;
+  erased.schemaVersion = CURRENT_SCHEMA_VERSION;
+  erased.erasedRows = { fromEpoch: epoch, ids: [...new Set(rowRootIds(prior))].sort() };
+  erased.meta.eraseEpoch = epoch;
+  erased.meta.erasedAt = now;
+  if (Object.keys(profile).length) erased.profile = { ...erased.profile, ...profile, updatedAt: now };
+  await adapter.write(ROADMAP_FILE_NAME, erased, version);
+  await act(async () => { window.dispatchEvent(new StorageEvent('storage', { key: null })); });
+}
 
 // First in the file: after other tests here, React's first commit flushed its effects in the
 // same task (no gap) in trials, and `inGap` would fail these.
@@ -594,26 +635,43 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
     await siRecord();
     const view = await open();
     type(q(view, '#heightCm'), '171'); // focused, unsaved
-    // Another device erases the record, as its deleteUserData writes it.
-    const adapter = new LocalStorageAdapter();
-    const { body, version } = await adapter.read(ROADMAP_FILE_NAME);
-    const now = new Date(Date.now() + 1000).toISOString();
-    const prior = migrateFile(body, { deviceId: 'other-device', now });
-    const erased = migrateFile(null, { deviceId: 'other-device', now });
-    const epoch = (prior.meta.eraseEpoch ?? 0) + 1;
-    erased.schemaVersion = CURRENT_SCHEMA_VERSION;
-    erased.erasedRows = { fromEpoch: epoch, ids: [...new Set(rowRootIds(prior))].sort() };
-    erased.meta.eraseEpoch = epoch;
-    erased.meta.erasedAt = now;
     // The erasing device then chose US units in its new record: they show at once, never held.
-    erased.profile = { ...erased.profile, unitSystem: 'conventional', updatedAt: now };
-    await adapter.write(ROADMAP_FILE_NAME, erased, version);
-    await act(async () => { window.dispatchEvent(new StorageEvent('storage', { key: null })); });
+    await eraseFromAnotherDevice({ unitSystem: 'conventional' });
     // The saved answers and the weight go. (The focused height box keeps its own typed
     // text, InputPanel's rawInputs, as before this change.)
     await waitFor(() => expect((q(view, '#birthYear') as HTMLInputElement | null)?.value ?? '').toBe(''), { timeout: 3000 });
     expect(view.queryByRole('radio', { name: 'Female', checked: true })).toBeNull();
     expect(await activeWeights()).toEqual([]);
     expect(q(view, '#heightFeet')).toBeTruthy(); // the height in ft/in, though the cm box had the focus
+  });
+
+  it('US-34 AC4, US-11 AC6 (PR 1155 review F1): the first read fails part-way; a remote erase still applies, and the failure is reported', async () => {
+    await completeRecord();
+    failMirror.next = true; // the first read throws after it has shown the record
+    const view = await open();
+    await waitFor(() => expect(failMirror.threw).toBe(true));
+    await settle(50);
+    await eraseFromAnotherDevice();
+    await waitFor(() => expect((q(view, '#birthYear') as HTMLInputElement | null)?.value ?? '').toBe(''), { timeout: 3000 });
+    expect(view.queryByRole('radio', { name: 'Female', checked: true })).toBeNull();
+    // Reported as the unhandled rejection reached Sentry before, tagged so the strict scrubber strips its text (PR 1155 review R4).
+    expect(vi.mocked(Sentry.captureException)).toHaveBeenCalledWith(new Error('Synthetic test: mirror failed'), { tags: { area: 'cloud-sync', op: 'load' } });
+    expect(scrubbed(new Error('Synthetic test: mirror failed'))).toEqual({ tags: { area: 'cloud-sync', op: 'load' }, value: 'Health record operation failed' });
+  });
+
+  it('US-34 AC4 (PR 1155 review R1): the first read fails for a lasting reason; a remote change then fails too: reported, never unhandled, and not shown', async () => {
+    await completeRecord();
+    failMirror.always = true; // every mirror of the record fails: the first read's, and each re-read's
+    const view = await open();
+    await waitFor(() => expect(vi.mocked(Sentry.captureException)).toHaveBeenCalledTimes(1));
+    await anotherWriter(() => saveChangedMeasurements({ birthYear: 1975 }, { birthYear: 1980 }));
+    await waitFor(() => expect(vi.mocked(Sentry.captureException)).toHaveBeenCalledTimes(2));
+    expect(vi.mocked(Sentry.captureException).mock.calls.map(([e, hint]) => [(e as Error).message, hint])).toEqual([
+      ['Synthetic test: lab read failed', { tags: { area: 'cloud-sync', op: 'load' } }],
+      ['Synthetic test: lab read failed', { tags: { area: 'cloud-sync', op: 'load' } }],
+    ]);
+    await settle(50);
+    // The re-read failed before it showed the record: the page keeps the first read's answer.
+    expect((q(view, '#birthYear') as HTMLInputElement).value).toBe('1980');
   });
 });

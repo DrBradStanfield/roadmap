@@ -1,10 +1,10 @@
 // The plan's view on My health (US-62 AC17-AC26): usePlanView sorts its cards by
-// topic, and holds the new-card highlight, the open reasons, the PDF's hidden copy and
-// the foot. The cards are PlanCards.tsx; the PDF box, its print state and the email
-// capture are PlanPdf.tsx.
+// topic, and holds the new-card highlight (hooks/useHighlights.ts), the open reasons,
+// the PDF's hidden copy and the foot. The cards are PlanCards.tsx; the PDF box, its
+// print state and the email capture are PlanPdf.tsx.
 // The plan has no column of its own since phase 5; InputPanel draws what this builds.
 import React, { useCallback, useState, useRef, useEffect, useMemo } from 'react';
-import type { HealthResults, Suggestion } from '@roadmap/health-core/types';
+import type { HealthResults } from '@roadmap/health-core/types';
 import type { StatTile } from '@roadmap/health-core/stat-tiles';
 import { planSections, topicSections, type TopicCard, type TopicLayout } from '@roadmap/health-core/plan-sections';
 import type { FormSection } from '@roadmap/health-core/input-form';
@@ -20,9 +20,7 @@ import { observeVisibility } from '../lib/observe-visibility';
 import { ColumnHeader } from './ColumnHeader';
 import { GroupedSuggestionCard, NO_HIGHLIGHTS, QuickStats, SuggestionCard, type Highlights, type OpenEvidence } from './PlanCards';
 import { PlanPdf, storagePulse, useEmailCaptureState, usePlanPrint } from './PlanPdf';
-
-// Stays until HealthTool imports OpenEvidenceContext from PlanCards.
-export { OpenEvidenceContext } from './PlanCards';
+import { useHighlights } from '../hooks/useHighlights';
 
 /** The plan's view on My health (US-62 AC17-AC26): its cards by topic (health-core's
  *  `topicSections`, with US-61's overlay on Shopify), the new-card highlight, the urgent
@@ -52,66 +50,8 @@ export interface PlanView {
   foot: React.ReactNode;
   /** US-09 AC19: the guest has their PDF, so the storage card may pulse. */
   attention: boolean;
-  /** An erase forgets the PDF this tab opened. */
-  onErased: () => void;
   /** The plan as Save as PDF prints it (US-08): drawn, hidden, only while getReportHtml copies it. */
   report: React.ReactNode;
-}
-
-/** New or changed suggestions glow for 3s, then fade, once the plan has settled (3s after mount). */
-function useHighlights(suggestions: Suggestion[] | undefined): Highlights {
-  const [highlighted, setHighlighted] = useState<Set<string>>(NO_HIGHLIGHTS);
-  const [fadingOut, setFadingOut] = useState<Set<string>>(NO_HIGHLIGHTS);
-  const baselineRef = useRef<Map<string, { title: string; description: string }>>(new Map());
-  const settledRef = useRef(false);
-  const clearTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const fadeOutTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
-
-  // Settle after 3s: skip highlighting during the initial load.
-  useEffect(() => {
-    const timer = setTimeout(() => { settledRef.current = true; }, 3000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    const current = suggestions ?? [];
-    const currentMap = new Map(current.map(s => [s.id, { title: s.title, description: s.description }]));
-    // Before settling, and for the first batch, the plan is the baseline: nothing glows.
-    if (!settledRef.current || (baselineRef.current.size === 0 && currentMap.size > 0)) {
-      baselineRef.current = currentMap;
-      return;
-    }
-    const next = new Set<string>();
-    for (const s of current) {
-      const prev = baselineRef.current.get(s.id);
-      if (!prev || prev.title !== s.title || prev.description !== s.description) next.add(s.id);
-    }
-    // Nothing new or changed: a change undone mid-glow ends the glow (the same empty set skips a re-render).
-    if (next.size === 0) {
-      setHighlighted(NO_HIGHLIGHTS);
-      setFadingOut(NO_HIGHLIGHTS);
-      baselineRef.current = currentMap;
-      return;
-    }
-    // Cancel any fade-out in progress.
-    if (fadeOutTimeoutRef.current) clearTimeout(fadeOutTimeoutRef.current);
-    setFadingOut(NO_HIGHLIGHTS);
-    setHighlighted(next);
-    if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
-    clearTimeoutRef.current = setTimeout(() => {
-      setFadingOut(next);
-      setHighlighted(NO_HIGHLIGHTS);
-      fadeOutTimeoutRef.current = setTimeout(() => {
-        setFadingOut(NO_HIGHLIGHTS);
-        baselineRef.current = currentMap;
-      }, 500);
-    }, 3000);
-    return () => {
-      if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
-      if (fadeOutTimeoutRef.current) clearTimeout(fadeOutTimeoutRef.current);
-    };
-  }, [suggestions]);
-  return { highlighted, fadingOut };
 }
 
 /**
@@ -160,6 +100,8 @@ const DISCLAIMER = 'This tool is for educational purposes only and is not a subs
 
 interface PlanViewOptions {
   results: HealthResults | null;
+  /** The erase the screen shows (useErase): the PDF window and the open reasons are this record's. */
+  shownErase: string;
   isValid: boolean;
   /** The plan's tiles, for the PDF. */
   tiles: StatTile[];
@@ -172,7 +114,7 @@ interface PlanViewOptions {
   alcoholQuestion?: AlcoholQuestion;
 }
 
-export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitudinal, onSaveLongitudinal, showEmailCapture, formStage, alcoholQuestion }: PlanViewOptions): PlanView {
+export function usePlanView({ results, shownErase, isValid, tiles, forms, hasUnsavedLongitudinal, onSaveLongitudinal, showEmailCapture, formStage, alcoholQuestion }: PlanViewOptions): PlanView {
   const highlights = useHighlights(results?.suggestions);
 
   const { printStatus, pdfBlocked, pdfOpened, printing, printReport, handlePrint, forget } = usePlanPrint(!!results, hasUnsavedLongitudinal, onSaveLongitudinal);
@@ -185,6 +127,15 @@ export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitud
     return next;
   }), []);
   const evidence = useMemo(() => ({ opened, toggle: toggleEvidence }), [opened, toggleEvidence]);
+  // US-09 AC19: any erase the screen shows forgets them: this tab's, one whose
+  // write failed but still erased, or another device's once re-read. The email
+  // capture is kept (a same-tab erase keeps its captured view until reload).
+  const [erase, setErase] = useState(shownErase);
+  if (erase !== shownErase) {
+    setErase(shownErase);
+    forget();
+    setOpened(NO_HIGHLIGHTS);
+  }
 
   // US-61 AC5: Brad's products for a known adult in the US, on the Shopify build only.
   const sections = useMemo((): UsPlanSection[] => {
@@ -236,7 +187,7 @@ export function usePlanView({ results, isValid, tiles, forms, hasUnsavedLongitud
   );
   const foot = <PlanFoot planned={planned}/>;
 
-  return { layout, topics, planned, highlights, alcoholQuestion, urgent, cardIds, evidence, supplementsRef, pdf, foot, attention, onErased: () => { forget(); setOpened(NO_HIGHLIGHTS); }, report };
+  return { layout, topics, planned, highlights, alcoholQuestion, urgent, cardIds, evidence, supplementsRef, pdf, foot, attention, report };
 }
 
 /** My health's foot (US-62 AC26): the disclaimer, feedback, Supercharge and the privacy link. */

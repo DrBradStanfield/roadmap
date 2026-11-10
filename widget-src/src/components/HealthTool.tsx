@@ -18,7 +18,8 @@ import type { MoveTestApi } from './MoveTestPanel';
 import type { VitalsPrefillFn } from './StartingInfoVitals';
 import type { LatestMeasurementsResult } from '../lib/api-types';
 import { InputPanel, type PlanBasis } from './InputPanel';
-import { OpenEvidenceContext, usePlanView } from './ResultsPanel';
+import { usePlanView } from './ResultsPanel';
+import { OpenEvidenceContext } from './PlanCards';
 import { PersonButton } from './SettingsSheet';
 import { MyHealth, type FormSlots } from './MyHealth';
 import { revealAndFocus } from '../lib/reveal';
@@ -147,7 +148,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // post-erase rows. A re-read that brings no erase keeps them.
   const { shownErase, erasing: isDeleting, showErase, eraseUnshown, refusalIsNews, eraseAll } = useErase(() => clearChatEdits());
   // The record shown, at load and on every re-read, and another writer's change held behind an edit (hooks/useRecordApply).
-  const { showRecord, signal: rereadRecord, saved: profileClean } = useRecordApply({
+  const { showRecord, signal: rereadRecord, saved: profileClean, firstReadFailed } = useRecordApply({
     setInputs, reloadValues, applyLists, showUnits, offerUnits, showErase, loaded: hasApiResponse,
     later: () => ({ markSaved, flushPendingSave, profileDirty, clearAnswered }), // declared below
   });
@@ -189,8 +190,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       setHasApiResponse(true);
     }
 
-    void loadData();
-  }, [showErase]);
+    void loadData().catch(firstReadFailed);
+  }, [showErase, firstReadFailed]);
 
   // Fire A/B impression once on mount
   useEffect(() => { trackABImpression(); }, []);
@@ -588,10 +589,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   }), [hasLipidInput, hasWeightInput, medications, screenings, planBasis, inputs.sex, unitOverrides, unitSystem]);
 
   const plan = usePlanView({
-    results,
-    isValid,
-    tiles,
-    forms,
+    results, shownErase, isValid, tiles, forms,
     hasUnsavedLongitudinal: hasApiResponse && LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined),
     onSaveLongitudinal: handleSaveLongitudinal,
     showEmailCapture: emailCaptureActive,
@@ -640,7 +638,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     // US-07 AC6: no reminders for a known minor, who is never enrolled and must see no mailing-list box.
     reminders: plan.planned && !results?.knownMinor ? remindersSection : null,
     storageCard,
-    onDelete: async () => { if (await handleDeleteData()) { plan.onErased(); closeSettings(); } },
+    onDelete: async () => { if (await handleDeleteData()) closeSettings(); },
     isDeleting,
     storageAtFoot: getBackendKind() === 'local',
     onPlanReadyDismiss: planReady ? dismissPlanReady : undefined,
@@ -690,15 +688,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     vitalsFlushRef,
     bloodTestPrefillRef,
     vitalsPrefillRef,
-    formStage,
-    reached,
-    fullForm,
-    aboutYouLow,
-    onProfileLeft: profileLeft,
+    onboarding: { stage: formStage, reached, fullForm, aboutYouLow, profileLeft, done: landOnMyHealth },
     setShowUploadModal,
     planBasis,
     grading,
-    onOnboardingDone: landOnMyHealth,
     // On a phone a chat edit opens the grids, so the filled cell shows (US-62 AC11).
     revealCell,
   };
