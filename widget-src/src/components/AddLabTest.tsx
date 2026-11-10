@@ -20,7 +20,7 @@ import type { Comparator } from '@roadmap/health-core/lab-limits';
 import { bloodTestKeyOf, coreStored } from '@roadmap/health-core/blood-tests';
 import { UnitChip } from './UnitChip';
 import { SAVE_ERRORS, saveErrorText } from './BloodTestTimeline';
-import { addLabValue } from '../lib/roadmap-data';
+import { addLabValue, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { CorrectFn } from '../lib/matrix-save';
 import type { ApiLabValue } from '../lib/api-types';
@@ -49,7 +49,10 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
   dirtyRef?: MutableRefObject<boolean>;
 }) {
   const presetKey = preset && (LAB_CATALOG.some(e => e.key === preset.metricName) ? preset.metricName : 'custom');
-  const [open, setOpen] = useState(false);
+  // Open: the erase the screen showed as it opened, which the save carries, so an erase shown
+  // since refuses it (US-16 AC2d). Closed: null.
+  const [openAt, setOpenAt] = useState<string | null>(null);
+  const open = openAt !== null;
   const [testKey, setTestKey] = useState(presetKey ?? ''); // catalogue key | 'custom' | ''
   const [customName, setCustomName] = useState(presetKey === 'custom' ? preset!.metricName : '');
   const [customUnit, setCustomUnit] = useState(presetKey === 'custom' ? preset!.unit : '');
@@ -64,7 +67,7 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
 
   if (!open) {
     return (
-      <button type="button" className="alr-add-btn" onClick={() => setOpen(true)}>
+      <button type="button" className="alr-add-btn" onClick={() => setOpenAt(getShownErase())}>
         {preset ? '+ Add a value' : '+ Add a blood test'}
       </button>
     );
@@ -89,7 +92,7 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
 
   const clearNotice = () => { setNotice(null); setHeld(null); };
   const close = () => {
-    setOpen(false);
+    setOpenAt(null);
     setTestKey(presetKey ?? '');
     setCustomName(presetKey === 'custom' ? preset!.metricName : '');
     setCustomUnit(presetKey === 'custom' ? preset!.unit : '');
@@ -138,7 +141,7 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
       // health-core's one lab add (US-25 AC25): it files the test, refuses a unit the catalogue does
       // not take in the upload summary's words (US-21 AC15), and names a held value on that day.
       // A value page adds to its own series, whatever its name or unit (US-25 AC25).
-      const result = await addLabValue({ metricName, unit, value: value!, day: date, ...(preset ? { existingSeries: true } : null) });
+      const result = await addLabValue({ metricName, unit, value: value!, day: date, ...(preset ? { existingSeries: true } : null) }, openAt!);
       if (!result) {
         setNotice('Could not save — please try again.');
       } else if (result.ok) {

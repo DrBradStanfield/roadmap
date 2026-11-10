@@ -38,13 +38,19 @@ export function useErase(onShown: () => void): Erase {
   const shownHook = useRef(onShown);
   useLayoutEffect(() => { shownHook.current = onShown; });
   const [shownErase, setShownErase] = useState(getShownErase);
+  // The store's mark moves only once the screen shows the erase: until React
+  // commits the new tree, the old one is on screen, and a save asked from it
+  // keeps the old mark and is refused (US-16 AC2d). Children's layout effects
+  // run before this one, so none may write; none does (2026-11-10).
+  useLayoutEffect(() => { markEraseShown(shownErase); }, [shownErase]);
+  const asked = useRef(shownErase); // the erase last asked of the screen, shown or still committing
   const [erasing, setErasing] = useState(false);
   const erasingNow = useRef(false); // the same, for a refusal inside the erase's own turn
   const saidFor = useRef(''); // the erase whose refusal was last said
 
   const showErase = useCallback((erase: string) => {
-    if (erase === getShownErase()) return;
-    markEraseShown(erase);
+    if (erase === asked.current) return;
+    asked.current = erase;
     setShownErase(erase);
     shownHook.current();
   }, []);

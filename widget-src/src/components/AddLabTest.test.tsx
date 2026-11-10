@@ -20,6 +20,7 @@ const addLabValue = vi.fn();
 const trackProductEvent = vi.fn();
 vi.mock('../lib/roadmap-data', () => ({
   addLabValue: (...args: unknown[]) => addLabValue(...args),
+  getShownErase: () => 'erase-1',
 }));
 const realAdd = (input: Parameters<typeof addRecordLabValue>[1]) =>
   addRecordLabValue({ ...createEmptyFile({ deviceId: 'test', now: new Date().toISOString() }), labValues: held }, input, new Date().toISOString());
@@ -65,7 +66,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
     fireEvent.change(getByLabelText('Value'), { target: { value: '30' } });
     fireEvent.click(getByRole('button', { name: /^save$/i }));
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
-    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'ggt', unit: 'U/L', value: 30, day: todayIso });
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'ggt', unit: 'U/L', value: 30, day: todayIso }, 'erase-1');
     expect(trackProductEvent).toHaveBeenCalledWith('lab_row_added');
   });
 
@@ -77,7 +78,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
     fireEvent.change(getByLabelText('Value'), { target: { value: '55' } });
     fireEvent.click(getByRole('button', { name: /^save$/i }));
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
-    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'Amylase', unit: 'U/L', value: 55, day: todayIso });
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'Amylase', unit: 'U/L', value: 55, day: todayIso }, 'erase-1');
   });
 
   it('a duplicate (same test, same day) shows a notice instead of silently doing nothing', async () => {
@@ -170,7 +171,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
       fireEvent.change(getByLabelText('Test name'), { target: { value: 'Folate' } });
       expect(queryByRole('button', { name: /^Replace/ })).toBeNull();
       fireEvent.click(getByRole('button', { name: /^save$/i }));
-      await waitFor(() => expect(addLabValue).toHaveBeenLastCalledWith(expect.objectContaining({ metricName: 'Folate', value: 54 })));
+      await waitFor(() => expect(addLabValue).toHaveBeenLastCalledWith(expect.objectContaining({ metricName: 'Folate', value: 54 }), 'erase-1'));
       expect(onCorrect).not.toHaveBeenCalled();
     });
 
@@ -179,7 +180,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
       fireEvent.change(getByLabelText('Unit'), { target: { value: 'ng/mL' } });
       expect(queryByRole('button', { name: /^Replace/ })).toBeNull();
       fireEvent.click(getByRole('button', { name: /^save$/i }));
-      await waitFor(() => expect(addLabValue).toHaveBeenLastCalledWith(expect.objectContaining({ metricName: 'Feritin', unit: 'ng/mL' })));
+      await waitFor(() => expect(addLabValue).toHaveBeenLastCalledWith(expect.objectContaining({ metricName: 'Feritin', unit: 'ng/mL' }), 'erase-1'));
       expect(onCorrect).not.toHaveBeenCalled();
     });
   });
@@ -304,7 +305,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
     expect(save.disabled).toBe(false);
     fireEvent.click(save);
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
-    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'Amylase', unit: 'U/L', value: 55, day: todayIso });
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'Amylase', unit: 'U/L', value: 55, day: todayIso }, 'erase-1');
   });
 
   it('US-21 AC2: a catalogue test picked after an Other test saves the catalogue test, not the typed name', async () => {
@@ -316,7 +317,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
     fireEvent.change(getByLabelText('Value'), { target: { value: '30' } });
     fireEvent.click(getByRole('button', { name: /^save$/i }));
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
-    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'ggt', unit: 'U/L', value: 30, day: todayIso });
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'ggt', unit: 'U/L', value: 30, day: todayIso }, 'erase-1');
   });
 
   // US-02 AC7: a catalogued test has no input range, so "1,050" (1050 or
@@ -333,7 +334,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
     fireEvent.change(getByLabelText('Value'), { target: { value: '1,05' } });
     fireEvent.click(save);
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
-    expect(addLabValue).toHaveBeenCalledWith(expect.objectContaining({ metricName: 'ferritin', value: 1.05 }));
+    expect(addLabValue).toHaveBeenCalledWith(expect.objectContaining({ metricName: 'ferritin', value: 1.05 }), 'erase-1');
   });
 
   // Codex R2: no range checks grouped thousands here, so they are refused.
@@ -433,7 +434,7 @@ describe('US-25 AC25: a value page adds to its own series', () => {
     fireEvent.change(getByLabelText(/value/i), { target: { value: '1.2' } });
     fireEvent.click(getByText(/^save$/i));
     await waitFor(() => expect(onAdded).toHaveBeenCalled());
-    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'INR', unit: '', value: 1.2, day: todayIso, existingSeries: true });
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'INR', unit: '', value: 1.2, day: todayIso, existingSeries: true }, 'erase-1');
   });
 
   it('adds to a kept-apart lab series named like a vital (Weight)', async () => {

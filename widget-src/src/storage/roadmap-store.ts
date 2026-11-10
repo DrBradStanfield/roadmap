@@ -476,10 +476,10 @@ export class RoadmapStore {
 
   /** One lab value a person adds, by health-core's one lab add (`addLabValue`, the iPhone's too):
    *  null when this copy refuses to write (an erase it has not shown). */
-  addLabValue(input: AddLabValueRequest): AddLabValueResult | null {
-    if (this.refuses()) return null;
+  addLabValue(input: AddLabValueRequest, erase?: string): AddLabValueResult | null {
+    if (this.refuses(erase)) return null;
     const result = addRecordLabValue(this.file, input, new Date().toISOString());
-    if (result.ok) this.session.edit(() => result.file);
+    if (result.ok) this.session.edit(() => result.file, erase);
     return result;
   }
 
@@ -561,9 +561,9 @@ export class RoadmapStore {
   }
 
   /** Mark the email-capture step done (monotonic, stamped + persisted). */
-  markReportEmailCaptured(): boolean {
+  markReportEmailCaptured(erase?: string): boolean {
     if (this.file.profile.reportEmailCaptured) return true; // idempotent — only ever set true
-    return this.session.edit((file) => stampProfile(file, { reportEmailCaptured: true }, new Date().toISOString()));
+    return this.session.edit((file) => stampProfile(file, { reportEmailCaptured: true }, new Date().toISOString()), erase);
   }
 
   /** The unit the user chose for Lp(a)'s field (US-05 AC2), as readers see it. */
