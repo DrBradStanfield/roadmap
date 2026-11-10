@@ -72,8 +72,10 @@ On 2026-11-10, from `leads.csv`:
 Since 2026-11-08 the refactor has split `HealthTool`, `ResultsPanel` and
 the upload flow into state hooks. The audit has no id for that work. Each
 area was surveyed first for modes held in flags, refs and timers; the
-leads are `D` (onboarding), `R` (record read), `P` (plan view) and `U`
-(upload).
+leads are `D` (onboarding), `R` (record read), `P` (plan view), `U`
+(upload) and `H` (composition, the machines meeting in `HealthTool`).
+This file has no `durability_check` column: a done row names its check in
+`evidence`.
 
 Status here comes from the survey sessions' notes and the merged PR list
 on 2026-11-10. It was not rechecked line by line against the code. Rows may be

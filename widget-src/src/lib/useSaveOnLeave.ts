@@ -15,9 +15,11 @@ export function useSaveOnLeave(root: RefObject<HTMLElement>, save: () => unknown
 
   useEffect(() => {
     // Leaving needs having been in: a value the chat offered to a matrix the
-    // user never touched waits for them to review it. Typing counts as being
-    // in: iOS leaves the focus in a cell after a tap on blank space, and a
-    // second value typed there must commit on the next leave.
+    // user never touched waits for them to review it. Being in is the user's
+    // own act: a press, typing, or a key landing in the matrix (Tab's keyup).
+    // A focus alone is not: the page focuses the chat's cell on a phone
+    // (US-16 AC1a). Typing counts: iOS leaves the focus in a cell after a tap
+    // on blank space, and a second value typed there must commit on the next leave.
     let inside = false;
     // Pointers pressed outside and not cancelled: taps, until they lift.
     const pressedOutside = new Set<number>();
@@ -37,18 +39,19 @@ export function useSaveOnLeave(root: RefObject<HTMLElement>, save: () => unknown
     const onPointerUp = (e: PointerEvent) => {
       if (pressedOutside.delete(e.pointerId) && !within(e)) leave();
     };
-    const onFocusIn = (e: FocusEvent) => {
-      if (within(e)) inside = true;
-      else leave();
-    };
-    const onInput = (e: Event) => { if (within(e)) inside = true; };
+    const onFocusIn = (e: FocusEvent) => { if (!within(e)) leave(); };
+    const onUse = (e: Event) => { if (within(e)) inside = true; };
+    // Only Tab lands a keyboard user here; an Escape or Cmd released on the
+    // chat's focused cell is not entering it.
+    const onKeyUp = (e: KeyboardEvent) => { if (e.key === 'Tab') onUse(e); };
 
     const listeners = [
       ['pointerdown', onPointerDown],
       ['pointercancel', onPointerCancel],
       ['pointerup', onPointerUp],
       ['focusin', onFocusIn],
-      ['input', onInput],
+      ['input', onUse],
+      ['keyup', onKeyUp],
     ] as const;
     for (const [type, listener] of listeners) document.addEventListener(type, listener as EventListener, true);
     return () => {

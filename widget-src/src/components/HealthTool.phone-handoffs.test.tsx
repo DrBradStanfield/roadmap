@@ -10,7 +10,7 @@ import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-libra
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, loadAllHistory, saveChangedMeasurements } from '../lib/roadmap-data';
 
 const chat = vi.hoisted(() => ({ proposeEdit: null as null | ((edits: ProposedEdit[]) => void) }));
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
@@ -209,6 +209,75 @@ describe('US-16 AC2 on a phone: a chat edit lands on My health, on the cell it f
     act(() => chat.proposeEdit!([{ kind: 'medication', medicationKey: 'statin', drugName: 'rosuvastatin', doseValue: 10, doseUnit: 'mg' }]));
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
     expect(tab(view, 'Chat').getAttribute('aria-selected')).toBe('true');
+  });
+});
+
+// US-16 AC1a: the reveal's focus is the page's, not the user's, so it must not
+// arm the matrix's save on leave (US-03 AC5); the chat's value waits for Save.
+describe('US-16 AC1a on a phone: a chat weight revealed in the vitals matrix waits for the user to Save', () => {
+  const weights = async () => (await loadAllHistory()).filter(m => m.metricType === 'weight').map(m => m.value).sort();
+  const tapOutside = () => {
+    fireEvent.pointerDown(document.body, { pointerId: 1, pointerType: 'touch' });
+    fireEvent.pointerUp(document.body, { pointerId: 1, pointerType: 'touch' });
+  };
+  const settle = async () => { await act(async () => { await new Promise((r) => setTimeout(r, 400)); }); await flushRoadmapStore(); };
+  async function revealChatWeight() {
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
+    await addMeasurement('weight', 82, '2026-09-01');
+    await flushRoadmapStore();
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    await waitFor(() => expect(view.container.querySelector('.bt-timeline-title')).not.toBeNull());
+    fireEvent.click(tab(view, 'Chat'));
+    act(() => chat.proposeEdit!([{ kind: 'field', field: 'weightKg', displayValue: 80, unitSystem: 'si', date: null }]));
+    await waitFor(() => expect(document.activeElement?.classList.contains('bt-input-active')).toBe(true));
+    const cell = document.activeElement as HTMLInputElement;
+    expect(cell.value).toBe('80');
+    return cell;
+  }
+
+  it('a tap outside saves nothing; the value stays in its highlighted cell', async () => {
+    const cell = await revealChatWeight();
+    tapOutside();
+    await settle();
+    expect(await weights()).toEqual([82]);
+    expect(cell.isConnected && cell.value).toBe('80');
+    expect(cell.classList.contains('bt-input-active')).toBe(true);
+  });
+
+  it('a key other than Tab released on the cell (Escape, Cmd) does not arm it: a tap outside saves nothing', async () => {
+    const cell = await revealChatWeight();
+    fireEvent.keyUp(cell, { key: 'Escape' });
+    fireEvent.keyUp(cell, { key: 'Meta' });
+    tapOutside();
+    await settle();
+    expect(await weights()).toEqual([82]);
+    expect(cell.value).toBe('80');
+  });
+
+  it('Save (Enter in the cell) saves it', async () => {
+    const cell = await revealChatWeight();
+    fireEvent.keyDown(cell, { key: 'Enter' });
+    await waitFor(async () => expect(await weights()).toEqual([80, 82]));
+  });
+
+  it('the user taps into the cell, edits it and taps outside: saved, as before', async () => {
+    const cell = await revealChatWeight();
+    fireEvent.pointerDown(cell, { pointerId: 2, pointerType: 'touch' });
+    fireEvent.pointerUp(cell, { pointerId: 2, pointerType: 'touch' });
+    fireEvent.change(cell, { target: { value: '79' } });
+    tapOutside();
+    await waitFor(async () => expect(await weights()).toEqual([79, 82]));
+  });
+
+  it('the user Tabs into the cell from outside, then taps outside: the chat value is saved, as before', async () => {
+    const cell = await revealChatWeight();
+    cell.blur();
+    fireEvent.keyDown(document.body, { key: 'Tab' });
+    cell.focus();
+    fireEvent.keyUp(cell, { key: 'Tab' });
+    tapOutside();
+    await waitFor(async () => expect(await weights()).toEqual([80, 82]));
   });
 });
 

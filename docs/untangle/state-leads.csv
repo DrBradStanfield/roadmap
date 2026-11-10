@@ -33,3 +33,4 @@ U6,upload,A quota refusal fires no upload_outcome,behaviour,awaits Brad,US-12 AC
 U7,upload,A session finished while hidden reopens on the done screen,behaviour,awaits Brad,,,yes
 U8,upload,A pick past 200 files drops the rest with no notice,known gap,awaits Brad,US-12 AC9,,yes
 U9,upload,Cancel during a read fires no upload_outcome,behaviour,awaits Brad,US-12 AC10,,yes
+H4,composition,"A chat value revealed in a matrix on a phone saved on the next tap outside, without Save",bug,done,"lib/useSaveOnLeave.ts arms only on the user's own act: a press, typing or Tab (US-16 AC1a); checked by the US-16 AC1a tests in HealthTool.phone-handoffs.test.tsx",1187,no
