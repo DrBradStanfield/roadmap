@@ -76,7 +76,9 @@ type Glow = { phase: 'still' } | { phase: 'glowing'; ids: Set<string> } | { phas
 Examples in this repo:
 
 - `widget-src/src/hooks/useHighlights.ts`: the `Glow` union above, data inside
-  each phase; `useHighlights.test.tsx` walks the phases (US-07 AC3).
+  each phase; `useHighlights.test.tsx` walks the phases (US-07 AC3). Copy the union
+  only: the hook still keeps a fourth mode, settling (the first 3 s), in `settledRef`
+  and a `setTimeout` beside the union, which the rule forbids.
 - `widget-src/src/lib/remote-replay.ts`: one named state
   (`loading | loading-held | idle | held`), each event a method;
   `remote-replay.test.ts` drives it through its states and events (US-34 AC4).
@@ -117,7 +119,8 @@ Line counts are a vital sign, not the goal (CLAUDE.md, Code entropy).
 
 ## Decision log
 
-The log lives in `docs/untangle/`, one file per area. Write each fix above the
+The log lives in `docs/untangle/`, one file per area. The folder does not exist
+yet; the first area to keep a log creates it. Write each fix above the
 problems it solves, so a reader sees why it exists. The shape (names made up):
 
 ```md
@@ -134,3 +137,31 @@ orchestrator instead.
 - Survey with a skeleton: function signatures only, so an area fits in context.
 - Script an import graph and rerun it after each move.
 - `git log --name-only` shows how often files change and what changes with them.
+
+## Licence of the adapted source
+
+The untangle-codebase skill (github.com/caldoai/skills) is used under this licence:
+
+```text
+MIT License
+
+Copyright (c) 2026 Maze
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```

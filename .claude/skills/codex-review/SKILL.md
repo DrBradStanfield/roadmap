@@ -113,7 +113,11 @@ Whenever the work under review is a specific file (a script, a doc, anything
 gitignored), or the tree holds other sessions' work, run with
 `--subject <file>`, plus `--baseline <file>` for its previous version and
 `--context <path>` for its sources; never a hand-run `codex exec`, which drops
-every protection this wrapper has. Then read the pre-flight `SUBJECT` line on
+every protection this wrapper has. `--context` refuses an instruction file or a
+path inside an instruction folder (AGENTS.md, CLAUDE.md, `.codex/`, `.claude/`,
+docs/review-format.md), and a folder holding one anywhere inside it: `ios/`
+now has a CLAUDE.md, so point `--context` at a subfolder without one, or at
+the specific files. Then read the pre-flight `SUBJECT` line on
 stderr before trusting the verdict: it names the file reviewed, its baseline,
 its size and sha256, and how many other uncommitted files were left out of
 the snapshot. A subject identical to its baseline is `E_SUBJECT_UNCHANGED`;
