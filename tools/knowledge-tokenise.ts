@@ -39,13 +39,13 @@ export const UNIT = [
   "mL/min", "L/min", "breaths/min", "IU/L", "U/L", "g/dL", "g/L", "ng/mL", "ng/dL", "ng/L", "nanogram/L", "[µμ]g/dL", "mcg/dL", "[µμ]g/L", "mcg/L",
   "mmHg", "bpm", "x/day", "times daily", "percent", "%",
   "kilograms?", "milligrams?", "micrograms?", "microg", "nanograms?", "millilitres?", "milliliters?", "litres?", "liters?", "grams?",
-  "mcg", "[µμ]g", "mg", "IU", "mL", "kg", "cm", "g", "hours?", "hrs?", "h", "days?", "d", "weeks?", "wks?", "months?", "years?", "minutes?", "mins?", "seconds?", "secs?",
+  "mcg", "[µμ]g", "mg", "IU", "mL", "kg", "cm", "g", "hours?", "hrs?", "h", "days?", "d", "weeks?", "wks?", "months?", "mos?", "years?", "yrs?", "y", "minutes?", "mins?", "seconds?", "secs?",
   "(?<=[\\s-])s", // "30-s chair stand", "5 s", but not the "s" of "1990s"
 ].join("|");
 const NUM = "\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d+(?:\\.\\d+)?|\\.\\d+";
 // Comparator words, longest first, so "no more than" never falls through to "more than".
 const CMP_WORDS = [...["no more than", "not more than", "no less than", "not less than", "up to", "at least", "more than",
-  "greater than", "less than", "lower than", "over", "above", "below", "under"].map((w) => w.replace(/ /g, "\\s+")),
+  "greater than", "less than", "lower than", "younger than", "older than", "over", "above", "below", "under"].map((w) => w.replace(/ /g, "\\s+")),
   "maximum(?:\\s+[A-Za-z]+)?"].join("|"); // "maximum 4 mg", "maximum of 1 week", "maximum duration 1 week"
 const CMP_PRE = `(?:(≥|≤|>=|<=|>|<|\\b(?:${CMP_WORDS}))\\s*)?`;
 const CMP_POST = "or more|or higher|or above|or less";
@@ -53,25 +53,25 @@ const CMP_POST = "or more|or higher|or above|or less";
 const SUFFIX = "(?:\\s*/\\s*|\\s+per\\s+)(?:day|dose|week|kg|d)|\\s+(?:a|each)\\s+(?:day|week)|\\s+(?:daily|weekly)";
 const suffixOf = (raw: string | undefined) => (!raw ? "" : /week/i.test(raw) ? "/week" : /dose/i.test(raw) ? "/dose" : /kg/i.test(raw) ? "/kg" : "/day");
 // Groups: 1 leading comparator, 2 and 3 numbers, 4 trailing comparator, 5 unit, 6 unit suffix (/day, per dose ...),
-// 7 any other attached "/x/y" (kept: "5 mg/m2" is not "5 mg"), 8 trailing comparator. A range may read "X-Y", "X to Y" or "X and Y".
+// 7 any other attached "/x/y" (kept: "5 mg/m2" is not "5 mg"), 8 trailing comparator. A range may read "X-Y", "X to Y", "X and Y" or "X or Y".
 const GENERIC = "/[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9]+)*(?:/[A-Za-z0-9][A-Za-z0-9]*(?:\\.[A-Za-z0-9]+)*)*";
 export const TOKEN_RE = () => new RegExp(
-  `${CMP_PRE}(?<![A-Za-z0-9.,]|[A-Za-z]-)(${NUM})(?:(?:\\s*[–-]\\s*|\\s+to\\s+|\\s+and\\s+)(${NUM}))?(?:\\s+(${CMP_POST})\\b)?(?:[\\s-]*(${UNIT})(?![A-Za-z])(?:(${SUFFIX})(?![A-Za-z]))?(?:(${GENERIC})(?![A-Za-z0-9]))?)?(?:\\s+(${CMP_POST})\\b)?`, "gi");
+  `${CMP_PRE}(?<![A-Za-z0-9.,]|[A-Za-z]-)(${NUM})(?:(?:\\s*[–-]\\s*|\\s+(?:to|and|or)\\s+)(${NUM}))?(?:\\s+(${CMP_POST})\\b)?(?:[\\s-]*(${UNIT})(?![A-Za-z])(?:(${SUFFIX})(?![A-Za-z]))?(?:(${GENERIC})(?![A-Za-z0-9]))?)?(?:\\s+(${CMP_POST})\\b)?`, "gi");
 
 const CMP_CANON: Record<string, string> = {
   "<=": "≤", "≤": "≤", "no more than": "≤", "not more than": "≤", "up to": "≤", "maximum": "≤", "maximum of": "≤", "or less": "≤",
   ">=": "≥", "≥": "≥", "no less than": "≥", "not less than": "≥", "at least": "≥", "or more": "≥", "or higher": "≥", "or above": "≥",
-  ">": ">", "more than": ">", "greater than": ">", "over": ">", "above": ">",
-  "<": "<", "less than": "<", "lower than": "<", "below": "<", "under": "<",
+  ">": ">", "more than": ">", "greater than": ">", "older than": ">", "over": ">", "above": ">",
+  "<": "<", "less than": "<", "lower than": "<", "younger than": "<", "below": "<", "under": "<",
 };
 const genericOf = (raw: string | undefined) => (!raw ? "" : raw.toLowerCase().split("/").filter(Boolean)
   .map((seg) => (/^minutes?$/.test(seg) ? "min" : /^seconds?$/.test(seg) ? "sec" : seg)).map((seg) => `/${seg}`).join(""));
 const canonCmp = (c: string | undefined) => (!c ? "" : /^maximum\b/i.test(c) ? "≤" : CMP_CANON[c.toLowerCase().replace(/\s+/g, " ")] ?? "");
 
-// "150 mg enteric coated, daily": "daily" or "per day" up to three words after a dose unit still means /day.
-const FAR_DAILY = /^(?:\s+(?!and\b|or\b|to\b)[A-Za-z][A-Za-z-]*,?){1,3}\s+(?:daily|per\s+day)\b/i;
+// "150 mg enteric coated, daily", "12 mg astaxanthin/day": "daily", "per day" or "/day" up to three words after a dose unit still means /day.
+const FAR_DAILY = /^(?:\s+(?!and\b|or\b|to\b)[A-Za-z][A-Za-z-]*,?){1,3}(?:\s+(?:daily|per\s+day)|\s*\/\s*d(?:ay)?)\b/i;
 const FAR_DAILY_UNITS = new Set(["mg", "mcg", "g", "IU", "mL", "kg"]);
-const RANGE_TAIL = new RegExp(`^\\s+(?:to|and)\\s+(?:${NUM})\\s*(?:${UNIT})(?![A-Za-z])`, "i");
+const RANGE_TAIL = new RegExp(`^\\s+(?:to|and|or)\\s+(?:${NUM})\\s*(?:${UNIT})(?![A-Za-z])`, "i");
 const DAILY_NEAR = /^\s+(?:daily|per\s+day|a\s+day|\/\s*day)\b/i;
 export const LIST_ITEM = /^\s*(?:[-*+]|\d+[.)])\s+/;
 const LEAD_CMP = new RegExp(`\\b(${CMP_WORDS})\\b[^:.]*:\\s*$`, "i");
@@ -101,6 +101,8 @@ function normUnit(u: string): string {
   if (/^wks?$/.test(l)) return "week";
   if (/^(h|hrs?)$/.test(l)) return "hour";
   if (l === "d") return "day";
+  if (/^(y|yrs?)$/.test(l)) return "year";
+  if (/^mos?$/.test(l)) return "month";
   return l.replace(/s$/, "");
 }
 
@@ -111,13 +113,16 @@ function normNumber(n: string, unit: string): { value: string; unit: string } {
   return { value: String(v), unit };
 }
 
-/** Topic-master dates (US-50): the view heading, a "([Brad, 15 Oct 2026](" or "(Brad's current guidance, 15 Oct 2026)" citation, and a "- 15 Oct 2026, [" video line. */
-const MASTER_DATES = new RegExp(`^(?:(?:##\\s+)?Current view \\(reviewed \\d{1,2} ${MONTH} \\d{4}\\)\\s*$|\\s*(?:[-*]\\s+)?\\d{1,2} ${MONTH} \\d{4}(?=, \\[))|(?<=\\(\\[Brad, )\\d{1,2} ${MONTH} \\d{4}(?=\\]\\()|(?<=\\(Brad['’]s current guidance, )\\d{1,2} ${MONTH} \\d{4}(?=\\))`, "g");
+// "24 Oct 2026", "3 May", "October 24, 2026": a date is not a value, like a year; this covers a topic master's heading,
+// citation and video-line dates (US-50). Capitalised only, so "aged 24 may" stays.
+const MONTH_NAME = "(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\\.?(?![A-Za-z])";
+const DATES = new RegExp(`\\b\\d{1,2}(?:st|nd|rd|th)?\\s+${MONTH_NAME}(?:,?\\s+\\d{4}\\b)?|\\b${MONTH_NAME}\\s+\\d{1,2}(?:st|nd|rd|th)?\\b(?![.,]\\d)(?:,?\\s+\\d{4}\\b)?(?![\\s-]*(?:${UNIT})(?![A-Za-z]))`, "g");
 
 /** Strip everything the tokeniser must ignore, line by line. */
 export function stripNoise(line: string): string {
   return unescapeMd(line)
-    .replace(MASTER_DATES, " ")
+    .replace(DATES, " ")
+    .replace(/(\d)[∙·⋅](\d)/g, "$1.$2") // "1·03" is 1.03
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/https?:\/\/\S+/g, " ")
     .replace(/\b10\.\d{4,9}\/\S+/g, " ")
@@ -126,18 +131,22 @@ export function stripNoise(line: string): string {
     .replace(/\[\d+(?:\s*[,–-]\s*\d+)*\]/g, " ")
     .replace(/\b(?:type\s+[12](?:\s*(?:and|or|\/|-)\s*[12])?|stage\s+[1-5])\b/gi, " ") // disease and category names, not values
     .replace(/^\s*(?:[-*+]\s+)?\d+[.)]\s+/, " ")
+    .replace(/(?<![\d.,])\d{1,3}(?:[ \u2009\u202f]\d{3})+(?!\d|[.,]\d)/g, (m) => m.replace(/\D/g, "")) // "4 000" is 4000
     .replace(/\b(micrograms?|microg|[µμ]g|mcg|milligrams?|mg|nanograms?|ng|grams?|g|IU|U)((?:\s+[A-Za-z-]+){0,4})\s+per\s+(?:liters?|litres?|L)\b/gi, "$1/L$2")
     .replace(/([A-Za-z])\s*[∙·⋅]\s*([A-Za-z]+)\s*(?:[-−]|⁻)[1¹]\b/g, "$1/$2") // "g∙kg-1" is g/kg
     .replace(/(\d)\s*-\s*(month|week|hour|year)ly\b/gi, "$1 $2")
-    .replace(/\baged\s+(\d+(?:\.\d+)?)(?![\d.])(?!\s*(?:years?|y\b|months?|weeks?|days?|(?:[-–]|to\s|and\s)\s*\d))/gi, "aged $1 years")
+    // "aged 45 to 64" and "younger than 55" are years.
+    .replace(/\b(aged|younger\s+than|older\s+than)\s+(\d+(?:\.\d+)?(?:(?:\s*[-–]\s*|\s+(?:to|and|or)\s+)\d+(?:\.\d+)?)?)(?![\d.])(?!\s*(?:years?|yrs?\b|y\b|months?|mos?\b|weeks?|days?|(?:[-–]|to\s|and\s|or\s)\s*\d))/gi, "$1 $2 years")
     .replace(NUMWORD_UNIT, (m, w: string, sp: string) => { const v = wordValue(w); return v === null ? m : `${v}${sp}`; })
-    .replace(NUMWORD_OPEN, (m, lead: string, w: string, noun: string) => {
-      const v = wordValue(w);
-      return v !== null && /^[A-Za-z]+s$/.test(noun) && !/(?:ss|us|is)$|^(?:was|has|does|as|this|thus)$/i.test(noun) ? `${lead}${v}` : m;
+    .replace(NUMWORD_OPEN, (m, lead: string, w: string, after: string) => {
+      const v = wordValue(w), words = after.trim().split(/\s+/);
+      const plural = (x: string) => /^(?:men|women|children|people|mice)$/i.test(x) || (/^[A-Za-z]+s$/.test(x) && !/(?:ss|us|is)$|^(?:was|has|does|as|this|thus)$/i.test(x));
+      return v !== null && (plural(words[0]) || (v > 1 && words.slice(1).some(plural))) ? `${lead}${v}` : m;
     });
 }
 
-// "six weeks" = "6 weeks"; a bare number word counts only when it opens a sentence before a plural noun ("Forty-five adults").
+// "six weeks" = "6 weeks"; a bare number word counts only when it opens a sentence before a plural noun ("Forty-five adults"),
+// or, above one, before a plural up to two words on ("Six healthy adult men").
 // A number-word expression is parsed whole ("one hundred twenty" = 120). One that does not parse yields no token, never its tail.
 const WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12,
   thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
@@ -164,7 +173,7 @@ function wordValue(expr: string): number | null {
   return hi === null || lo === null ? null : hi * 1000 + lo;
 }
 const NUMWORD_UNIT = new RegExp(`(?<!\\b(?:${W})[\\s-]+)(?<!(?:hundred|thousand)\\s+and\\s+)\\b(${NW})([\\s-]+)(?=(?:${UNIT})(?![A-Za-z]))`, "gi");
-const NUMWORD_OPEN = new RegExp(`(^[\\s>*_-]*|(?<=[.?!][)"'\\]*]*\\s+))(${NW})(?=\\s+([A-Za-z]+)\\b)`, "gi");
+const NUMWORD_OPEN = new RegExp(`(^[\\s>*_-]*|(?<=[.?!][)"'\\]*]*\\s+))(${NW})(?=((?:\\s+[A-Za-z]+){1,3}))`, "gi");
 
 /** Number tokens of a text, unit-normalised ("1 g" -> "1000 mg"). Reference lines are skipped unless keepRefs. */
 export function tokenCounts(text: string, opts: { keepRefs?: boolean } = {}): Map<string, number> {

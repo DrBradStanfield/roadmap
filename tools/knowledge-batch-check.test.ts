@@ -1476,6 +1476,76 @@ describe("US-42 AC2 void entries, number words, abbreviations (v3)", () => {
   });
 });
 
+describe("US-42 AC12 one number in different forms pairs; a different number never does (masters-rebuild-1, 2026-11-10)", () => {
+  const t = (s: string) => [...tokenise(s)].sort();
+  const pairs = (forms: string[], want: string[]) => { for (const f of forms) expect(t(f), f).toEqual(want); };
+  it("reads hyphenated and abbreviated units as the spaced plural", () => {
+    pairs(["12-week", "12 weeks"], ["12 week"]);
+    pairs(["21.9-y", "21.9 y", "21.9 years", "21.9 yrs"], ["21.9 year"]);
+    pairs(["10 and 12 mo", "10 and 12 months"], ["10 month", "12 month"]);
+  });
+  it("carries one unit to both numbers of an 'or', 'and' or 'to' pair", () => {
+    pairs(["11 or 16 months"], ["11 month", "16 month"]);
+    pairs(["6 or 12 mg a day", "6 or 12 mg per day"], ["12 mg/day", "6 mg/day"]);
+    pairs(["aged 45 to 64", "aged 45-64 years", "aged 45 and 64"], ["45 year", "64 year"]);
+  });
+  it("reads every per-day spelling as one /day token", () => {
+    pairs(["12 mg a day", "12 mg per day", "12 mg/day", "12 mg/d", "12 mg daily", "12 mg astaxanthin/day", "12 mg astaxanthin/d"], ["12 mg/day"]);
+    pairs(["550 mg/d"], ["550 mg/day"]);
+  });
+  it("reads a middle-dot decimal as a point", () => {
+    pairs(["1·03", "1.03"], ["1.03"]);
+    pairs(["HR 0·87 (95% CI 0·80 to 0·95)"], ["0.8", "0.87", "0.95", "95 %"]);
+  });
+  it("reads a number word opening a sentence before an irregular plural or a short adjective run", () => {
+    pairs(["Seventy adults took it.", "Seventy men took it."], ["70"]);
+    pairs(["Six healthy adult men took it.", "six healthy adult men", "Six healthy volunteers took it."], ["6"]);
+    pairs(["Twenty-four RCTs were included."], ["24"]);
+    pairs(["Ninety-six subjects took part."], ["96"]);
+    pairs(["One study shows benefit.", "One healthy man took it.", "We saw six healthy men."], []);
+  });
+  it("reads thousands written with a comma, a space or a thin space as one number", () => {
+    pairs(["4000 IU", "4,000 IU", "4 000 IU", "4 000 IU", "4 000 IU"], ["4000 IU"]);
+    pairs(["12 000 participants"], ["12000"]);
+  });
+  it("pairs comparator words with their symbols", () => {
+    pairs(["<55 years", "younger than 55", "younger than 55 years"], ["<55 year"]);
+    pairs([">65 years", "older than 65"], [">65 year"]);
+    pairs(["≥ 20 mg", "20 mg or more"], ["≥20 mg"]);
+  });
+  it("skips day-month dates as it skips years", () => {
+    pairs(["On 24 Oct 2026 the trial ended.", "On 24 October the trial ended.", "On October 24, 2026 the trial ended."], []);
+    pairs(["Took 24 mg on 3 May."], ["24 mg"]);
+    pairs(["Adults aged 24 may benefit."], ["24 year"]);
+  });
+  it("keeps a different number, unit or magnitude apart", () => {
+    const apart = (a: string, b: string) => {
+      const x = t(a), y = t(b);
+      expect(x.length > 0 && y.length > 0, `${a} | ${b}`).toBe(true);
+      expect(x.filter((k) => y.includes(k)), `${a} | ${b}`).toEqual([]);
+    };
+    apart("1.03", "1.3"); apart("1·03", "1.3"); apart("12 weeks", "12 months"); apart("12-week", "12 mo"); apart("6 mg", "60 mg");
+    apart("6 or 12 mg a day", "60 mg a day"); apart("Seventy adults took it.", "17"); apart("Seventy adults took it.", "Seventeen adults took it.");
+    apart("12 mg", "12 mcg"); apart("4,000 IU", "400 IU"); apart("4 000 IU", "400 IU"); apart("<55 years", ">55 years"); apart("younger than 55", "older than 55");
+    apart("21.9-y", "21.9 months"); apart("12 mg astaxanthin/day", "12 mg/week");
+  });
+  const addLine = (line: string, quote: string) => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("Take it with food", `${line}\nTake it with food`));
+    const raw = `${fx("alpha.raw.txt")}\nIn the second arm, participants took 12 mg astaxanthin/day over a 12-week period with no harms.`;
+    writeFileSync(join(reports, "alpha.raw.txt"), raw);
+    reps.alpha.raw_sha256 = sha256(raw);
+    reps.alpha.changed_tokens.push({ body_line: line, raw_quote: quote });
+  };
+  it("passes a body line whose numbers the quote writes in another form", () => {
+    addLine("Participants took 12 mg a day for 12 weeks.", "participants took 12 mg astaxanthin/day over a 12-week period");
+    expect(fails(run().AC2)).toEqual([]);
+  });
+  it("fails a body line whose dose differs from the quote's", () => {
+    addLine("Participants took 60 mg a day for 12 weeks.", "participants took 12 mg astaxanthin/day over a 12-week period");
+    expect(fails(run().AC2).join("\n")).toContain('"60 mg/day"');
+  });
+});
+
 // ---- US-50 AC1 / US-42 AC1 amended: topic-master batches (--masters) ----
 
 describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
@@ -1843,13 +1913,13 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
       });
     });
 
-    it("US-50 AC1 tokeniser: the heading date, a citation date and a video-line date carry no number; other dates still do", () => {
+    it("US-50 AC1 tokeniser: the heading date, a citation date and a video-line date carry no number; nor do other dates (US-42 AC12)", () => {
       expect([...tokenise("## Current view (reviewed 15 October 2026)")]).toEqual([]);
       expect([...tokenise("Current view (reviewed 15 October 2026)")]).toEqual([]); // the heading as a cleaned body line
       expect([...tokenise("He said so ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/x)).")]).toEqual([]);
       expect([...tokenise("- 15 Oct 2026, [Title](https://drstanfield.com/blogs/articles/x): take.")]).toEqual([]);
-      expect([...tokenise("Trials ran from 15 Oct 2026.")]).toEqual(["15"]);
-      expect([...tokenise("## Current view (reviewed 15 October 2026) 5 mg")].sort()).toEqual(["15", "5 mg"]); // not the bare heading
+      expect([...tokenise("Trials ran from 15 Oct 2026.")]).toEqual([]);
+      expect([...tokenise("## Current view (reviewed 15 October 2026) 5 mg")].sort()).toEqual(["5 mg"]); // not the bare heading
     });
     it("US-50 AC1: a master's dates (heading, citation, video line) are not numbers; the happy path passes AC2", () => {
       basisFor(`Short view ([Brad, 15 Oct 2026](${OTHER})).`);
