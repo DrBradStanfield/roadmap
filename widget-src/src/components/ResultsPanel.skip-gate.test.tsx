@@ -330,7 +330,7 @@ describe('US-44 AC6 — Save as PDF shows on a phone', () => {
   // The chat column's header still hides on a phone; the plan header's actions rule went with the plan column.
   it('styles.css: at 768px the column header hides', () => {
     const header = render(<ColumnHeader title="Ask about your plan"/>).container.querySelector('.hr-col-header')!;
-    expect(cascaded(header, 'display', 768)).toBe('none');
+    for (const phone of [390, 768]) expect(cascaded(header, 'display', phone)).toBe('none');
     expect(cascaded(header, 'display', 769)).toBe('flex');
     // Text, as an absence: no rule for the plan header's actions survives.
     const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
@@ -340,13 +340,16 @@ describe('US-44 AC6 — Save as PDF shows on a phone', () => {
   it('styles.css: on a phone the cards keep their 10px side gutter (live 2026-11-01: Sign in sat flush on the screen edge)', () => {
     const card = nest('section-card');
     for (const side of ['margin-left', 'margin-right']) {
-      expect(cascaded(card, side, 768)).toBe('10px');
+      for (const phone of [390, 768]) expect(cascaded(card, side, phone)).toBe('10px');
       expect(cascaded(card, side, 769)).toBeUndefined(); // a phone's gutter only
     }
     for (const side of ['padding-top', 'padding-right', 'padding-bottom', 'padding-left']) {
-      expect(cascaded(card, side, 768)).toBe('12px');
-      // !important: the later .section-card--bt { padding: 0 } does not take a phone card's padding.
-      expect(cascaded(nest('section-card section-card--bt'), side, 768)).toBe('12px');
+      for (const phone of [390, 768]) {
+        expect(cascaded(card, side, phone)).toBe('12px');
+        // !important: the later .section-card--bt { padding: 0 } does not take a phone card's padding.
+        expect(cascaded(nest('section-card section-card--bt'), side, phone)).toBe('12px');
+      }
+      expect(cascaded(card, side, 769)).toBe('24px'); // a desktop card keeps its 24px
     }
   });
 });

@@ -216,8 +216,10 @@ describe('US-61 AC7: one ownership line', () => {
     const blocks = container.querySelectorAll('.us-product, .us-ownership');
     expect(blocks.length).toBeGreaterThan(1);
     for (const el of blocks) {
-      expect(cascaded(el, 'display', { width: 1280, print: true }), el.className).toBe('none');
-      expect(cascaded(el, 'display', { width: 1280, print: true }, rival), el.className).toBe('none');
+      for (const width of [600, 768, 1280]) { // a printed page is narrower than a desktop screen
+        expect(cascaded(el, 'display', { width, print: true }), `${el.className} @${width}`).toBe('none');
+        expect(cascaded(el, 'display', { width, print: true }, rival), `${el.className} @${width}`).toBe('none');
+      }
       expect(cascaded(el, 'display', 1280), el.className).toBeUndefined(); // shown on screen
     }
   });

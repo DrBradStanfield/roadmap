@@ -194,7 +194,10 @@ function replacePseudo(selector: string, pseudo: string, replacement: string): s
 
 export const STYLES = parseRules(readFileSync(resolve(__dirname, '../styles.css'), 'utf8'));
 
-/** The cascaded value of `property` on `el`, as declared (whitespace collapsed), or undefined if no rule sets it. */
+/**
+ * The cascaded value of `property` on `el`, as declared (whitespace collapsed), or undefined if no rule sets it.
+ * Source order is the rule's place in `rules`, so a list joined after STYLES comes later in the cascade.
+ */
 export function cascaded(el: Element, property: string, screen: number | Screen, rules: Rule[] = STYLES): string | undefined {
   const { width, hover = false, print = false, states = [] } = typeof screen === 'number' ? { width: screen } : screen;
   // Each state becomes an attribute on the element that holds it, and the same pseudo-class
@@ -207,7 +210,7 @@ export function cascaded(el: Element, property: string, screen: number | Screen,
   let best: { important: boolean; spec: [number, number, number]; order: number; value: string } | null = null;
   for (const [holder, list] of states) for (const pseudo of list) holder.setAttribute(marker(pseudo), '');
   try {
-    for (const rule of rules) {
+    for (const [order, rule] of rules.entries()) {
       if (rule.media && !mediaApplies(rule.media, width, hover, print)) continue;
       const body = parseBody(rule.body);
       const decls = body.flatMap(d => d.name === property ? [d]
@@ -218,7 +221,7 @@ export function cascaded(el: Element, property: string, screen: number | Screen,
       if (matching.length === 0) continue;
       if (sibling) throw new Error(`css-cascade does not model ${sibling.name} beside ${property}: rule ${rule.selectors.join(', ')}`);
       const decl = decls.filter(d => d.important).at(-1) ?? decls.at(-1)!;
-      const candidate = { important: decl.important, spec: matching.map(specificity).sort(compare).at(-1)!, order: rule.order, value: decl.value };
+      const candidate = { important: decl.important, spec: matching.map(specificity).sort(compare).at(-1)!, order, value: decl.value };
       const wins = !best
         || (candidate.important !== best.important ? candidate.important
           : compare(candidate.spec, best.spec) !== 0 ? compare(candidate.spec, best.spec) > 0
