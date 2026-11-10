@@ -7,14 +7,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import type { Suggestion } from '@roadmap/health-core/types';
-
-vi.mock('../lib/roadmap-data', () => ({
-  getReportHtml: vi.fn(), sendGuestReport: vi.fn(), getReportEmailCaptured: () => false, markReportEmailCaptured: vi.fn(),
-}));
-vi.mock('../lib/server-api', () => ({ trackABConversion: vi.fn(), trackProductEvent: vi.fn() }));
-vi.mock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: false }));
-vi.mock('../lib/assistant-config', () => ({ getSkipEmailGate: () => false }));
-import { useHighlights } from '../components/ResultsPanel';
+import { useHighlights } from './useHighlights';
 import { NO_HIGHLIGHTS } from '../components/PlanCards';
 
 const s = (id: string, title = `${id} title`, description = `${id} words`): Suggestion =>
