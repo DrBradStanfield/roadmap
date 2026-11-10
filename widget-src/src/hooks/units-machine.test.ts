@@ -59,7 +59,7 @@ const table: Row[] = [
   ['holding, offered US while typing: still held', holding, E.offeredUsTyping, holding, []],
   ['holding, offered SI while typing: the record now holds what is shown', holding, E.offeredSiTyping, following, [apply(SI)]],
   ['holding, offered US with nothing focused: applied', holding, E.offeredUs, { mode: 'following', shown: US }, [apply(US)]],
-  ['holding, offered none: unchanged', holding, E.offeredNone, holding, []],
+  ['holding, offered none: a newer record with no units; the held offer goes, this device\'s units stay (Codex R2)', holding, E.offeredNone, following, []],
   ['holding, shown US: applied, never held', holding, E.shownUs, { mode: 'following', shown: US }, [apply(US)]],
   ['holding, shown none: the held units go (another erase)', holding, E.shownNone, following, []],
   ['holding, left for another field: still held', holding, E.leftTyping, holding, []],
@@ -73,7 +73,7 @@ const table: Row[] = [
   // pressing{SI, saw SI}
   ['pressing, offered US: remembered, not applied', pressing, E.offeredUs, pressingHeld, []],
   ['pressing, offered SI: nothing to hold', pressingHeld, E.offeredSiTyping, pressing, []],
-  ['pressing, offered none: unchanged', pressingHeld, E.offeredNone, pressingHeld, []],
+  ['pressing, offered none: the held offer goes (Codex R2)', pressingHeld, E.offeredNone, pressing, []],
   ['pressing, shown US: applied, the press keeps what it saw', pressingHeld, E.shownUs, { mode: 'pressing', shown: US, saw: SI }, [apply(US)]],
   ['pressing, shown none: the held units go, the press stays', pressingHeld, E.shownNone, pressing, []],
   ['pressing, left: no release while pressed (H1)', pressingHeld, E.left, pressingHeld, []],

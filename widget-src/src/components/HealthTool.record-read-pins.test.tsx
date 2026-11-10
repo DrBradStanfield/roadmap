@@ -859,5 +859,53 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
       await settle(50);
       expect(await pillSays(view)).toBe(US);
     });
+
+    // PR 1204 review (Codex R1): the first-time weight box's own pill was no unit control,
+    // so the press released the held units and the click toggled from them.
+    it('US-34 AC7a: 180 typed in the weight box in lb, SI held, then the box\'s lbs pill: kg chosen, and 180 lb kept', async () => {
+      await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3, unitSystem: 'conventional' }, {});
+      await flushRoadmapStore();
+      const view = render(<HealthTool />);
+      await waitFor(() => expect(q(view, '#weightKg')).toBeTruthy());
+      type(q(view, '#weightKg'), '180');
+      await anotherWriter(() => saveChangedMeasurements({ unitSystem: 'si' }, { unitSystem: 'conventional' }));
+      await settle(50);
+      const pill = () => q(view, 'label[for="weightKg"] .unit-toggle-pill') as HTMLElement;
+      expect(pill().textContent).toBe('lbs'); // held
+      pressMouse(pill());
+      await nextFrame();
+      releaseMouse(pill());
+      await nextFrame();
+      expect(pill().textContent).toBe('kg');
+      await waitFor(async () => expect(await activeWeights()).toHaveLength(1), { timeout: 3000 });
+      expect((await activeWeights())[0][0]).toBeCloseTo(lb180(), 1);
+    });
+
+    // PR 1204 review F3: main's rule. A chip turned back to the system's unit follows the system again.
+    it('US-05 AC2: SI, LDL\'s chip to mg/dL and back to mmol/L, then the record switches to US units: LDL follows, in mg/dL', async () => {
+      await siRecord();
+      const view = await open();
+      await settle(50);
+      const click = async () => { const chip = await ldlChip(view); pressMouse(chip); releaseMouse(chip); };
+      await click();
+      expect((await ldlChip(view)).textContent).toBe('mg/dL');
+      await click();
+      expect((await ldlChip(view)).textContent).toBe('mmol/L');
+      await toConventional();
+      await waitFor(async () => expect((await ldlChip(view)).textContent).toBe('mg/dL'));
+    });
+
+    // PR 1204 review F4: a page whose first read failed never saves, so its switch must not hold changes for good.
+    it('US-34 AC4, AC7a: the first read fails part-way, then the pill: another writer\'s change still applies', async () => {
+      await completeRecord();
+      failMirror.next = true; // the first read throws after it has shown the record: the page's saves stay off
+      const view = await open();
+      await waitFor(() => expect(failMirror.threw).toBe(true));
+      await settle(50);
+      const pill = await unitPill(view);
+      pressMouse(pill); releaseMouse(pill);
+      await anotherWriter(() => saveChangedMeasurements({ birthYear: 1975 }, { birthYear: 1980 }));
+      await waitFor(() => expect((q(view, '#birthYear') as HTMLInputElement).value).toBe('1975'), { timeout: 3000 });
+    });
   });
 });

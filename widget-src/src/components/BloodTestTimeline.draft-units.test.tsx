@@ -10,7 +10,8 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { render, cleanup, act, within } from '@testing-library/react';
-import { useState, type MutableRefObject } from 'react';
+import { useRef, useState, type MutableRefObject } from 'react';
+import { useUnits } from '../hooks/useUnits';
 import { toCanonicalValue, type UnitSystem } from '@roadmap/health-core/units';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { BloodTestTimeline, type BloodTestPrefillFn } from './BloodTestTimeline';
@@ -266,5 +267,43 @@ describe('US-04 AC1, US-34 AC7: a unit system from the record keeps every blood-
     expect(p.ldl().value).toBe(shownInMgdl);
     await p.leave();
     expect(Object.values(p.saved())).toEqual([3.5]);
+  });
+});
+
+// PR 1204 review F2: the chip toggles from the units seen at the press, and so must its
+// re-read of the cells typed by hand. A record's units landing mid-press changed only the second.
+describe('US-34 AC7a, US-05 AC2: a chip pressed while the record\'s units arrive', () => {
+  it('3.5 typed in mmol/L, the chip pressed, the record brings US units before the click: it reads 3.5 mg/dL and saves so', async () => {
+    localStorage.setItem('health_roadmap_unit_system', 'si');
+    const onSaveBatch: Mock = vi.fn().mockResolvedValue(new Map());
+    let units!: ReturnType<typeof useUnits>;
+    function Page() {
+      const rootRef = useRef<HTMLDivElement>(null);
+      units = useUnits(() => {}, rootRef);
+      return (
+        <div ref={rootRef}>
+          <BloodTestTimeline bloodTestHistory={[]} unitSystem={units.unitSystem} unitOverrides={units.unitOverrides}
+            onToggleFieldUnit={units.handleToggleFieldUnit} onUnitSwitch={units.onSwitch}
+            onSaveBatch={onSaveBatch} onDraftValue={() => {}} isSaving={false} grading={{}} hasApiResponse prefillRef={{ current: null }}/>
+          <button type="button">Elsewhere</button>
+        </div>
+      );
+    }
+    const view = render(<Page/>);
+    const row = () => Array.from(view.container.querySelectorAll('.bt-row'))
+      .find((r) => r.querySelector('.bt-name-label')?.textContent === 'LDL Cholesterol') as HTMLElement;
+    const ldl = () => row().querySelector('.bt-cell-draft input') as HTMLInputElement;
+    const chip = () => row().querySelector('.bt-unit-chip') as HTMLElement;
+    typeInto(ldl(), '3.5');
+    pressMouse(chip());
+    act(() => units.record.shown('conventional')); // the record's units, never held
+    releaseMouse(chip());
+    expect(ldl().value).toBe('3.5');
+    expect(chip().textContent).toBe('mg/dL');
+    press(ldl());
+    press(view.getByRole('button', { name: 'Elsewhere' }));
+    await wait(0);
+    const tasks = onSaveBatch.mock.calls.at(0)![0] as SaveTask[];
+    expect(tasks.flatMap((t) => Object.values(t.values))).toEqual([expect.closeTo(mgdl(3.5), 6)]);
   });
 });
