@@ -75,10 +75,10 @@ type Glow = { phase: 'still' } | { phase: 'glowing'; ids: Set<string> } | { phas
 
 Examples in this repo:
 
-- `widget-src/src/hooks/useHighlights.ts`: the `Glow` union above, data inside
-  each phase; `useHighlights.test.tsx` walks the phases (US-07 AC3). Copy the union
-  only: the hook still keeps a fourth mode, settling (the first 3 s), in `settledRef`
-  and a `setTimeout` beside the union, which the rule forbids.
+- `widget-src/src/hooks/useHighlights.ts`: the `Glow` union (settling, still,
+  held, glowing, fading), data and baseline inside each phase, changed only by its
+  exported `transition`; the hook sends events and runs the timers the phase asks
+  for. `useHighlights.test.tsx` has the table (US-07 AC3).
 - `widget-src/src/lib/remote-replay.ts`: one named state
   (`loading | loading-held | idle | held`), each event a method;
   `remote-replay.test.ts` drives it through its states and events (US-34 AC4).

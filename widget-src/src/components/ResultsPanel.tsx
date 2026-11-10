@@ -19,7 +19,7 @@ import { getMarketCountry } from '../lib/market-country';
 import { observeVisibility } from '../lib/observe-visibility';
 import { ColumnHeader } from './ColumnHeader';
 import { GroupedSuggestionCard, NO_HIGHLIGHTS, QuickStats, SuggestionCard, type Highlights, type OpenEvidence } from './PlanCards';
-import { PlanPdf, storagePulse, useEmailCaptureState, usePlanPrint } from './PlanPdf';
+import { emailPulses, pdfBox, PlanPdf, storagePulse, useEmailCaptureState, usePlanPrint } from './PlanPdf';
 import { useHighlights } from '../hooks/useHighlights';
 
 /** The plan's view on My health (US-62 AC17-AC26): its cards by topic (health-core's
@@ -115,11 +115,16 @@ interface PlanViewOptions {
 }
 
 export function usePlanView({ results, shownErase, isValid, tiles, forms, hasUnsavedLongitudinal, onSaveLongitudinal, showEmailCapture, formStage, alcoholQuestion }: PlanViewOptions): PlanView {
-  const highlights = useHighlights(results?.suggestions);
-
   const { printStatus, pdfBlocked, pdfOpened, printing, printReport, handlePrint, forget } = usePlanPrint(!!results, hasUnsavedLongitudinal, onSaveLongitudinal);
 
   const capture = useEmailCaptureState();
+  const planned = isValid && !!results;
+  // US-07 AC6: a known minor is never asked for an email (either box joins the
+  // mailing list). Their PDF is the gate-skipped page's Save as PDF (US-44 AC2).
+  const adult = planned && !results.knownMinor;
+  const pdfMode = pdfBox({ planned, adult, emailCapture: !!showEmailCapture && adult, state: capture.state, gateSkipped: capture.gateSkipped, shopify: SHOPIFY_SURFACE });
+  // US-07 AC3 (P7): no card glows while the PDF email box pulses.
+  const highlights = useHighlights(results?.suggestions, emailPulses(pdfMode.email, formStage));
   const [opened, setOpened] = useState<ReadonlySet<string>>(NO_HIGHLIGHTS);
   const toggleEvidence = useCallback((key: string) => setOpened(was => {
     const next = new Set(was);
@@ -178,13 +183,9 @@ export function usePlanView({ results, shownErase, isValid, tiles, forms, hasUns
   // US-09 AC19: the storage button's pulse.
   const attention = storagePulse({ shopify: SHOPIFY_SURFACE, state: capture.state, gateSkipped: capture.gateSkipped, knownMinor: !!results?.knownMinor, pdfOpened });
 
-  const planned = isValid && !!results;
-  // US-07 AC6: a known minor is never asked for an email (either box joins the
-  // mailing list). Their PDF is the gate-skipped page's Save as PDF (US-44 AC2).
-  const adult = planned && !results.knownMinor;
   const report = planned && printing && <PlanReport tiles={tiles} sections={sections} alcoholQuestion={alcoholQuestion}/>;
   const pdf = (
-    <PlanPdf key={shownErase} planned={planned} adult={adult} emailCapture={!!showEmailCapture && adult} formStage={formStage} capture={capture}
+    <PlanPdf key={shownErase} mode={pdfMode} formStage={formStage} capture={capture}
              printStatus={printStatus} pdfBlocked={pdfBlocked} onPrint={handlePrint} onCapturePrint={() => printReport('capture')}/>
   );
   const foot = <PlanFoot planned={planned}/>;

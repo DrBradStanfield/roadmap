@@ -6,7 +6,6 @@ import { flushSync } from 'react-dom';
 import { getReportHtml, sendGuestReport, getReportEmailCaptured, markReportEmailCaptured } from '../lib/roadmap-data';
 import { trackABConversion, trackProductEvent } from '../lib/server-api';
 import { EMAIL_REGEX } from '../lib/email';
-import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { getSkipEmailGate } from '../lib/assistant-config';
 
 // 'skipped' + 'reminded' are US-44's funnel-page states: the block skips the
@@ -137,6 +136,14 @@ export function pdfBox({ planned, adult, emailCapture, state, gateSkipped, shopi
     email: emailCapture ? emailBox(state, gateSkipped) : null,
     save: planned && (!shopify || state === 'captured' || gateSkipped || !adult),
   };
+}
+
+/**
+ * The gate email box pulses at the form's last step (US-07 AC3, P7 Brad 2026-11-10):
+ * the PDF save field comes first, so no plan card glows while it pulses.
+ */
+export function emailPulses(email: EmailBox, formStage: number | undefined): boolean {
+  return email === 'gate' && formStage === 4;
 }
 
 /**
@@ -315,7 +322,7 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
   if (box === 'reminders') return <ReminderSignup hook={hook} />;
 
   return (
-    <div className={`email-capture no-print${formStage === 4 ? ' field-attention' : ''}`}>
+    <div className={`email-capture no-print${emailPulses(box, formStage) ? ' field-attention' : ''}`}>
       <p className="email-guest-helper">{helperText}</p>
       <div className="email-capture-row">
         <input
@@ -344,13 +351,12 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
 
 /** My health's PDF box (US-62 AC26): the email box, or Save as PDF. It owns the box's typing, so a
  *  keystroke re-renders the box alone. Null when neither shows. */
-export function PlanPdf({ planned, adult, emailCapture, formStage, capture, printStatus, pdfBlocked, onPrint, onCapturePrint }: {
-  planned: boolean; adult: boolean; emailCapture: boolean; formStage?: number; capture: EmailCaptureState;
+export function PlanPdf({ mode, formStage, capture, printStatus, pdfBlocked, onPrint, onCapturePrint }: {
+  mode: ReturnType<typeof pdfBox>; formStage?: number; capture: EmailCaptureState;
   printStatus: 'idle' | 'loading'; pdfBlocked: PdfButton | null; onPrint: (at: PdfButton) => void; onCapturePrint: () => Promise<void>;
 }) {
   const guestEmailHook = useGuestEmailCapture(onCapturePrint, capture);
   const printLabel = printStatus === 'loading' ? 'Loading...' : 'Save as PDF';
-  const mode = pdfBox({ planned, adult, emailCapture, state: capture.state, gateSkipped: capture.gateSkipped, shopify: SHOPIFY_SURFACE });
   const box = mode.email && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />;
   if (!box && !mode.save) return null;
   return (
