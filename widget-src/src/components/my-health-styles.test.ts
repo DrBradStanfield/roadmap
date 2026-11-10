@@ -102,3 +102,28 @@ describe('US-62 AC35: the Account tab design', () => {
     expect(standalone.replace(/\s+/g, ' ')).toContain('html[data-hr-tab="chat"] .hr-hero, html[data-hr-tab="account"] .hr-hero { display: none; }');
   });
 });
+
+describe('US-62 AC36: one card inset on every phone tab', () => {
+  const sides = (el: Element, prop: 'padding' | 'margin', width: number) =>
+    [cascaded(el, `${prop}-left`, width), cascaded(el, `${prop}-right`, width)];
+
+  it('the tab panel\'s 16px sides are the inset; no card on any tab adds a side margin', () => {
+    expect(sides(nest('hr-tabpanel'), 'padding', PHONE)).toEqual(['16px', '16px']);
+    // My health (a plain card, a topic's card, the value page), Chat, Account (Settings is an .md-page).
+    const cards = [
+      nest('hr-tabpanel', 'health-input-panel', 'section-card'),
+      nest('hr-tabpanel', 'mh-page', 'mh-topics', 'section|mh-topic', 'section-card'),
+      nest('hr-tabpanel', 'section|md-page'),
+      nest('hr-tabpanel', 'health-tool-chat', 'chat-embed-root', 'chat-embed'),
+      nest('hr-tabpanel', 'mh-account', 'section|md-page mh-settings'),
+    ];
+    for (const card of cards) expect(sides(card, 'margin', PHONE).map(v => v ?? '0'), card.className).toEqual(['0', '0']);
+  });
+
+  it('desktop keeps its layout, and the chatbot embed (no tab panel) keeps its own 10px', () => {
+    expect(cascaded(nest('section|md-page'), 'margin-left', DESKTOP)).toBe('0');
+    const embed = nest('chat-embed-root', 'chat-embed');
+    embed.parentElement!.id = 'health-chatbot-embed-root';
+    expect(sides(embed, 'margin', PHONE)).toEqual(['10px', '10px']);
+  });
+});

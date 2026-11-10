@@ -140,14 +140,13 @@ input[type="number"] {
 
   .section-card {
     padding: 12px !important;
-    margin-left: 10px;
-    margin-right: 10px;
   }
 
-  /* The phone's panels; only the active one shows (the others are [hidden]). */
+  /* The phone's panels; only the active one shows (the others are [hidden]). Their 16px
+     sides are every tab's one card inset, as the iPhone's grouped lists (Brad 2026-11-10):
+     cards set no side margin of their own on a phone. */
   .hr-tabpanel {
-    padding-top: 16px;
-    padding-bottom: 16px;
+    padding: 16px;
     min-width: 0;
     overflow-x: hidden;
   }
@@ -1940,8 +1939,8 @@ input[type="number"] {
   .hr-skeleton-content {
     grid-template-columns: 1fr;
     gap: 0;
-    /* 49px: the top bar (33px, Sign in) and the panel's 16px. */
-    padding: 49px 10px 16px;
+    /* 49px: the top bar (33px, Sign in) and the panel's 16px; 16px sides, the panel's. */
+    padding: 49px 16px 16px;
   }
   .hr-skeleton-col:not(:first-child) { display: none; }
   .hr-skel-colhead { display: none; }
@@ -3972,8 +3971,12 @@ input[type="number"] {
   }
   .chat-embed,
   .health-tool-chat .chat-embed {
-    margin: 0 10px;
+    margin: 0; /* its panel's padding is the inset */
     min-height: 300px;
+  }
+  /* The chatbot embed block has no tab panel: the card keeps its own inset. */
+  #health-chatbot-embed-root .chat-embed {
+    margin: 0 10px;
   }
   /* A fixed height: the messages scroll inside, so the chat's auto-scroll
      works and the composer stays on screen. */
@@ -5406,7 +5409,7 @@ input[type="number"] {
 .md-page {
   background: #fff;
   border-radius: 12px;
-  margin: 0 10px 12px;
+  margin: 0 0 12px;
   padding: 8px 12px 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
@@ -5414,7 +5417,6 @@ input[type="number"] {
    header, so its top lines up with the plan's and the chat's (US-62 AC14). */
 @media (min-width: 769px) {
   .md-page {
-    margin: 0 0 12px;
     padding: 16px 24px 24px;
   }
 }
@@ -6365,7 +6367,7 @@ input[type="number"] {
   }
 }
 
-/* A phone: the cards' 10px gutter; every control a 44px target (Brad 2026-11-06). */
+/* A phone: every control a 44px target (Brad 2026-11-06). */
 @media (max-width: 768px) {
   /* Option A (Brad 2026-11-09, US-62 AC34): Sign in and Settings live in the Account tab, and
      the tab bar names the screen, so My health draws no header row at all. The title stays for
@@ -6381,22 +6383,6 @@ input[type="number"] {
     overflow: hidden;
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
-  }
-  .mh-pdf,
-  .mh-page > .mh-ready,
-  .mh-topics > .health-records-section,
-  .mh-pills,
-  .mh-banner,
-  .mh-topic-head,
-  .mh-foot,
-  .mh-foot-storage,
-  .mh-topic .section-card,
-  .mh-topic > .mh-card,
-  .mh-topic > .us-ownership,
-  .mh-page > .quick-stats,
-  .mh-page > .plan-empty-preview {
-    margin-left: 10px;
-    margin-right: 10px;
   }
   .md-foot-btn,
   .md-back,
