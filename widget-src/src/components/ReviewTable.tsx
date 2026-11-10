@@ -451,7 +451,7 @@ export function ReviewTable({
         />
       )}
 
-      <ReviewFileSections docs={docs} fileDates={fileDates} age={userAge} sex={sex} />
+      <ReviewFileSections docs={docs} age={userAge} sex={sex} />
 
       {!allDatesSet && (
         <p className="review-date-hint">Pick a past day for every new column before saving, and for previous results a day before the report's — keeps the saved date precise.</p>

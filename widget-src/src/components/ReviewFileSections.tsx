@@ -1,19 +1,17 @@
 import { isScreeningEligible } from '@roadmap/health-core/types';
 import { DraftDateCell } from './DraftDateCell';
-import { type FullDate, pastDay, fullDateToIso } from '../lib/review-dates';
+import { pastDay } from '../lib/review-dates';
 import type { ReviewDocuments } from '../hooks/useReviewDocuments';
 
 interface ReviewFileSectionsProps {
   docs: ReviewDocuments;
-  /** The files' report dates: a document's picker falls back to its file's. */
-  fileDates: Record<string, FullDate>;
   /** The plan's age and sex, which set screening eligibility (US-06 AC5). */
   age?: number;
   sex?: 'male' | 'female';
 }
 
 /** The upload review's per-file sections, after the value matrix. */
-export function ReviewFileSections({ docs, fileDates, age: userAge, sex }: ReviewFileSectionsProps) {
+export function ReviewFileSections({ docs, age: userAge, sex }: ReviewFileSectionsProps) {
   const { docChecked, setDocChecked, documentDates, setDocumentDates, screeningDateFor, docTitles, setDocTitles, screeningChecked, setScreeningChecked } = docs;
   return (
     <>
@@ -69,9 +67,10 @@ export function ReviewFileSections({ docs, fileDates, age: userAge, sex }: Revie
                 <div className="review-file-date">
                   <span>Date:</span>
                   {/* No day: an empty picker, "— Jun '24" for a month alone
-                      or "Date unknown", so any day picked sets it (US-13 AC6). */}
+                      or "Date unknown" (no date shown, so none passed), so any day
+                      picked sets it (US-13 AC6). */}
                   <DraftDateCell
-                    date={documentDate ?? (month ? `${month}-01` : fullDateToIso(fileDates[fi]))}
+                    date={documentDate ?? (month ? `${month}-01` : '')}
                     needsDay={!documentDate}
                     placeholder={documentDate || month ? undefined : 'Date unknown'}
                     ariaLabel="Document date"
