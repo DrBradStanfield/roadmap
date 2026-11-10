@@ -166,13 +166,5 @@
   "reason": "Public primary record cited by URL (a university thesis repository, or a government regulation or health-body page); not on the masters host list (masters-rebuild-pilot, 2026-11-10).",
   "date": "2026-11-10",
   "by": "orchestrator"
- },
- {
-  "check": "AC6",
-  "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
-  "match": "unexpected change: tools/test-queries.json",
-  "reason": "This batch registers its own answer checks (US-42 AC5), not run on Brad's 2026-11-10 rule (masters-rebuild-pilot, 2026-11-10).",
-  "date": "2026-11-10",
-  "by": "orchestrator"
  }
 ]
