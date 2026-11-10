@@ -35,6 +35,9 @@ const planReadySeen = (): boolean => safeGetItem(PLAN_READY_SEEN_KEY) === '1';
  * - `landed`: the jump to My health after the last answer happened (AC25).
  *   Once per record, and spent only when it lands. It lives here, not in the
  *   fields that ask for it, so a panel remount (the 768px swap) keeps it (D4).
+ *   Only an onboarding that ended in this tab (`endedHere`, the moment of
+ *   `onboarding_done`) lands: a record complete when first shown, or one
+ *   another writer completed (D6), never does.
  */
 interface RecordOnboarding {
   erase: string;
@@ -45,6 +48,7 @@ interface RecordOnboarding {
   answered: boolean;
   /** The stage the step count last saw (AC13). */
   counted: FormStage;
+  endedHere: boolean;
   landed: boolean;
 }
 
@@ -55,8 +59,8 @@ export interface Onboarding {
   aboutYouLow: boolean;
   planReady: boolean;
   /** Asked as the last answer is typed: the landing on the record shown now. The function
-   *  it returns says whether to land, once per record, only once the four answers hold and
-   *  only while that record is shown; a yes spends it (AC25, D4). */
+   *  it returns says whether to land, once per record, only once its onboarding ended in this
+   *  tab and only while that record is shown; a yes spends it (AC25, D4). */
   landing: () => () => boolean;
   markAnswered: () => void;
   /** A change this tab did not make: another writer's, or a refused save's re-read. */
@@ -80,7 +84,7 @@ export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded
   const ref = useRef<RecordOnboarding | null>(null);
   const was = ref.current;
   if (!was || was.erase !== erase) {
-    ref.current = { erase, epoch: (was?.epoch ?? 0) + 1, reached: stage, opened: stage, fullForm: false, answered: false, counted: stage, landed: false };
+    ref.current = { erase, epoch: (was?.epoch ?? 0) + 1, reached: stage, opened: stage, fullForm: false, answered: false, counted: stage, endedHere: false, landed: false };
   } else if (stage > was.reached) was.reached = stage;
   const now = ref.current!;
   now.fullForm ||= opensFullForm(now.reached, holdings);
@@ -103,6 +107,7 @@ export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded
     // The step that was asked is the one answered; later steps a record already held were not.
     trackProductEvent('onboarding_step', { step: ONBOARDING_STEPS[from - 1] });
     if (rec.reached === 4) {
+      rec.endedHere = true;
       trackProductEvent('onboarding_done');
       if (!planReadySeen()) setPlanReadyFor(rec.epoch);
     }
@@ -113,7 +118,7 @@ export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded
   const landing = useCallback(() => {
     const at = ref.current!; // the record as the answer was typed, not as the jump fires
     return () => {
-      if (ref.current !== at || at.landed || stageRef.current !== 4) return false;
+      if (ref.current !== at || at.landed || !at.endedHere || stageRef.current !== 4) return false;
       return (at.landed = true);
     };
   }, []);

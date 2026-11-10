@@ -387,6 +387,37 @@ describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboa
     expect(document.activeElement).toBe(cell);
   });
 
+  it('US-62 AC25 (D4): a record already complete when first shown never lands: a weight typed in the matrix keeps the focus', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await addMeasurement('weight', 70, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
+    await settle(200); // About you's rows, opened by open(), take their focus first
+    const cell = matrixWeight(view)!;
+    type(cell, '106'); // Shopify build: a weight would land, were it the last answer
+    await settle(100);
+    expect(landed()).toBe(false);
+    expect(document.activeElement).toBe(cell);
+  });
+
+  it('US-62 AC25 (D4, D6): another device completes the record; a weight then typed here does not land, and About you stays at the top', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female' }, {});
+    await addMeasurement('weight', 70, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(q(view, '#birthMonth')).toBeTruthy()); // stage 3
+    await anotherWriter({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, { heightCm: 170, sex: 'female' });
+    await waitFor(() => expect(fullForm(view)).toBe(true), { timeout: 3000 });
+    await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
+    const cell = matrixWeight(view)!;
+    type(cell, '106');
+    await settle(100);
+    expect(landed()).toBe(false);
+    expect(document.activeElement).toBe(cell);
+    expect(q(view, '.mh-page .about-card')).toBeTruthy();
+  });
+
   it('US-62 AC25 (D4): a complete year typed before sex lands nothing and leaves the landing for the year that is the last answer', async () => {
     const view = await wholeFormWithoutSexOrBirth();
     birth(view, '5', '1975'); // sex not yet given: not the last answer

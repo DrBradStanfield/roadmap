@@ -128,28 +128,40 @@ describe('US-62 AC12: About you moves low', () => {
   });
 });
 
-describe('US-62 AC25 (D4): the landing at My health, once per record', () => {
+describe('US-62 AC25 (D4): the landing at My health, once per record, for an onboarding ended here', () => {
   /** Asks for the landing as an answer is typed, and lands it at once. */
   const land = (view: ReturnType<typeof setup>) => view.result.current.landing()();
+  /** The last answer given here: the record rises to stage 4. */
+  const answerLast = (view: ReturnType<typeof setup>) => { act(() => view.result.current.markAnswered()); view.rerender({ stage: 4 }); };
 
-  it('lands once the four answers hold, once per record, and again after an erase', () => {
+  it('lands once the onboarding ends here, once per record, and again after an erase', () => {
     const view = setup(3);
     expect(land(view)).toBe(false); // not the last answer yet: nothing spent
-    view.rerender({ stage: 4 });
+    answerLast(view);
     expect(land(view)).toBe(true);
     expect(land(view)).toBe(false); // spent for this record
     shown.erase = 'erase-2';
-    view.rerender({ stage: 4 });
+    view.rerender({ stage: 3 });
+    answerLast(view);
     expect(land(view)).toBe(true); // the new record's own landing
     expect(land(view)).toBe(false);
   });
 
   it('a landing asked on one record does not land on the next', () => {
-    const view = setup(4);
+    const view = setup(3);
+    answerLast(view);
     const asked = view.result.current.landing(); // the weight typed on the first record
     shown.erase = 'erase-2';
-    view.rerender({ stage: 4 });
+    view.rerender({ stage: 3 });
+    answerLast(view);
     expect(asked()).toBe(false); // that record was erased before the jump fired
     expect(land(view)).toBe(true); // and the new record's landing is still there
+  });
+
+  it('never lands for a record complete when first shown, or one another writer completed (D6)', () => {
+    expect(land(setup(4))).toBe(false);
+    const view = setup(3);
+    view.rerender({ stage: 4 }); // a rise with no answer given here
+    expect(land(view)).toBe(false);
   });
 });
