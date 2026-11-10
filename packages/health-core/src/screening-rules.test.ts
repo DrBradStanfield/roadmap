@@ -121,6 +121,8 @@ describe('US-06, US-07: A2-1 step 2, every row\'s ages, sex and gates match the 
       }
       const abnormal = r.result.options.find((o) => o.followup)!.value;
       const s = { ...PASSING, lungPackYears: 5, [camel(r.choice.key)]: startedValue(r), [camel(r.dateKey)]: '2026-04', [camel(r.result.key)]: abnormal, [`${r.id}FollowupStatus`]: 'not_organized' };
+      // Inside the range the card shows for every row, so a fixture that never opens it fails here.
+      expect(cardIds(range[1], r.sex, s).includes(`screening-${r.id}-followup`), `${r.id} ${range[1]}: inside the range`).toBe(true);
       for (const age of [range[1] + 1, range[1] + 10]) {
         expect(cardIds(age, r.sex, s).includes(`screening-${r.id}-followup`), `${r.id} ${age}`).toBe(r.followupIgnoresUpperAge);
         if (r.reminder) expect(reminderCategories(age, r.sex, s).includes(r.reminder.category), `${r.id} ${age}`).toBe(r.followupIgnoresUpperAge);
