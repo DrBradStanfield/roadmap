@@ -148,8 +148,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // screen moves to another erase, this tab's or another device's, even with
   // post-erase rows. A re-read that brings no erase keeps them.
   const { shownErase, erasing: isDeleting, showErase, eraseUnshown, refusalIsNews, eraseAll } = useErase(() => clearChatEdits());
-  // The record shown, at load and on every re-read, and another writer's change held behind an edit (hooks/useRecordApply).
-  const { showRecord, signal: rereadRecord, saved: profileClean, firstReadFailed } = useRecordApply({
+  // The record shown, at load and on every whole re-read, and another writer's change held behind an edit (hooks/useRecordApply).
+  const { showRecord, signal: rereadRecord, ownSave, saved: profileClean, firstReadFailed } = useRecordApply({
     setInputs, reloadValues, applyLists, units, showErase, loaded: hasApiResponse,
     later: () => ({ markSaved, flushPendingSave, profileDirty, clearAnswered }), // declared below
   });
@@ -281,9 +281,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // then the page re-reads the record.
   const handleCorrectValue = useCallback<CorrectFn>(async (id, newValue, erase) => {
     const status = await countedCorrection(id, newValue, erase);
-    if (status === 'ok') await reloadValues();
+    if (status === 'ok') await ownSave();
     return status;
-  }, [reloadValues]);
+  }, [ownSave]);
 
   // A saved blood test moved to the day it was drawn (US-04 AC5), counted by
   // name only; the page re-reads the record as after a correction.
@@ -293,18 +293,18 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       const outcome = await moveBloodTest(from, to, expectedIds, keep);
       if (outcome.status === 'ok') {
         trackProductEvent('blood_test_moved');
-        await reloadValues();
+        await ownSave();
       }
       return outcome;
     },
-  }), [reloadValues]);
+  }), [ownSave]);
 
   // The first-time vitals fields' and the PSA's save, queued and debounced (hooks/useLongitudinalSave).
   const {
     handleSaveLongitudinal, scheduleLongitudinalSave, flushLongitudinalSave, commitPsa, stagePendingSave,
     cancelPendingSave, flushPendingSave, isSavingLongitudinal, fieldsSaved, psaDate, setPsaDate,
   } = useLongitudinalSave({
-    inputs, setInputs, history, unitOverrides, unitSystem, reloadValues,
+    inputs, setInputs, history, unitOverrides, unitSystem, reread: ownSave,
     flushPendingProfileSave: flushProfile, typedIn,
     firstSave: previousMeasurements.length === 0, // read once: a record holding a measurement at load sends no conversion (US-01 AC7)
   });

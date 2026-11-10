@@ -12,7 +12,7 @@
  *   once the read is shown (`loaded`, survey R2);
  * - idle: nothing waits;
  * - held: a remote change waits for a clean form.
- * Every re-read of the record goes through here, so a held change is applied
+ * Every whole re-read of the record goes through here, so a held change is applied
  * once (survey R8). `apply(remote)`: `remote` says the re-read takes in
  * another writer's change.
  */
