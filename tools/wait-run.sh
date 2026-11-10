@@ -15,7 +15,9 @@
 # over GraphQL (a separate budget). Polls every WAIT_RUN_INTERVAL seconds (default 60, never less), every 120 s
 # after 10 min and every 300 s after 30 min. Every 10th poll, and after a gh error, it reads `gh api rate_limit`
 # (free); with under 200 left in the budget its mode spends (core for deploy, graphql for pr) it sleeps until the
-# reset instead of polling. Plain POSIX sh plus perl (macOS ships
+# reset instead of polling. It prints the budget left in both (one free `gh api rate_limit` read each) to stderr
+# when the wait starts and when it ends, on every exit after the usage check, so the next shortage names its
+# spender; a failed read prints nothing and never changes the exit code. Plain POSIX sh plus perl (macOS ships
 # it) for the per-call limit, and gh's own --jq (no jq needed). Run it in the background (run_in_background) so
 # the session is woken when it ends.
 set -u
@@ -36,6 +38,12 @@ start=$(date +%s); errors=0; polls=0
 # Every gh call gets WAIT_RUN_GH_TIMEOUT seconds (default 60; perl's alarm, since macOS has no `timeout`), so a
 # stuck request counts as a gh error instead of hanging the wait.
 gh() { perl -e 'alarm shift; exec @ARGV' "${WAIT_RUN_GH_TIMEOUT:-60}" gh "$@"; }
+say_budget() {
+  b=$(gh api rate_limit --jq '"core=\(.resources.core.remaining) graphql=\(.resources.graphql.remaining)"' 2>/dev/null)
+  case "$b" in core=[0-9]*" graphql="[0-9]*) echo "GitHub budget at $1: $b" >&2 ;; esac
+}
+say_budget start
+trap 'say_budget end' EXIT
 # Wall-clock, so slow gh calls count too.
 give_up_if_late() {
   waited=$(( $(date +%s) - start ))
