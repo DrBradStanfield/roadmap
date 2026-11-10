@@ -118,7 +118,7 @@ In the ASCOMALVA trial, 113 people with mild to moderate Alzheimer's disease too
 
 In a retrospective study of 448 Italian patients aged 65 or older with Alzheimer's disease, 251 took citicoline 1,000 mg a day with a cholinesterase inhibitor and 197 took the inhibitor alone. Mini-Mental State Examination scores in the combination group were higher at 9 months than at baseline [55]. The design was not randomized.
 
-#### Egg Consumption and Alzheimer's Risk
+#### Egg Consumption and Alzheimer's Dementia
 
 In the Rush Memory and Aging Project, 1,024 older adults with a mean age of about 81 were followed for a mean of 6.7 years. Eating more than one egg a week was linked to a lower risk of Alzheimer's dementia (HR 0.53, 95% CI 0.34 to 0.83), and the authors estimated that 39% of this link ran through dietary choline [48]. The study is observational and cannot show that eggs prevent dementia.
 

@@ -1438,5 +1438,13 @@
   "reason": "Official public source host (cancer.gov, NCI PDQ) not on the allow-list (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
   "by": "orchestrator",
   "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: #### Egg Consumption and Alzheimer's Risk",
+  "reason": "Renamed '#### Egg Consumption and Alzheimer's Dementia': the subsection is an observational benefit association, not a safety caution, and 'Risk' made the US-41 AC8 connector cut test treat it as a risk section (masters-rebuild-1, CI fix)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
  }
 ]
