@@ -128,7 +128,6 @@ function SuggestionEvidence({ suggestion, open, onToggle }: { suggestion: Sugges
   );
 }
 
-
 /** US-61 AC4: Brad's product on a US adult's supplement card, at the card's foot. Never printed. */
 function UsProductBlockView({ block }: { block: UsProductBlock }) {
   return (
@@ -566,9 +565,8 @@ function useHighlights(suggestions: Suggestion[] | undefined): Highlights {
       const prev = baselineRef.current.get(s.id);
       if (!prev || prev.title !== s.title || prev.description !== s.description) next.add(s.id);
     }
-    // Nothing new or changed, nothing glowing: no new state, so no re-render.
+    // Nothing new or changed: a change undone mid-glow ends the glow (the same empty set skips a re-render).
     if (next.size === 0) {
-      // A change undone mid-glow ends the glow; the same empty set skips a re-render.
       setHighlighted(NO_HIGHLIGHTS);
       setFadingOut(NO_HIGHLIGHTS);
       baselineRef.current = currentMap;
@@ -707,7 +705,6 @@ export function PlanEmptyPreview() {
     </div>
   );
 }
-
 
 /**
  * The plan as its PDF has always printed it (US-08, US-18, US-62 AC28): its
