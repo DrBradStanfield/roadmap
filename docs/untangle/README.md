@@ -62,10 +62,10 @@ On 2026-11-10, from `leads.csv`:
 | S4 privacy scrub and vocabularies | 0 | 1 | 8 | 0 | 9 |
 | S5 clinical rules | 0 | 0 | 8 | 1 | 9 |
 | S6 record edits and iPhone engine | 0 | 0 | 9 | 0 | 9 |
-| S7 web data layer, upload, standalone | 2 | 0 | 9 | 1 | 12 |
+| S7 web data layer, upload, standalone | 4 | 0 | 7 | 1 | 12 |
 | S8 web big components | 3 | 3 | 5 | 0 | 11 |
 | S9 health-core entry points | 1 | 0 | 0 | 0 | 1 |
-| **All** | 16 | 7 | 73 | 2 | 98 |
+| **All** | 18 | 7 | 71 | 2 | 98 |
 
 ## state-leads.csv
 

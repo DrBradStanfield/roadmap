@@ -41,10 +41,11 @@ import { safeGetItem, safeRemoveItem, safeSetItem } from '../src/lib/storage';
 import { Sentry } from '../src/lib/sentry';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
+import { BRAD_SERVER_ORIGIN } from './server-origin';
 import type { Backend } from './connect';
 import type { FileReminderOptIn } from '@roadmap/health-core/roadmap-file';
 
-const REMINDERS_API_URL = 'https://health-tool-app.fly.dev/api/reminders-v2';
+const REMINDERS_API_URL = `${BRAD_SERVER_ORIGIN}/api/reminders-v2`;
 
 /** Set once the provider has NO email to give (a GitHub PAT without the email
  *  permission, a pre-openid Drive grant). That answer won't change on its own,

@@ -12,8 +12,6 @@
  * Same harness as logout-persistence.test.ts (second module graph standing in
  * for another tab, simulated `storage` events, in-memory provider only).
  */
-import { readFileSync } from 'node:fs';
-import { runInNewContext } from 'node:vm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryAdapter } from '@roadmap/health-core/memory-adapter';
 
@@ -202,32 +200,20 @@ async function otherTab() {
     storage: await import('../src/storage/roadmap-store'),
     local: await import('../src/storage/local-storage-adapter'),
     connect: await import('./connect'),
+    boot: await import('./boot'),
   };
 }
 type OtherTab = Awaited<ReturnType<typeof otherTab>>;
 type Resolved = import('./connect').ResolvedBackend;
 
-/** app.tsx's main() from its first line through the first record load: the
- *  real source, run with the other tab's modules. `resolveBackend` stands in
+/** The standalone boot (app.tsx main() calls loadRecord) through the first
+ *  record load, in the other tab's module graph. `resolveBackend` stands in
  *  for the wait before any cloud host exists (an OAuth code exchange, or a
- *  remembered Drive's token refresh). Same slice-and-run approach as
- *  logout-persistence.test.ts's installLifecycle. */
+ *  remembered Drive's token refresh). */
 async function runMainUntilLoaded(other: OtherTab, resolveBackend: () => Promise<{ resolved: Resolved }>) {
-  const source = readFileSync(new URL('./app.tsx', import.meta.url), 'utf8');
-  const start = source.indexOf('async function main() {');
-  const load = source.indexOf('await startOnBackend(', start);
-  expect(start).toBeGreaterThan(0);
-  expect(load).toBeGreaterThan(start);
-  const body = source.slice(source.indexOf('{', start) + 1, source.indexOf('\n', load));
   let store!: Awaited<ReturnType<OtherTab['storage']['RoadmapStore']['create']>>;
-  const backend: string = await runInNewContext(`(async () => {${body}\n  return backend;\n})()`, {
-    initSentry: () => {},
-    takeEmailFlag: () => false,
-    resolveBackend,
-    startOnBackend: other.connect.startOnBackend,
-    showLoadFailure: (error: unknown) => { throw error; }, // US-65 AC7's page message; these loads succeed
-    initRoadmapStore: async (adapter: Resolved['adapter']) => { store = await other.storage.RoadmapStore.create(adapter); },
-    noteOtherTabsLogOffWhileLoading: other.local.noteOtherTabsLogOffWhileLoading,
+  const { backend } = await other.boot.loadRecord(resolveBackend, async (adapter) => {
+    store = await other.storage.RoadmapStore.create(adapter);
   });
   return { backend, store };
 }
