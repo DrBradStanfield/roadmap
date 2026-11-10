@@ -147,7 +147,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // post-erase rows. A re-read that brings no erase keeps them.
   const { shownErase, erasing: isDeleting, showErase, eraseUnshown, refusalIsNews, eraseAll } = useErase(() => clearChatEdits());
   // The record shown, at load and on every re-read, and another writer's change held behind an edit (hooks/useRecordApply).
-  const { showRecord, signal: rereadRecord, saved: profileClean } = useRecordApply({
+  const { showRecord, signal: rereadRecord, saved: profileClean, firstReadFailed } = useRecordApply({
     setInputs, reloadValues, applyLists, showUnits, offerUnits, showErase, loaded: hasApiResponse,
     later: () => ({ markSaved, flushPendingSave, profileDirty, clearAnswered }), // declared below
   });
@@ -189,8 +189,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       setHasApiResponse(true);
     }
 
-    void loadData();
-  }, [showErase]);
+    void loadData().catch(firstReadFailed);
+  }, [showErase, firstReadFailed]);
 
   // Fire A/B impression once on mount
   useEffect(() => { trackABImpression(); }, []);

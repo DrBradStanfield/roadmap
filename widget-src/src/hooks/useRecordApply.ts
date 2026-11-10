@@ -5,6 +5,7 @@ import { inputRangeFault } from '@roadmap/health-core/validation';
 import type { LatestMeasurementsResult } from '../lib/api-types';
 import { getBackendKind, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
+import { Sentry } from '../lib/sentry';
 import { createRemoteChangeRelay } from '../lib/remote-replay';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import type { useRecordState } from './useRecordState';
@@ -41,6 +42,9 @@ interface Later {
  * The apply runs through refs, not an effect: the page re-reads in the turn
  * it is told, as before this hook.
  */
+/** A record read that failed, tagged so the strict scrubber strips its text (lib/sentry.ts scrubEvent): it can quote the record. */
+const reportReadFailure = (error: unknown) => { Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'load' } }); };
+
 export function useRecordApply(args: {
   setInputs: Dispatch<SetStateAction<Partial<HealthInputs>>>;
   reloadValues: () => Promise<LatestMeasurementsResult | null>;
@@ -111,7 +115,10 @@ export function useRecordApply(args: {
       latest.current.later().clearAnswered(); // another writer's change is no answer given here (US-62 AC13)
       trackProductEvent('remote_change_applied', { backend: getBackendKind() });
     }
-    return apply();
+    const read = apply();
+    // A remote change's re-read is dropped by the relay (arrived, loaded, saved): a failure is reported here, not left unhandled.
+    if (remote) read.catch(reportReadFailure);
+    return read;
   }));
 
   const signal = useCallback((reason: ReadReason): Promise<void> | void => {
@@ -120,9 +127,10 @@ export function useRecordApply(args: {
     // inputs, and a remote change landing on a half-entered height would take
     // those keystrokes with it. The relay HOLDS it: the next profile save
     // carries the edit up and then replays the change.
-    // An erase from another device (a new erase identity) is never held: it
-    // applies at once and drops this device's drafts, refused ones included
-    // (US-11 AC6); a refused draft would otherwise hold it for good.
+    // An erase from another device (a new erase identity) is never held once
+    // the page has shown its first read: it applies then and drops this
+    // device's drafts, refused ones included (US-11 AC6); a refused draft
+    // would otherwise hold it for good.
     if (reason === 'remote') return relay.arrived(getEraseIdentity() === getShownErase() && later().profileDirty());
     if (reason === 'refused') later().clearAnswered(); // the record re-read is not an answer given here (US-62 AC13)
     return relay.reread();
@@ -130,6 +138,9 @@ export function useRecordApply(args: {
 
   const { loaded } = args;
   useLayoutEffect(() => { if (loaded) relay.loaded(); }, [loaded, relay]);
+  // The first read failed part-way: the page stays as it is (not loaded, its
+  // saves off), but a change waiting on that read applies now, or never would.
+  const firstReadFailed = useCallback((error: unknown) => { reportReadFailure(error); relay.loaded(); }, [relay]);
 
   // Something wrote to the record under us: another device, or an AI
   // connector through MCP (US-34). The store has already re-read and merged.
@@ -139,5 +150,5 @@ export function useRecordApply(args: {
     return () => window.removeEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
   }, [signal]);
 
-  return { showRecord, signal, saved: relay.saved };
+  return { showRecord, signal, saved: relay.saved, firstReadFailed };
 }
