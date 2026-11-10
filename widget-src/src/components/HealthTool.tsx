@@ -141,8 +141,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const [floatingChatOpen, setFloatingChatOpen] = useState(false);
   const [chatPrefetch, setChatPrefetch] = useState<ChatPrefetch | null>(null);
 
-  // The unit system and each field's own unit (hooks/useUnits, US-05).
-  const { unitSystem, unitOverrides, metricUnitOverrides, handleToggleFieldUnit, handleUnitSystemChange, applySavedUnitSystem } = useUnits(setInputs);
+  const rootRef = useRef<HTMLDivElement>(null);
+  // The unit system and each field's own unit (hooks/useUnits, US-05); the record's, held while anything is typed (hooks/useHeldUnits).
+  const { unitSystem, unitOverrides, metricUnitOverrides, handleToggleFieldUnit, handleUnitSystemChange, showUnits, offerUnits, onDraftsHold } = useUnits(setInputs, rootRef);
 
   // The page's reads of the record: the values, both matrices, the lab rows (hooks/useRecordReads).
   const { reloadValues, refreshLabValues, loadHistory } = useRecordReads({ setPreviousMeasurements, setHistory, setLabValueHistory });
@@ -366,13 +367,13 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // Refresh state after upload bulk save (lab values + documents): the values,
   // lab rows and both matrices, then the profile and the rest.
   // The record shown in one step, load and every re-read: units, form, saved copy, lists (US-34 AC7).
-  // `form` builds the form from the one shown, for a re-read that keeps what is being typed.
-  const showRecord = useCallback((result: LatestMeasurementsResult, form: (shown: Partial<HealthInputs>) => Partial<HealthInputs> = () => result.inputs) => {
-    applySavedUnitSystem(result.inputs.unitSystem);
+  // `form` builds the form from the one shown, for a re-read that keeps what is being typed; `units` shows or offers its units.
+  const showRecord = useCallback((result: LatestMeasurementsResult, form: (shown: Partial<HealthInputs>) => Partial<HealthInputs> = () => result.inputs, units = showUnits) => {
+    units(result.inputs.unitSystem);
     setInputs(form);
     markSaved(result.inputs);
     applyLists(result);
-  }, [applySavedUnitSystem, markSaved, applyLists]);
+  }, [showUnits, markSaved, applyLists]);
 
   const handleUploadComplete = useCallback(async () => {
     // A field the user left has its save waiting (500 ms): it starts now; its own re-read follows.
@@ -405,12 +406,12 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
           if (inputRangeFault(field, value)) (next as Record<string, unknown>)[field] = value;
         }
         return next;
-      });
+      }, sameRecord ? offerUnits : showUnits); // another erase's units show at once, never held
     }
     // Another device erased the record (US-16 AC2a / US-09): a chat banner
     // left standing would write pre-erase values into the erased record.
     showErase(erase);
-  }, [reloadValues, flushPendingSave, showErase, showRecord]);
+  }, [reloadValues, flushPendingSave, showErase, showRecord, offerUnits, showUnits]);
 
   // Something wrote to the record under us — another device, or an AI
   // connector through MCP (US-34). The store has already re-read and merged;
@@ -496,7 +497,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   isMobileRef.current = isMobile;
   const isWideDesktop = useIsWideDesktop(1200);
   const floatingChat = !isMobile && !isWideDesktop && reached === 4;
-  const rootRef = useRef<HTMLDivElement>(null);
   // The phone's three tabs, each keeping its own scroll (hooks/useTabs, US-20 AC6).
   const { activeTab, selectTab, tabIds } = useTabs(rootRef);
 
@@ -772,7 +772,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     reached,
     fullForm,
     aboutYouLow,
-    onProfileLeft: profileLeft,
+    onProfileLeft: profileLeft, onDraftsHold,
     setShowUploadModal,
     planBasis,
     grading,

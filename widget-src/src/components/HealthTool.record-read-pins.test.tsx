@@ -13,10 +13,12 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor, type RenderResult } from '@testing-library/react';
-import { type RoadmapFile } from '@roadmap/health-core/roadmap-file';
-import { localDay } from '@roadmap/health-core/merge';
+import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { localDay, rowRootIds } from '@roadmap/health-core/merge';
+import { migrateFile } from '@roadmap/health-core/migrate';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
-import { formatDisplayValue } from '@roadmap/health-core/units';
+import { toOldShape } from '@roadmap/health-core/blood-tests';
+import { formatDisplayValue, toCanonicalValue } from '@roadmap/health-core/units';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
@@ -24,6 +26,7 @@ import { loadFromLocalStorage } from '../lib/storage';
 import { trackABConversion } from '../lib/server-api';
 import { openAboutYou } from '../testing/health-tool-harness';
 import { WRITE_REFUSED } from '../lib/erase-copy';
+import { press, typeInto } from '../testing/matrix-gestures';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -236,5 +239,109 @@ describe('US-34 AC7: a unit system another device chose shows here at once', () 
     await waitFor(() => expect(weightRow()).toContain(formatDisplayValue('weight', 70, 'si')));
     await anotherWriter(() => saveChangedMeasurements({ unitSystem: 'conventional' }, { unitSystem: 'si' }));
     await waitFor(() => expect(weightRow()).toContain(formatDisplayValue('weight', 70, 'conventional')), { timeout: 3000 });
+  });
+});
+
+describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes the meaning of a number being typed', () => {
+  // Brad 2026-11-10: the record's unit system is held while anything is being
+  // typed (the focus in a field, or a matrix draft holding text) and applies
+  // once the page is clean. PR 1135's reviewers found both scenarios below.
+  const weightRow = (view: RenderResult) => q(view, '.bt-vitals-card [data-metric="weight"]')?.textContent ?? '';
+  const lb180 = () => toCanonicalValue('weight', 180, 'conventional');
+  /** Scenario A: a first-time weight typed in lb; the phone switches the record to SI mid-number. */
+  async function weightTypedAcrossASwitch(): Promise<RenderResult> {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3, unitSystem: 'conventional' }, {});
+    await flushRoadmapStore();
+    const view = render(<HealthTool />); // the onboarding's weight box, beside the height (US-62 AC13)
+    await waitFor(() => expect(q(view, '#weightKg')).toBeTruthy());
+    type(q(view, '#weightKg'), '18');
+    await anotherWriter(() => saveChangedMeasurements({ unitSystem: 'si' }, { unitSystem: 'conventional' }));
+    await settle(50);
+    type(q(view, '#weightKg'), '180');
+    leave(q(view, '#weightKg'));
+    await waitFor(async () => expect(await activeWeights()).toHaveLength(1), { timeout: 3000 });
+    return view;
+  }
+
+  it('US-04 AC1, US-34 AC7: a weight typed in lb across a remote switch to SI saves as lb (scenario A)', async () => {
+    await weightTypedAcrossASwitch();
+    const [[saved]] = await activeWeights();
+    expect(saved).toBeCloseTo(lb180(), 1);
+  });
+
+  it('US-34 AC7: the held unit system applies once the field is left: the weight then shows in kg', async () => {
+    const view = await weightTypedAcrossASwitch();
+    await waitFor(() => expect(weightRow(view)).toContain(formatDisplayValue('weight', lb180(), 'si')), { timeout: 3000 });
+  });
+
+  /** The blood-test matrix's LDL row, once it is on the page. */
+  const ldlRow = (view: RenderResult) => waitFor(() => {
+    const row = Array.from(view.container.querySelectorAll<HTMLElement>('.bt-timeline .bt-row'))
+      .find((r) => r.querySelector('.bt-name-label')?.textContent === 'LDL Cholesterol');
+    if (!row) throw new Error('no LDL row');
+    return row;
+  });
+  const ldlDraft = async (view: RenderResult) => (await ldlRow(view)).querySelector('.bt-cell-draft input') as HTMLInputElement;
+  const activeLdl = async () => toOldShape(await recordOnDisk()).measurements
+    .filter((m) => m.metricType === 'ldl' && m.status === 'active').map((m) => m.value);
+  /** A complete record in SI units. */
+  async function siRecord() {
+    await completeRecord();
+    await saveChangedMeasurements({ unitSystem: 'si' }, {});
+    await flushRoadmapStore();
+  }
+  const toConventional = () => anotherWriter(() => saveChangedMeasurements({ unitSystem: 'conventional' }, { unitSystem: 'si' }));
+
+  it('US-04 AC1, US-34 AC7: an LDL drafted in mmol/L across a remote switch to US units saves as mmol/L (scenario B)', async () => {
+    await siRecord();
+    const view = await open();
+    typeInto(await ldlDraft(view), '3.5'); // the cell keeps the focus
+    await toConventional();
+    await settle(50);
+    press(q(view, '.alr-add-btn') as HTMLElement); // out of the matrix: the draft commits
+    await waitFor(async () => expect(await activeLdl()).toEqual([3.5]), { timeout: 3000 });
+    // Clean again: the record's US units show.
+    await waitFor(async () => expect((await ldlRow(view)).textContent).toContain('mg/dL'), { timeout: 3000 });
+  });
+
+  it('US-04 AC1, US-34 AC7: a draft holding text with the focus elsewhere holds the units too, until it commits', async () => {
+    await siRecord();
+    const first = await open();
+    typeInto(await ldlDraft(first), '3.5');
+    first.unmount(); // the draft stays on the device, unsaved
+    const view = await open();
+    expect((await ldlDraft(view)).value).toBe('3.5');
+    expect(document.activeElement?.matches('input, select, textarea')).toBe(false); // no field has the focus
+    await toConventional();
+    await settle(50);
+    expect((await ldlRow(view)).textContent).toContain('mmol/L'); // held
+    typeInto(await ldlDraft(view), '3.5');
+    press(q(view, '.alr-add-btn') as HTMLElement);
+    await waitFor(async () => expect(await activeLdl()).toEqual([3.5]), { timeout: 3000 });
+    await waitFor(async () => expect((await ldlRow(view)).textContent).toContain('mg/dL'), { timeout: 3000 });
+  });
+
+  it('US-11 AC6: a remote erase while a field is focused still applies at once: the form empties', async () => {
+    await completeRecord();
+    const view = await open();
+    type(q(view, '#heightCm'), '171'); // focused, unsaved
+    // Another device erases the record, as its deleteUserData writes it.
+    const adapter = new LocalStorageAdapter();
+    const { body, version } = await adapter.read(ROADMAP_FILE_NAME);
+    const now = new Date(Date.now() + 1000).toISOString();
+    const prior = migrateFile(body, { deviceId: 'other-device', now });
+    const erased = migrateFile(null, { deviceId: 'other-device', now });
+    const epoch = (prior.meta.eraseEpoch ?? 0) + 1;
+    erased.schemaVersion = CURRENT_SCHEMA_VERSION;
+    erased.erasedRows = { fromEpoch: epoch, ids: [...new Set(rowRootIds(prior))].sort() };
+    erased.meta.eraseEpoch = epoch;
+    erased.meta.erasedAt = now;
+    await adapter.write(ROADMAP_FILE_NAME, erased, version);
+    await act(async () => { window.dispatchEvent(new StorageEvent('storage', { key: null })); });
+    // The saved answers and the weight go. (The focused height box keeps its own typed
+    // text, InputPanel's rawInputs, as before this change.)
+    await waitFor(() => expect((q(view, '#birthYear') as HTMLInputElement | null)?.value ?? '').toBe(''), { timeout: 3000 });
+    expect(view.queryByRole('radio', { name: 'Female', checked: true })).toBeNull();
+    expect(await activeWeights()).toEqual([]);
   });
 });

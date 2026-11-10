@@ -157,6 +157,7 @@ interface InputPanelProps {
   aboutYouLow: boolean;
   /** The focus left the Starting Info card: HealthTool moves About you low if all four answers hold. */
   onProfileLeft?: () => void;
+  onDraftsHold?: (holds: boolean) => void; // a matrix draft holds typed text: HealthTool holds the record's units meanwhile (US-04 AC1)
   setShowUploadModal?: (show: boolean) => void;
   /** What the plan was computed from. Null until there is a plan (no valid
    *  sex or height). */
@@ -185,7 +186,7 @@ export function InputPanel({
   bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
   formStage, reached, fullForm, aboutYouLow, onProfileLeft,
   setShowUploadModal, planBasis, grading,
-  onOnboardingDone, revealCell = null,
+  onOnboardingDone, revealCell = null, onDraftsHold,
 }: InputPanelProps) {
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
   // Number boxes holding text the browser could not read ("175,500" gives "" with
@@ -233,10 +234,8 @@ export function InputPanel({
     focusFieldRef.current = null;
     requestAnimationFrame(() => {
       const input = document.getElementById(field);
-      if (input) {
-        input.focus();
-        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+      input?.focus();
+      input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   }, [expandedVitals, bpExpanded]);
 
@@ -282,6 +281,7 @@ export function InputPanel({
   // (US-62 AC11). Each grid reports what it keeps.
   const [draftedVitals, setDraftedVitals] = useState(false);
   const [draftedBlood, setDraftedBlood] = useState(false);
+  useEffect(() => { onDraftsHold?.(draftedVitals || draftedBlood); }, [draftedVitals, draftedBlood, onDraftsHold]);
   const unsavedCue = (shown: boolean) => !tableShown && shown && (
     <button type="button" className="md-unsaved" onClick={() => showTable(true)}>Unsaved values: review</button>
   );
