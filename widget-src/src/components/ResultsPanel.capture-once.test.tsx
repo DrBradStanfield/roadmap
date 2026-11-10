@@ -46,7 +46,7 @@ function showPlan(props: Partial<React.ComponentProps<typeof ResultsPanel>> = {}
 
 /** Draws plan.pdf in one of two places, as My health does (inside the full form, or below it). */
 function MovingPdfHost({ inForm }: { inForm: boolean }) {
-  const plan = usePlanView({ results, isValid: true, tiles: [], forms: { medications: [], screenings: [] }, showEmailCapture: true, formStage: 3 });
+  const plan = usePlanView({ results, shownErase: '', isValid: true, tiles: [], forms: { medications: [], screenings: [] }, showEmailCapture: true, formStage: 3 });
   return inForm ? <div className="in-form">{plan.pdf}</div> : <section className="below-form">{plan.pdf}</section>;
 }
 
