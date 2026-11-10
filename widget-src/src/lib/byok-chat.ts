@@ -27,46 +27,9 @@ import * as Sentry from '@sentry/react';
 import { getChatHistory } from './chat-history-access';
 import { recordFailure } from './error-diagnostics';
 import { ByokAnthropicError, callAnthropicDirectRaw } from './byok-anthropic';
-import type { ChatDelta } from './chat-api';
-
-// ---------------------------------------------------------------------------
-// Types — byte-compatible with chat-api.ts (chat-sync + the chat components
-// import these from "chat-api", which resolves here on the standalone build).
-// ---------------------------------------------------------------------------
-
-export interface ChatConversation {
-  id: string;
-  title: string;
-  updatedAt: string;
-  createdAt: string;
-}
-
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  createdAt: string;
-}
-
-export interface SendMessageResult {
-  conversationId: string;
-  messageId: string | null;
-  content: string;
-  sessionToken?: string;
-  isGuest?: boolean;
-  /** Form edits the model proposed via tool_use (pre-fill the form / update meds). */
-  proposedEdits?: ProposedEdit[];
-}
-
-export interface ChatListResult {
-  conversations: ChatConversation[];
-  sessionToken?: string;
-  isGuest?: boolean;
-}
-
-export interface ChatError {
-  error: string;
-}
+// Types come from chat-api.ts, the one home callers compile against. `import
+// type` is erased, so the Shopify transport never enters the Pages bundle.
+import type { ChatDelta, ChatError, ChatGate, ChatListResult, ChatMessage, SendMessageResult } from './chat-api';
 
 // ---------------------------------------------------------------------------
 // API key (this device only)
@@ -79,13 +42,6 @@ export function getAnthropicKey(): string | null {
 }
 
 /** Chat gate — see chat-api.ts for the contract. Always present on standalone. */
-export interface ChatGate {
-  needsKey: boolean;
-  /** Returns an error message, or null on success. */
-  saveKey(key: string): string | null;
-  clearKey(): void;
-}
-
 export function getChatGate(): ChatGate | null {
   return {
     needsKey: !getAnthropicKey(),

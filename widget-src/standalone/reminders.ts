@@ -43,6 +43,7 @@ import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
 import { BRAD_SERVER_ORIGIN } from './server-origin';
 import type { Backend } from './connect';
+import { providerOf, type ReminderBackend } from './providers';
 import type { FileReminderOptIn } from '@roadmap/health-core/roadmap-file';
 
 const REMINDERS_API_URL = `${BRAD_SERVER_ORIGIN}/api/reminders-v2`;
@@ -71,10 +72,9 @@ export class ReminderEmailNeeded extends Error {
 /** Survives a reload so the enrolment notice isn't lost to one refresh. */
 export const ENROL_NOTICE_KEY = 'hr_reminders_notice';
 
-/** Reminders need an account email the browser can read — §10 scopes them to these three. */
-export type ReminderBackend = 'google-drive' | 'dropbox' | 'github';
+/** Reminders need an account email the browser can read (§10; the provider table says which). */
 export function remindersSupported(backend: Backend): backend is ReminderBackend {
-  return backend === 'google-drive' || backend === 'dropbox' || backend === 'github';
+  return providerOf(backend)?.reminders === true;
 }
 
 async function post(body: unknown, keepalive = false): Promise<Response> {
@@ -97,16 +97,29 @@ type Identity = { provider: 'google-drive'; idToken: string } | { provider: Remi
  * throw, and the caller retries).
  */
 async function identityFor(backend: ReminderBackend): Promise<Identity | null> {
-  if (backend === 'google-drive') {
-    const drive = new GoogleDriveAdapter(googleDriveConfig());
-    const idToken = await drive.getReminderIdToken();
-    if (idToken) return { provider: 'google-drive', idToken };
-    const email = drive.accountEmail();
-    return email ? { provider: 'typed', email } : null;
+  switch (backend) {
+    case 'google-drive': {
+      const drive = new GoogleDriveAdapter(googleDriveConfig());
+      const idToken = await drive.getReminderIdToken();
+      if (idToken) return { provider: 'google-drive', idToken };
+      const email = drive.accountEmail();
+      return email ? { provider: 'typed', email } : null;
+    }
+    case 'dropbox':
+      return { provider: 'dropbox', email: await new DropboxAdapter(dropboxConfig()).accountEmail() };
+    case 'github': {
+      const email = await new GitHubAdapter().accountEmail();
+      return email ? { provider: 'github', email } : null;
+    }
+    default:
+      return noReminderLane(backend);
   }
-  if (backend === 'dropbox') return { provider: 'dropbox', email: await new DropboxAdapter(dropboxConfig()).accountEmail() };
-  const email = await new GitHubAdapter().accountEmail();
-  return email ? { provider: 'github', email } : null;
+}
+
+/** A provider the table marks `reminders: true` with no lane here fails the
+ *  typecheck, rather than borrowing another provider's lookup. */
+function noReminderLane(backend: never): never {
+  throw new Error(`No reminders lane for ${String(backend)}`);
 }
 
 /**
@@ -132,9 +145,21 @@ function sameAddress(a: string, b: string): boolean {
 }
 
 /** The ID token for a Drive-verified cancel (hard delete); null on any other lane or failure. */
-async function cancelProofFor(backend: Backend): Promise<string | null> {
-  if (backend !== 'google-drive') return null;
-  return new GoogleDriveAdapter(googleDriveConfig()).getReminderIdToken().catch(() => null);
+async function cancelProofFor(backend: ReminderBackend): Promise<string | null> {
+  switch (backend) {
+    case 'google-drive':
+      return new GoogleDriveAdapter(googleDriveConfig()).getReminderIdToken().catch(() => null);
+    case 'dropbox':
+    case 'github':
+      return null;
+    default: {
+      // Exhaustive at compile time; at run time the file's provider is not
+      // validated, so an unknown one cancels without proof, as it always has.
+      const unlisted: never = backend;
+      void unlisted;
+      return null;
+    }
+  }
 }
 
 /** A cancel, with the ID token only when there is one: the route's zod
