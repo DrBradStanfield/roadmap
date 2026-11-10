@@ -434,9 +434,12 @@ describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboa
     const view = await wholeFormWithoutSexOrBirth();
     birth(view, '5', '1975'); // the year before sex: asked, but not the last answer
     await settle(50);
+    const focused = document.activeElement;
     fireEvent.click(view.getByRole('radio', { name: 'Male' })); // sex last: the onboarding ends here, with no landing (AC31)
     await waitFor(() => expect(q(view, '.mh-ready')).toBeTruthy());
+    await settle(50);
     expect(landed()).toBe(false);
+    expect(document.activeElement).toBe(focused);
     await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
     await settle(200);
     const cell = matrixWeight(view)!;
@@ -460,8 +463,7 @@ describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboa
     chat.unmuted = runFrames;
     type(matrixWeight(view), '106'); // the weight, the last answer, typed in the matrix (Shopify build)
     await settle(50);
-    runFrames(); // the landing's own focus frame
-    await waitFor(() => expect(landed()).toBe(true));
+    await waitFor(() => { runFrames(); expect(landed()).toBe(true); }); // the landing's frame, then its focus frame
     expect(calls('onboarding_done')).toHaveLength(1);
   });
 
@@ -490,5 +492,106 @@ describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboa
     await settle(50);
     birth(view); // the year, the new record's last answer
     await waitFor(() => expect(landed()).toBe(true), { timeout: 1000 });
+  });
+});
+
+describe('US-62 AC25b: the weight or year that ends the onboarding lands once it is complete, while the person is still in it', () => {
+  /** Height, sex and birth on record: the weight in the box is the last answer (Shopify build). */
+  async function weightLast(): Promise<RenderResult> {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await flushRoadmapStore();
+    const view = await open();
+    expect(sexQuestion(view)).toBeNull();
+    return view;
+  }
+  const matrixWeight = (view: RenderResult) => {
+    const row = Array.from(view.container.querySelectorAll('.bt-vitals-card .bt-row'))
+      .find((r) => r.querySelector('.bt-name-label')?.textContent === 'Weight');
+    return row?.querySelector('.bt-cell-draft input') ?? null;
+  };
+
+  it('a: "25" backspaced to "2" waits out its 800 ms with no landing; "82" then lands', async () => {
+    const view = await weightLast();
+    const box = q(view, '#weightKg');
+    type(box, '25'); // complete, but may become 250: the wait starts
+    type(box, '2');
+    await settle(900);
+    expect(landed()).toBe(false);
+    expect(document.activeElement).toBe(box);
+    type(box, '82');
+    await waitFor(() => expect(landed()).toBe(true), { timeout: 500 });
+  });
+
+  it('b: "25" cleared to "" waits out its 800 ms with no landing; "82" then lands', async () => {
+    const view = await weightLast();
+    const box = q(view, '#weightKg');
+    type(box, '25');
+    type(box, '');
+    await settle(900);
+    expect(landed()).toBe(false);
+    expect(document.activeElement).toBe(box);
+    type(box, '82');
+    await waitFor(() => expect(landed()).toBe(true), { timeout: 500 });
+  });
+
+  it('c: a kg matrix weight typed digit by digit, "2", "25", "250", lands once, after "250"', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await addMeasurement('waist', 90, '2026-09-01'); // the whole form, the vitals as a matrix
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
+    await settle(200);
+    const cell = matrixWeight(view)!;
+    type(cell, '2');
+    type(cell, '25');
+    await settle(100);
+    expect(landed()).toBe(false); // "25" may become "250": still waiting
+    type(cell, '250');
+    await waitFor(() => expect(landed()).toBe(true), { timeout: 500 });
+    expect(calls('onboarding_done')).toHaveLength(1);
+  });
+
+  it('d: "25", then the focus leaves the box within 800 ms: no landing, then or for a later weight', async () => {
+    const view = await weightLast();
+    const box = q(view, '#weightKg');
+    type(box, '25');
+    act(() => { (q(view, '#heightCm') as HTMLElement).focus(); }); // another field, before the wait ends
+    await settle(1000);
+    expect(landed()).toBe(false);
+    type(box, '82');
+    await settle(300);
+    expect(landed()).toBe(false);
+    expect(document.activeElement).toBe(box);
+  });
+
+  it('h: the chat proposing the last weight lands nothing, and a weight typed after does not land', async () => {
+    const view = await weightLast();
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    act(() => chat.proposeEdit!([{ kind: 'field', field: 'weightKg', displayValue: 105, unitSystem: 'si', date: null }]));
+    await waitFor(() => expect(q(view, '.mh-ready')).toBeTruthy()); // the onboarding ended here
+    await settle(300);
+    expect(landed()).toBe(false);
+    act(() => { (document.activeElement as HTMLElement | null)?.blur(); });
+    type(q(view, '#weightKg'), '106');
+    await settle(300);
+    expect(landed()).toBe(false);
+  });
+
+  it('h: an upload completing the record lands nothing, and a weight typed after does not land', async () => {
+    const view = await weightLast();
+    await waitFor(() => expect(upload.complete).toBeTruthy());
+    await act(async () => {
+      await bulkSaveMeasurements([{ metricType: 'weight', value: 80, recordedAt: `${TODAY}T00:00:00.000Z`, source: 'lab_import' }]);
+      await upload.complete!();
+    });
+    await waitFor(() => expect(q(view, '.mh-ready')).toBeTruthy());
+    await settle(300);
+    expect(landed()).toBe(false);
+    await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
+    const cell = matrixWeight(view)!;
+    type(cell, '106');
+    await settle(300);
+    expect(landed()).toBe(false);
+    expect(document.activeElement).toBe(cell);
   });
 });

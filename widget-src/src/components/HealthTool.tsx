@@ -68,6 +68,7 @@ import { WRITE_REFUSED } from '../lib/erase-copy';
 
 /** The onboarding's answers (US-62 AC13): only an edit to one of them counts as a step. */
 const ONBOARDING_FIELDS: ReadonlyArray<keyof HealthInputs> = ['heightCm', 'weightKg', 'sex', 'birthMonth', 'birthYear'];
+const LANDING_FIELDS: ReadonlyArray<keyof HealthInputs> = ['weightKg', 'birthYear'];
 
 /** The chat list fetched ahead of time, and the record (`epoch`) it was listed for. */
 type ChatPrefetch = { epoch: number; data: ChatPrefetchData };
@@ -242,16 +243,12 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   );
   const onboarding = useOnboarding(formStage, {
     saved: previousMeasurements, medications, screenings, supplements, documents: documentHistory, labValues: labValueHistory,
-  }, hasApiResponse, shownErase);
+  }, hasApiResponse, shownErase, () => landOnMyHealth()); // declared below
   // Stable callbacks: the record's re-reads above (useRecordApply's `later`) call them after the first commit.
   const {
     reached, epoch, fullForm, aboutYouLow, planReady,
-    markAnswered, clearAnswered, landing, profileLeft, dismissPlanReady: leavePlanReady,
+    answered, rested, left, clearAnswered, profileLeft, dismissPlanReady: leavePlanReady,
   } = onboarding;
-  // A matrix's weight cell is the one matrix edit that can answer a step (US-62 AC13).
-  const markMatrixWeight = useCallback((e: React.SyntheticEvent) => {
-    if ((e.target as HTMLElement).closest?.('.bt-vitals-card [data-metric="weight"]')) markAnswered();
-  }, [markAnswered]);
   const dismissPlanReady = useCallback(() => {
     leavePlanReady();
     // The focus stays on the page, not lost with the button.
@@ -494,9 +491,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
 
   // One field's new value, from the form or the chat. A weight or waist
   // keeps the unit its caller converted it from (typedIn). One update per
-  // field, so several made at once all land (US-16 AC1).
-  const handleInputChange = useCallback(<K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem) => {
-    if (ONBOARDING_FIELDS.includes(field)) markAnswered(); // US-62 AC13: an answer given in this tab
+  // field, so several made at once all land (US-16 AC1). The weight and year
+  // fields report their own answers (US-62 AC25b); the chat's weight lands nothing.
+  const handleInputChange = useCallback(<K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem, fromChat = false) => {
+    if (ONBOARDING_FIELDS.includes(field) && (fromChat || !LANDING_FIELDS.includes(field))) answered(false); // US-62 AC13: an answer given in this tab
     if (unit) typedIn.current[field] = { value, unit };
     // The user's own sex or height outranks a chat proposal for it (US-16 AC2).
     if (field === 'sex' || field === 'heightCm') dropProfileProposal();
@@ -542,26 +540,20 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
 
   const emailCaptureActive = SHOPIFY_SURFACE; // email capture and US-23 reminders need the Shopify server
 
-  // Asked as the answer is typed; what it returns lands, once per record (D4), and says whether it did.
-  // After the last onboarding answer (US-62 AC13) the focus moves to "Your plan is ready."'s heading,
-  // with no jump (AC31); with no card, to My health's title (AC25, orchestrator 2026-11-06). Leaving the
-  // field also lets About you go to Settings (AC12). A weight lands only on the Shopify build, where it
-  // used to jump to the email box (US-22), so Pages never takes the focus from a value being typed; the
-  // birth year (`fromBirth`, Brad 2026-11-02) lands on both.
-  const landOnMyHealth = useCallback((fromBirth = false) => {
-    if (!emailCaptureActive && !fromBirth) return () => false; // asks nothing: a Pages weight ends it spent
-    const land = landing(); // only when the answer was the last one: a first weight is step 1
-    return (): boolean => {
-      if (!land()) return false;
-      selectTab('health');
-      requestAnimationFrame(() => {
-        const ready = rootRef.current?.querySelector<HTMLElement>('.mh-ready-title');
-        if (ready) ready.focus({ preventScroll: true });
-        else revealAndFocus(rootRef.current?.querySelector<HTMLElement>('.mh-title'), 'start', false);
-      });
-      return true;
-    };
-  }, [emailCaptureActive, selectTab, landing]);
+  // The landing, which useOnboarding decides (US-62 AC25b): the focus moves to "Your plan is ready."'s
+  // heading, with no jump (AC31); with no card, to My health's title (AC25, orchestrator 2026-11-06).
+  // Leaving the field also lets About you go to Settings (AC12). A weight lands only on the Shopify build,
+  // where it used to jump to the email box (US-22), so Pages never takes the focus from a value being
+  // typed; the birth year (Brad 2026-11-02) lands on both.
+  const answeredIn = useCallback((field: 'weightKg' | 'birthYear') => answered(field === 'birthYear' || emailCaptureActive), [answered, emailCaptureActive]);
+  const landOnMyHealth = useCallback(() => {
+    selectTab('health');
+    requestAnimationFrame(() => {
+      const ready = rootRef.current?.querySelector<HTMLElement>('.mh-ready-title');
+      if (ready) ready.focus({ preventScroll: true });
+      else revealAndFocus(rootRef.current?.querySelector<HTMLElement>('.mh-title'), 'start', false);
+    });
+  }, [selectTab]);
 
   // Memoised so the UploadModal's matrix doesn't rebuild on unrelated
   // HealthTool re-renders (typing, mobile-tab switches, etc.).
@@ -688,7 +680,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     vitalsFlushRef,
     bloodTestPrefillRef,
     vitalsPrefillRef,
-    onboarding: { stage: formStage, reached, fullForm, aboutYouLow, profileLeft, landing: landOnMyHealth },
+    onboarding: { stage: formStage, reached, fullForm, aboutYouLow, profileLeft, answered: answeredIn, rested, left },
     setShowUploadModal,
     planBasis,
     grading,
@@ -722,7 +714,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       {children}
     </div>
   );
-  const healthForm = <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps}>{myHealth}</InputPanel></fieldset>;
+  const healthForm = <fieldset className="health-form-lock" disabled={isDeleting}><InputPanel {...inputPanelProps}>{myHealth}</InputPanel></fieldset>;
   const chat = (
     <div className="health-tool-chat">
       <ChatEmbed isLoggedIn={chatSectionProps.isLoggedIn} guestInputs={chatSectionProps.guestInputs} muted={formStage < 4} onProposeEdit={handleProposeEdit}/>
@@ -757,7 +749,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
         metricUnitOverrides={metricUnitOverrides}
         onToggleFieldUnit={handleToggleFieldUnit}
         history={uploadHistory}
-        onComplete={() => { const read = rereadRecord('upload'); markAnswered(); return read; }} // an upload is an answer, after a held change is taken in
+        onComplete={() => { const read = rereadRecord('upload'); answered(false); return read; }} // an upload is an answer, after a held change is taken in
         onStart={handleUploadStart}
         onClose={() => setShowUploadModal(false)}
         onScreeningUpdate={handleScreeningChange}

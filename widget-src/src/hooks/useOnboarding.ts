@@ -32,28 +32,47 @@ const planReadySeen = (): boolean => safeGetItem(PLAN_READY_SEEN_KEY) === '1';
  *   record another device completes stays put until then (Brad 2026-11-10, D6).
  * - "Your plan is ready." (`planReady`) shows once, for the record whose
  *   onboarding ended in this tab, until Got it (AC31).
- * - `landing`: the jump to My health after the last answer (AC25), one
- *   named state (`Landing`). It lives here, not in the fields that ask for
- *   it, so a panel remount (the 768px swap) keeps it (D4).
+ * - `landing`: the jump to My health after the last answer (AC25b), one
+ *   named state (`Landing`) this hook alone decides and performs. It lives
+ *   here, not in the fields, so a panel remount (the 768px swap) keeps it.
  */
 /**
- * The landing's states (US-62 AC25, D4). `unended`: the onboarding has not
- * ended in this tab; `asked` says the latest answer asked to land (a weight,
- * the birth year), as it is typed. `due`: it ended here on an answer that
- * asked, so its jump lands. `spent`: it landed, or it ended on an answer that
- * asks none (sex, the chat, an upload). A record complete when first shown,
- * or completed by another writer (D6), never ends here: it never lands.
+ * The landing (US-62 AC25b): it follows the landing field the onboarding
+ * ended in, while the person is still in it. The fields report two facts, in
+ * any order: an answer (`lands`: typed in a landing field, the weight on the
+ * Shopify build or the birth year) and the field at rest (`settled`: complete,
+ * valid, and not about to grow). `open`: the onboarding has not ended here.
+ * `awaiting`: it ended on a landing answer not yet at rest. `spent`: it
+ * landed, or ended on another answer (sex, the chat, an upload), or the person
+ * left the field. A record complete when first shown, or completed by another
+ * writer (D6), never ends here, so it never lands.
  */
-export type Landing = { kind: 'unended'; asked: boolean } | { kind: 'due' } | { kind: 'spent' };
-export type LandingEvent = 'answered' | 'asked' | 'ended' | 'landed';
+export type Landing =
+  | { kind: 'open'; lands: boolean; settled: boolean }
+  | { kind: 'awaiting' }
+  | { kind: 'spent' };
+export type LandingEvent =
+  | { type: 'answered'; lands: boolean }
+  | { type: 'settled'; complete: boolean } // complete: the four answers hold as it fires
+  | { type: 'ended' }
+  | { type: 'left' }; // the focus left the landing field, or a change this tab did not make arrived
 
-/** The landing's one way to change. An answer clears the ask, which it may then make again. */
-export function transition(landing: Landing, event: LandingEvent): Landing {
-  if (landing.kind === 'unended') {
-    if (event === 'answered' || event === 'asked') return { kind: 'unended', asked: event === 'asked' };
-    if (event === 'ended') return landing.asked ? { kind: 'due' } : { kind: 'spent' };
+const SPENT: Landing = { kind: 'spent' };
+/** The landing's one way to change; `land` says to jump now. */
+export function transition(s: Landing, e: LandingEvent): { next: Landing; land: boolean } {
+  const to = (next: Landing, land = false) => ({ next, land });
+  if (s.kind === 'open') {
+    if (e.type === 'answered') return to({ kind: 'open', lands: e.lands, settled: false });
+    if (e.type === 'settled') return to({ ...s, settled: s.lands || s.settled });
+    if (e.type === 'ended') return s.lands && s.settled ? to(SPENT, true) : to(s.lands ? { kind: 'awaiting' } : SPENT);
+    return to({ kind: 'open', lands: false, settled: false });
   }
-  return landing.kind === 'due' && event === 'landed' ? { kind: 'spent' } : landing;
+  if (s.kind === 'awaiting') {
+    if (e.type === 'answered') return to(e.lands ? s : SPENT);
+    if (e.type === 'settled') return e.complete ? to(SPENT, true) : to(s);
+    return to(e.type === 'left' ? SPENT : s);
+  }
+  return to(s);
 }
 
 interface RecordOnboarding {
@@ -74,11 +93,12 @@ export interface Onboarding {
   fullForm: boolean;
   aboutYouLow: boolean;
   planReady: boolean;
-  /** Asked as an answer is typed, after `markAnswered`: the landing on the record shown now.
-   *  The function it returns lands only if that answer ended the onboarding here, only while
-   *  that record is shown, and once (AC25, D4). */
-  landing: () => () => boolean;
-  markAnswered: () => void;
+  /** An answer given in this tab; `lands`: typed in a landing field (AC13, AC25b). */
+  answered: (lands: boolean) => void;
+  /** The landing field's value is complete and at rest (AC25b). */
+  rested: () => void;
+  /** The focus left the landing field (AC25b). */
+  left: () => void;
   /** A change this tab did not make: another writer's, or a refused save's re-read. */
   clearAnswered: () => void;
   /** The focus left About you's card. Says whether it moves low, so the caller can measure before it does. */
@@ -91,16 +111,17 @@ export interface PanelOnboarding extends Pick<Onboarding, 'reached' | 'fullForm'
   /** The first answer the record lacks: 1 height and weight, 2 sex, 3 birth date, 4 none. */
   stage: FormStage;
   profileLeft?: Onboarding['profileLeft'];
-  /** Asked as the last onboarding answer is typed (AC13, AC25): the returned function lands
-   *  at My health's top when the jump fires, once per record, and says whether it did. */
-  landing?: (fromBirth?: boolean) => () => boolean;
+  /** A landing field, the weight or the birth year, was typed in (AC13, AC25b). */
+  answered?: (field: 'weightKg' | 'birthYear') => void;
+  rested?: Onboarding['rested'];
+  left?: Onboarding['left'];
 }
 
-export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded: boolean, erase: string): Onboarding {
+export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded: boolean, erase: string, land: () => void): Onboarding {
   const ref = useRef<RecordOnboarding | null>(null);
   const was = ref.current;
   if (!was || was.erase !== erase) {
-    ref.current = { erase, epoch: (was?.epoch ?? 0) + 1, reached: stage, opened: stage, fullForm: false, answered: false, counted: stage, landing: { kind: 'unended', asked: false } };
+    ref.current = { erase, epoch: (was?.epoch ?? 0) + 1, reached: stage, opened: stage, fullForm: false, answered: false, counted: stage, landing: { kind: 'open', lands: false, settled: false } };
   } else if (stage > was.reached) was.reached = stage;
   const now = ref.current!;
   now.fullForm ||= opensFullForm(now.reached, holdings);
@@ -108,14 +129,21 @@ export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded
 
   const stageRef = useRef(stage);
   stageRef.current = stage;
+  const landRef = useRef(land);
+  landRef.current = land;
+  /** The one way the landing moves; a jump runs on the next frame, never in the commit, only for the record still shown. */
+  const send = useCallback((rec: RecordOnboarding, event: LandingEvent) => {
+    const { next, land: jump } = transition(rec.landing, event);
+    rec.landing = next;
+    if (jump) requestAnimationFrame(() => { if (ref.current === rec) landRef.current(); });
+  }, []);
 
   const [planReadyFor, setPlanReadyFor] = useState<number | null>(null);
   const [movedLow, setMovedLow] = useState<number | null>(null);
   const low = useRef(false);
   low.current = opened === 4 || movedLow === epoch;
 
-  // A layout effect: the stage a matrix weight lends reaches the page in a later task, and the
-  // landing's frame may fire before passive effects run (R3). The ending is due by then.
+  // A layout effect: the ending is known in the commit that shows it (R3).
   useLayoutEffect(() => {
     const rec = ref.current!;
     const from = rec.counted;
@@ -125,27 +153,23 @@ export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded
     // The step that was asked is the one answered; later steps a record already held were not.
     trackProductEvent('onboarding_step', { step: ONBOARDING_STEPS[from - 1] });
     if (rec.reached === 4) {
-      rec.landing = transition(rec.landing, 'ended');
+      send(rec, { type: 'ended' });
       trackProductEvent('onboarding_done');
       if (!planReadySeen()) setPlanReadyFor(rec.epoch);
     }
   });
 
-  const markAnswered = useCallback(() => {
+  const answered = useCallback((lands: boolean) => {
     const rec = ref.current!;
     rec.answered = true;
-    rec.landing = transition(rec.landing, 'answered');
-  }, []);
-  const clearAnswered = useCallback(() => { ref.current!.answered = false; }, []);
-  const landing = useCallback(() => {
-    const at = ref.current!; // the record as the answer was typed, not as the jump fires
-    at.landing = transition(at.landing, 'asked');
-    return () => {
-      if (ref.current !== at || at.landing.kind !== 'due') return false;
-      at.landing = transition(at.landing, 'landed');
-      return true;
-    };
-  }, []);
+    send(rec, { type: 'answered', lands });
+  }, [send]);
+  const rested = useCallback(() => send(ref.current!, { type: 'settled', complete: stageRef.current === 4 }), [send]);
+  const left = useCallback(() => send(ref.current!, { type: 'left' }), [send]);
+  const clearAnswered = useCallback(() => {
+    ref.current!.answered = false;
+    left();
+  }, [left]);
   const profileLeft = useCallback(() => {
     if (stageRef.current !== 4 || low.current) return false;
     low.current = true; // a second leave before the move commits moves nothing either
@@ -162,6 +186,6 @@ export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded
     reached, epoch, fullForm,
     aboutYouLow: low.current,
     planReady: planReadyFor === epoch,
-    landing, markAnswered, clearAnswered, profileLeft, dismissPlanReady,
+    answered, rested, left, clearAnswered, profileLeft, dismissPlanReady,
   };
 }

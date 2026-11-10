@@ -173,7 +173,7 @@ export function InputPanel({
   bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
   onboarding, setShowUploadModal, planBasis, grading, revealCell = null,
 }: InputPanelProps) {
-  const { stage: formStage, reached, fullForm, aboutYouLow, profileLeft: onProfileLeft, landing } = onboarding;
+  const { stage: formStage, reached, fullForm, aboutYouLow, profileLeft: onProfileLeft, answered, rested, left } = onboarding;
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
   // Number boxes holding text the browser could not read ("175,500" gives "" with
   // validity.badInput): not a clear, so nothing is written or saved (US-02 AC7).
@@ -187,7 +187,7 @@ export function InputPanel({
   // One auto-advance instance per TARGET, so a new keystroke on any source
   // field cancels a pending advance to that target.
   const advanceToWeight = useAutoAdvance();
-  const advanceToMyHealth = useAutoAdvance();
+  const advanceToMyHealth = useAutoAdvance(true);
   const advanceToDiastolic = useAutoAdvance();
   // Shared keydown combos: numeric-only guard (US-02 AC4) + Enter-to-save.
   const onNumericEnter = (e: React.KeyboardEvent<HTMLInputElement>) => { blockBadNumericKeys(e); settleOnEnter(e); autoSaveOnEnterKey(e); };
@@ -573,22 +573,20 @@ export function InputPanel({
               const raw = e.target.value;
               typeIn(field, raw);
               setRawInputs(prev => ({ ...prev, [field]: raw }));
+              // The weight at rest once complete, for the landing (US-62 AC25b); anything else cancels the wait.
+              const n = parseLocalisedNumber(raw);
+              const complete = n !== undefined && /^\d{2,3}$/.test(raw) && n >= r.min && n <= r.max;
+              if (field === 'weightKg' && rested) advanceToMyHealth(complete ? { ambiguous: /^\d{2}$/.test(raw) && n * 10 <= r.max, advance: rested } : null);
               if (!readable(field, e)) return;
               // Ignore browser auto-fill of 0 for empty fields (spinner click on empty input)
               if (raw === '0' && inputs[field] === undefined && rawInputs[field] === undefined) {
                 return;
               }
               updateField(field, parseAndConvert(field, raw), fieldUnit(field));
-              // The weight's jump to My health, once per record (US-62 AC25, D4).
-              if (field === 'weightKg' && landing) {
-                const weightNum = parseLocalisedNumber(raw);
-                if (weightNum !== undefined && /^\d{2,3}$/.test(raw) && weightNum >= r.min && weightNum <= r.max) {
-                  const land = landing(); // on the record the weight was typed on
-                  advanceToMyHealth({ ambiguous: /^\d{2}$/.test(raw) && weightNum * 10 <= r.max, advance: () => requestAnimationFrame(land) });
-                }
-              }
+              if (field === 'weightKg') answered?.('weightKg');
             }}
             onBlur={() => {
+              if (field === 'weightKg') left?.();
               rangeWait.settle();
               if (unreadable[field]) return;
               setRawInputs(prev => { const next = { ...prev }; delete next[field]; return next; });
@@ -775,8 +773,9 @@ export function InputPanel({
   const sexField = <SexField form={form} aboutYouLow={aboutYouLow}/>;
   const birthFields = (
     <BirthFields form={form} yearShown={yearShown.current}
-      // The year's jump (Brad 2026-11-02), once per record (D4), never a returning user's edit in About you's Birth row (Codex R3).
-      onYearComplete={landing && !aboutYouLow && reached < 4 ? () => requestAnimationFrame(landing(true)) : undefined}/>
+      // The year's answer, leaving and rest, for the landing (Brad 2026-11-02, US-62 AC25b).
+      onYearAnswered={answered && (() => answered('birthYear'))} onYearLeft={left}
+      onYearComplete={rested && (() => requestAnimationFrame(rested))}/>
   );
 
   // ── Section render functions (shared closure state, not separate components) ──
@@ -850,7 +849,7 @@ export function InputPanel({
         formStage={formStage}
         plan={planBasis}
         knownMinor={knownMinor}
-        landing={landing}
+        onWeightAnswered={answered && (() => answered('weightKg'))} onWeightLeft={left} rested={rested}
         withoutWeight={weightInProfile}
         unitOverrides={unitOverrides}
         onToggleFieldUnit={onToggleFieldUnit} startUnitOf={startUnitOf}
