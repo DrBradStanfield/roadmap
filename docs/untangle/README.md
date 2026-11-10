@@ -63,7 +63,8 @@ Since 2026-11-08 the refactor has split `HealthTool`, `ResultsPanel` and
 the upload flow into state hooks. The audit has no id for that work. Each
 area was surveyed first for modes held in flags, refs and timers; the
 leads are `D` (onboarding), `R` (record read), `P` (plan view), `U`
-(upload) and `H` (composition, the machines meeting in `HealthTool`).
+(upload), `H` (composition, the machines meeting in `HealthTool`) and
+`C` (chat prompt).
 This file has no `durability_check` column: a done row names its check in
 `evidence`.
 
