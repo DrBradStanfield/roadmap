@@ -272,7 +272,7 @@ address, not an IP.
 
 If you are signed in to this store, the tool page's chat still runs as if you were not.
 Our server does not look up your name or email address, and it creates no account row.
-If you used this chat while signed in before 31 October 2026, an account row made then
+If you used this chat while signed in before 1 November 2026, an account row made then
 remains; neither the daily job nor the erase button removes it.
 
 The iPhone app's chat stores no question, no reply and no row of any kind; its own
@@ -302,7 +302,8 @@ question unmasked and with your earlier questions in that conversation beside it
 are signed in to this store, each message also makes our server look up your email
 address and your first and last name from your store account. The first time, it creates
 an account row for you in our database with those details and your store customer id,
-and an audit entry saying it did. Later messages keep the names up to date. Neither the
+and an audit entry saying it did. Our server updates your names from your store account
+from time to time. Neither the
 daily job nor the erase button removes the account row. If you are signed in, these rows
 carry the id of that account row; if not, a pseudonymous guest session id.
 
