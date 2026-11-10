@@ -463,6 +463,81 @@ describe('US-09 AC19 — the storage button\'s attention flag', () => {
     expect(attention(view)).toBe('false');
   });
 
+  // Brad 2026-11-10 (P3): the capture belongs to the erased record, so an erase resets it.
+  describe('an erase resets the email capture', () => {
+    // The record is captured once marked; a successful Delete erases it.
+    let eraseRecord: ReturnType<typeof vi.fn<() => Promise<boolean>>>;
+    beforeEach(() => {
+      mocks.markReportEmailCaptured.mockImplementation(() => { mocks.getReportEmailCaptured.mockReturnValue(true); });
+      eraseRecord = vi.fn<() => Promise<boolean>>(async () => { mocks.getReportEmailCaptured.mockReturnValue(false); return true; });
+    });
+
+    it('gated captured: a Delete brings the gate box back and stops the pulse', async () => {
+      mocks.skip.value = false;
+      const view = showPlan({ syncControl, onDeleteData: eraseRecord });
+      fillAndCapture(view);
+      await waitFor(() => expect(attention(view)).toBe('true'));
+      expect(view.container.querySelector('#guestEmail')).toBeNull();
+      fireEvent.click(deleteButton());
+      await waitFor(() => expect(view.container.querySelector('#guestEmail')).toBeTruthy());
+      expect(view.getByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })).toBeTruthy();
+      expect(view.queryByRole('button', { name: 'Save as PDF' })).toBeNull();
+      expect(attention(view)).toBe('false');
+    });
+
+    it('gated captured: another device\'s erase, re-read, does the same', async () => {
+      mocks.skip.value = false;
+      const view = showPlan({ syncControl, shownErase: 'e1' });
+      fillAndCapture(view);
+      await waitFor(() => expect(attention(view)).toBe('true'));
+      mocks.getReportEmailCaptured.mockReturnValue(false);
+      view.rerender(plan({ syncControl, shownErase: 'e2' }));
+      expect(view.container.querySelector('#guestEmail')).toBeTruthy();
+      expect(attention(view)).toBe('false');
+    });
+
+    it('skip-gate reminded: a Delete brings the reminders box back', async () => {
+      const view = showPlan({ syncControl, onDeleteData: eraseRecord });
+      fireEvent.change(view.getByLabelText(REMINDER_SIGNUP_LABEL), { target: { value: 'reader@example.com' } });
+      fireEvent.click(view.getByRole('button', { name: 'Remind me' }));
+      await waitFor(() => expect(view.getByText(REMINDER_SIGNUP_DONE)).toBeTruthy());
+      expect(attention(view)).toBe('true');
+      fireEvent.click(deleteButton());
+      await waitFor(() => expect(view.getByLabelText(REMINDER_SIGNUP_LABEL)).toBeTruthy());
+      expect(view.queryByText(REMINDER_SIGNUP_DONE)).toBeNull();
+      expect((view.getByLabelText(REMINDER_SIGNUP_LABEL) as HTMLInputElement).value).toBe('');
+      expect(attention(view)).toBe('false');
+    });
+
+    it('an erase empties a typed, unsent address and its error', async () => {
+      mocks.skip.value = false;
+      const view = showPlan({ syncControl, onDeleteData: eraseRecord });
+      fireEvent.change(view.container.querySelector('#guestEmail')!, { target: { value: 'not-an-email' } });
+      fireEvent.click(view.getByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL }));
+      expect(view.getByText('Please enter a valid email address')).toBeTruthy();
+      fireEvent.click(deleteButton());
+      await waitFor(() => expect(eraseRecord).toHaveBeenCalledOnce());
+      await waitFor(() => expect((view.container.querySelector('#guestEmail') as HTMLInputElement).value).toBe(''));
+      expect(view.queryByText('Please enter a valid email address')).toBeNull();
+    });
+
+    it('a cancelled erase keeps the captured view, the pulse and a typed address', async () => {
+      mocks.skip.value = false;
+      const cancel = vi.fn().mockResolvedValue(false);
+      const view = showPlan({ syncControl, onDeleteData: cancel });
+      fireEvent.change(view.container.querySelector('#guestEmail')!, { target: { value: 'half-typed' } });
+      fireEvent.click(deleteButton());
+      await waitFor(() => expect(cancel).toHaveBeenCalledTimes(1));
+      expect((view.container.querySelector('#guestEmail') as HTMLInputElement).value).toBe('half-typed');
+      fillAndCapture(view);
+      await waitFor(() => expect(attention(view)).toBe('true'));
+      fireEvent.click(deleteButton());
+      await waitFor(() => expect(cancel).toHaveBeenCalledTimes(2));
+      expect(view.container.querySelector('#guestEmail')).toBeNull();
+      expect(attention(view)).toBe('true');
+    });
+  });
+
   it('skip-gate: a plan that goes blank mid-edit (height cleared) keeps it on', async () => {
     const view = showPlan({ syncControl });
     fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));

@@ -170,19 +170,24 @@ interface EmailCaptureState {
   /** The box's typing, kept here without a re-render, so the box moving (the full form opening) keeps it. */
   draft: React.MutableRefObject<string>;
   sending: React.MutableRefObject<boolean>; // US-18 AC7: one send at a time, kept here for the same reason.
+  /** US-09 AC19: an erase the screen shows starts the new record's capture afresh. */
+  reset: () => void;
+}
+
+/** What a record's capture starts as, at mount and after an erase. A record already
+ *  captured (the flag lives in their own cloud) skips the email box. */
+function startState(gateSkipped: boolean): GuestEmailState {
+  return getReportEmailCaptured() ? 'captured' : gateSkipped ? 'skipped' : 'idle';
 }
 
 export function useEmailCaptureState(): EmailCaptureState {
   // US-44: the page decides, once per mount. Never written to the record.
   const [gateSkipped] = useState(getSkipEmailGate);
-  // Returning local-first users who already captured: skip the email box and
-  // land straight on the "Save as PDF" view (the flag lives in their own cloud).
-  const [state, setState] = useState<GuestEmailState>(
-    () => (getReportEmailCaptured() ? 'captured' : gateSkipped ? 'skipped' : 'idle'),
-  );
+  const [state, setState] = useState<GuestEmailState>(() => startState(gateSkipped));
   const draft = useRef('');
   const sending = useRef(false);
-  return { state, setState, gateSkipped, draft, sending };
+  const reset = () => { setState(startState(gateSkipped)); draft.current = ''; };
+  return { state, setState, gateSkipped, draft, sending, reset };
 }
 
 /** The box's own typing, in the PDF box, so a keystroke re-renders the box alone. */

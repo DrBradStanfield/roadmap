@@ -129,12 +129,14 @@ export function usePlanView({ results, shownErase, isValid, tiles, forms, hasUns
   const evidence = useMemo(() => ({ opened, toggle: toggleEvidence }), [opened, toggleEvidence]);
   // US-09 AC19: any erase the screen shows forgets them: this tab's, one whose
   // write failed but still erased, or another device's once re-read. The email
-  // capture is kept (a same-tab erase keeps its captured view until reload).
+  // capture starts afresh too (Brad 2026-11-10), and the PDF box below remounts,
+  // so the typed address and its error go with the erased record.
   const [erase, setErase] = useState(shownErase);
   if (erase !== shownErase) {
     setErase(shownErase);
     forget();
     setOpened(NO_HIGHLIGHTS);
+    capture.reset();
   }
 
   // US-61 AC5: Brad's products for a known adult in the US, on the Shopify build only.
@@ -182,7 +184,7 @@ export function usePlanView({ results, shownErase, isValid, tiles, forms, hasUns
   const adult = planned && !results.knownMinor;
   const report = planned && printing && <PlanReport tiles={tiles} sections={sections} alcoholQuestion={alcoholQuestion}/>;
   const pdf = (
-    <PlanPdf planned={planned} adult={adult} emailCapture={!!showEmailCapture && adult} formStage={formStage} capture={capture}
+    <PlanPdf key={shownErase} planned={planned} adult={adult} emailCapture={!!showEmailCapture && adult} formStage={formStage} capture={capture}
              printStatus={printStatus} pdfBlocked={pdfBlocked} onPrint={handlePrint} onCapturePrint={() => printReport('capture')}/>
   );
   const foot = <PlanFoot planned={planned}/>;
