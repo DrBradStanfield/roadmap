@@ -14,6 +14,7 @@ Your mandate, universal checks and finding shape are in docs/review-format.md. R
 - Merge semantics (packages/health-core/src/merge.ts): arrays append-only, scalars last-writer-wins, eraseEpoch monotonic, non-browser writes through sync-manager.ts. Build the two-device sequence that loses or resurrects data.
 - Clinical content: health_roadmap_algorithm.md, evidence.ts and roadmap_text.html change together. Citation numbers and cross-references resolve. Hedged wording stays hedged. The cited source supports the rule.
 - Security: identity comes only from Shopify's HMAC-verified logged_in_customer_id. Every endpoint sits behind app-proxy HMAC. No wildcard CORS origin, and localhost is never on the allow-list.
+- Modes: hunt for a new boolean, ref or timer that encodes a mode beside an existing state, and for a state union whose data lives outside it (CLAUDE.md "A mode is one named state"; .claude/skills/untangle).
 - Deletions: grep for every identifier, rule or cross-reference that disappeared, and name what still depends on it.
 - Claims: re-derive every number, count and "verified" in the report or commit message from its source (CSV, query, test output). Hunt for the claim whose evidence is missing.
 
