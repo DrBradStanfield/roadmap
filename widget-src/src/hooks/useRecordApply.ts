@@ -1,0 +1,135 @@
+import { useCallback, useLayoutEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import type { HealthInputs } from '@roadmap/health-core/types';
+import { LONGITUDINAL_FIELDS } from '@roadmap/health-core/mappings';
+import { inputRangeFault } from '@roadmap/health-core/validation';
+import type { LatestMeasurementsResult } from '../lib/api-types';
+import { getBackendKind, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
+import { trackProductEvent } from '../lib/server-api';
+import { createRemoteChangeRelay } from '../lib/remote-replay';
+import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
+import type { useRecordState } from './useRecordState';
+import type { useUnits } from './useUnits';
+import type { useErase } from './useErase';
+
+/** Why the page re-reads the record: its own upload, another writer's change (US-34), or a save the store refused. */
+export type ReadReason = 'upload' | 'remote' | 'refused';
+
+/** Hooks the page builds after this one. The cycle is real (a refused save
+ *  re-reads; the re-read starts the waiting save; that save can be refused),
+ *  so they are reached through this one step, when a re-read runs. */
+interface Later {
+  markSaved: (inputs: Partial<HealthInputs>) => void;
+  flushPendingSave: () => void;
+  profileDirty: () => boolean;
+  clearAnswered: () => void;
+}
+
+/**
+ * The record shown on the page, at load and on every re-read (US-34 AC4, AC7).
+ *
+ * Remote changes are idle or held (lib/remote-replay.ts): a change from
+ * another writer is held while the profile has an unsaved edit, and the save
+ * that carries the edit up (`saved`) applies it. Every re-read goes through
+ * `signal`, so the one that shows a held change ends the hold: the record is
+ * read once and the change counted once (survey R8).
+ *
+ * The page listens from its first commit (a layout effect), so a change
+ * announced before its passive effects run is not lost (survey R2).
+ *
+ * The apply runs through refs, not an effect: the page re-reads in the turn
+ * it is told, as before this hook.
+ */
+export function useRecordApply(args: {
+  setInputs: Dispatch<SetStateAction<Partial<HealthInputs>>>;
+  reloadValues: () => Promise<LatestMeasurementsResult | null>;
+  applyLists: ReturnType<typeof useRecordState>['applyLists'];
+  showUnits: ReturnType<typeof useUnits>['showUnits'];
+  offerUnits: ReturnType<typeof useUnits>['offerUnits'];
+  showErase: ReturnType<typeof useErase>['showErase'];
+  later: () => Later;
+}) {
+  const latest = useRef(args);
+  latest.current = args;
+
+  // The record shown in one step, load and every re-read: units, form, saved copy, lists (US-34 AC7).
+  // `form` builds the form from the one shown, for a re-read that keeps what is being typed; `units` shows or offers its units.
+  const showRecord = useCallback((result: LatestMeasurementsResult, form: (shown: Partial<HealthInputs>) => Partial<HealthInputs> = () => result.inputs, units = latest.current.showUnits) => {
+    const { setInputs, applyLists, later } = latest.current;
+    units(result.inputs.unitSystem);
+    setInputs(form);
+    later().markSaved(result.inputs);
+    applyLists(result);
+  }, []);
+
+  // Re-read the record and show it: the values, lab rows and both matrices, then the profile and the rest.
+  const apply = useCallback(async () => {
+    const { reloadValues, showErase, showUnits, offerUnits, later } = latest.current;
+    // A field the user left has its save waiting (500 ms): it starts now; its own re-read follows.
+    later().flushPendingSave();
+    const erase = getEraseIdentity(); // read with the record, in one turn
+    const result = await reloadValues();
+    if (result) {
+      // The record holds the profile and every saved value. A first-time
+      // field's value gets none of a draft's checks: it names the row it
+      // replaces only as it saves (still open), and nothing stops it standing
+      // in once another writer fills its slot. Carried through a re-read, it
+      // would outrank that writer's value in the plan, then correct it. So
+      // only the field the user is typing in rides through, since losing
+      // keystrokes is worse (US-34 AC4). The journey redesign moves these
+      // fields onto the draft model. What the matrices' drafts lend is kept
+      // apart (`lent`): it rides through, and each draft is judged again
+      // against the record read (US-03 AC6).
+      // A value out of range is never in the record (its save refused or
+      // skipped it, US-02 AC5), so it rides through too, with its error.
+      // Only within one record: an erase from another device clears this
+      // device's drafts (US-11 AC6, Codex R4).
+      const typing = document.activeElement?.id as keyof HealthInputs | undefined;
+      const sameRecord = erase === getShownErase();
+      showRecord(result, prev => {
+        if (!sameRecord) return result.inputs;
+        const next: Partial<HealthInputs> = typing && LONGITUDINAL_FIELDS.includes(typing) && prev[typing] !== undefined
+          ? { ...result.inputs, [typing]: prev[typing] }
+          : { ...result.inputs };
+        for (const [field, value] of Object.entries(prev)) {
+          if (inputRangeFault(field, value)) (next as Record<string, unknown>)[field] = value;
+        }
+        return next;
+      }, sameRecord ? offerUnits : showUnits); // another erase's units show at once, never held
+    }
+    // Another device erased the record (US-16 AC2a / US-09): a chat banner
+    // left standing would write pre-erase values into the erased record.
+    showErase(erase);
+  }, [showRecord]);
+
+  const [relay] = useState(() => createRemoteChangeRelay((remote: boolean) => {
+    if (remote) {
+      latest.current.later().clearAnswered(); // another writer's change is no answer given here (US-62 AC13)
+      trackProductEvent('remote_change_applied', { backend: getBackendKind() });
+    }
+    return apply();
+  }));
+
+  const signal = useCallback((reason: ReadReason): Promise<void> | void => {
+    const { later } = latest.current;
+    // Not while the user is mid-typing: the re-read replaces the form's
+    // inputs, and a remote change landing on a half-entered height would take
+    // those keystrokes with it. The relay HOLDS it: the next profile save
+    // carries the edit up and then replays the change.
+    // An erase from another device (a new erase identity) is never held: it
+    // applies at once and drops this device's drafts, refused ones included
+    // (US-11 AC6); a refused draft would otherwise hold it for good.
+    if (reason === 'remote') return relay.arrived(getEraseIdentity() === getShownErase() && later().profileDirty());
+    if (reason === 'refused') later().clearAnswered(); // the record re-read is not an answer given here (US-62 AC13)
+    return relay.reread();
+  }, [relay]);
+
+  // Something wrote to the record under us: another device, or an AI
+  // connector through MCP (US-34). The store has already re-read and merged.
+  useLayoutEffect(() => {
+    const onRemoteChange = () => { void signal('remote'); };
+    window.addEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
+    return () => window.removeEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
+  }, [signal]);
+
+  return { showRecord, signal, saved: relay.saved };
+}

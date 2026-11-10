@@ -60,4 +60,23 @@ describe('US-34 AC4 — createRemoteChangeRelay', () => {
     relay.saved();
     expect(apply).toHaveBeenCalledTimes(1);
   });
+
+  it('survey R8: a re-read the page makes for itself while a change is held takes it in, once; the save after finds nothing held', () => {
+    const apply = vi.fn((remote: boolean) => remote);
+    const relay = createRemoteChangeRelay(apply);
+
+    relay.arrived(true);
+    expect(relay.reread()).toBe(true);
+    relay.saved();
+    expect(apply.mock.calls).toEqual([[true]]);
+  });
+
+  it('survey R8: a re-read with nothing held takes in no remote change', () => {
+    const apply = vi.fn((remote: boolean) => remote);
+    const relay = createRemoteChangeRelay(apply);
+
+    expect(relay.reread()).toBe(false);
+    relay.saved();
+    expect(apply.mock.calls).toEqual([[false]]);
+  });
 });

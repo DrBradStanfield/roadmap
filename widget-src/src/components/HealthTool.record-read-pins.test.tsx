@@ -45,10 +45,13 @@ vi.mock('../lib/server-api', async original => {
 });
 // The profile save refuses once when asked, as the store refuses a write (US-16 AC2a).
 const refuse = vi.hoisted(() => ({ next: false }));
+// How many times the page re-reads the record (survey R8: a held change applied twice).
+const reads = vi.hoisted(() => ({ count: 0 }));
 vi.mock('../lib/roadmap-data', async original => {
   const real = await original<typeof import('../lib/roadmap-data')>();
   return {
     ...real,
+    loadLatestMeasurements: () => { reads.count++; return real.loadLatestMeasurements(); },
     saveChangedMeasurements: (...args: Parameters<typeof real.saveChangedMeasurements>) => {
       if (refuse.next) { refuse.next = false; return Promise.resolve({ ok: false }); }
       return real.saveChangedMeasurements(...args);
@@ -61,7 +64,13 @@ vi.mock('../lib/chat-api', async original => ({
 }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
-vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
+// Run once in the first commit's effects, before HealthTool's own (a child's run first): the
+// gap between the page's mount read and its listener (survey R2).
+const atMount = vi.hoisted(() => ({ run: null as null | (() => void) }));
+vi.mock('./UploadModal', async () => {
+  const { useEffect } = await import('react');
+  return { UploadModal: () => { useEffect(() => { const run = atMount.run; atMount.run = null; run?.(); }, []); return null; } };
+});
 import { HealthTool } from './HealthTool';
 import { deleteButton } from '../testing/settings';
 
@@ -77,6 +86,7 @@ const turn = (mobile: boolean) => act(() => { viewport.mobile = mobile; for (con
 beforeEach(async () => {
   tracked.calls = [];
   refuse.next = false;
+  atMount.run = null;
   vi.mocked(trackABConversion).mockClear();
   localStorage.clear(); sessionStorage.clear();
   viewport.mobile = false;
@@ -211,11 +221,11 @@ describe('US-15 AC10, US-34: another writer\'s change reaches the chat mirror', 
 });
 
 describe('US-34 AC4: a change held behind an unsaved profile edit, then a refused write', () => {
-  // Current behaviour (2026-11-10), pinned exactly. The refused save's re-read
-  // (writeRefused) goes around the relay and counts nothing; the form, clean
-  // after it, releases the held change, which re-reads again and counts once.
-  // A later change may fold the two re-reads into one; the count stays 1.
-  it('US-34 AC4: the held change shows after the refused height save re-reads the record; remote_change_applied is sent once today (current behaviour)', async () => {
+  // Survey R8 (2026-11-10): the refused save's re-read shows the held change. It is the
+  // re-read the change waited for, so the record is read once and the change counted as
+  // it shows. Before, the refused re-read went around the relay and counted nothing, and
+  // the clean form then released the held change into a second re-read.
+  it('US-34 AC4: the refused height save\'s re-read shows the held change and counts it as it shows; the record is re-read once', async () => {
     const alert = vi.fn();
     vi.stubGlobal('alert', alert);
     await completeRecord();
@@ -226,12 +236,31 @@ describe('US-34 AC4: a change held behind an unsaved profile edit, then a refuse
     expect((q(view, '#birthYear') as HTMLInputElement).value).toBe('1980'); // held
     expect(calls('remote_change_applied')).toEqual([]);
     refuse.next = true;
+    reads.count = 0;
     leave(q(view, '#heightCm'));
     await waitFor(() => expect(alert).toHaveBeenCalledWith(WRITE_REFUSED), { timeout: 3000 });
     await waitFor(() => expect((q(view, '#birthYear') as HTMLInputElement).value).toBe('1981'));
-    await waitFor(() => expect(calls('remote_change_applied')).toHaveLength(1), { timeout: 3000 });
-    await settle(300);
     expect(calls('remote_change_applied')).toHaveLength(1);
+    await settle(800); // past the profile save the clean form runs
+    expect(calls('remote_change_applied')).toHaveLength(1);
+    expect(reads.count).toBe(1);
+  });
+});
+
+describe('US-34 AC4: a change announced before the page listens', () => {
+  // Survey R2 (2026-11-10): the page reads the record as it first renders. A change
+  // announced after that commit but before its effects run (a browser runs other tasks
+  // between them) found no listener, and the next re-read found nothing new to announce.
+  it('US-34 AC4: another writer\'s weight, announced in the first commit\'s effects, is applied: the mirror holds it and remote_change_applied is sent', async () => {
+    await completeRecord();
+    atMount.run = () => {
+      void addMeasurement('weight', 82, TODAY); // the store takes it at once
+      window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT));
+    };
+    await open();
+    expect(atMount.run).toBeNull();
+    await waitFor(() => expect(calls('remote_change_applied')).toHaveLength(1), { timeout: 3000 });
+    await waitFor(() => expect(mirror()?.previousMeasurements.find((m) => m.metricType === 'weight')?.value).toBe(82));
   });
 });
 
