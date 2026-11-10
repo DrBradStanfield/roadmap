@@ -24,6 +24,8 @@ function mount(list: Suggestion[] | undefined, held = false) {
     renders: () => renders,
     show: (next: Suggestion[] | undefined) => { props = { ...props, list: next }; hook.rerender(props); },
     hold: (on: boolean) => { props = { ...props, held: on }; hook.rerender(props); },
+    /** The suggestions and the hold change in one commit. */
+    set: (next: Suggestion[] | undefined, on: boolean) => { props = { list: next, held: on }; hook.rerender(props); },
     glowing: () => [...hook.result.current.highlighted].sort(),
     fading: () => [...hook.result.current.fadingOut].sort(),
   };
@@ -238,6 +240,16 @@ describe('US-07 AC3, P7 (Brad 2026-11-10): nothing glows while the email box pul
     expect(h.glowing()).toEqual(['d']);
   });
 
+  it('a plan and a hold arriving in one commit (a minor corrected to an adult): nothing glows; on release, what is new since the shown plan glows', () => {
+    const h = settled();
+    h.set([s('a'), s('b'), s('c')], true);
+    expect(h.result.current.highlighted).toBe(NO_HIGHLIGHTS);
+    tick(10_000);
+    expect(h.result.current.highlighted).toBe(NO_HIGHLIGHTS);
+    h.hold(false);
+    expect(h.glowing()).toEqual(['c']);
+  });
+
   it('an email never given: no card ever glows', () => {
     const h = mount([s('a')], true);
     for (const next of [[s('a'), s('b')], [s('c')], [], [s('a'), s('d')]]) {
@@ -266,33 +278,36 @@ describe('US-07 AC3: transition, phase by event', () => {
   const held: Glow = { phase: 'held', baseline: AB, plan: ABC };
   const glowing: Glow = { phase: 'glowing', baseline: AB, plan: ABC, ids: ids('c') };
   const fading: Glow = { phase: 'fading', baseline: AB, plan: ABC, ids: ids('c') };
-  const plan = (p: ReturnType<typeof P>): GlowEvent => ({ type: 'plan', plan: p });
-  const on: GlowEvent = { type: 'hold', on: true };
-  const off: GlowEvent = { type: 'hold', on: false };
+  const ABCD = P('a', 'b', 'c', 'd');
+  const sync = (p: ReturnType<typeof P>, h: boolean): GlowEvent => ({ type: 'sync', plan: p, held: h });
   const settledE: GlowEvent = { type: 'settled' };
   const glowEnded: GlowEvent = { type: 'glowEnded' };
   const fadeEnded: GlowEvent = { type: 'fadeEnded' };
 
   it.each<[string, Glow, GlowEvent, Glow]>([
-    ['settling + plan: the plan is the baseline', settling(false), plan(ABC), { phase: 'settling', baseline: ABC, held: false }],
-    ['settling + hold on: remembered', settling(false), on, settling(true)],
+    ['settling + sync: the plan is the baseline', settling(false), sync(ABC, false), { phase: 'settling', baseline: ABC, held: false }],
+    ['settling + sync held: remembered', settling(false), sync(AB, true), settling(true)],
     ['settling + settled: still', settling(false), settledE, still],
     ['settling (held) + settled: held on the loaded plan', settling(true), settledE, { phase: 'held', baseline: AB, plan: AB }],
-    ['still + plan with a new id: glowing', still, plan(ABC), glowing],
-    ['still + plan with an id gone: still on it', still, plan(P('a')), { phase: 'still', baseline: P('a') }],
-    ['still (empty) + first plan: glowing all (P7)', { phase: 'still', baseline: P() }, plan(AB), { phase: 'glowing', baseline: P(), plan: AB, ids: ids('a', 'b') }],
-    ['still + hold on: held', still, on, { phase: 'held', baseline: AB, plan: AB }],
-    ['held + plan: remembered, baseline kept', held, plan(P('a', 'c', 'd')), { phase: 'held', baseline: AB, plan: P('a', 'c', 'd') }],
-    ['held + hold off with new ids: glowing', held, off, glowing],
-    ['held + hold off with nothing new: still on the plan', { phase: 'held', baseline: AB, plan: P('a') }, off, { phase: 'still', baseline: P('a') }],
+    ['still + sync with a new id: glowing', still, sync(ABC, false), glowing],
+    ['still + sync with an id gone: still on it', still, sync(P('a'), false), { phase: 'still', baseline: P('a') }],
+    ['still (empty) + first plan: glowing all (P7)', { phase: 'still', baseline: P() }, sync(AB, false), { phase: 'glowing', baseline: P(), plan: AB, ids: ids('a', 'b') }],
+    ['still + sync held, same plan: held', still, sync(AB, true), { phase: 'held', baseline: AB, plan: AB }],
+    ['still + sync held with a new plan in one commit: held, the shown plan the baseline (Codex R2 re-check)', still, sync(ABC, true), { phase: 'held', baseline: AB, plan: ABC }],
+    ['held + sync held: remembered, baseline kept', held, sync(P('a', 'c', 'd'), true), { phase: 'held', baseline: AB, plan: P('a', 'c', 'd') }],
+    ['held + sync free with new ids: glowing', held, sync(ABC, false), glowing],
+    ['held + sync free with a plan in the same commit: glowing on it', held, sync(ABCD, false), { phase: 'glowing', baseline: AB, plan: ABCD, ids: ids('c', 'd') }],
+    ['held + sync free with nothing new: still on the plan', { phase: 'held', baseline: AB, plan: P('a') }, sync(P('a'), false), { phase: 'still', baseline: P('a') }],
+    ['held (a card removed) + sync free with it back: still, nothing glows', { phase: 'held', baseline: AB, plan: P('a') }, sync(AB, false), still],
     ['glowing + glowEnded: fading', glowing, glowEnded, fading],
-    ['glowing + plan with more: glowing, same baseline', glowing, plan(P('a', 'b', 'c', 'd')), { phase: 'glowing', baseline: AB, plan: P('a', 'b', 'c', 'd'), ids: ids('c', 'd') }],
-    ['glowing + plan undone: still', glowing, plan(AB), still],
-    ['glowing + hold on: held, the glow\'s plan the baseline (Codex R2)', glowing, on, { phase: 'held', baseline: ABC, plan: ABC }],
+    ['glowing + sync with more: glowing, same baseline', glowing, sync(ABCD, false), { phase: 'glowing', baseline: AB, plan: ABCD, ids: ids('c', 'd') }],
+    ['glowing + sync undone: still', glowing, sync(AB, false), still],
+    ['glowing + sync held: held, the glow\'s plan the baseline (Codex R2)', glowing, sync(ABC, true), { phase: 'held', baseline: ABC, plan: ABC }],
+    ['glowing + sync held with a new plan in one commit: held, the glow\'s plan the baseline', glowing, sync(ABCD, true), { phase: 'held', baseline: ABC, plan: ABCD }],
     ['fading + fadeEnded: still on the plan', fading, fadeEnded, { phase: 'still', baseline: ABC }],
-    ['fading + plan with more: glowing', fading, plan(P('a', 'b', 'c', 'd')), { phase: 'glowing', baseline: AB, plan: P('a', 'b', 'c', 'd'), ids: ids('c', 'd') }],
-    ['fading + plan undone: still', fading, plan(AB), still],
-    ['fading + hold on: held, the glow\'s plan the baseline (Codex R2)', fading, on, { phase: 'held', baseline: ABC, plan: ABC }],
+    ['fading + sync with more: glowing', fading, sync(ABCD, false), { phase: 'glowing', baseline: AB, plan: ABCD, ids: ids('c', 'd') }],
+    ['fading + sync undone: still', fading, sync(AB, false), still],
+    ['fading + sync held: held, the glow\'s plan the baseline (Codex R2)', fading, sync(ABC, true), { phase: 'held', baseline: ABC, plan: ABC }],
   ])('%s', (_, state, event, next) => {
     expect(transition(state, event)).toEqual(next);
   });
@@ -300,24 +315,21 @@ describe('US-07 AC3: transition, phase by event', () => {
   // Codex R2 (US-07 AC3): a hold that starts mid-glow or mid-fade starts from what
   // was shown, so a card that glowed before the hold never glows again on release.
   it.each<[string, Glow]>([['glow', glowing], ['fade', fading]])('a hold entered mid-%s: released unchanged, nothing glows; released with an edit, only that card', (_, state) => {
-    const entered = transition(state, on);
-    expect(transition(entered, off)).toEqual({ phase: 'still', baseline: ABC });
-    const edited = transition(entered, plan(P('a', 'b', 'c', 'd')));
-    expect(transition(edited, off)).toEqual({ phase: 'glowing', baseline: ABC, plan: P('a', 'b', 'c', 'd'), ids: ids('d') });
+    const entered = transition(state, sync(ABC, true));
+    expect(transition(entered, sync(ABC, false))).toEqual({ phase: 'still', baseline: ABC });
+    const edited = transition(entered, sync(ABCD, true));
+    expect(transition(edited, sync(ABCD, false))).toEqual({ phase: 'glowing', baseline: ABC, plan: ABCD, ids: ids('d') });
   });
 
   it.each<[string, Glow, GlowEvent]>([
-    ['settling + the same plan', settling(false), plan(P('a', 'b'))],
-    ['settling + the same hold', settling(true), on],
-    ['still + the same plan', still, plan(P('a', 'b'))],
-    ['still + hold off', still, off],
+    ['settling + the same plan', settling(false), sync(P('a', 'b'), false)],
+    ['settling + the same plan and hold', settling(true), sync(P('a', 'b'), true)],
+    ['still + the same plan', still, sync(P('a', 'b'), false)],
     ['still + settled', still, settledE],
     ['still + glowEnded', still, glowEnded],
     ['still + fadeEnded', still, fadeEnded],
-    ['held + the same plan', held, plan(P('a', 'b', 'c'))],
-    ['held + hold on', held, on],
+    ['held + the same plan', held, sync(P('a', 'b', 'c'), true)],
     ['held + glowEnded', held, glowEnded],
-    ['glowing + hold off', glowing, off],
     ['glowing + fadeEnded', glowing, fadeEnded],
     ['fading + glowEnded', fading, glowEnded],
     ['fading + settled', fading, settledE],

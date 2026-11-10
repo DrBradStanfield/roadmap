@@ -16,7 +16,9 @@ export const planOf = (suggestions: Suggestion[] | undefined): Plan =>
  * - held (the cards are hidden, or the PDF email box pulses, P7): nothing glows; the
  *   baseline is the plan shown when the hold began and the latest plan waits.
  *   Released, what is new against it glows. A hold begun mid-glow or mid-fade takes
- *   the glow's plan as the baseline, so a card that glowed never glows again.
+ *   the glow's plan as the baseline, so a card that glowed never glows again. One
+ *   `sync` carries the plan and the hold together, so a plan arriving with the hold
+ *   waits rather than becoming the baseline unseen.
  * - glowing(ids) → fading(ids) after 3 s → still after 0.5 s, on the glow's plan.
  *   Another plan restarts the glow against the same baseline; one with nothing new
  *   (a change undone) ends it at once.
@@ -29,7 +31,7 @@ export type Glow =
   | { phase: 'fading'; baseline: Plan; plan: Plan; ids: Set<string> };
 
 export type GlowEvent =
-  | { type: 'settled' } | { type: 'plan'; plan: Plan } | { type: 'hold'; on: boolean }
+  | { type: 'settled' } | { type: 'sync'; plan: Plan; held: boolean }
   | { type: 'glowEnded' } | { type: 'fadeEnded' };
 
 function changed(baseline: Plan, plan: Plan): Set<string> {
@@ -49,22 +51,20 @@ function glowOn(baseline: Plan, plan: Plan): Glow {
 export function transition(state: Glow, event: GlowEvent): Glow {
   switch (state.phase) {
     case 'settling':
-      if (event.type === 'plan') return same(state.baseline, event.plan) ? state : { ...state, baseline: event.plan };
-      if (event.type === 'hold') return event.on === state.held ? state : { ...state, held: event.on };
+      if (event.type === 'sync') return same(state.baseline, event.plan) && event.held === state.held ? state : { ...state, baseline: event.plan, held: event.held };
       if (event.type === 'settled') return state.held ? { phase: 'held', baseline: state.baseline, plan: state.baseline } : { phase: 'still', baseline: state.baseline };
       return state;
     case 'still':
-      if (event.type === 'plan') return same(state.baseline, event.plan) ? state : glowOn(state.baseline, event.plan);
-      if (event.type === 'hold' && event.on) return { phase: 'held', baseline: state.baseline, plan: state.baseline };
-      return state;
+      if (event.type !== 'sync') return state;
+      if (event.held) return { phase: 'held', baseline: state.baseline, plan: event.plan };
+      return same(state.baseline, event.plan) ? state : glowOn(state.baseline, event.plan);
     case 'held':
-      if (event.type === 'plan') return same(state.plan, event.plan) ? state : { ...state, plan: event.plan };
-      if (event.type === 'hold' && !event.on) return glowOn(state.baseline, state.plan);
-      return state;
+      if (event.type !== 'sync') return state;
+      if (!event.held) return glowOn(state.baseline, event.plan);
+      return same(state.plan, event.plan) ? state : { ...state, plan: event.plan };
     case 'glowing':
     case 'fading':
-      if (event.type === 'plan') return glowOn(state.baseline, event.plan); // a copy restarts the glow, as before
-      if (event.type === 'hold' && event.on) return { phase: 'held', baseline: state.plan, plan: state.plan };
+      if (event.type === 'sync') return event.held ? { phase: 'held', baseline: state.plan, plan: event.plan } : glowOn(state.baseline, event.plan); // a copy restarts the glow, as before
       if (event.type === 'glowEnded' && state.phase === 'glowing') return { ...state, phase: 'fading' };
       if (event.type === 'fadeEnded' && state.phase === 'fading') return { phase: 'still', baseline: state.plan };
       return state;
@@ -85,9 +85,7 @@ export function useHighlights(suggestions: Suggestion[] | undefined, held: boole
     const timer = setTimeout(() => send({ type: 'settled' }), 3000);
     return () => clearTimeout(timer);
   }, []);
-  // The plan before the hold, so a plan and a release in one render glow the new plan.
-  useEffect(() => { send({ type: 'plan', plan: planOf(suggestions) }); }, [suggestions]);
-  useEffect(() => { send({ type: 'hold', on: held }); }, [held]);
+  useEffect(() => { send({ type: 'sync', plan: planOf(suggestions), held }); }, [suggestions, held]);
   // One glow run, glowing then fading, keeps its `ids` object: its two timers start
   // with it, and any other phase or a restarted glow cancels them.
   const run = glow.phase === 'glowing' || glow.phase === 'fading' ? glow.ids : null;

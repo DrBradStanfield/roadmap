@@ -49,7 +49,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   mocks.shopify.value = true;
   mocks.getReportHtml.mockResolvedValue({ success: true, html: '<p>Local report</p>' });
-  mocks.sendGuestReport.mockResolvedValue({ success: true });
+  mocks.sendGuestReport.mockClear().mockResolvedValue({ success: true });
   vi.spyOn(window, 'open').mockImplementation(() => ({ document: { write: vi.fn(), close: vi.fn() }, print: vi.fn() }) as unknown as Window);
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
@@ -85,6 +85,29 @@ it('US-07 AC3: hidden cards teach the glow nothing; while the email box pulses n
   expect(fading(view.container)).toBeGreaterThan(0);
   tick(500);
   expect(lit(view.container)).toBeNull();
+});
+
+it('US-07 AC3: a known minor\'s settled plan, the birth year corrected to an adult\'s: the gate pulses, nothing glows; once the email is given, the suggestions new since the minor\'s plan glow', async () => {
+  const MINOR = calculateHealthResults({ ...INPUTS, birthYear: new Date().getFullYear() - 12 })!;
+  expect(MINOR.knownMinor).toBe(true);
+  const minorIds = new Set(MINOR.suggestions.map(s => s.id));
+  const fresh = FULL.suggestions.filter(s => !minorIds.has(s.id));
+  expect(fresh.length).toBeGreaterThan(0);
+  const view = render(host(MINOR, true, true));
+  tick(3100); // settled on the minor's plan; a minor sees no email box
+  expect(view.container.querySelector('#guestEmail')).toBeNull();
+  view.rerender(host(FULL, true, true)); // the adult plan and the pulsing gate in one commit
+  expect(view.container.querySelector('.email-capture.field-attention')).not.toBeNull();
+  expect(lit(view.container)).toBeNull();
+  tick(10_000);
+  expect(lit(view.container)).toBeNull();
+
+  const input = view.container.querySelector('#guestEmail') as HTMLInputElement;
+  fireEvent.change(input, { target: { value: 'a@example.com' } });
+  fireEvent.keyDown(input, { key: 'Enter' });
+  await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+  expect(mocks.sendGuestReport).toHaveBeenCalledTimes(1);
+  expect(glowing(view.container)).toBeGreaterThan(0);
 });
 
 it('US-07 AC3: on Pages (no email box) every card glows when the cards first show', () => {
