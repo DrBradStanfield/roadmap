@@ -7,9 +7,8 @@
 //                                 happens in the session's own worktree. Untracked gitignored outputs are allowed.
 //                                 Bash writes (sed -i, >, cp) are NOT covered.
 //   Stop                          in a linked worktree, block ending the turn (once) while work is uncommitted,
-//                                 unpushed, or pushed with neither an open PR nor a merge into origin/main. While a
-//                                 subagent is still running here, uncommitted files are its half-done work: skipped.
-//   SubagentStart|SubagentStop    keep one marker per live subagent in the worktree's git dir (live-agents/<id>).
+//                                 unpushed, or pushed with neither an open PR nor a merge into origin/main. While
+//                                 a background subagent of this session runs, uncommitted files are skipped.
 //   SessionStart                  report local worktrees holding unlanded work, uncommitted files in the main
 //                                 checkout, and merged worktrees not yet removed (with their worktree-done line,
 //                                 or "in use" when used in the last day).
@@ -17,9 +16,8 @@
 // landing check) and when CLAUDE_MAIN_CHECKOUT_WRITES=1 (an unattended local job that commits to main itself; none
 // in this repo today). Fails open on any git or gh error: the GitHub watches (stranded-branch-watch,
 // stale-pr-watch) are the backstop. CommonJS (.cjs): the root package.json sets "type": "module" (see
-// tests/git-push-guard.test.ts). Ported from claude_business's worktree-guard.js; edit both. Roadmap-only, so
-// far: the main checkout found from this file's place, .claude/ never writable there, a random temp suffix and the
-// dropped self-links in a clone, and a non-macOS cache path and copy.
+// tests/git-push-guard.test.ts). Ported from claude_business's worktree-guard.js,
+// which that repo deleted on 2026-11-04 (its commit 4e374249: main-only rule back), so this is the only copy.
 // Workflow: docs/git-workflow.md.
 const { execFileSync, spawn } = require('child_process');
 const fs = require('fs');
@@ -187,36 +185,14 @@ if (event === 'PreToolUse') {
     + `edit there, not under ${main}. Workflow: docs/git-workflow.md.` } });
 }
 
-// Live subagents: an orchestrator's background worker edits the same worktree, so its files are uncommitted when the
-// main session ends a turn, and committing them would land half-written work. One empty marker per running subagent
-// in the worktree's git dir (never in the tree, so never committed), removed when it stops. A marker older than 6 h
-// is a crashed session's leftover: ignored and deleted.
-const LIVE_AGENT_TTL = 6 * 36e5;
-const liveAgentsDir = () => path.join(git(top, ['rev-parse', '--absolute-git-dir']), 'live-agents');
-if (event === 'SubagentStart' || event === 'SubagentStop') {
-  const id = String(input.agent_id || '');
-  if (!inWorktree || !/^[A-Za-z0-9_-]{1,128}$/.test(id)) process.exit(0);
-  try {
-    const dir = liveAgentsDir();
-    if (event === 'SubagentStart') { fs.mkdirSync(dir, { recursive: true }); fs.writeFileSync(path.join(dir, id), ''); }
-    else fs.rmSync(path.join(dir, id), { force: true });
-  } catch { /* best effort: with no marker, Stop asks for a commit as before */ }
-  process.exit(0);
-}
-function liveAgents() {
-  let live = 0;
-  try {
-    const dir = liveAgentsDir();
-    for (const f of fs.readdirSync(dir)) {
-      const p = path.join(dir, f);
-      try {
-        if (Date.now() - fs.statSync(p).mtimeMs < LIVE_AGENT_TTL) live += 1;
-        else fs.rmSync(p, { force: true });
-      } catch { /* removed under us */ }
-    }
-  } catch { /* no folder: none running */ }
-  return live;
-}
+// A background subagent, teammate or workflow of this session is still running (Claude Code's own `background_tasks`
+// list in the Stop input, scoped to the session). An orchestrator's worker edits the same worktree, so its files
+// are uncommitted when the main session ends a turn, and committing them would land half-written work (US-64
+// AC25). Claude wakes the session when the task ends, and the next Stop checks again. No list (an older Claude
+// Code, or the task registry unreachable) means none running: the check stays as before.
+const WORKER_TYPES = new Set(['subagent', 'teammate', 'workflow']);
+const workerRunning = () => Array.isArray(input.background_tasks) && input.background_tasks.some((t) =>
+  t && WORKER_TYPES.has(t.type) && (t.status === 'running' || t.status === 'pending'));
 
 if (event === 'Stop') {
   if (!inWorktree || input.stop_hook_active) process.exit(0);
@@ -228,7 +204,7 @@ if (event === 'Stop') {
   try {
     branch = git(top, ['rev-parse', '--abbrev-ref', 'HEAD']);
     const s = landing(top);
-    if (s.dirty && !liveAgents()) problems.push(`uncommitted changes:\n${s.dirty.split('\n').slice(0, 15).join('\n')}`);
+    if (s.dirty && !workerRunning()) problems.push(`uncommitted changes:\n${s.dirty.split('\n').slice(0, 15).join('\n')}`);
     if (s.localOnly !== '0') problems.push(`${s.localOnly} commit(s) on ${branch} are not pushed`);
     // Nothing ahead of the last-fetched origin/main means nothing to land; otherwise fetch (a GitHub-side merge).
     if (!problems.length && s.ahead() !== '0') {

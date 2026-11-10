@@ -65,9 +65,6 @@ function newWorktree(name: string, extra: NodeJS.ProcessEnv = {}) {
 }
 const done = (name: string, extra: NodeJS.ProcessEnv = {}) =>
   spawnSync('bash', [DONE, name], { cwd: MAIN, encoding: 'utf8', env: { ...ENV, ...extra } });
-// US-64 AC25: SubagentStart / SubagentStop, as Claude Code sends them.
-const agent = (event: string, id: string, cwd: string) =>
-  hook({ hook_event_name: event, cwd, agent_id: id, agent_type: 'worker-opus' });
 const gitDirOf = (wt: string) => spawnSync('git', ['-C', wt, 'rev-parse', '--absolute-git-dir'], { encoding: 'utf8', env: ENV }).stdout.trim();
 
 beforeAll(() => {
@@ -232,27 +229,18 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
     expect(stop(WT, {}, true)).toBeNull();
     expect(stop(WT, { CLAUDE_CODE_REMOTE: 'true' })).toBeNull();
   });
-  it('Stop skips uncommitted files while a subagent runs here, and asks again once it stops or goes stale (US-64 AC25)', () => {
-    const live = join(gitDirOf(WT), 'live-agents');
-    expect(agent('SubagentStart', 'a1', WT)).toBeNull();
-    expect(existsSync(join(live, 'a1'))).toBe(true);
-    expect(sh(WT, 'git status --porcelain')).toBe('M tracked.txt'); // the marker is never in the tree
-    expect(stop(WT)).toBeNull();
-    expect(agent('SubagentStop', 'a1', WT)).toBeNull();
-    expect(existsSync(join(live, 'a1'))).toBe(false);
-    expect(stop(WT)?.reason).toMatch(/uncommitted/);
-    // A marker older than 6 h is a crashed session's leftover: it no longer counts, and Stop deletes it.
-    agent('SubagentStart', 'a2', WT);
-    const old = (Date.now() - 7 * 36e5) / 1000;
-    utimesSync(join(live, 'a2'), old, old);
-    expect(stop(WT)?.reason).toMatch(/uncommitted/);
-    expect(existsSync(join(live, 'a2'))).toBe(false);
-    // An id that is not a plain name writes nothing; the main checkout keeps no markers.
-    agent('SubagentStart', '../../escape', WT);
-    expect(readdirSync(live)).toEqual([]);
-    expect(existsSync(join(gitDirOf(WT), 'escape'))).toBe(false);
-    agent('SubagentStart', 'm1', MAIN);
-    expect(existsSync(join(MAIN, '.git', 'live-agents'))).toBe(false);
+  it('Stop skips uncommitted files while a background subagent of this session runs (US-64 AC25)', () => {
+    const tasks = (type: string, status: string) => hook({ hook_event_name: 'Stop', cwd: WT, stop_hook_active: false,
+      background_tasks: [{ id: 't1', type, status, description: 'x' }] });
+    expect(tasks('subagent', 'running')).toBeNull();
+    expect(tasks('teammate', 'pending')).toBeNull();
+    expect(tasks('workflow', 'running')).toBeNull();
+    // A shell or monitor task edits nothing; a finished subagent no longer counts; an empty list is none.
+    expect(tasks('shell', 'running')?.reason).toMatch(/uncommitted/);
+    expect(tasks('monitor', 'running')?.reason).toMatch(/uncommitted/);
+    expect(tasks('subagent', 'completed')?.reason).toMatch(/uncommitted/);
+    expect(hook({ hook_event_name: 'Stop', cwd: WT, background_tasks: [] })?.reason).toMatch(/uncommitted/);
+    expect(hook({ hook_event_name: 'Stop', cwd: WT, background_tasks: 'junk' })?.reason).toMatch(/uncommitted/);
   });
   it('worktree-done refuses uncommitted work', () => {
     const r = done('feat');
@@ -262,14 +250,12 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
   it('Stop blocks an unpushed commit', () => {
     sh(WT, 'git commit -q -am two');
     expect(stop(WT)?.reason).toMatch(/not pushed/);
-    // A live subagent hides only its uncommitted files, never an unpushed commit (US-64 AC25).
-    agent('SubagentStart', 'a3', WT);
+    // A running subagent hides only uncommitted files, never an unpushed commit (US-64 AC25).
     writeFileSync(join(WT, 'wip.txt'), 'half\n');
-    const r = stop(WT);
+    const r = hook({ hook_event_name: 'Stop', cwd: WT, background_tasks: [{ id: 't', type: 'subagent', status: 'running' }] });
     expect(r?.reason).toMatch(/not pushed/);
     expect(r?.reason).not.toMatch(/uncommitted/);
     rmSync(join(WT, 'wip.txt'));
-    agent('SubagentStop', 'a3', WT);
   });
   it('worktree-done refuses an unpushed commit', () => {
     expect(done('feat').stdout).toMatch(/on no remote branch/);
