@@ -53,10 +53,19 @@ vi.mock('../lib/chat-api', async original => ({
   ...(await original<typeof import('../lib/chat-api')>()),
   listConversations: () => Promise.resolve(null), getChatGate: () => null,
 }));
-const chat = vi.hoisted(() => ({ proposeEdit: null as null | ((edits: ProposedEdit[]) => void) }));
-vi.mock('./ChatEmbed', () => ({
-  ChatEmbed: ({ onProposeEdit }: { onProposeEdit: (edits: ProposedEdit[]) => void }) => { chat.proposeEdit = onProposeEdit; return null; },
-}));
+// `unmuted`: run in the chat's passive effect as the four answers first hold. A child's passive
+// effects run before HealthTool's, after every layout effect of that commit (R3's frame).
+const chat = vi.hoisted(() => ({ proposeEdit: null as null | ((edits: ProposedEdit[]) => void), unmuted: null as null | (() => void) }));
+vi.mock('./ChatEmbed', async () => {
+  const { useEffect } = await import('react');
+  return {
+    ChatEmbed: ({ onProposeEdit, muted }: { onProposeEdit: (edits: ProposedEdit[]) => void; muted: boolean }) => {
+      chat.proposeEdit = onProposeEdit;
+      useEffect(() => { if (!muted) chat.unmuted?.(); }, [muted]);
+      return null;
+    },
+  };
+});
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 // The upload modal: its completion, the page's re-read after an upload's save.
 const upload = vi.hoisted(() => ({ complete: null as null | (() => Promise<void>) }));
@@ -80,6 +89,7 @@ beforeEach(async () => {
   tracked.calls = [];
   refuse.next = false;
   chat.proposeEdit = null;
+  chat.unmuted = null;
   upload.complete = null;
   localStorage.clear(); sessionStorage.clear();
   // A wide desktop: the chat column shows.
@@ -378,9 +388,11 @@ describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboa
     type(q(view, '#weightKg'), '105'); // the last answer (Shopify build)
     await waitFor(() => expect(landed()).toBe(true));
     await waitFor(async () => expect(await activeWeights()).toEqual([[105, TODAY]]), { timeout: 2000 });
+    const before = matrixWeight(view);
     cross(); // a phone: the panels are built again
     await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
     const cell = matrixWeight(view)!;
+    expect(cell).not.toBe(before); // a new matrix: its own refs started empty
     type(cell, '106');
     await settle(100);
     expect(landed()).toBe(false);
@@ -416,6 +428,41 @@ describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboa
     expect(landed()).toBe(false);
     expect(document.activeElement).toBe(cell);
     expect(q(view, '.mh-page .about-card')).toBeTruthy();
+  });
+
+  it('US-62 AC25 (D4, R2): an onboarding that ends on sex spends its landing: a later matrix weight does not land', async () => {
+    const view = await wholeFormWithoutSexOrBirth();
+    birth(view, '5', '1975'); // the year before sex: asked, but not the last answer
+    await settle(50);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' })); // sex last: the onboarding ends here, with no landing (AC31)
+    await waitFor(() => expect(q(view, '.mh-ready')).toBeTruthy());
+    expect(landed()).toBe(false);
+    await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
+    await settle(200);
+    const cell = matrixWeight(view)!;
+    type(cell, '106');
+    await settle(100);
+    expect(landed()).toBe(false);
+    expect(document.activeElement).toBe(cell);
+  });
+
+  it('US-62 AC25 (D4, R3): a matrix weight as the last answer lands though its frame fires before the page\'s passive effects; onboarding_done is sent once', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await addMeasurement('waist', 90, '2026-09-01'); // a saved vital: the whole form, the vitals as a matrix
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
+    await settle(200);
+    // Frames held until the chat sees the four answers hold: before the page's passive effects run.
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { frames.push(cb); return frames.length; });
+    const runFrames = () => { for (const cb of frames.splice(0)) cb(0); };
+    chat.unmuted = runFrames;
+    type(matrixWeight(view), '106'); // the weight, the last answer, typed in the matrix (Shopify build)
+    await settle(50);
+    runFrames(); // the landing's own focus frame
+    await waitFor(() => expect(landed()).toBe(true));
+    expect(calls('onboarding_done')).toHaveLength(1);
   });
 
   it('US-62 AC25 (D4): a complete year typed before sex lands nothing and leaves the landing for the year that is the last answer', async () => {

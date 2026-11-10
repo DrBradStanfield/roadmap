@@ -540,8 +540,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     medicationWaiting, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal: setRevealCell,
   });
 
-  // Email capture and US-23 reminder enrolment require the Shopify server.
-  const emailCaptureActive = SHOPIFY_SURFACE;
+  const emailCaptureActive = SHOPIFY_SURFACE; // email capture and US-23 reminders need the Shopify server
 
   // Asked as the answer is typed; what it returns lands, once per record (D4), and says whether it did.
   // After the last onboarding answer (US-62 AC13) the focus moves to "Your plan is ready."'s heading,
@@ -550,9 +549,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // used to jump to the email box (US-22), so Pages never takes the focus from a value being typed; the
   // birth year (`fromBirth`, Brad 2026-11-02) lands on both.
   const landOnMyHealth = useCallback((fromBirth = false) => {
+    if (!emailCaptureActive && !fromBirth) return () => false; // asks nothing: a Pages weight ends it spent
     const land = landing(); // only when the answer was the last one: a first weight is step 1
     return (): boolean => {
-      if ((!emailCaptureActive && !fromBirth) || !land()) return false;
+      if (!land()) return false;
       selectTab('health');
       requestAnimationFrame(() => {
         const ready = rootRef.current?.querySelector<HTMLElement>('.mh-ready-title');

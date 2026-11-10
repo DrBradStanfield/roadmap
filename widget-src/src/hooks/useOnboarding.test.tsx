@@ -14,7 +14,7 @@ const shown = { erase: 'erase-1' };
 const tracked = vi.hoisted(() => ({ calls: [] as Array<[string, unknown]> }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: (name: string, meta?: unknown) => { tracked.calls.push([name, meta]); } }));
 
-import { useOnboarding } from './useOnboarding';
+import { transition, useOnboarding, type Landing } from './useOnboarding';
 
 const EMPTY: RecordHoldings = { saved: [], medications: [], screenings: [], supplements: [], documents: [], labValues: [] };
 const setup = (stage: FormStage) => renderHook(
@@ -131,8 +131,11 @@ describe('US-62 AC12: About you moves low', () => {
 describe('US-62 AC25 (D4): the landing at My health, once per record, for an onboarding ended here', () => {
   /** Asks for the landing as an answer is typed, and lands it at once. */
   const land = (view: ReturnType<typeof setup>) => view.result.current.landing()();
-  /** The last answer given here: the record rises to stage 4. */
-  const answerLast = (view: ReturnType<typeof setup>) => { act(() => view.result.current.markAnswered()); view.rerender({ stage: 4 }); };
+  /** The last answer given here, which asks for the landing as it is typed (a weight, the year): the record rises to stage 4. */
+  const answerLast = (view: ReturnType<typeof setup>) => {
+    act(() => { view.result.current.markAnswered(); view.result.current.landing(); });
+    view.rerender({ stage: 4 });
+  };
 
   it('lands once the onboarding ends here, once per record, and again after an erase', () => {
     const view = setup(3);
@@ -165,3 +168,27 @@ describe('US-62 AC25 (D4): the landing at My health, once per record, for an onb
     expect(land(view)).toBe(false);
   });
 });
+
+describe('US-62 AC25 (D4): the landing\'s states, every state by every event', () => {
+  const unended = (asked: boolean): Landing => ({ kind: 'unended', asked });
+  const due: Landing = { kind: 'due' };
+  const spent: Landing = { kind: 'spent' };
+  it.each<[string, Landing, Record<'answered' | 'asked' | 'ended' | 'landed', Landing>]>([
+    ['unended, not asked', unended(false), { answered: unended(false), asked: unended(true), ended: spent, landed: unended(false) }],
+    ['unended, asked', unended(true), { answered: unended(false), asked: unended(true), ended: due, landed: unended(true) }],
+    ['due', due, { answered: due, asked: due, ended: due, landed: spent }],
+    ['spent', spent, { answered: spent, asked: spent, ended: spent, landed: spent }],
+  ])('%s', (_, from, to) => {
+    for (const [event, next] of Object.entries(to)) expect([event, transition(from, event as keyof typeof to)]).toEqual([event, next]);
+  });
+
+  it('an onboarding that ends on an answer that asked no landing spends it (R2, option iii)', () => {
+    const view = setup(3);
+    view.result.current.landing(); // a year typed before the last answer
+    answerLastSilently(view); // sex, last: it asks nothing
+    expect(view.result.current.landing()()).toBe(false);
+  });
+});
+
+/** The last answer given here, one that asks no landing (sex, the chat, an upload). */
+function answerLastSilently(view: ReturnType<typeof setup>) { act(() => view.result.current.markAnswered()); view.rerender({ stage: 4 }); }

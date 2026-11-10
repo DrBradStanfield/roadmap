@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { opensFullForm, type FormStage, type RecordHoldings } from '@roadmap/health-core/mappings';
 import { ONBOARDING_STEPS } from '@roadmap/health-core/product-events';
 import { trackProductEvent } from '../lib/server-api';
@@ -32,13 +32,30 @@ const planReadySeen = (): boolean => safeGetItem(PLAN_READY_SEEN_KEY) === '1';
  *   record another device completes stays put until then (Brad 2026-11-10, D6).
  * - "Your plan is ready." (`planReady`) shows once, for the record whose
  *   onboarding ended in this tab, until Got it (AC31).
- * - `landed`: the jump to My health after the last answer happened (AC25).
- *   Once per record, and spent only when it lands. It lives here, not in the
- *   fields that ask for it, so a panel remount (the 768px swap) keeps it (D4).
- *   Only an onboarding that ended in this tab (`endedHere`, the moment of
- *   `onboarding_done`) lands: a record complete when first shown, or one
- *   another writer completed (D6), never does.
+ * - `landing`: the jump to My health after the last answer (AC25), one
+ *   named state (`Landing`). It lives here, not in the fields that ask for
+ *   it, so a panel remount (the 768px swap) keeps it (D4).
  */
+/**
+ * The landing's states (US-62 AC25, D4). `unended`: the onboarding has not
+ * ended in this tab; `asked` says the latest answer asked to land (a weight,
+ * the birth year), as it is typed. `due`: it ended here on an answer that
+ * asked, so its jump lands. `spent`: it landed, or it ended on an answer that
+ * asks none (sex, the chat, an upload). A record complete when first shown,
+ * or completed by another writer (D6), never ends here: it never lands.
+ */
+export type Landing = { kind: 'unended'; asked: boolean } | { kind: 'due' } | { kind: 'spent' };
+export type LandingEvent = 'answered' | 'asked' | 'ended' | 'landed';
+
+/** The landing's one way to change. An answer clears the ask, which it may then make again. */
+export function transition(landing: Landing, event: LandingEvent): Landing {
+  if (landing.kind === 'unended') {
+    if (event === 'answered' || event === 'asked') return { kind: 'unended', asked: event === 'asked' };
+    if (event === 'ended') return landing.asked ? { kind: 'due' } : { kind: 'spent' };
+  }
+  return landing.kind === 'due' && event === 'landed' ? { kind: 'spent' } : landing;
+}
+
 interface RecordOnboarding {
   erase: string;
   epoch: number;
@@ -48,8 +65,7 @@ interface RecordOnboarding {
   answered: boolean;
   /** The stage the step count last saw (AC13). */
   counted: FormStage;
-  endedHere: boolean;
-  landed: boolean;
+  landing: Landing;
 }
 
 export interface Onboarding {
@@ -58,9 +74,9 @@ export interface Onboarding {
   fullForm: boolean;
   aboutYouLow: boolean;
   planReady: boolean;
-  /** Asked as the last answer is typed: the landing on the record shown now. The function
-   *  it returns says whether to land, once per record, only once its onboarding ended in this
-   *  tab and only while that record is shown; a yes spends it (AC25, D4). */
+  /** Asked as an answer is typed, after `markAnswered`: the landing on the record shown now.
+   *  The function it returns lands only if that answer ended the onboarding here, only while
+   *  that record is shown, and once (AC25, D4). */
   landing: () => () => boolean;
   markAnswered: () => void;
   /** A change this tab did not make: another writer's, or a refused save's re-read. */
@@ -84,7 +100,7 @@ export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded
   const ref = useRef<RecordOnboarding | null>(null);
   const was = ref.current;
   if (!was || was.erase !== erase) {
-    ref.current = { erase, epoch: (was?.epoch ?? 0) + 1, reached: stage, opened: stage, fullForm: false, answered: false, counted: stage, endedHere: false, landed: false };
+    ref.current = { erase, epoch: (was?.epoch ?? 0) + 1, reached: stage, opened: stage, fullForm: false, answered: false, counted: stage, landing: { kind: 'unended', asked: false } };
   } else if (stage > was.reached) was.reached = stage;
   const now = ref.current!;
   now.fullForm ||= opensFullForm(now.reached, holdings);
@@ -98,7 +114,9 @@ export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded
   const low = useRef(false);
   low.current = opened === 4 || movedLow === epoch;
 
-  useEffect(() => {
+  // A layout effect: the stage a matrix weight lends reaches the page in a later task, and the
+  // landing's frame may fire before passive effects run (R3). The ending is due by then.
+  useLayoutEffect(() => {
     const rec = ref.current!;
     const from = rec.counted;
     rec.counted = rec.reached;
@@ -107,19 +125,25 @@ export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded
     // The step that was asked is the one answered; later steps a record already held were not.
     trackProductEvent('onboarding_step', { step: ONBOARDING_STEPS[from - 1] });
     if (rec.reached === 4) {
-      rec.endedHere = true;
+      rec.landing = transition(rec.landing, 'ended');
       trackProductEvent('onboarding_done');
       if (!planReadySeen()) setPlanReadyFor(rec.epoch);
     }
   });
 
-  const markAnswered = useCallback(() => { ref.current!.answered = true; }, []);
+  const markAnswered = useCallback(() => {
+    const rec = ref.current!;
+    rec.answered = true;
+    rec.landing = transition(rec.landing, 'answered');
+  }, []);
   const clearAnswered = useCallback(() => { ref.current!.answered = false; }, []);
   const landing = useCallback(() => {
     const at = ref.current!; // the record as the answer was typed, not as the jump fires
+    at.landing = transition(at.landing, 'asked');
     return () => {
-      if (ref.current !== at || at.landed || !at.endedHere || stageRef.current !== 4) return false;
-      return (at.landed = true);
+      if (ref.current !== at || at.landing.kind !== 'due') return false;
+      at.landing = transition(at.landing, 'landed');
+      return true;
     };
   }, []);
   const profileLeft = useCallback(() => {
