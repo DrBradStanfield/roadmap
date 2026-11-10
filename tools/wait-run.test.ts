@@ -28,7 +28,7 @@ for a in "$@"; do [ "$prev" = --jq ] && jqf=$a; prev=$a; done
 json() { printf '%s\\n' "$1" | jq -r "$jqf"; }
 poll_n() { n=$((n+1)); echo $n > "$STATE"; [ "$n" = "\${FAIL_AT:-}" ] && exit 1; [ $n -ge "\${DONE_AT:-2}" ]; }
 case "$*" in
-  *rate_limit*) json "{\\"resources\\":{\\"core\\":{\\"remaining\\":\${RL_CORE:-4000},\\"reset\\":\${RL_RESET:-0}},\\"graphql\\":{\\"remaining\\":\${RL_GQL:-4000},\\"reset\\":\${RL_RESET:-0}}}}" ;;
+  *rate_limit*) [ -n "\${RL_FAIL:-}" ] && exit 1; json "{\\"resources\\":{\\"core\\":{\\"remaining\\":\${RL_CORE:-4000},\\"reset\\":\${RL_RESET:-0}},\\"graphql\\":{\\"remaining\\":\${RL_GQL:-4000},\\"reset\\":\${RL_RESET:-0}}}}" ;;
   *actions/runs/*) if poll_n; then json '{"status":"completed"}'; else json "{\\"status\\":\\"\${RUN_STATUS:-in_progress}\\"}"; fi ;;
   *"conclusion,headSha,jobs"*) [ -n "\${JOBS_FAIL:-}" ] && exit 1; echo "conclusion=$CONCLUSION"; echo "head=abc123"; echo "job deploy=$CONCLUSION" ;;
   *statusCheckRollup*) pend='[{"__typename":"CheckRun","name":"t","workflowName":"CI","status":"IN_PROGRESS","conclusion":""}]'
@@ -69,7 +69,36 @@ function run(args: string[], env: Record<string, string> = {}) {
   return { ...r, sleeps: lines(`${state}.sleeps`).map(Number), calls: lines(`${state}.calls`) };
 }
 
+// The in-loop rate-limit reads, not the budget lines printed at start and end (those name both budgets).
+const loopRateReads = (calls: string[]) => calls.filter((c) => c.includes('rate_limit') && !c.includes('graphql=')).length;
+const START = 'GitHub budget at start: core=4000 graphql=4000';
+const END = 'GitHub budget at end: core=4000 graphql=4000';
+
 describe('wait-run.sh (US-64 AC26)', () => {
+  it('US-64 AC26: prints the GitHub budget left at start and end on stderr, on success, failure and give-up', () => {
+    for (const r of [
+      run(['deploy', '123']),
+      run(['pr', '42'], { FAILS: '1' }),
+      run(['deploy', '123'], { WAIT_RUN_MAX_MIN: '0' }),
+    ]) {
+      const lines = r.stderr.split('\n');
+      expect(lines[0]).toBe(START);
+      expect(lines.filter(Boolean).at(-1)).toBe(END);
+    }
+  });
+  it('US-64 AC26: a usage error exits 2 before any budget read', () => {
+    const r = run(['watch', '1']);
+    expect(r.status).toBe(2);
+    expect(r.calls).toEqual([]);
+    expect(r.stderr).not.toContain('GitHub budget');
+  });
+  it('US-64 AC26: a failed budget read prints nothing and never changes the exit code', () => {
+    const ok = run(['deploy', '123'], { RL_FAIL: '1' });
+    expect(ok.status).toBe(0);
+    expect(ok.stderr).not.toContain('GitHub budget');
+    expect(run(['pr', '42'], { RL_FAIL: '1', FAILS: '1' }).status).toBe(1);
+    expect(run(['deploy', '123'], { RL_FAIL: '1', WAIT_RUN_MAX_MIN: '0' }).status).toBe(3);
+  });
   it('deploy: waits past "in progress", prints the verdict and exits 0 on success with healthz 200', () => {
     const r = run(['deploy', '123']);
     expect(r.status).toBe(0);
@@ -137,8 +166,8 @@ describe('wait-run.sh (US-64 AC26)', () => {
       const r = run([mode, '42'], { DONE_AT: '25' });
       const polls = r.calls.filter((c) => /actions\/runs\/|statusCheckRollup/.test(c));
       expect(polls.length).toBe(25);
-      expect(r.calls.filter((c) => c.includes('rate_limit')).length).toBe(3);
-      expect(r.calls.length).toBe(25 + 3 + (mode === 'deploy' ? 1 : 2)); // + the final reads
+      expect(loopRateReads(r.calls)).toBe(3);
+      expect(r.calls.length).toBe(25 + 3 + (mode === 'deploy' ? 1 : 2) + 2); // + the final reads, + start and end budget lines
     }
   });
   it('sleeps until the reset when under 200 requests are left, saying so once', () => {
@@ -162,7 +191,7 @@ describe('wait-run.sh (US-64 AC26)', () => {
   });
   it('reads the rate limit after a gh error, not only every 10th poll', () => {
     const rl = (env: Record<string, string>) =>
-      run(['deploy', '123'], { DONE_AT: '5', ...env }).calls.filter((c) => c.includes('rate_limit')).length;
+      loopRateReads(run(['deploy', '123'], { DONE_AT: '5', ...env }).calls);
     expect(rl({})).toBe(1);
     expect(rl({ FAIL_AT: '3' })).toBe(2);
   });
