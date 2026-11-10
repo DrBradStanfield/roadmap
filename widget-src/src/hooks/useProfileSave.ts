@@ -63,8 +63,8 @@ export function useProfileSave(args: {
 
   // A fresh function each render: the timer runs the one from the render that scheduled it.
   async function flushProfile(erase?: string): Promise<boolean> {
-    // Writes stopped: nothing is saved, so this tab's switch holds nothing (PR 1204 F4).
-    if (getBackendKind() === 'local' && localHealthWritesStopped()) { units.saved(units.pending()); return true; }
+    // Writes stopped: nothing is saved, so this tab's switch ends, and a change the relay held during it applies (PR 1204).
+    if (getBackendKind() === 'local' && localHealthWritesStopped()) { units.saved(units.pending()); onClean(); return true; }
     const current: Partial<HealthInputs> = {};
     const previous: Partial<HealthInputs> = {};
     // This tab's unit switch is written even when the copy saved holds it: switched,
@@ -113,11 +113,13 @@ export function useProfileSave(args: {
 
   const profileTimer = useDebouncedSave(500);
   useEffect(() => {
-    if (!loaded) return;
+    // No save runs before the first read is shown (or after it failed): this tab's switch ends at once,
+    // so it never drops the record's later units or holds a remote change (US-34 AC7a, PR 1204).
+    if (!loaded) { units.saved(units.pending()); return; }
     const erase = getShownErase(); // as the edit was made, not as the timer fires
     profileTimer.schedule(() => { void flushProfile(erase); });
     return () => profileTimer.cancel();
-  }, [inputs, loaded, profileTimer]);
+  }, [inputs, loaded, profileTimer, units]);
 
   const markSaved = useCallback((record: Partial<HealthInputs>) => { saved.current = { ...record }; }, []);
   const profileDirty = useCallback(() => hasUnsavedProfileEdits(inputsRef.current, saved.current), [inputsRef]);

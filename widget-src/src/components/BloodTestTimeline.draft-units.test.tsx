@@ -50,7 +50,11 @@ function page(rows: ApiMeasurement[] = [], start?: UnitSystem, mountedIn: UnitSy
   function Page() {
     const [system, setSystem] = useState<UnitSystem>(mountedIn);
     const [overrides, setOverrides] = useState<Record<string, UnitSystem>>({});
-    const toggle = (field: string) => setOverrides((o) => ({ ...o, [field]: other(o[field] ?? system) }));
+    const toggle = (field: string) => { // the turn, as useUnits reports it
+      const from = overrides[field] ?? system;
+      setOverrides((o) => ({ ...o, [field]: other(from) }));
+      return { from, to: other(from) };
+    };
     outside.remote = (unit) => setSystem(unit);
     outside.toggle = toggle;
     return (

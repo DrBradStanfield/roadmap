@@ -72,3 +72,7 @@ export function hidePage(): void {
 export function showPage(): void {
   delete (document as { visibilityState?: unknown }).visibilityState;
 }
+
+/** A field's unit toggle for a matrix page with no unit state of its own: the turn
+ *  useUnits' `handleToggleFieldUnit` would report from `unit` (PR 1204 R4). */
+export const turnFrom = (unit: 'si' | 'conventional') => () => ({ from: unit, to: unit === 'si' ? 'conventional' as const : 'si' as const });

@@ -19,7 +19,7 @@ const UNCLEAR_UNIT = 'Re-enter this value: its unit is unclear after an update.'
 
 type Cell = CellRef<MetricType>;
 /** A field's own unit toggle (useUnits' `handleToggleFieldUnit`): the turn it made. */
-export type FieldUnitToggle = (field: string) => { from: UnitSystem; to: UnitSystem } | void;
+export type FieldUnitToggle = (field: string) => { from: UnitSystem; to: UnitSystem };
 /** This tab's switch of the unit system, subscribed to (useUnits' `onSwitch`); returns the unsubscribe. */
 export type UnitSwitchSource = (listener: UnitSwitchListener) => () => void;
 
@@ -47,9 +47,8 @@ export function useBloodDraftUnits({ rows, unitSystem, unitOverrides, onToggleFi
   };
   // The re-read turns as the toggle did: from the unit the person saw at the
   // press, which a record's units landing mid-press do not change (PR 1204 F2).
-  // A page without useUnits (a test's) gives no turn: from the unit shown.
   const toggleUnit = (metric: MetricType, field: string) => {
-    const { from, to } = onToggleFieldUnit(field) ?? { from: fieldUnit(field), to: fieldUnit(field) === 'si' ? 'conventional' : 'si' };
+    const { from, to } = onToggleFieldUnit(field);
     restamp(metric, from, to);
   };
   // The page's Units or Height pill switches the unit system (useUnits' `onSwitch`):

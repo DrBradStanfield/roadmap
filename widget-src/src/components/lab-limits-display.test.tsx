@@ -11,6 +11,7 @@ import { cleanup, fireEvent, render } from '@testing-library/react';
 import { LIMIT_NOT_GRADED } from '@roadmap/health-core/lab-limits';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { BloodTestTimeline } from './BloodTestTimeline';
+import { turnFrom } from '../testing/matrix-gestures';
 import { AdditionalLabRows } from './AdditionalLabRows';
 import { BLOOD_ROWS, MetricRows, coreRow, pressureRow, type RowContext } from './MyDataRows';
 import { NumericInputCell } from './NumericInputCell';
@@ -31,7 +32,7 @@ const history = [
 
 function timeline() {
   const view = render(
-    <BloodTestTimeline bloodTestHistory={history} unitSystem="si" unitOverrides={{}} onToggleFieldUnit={() => {}}
+    <BloodTestTimeline bloodTestHistory={history} unitSystem="si" unitOverrides={{}} onToggleFieldUnit={turnFrom('si')}
       onSaveBatch={vi.fn().mockResolvedValue(new Map())} onCorrectValue={vi.fn().mockResolvedValue('ok')} onDraftValue={() => {}}
       isSaving={false} grading={{ sex: 'male' }} hasApiResponse/>,
   );
