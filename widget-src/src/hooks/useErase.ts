@@ -20,6 +20,12 @@ import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNR
  *
  * `shownErase` is the same erase as React state: the upload modal is keyed
  * on it, so an erase ends a review read before it (US-16 AC2c).
+ *
+ * Three copies of the shown erase, each for a reason: React state (what the
+ * tree renders), the `asked` ref (what showErase last asked for, so a second
+ * ask before the commit is a no-op), and the store's mark, set only once the
+ * tree that shows it commits, so a save asked from the old tree is refused
+ * (US-16 AC2d).
  */
 export interface Erase {
   shownErase: string;
@@ -38,13 +44,19 @@ export function useErase(onShown: () => void): Erase {
   const shownHook = useRef(onShown);
   useLayoutEffect(() => { shownHook.current = onShown; });
   const [shownErase, setShownErase] = useState(getShownErase);
+  // The store's mark moves only once the screen shows the erase: until React
+  // commits the new tree, the old one is on screen, and a save asked from it
+  // keeps the old mark and is refused (US-16 AC2d). Children's layout effects
+  // run before this one, so none may write; none does (2026-11-10).
+  useLayoutEffect(() => { markEraseShown(shownErase); }, [shownErase]);
+  const asked = useRef(shownErase); // the erase last asked of the screen, shown or still committing
   const [erasing, setErasing] = useState(false);
   const erasingNow = useRef(false); // the same, for a refusal inside the erase's own turn
   const saidFor = useRef(''); // the erase whose refusal was last said
 
   const showErase = useCallback((erase: string) => {
-    if (erase === getShownErase()) return;
-    markEraseShown(erase);
+    if (erase === asked.current) return;
+    asked.current = erase;
     setShownErase(erase);
     shownHook.current();
   }, []);

@@ -3,7 +3,7 @@
 // which box shows (pdfBox) and when the storage button pulses (storagePulse).
 import React, { useState, useRef } from 'react';
 import { flushSync } from 'react-dom';
-import { getReportHtml, sendGuestReport, getReportEmailCaptured, markReportEmailCaptured } from '../lib/roadmap-data';
+import { getReportHtml, sendGuestReport, getReportEmailCaptured, markReportEmailCaptured, getShownErase } from '../lib/roadmap-data';
 import { trackABConversion, trackProductEvent } from '../lib/server-api';
 import { EMAIL_REGEX } from '../lib/email';
 import { getSkipEmailGate } from '../lib/assistant-config';
@@ -233,6 +233,7 @@ function useGuestEmailCapture(printReport: () => Promise<void>, { state, setStat
     }
     setEmailError('');
     setState('sending');
+    const erase = getShownErase(); // the record the capture was asked for, not the one shown when it lands (US-16 AC2d)
 
     if (gateSkipped) {
       // US-44 AC3: reminders only. The PDF has its own button, so no print
@@ -241,7 +242,7 @@ function useGuestEmailCapture(printReport: () => Promise<void>, { state, setStat
       // emails' link back to /pages/roadmap doesn't ask for the email again.
       const result = await sendGuestReport(trimmed);
       if (result.success) {
-        markReportEmailCaptured();
+        markReportEmailCaptured(erase);
         setState('reminded');
       } else {
         setEmailError(result.error || 'Failed to send. Please try again.');
@@ -263,7 +264,7 @@ function useGuestEmailCapture(printReport: () => Promise<void>, { state, setStat
       // Local-first: the PDF window already opened (the delivery). Persist the
       // captured flag to the user's own cloud and switch to the "Save as PDF"
       // view — no email box on return, nothing extra (no articles screen).
-      markReportEmailCaptured();
+      markReportEmailCaptured(erase);
       setState('captured');
     } else {
       setEmailError(result.error || 'Failed to send. Please try again.');

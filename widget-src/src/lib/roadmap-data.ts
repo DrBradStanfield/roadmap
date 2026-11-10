@@ -119,8 +119,8 @@ export function holdsUnreadableMedication(key: string, answered = false): boolea
 export function getReportEmailCaptured(): boolean {
   return store?.getReportEmailCaptured() ?? false;
 }
-export function markReportEmailCaptured(): boolean {
-  return store?.markReportEmailCaptured() ?? false;
+export function markReportEmailCaptured(erase?: string): boolean {
+  return store?.markReportEmailCaptured(erase) ?? false;
 }
 
 // --- Lp(a)'s field unit, a profile preference (US-05 AC2; lpa-unit.ts reads it) ---
@@ -256,8 +256,8 @@ export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<Bu
   return result;
 }
 /** A lab value a person adds (US-21 AC2, US-25 AC25), by health-core's one lab add; null when nothing could be written. */
-export async function addLabValue(input: AddLabValueRequest): Promise<AddLabValueResult | null> {
-  const result = store ? store.addLabValue(input) : null;
+export async function addLabValue(input: AddLabValueRequest, erase?: string): Promise<AddLabValueResult | null> {
+  const result = store ? store.addLabValue(input, erase) : null;
   if (result && !result.ok && result.refused) countRefusedSpellings([result.refused]);
   return result;
 }

@@ -52,7 +52,7 @@ export function useProfileSave(args: {
   loaded: boolean;
   /** The form is clean: a held remote change may apply (the relay's `saved`). */
   onClean: () => void;
-  writeRefused: () => void;
+  writeRefused: (erase?: string) => void;
 }): ProfileSave {
   const { inputs, inputsRef, setInputs, loaded, onClean, writeRefused } = args;
   const saved = useRef<Partial<HealthInputs>>({});
@@ -74,7 +74,7 @@ export function useProfileSave(args: {
 
     const result = await saveChangedMeasurements(current, previous, erase);
     if (!result.ok) {
-      writeRefused();
+      writeRefused(erase);
       return false;
     }
     if (getBackendKind() === 'local' && localHealthWritesStopped()) return true;

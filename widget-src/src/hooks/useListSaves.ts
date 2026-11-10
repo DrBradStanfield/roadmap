@@ -34,15 +34,15 @@ async function mirrorSavedLists(): Promise<void> {
   const result = await loadLatestMeasurements();
   if (result) patchMirror({ medications: result.medications, screenings: result.screenings });
 }
-export function useListSaves(record: RecordPatches, writeRefused: () => void) {
+export function useListSaves(record: RecordPatches, writeRefused: (erase?: string) => void) {
   const { patchMedication, patchScreening, patchSupplement, stopSupplement } = record;
   const medSaves = useRef<ListSaves>(new Map());
   const screeningSaves = useRef<ListSaves>(new Map());
   const supplementSaves = useRef<ListSaves>(new Map());
   const all = () => [medSaves.current, screeningSaves.current, supplementSaves.current];
 
-  const afterListSave = useCallback((saved: boolean) => {
-    if (!saved) writeRefused();
+  const afterListSave = useCallback((saved: boolean, erase: string) => {
+    if (!saved) writeRefused(erase);
     return mirrorSavedLists();
   }, [writeRefused]);
   const dropListSaves = useCallback(() => listSaves.dropListSaves(all()), []);
@@ -68,7 +68,7 @@ export function useListSaves(record: RecordPatches, writeRefused: () => void) {
       updatedAt: new Date().toISOString(),
     }));
     listSaves.debounceSave(medSaves.current, medicationKey,
-      (erase) => void saveMedication(medicationKey, drugName, doseValue, doseUnit, erase).then(afterListSave));
+      (erase) => void saveMedication(medicationKey, drugName, doseValue, doseUnit, erase).then(saved => afterListSave(saved, erase)));
   }, [afterListSave, patchMedication]);
 
   // `erase`: a caller that asked before now, such as an upload (US-16 AC2a).
@@ -80,7 +80,7 @@ export function useListSaves(record: RecordPatches, writeRefused: () => void) {
       updatedAt: new Date().toISOString(),
     }));
     listSaves.debounceSave(screeningSaves.current, screeningKey,
-      (stamp) => void saveScreening(screeningKey, value, stamp).then(afterListSave), erase);
+      (stamp) => void saveScreening(screeningKey, value, stamp).then(saved => afterListSave(saved, stamp)), erase);
   }, [afterListSave, patchScreening]);
 
   const handleSupplementChange = useCallback((
@@ -102,7 +102,7 @@ export function useListSaves(record: RecordPatches, writeRefused: () => void) {
       updatedAt: new Date().toISOString(),
     }));
     listSaves.debounceSave(supplementSaves.current, supplementKey,
-      (erase) => void saveSupplement(supplementKey, supplementName, doseValue, doseUnit, status, startedAt, erase).then(saved => { if (!saved) writeRefused(); }));
+      (erase) => void saveSupplement(supplementKey, supplementName, doseValue, doseUnit, status, startedAt, erase).then(saved => { if (!saved) writeRefused(erase); }));
   }, [writeRefused, patchSupplement]);
 
   const handleSupplementDelete = useCallback((supplementKey: string) => {
