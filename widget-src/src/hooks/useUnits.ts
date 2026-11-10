@@ -1,7 +1,9 @@
 // The unit system the page shows (US-05): the saved preference, else one
 // detected from the browser, and each field's own unit where the person
 // switched it (kept on this device). A record's saved unit system wins at load
-// and on a re-read, held while anything is being typed (useHeldUnits).
+// and on a re-read, held while a field has the focus (useHeldUnits).
+// `startUnitOf(field)`: this device's unit for a field as the page started,
+// before the record's applied: a matrix draft cell kept with no unit was typed in it.
 import { useCallback, useMemo, useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import { FIELD_METRIC_MAP } from '@roadmap/health-core/mappings';
@@ -23,10 +25,12 @@ function loadUnitOverrides(): Record<string, UnitSystem> {
 
 export function useUnits(setInputs: Dispatch<SetStateAction<Partial<HealthInputs>>>, rootRef: RefObject<HTMLElement | null>) {
   // Unit system: load saved preference or auto-detect
-  const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => loadUnitPreference() ?? detectUnitSystem());
+  const [start] = useState(() => ({ system: loadUnitPreference() ?? detectUnitSystem(), overrides: loadUnitOverrides() }));
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>(start.system);
+  const startUnitOf = useCallback((field: string) => start.overrides[field] ?? start.system, [start]);
 
   // Per-field unit overrides (persisted to localStorage)
-  const [unitOverrides, setUnitOverrides] = useState(loadUnitOverrides);
+  const [unitOverrides, setUnitOverrides] = useState(start.overrides);
 
   // Toggle a single field's unit override
   const handleToggleFieldUnit = useCallback((field: string) => {
@@ -73,8 +77,8 @@ export function useUnits(setInputs: Dispatch<SetStateAction<Partial<HealthInputs
       saveUnitPreference(unitPref);
     }
   }, []);
-  // Shown at load; offered by a re-read, and held while anything is typed (hooks/useHeldUnits).
-  const { showUnits, offerUnits, onMatrixHolds } = useHeldUnits(applySavedUnitSystem, unitSystem, rootRef);
+  // Shown at load; offered by a re-read, and held while a field has the focus (hooks/useHeldUnits).
+  const { showUnits, offerUnits } = useHeldUnits(applySavedUnitSystem, unitSystem, rootRef);
 
-  return { unitSystem, unitOverrides, metricUnitOverrides, handleToggleFieldUnit, handleUnitSystemChange, showUnits, offerUnits, onMatrixHolds };
+  return { unitSystem, unitOverrides, startUnitOf, metricUnitOverrides, handleToggleFieldUnit, handleUnitSystemChange, showUnits, offerUnits };
 }
