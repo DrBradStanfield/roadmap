@@ -583,6 +583,22 @@ describe('US-62 AC25b: the weight or year that ends the onboarding lands once it
     expect(document.activeElement).toBe(box);
   });
 
+  it('a save refused during the last weight\'s wait spends the landing, though the re-read brings the four answers back', async () => {
+    const alert = vi.fn();
+    vi.stubGlobal('alert', alert);
+    const view = await weightLast();
+    await addMeasurement('weight', 80, '2026-09-01'); // another device's weight; the page is not told yet
+    await flushRoadmapStore();
+    refuse.next = true; // the next profile save is refused
+    type(q(view, '#heightCm'), '171'); // a profile edit: its save runs 500 ms after the last change
+    type(q(view, '#weightKg'), '25'); // the last answer; may become 250: an 800 ms wait
+    await waitFor(() => expect(alert).toHaveBeenCalledWith(WRITE_REFUSED), { timeout: 2000 });
+    expect(landed()).toBe(false); // refused within the wait
+    await settle(900);
+    expect(fullForm(view)).toBe(true); // the re-read holds the four answers, with no keystroke here
+    expect(landed()).toBe(false);
+  });
+
   it('h: the chat proposing the last weight lands nothing, and a weight typed after does not land', async () => {
     const view = await weightLast();
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());

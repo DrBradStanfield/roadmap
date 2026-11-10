@@ -107,8 +107,9 @@ export interface Onboarding {
   rested: () => void;
   /** The focus left the landing field, or it unmounted holding the focus (AC25b). */
   left: () => void;
-  /** A change this tab did not make: another writer's, or a refused save's re-read. */
-  clearAnswered: () => void;
+  /** A change this tab did not make: another writer's (it spares a landing awaiting its rest), or a
+   *  refused save's re-read (`spend`: this tab's own answer failed, so it spends one, as leaving does). */
+  clearAnswered: (spend?: boolean) => void;
   /** The focus left About you's card. Says whether it moves low, so the caller can measure before it does. */
   profileLeft: () => boolean;
   dismissPlanReady: () => void;
@@ -197,10 +198,10 @@ export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded
   }, [send]);
   const rested = useCallback(() => send(ref.current!, { type: 'settled', complete: stageRef.current === 4 }), [send]);
   const left = useCallback(() => send(ref.current!, { type: 'left' }), [send]);
-  const clearAnswered = useCallback(() => {
+  const clearAnswered = useCallback((spend = false) => {
     const rec = ref.current!;
     rec.answered = false;
-    send(rec, { type: 'foreign' });
+    send(rec, { type: spend ? 'left' : 'foreign' });
   }, [send]);
   const profileLeft = useCallback(() => {
     if (stageRef.current !== 4 || low.current) return false;
