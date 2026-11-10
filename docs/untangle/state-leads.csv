@@ -1,0 +1,37 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+D1,onboarding,"""Once per record"" was coded five ways; the landing was lost after an erase in the tab",bug,done,hooks/useOnboarding.ts keeps one record object keyed on the shown erase,1114;1115,no
+D2,onboarding,The answered mark outlived an erase,bug,done,The mark is per record in hooks/useOnboarding.ts,1117,no
+D3,onboarding,The stage-4 leave gate sat in two files,hidden link,done,One gate; InputPanel takes one onboarding prop,1168,no
+D4,onboarding,The landing gate was split over two files and three flags,implicit state,done,"useOnboarding owns Landing (open, awaiting, spent) with a pure transition and a table test",1175,no
+D5,onboarding,The erase identity had two sources,hidden link,done,The hook reads React shownErase only,1175,no
+D6,onboarding,Another device finishing the answers leaves About you at the top,behaviour,decided: leave,Brad 2026-11-10; pinned in HealthTool.onboarding-pins.test.tsx,1114,no
+D7,onboarding,vitalsLeft is state copied from a prop,note,no change needed,Intended,,no
+R1,record read,A remote change did not apply the record's unit system,bug,done,hooks/useHeldUnits.ts holds the change while anything typed is unsaved (US-34 AC7); every blood draft cell keeps its unit,1135;1147,no
+R2,record read,A change between the mount read and the listener could wait until next focus,possible bug,done,"Relay, listener and apply sit in one hook",1155,no
+R3,record read,A comment claimed the waiting save lands first; it only starts,note,cannot tell,Not rechecked after 1155,,no
+R4,record read,Mirror written twice; labEgfr computed twice,surplus,done,hooks/useRecordReads.ts with one mirror write,1133,no
+R5,record read,Dead generation counter in refreshLabValues,surplus,done,Removed with useRecordReads,1133,no
+R6,record read,Lists may be empty on the first commit for a returning user,possible bug,cannot tell,Needs a WebKit check,,no
+R7,record read,Refused-write cycle broken only by a forwarding ref,hidden link,cannot tell,Not rechecked after 1155,,no
+R8,record read,A refused re-read bypassed the relay,bug,done,The apply goes through the relay hook,1155,no
+R9,record read,No new A/B conversion after an erase in the tab,behaviour,decided: leave,Brad 2026-11-10 (US-01 AC7),1130,no
+R10,record read,A relay was built on every render,surplus,done,Built once in useRecordReads,1133,no
+P1,plan view,The glow stuck when a change was undone mid-glow,bug,done,hooks/useHighlights.ts holds one Glow phase (US-07 AC3),1150;1169,no
+P2,plan view,Per-record PDF state outlived an erase from elsewhere,bug,done,usePlanView is keyed on shownErase (US-09 AC19),1161,no
+P3,plan view,The email capture survived an erase until reload,behaviour,done,"PlanPdf.tsx useEmailCaptureState.reset() (startState) runs when usePlanView's shownErase moves; the box returns and the pulse stops (US-09 AC19, Brad 2026-11-10). Pinned by ResultsPanel.skip-gate.test.tsx ""an erase resets the email capture""; reset() also releases the send claim (a per-send token), so a send pending at the erase can neither block the fresh box nor write its answer into it (""a send pending at the erase"")",1189,no
+P4,plan view,Another device's email capture is not seen until reload,latent,not started,State is read once per mount,,no
+P5,plan view,The send guard was per mount,bug,done,The guard holds when the PDF box moves (US-18 AC7),1154,no
+P6,plan view,Save as PDF waited for a save before opening the window,behaviour,done,"PlanPdf.tsx usePlanPrint.handlePrint starts onSaveLongitudinal without awaiting it; the save stays (US-16 AC1, US-03 AC3). Pinned by ResultsPanel.skip-gate.test.tsx ""a save that never resolves: the print window still opens""",1189,no
+P7,plan view,The first suggestion after an empty plan never glowed,behaviour,done,"hooks/useHighlights.ts transition(): a held phase while the cards are hidden (HealthTool fullForm) or PlanPdf.tsx emailPulses() is true; a hold begun mid-glow takes the glow's plan as the baseline; the new cards glow once the email is given; an empty baseline glows (US-07 AC3, Brad 2026-11-10 reading B). Pinned by useHighlights.test.tsx (transition table), ResultsPanel.highlight-hold.test.tsx and HealthTool.first-glow.test.tsx",1189,no
+P8,plan view,Nothing says a send is running after a refused window,minor,not started,,,no
+P9,plan view,Two print paths share no guard,note,no change needed,Never both on screen,,no
+U1,upload,Dead done-screen error count,surplus,done,hooks/useUploadFlow.ts names the phases,1152;1153,no
+U2,upload,One fact held twice: a ref and a flag,implicit state,done,The mode is one union in lib/upload-flow-state.ts with a pure transition and a table test,1153;1181,no
+U3,upload,"""Review, save failed"" had no name",implicit state,done,saveFailed is a state in lib/upload-flow-state.ts,1153;1181,no
+U4,upload,Connect panel could hide a read error,latent,not started,Not reachable today: the backend changes only on reload,,no
+U5,upload,Error-boundary Cancel does nothing during a save,latent,not started,Needs a render throw during a save,,no
+U6,upload,A quota refusal fires no upload_outcome,behaviour,awaits Brad,US-12 AC10 covers only runs past the quota check,,yes
+U7,upload,A session finished while hidden reopens on the done screen,behaviour,awaits Brad,,,yes
+U8,upload,A pick past 200 files drops the rest with no notice,known gap,awaits Brad,US-12 AC9,,yes
+U9,upload,Cancel during a read fires no upload_outcome,behaviour,awaits Brad,US-12 AC10,,yes
+H4,composition,"A chat value revealed in a matrix on a phone saved on the next tap outside, without Save",bug,done,"lib/useSaveOnLeave.ts arms only on the user's own act: a press, typing or Tab (US-16 AC1a); checked by the US-16 AC1a tests in HealthTool.phone-handoffs.test.tsx",1187,no

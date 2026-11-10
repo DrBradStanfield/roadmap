@@ -581,7 +581,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   }), [hasLipidInput, hasWeightInput, medications, screenings, planBasis, inputs.sex, unitOverrides, unitSystem]);
 
   const plan = usePlanView({
-    results, shownErase, isValid, tiles, forms,
+    results, shownErase, isValid, tiles, forms, cardsShown: fullForm, // US-07 AC3: MyHealth draws the cards only then
     hasUnsavedLongitudinal: hasApiResponse && LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined),
     onSaveLongitudinal: handleSaveLongitudinal,
     showEmailCapture: emailCaptureActive,

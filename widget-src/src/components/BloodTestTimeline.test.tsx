@@ -1016,6 +1016,7 @@ describe('US-03 AC5 — the matrix commits when you leave it', () => {
     const m = matrix();
     const ldl = m.cell('LDL Cholesterol');
     act(() => ldl.focus());
+    fireEvent.keyUp(ldl, { key: 'Tab' }); // Tab lands here: the user is in (US-16 AC1a)
     fireEvent.change(ldl, { target: { value: '3.2' } });
     act(() => m.dateCell.focus()); // Tab
     fireEvent.click(m.dateCell); // Enter or Space

@@ -6,7 +6,6 @@ import { flushSync } from 'react-dom';
 import { getReportHtml, sendGuestReport, getReportEmailCaptured, markReportEmailCaptured, getShownErase } from '../lib/roadmap-data';
 import { trackABConversion, trackProductEvent } from '../lib/server-api';
 import { EMAIL_REGEX } from '../lib/email';
-import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { getSkipEmailGate } from '../lib/assistant-config';
 
 // 'skipped' + 'reminded' are US-44's funnel-page states: the block skips the
@@ -61,7 +60,7 @@ interface PlanPrint {
   printing: boolean;
   /** Build the report and open its window; the capture's print calls this directly. */
   printReport: (at: PdfButton) => Promise<void>;
-  /** Save as PDF: saves the pending values first, one press at a time. */
+  /** Save as PDF: starts the pending values' save without waiting for it, one press at a time. */
   handlePrint: (at: PdfButton) => Promise<void>;
   /** An erase forgets the window this record opened. */
   forget: () => void;
@@ -71,7 +70,8 @@ interface PlanPrint {
  * Save as PDF's state (US-18 AC6, US-09 AC19). Its states, each its own flag because
  * they overlap:
  * - idle: nothing running (`printStatus` 'idle').
- * - saving the pending values: Save as PDF awaits onSaveLongitudinal (`printStatus` 'loading').
+ * - Save as PDF running (`printStatus` 'loading'): it starts onSaveLongitudinal without
+ *   waiting, then builds the report.
  * - building the report: the hidden copy drawn inside the click while getReportHtml
  *   copies it (`printing`, synchronous; still 'loading' under Save as PDF).
  * - the last window refused at a button (`pdfBlocked`): the last try's outcome, emptied
@@ -104,11 +104,10 @@ export function usePlanPrint(hasPlan: boolean, hasUnsavedLongitudinal?: boolean,
   const handlePrint = async (at: PdfButton) => {
     if (printStatus === 'loading') return;
     setPrintStatus('loading');
-    setPdfBlocked(null); // before the save's await, for the same reason
-    // Include pending longitudinal values in the locally generated report.
-    if (hasUnsavedLongitudinal && onSaveLongitudinal) {
-      try { await onSaveLongitudinal(); } catch { /* proceed with saved data */ }
-    }
+    // US-03 AC3: the press saves what the fields hold, but never waits for it (Brad
+    // 2026-11-10): the report copies the page as drawn, and the window must open
+    // inside the click or a popup blocker refuses it.
+    if (hasUnsavedLongitudinal && onSaveLongitudinal) onSaveLongitudinal().catch(() => { /* a failed save never stops the PDF */ });
     await printReport(at);
     setPrintStatus('idle');
   };
@@ -137,6 +136,14 @@ export function pdfBox({ planned, adult, emailCapture, state, gateSkipped, shopi
     email: emailCapture ? emailBox(state, gateSkipped) : null,
     save: planned && (!shopify || state === 'captured' || gateSkipped || !adult),
   };
+}
+
+/**
+ * The gate email box pulses at the form's last step (US-07 AC3, P7 Brad 2026-11-10):
+ * the PDF save field comes first, so no plan card glows while it pulses.
+ */
+export function emailPulses(email: EmailBox, formStage: number | undefined): boolean {
+  return email === 'gate' && formStage === 4;
 }
 
 /**
@@ -169,20 +176,27 @@ interface EmailCaptureState {
   state: GuestEmailState; setState: (s: GuestEmailState) => void; gateSkipped: boolean;
   /** The box's typing, kept here without a re-render, so the box moving (the full form opening) keeps it. */
   draft: React.MutableRefObject<string>;
-  sending: React.MutableRefObject<boolean>; // US-18 AC7: one send at a time, kept here for the same reason.
+  /** US-18 AC7: one send at a time, kept here for the same reason. The claim is the
+   *  send's own token, so an erase (reset) can release it and orphan that send. */
+  sending: React.MutableRefObject<object | null>;
+  /** US-09 AC19: an erase the screen shows starts the new record's capture afresh. */
+  reset: () => void;
+}
+
+/** What a record's capture starts as, at mount and after an erase. A record already
+ *  captured (the flag lives in their own cloud) skips the email box. */
+function startState(gateSkipped: boolean): GuestEmailState {
+  return getReportEmailCaptured() ? 'captured' : gateSkipped ? 'skipped' : 'idle';
 }
 
 export function useEmailCaptureState(): EmailCaptureState {
   // US-44: the page decides, once per mount. Never written to the record.
   const [gateSkipped] = useState(getSkipEmailGate);
-  // Returning local-first users who already captured: skip the email box and
-  // land straight on the "Save as PDF" view (the flag lives in their own cloud).
-  const [state, setState] = useState<GuestEmailState>(
-    () => (getReportEmailCaptured() ? 'captured' : gateSkipped ? 'skipped' : 'idle'),
-  );
+  const [state, setState] = useState<GuestEmailState>(() => startState(gateSkipped));
   const draft = useRef('');
-  const sending = useRef(false);
-  return { state, setState, gateSkipped, draft, sending };
+  const sending = useRef<object | null>(null);
+  const reset = () => { setState(startState(gateSkipped)); draft.current = ''; sending.current = null; };
+  return { state, setState, gateSkipped, draft, sending, reset };
 }
 
 /** The box's own typing, in the PDF box, so a keystroke re-renders the box alone. */
@@ -193,17 +207,25 @@ function useGuestEmailCapture(printReport: () => Promise<void>, { state, setStat
   const helperText = LOCAL_FIRST_EMAIL_HELPER;
   // US-18 AC7: the button is disabled while sending, but Enter reaches here too.
 
+  // US-09 AC19: a send still pending at an erase belongs to the erased record. The
+  // erase releases its claim, so the fresh box can send, and the old send's answer
+  // no longer reaches the box (its setters below go quiet once the claim is gone).
   const handleSubmit = async () => {
     if (sending.current) return;
-    sending.current = true;
+    const claim = {};
+    sending.current = claim;
+    const mine = () => sending.current === claim;
     try {
-      await submit();
+      await submit({
+        setState: (s) => { if (mine()) setState(s); },
+        setEmailError: (e) => { if (mine()) setEmailError(e); },
+      });
     } finally {
-      sending.current = false;
+      if (mine()) sending.current = null;
     }
   };
 
-  const submit = async () => {
+  const submit = async ({ setState, setEmailError }: { setState: (s: GuestEmailState) => void; setEmailError: (e: string) => void }) => {
     const trimmed = email.trim();
     if (!trimmed || !EMAIL_REGEX.test(trimmed)) {
       setEmailError('Please enter a valid email address');
@@ -311,7 +333,7 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
   if (box === 'reminders') return <ReminderSignup hook={hook} />;
 
   return (
-    <div className={`email-capture no-print${formStage === 4 ? ' field-attention' : ''}`}>
+    <div className={`email-capture no-print${emailPulses(box, formStage) ? ' field-attention' : ''}`}>
       <p className="email-guest-helper">{helperText}</p>
       <div className="email-capture-row">
         <input
@@ -340,13 +362,12 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
 
 /** My health's PDF box (US-62 AC26): the email box, or Save as PDF. It owns the box's typing, so a
  *  keystroke re-renders the box alone. Null when neither shows. */
-export function PlanPdf({ planned, adult, emailCapture, formStage, capture, printStatus, pdfBlocked, onPrint, onCapturePrint }: {
-  planned: boolean; adult: boolean; emailCapture: boolean; formStage?: number; capture: EmailCaptureState;
+export function PlanPdf({ mode, formStage, capture, printStatus, pdfBlocked, onPrint, onCapturePrint }: {
+  mode: ReturnType<typeof pdfBox>; formStage?: number; capture: EmailCaptureState;
   printStatus: 'idle' | 'loading'; pdfBlocked: PdfButton | null; onPrint: (at: PdfButton) => void; onCapturePrint: () => Promise<void>;
 }) {
   const guestEmailHook = useGuestEmailCapture(onCapturePrint, capture);
   const printLabel = printStatus === 'loading' ? 'Loading...' : 'Save as PDF';
-  const mode = pdfBox({ planned, adult, emailCapture, state: capture.state, gateSkipped: capture.gateSkipped, shopify: SHOPIFY_SURFACE });
   const box = mode.email && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />;
   if (!box && !mode.save) return null;
   return (

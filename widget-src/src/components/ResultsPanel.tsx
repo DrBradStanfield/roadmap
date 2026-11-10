@@ -19,7 +19,7 @@ import { getMarketCountry } from '../lib/market-country';
 import { observeVisibility } from '../lib/observe-visibility';
 import { ColumnHeader } from './ColumnHeader';
 import { GroupedSuggestionCard, NO_HIGHLIGHTS, QuickStats, SuggestionCard, type Highlights, type OpenEvidence } from './PlanCards';
-import { PlanPdf, storagePulse, useEmailCaptureState, usePlanPrint } from './PlanPdf';
+import { emailPulses, pdfBox, PlanPdf, storagePulse, useEmailCaptureState, usePlanPrint } from './PlanPdf';
 import { useHighlights } from '../hooks/useHighlights';
 
 /** The plan's view on My health (US-62 AC17-AC26): its cards by topic (health-core's
@@ -111,15 +111,23 @@ interface PlanViewOptions {
   onSaveLongitudinal?: () => Promise<unknown>;
   showEmailCapture?: boolean;
   formStage?: number;
+  /** The plan's cards are on screen (the onboarding hides them until the whole form opens). */
+  cardsShown: boolean;
   alcoholQuestion?: AlcoholQuestion;
 }
 
-export function usePlanView({ results, shownErase, isValid, tiles, forms, hasUnsavedLongitudinal, onSaveLongitudinal, showEmailCapture, formStage, alcoholQuestion }: PlanViewOptions): PlanView {
-  const highlights = useHighlights(results?.suggestions);
-
+export function usePlanView({ results, shownErase, isValid, tiles, forms, hasUnsavedLongitudinal, onSaveLongitudinal, showEmailCapture, formStage, cardsShown, alcoholQuestion }: PlanViewOptions): PlanView {
   const { printStatus, pdfBlocked, pdfOpened, printing, printReport, handlePrint, forget } = usePlanPrint(!!results, hasUnsavedLongitudinal, onSaveLongitudinal);
 
   const capture = useEmailCaptureState();
+  const planned = isValid && !!results;
+  // US-07 AC6: a known minor is never asked for an email (either box joins the
+  // mailing list). Their PDF is the gate-skipped page's Save as PDF (US-44 AC2).
+  const adult = planned && !results.knownMinor;
+  const pdfMode = pdfBox({ planned, adult, emailCapture: !!showEmailCapture && adult, state: capture.state, gateSkipped: capture.gateSkipped, shopify: SHOPIFY_SURFACE });
+  // US-07 AC3 (P7): no card glows, and the glow learns nothing, while the cards are
+  // hidden or the PDF email box pulses.
+  const highlights = useHighlights(results?.suggestions, !cardsShown || emailPulses(pdfMode.email, formStage));
   const [opened, setOpened] = useState<ReadonlySet<string>>(NO_HIGHLIGHTS);
   const toggleEvidence = useCallback((key: string) => setOpened(was => {
     const next = new Set(was);
@@ -129,12 +137,14 @@ export function usePlanView({ results, shownErase, isValid, tiles, forms, hasUns
   const evidence = useMemo(() => ({ opened, toggle: toggleEvidence }), [opened, toggleEvidence]);
   // US-09 AC19: any erase the screen shows forgets them: this tab's, one whose
   // write failed but still erased, or another device's once re-read. The email
-  // capture is kept (a same-tab erase keeps its captured view until reload).
+  // capture starts afresh too (Brad 2026-11-10), and the PDF box below remounts,
+  // so the typed address and its error go with the erased record.
   const [erase, setErase] = useState(shownErase);
   if (erase !== shownErase) {
     setErase(shownErase);
     forget();
     setOpened(NO_HIGHLIGHTS);
+    capture.reset();
   }
 
   // US-61 AC5: Brad's products for a known adult in the US, on the Shopify build only.
@@ -176,13 +186,9 @@ export function usePlanView({ results, shownErase, isValid, tiles, forms, hasUns
   // US-09 AC19: the storage button's pulse.
   const attention = storagePulse({ shopify: SHOPIFY_SURFACE, state: capture.state, gateSkipped: capture.gateSkipped, knownMinor: !!results?.knownMinor, pdfOpened });
 
-  const planned = isValid && !!results;
-  // US-07 AC6: a known minor is never asked for an email (either box joins the
-  // mailing list). Their PDF is the gate-skipped page's Save as PDF (US-44 AC2).
-  const adult = planned && !results.knownMinor;
   const report = planned && printing && <PlanReport tiles={tiles} sections={sections} alcoholQuestion={alcoholQuestion}/>;
   const pdf = (
-    <PlanPdf planned={planned} adult={adult} emailCapture={!!showEmailCapture && adult} formStage={formStage} capture={capture}
+    <PlanPdf key={shownErase} mode={pdfMode} formStage={formStage} capture={capture}
              printStatus={printStatus} pdfBlocked={pdfBlocked} onPrint={handlePrint} onCapturePrint={() => printReport('capture')}/>
   );
   const foot = <PlanFoot planned={planned}/>;

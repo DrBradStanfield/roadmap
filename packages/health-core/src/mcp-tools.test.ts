@@ -54,6 +54,7 @@ import {
 } from './mcp-tools';
 import { computePlan, renderJson, REPO_PUBLIC, REPO_SLUG, REPO_URL, SCHEMA_URL } from './plan';
 import { dayOf, mergeFiles, stampFields } from './merge';
+import { scrubText } from './sentry-scrub';
 import { migrateFile } from './migrate';
 import { createCoreRow } from './blood-tests';
 import { createEmptyFile, createLabValue, createMeasurement, type FileDocument, type RoadmapFile } from './roadmap-file';
@@ -1307,6 +1308,63 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       expect(outcome.text, detail).toContain('file name');
     }
     expect(reportFeedback({ ...GOOD, title: 'upload of Jane Doe results.pdf fails' }, NOW).status).toBe('rejected');
+  });
+
+  // US-32 AC58: every guard pattern is linear on a long run. The tool's schema
+  // caps the text near 2,100 characters, but reportFeedback itself takes any
+  // length. Each row is the worst case for one pattern: a long run of its own
+  // characters with nothing that completes a match. None holds contact details
+  // or a value, so the guard passes it and the URL cap refuses it as too long.
+  it('US-32 AC58 — judges the worst long run for each guard pattern quickly', () => {
+    for (const [name, detail] of [
+      ['plain letters', 'a'.repeat(200_000)],
+      ['email', 'a'.repeat(100_000) + '@' + 'a'.repeat(100_000)],
+      ['file name', 'a.'.repeat(100_000)],
+      ['value with unit', '1'.repeat(200_000)],
+      ['value with unit, decimal', '1.' + '2'.repeat(199_998)],
+      ['url with query', 'http://'.repeat(28_572)],
+      ['phone', '1' + ' '.repeat(199_998) + 'x'],
+    ] as const) {
+      const started = performance.now();
+      const outcome = reportFeedback({ ...GOOD, detail }, NOW);
+      expect(performance.now() - started, name).toBeLessThan(1000);
+      expect(outcome, name).toMatchObject({ status: 'rejected' });
+      expect(outcome, name).not.toHaveProperty('reason');
+      expect(outcome.text, name).toContain('too long');
+    }
+  });
+
+  it('US-32 AC58 — the linear patterns refuse what they refused before', () => {
+    for (const detail of [
+      `${'x'.repeat(296)}.pdf would not import`,
+      `it broke at https://example.invalid/${'p'.repeat(1900)}?token=abc`,
+    ]) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW), detail).toMatchObject({ status: 'rejected', reason: 'contact' });
+    }
+    expect(reportFeedback({ ...GOOD, detail: 'weight shows 81 kg twice' }, NOW))
+      .toMatchObject({ status: 'rejected', reason: 'health-value', text: expect.stringContaining('“81 kg”') });
+    // A run longer than any real number is still quoted whole.
+    const digits = '1'.repeat(20);
+    expect(reportFeedback({ ...GOOD, detail: `it saved ${digits} kg` }, NOW))
+      .toMatchObject({ status: 'rejected', reason: 'health-value', text: expect.stringContaining(`“${digits} kg”`) });
+  });
+
+  it('US-32 AC58 — refuses an address exactly when the Sentry scrubber would redact one', () => {
+    for (const [detail, isAddress] of [
+      ['reply to synthetic@example.invalid', true],
+      ['one@example.invalid,two@example.invalid', true],
+      [`${'x'.repeat(64)}@example.invalid`, true],
+      [`${'x'.repeat(65)}@example.invalid`, true],
+      ['the @ sign broke the parser at a@b', false],
+      // No real domain is longer than 253 characters. The old unbounded copy
+      // called this an address; the scrubber's rule does not.
+      [`x@${'a'.repeat(256)}.invalid`, false],
+      ['the reminder arrived late', false],
+    ] as const) {
+      expect(scrubText(detail).includes('[email]'), detail).toBe(isAddress);
+      const outcome = reportFeedback({ ...GOOD, detail }, NOW);
+      expect(outcome.status === 'rejected' && outcome.reason === 'contact', detail).toBe(isAddress);
+    }
   });
 
   it('lets through what a bug report is actually made of', () => {
