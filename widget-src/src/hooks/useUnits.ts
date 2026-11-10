@@ -74,7 +74,7 @@ export function useUnits(setInputs: Dispatch<SetStateAction<Partial<HealthInputs
     }
   }, []);
   // Shown at load; offered by a re-read, and held while anything is typed (hooks/useHeldUnits).
-  const { showUnits, offerUnits, onDraftsHold } = useHeldUnits(applySavedUnitSystem, unitSystem, rootRef);
+  const { showUnits, offerUnits, onDraftsChanged } = useHeldUnits(applySavedUnitSystem, unitSystem, rootRef);
 
-  return { unitSystem, unitOverrides, metricUnitOverrides, handleToggleFieldUnit, handleUnitSystemChange, showUnits, offerUnits, onDraftsHold };
+  return { unitSystem, unitOverrides, metricUnitOverrides, handleToggleFieldUnit, handleUnitSystemChange, showUnits, offerUnits, onDraftsChanged };
 }

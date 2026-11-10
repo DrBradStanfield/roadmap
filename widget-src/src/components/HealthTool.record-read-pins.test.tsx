@@ -68,14 +68,22 @@ const TODAY = localDay(new Date());
 const calls = (name: string) => tracked.calls.filter(([n]) => n === name).map(([, m]) => m);
 const conversions = () => vi.mocked(trackABConversion).mock.calls.length;
 const stops: Array<() => void> = [];
+/** The window's width as the page's media queries read it: a desktop, until a test turns it into a phone. */
+const viewport = { mobile: false, listeners: new Set<(e: { matches: boolean }) => void>() };
+/** The window resized or turned across 768 px: the page moves its form between the phone's tab and the desktop's column. */
+const turn = (mobile: boolean) => act(() => { viewport.mobile = mobile; for (const l of [...viewport.listeners]) l({ matches: mobile }); });
 
 beforeEach(async () => {
   tracked.calls = [];
   refuse.next = false;
   vi.mocked(trackABConversion).mockClear();
   localStorage.clear(); sessionStorage.clear();
+  viewport.mobile = false;
+  viewport.listeners.clear();
   vi.stubGlobal('matchMedia', (q: string) => ({
-    matches: !q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {},
+    get matches() { return q.includes('max-width') ? viewport.mobile : true; }, media: q,
+    addEventListener(_: string, l: (e: { matches: boolean }) => void) { if (q.includes('max-width')) viewport.listeners.add(l); },
+    removeEventListener(_: string, l: (e: { matches: boolean }) => void) { viewport.listeners.delete(l); },
   }));
   vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('Synthetic test: no network'); }));
   Element.prototype.scrollIntoView ??= () => {};
@@ -321,8 +329,26 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
     await waitFor(async () => expect((await ldlRow(view)).textContent).toContain('mg/dL'), { timeout: 3000 });
   });
 
-  it('US-11 AC6: a remote erase while a field is focused still applies at once: the form empties', async () => {
-    await completeRecord();
+  it('US-04 AC1, US-34 AC7: a draft held across a turn of the phone keeps the units held: the LDL saves as mmol/L (PR 1135 B1)', async () => {
+    await siRecord();
+    const view = await open();
+    typeInto(await ldlDraft(view), '3.5');
+    act(() => { (document.activeElement as HTMLElement | null)?.blur(); }); // the focus off, the draft holding text
+    await toConventional();
+    await settle(50);
+    expect((await ldlRow(view)).textContent).toContain('mmol/L'); // held
+    turn(true); // the form moves into the phone's tab: InputPanel mounts again
+    await settle(50);
+    turn(false);
+    await settle(50);
+    typeInto(await ldlDraft(view), '3.5');
+    press(q(view, '.alr-add-btn') as HTMLElement);
+    await waitFor(async () => expect(await activeLdl()).toHaveLength(1), { timeout: 3000 });
+    expect(await activeLdl()).toEqual([3.5]);
+  });
+
+  it('US-11 AC6: a remote erase while a field is focused still applies at once: the form empties, and the erased record\'s units show', async () => {
+    await siRecord();
     const view = await open();
     type(q(view, '#heightCm'), '171'); // focused, unsaved
     // Another device erases the record, as its deleteUserData writes it.
@@ -336,6 +362,8 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
     erased.erasedRows = { fromEpoch: epoch, ids: [...new Set(rowRootIds(prior))].sort() };
     erased.meta.eraseEpoch = epoch;
     erased.meta.erasedAt = now;
+    // The erasing device then chose US units in its new record: they show at once, never held.
+    erased.profile = { ...erased.profile, unitSystem: 'conventional', updatedAt: now };
     await adapter.write(ROADMAP_FILE_NAME, erased, version);
     await act(async () => { window.dispatchEvent(new StorageEvent('storage', { key: null })); });
     // The saved answers and the weight go. (The focused height box keeps its own typed
@@ -343,5 +371,6 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
     await waitFor(() => expect((q(view, '#birthYear') as HTMLInputElement | null)?.value ?? '').toBe(''), { timeout: 3000 });
     expect(view.queryByRole('radio', { name: 'Female', checked: true })).toBeNull();
     expect(await activeWeights()).toEqual([]);
+    expect(q(view, '#heightFeet')).toBeTruthy(); // the height in ft/in, though the cm box had the focus
   });
 });
