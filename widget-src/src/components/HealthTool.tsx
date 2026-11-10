@@ -31,8 +31,6 @@ import { useIsMobile, useIsWideDesktop } from '../lib/useIsMobile';
 import { BottomTabBar, panelDomId, tabDomId, type TabId } from './BottomTabBar';
 import {
   saveToLocalStorage,
-  loadFromLocalStorage,
-  patchMirror,
   clearLocalStorage,
 } from '../lib/storage';
 import {
@@ -44,9 +42,6 @@ import {
   clearOffFileAfterErase,
   flushRoadmapStoreSync,
   loadLatestMeasurementsSync,
-  loadAllHistory,
-  loadAllHistorySync,
-  loadLabValues,
   loadDerivedSeries,
   moveBloodTest,
   previewMove,
@@ -65,6 +60,7 @@ import { useOnboarding } from '../hooks/useOnboarding';
 import { useErase } from '../hooks/useErase';
 import { useProfileSave } from '../hooks/useProfileSave';
 import { useListSaves } from '../hooks/useListSaves';
+import { useRecordReads, mirrorRecord } from '../hooks/useRecordReads';
 import { useTabs } from '../hooks/useTabs';
 import { useUnits } from '../hooks/useUnits';
 import { useLongitudinalSave, countedCorrection } from '../hooks/useLongitudinalSave';
@@ -148,47 +144,14 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // The unit system and each field's own unit (hooks/useUnits, US-05).
   const { unitSystem, unitOverrides, metricUnitOverrides, handleToggleFieldUnit, handleUnitSystemChange, applySavedUnitSystem } = useUnits(setInputs);
 
-  // Load additional lab values on mount (AdditionalLabRows surfaces them
-  // under the matrix — US-21 phase 1) and refresh when the upload modal
-  // opens (review-matrix dedup/context columns). Was modal-open-only while
-  // the review matrix was the sole consumer; the mount load was missing and
-  // the lab-rows section rendered empty (caught by live WebKit verification
-  // 2026-08-07). Generation counter discards stale overlapping responses.
-  const labValuesFetchGen = useRef(0);
-  const refreshLabValues = useCallback(() => {
-    const myGen = ++labValuesFetchGen.current;
-    return loadLabValues().then(rows => {
-      // Skip null (API error) so we don't blank cached history.
-      if (rows && myGen === labValuesFetchGen.current) {
-        setLabValueHistory(rows);
-        // A lab eGFR added by hand reaches the other chats too (US-07 AC7).
-        const labEgfr = labEgfrOf(rows);
-        const cached = loadFromLocalStorage();
-        if (cached && JSON.stringify(cached.labEgfr) !== JSON.stringify(labEgfr)) patchMirror({ labEgfr });
-      }
-    }).catch(() => {});
-  }, []);
+  // The page's reads of the record: the values, both matrices, the lab rows (hooks/useRecordReads).
+  const { reloadValues, refreshLabValues, loadHistory } = useRecordReads({ setPreviousMeasurements, setHistory, setLabValueHistory });
+  // The lab rows on mount (AdditionalLabRows shows them under the matrix,
+  // US-21), and again when the upload modal opens or closes (its review
+  // matrix dedups against them).
   useEffect(() => {
     refreshLabValues();
   }, [showUploadModal, refreshLabValues]);
-
-  const loadHistory = () => loadAllHistory().then(setHistory);
-
-  // Re-read every value the page shows from the store: the plan's latest
-  // values, both matrices, the lab rows and so the chat context. Every save
-  // and correction ends here, so nothing reads a patched copy that could
-  // disagree with the record. Hands back what it read.
-  const reloadValues = useCallback(async () => {
-    const result = await loadLatestMeasurements();
-    if (result) {
-      setPreviousMeasurements(result.previousMeasurements);
-      // The storefront chat embed reads this mirror; keep it in step too.
-      saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined, labEgfrOf(await loadLabValues() ?? []),
-        newestUsablePsa(loadAllHistorySync(), new Date()));
-    }
-    await Promise.all([refreshLabValues(), loadHistory()]);
-    return result;
-  }, [refreshLabValues]);
 
   // The erase the screen shows, and this tab's own erase (hooks/useErase.ts).
   // The chat's banners (a profile proposal, a medication Undo) go when the
@@ -233,8 +196,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
         // doesn't block the first render).
         loadHistory();
         // Keep the legacy mirror available to the separate storefront chat embed.
-        saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined, labEgfrOf(await loadLabValues() ?? []),
-          newestUsablePsa(loadAllHistorySync(), new Date()));
+        await mirrorRecord(result);
       } else {
         // Nothing on record: a new visitor, or another device erased it. The
         // bubble and the embed must not keep sending the old copy (US-11).
