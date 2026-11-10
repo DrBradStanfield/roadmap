@@ -163,8 +163,11 @@ describe('US-09 AC6c: connect diagnostics are closed-list tags and fixed text', 
 
   it('app.tsx reports both OAuth returns through reportConnectFailure, never raw', () => {
     const source = readFileSync(new URL('./app.tsx', import.meta.url), 'utf8');
-    expect(source).not.toMatch(/Sentry\.captureException/);
-    expect(source).not.toMatch(/console\.\w+\([^)]*\berror\b/);
+    const boot = readFileSync(new URL('./boot.ts', import.meta.url), 'utf8'); // main()'s first part
+    for (const text of [source, boot]) {
+      expect(text).not.toMatch(/Sentry\.captureException/);
+      expect(text).not.toMatch(/console\.\w+\([^)]*\berror\b/);
+    }
     expect(source.match(/reportConnectFailure\(error, '(dropbox|google-drive)'\)/g)).toHaveLength(2);
   });
 });
