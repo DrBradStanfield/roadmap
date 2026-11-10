@@ -603,6 +603,14 @@ describe('screeningsToInputs', () => {
     }
   });
 
+  it.each(LAST)('US-06/US-15 AC11: %s reads the injected now, not the clock (A2-1)', (key, field) => {
+    for (const [now, thisMonth, nextMonth] of CLOCKS) {
+      const at = (value: string) => screeningsToInputs([{ screeningKey: key, value }], new Date(now))[field];
+      expect(at(nextMonth), now).toBeUndefined();
+      expect(at(thisMonth), now).toBe(thisMonth);
+    }
+  });
+
   it('covers every date key: six "last done", five follow-up', async () => {
     const { SCREENING_KEYS } = await import('./validation');
     const dates = SCREENING_KEYS.filter(k => k.endsWith('_date')).sort();
