@@ -8,7 +8,8 @@
 //                                 Bash writes (sed -i, >, cp) are NOT covered.
 //   Stop                          in a linked worktree, block ending the turn (once) while work is uncommitted,
 //                                 unpushed, or pushed with neither an open PR nor a merge into origin/main. While
-//                                 a background subagent of this session runs, uncommitted files are skipped.
+//                                 a background subagent, teammate or workflow of this session runs, uncommitted
+//                                 files are skipped.
 //   SessionStart                  report local worktrees holding unlanded work, uncommitted files in the main
 //                                 checkout, and merged worktrees not yet removed (with their worktree-done line,
 //                                 or "in use" when used in the last day).
@@ -191,8 +192,11 @@ if (event === 'PreToolUse') {
 // AC25). Claude wakes the session when the task ends, and the next Stop checks again. No list (an older Claude
 // Code, or the task registry unreachable) means none running: the check stays as before.
 const WORKER_TYPES = new Set(['subagent', 'teammate', 'workflow']);
+// The list holds in-flight tasks only, and the docs fix no status values, so any status counts except a plainly
+// finished one (re-check N1: matching only "running" would silently bring the nag back on a new word).
+const DONE_STATUS = new Set(['completed', 'failed', 'killed', 'cancelled', 'canceled', 'stopped', 'error']);
 const workerRunning = () => Array.isArray(input.background_tasks) && input.background_tasks.some((t) =>
-  t && WORKER_TYPES.has(t.type) && (t.status === 'running' || t.status === 'pending'));
+  t && WORKER_TYPES.has(t.type) && !DONE_STATUS.has(t.status));
 
 if (event === 'Stop') {
   if (!inWorktree || input.stop_hook_active) process.exit(0);

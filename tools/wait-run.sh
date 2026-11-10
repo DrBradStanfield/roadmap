@@ -7,8 +7,8 @@
 #   sh tools/wait-run.sh pr <number>       wait until no check is pending; print pass/fail counts, the head sha
 #                                          and mergeability
 #
-# Exit: 0 success; 1 the run or a check failed, or healthz is not 200; 2 usage; 3 gave up (WAIT_RUN_MAX_MIN,
-# default 90, or 10 gh errors in a row). Polls every WAIT_RUN_INTERVAL seconds (default 30). Plain POSIX sh,
+# Exit: 0 success; 1 the run or a check failed, or healthz is not 200; 2 usage; 3 gave up (WAIT_RUN_MAX_MIN of
+# wall-clock time, default 90, or 10 gh errors in a row). Polls every WAIT_RUN_INTERVAL seconds (default 30). Plain POSIX sh,
 # gh's own --jq (no jq needed). Run it in the background (run_in_background) so the session is woken when it ends.
 set -u
 mode=${1:-}; id=${2:-}
@@ -16,12 +16,13 @@ interval=${WAIT_RUN_INTERVAL:-30}
 max_s=$(( ${WAIT_RUN_MAX_MIN:-90} * 60 ))
 healthz=${WAIT_RUN_HEALTHZ:-https://health-tool-app.fly.dev/healthz}
 case "$id" in ''|*[!0-9]*) mode=bad ;; esac
+case "$interval$max_s" in *[!0-9]*) mode=bad ;; esac
 case "$mode" in
   deploy|pr) ;;
   *) echo "usage: sh tools/wait-run.sh deploy <run-id> | pr <number>" >&2; exit 2 ;;
 esac
 
-waited=0; errors=0
+start=$(date +%s); errors=0
 # Poll until `$1` prints "done"; gh errors are retried, not fatal (a network blip must not end the wait).
 poll() {
   while :; do
@@ -32,8 +33,10 @@ poll() {
       errors=$((errors + 1))
       if [ "$errors" -ge 10 ]; then echo "gave up: 10 gh errors in a row" >&2; exit 3; fi
     fi
+    # Wall-clock, so slow gh calls count too. One gh call that hangs is not cut short (macOS has no `timeout`).
+    waited=$(( $(date +%s) - start ))
     if [ "$waited" -ge "$max_s" ]; then echo "gave up after $((waited / 60)) min; still not finished" >&2; exit 3; fi
-    sleep "$interval"; waited=$((waited + interval))
+    sleep "$interval"
   done
 }
 

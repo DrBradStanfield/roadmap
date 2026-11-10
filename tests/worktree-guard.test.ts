@@ -235,10 +235,12 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
     expect(tasks('subagent', 'running')).toBeNull();
     expect(tasks('teammate', 'pending')).toBeNull();
     expect(tasks('workflow', 'running')).toBeNull();
+    expect(tasks('subagent', 'in_progress')).toBeNull(); // an unlisted status word still counts (re-check N1)
     // A shell or monitor task edits nothing; a finished subagent no longer counts; an empty list is none.
     expect(tasks('shell', 'running')?.reason).toMatch(/uncommitted/);
     expect(tasks('monitor', 'running')?.reason).toMatch(/uncommitted/);
     expect(tasks('subagent', 'completed')?.reason).toMatch(/uncommitted/);
+    expect(tasks('subagent', 'failed')?.reason).toMatch(/uncommitted/);
     expect(hook({ hook_event_name: 'Stop', cwd: WT, background_tasks: [] })?.reason).toMatch(/uncommitted/);
     expect(hook({ hook_event_name: 'Stop', cwd: WT, background_tasks: 'junk' })?.reason).toMatch(/uncommitted/);
   });

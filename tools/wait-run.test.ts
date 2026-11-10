@@ -79,5 +79,6 @@ describe('wait-run.sh (US-64 AC26)', () => {
     expect(run(['deploy', 'abc']).status).toBe(2);
     expect(run(['watch', '1']).status).toBe(2);
     expect(run([]).status).toBe(2);
+    expect(run(['deploy', '1'], { WAIT_RUN_INTERVAL: 'x' }).status).toBe(2);
   });
 });
