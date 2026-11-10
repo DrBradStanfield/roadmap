@@ -36,7 +36,7 @@ interface ChatEditsDeps {
   unitSystem: UnitSystem;
   /** The store holds an erase the screen does not show (US-16 AC2a). */
   eraseUnshown: () => boolean;
-  handleInputChange: <K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem) => void;
+  handleInputChange: <K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem, fromChat?: boolean) => void;
   handleMedicationChange: (medicationKey: string, drugName: string, doseValue: number | null, doseUnit: string | null) => void;
   /** A medication's save still waits on its timer. */
   medicationWaiting: (key: string) => boolean;
@@ -80,7 +80,7 @@ export function useChatEdits({
       // height, US-62 AC13): that edit goes to the visible field.
       const filled = routeVitalsEdit(!!vitalsPrefillRef.current) === 'matrix'
         && vitalsPrefillRef.current!(metric, edit.displayValue, edit.unitSystem, edit.date) !== null;
-      if (!filled) handleInputChange(edit.field, toCanonicalValue(metric, edit.displayValue, edit.unitSystem), edit.unitSystem);
+      if (!filled) handleInputChange(edit.field, toCanonicalValue(metric, edit.displayValue, edit.unitSystem), edit.unitSystem, true);
       return filled;
     }
     // Blood-test metrics → the timeline matrix's draft/backfill cell.
