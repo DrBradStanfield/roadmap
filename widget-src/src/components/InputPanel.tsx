@@ -94,6 +94,7 @@ interface InputPanelProps {
   onUnitSystemChange: (system: UnitSystem) => void;
   unitOverrides: Record<string, UnitSystem>;
   onToggleFieldUnit: (field: string) => void;
+  startUnitOf: (field: string) => UnitSystem; // this device's units before the record's (useUnits), for kept drafts with no unit
   previousMeasurements: ApiMeasurement[];
   bloodTestHistory: ApiMeasurement[];
   /** Full vitals history (weight / waist / sys-BP / dia-BP). Same source
@@ -157,7 +158,6 @@ interface InputPanelProps {
   aboutYouLow: boolean;
   /** The focus left the Starting Info card: HealthTool moves About you low if all four answers hold. */
   onProfileLeft?: () => void;
-  onMatrixHolds?: (matrix: 'vitals' | 'blood', holds: boolean) => void; // a matrix's own draft holds typed text, or no longer: HealthTool holds the record's units meanwhile (US-04 AC1)
   setShowUploadModal?: (show: boolean) => void;
   /** What the plan was computed from. Null until there is a plan (no valid
    *  sex or height). */
@@ -175,7 +175,7 @@ interface InputPanelProps {
 
 export function InputPanel({
   children, inputs, effectiveInputs, onChange: updateField, errors: allErrors, unitSystem, onUnitSystemChange,
-  unitOverrides, onToggleFieldUnit,
+  unitOverrides, onToggleFieldUnit, startUnitOf,
   previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
   onCorrectValue, moveTest, onDraftValue,
   medications, onMedicationChange,
@@ -186,7 +186,7 @@ export function InputPanel({
   bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
   formStage, reached, fullForm, aboutYouLow, onProfileLeft,
   setShowUploadModal, planBasis, grading,
-  onOnboardingDone, revealCell = null, onMatrixHolds,
+  onOnboardingDone, revealCell = null,
 }: InputPanelProps) {
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
   // Number boxes holding text the browser could not read ("175,500" gives "" with
@@ -281,7 +281,6 @@ export function InputPanel({
   // (US-62 AC11). Each grid reports what it keeps.
   const [draftedVitals, setDraftedVitals] = useState(false);
   const [draftedBlood, setDraftedBlood] = useState(false);
-  const holds = (matrix: 'vitals' | 'blood', set: (h: boolean) => void) => (h: boolean) => { set(h); onMatrixHolds?.(matrix, h); };
   const unsavedCue = (shown: boolean) => !tableShown && shown && (
     <button type="button" className="md-unsaved" onClick={() => showTable(true)}>Unsaved values: review</button>
   );
@@ -874,14 +873,14 @@ export function InputPanel({
         onSave={onSaveBloodTestBatch}
         onCorrectValue={onCorrectValue}
         onDraftValue={onDraftValue}
-        onHoldsText={holds('vitals', setDraftedVitals)}
+        onHoldsText={setDraftedVitals}
         formStage={formStage}
         plan={planBasis}
         knownMinor={knownMinor}
         onOnboardingDone={onOnboardingDone}
         withoutWeight={weightInProfile}
         unitOverrides={unitOverrides}
-        onToggleFieldUnit={onToggleFieldUnit}
+        onToggleFieldUnit={onToggleFieldUnit} startUnitOf={startUnitOf}
         prefillRef={vitalsPrefillRef}
         flushRef={vitalsFlushRef}
       />
@@ -996,12 +995,12 @@ export function InputPanel({
       bloodTestHistory={bloodTestHistory}
       unitSystem={unitSystem}
       unitOverrides={unitOverrides}
-      onToggleFieldUnit={onToggleFieldUnit}
+      onToggleFieldUnit={onToggleFieldUnit} startUnitOf={startUnitOf}
       onSaveBatch={onSaveBloodTestBatch}
       onCorrectValue={onCorrectValue}
       move={move.headers}
       onDraftValue={onDraftValue}
-      onHoldsText={holds('blood', setDraftedBlood)}
+      onHoldsText={setDraftedBlood}
       isSaving={isSavingLongitudinal}
       grading={grading}
       onUploadClick={() => setShowUploadModal?.(true)}

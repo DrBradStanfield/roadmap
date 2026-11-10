@@ -38,13 +38,15 @@ import {
   validateTypedValue,
 } from '../lib/blood-test-cell';
 import { VITALS_DRAFT_KEY } from '../lib/storage';
+import { BP_DIA_MAX, BP_DIA_MIN, BP_SYS_MAX, BP_SYS_MIN, FIELD_OF, vitalsCellsOf, type VitalsKey } from '../lib/vitals-cells';
 import { describedBy } from '../lib/aria';
 import { useDraftMirror, useMatrixDraft, type CellRef } from '../lib/useMatrixDraft';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { useRangeWait } from '../lib/useRangeWait';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { usePrefillRef } from '../lib/usePrefillRef';
-import { Sparkline, ValueCell, BatchDateCell, BackfillCell, saveErrorText, SAVE_FAILED, SAME_SLOT, useLiveRegion } from './BloodTestTimeline';
+import { Sparkline, ValueCell, BatchDateCell, saveErrorText, SAVE_FAILED, SAME_SLOT, useLiveRegion } from './BloodTestTimeline';
+import { BackfillCell } from './MatrixInputCells';
 import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
 import { UnitChip } from './UnitChip';
@@ -86,6 +88,8 @@ interface StartingInfoVitalsProps {
    *  just that metric's display unit (kg ↔ lbs, cm ↔ inches). */
   unitOverrides: Record<string, UnitSystem>;
   onToggleFieldUnit: (field: string) => void;
+  /** This device's unit for a field before the record's applied (useUnits): a kept cell with no unit was typed in it. */
+  startUnitOf?: (field: string) => UnitSystem;
   /** When provided, the matrix exposes an imperative `prefill(metric, value,
    *  fromUnit, date)` so the chatbot can inject a vitals value into the
    *  draft/backfill cell (highlighted, for the user to Save). Mirrors
@@ -132,26 +136,6 @@ const ROWS: RowConfig[] = [
 
 function isoOnly(s: string): string { return s.slice(0, 10); }
 
-// ── Blood-pressure helpers (atomic sys+dia pair) ─────────────────────────
-// BP is a two-field value: a save must commit systolic AND diastolic together
-// or neither. These ranges gate both what each half lends the plan and the
-// chat (useDraftMirror) and the commit, so a mid-typed half (the "8" of
-// "120 / 80") never stands in, and a half-entered pair never lands.
-const BP_SYS_MIN = 60, BP_SYS_MAX = 250;
-const BP_DIA_MIN = 40, BP_DIA_MAX = 150;
-
-/** True only when both fields hold a valid, in-physiological-range number,
- *  the right way up (US-02 AC8) — the gate that stops a commit from saving a
- *  half-entered or swapped BP pair. */
-export function bpPairReady(sys: string, dia: string): boolean {
-  const s = parseLocalisedNumber(sys);
-  const d = parseLocalisedNumber(dia);
-  return (
-    s != null && s >= BP_SYS_MIN && s <= BP_SYS_MAX &&
-    d != null && d >= BP_DIA_MIN && d <= BP_DIA_MAX && s > d
-  );
-}
-
 // ── Per-date model ───────────────────────────────────────────────────────
 // One column per distinct date. Each column carries the SI value + row id for
 // every vital recorded that day (sparse — a date may hold only a weight).
@@ -194,42 +178,11 @@ export function buildColumns(rows: ApiMeasurement[]): DateColumn[] {
   return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
 
-/** What is typed in a vitals cell: a weight, a waist, or one half of a
- *  blood pressure (sys and dia share one cell). */
-type VitalsKey = 'weight' | 'waist' | 'sys' | 'dia';
-/** The field each one lends (useDraftMirror). */
-const FIELD_OF = { weight: 'weightKg', waist: 'waistCm', sys: 'systolicBp', dia: 'diastolicBp' } as const;
-
-/** One column's typed vitals (the draft's, or a saved column's empty cells)
- *  as the cells a commit saves: a weight, a waist, a BP pair committed
- *  together (mmHg is stored as typed). `values` (SI, by metric) is null for a
- *  cell that cannot be saved as it stands: out of range, not a number, or
- *  half a pair. Exported for unit testing. */
-export function vitalsCellsOf(
-  typed: Partial<Record<VitalsKey, string>>,
-  unitFor: (metric: 'weight' | 'waist') => UnitSystem,
-): Array<{ keys: VitalsKey[]; values: Record<string, number> | null }> {
-  const cells: Array<{ keys: VitalsKey[]; values: Record<string, number> | null }> = [];
-  for (const metric of ['weight', 'waist'] as const) {
-    const text = typed[metric];
-    if (!text) continue;
-    const unit = unitFor(metric);
-    const ok = !validateTypedValue(metric, text, unit).error;
-    cells.push({ keys: [metric], values: ok ? { [metric]: toCanonicalValue(metric, readTypedValue(metric, text, unit)!, unit) } : null });
-  }
-  const { sys = '', dia = '' } = typed;
-  if (sys || dia) {
-    const ok = bpPairReady(sys, dia);
-    cells.push({ keys: ['sys', 'dia'], values: ok ? { systolic_bp: parseLocalisedNumber(sys)!, diastolic_bp: parseLocalisedNumber(dia)! } : null });
-  }
-  return cells;
-}
-
 // ── Component ───────────────────────────────────────────────────────────
 
 export function StartingInfoVitals({
   vitalsHistory, unitSystem, onSave, onCorrectValue,
-  onDraftValue, formStage, plan, knownMinor, onOnboardingDone, withoutWeight, unitOverrides, onToggleFieldUnit,
+  onDraftValue, formStage, plan, knownMinor, onOnboardingDone, withoutWeight, unitOverrides, onToggleFieldUnit, startUnitOf,
   prefillRef, flushRef, onHoldsText,
 }: StartingInfoVitalsProps) {
   const rows = withoutWeight ? ROWS.filter(r => r.kind !== 'simple' || r.metric !== 'weight') : ROWS;
@@ -275,7 +228,8 @@ export function StartingInfoVitals({
   const {
     holdsText,
     draft, backfills, type, setDate, unitOf, expected, clashes, taken, lends, settle, refusal,
-  } = useMatrixDraft<VitalsKey>(VITALS_DRAFT_KEY, { onScreen, rowsUnder, latestDay, cellOf: key => (key === 'dia' ? 'sys' : key) });
+  } = useMatrixDraft<VitalsKey>(VITALS_DRAFT_KEY, { onScreen, rowsUnder, latestDay, cellOf: key => (key === 'dia' ? 'sys' : key),
+    legacyUnit: key => (key === 'weight' || key === 'waist' ? startUnitOf?.(FIELD_OF[key]) : undefined) });
   // No weight typed here while its row is hidden (the weight shows beside the
   // height): a restored or earlier draft goes, so nothing unseen is lent to
   // the plan or saved (US-62 AC13).
