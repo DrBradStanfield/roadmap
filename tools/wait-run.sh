@@ -9,12 +9,17 @@
 #
 # Exit: 0 success; 1 the run or a check failed, a final read failed, or healthz is not 200; 2 usage; 3 gave up
 # (WAIT_RUN_MAX_MIN of wall-clock time, default 90, or 10 gh errors in a row; each gh call is cut off at 60 s).
-# Polls every WAIT_RUN_INTERVAL seconds (default 30). Plain POSIX sh plus perl (macOS ships it) for the per-call
-# limit, and gh's own --jq (no jq needed). Run it in the background (run_in_background) so the session is woken
-# when it ends.
+#
+# Cheap on purpose: many sessions run this at once on one GitHub account, and on 2026-11-10 they spent the
+# 5000/hour REST limit (US-64 AC26). Each poll is ONE gh call: deploy reads the run over REST, pr reads the checks
+# over GraphQL (a separate budget). Polls every WAIT_RUN_INTERVAL seconds (default 60, never less), every 120 s
+# after 10 min and every 300 s after 30 min. Every 10th poll, and after a gh error, it reads `gh api rate_limit`
+# (free); with under 200 left it sleeps until the reset instead of polling. Plain POSIX sh plus perl (macOS ships
+# it) for the per-call limit, and gh's own --jq (no jq needed). Run it in the background (run_in_background) so
+# the session is woken when it ends.
 set -u
 mode=${1:-}; id=${2:-}
-interval=${WAIT_RUN_INTERVAL:-30}
+interval=${WAIT_RUN_INTERVAL:-60}
 max_s=$(( ${WAIT_RUN_MAX_MIN:-90} * 60 ))
 healthz=${WAIT_RUN_HEALTHZ:-https://health-tool-app.fly.dev/healthz}
 case "$id" in ''|*[!0-9]*) mode=bad ;; esac
@@ -23,11 +28,39 @@ case "$mode" in
   deploy|pr) ;;
   *) echo "usage: sh tools/wait-run.sh deploy <run-id> | pr <number>" >&2; exit 2 ;;
 esac
+[ "$interval" -ge 60 ] || interval=60
 
-start=$(date +%s); errors=0
+start=$(date +%s); errors=0; polls=0
 # Every gh call gets WAIT_RUN_GH_TIMEOUT seconds (default 60; perl's alarm, since macOS has no `timeout`), so a
 # stuck request counts as a gh error instead of hanging the wait.
 gh() { perl -e 'alarm shift; exec @ARGV' "${WAIT_RUN_GH_TIMEOUT:-60}" gh "$@"; }
+# Wall-clock, so slow gh calls count too.
+give_up_if_late() {
+  waited=$(( $(date +%s) - start ))
+  if [ "$waited" -ge "$max_s" ]; then echo "gave up after $((waited / 60)) min; still not finished" >&2; exit 3; fi
+}
+# Sleep one interval, longer the longer we have waited. If the REST or GraphQL budget is nearly spent, sleep until
+# it resets instead, never past the time limit.
+nap() {
+  polls=$((polls + 1))
+  if [ $((polls % 10)) -eq 1 ] || [ "$errors" -gt 0 ]; then
+    low=$(gh api rate_limit --jq '[.resources.core, .resources.graphql] | min_by(.remaining) | "\(.remaining) \(.reset)"' 2>/dev/null)
+    left=${low% *}; reset=${low#* }
+    case "$left$reset" in ''|*[!0-9]*) ;; *)
+      if [ "$left" -lt 200 ]; then
+        s=$(( reset - $(date +%s) + 5 )); cap=$(( max_s - waited ))
+        [ "$s" -le "$cap" ] || s=$cap
+        [ "$s" -ge 1 ] || s=1
+        echo "GitHub rate limit low ($left left); sleeping ${s}s until it resets" >&2
+        sleep "$s"; return
+      fi ;;
+    esac
+  fi
+  s=$interval
+  if [ "$waited" -ge 1800 ]; then [ "$s" -ge 300 ] || s=300
+  elif [ "$waited" -ge 600 ]; then [ "$s" -ge 120 ] || s=120; fi
+  sleep "$s"
+}
 # Poll until `$1` prints "done"; gh errors are retried, not fatal (a network blip must not end the wait).
 poll() {
   while :; do
@@ -38,20 +71,19 @@ poll() {
       errors=$((errors + 1))
       if [ "$errors" -ge 10 ]; then echo "gave up: 10 gh errors in a row" >&2; exit 3; fi
     fi
-    # Wall-clock, so slow gh calls count too.
-    waited=$(( $(date +%s) - start ))
-    if [ "$waited" -ge "$max_s" ]; then echo "gave up after $((waited / 60)) min; still not finished" >&2; exit 3; fi
-    sleep "$interval"
+    give_up_if_late
+    nap
   done
 }
 
-run_state() { gh run view "$id" --json status --jq 'if .status == "completed" then "done" else .status end'; }
-# `gh pr checks` exits non-zero while checks pend or fail, so read only its output. No checks yet = still pending,
-# as long as the PR itself answers (a wrong number or no network counts as a gh error).
+# One REST request per poll.
+run_state() { gh api "repos/{owner}/{repo}/actions/runs/$id" --jq 'if .status == "completed" then "done" else .status end'; }
+# One GraphQL query per poll. No checks yet = still pending; a wrong number or no network is a gh error. A check run
+# pends until COMPLETED, a commit status while PENDING or EXPECTED (as `gh pr checks` buckets them).
 pr_state() {
-  out=$(gh pr checks "$id" --json bucket --jq 'if length > 0 and all(.bucket != "pending") then "done" else "pending" end' 2>/dev/null)
-  [ -n "$out" ] || { gh pr view "$id" --json number >/dev/null 2>&1 || return 1; out=pending; }
-  echo "$out"
+  gh pr view "$id" --json statusCheckRollup --jq '.statusCheckRollup |
+    if length > 0 and all(((.status // "COMPLETED") == "COMPLETED") and .state != "PENDING" and .state != "EXPECTED")
+    then "done" else "pending" end'
 }
 
 if [ "$mode" = deploy ]; then
@@ -78,9 +110,8 @@ while :; do
   summary=$(printf '%s\n' "$checks" | sed -n '1p')
   case "$summary" in pass=*" pending=0") break ;; esac
   # Pending again, or the read failed: wait again, still inside the same time limit.
-  waited=$(( $(date +%s) - start ))
-  if [ "$waited" -ge "$max_s" ]; then echo "gave up after $((waited / 60)) min; still not finished" >&2; exit 3; fi
-  sleep "$interval"
+  give_up_if_late
+  nap
 done
 echo "$checks"
 gh pr view "$id" --json headRefOid,state,mergeable,mergeStateStatus \
