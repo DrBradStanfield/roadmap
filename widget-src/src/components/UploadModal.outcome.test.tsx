@@ -199,7 +199,7 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual({
       picked: 6, withValues: 1, documentOnly: 1, noValues: 1, openFailed: 1,
-      tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0, docx: 0, picturesOnly: 0, undatedPrevious: 0, unitsGuessed: 0, unitsRefused: 0, valuesLimit: 0, valuesLimitUngraded: 0,
+      tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0, docx: 0, picturesOnly: 0, undatedPrevious: 0, unitsGuessed: 0, unitsRefused: 0, valuesLimit: 0, valuesLimitUngraded: 0, cancelled: 0,
     });
     expect(Object.values(outcomes()[0]!).every(Number.isInteger)).toBe(true);
     // A zero is never sent, so a server a deploy behind never meets a new key it would refuse.
@@ -780,5 +780,80 @@ describe('US-12 AC5a: Cancel during a batch upload (20+ files) aborts the batch'
     expect(signal?.aborted).toBe(false);
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(signal?.aborted).toBe(true);
+  });
+});
+
+// US-12 AC9, AC10 (Brad 2026-11-11, U6 U8 U9): the runs that ended without a
+// count, and the files a pick past 200 left out without a word.
+describe('US-12 AC9, AC10: every run counts, and a pick past 200 says what it left out', () => {
+  type Poll = Awaited<ReturnType<typeof pollBatchStatus>>;
+  const LEFT_OUT = (n: number) => `Not read. One upload takes at most 200 files. Upload ${n === 1 ? 'it' : 'them'} separately.`;
+
+  it('US-12 AC10 (U6): a refused quota fires one upload_outcome, each file counted under limitError', async () => {
+    vi.mocked(checkLabImportQuota).mockResolvedValueOnce({ allowed: false, remaining: 0 });
+    render_(); pick(pdf('a.pdf'), pdf('b.pdf'), pdf('huge.pdf', 11 * 1024 * 1024));
+    await screen.findByText('Daily upload limit reached. You can upload more tomorrow.');
+    expect(sent()).toEqual([{ picked: 3, tooLarge: 1, limitError: 2 }]);
+    expect(reasonFor('a.pdf')).toBe('Not read. The daily upload limit was reached.');
+    expect(extractFromPdf).not.toHaveBeenCalled();
+  });
+
+  it('US-12 AC10 (U9): Cancel during a read fires one upload_outcome with cancelled: 1, and the read finishing later adds none', async () => {
+    const finishReads: Array<(r: Import) => void> = [];
+    vi.mocked(labImport).mockImplementation(() => new Promise<Import>(resolve => { finishReads.push(resolve); }));
+    docxToText.mockResolvedValue(docxText('synthetic'));
+    render_(); pick(pdf('a.pdf'), new File(['x'], 'b.docx'), pdf('huge.pdf', 11 * 1024 * 1024));
+    await waitFor(() => expect(labImport).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(sent()).toHaveLength(1));
+    expect(sent()[0]).toEqual({ picked: 3, docx: 1, tooLarge: 1, cancelled: 1 });
+    for (const finish of finishReads) finish(withValues);
+    await new Promise(r => setTimeout(r, 0));
+    expect(sent()).toHaveLength(1);
+  });
+
+  it('US-12 AC10 (U9): Cancel on the review sends nothing more: the read already counted', async () => {
+    render_(); pick(pdf('a.pdf'));
+    await screen.findByDisplayValue('3.9');
+    await waitFor(() => expect(sent()).toHaveLength(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(sent()).toEqual([{ picked: 1, withValues: 1 }]);
+  });
+
+  it('US-12 AC9 (U8): a pick of 202 files reads 200 and says 2 were left out, on the review and done screens, counted under limitError', async () => {
+    vi.mocked(labImportBatch).mockResolvedValue({ batchId: 'batch_abc' });
+    vi.mocked(pollBatchStatus).mockImplementation(async () => ({
+      status: 'ended', completed: 200, total: 200,
+      results: vi.mocked(labImportBatch).mock.calls[0]![0].map((_f, index) => ({ ...withValues.result!, index })),
+    }) as Poll);
+    vi.useFakeTimers();
+    try {
+      render_(); pick(...Array.from({ length: 202 }, (_, i) => pdf(`r${i}.pdf`)));
+      await vi.waitFor(() => expect(labImportBatch).toHaveBeenCalled());
+      await vi.advanceTimersByTimeAsync(5000);
+    } finally { vi.useRealTimers(); }
+    await screen.findAllByDisplayValue('3.9');
+    expect(vi.mocked(labImportBatch).mock.calls[0]![0]).toHaveLength(200);
+    expect(reasonFor('2 more files')).toBe(LEFT_OUT(2));
+    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 202, withValues: 200, limitError: 2 }));
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(reasonFor('2 more files')).toBe(LEFT_OUT(2));
+  });
+
+  it('US-12 AC9 (U8): the error screen says it too', async () => {
+    vi.mocked(checkLabImportQuota).mockResolvedValueOnce({ allowed: false, remaining: 0 });
+    render_(); pick(...Array.from({ length: 201 }, (_, i) => pdf(`r${i}.pdf`)));
+    await screen.findByText('Daily upload limit reached. You can upload more tomorrow.');
+    expect(reasonFor('1 more file')).toBe(LEFT_OUT(1));
+    expect(sent()).toEqual([{ picked: 201, limitError: 201 }]);
+  });
+
+  it('US-12 AC9 (U8): a pick of 201 oversize files names the extra one too, and starts no run', () => {
+    render_(); pick(...Array.from({ length: 201 }, (_, i) => pdf(`big${i}.pdf`, 11 * 1024 * 1024)));
+    expect(reasonFor('1 more file')).toBe(LEFT_OUT(1));
+    expect(checkLabImportQuota).not.toHaveBeenCalled();
+    expect(sent()).toEqual([{ picked: 201, tooLarge: 200, limitError: 1 }]);
   });
 });

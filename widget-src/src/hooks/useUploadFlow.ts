@@ -48,16 +48,24 @@ const BYOK_ERROR_MESSAGES: Partial<Record<UploadErrorCode, string>> = {
 export const MAX_FILES = IMPORT_LIMITS.websiteFiles; // also the server's per-IP daily limit (US-12 AC17)
 const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
 const OVER_LIMIT_TEXT = `Not read. It is over the ${MAX_FILES}-file limit for one upload. Upload it separately.`;
+/** The files a pick held past MAX_FILES, one notice that counts them (US-12 AC9). */
+const leftOutNotice = (n: number): FileNotice => ({
+  name: `${n} more file${n === 1 ? '' : 's'}`, reason: 'limitError', count: n,
+  text: `Not read. One upload takes at most ${MAX_FILES} files. Upload ${n === 1 ? 'it' : 'them'} separately.`,
+});
+/** How many picked files a pick's own notices stand for: an oversize file is one, a left-out notice its count. */
+const noticedFiles = (notices: FileNotice[]) => notices.reduce((n, x) => n + (x.count ?? 1), 0);
 
 /** US-12 AC10: one run's counts, integers only. Never a name, unit or value.
  *  `docx` is how many of the picked files were .docx (AC13); `values` holds
  *  value counts: `undatedPrevious` from an undated previous column (AC14),
  *  `unitsGuessed` (AC16), `unitsRefused` (AC15), and the read files' limits
  *  (`uploadLimitSignal`, AC20): `valuesLimit`, `valuesLimitUngraded`, and the
- *  closed-list keys of the ungraded tests, the one non-count. A zero, or an
+ *  closed-list keys of the ungraded tests, the one non-count; `cancelled` a
+ *  read Cancel stopped. A zero, or an
  *  empty list, is never sent: every key is optional, so a server a deploy
  *  behind meets a new key only once it counts something. */
-function trackUploadOutcome(picked: number, withValues: number, docx: number, notices: FileNotice[], values: Partial<Record<'undatedPrevious' | 'unitsGuessed' | 'unitsRefused' | 'valuesLimit' | 'valuesLimitUngraded', number>> = {}, limitUngradedTests: string[] = []): void {
+function trackUploadOutcome(picked: number, withValues: number, docx: number, notices: FileNotice[], values: Partial<Record<'undatedPrevious' | 'unitsGuessed' | 'unitsRefused' | 'valuesLimit' | 'valuesLimitUngraded' | 'cancelled', number>> = {}, limitUngradedTests: string[] = []): void {
   const counts: Partial<Record<UploadOutcomeKey, number>> = { picked, withValues, docx, ...values };
   for (const n of notices) counts[n.reason] = (counts[n.reason] ?? 0) + (n.count ?? 1);
   trackProductEvent('upload_outcome', {
@@ -124,7 +132,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     onClose();
   }, [onClose]);
 
-  const read = async (filesToProcess: File[], tooLarge: FileNotice[], docx: number, run: number) => {
+  const read = async (filesToProcess: File[], pickNotices: FileNotice[], docx: number, run: number) => {
     const abort = new AbortController();
     abortRef.current = abort;
     const updateProgress = (progress: Progress) => {
@@ -132,9 +140,9 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     };
 
     const fileCount = filesToProcess.length;
-    // Every file the run did not fully read, oversize ones first (US-12 AC9).
+    // Every file the run did not fully read, the pick's own first (US-12 AC9).
     // `names` is every other file seen, by whole path: a ZIP's members once it is listed.
-    const runNotices = [...tooLarge];
+    const runNotices = [...pickNotices];
     let names = filesToProcess.map(f => f.name);
     /** The run failed as a whole: each file without a verdict yet gets this one.
      *  Verdicts are matched one for one, so two files on one path count twice. */
@@ -160,13 +168,15 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
         values.unitsRefused += r.refusedValues?.length ?? 0;
       }
       const { limitUngradedTests, ...limits } = uploadLimitSignal(finished.filter(r => !r.error));
-      trackUploadOutcome(tooLarge.length + names.length, withValues, docx, runNotices, { ...values, ...limits }, limitUngradedTests);
+      trackUploadOutcome(noticedFiles(pickNotices) + names.length, withValues, docx, runNotices, { ...values, ...limits }, limitUngradedTests);
     };
 
     try {
       const quota = await checkLabImportQuota();
       if (abort.signal.aborted) return;
       if (!quota.allowed) {
+        failUnread('limitError');
+        finish([]);
         dispatch({ type: 'readFailed', run, message: quota.message ?? 'Daily upload limit reached. You can upload more tomorrow.', notices: runNotices });
         return;
       }
@@ -255,12 +265,16 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     if (!selectedFiles || (phase !== 'picking' && phase !== 'readFailed') || abortRef.current || savingRef.current) return;
     const fileArray = Array.from(selectedFiles).slice(0, MAX_FILES);
     const valid = fileArray.filter(f => f.size <= MAX_FILE_SIZE);
-    const tooLarge = fileArray.filter(f => f.size > MAX_FILE_SIZE).map(f => ({ name: f.name, reason: 'tooLarge' as const }));
+    const leftOut = selectedFiles.length - fileArray.length;
+    const notices: FileNotice[] = [
+      ...fileArray.filter(f => f.size > MAX_FILE_SIZE).map(f => ({ name: f.name, reason: 'tooLarge' as const })),
+      ...(leftOut > 0 ? [leftOutNotice(leftOut)] : []),
+    ];
     const docx = fileArray.filter(isDocx).length;
     const run = ++lastRun.current;
-    dispatch({ type: 'picked', run, files: valid, notices: tooLarge });
-    if (valid.length > 0) void read(valid, tooLarge, docx, run);
-    else if (tooLarge.length > 0) trackUploadOutcome(tooLarge.length, 0, docx, tooLarge);
+    dispatch({ type: 'picked', run, files: valid, notices });
+    if (valid.length > 0) void read(valid, notices, docx, run);
+    else if (notices.length > 0) trackUploadOutcome(noticedFiles(notices), 0, docx, notices);
   };
 
   const save = useCallback(async ({ values: selectedValues, documents, labValues, reviewed }: {
@@ -377,6 +391,12 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       savingRef.current = false;
     }
   }, [onComplete, onScreeningUpdate, history.documents]);
+
+  // A read Cancel stopped, counted once (US-12 AC10): each cancel holds a new object.
+  const cancelledRead = state.phase === 'picking' ? state.cancelledRead : undefined;
+  useEffect(() => {
+    if (cancelledRead) trackUploadOutcome(cancelledRead.files.length + noticedFiles(cancelledRead.notices), 0, cancelledRead.files.filter(isDocx).length, cancelledRead.notices, { cancelled: 1 });
+  }, [cancelledRead]);
 
   // A finished save, counted once with the session's totals (US-12 AC10):
   // each done state holds a new outcome object.

@@ -52,6 +52,9 @@ const PREPARING = { current: 0, total: 100, fileName: 'Preparing upload...' };
 const reset: UploadState = INITIAL_UPLOAD;
 const skipped = (phase: UploadPhase): UploadState => ({ ...STATES[phase], skipArchive: true });
 const reading2: UploadState = { phase: 'reading', run: 2, files: [file], notices: [], progress: PREPARING, skipArchive: false };
+/** US-12 AC10 (U9, 2026-11-11): a Cancel that stops a read keeps what the read
+ *  held, so the hook counts the cancelled run once. */
+const cancelledRead: UploadState = { phase: 'picking', notices: [], cancelledRead: { files: [file], notices: [notice] }, skipArchive: false };
 
 /** The state each event leads to; `same` = ignored, the identical object back. */
 type Next = UploadState | 'same';
@@ -65,7 +68,7 @@ const TABLE: Record<UploadPhase, Record<UploadEvent['type'], Next>> = {
     picked: s, progress: { ...STATES.reading, progress: newProgress } as UploadState,
     readFailed: { phase: 'readFailed', run: RUN, files: [file], notices: [], message: 'Daily upload limit reached.', skipArchive: false },
     read: { phase: 'reviewing', run: RUN, results: [result], notices: [], outcome: NO_OUTCOME, skipArchive: false },
-    cancel: reset, close: s, discard: reset, skipConnect: skipped('reading'), saveStarted: s, saved: s, saveFailed: s,
+    cancel: cancelledRead, close: s, discard: reset, skipConnect: skipped('reading'), saveStarted: s, saved: s, saveFailed: s,
   },
   readFailed: {
     picked: reading2, progress: s, readFailed: s, read: s, cancel: reset, close: reset, discard: reset,
@@ -123,6 +126,13 @@ describe('US-12 AC4, AC6, AC6c — the upload flow transition', () => {
     ])('reading run 1 ignores $type from run 2', event => {
       expect(transition(STATES.reading, event)).toBe(STATES.reading);
     });
+    it.each(['readFailed', 'reviewing'] as const)('US-12 AC10: a Cancel after the read already counted (%s) carries no cancelled read', phase => {
+      expect(transition(STATES[phase], EVENTS.cancel)).toEqual(INITIAL_UPLOAD);
+    });
+    it('US-12 AC10: a new pick after a cancelled read drops it, so it counts once', () => {
+      expect(transition(cancelledRead, EVENTS.picked)).toEqual(reading2);
+      expect(transition(cancelledRead, { type: 'picked', run: 2, files: [], notices: [notice] })).toEqual({ phase: 'picking', notices: [notice], skipArchive: false });
+    });
     it.each(['readFailed', 'reviewing'] as const)('a Cancel from another run leaves %s alone', phase => {
       expect(transition(STATES[phase], { type: 'cancel', run: stale })).toBe(STATES[phase]);
     });
@@ -130,7 +140,7 @@ describe('US-12 AC4, AC6, AC6c — the upload flow transition', () => {
 
   describe('US-12 AC4: the connect-first gate', () => {
     it('cancel keeps a skipped gate skipped', () => {
-      expect(transition(skipped('reading'), EVENTS.cancel)).toEqual({ ...INITIAL_UPLOAD, skipArchive: true });
+      expect(transition(skipped('reading'), EVENTS.cancel)).toEqual({ ...cancelledRead, skipArchive: true });
     });
     it.each(['picking', 'readFailed', 'done'] as const)('close from %s resets the gate', phase => {
       expect(transition(skipped(phase), EVENTS.close)).toEqual(INITIAL_UPLOAD);

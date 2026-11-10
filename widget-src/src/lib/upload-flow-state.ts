@@ -33,6 +33,8 @@ export type Progress = { current: number; total: number; fileName: string };
  * The upload flow, one named phase at a time, each carrying its own data (US-12).
  *
  * - picking: the dropzone. `notices`: an oversize-only pick's tooLarge list.
+ *   `cancelledRead`: the files and notices of a read Cancel stopped, for its
+ *   one `upload_outcome` (US-12 AC10); a new pick or a reset drops it.
  * - reading: the files are being read. Cancel returns to picking; a refusal
  *   or failure goes to readFailed; a finished read goes to reviewing.
  * - readFailed: the dropzone again, with the read's message. A new pick reads again.
@@ -47,7 +49,7 @@ export type Progress = { current: number; total: number; fileName: string };
  * so only from picking, readFailed and done; elsewhere it only hides the work.
  */
 type PhaseState =
-  | { phase: 'picking'; notices: FileNotice[] }
+  | { phase: 'picking'; notices: FileNotice[]; cancelledRead?: { files: File[]; notices: FileNotice[] } }
   | { phase: 'reading'; run: number; files: File[]; notices: FileNotice[]; progress: Progress }
   | { phase: 'readFailed'; run: number; files: File[]; notices: FileNotice[]; message: string }
   | { phase: 'reviewing'; run: number; results: FileResult[]; notices: FileNotice[]; outcome: SaveOutcome }
@@ -97,9 +99,9 @@ export function transition(state: UploadState, event: UploadEvent): UploadState 
         ? { phase: 'reviewing', run: state.run, results: event.results, notices: event.notices, outcome: NO_OUTCOME, skipArchive }
         : state;
     case 'cancel':
-      return ownRun && (state.phase === 'reading' || state.phase === 'readFailed' || state.phase === 'reviewing')
-        ? { ...INITIAL_UPLOAD, skipArchive }
-        : state;
+      if (!ownRun) return state;
+      if (state.phase === 'reading') return { phase: 'picking', notices: [], cancelledRead: { files: state.files, notices: state.notices }, skipArchive };
+      return state.phase === 'readFailed' || state.phase === 'reviewing' ? { ...INITIAL_UPLOAD, skipArchive } : state;
     case 'close':
       return state.phase === 'picking' || state.phase === 'readFailed' || state.phase === 'done' ? INITIAL_UPLOAD : state;
     case 'discard':

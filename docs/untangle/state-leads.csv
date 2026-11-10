@@ -30,10 +30,10 @@ U2,upload,One fact held twice: a ref and a flag,implicit state,done,The mode is 
 U3,upload,"""Review, save failed"" had no name",implicit state,done,saveFailed is a state in lib/upload-flow-state.ts,1153;1181,no
 U4,upload,Connect panel could hide a read error,latent,not started,Not reachable today: the backend changes only on reload,,no
 U5,upload,Error-boundary Cancel does nothing during a save,latent,not started,Needs a render throw during a save,,no
-U6,upload,A quota refusal fires no upload_outcome,behaviour,awaits Brad,US-12 AC10 covers only runs past the quota check,,yes
+U6,upload,A quota refusal fires no upload_outcome,behaviour,done,UploadModal.outcome.test.tsx US-12 AC10 (U6); UploadModal.flow-pins.test.tsx US-12 AC10 refused quota,,no
 U7,upload,A session finished while hidden reopens on the done screen,behaviour,awaits Brad,,,yes
-U8,upload,A pick past 200 files drops the rest with no notice,known gap,awaits Brad,US-12 AC9,,yes
-U9,upload,Cancel during a read fires no upload_outcome,behaviour,awaits Brad,US-12 AC10,,yes
+U8,upload,A pick past 200 files drops the rest with no notice,known gap,done,UploadModal.outcome.test.tsx US-12 AC9 (U8) x3,,no
+U9,upload,Cancel during a read fires no upload_outcome,behaviour,done,UploadModal.outcome.test.tsx US-12 AC10 (U9); upload-flow-state.test.ts reading + cancel; product-events.server.test.ts US-12 AC10 cancelled,,no
 H4,composition,"A chat value revealed in a matrix on a phone saved on the next tap outside, without Save",bug,done,"lib/useSaveOnLeave.ts arms only on the user's own act: a press, typing or Tab (US-16 AC1a); checked by the US-16 AC1a tests in HealthTool.phone-handoffs.test.tsx",1187,no
 H1,composition,"A unit control pressed from a focused field released the held units first, and the click toggled back from them",bug,done,"hooks/units-machine.ts: pressing holds the release until the click and remembers what the person saw; pins: the AC7a H1 tests in HealthTool.record-read-pins.test.tsx (Chrome and Safari order, click two frames late, Height pill, row chip, a chip kept while units are held, the first-time weight pill, a chip mid-load) and units-machine.test.ts",1204,no
 H2,composition,"A unit switch was not dirty for its 500 ms, so a remote change in that window undid it unsaved",bug,done,"hooks/units-machine.ts: switching until saved{s}; the relay holds on units.pending() and the save always writes a pending switch; pins: the AC7a H2 tests in HealthTool.record-read-pins.test.tsx (a remote weight, remote SI units, the toggle-back, an upload re-read, a failed first read)",1204,no

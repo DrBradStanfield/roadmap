@@ -123,7 +123,7 @@ const PROGRESS_MESSAGES = [
 export const MAX_FILE_SIZE = IMPORT_LIMITS.websiteFileMb * 1024 * 1024; // the connector's hint names this number
 
 /** Why a file was not fully read (US-12 AC9). Each is also its `upload_outcome` count. */
-export type FileNoticeReason = Exclude<UploadOutcomeKey, 'picked' | 'withValues' | 'docx' | 'undatedPrevious' | 'unitsGuessed' | 'unitsRefused' | 'valuesLimit' | 'valuesLimitUngraded'>;
+export type FileNoticeReason = Exclude<UploadOutcomeKey, 'picked' | 'withValues' | 'docx' | 'undatedPrevious' | 'unitsGuessed' | 'unitsRefused' | 'valuesLimit' | 'valuesLimitUngraded' | 'cancelled'>;
 /** `name` is the file's whole path, its identity; the list shows it short (`noticeName`).
  *  `count` is how many the notice stands for (values dropped), `unread` the ones that
  *  name their test (US-12 AC19); `text` overrides the reason's. */
