@@ -314,7 +314,7 @@ describe('trending cron tick — US-28 AC6: a failed run leaves the day open', (
     vi.useRealTimers();
   });
 
-  it('re-runs the day on the next tick after a failed run, then ends it once a run succeeds', async () => {
+  async function loadTick() {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-08-27T15:30:00Z')); // 03:30 NZST, 28 Aug
     vi.resetModules();
@@ -325,15 +325,21 @@ describe('trending cron tick — US-28 AC6: a failed run leaves the day open', (
     const { unauthenticated } = await import('../shopify.server');
     const { tryAcquireCronLock } = await import('./supabase.server');
     const Sentry = await import('@sentry/react-router');
-    const adminMock = vi.mocked(unauthenticated.admin);
-    const lockMock = vi.mocked(tryAcquireCronLock);
+    vi.mocked(Sentry.captureException).mockClear();
+    okAdmin.graphql.mockClear();
+    stop = cron.stopTrendingCron;
+    const adminMock = vi.mocked(unauthenticated.admin).mockReset();
+    const lockMock = vi.mocked(tryAcquireCronLock).mockReset();
+    return { cron, adminMock, lockMock, Sentry };
+  }
+
+  it('re-runs the day on the next tick after a failed run, then ends it once a run succeeds', async () => {
+    const { cron, adminMock, lockMock, Sentry } = await loadTick();
     // The lock row names this machine for today, so its own re-acquire wins.
-    lockMock.mockReset().mockResolvedValue(true);
-    adminMock.mockReset()
+    lockMock.mockResolvedValue(true);
+    adminMock
       .mockRejectedValueOnce(new Error('unauthenticated.admin failed'))
       .mockResolvedValue({ admin: okAdmin } as any);
-    vi.mocked(Sentry.captureException).mockClear();
-    stop = cron.stopTrendingCron;
 
     cron.startTrendingCron();
     await vi.advanceTimersByTimeAsync(HOUR_MS); // 04:30: lock won, run fails
@@ -350,5 +356,23 @@ describe('trending cron tick — US-28 AC6: a failed run leaves the day open', (
     await vi.advanceTimersByTimeAsync(HOUR_MS); // 06:30: done for the day
     expect(lockMock).toHaveBeenCalledTimes(2);
     expect(adminMock).toHaveBeenCalledTimes(2);
+  });
+
+  // US-28 AC2 at the trending caller: a lock-acquire rejection leaves the day
+  // unmarked; the next tick re-acquires and runs.
+  it('retries the lock on the next tick after an acquire error, then runs', async () => {
+    const { cron, adminMock, lockMock } = await loadTick();
+    lockMock
+      .mockRejectedValueOnce(new Error('cron lock acquire failed (trending_cron)'))
+      .mockResolvedValue(true);
+    adminMock.mockResolvedValue({ admin: okAdmin } as any);
+
+    cron.startTrendingCron();
+    await vi.advanceTimersByTimeAsync(HOUR_MS); // 04:30: acquire throws
+    expect(adminMock).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(HOUR_MS); // 05:30: re-acquired, runs
+    expect(lockMock).toHaveBeenCalledTimes(2);
+    expect(adminMock).toHaveBeenCalledTimes(1);
   });
 });
