@@ -267,11 +267,10 @@ function castEnum<T extends string>(value: string, valid: readonly T[]): T | und
 
 /** A screening date as stored (YYYY-MM, or YYYY-MM-DD), or undefined unless it
  *  is a real calendar date: `Date` would roll '2020-99' forward into the future
- *  and call the screening up to date. A "last done" date (`lastDoneBy`, today) must
- *  also fall in the current month or before it (the form offers only past months); a follow-up
- *  date may be future, since the form asks when one is scheduled. "Current
- *  month" is the one at UTC+14, the earliest time zone, so the widget (local
- *  time) and the chat server (UTC) agree for every user. */
+ *  and call the screening up to date. A "last done" date must also fall in the month of
+ *  `lastDoneBy` (now) or before it, as the form offers only past months; a follow-up date
+ *  may be future. That month is the one at UTC+14, the earliest time zone, so the widget
+ *  (local time) and the chat server (UTC) agree for every user. */
 function screeningDate(value: string, lastDoneBy?: Date): string | undefined {
   const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(value);
   if (!m) return undefined;
@@ -279,9 +278,8 @@ function screeningDate(value: string, lastDoneBy?: Date): string | undefined {
   const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
   const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
   if (days === undefined || day < 1 || day > days) return undefined;
-  if (!lastDoneBy) return value;
-  const now = new Date(lastDoneBy.getTime() + 14 * 3600_000);
-  return year * 12 + month > now.getUTCFullYear() * 12 + now.getUTCMonth() + 1 ? undefined : value;
+  const now = lastDoneBy && new Date(lastDoneBy.getTime() + 14 * 3600_000);
+  return now && year * 12 + month > now.getUTCFullYear() * 12 + now.getUTCMonth() + 1 ? undefined : value;
 }
 
 // Valid values for each screening enum field (derived from ScreeningInputs in types.ts)

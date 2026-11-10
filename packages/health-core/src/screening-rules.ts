@@ -8,13 +8,13 @@
  *   R  reminders      reminder-schedule.ts screeningSchedule
  *   M  upload gate    types.ts SCREENING_MIN_AGE, isScreeningEligible
  *
- * Rows are pure, JSON-serializable data: no functions. A gate that is not an age
- * or a sex is named (`extraGates`) and its predicate lives in SCREENING_GATES below.
+ * Rows are pure, JSON-serializable data: no functions. What a row names but cannot
+ * hold as data lives once in SCREENING_REFS below: a gate that is not an age or a
+ * sex (`extraGates`), and age-dependent prose (breastByAge, prostateByAge, the
+ * 40-44 breast start card), which a row names with a `ref`.
  * Rules that are logic, not data, stay as named branches in code: the lung
  * follow-up past 80 or below 20 pack-years, the raised-PSA card and its "up to
  * date" suppression, the DEXA result branches, and the endometrial bleeding card.
- * Age-dependent prose (breastByAge, prostateByAge, the 40-44 breast start card)
- * stays in code too; a row names it with a `ref`.
  *
  * Ages: [min, max?], inclusive; a sexed rule gives one range per sex.
  *   cardAges   S and R: when the plan card and the reminder apply.
@@ -27,6 +27,10 @@
  * It will live in the derived ask predicate, as one rule for every row, in the PR
  * that moves F and Q onto this table; it changes behaviour only where today's
  * rows differ, and that PR must show the golden unchanged or name the change.
+ * Nor is the cancer section's own gate, anyScreeningEligible (input-form.ts:371-376):
+ * it opens from 35 with no upper bound, which the union of groupAges cannot build
+ * (colorectal's group stops at 85), so past 85 with no sex the section shows empty.
+ * The same PR keeps it as a named carve-out beside this one, or names the change.
  *
  * The three-file check, by row (evidenceKey -> roadmap_text.html section):
  *   colorectal  screening-colorectal  #cancer-screening, "Colorectal Cancer"
@@ -50,36 +54,37 @@ export type ScreeningId = 'colorectal' | 'breast' | 'cervical' | 'lung' | 'prost
 export type AgeRange = readonly [min: number, max?: number];
 export type Ages = AgeRange | { readonly female: AgeRange; readonly male: AgeRange };
 
-/** A choice option. `months` is its screening interval; `postMonths` and `followup`
- *  apply after an abnormal result whose follow-up is completed. The post-follow-up
- *  interval varies by method (breast: 12 or 24), so it lives on the method, not the result. */
-export interface ScreeningOption {
-  readonly value: string;
-  readonly label: string;
+/** A follow-up's name and what the abnormal result means, as the follow-up card says them. */
+export interface Followup { readonly name: string; readonly abnormalMeans: string }
+
+interface Option { readonly value: string; readonly label: string }
+/** A choice option (a method). `months` is its screening interval. */
+interface Method extends Option {
   readonly months?: number;
-  readonly postMonths?: number;
-  readonly followup?: { readonly name: string; readonly abnormalMeans: string };
   /** The reminder's label when this method is chosen, if not the row's default. */
   readonly reminderLabel?: string;
+  readonly postMonths?: never;
+  readonly followup?: never;
 }
-
-/** A result option. `followup` true opens the follow-up questions and card;
- *  `months` is a result-based interval (DEXA), keyed `${id}_${value}` in SCREENING_INTERVALS. */
-export interface ResultOption {
-  readonly value: string;
-  readonly label: string;
-  readonly followup?: true;
-  readonly months?: number;
-}
+/** A method that carries its follow-up: `postMonths` applies after an abnormal result whose
+ *  follow-up is completed (breast: 12 or 24, so it lives on the method). */
+type MethodWithFollowup = Omit<Method, 'postMonths' | 'followup'> & { readonly postMonths: number; readonly followup: Followup };
+/** A result option. `followup` true opens the follow-up questions and card. */
+interface Result extends Option { readonly followup?: true; readonly postMonths?: never }
+/** A result of a rule whose follow-up is keyed by result: a result-based interval (`months`, keyed
+ *  `${id}_${value}` in SCREENING_INTERVALS), or the result that opens the follow-up and carries it. */
+type KeyedResult =
+  | (Result & { readonly months?: number })
+  | (Option & { readonly followup: Followup; readonly postMonths: number; readonly months?: never });
 
 /** Card text, verbatim. `{due}` is the next-due month ("Mar 2027"); `{packYears}` the answer. */
 export interface CardText { readonly title: string; readonly description: string }
 
-export type Note = { readonly below?: number; readonly above?: number; readonly text: string } | { readonly ref: 'breastByAge' | 'prostateByAge' };
-
 export type GateName = 'lungSmoker' | 'lungPackYears';
+export type NoteRef = 'breastByAge' | 'prostateByAge';
+export type Note = { readonly below?: number; readonly above?: number; readonly text: string } | { readonly ref: NoteRef };
 
-export interface ScreeningRule {
+interface RuleBase {
   readonly id: ScreeningId;
   readonly section: 'cancer-screening' | 'bone-density';
   readonly title: string;
@@ -90,12 +95,10 @@ export interface ScreeningRule {
   readonly uploadMinAge?: number;
   readonly uploadSex?: 'female' | 'male';
   readonly extraGates?: readonly GateName[];
-  readonly choice: { readonly key: string; readonly options: readonly ScreeningOption[] };
   readonly notStarted: string;
   /** Answers asked beside the choice, in SCREENING_KEYS order: before it, or after it (before the date). */
   readonly otherKeys?: { readonly before?: readonly string[]; readonly afterChoice?: readonly string[] };
   readonly dateKey?: string;
-  readonly result?: { readonly key: string; readonly options: readonly ResultOption[] };
   /** Lung keeps its follow-up past the upper age (US-07 AC1g); the pack-years gate is waived too, in code. */
   readonly followupIgnoresUpperAge: boolean;
   readonly reminder?: { readonly category: ReminderCategory; readonly label: string };
@@ -108,7 +111,23 @@ export interface ScreeningRule {
   };
 }
 
-const RESULTS: readonly ResultOption[] = [
+/** The post-follow-up interval and names have one home per rule, and the type says which:
+ *  `followupBy: 'choice'` puts them on the methods, `'result'` (DEXA) on the result that opens
+ *  the follow-up, keyed by every started method. A row cannot state both. */
+export type ScreeningRule = RuleBase & (
+  | {
+    readonly followupBy: 'choice';
+    readonly choice: { readonly key: string; readonly options: readonly (Method | MethodWithFollowup)[] };
+    readonly result?: { readonly key: string; readonly options: readonly Result[] };
+  }
+  | {
+    readonly followupBy: 'result';
+    readonly choice: { readonly key: string; readonly options: readonly Method[] };
+    readonly result: { readonly key: string; readonly options: readonly KeyedResult[] };
+  }
+);
+
+const RESULTS: readonly Result[] = [
   { value: 'normal', label: 'Normal' },
   { value: 'abnormal', label: 'Abnormal', followup: true },
   { value: 'awaiting', label: 'Awaiting results' },
@@ -118,7 +137,7 @@ const resultOf = (id: string) => ({ key: `${id}_result`, options: RESULTS });
 
 export const SCREENING_RULES: readonly ScreeningRule[] = [
   {
-    id: 'colorectal', section: 'cancer-screening', title: 'Colorectal',
+    id: 'colorectal', section: 'cancer-screening', followupBy: 'choice', title: 'Colorectal',
     cardAges: [35, 75], askAges: [35, 75], groupAges: [35, 85], uploadMinAge: 35,
     choice: { key: 'colorectal_method', options: [
       { value: 'fit_annual', label: 'FIT test (annual)', months: 12, postMonths: 36,
@@ -144,7 +163,7 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
     },
   },
   {
-    id: 'breast', section: 'cancer-screening', title: 'Breast', sex: 'female',
+    id: 'breast', section: 'cancer-screening', followupBy: 'choice', title: 'Breast', sex: 'female',
     cardAges: [40], askAges: [40], groupAges: [40], uploadMinAge: 40, uploadSex: 'female',
     choice: { key: 'breast_frequency', options: [
       { value: 'annual', label: 'Annual', months: 12, postMonths: 12,
@@ -165,7 +184,7 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
     },
   },
   {
-    id: 'cervical', section: 'cancer-screening', title: 'Cervical', sex: 'female',
+    id: 'cervical', section: 'cancer-screening', followupBy: 'choice', title: 'Cervical', sex: 'female',
     cardAges: [25, 65], askAges: [25, 65], groupAges: [25], uploadMinAge: 25, uploadSex: 'female',
     choice: { key: 'cervical_method', options: [
       { value: 'hpv_every_5yr', label: 'HPV test every 5 years (preferred)', months: 60, postMonths: 12,
@@ -188,7 +207,7 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
     },
   },
   {
-    id: 'lung', section: 'cancer-screening', title: 'Lung',
+    id: 'lung', section: 'cancer-screening', followupBy: 'choice', title: 'Lung',
     cardAges: [50, 80], askAges: [50, 80], groupAges: [50, 80], uploadMinAge: 50,
     extraGates: ['lungSmoker', 'lungPackYears'],
     choice: { key: 'lung_screening', options: [
@@ -209,7 +228,7 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
     },
   },
   {
-    id: 'prostate', section: 'cancer-screening', title: 'Prostate', sex: 'male',
+    id: 'prostate', section: 'cancer-screening', followupBy: 'choice', title: 'Prostate', sex: 'male',
     cardAges: [45], askAges: [45], groupAges: [45], uploadMinAge: 45, uploadSex: 'male',
     choice: { key: 'prostate_discussion', options: [
       { value: 'not_yet', label: 'Not yet' },
@@ -228,7 +247,7 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
     },
   },
   {
-    id: 'endometrial', section: 'cancer-screening', title: 'Endometrial', sex: 'female',
+    id: 'endometrial', section: 'cancer-screening', followupBy: 'choice', title: 'Endometrial', sex: 'female',
     cardAges: [45], askAges: [45], groupAges: [45],
     choice: { key: 'endometrial_discussion', options: [
       { value: 'not_yet', label: 'Not yet' },
@@ -243,19 +262,19 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
     },
   },
   {
-    id: 'dexa', section: 'bone-density', title: '',
+    id: 'dexa', section: 'bone-density', followupBy: 'result', title: '',
     cardAges: { female: [50], male: [70] }, askAges: { female: [50], male: [70] }, groupAges: { female: [50], male: [70] },
     uploadMinAge: 50,
     choice: { key: 'dexa_screening', options: [
-      { value: 'dexa_scan', label: 'Had a DEXA scan', months: 24, postMonths: 12,
-        followup: { name: 'treatment review', abnormalMeans: 'osteoporosis diagnosed — treatment and monitoring required' } },
+      { value: 'dexa_scan', label: 'Had a DEXA scan', months: 24 },
       NOT_YET_STARTED,
     ] },
     notStarted: 'not_yet_started', dateKey: 'dexa_last_date',
     result: { key: 'dexa_result', options: [
       { value: 'normal', label: 'Normal', months: 60 },
       { value: 'osteopenia', label: 'Osteopenia', months: 24 },
-      { value: 'osteoporosis', label: 'Osteoporosis', followup: true },
+      { value: 'osteoporosis', label: 'Osteoporosis', postMonths: 12,
+        followup: { name: 'treatment review', abnormalMeans: 'osteoporosis diagnosed — treatment and monitoring required' } },
       { value: 'awaiting', label: 'Awaiting results' },
     ] },
     followupIgnoresUpperAge: false,
@@ -270,10 +289,27 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
   },
 ];
 
-/** The named gates' predicates: the one place each lives. */
-export const SCREENING_GATES: Readonly<Record<GateName, (s: ScreeningInputs) => boolean>> = {
+/** Everything a row names but cannot hold as data, each in one place: the gates (`extraGates`)
+ *  and the age-dependent prose (a note's or a card's `ref`). screening-rules.test.ts checks each
+ *  against today's code at every age. */
+export const SCREENING_REFS: { readonly [K in GateName]: (s: ScreeningInputs) => boolean }
+  & { readonly [K in NoteRef]: (age: number) => string } & { readonly breastStart: (age: number) => CardText } = {
   lungSmoker: (s) => s.lungSmokingHistory === 'former_smoker' || s.lungSmokingHistory === 'current_smoker',
   lungPackYears: (s) => s.lungPackYears !== undefined && s.lungPackYears >= LUNG_PACK_YEARS,
+  breastByAge: (age) => age <= 44
+    ? 'Annual mammograms are optional at your age (40–44).'
+    : age <= 54
+      ? 'Annual mammograms are recommended at your age (45–54).'
+      : 'Annual or biennial mammograms are recommended at your age (55+).',
+  prostateByAge: (age) => age < 50
+    ? 'Screening typically starts at 50, but consider at 45 if you are at higher risk (African American or family history).'
+    : 'PSA testing is an option after an informed discussion with your doctor.',
+  breastStart: (age) => ({
+    title: 'Start breast cancer screening',
+    description: age >= 45
+      ? 'Mammography is recommended at your age. Discuss with your doctor.'
+      : 'Mammography is optional at your age (40\u201344). Discuss with your doctor.',
+  }),
 };
 
 /** Whether `age` (and `sex`) fall in a row's ages. A sexed range needs a sex. */
@@ -289,39 +325,44 @@ export function inAges(ages: Ages, age: number, sex: string | undefined): boolea
 // yet; screening-rules.test.ts proves each deep-equals the constant it replaces.
 // ---------------------------------------------------------------------------
 
-/** SCREENING_INTERVALS: keyed by the bare option value, as today. 'other' is both
- *  colorectal's and cervical's (12 months each), so the flat map holds it once; a
- *  value two rows give DIFFERENT months throws, since the flat key could not hold both.
- *  DEXA's result intervals are keyed `dexa_${result}` (dexa_normal, dexa_osteopenia). */
+type Entry = readonly [key: string, months: number];
+const intervalsOf = (options: readonly (Option & { readonly months?: number })[], key = (v: string) => v): Entry[] =>
+  options.flatMap((o) => (o.months === undefined ? [] : [[key(o.value), o.months] as const]));
+
+/** SCREENING_INTERVALS, keyed by the bare method value, in today's key order: each method's own
+ *  interval in row order, then a value several rows share ('other': colorectal's and cervical's),
+ *  then the result-keyed rows (DEXA: dexa_normal, dexa_osteopenia, then dexa_scan, the interval
+ *  before a result). A shared value takes its first row's months and never throws: a throw at load
+ *  blanks the tool. screening-rules.test.ts checks no two rows give one value different months. */
 export function screeningIntervals(rules: readonly ScreeningRule[] = SCREENING_RULES): Record<string, number> {
+  const methods = rules.flatMap((r) => (r.followupBy === 'choice' ? r.choice.options : []));
+  const shared = (v: string) => methods.filter((o) => o.value === v).length > 1;
+  const entries = [
+    ...intervalsOf(methods.filter((o) => !shared(o.value))),
+    ...intervalsOf(methods.filter((o) => shared(o.value))),
+    ...rules.flatMap((r) => (r.followupBy === 'result'
+      ? [...intervalsOf(r.result.options, (v) => `${r.id}_${v}`), ...intervalsOf(r.choice.options)] : [])),
+  ];
   const out: Record<string, number> = {};
-  const put = (key: string, months: number) => {
-    if (key in out && out[key] !== months) throw new Error(`screening interval collision: ${key}`);
-    out[key] = months;
-  };
-  for (const r of rules) {
-    for (const o of r.choice.options) if (o.months !== undefined) put(o.value, o.months);
-    for (const o of r.result?.options ?? []) if (o.months !== undefined) put(`${r.id}_${o.value}`, o.months);
-  }
+  for (const [key, months] of entries) if (!(key in out)) out[key] = months;
   return out;
 }
 
-/** POST_FOLLOWUP_INTERVALS, keyed `${id}_${method}`. */
+/** Each rule's follow-up, keyed `${id}_${method}`: from its methods, or from its result for every started method. */
+function followups(r: ScreeningRule): Array<readonly [string, { readonly postMonths: number; readonly followup: Followup }]> {
+  if (r.followupBy === 'choice') return r.choice.options.flatMap((o) => (o.followup ? [[`${r.id}_${o.value}`, o] as const] : []));
+  const started = r.choice.options.filter((o) => o.value !== r.notStarted);
+  return r.result.options.flatMap((res) => (res.postMonths === undefined ? [] : started.map((m) => [`${r.id}_${m.value}`, res] as const)));
+}
+
+/** POST_FOLLOWUP_INTERVALS, keyed `${id}_${method}`, in row order. */
 export function postFollowupIntervals(rules: readonly ScreeningRule[] = SCREENING_RULES): Record<string, number> {
-  const out: Record<string, number> = {};
-  for (const r of rules) for (const o of r.choice.options) if (o.postMonths !== undefined) out[`${r.id}_${o.value}`] = o.postMonths;
-  return out;
+  return Object.fromEntries(rules.flatMap(followups).map(([key, f]) => [key, f.postMonths]));
 }
 
-/** SCREENING_FOLLOWUP_INFO, keyed `${id}_${method}`. */
+/** SCREENING_FOLLOWUP_INFO, keyed `${id}_${method}`, in row order. */
 export function screeningFollowupInfo(rules: readonly ScreeningRule[] = SCREENING_RULES): Record<string, { followupName: string; abnormalMeans: string }> {
-  const out: Record<string, { followupName: string; abnormalMeans: string }> = {};
-  for (const r of rules) {
-    for (const o of r.choice.options) {
-      if (o.followup) out[`${r.id}_${o.value}`] = { followupName: o.followup.name, abnormalMeans: o.followup.abnormalMeans };
-    }
-  }
-  return out;
+  return Object.fromEntries(rules.flatMap(followups).map(([key, f]) => [key, { followupName: f.followup.name, abnormalMeans: f.followup.abnormalMeans }]));
 }
 
 /** SCREENING_MIN_AGE: the rows with an upload gate. */
