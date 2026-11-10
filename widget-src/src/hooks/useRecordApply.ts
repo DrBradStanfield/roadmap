@@ -22,7 +22,7 @@ interface Later {
   markSaved: (inputs: Partial<HealthInputs>) => void;
   flushPendingSave: () => void;
   profileDirty: () => boolean;
-  clearAnswered: () => void;
+  clearAnswered: (spend?: boolean) => void;
 }
 
 /**
@@ -132,7 +132,7 @@ export function useRecordApply(args: {
     // device's drafts, refused ones included (US-11 AC6); a refused draft
     // would otherwise hold it for good.
     if (reason === 'remote') return relay.arrived(getEraseIdentity() === getShownErase() && later().profileDirty());
-    if (reason === 'refused') later().clearAnswered(); // the record re-read is not an answer given here (US-62 AC13)
+    if (reason === 'refused') later().clearAnswered(true); // not an answer given here (US-62 AC13); spends a waiting landing (AC25b)
     return relay.reread();
   }, [relay]);
 

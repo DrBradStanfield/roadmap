@@ -9,6 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import { loadMatchedContent, contentHeader, MAX_BLOG_CHARS } from './matched-content';
 import { isMaster, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
+import { stripFrontmatter } from './frontmatter';
 
 const index = loadBlogIndex();
 const video = index.find(e => e.youtube && e.commerceUrl)!;
@@ -84,10 +85,10 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
   const POTASSIUM = 'potassium-benefits-forms-dosing-and-side-effects';
   const realRead = fs.readFileSync;
   afterEach(() => { vi.restoreAllMocks(); });
-  // A real page grown to `size` chars, measured on the raw file with its
-  // frontmatter, by a section its reduced forms leave out, so a test pins the cap's behaviour, not today's page sizes: the masters keep
+  // A real page grown to `size` chars, measured on the body the loader sees
+  // (frontmatter off: the masters rebuild grew `sources:` lines past 20k), by a section its reduced forms leave out, so a test pins the cap's behaviour, not today's page sizes: the masters keep
   // growing (omega-3 passed the old 120,000 cap on 2026-10-22).
-  const grown = (raw: string, size: number) => `${raw}\n\n## Grown for the test\n\n${'z'.repeat(Math.max(0, size - raw.length))}\n`;
+  const grown = (raw: string, size: number) => `${raw}\n\n## Grown for the test\n\n${'z'.repeat(Math.max(0, size - stripFrontmatter(raw).length))}\n`;
   const grow = (sizes: Record<string, number>) => (handle: string, raw: string) => (handle in sizes ? grown(raw, sizes[handle]) : raw);
   // loadMatchedContent from a fresh module (loadBlogArticle caches), reading
   // each .md file through `edit`.
@@ -197,14 +198,15 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
   const lastPart = (content: string) => content.slice(content.lastIndexOf('\n\n---\n\n'));
   const parts = (content: string) => content.split('\n\n---\n\n');
 
-  it('every citation in a reduced master keeps its reference line: taurine\'s view cites [26] (Codex R1)', async () => {
+  // masters-rebuild-1 renumbered taurine's references: Sharma 2025 (PMID 40369079) moved from [26] to [31].
+  it('every citation in a reduced master keeps its reference line: taurine\'s view cites [31] (Codex R1)', async () => {
     const PROTEIN = 'protein-powders-benefits-types-dosing-and-side-effects';
     const { content, skipped } = (await loaderWith(grow({ [PROTEIN]: MAX_BLOG_CHARS - 20_000 })))([PROTEIN, 'taurine-benefits-forms-dosing-and-side-effects']);
     expect(skipped).toEqual([]);
     const tail = lastPart(content!);
     expect(tail).toContain('Internal note, do not quote');
-    expect(tail).toMatch(/^#+ Current view[\s\S]*\[26\]/m);
-    expect(tail).toMatch(/^\[26\] Sharma S/m);
+    expect(tail).toMatch(/^#+ Current view[\s\S]*\[31\]/m);
+    expect(tail).toMatch(/^\[31\] Sharma S/m);
   });
 
   it('a large first master yields so the next master loads at least reduced (adversary R1)', () => {

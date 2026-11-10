@@ -62,9 +62,10 @@ export function parseRules(source: string): Rule[] {
  * The screen a cascade runs on. A bare width is a touch screen (hover: none, pointer: coarse).
  * `hover: true` is a mouse. `states` names which element holds which pseudo-class (say
  * [[row, [':focus-within']]]): jsdom cannot hold them, so a whole pseudo-class in a selector
- * matches only on the element given it. Specificity counts it as written.
+ * matches only on the element given it. Specificity counts it as written. `print: true` is
+ * the printed page: `print` media applies and `screen` does not.
  */
-export interface Screen { width: number; hover?: boolean; states?: Array<[Element, string[]]> }
+export interface Screen { width: number; hover?: boolean; print?: boolean; states?: Array<[Element, string[]]> }
 
 /** Keyboard focus on `el`: it holds :focus, :focus-visible and :focus-within; its ancestors :focus-within. */
 export function focusOn(el: Element): Array<[Element, string[]]> {
@@ -73,13 +74,13 @@ export function focusOn(el: Element): Array<[Element, string[]]> {
   return states;
 }
 
-/** Width features by number; hover and pointer from the screen; print never. */
-export function mediaApplies(query: string, width: number, hover = false): boolean {
+/** Width features by number; hover and pointer from the screen; print only when printing. */
+export function mediaApplies(query: string, width: number, hover = false, print = false): boolean {
   return query.split(',').some(alternative => alternative.trim().split(/\s+and\s+/).every(part => {
     const feature = /^\(\s*([\w-]+)\s*:\s*([^)]+?)\s*\)$/.exec(part.trim());
     if (!feature) {
-      if (part.trim() === 'print') return false;
-      if (part.trim() === 'screen') return true;
+      if (part.trim() === 'print') return print;
+      if (part.trim() === 'screen') return !print;
       throw new Error(`media part not understood: ${part}`);
     }
     const [, name, value] = feature;
@@ -193,9 +194,12 @@ function replacePseudo(selector: string, pseudo: string, replacement: string): s
 
 export const STYLES = parseRules(readFileSync(resolve(__dirname, '../styles.css'), 'utf8'));
 
-/** The cascaded value of `property` on `el`, as declared (whitespace collapsed), or undefined if no rule sets it. */
+/**
+ * The cascaded value of `property` on `el`, as declared (whitespace collapsed), or undefined if no rule sets it.
+ * Source order is the rule's place in `rules`, so a list joined after STYLES comes later in the cascade.
+ */
 export function cascaded(el: Element, property: string, screen: number | Screen, rules: Rule[] = STYLES): string | undefined {
-  const { width, hover = false, states = [] } = typeof screen === 'number' ? { width: screen } : screen;
+  const { width, hover = false, print = false, states = [] } = typeof screen === 'number' ? { width: screen } : screen;
   // Each state becomes an attribute on the element that holds it, and the same pseudo-class
   // in a selector becomes that attribute, so it matches only where the state is held.
   const marker = (pseudo: string) => `data-css-state-${pseudo.slice(1)}`;
@@ -206,8 +210,8 @@ export function cascaded(el: Element, property: string, screen: number | Screen,
   let best: { important: boolean; spec: [number, number, number]; order: number; value: string } | null = null;
   for (const [holder, list] of states) for (const pseudo of list) holder.setAttribute(marker(pseudo), '');
   try {
-    for (const rule of rules) {
-      if (rule.media && !mediaApplies(rule.media, width, hover)) continue;
+    for (const [order, rule] of rules.entries()) {
+      if (rule.media && !mediaApplies(rule.media, width, hover, print)) continue;
       const body = parseBody(rule.body);
       const decls = body.flatMap(d => d.name === property ? [d]
         : box && d.name === box[1] ? [{ ...d, value: sideOf(d.value, box[2] as Side) }] : []);
@@ -217,7 +221,7 @@ export function cascaded(el: Element, property: string, screen: number | Screen,
       if (matching.length === 0) continue;
       if (sibling) throw new Error(`css-cascade does not model ${sibling.name} beside ${property}: rule ${rule.selectors.join(', ')}`);
       const decl = decls.filter(d => d.important).at(-1) ?? decls.at(-1)!;
-      const candidate = { important: decl.important, spec: matching.map(specificity).sort(compare).at(-1)!, order: rule.order, value: decl.value };
+      const candidate = { important: decl.important, spec: matching.map(specificity).sort(compare).at(-1)!, order, value: decl.value };
       const wins = !best
         || (candidate.important !== best.important ? candidate.important
           : compare(candidate.spec, best.spec) !== 0 ? compare(candidate.spec, best.spec) > 0

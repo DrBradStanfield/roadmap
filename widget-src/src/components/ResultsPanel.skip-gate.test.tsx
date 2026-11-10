@@ -35,6 +35,8 @@ vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
 import { PlanHost as ResultsPanel } from '../testing/plan-host';
 import { REMINDER_SIGNUP_LABEL, REMINDER_SIGNUP_DONE, GUEST_CAPTURE_BUTTON_LABEL, PDF_WINDOW_BLOCKED } from './PlanPdf';
 import { deleteButton } from '../testing/settings';
+import { ColumnHeader } from './ColumnHeader';
+import { cascaded, nest } from '../testing/css-cascade';
 
 const results = calculateHealthResults({ heightCm: 175, sex: 'male' });
 
@@ -327,11 +329,28 @@ describe('US-44 AC6 — Save as PDF shows on a phone', () => {
 
   // The chat column's header still hides on a phone; the plan header's actions rule went with the plan column.
   it('styles.css: at 768px the column header hides', () => {
-    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8').replace(/\s+/g, ' ');
-    expect(css).toContain('.hr-col-header { display: none; }');
+    const header = render(<ColumnHeader title="Ask about your plan"/>).container.querySelector('.hr-col-header')!;
+    for (const phone of [390, 768]) expect(cascaded(header, 'display', phone)).toBe('none');
+    expect(cascaded(header, 'display', 769)).toBe('flex');
+    // Text, as an absence: no rule for the plan header's actions survives.
+    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
     expect(css).not.toContain('hr-col-header--actions');
   });
 
+  it('styles.css: a phone card sets no side margin; the tab panel gives its 16px inset (US-62 AC36)', () => {
+    const card = nest('section-card');
+    for (const side of ['margin-left', 'margin-right']) {
+      for (const width of [390, 768, 769]) expect(cascaded(card, side, width)).toBeUndefined();
+    }
+    for (const side of ['padding-top', 'padding-right', 'padding-bottom', 'padding-left']) {
+      for (const phone of [390, 768]) {
+        expect(cascaded(card, side, phone)).toBe('12px');
+        // !important: the later .section-card--bt { padding: 0 } does not take a phone card's padding.
+        expect(cascaded(nest('section-card section-card--bt'), side, phone)).toBe('12px');
+      }
+      expect(cascaded(card, side, 769)).toBe('24px'); // a desktop card keeps its 24px
+    }
+  });
 });
 
 describe('US-44 AC1 — the block setting', () => {

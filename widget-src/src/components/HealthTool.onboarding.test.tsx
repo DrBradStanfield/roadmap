@@ -814,6 +814,7 @@ describe('US-62 AC31: "Your plan is ready." after the onboarding', () => {
   async function finish(view: RenderResult) {
     await measurements(view);
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    await nextFrame(); // the sex answer's reveal focuses the month first, as it does before anyone can type a year
     birth(view);
   }
 

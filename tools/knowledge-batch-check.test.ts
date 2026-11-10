@@ -1476,6 +1476,113 @@ describe("US-42 AC2 void entries, number words, abbreviations (v3)", () => {
   });
 });
 
+describe("US-42 AC12 one number in different forms pairs; a different number never does (masters-rebuild-1, 2026-11-10)", () => {
+  const t = (s: string) => [...tokenise(s)].sort();
+  const pairs = (forms: string[], want: string[]) => { for (const f of forms) expect(t(f), f).toEqual(want); };
+  it("reads hyphenated and abbreviated units as the spaced plural", () => {
+    pairs(["12-week", "12 weeks"], ["12 week"]);
+    pairs(["21.9-y", "21.9 y", "21.9 years", "21.9 yrs"], ["21.9 year"]);
+    pairs(["10 and 12 mo", "10 and 12 months"], ["10 month", "12 month"]);
+  });
+  it("carries one unit to both numbers of an 'or', 'and' or 'to' pair", () => {
+    pairs(["11 or 16 months"], ["11 month", "16 month"]);
+    pairs(["6 or 12 mg a day", "6 or 12 mg per day"], ["12 mg/day", "6 mg/day"]);
+    pairs(["aged 45 to 64", "aged 45-64 years", "aged 45 and 64"], ["45 year", "64 year"]);
+  });
+  it("infers years after 'aged', 'younger than' or 'older than' only when no unit follows (review R3)", () => {
+    pairs(["younger than 6 wk", "younger than 6-week"], ["<6 week"]);
+    pairs(["older than 72 h", "older than 72 hours"], [">72 hour"]);
+    pairs(["Infants aged 6 to 12 wks"], ["12 week", "6 week"]);
+    pairs(["aged 45 or 64 kg"], ["45 kg", "64 kg"]);
+    pairs(["aged 48 hours", "aged 48-h"], ["48 hour"]);
+    pairs(["aged 12-mo"], ["12 month"]);
+  });
+  it("keeps the leading comparator on the first number of an 'or' pair (review R5)", () => {
+    pairs(["over 12 or 24 hours"], ["24 hour", ">12 hour"]);
+    pairs(["over 12 to 72 hours"], ["12 hour", "72 hour"]);
+  });
+  it("reads every per-day spelling as one /day token", () => {
+    pairs(["12 mg a day", "12 mg per day", "12 mg/day", "12 mg/d", "12 mg daily", "12 mg astaxanthin/day", "12 mg astaxanthin/d"], ["12 mg/day"]);
+    pairs(["550 mg/d"], ["550 mg/day"]);
+  });
+  it("reads a middle-dot decimal as a point", () => {
+    pairs(["1·03", "1.03"], ["1.03"]);
+    pairs(["HR 0·87 (95% CI 0·80 to 0·95)"], ["0.8", "0.87", "0.95", "95 %"]);
+    for (const f of ["4·10⁹/L", "4·10^9/L", "4·10⁻³"]) expect(t(f).filter((k) => /^4\.1/.test(k)), f).toEqual([]); // times ten to the power, not 4.10
+  });
+  it("reads scientific notation as one number, and only with an exponent (review re-check)", () => {
+    pairs(["4·10⁹/L", "4×10⁹/L", "4 x 10^9/L", "4·10^9"], ["4000000000"]);
+    pairs(["1·5×10⁻³"], ["0.0015"]);
+    pairs(["4·10"], ["4.1"]);
+    pairs(["4 × 10 mg"], ["10 mg", "4"]);
+    pairs(["Ne10"], []);
+    for (const f of ["type 2e", "strain 2e5 grew"]) expect(t(f).filter((k) => /e|00/.test(k)), f).toEqual([]); // a plain "e" is never an exponent
+    const apart = (a: string, b: string) => expect(t(a).filter((k) => t(b).includes(k)), `${a} | ${b}`).toEqual([]);
+    apart("4·10⁹", "4·10⁶"); apart("4·10⁹", "4"); apart("4·10⁹", "10");
+  });
+  it("reads a number word opening a sentence before an irregular plural or a short adjective run", () => {
+    pairs(["Seventy adults took it.", "Seventy men took it."], ["70"]);
+    pairs(["Six healthy adult men took it.", "six healthy adult men", "Six healthy volunteers took it."], ["6"]);
+    pairs(["Twenty-four RCTs were included."], ["24"]);
+    pairs(["Ninety-six subjects took part."], ["96"]);
+    pairs(["One study shows benefit.", "One healthy man took it.", "We saw six healthy men."], []);
+  });
+  it("reads thousands written with a comma as one number; a space never groups digits (review R1)", () => {
+    pairs(["4000 IU", "4,000 IU"], ["4000 IU"]);
+    pairs(["2 500 mg tablets"], ["2", "500 mg"]);
+    pairs(["2\u2009500 mg tablets"], ["2", "500 mg"]);
+  });
+  it("pairs comparator words with their symbols", () => {
+    pairs(["<55 years", "younger than 55", "younger than 55 years"], ["<55 year"]);
+    pairs([">65 years", "older than 65"], [">65 year"]);
+    pairs(["≥ 20 mg", "20 mg or more"], ["≥20 mg"]);
+  });
+  it("keeps a number beside a month name: a date is not stripped outside a master's own date positions (review R2, R4)", () => {
+    pairs(["In May 12 participants withdrew.", "By March 12 patients had died."], ["12"]);
+    pairs(["Dec 2 to 4 mg"], ["2 mg", "4 mg"]);
+    pairs(["Up to 4 May cause harm."], ["≤4"]);
+    pairs(["Adults aged 24 may benefit."], ["24 year"]);
+  });
+  it("keeps a different number, unit or magnitude apart", () => {
+    const apart = (a: string, b: string) => {
+      const x = t(a), y = t(b);
+      expect(x.length > 0 && y.length > 0, `${a} | ${b}`).toBe(true);
+      expect(x.filter((k) => y.includes(k)), `${a} | ${b}`).toEqual([]);
+    };
+    apart("1.03", "1.3"); apart("1·03", "1.3"); apart("12 weeks", "12 months"); apart("12-week", "12 mo"); apart("6 mg", "60 mg");
+    apart("6 or 12 mg a day", "60 mg a day"); apart("Seventy adults took it.", "17"); apart("Seventy adults took it.", "Seventeen adults took it.");
+    apart("12 mg", "12 mcg"); apart("4,000 IU", "400 IU"); apart("4 000 IU", "400 IU"); apart("<55 years", ">55 years"); apart("younger than 55", "older than 55");
+    apart("21.9-y", "21.9 months"); apart("12 mg astaxanthin/day", "12 mg/week");
+    apart("Take 2 500 mg tablets daily.", "2500 mg a day"); apart("1 500 mg", "1500 mg");
+    for (const f of ["2 mg twice/day", "2 mg twice a day", "2 mg twice daily", "2 mg three times a day", "2 mg three times daily", "2 mg every 12 hours"]) apart(f, "2 mg a day");
+    apart("younger than 6 wk", "younger than 6 years"); apart("older than 72 h", "older than 72 years"); apart("Infants aged 6 to 12 wks", "aged 6 to 12");
+    apart("aged 48 hours", "aged 48"); apart("over 12 or 24 hours", "12 hours");
+  });
+  const addLine = (line: string, quote: string) => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("Take it with food", `${line}\nTake it with food`));
+    const raw = `${fx("alpha.raw.txt")}\nIn the second arm, participants took 12 mg astaxanthin/day over a 12-week period with no harms.`;
+    writeFileSync(join(reports, "alpha.raw.txt"), raw);
+    reps.alpha.raw_sha256 = sha256(raw);
+    reps.alpha.changed_tokens.push({ body_line: line, raw_quote: quote });
+  };
+  it("passes a body line whose numbers the quote writes in another form", () => {
+    addLine("Participants took 12 mg a day for 12 weeks.", "participants took 12 mg astaxanthin/day over a 12-week period");
+    expect(fails(run().AC2)).toEqual([]);
+  });
+  it("fails a quote cropped inside a space-grouped number: '500 mg' cut from '1 500 mg' (review R1)", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("Take it with food", "Adults took 500 mg every day with breakfast.\nTake it with food"));
+    const raw = `${fx("alpha.raw.txt")}\nIn the second arm, adults took 1 500 mg every day with breakfast for a year.`;
+    writeFileSync(join(reports, "alpha.raw.txt"), raw);
+    reps.alpha.raw_sha256 = sha256(raw);
+    reps.alpha.changed_tokens.push({ body_line: "Adults took 500 mg every day with breakfast.", raw_quote: "500 mg every day with breakfast for a year" });
+    expect(fails(run().AC2).join("\n")).toContain("raw_quote: its numbers are not whole tokens in the raw: Adults took 500 mg every day");
+  });
+  it("fails a body line whose dose differs from the quote's", () => {
+    addLine("Participants took 60 mg a day for 12 weeks.", "participants took 12 mg astaxanthin/day over a 12-week period");
+    expect(fails(run().AC2).join("\n")).toContain('"60 mg/day"');
+  });
+});
+
 // ---- US-50 AC1 / US-42 AC1 amended: topic-master batches (--masters) ----
 
 describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
