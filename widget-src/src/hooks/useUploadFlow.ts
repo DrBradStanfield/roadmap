@@ -80,12 +80,12 @@ function trackUploadOutcome(picked: number, withValues: number, docx: number, no
  *  already holds (US-14 AC4). The refusals are lab rows in a unit the record
  *  does not know for that test, and core values it refused: each is named, as
  *  a dropped value must never be silent (US-21 phase 3, US-35 AC17). */
-export interface SaveOutcome {
+interface SaveOutcome {
   values: number; labValues: number; documents: string[];
-  skippedValues: number; skippedLabValues: number; errors: number; unstored: number;
+  skippedValues: number; skippedLabValues: number; unstored: number;
   refusedLabUnits: LabUnitRefusal[]; refusedMeasurements: MeasurementRefusal[];
 }
-const NO_OUTCOME: SaveOutcome = { values: 0, labValues: 0, documents: [], skippedValues: 0, skippedLabValues: 0, errors: 0, unstored: 0, refusedLabUnits: [], refusedMeasurements: [] };
+const NO_OUTCOME: SaveOutcome = { values: 0, labValues: 0, documents: [], skippedValues: 0, skippedLabValues: 0, unstored: 0, refusedLabUnits: [], refusedMeasurements: [] };
 const NO_PROGRESS = { current: 0, total: 0, fileName: '' };
 
 export interface UploadFlowOptions {
@@ -374,7 +374,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
         labValues: prior.labValues + savedLabValues.saved.length,
         documents: [...new Set([...prior.documents, ...savedDocs.saved.map(d => d.contentHash ?? d.sourceFileName ?? d.id)])],
         skippedValues: savedValues.skippedDuplicates, skippedLabValues: savedLabValues.skippedDuplicates,
-        errors: saveErrors, unstored: savedDocs.unstored ?? 0,
+        unstored: savedDocs.unstored ?? 0,
         refusedLabUnits: savedLabValues.refused, refusedMeasurements: savedValues.refused,
       };
       setOutcome(next);
