@@ -118,6 +118,8 @@ describe('US-07 AC3: useHighlights', () => {
     h.show([s('a'), s('b'), s('c'), s('d')]);
     expect(h.fading()).toEqual([]);
     expect(h.glowing()).toEqual(['c', 'd']);
+    tick(500); // the cancelled fade's timer must not end the new glow
+    expect(h.glowing()).toEqual(['c', 'd']);
   });
 
   it.each([['glow', 1000], ['fade', 3200]])('a change undone mid-%s ends it at once, and nothing glows later', (_, at) => {
@@ -129,7 +131,8 @@ describe('US-07 AC3: useHighlights', () => {
     expect(h.result.current.fadingOut).toBe(NO_HIGHLIGHTS);
     tick(10_000);
     expect(h.result.current.highlighted).toBe(NO_HIGHLIGHTS);
-    expect(h.result.current.fadingOut).toBe(NO_HIGHLIGHTS);
+    expect(h.result.current.fadingOut).toBe(NO_HIGHLIGHTS);    h.show([s('a'), s('b'), s('c')]); // the baseline stayed the settled plan, so c is new again
+    expect(h.glowing()).toEqual(['c']);
   });
 
   it('today: a new array with identical content mid-glow restarts the glow, so it fades 3 s after the copy', () => {
