@@ -115,6 +115,9 @@ describe('US-07 AC1i: the Elevated PSA card and its reason (spec lines 92-106)',
   it('the reason is the approved text, on the card too', () => {
     expect(SUGGESTION_EVIDENCE['screening-prostate-elevated'].reason).toBe(REASON);
     expect(plan({ prostatePsaValue: 4.0 })[0].reason).toBe(REASON);
+    // The page the reason's claims were checked against (spec line 106; Brad 2026-11-12, PR 1358 R2).
+    expect(SUGGESTION_EVIDENCE['screening-prostate-elevated'].references.map((r) => r.url))
+      .toContain('https://www.cancer.org/cancer/types/prostate-cancer/detection-diagnosis-staging/tests.html');
   });
 });
 
