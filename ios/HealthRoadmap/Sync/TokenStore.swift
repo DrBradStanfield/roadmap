@@ -16,8 +16,9 @@ struct OAuthTokens: Codable, Equatable, Sendable {
 struct TokenStore: Sendable {
     /// The Keychain service; tests use their own.
     let service: String
-    /// Tests only: every save fails, as a refusing Keychain does (US-25 AC11m).
+    /// Tests only: every save, or every delete, fails, as a refusing Keychain does (US-25 AC11m).
     var failsSaves = false
+    var failsDeletes = false
 
     init(service: String = "com.drstanfield.healthroadmap.oauth") {
         self.service = service
@@ -59,6 +60,7 @@ struct TokenStore: Sendable {
     }
 
     func delete(_ provider: CloudProvider) {
+        guard !failsDeletes else { return }
         SecItemDelete(baseQuery(provider) as CFDictionary)
     }
 

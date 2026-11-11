@@ -1014,6 +1014,72 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(activeDays(dropbox.record), ["2026-10-01", "2026-10-03"], "the shown session is the one the engine saves through")
     }
 
+    /// US-25 AC11m (adversary R1 on PR 1350): a step decided in the handover runs only after
+    /// the handover returns. A foreground in that window opens again; the busy try's close,
+    /// decided under the older attempt, must not supersede the newer open.
+    func testABusyTrysCloseNeverSupersedesAnOpenBegunAfterIt_US25_AC11m() async throws {
+        dropbox.put(try record(days: [], device: "web"))
+        let (store, sync, _) = try app()
+        let editing = Editing()
+        var day = 0
+        dropbox.onDownload = {
+            guard editing.on else { return }
+            day += 1
+            let day = day
+            Task { _ = await store.apply(.add(metric: "weight", value: 80, day: "2026-10-0\(day)")) }
+        }
+        let reopened = XCTestExpectation(description: "a foreground in the window opened again")
+        Self.reopenOnBusy(sync, editing, reopened)
+        await sync.start()
+        let result = await XCTWaiter().fulfillment(of: [reopened], timeout: 10)
+        XCTAssertEqual(result, .completed)
+        XCTAssertTrue(sync.recordOpen, "the open begun after the busy try stands: \(sync.connection)")
+    }
+
+    /// Watches the connection. In the turn it turns busy (inside the handover) it queues a
+    /// foreground, which runs before the open that decided busy resumes.
+    private static func reopenOnBusy(_ sync: CloudSync, _ editing: Editing, _ done: XCTestExpectation) {
+        withObservationTracking { _ = sync.connection } onChange: {
+            Task { @MainActor in
+                guard case .closed(let closed) = sync.connection, closed.problem?.kind == .busy else { return reopenOnBusy(sync, editing, done) }
+                editing.on = false
+                await sync.foreground()
+                done.fulfill()
+            }
+        }
+    }
+
+    /// Whether each record download still sends an edit.
+    @MainActor final class Editing {
+        var on = true
+    }
+
+    /// US-25 AC11m (Codex C3 on PR 1350): a Dropbox sign-in begun before a Disconnect that
+    /// returns after Google Drive connected is dropped silently, never refused with words.
+    func testASignInVoidedByADisconnectIsDroppedSilentlyAfterAnotherCloudConnects_US25_AC11m() async throws {
+        defer { tokens.delete(.googleDrive) }
+        answerGoogleToo()
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        let (_, sync, _) = try app()
+        await sync.start()
+        let held = heldSignIn()
+        let late = Task { try await sync.connect(.dropbox, authenticate: held.authenticate) }
+        for await _ in held.shown { break }
+        await sync.disconnect()
+        let drive = heldSignIn()
+        drive.release()
+        try await sync.connect(.googleDrive, authenticate: drive.authenticate)
+        XCTAssertEqual(sync.provider, .googleDrive)
+        held.release()
+        do {
+            try await late.value
+            XCTFail("a sign-in voided by the Disconnect cannot connect")
+        } catch {
+            XCTAssertEqual(error as? OAuthClient.Failure, .cancelled, "silent, never \(error.localizedDescription)")
+        }
+        XCTAssertEqual(sync.provider, .googleDrive)
+    }
+
     func testF3EditsThatKeepArrivingWhileOpeningLeaveNoSessionBehind() async throws {
         dropbox.put(try record(days: [], device: "web"))
         let (store, sync, engine) = try app()

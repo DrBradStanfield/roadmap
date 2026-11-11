@@ -117,6 +117,70 @@ final class CloudDisconnectTests: XCTestCase, CloudFixtures {
         XCTAssertNil(tokens.load(.dropbox), "and the token left behind")
     }
 
+    /// Codex C1 on PR 1350: a second Disconnect while the first copies down changes nothing
+    /// and closes nothing; a connect meanwhile is dropped; the files end agreeing with the state.
+    func testASecondDisconnectWhileTheFirstClosesChangesNothing_US25_AC11m() async throws {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        try write("dbid:A", "sync-account")
+        let (_, sync) = try app()
+        await sync.start()
+        let gate = StubHTTP.Gate()
+        dropbox.downloadGate = gate
+        let copyDown = nextDownload()
+        let first = Task { await sync.disconnectOutcome() }
+        await arrive(copyDown)
+        let second = await sync.disconnectOutcome()
+        XCTAssertEqual(second, .refused, "a Disconnect is already closing")
+        XCTAssertEqual(sync.status, .disconnecting)
+        let dropped = XCTestExpectation(description: "a connect while closing returns at once")
+        let reconnect = Task {
+            defer { dropped.fulfill() }
+            try await sync.connect(.dropbox, authenticate: signIn())
+        }
+        let returned = await XCTWaiter().fulfillment(of: [dropped], timeout: 5)
+        XCTAssertEqual(returned, .completed, "a connect while closing is dropped at once")
+        dropbox.downloadGate = nil
+        gate.open()
+        let outcome = await first.value
+        _ = try? await reconnect.value
+        XCTAssertEqual(outcome, .done(copied: true))
+        XCTAssertNil(sync.provider)
+        XCTAssertEqual(text("sync-provider"), sync.provider?.rawValue, "the files agree with the state")
+        XCTAssertEqual(tokens.load(.dropbox) != nil, sync.provider == .dropbox, "the Keychain agrees with the state")
+    }
+
+    /// Codex C2 on PR 1350: the Keychain refuses to delete on Disconnect. The account file stays
+    /// as the mark that a token is left, and the next launch removes the token.
+    func testATokenTheKeychainKeptIsRemovedAtTheNextLaunch_US25_AC11m() async throws {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        try write("dbid:A", "sync-account")
+        var keeping = tokens!
+        keeping.failsDeletes = true
+        let (_, sync) = try app(tokens: keeping)
+        await sync.start()
+        _ = await sync.disconnectOutcome()
+        XCTAssertNil(sync.provider)
+        XCTAssertNotNil(tokens.load(.dropbox), "the Keychain kept it")
+        _ = try relaunch()
+        XCTAssertNil(tokens.load(.dropbox), "the next launch removed it")
+        XCTAssertFalse(exists("sync-account"))
+    }
+
+    /// Fulfilled when the next record download reaches the fake Dropbox.
+    private func nextDownload() -> XCTestExpectation {
+        let arrived = XCTestExpectation(description: "a record download arrives")
+        dropbox.onDownload = { [weak dropbox] in
+            dropbox?.onDownload = nil
+            arrived.fulfill()
+        }
+        return arrived
+    }
+
+    private func arrive(_ expectation: XCTestExpectation, file: StaticString = #filePath, line: UInt = #line) async {
+        let result = await XCTWaiter().fulfillment(of: [expectation], timeout: 10)
+        XCTAssertEqual(result, .completed, expectation.description, file: file, line: line)
+    }
+
     // MARK: Connect
 
     /// The Keychain refuses the tokens on a first connect: nothing is kept, no sync file is
