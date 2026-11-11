@@ -142,7 +142,8 @@ describe('calculateAge', () => {
     expect(calculateAge(1990, 6, new Date(2026, 5, 1))).toBe(36);
   });
 
-  // A2-1: the screening table's boundaries (breast `age < 45`, colorectal `age <= 75`) rest on whole-year ages.
+  // A2-1: guards the premise that ages are whole years, which the screening table's age-band boundaries
+  // (breast `age < 45`, colorectal `age <= 75`) are written for.
   it('returns a whole number of years on any day', () => {
     for (let m = 1; m <= 12; m++) for (const day of [1, 15, 28]) expect(Number.isInteger(calculateAge(1981, m, new Date(2026, m - 1, day, 23, 59)))).toBe(true);
   });

@@ -92,6 +92,10 @@ describe('US-06 A2-1 step 7 — the cancer screening card does not change', () =
     ['lung 15 pack-years, not yet started', 'male', 60, { lung_smoking_history: 'current_smoker', lung_pack_years: '15', lung_screening: 'not_yet_started' }],
     ['lung 81, smoker, no LDCT answer', 'male', 81, { lung_smoking_history: 'former_smoker', lung_pack_years: '25' }],
     ['lung 81, LDCT normal', 'male', 81, { lung_smoking_history: 'former_smoker', lung_pack_years: '25', lung_screening: 'annual_ldct', lung_last_date: '2025-01', lung_result: 'normal' }],
+    // Lung's "data present, so ask" branches (US-07 AC1f, AC1g): the group past 80 and the LDCT question below 20 pack-years, from stored data alone.
+    ['US-07 AC1g: lung 82, 15 pack-years, abnormal result, no LDCT answer', 'male', 82, { lung_smoking_history: 'former_smoker', lung_pack_years: '15', lung_result: 'abnormal' }],
+    ['US-07 AC1f: lung 60, 15 pack-years, only a last date', 'male', 60, { lung_smoking_history: 'former_smoker', lung_pack_years: '15', lung_last_date: '2025-01' }],
+    ['US-07 AC1f: lung 60, 15 pack-years, only a result', 'male', 60, { lung_smoking_history: 'former_smoker', lung_pack_years: '15', lung_result: 'normal' }],
     ['prostate elected not to', 'male', 52, { prostate_discussion: 'elected_not_to' }],
     ['prostate not yet', 'male', 46, { prostate_discussion: 'not_yet' }],
   ];

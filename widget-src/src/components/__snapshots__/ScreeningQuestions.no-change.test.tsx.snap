@@ -1,5 +1,97 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`US-06 A2-1 step 7 — the cancer screening card does not change > US-07 AC1f: lung 60, 15 pack-years, only a last date 1`] = `
+{
+  "controls": [
+    "select#colorectal-method=",
+    "select#lung-smoking-history=former_smoker",
+    "input#lung-pack-years=15",
+    "select#lung-screening=",
+    "select#prostate-discussion=",
+  ],
+  "groups": [
+    "Colorectal",
+    "Lung",
+    "Prostate",
+  ],
+  "hints": [
+    "Screening recommended if ≥20 pack-years",
+  ],
+  "labels": [
+    "colorectal-method: Screening method",
+    "lung-smoking-history: Smoking history",
+    "lung-pack-years: Pack-years (packs/day × years smoked)",
+    "lung-screening: Screening status",
+    "prostate-discussion: Discussed prostate screening with your doctor?",
+  ],
+  "notes": [
+    "screening-age-message: PSA testing is an option after an informed discussion with your doctor.",
+  ],
+  "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalScreening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedLungSmoking historySelect...Never smokedFormer smokerCurrent smokerPack-years (packs/day × years smoked)Screening recommended if ≥20 pack-yearsScreening statusSelect...Annual low-dose CTNot yet startedProstatePSA testing is an option after an informed discussion with your doctor.Discussed prostate screening with your doctor?Select...Not yetYes, and I've elected not to screenYes, and I will screen",
+}
+`;
+
+exports[`US-06 A2-1 step 7 — the cancer screening card does not change > US-07 AC1f: lung 60, 15 pack-years, only a result 1`] = `
+{
+  "controls": [
+    "select#colorectal-method=",
+    "select#lung-smoking-history=former_smoker",
+    "input#lung-pack-years=15",
+    "select#lung-screening=",
+    "select#prostate-discussion=",
+  ],
+  "groups": [
+    "Colorectal",
+    "Lung",
+    "Prostate",
+  ],
+  "hints": [
+    "Screening recommended if ≥20 pack-years",
+  ],
+  "labels": [
+    "colorectal-method: Screening method",
+    "lung-smoking-history: Smoking history",
+    "lung-pack-years: Pack-years (packs/day × years smoked)",
+    "lung-screening: Screening status",
+    "prostate-discussion: Discussed prostate screening with your doctor?",
+  ],
+  "notes": [
+    "screening-age-message: PSA testing is an option after an informed discussion with your doctor.",
+  ],
+  "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalScreening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedLungSmoking historySelect...Never smokedFormer smokerCurrent smokerPack-years (packs/day × years smoked)Screening recommended if ≥20 pack-yearsScreening statusSelect...Annual low-dose CTNot yet startedProstatePSA testing is an option after an informed discussion with your doctor.Discussed prostate screening with your doctor?Select...Not yetYes, and I've elected not to screenYes, and I will screen",
+}
+`;
+
+exports[`US-06 A2-1 step 7 — the cancer screening card does not change > US-07 AC1g: lung 82, 15 pack-years, abnormal result, no LDCT answer 1`] = `
+{
+  "controls": [
+    "select#lung-smoking-history=former_smoker",
+    "input#lung-pack-years=15",
+    "select#lung-screening=",
+    "select#prostate-discussion=",
+  ],
+  "groups": [
+    "Colorectal",
+    "Lung",
+    "Prostate",
+  ],
+  "hints": [
+    "Screening recommended if ≥20 pack-years",
+  ],
+  "labels": [
+    "lung-smoking-history: Smoking history",
+    "lung-pack-years: Pack-years (packs/day × years smoked)",
+    "lung-screening: Screening status",
+    "prostate-discussion: Discussed prostate screening with your doctor?",
+  ],
+  "notes": [
+    "screening-age-message: Screening is individualized at your age. Discuss with your doctor whether continued screening is appropriate.",
+    "screening-age-message: PSA testing is an option after an informed discussion with your doctor.",
+  ],
+  "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalScreening is individualized at your age. Discuss with your doctor whether continued screening is appropriate.LungSmoking historySelect...Never smokedFormer smokerCurrent smokerPack-years (packs/day × years smoked)Screening recommended if ≥20 pack-yearsScreening statusSelect...Annual low-dose CTNot yet startedProstatePSA testing is an option after an informed discussion with your doctor.Discussed prostate screening with your doctor?Select...Not yetYes, and I've elected not to screenYes, and I will screen",
+}
+`;
+
 exports[`US-06 A2-1 step 7 — the cancer screening card does not change > breast annual, awaiting 1`] = `
 {
   "controls": [
