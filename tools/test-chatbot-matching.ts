@@ -556,10 +556,10 @@ async function checkAnswer(q: TestQuery, matchedHandles: string[] = []): Promise
   const savedChat = SAVED_CHATS.get(q);
   const base = surface ? `${ANSWER_SYSTEM_CONTEXT}\n\n---\n\n${POSTURES.get(surface)}${savedChat ? `\n\n---\n\n${savedChat}` : ''}` : ANSWER_SYSTEM_CONTEXT;
   const userContextJson = USER_CONTEXTS.get(q);
-  // The YouTube bot's platform context sits where the widget's user data does (runPipeline).
+  // The YouTube bot's platform context sits where the widget's user data does (runPipeline). Both carry a SAVED-CHAT block (SAVED_CHAT_DEFAULT).
   const platformContext = youtube ? youtube.platformContext : userContextJson;
   const system = platformContext !== undefined
-    ? buildSystemBlocks(platformContext, { surfaceContext: surface && POSTURES.get(surface), savedChat, blogArticles: matchedContent || null })
+    ? buildSystemBlocks(platformContext, { surfaceContext: surface && POSTURES.get(surface), savedChat: savedChat!, blogArticles: matchedContent || null })
     : matchedContent
       ? `${base}\n\n---\n\n## Referenced Blog Articles\n\n${matchedContent}`
       : base;

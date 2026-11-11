@@ -433,16 +433,16 @@ async function chatAction(request: Request, app: boolean) {
     // Sanitize message for router (strips control chars, caps at 2000 chars)
     const sanitizedCurrent = sanitizeForRouter(message);
 
-    // What this turn leaves on our server (chat-retention.ts). The app and the widget send their
-    // history in the body (US-15 AC7); the transcript surfaces load theirs here, is_fallback
-    // for the dedup check below, created_at for its time window.
+    // What this turn leaves on our server (chat-retention.ts); every storage branch reads it. The app and
+    // the widget send their history in the body (US-15 AC7); the transcript surfaces load theirs here.
     const retention = retentionOf({ app, widget: body.localFirst === true });
-    const widget = retention !== 'transcript';
+    // The app or the tool page: a surface capability (form edits, no subscription tool), not storage.
+    const appOrToolPage = app || body.localFirst === true;
     if (conversationId && retention === 'transcript') {
       const parentFailure = await checkConversationParent(auth, conversationId);
       if (parentFailure) return parentFailure;
     }
-    let history: Turn[] = widget ? readClientHistory(body.history) : [];
+    let history: Turn[] = retention !== 'transcript' ? readClientHistory(body.history) : [];
     let storedHistory: DedupHistoryItem[] = [];
     if (conversationId && retention === 'transcript') {
       const { data: historyRows, error: historyError } = await auth.client
@@ -470,7 +470,7 @@ async function chatAction(request: Request, app: boolean) {
     // Never while subscription changes are on for a signed-in customer (US-59): a replayed reply would
     // say "press Confirm below" with no card (cards are never stored), so the turn runs again instead.
     const subscriptionTurn = subscriptionActionsEnabled() && !auth.isGuest;
-    if (conversationId && !widget && !subscriptionTurn) {
+    if (conversationId && retention === 'transcript' && !subscriptionTurn) {
       const dup = findDuplicateReply(storedHistory, message);
       if (dup) {
         Sentry.captureMessage('chat: duplicate user message detected, re-serving previous reply', {
@@ -496,7 +496,7 @@ async function chatAction(request: Request, app: boolean) {
     // only they get the tools (US-15 AC19, US-67 AC1): the server holds the other surfaces
     // to that, whatever their body says. An older app sends no `edits` and gets none.
     const appEdits = app && body.edits === 1;
-    const canApplyEdits = appEdits || (!app && widget && body.canApplyEdits === true);
+    const canApplyEdits = appEdits || (!app && appOrToolPage && body.canApplyEdits === true);
     // US-16 AC2: only a widget that applies a profile edit says so; an older one would write it as a medication.
     // The app's `edits: 1` covers all three form tools.
     const canApplyProfileEdits = appEdits || (canApplyEdits && body.canApplyProfileEdits === true);
@@ -640,7 +640,7 @@ async function chatAction(request: Request, app: boolean) {
       // The subscription tool rides only while enabled (US-59), and never on a widget turn:
       // that is always a guest, so it could only end in "I can't make that change here",
       // replacing a health answer. run_roadmap reads the widget's own record (US-15 AC33).
-      const subscriptionTool = subscriptionsOn && !widget;
+      const subscriptionTool = subscriptionsOn && !appOrToolPage;
       const completion = await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits, onEvent,
         subscriptionTool || canApplyEdits ? { subscriptionTool, guestInputs: body.guestInputs, ...(canApplyProfileEdits ? { profileEdits: true } : {}), ...(appEdits ? { app: true } : {}) } : undefined);
       const tAfterLlm = Date.now();
@@ -698,7 +698,7 @@ async function chatAction(request: Request, app: boolean) {
       };
       const logMatchEvent = () => auth.client
         .from('chat_match_events')
-        .insert(widget ? redactForWidget(matchEvent) : matchEvent)
+        .insert(retention !== 'transcript' ? redactForWidget(matchEvent) : matchEvent)
         .then(({ error: matchError }: { error: { message: string } | null }) => {
           if (matchError) {
             reportChatError('Chat: Match-event insert failed');
