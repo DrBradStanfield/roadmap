@@ -7,8 +7,8 @@
  * address whose plan-ready email did not bounce.
  *
  * Built on the machinery the May-2026 cron debugging hardened (see CLAUDE.md
- * "Dangerous Gotchas"): hourly setInterval with a `< target hour` catch-up
- * check (deploy-resilient), tryAcquireCronLock's fixed CAS (UPDATE + separate
+ * "Dangerous Gotchas"): the shared daily runner (daily-cron.server.ts, an hourly
+ * tick with a deploy-resilient `< target hour` check), tryAcquireCronLock's fixed CAS (UPDATE + separate
  * verify SELECT — never .update().select() on a self-mutating filter), the
  * '1970-01-01' sentinel seed, and skip-reason counters so a 0-send day is
  * explainable rather than silent.
@@ -16,24 +16,20 @@
 import * as Sentry from '@sentry/react-router';
 import { GROUP_COOLDOWNS, getCategoryGroup, type ReminderCategory } from '../../packages/health-core/src/reminders';
 import { buildReminderV2EmailHtml, sendReminderEmail } from './email.server';
-import { tryAcquireCronLock } from './supabase.server';
+import { dailyCron, MACHINE_ID } from './daily-cron.server';
+import { utcNowParts } from './cron-helpers.server';
 import { buildUnsubscribeUrl, getOptinsBatch, inQuietPeriod, purgeTombstones, recordSent, type ReminderV2Optin } from './reminder-v2.server';
 import { recordServerEvent } from './product-events.server';
-import { safeErrorFields } from './safe-error-fields.server';
 
-const CRON_INTERVAL_MS = 60 * 60 * 1000; // hourly tick
 const TARGET_HOUR_UTC = 8;               // same morning window as the v1 reminder cron
 const BATCH_SIZE = 50;
 const CONCURRENCY_LIMIT = 5;
-const MACHINE_ID = process.env.FLY_MACHINE_ID || `local-${process.pid}`;
 
-let lastRunDate: string | null = null;
 // Optins this process has tried to email today. Marked before the send, so a
 // retried pass (US-28 AC3) never emails anyone twice in a day, even when the
 // failed pass sent the mail but could not stamp last_sent. In memory only: a
 // restart the same day starts empty, as the day itself did before AC3.
 let attemptedToday = { day: '', ids: new Set<string>() };
-let cronIntervalId: ReturnType<typeof setInterval> | null = null;
 
 /** Process items in chunks of `limit`, using Promise.allSettled per chunk.
  *  (Moved here from the retired v1 reminder cron — pure helper.) */
@@ -51,55 +47,22 @@ async function processWithConcurrency<T, R>(
   return results;
 }
 
-export function startReminderV2Cron(): void {
-  // Same guard as the other three crons — this module self-starts on import
-  // (below), so without the 'test' case every suite that transitively imports
-  // it would spawn a real hourly interval.
-  if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
-    console.log(`Reminder v2 cron disabled in ${process.env.NODE_ENV}`);
-    return;
-  }
-
-  console.log(`Reminder v2 cron started (first tick ≥ ${TARGET_HOUR_UTC}:00 UTC daily, machine: ${MACHINE_ID})`);
-
-  cronIntervalId = setInterval(async () => {
-    try {
-      const now = new Date();
-      if (now.getUTCHours() < TARGET_HOUR_UTC) return;
-
-      const todayStr = now.toISOString().slice(0, 10);
-      if (lastRunDate === todayStr) return;
-
-      // Acquire stays inside the try/catch (US-28 AC2: a lock error retries next tick).
-      const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, 'reminder_v2_cron');
-      if (!acquired) {
-        lastRunDate = todayStr;
-        return;
-      }
-      // Marked while the pass runs, so a pass that outlasts the hour is not
-      // started twice on this machine; released if it fails, so the next tick
-      // re-runs the day (US-28 AC3). The lock row names this machine, so its
-      // re-acquire wins; attemptedToday skips whoever the failed pass tried to email.
-      lastRunDate = todayStr;
-      const count = await processV2Reminders(todayStr).catch((passError: unknown) => {
-        lastRunDate = null;
-        throw passError;
-      });
-      console.log(`Reminder v2 cron: completed, sent ${count} emails`);
-    } catch (error) {
-      console.error('Reminder v2 cron error:', safeErrorFields(error));
-      Sentry.captureException(error, { tags: { feature: 'reminder_v2_cron' } });
-    }
-  }, CRON_INTERVAL_MS);
-}
-
-export function stopReminderV2Cron(): void {
-  if (cronIntervalId) {
-    clearInterval(cronIntervalId);
-    cronIntervalId = null;
-    console.log('Reminder v2 cron stopped');
-  }
-}
+const cron = dailyCron({
+  label: 'Reminder v2 cron',
+  feature: 'reminder_v2_cron',
+  lockName: 'reminder_v2_cron',
+  targetHour: TARGET_HOUR_UTC,
+  clock: utcNowParts,
+  startLog: `Reminder v2 cron started (first tick ≥ ${TARGET_HOUR_UTC}:00 UTC daily, machine: ${MACHINE_ID})`,
+  // A failed pass re-runs the day (US-28 AC3); attemptedToday skips whoever
+  // the failed pass tried to email.
+  run: async (todayStr) => {
+    const count = await processV2Reminders(todayStr);
+    return `Reminder v2 cron: completed, sent ${count} emails`;
+  },
+});
+export const startReminderV2Cron = cron.start;
+export const stopReminderV2Cron = cron.stop;
 
 type V2Result = 'sent' | 'none-due' | 'all-on-cooldown' | 'email-send-failed' | 'quiet-period' | 'attempted-today';
 

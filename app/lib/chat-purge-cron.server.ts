@@ -42,12 +42,12 @@ import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin, tryAcquireCronLock } from './supabase.server';
 import { scrubQuestion, SCRUB_TIMEOUT_MS } from './chat-question-scrub.server';
 import { withTimeout } from './cron-helpers.server';
+import { MACHINE_ID } from './daily-cron.server';
 import { recordServerEvent } from './product-events.server';
 import { safeErrorFields } from './safe-error-fields.server';
 
 const CRON_INTERVAL_MS = 60 * 60 * 1000;
 const TARGET_HOUR_UTC = 4;
-const MACHINE_ID = process.env.FLY_MACHINE_ID || `local-${process.pid}`;
 
 /** How long the question and the router's answer stay readable for the audit. */
 export const PURGE_AFTER_DAYS = 30;
