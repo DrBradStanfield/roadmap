@@ -1,5 +1,17 @@
+import SwiftUI
+
+extension View {
+    /// DEBUG only: opens the upload sheet on a save-all demo stage (US-52 AC8b); a no-op in release.
+    func labSaveAllDemo(_ adding: Binding<Bool>) -> some View {
+        #if DEBUG
+        task { if LabSaveAllDemo.stage != nil { adding.wrappedValue = true } }
+        #else
+        self
+        #endif
+    }
+}
+
 #if DEBUG
-import Foundation
 
 /// DEBUG only, never in a release build: with `--demo-record` and `--demo-save-all=<stage>`,
 /// My health opens "Add medical records" on a save-all screen (US-52 AC8b) built from
