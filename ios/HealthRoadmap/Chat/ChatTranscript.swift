@@ -34,6 +34,18 @@ struct ChatTranscript {
         return lines.count - 1
     }
 
+    /// A streamed line reaches the answer at `index`. A status line starts a new phase: text
+    /// streamed before it was not the answer (a run_roadmap round's preamble), so it goes,
+    /// as on the web (US-52 AC6f, US-15 AC38). Earlier status lines come before any text.
+    mutating func stream(_ event: ChatStreamEvent, into index: Int) {
+        switch event {
+        case .status: lines[index].text = ""
+        case .text(let text): lines[index].text += text
+        case .sources(let titles): lines[index].sources = titles
+        case .done, .other: break
+        }
+    }
+
     /// The last answer is in (its `done` arrived) and goes to history: Stop is too late (review R3).
     private(set) var finished = false
 

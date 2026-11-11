@@ -246,9 +246,10 @@ struct ChatView: View {
             for try await event in ChatClient().ask(body: body) {
                 guard live() else { return }
                 switch event {
-                case .status(let text): status = text
-                case .text(let text): transcript.lines[answerIndex].text += text
-                case .sources(let titles): transcript.lines[answerIndex].sources = titles
+                case .status(let text):
+                    status = text
+                    transcript.stream(event, into: answerIndex)
+                case .text, .sources: transcript.stream(event, into: answerIndex)
                 case .done(let content, let isFallback, let failure, let proposed):
                     if let failure { throw AppAttestClient.Failure.server(status: 500, message: failure) }
                     // The answer is in: Stop goes, and it is saved (review R3).
