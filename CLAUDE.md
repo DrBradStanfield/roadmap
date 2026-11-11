@@ -111,9 +111,9 @@ Key dirs: `packages/health-core/src/` · `widget-src/src/` · `app/` · `extensi
 ## Commands & Tests
 
 ```bash
-npm test                     # check:symlinks + health-core + app/lib (server) tests
-npm run test:all             # EVERYTHING (CI runs it in 6 shards; never a local merge gate)
-npx vitest related <files> --run   # just the tests your change touches
+npx vitest run <test files>  # locally: only the test files you touched, then push
+npm run test:all             # CI only, every push (6 shards); a hook refuses it here (US-71 AC10)
+ALLOW_BROAD_TESTS=<reason> npm run test:all   # a flake hunt or a run Brad asks for
 ```
 
 ## Deploy & Environment Variables
@@ -191,7 +191,7 @@ test. Miss a step = the value silently fails to round-trip.
   and your recommendation with its reason. Never a bare "accept X?" or "see above"; assume he remembers nothing.
 - **Say "I don't know" over guessing** — a confident wrong answer is worse, especially clinically.
 - **Every feature/behavior change includes unit tests**; bug fix = failing test first. A test checks what the
-  caller sees: one that would still pass if every function returned nothing gets thrown out. Run tests in a `runner`.
+  caller sees: one that would still pass if every function returned nothing gets thrown out. Run your touched test files in a `runner`.
 - **A mode is one named state (Brad 2026-11-10):** a flow with modes (saving, reading, sending, reviewing) holds one
   discriminated union that carries its own data, changed only through a pure `transition(state, event)` with a table
   test. Never add a boolean, ref or timer beside it to encode a mode. Synchronous claim refs stay. Plain view state
