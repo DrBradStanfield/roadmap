@@ -198,7 +198,8 @@ describe.each(crons)('$name cron tick (untangle S-4 pins, US-28)', (c) => {
     vi.mocked(captureMessage).mockClear();
     await tick();
     await vi.advanceTimersByTimeAsync(DAY_MS);
-    // Ticks fall on whole hours after the start, so the first one past the limit is an hour over it.
+    // Fake timers fire exactly on the hour, so the first tick strictly past the limit is an hour over it.
+    // In production a tick lands a few ms late, so the report usually comes at the limit itself.
     expect(captureMessage).toHaveBeenCalledTimes(1);
     expect(captureMessage).toHaveBeenCalledWith('Daily cron run still going', {
       level: 'warning', tags: { feature: c.feature, hours: c.stuckHours + 1 },
