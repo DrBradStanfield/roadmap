@@ -694,4 +694,83 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
     await waitFor(() => { frames.run(); expect(landed()).toBe(true); });
     expect(calls('onboarding_done')).toHaveLength(1);
   });
+
+  describe('US-62 AC31a: the chat\'s weight is an answer given here, in the box or the grid (AC13 Events, AC31)', () => {
+    const chatWeight = (date: string | null = null) =>
+      act(() => chat.proposeEdit!([{ kind: 'field', field: 'weightKg', displayValue: 105, unitSystem: 'si', date }]));
+    const ready = (view: RenderResult) => q(view, '.mh-ready-title')?.textContent ?? null;
+    /** Height, sex and birth saved, less `missing`; `waist` opens the whole form, so the weight row is in the grid. */
+    async function chatReady({ waist = true, missing = null as 'sex' | 'birth' | null, weight = false } = {}): Promise<RenderResult> {
+      await saveChangedMeasurements({ heightCm: 170, ...(missing === 'sex' ? {} : { sex: 'female' as const }), ...(missing === 'birth' ? {} : { birthYear: 1980, birthMonth: 3 }) }, {});
+      if (waist) await addMeasurement('waist', 90, '2026-09-01');
+      if (weight) await addMeasurement('weight', 80, '2026-09-01');
+      await flushRoadmapStore();
+      const view = await open();
+      if (waist) await waitFor(() => expect(weightRow(view)?.querySelector('.bt-cell-draft input')).toBeTruthy());
+      await settle(200);
+      await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+      return view;
+    }
+
+    it.each([['the box beside the height', false], ['the grid\'s New cell', true]])('%s: the last answer sends onboarding_step and onboarding_done once, shows the card, and lands nothing', async (_where, waist) => {
+      const view = await chatReady({ waist });
+      chatWeight();
+      if (waist) expect((weightRow(view)!.querySelector('.bt-cell-draft input') as HTMLInputElement).value).toBe('105');
+      await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'));
+      await settle(300);
+      expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]);
+      expect(calls('onboarding_done')).toHaveLength(1);
+      expect(landed()).toBe(false); // AC25b: an answer from the chat never jumps
+    });
+
+    it('the grid\'s empty 2026-09-01 cell: the chat\'s dated weight, saved, is the last answer', async () => {
+      const view = await chatReady();
+      chatWeight('2026-09-01');
+      const cell = weightRow(view)!.querySelector('.bt-cell-backfill input') as HTMLInputElement;
+      expect(cell.value).toBe('105');
+      fireEvent.keyDown(cell, { key: 'Enter' });
+      await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'), { timeout: 3000 });
+      expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]);
+      expect(calls('onboarding_done')).toHaveLength(1);
+      await settle(300);
+      expect(landed()).toBe(false);
+    });
+
+    it('a weight typed into the New cell after the chat\'s ended it neither lands nor counts again', async () => {
+      const view = await chatReady();
+      chatWeight();
+      await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'));
+      type(weightRow(view)!.querySelector('.bt-cell-draft input'), '106');
+      await settle(1000);
+      expect(landed()).toBe(false);
+      expect(calls('onboarding_step')).toHaveLength(1);
+      expect(calls('onboarding_done')).toHaveLength(1);
+    });
+
+    it.each(['sex', 'birth'] as const)('%s still missing: the chat\'s grid weight counts the measurements step only, with no card', async (missing) => {
+      const view = await chatReady({ missing });
+      chatWeight();
+      await waitFor(() => expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]));
+      await settle(300);
+      expect(calls('onboarding_done')).toHaveLength(0);
+      expect(q(view, '.mh-ready')).toBeNull();
+    });
+
+    it('a waist from the chat is no answer: the last weight typed in the grid still lands after its wait', async () => {
+      const view = await chatReady();
+      type(weightRow(view)!.querySelector('.bt-cell-draft input'), '25'); // may become 250: an 800 ms wait
+      act(() => chat.proposeEdit!([{ kind: 'field', field: 'waistCm', displayValue: 91, unitSystem: 'si', date: null }]));
+      await waitFor(() => expect(landed()).toBe(true), { timeout: 2000 });
+    });
+
+    it('a record already holding a weight: the chat\'s grid weight sends nothing and shows no card', async () => {
+      const view = await chatReady({ weight: true });
+      chatWeight();
+      await waitFor(() => expect((weightRow(view)!.querySelector('.bt-cell-draft input') as HTMLInputElement).value).toBe('105'));
+      await settle(300);
+      expect(calls('onboarding_step')).toEqual([]);
+      expect(calls('onboarding_done')).toEqual([]);
+      expect(q(view, '.mh-ready')).toBeNull();
+    });
+  });
 });
