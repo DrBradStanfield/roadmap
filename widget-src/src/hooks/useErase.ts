@@ -23,10 +23,14 @@ import { createEraseStore, refusal, type EraseState, type EraseStore } from '../
  * answered on pre-erase values.
  *
  * The tree reads the store through state its listener sets, not
- * useSyncExternalStore: React 18 renders a store change at sync priority, so
- * a read's record and its erase would commit apart, the store's mark moving
- * while the old record is still on screen (US-16 AC2d). Set from the listener,
- * the state commits with the record set in the same turn. `shownErase` keys
+ * useSyncExternalStore. Measured on React 18.2 (PR 1283): useSyncExternalStore
+ * commits a store change at sync priority, ahead of state set in the same
+ * async turn. A component changing both in one timer callback committed
+ * `a=0 b=0`, `a=0 b=1`, `a=1 b=1`: an intermediate commit. Here that commit
+ * would move the store's mark to the new erase while the old record is still
+ * on screen, so a save asked from it would land (US-16 AC2d). Set from the
+ * listener, the state commits with the record set in the same turn
+ * (`a=0 b=0`, `a=1 b=1`). The AC2d pin in useErase.test.tsx guards it. `shownErase` keys
  * the upload modal, so an erase ends a review read before it (US-16 AC2c).
  */
 export interface EraseDoorProps {
