@@ -86,6 +86,8 @@
  *   the saves stay off until reload.
  */
 
+import { epochOf } from '@roadmap/health-core/erase-identity';
+
 /** The store's erase identity, `[eraseEpoch, erasedAt]` as one string (record-session eraseIdentityOf). */
 export type EraseIdentity = string;
 
@@ -131,16 +133,6 @@ export interface Step { state: EraseState; effects: EraseEffect[] }
 
 export function initialEraseState(shown: EraseIdentity): EraseState {
   return { phase: 'loading', shown, heard: null, said: new Set(), counted: new Set() };
-}
-
-/** The identity's erase epoch; -1, the floor, when it cannot be read. */
-export function epochOf(identity: EraseIdentity): number {
-  try {
-    const [epoch] = JSON.parse(identity) as unknown[];
-    return typeof epoch === 'number' && Number.isFinite(epoch) ? epoch : -1;
-  } catch {
-    return -1;
-  }
 }
 
 /** `next` takes `prior`'s place: another identity, at the same or a higher epoch. */

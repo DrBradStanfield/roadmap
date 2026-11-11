@@ -8,9 +8,10 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import {
-  createEraseStore, epochOf, initialEraseState, refusalIsNews, transition,
+  createEraseStore, initialEraseState, refusalIsNews, transition,
   type EraseDoors, type EraseEffect, type EraseEvent, type EraseState,
 } from './erase-machine';
+import { epochOf } from '@roadmap/health-core/erase-identity';
 
 const id = (epoch: number, at: string | null) => JSON.stringify([epoch, at]);
 const W = id(0, null); // the record before any erase

@@ -8,12 +8,15 @@
  */
 import { ConflictError, ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
 import { buildErasedFile } from './erase';
+import { eraseIdentityOf, eraseOf } from './erase-identity';
 import { CLOCK_KEYS, mergeFiles } from './merge';
 import { SchemaTooNewError } from './migrate';
 import { announce, laterChange, liftMissed, type DeviceMirror, type RecordHost, type RemoteChange, type SyncStorage } from './record-host';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { CURRENT_SCHEMA_VERSION, stableStringify, type RoadmapFile } from './roadmap-file';
 import { SyncManager, type SyncContext } from './sync-manager';
+
+export { epochOf, eraseIdentityOf } from './erase-identity';
 
 /** How long a burst of edits waits before one save carries them all. */
 export const PERSIST_DEBOUNCE_MS = 800;
@@ -29,18 +32,6 @@ export const PERSIST_DEBOUNCE_MS = 800;
  */
 export const REMOTE_POLL_MS = 60_000;
 export const REMOTE_THROTTLE_MS = 5_000;
-
-/** Which erase the record is at. It lives in `meta` beside the clocks but is
- *  not one: an erase that leaves the record as empty as it was is still a
- *  change, and the page drops the chat's banners for it (US-16 AC2a). */
-function eraseOf(file: RoadmapFile): [number, string | null] {
-  return [file.meta.eraseEpoch ?? 0, file.meta.erasedAt ?? null];
-}
-
-/** Which erase this copy is at, as one comparable string (US-16 AC2a). */
-export function eraseIdentityOf(file: RoadmapFile): string {
-  return JSON.stringify(eraseOf(file));
-}
 
 /** The record minus its own clocks — what a person would call a change. Keys
  *  are sorted, as everywhere else content is compared: a merge rebuilds the
